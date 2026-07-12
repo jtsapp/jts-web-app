@@ -22,13 +22,14 @@ const dexterScript = [
   { text: 'Давай перейдём к твоей регистрации', delay: 1300 },
 ]
 
-export default function RegistrationPage({ onBack }) {
+export default function RegistrationPage({ onBack, onPhoneLogin }) {
   const [messages, setMessages] = useState([
     { from: 'dexter', text: 'Привет! Как тебя зовут?' },
   ])
   const [typing, setTyping] = useState(false)
   const [value, setValue] = useState('')
   const [showAuth, setShowAuth] = useState(false)
+  const [name, setName] = useState('')
   const listRef = useRef(null)
   const timers = useRef([])
 
@@ -71,6 +72,7 @@ export default function RegistrationPage({ onBack }) {
     if (!text || typing || showAuth) return
     setMessages((prev) => [...prev, { from: 'me', text }])
     setValue('')
+    setName(text)
     playScript(text)
   }
 
@@ -135,7 +137,11 @@ export default function RegistrationPage({ onBack }) {
                 {/* Варианты входа появляются после диалога */}
                 {showAuth && (
                   <div className="auth">
-                    <button className="auth-primary" type="button">
+                    <button
+                      className="auth-primary"
+                      type="button"
+                      onClick={() => onPhoneLogin?.(name)}
+                    >
                       <PhoneChatIcon size={18} />
                       <span>Войти по номеру телефона</span>
                     </button>
