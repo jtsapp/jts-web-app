@@ -77,6 +77,7 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
 
   return (
     <Shell onBack={onBack}>
+      <div className="form-inner">
       <form className="form-card" onSubmit={submit}>
         <h2 className="form-title">
           Мы отправили
@@ -118,6 +119,7 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
           )}
         </p>
       </form>
+      </div>
     </Shell>
   )
 }

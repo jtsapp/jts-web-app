@@ -33,6 +33,7 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
 
   return (
     <Shell onBack={onBack}>
+      <div className="form-inner">
       <form className="form-card" onSubmit={submit}>
         <h2 className="form-title">Войти по номеру телефона</h2>
         <p className="form-sub">
@@ -66,6 +67,7 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
           </a>
         </p>
       </form>
+      </div>
     </Shell>
   )
 }

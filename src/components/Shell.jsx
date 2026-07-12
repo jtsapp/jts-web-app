@@ -20,9 +20,7 @@ export default function Shell({ onBack, children }) {
           <LangSelector />
         </header>
 
-        <section className="reg-body">
-          <div className="form-inner">{children}</div>
-        </section>
+        <section className="reg-body">{children}</section>
       </div>
       <Footer />
     </div>

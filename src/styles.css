@@ -656,7 +656,32 @@ body {
   }
 }
 
+/* Кнопка «Пройду позже» */
+.btn-later {
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--blue-soft);
+  color: #1f6f8b;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.btn-later:hover {
+  transform: translateY(-1px);
+  background: var(--blue-soft-2);
+}
+
 /* Экран успеха */
+.success-center {
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  display: flex;
+  flex-direction: column;
+}
 .success-badge {
   width: 72px;
   height: 72px;
@@ -669,6 +694,13 @@ body {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   box-shadow: 0 12px 28px rgba(16, 185, 129, 0.35);
   animation: pop-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.success-badge--sm {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, #9b6bf3 0%, #7c3aed 100%);
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
 }
 @keyframes pop-in {
   from {
@@ -799,5 +831,259 @@ body {
   .footer-link,
   .footer-copy {
     justify-self: center;
+  }
+}
+
+/* ======================================================= */
+/* ==============  CEFR-ТЕСТ НА УРОВЕНЬ  ================= */
+/* ======================================================= */
+
+.test-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 22px 24px;
+  position: relative;
+}
+.test-close {
+  position: absolute;
+  left: 26px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: #cfeafc;
+  color: #2ca5e0;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.test-close:hover {
+  background: #bfe1fa;
+}
+.test-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.test-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 8px 24px 40px;
+}
+.test-inner {
+  width: 100%;
+  max-width: 560px;
+}
+
+.test-count {
+  text-align: center;
+  color: var(--purple);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* Слайдер уровня CEFR */
+.meter {
+  margin: 0 auto 26px;
+  max-width: 460px;
+}
+.meter-track {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: #ece9f6;
+}
+.meter-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #a78bfa, #7c3aed);
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.meter-thumb {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #7c3aed;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.5);
+  transform: translate(-50%, -50%);
+  transition: left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.meter-labels {
+  position: relative;
+  height: 18px;
+  margin-top: 10px;
+}
+.meter-labels span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #9b9aa8;
+}
+
+/* Текст задания */
+.test-passage {
+  margin-bottom: 16px;
+}
+.test-passage__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.test-passage p {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #6c6b78;
+}
+.test-prompt {
+  font-size: 13.5px;
+  color: #6c6b78;
+  margin-bottom: 8px;
+}
+.test-question {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+  margin-bottom: 18px;
+  text-wrap: balance;
+}
+
+/* Варианты ответа */
+.test-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.option {
+  text-align: left;
+  border: 1.5px solid #eee;
+  border-radius: 14px;
+  padding: 15px 18px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(23, 19, 38, 0.05);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.option:hover:not(:disabled) {
+  border-color: #d9cdf7;
+  transform: translateY(-1px);
+}
+.option:disabled {
+  cursor: default;
+}
+.option--selected {
+  background: linear-gradient(135deg, #9b6bf3, #7c3aed);
+  color: #fff;
+  border-color: transparent;
+}
+.option--correct {
+  background: #34a853;
+  color: #fff;
+  border-color: transparent;
+}
+.option--wrong {
+  background: #e5675f;
+  color: #fff;
+  border-color: transparent;
+}
+
+/* Кнопка «Проверить» */
+.test-check {
+  display: block;
+  margin: 26px auto 0;
+  min-width: 220px;
+  border: none;
+  border-radius: 14px;
+  padding: 15px 28px;
+  background: linear-gradient(135deg, #9b6bf3 0%, #7c3aed 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.3);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.test-check:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+.test-check:disabled {
+  background: #ece7fb;
+  color: #c3b6ec;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* Загрузка / результат */
+.test-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 24px;
+  text-align: center;
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 4px solid #ece9f6;
+  border-top-color: #7c3aed;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.result-badge {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #9b6bf3 0%, #7c3aed 100%);
+  box-shadow: 0 14px 32px rgba(124, 58, 237, 0.4);
+  animation: pop-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.result-btn {
+  min-width: 220px;
+  margin-top: 6px;
+}
+
+@media (max-width: 480px) {
+  .test-title {
+    font-size: 15px;
+  }
+  .meter-labels span {
+    font-size: 11px;
   }
 }

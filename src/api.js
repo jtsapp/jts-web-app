@@ -11,6 +11,22 @@ export function normalizePhone(input) {
   return '7' + ten
 }
 
+async function get(path) {
+  let res
+  try {
+    res = await fetch(BASE + path)
+  } catch (e) {
+    throw new Error('Нет связи с сервером. Проверьте интернет и попробуйте снова.')
+  }
+  if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`)
+  return res.json()
+}
+
+// CEFR-тест: банк вопросов (публичный эндпоинт, адаптивная логика — на клиенте)
+export function getAdaptiveQuestions() {
+  return get('/adaptive-test/questions')
+}
+
 async function post(path, body) {
   let res
   try {

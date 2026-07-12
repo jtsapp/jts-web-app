@@ -4,6 +4,8 @@ import RegistrationPage from './pages/RegistrationPage.jsx'
 import PhoneLoginPage from './pages/PhoneLoginPage.jsx'
 import OtpPage from './pages/OtpPage.jsx'
 import SuccessPage from './pages/SuccessPage.jsx'
+import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
+import LevelTestPage from './pages/LevelTestPage.jsx'
 import { sendOtp, verifyOtp } from './api.js'
 
 export default function App() {
@@ -93,7 +95,22 @@ export default function App() {
         />
       )
     case 'success':
-      return <SuccessPage name={name} onHome={() => setScreen('welcome')} />
+      return <SuccessPage onDone={() => setScreen('test-intro')} />
+    case 'test-intro':
+      return (
+        <LevelTestIntroPage
+          onBack={() => setScreen('welcome')}
+          onStart={() => setScreen('test')}
+          onLater={() => setScreen('welcome')}
+        />
+      )
+    case 'test':
+      return (
+        <LevelTestPage
+          onClose={() => setScreen('test-intro')}
+          onDone={() => setScreen('welcome')}
+        />
+      )
     default:
       return null
   }
