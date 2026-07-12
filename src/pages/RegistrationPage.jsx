@@ -4,35 +4,85 @@ import LangSelector from '../components/LangSelector.jsx'
 import Footer from '../components/Footer.jsx'
 import { ChevronLeftIcon, SendIcon } from '../components/icons.jsx'
 
+// Сценарий Декстера: реплики после того, как пользователь назвал имя.
+// {name} подставляется автоматически. delay — сколько «печатать» перед показом.
+const dexterScript = [
+  { text: 'Приятно познакомиться, {name}', delay: 900 },
+  {
+    text:
+      'Со мной ты действительно улучшишь свой английский — и получишь удовольствие от процесса. 💜',
+    delay: 1600,
+  },
+  { text: 'Для начала подскажи, сколько тебе лет?', delay: 1300 },
+]
+
 export default function RegistrationPage({ onBack }) {
   const [messages, setMessages] = useState([
     { from: 'dexter', text: 'Привет! Как тебя зовут?' },
   ])
+  const [typing, setTyping] = useState(false)
   const [value, setValue] = useState('')
+  const [name, setName] = useState(null)
+  const [step, setStep] = useState(0) // прогресс регистрации
   const listRef = useRef(null)
+  const timers = useRef([])
 
+  // Автоскролл вниз при новых сообщениях/индикаторе печати
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight
     }
-  }, [messages])
+  }, [messages, typing])
+
+  // Чистим таймеры при размонтировании
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
+
+  function pushDexter(text) {
+    setMessages((prev) => [...prev, { from: 'dexter', text }])
+  }
+
+  // Проигрывает сценарий: печатает -> сообщение -> печатает -> сообщение ...
+  function playScript(userName) {
+    let elapsed = 0
+    dexterScript.forEach((line) => {
+      // показать индикатор печати
+      timers.current.push(
+        setTimeout(() => setTyping(true), elapsed),
+      )
+      elapsed += line.delay
+      // показать само сообщение и убрать индикатор
+      timers.current.push(
+        setTimeout(() => {
+          setTyping(false)
+          pushDexter(line.text.replace('{name}', userName))
+        }, elapsed),
+      )
+      elapsed += 400 // пауза между репликами
+    })
+  }
 
   function send() {
     const text = value.trim()
-    if (!text) return
+    if (!text || typing) return
     setMessages((prev) => [...prev, { from: 'me', text }])
     setValue('')
 
-    // Ответ Декстера с небольшой задержкой
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          from: 'dexter',
-          text: `Приятно познакомиться, ${text}! Давай продолжим регистрацию 🎓`,
-        },
-      ])
-    }, 700)
+    if (step === 0) {
+      // Первый ответ — это имя, запускаем сценарий знакомства
+      setName(text)
+      setStep(1)
+      playScript(text)
+    } else {
+      // Дальнейшие ответы — короткое подтверждение
+      timers.current.push(setTimeout(() => setTyping(true), 200))
+      timers.current.push(
+        setTimeout(() => {
+          setTyping(false)
+          pushDexter(`Отлично${name ? ', ' + name : ''}! Идём дальше 🚀`)
+        }, 1200),
+      )
+      setStep((s) => s + 1)
+    }
   }
 
   function onKeyDown(e) {
@@ -41,6 +91,8 @@ export default function RegistrationPage({ onBack }) {
       send()
     }
   }
+
+  const placeholder = step === 0 ? 'Меня зовут ...' : 'Напишите ответ ...'
 
   return (
     <div className="screen">
@@ -83,18 +135,26 @@ export default function RegistrationPage({ onBack }) {
                       {m.text}
                     </div>
                   ))}
+
+                  {typing && (
+                    <div className="bubble bubble--dexter bubble--typing" aria-label="Декстер печатает">
+                      <span className="dot" />
+                      <span className="dot" />
+                      <span className="dot" />
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="chat__input">
                 <input
                   type="text"
-                  placeholder="Меня зовут ..."
+                  placeholder={placeholder}
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   onKeyDown={onKeyDown}
                 />
-                <button className="send-btn" onClick={send}>
+                <button className="send-btn" onClick={send} disabled={typing}>
                   <SendIcon size={15} />
                   <span>Отправить</span>
                 </button>
