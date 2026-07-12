@@ -31,7 +31,7 @@ export default function WelcomePage({ onRegister, onLogin }) {
         {/* Герой */}
         <section
           className="hero"
-          style={{ backgroundImage: 'url(/assets/hero-london.png)' }}
+          style={{ backgroundImage: 'url(/assets/hero-london.jpg)' }}
         >
           <div className="hero__content">
             <h1 className="hero__title">
