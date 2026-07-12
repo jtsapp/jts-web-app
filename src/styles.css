@@ -38,21 +38,20 @@ body {
 .screen {
   min-height: 100vh;
   background: var(--page-bg);
-  padding: 26px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 0;
 }
 
 .card {
   position: relative;
   flex: 1;
-  border-radius: var(--card-radius);
+  border-radius: 0;
   overflow: hidden;
   background: #f4f5f7;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
 }
 
 .card--plain {
@@ -472,7 +471,7 @@ body {
   padding: 0 34px;
   height: 62px;
   background: var(--footer-bg);
-  border-radius: var(--card-radius);
+  border-radius: 0;
 }
 .footer .logo {
   color: #fff;
@@ -497,8 +496,8 @@ body {
 /* ---------- Адаптив ---------- */
 @media (max-width: 720px) {
   .screen {
-    padding: 14px;
-    gap: 14px;
+    padding: 0;
+    gap: 0;
   }
   .hero-header {
     padding: 18px;

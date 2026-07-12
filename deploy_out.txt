@@ -1,0 +1,7 @@
+<claude-code-hint v="1" type="plugin" value="vercel@claude-plugins-official" />
+Vercel CLI 55.0.0 (Node.js 24.13.0)
+Retrieving project…
+Deploying dorhsis-projects/jts_web_app
+  Inspect         https://vercel.com/dorhsis-projects/jts_web_app/EPKTqx3PMroYkqWBDWRY1y7nK6TY
+  Production      https://jtsweb-6ed29c7pk-dorhsis-projects.vercel.app
+Building…
