@@ -1,0 +1,16 @@
+livekit-agents[google]>=1.2.0
+livekit-plugins-noise-cancellation>=0.2.0
+livekit-plugins-silero>=1.2.0
+python-dotenv>=1.0.0
+httpx>=0.27.0
+
+# ── Cascade voice stack (VOICE_STACK=cascade) ────────────────────────────────
+# STT = Soniox (all 3 langs, code-switching), TTS = Azure Neural (en/ru + kk-KZ,
+# one voice per session, $15/1M chars — replaced ElevenLabs for cost), Brain =
+# OpenAI-compatible shim over the Vercel /api/voice/brain route (→ Anthropic
+# Haiku 4.5 with prompt caching). Turn endpointing uses Silero VAD
+# (livekit-plugins-silero above) with a tuned silence window (Soniox does not
+# emit END_OF_SPEECH, GH livekit/agents#4034, so VAD closes the turn).
+livekit-plugins-openai>=1.2.0
+livekit-plugins-soniox>=1.2.0
+livekit-plugins-azure>=1.2.0
