@@ -7,8 +7,10 @@ import SuccessPage from './pages/SuccessPage.jsx'
 import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
 import LevelTestPage from './pages/LevelTestPage.jsx'
 import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
+import { useI18n } from './i18n.jsx'
 
 export default function App() {
+  const { t } = useI18n()
   // Машина состояний экранов регистрации
   const [screen, setScreen] = useState('welcome')
   const [name, setName] = useState('')
@@ -27,7 +29,7 @@ export default function App() {
       setPhone(fullPhone)
       setScreen('otp')
     } catch (e) {
-      setError(e.message || 'Не удалось отправить код. Попробуйте ещё раз.')
+      setError(e.message || t('err.send'))
     } finally {
       setLoading(false)
     }
@@ -50,7 +52,7 @@ export default function App() {
       setToken(tok || null)
       setScreen('success')
     } catch (e) {
-      setError(e.message || 'Неверный код. Проверьте и попробуйте снова.')
+      setError(e.message || t('err.otp'))
     } finally {
       setLoading(false)
     }

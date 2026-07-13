@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import Shell from '../components/Shell.jsx'
 import { RuFlagIcon } from '../components/icons.jsx'
+import { useI18n } from '../i18n.jsx'
+import Multiline from '../components/Multiline.jsx'
 
 // Форматируем ТОЛЬКО национальный номер (без кода страны): (777) 123-45-67
 // Разделитель добавляем только когда в следующей группе уже есть цифра —
@@ -16,6 +18,7 @@ function formatNational(d) {
 }
 
 export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
+  const { t } = useI18n()
   const [digits, setDigits] = useState('') // только 10 цифр номера, без +7
 
   function onChange(e) {
@@ -39,10 +42,10 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
     <Shell onBack={onBack}>
       <div className="form-inner">
         <form className="form-card" onSubmit={submit}>
-          <h2 className="form-title">Войти по номеру телефона</h2>
-          <p className="form-sub">
-            Введите свой номер и мы отправим вам СМС с кодом для подтверждения
-          </p>
+          <h2 className="form-title">
+            <Multiline text={t('phone.title')} />
+          </h2>
+          <p className="form-sub">{t('phone.subtitle')}</p>
 
           <div className="phone-field">
             <span className="phone-flag">
@@ -62,13 +65,13 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
           {error && <div className="form-error">{error}</div>}
 
           <button className="form-primary" type="submit" disabled={!valid || loading}>
-            {loading ? 'Отправляем…' : 'Войти'}
+            {loading ? t('phone.sending') : t('phone.submit')}
           </button>
 
           <p className="form-note">
-            Нажимая на кнопку «Войти» вы соглашаетесь с нашей{' '}
+            {t('phone.note')}
             <a href="#" onClick={(e) => e.preventDefault()}>
-              политикой конфиденциальности
+              {t('phone.privacy')}
             </a>
           </p>
         </form>

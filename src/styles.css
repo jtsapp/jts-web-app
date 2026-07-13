@@ -86,8 +86,66 @@ body {
 .lang-selector:hover {
   transform: translateY(-1px);
 }
-.lang-selector svg:last-child {
+.lang-selector .chev {
+  display: inline-flex;
   color: var(--muted);
+  transition: transform 0.18s ease;
+}
+.lang-selector .chev--open {
+  transform: rotate(90deg);
+}
+
+/* Выпадающее меню языка */
+.lang-wrap {
+  position: relative;
+  z-index: 20;
+}
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(23, 19, 38, 0.18);
+  border: 1px solid #eee;
+  animation: lang-in 0.16s ease both;
+}
+@keyframes lang-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.lang-option:hover {
+  background: #f4f2fa;
+}
+.lang-option--active {
+  background: #f0ebff;
+  color: var(--purple);
 }
 
 /* ======================================================= */

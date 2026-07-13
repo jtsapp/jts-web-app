@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
+import { useI18n } from '../i18n.jsx'
 
 // Проигрывает сценарий реплик Декстера с индикатором «печатает…»,
 // после последней реплики показывает footer (например, кнопки).
 export default function DexterChat({ script, footer }) {
+  const { t } = useI18n()
   const [messages, setMessages] = useState([])
   const [typing, setTyping] = useState(false)
   const [done, setDone] = useState(false)
@@ -39,10 +41,10 @@ export default function DexterChat({ script, footer }) {
     <div className="chat">
       <div className="chat__scroll" ref={listRef}>
         <div className="chat__author">
-          <img className="chat__avatar" src="/assets/dexter.png" alt="Декстер" />
+          <img className="chat__avatar" src="/assets/dexter.png" alt={t('dexter.name')} />
           <div>
-            <div className="chat__name">Декстер</div>
-            <div className="chat__role">Путеводитель и тьютор</div>
+            <div className="chat__name">{t('dexter.name')}</div>
+            <div className="chat__role">{t('dexter.role')}</div>
           </div>
         </div>
 

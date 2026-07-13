@@ -1,20 +1,15 @@
 import Shell from '../components/Shell.jsx'
 import DexterChat from '../components/DexterChat.jsx'
-
-const script = [
-  { text: 'Давай определим твой уровень знаний', delay: 900 },
-  {
-    text: 'Нужно пройти тестирование, чтобы мы смогли подобрать тебе обучение',
-    delay: 1400,
-  },
-  {
-    text:
-      'Я задам около 14 вопросов, которые подстраиваются под твои ответы — ответишь правильно, и следующий станет сложнее. Займёт примерно 5 минут.',
-    delay: 1900,
-  },
-]
+import { useI18n } from '../i18n.jsx'
 
 export default function LevelTestIntroPage({ onBack, onStart, onLater }) {
+  const { t } = useI18n()
+  const script = [
+    { text: t('test.intro1'), delay: 900 },
+    { text: t('test.intro2'), delay: 1400 },
+    { text: t('test.intro3'), delay: 1900 },
+  ]
+
   return (
     <Shell onBack={onBack}>
       <div className="reg-inner">
@@ -23,10 +18,10 @@ export default function LevelTestIntroPage({ onBack, onStart, onLater }) {
           footer={
             <div className="auth">
               <button className="auth-primary" type="button" onClick={onStart}>
-                Начать тестирование сейчас
+                {t('test.start')}
               </button>
               <button className="btn-later" type="button" onClick={onLater}>
-                Пройду позже
+                {t('test.later')}
               </button>
             </div>
           }

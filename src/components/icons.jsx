@@ -93,3 +93,33 @@ export function RuFlagIcon({ size = 18 }) {
     </svg>
   )
 }
+
+export function GbFlagIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size * 0.72} viewBox="0 0 30 20" style={{ borderRadius: 3, display: 'block' }}>
+      <rect width="30" height="20" fill="#012169" />
+      <g stroke="#fff" strokeWidth="4">
+        <path d="M0 0 30 20" />
+        <path d="M30 0 0 20" />
+      </g>
+      <g stroke="#C8102E" strokeWidth="2">
+        <path d="M0 0 30 20" />
+        <path d="M30 0 0 20" />
+      </g>
+      <rect x="12.5" width="5" height="20" fill="#fff" />
+      <rect y="7.5" width="30" height="5" fill="#fff" />
+      <rect x="13.5" width="3" height="20" fill="#C8102E" />
+      <rect y="8.5" width="30" height="3" fill="#C8102E" />
+    </svg>
+  )
+}
+
+export function KzFlagIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size * 0.72} viewBox="0 0 30 20" style={{ borderRadius: 3, display: 'block' }}>
+      <rect width="30" height="20" fill="#00AFCA" />
+      <circle cx="15" cy="9" r="4.2" fill="#FEC50C" />
+      <rect x="6" y="15.5" width="18" height="1.6" rx="0.8" fill="#FEC50C" />
+    </svg>
+  )
+}

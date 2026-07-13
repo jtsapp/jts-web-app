@@ -1,7 +1,10 @@
 import { useEffect } from 'react'
 import Shell from '../components/Shell.jsx'
+import Multiline from '../components/Multiline.jsx'
+import { useI18n } from '../i18n.jsx'
 
 export default function SuccessPage({ onDone }) {
+  const { t } = useI18n()
   // Короткая пауза и переход к предложению пройти тест уровня
   useEffect(() => {
     const t = setTimeout(() => onDone?.(), 1800)
@@ -24,9 +27,7 @@ export default function SuccessPage({ onDone }) {
           </svg>
         </div>
         <h2 className="form-title">
-          Регистрация
-          <br />
-          пройдена
+          <Multiline text={t('success.title')} />
         </h2>
       </div>
       </div>
