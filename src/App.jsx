@@ -13,8 +13,8 @@ import { useI18n } from './i18n.jsx'
 
 export default function App() {
   const { t } = useI18n()
-  // Машина состояний экранов регистрации
-  const [screen, setScreen] = useState('welcome')
+  // Стартуем сразу с теста уровня (регистрацию можно пройти позже)
+  const [screen, setScreen] = useState('test-intro')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login'
