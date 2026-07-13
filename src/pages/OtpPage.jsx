@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import Shell from '../components/Shell.jsx'
+import Multiline from '../components/Multiline.jsx'
+import { useI18n } from '../i18n.jsx'
 
 const LENGTH = 4
 
-export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, error }) {
+export default function OtpPage({ phone, onBack, onSubmit, onResend, onSkip, loading, error }) {
+  const { t } = useI18n()
   const [digits, setDigits] = useState(Array(LENGTH).fill(''))
   const [seconds, setSeconds] = useState(60)
   const inputs = useRef([])
@@ -80,11 +83,9 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
       <div className="form-inner">
       <form className="form-card" onSubmit={submit}>
         <h2 className="form-title">
-          Мы отправили
-          <br />
-          вам СМС-код
+          <Multiline text={t('otp.title')} />
         </h2>
-        <p className="form-sub">Введите 4-х значный код ниже</p>
+        <p className="form-sub">{t('otp.subtitle')}</p>
 
         <div className="otp-row">
           {digits.map((d, i) => (
@@ -106,18 +107,24 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, er
         {error && <div className="form-error">{error}</div>}
 
         <button className="form-primary" type="submit" disabled={!valid || loading}>
-          {loading ? 'Проверяем…' : 'Подтвердить номер'}
+          {loading ? t('otp.checking') : t('otp.submit')}
         </button>
 
         <p className="form-note form-note--center">
           {seconds > 0 ? (
-            <>Отправим сообщение повторно через {seconds} сек</>
+            t('otp.resendIn', { sec: seconds })
           ) : (
             <a href="#" onClick={(e) => { e.preventDefault(); resend() }}>
-              Отправить код повторно
+              {t('otp.resend')}
             </a>
           )}
         </p>
+
+        {onSkip && (
+          <button type="button" className="skip-link" onClick={onSkip}>
+            {t('common.skip')}
+          </button>
+        )}
       </form>
       </div>
     </Shell>

@@ -6,6 +6,8 @@ import OtpPage from './pages/OtpPage.jsx'
 import SuccessPage from './pages/SuccessPage.jsx'
 import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
 import LevelTestPage from './pages/LevelTestPage.jsx'
+import LearningPage from './pages/LearningPage.jsx'
+import KingdomInteriorPage from './pages/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './pages/TutorWelcomePage.jsx'
 import TutorLanguagePage from './pages/TutorLanguagePage.jsx'
 import TutorChoosePage from './pages/TutorChoosePage.jsx'
@@ -26,18 +28,23 @@ import TutorScenariosPage from './pages/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './pages/TutorChatHistoryPage.jsx'
 import { getTutor } from './tutor/tutors.js'
 import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
+import { useI18n } from './i18n.jsx'
 
 export default function App() {
-  // Машина состояний экранов регистрации.
-  // Начальный экран можно задать через ?screen=… (удобно для отладки/диплинков).
+  const { t } = useI18n()
+  // Стартуем сразу с главного меню «Обучение» (регистрацию/тест можно пройти
+  // позже). ?screen=… по-прежнему переопределяет начальный экран — так экраны
+  // тьютора остаются достижимы для отладки/диплинков.
   const [screen, setScreen] = useState(
-    () => new URLSearchParams(window.location.search).get('screen') || 'welcome',
+    () => new URLSearchParams(window.location.search).get('screen') || 'kingdom',
   )
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login'
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
+  const [userLevel, setUserLevel] = useState('A1')
+  const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,7 +59,7 @@ export default function App() {
       setPhone(fullPhone)
       setScreen('otp')
     } catch (e) {
-      setError(e.message || 'Не удалось отправить код. Попробуйте ещё раз.')
+      setError(e.message || t('err.send'))
     } finally {
       setLoading(false)
     }
@@ -75,14 +82,15 @@ export default function App() {
       setToken(tok || null)
       setScreen('success')
     } catch (e) {
-      setError(e.message || 'Неверный код. Проверьте и попробуйте снова.')
+      setError(e.message || t('err.otp'))
     } finally {
       setLoading(false)
     }
   }
 
-  // Завершение теста — сохраняем уровень в профиль пользователя
+  // Завершение теста — сохраняем уровень в профиль и открываем королевство
   async function handleTestDone(res) {
+    if (res?.level) setUserLevel(res.level)
     if (token && res?.level) {
       try {
         await saveLanguageLevel(token, res.level)
@@ -90,7 +98,13 @@ export default function App() {
         console.warn('Не удалось сохранить уровень:', e)
       }
     }
-    setScreen('tutor-welcome')
+    setScreen('kingdom')
+  }
+
+  // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
+  function handleSkip() {
+    setError('')
+    setScreen('test-intro')
   }
 
   async function handleResend() {
@@ -117,6 +131,7 @@ export default function App() {
       return (
         <RegistrationPage
           onBack={() => setScreen('welcome')}
+          onSkip={handleSkip}
           onPhoneLogin={(userName) => {
             setName(userName || '')
             setError('')
@@ -129,6 +144,7 @@ export default function App() {
         <PhoneLoginPage
           onBack={() => { setError(''); setScreen('chat') }}
           onSubmit={handlePhoneSubmit}
+          onSkip={handleSkip}
           loading={loading}
           error={error}
         />
@@ -140,6 +156,7 @@ export default function App() {
           onBack={() => { setError(''); setScreen('phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
+          onSkip={handleSkip}
           loading={loading}
           error={error}
         />
@@ -151,7 +168,7 @@ export default function App() {
         <LevelTestIntroPage
           onBack={() => setScreen('welcome')}
           onStart={() => setScreen('test')}
-          onLater={() => setScreen('welcome')}
+          onLater={() => setScreen('kingdom')}
         />
       )
     case 'test':
@@ -159,6 +176,27 @@ export default function App() {
         <LevelTestPage
           onClose={() => setScreen('test-intro')}
           onDone={handleTestDone}
+        />
+      )
+    case 'kingdom':
+      return (
+        <LearningPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onOpenKingdom={(k) => {
+            setKingdom(k)
+            setScreen('kingdom-interior')
+          }}
+        />
+      )
+    case 'kingdom-interior':
+      return (
+        <KingdomInteriorPage
+          kingdom={kingdom}
+          userName={name}
+          userLevel={userLevel}
+          onBack={() => setScreen('kingdom')}
         />
       )
     case 'tutor-welcome':

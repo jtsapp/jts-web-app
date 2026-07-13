@@ -3,6 +3,7 @@ import Footer from '../components/Footer.jsx'
 import Shell from '../components/Shell.jsx'
 import { getAdaptiveQuestions } from '../api.js'
 import { createSession, next, submit, result, isDone, pctOf, LEVELS, CFG } from '../cefr.js'
+import { useI18n } from '../i18n.jsx'
 
 // Декоративная «печать» с зубчатым краем (белый бейдж уровня)
 function SealBadge({ level }) {
@@ -33,6 +34,7 @@ function SealBadge({ level }) {
 const LABEL_POS = [8.33, 25, 41.67, 58.33, 75, 91.67]
 
 export default function LevelTestPage({ onClose, onDone }) {
+  const { t } = useI18n()
   const [phase, setPhase] = useState('loading') // loading | error | question | result
   const [errMsg, setErrMsg] = useState('')
   const [cur, setCur] = useState(null)
@@ -103,13 +105,13 @@ export default function LevelTestPage({ onClose, onDone }) {
             {phase === 'loading' ? (
               <>
                 <div className="spinner" />
-                <p className="form-sub">Готовим тест…</p>
+                <p className="form-sub">{t('test.loading')}</p>
               </>
             ) : (
               <>
-                <p className="form-error">{errMsg}</p>
+                <p className="form-error">{errMsg || t('test.errLoad')}</p>
                 <button className="btn-later" onClick={onClose}>
-                  Назад
+                  {t('common.back')}
                 </button>
               </>
             )}
@@ -126,8 +128,8 @@ export default function LevelTestPage({ onClose, onDone }) {
       <Shell onBack={() => onDone?.(res)}>
         <div className="result-wrap">
           <div className="result-card">
-            <h2 className="result-heading">Отлично!</h2>
-            <p className="result-caption">Ваш уровень определен</p>
+            <h2 className="result-heading">{t('result.great')}</h2>
+            <p className="result-caption">{t('result.determined')}</p>
 
             <SealBadge level={res.level} />
 
@@ -144,7 +146,7 @@ export default function LevelTestPage({ onClose, onDone }) {
                   </span>
                   <span className="rstat-num rstat-num--red">{wrong}</span>
                 </div>
-                <div className="rstat-label rstat-label--red">Неверных ответов</div>
+                <div className="rstat-label rstat-label--red">{t('result.wrong')}</div>
               </div>
 
               <div className="rstat">
@@ -157,12 +159,12 @@ export default function LevelTestPage({ onClose, onDone }) {
                   </span>
                   <span className="rstat-num rstat-num--green">{res.correct}</span>
                 </div>
-                <div className="rstat-label rstat-label--green">Верных ответов</div>
+                <div className="rstat-label rstat-label--green">{t('result.correct')}</div>
               </div>
             </div>
 
             <button className="result-continue" onClick={() => onDone?.(res)}>
-              Продолжить
+              {t('result.continue')}
             </button>
           </div>
         </div>
@@ -184,14 +186,12 @@ export default function LevelTestPage({ onClose, onDone }) {
               <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
             </svg>
           </button>
-          <span className="test-title">Тестирование на знания языка (CEFR)</span>
+          <span className="test-title">{t('test.header')}</span>
         </header>
 
         <section className="test-body">
           <div className="test-inner">
-            <div className="test-count">
-              Вопрос {n + 1} из {total}
-            </div>
+            <div className="test-count">{t('test.question', { n: n + 1, total })}</div>
 
             {/* Слайдер уровня CEFR */}
             <div className="meter">
@@ -211,7 +211,7 @@ export default function LevelTestPage({ onClose, onDone }) {
             {/* Текст задания */}
             {q.passage && (
               <div className="test-passage">
-                <div className="test-passage__label">Read the passage</div>
+                <div className="test-passage__label">{t('test.readPassage')}</div>
                 <p>{q.passage}</p>
               </div>
             )}
@@ -246,7 +246,7 @@ export default function LevelTestPage({ onClose, onDone }) {
               disabled={chosen == null || checked}
               onClick={check}
             >
-              Проверить
+              {t('test.check')}
             </button>
           </div>
         </section>

@@ -84,12 +84,75 @@ export function GoogleIcon({ size = 18 }) {
   )
 }
 
+export function LearningIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M12 4 2 9l10 5 8-4v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 11.5V16c0 1 2.7 3 6 3s6-2 6-3v-4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+export function PracticeIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+    </svg>
+  )
+}
+export function TutorIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  )
+}
+export function LessonsIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5v-15Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5v-15Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function RuFlagIcon({ size = 18 }) {
   return (
     <svg width={size} height={size * 0.72} viewBox="0 0 30 20" style={{ borderRadius: 3, display: 'block' }}>
       <rect width="30" height="20" fill="#fff" />
       <rect y="6.67" width="30" height="6.67" fill="#0039A6" />
       <rect y="13.33" width="30" height="6.67" fill="#D52B1E" />
+    </svg>
+  )
+}
+
+export function GbFlagIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size * 0.72} viewBox="0 0 30 20" style={{ borderRadius: 3, display: 'block' }}>
+      <rect width="30" height="20" fill="#012169" />
+      <g stroke="#fff" strokeWidth="4">
+        <path d="M0 0 30 20" />
+        <path d="M30 0 0 20" />
+      </g>
+      <g stroke="#C8102E" strokeWidth="2">
+        <path d="M0 0 30 20" />
+        <path d="M30 0 0 20" />
+      </g>
+      <rect x="12.5" width="5" height="20" fill="#fff" />
+      <rect y="7.5" width="30" height="5" fill="#fff" />
+      <rect x="13.5" width="3" height="20" fill="#C8102E" />
+      <rect y="8.5" width="30" height="3" fill="#C8102E" />
+    </svg>
+  )
+}
+
+export function KzFlagIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size * 0.72} viewBox="0 0 30 20" style={{ borderRadius: 3, display: 'block' }}>
+      <rect width="30" height="20" fill="#00AFCA" />
+      <circle cx="15" cy="9" r="4.2" fill="#FEC50C" />
+      <rect x="6" y="15.5" width="18" height="1.6" rx="0.8" fill="#FEC50C" />
     </svg>
   )
 }

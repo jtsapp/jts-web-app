@@ -9,22 +9,21 @@ import {
   AppleIcon,
   GoogleIcon,
 } from '../components/icons.jsx'
+import { useI18n } from '../i18n.jsx'
 
-// Реплики Декстера после того, как пользователь назвал имя.
-// {name} подставляется автоматически. delay — сколько «печатать» перед показом.
-const dexterScript = [
-  { text: 'Приятно познакомиться, {name}', delay: 900 },
-  {
-    text:
-      'Со мной ты действительно улучшишь свой английский — и получишь удовольствие от процесса. 💛',
-    delay: 1600,
-  },
-  { text: 'Давай перейдём к твоей регистрации', delay: 1300 },
-]
+export default function RegistrationPage({ onBack, onPhoneLogin, onSkip }) {
+  const { t } = useI18n()
 
-export default function RegistrationPage({ onBack, onPhoneLogin }) {
+  // Реплики Декстера после того, как пользователь назвал имя.
+  // {name} подставляется автоматически. delay — сколько «печатать» перед показом.
+  const dexterScript = [
+    { text: t('dexter.nice'), delay: 900 },
+    { text: t('dexter.motiv'), delay: 1600 },
+    { text: t('dexter.toReg'), delay: 1300 },
+  ]
+
   const [messages, setMessages] = useState([
-    { from: 'dexter', text: 'Привет! Как тебя зовут?' },
+    { from: 'dexter', text: t('dexter.greet') },
   ])
   const [typing, setTyping] = useState(false)
   const [value, setValue] = useState('')
@@ -100,18 +99,16 @@ export default function RegistrationPage({ onBack, onPhoneLogin }) {
         {/* Контент */}
         <section className="reg-body">
           <div className="reg-inner">
-            <h2 className="reg-title">Регистрация</h2>
-            <p className="reg-subtitle">
-              Декстер пишет вам, отвечайте ему чтобы пройти регистрацию
-            </p>
+            <h2 className="reg-title">{t('reg.title')}</h2>
+            <p className="reg-subtitle">{t('reg.subtitle')}</p>
 
             <div className="chat">
               <div className="chat__scroll" ref={listRef}>
                 <div className="chat__author">
-                  <img className="chat__avatar" src="/assets/dexter.png" alt="Декстер" />
+                  <img className="chat__avatar" src="/assets/dexter.png" alt={t('dexter.name')} />
                   <div>
-                    <div className="chat__name">Декстер</div>
-                    <div className="chat__role">Путеводитель и тьютор</div>
+                    <div className="chat__name">{t('dexter.name')}</div>
+                    <div className="chat__role">{t('dexter.role')}</div>
                   </div>
                 </div>
 
@@ -143,18 +140,23 @@ export default function RegistrationPage({ onBack, onPhoneLogin }) {
                       onClick={() => onPhoneLogin?.(name)}
                     >
                       <PhoneChatIcon size={18} />
-                      <span>Войти по номеру телефона</span>
+                      <span>{t('auth.phone')}</span>
                     </button>
                     <div className="auth-row">
                       <button className="auth-btn auth-btn--apple" type="button">
                         <AppleIcon size={17} />
-                        <span>Войти через Apple ID</span>
+                        <span>{t('auth.apple')}</span>
                       </button>
                       <button className="auth-btn auth-btn--google" type="button">
                         <GoogleIcon size={17} />
-                        <span>Войти через Google</span>
+                        <span>{t('auth.google')}</span>
                       </button>
                     </div>
+                    {onSkip && (
+                      <button type="button" className="skip-link" onClick={onSkip}>
+                        {t('common.skip')}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -164,14 +166,14 @@ export default function RegistrationPage({ onBack, onPhoneLogin }) {
                 <div className="chat__input">
                   <input
                     type="text"
-                    placeholder="Меня зовут ..."
+                    placeholder={t('chat.placeholder')}
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     onKeyDown={onKeyDown}
                   />
                   <button className="send-btn" onClick={send} disabled={typing}>
                     <SendIcon size={15} />
-                    <span>Отправить</span>
+                    <span>{t('common.send')}</span>
                   </button>
                 </div>
               )}
