@@ -10,7 +10,7 @@ export const KINGDOMS = [
 
 export const LEVEL_ORDER = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
-// Роль (звание) по уровню — как JtsRole.forLevel в мобилке
+// Роль (звание) по уровню. Аватарки статусов — из загрузок.
 export const ROLE_BY_LEVEL = {
   A0: { key: 'merchant', title: 'Купец' },
   A1: { key: 'merchant', title: 'Купец' },
@@ -18,7 +18,7 @@ export const ROLE_BY_LEVEL = {
   B1: { key: 'baron', title: 'Барон' },
   B2: { key: 'viscount', title: 'Виконт' },
   C1: { key: 'king', title: 'Король' },
-  C2: { key: 'emperor', title: 'Император' },
+  C2: { key: 'lord', title: 'Лорд' },
 }
 
 export function levelIndex(level) {

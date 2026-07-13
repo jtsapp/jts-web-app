@@ -1985,19 +1985,19 @@ body {
   text-align: center;
 }
 .lp-status__ic {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 35%, #d9ffe0, #9be6a8);
+  background: radial-gradient(circle at 50% 35%, #ffffff, #f1ecfb);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: 0 8px 20px rgba(52, 168, 83, 0.25);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.16);
 }
 .lp-status__ic img {
-  width: 46px;
-  height: 46px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
 }
 .lp-status__label {
