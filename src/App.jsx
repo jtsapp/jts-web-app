@@ -7,6 +7,7 @@ import SuccessPage from './pages/SuccessPage.jsx'
 import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
 import LevelTestPage from './pages/LevelTestPage.jsx'
 import KingdomPage from './pages/KingdomPage.jsx'
+import KingdomInteriorPage from './pages/KingdomInteriorPage.jsx'
 import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
 import { useI18n } from './i18n.jsx'
 
@@ -19,6 +20,7 @@ export default function App() {
   const [mode, setMode] = useState('register') // 'register' | 'login'
   const [token, setToken] = useState(null)
   const [userLevel, setUserLevel] = useState('A1')
+  const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -140,7 +142,26 @@ export default function App() {
         />
       )
     case 'kingdom':
-      return <KingdomPage userLevel={userLevel} userName={name} token={token} />
+      return (
+        <KingdomPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onOpenKingdom={(k) => {
+            setKingdom(k)
+            setScreen('kingdom-interior')
+          }}
+        />
+      )
+    case 'kingdom-interior':
+      return (
+        <KingdomInteriorPage
+          kingdom={kingdom}
+          userName={name}
+          userLevel={userLevel}
+          onBack={() => setScreen('kingdom')}
+        />
+      )
     default:
       return null
   }

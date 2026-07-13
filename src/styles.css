@@ -1557,3 +1557,281 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* ======================================================= */
+/* ============  ОБОЛОЧКА ОБУЧЕНИЯ (сайдбар)  ============ */
+/* ======================================================= */
+
+.learn {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f4f5f7;
+}
+.learn__body {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+.learn__main {
+  flex: 1;
+  min-width: 0;
+  background: #ffffff;
+  overflow: auto;
+}
+
+/* Сайдбар */
+.sb {
+  width: 260px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #efeef4;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px;
+  gap: 14px;
+}
+.sb__logo {
+  padding: 4px 8px 6px;
+}
+.sb__logo .logo {
+  color: var(--purple);
+  font-size: 19px;
+}
+.sb__profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  border-radius: 16px;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.sb__profile:hover {
+  background: #faf9ff;
+}
+.sb__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9b6bf3, #7c3aed);
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sb__profile-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.sb__profile-text b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb__profile-text span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.sb__profile-chev {
+  color: #c4c2d0;
+  display: inline-flex;
+}
+
+.sb__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.sb__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sb__item:hover {
+  background: #f5f2fe;
+  color: var(--purple);
+}
+.sb__item--active {
+  background: linear-gradient(135deg, #9b6bf3, #7c3aed);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.28);
+}
+.sb__item--active:hover {
+  background: linear-gradient(135deg, #9b6bf3, #7c3aed);
+  color: #fff;
+}
+
+.sb__spacer {
+  flex: 1;
+}
+.sb__role {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 8px 12px;
+}
+.sb__role-ic {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.sb__role-text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.sb__role-lvl {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Верхняя панель контента интерьера */
+.li-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 26px;
+  border-bottom: 1px solid #f0eff5;
+}
+.li-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: #ede6ff;
+  color: var(--purple);
+  border-radius: 999px;
+  padding: 9px 16px 9px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.li-back:hover {
+  background: #e2d7ff;
+}
+.li-crumb {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.li-crumb b {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--purple);
+}
+.li-crumb span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Заглушка «уроки скоро» */
+.li-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 60vh;
+  padding: 40px 24px;
+  text-align: center;
+}
+.li-empty__art {
+  width: 220px;
+  max-width: 70%;
+  border-radius: 20px;
+  box-shadow: 0 14px 34px rgba(23, 19, 38, 0.16);
+}
+.li-empty__title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.li-empty__sub {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 42ch;
+  line-height: 1.5;
+}
+
+/* Адаптив: сайдбар сворачивается в верхнюю строку на узких экранах */
+@media (max-width: 760px) {
+  .learn__body {
+    flex-direction: column;
+  }
+  .sb {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    border-right: none;
+    border-bottom: 1px solid #efeef4;
+  }
+  .sb__logo {
+    padding: 0;
+  }
+  .sb__profile {
+    order: 2;
+  }
+  .sb__nav {
+    order: 3;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0;
+    width: 100%;
+  }
+  .sb__item span {
+    display: none;
+  }
+  .sb__item {
+    padding: 10px;
+  }
+  .sb__spacer {
+    display: none;
+  }
+  .sb__role {
+    order: 1;
+    margin-left: auto;
+  }
+}
