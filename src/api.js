@@ -2,7 +2,7 @@
 // По умолчанию бьём в dev-бэкенд — тот же, что читает dev-админка
 // (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
-const BASE = import.meta.env.VITE_API_URL || 'https://dev-server.justtostudy.kz'
+const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
 // Приводим телефон к формату бэкенда: 7XXXXXXXXXX (11 цифр, без "+")
 export function normalizePhone(input) {
