@@ -555,6 +555,12 @@ body {
   display: inline-flex;
   flex-shrink: 0;
 }
+.phone-prefix {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+}
 .phone-field input {
   flex: 1;
   border: none;
