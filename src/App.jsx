@@ -75,6 +75,12 @@ export default function App() {
     setScreen('kingdom')
   }
 
+  // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
+  function handleSkip() {
+    setError('')
+    setScreen('test-intro')
+  }
+
   async function handleResend() {
     setError('')
     try {
@@ -97,6 +103,7 @@ export default function App() {
       return (
         <RegistrationPage
           onBack={() => setScreen('welcome')}
+          onSkip={handleSkip}
           onPhoneLogin={(userName) => {
             setName(userName || '')
             setError('')
@@ -109,6 +116,7 @@ export default function App() {
         <PhoneLoginPage
           onBack={() => { setError(''); setScreen('chat') }}
           onSubmit={handlePhoneSubmit}
+          onSkip={handleSkip}
           loading={loading}
           error={error}
         />
@@ -120,6 +128,7 @@ export default function App() {
           onBack={() => { setError(''); setScreen('phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
+          onSkip={handleSkip}
           loading={loading}
           error={error}
         />

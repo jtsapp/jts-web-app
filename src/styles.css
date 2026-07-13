@@ -659,6 +659,24 @@ body {
   cursor: default;
 }
 
+.skip-link {
+  display: block;
+  margin: 16px auto 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.skip-link:hover {
+  color: var(--purple);
+}
+
 .form-note {
   color: #a6a5b2;
   font-size: 12px;

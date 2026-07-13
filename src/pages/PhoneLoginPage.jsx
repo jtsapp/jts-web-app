@@ -17,7 +17,7 @@ function formatNational(d) {
   return out
 }
 
-export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
+export default function PhoneLoginPage({ onBack, onSubmit, onSkip, loading, error }) {
   const { t } = useI18n()
   const [digits, setDigits] = useState('') // только 10 цифр номера, без +7
 
@@ -74,6 +74,12 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
               {t('phone.privacy')}
             </a>
           </p>
+
+          {onSkip && (
+            <button type="button" className="skip-link" onClick={onSkip}>
+              {t('common.skip')}
+            </button>
+          )}
         </form>
       </div>
     </Shell>
