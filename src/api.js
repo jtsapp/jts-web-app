@@ -6,9 +6,10 @@ const BASE = import.meta.env.VITE_API_URL || 'https://dev-server.justtostudy.kz'
 
 // Приводим телефон к формату бэкенда: 7XXXXXXXXXX (11 цифр, без "+")
 export function normalizePhone(input) {
-  const digits = String(input).replace(/\D/g, '')
-  const ten = digits.replace(/^[78]/, '').slice(-10)
-  return '7' + ten
+  let d = String(input).replace(/\D/g, '')
+  // если введён код страны (11 цифр с ведущей 7/8) — убираем его
+  if (d.length === 11 && (d[0] === '7' || d[0] === '8')) d = d.slice(1)
+  return '7' + d.slice(-10) // 7 + 10 цифр национального номера
 }
 
 async function get(path) {

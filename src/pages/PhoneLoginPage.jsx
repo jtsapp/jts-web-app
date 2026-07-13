@@ -17,10 +17,11 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
   const [digits, setDigits] = useState('')
 
   function onChange(e) {
-    const only = e.target.value.replace(/\D/g, '')
-    // отбрасываем ведущую 7/8, оставляем 10 цифр номера
-    const trimmed = only.replace(/^[78]/, '').slice(0, 10)
-    setDigits(trimmed)
+    let only = e.target.value.replace(/\D/g, '')
+    // код страны отбрасываем только если введён целиком (11 цифр с 7/8),
+    // чтобы не срезать ведущую 7 у обычного 10-значного номера (777…, 701…)
+    if (only.length === 11 && (only[0] === '7' || only[0] === '8')) only = only.slice(1)
+    setDigits(only.slice(0, 10))
   }
 
   const full = '+7' + digits
