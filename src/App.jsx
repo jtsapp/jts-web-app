@@ -6,7 +6,7 @@ import OtpPage from './pages/OtpPage.jsx'
 import SuccessPage from './pages/SuccessPage.jsx'
 import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
 import LevelTestPage from './pages/LevelTestPage.jsx'
-import KingdomPage from './pages/KingdomPage.jsx'
+import LearningPage from './pages/LearningPage.jsx'
 import KingdomInteriorPage from './pages/KingdomInteriorPage.jsx'
 import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
 import { useI18n } from './i18n.jsx'
@@ -143,7 +143,7 @@ export default function App() {
       )
     case 'kingdom':
       return (
-        <KingdomPage
+        <LearningPage
           userLevel={userLevel}
           userName={name}
           token={token}

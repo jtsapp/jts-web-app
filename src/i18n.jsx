@@ -84,6 +84,12 @@ const dict = {
     'role.viscount': 'Виконт',
     'role.king': 'Король',
     'role.emperor': 'Император',
+    'learn.subtitle': 'Изучай английский по уровням',
+    'learn.status': 'Ваш нынешний статус',
+    'learn.currentLevel': 'Текущий уровень',
+    'learn.progress': 'Пройдено',
+    'learn.done': 'Пройдено',
+    'learn.here': 'Вы здесь',
   },
   en: {
     'welcome.title': 'Learn English\nwith a personal tutor',
@@ -159,6 +165,12 @@ const dict = {
     'role.viscount': 'Viscount',
     'role.king': 'King',
     'role.emperor': 'Emperor',
+    'learn.subtitle': 'Learn English by levels',
+    'learn.status': 'Your current status',
+    'learn.currentLevel': 'Current level',
+    'learn.progress': 'Completed',
+    'learn.done': 'Completed',
+    'learn.here': 'You are here',
   },
   kk: {
     'welcome.title': 'Жеке ұстазбен\nағылшын тілін үйрен',
@@ -234,6 +246,12 @@ const dict = {
     'role.viscount': 'Виконт',
     'role.king': 'Король',
     'role.emperor': 'Император',
+    'learn.subtitle': 'Ағылшын тілін деңгейлер бойынша үйрен',
+    'learn.status': 'Сіздің қазіргі мәртебеңіз',
+    'learn.currentLevel': 'Ағымдағы деңгей',
+    'learn.progress': 'Аяқталды',
+    'learn.done': 'Аяқталды',
+    'learn.here': 'Сіз осындасыз',
   },
 }
 
