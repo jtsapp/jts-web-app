@@ -6,6 +6,7 @@ import OtpPage from './pages/OtpPage.jsx'
 import SuccessPage from './pages/SuccessPage.jsx'
 import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
 import LevelTestPage from './pages/LevelTestPage.jsx'
+import KingdomPage from './pages/KingdomPage.jsx'
 import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
 import { useI18n } from './i18n.jsx'
 
@@ -17,6 +18,7 @@ export default function App() {
   const [phone, setPhone] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login'
   const [token, setToken] = useState(null)
+  const [userLevel, setUserLevel] = useState('A1')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -58,8 +60,9 @@ export default function App() {
     }
   }
 
-  // Завершение теста — сохраняем уровень в профиль пользователя
+  // Завершение теста — сохраняем уровень в профиль и открываем королевство
   async function handleTestDone(res) {
+    if (res?.level) setUserLevel(res.level)
     if (token && res?.level) {
       try {
         await saveLanguageLevel(token, res.level)
@@ -67,7 +70,7 @@ export default function App() {
         console.warn('Не удалось сохранить уровень:', e)
       }
     }
-    setScreen('welcome')
+    setScreen('kingdom')
   }
 
   async function handleResend() {
@@ -126,7 +129,7 @@ export default function App() {
         <LevelTestIntroPage
           onBack={() => setScreen('welcome')}
           onStart={() => setScreen('test')}
-          onLater={() => setScreen('welcome')}
+          onLater={() => setScreen('kingdom')}
         />
       )
     case 'test':
@@ -136,6 +139,8 @@ export default function App() {
           onDone={handleTestDone}
         />
       )
+    case 'kingdom':
+      return <KingdomPage userLevel={userLevel} userName={name} token={token} />
     default:
       return null
   }

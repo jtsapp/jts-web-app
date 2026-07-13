@@ -1267,3 +1267,293 @@ body {
   transform: translateY(-1px);
   background: #f4f0ff;
 }
+
+/* ======================================================= */
+/* ==============  ГЛАВНАЯ: КОРОЛЕВСТВО  ================= */
+/* ======================================================= */
+
+.kd-screen {
+  position: relative;
+  min-height: 100vh;
+}
+.kd-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, #efe8ff 0%, #f7f4ff 40%, #ffffff 100%);
+}
+
+/* Список королевств */
+.kd-list {
+  position: relative;
+  z-index: 1;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 118px 20px calc(120px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.kd-map {
+  position: relative;
+  z-index: 1;
+  padding: 110px 0 130px;
+  min-height: 100vh;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+.kd-map img {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  object-fit: contain;
+}
+
+.kd-card {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  animation: kd-in 0.38s ease both;
+}
+.kd-card:disabled {
+  cursor: default;
+}
+@keyframes kd-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kd-card__img {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 14px 32px rgba(23, 19, 38, 0.14);
+  background: #efe8ff;
+}
+.kd-card__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.25s ease;
+}
+.kd-card:not(:disabled):hover .kd-card__img img {
+  transform: scale(1.03);
+}
+.kd-card__img--locked img {
+  filter: brightness(0.55) saturate(0.85);
+}
+.kd-locked {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: max-content;
+  height: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 30px;
+  background: #ffffff;
+  color: #9047ff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+.kd-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+.kd-card__name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #171326;
+}
+.kd-badge {
+  flex-shrink: 0;
+  background: #9047ff;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 14px;
+}
+
+.kd-progress {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 6px;
+  background: #f2ecff;
+  overflow: hidden;
+}
+.kd-progress__fill {
+  height: 100%;
+  border-radius: 6px;
+  background: #9047ff;
+  transition: width 0.5s ease;
+}
+
+/* Верхний HUD */
+.kd-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 14px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kd-hud__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kd-hud__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kd-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 60px;
+  padding: 8px 16px 8px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+.kd-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9b6bf3, #7c3aed);
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.kd-profile__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #171326;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kd-toggle {
+  display: inline-flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 40px;
+  padding: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+.kd-toggle button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #9047ff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.kd-toggle button.on {
+  background: #9047ff;
+  color: #fff;
+}
+.kd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 20px;
+  padding: 6px 18px 6px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+.kd-chip img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.kd-flame {
+  filter: grayscale(1) brightness(1.4);
+}
+.kd-chip__num {
+  font-size: 18px;
+  font-weight: 800;
+  color: #504b4b;
+  font-variant-numeric: tabular-nums;
+}
+.kd-chip__num--coin {
+  color: #ea4f4f;
+}
+.kd-chip__num--hot {
+  color: #ea4f4f;
+}
+
+/* Нижняя плашка уровня */
+.kd-levelpill {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(19px + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  width: calc(100% - 32px);
+  max-width: 428px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 22px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(23, 19, 38, 0.16);
+}
+.kd-role-ic {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.kd-levelpill__text {
+  flex: 1;
+  font-size: 14px;
+  color: #504b4b;
+}
+.kd-levelpill__text b {
+  color: #171326;
+  font-weight: 800;
+}
+.kd-levelpill__cefr {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

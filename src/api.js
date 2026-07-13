@@ -28,6 +28,46 @@ export function getAdaptiveQuestions() {
   return get('/adaptive-test/questions')
 }
 
+async function authGet(path, token) {
+  let res
+  try {
+    res = await fetch(BASE + path, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`)
+  return res.json()
+}
+
+// Учебный путь королевства (уроки из dev-admin) по уровню CEFR
+export function getLearningPath(level, token) {
+  return authGet(`/mobile/learning-paths/by-language-level/${encodeURIComponent(level)}`, token)
+}
+
+// Баланс: монеты и стрик (для HUD)
+export function getBalance(token) {
+  return authGet('/mobile/balance/info', token)
+}
+
+// Считает уроки/пройдено по LearningPathModel (modules -> sections -> activities)
+const LESSON_TYPES = new Set(['LESSON', 'QUIZ', 'PRACTICE', 'REVIEW', 'ASSESSMENT', 'ORDINARY', 'MNEMOTECHNIC'])
+export function countProgress(path) {
+  let total = 0
+  let done = 0
+  const modules = path?.modules || []
+  for (const m of modules) {
+    for (const s of m.sections || []) {
+      for (const a of s.activities || []) {
+        if (LESSON_TYPES.has((a.activityType || '').toUpperCase())) {
+          total += 1
+          if (a.completed) done += 1
+        }
+      }
+    }
+  }
+  return { total, done }
+}
+
 async function post(path, body) {
   let res
   try {
