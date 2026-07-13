@@ -69,12 +69,34 @@ export async function sendOtp(phone, name) {
   }
 }
 
-// Шаг 2: проверка кода. В режиме register создаёт пользователя,
-// в режиме login — выдаёт JWT существующему.
+// Шаг 2: проверка кода. В режиме register создаёт пользователя (без токена),
+// в режиме login — возвращает LoginResponse с accessToken.
 export async function verifyOtp(phone, code, name, mode) {
   const p = normalizePhone(phone)
   if (mode === 'login') {
     return post('/auth/otp/verify', { phone: p, otp: code })
   }
   return post('/registration/verify', { name: name || 'Гость', phone: p, otp: code })
+}
+
+// Вход по OTP → accessToken. Используется после регистрации, чтобы получить JWT.
+// В dev-окружении код всегда '0000' (запрос генерирует свежий код).
+export async function loginWithOtp(phone, otp = '0000') {
+  const p = normalizePhone(phone)
+  await post('/auth/otp/request', { phone: p })
+  const res = await post('/auth/otp/verify', { phone: p, otp })
+  return res?.accessToken || null
+}
+
+// Сохранить уровень CEFR в профиль пользователя (query-param + Bearer).
+export async function saveLanguageLevel(token, level) {
+  const url = `${BASE}/user/language-level?languageLevel=${encodeURIComponent(level)}`
+  let res
+  try {
+    res = await fetch(url, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } })
+  } catch (e) {
+    throw new Error('Нет связи с сервером при сохранении уровня.')
+  }
+  if (!res.ok) throw new Error(`Не удалось сохранить уровень (${res.status})`)
+  return res.json().catch(() => ({}))
 }

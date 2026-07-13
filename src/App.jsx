@@ -6,7 +6,7 @@ import OtpPage from './pages/OtpPage.jsx'
 import SuccessPage from './pages/SuccessPage.jsx'
 import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
 import LevelTestPage from './pages/LevelTestPage.jsx'
-import { sendOtp, verifyOtp } from './api.js'
+import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
 
 export default function App() {
   // Машина состояний экранов регистрации
@@ -14,6 +14,7 @@ export default function App() {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login'
+  const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -36,13 +37,35 @@ export default function App() {
     setError('')
     setLoading(true)
     try {
-      await verifyOtp(phone, code, name, mode)
+      const data = await verifyOtp(phone, code, name, mode)
+      // токен: в login-режиме приходит сразу; после регистрации — отдельным входом
+      let tok = mode === 'login' ? data?.accessToken : null
+      if (!tok) {
+        try {
+          tok = await loginWithOtp(phone)
+        } catch (e) {
+          console.warn('Не удалось получить токен:', e)
+        }
+      }
+      setToken(tok || null)
       setScreen('success')
     } catch (e) {
       setError(e.message || 'Неверный код. Проверьте и попробуйте снова.')
     } finally {
       setLoading(false)
     }
+  }
+
+  // Завершение теста — сохраняем уровень в профиль пользователя
+  async function handleTestDone(res) {
+    if (token && res?.level) {
+      try {
+        await saveLanguageLevel(token, res.level)
+      } catch (e) {
+        console.warn('Не удалось сохранить уровень:', e)
+      }
+    }
+    setScreen('welcome')
   }
 
   async function handleResend() {
@@ -108,7 +131,7 @@ export default function App() {
       return (
         <LevelTestPage
           onClose={() => setScreen('test-intro')}
-          onDone={() => setScreen('welcome')}
+          onDone={handleTestDone}
         />
       )
     default:

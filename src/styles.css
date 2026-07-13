@@ -1087,3 +1087,119 @@ body {
     font-size: 11px;
   }
 }
+
+/* Экран результата теста (фиолетовая карточка) */
+.result-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+}
+.result-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(160deg, #8b5cf6 0%, #7c3aed 100%);
+  border-radius: 28px;
+  padding: 34px 30px 30px;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 24px 60px rgba(124, 58, 237, 0.35);
+}
+.result-heading {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.result-caption {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+.result-seal {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  margin: 22px auto 26px;
+}
+.result-seal svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.12));
+  animation: pop-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.result-level {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 46px;
+  font-weight: 800;
+  color: var(--purple);
+  letter-spacing: -0.01em;
+}
+.result-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.rstat {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px 12px;
+}
+.rstat-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.rstat-ic {
+  display: inline-flex;
+}
+.rstat-ic--red {
+  color: #e5675f;
+}
+.rstat-ic--green {
+  color: #34a853;
+}
+.rstat-num {
+  font-size: 22px;
+  font-weight: 800;
+}
+.rstat-num--red {
+  color: #e5675f;
+}
+.rstat-num--green {
+  color: #34a853;
+}
+.rstat-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.25;
+}
+.rstat-label--red {
+  color: #e5675f;
+}
+.rstat-label--green {
+  color: #34a853;
+}
+.result-continue {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  background: #fff;
+  color: var(--purple);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.result-continue:hover {
+  transform: translateY(-1px);
+  background: #f4f0ff;
+}

@@ -1,7 +1,33 @@
 import { useState, useEffect, useRef } from 'react'
 import Footer from '../components/Footer.jsx'
+import Shell from '../components/Shell.jsx'
 import { getAdaptiveQuestions } from '../api.js'
 import { createSession, next, submit, result, isDone, pctOf, LEVELS, CFG } from '../cefr.js'
+
+// Декоративная «печать» с зубчатым краем (белый бейдж уровня)
+function SealBadge({ level }) {
+  const bumps = 14
+  const cx = 100
+  const cy = 100
+  const R = 66
+  const r = 15
+  const dots = []
+  for (let i = 0; i < bumps; i++) {
+    const a = (Math.PI * 2 * i) / bumps - Math.PI / 2
+    dots.push(<circle key={i} cx={cx + R * Math.cos(a)} cy={cy + R * Math.sin(a)} r={r} />)
+  }
+  return (
+    <div className="result-seal">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <g fill="#fff">
+          <circle cx={cx} cy={cy} r={R + 6} />
+          {dots}
+        </g>
+      </svg>
+      <span className="result-level">{level}</span>
+    </div>
+  )
+}
 
 // Позиции подписей уровней = pctOf центров полос (чтобы бегунок совпадал с подписями)
 const LABEL_POS = [8.33, 25, 41.67, 58.33, 75, 91.67]
@@ -95,22 +121,52 @@ export default function LevelTestPage({ onClose, onDone }) {
   }
 
   if (phase === 'result') {
+    const wrong = res.total - res.correct
     return (
-      <div className="screen">
-        <div className="card card--plain">
-          <div className="test-center">
-            <div className="result-badge">{res.level}</div>
-            <h2 className="form-title">Твой уровень — {res.level}</h2>
-            <p className="form-sub">
-              Правильных ответов: {res.correct} из {res.total}. Мы подберём обучение под твой уровень.
-            </p>
-            <button className="form-primary result-btn" onClick={() => onDone?.(res)}>
+      <Shell onBack={() => onDone?.(res)}>
+        <div className="result-wrap">
+          <div className="result-card">
+            <h2 className="result-heading">Отлично!</h2>
+            <p className="result-caption">Ваш уровень определен</p>
+
+            <SealBadge level={res.level} />
+
+            <div className="result-stats">
+              <div className="rstat">
+                <div className="rstat-top">
+                  <span className="rstat-ic rstat-ic--red" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                      <path d="M8.5 15.5c.7-1 2-1.6 3.5-1.6s2.8.6 3.5 1.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <circle cx="9" cy="10" r="1.2" fill="currentColor" />
+                      <circle cx="15" cy="10" r="1.2" fill="currentColor" />
+                    </svg>
+                  </span>
+                  <span className="rstat-num rstat-num--red">{wrong}</span>
+                </div>
+                <div className="rstat-label rstat-label--red">Неверных ответов</div>
+              </div>
+
+              <div className="rstat">
+                <div className="rstat-top">
+                  <span className="rstat-ic rstat-ic--green" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" fill="currentColor" />
+                      <path d="m8 12.5 2.5 2.5L16 9.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <span className="rstat-num rstat-num--green">{res.correct}</span>
+                </div>
+                <div className="rstat-label rstat-label--green">Верных ответов</div>
+              </div>
+            </div>
+
+            <button className="result-continue" onClick={() => onDone?.(res)}>
               Продолжить
             </button>
           </div>
         </div>
-        <Footer />
-      </div>
+      </Shell>
     )
   }
 
