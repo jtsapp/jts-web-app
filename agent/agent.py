@@ -143,6 +143,48 @@ else:
     )
 
 
+# ---- scenario loader -------------------------------------------------------
+# Structured voice scenarios (e.g. the U.S. Visa interview) live as markdown
+# files with YAML-ish frontmatter, next to methodology.md. Same dual-path idea:
+# <repo-root>/data/scenarios/<id>.md in dev, agent/scenarios/<id>.md in the
+# Docker image (build context is agent/). Metadata carries only the small
+# `scenarioId` — the full prompt (any length) is read here, so nothing bloats
+# the LiveKit token.
+_SCENARIO_DIRS = [
+    ROOT / "data" / "scenarios",
+    _HERE / "scenarios",
+]
+
+_FRONTMATTER_RE = _re.compile(r"^---\s*\n(.*?)\n---\s*\n", _re.DOTALL)
+
+
+def load_scenario(scenario_id: str) -> dict[str, Any] | None:
+    """Read data/scenarios/<id>.md → {id, frontmatter, body}. None if missing.
+
+    `scenario_id` is sanitised to [a-z0-9_-] so it can never escape the
+    scenarios directory (path-traversal guard).
+    """
+    safe = _re.sub(r"[^a-z0-9_-]", "", (scenario_id or "").lower())
+    if not safe:
+        return None
+    for d in _SCENARIO_DIRS:
+        path = d / f"{safe}.md"
+        if path.exists():
+            raw = path.read_text(encoding="utf-8")
+            fm: dict[str, str] = {}
+            body = raw
+            m = _FRONTMATTER_RE.match(raw)
+            if m:
+                body = raw[m.end():]
+                for line in m.group(1).splitlines():
+                    if ":" in line and not line.strip().startswith("#"):
+                        k, v = line.split(":", 1)
+                        fm[k.strip()] = v.strip()
+            return {"id": safe, "frontmatter": fm, "body": body.strip()}
+    logger.warning("Scenario '%s' not found in %s", safe, _SCENARIO_DIRS)
+    return None
+
+
 # Per-level behavioural protocols (spoken). Language ceiling + tone + how to
 # correct, scaled by band — gentle/explicit at A1/A2, embedded-in-flow at B2+.
 CEFR_LEVEL_GUIDANCE = {
@@ -314,6 +356,9 @@ class LearnerProfile:
     explanation_lang: str = ""
     # Roleplay scenario setup (English role description). "" → normal tutoring.
     scenario: str = ""
+    # Structured voice scenario id (loads data/scenarios/<id>.md). Set together
+    # with mode == "scenario". "" → not a structured scenario.
+    scenario_id: str = ""
     # Debate motion (English statement) — set when mode == "debate". The agent
     # argues the OPPOSITE side and debriefs language + argumentation at the end.
     debate_topic: str = ""
@@ -407,6 +452,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         tuning=_tuning(data.get("tuning")),
         explanation_lang=str(data.get("explanationLang", "") or ""),
         scenario=str(data.get("scenario", "") or "")[:400],
+        scenario_id=str(data.get("scenarioId", "") or "")[:64],
         debate_topic=str(data.get("debateTopic", "") or "")[:200],
         tier=str(data.get("tier", "free") or "free"),
     )
@@ -662,10 +708,13 @@ class TutorAgent(Agent):
         device_id: str,
         api_url: str,
         room: Any = None,
+        scenario_id: str = "",
     ):
         super().__init__(instructions=instructions)
         self._device_id = device_id
         self._api_url = api_url.rstrip("/")
+        # Which structured scenario this call is running (for report_task_complete).
+        self._scenario_id = scenario_id
         # Room handle so placement mode can push the confirmed level straight to
         # the web client over a LiveKit data message (topic "placement").
         self._room = room
@@ -792,6 +841,66 @@ class TutorAgent(Agent):
         await self._post_json(
             "/api/profile/safety",
             {"deviceId": self._device_id},
+        )
+        return "ok"
+
+    @function_tool()
+    async def report_task_complete(
+        self,
+        passed: bool,
+        summary: str,
+        tips: list[str],
+        score: int = 0,
+    ) -> str:
+        """Report that the structured voice scenario has reached its final
+        outcome. Call this EXACTLY ONCE, only when the scenario's own ending is
+        reached (e.g. the visa VERDICT after the last question) — never early.
+        After calling it, speak your in-scene verdict and closing feedback out
+        loud as normal; this call is silent and does not replace speaking.
+
+        Args:
+            passed: true if the learner succeeded (e.g. VISA APPROVED), false if
+                not (e.g. VISA DENIED / 214(b) refusal).
+            summary: one or two sentences on why they passed or failed (this text
+                may be shown on-screen, so keep it self-contained).
+            tips: up to three short, personalised tips to improve next time.
+            score: optional overall performance score 0-100.
+        """
+        def _tips(items: Any) -> list[str]:
+            out: list[str] = []
+            if isinstance(items, list):
+                for x in items:
+                    if isinstance(x, str) and x.strip():
+                        out.append(x.strip())
+                    if len(out) >= 3:
+                        break
+            return out
+
+        try:
+            sc = max(0, min(100, int(score)))
+        except (TypeError, ValueError):
+            sc = 0
+        payload = {
+            "scenarioId": self._scenario_id,
+            "passed": bool(passed),
+            "summary": summary.strip()[:600] if isinstance(summary, str) else "",
+            "tips": _tips(tips),
+            "score": sc,
+        }
+        # Primary path: push to the web client so it renders the verdict card
+        # instantly (topic "lesson"). Best-effort persistence follows.
+        if self._room is not None:
+            try:
+                await self._room.local_participant.publish_data(
+                    json.dumps(payload),
+                    reliable=True,
+                    topic="lesson",
+                )
+            except Exception:
+                logger.exception("publish task-complete failed")
+        await self._post_json(
+            "/api/lesson/complete",
+            {"deviceId": self._device_id, **payload},
         )
         return "ok"
 
@@ -1196,6 +1305,56 @@ def build_placement_instructions(p: LearnerProfile) -> str:
         "NEVER say the tool name, the word 'report', or read any score/marker "
         "aloud. Do NOT output '[SPEAKING_LEVEL]' as text — the tool call is the "
         "ONLY result channel."
+    )
+
+
+def build_scenario_instructions(p: LearnerProfile, scenario: dict[str, Any]) -> str:
+    """System prompt for a structured VOICE scenario (e.g. the U.S. Visa
+    interview). The scenario's own markdown body defines the character, script
+    and ending; this wrapper only enforces the voice rules, injects the known
+    level (so the scene never asks it), and points the model at the
+    report_task_complete tool for the final outcome.
+    """
+    body = scenario.get("body", "")
+    fm = scenario.get("frontmatter", {})
+    max_q = str(fm.get("maxQuestions", "5"))
+    exp_block = explanation_language_block(p.explanation_lang or p.lang)
+    return (
+        "==== VOICE SCENARIO MODE (this whole call) ====\n"
+        "This is a VOICE-ONLY call: the learner wears headphones and only HEARS "
+        "you — there is no screen and no text. Speak naturally and continuously "
+        "like a real person, never like a robot reading a document. Keep each "
+        "turn short (usually one to three sentences), ask ONE question at a time, "
+        "then WAIT for their answer.\n"
+        f"Adjust your speaking difficulty to the learner's known CEFR level: "
+        f"{p.level}. Do NOT ask the learner what their level is — you already "
+        "know it and adapt silently.\n"
+        "Any feedback you give must be SPOKEN and brief — talk it out like a real "
+        "person would; NEVER read out written labels, headings, bullet points or "
+        "long lists. One quick impression, one correction, one useful phrase, then "
+        "move on.\n"
+        "Stay fully in role for the whole call. Follow the SCENARIO SCRIPT below "
+        "exactly — its character, its questions and its ending.\n"
+        f"COMPLETION: the scenario ends with a final outcome/verdict after about "
+        f"{max_q} questions. The MOMENT you reach that ending, call the "
+        "report_task_complete tool ONCE (passed=true on success, false on "
+        "failure, with a short summary and up to 3 tips) — then speak your verdict "
+        "and closing feedback out loud. Do NOT call the tool before the real "
+        "ending, and do NOT announce that you are calling any tool.\n"
+        f"{exp_block}"
+        "\n==== SCENARIO SCRIPT ====\n"
+        f"{body}\n"
+    )
+
+
+def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
+    """Open a structured voice scenario in role on the very first turn."""
+    return (
+        "Begin the scenario now, fully IN ROLE. Deliver your professional opening "
+        "greeting in ONE short spoken line and ask ONLY your first onboarding "
+        "question, then stop and WAIT. Keep it natural for a voice call — do not "
+        "read out any written formatting, and do not ask the learner their "
+        "English level."
     )
 
 
@@ -1938,14 +2097,27 @@ async def entrypoint(ctx: JobContext):
 
     is_placement = profile.mode == "placement"
     is_debate = profile.mode == "debate"
+    # Structured voice scenario: mode == "scenario" + a scenarioId that resolves
+    # to a data/scenarios/<id>.md file. If the file is missing we fall through to
+    # the normal tutor so the call still works.
+    scenario_data = (
+        load_scenario(profile.scenario_id)
+        if profile.mode == "scenario" and profile.scenario_id
+        else None
+    )
+    is_scenario = scenario_data is not None
     instructions = (
-        build_placement_instructions(profile)
+        build_scenario_instructions(profile, scenario_data)
+        if is_scenario
+        else build_placement_instructions(profile)
         if is_placement
         else build_debate_instructions(profile)
         if is_debate
         else build_instructions(profile)
     )
-    if is_placement:
+    if is_scenario:
+        logger.info("Scenario mode: id=%s (%d chars)", scenario_data["id"], len(scenario_data["body"]))
+    elif is_placement:
         logger.info("Placement mode: spoken Speaking Buddy interview (draft=%s)", profile.draft_level)
     elif is_debate:
         logger.info("Debate mode: motion=%s", profile.debate_topic or "<default>")
@@ -1964,7 +2136,7 @@ async def entrypoint(ctx: JobContext):
         # web app at JTS_API_URL to be on the tools-passthrough shim build —
         # an older shim silently drops tools and the model may act the call
         # out loud (the "tutor thinks aloud" bug).
-        if is_placement or is_debate:
+        if is_placement or is_debate or is_scenario:
             logger.info(
                 "VOICE_STACK=cascade + mode=%s: tool writeback rides the "
                 "brain shim's tools passthrough.",
@@ -1996,6 +2168,7 @@ async def entrypoint(ctx: JobContext):
         device_id=profile.device_id,
         api_url=api_url,
         room=ctx.room,
+        scenario_id=scenario_data["id"] if is_scenario else "",
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
@@ -2016,7 +2189,9 @@ async def entrypoint(ctx: JobContext):
         await session.start(agent=agent, room=ctx.room)
 
     greeting_hint = (
-        build_placement_greeting(profile)
+        build_scenario_greeting(profile, scenario_data)
+        if is_scenario
+        else build_placement_greeting(profile)
         if is_placement
         else build_debate_greeting(profile)
         if is_debate

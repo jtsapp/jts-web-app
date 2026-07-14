@@ -14,6 +14,9 @@ RUN pip install -r requirements.txt
 # bundle it alongside agent.py via a build-time copy (see livekit deploy
 # script). The agent's loader checks both paths.
 COPY methodology.md ./methodology.md
+# Structured voice scenarios (data/scenarios/*.md in dev). Bundled next to
+# agent.py; the loader's second candidate path (/app/scenarios) finds them.
+COPY scenarios/ ./scenarios/
 COPY agent.py .
 
 # Pre-fetch the Silero VAD weights so the cold-start of the first call is

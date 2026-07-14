@@ -49,6 +49,7 @@ export default function App() {
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   const [userLevel, setUserLevel] = useState('A1')
+  const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -228,6 +229,7 @@ export default function App() {
           kingdom={kingdom}
           userName={name}
           userLevel={userLevel}
+          onNav={handleNav}
           onBack={() => setScreen('kingdom')}
         />
       )
@@ -291,7 +293,10 @@ export default function App() {
           onProfile={() => {}}
           onBack={() => setScreen('tutor-level-offer')}
           tutor={tutor}
-          onStart={() => setScreen('tutor-voice-chat')}
+          onStart={() => {
+            setScenario(null)
+            setScreen('tutor-voice-chat')
+          }}
           onDecline={() => setScreen('tutor-interests')}
         />
       )
@@ -303,7 +308,8 @@ export default function App() {
           onProfile={() => {}}
           onBack={() => setScreen('tutor-voice-intro')}
           tutor={tutor}
-          onFinish={() => setScreen('tutor-level-result')}
+          scenario={scenario}
+          onFinish={() => setScreen(scenario ? 'tutor-scenarios' : 'tutor-level-result')}
         />
       )
     // (голосовой чат завершается тапом по орбу → результат уровня)
@@ -362,7 +368,10 @@ export default function App() {
           onProfile={() => {}}
           tutor={tutor}
           onManage={() => setScreen('tutor-manage')}
-          onTalk={() => setScreen('tutor-voice-chat')}
+          onTalk={() => {
+            setScenario(null)
+            setScreen('tutor-voice-chat')
+          }}
           onSuggest={() => {}}
           onSeeLessons={() => setScreen('tutor-lesson-plan')}
           onSeeScenarios={() => setScreen('tutor-scenarios')}
@@ -376,7 +385,10 @@ export default function App() {
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-dashboard')}
-          onStart={() => setScreen('tutor-voice-chat')}
+          onStart={(id) => {
+            setScenario(id || null)
+            setScreen('tutor-voice-chat')
+          }}
         />
       )
     case 'tutor-chat-history':

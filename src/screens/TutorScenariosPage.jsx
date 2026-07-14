@@ -1,11 +1,22 @@
 import TutorShell from '../tutor/TutorShell.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
-const SCENARIOS = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  label: 'Job Interview',
-  img: '/tutor/job-interview.jpg',
-}))
+// scenarioId — slug of data/scenarios/<id>.md loaded by the voice agent.
+// Cards without a scenarioId fall back to free conversation.
+const SCENARIOS = [
+  {
+    id: 'visa-interview',
+    scenarioId: 'visa-interview',
+    label: 'U.S. Visa Interview',
+    img: '/tutor/job-interview.jpg',
+  },
+  ...Array.from({ length: 11 }, (_, i) => ({
+    id: `job-${i + 1}`,
+    scenarioId: '',
+    label: 'Job Interview',
+    img: '/tutor/job-interview.jpg',
+  })),
+]
 
 export default function TutorScenariosPage({
   user,
@@ -42,7 +53,7 @@ export default function TutorScenariosPage({
               <button
                 className="t-pill t-pill--primary t-scen__btn"
                 type="button"
-                onClick={() => onStart && onStart(s.id)}
+                onClick={() => onStart && onStart(s.scenarioId)}
               >
                 {t('scen.start')}
               </button>

@@ -76,6 +76,16 @@ function buildMetadata(p, tier) {
   }
   if (typeof p.scenario === 'string' && p.scenario.trim())
     meta.scenario = p.scenario.trim().slice(0, 400)
+  // Structured voice scenario: only the small id travels in metadata — the
+  // agent loads the full prompt from data/scenarios/<id>.md. Sanitised to a
+  // safe slug so it can't reference anything outside that directory.
+  if (typeof p.scenarioId === 'string' && p.scenarioId.trim()) {
+    const sid = p.scenarioId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64)
+    if (sid) {
+      meta.scenarioId = sid
+      meta.mode = 'scenario'
+    }
+  }
   return JSON.stringify(meta)
 }
 
@@ -94,9 +104,13 @@ async function issue(p) {
     )
   }
 
-  let ttl = 600 // 10 min hard ceiling per session
+  // Testing escape hatch: VOICE_NO_LIMIT=1 skips the free-tier minute cap and
+  // grants a long session. Unset it to restore the 10-min/day limit.
+  const noLimit = process.env.VOICE_NO_LIMIT === '1' || process.env.VOICE_NO_LIMIT === 'true'
+
+  let ttl = noLimit ? 3600 : 600 // per-session ceiling (1h while testing, else 10 min)
   const freeTier = p.tier !== 'paid'
-  if (freeTier && isDbConfigured() && isValidDeviceId(p.deviceId)) {
+  if (!noLimit && freeTier && isDbConfigured() && isValidDeviceId(p.deviceId)) {
     try {
       const { todaySeconds, monthSeconds } = await getUsage(p.deviceId)
       if (monthSeconds >= MONTH_LIMIT_SEC || todaySeconds >= DAILY_LIMIT_SEC) {
