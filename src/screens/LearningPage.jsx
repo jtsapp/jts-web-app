@@ -5,7 +5,7 @@ import { useI18n } from '../i18n.jsx'
 import { computeKingdoms, roleForLevel } from '../kingdoms.js'
 import { getLearningPath, countProgress } from '../api.js'
 
-export default function LearningPage({ userLevel = 'A1', userName, token, onNav, onOpenKingdom }) {
+export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom, onNav }) {
   const { t } = useI18n()
   const [progress, setProgress] = useState({}) // id -> {done,total}
 

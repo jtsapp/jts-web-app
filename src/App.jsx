@@ -1,29 +1,59 @@
+'use client'
+
 import { useState } from 'react'
-import WelcomePage from './pages/WelcomePage.jsx'
-import RegistrationPage from './pages/RegistrationPage.jsx'
-import PhoneLoginPage from './pages/PhoneLoginPage.jsx'
-import OtpPage from './pages/OtpPage.jsx'
-import SuccessPage from './pages/SuccessPage.jsx'
-import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
-import LevelTestPage from './pages/LevelTestPage.jsx'
-import LearningPage from './pages/LearningPage.jsx'
-import PracticePage from './pages/PracticePage.jsx'
-import KingdomInteriorPage from './pages/KingdomInteriorPage.jsx'
+import WelcomePage from './screens/WelcomePage.jsx'
+import RegistrationPage from './screens/RegistrationPage.jsx'
+import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
+import OtpPage from './screens/OtpPage.jsx'
+import SuccessPage from './screens/SuccessPage.jsx'
+import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
+import LevelTestPage from './screens/LevelTestPage.jsx'
+import LearningPage from './screens/LearningPage.jsx'
+import PracticePage from './screens/PracticePage.jsx'
+import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
+import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
+import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
+import TutorChoosePage from './screens/TutorChoosePage.jsx'
+import TutorLoadingPage from './screens/TutorLoadingPage.jsx'
+import TutorLevelOfferPage from './screens/TutorLevelOfferPage.jsx'
+import TutorVoiceIntroPage from './screens/TutorVoiceIntroPage.jsx'
+import TutorVoiceChatPage from './screens/TutorVoiceChatPage.jsx'
+import TutorLevelResultPage from './screens/TutorLevelResultPage.jsx'
+import TutorInterestsPage from './screens/TutorInterestsPage.jsx'
+import TutorProfessionPage from './screens/TutorProfessionPage.jsx'
+import TutorAnalysisPage from './screens/TutorAnalysisPage.jsx'
+import TutorDashboardPage from './screens/TutorDashboardPage.jsx'
+import TutorLessonPlanPage from './screens/TutorLessonPlanPage.jsx'
+import TutorManagePage from './screens/TutorManagePage.jsx'
+import TutorPracticeResultPage from './screens/TutorPracticeResultPage.jsx'
+import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
+import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
+import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
+import { getTutor } from './tutor/tutors.js'
 import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
 import { useI18n } from './i18n.jsx'
 
 export default function App() {
   const { t } = useI18n()
-  // Стартуем сразу с главного меню «Обучение» (регистрацию/тест можно пройти позже)
-  const [screen, setScreen] = useState('kingdom')
+  // Стартуем сразу с главного меню «Обучение» (регистрацию/тест можно пройти
+  // позже). ?screen=… по-прежнему переопределяет начальный экран — так экраны
+  // тьютора остаются достижимы для отладки/диплинков.
+  const [screen, setScreen] = useState(() => {
+    // Гард для SSR-пререндера Next: window есть только в браузере.
+    if (typeof window === 'undefined') return 'kingdom'
+    return new URLSearchParams(window.location.search).get('screen') || 'kingdom'
+  })
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login'
   const [token, setToken] = useState(null)
+  const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   const [userLevel, setUserLevel] = useState('A1')
   const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
 
   async function handlePhoneSubmit(fullPhone) {
     setError('')
@@ -80,7 +110,8 @@ export default function App() {
   function handleNav(key) {
     if (key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
-    // tutor / lessons — пока заглушки
+    else if (key === 'tutor') setScreen('tutor-welcome')
+    // lessons — пока заглушка
   }
 
   // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
@@ -103,8 +134,10 @@ export default function App() {
     case 'welcome':
       return (
         <WelcomePage
-          onRegister={() => setScreen('chat')}
-          onLogin={() => setScreen('chat')}
+          // DEV: вход временно сломан — обе кнопки пропускают авторизацию.
+          // Вернуть на () => setScreen('chat'), когда починим вход.
+          onRegister={() => setScreen('tutor-welcome')}
+          onLogin={() => setScreen('tutor-welcome')}
         />
       )
     case 'chat':
@@ -187,6 +220,208 @@ export default function App() {
           userName={name}
           userLevel={userLevel}
           onBack={() => setScreen('kingdom')}
+        />
+      )
+    case 'tutor-welcome':
+      return (
+        <TutorWelcomePage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={() => {}}
+          onProfile={() => {}}
+          onContinue={() => setScreen('tutor-lang')}
+        />
+      )
+    case 'tutor-lang':
+      return (
+        <TutorLanguagePage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onSelect={() => setScreen('tutor-choose')}
+        />
+      )
+    case 'tutor-choose':
+      return (
+        <TutorChoosePage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-lang')}
+          onChoose={(key) => { setTutorKey(key); setScreen('tutor-loading') }}
+          onListen={() => {}}
+        />
+      )
+    case 'tutor-loading':
+      return (
+        <TutorLoadingPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-choose')}
+          tutor={tutor}
+          onDone={() => setScreen('tutor-level-offer')}
+        />
+      )
+    case 'tutor-level-offer':
+      return (
+        <TutorLevelOfferPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-choose')}
+          tutor={tutor}
+          onStartTest={() => setScreen('tutor-voice-intro')}
+          onLater={() => setScreen('tutor-interests')}
+        />
+      )
+    case 'tutor-voice-intro':
+      return (
+        <TutorVoiceIntroPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-level-offer')}
+          tutor={tutor}
+          onStart={() => setScreen('tutor-voice-chat')}
+          onDecline={() => setScreen('tutor-interests')}
+        />
+      )
+    case 'tutor-voice-chat':
+      return (
+        <TutorVoiceChatPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-voice-intro')}
+          tutor={tutor}
+          onFinish={() => setScreen('tutor-level-result')}
+        />
+      )
+    // (голосовой чат завершается тапом по орбу → результат уровня)
+    case 'tutor-level-result':
+      return (
+        <TutorLevelResultPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-voice-chat')}
+          tutor={tutor}
+          level="A1"
+          onContinue={() => setScreen('tutor-interests')}
+          onRetry={() => setScreen('tutor-voice-intro')}
+        />
+      )
+    case 'tutor-interests':
+      return (
+        <TutorInterestsPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-level-result')}
+          tutor={tutor}
+          onContinue={() => setScreen('tutor-profession')}
+        />
+      )
+    case 'tutor-profession':
+      return (
+        <TutorProfessionPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-interests')}
+          tutor={tutor}
+          onSubmit={() => setScreen('tutor-analysis')}
+          onSkip={() => setScreen('tutor-analysis')}
+        />
+      )
+    case 'tutor-analysis':
+      return (
+        <TutorAnalysisPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-profession')}
+          tutor={tutor}
+          onDone={() => setScreen('tutor-dashboard')}
+        />
+      )
+    case 'tutor-dashboard':
+      return (
+        <TutorDashboardPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          onProfile={() => {}}
+          tutor={tutor}
+          onManage={() => setScreen('tutor-manage')}
+          onTalk={() => setScreen('tutor-voice-chat')}
+          onSuggest={() => {}}
+          onSeeLessons={() => setScreen('tutor-lesson-plan')}
+          onSeeScenarios={() => setScreen('tutor-scenarios')}
+          onScenario={() => setScreen('tutor-scenarios')}
+        />
+      )
+    case 'tutor-scenarios':
+      return (
+        <TutorScenariosPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-dashboard')}
+          onStart={() => setScreen('tutor-voice-chat')}
+        />
+      )
+    case 'tutor-chat-history':
+      return (
+        <TutorChatHistoryPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-manage')}
+        />
+      )
+    case 'tutor-lesson-plan':
+      return (
+        <TutorLessonPlanPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-dashboard')}
+        />
+      )
+    case 'tutor-manage':
+      return (
+        <TutorManagePage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-dashboard')}
+          tutor={tutor}
+          onChangeTutor={() => setScreen('tutor-choose')}
+        />
+      )
+    case 'tutor-practice-result':
+      return (
+        <TutorPracticeResultPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-dashboard')}
+          variant="fail"
+          onAnalytics={() => setScreen('tutor-error-analytics')}
+          onRetry={() => setScreen('tutor-voice-chat')}
+          onToPlan={() => setScreen('tutor-lesson-plan')}
+        />
+      )
+    case 'tutor-error-analytics':
+      return (
+        <TutorErrorAnalyticsPage
+          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
+          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          onProfile={() => {}}
+          onBack={() => setScreen('tutor-practice-result')}
+          tutor={tutor}
+          onToPlan={() => setScreen('tutor-lesson-plan')}
+          onRetry={() => setScreen('tutor-voice-chat')}
         />
       )
     default:

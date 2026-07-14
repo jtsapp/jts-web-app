@@ -2,7 +2,7 @@
 // По умолчанию бьём в dev-бэкенд — тот же, что читает dev-админка
 // (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
-const BASE = import.meta.env.VITE_API_URL || 'https://dev-server.justtostudy.kz'
+const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
 // Приводим телефон к формату бэкенда: 7XXXXXXXXXX (11 цифр, без "+")
 export function normalizePhone(input) {
@@ -144,8 +144,8 @@ export async function loginWithPassword(phone, password) {
 
 // Демо-доступ для витрины «Практика», когда пользователь ещё не залогинен
 // (флоу Skip). Кэшируем промис, чтобы не логиниться повторно.
-const DEMO_PHONE = import.meta.env.VITE_DEMO_PHONE || '+7 (777) 123-45-67'
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || 'password123'
+const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
+const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
 let _demoTokenPromise = null
 export function getPracticeToken(token) {
   if (token) return Promise.resolve(token)
