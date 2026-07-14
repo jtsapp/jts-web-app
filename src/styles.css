@@ -2139,3 +2139,301 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ═══════════════ Практика ═══════════════ */
+.pp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 30px;
+  padding: 26px 34px 40px;
+  align-items: start;
+}
+/* Панель «выезжает» слева при переходе на Практику */
+.pp--enter {
+  animation: pp-slide 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes pp-slide {
+  from { opacity: 0; transform: translateX(-26px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.pp__title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+/* Фильтр-чипсы */
+.pp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.pp-chip {
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pp-chip:hover { border-color: #d9d2f7; color: var(--purple); }
+.pp-chip--on {
+  background: #f1ebfe;
+  border-color: transparent;
+  color: var(--purple);
+}
+
+/* Секция + заголовок */
+.pp-sec { margin-bottom: 26px; }
+.pp-sec__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.pp-sec__head h2 {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.pp-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 8px 6px 14px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.pp-all:hover { color: var(--purple); border-color: #d9d2f7; }
+.pp-all svg { color: var(--purple); }
+
+/* Горизонтальная лента */
+.pp-rail {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+.pp-rail::-webkit-scrollbar { height: 6px; }
+.pp-rail::-webkit-scrollbar-thumb { background: #e3e0ee; border-radius: 999px; }
+
+/* Плитка-обёртка изображения */
+.pp-thumb {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #d9d2f7, #b9a9ef);
+}
+.pp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pp-thumb__ph { width: 100%; height: 100%; }
+.pp-thumb--16x9 { aspect-ratio: 16 / 10; }
+.pp-thumb--portrait { aspect-ratio: 3 / 4; }
+.pp-thumb--situation { aspect-ratio: 3 / 4; }
+.pp-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.pp-vcard:hover .pp-play { opacity: 1; }
+
+/* Карточка видеоклипа */
+.pp-vcard {
+  flex: 0 0 280px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.pp-vcard__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 10px 0 4px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pp-vcard__meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.pp-views { display: inline-flex; align-items: center; gap: 5px; }
+
+/* Точки сложности */
+.pp-dots { display: inline-flex; align-items: center; gap: 6px; }
+.pp-dots__row { display: inline-flex; gap: 3px; }
+.pp-dots__row i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d7d4e2;
+}
+.pp-dots__row i.on { background: var(--purple); }
+
+/* Карточка мема/рилса */
+.pp-mcard {
+  position: relative;
+  flex: 0 0 150px;
+  text-decoration: none;
+}
+.pp-mcard__views {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.pp-mcard__views svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+
+/* Карточка ситуации */
+.pp-scard {
+  flex: 0 0 165px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.pp-scard__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6c6b78;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+
+/* Пустые состояния */
+.pp-empty {
+  border: 1px dashed #e6e3f0;
+  border-radius: 14px;
+  padding: 22px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.pp-note { border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
+.pp-note--err { background: #fdecec; color: #c0392b; }
+
+/* ── Правая колонка: Словарь ── */
+.pp__side {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pp-voc__title { font-size: 20px; font-weight: 800; color: var(--ink); }
+.pp-voc__tabs { display: flex; gap: 22px; border-bottom: 1px solid #efeef4; }
+.pp-voc__tab {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0 0 10px;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.pp-voc__tab b {
+  font-size: 11px;
+  background: #f1eefb;
+  color: #7c6ba8;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-weight: 800;
+}
+.pp-voc__tab.on { color: var(--ink); }
+.pp-voc__tab.on b { background: var(--purple); color: #fff; }
+.pp-voc__tab.on::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--purple);
+  border-radius: 2px;
+}
+.pp-voc__list { display: flex; flex-direction: column; }
+.pp-word {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 2px;
+  border-bottom: 1px solid #f3f2f7;
+}
+.pp-word__text { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.pp-word__text b { font-size: 14px; font-weight: 700; color: var(--ink); }
+.pp-word__text span { font-size: 12.5px; color: var(--muted); }
+.pp-word__say {
+  border: none;
+  background: none;
+  color: #b3aec6;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.pp-word__say:hover { color: var(--purple); background: #f5f2fe; }
+.pp-voc__empty { padding: 20px 0; font-size: 13px; color: var(--muted); text-align: center; }
+.pp-voc__cta {
+  margin-top: 6px;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(135deg, #9b6bf3, #7c3aed);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.28);
+  transition: filter 0.15s ease;
+}
+.pp-voc__cta:hover { filter: brightness(1.05); }
+
+@media (max-width: 1000px) {
+  .pp { grid-template-columns: 1fr; }
+  .pp__side { position: static; order: -1; }
+}
+@media (max-width: 560px) {
+  .pp { padding: 20px 16px 32px; }
+}

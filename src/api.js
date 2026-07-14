@@ -129,6 +129,56 @@ export async function loginWithOtp(phone, otp = '0000') {
   return res?.accessToken || null
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Практика: контент из dev-admin (mobile-эндпоинты бэкенда, требуют Bearer).
+// dev-admin.justtostudy.kz читает из того же dev-server, поэтому всё, что
+// заведено в админке, приходит сюда.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Вход по телефону + паролю (тот же логин, что у dev-админки) → accessToken.
+export async function loginWithPassword(phone, password) {
+  const p = normalizePhone(phone)
+  const res = await post('/auth/login', { phone: p, password })
+  return res?.accessToken || null
+}
+
+// Демо-доступ для витрины «Практика», когда пользователь ещё не залогинен
+// (флоу Skip). Кэшируем промис, чтобы не логиниться повторно.
+const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
+const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
+let _demoTokenPromise = null
+export function getPracticeToken(token) {
+  if (token) return Promise.resolve(token)
+  if (!_demoTokenPromise) {
+    _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD).catch((e) => {
+      _demoTokenPromise = null // дать шанс на повторную попытку
+      throw e
+    })
+  }
+  return _demoTokenPromise
+}
+
+// Видеоклипы (GET /mobile/video-lessons) → [{title,videoUrl,thumbnailUrl,durationLabel,level,views,youtubeKey}]
+export function getVideoLessons(token) {
+  return authGet('/mobile/video-lessons', token)
+}
+
+// Мемы и рилсы (GET /mobile/media-clips) → [{title,mediaUrl,thumbnailUrl,kind,mediaType,durationLabel,views,level}]
+export function getMediaClips(token) {
+  return authGet('/mobile/media-clips', token)
+}
+
+// Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
+export function getSituativki(token, level) {
+  const q = level ? `?level=${encodeURIComponent(level)}` : ''
+  return authGet('/mobile/situativki' + q, token)
+}
+
+// Словарь пользователя (GET /mobile/saved-words) → [{word,translation,learned,correctCount,language}]
+export function getSavedWords(token) {
+  return authGet('/mobile/saved-words', token)
+}
+
 // Сохранить уровень CEFR в профиль пользователя (query-param + Bearer).
 export async function saveLanguageLevel(token, level) {
   const url = `${BASE}/user/language-level?languageLevel=${encodeURIComponent(level)}`

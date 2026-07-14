@@ -9,6 +9,7 @@ import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
+import PracticePage from './screens/PracticePage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
 import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
@@ -105,6 +106,14 @@ export default function App() {
     setScreen('kingdom')
   }
 
+  // Навигация по левому сайдбару обучающей зоны.
+  function handleNav(key) {
+    if (key === 'learning') setScreen('kingdom')
+    else if (key === 'practice') setScreen('practice')
+    else if (key === 'tutor') setScreen('tutor-welcome')
+    // lessons — пока заглушка
+  }
+
   // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
   function handleSkip() {
     setError('')
@@ -188,11 +197,20 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
-          onNav={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          onNav={handleNav}
           onOpenKingdom={(k) => {
             setKingdom(k)
             setScreen('kingdom-interior')
           }}
+        />
+      )
+    case 'practice':
+      return (
+        <PracticePage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
         />
       )
     case 'kingdom-interior':
