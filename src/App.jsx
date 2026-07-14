@@ -108,9 +108,18 @@ export default function App() {
 
   // Навигация по левому сайдбару обучающей зоны.
   function handleNav(key) {
-    if (key === 'learning') setScreen('kingdom')
+    if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen('tutor-welcome')
+    // lessons — пока заглушка
+  }
+
+  // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
+  // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
+  function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
+    if (key === 'learn' || key === 'learning') setScreen('kingdom')
+    else if (key === 'practice') setScreen('practice')
+    else if (key === 'tutor') setScreen(tutorHome)
     // lessons — пока заглушка
   }
 
@@ -225,8 +234,8 @@ export default function App() {
     case 'tutor-welcome':
       return (
         <TutorWelcomePage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={() => {}}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onContinue={() => setScreen('tutor-lang')}
         />
@@ -234,8 +243,8 @@ export default function App() {
     case 'tutor-lang':
       return (
         <TutorLanguagePage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onSelect={() => setScreen('tutor-choose')}
         />
@@ -243,8 +252,8 @@ export default function App() {
     case 'tutor-choose':
       return (
         <TutorChoosePage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-lang')}
           onChoose={(key) => { setTutorKey(key); setScreen('tutor-loading') }}
@@ -254,8 +263,8 @@ export default function App() {
     case 'tutor-loading':
       return (
         <TutorLoadingPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
@@ -265,8 +274,8 @@ export default function App() {
     case 'tutor-level-offer':
       return (
         <TutorLevelOfferPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
@@ -277,8 +286,8 @@ export default function App() {
     case 'tutor-voice-intro':
       return (
         <TutorVoiceIntroPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-level-offer')}
           tutor={tutor}
@@ -289,8 +298,8 @@ export default function App() {
     case 'tutor-voice-chat':
       return (
         <TutorVoiceChatPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-voice-intro')}
           tutor={tutor}
@@ -301,8 +310,8 @@ export default function App() {
     case 'tutor-level-result':
       return (
         <TutorLevelResultPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-voice-chat')}
           tutor={tutor}
@@ -314,8 +323,8 @@ export default function App() {
     case 'tutor-interests':
       return (
         <TutorInterestsPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-level-result')}
           tutor={tutor}
@@ -325,8 +334,8 @@ export default function App() {
     case 'tutor-profession':
       return (
         <TutorProfessionPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-interests')}
           tutor={tutor}
@@ -337,8 +346,8 @@ export default function App() {
     case 'tutor-analysis':
       return (
         <TutorAnalysisPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-welcome')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-profession')}
           tutor={tutor}
@@ -348,8 +357,8 @@ export default function App() {
     case 'tutor-dashboard':
       return (
         <TutorDashboardPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           tutor={tutor}
           onManage={() => setScreen('tutor-manage')}
@@ -363,8 +372,8 @@ export default function App() {
     case 'tutor-scenarios':
       return (
         <TutorScenariosPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-dashboard')}
           onStart={() => setScreen('tutor-voice-chat')}
@@ -373,8 +382,8 @@ export default function App() {
     case 'tutor-chat-history':
       return (
         <TutorChatHistoryPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-manage')}
         />
@@ -382,8 +391,8 @@ export default function App() {
     case 'tutor-lesson-plan':
       return (
         <TutorLessonPlanPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-dashboard')}
         />
@@ -391,8 +400,8 @@ export default function App() {
     case 'tutor-manage':
       return (
         <TutorManagePage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-dashboard')}
           tutor={tutor}
@@ -402,8 +411,8 @@ export default function App() {
     case 'tutor-practice-result':
       return (
         <TutorPracticeResultPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-dashboard')}
           variant="fail"
@@ -415,8 +424,8 @@ export default function App() {
     case 'tutor-error-analytics':
       return (
         <TutorErrorAnalyticsPage
-          user={{ name: name || 'Сакен', rank: 'Вы Барон', level: 'B1' }}
-          onNavigate={(key) => key === 'tutor' && setScreen('tutor-dashboard')}
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-practice-result')}
           tutor={tutor}

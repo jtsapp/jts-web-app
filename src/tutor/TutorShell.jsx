@@ -1,5 +1,5 @@
-import TutorSidebar from './TutorSidebar.jsx'
-import TutorFooter from './TutorFooter.jsx'
+import Sidebar from '../components/Sidebar.jsx'
+import Footer from '../components/Footer.jsx'
 import { ArrowLeftIcon } from './TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
@@ -21,10 +21,11 @@ export default function TutorShell({
   return (
     <div className="t-app">
       <div className="t-body">
-        <TutorSidebar
+        <Sidebar
           active={active}
-          user={user}
-          onNavigate={onNavigate}
+          userName={user?.name}
+          userLevel={user?.level}
+          onNav={onNavigate}
           onProfile={onProfile}
         />
         <main className="t-main">
@@ -41,7 +42,7 @@ export default function TutorShell({
         </main>
       </div>
 
-      <TutorFooter />
+      <Footer />
     </div>
   )
 }
