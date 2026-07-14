@@ -772,6 +772,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Весь стек (орб → подпись → микрофон) центрируется как одна группа, равные
+     отступы между элементами — так рамка симметрична, без пустой полосы снизу. */
+  justify-content: center;
+  gap: 28px;
   padding: 48px 0;
 }
 .t-voice__orb {
@@ -779,6 +783,19 @@
   height: 220px;
   border-radius: 50%;
   background: linear-gradient(157deg, #c9adf7 0%, #ab88e1 45%, #9a5cf0 78%, #8b3ff0 100%);
+  /* Always breathing — the tutor feels alive even while idle. A stronger ping
+     pulse takes over when the agent is actively speaking/listening (.is-live). */
+  animation: t-orb-breathe 3.4s ease-in-out infinite;
+}
+@keyframes t-orb-breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 46px 6px rgba(144, 71, 255, 0.22);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 72px 14px rgba(144, 71, 255, 0.42);
+  }
 }
 .t-voice__orb.is-live {
   animation: t-orb-pulse 2s ease-in-out infinite;
@@ -786,27 +803,47 @@
 @keyframes t-orb-pulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(144, 71, 255, 0.25);
+    box-shadow: 0 0 0 0 rgba(144, 71, 255, 0.35);
   }
   50% {
-    transform: scale(1.03);
-    box-shadow: 0 0 0 18px rgba(144, 71, 255, 0);
+    transform: scale(1.06);
+    box-shadow: 0 0 0 22px rgba(144, 71, 255, 0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .t-voice__orb,
   .t-voice__orb.is-live {
     animation: none;
   }
 }
+/* Мелкий таймер остатка сессии — правый верхний угол карточки звонка */
+.t-voice__timer {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #9a8fb5;
+  background: #f4f1fb;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+.t-voice__timer.is-low {
+  color: #e5484d;
+  background: #fdeaea;
+}
 .t-voice__text {
-  margin-top: 28px;
+  margin-top: 0;
   font-size: 36px;
   font-weight: 700;
   color: var(--t-ink);
   text-align: center;
+  padding: 0 32px;
 }
 .t-voice__mic {
-  margin-top: 72px;
+  margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 10px;

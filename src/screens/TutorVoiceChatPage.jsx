@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -158,7 +158,7 @@ export default function TutorVoiceChatPage({
             className="contents"
           >
             <RoomAudioRenderer />
-            <CallStage onFinish={onFinish} t={t} />
+            <CallStage onFinish={onFinish} t={t} ttl={tokenData.ttl} />
           </LiveKitRoom>
         ) : (
           <div className="t-voice__card">
@@ -173,12 +173,35 @@ export default function TutorVoiceChatPage({
   )
 }
 
+// Обратный отсчёт до конца сессии — сервер отдаёт ttl (остаток секунд), токен
+// LiveKit истекает ровно тогда же, так что таймер отражает реальный лимит.
+function useCountdown(ttl) {
+  const [left, setLeft] = useState(typeof ttl === 'number' ? ttl : null)
+  useEffect(() => {
+    if (typeof ttl !== 'number') return
+    setLeft(ttl)
+    const iv = setInterval(() => {
+      setLeft((s) => (s !== null && s > 0 ? s - 1 : 0))
+    }, 1000)
+    return () => clearInterval(iv)
+  }, [ttl])
+  return left
+}
+
+function fmtClock(sec) {
+  if (sec === null) return ''
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
 // Внутри LiveKitRoom: состояние агента → класс орба, живая подпись, тумблер мика.
-function CallStage({ onFinish, t }) {
+function CallStage({ onFinish, t, ttl }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
   const transcriptions = useTranscriptions()
+  const left = useCountdown(ttl)
 
   const connected = state === ConnectionState.Connected
   const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
@@ -202,6 +225,9 @@ function CallStage({ onFinish, t }) {
 
   return (
     <div className="t-voice__card">
+      {left !== null && (
+        <span className={'t-voice__timer' + (left <= 30 ? ' is-low' : '')}>{fmtClock(left)}</span>
+      )}
       <div
         className={'t-voice__orb' + (live ? ' is-live' : '')}
         onClick={onFinish}
