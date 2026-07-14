@@ -8,14 +8,8 @@ const SCENARIOS = [
     id: 'visa-interview',
     scenarioId: 'visa-interview',
     label: 'U.S. Visa Interview',
-    img: '/tutor/job-interview.jpg',
+    img: '/tutor/visa-interview.jpg',
   },
-  ...Array.from({ length: 11 }, (_, i) => ({
-    id: `job-${i + 1}`,
-    scenarioId: '',
-    label: 'Job Interview',
-    img: '/tutor/job-interview.jpg',
-  })),
 ]
 
 export default function TutorScenariosPage({
