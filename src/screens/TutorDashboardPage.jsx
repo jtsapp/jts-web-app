@@ -15,11 +15,9 @@ const LESSONS = [
   { num: '03', title: 'Практика Present Continious', desc: LESSON_DESC },
   { num: '04', title: 'Практика Present Continious', desc: LESSON_DESC },
 ]
+// Пока рабочий только один сценарий — Visa Interview.
 const SCENARIOS = [
-  { id: 1, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
-  { id: 2, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
-  { id: 3, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
-  { id: 4, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
+  { id: 'visa-interview', label: 'U.S. Visa Interview', img: '/tutor/visa-interview.jpg' },
 ]
 
 export default function TutorDashboardPage({
