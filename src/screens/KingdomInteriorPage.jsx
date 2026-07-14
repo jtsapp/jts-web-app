@@ -1,22 +1,90 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
+import { getLessonModules, getPracticeToken } from '../api.js'
 
-// Оболочка интерьера королевства. Пока статичная: сайдбар + шапка + заглушка.
-// Лента уроков («печеньки» + HTML-контент) появится, когда данные пойдут из dev-admin.
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, onBack }) {
+// Кольцо общего прогресса королевства (пройдено/всего уроков) — как в шапке
+// мобильного приложения (Figma node 903-3033).
+function ProgressRing({ done = 0, total = 0 }) {
+  const r = 22
+  const c = 2 * Math.PI * r
+  const pct = total > 0 ? Math.min(1, done / total) : 0
+  const offset = c * (1 - pct)
+  return (
+    <svg className="kh-ring" width="54" height="54" viewBox="0 0 54 54">
+      <circle cx="27" cy="27" r={r} className="kh-ring__track" />
+      <circle
+        cx="27"
+        cy="27"
+        r={r}
+        className="kh-ring__value"
+        strokeDasharray={c}
+        strokeDashoffset={offset}
+        transform="rotate(-90 27 27)"
+      />
+      <text x="27" y="28" className="kh-ring__label" dominantBaseline="middle" textAnchor="middle">
+        {done}/{total}
+      </text>
+    </svg>
+  )
+}
+
+// Интерьер королевства: сразу открывает урок из раздела «Уроки (контент)»
+// админки — опубликованный Speakout-модуль (/mobile/lesson-modules), чей
+// CEFR-уровень совпадает с уровнем королевства (Sunhaven → A1). Сверху —
+// арт-шапка королевства (сцена + портрет короля + уровень + кольцо прогресса,
+// по мобильному дизайну), под ней — hosted-сайт модуля в iframe.
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onBack }) {
   const { t } = useI18n()
-  const [active, setActive] = useState('learning')
-  const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', level: 'A1' }
+  const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
+  const level = k.level || userLevel || 'A1'
+
+  const [state, setState] = useState({ loading: true, error: null, module: null })
+
+  useEffect(() => {
+    let alive = true
+    setState({ loading: true, error: null, module: null })
+    // Таймаут: если бэкенд не отвечает (dev-server периодически лежит),
+    // не висим на спиннере вечно, а показываем ошибку через 15 c.
+    const withTimeout = (promise, ms) =>
+      Promise.race([
+        promise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Сервер не отвечает')), ms)
+        ),
+      ])
+    ;(async () => {
+      try {
+        const authToken = await withTimeout(getPracticeToken(token), 15000)
+        const all = await withTimeout(getLessonModules(authToken), 15000)
+        if (!alive) return
+        // Берём модуль этого королевства (по CEFR-уровню) — тот, что можно открыть.
+        const want = String(level).toUpperCase()
+        const forLevel = (Array.isArray(all) ? all : [])
+          .filter((m) => String(m.level || '').toUpperCase() === want)
+          .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+        const module = forLevel.find((m) => m.indexUrl) || forLevel[0] || null
+        setState({ loading: false, error: null, module })
+      } catch (e) {
+        if (!alive) return
+        setState({ loading: false, error: e.message || 'Не удалось загрузить уроки', module: null })
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [level, token])
+
+  const { loading, error, module } = state
 
   return (
     <LearningLayout
       userName={userName}
       userLevel={userLevel}
-      active={active}
-      onNav={setActive}
-      onProfile={onBack}
+      active="learning"
+      onNav={onNav}
+      onProfile={() => {}}
     >
       <div className="li-top">
         <button className="li-back" onClick={onBack}>
@@ -25,17 +93,76 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, onBa
         </button>
         <div className="li-crumb">
           <b>{t('kingdom.title', { name: k.name })}</b>
-          <span>{t('kingdom.levelBadge', { label: k.level })}</span>
+          <span>{t('kingdom.levelBadge', { label: level })}</span>
         </div>
       </div>
 
-      <div className="li-empty">
-        <img className="li-empty__art" src={`/assets/world/kings/${k.id}.jpg`} alt={k.name} />
-        <div className="li-empty__title">{t('kingdom.empty')}</div>
-        <div className="li-empty__sub">
-          {t('kingdom.king', { name: k.king || '—' })}
+      {loading && (
+        <div className="ki-state">
+          <div className="ki-spinner" />
+          <p>Загружаем уроки…</p>
         </div>
-      </div>
+      )}
+
+      {!loading && error && (
+        <div className="ki-state ki-state--error">
+          <p>Ошибка: {error}</p>
+        </div>
+      )}
+
+      {!loading && !error && (!module || !module.indexUrl) && (
+        <div className="li-empty">
+          <img className="li-empty__art" src={`/assets/world/kings/${k.id}.jpg`} alt={k.name} />
+          <div className="li-empty__title">{t('kingdom.empty')}</div>
+          <div className="li-empty__sub">Для уровня {level} пока нет опубликованных уроков в админке</div>
+        </div>
+      )}
+
+      {/* Арт-шапка королевства + hosted-сайт Speakout-модуля в iframe */}
+      {!loading && !error && module?.indexUrl && (
+        <>
+          <div
+            className="kh-hero"
+            style={{
+              backgroundImage: `url(/assets/world/hero/${String(level).toLowerCase()}.png), linear-gradient(135deg, #7c4dff, #4a2b9e)`,
+            }}
+          >
+            <div className="kh-hero__scrim" />
+            <div className="kh-hero__info">
+              <div className="kh-hero__king">
+                <img
+                  className="kh-hero__avatar"
+                  src={`/assets/world/kings/${k.id}_portrait.png`}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.style.visibility = 'hidden'
+                  }}
+                />
+                <span className="kh-hero__kingname">Король {k.king}</span>
+              </div>
+              <div className="kh-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
+            </div>
+            <div className="kh-hero__ring">
+              <ProgressRing done={0} total={module.lessonCount || 0} />
+            </div>
+          </div>
+
+          {/* Клип сверху (.km-stage overflow:hidden + iframe со сдвигом вверх)
+              детерминированно прячет собственную шапку hosted-сайта (brandbar +
+              баннер «Speakout · A1»). iframe высотой с вьюпорт — чтобы страницы
+              уроков (они центрируются по 100dvh) отображались нормально, а не
+              уезжали вниз. Сцена чуть выше вьюпорта → контент выходит за
+              контейнер, и арт-шапка уезжает вверх при прокрутке. */}
+          <div className="km-stage">
+            <iframe
+              className="km-frame"
+              src={module.indexUrl}
+              title={module.title}
+              allow="autoplay; fullscreen; microphone"
+            />
+          </div>
+        </>
+      )}
     </LearningLayout>
   )
 }

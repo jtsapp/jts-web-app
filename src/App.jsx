@@ -10,6 +10,7 @@ import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
+import LessonsPage from './screens/LessonsPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
 import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
@@ -111,7 +112,7 @@ export default function App() {
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen('tutor-welcome')
-    // lessons — пока заглушка
+    else if (key === 'lessons') setScreen('lessons')
   }
 
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
@@ -120,7 +121,7 @@ export default function App() {
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen(tutorHome)
-    // lessons — пока заглушка
+    else if (key === 'lessons') setScreen('lessons')
   }
 
   // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
@@ -222,12 +223,22 @@ export default function App() {
           onNav={handleNav}
         />
       )
+    case 'lessons':
+      return (
+        <LessonsPage
+          userLevel={userLevel}
+          userName={name}
+          onNav={handleNav}
+        />
+      )
     case 'kingdom-interior':
       return (
         <KingdomInteriorPage
           kingdom={kingdom}
           userName={name}
           userLevel={userLevel}
+          token={token}
+          onNav={handleNav}
           onBack={() => setScreen('kingdom')}
         />
       )
