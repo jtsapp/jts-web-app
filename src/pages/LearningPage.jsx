@@ -5,7 +5,7 @@ import { useI18n } from '../i18n.jsx'
 import { computeKingdoms, roleForLevel } from '../kingdoms.js'
 import { getLearningPath, countProgress } from '../api.js'
 
-export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom }) {
+export default function LearningPage({ userLevel = 'A1', userName, token, onNav, onOpenKingdom }) {
   const { t } = useI18n()
   const [progress, setProgress] = useState({}) // id -> {done,total}
 
@@ -45,7 +45,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
   const overall = sumTotal > 0 ? Math.round((sumDone / sumTotal) * 100) : 0
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="learning" onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="learning" onNav={onNav} onProfile={() => {}}>
       <div className="lp">
         {/* Центр: заголовок + сетка миров */}
         <div className="lp__center">

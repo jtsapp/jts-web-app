@@ -7,6 +7,7 @@ import SuccessPage from './pages/SuccessPage.jsx'
 import LevelTestIntroPage from './pages/LevelTestIntroPage.jsx'
 import LevelTestPage from './pages/LevelTestPage.jsx'
 import LearningPage from './pages/LearningPage.jsx'
+import PracticePage from './pages/PracticePage.jsx'
 import KingdomInteriorPage from './pages/KingdomInteriorPage.jsx'
 import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
 import { useI18n } from './i18n.jsx'
@@ -73,6 +74,13 @@ export default function App() {
       }
     }
     setScreen('kingdom')
+  }
+
+  // Навигация по левому сайдбару обучающей зоны.
+  function handleNav(key) {
+    if (key === 'learning') setScreen('kingdom')
+    else if (key === 'practice') setScreen('practice')
+    // tutor / lessons — пока заглушки
   }
 
   // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
@@ -156,10 +164,20 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          onNav={handleNav}
           onOpenKingdom={(k) => {
             setKingdom(k)
             setScreen('kingdom-interior')
           }}
+        />
+      )
+    case 'practice':
+      return (
+        <PracticePage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
         />
       )
     case 'kingdom-interior':
