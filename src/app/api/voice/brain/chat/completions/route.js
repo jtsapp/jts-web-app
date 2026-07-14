@@ -69,8 +69,13 @@ export async function POST(request) {
   const { systemPrompt, turns } = toRichConversation(messages)
   const tools = toToolDefs(body.tools)
 
+  // Greeting turn = the learner hasn't produced any input yet (no user/tool
+  // turn). The tutor speaks first, so we synthesise a kickoff. On this turn a
+  // "could you say that again?" fallback is nonsensical — nothing was said —
+  // so the empty-response fallback below greets instead.
+  const isGreeting = !turns.some((t) => t.role === 'user' || t.role === 'tool')
   const kickoff = '(Begin the conversation now — greet the learner.)'
-  if (!turns.some((t) => t.role !== 'assistant')) {
+  if (isGreeting) {
     turns.push({ role: 'user', content: kickoff })
   }
 
@@ -111,40 +116,69 @@ export async function POST(request) {
           return
         }
 
-        let anyText = false
-        let toolCallIndex = 0
-        for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature })) {
-          if (ev.type === 'text') {
-            if (!ev.text) continue
-            anyText = true
-            send(sseChunk(id, model, created, { content: ev.text }, null))
-          } else {
+        // Stream one Anthropic completion, forwarding text/tool deltas as OpenAI
+        // SSE. Returns how much it actually produced so the caller can decide
+        // whether to retry. `toolBase` offsets tool_call indices across attempts.
+        const streamOnce = async (toolBase) => {
+          let anyText = false
+          let toolCount = 0
+          for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature })) {
+            if (ev.type === 'text') {
+              if (!ev.text) continue
+              anyText = true
+              send(sseChunk(id, model, created, { content: ev.text }, null))
+            } else {
+              send(
+                sseChunk(
+                  id,
+                  model,
+                  created,
+                  {
+                    tool_calls: [
+                      {
+                        index: toolBase + toolCount++,
+                        id: ev.toolCall.id,
+                        type: 'function',
+                        function: { name: ev.toolCall.name, arguments: ev.toolCall.argumentsJson },
+                      },
+                    ],
+                  },
+                  null,
+                ),
+              )
+            }
+          }
+          return { anyText, toolCount }
+        }
+
+        let { anyText, toolCount } = await streamOnce(0)
+        // Haiku occasionally returns an empty completion (no text, no tool call)
+        // — most visibly on the greeting, where the learner then sees a bogus
+        // "could you say that again?". Nothing was streamed yet, so retry once;
+        // empties are transient and clear on the second attempt.
+        if (!anyText && toolCount === 0) {
+          const retry = await streamOnce(0)
+          anyText = retry.anyText
+          toolCount = retry.toolCount
+        }
+
+        if (toolCount > 0) {
+          send(sseChunk(id, model, created, {}, 'tool_calls'))
+        } else {
+          // Still empty after the retry. On the greeting we must say *something*
+          // (the tutor speaks first), so fall back to a warm opener. Mid-convo we
+          // stay silent rather than emit a canned "could you say that again?" —
+          // dead air is less jarring than the bot begging for a repeat.
+          if (!anyText && isGreeting) {
             send(
               sseChunk(
                 id,
                 model,
                 created,
-                {
-                  tool_calls: [
-                    {
-                      index: toolCallIndex++,
-                      id: ev.toolCall.id,
-                      type: 'function',
-                      function: { name: ev.toolCall.name, arguments: ev.toolCall.argumentsJson },
-                    },
-                  ],
-                },
+                { content: "Hi! I'm your tutor — what would you like to work on today?" },
                 null,
               ),
             )
-          }
-        }
-
-        if (toolCallIndex > 0) {
-          send(sseChunk(id, model, created, {}, 'tool_calls'))
-        } else {
-          if (!anyText) {
-            send(sseChunk(id, model, created, { content: 'Sorry, could you say that again?' }, null))
           }
           send(sseChunk(id, model, created, {}, 'stop'))
         }
