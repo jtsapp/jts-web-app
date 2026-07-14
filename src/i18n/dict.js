@@ -136,10 +136,25 @@ export const DICT = {
     'dash.scenariosSub':
       'Протестируй свой Speaking в разных ситуациях, и получи личный разбор от тьютора',
 
+    // Онбординг-тур
+    'tour.skip': 'Пропустить',
+    'tour.next': 'ОК',
+    'tour.done': 'Готово',
+    'tour.mic.title': 'Поговори с тьютором',
+    'tour.mic.text':
+      'Нажми на микрофон и общайся с тьютором голосом — как с живым собеседником.',
+    'tour.plan.title': 'Твой план урока',
+    'tour.plan.text':
+      'Здесь тьютор собирает уроки под твой уровень. Отмечай пройденное и следи за прогрессом.',
+    'tour.scenarios.title': 'Ролевые сценарии',
+    'tour.scenarios.text':
+      'Попробуй себя в реальных ситуациях — собеседование, разговор о семье и другое.',
+
     // Управление тьютором
     'manage.title': 'Управление тьютором',
     'manage.change': 'Поменять тьютора',
     'manage.history': 'История разговоров',
+    'manage.historyEmpty': 'Здесь появится история ваших разговоров с тьютором',
 
     // Аналитика ошибок
     'erran.title': 'Аналитика ошибок в разговоре',
@@ -154,6 +169,9 @@ export const DICT = {
     'scen.desc':
       'практикуем собеседование на английском: рассказ о себе, вопросы рекрутёру и ответы на них',
     'scen.start': 'Начать разговор',
+    'scen.verdictPass': 'Задача пройдена',
+    'scen.verdictFail': 'Задача не пройдена',
+    'scen.verdictDone': 'Готово',
 
     // План уроков
     'plan.title': 'План уроков',
@@ -291,9 +309,24 @@ export const DICT = {
     'dash.scenariosSub':
       'Speaking-іңді әртүрлі жағдайда сынап, тьютордан жеке талдау ал',
 
+    // Онбординг-тур
+    'tour.skip': 'Өткізу',
+    'tour.next': 'ОК',
+    'tour.done': 'Дайын',
+    'tour.mic.title': 'Тьютормен сөйлес',
+    'tour.mic.text':
+      'Микрофонды бас та, тьютормен дауыспен сөйлес — тірі әңгімелесушідей.',
+    'tour.plan.title': 'Сабақ жоспарың',
+    'tour.plan.text':
+      'Мұнда тьютор деңгейіңе сай сабақтар жинайды. Өткеніңді белгілеп, прогресті қадағала.',
+    'tour.scenarios.title': 'Рөлдік сценарийлер',
+    'tour.scenarios.text':
+      'Нақты жағдайларда өзіңді сына — сұхбат, отбасы туралы әңгіме және т.б.',
+
     'manage.title': 'Тьюторды басқару',
     'manage.change': 'Тьюторды ауыстыру',
     'manage.history': 'Әңгімелер тарихы',
+    'manage.historyEmpty': 'Мұнда тьютормен әңгімелеріңіздің тарихы пайда болады',
 
     'erran.title': 'Әңгімедегі қателер талдауы',
     'erran.by': 'Талдауды тьюторың жасады:',
@@ -306,6 +339,9 @@ export const DICT = {
     'scen.desc':
       'ағылшынша сұхбатты жаттықтырамыз: өзің туралы әңгіме, рекрутёрге сұрақтар және оларға жауаптар',
     'scen.start': 'Әңгімені бастау',
+    'scen.verdictPass': 'Тапсырма орындалды',
+    'scen.verdictFail': 'Тапсырма орындалмады',
+    'scen.verdictDone': 'Дайын',
 
     'plan.title': 'Сабақ жоспары',
     'plan.progress': '{total}-тен {done} өтілді',
@@ -441,9 +477,24 @@ export const DICT = {
     'dash.scenariosSub':
       'Test your speaking in different situations and get personal feedback from the tutor',
 
+    // Onboarding tour
+    'tour.skip': 'Skip',
+    'tour.next': 'OK',
+    'tour.done': 'Done',
+    'tour.mic.title': 'Talk to your tutor',
+    'tour.mic.text':
+      'Tap the microphone and chat with your tutor by voice — like a real conversation partner.',
+    'tour.plan.title': 'Your lesson plan',
+    'tour.plan.text':
+      'Here the tutor builds lessons for your level. Check off what you finish and track your progress.',
+    'tour.scenarios.title': 'Role-play scenarios',
+    'tour.scenarios.text':
+      'Try yourself in real situations — a job interview, a chat about family and more.',
+
     'manage.title': 'Manage tutor',
     'manage.change': 'Change tutor',
     'manage.history': 'Conversation history',
+    'manage.historyEmpty': 'Your conversation history with the tutor will appear here',
 
     'erran.title': 'Conversation mistakes analytics',
     'erran.by': 'The analysis was done by your tutor:',
@@ -456,6 +507,9 @@ export const DICT = {
     'scen.desc':
       'we practise a job interview in English: talking about yourself, questions from the recruiter and answers to them',
     'scen.start': 'Start conversation',
+    'scen.verdictPass': 'Task complete',
+    'scen.verdictFail': 'Task not passed',
+    'scen.verdictDone': 'Done',
 
     'plan.title': 'Lesson plan',
     'plan.progress': '{done} of {total} completed',

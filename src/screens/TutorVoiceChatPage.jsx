@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -6,6 +6,7 @@ import {
   useVoiceAssistant,
   useLocalParticipant,
   useTranscriptions,
+  useDataChannel,
 } from '@livekit/components-react'
 import { ConnectionState } from 'livekit-client'
 import '@livekit/components-styles'
@@ -52,9 +53,13 @@ export default function TutorVoiceChatPage({
   onBack,
   onFinish,
   tutor = {},
+  scenario = null,
 }) {
   const t = useT()
   const { lang } = useLang()
+  // Structured voice scenario id (e.g. 'visa-interview') — when set, the token
+  // route flips the agent into scenario mode and loads the matching prompt.
+  const scenarioId = typeof scenario === 'string' ? scenario : scenario?.id || ''
   const { name: tutorName = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
 
   const [perm, setPerm] = useState('prompt') // 'prompt' | 'granted'
@@ -82,6 +87,7 @@ export default function TutorVoiceChatPage({
           level: user?.level || 'B1',
           lang,
           tutor: tutor.key,
+          ...(scenarioId ? { scenarioId } : {}),
         }),
       })
       const data = await res.json().catch(() => ({}))
@@ -155,9 +161,13 @@ export default function TutorVoiceChatPage({
             audio
             video={false}
             onDisconnected={() => onFinish?.()}
-            className="contents"
+            className="t-voice__room"
           >
-            <RoomAudioRenderer />
+            {/* Аудио-элементы вне визуального потока — иначе они расширяют
+                обёртку и карточка съезжает влево. */}
+            <div className="t-voice__audio">
+              <RoomAudioRenderer />
+            </div>
             <CallStage onFinish={onFinish} t={t} ttl={tokenData.ttl} />
           </LiveKitRoom>
         ) : (
@@ -203,24 +213,94 @@ function CallStage({ onFinish, t, ttl }) {
   const transcriptions = useTranscriptions()
   const left = useCountdown(ttl)
 
+  // Scenario outcome — the agent publishes a JSON verdict on topic "lesson"
+  // (report_task_complete) when a structured scenario ends. We render it as a
+  // pass/fail card over the call.
+  const [verdict, setVerdict] = useState(null)
+  useDataChannel('lesson', (msg) => {
+    try {
+      const data = JSON.parse(new TextDecoder().decode(msg.payload))
+      if (data && typeof data === 'object') setVerdict(data)
+    } catch {
+      /* ignore malformed payloads */
+    }
+  })
+
   const connected = state === ConnectionState.Connected
   const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
   const live = connected && agentPresent && (va.state === 'speaking' || va.state === 'listening')
 
-  const caption = useMemo(() => {
-    const segs = [...transcriptions]
-      .filter((ts) => ts.text.trim().length > 0)
-      .sort((a, b) => (a.streamInfo?.timestamp ?? 0) - (b.streamInfo?.timestamp ?? 0))
-    const last = segs[segs.length - 1]
-    return last ? lastSentence(last.text) : ''
-  }, [transcriptions])
+  // Субтитры ТЬЮТОРА — из agentTranscriptions (синхрон с аудио). Показываем
+  // предложение, которое он произносит сейчас; держится, пока не дойдёт до
+  // следующего сегмента. Липкая ссылка не даёт подписи гаснуть между сегментами.
+  const tutorRef = useRef('')
+  const tutorCaption = useMemo(() => {
+    const segs = va.agentTranscriptions ?? []
+    if (segs.length > 0) {
+      const latest = [...segs]
+        .sort((a, b) => (a.firstReceivedTime ?? 0) - (b.firstReceivedTime ?? 0))
+        .pop()
+      const s = lastSentence(latest?.text || '')
+      if (s) tutorRef.current = s
+    }
+    return tutorRef.current
+  }, [va.agentTranscriptions])
 
-  const text =
-    caption || (!connected ? t('voice.connecting') : !agentPresent ? t('voice.waiting') : t('voice.prompt'))
+  // Субтитры УЧЕНИКА — его собственная речь (транскрипции локального участника),
+  // чтобы он видел, что сказал.
+  const userRef = useRef('')
+  const userId = localParticipant?.identity
+  const userCaption = useMemo(() => {
+    const mine = transcriptions
+      .filter((ts) => ts.participantInfo?.identity === userId && ts.text.trim())
+      .sort((a, b) => (a.streamInfo?.timestamp ?? 0) - (b.streamInfo?.timestamp ?? 0))
+    const last = mine[mine.length - 1]
+    if (last) userRef.current = lastSentence(last.text)
+    return userRef.current
+  }, [transcriptions, userId])
+
+  // Тьютор говорит → его строка (тёмная). Иначе — строка ученика (фиолетовая,
+  // как в макете). Фолбэк-статусы, пока ни у кого нет реплики.
+  const tutorSpeaking = va.state === 'speaking'
+  let text
+  let isUser = false
+  if (tutorSpeaking && tutorCaption) {
+    text = tutorCaption
+  } else if (userCaption) {
+    text = userCaption
+    isUser = true
+  } else if (tutorCaption) {
+    text = tutorCaption
+  } else {
+    text = !connected ? t('voice.connecting') : !agentPresent ? t('voice.waiting') : t('voice.prompt')
+  }
 
   const micOn = isMicrophoneEnabled
   const toggleMic = () => {
     void localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)
+  }
+
+  if (verdict) {
+    const passed = Boolean(verdict.passed)
+    return (
+      <div className={'t-voice__card t-verdict' + (passed ? ' is-pass' : ' is-fail')}>
+        <div className="t-verdict__badge">{passed ? '✅' : '❌'}</div>
+        <div className="t-verdict__title">
+          {passed ? t('scen.verdictPass') : t('scen.verdictFail')}
+        </div>
+        {verdict.summary && <p className="t-verdict__summary">{verdict.summary}</p>}
+        {Array.isArray(verdict.tips) && verdict.tips.length > 0 && (
+          <ul className="t-verdict__tips">
+            {verdict.tips.map((tip, i) => (
+              <li key={i}>{tip}</li>
+            ))}
+          </ul>
+        )}
+        <button className="t-pill t-pill--primary t-verdict__done" type="button" onClick={onFinish}>
+          {t('scen.verdictDone')}
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -233,7 +313,9 @@ function CallStage({ onFinish, t, ttl }) {
         onClick={onFinish}
         role={onFinish ? 'button' : undefined}
       />
-      <div className="t-voice__text">{text}</div>
+      <div className="t-voice__text">
+        <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>
+      </div>
       <button className="t-voice__mic" type="button" onClick={toggleMic}>
         <MicIcon size={28} />
         {micOn ? t('voice.micOn') : t('voice.micOff')}

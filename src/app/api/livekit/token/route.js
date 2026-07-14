@@ -76,6 +76,16 @@ function buildMetadata(p, tier) {
   }
   if (typeof p.scenario === 'string' && p.scenario.trim())
     meta.scenario = p.scenario.trim().slice(0, 400)
+  // Structured voice scenario: only the small id travels in metadata — the
+  // agent loads the full prompt from data/scenarios/<id>.md. Sanitised to a
+  // safe slug so it can't reference anything outside that directory.
+  if (typeof p.scenarioId === 'string' && p.scenarioId.trim()) {
+    const sid = p.scenarioId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64)
+    if (sid) {
+      meta.scenarioId = sid
+      meta.mode = 'scenario'
+    }
+  }
   return JSON.stringify(meta)
 }
 

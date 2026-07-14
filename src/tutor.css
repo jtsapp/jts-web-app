@@ -610,6 +610,37 @@
   text-align: center;
   white-space: pre-line;
 }
+/* Анимированные точки: . → .. → ... → пусто → по новой. Ширина зарезервирована,
+   чтобы центрированный текст не дёргался при смене числа точек. */
+.t-status__dots {
+  display: inline-block;
+  width: 0.9em;
+  text-align: left;
+}
+.t-status__dots::after {
+  content: '.';
+  animation: t-dots 1.4s steps(1, end) infinite;
+}
+@keyframes t-dots {
+  0% {
+    content: '.';
+  }
+  25% {
+    content: '..';
+  }
+  50% {
+    content: '...';
+  }
+  75% {
+    content: '';
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-status__dots::after {
+    content: '...';
+    animation: none;
+  }
+}
 
 /* Экран предложения теста уровня */
 .t-offer {
@@ -762,6 +793,18 @@
   align-items: center;
   padding-top: 36px;
 }
+/* LiveKitRoom исчезает из раскладки → карточка становится прямым flex-ребёнком
+   .t-voice и центрируется так же, как до звонка (не съезжает влево). */
+.t-voice__room {
+  display: contents;
+}
+/* Аудио-элементы LiveKit не должны влиять на ширину/раскладку */
+.t-voice__audio {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
 .t-voice__card {
   position: relative;
   margin-top: 18px;
@@ -778,10 +821,53 @@
   gap: 28px;
   padding: 48px 0;
 }
+/* Scenario verdict card (report_task_complete → topic "lesson"). */
+.t-verdict {
+  gap: 20px;
+  padding: 48px 64px;
+  text-align: center;
+}
+.t-verdict__badge {
+  font-size: 72px;
+  line-height: 1;
+}
+.t-verdict__title {
+  font-size: 34px;
+  font-weight: 700;
+  color: #1a1430;
+}
+.t-verdict.is-pass .t-verdict__title {
+  color: #16a34a;
+}
+.t-verdict.is-fail .t-verdict__title {
+  color: #dc2626;
+}
+.t-verdict__summary {
+  max-width: 560px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: #4a4460;
+}
+.t-verdict__tips {
+  max-width: 560px;
+  margin: 0;
+  padding-left: 22px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #4a4460;
+}
+.t-verdict__done {
+  margin-top: 8px;
+}
 .t-voice__orb {
   width: 220px;
   height: 220px;
   border-radius: 50%;
+  flex-shrink: 0; /* орб не плющится, когда подписи много */
   /* Плоский фирменный фиолетовый (без градиентов — единый брендинг #9047ff) */
   background: #9047ff;
   /* Always breathing — the tutor feels alive even while idle. A stronger ping
@@ -835,13 +921,34 @@
   color: #e5484d;
   background: #fdeaea;
 }
+/* Подпись = субтитры: фиксированная область высотой ровно в 2 строки, текст в ней
+   ВЕРТИКАЛЬНО ПО ЦЕНТРУ — поэтому 1 и 2 строки не «съезжают», рамка и орб стоят
+   на месте при любой длине реплики. */
 .t-voice__text {
   margin-top: 0;
-  font-size: 36px;
+  width: 100%;
+  max-width: 760px;
+  height: 84px; /* 2 строки * 32px * 1.3 ≈ 84px, фикс */
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.t-voice__cap {
+  font-size: 32px;
   font-weight: 700;
+  line-height: 1.3;
   color: var(--t-ink);
   text-align: center;
-  padding: 0 32px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Субтитры ученика — фирменный фиолетовый (как в макете Figma) */
+.t-voice__cap.is-user {
+  color: var(--t-purple);
 }
 .t-voice__mic {
   margin-top: 8px;
@@ -1104,7 +1211,48 @@
   gap: 16px;
   font-size: 17px;
   font-weight: 500;
+  color: #afafaf; /* пункт ждёт своей очереди — приглушён */
+  transition: color 0.3s ease;
+}
+.t-analysis__item.is-done {
   color: #000000;
+}
+/* Галочка появляется, когда пункт «готов» */
+.t-analysis__item .t-radio {
+  position: relative;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+.t-analysis__item.is-done .t-radio {
+  border-color: var(--t-purple);
+  background: var(--t-purple);
+  animation: t-check-pop 0.35s ease;
+}
+.t-analysis__item.is-done .t-radio::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 5px;
+  height: 10px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+@keyframes t-check-pop {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-analysis__item.is-done .t-radio {
+    animation: none;
+  }
 }
 
 /* ========================= Дашборд =============================== */
@@ -1569,6 +1717,16 @@
   font-weight: 700;
   color: var(--t-ink);
 }
+.t-manage__empty {
+  margin-top: 20px;
+  padding: 28px 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--t-muted);
+  text-align: center;
+}
 .t-histgroup__date {
   margin: 26px 0 6px;
   font-size: 13px;
@@ -1859,4 +2017,128 @@
   align-self: flex-end;
   background: #ff7300;
   border-radius: 19px 19px 5px 19px;
+}
+
+/* ---------------------- Онбординг-тур ---------------------------- */
+.t-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+/* Затемнение всего экрана, когда цель не найдена */
+.t-tour__veil {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 12, 40, 0.62);
+}
+/* «Дырка» на подсвеченном элементе: огромная тень заливает всё вокруг */
+.t-tour__hole {
+  position: fixed;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(20, 12, 40, 0.62);
+  outline: 3px solid rgba(144, 71, 255, 0.95);
+  outline-offset: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+.t-tour__pop {
+  position: fixed;
+  width: 300px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 24px 60px rgba(20, 12, 40, 0.32);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: t-tour-in 0.28s ease;
+}
+@keyframes t-tour-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.t-tour__title {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--t-ink);
+}
+.t-tour__text {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #5c5c5c;
+}
+.t-tour__bar {
+  margin-top: 16px;
+  height: 4px;
+  border-radius: 999px;
+  background: #efe9fb;
+  overflow: hidden;
+}
+.t-tour__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--t-purple);
+  transition: width 0.3s ease;
+}
+.t-tour__foot {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.t-tour__right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.t-tour__count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t-muted);
+}
+.t-tour__skip {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.t-tour__skip:hover {
+  color: var(--t-ink);
+}
+.t-tour__ok {
+  border: none;
+  border-radius: 14px;
+  padding: 10px 22px;
+  background: var(--t-purple);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.t-tour__ok:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-tour__hole,
+  .t-tour__pop,
+  .t-tour__bar span {
+    transition: none;
+  }
+  .t-tour__pop {
+    animation: none;
+  }
 }
