@@ -2,16 +2,6 @@ import TutorShell from '../tutor/TutorShell.jsx'
 import { ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
-const ITEMS = [
-  { title: 'Практика Present Continious', sub: 'Практика не пройдена', time: '12:45' },
-  { title: 'Свободный разговор', sub: 'Общаемся о семье', time: '12:45' },
-  { title: 'Сценарий Job Interview', sub: 'Успешно пройдено', time: '12:45' },
-]
-const GROUPS = [
-  { date: 'Четверг, 12.06', items: ITEMS },
-  { date: 'среда, 11.06', items: ITEMS },
-]
-
 export default function TutorManagePage({
   user,
   onNavigate,
@@ -19,6 +9,9 @@ export default function TutorManagePage({
   onBack,
   tutor = {},
   onChangeTutor,
+  // Реальная история разговоров. Пока бэкенд её не отдаёт — список пустой.
+  // Формат группы: { date, items: [{ title, sub, time }] }.
+  history = [],
 }) {
   const t = useT()
   const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
@@ -49,20 +42,24 @@ export default function TutorManagePage({
 
         <div className="t-manage__history">
           <h2>{t('manage.history')}</h2>
-          {GROUPS.map((g) => (
-            <div className="t-histgroup" key={g.date}>
-              <div className="t-histgroup__date">{g.date}</div>
-              {g.items.map((it, i) => (
-                <div className="t-histrow" key={i}>
-                  <div className="t-histrow__text">
-                    <b>{it.title}</b>
-                    <span>{it.sub}</span>
+          {history.length === 0 ? (
+            <p className="t-manage__empty">{t('manage.historyEmpty')}</p>
+          ) : (
+            history.map((g) => (
+              <div className="t-histgroup" key={g.date}>
+                <div className="t-histgroup__date">{g.date}</div>
+                {g.items.map((it, i) => (
+                  <div className="t-histrow" key={i}>
+                    <div className="t-histrow__text">
+                      <b>{it.title}</b>
+                      <span>{it.sub}</span>
+                    </div>
+                    <time>{it.time}</time>
                   </div>
-                  <time>{it.time}</time>
-                </div>
-              ))}
-            </div>
-          ))}
+                ))}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </TutorShell>

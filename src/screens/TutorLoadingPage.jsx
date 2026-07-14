@@ -33,7 +33,7 @@ export default function TutorLoadingPage({
       onBack={onBack}
       layout="center"
     >
-      <TutorStatus heading={head} name={name} avatar={avatar} pulse />
+      <TutorStatus heading={head} name={name} avatar={avatar} pulse dots />
     </TutorShell>
   )
 }
