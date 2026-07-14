@@ -782,7 +782,8 @@
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: linear-gradient(157deg, #c9adf7 0%, #ab88e1 45%, #9a5cf0 78%, #8b3ff0 100%);
+  /* Плоский фирменный фиолетовый (без градиентов — единый брендинг #9047ff) */
+  background: #9047ff;
   /* Always breathing — the tutor feels alive even while idle. A stronger ping
      pulse takes over when the agent is actively speaking/listening (.is-live). */
   animation: t-orb-breathe 3.4s ease-in-out infinite;
@@ -1183,7 +1184,7 @@
   height: 142px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(157deg, #c9adf7 0%, #ab88e1 45%, #9a5cf0 78%, #8b3ff0 100%);
+  background: #9047ff;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -1215,7 +1216,7 @@
   padding: 16px;
   border: none;
   border-radius: 20px;
-  background: linear-gradient(135deg, #9d5cf5 0%, #7c3aed 100%);
+  background: #9047ff;
   cursor: pointer;
   transition: filter 0.15s ease;
 }
