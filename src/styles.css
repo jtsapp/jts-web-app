@@ -1629,17 +1629,17 @@ body {
 
 /* Сайдбар */
 .sb {
-  width: 260px;
+  width: 272px;
   flex-shrink: 0;
   background: #ffffff;
   border-right: 1px solid #efeef4;
   display: flex;
   flex-direction: column;
-  padding: 22px 16px;
-  gap: 14px;
+  padding: 30px 17px 30px 15px;
+  gap: 20px;
 }
 .sb__logo {
-  padding: 4px 8px 6px;
+  padding: 0 2px;
 }
 .sb__logo .logo {
   color: var(--purple);
@@ -1648,26 +1648,26 @@ body {
 .sb__profile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  border: 1px solid #eee;
-  background: #fff;
-  border-radius: 16px;
-  padding: 10px 12px;
+  gap: 10px;
+  border: none;
+  background: #f8f8f8;
+  border-radius: 12px;
+  padding: 10px;
   cursor: pointer;
   text-align: left;
   transition: background 0.15s ease;
 }
 .sb__profile:hover {
-  background: #faf9ff;
+  background: #f1eeff;
 }
 .sb__avatar {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: #9047ff;
   color: #fff;
   font-weight: 800;
-  font-size: 16px;
+  font-size: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1681,7 +1681,7 @@ body {
   line-height: 1.25;
 }
 .sb__profile-text b {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
   overflow: hidden;
@@ -1689,7 +1689,7 @@ body {
   white-space: nowrap;
 }
 .sb__profile-text span {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--muted);
 }
 .sb__profile-chev {
@@ -1700,69 +1700,70 @@ body {
 .sb__nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
 }
 .sb__item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: none;
   background: transparent;
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 20px;
+  padding: 16px 20px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  color: #6c6b78;
+  color: var(--purple);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
+.sb__item svg {
+  flex-shrink: 0;
+}
 .sb__item:hover {
   background: #f5f2fe;
-  color: var(--purple);
 }
-.sb__item--active {
-  background: #9047ff;
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.28);
-}
+.sb__item--active,
 .sb__item--active:hover {
   background: #9047ff;
   color: #fff;
 }
 
+/* Ранг стоит под навигацией с отступом ~56px (как в Figma):
+   .sb gap 20 между детьми → 20 + spacer 36 = 56. */
 .sb__spacer {
-  flex: 1;
+  flex: 0 0 16px;
 }
 .sb__role {
   display: flex;
   align-items: center;
-  gap: 10px;
-  border: 1px solid #eee;
-  border-radius: 16px;
-  padding: 8px 12px;
+  gap: 12px;
+  border: none;
+  background: #f8f8f8;
+  border-radius: 50px;
+  padding: 11px 12px;
 }
 .sb__role-ic {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
   flex-shrink: 0;
 }
 .sb__role-text {
   flex: 1;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
 }
 .sb__role-lvl {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: #9047ff;
   color: #fff;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
@@ -1837,6 +1838,202 @@ body {
   color: var(--muted);
   max-width: 42ch;
   line-height: 1.5;
+}
+
+/* ======================================================= */
+/* =====  ИНТЕРЬЕР КОРОЛЕВСТВА (Figma 1458:161)  ========= */
+/* ======================================================= */
+
+/* Верхняя полоса */
+.ki-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  padding: 12px 32px;
+  border-bottom: 1px solid #f0eff5;
+}
+.ki-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: #9047ff;
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 8px 16px 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ki-back:hover {
+  background: #7f34f2;
+}
+.ki-top__castle {
+  color: #9047ff;
+  display: inline-flex;
+}
+.ki-crumb {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.ki-crumb b {
+  font-size: 16px;
+  font-weight: 700;
+  color: #9047ff;
+}
+.ki-crumb span {
+  font-size: 14px;
+  color: #9d9d9d;
+}
+
+/* Центральная колонка */
+.ki {
+  max-width: 542px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+/* Герой королевства */
+.ki-hero {
+  position: relative;
+  height: 150px;
+  border-radius: 40px;
+  overflow: hidden;
+  background: #efe8ff;
+}
+.ki-hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ki-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(23, 19, 38, 0.55) 0%,
+    rgba(23, 19, 38, 0.15) 45%,
+    rgba(23, 19, 38, 0) 70%
+  );
+}
+.ki-hero__meta {
+  position: absolute;
+  left: 30px;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #ffffff;
+}
+.ki-hero__king {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ki-hero__av {
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+.ki-hero__level {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.ki-hero__ring {
+  position: absolute;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.29);
+  border: 3px solid #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ki-hero__ring b {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Лента юнитов + HTML-слоты (данные из ВЕБ-Админа) */
+.ki-feed {
+  display: flex;
+  flex-direction: column;
+}
+.ki-group {
+  margin-top: 16px;
+}
+.ki-group:first-child {
+  margin-top: 12px;
+}
+.ki-unit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  border-radius: 24px;
+  padding: 8px 20px 8px 8px;
+  background: var(--row, #5b6efa);
+  color: #ffffff;
+}
+.ki-unit__ic {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.ki-unit__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.ki-unit__meta b {
+  font-size: 16px;
+  font-weight: 700;
+}
+.ki-unit__meta span {
+  font-size: 14px;
+  font-weight: 700;
+}
+.ki-unit__count {
+  flex-shrink: 0;
+  background: #ffffff;
+  color: var(--row, #5b6efa);
+  border-radius: 40px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 700;
+}
+/* Нативное место под HTML-контент («Печеньки») из ВЕБ-Админа */
+.ki-slot {
+  margin-top: 8px;
+  min-height: 116px;
+  border-radius: 20px;
+  background: #ffffff;
 }
 
 /* Адаптив: сайдбар сворачивается в верхнюю строку на узких экранах */

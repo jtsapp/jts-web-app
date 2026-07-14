@@ -228,6 +228,7 @@ export default function App() {
           kingdom={kingdom}
           userName={name}
           userLevel={userLevel}
+          onNav={handleNav}
           onBack={() => setScreen('kingdom')}
         />
       )
