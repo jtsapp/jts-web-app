@@ -45,15 +45,23 @@ ready(function(){
  // Сердечки — локальные для урока: сам урок ставит 3 при загрузке страницы и
  // снимает по одному за неверный ответ, поэтому при перезаходе в урок или
  // переходе на следующий они снова полные. Backend-пул сердец тут НЕ трогаем.
- var correct=0, wrong=0, ended=false;
+ var correct=0, wrong=0, streakN=0, ended=false;
  function post(m){try{window.parent.postMessage(Object.assign({jts:'lesson'},m),'*');}catch(e){}}
+ var fbH=document.getElementById('fbH'), fbS=document.getElementById('fbS');
+ // Бейдж монеты «+10» в футер фидбэка (виден только на верном ответе — по CSS).
  var dfoot=document.getElementById('dfoot');
+ var dIn=dfoot&&dfoot.querySelector('.in'), btnMain=document.getElementById('btnMain');
+ if(dIn&&btnMain){var coin=document.createElement('div');coin.className='jts-coin';
+  coin.innerHTML='<img src="/assets/lesson/coin.png" alt=""><span>+10</span>';dIn.insertBefore(coin,btnMain);}
  if(dfoot){new MutationObserver(function(){
   var ok=dfoot.classList.contains('ok'), bad=dfoot.classList.contains('bad');
   if(!ok&&!bad){dfoot.__jts=0;return;}
   if(dfoot.__jts)return; dfoot.__jts=1;
-  if(ok){correct++; call('POST','/mobile/coins/grant?amount=10');}
-  else{wrong++;
+  if(ok){correct++; streakN++; call('POST','/mobile/coins/grant?amount=10');
+   // Текст фидбэка по дизайну: «Молодец! / Правильных ответов подряд: N».
+   if(fbH)fbH.textContent='Молодец!';
+   if(fbS)fbS.textContent='Правильных ответов подряд: '+streakN;
+  }else{wrong++; streakN=0;
    // 3-я ошибка → сердца кончились → сразу экран «Жизней больше нет».
    if(!ended && hN && (hN.textContent||'').trim()==='0'){ended=true; post({outcome:'fail',correct:correct,wrong:wrong});}
   }
@@ -66,10 +74,6 @@ ready(function(){
   try{var as=sEnd.querySelectorAll('a');for(var i=0;i<as.length;i++){if((as[i].href||'').indexOf('/lessons/')>=0){next=as[i].href;break;}}}catch(e){}
   post({outcome:'success',correct:correct,wrong:wrong,accuracy:acc,nextUrl:next});
  }).observe(sEnd,{attributes:true,attributeFilter:['class']});}
- var fbS=document.getElementById('fbS');
- if(fbS){new MutationObserver(function(){var t=fbS.textContent||'';
-  if(/XP/.test(t)){fbS.textContent=t.replace(/\\+(\\d+)\\s*XP/g,'+$1 🪙').replace(/\\bXP\\b/g,'монет');}
- }).observe(fbS,{childList:true,characterData:true,subtree:true});}
 });
 })();</script>`
 
@@ -108,7 +112,13 @@ export async function GET(request, { params }) {
     // Прячем нижний бренд-футер тропы; прогресс-бар урока делаем сплошным
     // фиолетовым (#9047ff) вместо градиента violet→blue.
     `<style>div.wrap{display:none!important}` +
-    `.pbar i{background:#9047ff!important}.pbar i:before{display:none!important}</style>` +
+    `.pbar i{background:#9047ff!important}.pbar i:before{display:none!important}` +
+    // Верный ответ: кнопка «Продолжить» фиолетовая (а не зелёная) + бейдж монеты.
+    `.dfoot.ok #btnMain{background:#9047ff!important;box-shadow:0 4px 0 #6a2ee0!important;color:#fff!important}` +
+    `.jts-coin{display:none;align-items:center;gap:5px;background:#fff;border-radius:12px;` +
+    `padding:5px 11px 5px 7px;font-weight:900;font-size:15px;color:#1a1730;box-shadow:0 2px 8px rgba(23,19,38,.1);flex:none}` +
+    `.jts-coin img{width:22px;height:22px;display:block}` +
+    `.dfoot.ok .jts-coin{display:inline-flex}</style>` +
     bridge
 
   html = /<head[^>]*>/i.test(html)
