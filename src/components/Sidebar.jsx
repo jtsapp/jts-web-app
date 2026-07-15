@@ -6,6 +6,7 @@ import {
   PracticeIcon,
   TutorIcon,
   LessonsIcon,
+  IeltsIcon,
   ChevronRightIcon,
 } from './icons.jsx'
 
@@ -14,6 +15,7 @@ const NAV = [
   { key: 'practice', label: 'nav.practice', Icon: PracticeIcon },
   { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
   { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
+  { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
 ]
 
 // Левый сайдбар обучающей зоны (статичная оболочка).
