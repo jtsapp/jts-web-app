@@ -2000,9 +2000,157 @@ body {
 /* Скролл-область королевства: прокручивается только баннер+тропа внутри этого
    фикс-высотного окна, а «Назад», сайдбар и футер остаются на месте. */
 .km-scroll {
+  position: relative;
   height: calc(100vh - 120px);
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* Экран завершения урока (успех / «жизней больше нет») поверх области урока */
+.le-over {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.le-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  width: 100%;
+  max-width: 860px;
+}
+.le-art {
+  width: 340px;
+  height: 340px;
+  max-width: 42%;
+  object-fit: contain;
+  border-radius: 28px;
+  flex-shrink: 0;
+}
+.le-over--ok .le-art {
+  background: linear-gradient(160deg, #7b5cff, #5a2ea8);
+}
+.le-over--fail .le-art {
+  background: linear-gradient(160deg, #ff6a5a, #d33636);
+}
+.le-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 340px;
+  max-width: 46%;
+}
+.le-pct {
+  align-self: flex-start;
+  background: #2fbf5a;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 900;
+  padding: 8px 22px;
+  border-radius: 16px;
+}
+.le-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--purple);
+}
+.le-sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: -8px;
+}
+.le-stats {
+  display: flex;
+  gap: 14px;
+  margin: 6px 0 4px;
+}
+.le-stat {
+  flex: 1;
+  border: 1px solid #efeef4;
+  border-radius: 16px;
+  padding: 14px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.le-stat b {
+  font-size: 22px;
+  font-weight: 900;
+}
+.le-stat span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.le-stat--wrong b {
+  color: #e5484d;
+}
+.le-stat--right b {
+  color: #2fbf5a;
+}
+.le-btn {
+  background: var(--purple);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 15px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s ease;
+}
+.le-btn:hover {
+  filter: brightness(1.06);
+}
+.le-again {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 4px;
+}
+.le-again:hover {
+  color: var(--ink);
+}
+.le-heart {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #f1e2e2;
+  border-radius: 16px;
+  padding: 10px 16px;
+  font-size: 22px;
+  box-shadow: 0 6px 18px rgba(23, 19, 38, 0.06);
+}
+.le-heart span {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+@media (max-width: 720px) {
+  .le-card {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .le-art,
+  .le-info {
+    max-width: 88%;
+    width: 300px;
+  }
 }
 
 /* Арт-шапка королевства (сцена + король + уровень + кольцо прогресса) */

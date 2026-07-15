@@ -37,7 +37,7 @@ ready(function(){
  function tok(){try{return window.__JTS_TOKEN__||(window.parent&&window.parent.__JTS_TOKEN__)||'';}catch(e){return '';}}
  function call(method,path){var t=tok(); if(!t) return Promise.resolve(null);
   return fetch(API+path,{method:method,headers:{Authorization:'Bearer '+t}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
- var hudXp=document.getElementById('hudXp');
+ var hudXp=document.getElementById('hudXp'), hN=document.getElementById('hN');
  // Монеты в верхнем HUD не показываем — только сердечко. XP-пилюлю прячем,
  // а её локальный апдейтер гасим (монеты всё равно начисляются в backend).
  try{window.hudXpSet=function(){};}catch(e){}
@@ -45,13 +45,27 @@ ready(function(){
  // Сердечки — локальные для урока: сам урок ставит 3 при загрузке страницы и
  // снимает по одному за неверный ответ, поэтому при перезаходе в урок или
  // переходе на следующий они снова полные. Backend-пул сердец тут НЕ трогаем.
+ var correct=0, wrong=0, ended=false;
+ function post(m){try{window.parent.postMessage(Object.assign({jts:'lesson'},m),'*');}catch(e){}}
  var dfoot=document.getElementById('dfoot');
  if(dfoot){new MutationObserver(function(){
   var ok=dfoot.classList.contains('ok'), bad=dfoot.classList.contains('bad');
   if(!ok&&!bad){dfoot.__jts=0;return;}
   if(dfoot.__jts)return; dfoot.__jts=1;
-  if(ok){call('POST','/mobile/coins/grant?amount=10');}
+  if(ok){correct++; call('POST','/mobile/coins/grant?amount=10');}
+  else{wrong++;
+   // 3-я ошибка → сердца кончились → сразу экран «Жизней больше нет».
+   if(!ended && hN && (hN.textContent||'').trim()==='0'){ended=true; post({outcome:'fail',correct:correct,wrong:wrong});}
+  }
  }).observe(dfoot,{attributes:true,attributeFilter:['class']});}
+ // Успех: урок дошёл до экрана завершения (#sEnd).
+ var sEnd=document.getElementById('sEnd');
+ if(sEnd){new MutationObserver(function(){
+  if(ended || !sEnd.classList.contains('on')) return; ended=true;
+  var acc=(correct+wrong)>0?Math.round(correct/(correct+wrong)*100):100, next='';
+  try{var as=sEnd.querySelectorAll('a');for(var i=0;i<as.length;i++){if((as[i].href||'').indexOf('/lessons/')>=0){next=as[i].href;break;}}}catch(e){}
+  post({outcome:'success',correct:correct,wrong:wrong,accuracy:acc,nextUrl:next});
+ }).observe(sEnd,{attributes:true,attributeFilter:['class']});}
  var fbS=document.getElementById('fbS');
  if(fbS){new MutationObserver(function(){var t=fbS.textContent||'';
   if(/XP/.test(t)){fbS.textContent=t.replace(/\\+(\\d+)\\s*XP/g,'+$1 🪙').replace(/\\bXP\\b/g,'монет');}

@@ -95,6 +95,40 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // true, когда в iframe открыта страница урока (а не тропа): прячем арт-шапку
   // и показываем HUD урока (сердца/прогресс) без верхнего клипа.
   const [inLesson, setInLesson] = useState(false)
+  // Экран завершения урока: null | {outcome:'success'|'fail', correct, wrong, accuracy, nextUrl}
+  // Присылается мостом из iframe через postMessage.
+  const [lessonEnd, setLessonEnd] = useState(null)
+
+  // Перезайти в текущий урок (сброс сердец до 3).
+  const retryLesson = () => {
+    setLessonEnd(null)
+    try {
+      frameRef.current?.contentWindow?.location.reload()
+    } catch {
+      /* ignore */
+    }
+  }
+  // Перейти на следующий урок (или перезагрузить, если ссылки нет).
+  const goNextLesson = (url) => {
+    setLessonEnd(null)
+    try {
+      if (url) frameRef.current.contentWindow.location.href = url
+      else frameRef.current?.contentWindow?.location.reload()
+    } catch {
+      /* ignore */
+    }
+  }
+
+  useEffect(() => {
+    const onMsg = (e) => {
+      const d = e.data
+      if (d && d.jts === 'lesson' && (d.outcome === 'success' || d.outcome === 'fail')) {
+        setLessonEnd(d)
+      }
+    }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [])
 
   const fitFrame = () => {
     const iframe = frameRef.current
@@ -141,6 +175,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       roRef.current.disconnect()
       roRef.current = null
     }
+    setLessonEnd(null) // новый урок/страница загрузилась — убираем экран конца
     fitFrame()
     const iframe = frameRef.current
     let doc
@@ -255,6 +290,60 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               onLoad={handleFrameLoad}
             />
           </div>
+
+          {/* Экран завершения урока поверх области урока */}
+          {lessonEnd && lessonEnd.outcome === 'success' && (
+            <div className="le-over le-over--ok">
+              <div className="le-card">
+                <img className="le-art" src="/assets/lesson/success.png" alt="" />
+                <div className="le-info">
+                  <div className="le-pct">{lessonEnd.accuracy ?? 100}%</div>
+                  <h2 className="le-title">
+                    {(lessonEnd.accuracy ?? 100) >= 80
+                      ? 'Отличный результат'
+                      : (lessonEnd.accuracy ?? 100) >= 50
+                        ? 'Хорошая работа'
+                        : 'Урок пройден'}
+                  </h2>
+                  <div className="le-sub">Урок пройден</div>
+                  <div className="le-stats">
+                    <div className="le-stat le-stat--wrong">
+                      <b>{lessonEnd.wrong ?? 0}</b>
+                      <span>Неверных ответов</span>
+                    </div>
+                    <div className="le-stat le-stat--right">
+                      <b>{lessonEnd.correct ?? 0}</b>
+                      <span>Верных ответов</span>
+                    </div>
+                  </div>
+                  <button className="le-btn" onClick={() => goNextLesson(lessonEnd.nextUrl)}>
+                    Перейти на следующий урок
+                  </button>
+                  <button className="le-again" onClick={retryLesson}>
+                    Пройти снова
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {lessonEnd && lessonEnd.outcome === 'fail' && (
+            <div className="le-over le-over--fail">
+              <div className="le-card">
+                <img className="le-art" src="/assets/lesson/fail.png" alt="" />
+                <div className="le-info">
+                  <div className="le-heart">
+                    💔<span>Жизней больше нет</span>
+                  </div>
+                  <h2 className="le-title">Ой-ой</h2>
+                  <div className="le-sub">Видимо, нужно попробовать ещё раз</div>
+                  <button className="le-btn" onClick={retryLesson}>
+                    Попробовать ещё раз
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </LearningLayout>
