@@ -2,31 +2,54 @@ import { useState, useEffect } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronRightIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { computeKingdoms, roleForLevel } from '../kingdoms.js'
-import { getLearningPath, countProgress } from '../api.js'
+import { KINGDOMS, computeKingdoms, roleForLevel } from '../kingdoms.js'
+import { getLessonModules } from '../api.js'
+
+// Пройденные уроки королевства хранит сам hosted-урок в
+// localStorage['jts-{level}-done'] (массив кодов). iframe проксируется на наш
+// origin, поэтому localStorage общий — читаем длину напрямую.
+function readDone(level) {
+  if (typeof window === 'undefined') return 0
+  try {
+    const a = JSON.parse(window.localStorage.getItem('jts-' + String(level).toLowerCase() + '-done') || '[]')
+    return Array.isArray(a) ? a.length : 0
+  } catch {
+    return 0
+  }
+}
 
 export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom, onNav }) {
   const { t } = useI18n()
-  const [progress, setProgress] = useState({}) // id -> {done,total}
+  // Всего уроков по уровню — из API «Уроки (контент)» (lessonCount модуля).
+  const [countByLevel, setCountByLevel] = useState({})
 
   useEffect(() => {
     if (!token) return
     let alive = true
-    computeKingdoms(userLevel)
-      .filter((k) => !k.comingSoon)
-      .forEach((k) => {
-        getLearningPath(k.level, token)
-          .then((p) => alive && setProgress((prev) => ({ ...prev, [k.id]: countProgress(p) })))
-          .catch(() => {})
+    getLessonModules(token)
+      .then((mods) => {
+        if (!alive) return
+        const m = {}
+        ;(Array.isArray(mods) ? mods : []).forEach((x) => {
+          m[String(x.level).toUpperCase()] = x.lessonCount || 0
+        })
+        setCountByLevel(m)
       })
+      .catch(() => {})
     return () => {
       alive = false
     }
-  }, [token, userLevel])
+  }, [token])
 
   const kingdoms = computeKingdoms(userLevel)
-  const role = roleForLevel(userLevel)
   const current = kingdoms.find((k) => k.current) || kingdoms[0]
+
+  // Реальный прогресс каждого королевства: пройдено (localStorage) / всего (API).
+  const progress = {}
+  for (const k of kingdoms) {
+    const total = countByLevel[String(k.level).toUpperCase()] || 0
+    progress[k.id] = { done: total ? Math.min(readDone(k.level), total) : readDone(k.level), total }
+  }
 
   // Пройденные королевства и общий прогресс
   const completed = kingdoms.filter((k) => {
@@ -43,6 +66,11 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
     }
   }
   const overall = sumTotal > 0 ? Math.round((sumDone / sumTotal) * 100) : 0
+
+  // Статус меняется по числу пройденных королевств: 0 → Купец (A1), после
+  // Sunhaven → Рыцарь (A2), и т.д. (роль уровня следующего королевства).
+  const statusIdx = Math.min(completed.length, KINGDOMS.length - 1)
+  const role = roleForLevel(KINGDOMS[statusIdx].level)
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" onNav={onNav} onProfile={() => {}}>
