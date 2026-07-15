@@ -32,6 +32,7 @@ from livekit.agents import (
     Agent,
     AgentSession,
     APIConnectOptions,
+    DEFAULT_API_CONNECT_OPTIONS,
     JobContext,
     JobExecutorType,
     RoomInputOptions,
@@ -1869,7 +1870,7 @@ AZURE_KZ_FEMALE = "kk-KZ-AigulNeural"
 FEMALE_TUTORS = {"gentle", "coach"}
 
 
-def _cascade_tts(profile: LearnerProfile):
+def _cascade_tts_azure(profile: LearnerProfile):
     """Azure Neural TTS — one voice per session, picked by tutor + language.
     Replaces ElevenLabs (cost): $15/1M chars vs $50/1M. Multilingual voices
     voice en+ru; kz sessions use a dedicated kk-KZ voice (same one-language-per-
@@ -1894,6 +1895,148 @@ def _cascade_tts(profile: LearnerProfile):
     return azure.TTS(speech_key=key, speech_region=region, voice=voice)
 
 
+# Gemini-TTS reuses TUTOR_VOICE — the same voice names the gemini-live stack
+# used — so a persona keeps ONE voice across en/ru/kz. That is the point of this
+# path: Azure has no multilingual kk-KZ voice, so on a kz session Dexter has to
+# switch to kk-KZ-Daulet and stops sounding like Dexter.
+DEFAULT_GEMINI_TTS_VOICE = "Puck"
+DEFAULT_GEMINI_TTS_MODEL = "gemini-2.5-flash-tts"
+
+# Gemini-TTS synthesises audio with an LLM, so a long tutor turn takes far
+# longer to generate than Azure's vocoder does. livekit's default request
+# timeout is 10s (DEFAULT_API_CONNECT_OPTIONS), which a normal reply blows
+# through: the stream dies mid-word and the turn is lost with
+#   "TTS failed after partial audio was already sent to the user, skip retrying"
+# Streaming means the learner is already hearing audio while this runs, so a
+# long ceiling costs nothing when synthesis is healthy — it only stops a
+# working stream from being killed. Retries are pointless once partial audio
+# has shipped (livekit skips them), so the ceiling is the only lever.
+GEMINI_TTS_CONN = APIConnectOptions(
+    max_retry=3,
+    retry_interval=1.0,
+    timeout=float(os.getenv("GEMINI_TTS_TIMEOUT_SEC", "45")),
+)
+
+
+class _GeminiTTS(google.TTS):
+    """google.TTS pinned to GEMINI_TTS_CONN.
+
+    TTS.__init__ has no conn_options parameter, and the timeout is only read at
+    the stream()/synthesize() call — which AgentSession makes itself, supplying
+    its own APIConnectOptions from SessionConnectOptions. Overriding both entry
+    points is the only injection point that does not reach into private modules
+    (SessionConnectOptions is not exported from livekit.agents).
+
+    The override is UNCONDITIONAL on purpose. The first attempt only replaced
+    conn_options when it was DEFAULT_API_CONNECT_OPTIONS by identity, on the
+    assumption AgentSession passed no value; it passes an equal-but-distinct
+    object, so the branch never fired and the 10s default silently stood. Only
+    AgentSession calls these, so there is no caller whose value we are stealing.
+    """
+
+    _logged_override = False
+
+    def _log_once(self, entry: str, incoming: APIConnectOptions) -> None:
+        # The "timeout=45s" on the session line only proves the constant exists;
+        # it printed happily while the override was dead. This proves the swap
+        # actually happens, and shows what AgentSession was going to use.
+        if not _GeminiTTS._logged_override:
+            _GeminiTTS._logged_override = True
+            logger.info(
+                "Gemini TTS conn_options: %s incoming=%.0fs -> applied=%.0fs",
+                entry, incoming.timeout, GEMINI_TTS_CONN.timeout,
+            )
+
+    def stream(self, *, conn_options=DEFAULT_API_CONNECT_OPTIONS):
+        self._log_once("stream", conn_options)
+        return super().stream(conn_options=GEMINI_TTS_CONN)
+
+    def synthesize(self, text, *, conn_options=DEFAULT_API_CONNECT_OPTIONS):
+        self._log_once("synthesize", conn_options)
+        return super().synthesize(text, conn_options=GEMINI_TTS_CONN)
+
+
+def _gemini_tts_credentials() -> dict[str, Any] | None:
+    """Service-account JSON out of GOOGLE_CREDENTIALS_JSON (one env var beats
+    shipping a key file into the image). None → the plugin falls back to ADC via
+    GOOGLE_APPLICATION_CREDENTIALS, which is how local dev usually authenticates.
+    """
+    raw = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"GOOGLE_CREDENTIALS_JSON is not valid JSON: {e}") from e
+
+
+def _cascade_tts_gemini(profile: LearnerProfile):
+    """Gemini-TTS via Cloud Text-to-Speech. Streams by default (use_streaming)
+    and emits 24 kHz PCM, so it drops into the same slot as Azure.
+
+    NOT the same product as the gemini-2.5-flash-preview-tts on ai.google.dev:
+    that one is the Developer API (GEMINI_API_KEY) and cannot stream. This is
+    Cloud TTS (texttospeech.googleapis.com) and needs a GCP service account.
+
+    Billed per TOKEN, not per character, so the Azure per-char numbers do not
+    convert. Measure a real session before trusting any estimate.
+    """
+    voice = TUTOR_VOICE.get(profile.tutor, DEFAULT_GEMINI_TTS_VOICE)
+    voice = os.getenv("GEMINI_TTS_VOICE_OVERRIDE", voice)
+    model = os.getenv("GEMINI_TTS_MODEL", DEFAULT_GEMINI_TTS_MODEL)
+    # The plugin defaults to location="global". The worker runs in us-east, so a
+    # regional endpoint may cut round-trip enough to keep playout fed — audio
+    # arriving late starves the buffer and the tutor stutters mid-sentence even
+    # though nothing errors. Env-tunable so both can be measured without a
+    # redeploy; "global" restores the plugin default.
+    location = os.getenv("GEMINI_TTS_LOCATION", "us-central1").strip()
+    creds = _gemini_tts_credentials()
+    logger.info(
+        "Cascade TTS: Gemini (%s, voice=%s, creds=%s, timeout=%.0fs, loc=%s), lang=%s, tutor=%s",
+        model, voice, "env" if creds else "ADC", GEMINI_TTS_CONN.timeout, location,
+        profile.lang, profile.tutor or "<none>",
+    )
+    kwargs: dict[str, Any] = {
+        "model_name": model,
+        "voice_name": voice,
+        "location": location,
+    }
+    if creds:
+        kwargs["credentials_info"] = creds
+    return _GeminiTTS(**kwargs)
+
+
+def _cascade_tts(profile: LearnerProfile):
+    """Cascade TTS, picked by CASCADE_TTS so both legs can be measured on live
+    sessions and rolled back with one env var.
+
+    azure (default) — per-character billing, streaming, in production today.
+      One voice per LANGUAGE: a persona changes timbre on a kz session.
+    gemini — per-token billing, streaming, one voice across all languages.
+      Needs GOOGLE_CREDENTIALS_JSON (or ADC). Kazakh output quality is the open
+      question — Azure has dedicated kk-KZ voices, Gemini-TTS is multilingual and
+      its kk coverage is unverified. Listen to a kz session before switching it on
+      by default.
+    """
+    which = (os.getenv("CASCADE_TTS") or "azure").strip().lower()
+    if which not in ("azure", "gemini"):
+        raise RuntimeError(
+            f"CASCADE_TTS={which!r} not recognised (expected 'azure' or 'gemini')"
+        )
+    # kz always falls back to Azure: Gemini-TTS is multilingual with no dedicated
+    # Kazakh voice and testers rated its kk output unintelligible, while Azure has
+    # native kk-KZ voices. The cost is that a kz session breaks the one-voice-per-
+    # persona property this whole path exists for — an intelligible stranger beats
+    # Dexter reciting mush. Flip GEMINI_TTS_ALLOW_KZ=1 to re-measure after a model
+    # update.
+    if which == "gemini" and profile.lang == "kz" and os.getenv("GEMINI_TTS_ALLOW_KZ") != "1":
+        logger.info("Cascade TTS: kz session → Azure (Gemini kk quality unusable)")
+        return _cascade_tts_azure(profile)
+    if which == "gemini":
+        return _cascade_tts_gemini(profile)
+    return _cascade_tts_azure(profile)
+
+
 def build_cascade_session(
     profile: LearnerProfile,
     persona_temperature: float,
@@ -1914,7 +2057,7 @@ def build_cascade_session(
             "(pip install -r requirements.txt)"
         )
     logger.info("Session stack: CASCADE (Soniox STT / bundled Silero VAD / lib/llm brain / %s TTS)",
-                "Soniox" if profile.lang == "kz" else "ElevenLabs")
+                (os.getenv("CASCADE_TTS") or "azure").strip().lower())
 
     # Soniox auto-detects across en/ru/kz with code-switching. (soniox.STT takes
     # no `model` kwarg — config via params.) Pass the key explicitly.

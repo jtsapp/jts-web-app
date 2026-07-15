@@ -1,5 +1,6 @@
 import '../styles.css'
 import '../tutor.css'
+import '../ielts.css'
 import Providers from './providers.jsx'
 
 export const metadata = {

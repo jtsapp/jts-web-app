@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
@@ -10,6 +10,13 @@ import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
+import LessonsPage from './screens/LessonsPage.jsx'
+import IeltsPage from './screens/IeltsPage.jsx'
+import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
+import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
+import IeltsReadingPage from './screens/IeltsReadingPage.jsx'
+import IeltsSpeakingPage from './screens/IeltsSpeakingPage.jsx'
+import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
 import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
@@ -38,11 +45,17 @@ export default function App() {
   // Стартуем сразу с главного меню «Обучение» (регистрацию/тест можно пройти
   // позже). ?screen=… по-прежнему переопределяет начальный экран — так экраны
   // тьютора остаются достижимы для отладки/диплинков.
-  const [screen, setScreen] = useState(() => {
-    // Гард для SSR-пререндера Next: window есть только в браузере.
-    if (typeof window === 'undefined') return 'kingdom'
-    return new URLSearchParams(window.location.search).get('screen') || 'kingdom'
-  })
+  //
+  // Читать ?screen= прямо в useState нельзя: на сервере window нет, поэтому
+  // SSR отрисовал бы 'kingdom', а первый рендер клиента — экран из query, и
+  // React ронял бы hydration mismatch. Поэтому первый рендер везде одинаковый
+  // ('kingdom'), а диплинк применяется эффектом уже после гидратации.
+  const [screen, setScreen] = useState('kingdom')
+
+  useEffect(() => {
+    const deepLink = new URLSearchParams(window.location.search).get('screen')
+    if (deepLink) setScreen(deepLink)
+  }, [])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login'
@@ -112,7 +125,8 @@ export default function App() {
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen('tutor-welcome')
-    // lessons — пока заглушка
+    else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'ielts') setScreen('ielts')
   }
 
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
@@ -121,13 +135,23 @@ export default function App() {
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen(tutorHome)
-    // lessons — пока заглушка
+    else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'ielts') setScreen('ielts')
   }
 
   // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
   function handleSkip() {
     setError('')
     setScreen('test-intro')
+  }
+
+  // Общие пропсы всех экранов IELTS: сайдбар + внутренняя навигация по секциям.
+  const ieltsProps = {
+    userLevel,
+    userName: name,
+    token,
+    onNav: handleNav,
+    onGo: setScreen,
   }
 
   async function handleResend() {
@@ -223,6 +247,22 @@ export default function App() {
           onNav={handleNav}
         />
       )
+    case 'lessons':
+      return <LessonsPage userLevel={userLevel} userName={name} onNav={handleNav} />
+    // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
+    // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
+    case 'ielts':
+      return <IeltsPage {...ieltsProps} />
+    case 'ielts-writing':
+      return <IeltsWritingPage {...ieltsProps} />
+    case 'ielts-listening':
+      return <IeltsListeningPage {...ieltsProps} />
+    case 'ielts-reading':
+      return <IeltsReadingPage {...ieltsProps} />
+    case 'ielts-speaking':
+      return <IeltsSpeakingPage {...ieltsProps} />
+    case 'ielts-progress':
+      return <IeltsProgressPage {...ieltsProps} />
     case 'kingdom-interior':
       return (
         <KingdomInteriorPage
