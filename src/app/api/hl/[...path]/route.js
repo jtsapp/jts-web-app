@@ -91,7 +91,10 @@ export async function GET(request, { params }) {
 
   const inject =
     `<base href="/api/hl/${dir}">` +
-    `<style>div.wrap{display:none!important}</style>` +
+    // Прячем нижний бренд-футер тропы; прогресс-бар урока делаем сплошным
+    // фиолетовым (#9047ff) вместо градиента violet→blue.
+    `<style>div.wrap{display:none!important}` +
+    `.pbar i{background:#9047ff!important}.pbar i:before{display:none!important}</style>` +
     bridge
 
   html = /<head[^>]*>/i.test(html)

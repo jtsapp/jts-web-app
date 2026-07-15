@@ -111,18 +111,23 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     const isIndex = !!doc.getElementById('path')
     setInLesson(!isIndex)
     if (isIndex) {
-      // Тропа: клип сверху (CSS top:-205 прячет шапку «Speakout»), высота под
-      // весь контент → страница скроллится, арт-шапка уезжает.
+      // Тропа: масштаб .82 + клип сверху (CSS top:-205 прячет шапку «Speakout»),
+      // высота под весь контент → страница скроллится, арт-шапка уезжает.
+      iframe.style.transform = ''
+      iframe.style.width = ''
       iframe.style.top = ''
       const hc = doc.documentElement.scrollHeight
       iframe.style.height = hc + 'px'
       if (stage) stage.style.height = Math.max(240, Math.round(hc * SCALE - CLIP)) + 'px'
     } else {
-      // Урок: без клипа (top:0) — видна его полоска с сердцами/прогрессом.
-      // Подгоняем так, чтобы урок целиком помещался в видимую область.
+      // Урок: без масштаба и клипа — рисуем в натуральную величину и точно под
+      // видимую область (урок сам свёрстан как один экран: HUD сверху, контент,
+      // липкая кнопка «Проверить/Продолжить» снизу — теперь она видна).
+      iframe.style.transform = 'none'
+      iframe.style.width = '100%'
       iframe.style.top = '0px'
       const vis = scroll ? scroll.clientHeight : 600
-      iframe.style.height = Math.round(vis / SCALE) + 'px'
+      iframe.style.height = vis + 'px'
       if (stage) stage.style.height = vis + 'px'
     }
   }
