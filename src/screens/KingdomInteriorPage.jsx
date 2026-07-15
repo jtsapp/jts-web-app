@@ -99,23 +99,23 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // Присылается мостом из iframe через postMessage.
   const [lessonEnd, setLessonEnd] = useState(null)
 
-  // Перезайти в текущий урок (сброс сердец до 3).
+  // Перезайти в текущий урок (сброс сердец до 3). Оверлей НЕ убираем здесь —
+  // он держится до загрузки урока (handleFrameLoad снимет), чтобы при переходе
+  // ничего не мелькало (встроенный экран завершения и т.п.).
   const retryLesson = () => {
-    setLessonEnd(null)
     try {
       frameRef.current?.contentWindow?.location.reload()
     } catch {
-      /* ignore */
+      setLessonEnd(null)
     }
   }
   // Перейти на следующий урок (или перезагрузить, если ссылки нет).
   const goNextLesson = (url) => {
-    setLessonEnd(null)
     try {
       if (url) frameRef.current.contentWindow.location.href = url
       else frameRef.current?.contentWindow?.location.reload()
     } catch {
-      /* ignore */
+      setLessonEnd(null)
     }
   }
 

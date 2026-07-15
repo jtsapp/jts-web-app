@@ -113,6 +113,9 @@ export async function GET(request, { params }) {
     // фиолетовым (#9047ff) вместо градиента violet→blue.
     `<style>div.wrap{display:none!important}` +
     `.pbar i{background:#9047ff!important}.pbar i:before{display:none!important}` +
+    // Встроенный экран завершения урока прячем — его заменяет нативный оверлей
+    // JTS (детекция по классу .on всё равно работает при display:none).
+    `#sEnd{display:none!important}` +
     // Верный ответ: кнопка «Продолжить» фиолетовая (а не зелёная) + бейдж монеты.
     `.dfoot.ok #btnMain{background:#9047ff!important;box-shadow:0 4px 0 #6a2ee0!important;color:#fff!important}` +
     `.jts-coin{display:none;align-items:center;gap:5px;background:#fff;border-radius:12px;` +
