@@ -182,9 +182,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Арт-шапка королевства + hosted-сайт Speakout-модуля в iframe */}
+      {/* Арт-шапка королевства + hosted-сайт Speakout-модуля в iframe.
+          Обёрнуты в .km-scroll — прокручивается только эта область (баннер
+          уезжает вместе с тропой), а «Назад», сайдбар и футер остаются. */}
       {!loading && !error && module?.indexUrl && (
-        <>
+        <div className="km-scroll">
           <div
             className="kh-hero"
             style={{
@@ -228,7 +230,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               onLoad={handleFrameLoad}
             />
           </div>
-        </>
+        </div>
       )}
     </LearningLayout>
   )
