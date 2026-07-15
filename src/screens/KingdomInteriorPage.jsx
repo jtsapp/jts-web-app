@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -78,6 +78,70 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
   const { loading, error, module } = state
 
+  // Прокси /api/hl отдаёт урочный контент с нашего origin, поэтому высоту
+  // контента можно измерить и подогнать под неё iframe:
+  //   • тропа (index) → iframe в полную высоту контента: внутренней прокрутки
+  //     нет, скроллится вся страница, и арт-шапка уезжает вместе с ней;
+  //   • страница урока → высота с вьюпорт (центрируется по 100dvh) — отдаём
+  //     стили CSS, чтобы урок не проваливался вниз.
+  const SCALE = 0.82
+  const CLIP = 205
+  const frameRef = useRef(null)
+  const roRef = useRef(null)
+
+  const fitFrame = () => {
+    const iframe = frameRef.current
+    if (!iframe) return
+    let doc
+    try {
+      doc = iframe.contentDocument
+    } catch {
+      return
+    }
+    if (!doc || !doc.documentElement) return
+    const stage = iframe.parentElement
+    const isIndex = !!doc.getElementById('path')
+    if (isIndex) {
+      const hc = doc.documentElement.scrollHeight
+      iframe.style.height = hc + 'px'
+      if (stage) stage.style.height = Math.max(240, Math.round(hc * SCALE - CLIP)) + 'px'
+    } else {
+      iframe.style.height = ''
+      if (stage) stage.style.height = ''
+    }
+  }
+
+  const handleFrameLoad = () => {
+    if (roRef.current) {
+      roRef.current.disconnect()
+      roRef.current = null
+    }
+    fitFrame()
+    const iframe = frameRef.current
+    let doc
+    try {
+      doc = iframe && iframe.contentDocument
+    } catch {
+      doc = null
+    }
+    if (!doc) return
+    // Тропа достраивается JS-ом hosted-страницы уже после load — до-меряем
+    // через ResizeObserver, пока высота не устаканится.
+    try {
+      const ro = new ResizeObserver(fitFrame)
+      ro.observe(doc.documentElement)
+      roRef.current = ro
+    } catch {
+      /* ResizeObserver может отсутствовать — не критично */
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (roRef.current) roRef.current.disconnect()
+    }
+  }, [])
+
   return (
     <LearningLayout
       userName={userName}
@@ -156,10 +220,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               вьюпорта → арт-шапка уезжает при прокрутке. */}
           <div className="km-stage">
             <iframe
+              ref={frameRef}
               className="km-frame"
               src={`/api/hl${new URL(module.indexUrl).pathname}`}
               title={module.title}
               allow="autoplay; fullscreen; microphone"
+              onLoad={handleFrameLoad}
             />
           </div>
         </>
