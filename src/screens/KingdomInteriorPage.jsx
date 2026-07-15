@@ -99,6 +99,21 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // Присылается мостом из iframe через postMessage.
   const [lessonEnd, setLessonEnd] = useState(null)
 
+  // Реальный прогресс королевства: пройденные уроки хранит сам hosted-урок в
+  // localStorage['jts-{level}-done'] (массив кодов). iframe проксируется на наш
+  // origin, поэтому localStorage общий — читаем длину напрямую.
+  const doneKey = 'jts-' + String(level).toLowerCase() + '-done'
+  const readDone = () => {
+    if (typeof window === 'undefined') return 0
+    try {
+      const a = JSON.parse(window.localStorage.getItem(doneKey) || '[]')
+      return Array.isArray(a) ? a.length : 0
+    } catch {
+      return 0
+    }
+  }
+  const [doneCount, setDoneCount] = useState(0)
+
   // Перезайти в текущий урок (сброс сердец до 3). Оверлей НЕ убираем здесь —
   // он держится до загрузки урока (handleFrameLoad снимет), чтобы при переходе
   // ничего не мелькало (встроенный экран завершения и т.п.).
@@ -145,6 +160,8 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     const isIndex = !!doc.getElementById('path')
     setInLesson(!isIndex)
     if (isIndex) {
+      // Обновляем реальный прогресс королевства (мог измениться после урока).
+      setDoneCount(readDone())
       // Тропа: масштаб .82 + клип сверху (CSS top:-205 прячет шапку «Speakout»),
       // высота под весь контент → страница скроллится, арт-шапка уезжает.
       iframe.style.transform = ''
@@ -269,7 +286,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               <div className="kh-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
             </div>
             <div className="kh-hero__ring">
-              <ProgressRing done={0} total={module.lessonCount || 0} />
+              <ProgressRing
+                done={Math.min(doneCount, module.lessonCount || 0)}
+                total={module.lessonCount || 0}
+              />
             </div>
           </div>
 
