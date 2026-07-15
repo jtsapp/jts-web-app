@@ -31,18 +31,18 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import { getTutor } from './tutor/tutors.js'
-import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
+import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { useI18n } from './i18n.jsx'
 
 export default function App() {
   const { t } = useI18n()
-  // Стартуем сразу с главного меню «Обучение» (регистрацию/тест можно пройти
-  // позже). ?screen=… по-прежнему переопределяет начальный экран — так экраны
+  // Стартуем с самого начала — экран приветствия и далее регистрация/онбординг.
+  // ?screen=… по-прежнему переопределяет начальный экран — так экраны
   // тьютора остаются достижимы для отладки/диплинков.
   const [screen, setScreen] = useState(() => {
     // Гард для SSR-пререндера Next: window есть только в браузере.
-    if (typeof window === 'undefined') return 'kingdom'
-    return new URLSearchParams(window.location.search).get('screen') || 'kingdom'
+    if (typeof window === 'undefined') return 'welcome'
+    return new URLSearchParams(window.location.search).get('screen') || 'welcome'
   })
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -86,6 +86,16 @@ export default function App() {
         }
       }
       setToken(tok || null)
+      // Уровень берём сразу из профиля на backend — тест на определение
+      // уровня после входа не показываем.
+      if (tok) {
+        try {
+          const lvl = await getLanguageLevel(tok)
+          if (lvl) setUserLevel(lvl)
+        } catch (e) {
+          console.warn('Не удалось получить уровень из профиля:', e)
+        }
+      }
       setScreen('success')
     } catch (e) {
       setError(e.message || t('err.otp'))
@@ -144,10 +154,8 @@ export default function App() {
     case 'welcome':
       return (
         <WelcomePage
-          // DEV: вход временно сломан — обе кнопки пропускают авторизацию.
-          // Вернуть на () => setScreen('chat'), когда починим вход.
-          onRegister={() => setScreen('tutor-welcome')}
-          onLogin={() => setScreen('tutor-welcome')}
+          onRegister={() => setScreen('chat')}
+          onLogin={() => setScreen('phone')}
         />
       )
     case 'chat':
@@ -185,7 +193,8 @@ export default function App() {
         />
       )
     case 'success':
-      return <SuccessPage onDone={() => setScreen('test-intro')} />
+      // После входа уровень уже взят из профиля — минуем тест, сразу в обучение.
+      return <SuccessPage onDone={() => setScreen('kingdom')} />
     case 'test-intro':
       return (
         <LevelTestIntroPage
