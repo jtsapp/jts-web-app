@@ -57,6 +57,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     ;(async () => {
       try {
         const authToken = await withTimeout(getPracticeToken(token), 15000)
+        // Кладём токен в глобал приложения: мост урока (в same-origin iframe
+        // /api/hl) читает его как window.parent.__JTS_TOKEN__, чтобы ходить в
+        // backend за сердцами/монетами.
+        if (typeof window !== 'undefined') window.__JTS_TOKEN__ = authToken
         const all = await withTimeout(getLessonModules(authToken), 15000)
         if (!alive) return
         // Берём модуль этого королевства (по CEFR-уровню) — тот, что можно открыть.
@@ -88,6 +92,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const CLIP = 205
   const frameRef = useRef(null)
   const roRef = useRef(null)
+  // true, когда в iframe открыта страница урока (а не тропа): прячем арт-шапку
+  // и показываем HUD урока (сердца/прогресс) без верхнего клипа.
+  const [inLesson, setInLesson] = useState(false)
 
   const fitFrame = () => {
     const iframe = frameRef.current
@@ -100,14 +107,23 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     }
     if (!doc || !doc.documentElement) return
     const stage = iframe.parentElement
+    const scroll = iframe.closest('.km-scroll')
     const isIndex = !!doc.getElementById('path')
+    setInLesson(!isIndex)
     if (isIndex) {
+      // Тропа: клип сверху (CSS top:-205 прячет шапку «Speakout»), высота под
+      // весь контент → страница скроллится, арт-шапка уезжает.
+      iframe.style.top = ''
       const hc = doc.documentElement.scrollHeight
       iframe.style.height = hc + 'px'
       if (stage) stage.style.height = Math.max(240, Math.round(hc * SCALE - CLIP)) + 'px'
     } else {
-      iframe.style.height = ''
-      if (stage) stage.style.height = ''
+      // Урок: без клипа (top:0) — видна его полоска с сердцами/прогрессом.
+      // Подгоняем так, чтобы урок целиком помещался в видимую область.
+      iframe.style.top = '0px'
+      const vis = scroll ? scroll.clientHeight : 600
+      iframe.style.height = Math.round(vis / SCALE) + 'px'
+      if (stage) stage.style.height = vis + 'px'
     }
   }
 
@@ -188,7 +204,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {!loading && !error && module?.indexUrl && (
         <div className="km-scroll">
           <div
-            className="kh-hero"
+            className={'kh-hero' + (inLesson ? ' is-hidden' : '')}
             style={{
               backgroundImage: `url(/assets/world/hero/${String(level).toLowerCase()}.png), linear-gradient(135deg, #7c4dff, #4a2b9e)`,
             }}

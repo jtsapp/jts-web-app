@@ -2006,6 +2006,9 @@ body {
 }
 
 /* Арт-шапка королевства (сцена + король + уровень + кольцо прогресса) */
+.kh-hero.is-hidden {
+  display: none;
+}
 .kh-hero {
   position: relative;
   /* Ширина = колонка уроков hosted-сайта (--col 560px × scale .82 − паддинги)

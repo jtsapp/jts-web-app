@@ -22,6 +22,42 @@ const UPSTREAM = 'https://files-api.iqra.space'
 // Ограничиваем прокси только Speakout-курсами и только .html (SSRF-защита).
 const ALLOWED_PREFIX = 'development/speakout/'
 
+// Мост урок↔JTS-backend (внедряется только на страницах уроков).
+// Урок сам считает XP/сердца локально; здесь мы:
+//   • превращаем XP-пилюлю в монеты (гасим hudXpSet, показываем coins из balance);
+//   • на верный ответ → начисляем монеты (/mobile/coins/grant), на неверный →
+//     тратим сердце (/mobile/lives/spend), и показываем реальные значения;
+//   • перекрашиваем текст фидбэка «+10 XP» → «+10 🪙».
+// Токен берём из window.__JTS_TOKEN__ (кладёт родитель, iframe same-origin).
+const LESSON_BRIDGE = `<script>(function(){
+function ready(fn){document.readyState!=='loading'?fn():document.addEventListener('DOMContentLoaded',fn);}
+ready(function(){
+ var hud=document.querySelector('.hud'); if(!hud) return;
+ var API=window.__JTS_API__||'https://dev-server.justtostudy.kz';
+ function tok(){try{return window.__JTS_TOKEN__||(window.parent&&window.parent.__JTS_TOKEN__)||'';}catch(e){return '';}}
+ function call(method,path){var t=tok(); if(!t) return Promise.resolve(null);
+  return fetch(API+path,{method:method,headers:{Authorization:'Bearer '+t}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
+ var hudXp=document.getElementById('hudXp'), hN=document.getElementById('hN');
+ function setCoins(c){if(hudXp&&c!=null)hudXp.textContent='🪙 '+c;}
+ function setHearts(l){if(hN&&l!=null)hN.textContent=l;}
+ try{window.hudXpSet=function(){};}catch(e){}
+ setCoins(0);
+ call('GET','/mobile/balance/info').then(function(b){if(!b)return;setHearts(b.lives);setCoins(b.coins);});
+ var dfoot=document.getElementById('dfoot');
+ if(dfoot){new MutationObserver(function(){
+  var ok=dfoot.classList.contains('ok'), bad=dfoot.classList.contains('bad');
+  if(!ok&&!bad){dfoot.__jts=0;return;}
+  if(dfoot.__jts)return; dfoot.__jts=1;
+  if(bad){call('POST','/mobile/lives/spend').then(function(b){if(b)setHearts(b.lives);});}
+  else{call('POST','/mobile/coins/grant?amount=10').then(function(res){if(res&&res.coins!=null)setCoins(res.coins);});}
+ }).observe(dfoot,{attributes:true,attributeFilter:['class']});}
+ var fbS=document.getElementById('fbS');
+ if(fbS){new MutationObserver(function(){var t=fbS.textContent||'';
+  if(/XP/.test(t)){fbS.textContent=t.replace(/\\+(\\d+)\\s*XP/g,'+$1 🪙').replace(/\\bXP\\b/g,'монет');}
+ }).observe(fbS,{childList:true,characterData:true,subtree:true});}
+});
+})();</script>`
+
 export async function GET(request, { params }) {
   const { path } = await params
   const rel = (Array.isArray(path) ? path : []).join('/')
@@ -47,9 +83,15 @@ export async function GET(request, { params }) {
   // База = директория текущей страницы В ПРОСТРАНСТВЕ ПРОКСИ, чтобы вся
   // относительная навигация оставалась на /api/hl/… (и футер был скрыт везде).
   const dir = rel.slice(0, rel.lastIndexOf('/') + 1)
+  // На страницах уроков подключаем мост: XP-пилюлю превращаем в монеты и
+  // связываем сердца/монеты урока с backend (родитель кладёт токен в
+  // window.__JTS_TOKEN__ уже same-origin iframe).
+  const bridge = rel.includes('/lessons/') ? LESSON_BRIDGE : ''
+
   const inject =
     `<base href="/api/hl/${dir}">` +
-    `<style>div.wrap{display:none!important}</style>`
+    `<style>div.wrap{display:none!important}</style>` +
+    bridge
 
   html = /<head[^>]*>/i.test(html)
     ? html.replace(/<head[^>]*>/i, (m) => m + inject)
