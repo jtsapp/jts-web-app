@@ -37,20 +37,20 @@ ready(function(){
  function tok(){try{return window.__JTS_TOKEN__||(window.parent&&window.parent.__JTS_TOKEN__)||'';}catch(e){return '';}}
  function call(method,path){var t=tok(); if(!t) return Promise.resolve(null);
   return fetch(API+path,{method:method,headers:{Authorization:'Bearer '+t}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
- var hudXp=document.getElementById('hudXp'), hN=document.getElementById('hN');
- function setHearts(l){if(hN&&l!=null)hN.textContent=l;}
+ var hudXp=document.getElementById('hudXp');
  // Монеты в верхнем HUD не показываем — только сердечко. XP-пилюлю прячем,
  // а её локальный апдейтер гасим (монеты всё равно начисляются в backend).
  try{window.hudXpSet=function(){};}catch(e){}
  if(hudXp)hudXp.style.display='none';
- call('GET','/mobile/balance/info').then(function(b){if(!b)return;setHearts(b.lives);});
+ // Сердечки — локальные для урока: сам урок ставит 3 при загрузке страницы и
+ // снимает по одному за неверный ответ, поэтому при перезаходе в урок или
+ // переходе на следующий они снова полные. Backend-пул сердец тут НЕ трогаем.
  var dfoot=document.getElementById('dfoot');
  if(dfoot){new MutationObserver(function(){
   var ok=dfoot.classList.contains('ok'), bad=dfoot.classList.contains('bad');
   if(!ok&&!bad){dfoot.__jts=0;return;}
   if(dfoot.__jts)return; dfoot.__jts=1;
-  if(bad){call('POST','/mobile/lives/spend').then(function(b){if(b)setHearts(b.lives);});}
-  else{call('POST','/mobile/coins/grant?amount=10');}
+  if(ok){call('POST','/mobile/coins/grant?amount=10');}
  }).observe(dfoot,{attributes:true,attributeFilter:['class']});}
  var fbS=document.getElementById('fbS');
  if(fbS){new MutationObserver(function(){var t=fbS.textContent||'';
