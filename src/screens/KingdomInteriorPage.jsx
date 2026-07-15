@@ -147,16 +147,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
             </div>
           </div>
 
-          {/* Клип сверху (.km-stage overflow:hidden + iframe со сдвигом вверх)
-              детерминированно прячет собственную шапку hosted-сайта (brandbar +
-              баннер «Speakout · A1»). iframe высотой с вьюпорт — чтобы страницы
-              уроков (они центрируются по 100dvh) отображались нормально, а не
-              уезжали вниз. Сцена чуть выше вьюпорта → контент выходит за
-              контейнер, и арт-шапка уезжает вверх при прокрутке. */}
+          {/* Курс (тропа + уроки) отдаётся через свой прокси-роут /api/hl —
+              он прячет нижний бренд-футер hosted-сайта и держит навигацию на
+              нашем origin (footer скрыт на всех страницах). Клип сверху
+              (.km-stage overflow:hidden + сдвиг iframe) прячет верхнюю шапку
+              «Speakout». iframe высотой с вьюпорт — чтобы страницы уроков
+              (центрируются по 100dvh) не уезжали вниз; сцена чуть выше
+              вьюпорта → арт-шапка уезжает при прокрутке. */}
           <div className="km-stage">
             <iframe
               className="km-frame"
-              src={module.indexUrl}
+              src={`/api/hl${new URL(module.indexUrl).pathname}`}
               title={module.title}
               allow="autoplay; fullscreen; microphone"
             />
