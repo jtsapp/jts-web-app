@@ -179,6 +179,14 @@ export function getSavedWords(token) {
   return authGet('/mobile/saved-words', token)
 }
 
+// Уровень CEFR из профиля пользователя (GET /user/language-level).
+// Бэкенд отдаёт enum как JSON-строку ("A1"); подстраховываемся и на объект.
+export async function getLanguageLevel(token) {
+  const data = await authGet('/user/language-level', token)
+  if (typeof data === 'string') return data
+  return data?.languageLevel || data?.level || data?.value || null
+}
+
 // Сохранить уровень CEFR в профиль пользователя (query-param + Bearer).
 export async function saveLanguageLevel(token, level) {
   const url = `${BASE}/user/language-level?languageLevel=${encodeURIComponent(level)}`
