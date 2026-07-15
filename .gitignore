@@ -6,3 +6,11 @@ out/
 .env
 .env*.local
 .vercel
+.env*
+
+# Python bytecode from the LiveKit agent
+__pycache__/
+*.pyc
+
+# Machine-local Claude Code settings (absolute paths, not shareable)
+.claude/
