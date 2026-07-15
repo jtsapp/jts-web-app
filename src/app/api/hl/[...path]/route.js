@@ -38,18 +38,19 @@ ready(function(){
  function call(method,path){var t=tok(); if(!t) return Promise.resolve(null);
   return fetch(API+path,{method:method,headers:{Authorization:'Bearer '+t}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
  var hudXp=document.getElementById('hudXp'), hN=document.getElementById('hN');
- function setCoins(c){if(hudXp&&c!=null)hudXp.textContent='🪙 '+c;}
  function setHearts(l){if(hN&&l!=null)hN.textContent=l;}
+ // Монеты в верхнем HUD не показываем — только сердечко. XP-пилюлю прячем,
+ // а её локальный апдейтер гасим (монеты всё равно начисляются в backend).
  try{window.hudXpSet=function(){};}catch(e){}
- setCoins(0);
- call('GET','/mobile/balance/info').then(function(b){if(!b)return;setHearts(b.lives);setCoins(b.coins);});
+ if(hudXp)hudXp.style.display='none';
+ call('GET','/mobile/balance/info').then(function(b){if(!b)return;setHearts(b.lives);});
  var dfoot=document.getElementById('dfoot');
  if(dfoot){new MutationObserver(function(){
   var ok=dfoot.classList.contains('ok'), bad=dfoot.classList.contains('bad');
   if(!ok&&!bad){dfoot.__jts=0;return;}
   if(dfoot.__jts)return; dfoot.__jts=1;
   if(bad){call('POST','/mobile/lives/spend').then(function(b){if(b)setHearts(b.lives);});}
-  else{call('POST','/mobile/coins/grant?amount=10').then(function(res){if(res&&res.coins!=null)setCoins(res.coins);});}
+  else{call('POST','/mobile/coins/grant?amount=10');}
  }).observe(dfoot,{attributes:true,attributeFilter:['class']});}
  var fbS=document.getElementById('fbS');
  if(fbS){new MutationObserver(function(){var t=fbS.textContent||'';
