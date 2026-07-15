@@ -116,6 +116,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       iframe.style.transform = ''
       iframe.style.width = ''
       iframe.style.top = ''
+      iframe.style.minHeight = ''
       const hc = doc.documentElement.scrollHeight
       iframe.style.height = hc + 'px'
       if (stage) stage.style.height = Math.max(240, Math.round(hc * SCALE - CLIP)) + 'px'
@@ -126,6 +127,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       iframe.style.transform = 'none'
       iframe.style.width = '100%'
       iframe.style.top = '0px'
+      // Гасим CSS min-height (884px из индексного варианта) — иначе iframe
+      // выше видимой сцены и липкая кнопка снизу уходит под обрез.
+      iframe.style.minHeight = '0px'
       const vis = scroll ? scroll.clientHeight : 600
       iframe.style.height = vis + 'px'
       if (stage) stage.style.height = vis + 'px'
