@@ -3,7 +3,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronRightIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { KINGDOMS, computeKingdoms, roleForLevel } from '../kingdoms.js'
-import { getLessonModules } from '../api.js'
+import { getLessonModules, getPracticeToken } from '../api.js'
 
 // Пройденные уроки королевства хранит сам hosted-урок в
 // localStorage['jts-{level}-done'] (массив кодов). iframe проксируется на наш
@@ -24,9 +24,11 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
   const [countByLevel, setCountByLevel] = useState({})
 
   useEffect(() => {
-    if (!token) return
     let alive = true
-    getLessonModules(token)
+    // getPracticeToken отдаёт токен пользователя, а без логина — демо-токен,
+    // поэтому lessonCount (всего уроков) грузится и в режиме «Пропустить».
+    getPracticeToken(token)
+      .then((authToken) => getLessonModules(authToken))
       .then((mods) => {
         if (!alive) return
         const m = {}
