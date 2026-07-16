@@ -166,9 +166,24 @@ export const DICT = {
     'scen.title': 'Сценарии',
     'scen.heading':
       'Протестируй свой Speaking в разных ситуациях,\nи получи личный разбор ошибок от тьютора',
-    'scen.desc':
+    // По ключу на сценарий: 'scen.desc.<scenarioId>'.
+    'scen.desc.visa-interview':
+      'собеседование в посольстве США: визовый офицер, каверзные вопросы и вердикт в конце',
+    'scen.desc.hotel-check-in':
+      'заселение в отель: бронь, накладка с номером и вежливые просьбы на английском',
+    'scen.desc.asking-directions':
+      'спрашиваем дорогу у прохожего: предлоги места, ориентиры и пересказ маршрута',
+    'scen.desc.ordering-coffee':
+      'заказ в кофейне в час пик: вежливые формулировки, уточнения и исправление ошибки бариста',
+    'scen.desc.job-interview':
       'практикуем собеседование на английском: рассказ о себе, вопросы рекрутёру и ответы на них',
+    'scen.desc.household-store':
+      'закупка для новой квартиры: как объяснить предмет, название которого не знаешь',
+    'scen.desc.doctors-office':
+      'приём у врача: описываем симптомы точно — ache, pain, hurt, sore — и говорим о длительности',
     'scen.start': 'Начать разговор',
+    'scen.locked': 'Откроется, когда пройдёшь «{label}» — это следующий шаг истории',
+    'scen.lockedBtn': 'Закрыто',
     'scen.verdictPass': 'Задача пройдена',
     'scen.verdictFail': 'Задача не пройдена',
     'scen.verdictDone': 'Готово',
@@ -336,9 +351,23 @@ export const DICT = {
     'scen.title': 'Сценарийлер',
     'scen.heading':
       'Speaking-іңді әртүрлі жағдайда сынап,\nтьютордан қателердің жеке талдауын ал',
-    'scen.desc':
+    'scen.desc.visa-interview':
+      'АҚШ елшілігіндегі сұхбат: виза офицері, қитұрқы сұрақтар және соңында шешім',
+    'scen.desc.hotel-check-in':
+      'қонақүйге тіркелу: брондау, нөмірмен шатасу және ағылшынша сыпайы өтініштер',
+    'scen.desc.asking-directions':
+      'жолды сұраймыз: орын предлогтары, бағдарлар және маршрутты қайталап айту',
+    'scen.desc.ordering-coffee':
+      'кофеханада тапсырыс: сыпайы тіркестер, нақтылау және бариста қатесін түзету',
+    'scen.desc.job-interview':
       'ағылшынша сұхбатты жаттықтырамыз: өзің туралы әңгіме, рекрутёрге сұрақтар және оларға жауаптар',
+    'scen.desc.household-store':
+      'жаңа пәтерге керек-жарақ: атауын білмейтін затты қалай түсіндіру',
+    'scen.desc.doctors-office':
+      'дәрігер қабылдауы: симптомдарды дәл сипаттаймыз — ache, pain, hurt, sore — және ұзақтығы',
     'scen.start': 'Әңгімені бастау',
+    'scen.locked': '«{label}» өткен соң ашылады — бұл әңгіменің келесі қадамы',
+    'scen.lockedBtn': 'Жабық',
     'scen.verdictPass': 'Тапсырма орындалды',
     'scen.verdictFail': 'Тапсырма орындалмады',
     'scen.verdictDone': 'Дайын',
@@ -504,9 +533,23 @@ export const DICT = {
     'scen.title': 'Scenarios',
     'scen.heading':
       'Test your speaking in different situations\nand get personal mistake feedback from the tutor',
-    'scen.desc':
+    'scen.desc.visa-interview':
+      'a U.S. embassy interview: a consular officer, sharp follow-ups and a verdict at the end',
+    'scen.desc.hotel-check-in':
+      'checking into a hotel: your booking, a room mix-up and polite requests in English',
+    'scen.desc.asking-directions':
+      'asking a local the way: prepositions of place, landmarks and repeating the route back',
+    'scen.desc.ordering-coffee':
+      'ordering in a rush-hour coffee shop: polite frames, clarifying and fixing the barista’s mistake',
+    'scen.desc.job-interview':
       'we practise a job interview in English: talking about yourself, questions from the recruiter and answers to them',
+    'scen.desc.household-store':
+      'stocking an empty apartment: how to describe an object when you don’t know its name',
+    'scen.desc.doctors-office':
+      'a doctor’s visit: describing symptoms precisely — ache, pain, hurt, sore — and how long',
     'scen.start': 'Start conversation',
+    'scen.locked': 'Unlocks once you pass “{label}” — it’s the next step of the story',
+    'scen.lockedBtn': 'Locked',
     'scen.verdictPass': 'Task complete',
     'scen.verdictFail': 'Task not passed',
     'scen.verdictDone': 'Done',

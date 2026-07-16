@@ -1979,6 +1979,21 @@
   width: 100%;
   height: 44px;
 }
+/* Заперто до прохождения предыдущего сценария: карточка глушится, но остаётся
+   читаемой — она должна дразнить, а не исчезать. */
+.t-scen__card--locked .t-scen__img {
+  filter: grayscale(1) brightness(0.9);
+}
+.t-scen__card--locked:hover .t-scen__img {
+  filter: grayscale(1) brightness(0.9);
+}
+.t-scen__card--locked .t-scen__label {
+  color: var(--t-muted);
+}
+.t-scen__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 /* ------------------- История разговора (чат) --------------------- */
 .t-chat {

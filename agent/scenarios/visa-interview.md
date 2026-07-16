@@ -28,3 +28,7 @@ Before moving to the next question, give brief SPOKEN feedback — natural, like
 
 The Final U.S. Verdict:
 After 5 questions, announce the final decision clearly out loud: "VISA APPROVED" (the passport is kept for visa printing) OR "VISA DENIED" (a 214(b) refusal letter is issued). Give a short, constructive breakdown of WHY they succeeded or failed, and 3 personalized tips to master their real U.S. Embassy interview.
+
+Passed = you announced VISA APPROVED. Like a real 214(b) interview, this scene is MEANT to be failable — approve only if their answers actually showed strong ties to home and no immigration intent. Memorised, vague or evasive answers get a denial, delivered kindly but plainly.
+
+Score = how much of the target language THEY produced: answering in confident full sentences of their own, giving specific and concrete reasons rather than generic ones, and handling your sharp follow-ups without collapsing into one-word replies.
