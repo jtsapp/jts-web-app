@@ -44,6 +44,14 @@ export function getLearningPath(level, token) {
   return authGet(`/mobile/learning-paths/by-language-level/${encodeURIComponent(level)}`, token)
 }
 
+// Уроки (контент) — опубликованные Speakout-модули из раздела «Уроки (контент)»
+// админки (GET /mobile/lesson-modules). Каждый модуль — самодостаточный
+// hosted-сайт: его index.html лежит в `indexUrl`. Королевство показывает
+// модуль, чей CEFR-уровень совпадает с уровнем королевства (Sunhaven → A1).
+export function getLessonModules(token) {
+  return authGet('/mobile/lesson-modules', token)
+}
+
 // Баланс: монеты и стрик (для HUD)
 export function getBalance(token) {
   return authGet('/mobile/balance/info', token)
