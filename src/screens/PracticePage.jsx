@@ -17,8 +17,10 @@ import {
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 
-// URL hosted-библиотек (self-contained HTML в public/practice)
-const BOOKS_URL = '/practice/books.html'
+// URL hosted-библиотек. Книжки (109 МБ) хостятся на бэкенде (dev-admin S3,
+// files-api) — в репозиторий такой файл не влезает; сказки (2.9 МБ) лежат в public.
+const BOOKS_URL =
+  'https://files-api.iqra.space/development/development/practice/books.html'
 const TALES_URL = '/practice/fairytales.html'
 
 // Просмотры: 1331 → «1 331», 12000 → «12 тыс», 3400000 → «3.4 млн»
