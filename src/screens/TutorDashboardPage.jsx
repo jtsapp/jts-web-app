@@ -4,6 +4,7 @@ import Footer from '../components/Footer.jsx'
 import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import { MenuIcon, MicIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
+import { SCENARIOS, DASHBOARD_SCENARIO_COUNT } from '../tutor/scenarios.js'
 
 const ONBOARDED_KEY = 'jts_tutor_onboarded'
 
@@ -15,10 +16,8 @@ const LESSONS = [
   { num: '03', title: 'Практика Present Continious', desc: LESSON_DESC },
   { num: '04', title: 'Практика Present Continious', desc: LESSON_DESC },
 ]
-// Пока рабочий только один сценарий — Visa Interview.
-const SCENARIOS = [
-  { id: 'visa-interview', label: 'U.S. Visa Interview', img: '/tutor/visa-interview.jpg' },
-]
+// Виджет-превью: полный список — на странице «Сценарии» по кнопке «Посмотреть все».
+const DASH_SCENARIOS = SCENARIOS.slice(0, DASHBOARD_SCENARIO_COUNT)
 
 export default function TutorDashboardPage({
   user,
@@ -144,7 +143,7 @@ export default function TutorDashboardPage({
               <p className="t-panel__sub">{t('dash.scenariosSub')}</p>
 
               <div className="t-scenarios">
-                {SCENARIOS.map((s) => (
+                {DASH_SCENARIOS.map((s) => (
                   <button
                     className="t-scenario"
                     key={s.id}
@@ -155,7 +154,7 @@ export default function TutorDashboardPage({
                       className="t-scenario__img"
                       style={{ backgroundImage: `url(${s.img})` }}
                     >
-                      <span className="t-scenario__badge">💼</span>
+                      <span className="t-scenario__badge">{s.badge}</span>
                     </span>
                     <span className="t-scenario__label">{s.label}</span>
                   </button>

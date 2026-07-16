@@ -36,6 +36,7 @@ import TutorPracticeResultPage from './screens/TutorPracticeResultPage.jsx'
 import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
+import ProfilePage from './screens/ProfilePage.jsx'
 import { getTutor } from './tutor/tutors.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
@@ -69,6 +70,7 @@ export default function App() {
         if (session) {
           setToken(session.token)
           if (session.name) setName(session.name)
+          if (session.phone) setPhone(session.phone)
           if (session.languageLevel) setUserLevel(session.languageLevel)
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
@@ -169,6 +171,15 @@ export default function App() {
       }
     }
     setScreen('kingdom')
+  }
+
+  // Выход из аккаунта: чистим токен и возвращаем на welcome.
+  function handleLogout() {
+    clearToken()
+    setToken(null)
+    setName('')
+    setPhone('')
+    setScreen('welcome')
   }
 
   // Навигация по левому сайдбару обучающей зоны.
@@ -300,10 +311,23 @@ export default function App() {
           userName={name}
           token={token}
           onNav={handleNav}
+          onProfile={() => setScreen('profile')}
           onOpenKingdom={(k) => {
             setKingdom(k)
             setScreen('kingdom-interior')
           }}
+        />
+      )
+    case 'profile':
+      return (
+        <ProfilePage
+          userName={name}
+          userLevel={userLevel}
+          userPhone={phone}
+          token={token}
+          onNav={handleNav}
+          onLogout={handleLogout}
+          onUpdateName={setName}
         />
       )
     case 'practice':
@@ -313,10 +337,11 @@ export default function App() {
           userName={name}
           token={token}
           onNav={handleNav}
+          onProfile={() => setScreen('profile')}
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} onNav={handleNav} />
+      return <LessonsPage userLevel={userLevel} userName={name} onNav={handleNav} onProfile={() => setScreen('profile')} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
@@ -337,6 +362,7 @@ export default function App() {
           kingdom={kingdom}
           userName={name}
           userLevel={userLevel}
+          token={token}
           onNav={handleNav}
           onBack={() => setScreen('kingdom')}
         />
