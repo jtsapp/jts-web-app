@@ -28,6 +28,23 @@ function formatPhone(raw) {
   return `+7 ${s.slice(1, 4)} ${s.slice(4, 7)} ${s.slice(7, 9)} ${s.slice(9, 11)}`
 }
 
+// Градиент hero-сцены по рангу — самодостаточный фон, не зависящий от
+// тяжёлых hero-картинок (они приезжают отдельным PR). Если PNG всё же есть,
+// он ложится верхним слоем поверх градиента.
+const HERO_GRADIENT = {
+  merchant: 'linear-gradient(135deg, #ffce9e 0%, #ff8f6b 100%)',
+  knight: 'linear-gradient(135deg, #a6e3a1 0%, #3f9d6b 100%)',
+  baron: 'linear-gradient(135deg, #9ed8ef 0%, #4f7fe0 100%)',
+  viscount: 'linear-gradient(135deg, #b7a6ff 0%, #6a5cff 100%)',
+  king: 'linear-gradient(135deg, #d8b6ff 0%, #9047ff 100%)',
+  emperor: 'linear-gradient(135deg, #ffd27a 0%, #c1440e 100%)',
+  lord: 'linear-gradient(135deg, #ffd27a 0%, #c1440e 100%)',
+}
+
+function heroGradientFor(level) {
+  return HERO_GRADIENT[roleForLevel(level).key] || HERO_GRADIENT.merchant
+}
+
 // Роль для следующего по порядку CEFR-уровня (для правой «монеты» прогресса).
 function nextRoleFor(level) {
   const idx = levelIndex(level)
@@ -234,7 +251,11 @@ export default function ProfilePage({
         <section className="pf-hero">
           <div
             className="pf-hero__scene"
-            style={{ backgroundImage: `url(/assets/world/hero/${(userLevel || 'a1').toLowerCase()}.png)` }}
+            style={{
+              // PNG-шапка (если есть) ложится поверх градиента; при её отсутствии
+              // виден только градиент — экран самодостаточен.
+              backgroundImage: `url(/assets/world/hero/${(userLevel || 'a1').toLowerCase()}.png), ${heroGradientFor(userLevel)}`,
+            }}
           />
           <div className="pf-hero__sheet">
             <div className="pf-avatar">
