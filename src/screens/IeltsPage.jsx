@@ -65,9 +65,9 @@ const BANDS = [
   { band: '8.0+', cefr: 'C2' },
 ]
 
-export default function IeltsPage({ userLevel = 'A1', userName, onNav, onGo }) {
+export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, onGo }) {
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={() => {}}>
       <div className="ie">
         <header className="ie__head">
           <div>

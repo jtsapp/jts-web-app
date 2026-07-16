@@ -234,7 +234,7 @@ export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, o
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={() => {}}>
       <div className="ie ie--narrow">
         <button type="button" className="ie-back" onClick={() => onGo?.('ielts')}>
           ← К секциям IELTS

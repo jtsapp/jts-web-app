@@ -6,6 +6,7 @@ export default function LearningLayout({
   userName,
   userLevel,
   active = 'learning',
+  token,
   onNav,
   onProfile,
   children,
@@ -17,6 +18,7 @@ export default function LearningLayout({
           userName={userName}
           userLevel={userLevel}
           active={active}
+          token={token}
           onNav={onNav}
           onProfile={onProfile}
         />

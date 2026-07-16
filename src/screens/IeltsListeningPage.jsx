@@ -89,7 +89,7 @@ export default function IeltsListeningPage({ userLevel = 'A1', userName, token, 
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={() => {}}>
       <div className="ie ie--narrow">
         <button
           type="button"

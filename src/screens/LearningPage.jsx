@@ -45,7 +45,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
   const overall = sumTotal > 0 ? Math.round((sumDone / sumTotal) * 100) : 0
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="learning" onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="lp">
         {/* Центр: заголовок + сетка миров */}
         <div className="lp__center">

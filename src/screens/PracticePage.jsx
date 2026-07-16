@@ -144,7 +144,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="pp pp--enter">
         {/* ───── Центр: ленты контента ───── */}
         <div className="pp__center">

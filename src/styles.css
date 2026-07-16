@@ -4056,3 +4056,40 @@ body {
   color: #9047ff;
   font-weight: 700;
 }
+
+/* ── Сайдбар: стрик + монеты (данные из бэкенда /mobile/balance/info) ── */
+.sb__balance {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  padding: 10px 14px 2px;
+}
+.sb__stat {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.sb__flame {
+  width: 26px;
+  height: 26px;
+  /* серое пламя, пока стрик сегодня не подтверждён (как в мобильном HUD) */
+  filter: grayscale(1) brightness(1.35);
+}
+.sb__flame--hot {
+  filter: none;
+}
+.sb__coin {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.sb__stat-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: #7a7580;
+  font-variant-numeric: tabular-nums;
+}
+.sb__stat-num--hot,
+.sb__stat-num--coin {
+  color: #ea4f4f;
+}
