@@ -58,6 +58,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Form controls don't inherit the page font — browsers give them their own
+   default (Arial). The tutor section set `.t-app button { font-family: inherit }`
+   for itself, so the same shared Sidebar rendered PT Root UI inside the tutor
+   and Arial everywhere else: the profile card is a <button>. Global, so a
+   control looks like the page it sits on wherever it is used. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 .app {
   min-height: 100%;
 }

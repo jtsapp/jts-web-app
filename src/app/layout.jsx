@@ -23,8 +23,6 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
-        {/* Тьютор-раздел использует PT Root UI (как в макете Figma) */}
-        <link href="https://fonts.cdnfonts.com/css/pt-root-ui" rel="stylesheet" />
       </head>
       <body>
         <Providers>{children}</Providers>
