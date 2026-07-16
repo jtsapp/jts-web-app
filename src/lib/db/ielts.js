@@ -5,32 +5,11 @@
 //
 // Ported from felix lib/db/ielts.ts. Tables: see src/lib/schema.sql.
 
-import { neon } from '@neondatabase/serverless'
+import { getSql, isDbConfigured } from './sql.js'
+import { ensureLearner } from './profile.js'
 
-let cached
-function getSql() {
-  if (cached !== undefined) return cached
-  const url = process.env.DATABASE_URL
-  cached = url ? neon(url) : null
-  return cached
-}
-
-export function isDbConfigured() {
-  return Boolean(process.env.DATABASE_URL)
-}
-
-// FK safety: ielts_attempt.device_id references learner(device_id), so every
-// writer upserts the learner row first.
-async function ensureLearner(deviceId) {
-  const sql = getSql()
-  if (!sql) return
-  await sql`
-    insert into learner (device_id)
-    values (${deviceId})
-    on conflict (device_id) do update
-      set last_seen_at = now()
-  `
-}
+// Re-export: роуты IELTS импортируют isDbConfigured отсюда.
+export { isDbConfigured }
 
 // Shared two-row write: attempt (what they submitted) + score (the outcome).
 // Returns { attemptId, scoreId }, or null when the DB is unconfigured.

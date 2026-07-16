@@ -5,6 +5,8 @@
 // Ported from felix lib/auth-server.ts, trimmed to resolveProfileId and its
 // dependencies (the registration/proxy helpers live in src/api.js here).
 
+import { timingSafeEqual } from 'node:crypto'
+
 const BACKEND_URL = (
   process.env.BACKEND_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
@@ -17,6 +19,28 @@ const BACKEND_URL = (
 // access token can resolve to one.
 const RESERVED_ID_RE = /^user-/i
 const DEVICE_ID_RE = /^[A-Za-z0-9_-]{6,64}$/
+
+/**
+ * Доверенный сервер-к-серверу вызов (голосовой агент на воркере LiveKit).
+ * У агента нет токена ученика: он получает profileId в metadata комнаты, которую
+ * подписал наш же /api/livekit/token. Ключ живёт только в server-env обоих
+ * процессов и в браузер не попадает.
+ *
+ * Не настроен INTERNAL_API_KEY → канал закрыт. Пустая переменная НЕ должна
+ * означать «пускаем всех» — иначе забытый env открывает запись в любой аккаунт.
+ */
+function isTrustedInternalCaller(request) {
+  const expected = process.env.INTERNAL_API_KEY
+  if (!expected) return false
+  const got = request.headers.get('x-internal-key')
+  if (typeof got !== 'string') return false
+  const a = Buffer.from(got)
+  const b = Buffer.from(expected)
+  // timingSafeEqual падает на разной длине — сравниваем её отдельно, а сам
+  // ключ всегда постоянным временем.
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
 
 export function isValidDeviceId(id) {
   return typeof id === 'string' && DEVICE_ID_RE.test(id)
@@ -45,6 +69,9 @@ export async function verifyToken(token) {
       name: user.name ?? null,
       phone: user.phone ?? null,
       role: user.role ?? null,
+      // Для восстановления сессии на клиенте: /api/auth/me отдаёт это в App,
+      // чтобы уровень не сбрасывался на A1 после перезагрузки.
+      languageLevel: user.languageLevel ?? null,
     }
   } catch {
     return null
@@ -63,7 +90,12 @@ export function profileIdForUser(userId) {
  * - With no token → the anonymous deviceId, UNLESS it intrudes on the reserved
  *   `user-*` namespace (then 401: that data requires authentication).
  *
- * Returns { id } on success, or { error: Response } the caller should return.
+ * Returns { id, name } on success, or { error: Response } the caller should
+ * return. `name` is the backend's display name for an authenticated learner and
+ * null for everyone else — verifyToken already fetches it, so callers that want
+ * it (the LiveKit token route, for the voice scenarios) cost no extra request.
+ * It is derived from the token, never from the client body: a caller cannot
+ * claim someone else's name.
  */
 export async function resolveProfileId(request, clientDeviceId) {
   const token = bearerFromRequest(request)
@@ -78,7 +110,7 @@ export async function resolveProfileId(request, clientDeviceId) {
         ),
       }
     }
-    return { id: profileIdForUser(user.userId) }
+    return { id: profileIdForUser(user.userId), name: user.name ?? null }
   }
 
   if (!isValidDeviceId(clientDeviceId)) {
@@ -87,6 +119,9 @@ export async function resolveProfileId(request, clientDeviceId) {
     }
   }
   if (RESERVED_ID_RE.test(clientDeviceId)) {
+    // Единственное исключение: наш же голосовой агент с сервисным ключом. Он
+    // пишет память ученика от его имени, своего токена не имея.
+    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null }
     return {
       error: Response.json(
         { configured: true, error: 'This profile requires authentication.' },
@@ -94,5 +129,5 @@ export async function resolveProfileId(request, clientDeviceId) {
       ),
     }
   }
-  return { id: clientDeviceId }
+  return { id: clientDeviceId, name: null }
 }

@@ -4,26 +4,21 @@
 // moment a structured scenario reaches its verdict (the live UI is driven by a
 // LiveKit data message on topic "lesson"; this route is the durable path).
 //
-// Persistence is intentionally a no-op for now — the profiles/progress tables
-// don't exist on this branch yet. Once they land, write the pass/fail + score
-// here keyed by owner_id so progress follows the account across devices.
-// Until then we validate, log, and return ok so the agent's fire-and-forget
-// call never errors.
+// Identity comes from resolveProfileId, so a logged-in learner's scenario
+// results follow the account across devices; anonymous ones stay on the
+// deviceId. The agent has no learner token, so it authenticates with the
+// service key (see lib/auth-server).
+
+import { isDbConfigured } from '@/lib/db/sql.js'
+import { upsertLessonProgress } from '@/lib/db/lessons.js'
+import { resolveProfileId } from '@/lib/auth-server.js'
 
 export const runtime = 'nodejs'
 
-function ok() {
-  return Response.json({ ok: true })
-}
-
-async function handle(body) {
-  const deviceId = typeof body?.deviceId === 'string' ? body.deviceId : ''
-  const scenarioId = typeof body?.scenarioId === 'string' ? body.scenarioId : ''
-  const passed = Boolean(body?.passed)
-  if (!scenarioId) return ok()
-  // TODO(profiles): persist { owner_id, scenarioId, passed, score } to Neon.
-  console.log('[lesson.complete]', { deviceId, scenarioId, passed })
-  return ok()
+// The agent's call is fire-and-forget: it never reads the body and a rejection
+// would just noise its logs. Report failures via status, keep the shape stable.
+function ok(extra = {}) {
+  return Response.json({ ok: true, ...extra })
 }
 
 export async function POST(request) {
@@ -34,5 +29,32 @@ export async function POST(request) {
   } catch {
     // empty / malformed body — treat as no-op
   }
-  return handle(body)
+
+  const scenarioId = typeof body.scenarioId === 'string' ? body.scenarioId.trim().slice(0, 80) : ''
+  if (!scenarioId) return ok({ written: 0 })
+
+  const resolved = await resolveProfileId(request, body.deviceId)
+  if ('error' in resolved) return resolved.error
+
+  if (!isDbConfigured()) return ok({ written: 0 })
+
+  const passed = Boolean(body.passed)
+  const score =
+    typeof body.score === 'number' && Number.isFinite(body.score)
+      ? Math.max(0, Math.min(100, Math.round(body.score)))
+      : 0
+
+  try {
+    await upsertLessonProgress(resolved.id, {
+      lessonKey: scenarioId,
+      status: passed ? 'passed' : 'failed',
+      score,
+      // Сценарии не имеют вариантов, как уроки плана: держим 0.
+      nextVariant: 0,
+    })
+    return ok()
+  } catch (err) {
+    console.error('[lesson.complete] failed', err)
+    return Response.json({ ok: false, error: 'Lesson progress upsert failed.' }, { status: 500 })
+  }
 }
