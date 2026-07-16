@@ -11,7 +11,7 @@ import {
 } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 
-export default function RegistrationPage({ onBack, onPhoneLogin, onSkip }) {
+export default function RegistrationPage({ onBack, onPhoneLogin }) {
   const { t } = useI18n()
 
   // Реплики Декстера после того, как пользователь назвал имя.
@@ -152,11 +152,6 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onSkip }) {
                         <span>{t('auth.google')}</span>
                       </button>
                     </div>
-                    {onSkip && (
-                      <button type="button" className="skip-link" onClick={onSkip}>
-                        {t('common.skip')}
-                      </button>
-                    )}
                   </div>
                 )}
               </div>

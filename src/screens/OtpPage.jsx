@@ -5,7 +5,7 @@ import { useI18n } from '../i18n.jsx'
 
 const LENGTH = 4
 
-export default function OtpPage({ phone, onBack, onSubmit, onResend, onSkip, loading, error }) {
+export default function OtpPage({ phone, onBack, onSubmit, onResend, loading, error }) {
   const { t } = useI18n()
   const [digits, setDigits] = useState(Array(LENGTH).fill(''))
   const [seconds, setSeconds] = useState(60)
@@ -120,11 +120,6 @@ export default function OtpPage({ phone, onBack, onSubmit, onResend, onSkip, loa
           )}
         </p>
 
-        {onSkip && (
-          <button type="button" className="skip-link" onClick={onSkip}>
-            {t('common.skip')}
-          </button>
-        )}
       </form>
       </div>
     </Shell>
