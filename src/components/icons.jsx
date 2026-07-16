@@ -119,39 +119,64 @@ export function GoogleIcon({ size = 18 }) {
   )
 }
 
-export function LearningIcon({ size = 20 }) {
+// Иконки навигации — точные векторы из Figma-сайдбара (RemixIcon fill),
+// заливка currentColor. Offset пути повторяет позицию вектора в кадре 24×24.
+export function LearningIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 4 2 9l10 5 8-4v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M6 11.5V16c0 1 2.7 3 6 3s6-2 6-3v-4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        transform="translate(3 2.27)"
+        d="M18 17.73C18 18.29 17.55 18.73 17 18.73L1 18.73C0.45 18.73 0 18.29 0 17.73L0 7.22C0 6.91 0.14 6.62 0.39 6.43L8.39 0.21C8.75 -0.07 9.25 -0.07 9.61 0.21L17.61 6.43C17.86 6.62 18 6.91 18 7.22L18 17.73Z"
+        fill="currentColor"
+      />
     </svg>
   )
 }
-export function PracticeIcon({ size = 20 }) {
+export function PracticeIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-      <circle cx="12" cy="12" r="4.5" stroke="currentColor" strokeWidth="2" />
-      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+      <path
+        transform="translate(3 3)"
+        d="M18 14C18 16.21 16.21 18 14 18C11.79 18 10 16.21 10 14C10 11.79 11.79 10 14 10C16.21 10 18 11.79 18 14ZM8 4C8 6.21 6.21 8 4 8C1.79 8 0 6.21 0 4C0 1.79 1.79 0 4 0C6.21 0 8 1.79 8 4ZM18 4C18 6.21 16.21 8 14 8C13.26 8 12.56 7.80 11.97 7.45L7.45 11.97C7.80 12.56 8 13.26 8 14C8 16.21 6.21 18 4 18C1.79 18 0 16.21 0 14C0 11.79 1.79 10 4 10C4.74 10 5.44 10.20 6.03 10.55L10.55 6.03C10.20 5.44 10 4.74 10 4C10 1.79 11.79 0 14 0C16.21 0 18 1.79 18 4Z"
+        fill="currentColor"
+      />
     </svg>
   )
 }
-export function TutorIcon({ size = 20 }) {
+export function TutorIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9L12 3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path
+        transform="translate(0.59 0.5)"
+        d="M11.41 17.76L4.36 21.71L5.93 13.78L0 8.29L8.03 7.34L11.41 0L14.80 7.34L22.83 8.29L16.89 13.78L18.47 21.71L11.41 17.76Z"
+        fill="currentColor"
+      />
     </svg>
   )
 }
-export function LessonsIcon({ size = 20 }) {
+export function LessonsIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5v-15Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5v-15Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path
+        transform="translate(0 2)"
+        d="M12 0L0 7L12 14L22 8.17L22 15.5L24 15.5L24 7L12 0ZM4 11.49L4 16C5.82 18.43 8.73 20 12 20C15.27 20 18.18 18.43 20 16L20 11.49L12 16.16L4 11.49Z"
+        fill="currentColor"
+      />
     </svg>
   )
 }
 
+export function IeltsIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        transform="translate(1 2)"
+        d="M20.625 14.0538C20.625 14.7745 19.9833 15.4052 19.25 15.4052H16.9583C15.3083 15.4052 13.6583 15.946 12.375 16.9369L11.8254 17.3874C11.5504 17.5675 11.275 17.6575 11 17.6575C10.725 17.6575 10.4496 17.5675 10.1746 17.3874L9.625 16.9369C8.34168 15.946 6.69163 15.4052 5.04167 15.4052H2.75C2.01667 15.4052 1.375 14.7745 1.375 14.0538V2.88309H0.916667C0.410406 2.88309 0 3.28644 0 3.784V16.3967C9.7911e-05 16.8942 0.410468 17.2976 0.916667 17.2976H3.66667C5.85819 17.2976 7.95261 17.9588 9.71098 19.2754L9.7163 19.2798L10.4504 19.82C10.7762 20.06 11.2239 20.06 11.5496 19.82L12.289 19.2754C14.0474 17.9588 16.1419 17.2976 18.3333 17.2976H21.0833C21.5895 17.2976 21.9999 16.8942 22 16.3967V3.784C22 3.28644 21.5896 2.88309 21.0833 2.88309H20.625V14.0538ZM16.9583 0C15.0333 0 13.108 0.630636 11.5496 1.80182L11 2.25227L10.4504 1.80182C8.89202 0.630636 6.96667 0 5.04167 0H3.66667C3.11667 0 2.75 0.360364 2.75 0.900909V14.0538H5.04167C6.96667 14.0538 8.89202 14.6845 10.4504 15.8556L11 16.3061L11.5496 15.8556C13.108 14.6845 15.0333 14.0538 16.9583 14.0538H19.25V0.900909C19.25 0.360364 18.8833 0 18.3333 0H16.9583Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
 export function RuFlagIcon({ size = 18 }) {
   return (
     <svg width={size} height={size * 0.72} viewBox="0 0 30 20" style={{ borderRadius: 3, display: 'block' }}>

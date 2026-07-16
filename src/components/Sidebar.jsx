@@ -6,6 +6,7 @@ import {
   PracticeIcon,
   TutorIcon,
   LessonsIcon,
+  IeltsIcon,
   ChevronRightIcon,
 } from './icons.jsx'
 
@@ -14,6 +15,7 @@ const NAV = [
   { key: 'practice', label: 'nav.practice', Icon: PracticeIcon },
   { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
   { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
+  { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
 ]
 
 // Левый сайдбар обучающей зоны (статичная оболочка).
@@ -46,7 +48,7 @@ export default function Sidebar({ userName, userLevel = 'A1', active = 'learning
             className={`sb__item ${active === key ? 'sb__item--active' : ''}`}
             onClick={() => onNav?.(key)}
           >
-            <Icon size={20} />
+            <Icon size={24} />
             <span>{t(label)}</span>
           </button>
         ))}

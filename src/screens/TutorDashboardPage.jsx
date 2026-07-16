@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar.jsx'
 import Footer from '../components/Footer.jsx'
+import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import { MenuIcon, MicIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
+
+const ONBOARDED_KEY = 'jts_tutor_onboarded'
 
 const LESSON_DESC =
   'Разберём, как строится форма am/is/are + глагол с -ing, когда её использовать, а когда нет'
@@ -11,11 +15,9 @@ const LESSONS = [
   { num: '03', title: 'Практика Present Continious', desc: LESSON_DESC },
   { num: '04', title: 'Практика Present Continious', desc: LESSON_DESC },
 ]
+// Пока рабочий только один сценарий — Visa Interview.
 const SCENARIOS = [
-  { id: 1, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
-  { id: 2, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
-  { id: 3, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
-  { id: 4, label: 'Job Interview', img: '/tutor/job-interview.jpg' },
+  { id: 'visa-interview', label: 'U.S. Visa Interview', img: '/tutor/visa-interview.jpg' },
 ]
 
 export default function TutorDashboardPage({
@@ -32,6 +34,26 @@ export default function TutorDashboardPage({
 }) {
   const t = useT()
   const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+
+  // Онбординг-тур один раз при первом заходе на дашборд.
+  const [showTour, setShowTour] = useState(false)
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(ONBOARDED_KEY)) setShowTour(true)
+    } catch {
+      /* localStorage недоступен — тур не показываем */
+    }
+  }, [])
+  const tourSteps = [
+    { selector: '.t-dash__mic', title: t('tour.mic.title'), text: t('tour.mic.text') },
+    {
+      selector: '.t-dash__panel .t-panel__section:first-child',
+      title: t('tour.plan.title'),
+      text: t('tour.plan.text'),
+    },
+    { selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text') },
+  ]
+
   return (
     <div className="t-app">
       <div className="t-body">
@@ -145,6 +167,14 @@ export default function TutorDashboardPage({
       </div>
 
       <Footer />
+
+      {showTour && (
+        <OnboardingTour
+          steps={tourSteps}
+          storageKey={ONBOARDED_KEY}
+          onFinish={() => setShowTour(false)}
+        />
+      )}
     </div>
   )
 }

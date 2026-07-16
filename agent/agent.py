@@ -32,6 +32,7 @@ from livekit.agents import (
     Agent,
     AgentSession,
     APIConnectOptions,
+    DEFAULT_API_CONNECT_OPTIONS,
     JobContext,
     JobExecutorType,
     RoomInputOptions,
@@ -141,6 +142,48 @@ else:
         "Methodology file empty or missing at %s — tutor will run without it",
         _METHODOLOGY_PATH,
     )
+
+
+# ---- scenario loader -------------------------------------------------------
+# Structured voice scenarios (e.g. the U.S. Visa interview) live as markdown
+# files with YAML-ish frontmatter, next to methodology.md. Same dual-path idea:
+# <repo-root>/data/scenarios/<id>.md in dev, agent/scenarios/<id>.md in the
+# Docker image (build context is agent/). Metadata carries only the small
+# `scenarioId` — the full prompt (any length) is read here, so nothing bloats
+# the LiveKit token.
+_SCENARIO_DIRS = [
+    ROOT / "data" / "scenarios",
+    _HERE / "scenarios",
+]
+
+_FRONTMATTER_RE = _re.compile(r"^---\s*\n(.*?)\n---\s*\n", _re.DOTALL)
+
+
+def load_scenario(scenario_id: str) -> dict[str, Any] | None:
+    """Read data/scenarios/<id>.md → {id, frontmatter, body}. None if missing.
+
+    `scenario_id` is sanitised to [a-z0-9_-] so it can never escape the
+    scenarios directory (path-traversal guard).
+    """
+    safe = _re.sub(r"[^a-z0-9_-]", "", (scenario_id or "").lower())
+    if not safe:
+        return None
+    for d in _SCENARIO_DIRS:
+        path = d / f"{safe}.md"
+        if path.exists():
+            raw = path.read_text(encoding="utf-8")
+            fm: dict[str, str] = {}
+            body = raw
+            m = _FRONTMATTER_RE.match(raw)
+            if m:
+                body = raw[m.end():]
+                for line in m.group(1).splitlines():
+                    if ":" in line and not line.strip().startswith("#"):
+                        k, v = line.split(":", 1)
+                        fm[k.strip()] = v.strip()
+            return {"id": safe, "frontmatter": fm, "body": body.strip()}
+    logger.warning("Scenario '%s' not found in %s", safe, _SCENARIO_DIRS)
+    return None
 
 
 # Per-level behavioural protocols (spoken). Language ceiling + tone + how to
@@ -292,6 +335,10 @@ class LearnerProfile:
     goal: str = "general"
     tutor: str = ""
     device_id: str = ""
+    # Learner's display name, straight from the verified access token in
+    # /api/livekit/token. "" for anonymous learners. Used by the voice
+    # scenarios so NPCs can address them by name.
+    user_name: str = ""
     eleven_voice_id: str = ""
     interests: list[str] = field(default_factory=list)
     profession: str = ""
@@ -314,6 +361,9 @@ class LearnerProfile:
     explanation_lang: str = ""
     # Roleplay scenario setup (English role description). "" → normal tutoring.
     scenario: str = ""
+    # Structured voice scenario id (loads data/scenarios/<id>.md). Set together
+    # with mode == "scenario". "" → not a structured scenario.
+    scenario_id: str = ""
     # Debate motion (English statement) — set when mode == "debate". The agent
     # argues the OPPOSITE side and debriefs language + argumentation at the end.
     debate_topic: str = ""
@@ -388,6 +438,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         goal=str(data.get("goal", "general")) or "general",
         tutor=str(data.get("tutor", "") or ""),
         device_id=str(data.get("deviceId", "") or ""),
+        user_name=str(data.get("userName", "") or "")[:40],
         eleven_voice_id=str(data.get("elevenLabsVoiceId", "") or ""),
         interests=_str_list(data.get("interests"), 6),
         profession=str(data.get("profession", "") or "")[:120],
@@ -407,6 +458,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         tuning=_tuning(data.get("tuning")),
         explanation_lang=str(data.get("explanationLang", "") or ""),
         scenario=str(data.get("scenario", "") or "")[:400],
+        scenario_id=str(data.get("scenarioId", "") or "")[:64],
         debate_topic=str(data.get("debateTopic", "") or "")[:200],
         tier=str(data.get("tier", "free") or "free"),
     )
@@ -662,10 +714,13 @@ class TutorAgent(Agent):
         device_id: str,
         api_url: str,
         room: Any = None,
+        scenario_id: str = "",
     ):
         super().__init__(instructions=instructions)
         self._device_id = device_id
         self._api_url = api_url.rstrip("/")
+        # Which structured scenario this call is running (for report_task_complete).
+        self._scenario_id = scenario_id
         # Room handle so placement mode can push the confirmed level straight to
         # the web client over a LiveKit data message (topic "placement").
         self._room = room
@@ -691,9 +746,18 @@ class TutorAgent(Agent):
 
     async def _do_post(self, path: str, body: dict[str, Any]) -> None:
         url = f"{self._api_url}{path}"
+        # The learner's profile id may be `user-<id>` (they are logged in). That
+        # namespace is reserved: the web app rejects it without proof of
+        # identity, and we have no learner token here. The service key is that
+        # proof — it lives in server env on both sides and never reaches a
+        # browser. Without it we can only write anonymous device profiles.
+        headers = {}
+        key = os.getenv("INTERNAL_API_KEY")
+        if key:
+            headers["X-Internal-Key"] = key
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:
-                await client.post(url, json=body)
+                await client.post(url, json=body, headers=headers)
         except Exception:
             logger.exception("Tool POST failed: %s", path)
 
@@ -792,6 +856,66 @@ class TutorAgent(Agent):
         await self._post_json(
             "/api/profile/safety",
             {"deviceId": self._device_id},
+        )
+        return "ok"
+
+    @function_tool()
+    async def report_task_complete(
+        self,
+        passed: bool,
+        summary: str,
+        tips: list[str],
+        score: int = 0,
+    ) -> str:
+        """Report that the structured voice scenario has reached its final
+        outcome. Call this EXACTLY ONCE, only when the scenario's own ending is
+        reached (e.g. the visa VERDICT after the last question) — never early.
+        After calling it, speak your in-scene verdict and closing feedback out
+        loud as normal; this call is silent and does not replace speaking.
+
+        Args:
+            passed: true if the learner succeeded (e.g. VISA APPROVED), false if
+                not (e.g. VISA DENIED / 214(b) refusal).
+            summary: one or two sentences on why they passed or failed (this text
+                may be shown on-screen, so keep it self-contained).
+            tips: up to three short, personalised tips to improve next time.
+            score: optional overall performance score 0-100.
+        """
+        def _tips(items: Any) -> list[str]:
+            out: list[str] = []
+            if isinstance(items, list):
+                for x in items:
+                    if isinstance(x, str) and x.strip():
+                        out.append(x.strip())
+                    if len(out) >= 3:
+                        break
+            return out
+
+        try:
+            sc = max(0, min(100, int(score)))
+        except (TypeError, ValueError):
+            sc = 0
+        payload = {
+            "scenarioId": self._scenario_id,
+            "passed": bool(passed),
+            "summary": summary.strip()[:600] if isinstance(summary, str) else "",
+            "tips": _tips(tips),
+            "score": sc,
+        }
+        # Primary path: push to the web client so it renders the verdict card
+        # instantly (topic "lesson"). Best-effort persistence follows.
+        if self._room is not None:
+            try:
+                await self._room.local_participant.publish_data(
+                    json.dumps(payload),
+                    reliable=True,
+                    topic="lesson",
+                )
+            except Exception:
+                logger.exception("publish task-complete failed")
+        await self._post_json(
+            "/api/lesson/complete",
+            {"deviceId": self._device_id, **payload},
         )
         return "ok"
 
@@ -1196,6 +1320,127 @@ def build_placement_instructions(p: LearnerProfile) -> str:
         "NEVER say the tool name, the word 'report', or read any score/marker "
         "aloud. Do NOT output '[SPEAKING_LEVEL]' as text — the tool call is the "
         "ONLY result channel."
+    )
+
+
+def scenario_name_block(user_name: str) -> str:
+    """Tell the NPC what it knows about the learner's name.
+
+    Deliberately a behavioural instruction rather than {user_name} string
+    interpolation. An anonymous learner has no name, and templating a fallback
+    into a scripted line gives "Order up for there!"; a missed token gives the
+    NPC reading "{user_name}" out loud. Stating what the character knows lets it
+    either use the real name naturally or ask for it in scene — which is what
+    a receptionist or a barista would do anyway.
+    """
+    name = (user_name or "").strip()
+    if not name:
+        return (
+            "THE LEARNER'S NAME: you do NOT know it. If your character would "
+            "naturally need it (a booking, a name for the cup, an introduction), "
+            "ask for it in scene and use it from then on.\n"
+        )
+    return (
+        f"THE LEARNER'S NAME: {name}. Use it where your character naturally "
+        "would — greeting them, calling out their order, thanking them at the "
+        "end. Don't overuse it, don't spell it out, don't remark on it.\n"
+    )
+
+
+def build_scenario_instructions(p: LearnerProfile, scenario: dict[str, Any]) -> str:
+    """System prompt for a structured VOICE scenario (e.g. the U.S. Visa
+    interview). The scenario's own markdown body defines the character, script
+    and ending; this wrapper only enforces the voice rules, injects the known
+    level (so the scene never asks it), tells the NPC the learner's name, and
+    points the model at the report_task_complete tool for the final outcome.
+    """
+    body = scenario.get("body", "")
+    fm = scenario.get("frontmatter", {})
+    max_q = str(fm.get("maxQuestions", "5"))
+    exp_block = explanation_language_block(p.explanation_lang or p.lang)
+    name_block = scenario_name_block(p.user_name)
+    return (
+        "==== VOICE SCENARIO MODE (this whole call) ====\n"
+        "This is a VOICE-ONLY call: the learner wears headphones and only HEARS "
+        "you — there is no screen and no text. Speak naturally and continuously "
+        "like a real person, never like a robot reading a document. Keep each "
+        "turn short (usually one to three sentences), ask ONE question at a time, "
+        "then WAIT for their answer.\n"
+        "EVERY CHARACTER YOU WRITE IS SPOKEN ALOUD by a text-to-speech voice. "
+        "So write ONLY the words your character actually says. NEVER write stage "
+        "directions, narration or asides — no *pauses*, no *calling out*, no "
+        "*waiting for your answer*, no *speaking warmly*, nothing in asterisks or "
+        "brackets. If you want to sound like you are calling an order across the "
+        "room, just say the words; the delivery is not yours to narrate. A stage "
+        "direction reaches the learner as read-aloud gibberish.\n"
+        f"Adjust your speaking difficulty to the learner's known CEFR level: "
+        f"{p.level}. Do NOT ask the learner what their level is — you already "
+        "know it and adapt silently.\n"
+        f"{name_block}"
+        "Any feedback you give must be SPOKEN and brief — talk it out like a real "
+        "person would; NEVER read out written labels, headings, bullet points or "
+        "long lists. One quick impression, one correction, one useful phrase, then "
+        "move on.\n"
+        "CORRECT IN THE MOMENT, NOT AT THE END. The instant the learner slips, "
+        "your VERY NEXT reply must already contain the fixed form, folded into "
+        "what your character would say anyway (a recast). They say 'I want a "
+        "coffee' — you say 'Sure, so that's could I get one coffee — what size?'. "
+        "Do NOT quietly note the mistake and save it for the closing wrap-up: a "
+        "correction that arrives five minutes later teaches nothing, and the "
+        "learner has already said it wrong four more times. If you catch yourself "
+        "about to put a slip in the final feedback, you should have recast it when "
+        "it happened. The wrap-up is for ONE last impression — not a receipt of "
+        "everything you let slide.\n"
+        "Stay fully in role for the whole call. Follow the SCENARIO SCRIPT below "
+        "exactly — its character, its questions and its ending. If the learner "
+        "contradicts the scene's premise or wanders off into some other story, do "
+        "not follow them — stay in your scene and steer them back in character.\n"
+        f"COMPLETION: the scenario ends with a final outcome/verdict after about "
+        f"{max_q} questions. The MOMENT you reach that ending, call the "
+        "report_task_complete tool ONCE (passed=true on success, false on "
+        "failure, with a short summary and up to 3 tips) — then speak your verdict "
+        "and closing feedback out loud. Do NOT call the tool before the real "
+        "ending, and do NOT announce that you are calling any tool.\n"
+        "GRADING — two DIFFERENT questions, do not merge them:\n"
+        "passed = did the SCENE reach its own ending? Read the script's 'Passed =' "
+        "line: it asks only whether the business of the scene got done (the "
+        "check-in completed, the order served, the offer made or refused). That is "
+        "a fact about your own scene and you know it for certain. Someone can be "
+        "blunt, lazy and full of mistakes and still complete a check-in — that is "
+        "still passed=true. You are not deciding whether they deserve it.\n"
+        "score (0-100) = how well they used the language the script was TEACHING. "
+        "This is where honesty matters, and where you must not flatter. Judge ONLY "
+        "the learner's own words:\n"
+        "  - YOUR lines are never evidence of what THEY did. You model the good "
+        "form all scene long — that is your job — but if the only 'could I get' in "
+        "the whole conversation came out of YOUR mouth, they never used it. If you "
+        "offered the Wi-Fi and they said 'no thanks', they asked nothing. If you "
+        "named the object and they said 'yeah, that', they described nothing.\n"
+        "  - Never reword a target to make it fit. 'Made the request' is not "
+        "'declined the thing you offered'. 'Described it' is not 'agreed with your "
+        "description'.\n"
+        "  - Rough scale: 80+ they used the target forms themselves and unprompted; "
+        "50-79 they got there after you modelled it, or half of it; below 40 they "
+        "never produced the target language at all, however smoothly the scene ran. "
+        "A monosyllabic learner who completed the scene is passed=true with a score "
+        "around 30 — that combination is normal and correct, not a contradiction.\n"
+        "The summary and tips must match the score, not the mood: never write that "
+        "they asked good questions when they asked none. The SPOKEN goodbye stays "
+        "warm regardless — it is the numbers and the summary that must be true.\n"
+        f"{exp_block}"
+        "\n==== SCENARIO SCRIPT ====\n"
+        f"{body}\n"
+    )
+
+
+def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
+    """Open a structured voice scenario in role on the very first turn."""
+    return (
+        "Begin the scenario now, fully IN ROLE. Deliver your professional opening "
+        "greeting in ONE short spoken line and ask ONLY your first onboarding "
+        "question, then stop and WAIT. Keep it natural for a voice call — do not "
+        "read out any written formatting, and do not ask the learner their "
+        "English level."
     )
 
 
@@ -1710,7 +1955,7 @@ AZURE_KZ_FEMALE = "kk-KZ-AigulNeural"
 FEMALE_TUTORS = {"gentle", "coach"}
 
 
-def _cascade_tts(profile: LearnerProfile):
+def _cascade_tts_azure(profile: LearnerProfile):
     """Azure Neural TTS — one voice per session, picked by tutor + language.
     Replaces ElevenLabs (cost): $15/1M chars vs $50/1M. Multilingual voices
     voice en+ru; kz sessions use a dedicated kk-KZ voice (same one-language-per-
@@ -1735,6 +1980,148 @@ def _cascade_tts(profile: LearnerProfile):
     return azure.TTS(speech_key=key, speech_region=region, voice=voice)
 
 
+# Gemini-TTS reuses TUTOR_VOICE — the same voice names the gemini-live stack
+# used — so a persona keeps ONE voice across en/ru/kz. That is the point of this
+# path: Azure has no multilingual kk-KZ voice, so on a kz session Dexter has to
+# switch to kk-KZ-Daulet and stops sounding like Dexter.
+DEFAULT_GEMINI_TTS_VOICE = "Puck"
+DEFAULT_GEMINI_TTS_MODEL = "gemini-2.5-flash-tts"
+
+# Gemini-TTS synthesises audio with an LLM, so a long tutor turn takes far
+# longer to generate than Azure's vocoder does. livekit's default request
+# timeout is 10s (DEFAULT_API_CONNECT_OPTIONS), which a normal reply blows
+# through: the stream dies mid-word and the turn is lost with
+#   "TTS failed after partial audio was already sent to the user, skip retrying"
+# Streaming means the learner is already hearing audio while this runs, so a
+# long ceiling costs nothing when synthesis is healthy — it only stops a
+# working stream from being killed. Retries are pointless once partial audio
+# has shipped (livekit skips them), so the ceiling is the only lever.
+GEMINI_TTS_CONN = APIConnectOptions(
+    max_retry=3,
+    retry_interval=1.0,
+    timeout=float(os.getenv("GEMINI_TTS_TIMEOUT_SEC", "45")),
+)
+
+
+class _GeminiTTS(google.TTS):
+    """google.TTS pinned to GEMINI_TTS_CONN.
+
+    TTS.__init__ has no conn_options parameter, and the timeout is only read at
+    the stream()/synthesize() call — which AgentSession makes itself, supplying
+    its own APIConnectOptions from SessionConnectOptions. Overriding both entry
+    points is the only injection point that does not reach into private modules
+    (SessionConnectOptions is not exported from livekit.agents).
+
+    The override is UNCONDITIONAL on purpose. The first attempt only replaced
+    conn_options when it was DEFAULT_API_CONNECT_OPTIONS by identity, on the
+    assumption AgentSession passed no value; it passes an equal-but-distinct
+    object, so the branch never fired and the 10s default silently stood. Only
+    AgentSession calls these, so there is no caller whose value we are stealing.
+    """
+
+    _logged_override = False
+
+    def _log_once(self, entry: str, incoming: APIConnectOptions) -> None:
+        # The "timeout=45s" on the session line only proves the constant exists;
+        # it printed happily while the override was dead. This proves the swap
+        # actually happens, and shows what AgentSession was going to use.
+        if not _GeminiTTS._logged_override:
+            _GeminiTTS._logged_override = True
+            logger.info(
+                "Gemini TTS conn_options: %s incoming=%.0fs -> applied=%.0fs",
+                entry, incoming.timeout, GEMINI_TTS_CONN.timeout,
+            )
+
+    def stream(self, *, conn_options=DEFAULT_API_CONNECT_OPTIONS):
+        self._log_once("stream", conn_options)
+        return super().stream(conn_options=GEMINI_TTS_CONN)
+
+    def synthesize(self, text, *, conn_options=DEFAULT_API_CONNECT_OPTIONS):
+        self._log_once("synthesize", conn_options)
+        return super().synthesize(text, conn_options=GEMINI_TTS_CONN)
+
+
+def _gemini_tts_credentials() -> dict[str, Any] | None:
+    """Service-account JSON out of GOOGLE_CREDENTIALS_JSON (one env var beats
+    shipping a key file into the image). None → the plugin falls back to ADC via
+    GOOGLE_APPLICATION_CREDENTIALS, which is how local dev usually authenticates.
+    """
+    raw = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"GOOGLE_CREDENTIALS_JSON is not valid JSON: {e}") from e
+
+
+def _cascade_tts_gemini(profile: LearnerProfile):
+    """Gemini-TTS via Cloud Text-to-Speech. Streams by default (use_streaming)
+    and emits 24 kHz PCM, so it drops into the same slot as Azure.
+
+    NOT the same product as the gemini-2.5-flash-preview-tts on ai.google.dev:
+    that one is the Developer API (GEMINI_API_KEY) and cannot stream. This is
+    Cloud TTS (texttospeech.googleapis.com) and needs a GCP service account.
+
+    Billed per TOKEN, not per character, so the Azure per-char numbers do not
+    convert. Measure a real session before trusting any estimate.
+    """
+    voice = TUTOR_VOICE.get(profile.tutor, DEFAULT_GEMINI_TTS_VOICE)
+    voice = os.getenv("GEMINI_TTS_VOICE_OVERRIDE", voice)
+    model = os.getenv("GEMINI_TTS_MODEL", DEFAULT_GEMINI_TTS_MODEL)
+    # The plugin defaults to location="global". The worker runs in us-east, so a
+    # regional endpoint may cut round-trip enough to keep playout fed — audio
+    # arriving late starves the buffer and the tutor stutters mid-sentence even
+    # though nothing errors. Env-tunable so both can be measured without a
+    # redeploy; "global" restores the plugin default.
+    location = os.getenv("GEMINI_TTS_LOCATION", "us-central1").strip()
+    creds = _gemini_tts_credentials()
+    logger.info(
+        "Cascade TTS: Gemini (%s, voice=%s, creds=%s, timeout=%.0fs, loc=%s), lang=%s, tutor=%s",
+        model, voice, "env" if creds else "ADC", GEMINI_TTS_CONN.timeout, location,
+        profile.lang, profile.tutor or "<none>",
+    )
+    kwargs: dict[str, Any] = {
+        "model_name": model,
+        "voice_name": voice,
+        "location": location,
+    }
+    if creds:
+        kwargs["credentials_info"] = creds
+    return _GeminiTTS(**kwargs)
+
+
+def _cascade_tts(profile: LearnerProfile):
+    """Cascade TTS, picked by CASCADE_TTS so both legs can be measured on live
+    sessions and rolled back with one env var.
+
+    azure (default) — per-character billing, streaming, in production today.
+      One voice per LANGUAGE: a persona changes timbre on a kz session.
+    gemini — per-token billing, streaming, one voice across all languages.
+      Needs GOOGLE_CREDENTIALS_JSON (or ADC). Kazakh output quality is the open
+      question — Azure has dedicated kk-KZ voices, Gemini-TTS is multilingual and
+      its kk coverage is unverified. Listen to a kz session before switching it on
+      by default.
+    """
+    which = (os.getenv("CASCADE_TTS") or "azure").strip().lower()
+    if which not in ("azure", "gemini"):
+        raise RuntimeError(
+            f"CASCADE_TTS={which!r} not recognised (expected 'azure' or 'gemini')"
+        )
+    # kz always falls back to Azure: Gemini-TTS is multilingual with no dedicated
+    # Kazakh voice and testers rated its kk output unintelligible, while Azure has
+    # native kk-KZ voices. The cost is that a kz session breaks the one-voice-per-
+    # persona property this whole path exists for — an intelligible stranger beats
+    # Dexter reciting mush. Flip GEMINI_TTS_ALLOW_KZ=1 to re-measure after a model
+    # update.
+    if which == "gemini" and profile.lang == "kz" and os.getenv("GEMINI_TTS_ALLOW_KZ") != "1":
+        logger.info("Cascade TTS: kz session → Azure (Gemini kk quality unusable)")
+        return _cascade_tts_azure(profile)
+    if which == "gemini":
+        return _cascade_tts_gemini(profile)
+    return _cascade_tts_azure(profile)
+
+
 def build_cascade_session(
     profile: LearnerProfile,
     persona_temperature: float,
@@ -1755,7 +2142,7 @@ def build_cascade_session(
             "(pip install -r requirements.txt)"
         )
     logger.info("Session stack: CASCADE (Soniox STT / bundled Silero VAD / lib/llm brain / %s TTS)",
-                "Soniox" if profile.lang == "kz" else "ElevenLabs")
+                (os.getenv("CASCADE_TTS") or "azure").strip().lower())
 
     # Soniox auto-detects across en/ru/kz with code-switching. (soniox.STT takes
     # no `model` kwarg — config via params.) Pass the key explicitly.
@@ -1938,14 +2325,27 @@ async def entrypoint(ctx: JobContext):
 
     is_placement = profile.mode == "placement"
     is_debate = profile.mode == "debate"
+    # Structured voice scenario: mode == "scenario" + a scenarioId that resolves
+    # to a data/scenarios/<id>.md file. If the file is missing we fall through to
+    # the normal tutor so the call still works.
+    scenario_data = (
+        load_scenario(profile.scenario_id)
+        if profile.mode == "scenario" and profile.scenario_id
+        else None
+    )
+    is_scenario = scenario_data is not None
     instructions = (
-        build_placement_instructions(profile)
+        build_scenario_instructions(profile, scenario_data)
+        if is_scenario
+        else build_placement_instructions(profile)
         if is_placement
         else build_debate_instructions(profile)
         if is_debate
         else build_instructions(profile)
     )
-    if is_placement:
+    if is_scenario:
+        logger.info("Scenario mode: id=%s (%d chars)", scenario_data["id"], len(scenario_data["body"]))
+    elif is_placement:
         logger.info("Placement mode: spoken Speaking Buddy interview (draft=%s)", profile.draft_level)
     elif is_debate:
         logger.info("Debate mode: motion=%s", profile.debate_topic or "<default>")
@@ -1964,7 +2364,7 @@ async def entrypoint(ctx: JobContext):
         # web app at JTS_API_URL to be on the tools-passthrough shim build —
         # an older shim silently drops tools and the model may act the call
         # out loud (the "tutor thinks aloud" bug).
-        if is_placement or is_debate:
+        if is_placement or is_debate or is_scenario:
             logger.info(
                 "VOICE_STACK=cascade + mode=%s: tool writeback rides the "
                 "brain shim's tools passthrough.",
@@ -1996,6 +2396,7 @@ async def entrypoint(ctx: JobContext):
         device_id=profile.device_id,
         api_url=api_url,
         room=ctx.room,
+        scenario_id=scenario_data["id"] if is_scenario else "",
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
@@ -2016,7 +2417,9 @@ async def entrypoint(ctx: JobContext):
         await session.start(agent=agent, room=ctx.room)
 
     greeting_hint = (
-        build_placement_greeting(profile)
+        build_scenario_greeting(profile, scenario_data)
+        if is_scenario
+        else build_placement_greeting(profile)
         if is_placement
         else build_debate_greeting(profile)
         if is_debate

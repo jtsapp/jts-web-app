@@ -136,10 +136,25 @@ export const DICT = {
     'dash.scenariosSub':
       'Протестируй свой Speaking в разных ситуациях, и получи личный разбор от тьютора',
 
+    // Онбординг-тур
+    'tour.skip': 'Пропустить',
+    'tour.next': 'ОК',
+    'tour.done': 'Готово',
+    'tour.mic.title': 'Поговори с тьютором',
+    'tour.mic.text':
+      'Нажми на микрофон и общайся с тьютором голосом — как с живым собеседником.',
+    'tour.plan.title': 'Твой план урока',
+    'tour.plan.text':
+      'Здесь тьютор собирает уроки под твой уровень. Отмечай пройденное и следи за прогрессом.',
+    'tour.scenarios.title': 'Ролевые сценарии',
+    'tour.scenarios.text':
+      'Попробуй себя в реальных ситуациях — собеседование, разговор о семье и другое.',
+
     // Управление тьютором
     'manage.title': 'Управление тьютором',
     'manage.change': 'Поменять тьютора',
     'manage.history': 'История разговоров',
+    'manage.historyEmpty': 'Здесь появится история ваших разговоров с тьютором',
 
     // Аналитика ошибок
     'erran.title': 'Аналитика ошибок в разговоре',
@@ -151,9 +166,27 @@ export const DICT = {
     'scen.title': 'Сценарии',
     'scen.heading':
       'Протестируй свой Speaking в разных ситуациях,\nи получи личный разбор ошибок от тьютора',
-    'scen.desc':
+    // По ключу на сценарий: 'scen.desc.<scenarioId>'.
+    'scen.desc.visa-interview':
+      'собеседование в посольстве США: визовый офицер, каверзные вопросы и вердикт в конце',
+    'scen.desc.hotel-check-in':
+      'заселение в отель: бронь, накладка с номером и вежливые просьбы на английском',
+    'scen.desc.asking-directions':
+      'спрашиваем дорогу у прохожего: предлоги места, ориентиры и пересказ маршрута',
+    'scen.desc.ordering-coffee':
+      'заказ в кофейне в час пик: вежливые формулировки, уточнения и исправление ошибки бариста',
+    'scen.desc.job-interview':
       'практикуем собеседование на английском: рассказ о себе, вопросы рекрутёру и ответы на них',
+    'scen.desc.household-store':
+      'закупка для новой квартиры: как объяснить предмет, название которого не знаешь',
+    'scen.desc.doctors-office':
+      'приём у врача: описываем симптомы точно — ache, pain, hurt, sore — и говорим о длительности',
     'scen.start': 'Начать разговор',
+    'scen.locked': 'Откроется, когда пройдёшь «{label}» — это следующий шаг истории',
+    'scen.lockedBtn': 'Закрыто',
+    'scen.verdictPass': 'Задача пройдена',
+    'scen.verdictFail': 'Задача не пройдена',
+    'scen.verdictDone': 'Готово',
 
     // План уроков
     'plan.title': 'План уроков',
@@ -291,9 +324,24 @@ export const DICT = {
     'dash.scenariosSub':
       'Speaking-іңді әртүрлі жағдайда сынап, тьютордан жеке талдау ал',
 
+    // Онбординг-тур
+    'tour.skip': 'Өткізу',
+    'tour.next': 'ОК',
+    'tour.done': 'Дайын',
+    'tour.mic.title': 'Тьютормен сөйлес',
+    'tour.mic.text':
+      'Микрофонды бас та, тьютормен дауыспен сөйлес — тірі әңгімелесушідей.',
+    'tour.plan.title': 'Сабақ жоспарың',
+    'tour.plan.text':
+      'Мұнда тьютор деңгейіңе сай сабақтар жинайды. Өткеніңді белгілеп, прогресті қадағала.',
+    'tour.scenarios.title': 'Рөлдік сценарийлер',
+    'tour.scenarios.text':
+      'Нақты жағдайларда өзіңді сына — сұхбат, отбасы туралы әңгіме және т.б.',
+
     'manage.title': 'Тьюторды басқару',
     'manage.change': 'Тьюторды ауыстыру',
     'manage.history': 'Әңгімелер тарихы',
+    'manage.historyEmpty': 'Мұнда тьютормен әңгімелеріңіздің тарихы пайда болады',
 
     'erran.title': 'Әңгімедегі қателер талдауы',
     'erran.by': 'Талдауды тьюторың жасады:',
@@ -303,9 +351,26 @@ export const DICT = {
     'scen.title': 'Сценарийлер',
     'scen.heading':
       'Speaking-іңді әртүрлі жағдайда сынап,\nтьютордан қателердің жеке талдауын ал',
-    'scen.desc':
+    'scen.desc.visa-interview':
+      'АҚШ елшілігіндегі сұхбат: виза офицері, қитұрқы сұрақтар және соңында шешім',
+    'scen.desc.hotel-check-in':
+      'қонақүйге тіркелу: брондау, нөмірмен шатасу және ағылшынша сыпайы өтініштер',
+    'scen.desc.asking-directions':
+      'жолды сұраймыз: орын предлогтары, бағдарлар және маршрутты қайталап айту',
+    'scen.desc.ordering-coffee':
+      'кофеханада тапсырыс: сыпайы тіркестер, нақтылау және бариста қатесін түзету',
+    'scen.desc.job-interview':
       'ағылшынша сұхбатты жаттықтырамыз: өзің туралы әңгіме, рекрутёрге сұрақтар және оларға жауаптар',
+    'scen.desc.household-store':
+      'жаңа пәтерге керек-жарақ: атауын білмейтін затты қалай түсіндіру',
+    'scen.desc.doctors-office':
+      'дәрігер қабылдауы: симптомдарды дәл сипаттаймыз — ache, pain, hurt, sore — және ұзақтығы',
     'scen.start': 'Әңгімені бастау',
+    'scen.locked': '«{label}» өткен соң ашылады — бұл әңгіменің келесі қадамы',
+    'scen.lockedBtn': 'Жабық',
+    'scen.verdictPass': 'Тапсырма орындалды',
+    'scen.verdictFail': 'Тапсырма орындалмады',
+    'scen.verdictDone': 'Дайын',
 
     'plan.title': 'Сабақ жоспары',
     'plan.progress': '{total}-тен {done} өтілді',
@@ -441,9 +506,24 @@ export const DICT = {
     'dash.scenariosSub':
       'Test your speaking in different situations and get personal feedback from the tutor',
 
+    // Onboarding tour
+    'tour.skip': 'Skip',
+    'tour.next': 'OK',
+    'tour.done': 'Done',
+    'tour.mic.title': 'Talk to your tutor',
+    'tour.mic.text':
+      'Tap the microphone and chat with your tutor by voice — like a real conversation partner.',
+    'tour.plan.title': 'Your lesson plan',
+    'tour.plan.text':
+      'Here the tutor builds lessons for your level. Check off what you finish and track your progress.',
+    'tour.scenarios.title': 'Role-play scenarios',
+    'tour.scenarios.text':
+      'Try yourself in real situations — a job interview, a chat about family and more.',
+
     'manage.title': 'Manage tutor',
     'manage.change': 'Change tutor',
     'manage.history': 'Conversation history',
+    'manage.historyEmpty': 'Your conversation history with the tutor will appear here',
 
     'erran.title': 'Conversation mistakes analytics',
     'erran.by': 'The analysis was done by your tutor:',
@@ -453,9 +533,26 @@ export const DICT = {
     'scen.title': 'Scenarios',
     'scen.heading':
       'Test your speaking in different situations\nand get personal mistake feedback from the tutor',
-    'scen.desc':
+    'scen.desc.visa-interview':
+      'a U.S. embassy interview: a consular officer, sharp follow-ups and a verdict at the end',
+    'scen.desc.hotel-check-in':
+      'checking into a hotel: your booking, a room mix-up and polite requests in English',
+    'scen.desc.asking-directions':
+      'asking a local the way: prepositions of place, landmarks and repeating the route back',
+    'scen.desc.ordering-coffee':
+      'ordering in a rush-hour coffee shop: polite frames, clarifying and fixing the barista’s mistake',
+    'scen.desc.job-interview':
       'we practise a job interview in English: talking about yourself, questions from the recruiter and answers to them',
+    'scen.desc.household-store':
+      'stocking an empty apartment: how to describe an object when you don’t know its name',
+    'scen.desc.doctors-office':
+      'a doctor’s visit: describing symptoms precisely — ache, pain, hurt, sore — and how long',
     'scen.start': 'Start conversation',
+    'scen.locked': 'Unlocks once you pass “{label}” — it’s the next step of the story',
+    'scen.lockedBtn': 'Locked',
+    'scen.verdictPass': 'Task complete',
+    'scen.verdictFail': 'Task not passed',
+    'scen.verdictDone': 'Done',
 
     'plan.title': 'Lesson plan',
     'plan.progress': '{done} of {total} completed',

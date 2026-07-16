@@ -110,6 +110,14 @@ export async function sendOtp(phone, name) {
   }
 }
 
+// Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
+// номер молча зарегистрировался бы «Гостем». Незарегистрированный номер здесь
+// даёт 400 «User with this phone not found», и мы показываем это пользователю.
+export async function requestLoginOtp(phone) {
+  await post('/auth/otp/request', { phone: normalizePhone(phone) })
+  return 'login'
+}
+
 // Шаг 2: проверка кода. В режиме register создаёт пользователя (без токена),
 // в режиме login — возвращает LoginResponse с accessToken.
 export async function verifyOtp(phone, code, name, mode) {

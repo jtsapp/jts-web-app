@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
@@ -10,6 +10,13 @@ import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
+import LessonsPage from './screens/LessonsPage.jsx'
+import IeltsPage from './screens/IeltsPage.jsx'
+import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
+import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
+import IeltsReadingPage from './screens/IeltsReadingPage.jsx'
+import IeltsSpeakingPage from './screens/IeltsSpeakingPage.jsx'
+import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
 import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
@@ -30,36 +37,79 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import { getTutor } from './tutor/tutors.js'
-import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel, getLanguageLevel } from './api.js'
+import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, saveLanguageLevel, getLanguageLevel } from './api.js'
+import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { useI18n } from './i18n.jsx'
 
 export default function App() {
   const { t } = useI18n()
-  // Стартуем с самого начала — экран приветствия и далее регистрация/онбординг.
-  // ?screen=… по-прежнему переопределяет начальный экран — так экраны
-  // тьютора остаются достижимы для отладки/диплинков.
-  const [screen, setScreen] = useState(() => {
-    // Гард для SSR-пререндера Next: window есть только в браузере.
-    if (typeof window === 'undefined') return 'welcome'
-    return new URLSearchParams(window.location.search).get('screen') || 'welcome'
-  })
+  // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
+  // ?screen=… переопределяет начальный экран — так экраны тьютора остаются
+  // достижимы для отладки/диплинков.
+  //
+  // Читать ?screen= прямо в useState нельзя: на сервере window нет, поэтому
+  // SSR отрисовал бы 'welcome', а первый рендер клиента — экран из query, и
+  // React ронял бы hydration mismatch. Поэтому первый рендер везде одинаковый
+  // ('welcome'), а диплинк применяется эффектом уже после гидратации.
+  const [screen, setScreen] = useState('welcome')
+  // Пока проверяем сохранённый токен, не рисуем ни welcome, ни kingdom — иначе
+  // у вернувшегося пользователя мелькнёт экран входа. Стартовое значение true
+  // одинаково на сервере и клиенте, так что гидратация не ломается.
+  const [restoring, setRestoring] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    const deepLink = new URLSearchParams(window.location.search).get('screen')
+
+    // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
+    // синхронно — аноним не видит заметной паузы.
+    restoreSession()
+      .then((session) => {
+        if (cancelled) return
+        if (session) {
+          setToken(session.token)
+          if (session.name) setName(session.name)
+          if (session.languageLevel) setUserLevel(session.languageLevel)
+        }
+        // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
+        if (deepLink) setScreen(deepLink)
+        else if (session) setScreen('kingdom')
+      })
+      .finally(() => {
+        if (!cancelled) setRestoring(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [mode, setMode] = useState('register') // 'register' | 'login'
+  const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
+  // Что пользователь нажал на welcome. Вход бьёт в /auth/otp/request напрямую,
+  // регистрация — в /registration/initiate. Определяет и «назад» с экрана телефона.
+  const [authIntent, setAuthIntent] = useState('register')
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   const [userLevel, setUserLevel] = useState('A1')
+  const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
 
+  // Запрос кода: вход — строго /auth/otp/request, регистрация — с фолбэком
+  // на вход, если номер уже занят. Бэкенд решает итоговый режим.
+  function requestCode(fullPhone) {
+    return authIntent === 'login' ? requestLoginOtp(fullPhone) : sendOtp(fullPhone, name)
+  }
+
   async function handlePhoneSubmit(fullPhone) {
     setError('')
     setLoading(true)
     try {
-      const m = await sendOtp(fullPhone, name)
+      const m = await requestCode(fullPhone)
       setMode(m)
       setPhone(fullPhone)
       setScreen('otp')
@@ -85,6 +135,7 @@ export default function App() {
         }
       }
       setToken(tok || null)
+      saveToken(tok || null) // без этого сессия умрёт на первой перезагрузке
       // Уровень берём сразу из профиля на backend — тест на определение
       // уровня после входа не показываем.
       if (tok) {
@@ -95,6 +146,10 @@ export default function App() {
           console.warn('Не удалось получить уровень из профиля:', e)
         }
       }
+      // Прогресс, накопленный до входа, перевешиваем на аккаунт — иначе человек
+      // увидит пустой словарь и забывшего его тьютора. Не ждём: вход не должен
+      // упираться в эту запись.
+      if (tok) mergeAnonymousProgress(tok)
       setScreen('success')
     } catch (e) {
       setError(e.message || t('err.otp'))
@@ -121,7 +176,8 @@ export default function App() {
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen('tutor-welcome')
-    // lessons — пока заглушка
+    else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'ielts') setScreen('ielts')
   }
 
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
@@ -130,7 +186,8 @@ export default function App() {
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen(tutorHome)
-    // lessons — пока заглушка
+    else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'ielts') setScreen('ielts')
   }
 
   // Пропуск регистрации — сразу к тесту уровня, без обращений к backend
@@ -139,22 +196,49 @@ export default function App() {
     setScreen('test-intro')
   }
 
+  // Общие пропсы всех экранов IELTS: сайдбар + внутренняя навигация по секциям.
+  const ieltsProps = {
+    userLevel,
+    userName: name,
+    token,
+    onNav: handleNav,
+    onGo: setScreen,
+  }
+
   async function handleResend() {
     setError('')
     try {
-      const m = await sendOtp(phone, name)
+      const m = await requestCode(phone)
       setMode(m)
     } catch (e) {
       setError(e.message || 'Не удалось отправить код повторно.')
     }
   }
 
+  if (restoring) {
+    return (
+      <div className="screen">
+        <div className="spinner" aria-label="Загрузка" />
+      </div>
+    )
+  }
+
   switch (screen) {
     case 'welcome':
       return (
         <WelcomePage
-          onRegister={() => setScreen('chat')}
-          onLogin={() => setScreen('phone')}
+          onRegister={() => {
+            setError('')
+            setAuthIntent('register')
+            setScreen('chat')
+          }}
+          // Вход не требует знакомства — сразу телефон + OTP.
+          onLogin={() => {
+            setError('')
+            setName('')
+            setAuthIntent('login')
+            setScreen('phone')
+          }}
         />
       )
     case 'chat':
@@ -172,7 +256,7 @@ export default function App() {
     case 'phone':
       return (
         <PhoneLoginPage
-          onBack={() => { setError(''); setScreen('chat') }}
+          onBack={() => { setError(''); setScreen(authIntent === 'login' ? 'welcome' : 'chat') }}
           onSubmit={handlePhoneSubmit}
           onSkip={handleSkip}
           loading={loading}
@@ -231,12 +315,29 @@ export default function App() {
           onNav={handleNav}
         />
       )
+    case 'lessons':
+      return <LessonsPage userLevel={userLevel} userName={name} onNav={handleNav} />
+    // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
+    // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
+    case 'ielts':
+      return <IeltsPage {...ieltsProps} />
+    case 'ielts-writing':
+      return <IeltsWritingPage {...ieltsProps} />
+    case 'ielts-listening':
+      return <IeltsListeningPage {...ieltsProps} />
+    case 'ielts-reading':
+      return <IeltsReadingPage {...ieltsProps} />
+    case 'ielts-speaking':
+      return <IeltsSpeakingPage {...ieltsProps} />
+    case 'ielts-progress':
+      return <IeltsProgressPage {...ieltsProps} />
     case 'kingdom-interior':
       return (
         <KingdomInteriorPage
           kingdom={kingdom}
           userName={name}
           userLevel={userLevel}
+          onNav={handleNav}
           onBack={() => setScreen('kingdom')}
         />
       )
@@ -300,7 +401,10 @@ export default function App() {
           onProfile={() => {}}
           onBack={() => setScreen('tutor-level-offer')}
           tutor={tutor}
-          onStart={() => setScreen('tutor-voice-chat')}
+          onStart={() => {
+            setScenario(null)
+            setScreen('tutor-voice-chat')
+          }}
           onDecline={() => setScreen('tutor-interests')}
         />
       )
@@ -308,11 +412,13 @@ export default function App() {
       return (
         <TutorVoiceChatPage
           user={{ name, level: userLevel }}
+          token={token}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-voice-intro')}
           tutor={tutor}
-          onFinish={() => setScreen('tutor-level-result')}
+          scenario={scenario}
+          onFinish={() => setScreen(scenario ? 'tutor-scenarios' : 'tutor-level-result')}
         />
       )
     // (голосовой чат завершается тапом по орбу → результат уровня)
@@ -371,7 +477,10 @@ export default function App() {
           onProfile={() => {}}
           tutor={tutor}
           onManage={() => setScreen('tutor-manage')}
-          onTalk={() => setScreen('tutor-voice-chat')}
+          onTalk={() => {
+            setScenario(null)
+            setScreen('tutor-voice-chat')
+          }}
           onSuggest={() => {}}
           onSeeLessons={() => setScreen('tutor-lesson-plan')}
           onSeeScenarios={() => setScreen('tutor-scenarios')}
@@ -385,7 +494,10 @@ export default function App() {
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-dashboard')}
-          onStart={() => setScreen('tutor-voice-chat')}
+          onStart={(id) => {
+            setScenario(id || null)
+            setScreen('tutor-voice-chat')
+          }}
         />
       )
     case 'tutor-chat-history':
