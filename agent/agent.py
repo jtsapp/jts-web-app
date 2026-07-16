@@ -612,14 +612,23 @@ PERSONA_TEMPERATURE = {
     "professor": 0.45,
 }
 
-# Gemini Live API voice per persona. Must match the constants in lib/tutors.ts.
+# Gemini voice per persona. Written for the Live API, but _cascade_tts_gemini
+# reads the same table — so under CASCADE_TTS=gemini this is what every learner
+# actually hears.
+#
 # Available voices: Puck (M), Charon (M), Fenrir (M), Kore (F), Aoede (F), Leda (F).
+#
+# hype was "Puck" — the same voice as bro, so Dexter and Spark were one man with
+# two scripts. It went unnoticed while TTS was Azure, where AZURE_TTS_VOICE gives
+# them Andrew and Brian; moving TTS to Gemini quietly collapsed them together.
+# Fenrir is the harder male voice, which suits Spark's "short, fast, loud bursts"
+# better than Puck's warmth anyway — Puck stays with Dexter.
 TUTOR_VOICE = {
     "bro": "Puck",
     "coach": "Leda",
     "professor": "Charon",
     "sage": "Fenrir",
-    "hype": "Puck",
+    "hype": "Fenrir",
     "snark": "Kore",
     "gentle": "Aoede",
     "edge": "Charon",
