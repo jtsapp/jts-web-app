@@ -38,7 +38,7 @@ import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
 import { getTutor } from './tutor/tutors.js'
-import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, saveLanguageLevel, getLanguageLevel } from './api.js'
+import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { useI18n } from './i18n.jsx'
 
@@ -160,6 +160,35 @@ export default function App() {
     }
   }
 
+  // Вход через Google: GIS уже отдал проверяемый id_token, бэкенд его
+  // верифицирует и находит/создаёт пользователя. Дальше — тот же пост-логин,
+  // что и после OTP: токен, уровень из профиля, перенос анонимного прогресса.
+  async function handleGoogleCredential(idToken, chatName) {
+    setError('')
+    setLoading(true)
+    try {
+      const data = await loginWithGoogle(idToken)
+      const tok = data?.accessToken || null
+      if (!tok) throw new Error(t('err.otp'))
+      // Имя из Google-профиля надёжнее введённого в чате, но чат — фолбэк.
+      setName(data?.name || chatName || '')
+      setToken(tok)
+      saveToken(tok)
+      try {
+        const lvl = await getLanguageLevel(tok)
+        if (lvl) setUserLevel(lvl)
+      } catch (e) {
+        console.warn('Не удалось получить уровень из профиля:', e)
+      }
+      mergeAnonymousProgress(tok)
+      setScreen('success')
+    } catch (e) {
+      setError(e.message || t('err.otp'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Завершение теста — сохраняем уровень в профиль и открываем королевство
   async function handleTestDone(res) {
     if (res?.level) setUserLevel(res.level)
@@ -255,6 +284,8 @@ export default function App() {
             setError('')
             setScreen('phone')
           }}
+          onGoogleToken={handleGoogleCredential}
+          error={error}
         />
       )
     case 'phone':
@@ -262,6 +293,7 @@ export default function App() {
         <PhoneLoginPage
           onBack={() => { setError(''); setScreen(authIntent === 'login' ? 'welcome' : 'chat') }}
           onSubmit={handlePhoneSubmit}
+          onGoogleToken={handleGoogleCredential}
           loading={loading}
           error={error}
         />
