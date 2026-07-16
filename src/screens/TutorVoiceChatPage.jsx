@@ -43,6 +43,8 @@ export default function TutorVoiceChatPage({
   scenario = null,
   // Токен аккаунта. Не путать с tokenData.token — тот выдаёт LiveKit для комнаты.
   token = null,
+  // Бэкенд отверг токен аккаунта (401). Чистит сессию и уводит на вход.
+  onSessionExpired,
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -53,7 +55,7 @@ export default function TutorVoiceChatPage({
 
   const [perm, setPerm] = useState('prompt') // 'prompt' | 'granted'
   const [tokenData, setTokenData] = useState(null)
-  // null | 'daily' | 'monthly' | 'mic' | 'generic'
+  // null | 'daily' | 'monthly' | 'mic' | 'expired' | 'generic'
   const [error, setError] = useState(null)
 
   async function requestMic() {
@@ -86,6 +88,15 @@ export default function TutorVoiceChatPage({
         setError(data.error === 'monthly_limit' ? 'monthly' : 'daily')
         return
       }
+      // Токен аккаунта протух: бэкенд отверг его на /user/me. Без этой ветки 401
+      // падал в 'generic' — «голосовой режим временно недоступен», хотя ломался
+      // не голос, а сессия, и чинилась она перезаходом. Сбрасываем сессию, чтобы
+      // App увёл на вход, а не оставлял залогиненным с мёртвым токеном.
+      if (res.status === 401) {
+        setError('expired')
+        onSessionExpired?.()
+        return
+      }
       if (!res.ok || !data.configured || !data.token || !data.url) {
         setError('generic')
         return
@@ -103,9 +114,11 @@ export default function TutorVoiceChatPage({
         ? t('voice.limitMonthly')
         : error === 'mic'
           ? t('voice.micDenied')
-          : error === 'generic'
-            ? t('voice.unavailable')
-            : ''
+          : error === 'expired'
+            ? t('voice.expired')
+            : error === 'generic'
+              ? t('voice.unavailable')
+              : ''
 
   const connected = Boolean(tokenData?.token && tokenData?.url)
 

@@ -208,6 +208,7 @@ export default function App() {
     token,
     onNav: handleNav,
     onGo: setScreen,
+    onProfile: () => setScreen('profile'),
   }
 
   async function handleResend() {
@@ -355,6 +356,7 @@ export default function App() {
           userLevel={userLevel}
           token={token}
           onNav={handleNav}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('kingdom')}
         />
       )
@@ -363,7 +365,7 @@ export default function App() {
         <TutorWelcomePage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onContinue={() => setScreen('tutor-lang')}
         />
       )
@@ -372,7 +374,7 @@ export default function App() {
         <TutorLanguagePage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onSelect={() => setScreen('tutor-choose')}
         />
       )
@@ -381,7 +383,7 @@ export default function App() {
         <TutorChoosePage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-lang')}
           onChoose={(key) => { setTutorKey(key); setScreen('tutor-loading') }}
           onListen={() => {}}
@@ -392,7 +394,7 @@ export default function App() {
         <TutorLoadingPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
           onDone={() => setScreen('tutor-level-offer')}
@@ -403,7 +405,7 @@ export default function App() {
         <TutorLevelOfferPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
           onStartTest={() => setScreen('tutor-voice-intro')}
@@ -415,7 +417,7 @@ export default function App() {
         <TutorVoiceIntroPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-level-offer')}
           tutor={tutor}
           onStart={() => {
@@ -431,11 +433,12 @@ export default function App() {
           user={{ name, level: userLevel }}
           token={token}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-voice-intro')}
           tutor={tutor}
           scenario={scenario}
           onFinish={() => setScreen(scenario ? 'tutor-scenarios' : 'tutor-level-result')}
+          onSessionExpired={handleLogout}
         />
       )
     // (голосовой чат завершается тапом по орбу → результат уровня)
@@ -444,7 +447,7 @@ export default function App() {
         <TutorLevelResultPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-voice-chat')}
           tutor={tutor}
           level="A1"
@@ -457,7 +460,7 @@ export default function App() {
         <TutorInterestsPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-level-result')}
           tutor={tutor}
           onContinue={() => setScreen('tutor-profession')}
@@ -468,7 +471,7 @@ export default function App() {
         <TutorProfessionPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-interests')}
           tutor={tutor}
           onSubmit={() => setScreen('tutor-analysis')}
@@ -480,7 +483,7 @@ export default function App() {
         <TutorAnalysisPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-profession')}
           tutor={tutor}
           onDone={() => setScreen('tutor-dashboard')}
@@ -491,7 +494,7 @@ export default function App() {
         <TutorDashboardPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           tutor={tutor}
           onManage={() => setScreen('tutor-manage')}
           onTalk={() => {
@@ -509,7 +512,7 @@ export default function App() {
         <TutorScenariosPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-dashboard')}
           onStart={(id) => {
             setScenario(id || null)
@@ -522,7 +525,7 @@ export default function App() {
         <TutorChatHistoryPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-manage')}
         />
       )
@@ -531,7 +534,7 @@ export default function App() {
         <TutorLessonPlanPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-dashboard')}
         />
       )
@@ -540,7 +543,7 @@ export default function App() {
         <TutorManagePage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-dashboard')}
           tutor={tutor}
           onChangeTutor={() => setScreen('tutor-choose')}
@@ -551,7 +554,7 @@ export default function App() {
         <TutorPracticeResultPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-dashboard')}
           variant="fail"
           onAnalytics={() => setScreen('tutor-error-analytics')}
@@ -564,7 +567,7 @@ export default function App() {
         <TutorErrorAnalyticsPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
-          onProfile={() => {}}
+          onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-practice-result')}
           tutor={tutor}
           onToPlan={() => setScreen('tutor-lesson-plan')}
