@@ -14,3 +14,8 @@ __pycache__/
 
 # Machine-local Claude Code settings (absolute paths, not shareable)
 .claude/
+
+# books.html — 109 МБ, превышает лимит файла GitHub (100 МБ), поэтому только
+# локально. fairytales.html (2.9 МБ) и обложки сказок (covers/) — коммитим,
+# чтобы «Практика» с настоящими обложками работала у всех.
+public/practice/books.html
