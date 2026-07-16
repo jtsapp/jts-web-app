@@ -52,13 +52,6 @@ export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
 }
 
-// Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
-// Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
-// durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
-export function getAudiobooks(token) {
-  return authGet('/mobile/audio-lessons', token)
-}
-
 // Баланс: монеты и стрик (для HUD)
 export function getBalance(token) {
   return authGet('/mobile/balance/info', token)
