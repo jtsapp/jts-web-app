@@ -98,6 +98,15 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // Экран завершения урока: null | {outcome:'success'|'fail', correct, wrong, accuracy, nextUrl}
   // Присылается мостом из iframe через postMessage.
   const [lessonEnd, setLessonEnd] = useState(null)
+  // Подтверждение выхода из незаконченного урока (модалка «Вы уверены…»).
+  const [confirmExit, setConfirmExit] = useState(false)
+
+  // «Назад»: внутри незаконченного урока сначала спрашиваем подтверждение,
+  // на тропе/экране завершения — уходим сразу.
+  const handleBack = () => {
+    if (inLesson && !lessonEnd) setConfirmExit(true)
+    else onBack()
+  }
 
   // Реальный прогресс королевства: пройденные уроки хранит сам hosted-урок в
   // localStorage['jts-{level}-done'] (массив кодов). iframe проксируется на наш
@@ -228,7 +237,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       onProfile={() => {}}
     >
       <div className="li-top">
-        <button className="li-back" onClick={onBack}>
+        <button className="li-back" onClick={handleBack}>
           <ChevronLeftIcon size={18} />
           {t('common.back')}
         </button>
@@ -361,6 +370,30 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                     Попробовать ещё раз
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Подтверждение выхода из незаконченного урока */}
+          {confirmExit && (
+            <div className="lx-over" onClick={() => setConfirmExit(false)}>
+              <div className="lx-card" onClick={(e) => e.stopPropagation()}>
+                <button
+                  className="lx-close"
+                  aria-label="Закрыть"
+                  onClick={() => setConfirmExit(false)}
+                >
+                  ×
+                </button>
+                <img className="lx-art" src="/assets/lesson/exit.png" alt="" />
+                <h2 className="lx-title">Вы уверены что хотите выйти?</h2>
+                <div className="lx-sub">Урок не будет пройден</div>
+                <button className="le-btn lx-continue" onClick={() => setConfirmExit(false)}>
+                  Продолжить обучение
+                </button>
+                <button className="lx-leave" onClick={onBack}>
+                  Выйти в меню
+                </button>
               </div>
             </div>
           )}

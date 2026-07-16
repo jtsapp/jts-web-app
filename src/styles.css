@@ -2153,6 +2153,83 @@ body {
   }
 }
 
+/* Модалка подтверждения выхода из незаконченного урока */
+.lx-over {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: rgba(23, 19, 38, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.lx-card {
+  position: relative;
+  background: #fff;
+  border-radius: 28px;
+  padding: 28px 26px 24px;
+  width: 320px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
+}
+.lx-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+.lx-art {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+}
+.lx-title {
+  margin: 4px 0 0;
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.lx-sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: -2px;
+}
+.lx-continue {
+  width: 100%;
+  margin-top: 12px;
+}
+.lx-leave {
+  width: 100%;
+  background: #efeaff;
+  color: var(--purple);
+  border: none;
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s ease;
+}
+.lx-leave:hover {
+  filter: brightness(0.97);
+}
+
 /* Арт-шапка королевства (сцена + король + уровень + кольцо прогресса) */
 .kh-hero.is-hidden {
   display: none;
