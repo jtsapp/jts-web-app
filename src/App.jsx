@@ -38,7 +38,7 @@ import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
 import { getTutor } from './tutor/tutors.js'
-import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
+import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { useI18n } from './i18n.jsx'
 
@@ -138,6 +138,16 @@ export default function App() {
       }
       setToken(tok || null)
       saveToken(tok || null) // без этого сессия умрёт на первой перезагрузке
+      // Уровень берём сразу из профиля на backend — тест на определение
+      // уровня после входа не показываем.
+      if (tok) {
+        try {
+          const lvl = await getLanguageLevel(tok)
+          if (lvl) setUserLevel(lvl)
+        } catch (e) {
+          console.warn('Не удалось получить уровень из профиля:', e)
+        }
+      }
       // Прогресс, накопленный до входа, перевешиваем на аккаунт — иначе человек
       // увидит пустой словарь и забывшего его тьютора. Не ждём: вход не должен
       // упираться в эту запись.
@@ -277,7 +287,8 @@ export default function App() {
         />
       )
     case 'success':
-      return <SuccessPage onDone={() => setScreen('test-intro')} />
+      // После входа уровень уже взят из профиля — минуем тест, сразу в обучение.
+      return <SuccessPage onDone={() => setScreen('kingdom')} />
     case 'test-intro':
       return (
         <LevelTestIntroPage
