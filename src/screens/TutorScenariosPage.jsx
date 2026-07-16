@@ -3,6 +3,7 @@ import TutorShell from '../tutor/TutorShell.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 import { loadToken } from '../lib/session.js'
 import { getDeviceId } from '../lib/identity.js'
+import { SCENARIOS, LABEL_BY_ID } from '../tutor/scenarios.js'
 
 // Локальная отмычка: NEXT_PUBLIC_SCENARIOS_NO_LOCK=1 открывает все сценарии,
 // чтобы их можно было тестировать в любом порядке, не проходя цепочку. Как
@@ -11,71 +12,6 @@ import { getDeviceId } from '../lib/identity.js'
 const NO_LOCK =
   process.env.NEXT_PUBLIC_SCENARIOS_NO_LOCK === '1' ||
   process.env.NEXT_PUBLIC_SCENARIOS_NO_LOCK === 'true'
-
-// scenarioId — slug of data/scenarios/<id>.md loaded by the voice agent.
-// Cards without a scenarioId fall back to free conversation.
-// Order follows the "newcomer in the US" storyline: land → get around → coffee
-// → interview → move in → clinic.
-//
-// requires — scenarioId that must be passed first. The scenes are self-contained,
-// so the chain is narrative, not technical: only the two beats that read as
-// consequences of the interview are gated (you furnish an apartment because you
-// got the job; you land at the clinic after the move). Everything else is open.
-const SCENARIOS = [
-  {
-    id: 'visa-interview',
-    scenarioId: 'visa-interview',
-    label: 'U.S. Visa Interview',
-    img: '/tutor/visa-interview.jpg',
-    badge: '🛂',
-  },
-  {
-    id: 'hotel-check-in',
-    scenarioId: 'hotel-check-in',
-    label: 'Hotel Check-In',
-    img: '/tutor/hotel-check-in.jpg',
-    badge: '🛬',
-  },
-  {
-    id: 'asking-directions',
-    scenarioId: 'asking-directions',
-    label: 'Asking for Directions',
-    img: '/tutor/asking-directions.jpg',
-    badge: '🗺️',
-  },
-  {
-    id: 'ordering-coffee',
-    scenarioId: 'ordering-coffee',
-    label: 'Ordering Coffee',
-    img: '/tutor/ordering-coffee.jpg',
-    badge: '☕',
-  },
-  {
-    id: 'job-interview',
-    scenarioId: 'job-interview',
-    label: 'The Job Interview',
-    img: '/tutor/job-interview.jpg',
-    badge: '💼',
-  },
-  {
-    id: 'household-store',
-    scenarioId: 'household-store',
-    label: 'Setting Up the Apartment',
-    img: '/tutor/household-store.jpg',
-    badge: '🛒',
-    requires: 'job-interview',
-  },
-  {
-    id: 'doctors-office',
-    scenarioId: 'doctors-office',
-    label: "At the Doctor's Office",
-    img: '/tutor/doctors-office.jpg',
-    badge: '🩺',
-    requires: 'household-store',
-  },
-]
-
-const LABEL_BY_ID = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.label]))
 
 /**
  * Слаги сценариев, сданных этим учеником. Источник — lesson_progress: голосовой
@@ -177,7 +113,7 @@ export default function TutorScenariosPage({
                   className="t-pill t-pill--primary t-scen__btn"
                   type="button"
                   disabled={Boolean(locked)}
-                  onClick={() => !locked && onStart && onStart(s.scenarioId)}
+                  onClick={() => !locked && onStart && onStart(s.id)}
                 >
                   {locked ? t('scen.lockedBtn') : t('scen.start')}
                 </button>
