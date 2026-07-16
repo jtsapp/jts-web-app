@@ -1,16 +1,128 @@
+import { useEffect, useState } from 'react'
 import TutorShell from '../tutor/TutorShell.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
+import { loadToken } from '../lib/session.js'
+import { getDeviceId } from '../lib/identity.js'
+
+// Локальная отмычка: NEXT_PUBLIC_SCENARIOS_NO_LOCK=1 открывает все сценарии,
+// чтобы их можно было тестировать в любом порядке, не проходя цепочку. Как
+// VOICE_NO_LIMIT у токен-роута. NEXT_PUBLIC_ вшивается в бандл на сборке —
+// значения секретного тут нет, только флаг.
+const NO_LOCK =
+  process.env.NEXT_PUBLIC_SCENARIOS_NO_LOCK === '1' ||
+  process.env.NEXT_PUBLIC_SCENARIOS_NO_LOCK === 'true'
 
 // scenarioId — slug of data/scenarios/<id>.md loaded by the voice agent.
 // Cards without a scenarioId fall back to free conversation.
+// Order follows the "newcomer in the US" storyline: land → get around → coffee
+// → interview → move in → clinic.
+//
+// requires — scenarioId that must be passed first. The scenes are self-contained,
+// so the chain is narrative, not technical: only the two beats that read as
+// consequences of the interview are gated (you furnish an apartment because you
+// got the job; you land at the clinic after the move). Everything else is open.
 const SCENARIOS = [
   {
     id: 'visa-interview',
     scenarioId: 'visa-interview',
     label: 'U.S. Visa Interview',
     img: '/tutor/visa-interview.jpg',
+    badge: '🛂',
+  },
+  {
+    id: 'hotel-check-in',
+    scenarioId: 'hotel-check-in',
+    label: 'Hotel Check-In',
+    img: '/tutor/hotel-check-in.jpg',
+    badge: '🛬',
+  },
+  {
+    id: 'asking-directions',
+    scenarioId: 'asking-directions',
+    label: 'Asking for Directions',
+    img: '/tutor/asking-directions.jpg',
+    badge: '🗺️',
+  },
+  {
+    id: 'ordering-coffee',
+    scenarioId: 'ordering-coffee',
+    label: 'Ordering Coffee',
+    img: '/tutor/ordering-coffee.jpg',
+    badge: '☕',
+  },
+  {
+    id: 'job-interview',
+    scenarioId: 'job-interview',
+    label: 'The Job Interview',
+    img: '/tutor/job-interview.jpg',
+    badge: '💼',
+  },
+  {
+    id: 'household-store',
+    scenarioId: 'household-store',
+    label: 'Setting Up the Apartment',
+    img: '/tutor/household-store.jpg',
+    badge: '🛒',
+    requires: 'job-interview',
+  },
+  {
+    id: 'doctors-office',
+    scenarioId: 'doctors-office',
+    label: "At the Doctor's Office",
+    img: '/tutor/doctors-office.jpg',
+    badge: '🩺',
+    requires: 'household-store',
   },
 ]
+
+const LABEL_BY_ID = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.label]))
+
+/**
+ * Слаги сценариев, сданных этим учеником. Источник — lesson_progress: голосовой
+ * агент по концовке сцены зовёт report_task_complete, тот пишет строку через
+ * /api/lesson/complete (lesson_key = scenarioId), а GET /api/profile её отдаёт.
+ * Отдельного хранилища для этого не нужно.
+ *
+ * Возвращает null, пока прогресс не прочитан ИЛИ если прочитать не удалось (нет
+ * БД, сеть, 401). Замок — подсказка по сюжету, а не защита, поэтому при
+ * неизвестном прогрессе открываем всё: лучше пустить дальше, чем запереть
+ * человека из-за неподнятой базы.
+ */
+function usePassedScenarios() {
+  const [passed, setPassed] = useState(null)
+
+  useEffect(() => {
+    if (NO_LOCK) return
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const token = loadToken()
+        const res = await fetch(`/api/profile?deviceId=${encodeURIComponent(getDeviceId())}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        if (!res.ok) return // 503 без БД, 401 — оставляем null, всё открыто
+        const data = await res.json().catch(() => null)
+        if (cancelled || !data?.configured) return
+        // Ответ получен — прогресс известен. profile === null означает «ученика в
+        // базе ещё нет», то есть не сдано НИЧЕГО; это не то же самое, что
+        // «прочитать не удалось», и запирать тут правильно.
+        const lessons = Array.isArray(data.profile?.lessons) ? data.profile.lessons : []
+        setPassed(
+          new Set(lessons.filter((l) => l.status === 'passed').map((l) => l.lessonKey)),
+        )
+      } catch {
+        // сеть отвалилась — тоже открываем всё
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return passed
+}
 
 export default function TutorScenariosPage({
   user,
@@ -20,6 +132,14 @@ export default function TutorScenariosPage({
   onStart,
 }) {
   const t = useT()
+  const passed = usePassedScenarios()
+
+  // Заперт только если точно знаем, что предыдущий не сдан.
+  const lockedBy = (s) => {
+    if (NO_LOCK || !s.requires || !passed) return null
+    return passed.has(s.requires) ? null : s.requires
+  }
+
   return (
     <TutorShell
       active="tutor"
@@ -34,25 +154,36 @@ export default function TutorScenariosPage({
         <h1 className="t-scen__title">{t('scen.heading')}</h1>
 
         <div className="t-scen__grid">
-          {SCENARIOS.map((s) => (
-            <div className="t-scen__card" key={s.id}>
-              <span
-                className="t-scen__img"
-                style={{ backgroundImage: `url(${s.img})` }}
+          {SCENARIOS.map((s) => {
+            const locked = lockedBy(s)
+            return (
+              <div
+                className={`t-scen__card${locked ? ' t-scen__card--locked' : ''}`}
+                key={s.id}
               >
-                <span className="t-scenario__badge">💼</span>
-              </span>
-              <div className="t-scen__label">{s.label}</div>
-              <p className="t-scen__desc">{t('scen.desc')}</p>
-              <button
-                className="t-pill t-pill--primary t-scen__btn"
-                type="button"
-                onClick={() => onStart && onStart(s.scenarioId)}
-              >
-                {t('scen.start')}
-              </button>
-            </div>
-          ))}
+                <span
+                  className="t-scen__img"
+                  style={{ backgroundImage: `url(${s.img})` }}
+                >
+                  <span className="t-scenario__badge">{locked ? '🔒' : s.badge}</span>
+                </span>
+                <div className="t-scen__label">{s.label}</div>
+                <p className="t-scen__desc">
+                  {locked
+                    ? t('scen.locked', { label: LABEL_BY_ID[locked] || locked })
+                    : t(`scen.desc.${s.id}`)}
+                </p>
+                <button
+                  className="t-pill t-pill--primary t-scen__btn"
+                  type="button"
+                  disabled={Boolean(locked)}
+                  onClick={() => !locked && onStart && onStart(s.scenarioId)}
+                >
+                  {locked ? t('scen.lockedBtn') : t('scen.start')}
+                </button>
+              </div>
+            )
+          })}
         </div>
       </div>
     </TutorShell>

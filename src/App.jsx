@@ -37,28 +37,58 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import { getTutor } from './tutor/tutors.js'
-import { sendOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
+import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, saveLanguageLevel } from './api.js'
+import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { useI18n } from './i18n.jsx'
 
 export default function App() {
   const { t } = useI18n()
-  // Стартуем сразу с главного меню «Обучение» (регистрацию/тест можно пройти
-  // позже). ?screen=… по-прежнему переопределяет начальный экран — так экраны
-  // тьютора остаются достижимы для отладки/диплинков.
+  // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
+  // ?screen=… переопределяет начальный экран — так экраны тьютора остаются
+  // достижимы для отладки/диплинков.
   //
   // Читать ?screen= прямо в useState нельзя: на сервере window нет, поэтому
-  // SSR отрисовал бы 'kingdom', а первый рендер клиента — экран из query, и
+  // SSR отрисовал бы 'welcome', а первый рендер клиента — экран из query, и
   // React ронял бы hydration mismatch. Поэтому первый рендер везде одинаковый
-  // ('kingdom'), а диплинк применяется эффектом уже после гидратации.
-  const [screen, setScreen] = useState('kingdom')
+  // ('welcome'), а диплинк применяется эффектом уже после гидратации.
+  const [screen, setScreen] = useState('welcome')
+  // Пока проверяем сохранённый токен, не рисуем ни welcome, ни kingdom — иначе
+  // у вернувшегося пользователя мелькнёт экран входа. Стартовое значение true
+  // одинаково на сервере и клиенте, так что гидратация не ломается.
+  const [restoring, setRestoring] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
     const deepLink = new URLSearchParams(window.location.search).get('screen')
-    if (deepLink) setScreen(deepLink)
+
+    // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
+    // синхронно — аноним не видит заметной паузы.
+    restoreSession()
+      .then((session) => {
+        if (cancelled) return
+        if (session) {
+          setToken(session.token)
+          if (session.name) setName(session.name)
+          if (session.languageLevel) setUserLevel(session.languageLevel)
+        }
+        // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
+        if (deepLink) setScreen(deepLink)
+        else if (session) setScreen('kingdom')
+      })
+      .finally(() => {
+        if (!cancelled) setRestoring(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [mode, setMode] = useState('register') // 'register' | 'login'
+  const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
+  // Что пользователь нажал на welcome. Вход бьёт в /auth/otp/request напрямую,
+  // регистрация — в /registration/initiate. Определяет и «назад» с экрана телефона.
+  const [authIntent, setAuthIntent] = useState('register')
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   const [userLevel, setUserLevel] = useState('A1')
@@ -69,11 +99,17 @@ export default function App() {
 
   const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
 
+  // Запрос кода: вход — строго /auth/otp/request, регистрация — с фолбэком
+  // на вход, если номер уже занят. Бэкенд решает итоговый режим.
+  function requestCode(fullPhone) {
+    return authIntent === 'login' ? requestLoginOtp(fullPhone) : sendOtp(fullPhone, name)
+  }
+
   async function handlePhoneSubmit(fullPhone) {
     setError('')
     setLoading(true)
     try {
-      const m = await sendOtp(fullPhone, name)
+      const m = await requestCode(fullPhone)
       setMode(m)
       setPhone(fullPhone)
       setScreen('otp')
@@ -99,6 +135,11 @@ export default function App() {
         }
       }
       setToken(tok || null)
+      saveToken(tok || null) // без этого сессия умрёт на первой перезагрузке
+      // Прогресс, накопленный до входа, перевешиваем на аккаунт — иначе человек
+      // увидит пустой словарь и забывшего его тьютора. Не ждём: вход не должен
+      // упираться в эту запись.
+      if (tok) mergeAnonymousProgress(tok)
       setScreen('success')
     } catch (e) {
       setError(e.message || t('err.otp'))
@@ -157,21 +198,37 @@ export default function App() {
   async function handleResend() {
     setError('')
     try {
-      const m = await sendOtp(phone, name)
+      const m = await requestCode(phone)
       setMode(m)
     } catch (e) {
       setError(e.message || 'Не удалось отправить код повторно.')
     }
   }
 
+  if (restoring) {
+    return (
+      <div className="screen">
+        <div className="spinner" aria-label="Загрузка" />
+      </div>
+    )
+  }
+
   switch (screen) {
     case 'welcome':
       return (
         <WelcomePage
-          // DEV: вход временно сломан — обе кнопки пропускают авторизацию.
-          // Вернуть на () => setScreen('chat'), когда починим вход.
-          onRegister={() => setScreen('tutor-welcome')}
-          onLogin={() => setScreen('tutor-welcome')}
+          onRegister={() => {
+            setError('')
+            setAuthIntent('register')
+            setScreen('chat')
+          }}
+          // Вход не требует знакомства — сразу телефон + OTP.
+          onLogin={() => {
+            setError('')
+            setName('')
+            setAuthIntent('login')
+            setScreen('phone')
+          }}
         />
       )
     case 'chat':
@@ -189,7 +246,7 @@ export default function App() {
     case 'phone':
       return (
         <PhoneLoginPage
-          onBack={() => { setError(''); setScreen('chat') }}
+          onBack={() => { setError(''); setScreen(authIntent === 'login' ? 'welcome' : 'chat') }}
           onSubmit={handlePhoneSubmit}
           onSkip={handleSkip}
           loading={loading}
@@ -344,6 +401,7 @@ export default function App() {
       return (
         <TutorVoiceChatPage
           user={{ name, level: userLevel }}
+          token={token}
           onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
           onProfile={() => {}}
           onBack={() => setScreen('tutor-voice-intro')}

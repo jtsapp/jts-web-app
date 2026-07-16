@@ -13,20 +13,7 @@ import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
 import { MicIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
-
-// Стабильный id устройства — сервер по нему считает минуты (лимит 10/день).
-function getDeviceId() {
-  try {
-    let id = localStorage.getItem('jts_device_id')
-    if (!id) {
-      id = 'dev-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
-      localStorage.setItem('jts_device_id', id)
-    }
-    return id
-  } catch {
-    return 'dev-ephemeral'
-  }
-}
+import { getDeviceId, authHeaders } from '../lib/identity.js'
 
 function ArrowUpIcon({ size = 22 }) {
   return (
@@ -54,6 +41,8 @@ export default function TutorVoiceChatPage({
   onFinish,
   tutor = {},
   scenario = null,
+  // Токен аккаунта. Не путать с tokenData.token — тот выдаёт LiveKit для комнаты.
+  token = null,
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -81,7 +70,9 @@ export default function TutorVoiceChatPage({
     try {
       const res = await fetch('/api/livekit/token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // Bearer решает, чьей будет память сессии: с токеном сервер положит в
+        // metadata user-<id>, без него — deviceId.
+        headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
         body: JSON.stringify({
           deviceId: getDeviceId(),
           level: user?.level || 'B1',

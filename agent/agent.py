@@ -335,6 +335,10 @@ class LearnerProfile:
     goal: str = "general"
     tutor: str = ""
     device_id: str = ""
+    # Learner's display name, straight from the verified access token in
+    # /api/livekit/token. "" for anonymous learners. Used by the voice
+    # scenarios so NPCs can address them by name.
+    user_name: str = ""
     eleven_voice_id: str = ""
     interests: list[str] = field(default_factory=list)
     profession: str = ""
@@ -434,6 +438,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         goal=str(data.get("goal", "general")) or "general",
         tutor=str(data.get("tutor", "") or ""),
         device_id=str(data.get("deviceId", "") or ""),
+        user_name=str(data.get("userName", "") or "")[:40],
         eleven_voice_id=str(data.get("elevenLabsVoiceId", "") or ""),
         interests=_str_list(data.get("interests"), 6),
         profession=str(data.get("profession", "") or "")[:120],
@@ -741,9 +746,18 @@ class TutorAgent(Agent):
 
     async def _do_post(self, path: str, body: dict[str, Any]) -> None:
         url = f"{self._api_url}{path}"
+        # The learner's profile id may be `user-<id>` (they are logged in). That
+        # namespace is reserved: the web app rejects it without proof of
+        # identity, and we have no learner token here. The service key is that
+        # proof — it lives in server env on both sides and never reaches a
+        # browser. Without it we can only write anonymous device profiles.
+        headers = {}
+        key = os.getenv("INTERNAL_API_KEY")
+        if key:
+            headers["X-Internal-Key"] = key
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:
-                await client.post(url, json=body)
+                await client.post(url, json=body, headers=headers)
         except Exception:
             logger.exception("Tool POST failed: %s", path)
 
@@ -1309,17 +1323,42 @@ def build_placement_instructions(p: LearnerProfile) -> str:
     )
 
 
+def scenario_name_block(user_name: str) -> str:
+    """Tell the NPC what it knows about the learner's name.
+
+    Deliberately a behavioural instruction rather than {user_name} string
+    interpolation. An anonymous learner has no name, and templating a fallback
+    into a scripted line gives "Order up for there!"; a missed token gives the
+    NPC reading "{user_name}" out loud. Stating what the character knows lets it
+    either use the real name naturally or ask for it in scene — which is what
+    a receptionist or a barista would do anyway.
+    """
+    name = (user_name or "").strip()
+    if not name:
+        return (
+            "THE LEARNER'S NAME: you do NOT know it. If your character would "
+            "naturally need it (a booking, a name for the cup, an introduction), "
+            "ask for it in scene and use it from then on.\n"
+        )
+    return (
+        f"THE LEARNER'S NAME: {name}. Use it where your character naturally "
+        "would — greeting them, calling out their order, thanking them at the "
+        "end. Don't overuse it, don't spell it out, don't remark on it.\n"
+    )
+
+
 def build_scenario_instructions(p: LearnerProfile, scenario: dict[str, Any]) -> str:
     """System prompt for a structured VOICE scenario (e.g. the U.S. Visa
     interview). The scenario's own markdown body defines the character, script
     and ending; this wrapper only enforces the voice rules, injects the known
-    level (so the scene never asks it), and points the model at the
-    report_task_complete tool for the final outcome.
+    level (so the scene never asks it), tells the NPC the learner's name, and
+    points the model at the report_task_complete tool for the final outcome.
     """
     body = scenario.get("body", "")
     fm = scenario.get("frontmatter", {})
     max_q = str(fm.get("maxQuestions", "5"))
     exp_block = explanation_language_block(p.explanation_lang or p.lang)
+    name_block = scenario_name_block(p.user_name)
     return (
         "==== VOICE SCENARIO MODE (this whole call) ====\n"
         "This is a VOICE-ONLY call: the learner wears headphones and only HEARS "
@@ -1327,21 +1366,67 @@ def build_scenario_instructions(p: LearnerProfile, scenario: dict[str, Any]) -> 
         "like a real person, never like a robot reading a document. Keep each "
         "turn short (usually one to three sentences), ask ONE question at a time, "
         "then WAIT for their answer.\n"
+        "EVERY CHARACTER YOU WRITE IS SPOKEN ALOUD by a text-to-speech voice. "
+        "So write ONLY the words your character actually says. NEVER write stage "
+        "directions, narration or asides — no *pauses*, no *calling out*, no "
+        "*waiting for your answer*, no *speaking warmly*, nothing in asterisks or "
+        "brackets. If you want to sound like you are calling an order across the "
+        "room, just say the words; the delivery is not yours to narrate. A stage "
+        "direction reaches the learner as read-aloud gibberish.\n"
         f"Adjust your speaking difficulty to the learner's known CEFR level: "
         f"{p.level}. Do NOT ask the learner what their level is — you already "
         "know it and adapt silently.\n"
+        f"{name_block}"
         "Any feedback you give must be SPOKEN and brief — talk it out like a real "
         "person would; NEVER read out written labels, headings, bullet points or "
         "long lists. One quick impression, one correction, one useful phrase, then "
         "move on.\n"
+        "CORRECT IN THE MOMENT, NOT AT THE END. The instant the learner slips, "
+        "your VERY NEXT reply must already contain the fixed form, folded into "
+        "what your character would say anyway (a recast). They say 'I want a "
+        "coffee' — you say 'Sure, so that's could I get one coffee — what size?'. "
+        "Do NOT quietly note the mistake and save it for the closing wrap-up: a "
+        "correction that arrives five minutes later teaches nothing, and the "
+        "learner has already said it wrong four more times. If you catch yourself "
+        "about to put a slip in the final feedback, you should have recast it when "
+        "it happened. The wrap-up is for ONE last impression — not a receipt of "
+        "everything you let slide.\n"
         "Stay fully in role for the whole call. Follow the SCENARIO SCRIPT below "
-        "exactly — its character, its questions and its ending.\n"
+        "exactly — its character, its questions and its ending. If the learner "
+        "contradicts the scene's premise or wanders off into some other story, do "
+        "not follow them — stay in your scene and steer them back in character.\n"
         f"COMPLETION: the scenario ends with a final outcome/verdict after about "
         f"{max_q} questions. The MOMENT you reach that ending, call the "
         "report_task_complete tool ONCE (passed=true on success, false on "
         "failure, with a short summary and up to 3 tips) — then speak your verdict "
         "and closing feedback out loud. Do NOT call the tool before the real "
         "ending, and do NOT announce that you are calling any tool.\n"
+        "GRADING — two DIFFERENT questions, do not merge them:\n"
+        "passed = did the SCENE reach its own ending? Read the script's 'Passed =' "
+        "line: it asks only whether the business of the scene got done (the "
+        "check-in completed, the order served, the offer made or refused). That is "
+        "a fact about your own scene and you know it for certain. Someone can be "
+        "blunt, lazy and full of mistakes and still complete a check-in — that is "
+        "still passed=true. You are not deciding whether they deserve it.\n"
+        "score (0-100) = how well they used the language the script was TEACHING. "
+        "This is where honesty matters, and where you must not flatter. Judge ONLY "
+        "the learner's own words:\n"
+        "  - YOUR lines are never evidence of what THEY did. You model the good "
+        "form all scene long — that is your job — but if the only 'could I get' in "
+        "the whole conversation came out of YOUR mouth, they never used it. If you "
+        "offered the Wi-Fi and they said 'no thanks', they asked nothing. If you "
+        "named the object and they said 'yeah, that', they described nothing.\n"
+        "  - Never reword a target to make it fit. 'Made the request' is not "
+        "'declined the thing you offered'. 'Described it' is not 'agreed with your "
+        "description'.\n"
+        "  - Rough scale: 80+ they used the target forms themselves and unprompted; "
+        "50-79 they got there after you modelled it, or half of it; below 40 they "
+        "never produced the target language at all, however smoothly the scene ran. "
+        "A monosyllabic learner who completed the scene is passed=true with a score "
+        "around 30 — that combination is normal and correct, not a contradiction.\n"
+        "The summary and tips must match the score, not the mood: never write that "
+        "they asked good questions when they asked none. The SPOKEN goodbye stays "
+        "warm regardless — it is the numbers and the summary that must be true.\n"
         f"{exp_block}"
         "\n==== SCENARIO SCRIPT ====\n"
         f"{body}\n"

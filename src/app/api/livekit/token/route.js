@@ -20,6 +20,7 @@ import {
   DAILY_LIMIT_SEC,
   MONTH_LIMIT_SEC,
 } from '@/lib/usage.js'
+import { resolveProfileId } from '@/lib/auth-server.js'
 
 export const runtime = 'nodejs'
 
@@ -42,7 +43,7 @@ function trimList(raw, cap, maxLen = MAX_LEN) {
   return out
 }
 
-function buildMetadata(p, tier) {
+function buildMetadata(p, tier, profileId, userName) {
   const meta = {
     level: p.level || 'B1',
     lang: p.lang || 'en',
@@ -50,7 +51,14 @@ function buildMetadata(p, tier) {
     goal: p.goal || 'general',
     tier,
   }
-  if (p.deviceId) meta.deviceId = p.deviceId
+  // Именно resolveProfileId, а не p.deviceId из тела: у залогиненного это
+  // user-<id>, и агент запишет память в аккаунт, а не в device-корзину.
+  if (profileId) meta.deviceId = profileId
+  // Имя ученика для голосовых сценариев: NPC зовёт его по имени. Только из
+  // проверенного токена (resolveProfileId), НЕ из тела запроса — иначе любой
+  // подставит чужое. У анонима имени нет, и сцена спросит его сама.
+  const name = trimStr(userName, 40)
+  if (name) meta.userName = name
   const persona = p.tutor ? TUTOR_KEY_TO_PERSONA[p.tutor] || p.tutor : undefined
   if (persona) meta.tutor = persona
   const interests = trimList(p.interests, 6, 40)
@@ -89,7 +97,7 @@ function buildMetadata(p, tier) {
   return JSON.stringify(meta)
 }
 
-async function issue(p) {
+async function issue(p, profileId, userName) {
   const apiKey = process.env.LIVEKIT_API_KEY
   const apiSecret = process.env.LIVEKIT_API_SECRET
   const wsUrl = process.env.LIVEKIT_URL
@@ -110,9 +118,11 @@ async function issue(p) {
 
   let ttl = noLimit ? 3600 : 600 // per-session ceiling (1h while testing, else 10 min)
   const freeTier = p.tier !== 'paid'
-  if (!noLimit && freeTier && isDbConfigured() && isValidDeviceId(p.deviceId)) {
+  // Лимиты по profileId: у залогиненного минуты держатся за аккаунтом, поэтому
+  // их больше не обнулить очисткой localStorage.
+  if (!noLimit && freeTier && isDbConfigured() && isValidDeviceId(profileId)) {
     try {
-      const { todaySeconds, monthSeconds } = await getUsage(p.deviceId)
+      const { todaySeconds, monthSeconds } = await getUsage(profileId)
       if (monthSeconds >= MONTH_LIMIT_SEC || todaySeconds >= DAILY_LIMIT_SEC) {
         return Response.json(
           {
@@ -132,15 +142,15 @@ async function issue(p) {
   const identity = p.identity || `learner-${Math.random().toString(36).slice(2, 10)}`
   const room = p.room || `jts-tutor-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`
   const tier = freeTier ? 'free' : 'paid'
-  const metadata = buildMetadata(p, tier)
+  const metadata = buildMetadata(p, tier, profileId, userName)
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
   const token = await at.toJwt()
 
-  if (isDbConfigured() && isValidDeviceId(p.deviceId)) {
+  if (isDbConfigured() && isValidDeviceId(profileId)) {
     try {
-      await openSession(room, p.deviceId)
+      await openSession(room, profileId)
     } catch (err) {
       console.error('[livekit.token] openSession failed', err)
     }
@@ -157,10 +167,15 @@ export async function POST(request) {
   } catch {
     // empty / malformed body — use defaults
   }
-  return issue(body)
+  const resolved = await resolveProfileId(request, body.deviceId)
+  if ('error' in resolved) return resolved.error
+  return issue(body, resolved.id, resolved.name)
 }
 
 export async function GET(request) {
   const params = new URL(request.url).searchParams
-  return issue(Object.fromEntries(params))
+  const p = Object.fromEntries(params)
+  const resolved = await resolveProfileId(request, p.deviceId)
+  if ('error' in resolved) return resolved.error
+  return issue(p, resolved.id, resolved.name)
 }
