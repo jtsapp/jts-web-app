@@ -12,7 +12,7 @@ const MAX_PLAYS = 2
 // IELTS Listening — two parts, each with its own audio (TTS from the bundled
 // script, never displayed) and questions. Max 2 plays per part, like the exam
 // plus one review. Answers stay editable while audio plays.
-export default function IeltsListeningPage({ userLevel = 'A1', userName, token, onNav, onGo }) {
+export default function IeltsListeningPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo }) {
   const task = IELTS_LISTENING_TASK
   const [answers, setAnswers] = useState({})
   const [result, setResult] = useState(null)
@@ -89,7 +89,7 @@ export default function IeltsListeningPage({ userLevel = 'A1', userName, token, 
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={onProfile}>
       <div className="ie ie--narrow">
         <button
           type="button"

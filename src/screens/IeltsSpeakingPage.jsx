@@ -98,7 +98,7 @@ function fmt(sec) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, onNav, onGo }) {
+export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo }) {
   const task = IELTS_SPEAKING_TASK
   const rec = useWavRecorder()
   const [supported] = useState(() => isMediaRecordingSupported())
@@ -234,7 +234,7 @@ export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, o
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={onProfile}>
       <div className="ie ie--narrow">
         <button type="button" className="ie-back" onClick={() => onGo?.('ielts')}>
           ← К секциям IELTS

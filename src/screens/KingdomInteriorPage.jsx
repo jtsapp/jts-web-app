@@ -35,7 +35,7 @@ function ProgressRing({ done = 0, total = 0 }) {
 // CEFR-уровень совпадает с уровнем королевства (Sunhaven → A1). Сверху —
 // арт-шапка королевства (сцена + портрет короля + уровень + кольцо прогресса,
 // по мобильному дизайну), под ней — hosted-сайт модуля в iframe.
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onBack }) {
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onProfile, onBack }) {
   const { t } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
@@ -234,7 +234,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       userLevel={userLevel}
       active="learning"
       onNav={onNav}
-      onProfile={() => {}}
+      onProfile={onProfile}
     >
       <div className="li-top">
         <button className="li-back" onClick={handleBack}>

@@ -86,6 +86,7 @@ export const DICT = {
     'voice.micDenied':
       'Доступ к микрофону запрещён. Разрешите его в настройках браузера и попробуйте снова.',
     'voice.unavailable': 'Голосовой режим временно недоступен. Попробуйте позже.',
+    'voice.expired': 'Сессия истекла. Войдите заново, чтобы продолжить разговор.',
     'voice.limitDaily':
       'На сегодня лимит разговора исчерпан (10 минут в день на бесплатном тарифе). Возвращайся завтра!',
     'voice.limitMonthly':
@@ -283,6 +284,7 @@ export const DICT = {
     'voice.micDenied':
       'Микрофонға қолжетімділік бұғатталған. Оны браузер баптауларынан рұқсат етіп, қайта көріңіз.',
     'voice.unavailable': 'Дауыстық режим уақытша қолжетімсіз. Кейінірек көріңіз.',
+    'voice.expired': 'Сессия аяқталды. Әңгімені жалғастыру үшін қайта кіріңіз.',
     'voice.limitDaily':
       'Бүгінгі әңгіме лимиті бітті (тегін тарифте күніне 10 минут). Ертең қайта келіңіз!',
     'voice.limitMonthly':
@@ -469,6 +471,7 @@ export const DICT = {
     'voice.micDenied':
       'Microphone access is blocked. Allow it in your browser settings and try again.',
     'voice.unavailable': 'Voice mode is temporarily unavailable. Please try later.',
+    'voice.expired': 'Your session has expired. Sign in again to keep talking.',
     'voice.limitDaily':
       "You've used today's talk limit (10 minutes a day on the free plan). Come back tomorrow!",
     'voice.limitMonthly':
