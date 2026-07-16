@@ -87,7 +87,7 @@ function speak(word) {
   }
 }
 
-export default function PracticePage({ userLevel = 'A1', userName, token, onNav }) {
+export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
   const [videos, setVideos] = useState([])
@@ -134,7 +134,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav 
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="practice" onNav={onNav} onProfile={onProfile}>
       <div className="pp pp--enter">
         {/* ───── Центр: ленты контента ───── */}
         <div className="pp__center">
