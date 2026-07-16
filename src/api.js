@@ -195,6 +195,36 @@ export function getSavedWords(token) {
   return authGet('/mobile/saved-words', token)
 }
 
+// Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest
+// мобилки: name обязателен, остальные поля шлём только если заданы, чтобы не
+// затирать то, что уже хранит бэкенд. Возвращает обновлённый UserInfo.
+export async function updateUser(token, { name, email, city, gender, birthDate }) {
+  const payload = { name }
+  if (email) payload.email = email
+  if (city) payload.city = city
+  if (gender) payload.gender = gender
+  if (birthDate) payload.birthDate = birthDate
+  let res
+  try {
+    res = await fetch(`${BASE}/user/update`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const msg =
+      (Array.isArray(data?.messages) && data.messages[0]) ||
+      data?.message ||
+      `Не удалось сохранить профиль (${res.status})`
+    throw new Error(msg)
+  }
+  return data
+}
+
 // Сохранить уровень CEFR в профиль пользователя (query-param + Bearer).
 export async function saveLanguageLevel(token, level) {
   const url = `${BASE}/user/language-level?languageLevel=${encodeURIComponent(level)}`
