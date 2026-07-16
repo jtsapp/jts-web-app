@@ -13,7 +13,13 @@ import {
   getMediaClips,
   getSituativki,
   getSavedWords,
+  getAudiobooks,
 } from '../api.js'
+import { TALES } from '../data/practiceLibrary.js'
+
+// URL hosted-библиотек (self-contained HTML в public/practice)
+const BOOKS_URL = '/practice/books.html'
+const TALES_URL = '/practice/fairytales.html'
 
 // Просмотры: 1331 → «1 331», 12000 → «12 тыс», 3400000 → «3.4 млн»
 function formatViews(n) {
@@ -93,6 +99,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [videos, setVideos] = useState([])
   const [clips, setClips] = useState([])
   const [situations, setSituations] = useState([])
+  const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
   const [tab, setTab] = useState('saved') // 'saved' | 'learned'
 
@@ -110,6 +117,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           pull((k) => getVideoLessons(k), setVideos),
           pull((k) => getMediaClips(k), setClips),
           pull((k) => getSituativki(k, userLevel), setSituations),
+          pull((k) => getAudiobooks(k), setBooks),
           pull((k) => getSavedWords(k), setWords),
         ])
       })
@@ -209,16 +217,60 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
             )}
           </section>
 
-          {/* Книжки — бэкенд пока не отдаёт (в мобилке это bundled-манифест) */}
+          {/* Книжки — каталог аудиокниг из dev-admin (реальные обложки) */}
           <section id="sec-Книжки" className="pp-sec">
-            <SectionHead title="Книжки" onAll={() => {}} />
-            <Empty loading={false} text="Раздел появится, когда книги заведут в админке" />
+            <SectionHead title="Книжки" onAll={() => openHosted(BOOKS_URL)} />
+            {books.length === 0 ? (
+              <Empty loading={state.loading} />
+            ) : (
+              <Rail>
+                {books.map((b) => (
+                  <a
+                    key={b.id}
+                    className="pp-bcard"
+                    href={BOOKS_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <BookCover book={b} />
+                    <div className="pp-bcard__title">{b.title}</div>
+                    <div className="pp-bcard__meta">
+                      <Dots level={b.level} />
+                      {b.level && <span className="pp-bcard__cefr">{b.level}</span>}
+                    </div>
+                    {b.author && <div className="pp-bcard__author">{b.author}</div>}
+                  </a>
+                ))}
+              </Rail>
+            )}
           </section>
 
-          {/* Сказки — тоже без бэкенд-эндпоинта */}
+          {/* Сказки — реестр из fairytales.html (title/desc/len/chars + coverGrad) */}
           <section id="sec-Сказки" className="pp-sec">
-            <SectionHead title="Сказки" onAll={() => {}} />
-            <Empty loading={false} text="Раздел появится, когда сказки заведут в админке" />
+            <SectionHead title="Сказки" onAll={() => openHosted(TALES_URL)} />
+            <Rail>
+              {TALES.map((tl) => (
+                <a
+                  key={tl.id}
+                  className="pp-tcard"
+                  href={TALES_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <TaleCover tale={tl} />
+                  <div className="pp-tcard__title">{tl.title}</div>
+                  <p className="pp-tcard__desc">{tl.desc}</p>
+                  <div className="pp-tcard__meta">
+                    <span className="pp-chip-meta">
+                      Длительность <b>{tl.len}</b>
+                    </span>
+                    <span className="pp-chip-meta">
+                      Персонажей <b>{tl.chars}</b>
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </Rail>
           </section>
 
           {/* Ситуации */}
@@ -296,5 +348,64 @@ function Empty({ loading, text }) {
     <div className="pp-empty">
       {loading ? 'Загрузка…' : text || 'Нет данных'}
     </div>
+  )
+}
+
+// Открыть hosted-библиотеку (книжки/сказки) в новой вкладке.
+function openHosted(href) {
+  window.open(href, '_blank', 'noopener')
+}
+
+// Детерминированный градиент из строки (фолбэк-обложка, когда нет coverImageUrl).
+function gradFor(seed) {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) & 0xffff
+  const a = h % 360
+  return `linear-gradient(150deg, hsl(${a} 45% 42%), hsl(${(a + 40) % 360} 55% 18%))`
+}
+
+// Обложка сказки: настоящий арт из библиотеки (снят Playwright'ом в
+// public/practice/covers/tales/<id>.png); при отсутствии — градиент + мотив.
+function TaleCover({ tale }) {
+  const [ok, setOk] = useState(true)
+  if (ok) {
+    return (
+      <span className="pp-tcard__cover pp-tcard__cover--img">
+        <img
+          src={`/practice/covers/tales/${tale.id}.png`}
+          alt={tale.title}
+          loading="lazy"
+          onError={() => setOk(false)}
+        />
+      </span>
+    )
+  }
+  return (
+    <span
+      className="pp-tcard__cover"
+      style={{ background: `linear-gradient(140deg, ${tale.grad[0]}, ${tale.grad[1]})` }}
+    >
+      <span className="pp-tcard__motif" aria-hidden="true">{tale.motif}</span>
+      <span className="pp-tcard__coverTitle">{tale.title}</span>
+    </span>
+  )
+}
+
+// Обложка книги: реальная картинка из dev-admin (coverImageUrl); при отсутствии
+// или ошибке загрузки — цветной фолбэк с названием.
+function BookCover({ book }) {
+  const [ok, setOk] = useState(true)
+  const src = book.coverImageUrl || book.coverUrl || ''
+  if (src && ok) {
+    return (
+      <span className="pp-bcard__cover pp-bcard__cover--img">
+        <img src={src} alt={book.title} loading="lazy" onError={() => setOk(false)} />
+      </span>
+    )
+  }
+  return (
+    <span className="pp-bcard__cover" style={{ background: gradFor(book.title || String(book.id)) }}>
+      <span className="pp-bcard__coverTitle">{book.title}</span>
+    </span>
   )
 }
