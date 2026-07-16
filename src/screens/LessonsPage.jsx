@@ -7,12 +7,12 @@ const TABS = [
   { key: 'online', label: 'lessons.tabOnline' },
 ]
 
-export default function LessonsPage({ userLevel = 'A1', userName, onNav }) {
+export default function LessonsPage({ userLevel = 'A1', userName, onNav, onProfile }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('online')
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" onNav={onNav} onProfile={onProfile}>
       <div className="ls">
         <header className="ls__head">
           <h1 className="ls__title">{t('nav.lessons')}</h1>

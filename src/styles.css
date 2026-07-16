@@ -2775,3 +2775,391 @@ body {
 @media (max-width: 560px) {
   .pp { padding: 20px 16px 32px; }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Профиль (порт мобильного экрана profile.dart на десктоп)
+   ────────────────────────────────────────────────────────────────────────── */
+.pf {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+/* Hero: сцена уровня + белый лист + аватар */
+.pf-hero {
+  position: relative;
+  margin-bottom: 28px;
+}
+.pf-hero__scene {
+  height: 190px;
+  border-radius: 22px 22px 0 0;
+  background-size: cover;
+  background-position: center;
+  background-color: #efeaff;
+}
+.pf-hero__sheet {
+  position: relative;
+  margin-top: -22px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 64px 22px 24px;
+  box-shadow: 0 8px 30px rgba(23, 19, 38, 0.06);
+  text-align: center;
+}
+.pf-avatar {
+  position: absolute;
+  top: -53px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 106px;
+  height: 106px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 5px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+}
+.pf-avatar__img,
+.pf-avatar__initial {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pf-avatar__initial {
+  background: #f0ebff;
+  color: #9047ff;
+  font-size: 40px;
+  font-weight: 800;
+}
+.pf-avatar__cam {
+  position: absolute;
+  right: 0;
+  bottom: 4px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #f4f5f7;
+  color: #9047ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.pf-avatar__cam:hover {
+  background: #f5f2fe;
+}
+.pf-name {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+.pf-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+}
+.pf-phone svg {
+  color: #9047ff;
+}
+
+/* Карточка звания */
+.pf-rank {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid #efeef4;
+  border-radius: 18px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+.pf-rank__coin {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.pf-rank__text {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+  color: var(--muted);
+}
+.pf-rank__text b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.pf-rank__cefr {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Прогресс к следующему званию */
+.pf-progress {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid #efeef4;
+  border-radius: 18px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+.pf-progress__cap {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.pf-progress__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pf-progress__coin {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.pf-progress__coin--dim {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.pf-progress__bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 8px;
+  background: #f0ebff;
+  overflow: hidden;
+}
+.pf-progress__fill {
+  height: 100%;
+  border-radius: 8px;
+  background: #9047ff;
+  transition: width 0.5s ease;
+}
+
+/* Статистика */
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+.pf-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  border: 1px solid #efeef4;
+  border-radius: 18px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+.pf-stat__ic {
+  width: 24px;
+  height: 24px;
+}
+.pf-stat__glyph {
+  color: #9047ff;
+  display: flex;
+}
+.pf-stat__glyph--gold {
+  color: #f0a500;
+}
+.pf-stat b {
+  font-size: 20px;
+  font-weight: 800;
+  color: #9047ff;
+}
+.pf-stat span {
+  font-size: 11px;
+  line-height: 1.2;
+  color: #a6a5b2;
+  text-align: center;
+}
+
+/* Секции настроек */
+.pf-label {
+  margin: 26px 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #a6a5b2;
+}
+.pf-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+.pf-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.pf-row:hover {
+  background: #faf9ff;
+}
+.pf-row__ic {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9047ff;
+  flex-shrink: 0;
+}
+.pf-row__ic--chip {
+  background: #f0ebff;
+  border-radius: 10px;
+}
+.pf-row__title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.pf-row__trailing {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9047ff;
+}
+.pf-row__chev {
+  color: #9047ff;
+  display: flex;
+}
+.pf-row--chip .pf-row__chev {
+  color: #c4c2d0;
+}
+.pf-row__divider {
+  height: 1px;
+  margin-left: 56px;
+  background: #f0f0f3;
+}
+
+/* Выход */
+.pf-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 24px;
+  padding: 15px;
+  border: 1px solid #ffd7d8;
+  border-radius: 16px;
+  background: #fff5f5;
+  color: #e5484d;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.pf-logout:hover {
+  background: #ffecec;
+}
+
+/* Модалка выбора языка */
+.pf-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 19, 38, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.pf-modal__sheet {
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  background: #fff;
+  border-radius: 24px;
+  padding: 16px 20px 24px;
+}
+.pf-modal__grab {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #e6e6ec;
+  margin: 0 auto 16px;
+}
+.pf-modal__title {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 18px;
+}
+.pf-lang {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e6e6ec;
+  border-radius: 14px;
+  background: #f8f8f8;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pf-lang span {
+  flex: 1;
+  text-align: left;
+}
+.pf-lang--active {
+  background: #f0ebff;
+  border-color: #9047ff;
+  color: #9047ff;
+}
+.pf-lang--active svg:last-child {
+  color: #9047ff;
+}
+
+/* Тост */
+.pf-toast {
+  position: fixed;
+  bottom: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #171326;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 120;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
