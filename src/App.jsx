@@ -316,6 +316,7 @@ export default function App() {
           token={token}
           onNav={handleNav}
           onLogout={handleLogout}
+          onUpdateName={setName}
         />
       )
     case 'practice':
