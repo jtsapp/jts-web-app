@@ -2013,6 +2013,23 @@ DEFAULT_ELEVEN_VOICE = ELEVEN_VOICE["bro"]
 DEFAULT_GEMINI_TTS_VOICE = "Puck"
 DEFAULT_GEMINI_TTS_MODEL = "gemini-2.5-flash-tts"
 
+# Soniox TTS voice per persona. Only Spark (hype) is routed here today (see the
+# persona override in _cascade_tts); every other persona stays on the CASCADE_TTS
+# choice. A single Soniox voice keeps one timbre across all 60+ languages, so a
+# Spark kz session sounds like Spark instead of swapping to Azure's kk-KZ voice
+# the way the Gemini path has to. Voices (28): male Daniel/Noah/Jack/Adrian/Owen/
+# Kenji/Rafael/Mateo/Oliver/Arthur/Cooper/Mason/Arjun/Rohan; female Maya/Nina/
+# Emma/Claire/Grace/Mina/Lucia/Sofia/Isla/Victoria/Ruby/Elise/Priya/Meera.
+SONIOX_TTS_VOICE = {
+    "hype": "Owen",  # Spark — punchy male, matches the Fenrir/fast-bursts energy
+}
+DEFAULT_SONIOX_TTS_VOICE = "Owen"
+DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
+# Personas that ALWAYS speak through Soniox TTS regardless of CASCADE_TTS. Spark
+# lives here so its voice is one provider across en/ru/kz. Comma-separated env
+# override (persona ids) so it can be widened or disabled ("") without a redeploy.
+DEFAULT_SONIOX_TTS_PERSONAS = {"hype"}
+
 # Gemini-TTS synthesises audio with an LLM, so a long tutor turn takes far
 # longer to generate than Azure's vocoder does. livekit's default request
 # timeout is 10s (DEFAULT_API_CONNECT_OPTIONS), which a normal reply blows
@@ -2160,6 +2177,40 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     )
 
 
+def _cascade_tts_soniox(profile: LearnerProfile):
+    """Soniox TTS (tts-rt-v1). One voice holds its timbre across all 60+ languages,
+    so a persona sounds the same in en/ru/kz with no Azure-style swap to a native
+    kk-KZ voice on a Kazakh session. Reuses SONIOX_API_KEY — the STT leg already
+    needs it — so routing a persona here costs no new secret. Currently Spark only.
+    """
+    if soniox is None:
+        raise RuntimeError("Soniox TTS needs livekit-plugins-soniox")
+    key = os.getenv("SONIOX_API_KEY")
+    if not key:
+        raise RuntimeError("Soniox TTS needs SONIOX_API_KEY")
+    voice = SONIOX_TTS_VOICE.get(profile.tutor, DEFAULT_SONIOX_TTS_VOICE)
+    voice = os.getenv("SONIOX_TTS_VOICE_OVERRIDE", voice)
+    model = os.getenv("SONIOX_TTS_MODEL", DEFAULT_SONIOX_TTS_MODEL)
+    # `language` only biases pronunciation of the input text; the voice itself is
+    # language-agnostic. The tutor speaks mostly English even in a ru/kz session,
+    # but the session language is the best single hint.
+    language = (profile.lang or "en").strip() or "en"
+    logger.info(
+        "Cascade TTS: Soniox (%s, voice=%s, lang=%s), tutor=%s",
+        model, voice, language, profile.tutor or "<none>",
+    )
+    return soniox.TTS(api_key=key, model=model, voice=voice, language=language)
+
+
+def _soniox_tts_personas() -> set[str]:
+    """Persona ids forced onto Soniox TTS. Env override (comma-separated) wins so
+    the routing can be widened or turned off ("") without redeploying."""
+    raw = os.getenv("SONIOX_TTS_PERSONAS")
+    if raw is None:
+        return DEFAULT_SONIOX_TTS_PERSONAS
+    return {p.strip().lower() for p in raw.split(",") if p.strip()}
+
+
 def _cascade_tts(profile: LearnerProfile):
     """Cascade TTS, picked by CASCADE_TTS so both legs can be measured on live
     sessions and rolled back with one env var.
@@ -2175,6 +2226,12 @@ def _cascade_tts(profile: LearnerProfile):
       requested: Pro = 20 parallel on Flash/Turbo (the default here), 10 on
       multilingual_v2. Needs ELEVENLABS_API_KEY.
     """
+    # Per-persona override BEFORE the CASCADE_TTS switch: Spark (hype) always
+    # speaks through Soniox TTS, whatever CASCADE_TTS is set to — one provider,
+    # one voice, en/ru/kz. Others fall through to the global CASCADE_TTS choice.
+    if profile.tutor in _soniox_tts_personas():
+        return _cascade_tts_soniox(profile)
+
     which = (os.getenv("CASCADE_TTS") or "azure").strip().lower()
     if which not in ("azure", "gemini", "eleven"):
         raise RuntimeError(
