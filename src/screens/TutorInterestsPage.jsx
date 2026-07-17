@@ -1,20 +1,7 @@
 import { useState } from 'react'
 import TutorShell from '../tutor/TutorShell.jsx'
+import { INTEREST_TOPICS } from '../tutor/interests.js'
 import { useT } from '../i18n/LanguageContext.jsx'
-
-// Ключи тем интереса — тексты берём из словаря (t) по ним же.
-const TOPIC_KEYS = [
-  'interests.topic.code',
-  'interests.topic.football',
-  'interests.topic.sport',
-  'interests.topic.psy',
-  'interests.topic.games',
-  'interests.topic.esport',
-  'interests.topic.art',
-  'interests.topic.politics',
-  'interests.topic.movies',
-  'interests.topic.fashion',
-]
 
 export default function TutorInterestsPage({
   user,
@@ -22,18 +9,20 @@ export default function TutorInterestsPage({
   onProfile,
   onBack,
   tutor = {},
+  // id тем из сохранённого профиля — подсвечиваем прошлый выбор.
+  initialIds = [],
+  // Получает массив id выбранных тем.
   onContinue,
 }) {
   const t = useT()
   const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
-  const [selected, setSelected] = useState(
-    () => new Set(['interests.topic.psy', 'interests.topic.movies', 'interests.topic.fashion']),
-  )
+  // Ничего не предвыбираем: интересы — выбор ученика, а не наша догадка.
+  const [selected, setSelected] = useState(() => new Set(initialIds))
 
-  function toggle(key) {
+  function toggle(id) {
     setSelected((prev) => {
       const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
+      next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
   }
@@ -60,14 +49,14 @@ export default function TutorInterestsPage({
         <p className="t-interests__sub">{t('interests.sub')}</p>
 
         <div className="t-interests__chips">
-          {TOPIC_KEYS.map((key) => (
+          {INTEREST_TOPICS.map(({ id, tKey }) => (
             <button
-              key={key}
+              key={id}
               type="button"
-              className={'t-topic' + (selected.has(key) ? ' is-selected' : '')}
-              onClick={() => toggle(key)}
+              className={'t-topic' + (selected.has(id) ? ' is-selected' : '')}
+              onClick={() => toggle(id)}
             >
-              {t(key)}
+              {t(tKey)}
             </button>
           ))}
         </div>
@@ -75,8 +64,10 @@ export default function TutorInterestsPage({
         <button
           className="t-pill t-pill--primary"
           type="button"
-          onClick={onContinue}
-          style={{ marginTop: 42, width: 370 }}
+          // Минимум одна тема: без интересов тьютору не за что зацепиться.
+          disabled={selected.size === 0}
+          onClick={() => onContinue?.(Array.from(selected))}
+          style={{ marginTop: 42, width: 370, opacity: selected.size === 0 ? 0.45 : 1 }}
         >
           {t('common.continue')}
         </button>

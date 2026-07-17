@@ -41,6 +41,10 @@ export default function TutorVoiceChatPage({
   onFinish,
   tutor = {},
   scenario = null,
+  // Интересы (англ. метки) и профессия из профиля — уходят в metadata комнаты,
+  // чтобы тьютор цеплялся за темы ученика.
+  interests = [],
+  profession = '',
   // Токен аккаунта. Не путать с tokenData.token — тот выдаёт LiveKit для комнаты.
   token = null,
   // Бэкенд отверг токен аккаунта (401). Чистит сессию и уводит на вход.
@@ -80,6 +84,8 @@ export default function TutorVoiceChatPage({
           level: user?.level || 'B1',
           lang,
           tutor: tutor.key,
+          ...(interests.length ? { interests } : {}),
+          ...(profession ? { profession } : {}),
           ...(scenarioId ? { scenarioId } : {}),
         }),
       })

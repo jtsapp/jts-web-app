@@ -38,8 +38,10 @@ import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
 import { getTutor } from './tutor/tutors.js'
+import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
+import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
 
 export default function App() {
@@ -65,13 +67,27 @@ export default function App() {
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
     restoreSession()
-      .then((session) => {
+      .then(async (session) => {
         if (cancelled) return
         if (session) {
           setToken(session.token)
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
           if (session.languageLevel) setUserLevel(session.languageLevel)
+        }
+        // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
+        // device-id) — восстанавливаем, чтобы перезагрузка не гоняла онбординг
+        // заново. Ждём здесь же: спиннер и так висит, зато к первому экрану
+        // навигация «Тьютор» уже знает, вести на dashboard или на welcome.
+        const profile = await loadTutorProfile(session?.token)
+        if (cancelled) return
+        if (profile) {
+          if (profile.tutor) {
+            setTutorKey(profile.tutor)
+            setTutorOnboarded(true)
+          }
+          setInterestIds(enToInterestIds(profile.interests))
+          if (profile.profession) setProfession(profile.profession)
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
         if (deepLink) setScreen(deepLink)
@@ -93,6 +109,11 @@ export default function App() {
   const [authIntent, setAuthIntent] = useState('register')
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
+  // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
+  // ведёт сразу на dashboard, а не на welcome-цепочку.
+  const [tutorOnboarded, setTutorOnboarded] = useState(false)
+  const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
+  const [profession, setProfession] = useState('')
   const [userLevel, setUserLevel] = useState('A1')
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   const [kingdom, setKingdom] = useState(null)
@@ -150,8 +171,21 @@ export default function App() {
       }
       // Прогресс, накопленный до входа, перевешиваем на аккаунт — иначе человек
       // увидит пустой словарь и забывшего его тьютора. Не ждём: вход не должен
-      // упираться в эту запись.
-      if (tok) mergeAnonymousProgress(tok)
+      // упираться в эту запись. После переноса подтягиваем профиль аккаунта:
+      // у вернувшегося юзера там уже лежат тьютор/интересы с прошлых сессий.
+      if (tok) {
+        mergeAnonymousProgress(tok)
+          .then(() => loadTutorProfile(tok))
+          .then((profile) => {
+            if (!profile) return
+            if (profile.tutor) {
+              setTutorKey(profile.tutor)
+              setTutorOnboarded(true)
+            }
+            setInterestIds(enToInterestIds(profile.interests))
+            if (profile.profession) setProfession(profile.profession)
+          })
+      }
       setScreen('success')
     } catch (e) {
       setError(e.message || t('err.otp'))
@@ -208,14 +242,23 @@ export default function App() {
     setToken(null)
     setName('')
     setPhone('')
+    // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
+    // не должен унаследовать чужой выбор.
+    setTutorKey('spark')
+    setTutorOnboarded(false)
+    setInterestIds([])
+    setProfession('')
     setScreen('welcome')
   }
+
+  // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
+  const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
 
   // Навигация по левому сайдбару обучающей зоны.
   function handleNav(key) {
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
-    else if (key === 'tutor') setScreen('tutor-welcome')
+    else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
   }
@@ -396,7 +439,7 @@ export default function App() {
       return (
         <TutorWelcomePage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onContinue={() => setScreen('tutor-lang')}
         />
@@ -405,7 +448,7 @@ export default function App() {
       return (
         <TutorLanguagePage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onSelect={() => setScreen('tutor-choose')}
         />
@@ -414,10 +457,16 @@ export default function App() {
       return (
         <TutorChoosePage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-lang')}
-          onChoose={(key) => { setTutorKey(key); setScreen('tutor-loading') }}
+          onChoose={(key) => {
+            setTutorKey(key)
+            // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
+            setTutorOnboarded(true)
+            saveTutorPrefs(token, { tutor: key })
+            setScreen('tutor-loading')
+          }}
           onListen={() => {}}
         />
       )
@@ -425,18 +474,20 @@ export default function App() {
       return (
         <TutorLoadingPage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
-          onDone={() => setScreen('tutor-level-offer')}
+          // CEFR-оффер убран из цепочки: после «подстройки» сразу интересы.
+          // Экраны tutor-level-offer/voice-intro остались достижимы диплинком.
+          onDone={() => setScreen('tutor-interests')}
         />
       )
     case 'tutor-level-offer':
       return (
         <TutorLevelOfferPage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
@@ -448,7 +499,7 @@ export default function App() {
       return (
         <TutorVoiceIntroPage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-level-offer')}
           tutor={tutor}
@@ -464,7 +515,9 @@ export default function App() {
         <TutorVoiceChatPage
           user={{ name, level: userLevel }}
           token={token}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          interests={interestIdsToEn(interestIds)}
+          profession={profession}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-voice-intro')}
           tutor={tutor}
@@ -478,7 +531,7 @@ export default function App() {
       return (
         <TutorLevelResultPage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-voice-chat')}
           tutor={tutor}
@@ -491,22 +544,34 @@ export default function App() {
       return (
         <TutorInterestsPage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-level-result')}
+          onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
-          onContinue={() => setScreen('tutor-profession')}
+          initialIds={interestIds}
+          onContinue={(ids) => {
+            setInterestIds(ids)
+            saveTutorPrefs(token, { interests: interestIdsToEn(ids) })
+            setScreen('tutor-profession')
+          }}
         />
       )
     case 'tutor-profession':
       return (
         <TutorProfessionPage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-interests')}
           tutor={tutor}
-          onSubmit={() => setScreen('tutor-analysis')}
+          onSubmit={(prof) => {
+            const p = typeof prof === 'string' ? prof.trim() : ''
+            if (p) {
+              setProfession(p)
+              saveTutorPrefs(token, { profession: p })
+            }
+            setScreen('tutor-analysis')
+          }}
           onSkip={() => setScreen('tutor-analysis')}
         />
       )
@@ -514,7 +579,7 @@ export default function App() {
       return (
         <TutorAnalysisPage
           user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, 'tutor-welcome')}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-profession')}
           tutor={tutor}

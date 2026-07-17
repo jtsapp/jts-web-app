@@ -12,6 +12,17 @@ const PROF_KEYS = [
   'prof.opt.actor',
 ]
 
+// Каноническая (английская) метка для профиля: её читает голосовой тьютор в
+// промпте, поэтому сохраняем не локализованный текст кнопки.
+const PROF_EN = {
+  'prof.opt.it': 'IT/Development',
+  'prof.opt.management': 'Management',
+  'prof.opt.marketing': 'Marketing',
+  'prof.opt.logist': 'Logistics',
+  'prof.opt.design': 'Design',
+  'prof.opt.actor': 'Actor',
+}
+
 // Экран «тьютор хочет узнать кем ты работаешь» — ввод или выбор профессии.
 export default function TutorProfessionPage({
   user,
@@ -74,7 +85,12 @@ export default function TutorProfessionPage({
               key={key}
               type="button"
               className={'t-prof__opt' + (picked === key ? ' is-picked' : '')}
-              onClick={() => setPicked(key)}
+              // Клик по плитке = выбор: подтверждающей кнопки на макете нет,
+              // поэтому сразу отдаём профессию наверх (раньше выбор терялся).
+              onClick={() => {
+                setPicked(key)
+                onSubmit && onSubmit(PROF_EN[key])
+              }}
             >
               <span>{t(key)}</span>
               <span className="t-radio" />
