@@ -5,7 +5,7 @@ import { useI18n } from '../i18n.jsx'
 import { computeKingdoms, roleForLevel } from '../kingdoms.js'
 import { getLearningPath, countProgress } from '../api.js'
 
-export default function LearningPage({ userLevel = 'A1', userName, token, tested = true, onStartTest, onOpenKingdom, onNav, onProfile }) {
+export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom, onNav, onProfile }) {
   const { t } = useI18n()
   const [progress, setProgress] = useState({}) // id -> {done,total}
 
@@ -120,23 +120,6 @@ export default function LearningPage({ userLevel = 'A1', userName, token, tested
             </div>
           )}
         </aside>
-
-        {/* Обучение заблокировано, пока не пройден тест уровня */}
-        {!tested && (
-          <div className="lp-lock">
-            <div className="lp-lock__card">
-              <h2 className="lp-lock__title">
-                Обучение
-                <br />
-                не доступно
-              </h2>
-              <p className="lp-lock__sub">Пройдите тестирование, чтобы мы определили твой уровень</p>
-              <button className="lp-lock__btn" onClick={onStartTest}>
-                Начать тестирование сейчас
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </LearningLayout>
   )
