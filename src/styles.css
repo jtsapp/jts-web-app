@@ -4587,9 +4587,10 @@ textarea {
 }
 
 /* Сброс дефолтных стилей <button> у карточек-кнопок практики
-   (видео/мемы/книги) — убираем рамку, фон, паддинг и обводку фокуса. */
+   (видео/мемы/книги/ситуации) — убираем рамку, фон, паддинг и обводку фокуса. */
 .pp-vcard,
 .pp-mcard,
+.pp-scard,
 .pp-bcard {
   appearance: none;
   border: none;
@@ -4603,11 +4604,13 @@ textarea {
 }
 .pp-vcard:focus,
 .pp-mcard:focus,
+.pp-scard:focus,
 .pp-bcard:focus {
   outline: none;
 }
 .pp-vcard:focus-visible,
 .pp-mcard:focus-visible,
+.pp-scard:focus-visible,
 .pp-bcard:focus-visible {
   outline: 2px solid #b79cf5;
   outline-offset: 2px;

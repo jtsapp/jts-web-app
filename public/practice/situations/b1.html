@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Just To Study — Speaking Practice</title>
+<meta name="description" content="Watch a real-life situation, then practise speaking and get instant feedback. English is simple." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --purple:#874BF8; --purple-deep:#6A35E0; --purple-soft:#A57BFA;
+  --cyan:#0AC7FF; --cyan-deep:#0AAFFF;
+  --ink:#16131F; --orange:#FF631E; --orange-light:#FF7D1D; --amber:#FFAD00;
+  --green:#00D441; --green-deep:#00B838; --yellow:#FFFB05; --red:#FF4D4D;
+  --g1:#4E4B4B; --g2:#898787; --g3:#C4C3C3;
+  --bg:#F3F1FB; --bg-2:#ECE8FA; --card:#FFFFFF; --line:#ECE7F8;
+  --radius:22px; --radius-lg:30px; --pill:999px;
+  --shadow-sm:0 6px 18px -10px rgba(78,40,160,.30);
+  --shadow:0 22px 55px -24px rgba(78,40,160,.45);
+  --display:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --body:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+body{margin:0;font-family:var(--body);color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.5;}
+h1,h2,h3,h4,.wordmark{font-family:var(--display);line-height:1.08;margin:0;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+ol,ul{margin:0;padding:0;list-style:none;}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:3px;border-radius:8px;}
+
+.ambient{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.ambient span{position:absolute;border-radius:50% 50% 50% 4px;opacity:.10;filter:blur(2px);animation:drift 22s ease-in-out infinite;}
+.ambient span:nth-child(1){width:240px;height:240px;background:var(--purple);left:-60px;top:8%;}
+.ambient span:nth-child(2){width:160px;height:160px;background:var(--cyan);right:-40px;top:24%;animation-delay:-6s;}
+.ambient span:nth-child(3){width:200px;height:200px;background:var(--orange);left:10%;bottom:6%;animation-delay:-12s;}
+.ambient span:nth-child(4){width:130px;height:130px;background:var(--green);right:14%;bottom:18%;animation-delay:-3s;}
+@keyframes drift{0%,100%{transform:translateY(0) translateX(0) rotate(0)}50%{transform:translateY(-34px) translateX(18px) rotate(8deg)}}
+
+.shell{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:0 18px 80px;}
+
+header.app{position:relative;z-index:2;background:linear-gradient(135deg,var(--purple) 0%,var(--purple-deep) 70%,#5a2fce 100%);color:#fff;border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:20px 18px 30px;box-shadow:var(--shadow);overflow:hidden;}
+header.app::after{content:"just to study";position:absolute;right:-30px;bottom:-46px;font-family:var(--display);font-weight:900;font-size:110px;letter-spacing:-4px;color:#fff;opacity:.06;white-space:nowrap;pointer-events:none;}
+.header-row{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+.brand{display:flex;flex-direction:column;gap:4px;}
+.wordmark{font-weight:900;font-size:30px;letter-spacing:-1px;color:#fff;display:inline-flex;align-items:baseline;}
+.wordmark .to{color:var(--cyan);}
+.wordmark .reg{font-size:11px;vertical-align:super;opacity:.7;margin-left:2px;}
+.slogan{font-size:13px;font-weight:600;opacity:.9;letter-spacing:.2px;}
+.help-tag{display:inline-flex;align-items:center;gap:7px;font-family:var(--display);font-weight:800;font-size:12.5px;color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);padding:8px 13px;border-radius:var(--pill);backdrop-filter:blur(10px);}
+.help-tag .d{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(0,212,65,.3);}
+
+.hero{max-width:760px;margin:26px auto 0;padding:0 4px;}
+.hero h1{font-size:clamp(28px,7vw,42px);font-weight:900;letter-spacing:-1px;}
+.hero h1 .accent{color:var(--purple);}
+.hero p{margin:12px 0 0;color:var(--g1);font-size:16px;max-width:54ch;}
+.hero-bubbles{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.chip{font-family:var(--display);font-weight:800;font-size:12.5px;color:#fff;padding:8px 14px;border-radius:18px 18px 18px 5px;box-shadow:var(--shadow-sm);animation:pop .5s cubic-bezier(.2,1.4,.4,1) both;}
+.chip:nth-child(1){background:var(--cyan);}
+.chip:nth-child(2){background:var(--orange);animation-delay:.08s;}
+.chip:nth-child(3){background:var(--green);animation-delay:.16s;}
+.chip:nth-child(4){background:var(--purple);animation-delay:.24s;}
+@keyframes pop{from{transform:scale(.6) translateY(8px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+
+.progress{margin:26px auto 0;max-width:760px;background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm);border:1px solid var(--line);}
+.progress-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.progress-top .label{font-family:var(--display);font-weight:800;font-size:15px;}
+.progress-top .count{font-family:var(--display);font-weight:900;font-size:15px;color:var(--purple);}
+.bar{height:14px;border-radius:var(--pill);background:var(--bg-2);overflow:hidden;}
+.bar>i{display:block;height:100%;width:0%;border-radius:inherit;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width .7s cubic-bezier(.2,.8,.2,1);}
+.badges{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:var(--pill);background:var(--bg-2);color:var(--g2);transition:.3s;}
+.badge.on{background:linear-gradient(120deg,var(--green),var(--green-deep));color:#fff;box-shadow:0 8px 18px -8px rgba(0,212,65,.6);}
+.badge svg{width:15px;height:15px;}
+
+.section-head{display:flex;align-items:center;gap:12px;margin:38px 4px 4px;}
+.section-head .dot-bubble{width:34px;height:34px;border-radius:50% 50% 50% 4px;background:linear-gradient(135deg,var(--purple),var(--cyan));flex:none;box-shadow:var(--shadow-sm);}
+.section-head h2{font-size:23px;font-weight:900;letter-spacing:-.5px;}
+.section-sub{margin:4px 4px 0 58px;color:var(--g2);font-size:14px;}
+
+.situation{background:var(--card);border-radius:var(--radius-lg);padding:20px;margin-top:20px;box-shadow:var(--shadow);border:1px solid var(--line);opacity:0;transform:translateY(22px);transition:opacity .6s,transform .6s;}
+.situation.in{opacity:1;transform:none;}
+.sit-head{display:flex;align-items:flex-start;gap:14px;}
+.sit-seq{flex:none;width:48px;height:48px;border-radius:16px 16px 16px 5px;background:linear-gradient(140deg,var(--purple),var(--purple-deep));color:#fff;font-family:var(--display);font-weight:900;font-size:20px;display:grid;place-items:center;box-shadow:var(--shadow-sm);}
+.titles{flex:1;min-width:0;}
+.sit-flag{flex:none;align-self:flex-start;font-family:var(--display);font-weight:800;font-size:11.5px;padding:6px 11px;border-radius:var(--pill);background:var(--bg-2);color:var(--g2);display:inline-flex;align-items:center;gap:5px;transition:.3s;}
+.sit-flag.done{background:linear-gradient(120deg,var(--green),var(--green-deep));color:#fff;}
+.sit-flag svg{width:14px;height:14px;}
+
+/* ---- multilingual item: English-first + KZ/RU collapsible toggles ---- */
+.ml{margin:0;}
+.ml + .ml{margin-top:2px;}
+.ml-main{font-size:15.5px;color:var(--ink);display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;}
+.title-main{font-size:21px;font-weight:900;letter-spacing:-.4px;}
+.sit-desc .ml-main{color:var(--g1);}
+.ml-tg{display:inline-flex;gap:5px;flex:none;}
+.ml-toggle{font-family:var(--display);font-weight:800;font-size:10.5px;letter-spacing:.4px;color:var(--purple);background:var(--bg-2);border:1px solid transparent;padding:3px 8px;border-radius:var(--pill);transition:.2s;line-height:1.4;}
+.ml-toggle:hover{background:#E4DCFB;}
+.ml-toggle.on{background:linear-gradient(120deg,var(--purple),var(--cyan));color:#fff;box-shadow:var(--shadow-sm);}
+.ml-tr{max-height:0;opacity:0;overflow:hidden;transition:max-height .35s ease,opacity .3s ease,margin .3s ease,padding .3s ease;border-left:3px solid var(--line);margin:0 0 0 2px;padding:0 0 0 12px;font-size:14.5px;}
+.ml-tr.show{max-height:320px;opacity:1;margin:6px 0 6px 2px;padding:2px 0 2px 12px;}
+.ml-tr.kz{border-left-color:var(--cyan);color:#0a6f8c;}
+.ml-tr.ru{border-left-color:var(--purple);color:#5b34c0;}
+.ml-tr .ml-lab{font-family:var(--display);font-weight:900;font-size:10px;letter-spacing:.6px;opacity:.7;display:block;margin-bottom:1px;}
+
+.sit-desc{margin-top:16px;}
+
+/* ---- video ---- */
+.video-card{position:relative;margin-top:18px;border-radius:var(--radius);overflow:hidden;background:#0c0a14;box-shadow:var(--shadow-sm);aspect-ratio:16/9;}
+.video-card video{display:block;width:100%;height:100%;object-fit:cover;background:#0c0a14;}
+.video-status{position:absolute;top:12px;left:12px;z-index:4;display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:800;font-size:11px;color:#fff;padding:5px 10px;border-radius:var(--pill);background:rgba(0,0,0,.42);backdrop-filter:blur(6px);opacity:0;transform:translateY(-4px);transition:.3s;}
+.video-status.show{opacity:1;transform:none;}
+.video-status .s-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);}
+.video-status.ready .s-dot{background:var(--green);box-shadow:0 0 0 3px rgba(0,212,65,.25);}
+.video-status.broken .s-dot{background:var(--orange);}
+.muted-note{position:absolute;top:12px;right:12px;z-index:4;font-family:var(--display);font-weight:800;font-size:10.5px;color:#fff;padding:4px 9px;border-radius:var(--pill);background:rgba(0,0,0,.42);backdrop-filter:blur(6px);}
+.play-overlay{position:absolute;inset:0;z-index:3;display:grid;place-items:center;transition:opacity .35s;cursor:pointer;background:linear-gradient(180deg,rgba(106,53,224,.12),rgba(12,10,20,.5));}
+.play-overlay.hide{opacity:0;pointer-events:none;}
+.play-btn{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,.5);box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .25s;animation:breathe 3s ease-in-out infinite;}
+.play-overlay:hover .play-btn{transform:scale(1.08);}
+.play-btn svg{width:30px;height:30px;fill:#fff;margin-left:4px;}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.video-loading{position:absolute;inset:0;z-index:5;display:none;place-items:center;background:rgba(12,10,20,.55);}
+.video-loading.show{display:grid;}
+.spinner{width:46px;height:46px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:var(--cyan);animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.video-error{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:22px;color:#fff;background:linear-gradient(160deg,#241a3f,#1a1430);}
+.video-error.show{display:flex;}
+.video-error .ve-ic{width:46px;height:46px;border-radius:50% 50% 50% 5px;background:rgba(255,99,30,.2);display:grid;place-items:center;}
+.video-error .ve-ic svg{width:24px;height:24px;fill:var(--orange-light);}
+.video-error p{margin:0;font-size:14px;font-weight:600;max-width:36ch;color:#EFEBFF;}
+.video-error .ve-src{font-size:11px;color:#9c93c7;font-family:ui-monospace,Menlo,Consolas,monospace;}
+.video-error .ve-retry{margin-top:4px;font-family:var(--display);font-weight:800;font-size:13px;color:#fff;padding:9px 18px;border-radius:var(--pill);background:linear-gradient(120deg,var(--purple),var(--cyan));box-shadow:var(--shadow-sm);transition:transform .2s;}
+.video-error .ve-retry:hover{transform:translateY(-2px);}
+.video-meta{position:absolute;left:12px;bottom:12px;right:12px;z-index:2;display:flex;align-items:center;gap:8px;pointer-events:none;}
+.video-meta .dur{font-family:var(--display);font-weight:800;font-size:12px;color:#fff;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);padding:5px 9px;border-radius:var(--pill);}
+.video-meta .vtitle{font-family:var(--display);font-weight:800;font-size:12.5px;color:#fff;opacity:.95;text-shadow:0 1px 6px rgba(0,0,0,.6);margin-left:auto;}
+.video-card.playing .video-meta,.video-card.playing .video-status,.video-card.playing .muted-note{opacity:0;transition:opacity .3s;}
+
+/* ---- immersive: you-are-here tag ---- */
+.you-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:900;font-size:10.5px;letter-spacing:.6px;color:#fff;background:linear-gradient(120deg,var(--orange),var(--amber));padding:5px 11px;border-radius:var(--pill);margin-bottom:9px;box-shadow:var(--shadow-sm);}
+.you-tag svg{width:13px;height:13px;fill:#fff;}
+
+/* ---- mission ---- */
+.mission{margin-top:22px;background:linear-gradient(120deg,rgba(10,199,255,.10),rgba(135,75,248,.10));border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+.mission .block-head{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900;}
+.mission .block-head .ic{width:30px;height:30px;border-radius:50% 50% 50% 4px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:grid;place-items:center;flex:none;}
+.mission .block-head .ic svg{width:16px;height:16px;fill:#fff;}
+.mlist{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.mlist li{display:flex;background:#fff;border:1px solid var(--line);border-left:4px solid var(--cyan);border-radius:14px;padding:12px 14px;}
+.mlist li:nth-child(2){border-left-color:var(--purple);}
+.mlist li:nth-child(3){border-left-color:var(--orange);}
+
+/* ---- scenario beats ---- */
+.scenario{margin-top:22px;background:linear-gradient(160deg,#FbFAFF,#F1F6FF);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+.scenario .block-head{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:900;margin:0 0 4px;}
+.scenario .block-head .ic{width:28px;height:28px;border-radius:50% 50% 50% 4px;background:linear-gradient(135deg,var(--cyan),var(--cyan-deep));display:grid;place-items:center;flex:none;}
+.scenario .block-head .ic svg{width:15px;height:15px;fill:#fff;}
+.scenario .block-head span:last-child{font-size:14.5px;}
+.scenario-hint{margin:2px 0 6px;font-size:13px;color:var(--g1);}
+.beat{margin-top:12px;}
+.beat-scene{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;background:transparent;border:none;padding:6px 2px 6px 0;}
+.beat-scene .beat-tag{flex:none;font-family:var(--display);font-weight:900;font-size:9.5px;letter-spacing:.7px;color:var(--g2);background:var(--bg-2);padding:3px 8px;border-radius:var(--pill);}
+.beat-scene .ml{flex:1;min-width:60%;}
+.beat-scene .ml-main{font-style:italic;color:var(--g1);font-size:14.5px;}
+.beat-them{background:#fff;border:1px solid var(--line);border-radius:16px 16px 16px 5px;padding:12px 14px;position:relative;}
+.beat-them .beat-who{display:inline-block;font-family:var(--display);font-weight:800;font-size:10.5px;color:#fff;background:linear-gradient(120deg,var(--cyan-deep),#0a8fd0);padding:3px 10px;border-radius:var(--pill);margin-bottom:7px;}
+.beat-you{background:linear-gradient(135deg,rgba(255,99,30,.12),rgba(255,173,0,.12));border:1.5px dashed rgba(255,99,30,.5);border-radius:16px 16px 5px 16px;padding:13px 14px;}
+.beat-you-lab{display:flex;align-items:center;gap:7px;font-family:var(--display);font-weight:900;font-size:11px;letter-spacing:.5px;color:var(--orange);margin-bottom:6px;}
+.beat-you-lab svg{width:14px;height:14px;fill:var(--orange);}
+.beat-you .ml-main{font-weight:700;}
+
+/* ---- speaking mission task ---- */
+.task{margin-top:14px;background:linear-gradient(120deg,rgba(255,173,0,.14),rgba(255,99,30,.12));border:1px solid rgba(255,173,0,.4);border-radius:16px;padding:13px 14px;}
+.task .tlabel{font-family:var(--display);font-weight:900;font-size:11px;letter-spacing:.5px;color:var(--orange);display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.task .tlabel svg{width:14px;height:14px;fill:var(--orange);}
+
+/* ---- speaking ---- */
+.speaking{margin-top:22px;background:linear-gradient(160deg,#FbFAFF,#F4F1FD);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+.speaking-head{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:900;}
+.speaking-head .ic{width:30px;height:30px;border-radius:50% 50% 50% 4px;background:linear-gradient(135deg,var(--cyan),var(--cyan-deep));display:grid;place-items:center;flex:none;}
+.speaking-head .ic svg{width:16px;height:16px;fill:#fff;}
+/* Useful Phrases & Linking Words sections (B1 add-on) */
+.phrases{background:linear-gradient(160deg,#FbFAFF,#FFF6F0);}
+.phrases .speaking-head .ic{background:linear-gradient(135deg,var(--orange),var(--amber));}
+.connectors{background:linear-gradient(160deg,#FbFAFF,#F1FBF4);}
+.connectors .speaking-head .ic{background:linear-gradient(135deg,var(--green),var(--green-deep));}
+.xlist{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+.xitem{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:14px;background:#fff;border:1px solid var(--line);transition:transform .2s,box-shadow .2s,border-color .2s;}
+.xitem:hover{transform:translateX(3px);box-shadow:var(--shadow-sm);border-color:var(--purple-soft);}
+.xitem .xic{flex:none;width:24px;height:24px;border-radius:8px 8px 8px 3px;background:linear-gradient(135deg,var(--orange),var(--amber));display:grid;place-items:center;margin-top:1px;}
+.xitem .xic.cc{background:linear-gradient(135deg,var(--green),var(--green-deep));}
+.xitem .xic svg{width:13px;height:13px;fill:#fff;}
+.xitem .ml{flex:1;}
+.xitem .ml-main{font-size:14.5px;font-weight:700;}
+.questions{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+.questions li{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 14px;transition:transform .2s,box-shadow .2s,border-color .2s;}
+.questions li:hover{transform:translateX(3px);box-shadow:var(--shadow-sm);border-color:var(--purple-soft);}
+.qnum{color:var(--purple);font-family:var(--display);font-weight:900;margin-right:4px;}
+
+/* ---- recorder ---- */
+.recorder{margin-top:18px;background:linear-gradient(165deg,#1a1430,#241a3f);color:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm);overflow:hidden;}
+.rec-title{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:900;font-size:16px;}
+.rec-title .ic{width:30px;height:30px;border-radius:50% 50% 50% 4px;background:linear-gradient(135deg,var(--orange),var(--amber));display:grid;place-items:center;flex:none;}
+.rec-title .ic svg{width:16px;height:16px;fill:#fff;}
+.rec-hint{margin:8px 0 0;font-size:13px;color:#C9C2E4;}
+.rec-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;}
+.status{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#D9D3F0;}
+.status .dot{width:11px;height:11px;border-radius:50%;background:var(--g3);flex:none;transition:.3s;}
+.status.recording .dot{background:var(--orange);animation:pulse 1.3s infinite;}
+.status.recorded .dot{background:var(--green);}
+.status.playing .dot{background:var(--cyan);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,99,30,.6)}70%{box-shadow:0 0 0 12px rgba(255,99,30,0)}100%{box-shadow:0 0 0 0 rgba(255,99,30,0)}}
+.timer{font-family:var(--display);font-weight:900;font-size:20px;letter-spacing:1px;font-variant-numeric:tabular-nums;}
+.wave-wrap{margin-top:14px;height:72px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);overflow:hidden;}
+canvas.wave{display:block;width:100%;height:100%;}
+.controls{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px;flex-wrap:wrap;}
+.mic{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--purple),var(--cyan));box-shadow:0 14px 34px -10px rgba(138,75,248,.8);transition:transform .2s;}
+.mic:hover{transform:translateY(-2px) scale(1.03);}
+.mic:active{transform:scale(.96);}
+.mic svg{width:34px;height:34px;fill:#fff;}
+.mic.live{background:linear-gradient(140deg,var(--orange),var(--orange-light));animation:micpulse 1.4s infinite;}
+@keyframes micpulse{0%{box-shadow:0 0 0 0 rgba(255,99,30,.55)}70%{box-shadow:0 0 0 22px rgba(255,99,30,0)}100%{box-shadow:0 0 0 0 rgba(255,99,30,0)}}
+.tool{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);transition:.2s;}
+.tool:hover:not(:disabled){background:rgba(255,255,255,.20);transform:translateY(-2px);}
+.tool svg{width:22px;height:22px;fill:#fff;}
+.tool:disabled{opacity:.32;cursor:not-allowed;}
+.tool.danger:hover:not(:disabled){background:rgba(255,99,30,.3);}
+.saved-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:800;font-size:11.5px;color:#9BE8B4;opacity:0;transition:.3s;width:100%;justify-content:center;margin-top:2px;}
+.saved-pill.show{opacity:1;}
+.saved-pill svg{width:14px;height:14px;fill:#00D441;}
+.rec-error{margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(255,99,30,.16);border:1px solid rgba(255,99,30,.4);font-size:13px;color:#FFD9C7;}
+.rec-error[hidden]{display:none;}
+
+/* ---- analysis / feedback ---- */
+.analysis{margin-top:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:16px;animation:pop .5s cubic-bezier(.2,1.4,.4,1) both;}
+.analysis[hidden]{display:none;}
+.an-analyzing{display:flex;align-items:center;gap:10px;font-size:14px;color:#D9D3F0;font-weight:700;}
+.an-analyzing .spinner{width:22px;height:22px;border-width:3px;}
+.an-top{display:flex;align-items:center;gap:16px;}
+.score-ring{--p:0;flex:none;width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--cyan) calc(var(--p)*1%),rgba(255,255,255,.12) 0);position:relative;}
+.score-ring::after{content:"";position:absolute;inset:7px;border-radius:50%;background:#201838;}
+.score-ring .sv{position:relative;z-index:1;font-family:var(--display);font-weight:900;font-size:26px;}
+.an-top-txt h5{font-family:var(--display);font-weight:900;font-size:17px;margin:0;}
+.an-top-txt p{margin:3px 0 0;font-size:12.5px;color:#B7AEDC;}
+.subscores{margin-top:14px;display:flex;flex-direction:column;gap:9px;}
+.sub{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;gap:10px;}
+.sub .sname{font-size:12.5px;font-weight:700;color:#CFC7EC;}
+.sub .sbar{height:9px;border-radius:var(--pill);background:rgba(255,255,255,.10);overflow:hidden;}
+.sub .sbar>i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width .8s cubic-bezier(.2,.8,.2,1);}
+.sub .sbar.warn>i{background:linear-gradient(90deg,var(--amber),var(--orange));}
+.sub .sval{font-family:var(--display);font-weight:800;font-size:12.5px;text-align:right;color:#EAE5FA;}
+.sub .sval.na{color:#8b82ad;font-size:11px;}
+.an-block{margin-top:14px;}
+.an-block h6{font-family:var(--display);font-weight:900;font-size:12.5px;letter-spacing:.3px;margin:0 0 7px;color:#fff;display:flex;align-items:center;gap:7px;}
+.an-block h6 .pip{width:7px;height:7px;border-radius:50%;background:var(--cyan);}
+.transcript{font-size:13.5px;color:#E7E2F7;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;font-style:italic;}
+.issue{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:#E7E2F7;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.05);margin-bottom:6px;}
+.issue .x{color:#FFB199;text-decoration:line-through;font-weight:700;}
+.issue .arrow{opacity:.6;}
+.issue .ok{color:#9BE8B4;font-weight:800;}
+.issue .tip{color:#CFC7EC;}
+.recs{margin-top:6px;display:flex;flex-direction:column;gap:6px;}
+.rec-item{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:#EFEBFF;}
+.rec-item .b{flex:none;width:20px;height:20px;border-radius:7px 7px 7px 2px;background:linear-gradient(135deg,var(--green),var(--green-deep));display:grid;place-items:center;}
+.rec-item .b svg{width:12px;height:12px;fill:#fff;}
+.an-note{margin-top:12px;font-size:11.5px;color:#8b82ad;line-height:1.5;}
+
+footer{max-width:760px;margin:46px auto 0;text-align:center;color:var(--g2);font-size:13px;}
+footer .wordmark{font-size:22px;color:var(--ink);justify-content:center;margin-bottom:8px;}
+footer .wordmark .to{color:var(--purple);}
+footer small{display:block;margin-top:8px;color:var(--g3);}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto;}.situation{opacity:1;transform:none;}}
+@media (max-width:520px){header.app::after{font-size:78px;}.wordmark{font-size:26px;}.mic{width:76px;height:76px;}.sub{grid-template-columns:84px 1fr 32px;}}
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+<header class="app">
+  <div class="header-row">
+    <div class="brand">
+      <span class="wordmark">just&nbsp;<span class="to">to</span>&nbsp;study<span class="reg">®</span></span>
+      <span class="slogan">English is simple</span>
+    </div>
+    <span class="help-tag"><span class="d"></span>Speaking Practice</span>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="hero">
+    <h1>Speak real English.<br><span class="accent">One situation at a time.</span></h1>
+    <p>Watch a real-life moment, then record your answer and get instant feedback on your speaking.</p>
+    <div class="hero-bubbles" aria-hidden="true">
+      <span class="chip">So easy</span><span class="chip">Dreams come true</span><span class="chip">Keep going</span><span class="chip">Be kind</span>
+    </div>
+  </section>
+
+  <section class="progress" aria-live="polite">
+    <div class="progress-top"><span class="label">Your progress</span><span class="count"><b id="doneCount">0</b>/<span id="totalCount">0</span></span></div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="badges" id="badges"></div>
+  </section>
+
+  <div class="section-head"><span class="dot-bubble" aria-hidden="true"></span><h2>Situational Practice</h2></div>
+  <p class="section-sub">Watch a situation, answer out loud, and get instant feedback. Tap <b>KZ</b> or <b>RU</b> for translations.</p>
+
+  <div id="situations"></div>
+
+  <footer>
+    <span class="wordmark">just <span class="to">to</span> study</span>
+    <span>English is simple</span>
+    <small>© 2026 Just To Study. All rights reserved.</small>
+  </footer>
+</main>
+
+<script>
+"use strict";
+
+const ICON={
+  play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+  mic:'<svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>',
+  stop:'<svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  trash:'<svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7zm3-3h6l1 2h4v2H4V6h4l1-2z"/></svg>',
+  download:'<svg viewBox="0 0 24 24"><path d="M12 3v10l4-4 1.4 1.4L12 16.8 5.6 10.4 7 9l4 4V3h1zM5 19h14v2H5z"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>',
+  chat:'<svg viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4V6a2 2 0 0 1 2-2z"/></svg>',
+  spark:'<svg viewBox="0 0 24 24"><path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></svg>',
+  alert:'<svg viewBox="0 0 24 24"><path d="M12 2 1 21h22L12 2zm-1 6h2v7h-2zm0 9h2v2h-2z"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24"><path d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>',
+  target:'<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4a6 6 0 1 0 0 12A6 6 0 0 0 12 6zm0 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>'
+};
+
+/* === situation data (English-first; ru/kz used for collapsible toggles) === */
+const SITUATIONS = [{"id":1,"hasAudio":false,"video":"/practice/situations/media/b1-v01.mp4","poster":"/practice/situations/media/b1-p01.jpg","title":{"en":"The Gate That Changed","ru":"Гейт изменился","kz":"Ұшу қақпасы өзгерді"},"desc":{"en":"You're relaxing at the airport when you suddenly notice your flight has moved to a different gate — far away, on the other side of the terminal. The final call is playing and the doors are closing. You have to run, stay calm, and convince the staff to let you board.","ru":"Вы спокойно ждёте рейс в аэропорту и вдруг замечаете, что выход на посадку перенесли — далеко, в другой конец терминала. Звучит последний вызов, двери закрываются. Нужно бежать, сохранять спокойствие и убедить сотрудников пустить вас на борт.","kz":"Әуежайда тыныш отырғанда, рейсіңіз басқа гейтке — терминалдың арғы шетіне ауысып кеткенін кенет байқайсыз. Соңғы шақыру жарияланып, есік жабылып барады. Жүгіріп, сабыр сақтап, қызметкерлерді ұшаққа отырғызуға көндіруіңіз керек."},"questions":[{"en":"What would you say to the gate agent to let you board?","ru":"Что бы вы сказали сотруднику, чтобы вас пустили на борт?","kz":"Сізді ұшаққа отырғызуы үшін қызметкерге не айтар едіңіз?"},{"en":"How would you explain why you were late?","ru":"Как бы вы объяснили, почему опоздали?","kz":"Неге кешіккеніңізді қалай түсіндірер едіңіз?"},{"en":"How would you stay calm under pressure?","ru":"Как бы вы сохраняли спокойствие в стрессовой ситуации?","kz":"Қысым кезінде қалай сабыр сақтар едіңіз?"},{"en":"What would you do if the gate is already closed?","ru":"Что бы вы сделали, если выход уже закрыт?","kz":"Егер гейт жабылып қалса, не істер едіңіз?"},{"en":"Have you ever almost missed a flight? What happened?","ru":"Вы когда-нибудь почти опаздывали на самолёт? Что случилось?","kz":"Сіз ұшаққа кешігіп қала жаздаған кезіңіз болды ма? Не болды?"}],"phrases":[{"en":"Excuse me, could you help me, please?","ru":"Извините, не могли бы вы мне помочь?","kz":"Кешіріңіз, маған көмектесе аласыз ба?"},{"en":"Sorry, I'm a bit confused — could you explain that again?","ru":"Простите, я немного запутался — можете объяснить ещё раз?","kz":"Кешіріңіз, сәл шатастым — қайта түсіндіре аласыз ба?"},{"en":"I think there's been a mistake with my gate.","ru":"Кажется, произошла ошибка с моим выходом на посадку.","kz":"Менің ұшу қақпамда қателік болған сияқты."},{"en":"Is there any way I can still catch my flight?","ru":"Есть ли возможность всё-таки успеть на рейс?","kz":"Рейсіме әлі де үлгерудің жолы бар ма?"},{"en":"Could you tell me exactly which gate I need?","ru":"Не могли бы вы сказать, какой именно выход мне нужен?","kz":"Маған қай қақпа керек екенін дәл айта аласыз ба?"},{"en":"I'd really appreciate it if you could check for me.","ru":"Я был бы очень благодарен, если бы вы проверили для меня.","kz":"Тексеріп берсеңіз, шын ризашылығымды білдіремін."},{"en":"In my opinion, the board is showing the wrong information.","ru":"По-моему, на табло неверная информация.","kz":"Менің ойымша, табло қате ақпарат көрсетіп тұр."},{"en":"What do you suggest I do now?","ru":"Что вы посоветуете мне делать?","kz":"Қазір не істеуге кеңес бересіз?"}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"however (to contrast)","ru":"однако (противопоставление)","kz":"алайда (қарама-қарсылық)"},{"en":"first … then … after that (sequence)","ru":"сначала … потом … после этого","kz":"алдымен … содан кейін … одан кейін"},{"en":"as a result (consequence)","ru":"в результате","kz":"нәтижесінде"},{"en":"therefore (formal result)","ru":"следовательно","kz":"сондықтан / демек"},{"en":"in my opinion (to give a view)","ru":"по моему мнению","kz":"менің ойымша"},{"en":"finally (last point)","ru":"наконец","kz":"ақыры / соңында"}],"mission":[{"en":"Explain calmly to the gate agent that your gate changed and you've been running.","kz":"Әуежай қызметкеріне ұшу қақпаңыз ауысқанын және сіз жүгіріп келгеніңізді сабырмен түсіндіріңіз.","ru":"Спокойно объясните сотруднику выхода, что ваш гейт изменился и вы бежали через весь терминал."},{"en":"Ask whether the doors are still open and what your options are if you miss this flight.","kz":"Есік әлі ашық па және осы рейске үлгермесеңіз қандай нұсқалар бар екенін сұраңыз.","ru":"Спросите, открыты ли ещё двери и какие у вас варианты, если вы не успеете на этот рейс."},{"en":"Persuade the staff to let you board — politely but firmly.","kz":"Қызметкерлерді сізді ұшаққа жіберуге көндіріңіз — сыпайы, бірақ табанды түрде.","ru":"Убедите персонал пустить вас на посадку — вежливо, но настойчиво."}],"scenario":[{"who":"scene","en":"You hear your name on the speakers. The board now shows a different gate — far across the terminal. You start running.","kz":"Динамиктен есіміңізді естисіз. Таблода енді басқа қақпа көрсетілген — терминалдың арғы шетінде. Сіз жүгіре бастайсыз.","ru":"Из динамиков звучит ваше имя. На табло теперь другой выход — на другом конце терминала. Вы срываетесь на бег."},{"who":"scene","en":"You arrive breathless. A gate agent stands by a half-closed door, checking her watch.","kz":"Ентігіп жетесіз. Қызметкер жартылай жабылған есіктің қасында тұрып, сағатына қарайды.","ru":"Вы добегаете, едва дыша. Сотрудница стоит у полузакрытой двери и смотрит на часы."},{"who":"them","label":"Gate agent","en":"I'm sorry, we've started final boarding. Are you on the Istanbul flight?","kz":"Кешіріңіз, біз соңғы отырғызуды бастадық. Сіз Стамбул рейсінде ме едіңіз?","ru":"Извините, мы уже начали финальную посадку. Вы на рейс в Стамбул?"},{"who":"you","en":"Greet her, say yes, and explain quickly why you're late: the gate changed and you had to run from the other side.","kz":"Амандасып, иә деңіз де, неге кешіккеніңізді тез түсіндіріңіз: қақпа ауысып, арғы жақтан жүгіруге тура келді.","ru":"Поздоровайтесь, скажите «да» и быстро объясните, почему опоздали: гейт изменили, и пришлось бежать с другого конца."},{"who":"them","label":"Gate agent","en":"Let me check… The doors are closing in about a minute. Do you have your boarding pass ready?","kz":"Тексеріп көрейін… Есік шамамен бір минуттан кейін жабылады. Отырғызу талоныңыз дайын ба?","ru":"Сейчас проверю… Двери закрываются примерно через минуту. Посадочный талон готов?"},{"who":"you","en":"Confirm you're ready, ask if you can still board, and reassure her you'll be quick.","kz":"Дайын екеніңізді растап, әлі де отыруға бола ма деп сұраңыз және тез боласыз деп сендіріңіз.","ru":"Подтвердите, что готовы, спросите, можно ли ещё пройти, и заверьте её, что вы быстро."},{"who":"them","label":"Gate agent","en":"Okay — go straight down, seat 24B. Next time, please keep an eye on the screens. Have a good flight!","kz":"Жарайды — тура төмен өтіңіз, 24B орын. Келесіде экрандарды бақылап жүріңіз. Ұшуыңыз сәтті болсын!","ru":"Хорошо — проходите прямо, место 24B. В следующий раз следите за экранами. Хорошего полёта!"},{"who":"you","en":"Thank her warmly and apologise for the rush before you board.","kz":"Ұшаққа кірмес бұрын оған шын жүректен алғыс айтып, асыққаныңыз үшін кешірім сұраңыз.","ru":"Тепло поблагодарите её и извинитесь за спешку, прежде чем подняться на борт."}],"task":{"en":"You're the passenger. Act out the whole scene out loud: explain the gate change, ask to board, and thank the agent. Use because, so, and however.","kz":"Сіз — жолаушысыз. Бүкіл көріністі дауыстап ойнаңыз: қақпаның ауысқанын түсіндіріп, отыруды сұрап, қызметкерге алғыс айтыңыз. because, so, however қолданыңыз.","ru":"Вы — пассажир. Разыграйте всю сцену вслух: объясните смену гейта, попросите пустить на посадку и поблагодарите сотрудника. Используйте because, so и however."}},{"id":3,"hasAudio":true,"video":"/practice/situations/media/b1-v02.mp4","poster":"/practice/situations/media/b1-p02.jpg","title":{"en":"Can You Watch My Bag?","ru":"Присмотрите за моей сумкой?","kz":"Сөмкеме қарап тұрасыз ба?"},"desc":{"en":"You're waiting at a quiet airport gate when a friendly stranger asks you to watch their backpack for 'just two minutes' and walks off before you can answer. Minutes pass and they don't come back. The bag sits there alone — and a security officer notices it, looking from the bag to you.","ru":"Вы ждёте у тихого выхода на посадку, когда приветливый незнакомец просит присмотреть за его рюкзаком «всего две минуты» и уходит, прежде чем вы успеваете ответить. Минуты идут, а он не возвращается. Сумка стоит одна — и сотрудник службы безопасности замечает её, переводя взгляд с сумки на вас.","kz":"Сіз тыныш ұшу қақпасында күтіп отырғанда, бір сыпайы бейтаныс адам рюкзагына «бар болғаны екі минут» қарап тұруды өтініп, жауап беруге үлгертпей кетіп қалады. Минуттар өтеді, ал ол қайтып келмейді. Сөмке жалғыз тұр — ал қауіпсіздік қызметкері оны байқап, сөмкеден сізге қарайды."},"questions":[{"en":"What would you say to the security officer about the bag?","ru":"Что бы вы сказали сотруднику службы безопасности об этой сумке?","kz":"Қауіпсіздік қызметкеріне бұл сөмке туралы не айтар едіңіз?"},{"en":"How would you explain that the bag isn't yours?","ru":"Как бы вы объяснили, что сумка не ваша?","kz":"Сөмкенің сіздікі емес екенін қалай түсіндірер едіңіз?"},{"en":"Should you have agreed at the start? How would you refuse politely?","ru":"Стоило ли соглашаться вначале? Как бы вы вежливо отказались?","kz":"Басында келісу керек пе еді? Қалай сыпайы түрде бас тартар едіңіз?"},{"en":"What would you do if the stranger suddenly came back?","ru":"Что бы вы сделали, если бы незнакомец вдруг вернулся?","kz":"Егер бейтаныс адам кенет қайтып келсе, не істер едіңіз?"},{"en":"Have you ever been asked to watch a stranger's things? What did you do?","ru":"Вас когда-нибудь просили присмотреть за чужими вещами? Что вы сделали?","kz":"Сізден бөтен адамның заттарына қарап тұруды сұраған кезі болды ма? Не істедіңіз?"}],"phrases":[{"en":"Excuse me, would you mind watching my bag for a minute?","ru":"Извините, вы не присмотрите за моей сумкой минутку?","kz":"Кешіріңіз, бір минут сөмкеме қарап тұрасыз ба?"},{"en":"I'll be right back, I promise.","ru":"Я сейчас вернусь, обещаю.","kz":"Қазір қайтып келемін, уәде беремін."},{"en":"Of course, no problem at all.","ru":"Конечно, без проблем.","kz":"Әрине, ешқандай мәселе жоқ."},{"en":"Sorry, I'd rather not — I'm about to leave.","ru":"Извините, лучше не надо — я скоро ухожу.","kz":"Кешіріңіз, жөн болмас — мен кетейін деп тұрмын."},{"en":"How long will you be?","ru":"Как долго вас не будет?","kz":"Қанша уақытқа кетесіз?"},{"en":"I'm not sure that's a good idea, to be honest.","ru":"Честно говоря, не уверен, что это хорошая идея.","kz":"Шынымды айтсам, бұл жақсы ой деп ойламаймын."},{"en":"Could you keep an eye on it for me?","ru":"Не могли бы вы за ней присмотреть?","kz":"Оны бақылап тұра аласыз ба?"},{"en":"Thanks so much, I really appreciate it.","ru":"Большое спасибо, я очень благодарен.","kz":"Көп рахмет, шын ризамын."}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"but (to contrast)","ru":"но (противопоставление)","kz":"бірақ (қарама-қарсылық)"},{"en":"however (to contrast)","ru":"однако","kz":"алайда"},{"en":"while (at the same time)","ru":"пока / в то время как","kz":"… кезде / … уақытта"},{"en":"unless (except if)","ru":"если только не","kz":"егер … болмаса"},{"en":"for example (to give an example)","ru":"например","kz":"мысалы"},{"en":"in my opinion (to give a view)","ru":"по моему мнению","kz":"менің ойымша"}],"mission":[{"en":"Explain to the security officer that the bag is not yours and how it got there.","kz":"Қауіпсіздік қызметкеріне сөмке сіздікі емес екенін және оның қалай пайда болғанын түсіндіріңіз.","ru":"Объясните сотруднику охраны, что сумка не ваша и как она там оказалась."},{"en":"Describe the stranger and stay calm while you're questioned.","kz":"Бейтаныс адамды сипаттап, сұрақ қойылып жатқанда сабырлы болыңыз.","ru":"Опишите незнакомца и сохраняйте спокойствие, пока вас расспрашивают."},{"en":"Make clear you acted in good faith and ask what you should do now.","kz":"Сіз адал ниетпен әрекет еткеніңізді анық айтып, енді не істеу керектігін сұраңыз.","ru":"Дайте понять, что вы действовали без злого умысла, и спросите, что вам теперь делать."}],"scenario":[{"who":"scene","en":"A friendly stranger asked you to watch his backpack for 'two minutes' and walked off. Fifteen minutes have passed. The bag sits alone.","kz":"Жылы шырайлы бейтаныс адам сізден рюкзагын 'екі минут' қарап тұруды өтініп, кетіп қалды. Он бес минут өтті. Сөмке жалғыз тұр.","ru":"Приветливый незнакомец попросил вас присмотреть за рюкзаком «две минуты» и ушёл. Прошло пятнадцать минут. Сумка стоит одна."},{"who":"scene","en":"A security officer walks over, looking from the bag to you.","kz":"Қауіпсіздік қызметкері жақындап, сөмкеден сізге қарайды.","ru":"Подходит сотрудник охраны, переводя взгляд с сумки на вас."},{"who":"them","label":"Officer","en":"Excuse me. Is this your bag? It's been unattended for a while.","kz":"Кешіріңіз. Бұл сіздің сөмкеңіз бе? Ол біраздан бері иесіз тұр.","ru":"Извините. Это ваша сумка? Она уже какое-то время стоит без присмотра."},{"who":"you","en":"Say honestly that it isn't yours, and explain that a stranger asked you to watch it and didn't come back.","kz":"Оның сіздікі емес екенін шынайы айтып, бейтаныс адам оны қарап тұруды өтініп, қайтып келмегенін түсіндіріңіз.","ru":"Честно скажите, что она не ваша, и объясните, что незнакомец попросил присмотреть за ней и не вернулся."},{"who":"them","label":"Officer","en":"I see. Can you describe the person? When exactly did they leave?","kz":"Түсінікті. Сол адамды сипаттай аласыз ба? Олар дәл қашан кетті?","ru":"Понятно. Вы можете описать этого человека? Когда именно он ушёл?"},{"who":"you","en":"Describe what he looked like and roughly when he left. Stay calm and cooperative.","kz":"Оның сыртқы келбетін және шамамен қашан кеткенін сипаттаңыз. Сабырлы әрі ынтымақты болыңыз.","ru":"Опишите, как он выглядел и примерно когда ушёл. Будьте спокойны и готовы помочь."},{"who":"them","label":"Officer","en":"Thank you. We'll handle the bag. In future, please don't agree to watch strangers' luggage — it can be risky.","kz":"Рахмет. Сөмкемен біз айналысамыз. Болашақта бейтаныс адамдардың жүгін қарап тұруға келіспеңіз — бұл қауіпті болуы мүмкін.","ru":"Спасибо. Сумкой мы займёмся. На будущее: не соглашайтесь присматривать за чужим багажом — это может быть рискованно."},{"who":"you","en":"Thank the officer, agree it won't happen again, and ask if you're free to go.","kz":"Қызметкерге алғыс айтып, мұның қайталанбайтынымен келісіп, кете беруге бола ма деп сұраңыз.","ru":"Поблагодарите сотрудника, согласитесь, что это не повторится, и спросите, можете ли вы идти."}],"task":{"en":"You're the traveller. Act out the conversation out loud: explain the situation, describe the stranger, and show you meant no harm. Use because, however, and as a result.","kz":"Сіз — жолаушысыз. Әңгімені дауыстап ойнаңыз: жағдайды түсіндіріп, бейтаныс адамды сипаттап, ешқандай жаман ниетіңіз болмағанын көрсетіңіз. because, however, as a result қолданыңыз.","ru":"Вы — путешественник. Разыграйте разговор вслух: объясните ситуацию, опишите незнакомца и покажите, что не имели злого умысла. Используйте because, however и as a result."}},{"id":5,"hasAudio":false,"video":"/practice/situations/media/b1-v03.mp4","poster":"/practice/situations/media/b1-p03.jpg","title":{"en":"The Suspicious Taxi Route","ru":"Подозрительный маршрут такси","kz":"Күдікті такси бағыты"},"desc":{"en":"It's late at night and your taxi seems to be going the wrong way. The meter keeps climbing, the same building passes twice, and your map shows the hotel is now behind you. The driver only says “shortcut”. You need to stay calm but firm and reach your hotel safely.","ru":"Поздняя ночь, и ваше такси, кажется, едет не туда. Счётчик растёт, одно и то же здание проезжает дважды, а карта показывает, что отель уже позади. Водитель повторяет лишь «shortcut» («короткий путь»). Нужно сохранять спокойствие, но твёрдость и добраться до отеля безопасно.","kz":"Түн ортасы, таксиіңіз қате бағытпен бара жатқан сияқты. Есептегіш өсіп барады, бір ғимарат екі рет көрінеді, ал картада қонақүй артта қалғаны көрінеді. Жүргізуші тек «shortcut» («қысқа жол») деп қайталайды. Сабырлы, бірақ табанды болып, қонақүйге аман жетуіңіз керек."},"questions":[{"en":"How would you ask the driver to follow your map?","ru":"Как бы вы попросили водителя ехать по вашей карте?","kz":"Жүргізушіден сіздің картаңызбен жүруді қалай сұрар едіңіз?"},{"en":"What would you say if the final price seems too high?","ru":"Что бы вы сказали, если итоговая цена кажется слишком высокой?","kz":"Соңғы баға тым жоғары болса, не айтар едіңіз?"},{"en":"How would you stay calm but firm with the driver?","ru":"Как бы вы оставались спокойным, но твёрдым с водителем?","kz":"Жүргізушімен сабырлы, бірақ табанды болуды қалай сақтар едіңіз?"},{"en":"What would you do if you felt unsafe?","ru":"Что бы вы сделали, если бы почувствовали себя небезопасно?","kz":"Өзіңізді қауіпсіз сезінбесеңіз, не істер едіңіз?"},{"en":"Have you ever had a problem with a taxi or ride-share? What happened?","ru":"У вас были проблемы с такси? Что произошло?","kz":"Таксиде қиындық болған кезіңіз бар ма? Не болды?"}],"phrases":[{"en":"Excuse me, why are we going this way?","ru":"Извините, почему мы едем этой дорогой?","kz":"Кешіріңіз, неге осы жолмен барамыз?"},{"en":"I think this isn't the usual route.","ru":"Кажется, это не обычный маршрут.","kz":"Бұл әдеттегі бағыт емес сияқты."},{"en":"Could you use the GPS, please?","ru":"Не могли бы вы включить навигатор?","kz":"GPS-ті қоса аласыз ба?"},{"en":"I'd prefer to take the main road.","ru":"Я бы предпочёл ехать по главной дороге.","kz":"Мен негізгі жолмен жүргенді қалаймын."},{"en":"Are you sure this is faster?","ru":"Вы уверены, что так быстрее?","kz":"Бұл жылдамырақ екеніне сенімдісіз бе?"},{"en":"I don't think this is right.","ru":"Мне кажется, это неправильно.","kz":"Бұл дұрыс емес сияқты."},{"en":"Could you stop here, please?","ru":"Не могли бы вы остановиться здесь?","kz":"Осы жерде тоқтай аласыз ба?"},{"en":"How much will it cost in total?","ru":"Сколько это будет стоить в итоге?","kz":"Барлығы қанша тұрады?"}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"however (to contrast)","ru":"однако","kz":"алайда"},{"en":"although (despite the fact)","ru":"хотя","kz":"… болса да"},{"en":"therefore (formal result)","ru":"следовательно","kz":"демек / сондықтан"},{"en":"that's why (to explain a result)","ru":"вот почему","kz":"сол себепті"},{"en":"in my opinion (to give a view)","ru":"по моему мнению","kz":"менің ойымша"},{"en":"as a result (consequence)","ru":"в результате","kz":"нәтижесінде"}],"mission":[{"en":"Tell the driver calmly that the route looks wrong and you'd like to follow the map.","kz":"Жүргізушіге бағыт қате сияқты екенін және картамен жүргіңіз келетінін сабырмен айтыңыз.","ru":"Спокойно скажите водителю, что маршрут выглядит неправильным и вы хотите ехать по карте."},{"en":"Stay firm and ask him to take the direct way to your hotel.","kz":"Табанды болып, қонақ үйге тура жолмен баруды сұраңыз.","ru":"Держитесь твёрдо и попросите ехать к отелю прямой дорогой."},{"en":"Protect yourself: be ready to stop, get out, or call someone if needed.","kz":"Өзіңізді қорғаңыз: қажет болса тоқтауға, шығуға немесе біреуге қоңырау шалуға дайын болыңыз.","ru":"Обезопасьте себя: будьте готовы остановиться, выйти или позвонить кому-то при необходимости."}],"scenario":[{"who":"scene","en":"It's late at night. The meter keeps climbing and you pass the same building twice. Your map shows the hotel is now behind you.","kz":"Түн ортасы. Есептегіш үнемі өсіп барады, сіз бір ғимаратты екі рет аралап өтесіз. Картаңызда қонақ үй енді артта қалғанын көрсетеді.","ru":"Поздняя ночь. Счётчик растёт, и вы дважды проезжаете одно и то же здание. Карта показывает, что отель теперь позади вас."},{"who":"them","label":"Driver","en":"Don't worry, my friend. This way is faster. Big traffic on the main road. Shortcut, shortcut.","kz":"Уайымдамаңыз, досым. Бұл жол жылдамырақ. Басты жолда үлкен кептеліс. Қысқа жол, қысқа жол.","ru":"Не волнуйтесь, друг. Так быстрее. На главной дороге большая пробка. Короткий путь, короткий путь."},{"who":"you","en":"Stay polite but firm: say your map shows a different way and you'd prefer to go directly.","kz":"Сыпайы, бірақ табанды болыңыз: картаңыз басқа жолды көрсетіп тұрғанын және тура жүргіңіз келетінін айтыңыз.","ru":"Будьте вежливы, но твёрды: скажите, что ваша карта показывает другой путь и вы предпочли бы ехать напрямую."},{"who":"them","label":"Driver","en":"My way is better, trust me. GPS is wrong here at night.","kz":"Менің жолым жақсырақ, маған сеніңіз. Түнде мұнда GPS қателеседі.","ru":"Мой путь лучше, поверьте. Ночью тут GPS ошибается."},{"who":"you","en":"Hold your ground. Ask him clearly to turn around and take you straight to the hotel address.","kz":"Өз дегеніңізде тұрыңыз. Кері бұрылып, сізді қонақ үй мекенжайына тура апаруды нақты сұраңыз.","ru":"Не уступайте. Чётко попросите развернуться и отвезти вас прямо по адресу отеля."},{"who":"scene","en":"He sighs, slows down, and finally turns toward your hotel. The lights of the entrance appear ahead.","kz":"Ол күрсініп, жылдамдығын баяулатып, ақыры қонақ үйіңізге қарай бұрылады. Алда кіреберістің шамдары көрінеді.","ru":"Он вздыхает, сбавляет скорость и наконец поворачивает к вашему отелю. Впереди появляются огни входа."},{"who":"them","label":"Driver","en":"Okay, okay. Here is your hotel. That's 4,500.","kz":"Жарайды, жарайды. Міне сіздің қонақ үйіңіз. 4500 болады.","ru":"Ладно, ладно. Вот ваш отель. С вас 4500."},{"who":"you","en":"Check the fare against the normal price, pay or question it calmly, and get out safely.","kz":"Бағаны қалыпты бағамен салыстырып, төлеңіз немесе сабырмен сұрақ қойып, аман-есен шығыңыз.","ru":"Сверьте сумму с обычной ценой, оплатите или спокойно уточните её и безопасно выйдите."}],"task":{"en":"You're the passenger. Act out the scene out loud: question the route, insist on the direct way, and handle the fare. Use however, therefore, and in my opinion.","kz":"Сіз — жолаушысыз. Көріністі дауыстап ойнаңыз: бағытқа қатысты сұрақ қойып, тура жолды талап етіп, ақы төлеуді реттеңіз. however, therefore, in my opinion қолданыңыз.","ru":"Вы — пассажир. Разыграйте сцену вслух: усомнитесь в маршруте, настойте на прямой дороге и разберитесь с оплатой. Используйте however, therefore и in my opinion."}},{"id":6,"hasAudio":true,"video":"/practice/situations/media/b1-v04.mp4","poster":"/practice/situations/media/b1-p04.jpg","title":{"en":"Passport Left Behind","ru":"Забытый паспорт","kz":"Ұмыт қалған төлқұжат"},"desc":{"en":"You're already past security, heading to your gate, when your hand reaches for your passport — and it's gone. You left it in the tray at the security check. The area is far behind you, full of people, and your flight boards in minutes. You have to find airport staff fast and explain the emergency calmly.","ru":"Вы уже прошли досмотр и идёте к выходу на посадку, как вдруг тянетесь за паспортом — а его нет. Вы оставили его в лотке на контроле безопасности. Зона досмотра далеко позади, вокруг толпа, а посадка начинается через несколько минут. Нужно быстро найти сотрудника аэропорта и спокойно объяснить ситуацию.","kz":"Сіз қауіпсіздік тексерісінен өтіп, ұшу қақпасына бара жатқанда, төлқұжатыңызды іздеп қол созасыз — ал ол жоқ. Оны тексеру кезіндегі науаға қалдырып кетіпсіз. Тексеру аймағы әлдеқашан артта қалды, айналаңыз адамға толы, ал отырғызу бірнеше минуттан кейін басталады. Тез әуежай қызметкерін тауып, жағдайды сабырмен түсіндіруіңіз керек."},"questions":[{"en":"Who would you ask for help first, and what would you say?","ru":"У кого бы вы попросили помощи первым и что бы вы сказали?","kz":"Алдымен кімнен көмек сұрар едіңіз және не айтар едіңіз?"},{"en":"How would you explain the situation clearly and quickly?","ru":"Как бы вы объяснили ситуацию чётко и быстро?","kz":"Жағдайды нақты әрі тез қалай түсіндірер едіңіз?"},{"en":"How would you prove the passport is yours?","ru":"Как бы вы доказали, что паспорт ваш?","kz":"Төлқұжаттың сізге тиесілі екенін қалай дәлелдер едіңіз?"},{"en":"What would you do if they say you can't go back through security?","ru":"Что бы вы сделали, если бы вам сказали, что вернуться через досмотр нельзя?","kz":"Егер тексерістен кері өтуге болмайды десе, не істер едіңіз?"},{"en":"Have you ever lost an important document while travelling? What happened?","ru":"Вы когда-нибудь теряли важный документ в поездке? Что случилось?","kz":"Сапарда маңызды құжатты жоғалтқан кезіңіз болды ма? Не болды?"}],"phrases":[{"en":"I think I've left my passport at the hotel.","ru":"Кажется, я оставил паспорт в отеле.","kz":"Төлқұжатымды қонақ үйде қалдырып кеткен сияқтымын."},{"en":"What should I do now?","ru":"Что мне теперь делать?","kz":"Қазір не істеуім керек?"},{"en":"Is there any way to get it back in time?","ru":"Есть ли способ вернуть его вовремя?","kz":"Оны уақытында қайтарудың жолы бар ма?"},{"en":"Could you possibly help me?","ru":"Не могли бы вы мне помочь?","kz":"Маған көмектесе аласыз ба?"},{"en":"I'm really sorry, this is my fault.","ru":"Мне очень жаль, это моя вина.","kz":"Кешіріңіз, бұл менің кінәм."},{"en":"Do you think there's enough time?","ru":"Как думаете, времени хватит?","kz":"Уақыт жетеді деп ойлайсыз ба?"},{"en":"Would it be possible to send it by taxi?","ru":"Можно ли прислать его на такси?","kz":"Оны таксимен жіберуге бола ма?"},{"en":"I'd really appreciate any help.","ru":"Я буду благодарен за любую помощь.","kz":"Кез келген көмекке ризамын."}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"therefore (formal result)","ru":"следовательно","kz":"демек / сондықтан"},{"en":"first … then … after that (sequence)","ru":"сначала … потом … после этого","kz":"алдымен … содан кейін … одан кейін"},{"en":"finally (last point)","ru":"наконец","kz":"ақыры / соңында"},{"en":"as a result (consequence)","ru":"в результате","kz":"нәтижесінде"},{"en":"unless (except if)","ru":"если только не","kz":"егер … болмаса"},{"en":"that's why (to explain a result)","ru":"вот почему","kz":"сол себепті"}],"mission":[{"en":"Find airport staff fast and explain that you left your passport at the security check.","kz":"Әуежай қызметкерлерін тез тауып, паспортыңызды қауіпсіздік тексерісінде ұмытып кеткеніңізді түсіндіріңіз.","ru":"Быстро найдите сотрудника аэропорта и объясните, что оставили паспорт на досмотре."},{"en":"Stay calm, describe exactly where you think it is, and ask for the quickest way to get it back.","kz":"Сабыр сақтап, оның қайда екенін нақты сипаттап, оны тез қайтарудың ең жылдам жолын сұраңыз.","ru":"Сохраняйте спокойствие, точно опишите, где он, по-вашему, и спросите самый быстрый способ его вернуть."},{"en":"Make clear your flight boards very soon and ask for help to avoid missing it.","kz":"Рейсіңіз көп ұзамай отырғызуға басталатынын анық айтып, оған кешікпеу үшін көмек сұраңыз.","ru":"Дайте понять, что ваш рейс скоро на посадку, и попросите помощи, чтобы не опоздать."}],"scenario":[{"who":"scene","en":"Past security, heading to your gate, you reach for your passport — and it's gone. You left it in the tray.","kz":"Қауіпсіздіктен өтіп, қақпаға бара жатып, паспортыңызды іздейсіз — ол жоқ. Сіз оны науада қалдырыпсыз.","ru":"Пройдя досмотр и направляясь к выходу, вы тянетесь за паспортом — а его нет. Вы оставили его в лотке."},{"who":"scene","en":"You hurry back toward an information desk. A staff member looks up.","kz":"Сіз анықтама бюросына қарай асығасыз. Қызметкер басын көтереді.","ru":"Вы спешите обратно к стойке информации. Сотрудник поднимает взгляд."},{"who":"them","label":"Staff","en":"Hello, can I help you? You look worried.","kz":"Сәлеметсіз бе, көмектесе аламын ба? Сіз уайымды көрінесіз.","ru":"Здравствуйте, чем могу помочь? Вы выглядите взволнованно."},{"who":"you","en":"Explain the emergency calmly: you left your passport in the tray at security, and your flight is boarding soon.","kz":"Жағдайды сабырмен түсіндіріңіз: паспортыңызды қауіпсіздіктегі науада қалдырдыңыз, ал рейсіңіз жақында отырғызуға басталады.","ru":"Спокойно объясните срочность: вы оставили паспорт в лотке на досмотре, а ваш рейс скоро на посадку."},{"who":"them","label":"Staff","en":"Okay, stay calm. Which security lane did you use? Do you remember the time?","kz":"Жарайды, сабыр сақтаңыз. Қай қауіпсіздік жолағын қолдандыңыз? Уақытын есіңізде ме?","ru":"Хорошо, не волнуйтесь. Какой полосой досмотра вы пользовались? Время помните?"},{"who":"you","en":"Give the details you remember and politely ask if they can call the security team right away.","kz":"Есіңізде қалған мәліметтерді беріп, қауіпсіздік тобына дереу хабарласа алатын-алмайтынын сыпайы сұраңыз.","ru":"Сообщите детали, которые помните, и вежливо попросите сразу же связаться со службой досмотра."},{"who":"them","label":"Staff","en":"I'll call them now. Please wait here. If they have it, I'll have someone bring it to your gate.","kz":"Қазір оларға хабарласамын. Осында күте тұрыңыз. Олар тапса, біреумен қақпаңызға жеткіземін.","ru":"Сейчас позвоню им. Подождите здесь. Если он у них, я попрошу кого-нибудь принести его к вашему выходу."},{"who":"you","en":"Thank the staff, confirm your gate and flight number, and ask roughly how long it will take.","kz":"Қызметкерге алғыс айтып, қақпаңыз бен рейс нөміріңізді растап, шамамен қанша уақыт алатынын сұраңыз.","ru":"Поблагодарите сотрудника, подтвердите выход и номер рейса и спросите, сколько примерно это займёт."}],"task":{"en":"You're the traveller. Act out the scene out loud: report the lost passport, give the details, and ask for fast help. Use because, so, and as a result.","kz":"Сіз — жолаушысыз. Көріністі дауыстап ойнаңыз: жоғалған паспорт туралы хабарлап, мәліметтерді беріп, жедел көмек сұраңыз. because, so, as a result қолданыңыз.","ru":"Вы — путешественник. Разыграйте сцену вслух: сообщите о потерянном паспорте, дайте детали и попросите быстрой помощи. Используйте because, so и as a result."}},{"id":45,"hasAudio":true,"video":"/practice/situations/media/b1-v05.mp4","poster":"/practice/situations/media/b1-p05.jpg","title":{"en":"The Awkward First Date","ru":"Неловкое первое свидание","kz":"Ыңғайсыз бірінші кездесу"},"desc":{"en":"You're on a first date at a nice restaurant. The conversation started well, but now there are long silences. Your date seems pleasant but a little different from their photos, and you're not sure if there's a real connection. The waiter is bringing the bill, and you don't know who should pay — or whether you'd even want a second date.","ru":"Вы на первом свидании в хорошем ресторане. Разговор начался неплохо, но теперь возникают долгие паузы. Спутник кажется приятным, но немного отличается от своих фото, и вы не уверены, есть ли настоящая искра. Официант несёт счёт, а вы не знаете, кто должен платить — и хотите ли вы второго свидания.","kz":"Сіз жақсы мейрамханада бірінші кездесудесіз. Әңгіме жақсы басталды, бірақ енді ұзақ үнсіздік орнайды. Серіктесіңіз жағымды, бірақ суреттерінен сәл өзгеше көрінеді, ал арада нағыз ұшқын бар-жоғын білмейсіз. Даяшы шот әкеле жатыр, ал сіз кім төлеу керегін — және екінші кездесу қалайтын-қаламайтыныңызды білмейсіз."},"questions":[{"en":"How would you fill the awkward silences?","ru":"Как бы вы заполнили неловкие паузы?","kz":"Ыңғайсыз үнсіздікті қалай толтырар едіңіз?"},{"en":"How would you handle the question of who pays?","ru":"Как бы вы решили вопрос о том, кто платит?","kz":"Кім төлейді деген мәселені қалай шешер едіңіз?"},{"en":"How would you end the date kindly, whatever you feel?","ru":"Как бы вы вежливо завершили свидание, что бы вы ни чувствовали?","kz":"Не сезінсеңіз де, кездесуді қалай сыпайы аяқтар едіңіз?"},{"en":"What would you say about a possible second date, honestly?","ru":"Что бы вы честно сказали о возможном втором свидании?","kz":"Болуы мүмкін екінші кездесу туралы шынайы не айтар едіңіз?"},{"en":"Have you ever had an awkward first meeting? What happened?","ru":"У вас было неловкое первое знакомство? Что произошло?","kz":"Сізде ыңғайсыз алғашқы танысу болды ма? Не болды?"}],"phrases":[{"en":"So, what do you like doing in your free time?","ru":"Итак, чем ты любишь заниматься в свободное время?","kz":"Сонымен, бос уақытыңда немен айналысқанды ұнатасың?"},{"en":"Shall we get something to eat?","ru":"Может, перекусим?","kz":"Бірдеңе жеп алайық па?"},{"en":"To be honest, I'm a little nervous.","ru":"Честно говоря, я немного волнуюсь.","kz":"Шынымды айтсам, сәл толқып тұрмын."},{"en":"That sounds great!","ru":"Звучит здорово!","kz":"Тамаша екен!"},{"en":"I'd rather talk about something else, if that's okay.","ru":"Если можно, я бы лучше поговорил о чём-то другом.","kz":"Болса, басқа нәрсе туралы сөйлескім келеді."},{"en":"What kind of music are you into?","ru":"Какую музыку ты любишь?","kz":"Қандай музыканы ұнатасың?"},{"en":"Maybe we could go somewhere quieter?","ru":"Может, пойдём в место потише?","kz":"Тынышырақ жерге барсақ па?"},{"en":"I've really enjoyed talking to you.","ru":"Мне очень понравилось с тобой разговаривать.","kz":"Сенімен сөйлескенім ұнады."}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"but (to contrast)","ru":"но","kz":"бірақ"},{"en":"although (despite the fact)","ru":"хотя","kz":"… болса да"},{"en":"for example (to give an example)","ru":"например","kz":"мысалы"},{"en":"on the one hand … on the other hand","ru":"с одной стороны … с другой стороны","kz":"бір жағынан … екінші жағынан"},{"en":"in my opinion (to give a view)","ru":"по моему мнению","kz":"менің ойымша"},{"en":"also / besides (to add)","ru":"также / кроме того","kz":"сондай-ақ / оның үстіне"}],"mission":[{"en":"Keep the conversation going by asking open, friendly questions during the silences.","kz":"Үнсіздік кезінде ашық, жылы сұрақтар қойып, әңгімені жалғастырыңыз.","ru":"Поддержите разговор, задавая открытые дружелюбные вопросы во время пауз."},{"en":"Handle the bill gracefully when the waiter brings it.","kz":"Даяшы шот әкелгенде, оны әдептілікпен реттеңіз.","ru":"Тактично разберитесь со счётом, когда официант его принесёт."},{"en":"End the date kindly and be honest with yourself about a second date.","kz":"Кездесуді жылы аяқтап, екінші кездесу туралы өзіңізге адал болыңыз.","ru":"Завершите свидание по-доброму и будьте честны с собой насчёт второй встречи."}],"scenario":[{"who":"scene","en":"The restaurant is nice, but the conversation has slowed. A long silence sits between you. Your date smiles politely.","kz":"Мейрамхана әдемі, бірақ әңгіме баяулады. Араларыңызда ұзақ үнсіздік орнады. Серіктесіңіз сыпайы жымияды.","ru":"Ресторан приятный, но разговор затих. Между вами повисла долгая пауза. Ваш собеседник вежливо улыбается."},{"who":"them","label":"Your date","en":"So… yeah. This place is nice, isn't it?","kz":"Сонымен… иә. Бұл жер жақсы екен, солай ма?","ru":"Ну… да. Хорошее место, правда?"},{"who":"you","en":"Pick up the thread: agree warmly and ask an open question about their interests or week.","kz":"Әңгімені іліп әкетіңіз: жылы келісіп, олардың қызығушылықтары немесе аптасы туралы ашық сұрақ қойыңыз.","ru":"Подхватите нить: тепло согласитесь и задайте открытый вопрос об их увлечениях или о том, как прошла неделя."},{"who":"them","label":"Your date","en":"Oh, I love hiking actually. I went to the mountains last weekend. What about you?","kz":"О, мен шынында жаяу серуенді жақсы көремін. Өткен демалыста тауға барып келдім. Сіз ше?","ru":"О, я вообще-то люблю походы. На выходных был в горах. А вы?"},{"who":"you","en":"Respond, share something about yourself, and keep the energy friendly and curious.","kz":"Жауап беріп, өзіңіз туралы бірдеңе айтып, әңгіменің жылы әрі қызық болуын сақтаңыз.","ru":"Ответьте, расскажите что-то о себе и сохраняйте дружелюбный, заинтересованный тон."},{"who":"scene","en":"The waiter approaches and places the bill in the middle of the table. A small awkward pause.","kz":"Даяшы жақындап, шотты үстелдің ортасына қояды. Шағын ыңғайсыз үзіліс.","ru":"Подходит официант и кладёт счёт в центр стола. Небольшая неловкая пауза."},{"who":"you","en":"Handle the bill: offer to split it or pay, in a relaxed and polite way.","kz":"Шотты реттеңіз: оны бөлуді немесе төлеуді сабырлы әрі сыпайы түрде ұсыныңыз.","ru":"Разберитесь со счётом: предложите разделить его или оплатить — спокойно и вежливо."},{"who":"them","label":"Your date","en":"This was lovely. Maybe we could do it again sometime?","kz":"Бұл тамаша болды. Мүмкін бір кезде тағы да кездесерміз?","ru":"Это было здорово. Может, как-нибудь повторим?"},{"who":"you","en":"Answer honestly but kindly — whether you'd like a second date or would rather leave it here.","kz":"Шынайы, бірақ жылы жауап беріңіз — екінші кездесуді қалайсыз ба, әлде осымен аяқтағыңыз келе ме.","ru":"Ответьте честно, но по-доброму — хотите ли вы второго свидания или предпочли бы оставить всё как есть."}],"task":{"en":"You're on the date. Act out the scene out loud: break the silence, handle the bill, and answer about a second date honestly. Use because, although, and on the one hand … on the other hand.","kz":"Сіз — кездесудесіз. Көріністі дауыстап ойнаңыз: үнсіздікті бұзып, шотты реттеп, екінші кездесу туралы шынайы жауап беріңіз. because, although, on the one hand … on the other hand қолданыңыз.","ru":"Вы на свидании. Разыграйте сцену вслух: прервите молчание, разберитесь со счётом и честно ответьте про второе свидание. Используйте because, although и on the one hand … on the other hand."}},{"id":46,"hasAudio":true,"video":"/practice/situations/media/b1-v06.mp4","poster":"/practice/situations/media/b1-p06.jpg","title":{"en":"The Friend Who's Always Late","ru":"Друг, который вечно опаздывает","kz":"Үнемі кешігетін дос"},"desc":{"en":"You planned to meet your friend at 7 for a film. It's now 7:40, the film has started, and she's still not here — again. Your phone is full of past 'running late' messages. When she finally arrives, smiling and breezy with 'Sorry, traffic!', you have to decide whether to bring up this pattern honestly without ruining the evening.","ru":"Вы договорились встретиться с подругой в 7 на фильм. Сейчас 7:40, фильм уже начался, а её всё нет — снова. Телефон полон прошлых сообщений «опаздываю». Когда она наконец появляется, с улыбкой и беспечным «Извини, пробки!», вам нужно решить, стоит ли честно поднять эту тему, не испортив вечер.","kz":"Сіз досыңызбен фильмге сағат 7-де кездесуге уағдаласқансыз. Қазір 7:40, фильм басталып кетті, ал ол әлі жоқ — тағы да. Телефоныңыз бұрынғы «кешігіп жатырмын» хабарламаларына толы. Ол ақыры күлімсіреп, жайбарақат «Кешір, кептеліс!» деп келгенде, кешті бұзбай, осы әдетті шынайы көтеру керек пе екенін шешуіңіз керек."},"questions":[{"en":"How would you bring up the pattern, not just today?","ru":"Как бы вы заговорили о привычке, а не только о сегодняшнем дне?","kz":"Тек бүгінгі емес, осы әдет туралы қалай сөз бастар едіңіз?"},{"en":"How would you explain how it makes you feel?","ru":"Как бы вы объяснили, что вы при этом чувствуете?","kz":"Бұл сізге қалай әсер ететінін қалай түсіндірер едіңіз?"},{"en":"What would you ask her to do differently?","ru":"О чём бы вы попросили её в следующий раз?","kz":"Одан келесіде нені басқаша істеуді сұрар едіңіз?"},{"en":"How would you keep the friendship strong while being honest?","ru":"Как бы вы сохранили дружбу, оставаясь честным?","kz":"Шыншыл бола отырып, достықты қалай сақтар едіңіз?"},{"en":"Do you know someone who is always late? How do you handle it?","ru":"Вы знаете кого-то, кто вечно опаздывает? Как вы с этим справляетесь?","kz":"Үнемі кешігетін біреуді білесіз бе? Мұны қалай шешесіз?"}],"phrases":[{"en":"Can I be honest with you about something?","ru":"Можно я буду с тобой честен?","kz":"Саған бір нәрсені шынымен айтсам бола ма?"},{"en":"It really bothers me when you're late.","ru":"Меня правда расстраивает, когда ты опаздываешь.","kz":"Кешігіп қалғаныңда мені шынымен мазалайды."},{"en":"I'd appreciate it if you let me know in advance.","ru":"Я был бы признателен, если бы ты предупреждал заранее.","kz":"Алдын ала ескертсең, ризашылығымды білдірер едім."},{"en":"I don't want to argue, but this keeps happening.","ru":"Не хочу спорить, но это повторяется.","kz":"Дауласқым келмейді, бірақ бұл қайталанып жатыр."},{"en":"Maybe you could set an alarm?","ru":"Может, поставишь будильник?","kz":"Оятқыш қойсаң қайтеді?"},{"en":"I understand things come up, however…","ru":"Я понимаю, что бывают непредвиденные дела, однако…","kz":"Кенеттен жұмыс шығатынын түсінемін, алайда…"},{"en":"Can we agree on a time and stick to it?","ru":"Можем договориться о времени и придерживаться его?","kz":"Уақытты келісіп, соны ұстана аламыз ба?"},{"en":"It's not a big deal, but it matters to me.","ru":"Это не страшно, но для меня важно.","kz":"Үлкен мәселе емес, бірақ маған маңызды."}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"although (despite the fact)","ru":"хотя","kz":"… болса да"},{"en":"however (to contrast)","ru":"однако","kz":"алайда"},{"en":"therefore (formal result)","ru":"следовательно","kz":"демек / сондықтан"},{"en":"that's why (to explain a result)","ru":"вот почему","kz":"сол себепті"},{"en":"besides (to add a point)","ru":"кроме того","kz":"оның үстіне"},{"en":"in my opinion (to give a view)","ru":"по моему мнению","kz":"менің ойымша"}],"mission":[{"en":"Greet your friend without exploding, even though you're frustrated.","kz":"Ашулансаңыз да, досыңызбен жарылып кетпей амандасыңыз.","ru":"Поздоровайтесь с подругой, не взрываясь, хотя вы раздражены."},{"en":"Name the pattern honestly — that this keeps happening — without attacking her.","kz":"Үлгіні шынайы атаңыз — мұның қайталанып жатқанын — оны кінәламай.","ru":"Честно назовите закономерность — что это повторяется — не нападая на неё."},{"en":"Ask for a small, fair change so your evenings work better.","kz":"Кештеріңіз жақсырақ өтуі үшін шағын, әділ өзгеріс сұраңыз.","ru":"Попросите небольшое справедливое изменение, чтобы ваши встречи проходили лучше."}],"scenario":[{"who":"scene","en":"It's 7:40. The film started ten minutes ago. Your phone is full of old 'running late' messages. Finally, your friend appears, smiling.","kz":"Сағат 7:40. Фильм он минут бұрын басталды. Телефоныңыз ескі 'кешігіп келемін' хабарламаларына толы. Ақыры досыңыз жымиып келеді.","ru":"7:40. Фильм начался десять минут назад. Телефон полон старых сообщений «уже бегу». Наконец появляется подруга, улыбаясь."},{"who":"them","label":"Your friend","en":"Heyyy! Sorry, sorry — traffic was crazy. Did we miss much?","kz":"Сәлееем! Кешір, кешір — кептеліс ақылдан адастырды. Көп нәрсені жіберіп алдық па?","ru":"Приве-е-ет! Прости, прости — пробки были жуткие. Мы много пропустили?"},{"who":"you","en":"Greet her, but gently say you've been waiting a while and the film has already started.","kz":"Онымен амандасыңыз, бірақ біраздан бері күтіп тұрғаныңызды және фильм басталып кеткенін жұмсақ айтыңыз.","ru":"Поздоровайтесь, но мягко скажите, что ждёте уже какое-то время и фильм уже начался."},{"who":"them","label":"Your friend","en":"I know, I know. I'm so sorry. You know how I am with time!","kz":"Білемін, білемін. Қатты кешірім сұраймын. Уақытпен қалай екенімді білесің ғой!","ru":"Знаю, знаю. Мне правда жаль. Ты же знаешь меня с этим временем!"},{"who":"you","en":"Name the pattern kindly: this has happened several times, and it makes you feel unimportant. Use 'I' statements.","kz":"Үлгіні жұмсақ атаңыз: бұл бірнеше рет болды және бұл сізді маңызды емес сезіндіреді. 'Мен' тұжырымдарын қолданыңыз.","ru":"По-доброму назовите закономерность: это случалось несколько раз, и из-за этого вы чувствуете себя неважным. Говорите от «я»."},{"who":"them","label":"Your friend","en":"Oh… I didn't realise it bothered you that much. I really don't mean to.","kz":"О… бұл сені сонша мазалайтынын білмеппін. Мен шынымен әдейі емес.","ru":"Ой… я не думала, что это тебя так задевает. Я правда не нарочно."},{"who":"you","en":"Suggest a small, fair fix — for example, a clear meeting time or a message if she's running late.","kz":"Шағын, әділ шешім ұсыныңыз — мысалы, нақты кездесу уақыты немесе кешігіп жатса хабарлама.","ru":"Предложите небольшое справедливое решение — например, чёткое время встречи или сообщение, если она опаздывает."},{"who":"them","label":"Your friend","en":"That's fair. I'll really try. Let's still enjoy tonight, okay?","kz":"Бұл әділ. Шынымен тырысамын. Бүгінгі кешті бәрібір тамаша өткізейік, жарай ма?","ru":"Это справедливо. Я правда постараюсь. Давай всё равно насладимся вечером, хорошо?"},{"who":"you","en":"Accept warmly, agree to enjoy the evening, and move on without dragging it out.","kz":"Жылы қабылдап, кешті тамаша өткізуге келісіп, мәселені созбай әрі қарай жалғастырыңыз.","ru":"Тепло примите это, согласитесь насладиться вечером и двигайтесь дальше, не затягивая."}],"task":{"en":"You're the friend who waited. Act out the scene out loud: greet her, raise the pattern honestly, and ask for a fair change. Use because, however, and for example.","kz":"Сіз — күткен досысыз. Көріністі дауыстап ойнаңыз: онымен амандасып, үлгіні шынайы көтеріп, әділ өзгеріс сұраңыз. because, however, for example қолданыңыз.","ru":"Вы — тот, кто ждал. Разыграйте сцену вслух: поздоровайтесь, честно поднимите тему, попросите справедливого изменения. Используйте because, however и for example."}},{"id":47,"hasAudio":true,"video":"/practice/situations/media/b1-v07.mp4","poster":"/practice/situations/media/b1-p07.jpg","title":{"en":"The Party Where You Know No One","ru":"Вечеринка, где вы никого не знаете","kz":"Ешкімді танымайтын кеш"},"desc":{"en":"A colleague invited you to a party 'to meet new people'. You arrive and immediately feel out of place — everyone is in tight groups, laughing, and you don't know a single person except the host, who is busy in the kitchen. You could stand alone and leave early, or push yourself to start a conversation with strangers.","ru":"Коллега пригласил вас на вечеринку «познакомиться с новыми людьми». Вы приходите и сразу чувствуете себя не в своей тарелке — все собрались в тесные компании и смеются, а вы не знаете никого, кроме хозяина, который занят на кухне. Можно стоять в стороне и уйти пораньше — или решиться и заговорить с незнакомцами.","kz":"Әріптесіңіз сізді «жаңа адамдармен танысуға» кешке шақырды. Сіз келісімен өзіңізді ыңғайсыз сезінесіз — бәрі топ-топ болып күлісіп тұр, ал сіз ас үйде жүрген үй иесінен басқа ешкімді танымайсыз. Жалғыз тұрып, ерте кетуіңізге де болады — немесе батылдық танытып, бейтаныстармен әңгіме бастауыңызға да болады."},"questions":[{"en":"How would you approach a group of strangers?","ru":"Как бы вы подошли к группе незнакомцев?","kz":"Бейтаныстар тобына қалай жақындар едіңіз?"},{"en":"How would you introduce yourself naturally?","ru":"Как бы вы естественно представились?","kz":"Өзіңізді қалай табиғи түрде таныстырар едіңіз?"},{"en":"What questions would you ask to keep the conversation going?","ru":"Какие вопросы вы бы задали, чтобы поддержать разговор?","kz":"Әңгімені жалғастыру үшін қандай сұрақтар қояр едіңіз?"},{"en":"How would you handle an awkward silence?","ru":"Как бы вы справились с неловкой паузой?","kz":"Ыңғайсыз үнсіздікті қалай шешер едіңіз?"},{"en":"Do you find it easy or hard to meet new people? Why?","ru":"Вам легко или сложно знакомиться с новыми людьми? Почему?","kz":"Жаңа адамдармен танысу сізге оңай ма, әлде қиын ба? Неге?"}],"phrases":[{"en":"Hi, I don't think we've met — I'm…","ru":"Привет, кажется, мы не знакомы — я…","kz":"Сәлем, біз танысқан жоқ сияқтымыз — мен…"},{"en":"How do you know the host?","ru":"Откуда ты знаешь хозяина?","kz":"Үй иесін қайдан танисың?"},{"en":"Is it okay if I join you?","ru":"Можно к вам присоединиться?","kz":"Сендерге қосылсам бола ма?"},{"en":"What do you do for a living?","ru":"Чем ты занимаешься?","kz":"Немен айналысасың?"},{"en":"This music is great, isn't it?","ru":"Классная музыка, правда?","kz":"Музыка тамаша емес пе?"},{"en":"Do you fancy getting a drink?","ru":"Не хочешь что-нибудь выпить?","kz":"Бірдеңе ішкің келе ме?"},{"en":"I'm actually new here, so I don't know many people.","ru":"Я вообще-то здесь впервые, мало кого знаю.","kz":"Мен мұнда жаңамын, көп адамды танымаймын."},{"en":"It was really nice to meet you.","ru":"Было очень приятно познакомиться.","kz":"Танысқаныма қуаныштымын."}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"also (to add)","ru":"также","kz":"сондай-ақ"},{"en":"in addition (to add)","ru":"кроме того / вдобавок","kz":"оған қоса"},{"en":"for example (to give an example)","ru":"например","kz":"мысалы"},{"en":"by the way (to change topic)","ru":"кстати","kz":"айтпақшы"},{"en":"in my opinion (to give a view)","ru":"по моему мнению","kz":"менің ойымша"},{"en":"besides (to add a point)","ru":"к тому же","kz":"оның үстіне"}],"mission":[{"en":"Push yourself to start one friendly conversation instead of leaving early.","kz":"Ерте кетудің орнына бір жылы әңгіме бастауға өзіңізді жұмылдырыңыз.","ru":"Заставьте себя начать одну дружелюбную беседу вместо того, чтобы уйти пораньше."},{"en":"Introduce yourself and find something you have in common with a stranger.","kz":"Өзіңізді таныстырып, бейтаныс адаммен ортақ бірдеңе табыңыз.","ru":"Представьтесь и найдите что-то общее с незнакомцем."},{"en":"Keep the conversation alive and join the group naturally.","kz":"Әңгімені тірі ұстап, топқа табиғи түрде қосылыңыз.","ru":"Поддержите беседу и естественно влейтесь в компанию."}],"scenario":[{"who":"scene","en":"You arrive at the party. Everyone is in tight groups, laughing. You don't know a single person except the host, who is busy in the kitchen.","kz":"Сіз кешке келесіз. Барлығы тығыз топтарда күліп тұр. Ас үйде жұмыспен әбігер болып жүрген үй иесінен басқа бірде-бір адамды танымайсыз.","ru":"Вы приходите на вечеринку. Все стоят тесными группами и смеются. Вы не знаете ни одного человека, кроме хозяина, который занят на кухне."},{"who":"scene","en":"You take a drink and stand near a small group. One person near you smiles and catches your eye.","kz":"Сіз сусын алып, шағын топтың қасында тұрасыз. Қасыңыздағы біреу жымиып, көзіңізге қарайды.","ru":"Вы берёте напиток и встаёте рядом с небольшой группой. Один человек рядом улыбается и ловит ваш взгляд."},{"who":"them","label":"Guest","en":"Hi! I don't think we've met. Are you a friend of Dana's?","kz":"Сәлем! Біз танысқан жоқ сияқтымыз. Сіз Дананың досысыз ба?","ru":"Привет! Кажется, мы не знакомы. Вы друг Даны?"},{"who":"you","en":"Introduce yourself warmly, say how you know the host, and ask how they know her.","kz":"Өзіңізді жылы таныстырып, үй иесін қайдан білетініңізді айтып, олардың оны қайдан білетінін сұраңыз.","ru":"Тепло представьтесь, расскажите, откуда знаете хозяйку, и спросите, откуда её знают они."},{"who":"them","label":"Guest","en":"Oh nice! We work together. So what do you do?","kz":"О, тамаша! Біз бірге жұмыс істейміз. Ал сіз немен айналысасыз?","ru":"О, здорово! Мы вместе работаем. А чем вы занимаетесь?"},{"who":"you","en":"Answer, then keep the conversation going by asking an open question and finding something in common.","kz":"Жауап беріп, содан кейін ашық сұрақ қойып, ортақ бірдеңе тауып, әңгімені жалғастырыңыз.","ru":"Ответьте, а затем поддержите беседу: задайте открытый вопрос и найдите что-то общее."},{"who":"them","label":"Guest","en":"Come on, let me introduce you to the others — they're really friendly.","kz":"Жүріңіз, сізді басқаларға таныстырайын — олар өте достық.","ru":"Пойдёмте, я познакомлю вас с остальными — они очень дружелюбные."},{"who":"you","en":"Accept happily, join the group, and greet the others naturally.","kz":"Қуана келісіп, топқа қосылып, басқалармен табиғи түрде амандасыңыз.","ru":"С радостью согласитесь, присоединитесь к компании и естественно поздоровайтесь с остальными."}],"task":{"en":"You're the new guest. Act out the scene out loud: introduce yourself, keep the conversation going, and join the group. Use because, also, and for example.","kz":"Сіз — жаңа қонақсыз. Көріністі дауыстап ойнаңыз: өзіңізді таныстырып, әңгімені жалғастырып, топқа қосылыңыз. because, also, for example қолданыңыз.","ru":"Вы — новый гость. Разыграйте сцену вслух: представьтесь, поддержите беседу и присоединитесь к компании. Используйте because, also и for example."}},{"id":48,"hasAudio":true,"video":"/practice/situations/media/b1-v08.mp4","poster":"/practice/situations/media/b1-p08.jpg","title":{"en":"Can You Lend Me Money?","ru":"Можешь одолжить денег?","kz":"Маған ақша қарызға бере аласың ба?"},"desc":{"en":"A close friend pulls you aside in a quiet cafe, looking embarrassed. 'I'm really sorry to ask, but could you lend me some money? Just until next month.' It's a fairly large amount. You care about your friend, but lending money can strain a friendship. You want to help if you can — while protecting yourself and the relationship.","ru":"Близкий друг отводит вас в сторону в тихом кафе, смущённо: «Извини, что прошу, но можешь одолжить денег? Всего до следующего месяца». Сумма довольно большая. Вы дорожите дружбой, но деньги способны её испортить. Вы хотите помочь, если можете — но при этом защитить и себя, и отношения.","kz":"Жақын досыңыз тыныш кафеде сізді шетке шақырып, ұялыңқырап: «Сұрағаныма кешір, бірақ маған біраз ақша қарызға бере аласың ба? Тек келесі айға дейін» дейді. Сома едәуір көп. Сіз досыңызды бағалайсыз, бірақ ақша достықты бұзуы мүмкін. Мүмкіндігінше көмектескіңіз келеді — әрі өзіңізді де, қарым-қатынасты да қорғағыңыз келеді."},"questions":[{"en":"What questions would you ask before deciding?","ru":"Какие вопросы вы бы задали, прежде чем решить?","kz":"Шешім қабылдамас бұрын қандай сұрақтар қояр едіңіз?"},{"en":"How would you say yes with clear conditions, if you agree?","ru":"Как бы вы согласились, обозначив чёткие условия?","kz":"Келісетін болсаңыз, нақты шарттармен қалай келісер едіңіз?"},{"en":"How would you say no kindly, if you can't?","ru":"Как бы вы мягко отказали, если не можете помочь?","kz":"Көмектесе алмасаңыз, қалай сыпайы түрде бас тартар едіңіз?"},{"en":"How would you protect the friendship either way?","ru":"Как бы вы сохранили дружбу в любом случае?","kz":"Қалай болғанда да достықты қалай сақтар едіңіз?"},{"en":"Do you think lending money to friends is a good idea? Why?","ru":"Считаете ли вы, что одалживать деньги друзьям — хорошая идея? Почему?","kz":"Достарға ақша қарызға беру жақсы ой деп ойлайсыз ба? Неге?"}],"phrases":[{"en":"Would it be possible to borrow some money?","ru":"Можно ли занять немного денег?","kz":"Біраз ақша қарызға алуға бола ма?"},{"en":"I'll pay you back by Friday, I promise.","ru":"Я верну до пятницы, обещаю.","kz":"Жұмаға дейін қайтарамын, уәде беремін."},{"en":"Can I ask why you need it?","ru":"Можно спросить, зачем тебе это?","kz":"Неге керек екенін сұрасам бола ма?"},{"en":"I'm sorry, but I can't right now.","ru":"Извини, но сейчас я не могу.","kz":"Кешір, бірақ қазір мүмкін емес."},{"en":"To be honest, I'd rather not lend money.","ru":"Честно говоря, я предпочитаю не одалживать деньги.","kz":"Шынымды айтсам, ақша қарызға бергім келмейді."},{"en":"How much do you need exactly?","ru":"Сколько именно тебе нужно?","kz":"Саған нақты қанша керек?"},{"en":"Let's try to find another solution.","ru":"Давай попробуем найти другое решение.","kz":"Басқа шешім табуға тырысайық."},{"en":"I understand, but money and friends can be tricky.","ru":"Понимаю, но деньги и дружба — вещи непростые.","kz":"Түсінемін, бірақ ақша мен достық — қиын нәрсе."}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"however (to contrast)","ru":"однако","kz":"алайда"},{"en":"although (despite the fact)","ru":"хотя","kz":"… болса да"},{"en":"unless (except if)","ru":"если только не","kz":"егер … болмаса"},{"en":"that's why (to explain a result)","ru":"вот почему","kz":"сол себепті"},{"en":"on the other hand (to contrast)","ru":"с другой стороны","kz":"екінші жағынан"},{"en":"therefore (formal result)","ru":"следовательно","kz":"демек / сондықтан"}],"mission":[{"en":"Listen with care and show your friend you take the request seriously.","kz":"Мұқият тыңдап, досыңызға өтінішті байыппен қабылдайтыныңызды көрсетіңіз.","ru":"Выслушайте с участием и покажите другу, что относитесь к просьбе серьёзно."},{"en":"Be honest about what you can or can't do, and set a clear boundary.","kz":"Не істей алатыныңыз бен алмайтыныңыз туралы шынайы болып, нақты шек қойыңыз.","ru":"Будьте честны в том, что вы можете и не можете, и установите чёткую границу."},{"en":"Protect the friendship while protecting yourself.","kz":"Өзіңізді қорғай отырып, достықты да сақтаңыз.","ru":"Сохраните дружбу, защищая при этом себя."}],"scenario":[{"who":"scene","en":"In a quiet cafe, your close friend pulls you aside. He looks embarrassed and lowers his voice.","kz":"Тыныш кафеде жақын досыңыз сізді шетке шақырады. Ол ұялған сияқты, дауысын бәсеңдетеді.","ru":"В тихом кафе близкий друг отводит вас в сторону. Он смущён и понижает голос."},{"who":"them","label":"Friend","en":"I'm really sorry to ask… but could you lend me some money? Just until next month. Things are tight right now.","kz":"Сұрағаныма қатты кешірім сұраймын… бірақ маған біраз ақша қарызға бере аласың ба? Тек келесі айға дейін. Қазір жағдай қиын.","ru":"Мне очень неловко просить… но не мог бы ты одолжить мне немного денег? Только до следующего месяца. Сейчас туго."},{"who":"you","en":"Show you care: acknowledge it was hard for him to ask, and ask gently what's going on.","kz":"Қамқорлық танытыңыз: сұрау оған қиын болғанын мойындап, не болып жатқанын жұмсақ сұраңыз.","ru":"Проявите участие: признайте, что ему было нелегко просить, и мягко спросите, что случилось."},{"who":"them","label":"Friend","en":"Some unexpected bills came up. I'll pay you back, I promise. You're the only person I trust with this.","kz":"Күтпеген төлемдер шықты. Қайтарамын, уәде беремін. Бұл мәселеде сенетін жалғыз адамым сенсің.","ru":"Возникли непредвиденные счета. Я верну, обещаю. Ты единственный, кому я могу это доверить."},{"who":"you","en":"Be honest about your limit: say how much (if any) you can manage, and be clear about what you can't do.","kz":"Шегіңіз туралы шынайы болыңыз: қанша көтере алатыныңызды (егер болса) айтып, не істей алмайтыныңызды анық жеткізіңіз.","ru":"Будьте честны о своём пределе: скажите, какую сумму (если вообще) можете осилить, и ясно обозначьте, чего не можете."},{"who":"them","label":"Friend","en":"That… actually really helps. Thank you. How do you want to do this?","kz":"Бұл… шынында көп көмек. Рахмет. Мұны қалай реттегің келеді?","ru":"Это… правда очень помогает. Спасибо. Как ты хочешь это оформить?"},{"who":"you","en":"Set a fair, clear arrangement: agree on the amount and a simple plan for paying it back.","kz":"Әділ, нақты келісім жасаңыз: соманы және оны қайтарудың қарапайым жоспарын келісіңіз.","ru":"Договоритесь о справедливых, ясных условиях: согласуйте сумму и простой план возврата."},{"who":"them","label":"Friend","en":"Agreed. And honestly — thank you for not making me feel bad about it.","kz":"Келістік. Әрі шынымды айтсам — бұл үшін мені ұят сезіндірмегеніңе рахмет.","ru":"Договорились. И, честно — спасибо, что не дал мне почувствовать себя плохо из-за этого."},{"who":"you","en":"Reassure him the friendship matters more than the money, and keep things warm.","kz":"Достық ақшадан маңыздырақ екеніне оны сендіріп, қарым-қатынасты жылы сақтаңыз.","ru":"Заверьте его, что дружба важнее денег, и сохраните тёплый тон."}],"task":{"en":"You're the friend being asked. Act out the scene out loud: show you care, set an honest boundary, and protect the friendship. Use because, however, and on the other hand.","kz":"Сіз — өтініш жасалған доссыз. Көріністі дауыстап ойнаңыз: қамқорлық танытып, шынайы шек қойып, достықты сақтаңыз. because, however, on the other hand қолданыңыз.","ru":"Вы — друг, к которому обратились. Разыграйте сцену вслух: проявите участие, установите честную границу и сохраните дружбу. Используйте because, however и on the other hand."}},{"id":57,"hasAudio":true,"video":"/practice/situations/media/b1-v09.mp4","poster":"/practice/situations/media/b1-p09.jpg","title":{"en":"Missed the Deadline","ru":"Пропущенный дедлайн","kz":"Өткізіп алған мерзім"},"desc":{"en":"You missed an important assignment deadline because you were sick, but you didn't tell your professor in time. Now you're standing outside her office, typing an unsent apology on your phone. She's strict, and you don't want to seem irresponsible. You need to take responsibility, explain the real reason, and politely ask for another chance.","ru":"Вы пропустили важный дедлайн по заданию из-за болезни, но не предупредили преподавателя вовремя. Теперь вы стоите у её кабинета и набираете на телефоне неотправленное извинение. Она строгая, и вы не хотите выглядеть безответственным. Нужно взять на себя ответственность, объяснить настоящую причину и вежливо попросить ещё один шанс.","kz":"Сіз ауырып қалғандықтан маңызды тапсырманың мерзімін өткізіп алдыңыз, бірақ оқытушыға уақытында айтпадыңыз. Енді оның кабинетінің алдында тұрып, телефоныңызда жіберілмеген кешірім хатын тересіз. Ол қатал, ал сіз жауапсыз болып көрінгіңіз келмейді. Жауапкершілікті мойындап, нақты себепті түсіндіріп, тағы бір мүмкіндік сұрауыңыз керек."},"questions":[{"en":"How would you explain what happened honestly?","ru":"Как бы вы честно объяснили, что произошло?","kz":"Не болғанын қалай шынайы түсіндірер едіңіз?"},{"en":"How would you take responsibility for your part?","ru":"Как бы вы взяли на себя ответственность за свою часть?","kz":"Өз тарапыңыздан жауапкершілікті қалай мойныңызға алар едіңіз?"},{"en":"How would you make a polite request for an extension?","ru":"Как бы вы вежливо попросили продлить срок?","kz":"Мерзімді ұзартуды қалай сыпайы сұрар едіңіз?"},{"en":"What would you do if she says no?","ru":"Что бы вы сделали, если она откажет?","kz":"Егер ол бас тартса, не істер едіңіз?"},{"en":"Have you ever had to apologise for missing something important?","ru":"Вам приходилось извиняться за то, что вы что-то важное пропустили?","kz":"Маңызды нәрсені өткізіп алғаныңыз үшін кешірім сұрауға тура келді ме?"}],"phrases":[{"en":"I'm really sorry, I missed the deadline.","ru":"Мне очень жаль, я не уложился в срок.","kz":"Кешіріңіз, мерзімге үлгермедім."},{"en":"Let me explain what happened.","ru":"Позвольте объяснить, что случилось.","kz":"Не болғанын түсіндіріп берейін."},{"en":"Is there any chance of an extension?","ru":"Есть ли возможность продлить срок?","kz":"Мерзімді ұзартуға мүмкіндік бар ма?"},{"en":"It won't happen again, I promise.","ru":"Это больше не повторится, обещаю.","kz":"Бұл қайталанбайды, уәде беремін."},{"en":"I take full responsibility.","ru":"Я беру на себя полную ответственность.","kz":"Толық жауапкершілікті өзіме аламын."},{"en":"Would it be possible to hand it in tomorrow?","ru":"Можно ли сдать это завтра?","kz":"Оны ертең тапсыруға бола ма?"},{"en":"I should have started earlier.","ru":"Мне следовало начать раньше.","kz":"Ертерек бастауым керек еді."},{"en":"What can I do to make up for it?","ru":"Что я могу сделать, чтобы это исправить?","kz":"Оны түзету үшін не істей аламын?"}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"however (to contrast)","ru":"однако","kz":"алайда"},{"en":"therefore (formal result)","ru":"следовательно","kz":"демек / сондықтан"},{"en":"as a result (consequence)","ru":"в результате","kz":"нәтижесінде"},{"en":"that's why (to explain a result)","ru":"вот почему","kz":"сол себепті"},{"en":"although (despite the fact)","ru":"хотя","kz":"… болса да"},{"en":"finally (last point)","ru":"наконец","kz":"ақыры / соңында"}],"mission":[{"en":"Take responsibility instead of making excuses.","kz":"Сылтау айтудың орнына жауапкершілікті мойныңызға алыңыз.","ru":"Возьмите ответственность на себя, а не оправдывайтесь."},{"en":"Explain the real reason honestly and apologise for not telling her sooner.","kz":"Шынайы себепті адал түсіндіріп, ертерек айтпағаныңыз үшін кешірім сұраңыз.","ru":"Честно объясните настоящую причину и извинитесь, что не сказали ей раньше."},{"en":"Politely ask for another chance and suggest a fair next step.","kz":"Тағы бір мүмкіндік сұрап, әділ келесі қадам ұсыныңыз.","ru":"Вежливо попросите ещё один шанс и предложите справедливый следующий шаг."}],"scenario":[{"who":"scene","en":"You stand outside your professor's office, deleting and rewriting an apology on your phone. You missed the deadline because you were ill — but you didn't tell her in time.","kz":"Сіз профессордың кабинетінің сыртында тұрып, телефоныңызда кешірім сөзін өшіріп, қайта жазып жатырсыз. Ауырғандықтан мерзімді өткізіп алдыңыз — бірақ оған уақытында айтпадыңыз.","ru":"Вы стоите у кабинета профессора, удаляя и переписывая извинение в телефоне. Вы пропустили дедлайн из-за болезни — но не сказали ей вовремя."},{"who":"scene","en":"You knock. She looks up from her desk.","kz":"Сіз есік қағасыз. Ол үстелінен басын көтереді.","ru":"Вы стучите. Она поднимает взгляд от стола."},{"who":"them","label":"Professor","en":"Come in. I noticed your assignment wasn't submitted. I'd like to hear what happened.","kz":"Кіріңіз. Тапсырмаңыз тапсырылмағанын байқадым. Не болғанын естігім келеді.","ru":"Войдите. Я заметила, что ваша работа не сдана. Хотела бы услышать, что случилось."},{"who":"you","en":"Take responsibility first: don't blame anyone, and say you understand the deadline was missed.","kz":"Алдымен жауапкершілікті мойныңызға алыңыз: ешкімді кінәламай, мерзімді өткізіп алғаныңызды түсінетіңізді айтыңыз.","ru":"Сначала возьмите ответственность: никого не вините и скажите, что понимаете — дедлайн был пропущен."},{"who":"them","label":"Professor","en":"I appreciate that. But why didn't you contact me before the deadline?","kz":"Мұны бағалаймын. Бірақ неге мерзімнен бұрын маған хабарласпадыңыз?","ru":"Это похвально. Но почему вы не связались со мной до дедлайна?"},{"who":"you","en":"Explain the real reason honestly — you were ill — and apologise for not letting her know in time.","kz":"Шынайы себепті адал түсіндіріңіз — ауырдыңыз — әрі оған уақытында хабарламағаныңыз үшін кешірім сұраңыз.","ru":"Честно объясните настоящую причину — вы болели — и извинитесь, что не сообщили вовремя."},{"who":"them","label":"Professor","en":"I see. Thank you for being honest. What are you proposing now?","kz":"Түсінікті. Адал болғаныңызға рахмет. Қазір не ұсынасыз?","ru":"Понятно. Спасибо за честность. Что вы предлагаете теперь?"},{"who":"you","en":"Politely ask for another chance and suggest a realistic new deadline you can meet.","kz":"Тағы бір мүмкіндік сұрап, орындай алатын нақты жаңа мерзім ұсыныңыз.","ru":"Вежливо попросите ещё один шанс и предложите реалистичный новый срок, который вы сможете соблюсти."},{"who":"them","label":"Professor","en":"Alright. Submit it by Friday, and next time, email me as soon as a problem comes up.","kz":"Жарайды. Жұмаға дейін тапсырыңыз, әрі келесіде мәселе туындағанда бірден маған жазыңыз.","ru":"Хорошо. Сдайте к пятнице, и в следующий раз пишите мне сразу, как только возникнет проблема."},{"who":"you","en":"Thank her sincerely, confirm the new deadline, and promise to communicate earlier next time.","kz":"Оған шын жүректен алғыс айтып, жаңа мерзімді растап, келесіде ертерек хабарласуға уәде беріңіз.","ru":"Искренне поблагодарите её, подтвердите новый срок и пообещайте сообщать раньше в следующий раз."}],"task":{"en":"You're the student. Act out the conversation out loud: take responsibility, explain honestly, and ask for another chance. Use because, however, and therefore.","kz":"Сіз — студентсіз. Әңгімені дауыстап ойнаңыз: жауапкершілікті мойныңызға алып, адал түсіндіріп, тағы бір мүмкіндік сұраңыз. because, however, therefore қолданыңыз.","ru":"Вы — студент. Разыграйте разговор вслух: возьмите ответственность, честно объясните и попросите ещё один шанс. Используйте because, however и therefore."}},{"id":59,"hasAudio":true,"video":"/practice/situations/media/b1-v10.mp4","poster":"/practice/situations/media/b1-p10.jpg","title":{"en":"The Roommate Rules","ru":"Правила с соседом по комнате","kz":"Бөлмелес ережелері"},"desc":{"en":"Your dorm roommate keeps doing things that bother you: loud music late at night, dishes left for days, and friends invited over without asking. You've stayed quiet, but it's affecting your sleep and study. The roommate is sitting nearby, relaxed. You need an honest, fair conversation to agree on a few simple shared rules — without ruining the relationship.","ru":"Ваш сосед по комнате в общежитии постоянно делает то, что вас раздражает: громкая музыка поздно ночью, посуда, которую не моют днями, и друзья, которых зовут без предупреждения. Вы молчали, но это мешает спать и учиться. Сосед сидит рядом, расслабленный. Нужен честный и справедливый разговор, чтобы договориться о нескольких простых общих правилах — не испортив отношения.","kz":"Жатақханадағы бөлмелесіңіз сізді мазалайтын нәрселерді үнемі істейді: түнде қатты музыка, бірнеше күн жуылмаған ыдыс, рұқсат сұрамай шақырылатын достар. Сіз үндемей жүрдіңіз, бірақ бұл ұйқыңыз бен оқуыңызға кедергі келтіруде. Бөлмелес жанында жайбарақат отыр. Қарым-қатынасты бұзбай, бірнеше қарапайым ортақ ережеге келісу үшін шынайы әрі әділ әңгіме қажет."},"questions":[{"en":"How would you start the conversation calmly?","ru":"Как бы вы спокойно начали разговор?","kz":"Әңгімені қалай сабырлы бастар едіңіз?"},{"en":"How would you explain what bothers you without attacking?","ru":"Как бы вы объяснили, что вас беспокоит, не нападая?","kz":"Шабуылдамай, сізді не мазалайтынын қалай түсіндірер едіңіз?"},{"en":"How would you invite their side and find fair rules?","ru":"Как бы вы выслушали его сторону и нашли справедливые правила?","kz":"Оның пікірін тыңдап, әділ ережелерді қалай табар едіңіз?"},{"en":"What simple agreements would you suggest?","ru":"Какие простые договорённости вы бы предложили?","kz":"Қандай қарапайым уағдаластықтар ұсынар едіңіз?"},{"en":"Have you ever shared a room or home? What was hard about it?","ru":"Вы когда-нибудь делили комнату или жильё? Что было сложным?","kz":"Бөлмені немесе үйді біреумен бөлісіп көрдіңіз бе? Қиыны не болды?"}],"phrases":[{"en":"Can we talk about the house rules?","ru":"Можем обсудить правила в квартире?","kz":"Үй ережелері туралы сөйлессек бола ма?"},{"en":"I think we should share the cleaning.","ru":"Думаю, нам стоит делить уборку.","kz":"Менің ойымша, тазалықты бөлісуіміз керек."},{"en":"How about we make a schedule?","ru":"Может, составим график?","kz":"Кесте жасасақ қайтеді?"},{"en":"I see your point, but…","ru":"Я понимаю тебя, но…","kz":"Сені түсінемін, бірақ…"},{"en":"Would you mind keeping the noise down at night?","ru":"Не мог бы ты потише по ночам?","kz":"Түнде шуды азайта аласың ба?"},{"en":"Let's split the bills equally.","ru":"Давай делить счета поровну.","kz":"Шоттарды тең бөлейік."},{"en":"I'm happy to compromise.","ru":"Я готов пойти на компромисс.","kz":"Ымыраға келуге дайынмын."},{"en":"It's only fair if we both help.","ru":"Будет честно, если мы оба будем помогать.","kz":"Екеуміз де көмектессек, әділ болады."}],"connectors":[{"en":"because (to give a reason)","ru":"потому что (причина)","kz":"өйткені (себеп)"},{"en":"so (to show a result)","ru":"поэтому (результат)","kz":"сондықтан (нәтиже)"},{"en":"however (to contrast)","ru":"однако","kz":"алайда"},{"en":"although (despite the fact)","ru":"хотя","kz":"… болса да"},{"en":"in addition (to add)","ru":"кроме того","kz":"оған қоса"},{"en":"besides (to add a point)","ru":"к тому же","kz":"оның үстіне"},{"en":"on the one hand … on the other hand","ru":"с одной стороны … с другой стороны","kz":"бір жағынан … екінші жағынан"},{"en":"first … next … finally (sequence)","ru":"сначала … затем … наконец","kz":"алдымен … одан кейін … соңында"}],"mission":[{"en":"Open the conversation calmly, without blaming your roommate.","kz":"Бөлмелесіңізді кінәламай, әңгімені сабырмен бастаңыз.","ru":"Начните разговор спокойно, не обвиняя соседа."},{"en":"Describe how the behaviour affects your sleep and study, using 'I' statements.","kz":"Мінез-құлықтың ұйқыңыз бен оқуыңызға қалай әсер ететінін 'мен' тұжырымдарымен сипаттаңыз.","ru":"Опишите, как поведение влияет на ваш сон и учёбу, говоря от «я»."},{"en":"Agree together on a few simple, fair shared rules.","kz":"Бірнеше қарапайым, әділ ортақ ережелерді бірге келісіңіз.","ru":"Договоритесь вместе о нескольких простых, справедливых общих правилах."}],"scenario":[{"who":"scene","en":"Your roommate keeps you awake with loud music, leaves dishes for days, and invites friends without asking. He's sitting nearby now, relaxed and scrolling on his phone.","kz":"Бөлмелесіңіз қатты музыкамен ұйықтатпайды, ыдысты күндеп қалдырады және сұрамай достарын шақырады. Ол қазір жақын жерде отыр, рахаттанып телефонын ақтарып.","ru":"Сосед не даёт вам спать громкой музыкой, оставляет посуду на дни и зовёт друзей, не спрашивая. Сейчас он сидит рядом, расслабленно листая телефон."},{"who":"you","en":"Open gently: ask if he has a minute to talk about how you share the room.","kz":"Жұмсақ бастаңыз: бөлмені қалай бөлісетіндеріңіз туралы сөйлесуге уақыты бар-жоғын сұраңыз.","ru":"Начните мягко: спросите, есть ли у него минута поговорить о том, как вы делите комнату."},{"who":"them","label":"Roommate","en":"Yeah, sure. Is something wrong?","kz":"Иә, әрине. Бірдеңе болды ма?","ru":"Да, конечно. Что-то не так?"},{"who":"you","en":"Describe the issues calmly, using 'I' statements — how the late music and dishes affect your sleep and study.","kz":"Мәселелерді сабырмен сипаттаңыз, 'мен' тұжырымдарын қолданып — кешкі музыка мен ыдыс ұйқыңыз бен оқуыңызға қалай әсер ететінін.","ru":"Спокойно опишите проблемы, говоря от «я» — как поздняя музыка и посуда влияют на ваш сон и учёбу."},{"who":"them","label":"Roommate","en":"Oh. I honestly didn't think it was a big deal. You should've said something earlier.","kz":"О. Шынымды айтсам, мұны үлкен мәселе деп ойламаппын. Ертерек айту керек еді.","ru":"О. Честно, я не думал, что это серьёзно. Мог бы сказать раньше."},{"who":"you","en":"Acknowledge his point, then suggest a few simple shared rules — quiet hours, washing dishes, asking before guests.","kz":"Оның пікірін мойындап, бірнеше қарапайым ортақ ереже ұсыныңыз — тыныштық сағаттары, ыдыс жуу, қонақтардан бұрын сұрау.","ru":"Признайте его правоту, затем предложите несколько простых общих правил — часы тишины, мытьё посуды, спрашивать перед гостями."},{"who":"them","label":"Roommate","en":"That sounds fair. I can do quiet after eleven. And I'll text you before people come over.","kz":"Бұл әділ сияқты. Он бірден кейін тыныштық сақтай аламын. Әрі адамдар келмес бұрын саған жазамын.","ru":"Звучит справедливо. После одиннадцати могу потише. И буду писать тебе, прежде чем кто-то придёт."},{"who":"you","en":"Agree warmly, confirm the rules together, and thank him for being open about it.","kz":"Жылы келісіп, ережелерді бірге растап, оған ашық болғаны үшін алғыс айтыңыз.","ru":"Тепло согласитесь, вместе подтвердите правила и поблагодарите его за открытость."}],"task":{"en":"You're the roommate raising the issue. Act out the conversation out loud: open calmly, explain the impact, and agree on fair rules. Use because, so, and also.","kz":"Сіз — мәселе көтеріп отырған бөлмелессіз. Әңгімені дауыстап ойнаңыз: сабырмен бастап, әсерін түсіндіріп, әділ ережелерге келісіңіз. because, so, also қолданыңыз.","ru":"Вы — сосед, поднимающий вопрос. Разыграйте разговор вслух: начните спокойно, объясните последствия и договоритесь о справедливых правилах. Используйте because, so и also."}}];
+
+/* ---------- storage ---------- */
+const mem={done:new Set()};
+const LSok=(function(){try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return true;}catch(e){return false;}})();
+const Store={
+  getDone(){if(LSok){try{return new Set(JSON.parse(localStorage.getItem('jts_done')||'[]'));}catch(e){}}return new Set(mem.done);},
+  setDone(s){mem.done=new Set(s);if(LSok){try{localStorage.setItem('jts_done',JSON.stringify([...s]));}catch(e){}}}
+};
+const DB={db:null,
+  open(){return new Promise(res=>{if(this.db)return res(this.db);try{const r=indexedDB.open('jts_audio',1);r.onupgradeneeded=e=>e.target.result.createObjectStore('rec');r.onsuccess=e=>{this.db=e.target.result;res(this.db);};r.onerror=()=>res(null);}catch(e){res(null);}});},
+  async put(k,b){const d=await this.open();if(!d)return;try{d.transaction('rec','readwrite').objectStore('rec').put(b,k);}catch(e){}},
+  async get(k){const d=await this.open();if(!d)return null;return new Promise(r=>{try{const q=d.transaction('rec','readonly').objectStore('rec').get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null);}catch(e){r(null);}});},
+  async del(k){const d=await this.open();if(!d)return;try{d.transaction('rec','readwrite').objectStore('rec').delete(k);}catch(e){}}
+};
+
+/* =========================================================
+   SPEECH ANALYSIS — real metrics from transcript + timing
+   ========================================================= */
+const FILLERS=['um','uh','er','ah','eh','hmm','like','well','actually','basically','literally'];
+const WEAK={good:['great','excellent','wonderful'],bad:['poor','terrible','awful'],nice:['lovely','pleasant','delightful'],
+  thing:['item','aspect','matter'],things:['items','aspects','matters'],stuff:['things','items','belongings'],
+  big:['large','huge','significant'],small:['tiny','minor','compact'],very:['extremely','remarkably','incredibly'],
+  really:['truly','genuinely','seriously'],get:['obtain','receive','reach'],got:['received','obtained'],
+  happy:['delighted','pleased','glad'],sad:['upset','unhappy','disappointed'],said:['mentioned','explained','replied']};
+
+async function checkGrammarOnline(text){
+  try{
+    const body=new URLSearchParams({text:text,language:'en-US',level:'picky'});
+    const res=await fetch('https://api.languagetool.org/v2/check',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    if(!res.ok) throw 0;
+    const data=await res.json();
+    return (data.matches||[]).filter(m=>m.rule.category.id!=='TYPOS'||true).map(m=>({
+      msg:m.shortMessage||m.message, bad:text.substr(m.offset,m.length),
+      repl:(m.replacements&&m.replacements[0]?m.replacements[0].value:''), cat:m.rule.category.name
+    }));
+  }catch(e){ return null; }
+}
+function checkGrammarLocal(text){
+  const issues=[]; const t=' '+text+' ';
+  if(/\bi\b/.test(text)) issues.push({msg:"Pronoun 'I' should be capitalised",bad:'i',repl:'I',cat:'Grammar'});
+  const an=t.match(/\ba\s+(a|e|i|o|u)\w+/gi); if(an) issues.push({msg:"Use 'an' before a vowel sound",bad:an[0].trim(),repl:an[0].trim().replace(/^a\s/i,'an '),cat:'Grammar'});
+  const dbl=text.match(/\b(\w+)\s+\1\b/i); if(dbl) issues.push({msg:'Repeated word',bad:dbl[0],repl:dbl[1],cat:'Style'});
+  [['dont',"don't"],['doesnt',"doesn't"],['cant',"can't"],['im',"I'm"],['ive',"I've"],['didnt',"didn't"],['wont',"won't"]].forEach(p=>{
+    const re=new RegExp('\\b'+p[0]+'\\b','i'); if(re.test(text)) issues.push({msg:'Missing apostrophe',bad:p[0],repl:p[1],cat:'Spelling'});
+  });
+  return issues;
+}
+function analyseMetrics(text,words,duration){
+  const tokens=(text.toLowerCase().match(/[a-z']+/g))||[];
+  const wordCount=tokens.length;
+  const uniq=new Set(tokens).size;
+  const ttr=wordCount?uniq/wordCount:0;
+  const wpm=duration>0?Math.round(wordCount/(duration/60)):0;
+  let fillers=0; tokens.forEach(w=>{if(FILLERS.indexOf(w)>=0)fillers++;});
+  const weakFound=[]; const seen={};
+  tokens.forEach(w=>{if(WEAK[w]&&!seen[w]){seen[w]=1;weakFound.push({word:w,alts:WEAK[w]});}});
+  // pronunciation: low-confidence words from recognition (if confidences present)
+  let confVals=words.filter(o=>o.c>0).map(o=>o.c);
+  let avgConf=confVals.length?confVals.reduce((a,b)=>a+b,0)/confVals.length:0;
+  let unclear=[]; const us={};
+  words.forEach(o=>{const lw=o.w.toLowerCase().replace(/[^a-z']/g,'');if(o.c>0&&o.c<0.6&&lw.length>1&&!us[lw]){us[lw]=1;unclear.push(lw);}});
+  const connectors=['because','so','but','however','then','after','before','also','and','when','if','although'];
+  let connCount=0; tokens.forEach(w=>{if(connectors.indexOf(w)>=0)connCount++;});
+  return {wordCount,uniq,ttr,wpm,fillers,weakFound,avgConf,confAvailable:confVals.length>0,unclear,connCount};
+}
+function scoreFrom(m,grammarIssues){
+  // fluency
+  let fl=100;
+  if(m.wpm<60) fl-=40; else if(m.wpm<90) fl-=18; else if(m.wpm>190) fl-=25; else if(m.wpm>165) fl-=10;
+  fl-=Math.min(30,m.fillers*7);
+  if(m.wordCount<8) fl-=25; else if(m.wordCount<15) fl-=10;
+  fl=Math.max(20,Math.min(100,fl));
+  // vocabulary
+  let vo=Math.round(40+m.ttr*90); vo-=Math.min(24,m.weakFound.length*8); if(m.wordCount<8)vo-=15;
+  vo=Math.max(20,Math.min(100,vo));
+  // grammar
+  let gr=null;
+  if(grammarIssues!=null){ const per=m.wordCount?grammarIssues.length/m.wordCount:0; gr=Math.round(100-per*180-grammarIssues.length*3); gr=Math.max(25,Math.min(100,gr)); }
+  // pronunciation (estimate from recognition confidence)
+  let pr=null;
+  if(m.confAvailable){ pr=Math.round(m.avgConf*100); pr-=Math.min(20,m.unclear.length*5); pr=Math.max(25,Math.min(100,pr)); }
+  // coherence
+  let co=70; if(m.wordCount>=20)co+=10; if(m.connCount>=2)co+=12; else if(m.connCount===0)co-=10; if(m.wordCount<8)co-=25;
+  co=Math.max(25,Math.min(100,co));
+  const parts=[]; if(gr!=null)parts.push(gr*0.30); let w=gr!=null?0.30:0;
+  parts.push(vo*0.20); w+=0.20;
+  if(pr!=null){parts.push(pr*0.25); w+=0.25;}
+  parts.push(fl*0.15); w+=0.15;
+  parts.push(co*0.10); w+=0.10;
+  const overall=Math.round(parts.reduce((a,b)=>a+b,0)/w);
+  return {grammar:gr,vocabulary:vo,pronunciation:pr,fluency:fl,coherence:co,overall};
+}
+function recommendations(s,m,grammarIssues){
+  const r=[];
+  if(s.grammar!=null&&s.grammar<75&&grammarIssues&&grammarIssues.length) r.push("Fix the grammar points above, then say the sentence again.");
+  if(s.fluency<75){ if(m.wpm&&m.wpm<85) r.push("Speak a little faster and keep a steady rhythm."); else if(m.wpm>180) r.push("Slow down slightly so every word is clear."); if(m.fillers>=2) r.push("Replace filler words ('um', 'uh', 'like') with a short silent pause."); }
+  if(s.vocabulary<75&&m.weakFound.length) r.push("Swap common words for stronger ones — e.g. "+m.weakFound[0].word+" → "+m.weakFound[0].alts[0]+".");
+  if(s.pronunciation!=null&&s.pronunciation<75&&m.unclear.length) r.push("Practise these words slowly: "+m.unclear.slice(0,3).join(', ')+".");
+  if(s.coherence<75&&m.connCount===0) r.push("Link your ideas with words like 'because', 'so', and 'then'.");
+  if(m.wordCount<10) r.push("Give a fuller answer — aim for two or three complete sentences.");
+  if(!r.length) r.push("Excellent work! Keep practising to build speed and confidence.");
+  return r.slice(0,4);
+}
+function scoreLabel(v){return v>=85?'Excellent':v>=70?'Great':v>=55?'Good':'Keep practising';}
+
+/* =========================================================
+   RECORDER (mic + live transcription + analysis)
+   ========================================================= */
+class Recorder{
+  constructor(root,sit){
+    this.sit=sit;this.key='sit-'+sit.id;
+    this.audio=root.querySelector('audio');this.canvas=root.querySelector('canvas.wave');this.ctx=this.canvas.getContext('2d');
+    this.statusEl=root.querySelector('.status');this.statusTxt=root.querySelector('[data-status]');this.timerEl=root.querySelector('.timer');
+    this.micBtn=root.querySelector('[data-act="record"]');this.stopBtn=root.querySelector('[data-act="stop"]');
+    this.playBtn=root.querySelector('[data-act="play"]');this.delBtn=root.querySelector('[data-act="delete"]');this.dlBtn=root.querySelector('[data-act="download"]');
+    this.errEl=root.querySelector('.rec-error');this.savedPill=root.querySelector('.saved-pill');this.analysis=root.querySelector('.analysis');
+    this.state='idle';this.t0=0;this.timerId=null;this.rafId=null;this.audioCtx=null;
+    this.transcript='';this.words=[];this.recognizing=false;this.srSupported=false;this.lastDuration=0;
+    this.micBtn.addEventListener('click',()=>this.state==='recording'?this.stop():this.start());
+    this.stopBtn.addEventListener('click',()=>this.stop());
+    this.playBtn.addEventListener('click',()=>this.playToggle());
+    this.delBtn.addEventListener('click',()=>this.remove());
+    this.dlBtn.addEventListener('click',()=>this.download());
+    this.audio.addEventListener('ended',()=>{this.setState('recorded');this.drawIdle();});
+    this.fitCanvas();window.addEventListener('resize',()=>this.fitCanvas());this.restore();
+  }
+  fitCanvas(){const r=this.canvas.getBoundingClientRect();const d=window.devicePixelRatio||1;this.canvas.width=Math.max(300,r.width*d);this.canvas.height=72*d;this.ctx.setTransform(d,0,0,d,0,0);this.drawIdle();}
+  async restore(){const b=await DB.get(this.key);if(b){this.blob=b;this.url=URL.createObjectURL(b);this.audio.src=this.url;this.setState('recorded');this.savedPill.classList.add('show');}}
+  setState(s){this.state=s;this.statusEl.classList.remove('recording','recorded','playing');
+    if(s==='recording'){this.statusEl.classList.add('recording');this.statusTxt.textContent='Recording…';this.micBtn.classList.add('live');this.micBtn.setAttribute('aria-label','Stop');}
+    else{this.micBtn.classList.remove('live');this.micBtn.setAttribute('aria-label','Record');}
+    if(s==='recorded'){this.statusEl.classList.add('recorded');this.statusTxt.textContent='Recording saved';}
+    if(s==='playing'){this.statusEl.classList.add('playing');this.statusTxt.textContent='Playing…';}
+    if(s==='idle'){this.statusTxt.textContent='Ready to record';}
+    const has=!!this.blob;this.stopBtn.disabled=s!=='recording';this.playBtn.disabled=!has||s==='recording';this.delBtn.disabled=!has||s==='recording';this.dlBtn.disabled=!has||s==='recording';
+  }
+  startRecognition(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){this.srSupported=false;return;}
+    this.srSupported=true;this.transcript='';this.words=[];this.recognizing=true;
+    const r=new SR();this.recog=r;r.lang='en-US';r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+    r.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i];if(res.isFinal){const a=res[0];this.transcript+=a.transcript+' ';const c=a.confidence||0;a.transcript.trim().split(/\s+/).forEach(w=>{if(w)this.words.push({w:w,c:c});});}}};
+    r.onerror=()=>{};
+    r.onend=()=>{if(this.recognizing){try{r.start();}catch(e){}}};
+    try{r.start();}catch(e){this.srSupported=false;}
+  }
+  stopRecognition(){this.recognizing=false;try{this.recog&&this.recog.stop();}catch(e){}}
+  async start(){
+    this.errEl.hidden=true;this.analysis.hidden=true;
+    if(!navigator.mediaDevices||!window.MediaRecorder){this.showErr('Recording is not supported in this browser.');return;}
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      this.stream=stream;this.chunks=[];
+      let mime='';['audio/webm','audio/mp4','audio/ogg'].forEach(m=>{if(!mime&&MediaRecorder.isTypeSupported(m))mime=m;});
+      this.media=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+      this.media.ondataavailable=e=>{if(e.data.size)this.chunks.push(e.data);};
+      this.media.onstop=()=>this.finalize();
+      this.media.start();this.setState('recording');this.startTimer();this.startMeter(stream);this.startRecognition();
+    }catch(e){this.showErr('Microphone access is needed to record. Please allow it in your browser, and open the page over https or localhost.');}
+  }
+  stop(){if(this.media&&this.state==='recording'){this.media.stop();}this.stopTimer();this.stopMeter();this.stopRecognition();if(this.stream){this.stream.getTracks().forEach(t=>t.stop());}}
+  async finalize(){
+    const type=(this.media&&this.media.mimeType)||'audio/webm';
+    this.blob=new Blob(this.chunks,{type});if(this.url)URL.revokeObjectURL(this.url);this.url=URL.createObjectURL(this.blob);this.audio.src=this.url;
+    this.setState('recorded');this.drawIdle();await DB.put(this.key,this.blob);this.savedPill.classList.add('show');
+    markComplete(this.sit.id);
+    setTimeout(()=>this.runAnalysis(),450); // let recognition flush
+  }
+  playToggle(){if(this.audio.paused){this.audio.currentTime=0;this.audio.play();this.setState('playing');this.startPlaybackMeter();}else{this.audio.pause();this.setState('recorded');this.stopMeter();this.drawIdle();}}
+  async remove(){if(this.url)URL.revokeObjectURL(this.url);this.blob=null;this.url=null;this.audio.removeAttribute('src');this.audio.load();await DB.del(this.key);this.savedPill.classList.remove('show');this.analysis.hidden=true;this.timerEl.textContent='00:00';this.setState('idle');this.drawIdle();}
+  download(){if(!this.blob)return;const ext=this.blob.type.indexOf('mp4')>-1?'m4a':this.blob.type.indexOf('ogg')>-1?'ogg':'webm';const a=document.createElement('a');a.href=this.url;a.download='just-to-study-'+this.key+'.'+ext;document.body.appendChild(a);a.click();a.remove();}
+  startTimer(){this.t0=Date.now();this.timerEl.textContent='00:00';this.timerId=setInterval(()=>{const s=Math.floor((Date.now()-this.t0)/1000);this.lastDuration=s;this.timerEl.textContent=this.fmt(s);},200);}
+  stopTimer(){clearInterval(this.timerId);this.lastDuration=Math.max(this.lastDuration,(Date.now()-this.t0)/1000);}
+  fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+  ensureCtx(){if(!this.audioCtx)this.audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(this.audioCtx.state==='suspended')this.audioCtx.resume();return this.audioCtx;}
+  startMeter(stream){try{this.ensureCtx();this.srcNode=this.audioCtx.createMediaStreamSource(stream);this._a=this.audioCtx.createAnalyser();this._a.fftSize=256;this.srcNode.connect(this._a);this.analyser=this._a;this.drawLoop('#FF7D1D');}catch(e){}}
+  startPlaybackMeter(){try{this.ensureCtx();if(!this._pb){this._ms=this.audioCtx.createMediaElementSource(this.audio);this._pb=this.audioCtx.createAnalyser();this._pb.fftSize=256;this._ms.connect(this._pb);this._pb.connect(this.audioCtx.destination);}this.analyser=this._pb;this.drawLoop('#0AC7FF');}catch(e){}}
+  stopMeter(){cancelAnimationFrame(this.rafId);try{if(this.srcNode){this.srcNode.disconnect();this.srcNode=null;}}catch(e){}try{if(this._a){this._a.disconnect();this._a=null;}}catch(e){}}
+  drawLoop(color){const a=this.analyser;if(!a)return;const data=new Uint8Array(a.frequencyBinCount);const W=this.canvas.clientWidth,H=72;const draw=()=>{this.rafId=requestAnimationFrame(draw);a.getByteFrequencyData(data);this.ctx.clearRect(0,0,W,H);const bars=40,step=Math.floor(data.length/bars),gap=3,bw=(W-(bars-1)*gap)/bars;for(let i=0;i<bars;i++){const v=data[i*step]/255,h=Math.max(3,v*H),x=i*(bw+gap),y=(H-h)/2;this.ctx.fillStyle=color;this.rr(x,y,bw,h,bw/2);this.ctx.fill();}};draw();}
+  drawIdle(){const W=this.canvas.clientWidth,H=72;this.ctx.clearRect(0,0,W,H);const bars=40,gap=3,bw=(W-(bars-1)*gap)/bars;for(let i=0;i<bars;i++){const h=3+Math.abs(Math.sin(i*.5))*8,x=i*(bw+gap),y=(H-h)/2;this.ctx.fillStyle='rgba(255,255,255,.16)';this.rr(x,y,bw,h,bw/2);this.ctx.fill();}}
+  rr(x,y,w,h,r){const c=this.ctx;r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+  showErr(msg){this.errEl.textContent=msg;this.errEl.hidden=false;this.setState('idle');}
+
+  /* ---- analysis pipeline ---- */
+  async runAnalysis(){
+    const text=this.transcript.trim();
+    const dur=this.lastDuration||0;
+    this.analysis.hidden=false;
+    if(!this.srSupported){
+      this.renderAnalysis(null,null,null,{noSR:true,duration:dur});return;
+    }
+    if(!text){
+      this.renderAnalysis(null,null,null,{empty:true,duration:dur});return;
+    }
+    this.analysis.innerHTML='<div class="an-analyzing"><span class="spinner"></span><span>Analysing your answer…</span></div>';
+    const grammar=await checkGrammarOnline(text);
+    const grammarIssues=grammar!=null?grammar:checkGrammarLocal(text);
+    const offline=grammar==null;
+    const m=analyseMetrics(text,this.words,dur);
+    const s=scoreFrom(m,grammarIssues);
+    const recs=recommendations(s,m,grammarIssues);
+    this.renderAnalysis(s,m,grammarIssues,{text:text,offline:offline,recs:recs});
+  }
+  renderAnalysis(s,m,grammarIssues,opt){
+    opt=opt||{};
+    if(opt.noSR){
+      this.analysis.innerHTML='<div class="an-block"><h6><span class="pip"></span>Instant feedback</h6>'+
+        '<p class="an-note">Automatic speech analysis (grammar, pronunciation, vocabulary) needs Chrome or Edge with an internet connection, served over https or localhost. Your recording is saved and you can play it back any time.</p>'+
+        (opt.duration?'<p class="an-note">You spoke for about '+Math.round(opt.duration)+' seconds — a good length is 20–40s for a full answer.</p>':'')+'</div>';
+      return;
+    }
+    if(opt.empty){
+      this.analysis.innerHTML='<div class="an-block"><h6><span class="pip"></span>We didn\'t catch any speech</h6><p class="an-note">We couldn\'t detect clear English speech. Try again in a quiet place, speak a little louder, and answer in full sentences.</p></div>';
+      return;
+    }
+    const subRow=(name,val)=>{
+      if(val==null) return '<div class="sub"><span class="sname">'+name+'</span><div class="sbar"><i style="width:0"></i></div><span class="sval na">n/a</span></div>';
+      const warn=val<70?' warn':'';
+      return '<div class="sub"><span class="sname">'+name+'</span><div class="sbar'+warn+'"><i style="width:'+val+'%"></i></div><span class="sval">'+val+'</span></div>';
+    };
+    let html='';
+    html+='<div class="an-top"><div class="score-ring" style="--p:'+s.overall+'"><span class="sv">'+s.overall+'</span></div>'+
+      '<div class="an-top-txt"><h5>'+scoreLabel(s.overall)+'</h5><p>Overall speaking score — based on your recorded answer.</p></div></div>';
+    html+='<div class="subscores">'+subRow('Grammar',s.grammar)+subRow('Vocabulary',s.vocabulary)+subRow('Pronunciation',s.pronunciation)+subRow('Fluency',s.fluency)+subRow('Coherence',s.coherence)+'</div>';
+    html+='<div class="an-block"><h6><span class="pip"></span>What we heard</h6><div class="transcript">“'+escapeHtml(opt.text)+'”</div></div>';
+    // grammar
+    html+='<div class="an-block"><h6><span class="pip"></span>Grammar</h6>';
+    if(grammarIssues&&grammarIssues.length){
+      grammarIssues.slice(0,5).forEach(g=>{html+='<div class="issue"><span>'+(g.bad?'<span class="x">'+escapeHtml(g.bad)+'</span> ':'')+(g.repl?'<span class="arrow">→</span> <span class="ok">'+escapeHtml(g.repl)+'</span> ':'')+'<span class="tip">'+escapeHtml(g.msg||'')+'</span></span></div>';});
+    } else { html+='<div class="issue"><span class="ok">No grammar problems detected. Nicely done!</span></div>'; }
+    html+='</div>';
+    // pronunciation
+    html+='<div class="an-block"><h6><span class="pip"></span>Pronunciation</h6>';
+    if(!m.confAvailable){ html+='<p class="an-note">This browser didn\'t provide per-word clarity scores, so pronunciation isn\'t rated this time. Chrome usually provides it.</p>'; }
+    else if(m.unclear.length){ html+='<div class="issue"><span class="tip">Words that sounded unclear — practise them slowly: </span><span class="ok">'+m.unclear.slice(0,6).map(escapeHtml).join(', ')+'</span></div>'; }
+    else { html+='<div class="issue"><span class="ok">Your words came through clearly.</span></div>'; }
+    html+='</div>';
+    // vocabulary
+    html+='<div class="an-block"><h6><span class="pip"></span>Vocabulary</h6>';
+    if(m.weakFound.length){ m.weakFound.slice(0,4).forEach(w=>{html+='<div class="issue"><span><span class="x">'+escapeHtml(w.word)+'</span> <span class="arrow">→</span> <span class="ok">'+w.alts.map(escapeHtml).join(', ')+'</span></span></div>';}); }
+    else { html+='<div class="issue"><span class="ok">Good word variety ('+Math.round(m.ttr*100)+'% unique words).</span></div>'; }
+    html+='</div>';
+    // recommendations
+    html+='<div class="an-block"><h6><span class="pip"></span>Recommendations</h6><div class="recs">';
+    (opt.recs||[]).forEach(r=>{html+='<div class="rec-item"><span class="b">'+ICON.check+'</span><span>'+escapeHtml(r)+'</span></div>';});
+    html+='</div></div>';
+    html+='<p class="an-note">'+(opt.offline?'Grammar checked with built-in rules (the online checker was unavailable). ':'')+'Pronunciation is estimated from speech-recognition confidence and is a guide, not a clinical assessment.</p>';
+    this.analysis.innerHTML=html;
+  }
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* =========================================================
+   VIDEO CONTROLLER (audio enabled + errors + diagnostics)
+   ========================================================= */
+class VideoController{
+  constructor(art,sit){
+    this.sit=sit;
+    this.card=art.querySelector('[data-vcard]');this.video=art.querySelector('[data-video]');
+    this.overlay=art.querySelector('[data-overlay]');this.loading=art.querySelector('[data-vload]');
+    this.errBox=art.querySelector('[data-verror]');this.statusChip=art.querySelector('[data-vstatus]');this.durEl=art.querySelector('[data-dur]');
+    this.retryBtn=this.errBox.querySelector('.ve-retry');this.failed=false;
+    this.overlay.addEventListener('click',()=>this.play());
+    this.retryBtn.addEventListener('click',()=>this.retry());
+    this.video.addEventListener('play',()=>{this.overlay.classList.add('hide');this.card.classList.add('playing');});
+    this.video.addEventListener('pause',()=>{if(!this.video.ended){this.overlay.classList.remove('hide');this.card.classList.remove('playing');}});
+    this.video.addEventListener('ended',()=>{this.overlay.classList.remove('hide');this.card.classList.remove('playing');});
+    ['waiting','stalled','loadstart'].forEach(ev=>this.video.addEventListener(ev,()=>this.showLoading(true)));
+    ['canplay','playing','loadeddata'].forEach(ev=>this.video.addEventListener(ev,()=>this.showLoading(false)));
+    this.video.addEventListener('loadedmetadata',()=>{if(isFinite(this.video.duration)){const d=Math.round(this.video.duration);this.durEl.textContent=Math.floor(d/60)+':'+String(d%60).padStart(2,'0');}});
+    this.video.addEventListener('error',()=>this.fail(this.descErr()));
+    const src=this.video.querySelector('source');if(src)src.addEventListener('error',()=>this.fail('source error'));
+  }
+  srcLabel(){const v=this.sit.video;return v.indexOf('data:')===0?('embedded video (situation '+this.sit.id+')'):v;}
+  showLoading(on){if(this.failed)return;this.loading.classList.toggle('show',!!on);}
+  play(){if(this.failed){this.retry();return;}this.showLoading(true);const p=this.video.play();if(p&&p.catch){p.catch(err=>{console.warn('[JTS][video] play() rejected for '+this.srcLabel()+':',err&&err.name);if(this.video.error)this.fail(this.descErr());else this.showLoading(false);});}}
+  descErr(){const e=this.video.error;if(!e)return'unknown';return({1:'aborted',2:'network',3:'decode',4:'src not supported / not found'})[e.code]||('code '+e.code);}
+  fail(reason){this.failed=true;console.error('[JTS][video] FAILED — situation '+this.sit.id+' ('+reason+')');this.showLoading(false);this.overlay.classList.add('hide');this.errBox.querySelector('.ve-msg').textContent='This video could not be loaded.';this.errBox.querySelector('.ve-src').textContent=this.srcLabel();this.errBox.querySelector('.ve-retry-txt').textContent='Try again';this.errBox.classList.add('show');this.setStatus('broken','Unavailable');}
+  retry(){this.failed=false;this.errBox.classList.remove('show');this.overlay.classList.remove('hide');this.setStatus('checking','Checking…');const src=this.video.querySelector('source');const base=this.sit.video;if(src)src.src=base.indexOf('data:')===0?base:(base+'?r='+Date.now());this.video.load();this.showLoading(true);probeVideo(base).then(ok=>{if(ok){this.markReady();this.play();}else this.fail('retry failed');});}
+  setStatus(k,t){this.statusChip.className='video-status show '+k;this.statusChip.querySelector('.s-txt').textContent=t;}
+  markReady(){if(this.failed)return;this.setStatus('ready','Ready');this.showLoading(false);}
+  markChecking(){this.setStatus('checking','Checking…');}
+}
+function probeVideo(url){return new Promise(res=>{const v=document.createElement('video');v.preload='metadata';v.muted=true;let done=false;const fin=ok=>{if(done)return;done=true;clearTimeout(t);v.removeAttribute('src');try{v.load();}catch(e){}res(ok);};const t=setTimeout(()=>fin(false),12000);v.addEventListener('loadedmetadata',()=>fin(true));v.addEventListener('canplay',()=>fin(true));v.addEventListener('error',()=>fin(false));try{v.src=url;}catch(e){fin(false);}});}
+async function validateVideos(){console.log('%c[JTS] Video diagnostics starting…','color:#874BF8;font-weight:bold');const report=[];for(const c of videoControllers){c.markChecking();const ok=await probeVideo(c.sit.video);report.push({situation:c.sit.id,file:c.srcLabel(),status:ok?'READY ✅':'BROKEN ❌'});if(ok)c.markReady();else c.fail('failed validation');}try{console.table(report);}catch(e){console.log(report);}const broken=report.filter(r=>r.status.indexOf('BROKEN')===0);if(broken.length)console.error('[JTS] Broken videos:',broken.map(b=>b.file).join(', '));else console.log('%c[JTS] All videos validated and ready.','color:#00B838;font-weight:bold');}
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+const recorders=[];const videoControllers=[];
+function mlBlock(data,opts){
+  opts=opts||{};
+  const prefix=opts.prefix||'';
+  const mainClass=opts.titleMain?'title-main':'';
+  return '<div class="ml">'+
+    '<div class="ml-main">'+(prefix?'<span class="qnum">'+prefix+'</span>':'')+'<span class="'+mainClass+'">'+escapeHtml(data.en)+'</span>'+
+      '<span class="ml-tg"><button class="ml-toggle" data-l="kz" type="button">KZ</button><button class="ml-toggle" data-l="ru" type="button">RU</button></span>'+
+    '</div>'+
+    '<div class="ml-tr kz" data-l="kz"><span class="ml-lab">ҚАЗАҚША</span>'+escapeHtml(data.kz)+'</div>'+
+    '<div class="ml-tr ru" data-l="ru"><span class="ml-lab">РУССКИЙ</span>'+escapeHtml(data.ru)+'</div>'+
+  '</div>';
+}
+function buildSituations(){
+  const wrap=document.getElementById('situations');wrap.innerHTML='';
+  SITUATIONS.forEach((s,idx)=>{
+    const n=idx+1; s._n=n;
+    const muted=!s.hasAudio;
+    const art=document.createElement('article');art.className='situation';art.id='sit-'+s.id;
+    const mission=(s.mission||[]).map(m=>'<li>'+mlBlock(m)+'</li>').join('');
+    const beats=(s.scenario||[]).map(b=>{
+      if(b.who==='scene'){return '<div class="beat beat-scene"><span class="beat-tag">SCENE</span>'+mlBlock({en:b.en,kz:b.kz,ru:b.ru})+'</div>';}
+      if(b.who==='you'){return '<div class="beat beat-you"><div class="beat-you-lab">'+ICON.mic+'<span>YOUR TURN — say it out loud</span></div>'+mlBlock({en:b.en,kz:b.kz,ru:b.ru})+'</div>';}
+      return '<div class="beat beat-them"><span class="beat-who">'+escapeHtml(b.label||'')+'</span>'+mlBlock({en:b.en,kz:b.kz,ru:b.ru})+'</div>';
+    }).join('');
+    art.innerHTML=
+      '<div class="sit-head"><span class="sit-seq">'+n+'</span>'+
+        '<div class="titles">'+mlBlock(s.title,{prefix:n+'.',titleMain:true})+'</div>'+
+        '<span class="sit-flag" data-flag="'+s.id+'"></span>'+
+      '</div>'+
+      '<div class="sit-desc"><span class="you-tag">'+ICON.spark+'<span>YOU ARE HERE</span></span>'+mlBlock(s.desc)+'</div>'+
+      '<div class="video-card" data-vcard>'+
+        '<video preload="metadata" playsinline webkit-playsinline controls poster="'+s.poster+'" data-video>'+
+          '<source src="'+s.video+'" type="video/mp4" /></video>'+
+        '<span class="video-status" data-vstatus><span class="s-dot"></span><span class="s-txt"></span></span>'+
+        (muted?'<span class="muted-note">No audio in this clip</span>':'')+
+        '<div class="video-loading" data-vload><span class="spinner"></span></div>'+
+        '<button class="play-overlay" data-overlay aria-label="Play video"><span class="play-btn">'+ICON.play+'</span></button>'+
+        '<div class="video-error" data-verror><span class="ve-ic">'+ICON.alert+'</span><p class="ve-msg"></p><span class="ve-src"></span><button class="ve-retry">'+ICON.refresh+'<span class="ve-retry-txt"></span></button></div>'+
+        '<div class="video-meta"><span class="dur" data-dur>0:08</span><span class="vtitle">Watch the situation</span></div>'+
+      '</div>'+
+      '<section class="speaking">'+
+        '<div class="speaking-head"><span class="ic">'+ICON.chat+'</span><span>Think, React &amp; Decide</span></div>'+
+        '<ol class="questions">'+s.questions.map((q,i)=>'<li>'+mlBlock(q,{prefix:(i+1)+'.'})+'</li>').join('')+'</ol>'+
+        (s.task?'<div class="task"><div class="tlabel">'+ICON.target+' YOUR SPEAKING MISSION</div>'+mlBlock(s.task)+'</div>':'')+
+      '</section>'+
+      '<section class="recorder">'+
+        '<div class="rec-title"><span class="ic">'+ICON.mic+'</span><span>Your turn to speak</span></div>'+
+        '<p class="rec-hint">Play the role: act out the scenario as the main character, or do Your Speaking Mission. Tap the mic — you\'ll get instant feedback.</p>'+
+        '<div class="rec-bar"><div class="status"><span class="dot"></span><span data-status>Ready to record</span></div><div class="timer">00:00</div></div>'+
+        '<div class="wave-wrap"><canvas class="wave"></canvas></div>'+
+        '<div class="controls">'+
+          '<button class="tool danger" data-act="delete" disabled aria-label="Delete">'+ICON.trash+'</button>'+
+          '<button class="mic" data-act="record" aria-label="Record">'+ICON.mic+'</button>'+
+          '<button class="tool" data-act="stop" disabled aria-label="Stop">'+ICON.stop+'</button>'+
+          '<button class="tool" data-act="play" disabled aria-label="Play">'+ICON.play+'</button>'+
+          '<button class="tool" data-act="download" disabled aria-label="Download">'+ICON.download+'</button>'+
+          '<span class="saved-pill">'+ICON.check+'<span>Saved on this device</span></span>'+
+        '</div>'+
+        '<div class="rec-error" hidden></div>'+
+        '<div class="analysis" hidden></div>'+
+        '<audio hidden></audio>'+
+      '</section>'+
+      '<section class="speaking phrases">'+
+        '<div class="speaking-head"><span class="ic">'+ICON.chat+'</span><span>Useful Phrases (Use these words in your speaking.)</span></div>'+
+        '<div class="xlist">'+(s.phrases||[]).map(p=>'<div class="xitem"><span class="xic">'+ICON.spark+'</span>'+mlBlock(p)+'</div>').join('')+'</div>'+
+      '</section>'+
+      '<section class="speaking connectors">'+
+        '<div class="speaking-head"><span class="ic">'+ICON.spark+'</span><span>Linking Words &amp; Connectors</span></div>'+
+        '<div class="xlist">'+(s.connectors||[]).map(p=>'<div class="xitem"><span class="xic cc">'+ICON.chat+'</span>'+mlBlock(p)+'</div>').join('')+'</div>'+
+      '</section>';
+    wrap.appendChild(art);
+    videoControllers.push(new VideoController(art,s));
+    recorders.push(new Recorder(art.querySelector('.recorder'),s));
+  });
+  // per-item KZ/RU toggle (collapsible)
+  wrap.addEventListener('click',e=>{
+    const b=e.target.closest('.ml-toggle');if(!b)return;
+    const l=b.dataset.l;const ml=b.closest('.ml');const tr=ml.querySelector('.ml-tr[data-l="'+l+'"]');
+    const show=!tr.classList.contains('show');tr.classList.toggle('show',show);b.classList.toggle('on',show);
+  });
+  document.getElementById('totalCount').textContent=SITUATIONS.length;
+  renderBadges();observeCards();validateVideos();
+}
+function renderBadges(){
+  const done=Store.getDone();
+  document.getElementById('doneCount').textContent=done.size;
+  document.getElementById('barFill').style.width=(done.size/SITUATIONS.length*100)+'%';
+  const box=document.getElementById('badges');box.innerHTML='';
+  SITUATIONS.forEach((s,idx)=>{const on=done.has(s.id);const b=document.createElement('span');b.className='badge'+(on?' on':'');b.innerHTML=(on?ICON.check:ICON.spark)+'<span>'+(idx+1)+(on?' · done':'')+'</span>';box.appendChild(b);});
+  SITUATIONS.forEach(s=>{const f=document.querySelector('[data-flag="'+s.id+'"]');if(!f)return;const on=done.has(s.id);f.classList.toggle('done',on);f.innerHTML=(on?ICON.check:'')+'<span>'+(on?'Practised':'Not yet')+'</span>';});
+}
+function markComplete(id){const d=Store.getDone();if(!d.has(id)){d.add(id);Store.setDone(d);renderBadges();}}
+function observeCards(){const cards=document.querySelectorAll('.situation');if(!('IntersectionObserver'in window)){cards.forEach(c=>c.classList.add('in'));return;}const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});cards.forEach(c=>io.observe(c));}
+
+buildSituations();
+</script>
+</body>
+</html>

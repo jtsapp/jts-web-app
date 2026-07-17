@@ -3,6 +3,7 @@ import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance } from '../api.js'
+import { loadToken } from '../lib/session.js'
 import {
   LearningIcon,
   PracticeIcon,
@@ -35,9 +36,12 @@ export default function Sidebar({ userName, userLevel = 'A1', active = 'learning
   const [balance, setBalance] = useState({ coins: 0, streak: 0, streakActiveToday: false })
 
   useEffect(() => {
-    if (!token) return
+    // Не все экраны пробрасывают token (тьютор, профиль) — тогда берём его
+    // из localStorage сами, чтобы монеты и стрик не залипали на нуле.
+    const authToken = token || loadToken()
+    if (!authToken) return
     let alive = true
-    getBalance(token)
+    getBalance(authToken)
       .then((b) => {
         if (alive && b) {
           setBalance({
