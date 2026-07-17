@@ -19,6 +19,7 @@ export const TALES = [
     len: '25–40 мин',
     chars: 3,
     grad: ['#2a3f6b', '#0a1024'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260701_070345_41f96e09-a14f-454d-bb30-46084296bb1a_min.webp',
     motif: '❄️',
   },
   {
@@ -28,6 +29,7 @@ export const TALES = [
     len: '25–40 мин',
     chars: 1,
     grad: ['#2c6fa6', '#08213b'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_220108_5772c0d8-4dd5-4d15-bea5-109580188fdc_min.webp',
     motif: '🧜‍♀️',
   },
   {
@@ -37,6 +39,7 @@ export const TALES = [
     len: '20–35 мин',
     chars: 1,
     grad: ['#b07ac0', '#2a1440'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260706_220501_c7612173-43a3-4917-8802-2a5a9129992c_min.webp',
     motif: '🌹',
   },
   {
@@ -46,6 +49,7 @@ export const TALES = [
     len: '15–25 мин',
     chars: 3,
     grad: ['#2f7d46', '#0d1a12'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_125112_dcbc8cef-0396-4f0f-83fb-71ea1e2799b8_min.webp',
     motif: '🐸',
   },
   {
@@ -55,6 +59,7 @@ export const TALES = [
     len: '15–25 мин',
     chars: 3,
     grad: ['#b23a2a', '#1a0e0a'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_215336_814ac745-0404-4e04-a410-4e2e18cb56e3_min.webp',
     motif: '🔴',
   },
   {
@@ -64,6 +69,7 @@ export const TALES = [
     len: '15–30 мин',
     chars: 3,
     grad: ['#c98a3c', '#5a3416'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260702_125138_158e0c10-a888-42d8-a17e-5260cec63fbc_min.webp',
     motif: '🦊',
   },
   {
@@ -73,6 +79,7 @@ export const TALES = [
     len: '15–25 мин',
     chars: 3,
     grad: ['#c98a3c', '#5a3416'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_215800_84886228-18ec-4317-8815-b310c9856de6_min.webp',
     motif: '🍃',
   },
   {
@@ -82,6 +89,7 @@ export const TALES = [
     len: '30–45 мин',
     chars: 3,
     grad: ['#c98a3c', '#3a2410'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260706_235739_02391681-6f15-4673-90d1-1a6d50d80fd2_min.webp',
     motif: '🐎',
   },
   {
@@ -91,6 +99,7 @@ export const TALES = [
     len: '30–45 мин',
     chars: 3,
     grad: ['#c98a3c', '#4a3016'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_213837_7881e551-604d-4b3f-8cf8-572528424359_min.webp',
     motif: '⚖️',
   },
   {
@@ -100,6 +109,7 @@ export const TALES = [
     len: '15–30 мин',
     chars: 1,
     grad: ['#caa63c', '#3a2a10'],
+    cover: 'https://d8j0ntlcm91z4.cloudfront.net/user_2xUTZyOrgpbyqY4CQUTF1CKWnQy/hf_20260708_220817_68445df2-74ce-412e-9db7-ffa50aca6ef3_min.webp',
     motif: '🪙',
   },
 ]
