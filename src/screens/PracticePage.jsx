@@ -23,6 +23,8 @@ import BookDetail from './BookDetail.jsx'
 // files-api) — в репозиторий такой файл не влезает; сказки (2.9 МБ) лежат в public.
 const BOOKS_URL =
   'https://files-api.iqra.space/development/development/practice/books.html'
+// Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
+// открывает мир нативно внутри приложения (src/practice/fairytale/).
 const TALES_URL = '/practice/fairytales.html'
 
 // Просмотры: 1331 → «1 331», 12000 → «12 тыс», 3400000 → «3.4 млн»
@@ -152,6 +154,21 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Открытый рилс (индекс в clips) — вертикальный плеер с прокруткой.
   const [openReel, setOpenReel] = useState(null)
   const [openBook, setOpenBook] = useState(null)
+
+  // Мир сказок: движок Fairytale's World открывается полноэкранным оверлеем
+  // поверх Практики (deep-link на конкретную сказку). Модуль ~3 МБ (base64-
+  // музыка и арт), поэтому грузим его лениво при первом клике.
+  const taleLoadingRef = useRef(false)
+  const openTale = async (tale) => {
+    if (taleLoadingRef.current) return
+    taleLoadingRef.current = true
+    try {
+      const mod = await import('../practice/fairytale/taleWorld.js')
+      mod.openTaleWorld(tale.id)
+    } finally {
+      taleLoadingRef.current = false
+    }
+  }
 
   // Поиск по видеоклипам (по названию).
   const [videoQuery, setVideoQuery] = useState('')
@@ -307,8 +324,12 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   key={tl.id}
                   className="pp-tcard"
                   href={TALES_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    // модифицированные клики оставляем браузеру (новая вкладка)
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                    e.preventDefault()
+                    openTale(tl)
+                  }}
                 >
                   <TaleCover tale={tl} />
                   <div className="pp-tcard__title">{tl.title}</div>
@@ -653,15 +674,11 @@ function ReelsViewer({ clips, startIndex, onBack }) {
 // public/practice/covers/tales/<id>.png); при отсутствии — градиент + мотив.
 function TaleCover({ tale }) {
   const [ok, setOk] = useState(true)
+  const src = tale.cover || `/practice/covers/tales/${tale.id}.png`
   if (ok) {
     return (
       <span className="pp-tcard__cover pp-tcard__cover--img">
-        <img
-          src={`/practice/covers/tales/${tale.id}.png`}
-          alt={tale.title}
-          loading="lazy"
-          onError={() => setOk(false)}
-        />
+        <img src={src} alt={tale.title} loading="lazy" onError={() => setOk(false)} />
       </span>
     )
   }
