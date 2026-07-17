@@ -38,7 +38,7 @@ function countWords(text) {
   return t ? t.split(/\s+/).length : 0
 }
 
-export default function IeltsWritingPage({ userLevel = 'A1', userName, token, onNav, onGo }) {
+export default function IeltsWritingPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo }) {
   const [task, setTask] = useState('task2')
   const [essay, setEssay] = useState('')
   const [loading, setLoading] = useState(false)
@@ -90,7 +90,7 @@ export default function IeltsWritingPage({ userLevel = 'A1', userName, token, on
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ie">
         <button type="button" className="ie-back ie-back--icon" onClick={() => onGo?.('ielts')}>
           <ArrowLeftIcon size={16} strokeWidth={2.5} />К секциям IELTS

@@ -1993,6 +1993,23 @@ def _cascade_tts_azure(profile: LearnerProfile):
 # used — so a persona keeps ONE voice across en/ru/kz. That is the point of this
 # path: Azure has no multilingual kk-KZ voice, so on a kz session Dexter has to
 # switch to kk-KZ-Daulet and stops sounding like Dexter.
+# ElevenLabs voice per persona, lifted from felix lib/tutors.ts, where the id
+# is sent per-session as elevenLabsVoiceId. This app's token route never sets
+# that field, so profile.eleven_voice_id is always "" and every tutor would
+# collapse onto one env voice — hence the table lives here instead.
+ELEVEN_VOICE = {
+    "bro": "Gubgw9l4dtIoQA9YZHgx",       # Dexter
+    "coach": "XrExE9yKIg1WjnnlVkGX",
+    "professor": "onwK4e9ZLuTAKqWW03F9",
+    "sage": "JBFqnCBsd6RMkjVDRZzb",
+    "hype": "yl2ZDV1MzN4HbQJbMihG",      # Spark
+    "snark": "XB0fDUnXU5powFXDhCwa",
+    "gentle": "AXdMgz6evoL7OPd7eU12",    # Luna
+    "edge": "N2lVS1w4EtoT3dr4eOWO",
+    "velvet": "Xb7hH8MSUJpSbSDYk0k2",
+}
+DEFAULT_ELEVEN_VOICE = ELEVEN_VOICE["bro"]
+
 DEFAULT_GEMINI_TTS_VOICE = "Puck"
 DEFAULT_GEMINI_TTS_MODEL = "gemini-2.5-flash-tts"
 
@@ -2100,23 +2117,71 @@ def _cascade_tts_gemini(profile: LearnerProfile):
     return _GeminiTTS(**kwargs)
 
 
+def _cascade_tts_eleven(profile: LearnerProfile):
+    """ElevenLabs TTS. Ported from felix agent/_cascade_tts.
+
+    Concurrency is per PLAN and per MODEL FAMILY: Pro gives 20 parallel requests
+    on Flash/Turbo but only 10 on everything else (eleven_multilingual_v2 included).
+    Pick ELEVENLABS_MODEL with that in mind — the quality/headroom trade is real,
+    not theoretical.
+    """
+    if elevenlabs is None:
+        raise RuntimeError("CASCADE_TTS=eleven needs livekit-plugins-elevenlabs")
+    key = os.getenv("ELEVENLABS_API_KEY")
+    if not key:
+        raise RuntimeError("CASCADE_TTS=eleven needs ELEVENLABS_API_KEY")
+    # Flash is the default for concurrency, not quality: Pro allows 20 parallel
+    # requests on Flash/Turbo but only 10 on multilingual_v2. felix runs Flash
+    # too. Set ELEVENLABS_MODEL=eleven_multilingual_v2 to trade headroom for
+    # fidelity.
+    model = os.getenv("ELEVENLABS_MODEL", "eleven_flash_v2_5")
+    # profile.eleven_voice_id stays "" in this app (the token route never sends
+    # elevenLabsVoiceId) — kept first so a future per-learner override just works.
+    voice_id = (
+        profile.eleven_voice_id
+        or os.getenv("ELEVENLABS_VOICE_ID")
+        or ELEVEN_VOICE.get(profile.tutor, DEFAULT_ELEVEN_VOICE)
+    )
+    vs = PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
+    logger.info(
+        "Cascade TTS: ElevenLabs (%s, voice=%s), lang=%s, tutor=%s",
+        model, voice_id, profile.lang, profile.tutor or "<none>",
+    )
+    return elevenlabs.TTS(
+        model=model,
+        # The plugin reads ELEVEN_API_KEY, not ELEVENLABS_API_KEY — relying on
+        # its env auto-read fails the session build silently (felix hit this).
+        api_key=key,
+        voice_id=voice_id,
+        voice_settings=elevenlabs.VoiceSettings(**vs),
+        # Synthesise as soon as a chunk lands instead of waiting on a chunk
+        # schedule — lower time-to-first-audio for sentence-at-a-time LLM output.
+        auto_mode=True,
+    )
+
+
 def _cascade_tts(profile: LearnerProfile):
     """Cascade TTS, picked by CASCADE_TTS so both legs can be measured on live
     sessions and rolled back with one env var.
 
-    azure (default) — per-character billing, streaming, in production today.
-      One voice per LANGUAGE: a persona changes timbre on a kz session.
-    gemini — per-token billing, streaming, one voice across all languages.
-      Needs GOOGLE_CREDENTIALS_JSON (or ADC). Kazakh output quality is the open
-      question — Azure has dedicated kk-KZ voices, Gemini-TTS is multilingual and
-      its kk coverage is unverified. Listen to a kz session before switching it on
-      by default.
+    azure (default) — $15/1M chars, native kk-KZ voices. Its en<->ru transitions
+      were rated bad in testing, and a persona changes timbre on a kz session
+      because there is no multilingual voice covering Kazakh.
+    gemini — best quality on en/ru and one voice across both, but the Vertex
+      quota is 10 req/min per project per region, i.e. ~6 concurrent lessons.
+      Raising it is a support request measured in days. Needs
+      GOOGLE_CREDENTIALS_JSON (or ADC). Kazakh is unusable → routed to Azure.
+    eleven — $50/1M chars, the expensive one, but concurrency is bought not
+      requested: Pro = 20 parallel on Flash/Turbo (the default here), 10 on
+      multilingual_v2. Needs ELEVENLABS_API_KEY.
     """
     which = (os.getenv("CASCADE_TTS") or "azure").strip().lower()
-    if which not in ("azure", "gemini"):
+    if which not in ("azure", "gemini", "eleven"):
         raise RuntimeError(
-            f"CASCADE_TTS={which!r} not recognised (expected 'azure' or 'gemini')"
+            f"CASCADE_TTS={which!r} not recognised (expected 'azure', 'gemini' or 'eleven')"
         )
+    if which == "eleven":
+        return _cascade_tts_eleven(profile)
     # kz always falls back to Azure: Gemini-TTS is multilingual with no dedicated
     # Kazakh voice and testers rated its kk output unintelligible, while Azure has
     # native kk-KZ voices. The cost is that a kz session breaks the one-voice-per-

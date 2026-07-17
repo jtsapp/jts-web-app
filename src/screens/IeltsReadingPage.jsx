@@ -8,7 +8,7 @@ import { GapInput, TfngOptions, SectionResults } from './IeltsSectionShared.jsx'
 // IELTS Reading — one passage, TFNG + sentence-completion questions,
 // answer-key graded on the client for instant results; the attempt is
 // persisted best-effort via POST /api/ielts/record-section (server re-grades).
-export default function IeltsReadingPage({ userLevel = 'A1', userName, token, onNav, onGo }) {
+export default function IeltsReadingPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo }) {
   const task = IELTS_READING_TASK
   const [answers, setAnswers] = useState({})
   const [result, setResult] = useState(null)
@@ -54,7 +54,7 @@ export default function IeltsReadingPage({ userLevel = 'A1', userName, token, on
   const gaps = task.questions.filter((q) => q.kind === 'gap')
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ie">
         <button type="button" className="ie-back" onClick={() => onGo?.('ielts')}>
           ← К секциям IELTS
