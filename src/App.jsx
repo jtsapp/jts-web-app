@@ -17,6 +17,7 @@ import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
 import IeltsReadingPage from './screens/IeltsReadingPage.jsx'
 import IeltsSpeakingPage from './screens/IeltsSpeakingPage.jsx'
 import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
+import VocabularyPage from './screens/VocabularyPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
 import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
@@ -273,6 +274,7 @@ export default function App() {
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
+    else if (key === 'vocab') setScreen('vocab')
   }
 
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
@@ -283,6 +285,7 @@ export default function App() {
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
+    else if (key === 'vocab') setScreen('vocab')
   }
 
   // Общие пропсы всех экранов IELTS: сайдбар + внутренняя навигация по секциям.
@@ -435,6 +438,16 @@ export default function App() {
       return <IeltsSpeakingPage {...ieltsProps} />
     case 'ielts-progress':
       return <IeltsProgressPage {...ieltsProps} />
+    case 'vocab':
+      return (
+        <VocabularyPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
     case 'kingdom-interior':
       return (
         <KingdomInteriorPage

@@ -177,6 +177,18 @@ export function IeltsIcon({ size = 24 }) {
     </svg>
   )
 }
+export function VocabIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M7 2.5C5.34 2.5 4 3.84 4 5.5V18.5C4 20.16 5.34 21.5 7 21.5H19C19.55 21.5 20 21.05 20 20.5C20 19.95 19.55 19.5 19 19.5V17.5C19.55 17.5 20 17.05 20 16.5V3.5C20 2.95 19.55 2.5 19 2.5H7ZM17 19.5V17.5H7C6.45 17.5 6 17.95 6 18.5C6 19.05 6.45 19.5 7 19.5H17ZM8 7.5H16V9.5H8V7.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
 export function RuFlagIcon({ size = 18 }) {
   return (
     <svg width={size} height={size * 0.72} viewBox="0 0 30 20" style={{ borderRadius: 3, display: 'block' }}>
