@@ -116,6 +116,9 @@ export default function App() {
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
   const [userLevel, setUserLevel] = useState('A1')
+  // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
+  // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
+  const [needsLevelTest, setNeedsLevelTest] = useState(false)
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -160,16 +163,22 @@ export default function App() {
       }
       setToken(tok || null)
       saveToken(tok || null) // без этого сессия умрёт на первой перезагрузке
-      // Уровень берём сразу из профиля на backend — тест на определение
-      // уровня после входа не показываем.
+      // Уровень берём из профиля на backend. Если его там нет — аккаунт новый
+      // (или тест пропускали), и после success покажем CEFR-тест.
+      let lvl = null
+      let lvlKnown = false
       if (tok) {
         try {
-          const lvl = await getLanguageLevel(tok)
-          if (lvl) setUserLevel(lvl)
+          lvl = await getLanguageLevel(tok)
+          lvlKnown = true
         } catch (e) {
           console.warn('Не удалось получить уровень из профиля:', e)
         }
       }
+      if (lvl) setUserLevel(lvl)
+      // При сетевой осечке уровень неизвестен — тестом не пристаём, кроме
+      // свежей регистрации: у неё уровня заведомо ещё нет.
+      setNeedsLevelTest(lvlKnown ? !lvl : mode !== 'login')
       // Прогресс, накопленный до входа, перевешиваем на аккаунт — иначе человек
       // увидит пустой словарь и забывшего его тьютора. Не ждём: вход не должен
       // упираться в эту запись. После переноса подтягиваем профиль аккаунта:
@@ -212,6 +221,9 @@ export default function App() {
       try {
         const lvl = await getLanguageLevel(tok)
         if (lvl) setUserLevel(lvl)
+        // Уровня в профиле нет — Google-аккаунт свежесозданный (или тест
+        // пропускали), после success ведём на CEFR-тест.
+        setNeedsLevelTest(!lvl)
       } catch (e) {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
@@ -238,6 +250,7 @@ export default function App() {
 
   // Завершение теста — сохраняем уровень в профиль и открываем королевство
   async function handleTestDone(res) {
+    setNeedsLevelTest(false)
     if (res?.level) setUserLevel(res.level)
     if (token && res?.level) {
       try {
@@ -261,6 +274,7 @@ export default function App() {
     setTutorOnboarded(false)
     setInterestIds([])
     setProfession('')
+    setNeedsLevelTest(false)
     setScreen('welcome')
   }
 
@@ -369,12 +383,15 @@ export default function App() {
         />
       )
     case 'success':
-      // После входа уровень уже взят из профиля — минуем тест, сразу в обучение.
-      return <SuccessPage onDone={() => setScreen('kingdom')} />
+      // Уровень уже взят из профиля; если его там не было (новая регистрация) —
+      // сначала CEFR-тест, иначе сразу в обучение.
+      return <SuccessPage onDone={() => setScreen(needsLevelTest ? 'test-intro' : 'kingdom')} />
     case 'test-intro':
       return (
         <LevelTestIntroPage
-          onBack={() => setScreen('welcome')}
+          // Сюда попадают уже залогиненными — «назад» ведёт в королевство,
+          // как и «позже», а не на экран входа.
+          onBack={() => setScreen('kingdom')}
           onStart={() => setScreen('test')}
           onLater={() => setScreen('kingdom')}
         />
