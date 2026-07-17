@@ -4105,3 +4105,13 @@ textarea {
 .sb__stat-num--coin {
   color: #ea4f4f;
 }
+
+/* Практика: при фильтре по типу — карточки сеткой (перенос вместо прокрутки) */
+.pp-rail--grid {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  padding-bottom: 0;
+}
+.pp-rail--grid > * {
+  flex-grow: 0;
+}
