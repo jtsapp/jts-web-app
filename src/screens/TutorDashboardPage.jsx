@@ -1,12 +1,9 @@
-import { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar.jsx'
 import Footer from '../components/Footer.jsx'
 import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import { MenuIcon, MicIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 import { SCENARIOS, DASHBOARD_SCENARIO_COUNT } from '../tutor/scenarios.js'
-
-const ONBOARDED_KEY = 'jts_tutor_onboarded'
 
 const LESSON_DESC =
   'Разберём, как строится форма am/is/are + глагол с -ing, когда её использовать, а когда нет'
@@ -24,6 +21,11 @@ export default function TutorDashboardPage({
   onNavigate,
   onProfile,
   tutor = {},
+  // Тур по дашборду. Раньше решал браузерный флаг в localStorage — один показ
+  // на устройство: новый аккаунт на том же браузере тура не видел. Теперь
+  // решает App: тур идёт сразу после онбординг-цепочки, один раз на аккаунт.
+  showTour = false,
+  onTourDone,
   onManage,
   onTalk,
   onSuggest,
@@ -33,16 +35,6 @@ export default function TutorDashboardPage({
 }) {
   const t = useT()
   const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
-
-  // Онбординг-тур один раз при первом заходе на дашборд.
-  const [showTour, setShowTour] = useState(false)
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem(ONBOARDED_KEY)) setShowTour(true)
-    } catch {
-      /* localStorage недоступен — тур не показываем */
-    }
-  }, [])
   const tourSteps = [
     { selector: '.t-dash__mic', title: t('tour.mic.title'), text: t('tour.mic.text') },
     {
@@ -167,13 +159,7 @@ export default function TutorDashboardPage({
 
       <Footer />
 
-      {showTour && (
-        <OnboardingTour
-          steps={tourSteps}
-          storageKey={ONBOARDED_KEY}
-          onFinish={() => setShowTour(false)}
-        />
-      )}
+      {showTour && <OnboardingTour steps={tourSteps} onFinish={onTourDone} />}
     </div>
   )
 }
