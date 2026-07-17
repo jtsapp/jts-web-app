@@ -17,6 +17,7 @@ import {
   getAudiobooks,
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
+import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import BookDetail from './BookDetail.jsx'
 
 // URL hosted-библиотек. Книжки (109 МБ) хостятся на бэкенде (dev-admin S3,
@@ -165,6 +166,19 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     try {
       const mod = await import('../practice/fairytale/taleWorld.js')
       mod.openTaleWorld(tale.id)
+    } finally {
+      taleLoadingRef.current = false
+    }
+  }
+
+  // Разговорная практика (Speaking A1–C1): оверлей с уровневыми страницами
+  // (src/practice/situations/), открывается на выбранном уровне.
+  const openSituationsLevel = async (level) => {
+    if (taleLoadingRef.current) return
+    taleLoadingRef.current = true
+    try {
+      const mod = await import('../practice/situations/situationsOverlay.js')
+      mod.openSituations(level)
     } finally {
       taleLoadingRef.current = false
     }
@@ -348,28 +362,39 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </section>
           )}
 
-          {/* Ситуации */}
+          {/* Ситуации: разговорная практика A1–C1 (нативный оверлей) + ситуативки из бэкенда */}
           {show('Ситуации') && (
           <section id="sec-Ситуации" className="pp-sec">
             <SectionHead title="Ситуации" onAll={() => setFilter('Ситуации')} />
-            {situations.length === 0 ? (
-              <Empty loading={state.loading} />
-            ) : (
-              <Rail grid={grid}>
-                {situations.map((s) => (
-                  <a
-                    key={s.id}
-                    className="pp-scard"
-                    href={s.videoUrl || '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
-                    <div className="pp-scard__title">{s.title}</div>
-                  </a>
-                ))}
-              </Rail>
-            )}
+            <Rail grid={grid}>
+              {SITUATION_LEVELS.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  className="pp-scard"
+                  onClick={() => openSituationsLevel(l.code)}
+                >
+                  <Thumb src={l.poster} alt={`${l.label} Speaking`} className="pp-thumb--situation">
+                    <span className="pp-play"><PlayIcon size={22} /></span>
+                  </Thumb>
+                  <div className="pp-scard__title">
+                    Speaking · {l.label} {l.desc}
+                  </div>
+                </button>
+              ))}
+              {situations.map((s) => (
+                <a
+                  key={s.id}
+                  className="pp-scard"
+                  href={s.videoUrl || '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
+                  <div className="pp-scard__title">{s.title}</div>
+                </a>
+              ))}
+            </Rail>
           </section>
           )}
         </div>
