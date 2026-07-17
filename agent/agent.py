@@ -2025,6 +2025,10 @@ SONIOX_TTS_VOICE = {
 }
 DEFAULT_SONIOX_TTS_VOICE = "Owen"
 DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
+# App language ("kz"/"ru"/"en") -> Soniox TTS language code. Only Kazakh differs:
+# the app carries the country code "kz", Soniox expects ISO 639-1 "kk". en/ru are
+# identical, so they need no entry (the .get() fallback returns them unchanged).
+SONIOX_LANG_CODE = {"kz": "kk"}
 # Personas that ALWAYS speak through Soniox TTS regardless of CASCADE_TTS. Spark
 # lives here so its voice is one provider across en/ru/kz. Comma-separated env
 # override (persona ids) so it can be widened or disabled ("") without a redeploy.
@@ -2194,7 +2198,13 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # `language` only biases pronunciation of the input text; the voice itself is
     # language-agnostic. The tutor speaks mostly English even in a ru/kz session,
     # but the session language is the best single hint.
-    language = (profile.lang or "en").strip() or "en"
+    #
+    # This app stores "kz" (a COUNTRY code) for Kazakh, but Soniox wants the ISO
+    # 639-1 LANGUAGE code "kk" (Cyrillic only) — passing "kz" would not select
+    # Kazakh, which is the whole point of putting Spark on Soniox. en/ru already
+    # match Soniox's codes. Kept as a map so any future language maps in one place.
+    app_lang = (profile.lang or "en").strip().lower() or "en"
+    language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
         "Cascade TTS: Soniox (%s, voice=%s, lang=%s), tutor=%s",
         model, voice, language, profile.tutor or "<none>",
