@@ -214,7 +214,19 @@ export default function App() {
       } catch (e) {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
+      // Как и после OTP: перенос анонимного прогресса, затем тьютор-профиль
+      // аккаунта (тьютор/интересы/профессия с прошлых сессий).
       mergeAnonymousProgress(tok)
+        .then(() => loadTutorProfile(tok))
+        .then((profile) => {
+          if (!profile) return
+          if (profile.tutor) {
+            setTutorKey(profile.tutor)
+            setTutorOnboarded(true)
+          }
+          setInterestIds(enToInterestIds(profile.interests))
+          if (profile.profession) setProfession(profile.profession)
+        })
       setScreen('success')
     } catch (e) {
       setError(e.message || t('err.otp'))
