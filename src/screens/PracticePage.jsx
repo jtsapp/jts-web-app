@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import {
@@ -148,6 +148,8 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
 
   // Открытый видеоклип (детальная страница с плеером и словами из видео).
   const [openVideo, setOpenVideo] = useState(null)
+  // Открытый рилс (индекс в clips) — вертикальный плеер с прокруткой.
+  const [openReel, setOpenReel] = useState(null)
 
   // Поиск по видеоклипам (по названию).
   const [videoQuery, setVideoQuery] = useState('')
@@ -161,6 +163,14 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
         <VideoDetail video={openVideo} words={words} onBack={() => setOpenVideo(null)} />
+      </LearningLayout>
+    )
+  }
+
+  if (openReel !== null) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <ReelsViewer clips={clips} startIndex={openReel} onBack={() => setOpenReel(null)} />
       </LearningLayout>
     )
   }
@@ -242,17 +252,11 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               <Empty loading={state.loading} />
             ) : (
               <Rail grid={grid}>
-                {clips.map((c) => (
-                  <a
-                    key={c.id}
-                    className="pp-mcard"
-                    href={c.mediaUrl || '#'}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                {clips.map((c, i) => (
+                  <button key={c.id} type="button" className="pp-mcard" onClick={() => setOpenReel(i)}>
                     <Thumb src={c.thumbnailUrl} alt={c.title} className="pp-thumb--portrait" />
                     <span className="pp-mcard__views"><EyeIcon size={13} /> {formatViews(c.views)}</span>
-                  </a>
+                  </button>
                 ))}
               </Rail>
             )}
@@ -535,6 +539,110 @@ function gradFor(seed) {
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) & 0xffff
   const a = h % 360
   return `linear-gradient(150deg, hsl(${a} 45% 42%), hsl(${(a + 40) % 360} 55% 18%))`
+}
+
+// Вертикальный просмотр мемов/рилсов (как TikTok): плеер 9:16, переключение
+// колёсиком мыши / стрелками / кнопками вверх-вниз.
+function ReelsViewer({ clips, startIndex, onBack }) {
+  const [i, setI] = useState(startIndex)
+  const [hint, setHint] = useState(true)
+  const [paused, setPaused] = useState(false)
+  const lockRef = useRef(false)
+  const videoRef = useRef(null)
+  const clip = clips[i]
+
+  const go = (dir) => {
+    setI((cur) => {
+      const next = Math.min(clips.length - 1, Math.max(0, cur + dir))
+      if (next !== cur) setHint(false)
+      return next
+    })
+  }
+
+  // Колёсико: один «щелчок» = одно переключение (с блокировкой на время).
+  const onWheel = (e) => {
+    if (Math.abs(e.deltaY) < 8) return
+    if (lockRef.current) return
+    lockRef.current = true
+    setTimeout(() => {
+      lockRef.current = false
+    }, 600)
+    go(e.deltaY > 0 ? 1 : -1)
+  }
+
+  // Стрелки клавиатуры.
+  useEffect(() => {
+    const h = (e) => {
+      if (e.key === 'ArrowDown') go(1)
+      else if (e.key === 'ArrowUp') go(-1)
+    }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [clips.length])
+
+  const togglePlay = () => {
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) {
+      v.play()
+      setPaused(false)
+    } else {
+      v.pause()
+      setPaused(true)
+    }
+  }
+
+  return (
+    <div className="rl">
+      <div className="vd__head">
+        <button className="vd__back" onClick={onBack}>
+          <ChevronLeftIcon size={18} /> Назад
+        </button>
+        <div className="vd__headtitle">
+          <b>Мемы и рилсы</b>
+        </div>
+      </div>
+
+      <div className="rl__stage" onWheel={onWheel}>
+        <div className="rl__player">
+          <video
+            key={clip.id}
+            ref={videoRef}
+            className="rl__video"
+            src={clip.mediaUrl}
+            poster={clip.thumbnailUrl}
+            autoPlay
+            loop
+            playsInline
+            onClick={togglePlay}
+          />
+          {paused && (
+            <button className="rl__playbtn" onClick={togglePlay} aria-label="Играть">
+              <PlayIcon size={30} />
+            </button>
+          )}
+          {hint && (
+            <div className="rl__hint">
+              <svg width="26" height="34" viewBox="0 0 26 34" fill="none">
+                <rect x="1.5" y="1.5" width="23" height="31" rx="11.5" stroke="currentColor" strokeWidth="2" />
+                <rect x="12" y="7" width="2" height="7" rx="1" fill="currentColor" />
+              </svg>
+              <span>Крутите колесиком вверх и вниз для переключения видео</span>
+            </div>
+          )}
+        </div>
+
+        <div className="rl__nav">
+          <button className="rl__navbtn" disabled={i === 0} onClick={() => go(-1)} aria-label="Предыдущее">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="m6 15 6-6 6 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <button className="rl__navbtn" disabled={i === clips.length - 1} onClick={() => go(1)} aria-label="Следующее">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // Обложка сказки: настоящий арт из библиотеки (снят Playwright'ом в
