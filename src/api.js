@@ -143,6 +143,12 @@ export async function verifyOtp(phone, code, name, mode) {
   return post('/registration/verify', { name: name || 'Гость', phone: p, otp: code })
 }
 
+// Вход через Google: id_token из Google Identity Services → LoginResponse
+// с accessToken. Бэкенд сам создаёт пользователя при первом входе.
+export function loginWithGoogle(idToken) {
+  return post('/auth/google', { idToken })
+}
+
 // Вход по OTP → accessToken. Используется после регистрации, чтобы получить JWT.
 // В dev-окружении код всегда '0000' (запрос генерирует свежий код).
 export async function loginWithOtp(phone, otp = '0000') {

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Shell from '../components/Shell.jsx'
 import { RuFlagIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
+import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 
 // Форматируем ТОЛЬКО национальный номер (без кода страны): (777) 123-45-67
 // Разделитель добавляем только когда в следующей группе уже есть цифра —
@@ -17,9 +18,27 @@ function formatNational(d) {
   return out
 }
 
-export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
-  const { t } = useI18n()
+export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loading, error }) {
+  const { t, lang } = useI18n()
   const [digits, setDigits] = useState('') // только 10 цифр номера, без +7
+  const [googleReady, setGoogleReady] = useState(false)
+  const googleRef = useRef(null)
+
+  // Google-вход и здесь: пользователи, зарегистрированные через Google, не
+  // имеют телефона и войти по OTP не могут. Перерисовка — при смене языка.
+  useEffect(() => {
+    if (!isGoogleAuthEnabled()) return
+    let cancelled = false
+    renderGoogleButton(googleRef.current, (idToken) => onGoogleToken?.(idToken), lang)
+      .then((ok) => {
+        if (!cancelled && ok) setGoogleReady(true)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
 
   function onChange(e) {
     let raw = e.target.value.replace(/\D/g, '')
@@ -75,6 +94,12 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
             </a>
           </p>
 
+          {googleReady && <div className="auth-divider">{t('auth.or')}</div>}
+          <div
+            className="google-slot google-slot--center"
+            ref={googleRef}
+            style={googleReady ? undefined : { display: 'none' }}
+          />
         </form>
       </div>
     </Shell>
