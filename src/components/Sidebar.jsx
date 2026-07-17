@@ -10,6 +10,7 @@ import {
   TutorIcon,
   LessonsIcon,
   IeltsIcon,
+  VocabIcon,
   ChevronRightIcon,
 } from './icons.jsx'
 
@@ -19,6 +20,7 @@ const NAV = [
   { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
   { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
   { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
+  { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
 
 // 1253 → «1 253» (как в мобильном HUD)
