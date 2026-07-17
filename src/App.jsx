@@ -113,6 +113,8 @@ export default function App() {
   // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
   // ведёт сразу на dashboard, а не на welcome-цепочку.
   const [tutorOnboarded, setTutorOnboarded] = useState(false)
+  // Тур по дашборду: включается один раз — сразу после онбординг-цепочки.
+  const [showTutorTour, setShowTutorTour] = useState(false)
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
   const [userLevel, setUserLevel] = useState('A1')
@@ -642,7 +644,11 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-profession')}
           tutor={tutor}
-          onDone={() => setScreen('tutor-dashboard')}
+          // Цепочка завершена — первый dashboard показываем с туром.
+          onDone={() => {
+            setShowTutorTour(true)
+            setScreen('tutor-dashboard')
+          }}
         />
       )
     case 'tutor-dashboard':
@@ -651,6 +657,8 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
+          showTour={showTutorTour}
+          onTourDone={() => setShowTutorTour(false)}
           tutor={tutor}
           onManage={() => setScreen('tutor-manage')}
           onTalk={() => {
