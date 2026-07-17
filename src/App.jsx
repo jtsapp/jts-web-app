@@ -71,7 +71,11 @@ export default function App() {
           setToken(session.token)
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
-          if (session.languageLevel) setUserLevel(session.languageLevel)
+          if (session.languageLevel) {
+            setUserLevel(session.languageLevel)
+            // Уровень задан в профиле → тест уже пройден.
+            if (session.languageLevel !== 'A0') setTested(true)
+          }
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
         if (deepLink) setScreen(deepLink)
@@ -94,6 +98,9 @@ export default function App() {
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   const [userLevel, setUserLevel] = useState('A1')
+  // Прошёл ли пользователь тест уровня. Без него обучение заблокировано:
+  // уровень известен только после теста (или если бэкенд его уже вернул).
+  const [tested, setTested] = useState(false)
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -163,6 +170,7 @@ export default function App() {
   // Завершение теста — сохраняем уровень в профиль и открываем королевство
   async function handleTestDone(res) {
     if (res?.level) setUserLevel(res.level)
+    setTested(true)
     if (token && res?.level) {
       try {
         await saveLanguageLevel(token, res.level)
@@ -302,6 +310,8 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          tested={tested}
+          onStartTest={() => setScreen('test')}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenKingdom={(k) => {
