@@ -145,6 +145,14 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const show = (type) => filter === null || filter === type
   const grid = filter !== null
 
+  // Поиск по видеоклипам (по названию).
+  const [videoQuery, setVideoQuery] = useState('')
+  const videoResults = useMemo(() => {
+    const q = videoQuery.trim().toLowerCase()
+    if (!q) return videos
+    return videos.filter((v) => (v.title || '').toLowerCase().includes(q))
+  }, [videos, videoQuery])
+
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="pp pp--enter">
@@ -173,11 +181,31 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           {show('Видеоклипы') && (
           <section id="sec-Видеоклипы" className="pp-sec">
             <SectionHead title="Видеоклипы" onAll={() => setFilter('Видеоклипы')} />
+            <label className="pp-search">
+              <span className="pp-search__ic">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                  <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </span>
+              <input
+                type="search"
+                className="pp-search__input"
+                placeholder="Поиск по видео"
+                value={videoQuery}
+                onChange={(e) => setVideoQuery(e.target.value)}
+              />
+            </label>
             {videos.length === 0 ? (
               <Empty loading={state.loading} />
+            ) : videoResults.length === 0 ? (
+              <div className="pp-noresult">
+                <div className="pp-noresult__title">Ничего не найдено</div>
+                <div className="pp-noresult__sub">Попробуйте другой запрос</div>
+              </div>
             ) : (
               <Rail grid={grid}>
-                {videos.map((v) => (
+                {videoResults.map((v) => (
                   <a
                     key={v.id}
                     className="pp-vcard"
