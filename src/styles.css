@@ -4585,3 +4585,31 @@ textarea {
 @media (max-width: 900px) {
   .bk-ov, .bk-read { grid-template-columns: 1fr; }
 }
+
+/* Сброс дефолтных стилей <button> у карточек-кнопок практики
+   (видео/мемы/книги) — убираем рамку, фон, паддинг и обводку фокуса. */
+.pp-vcard,
+.pp-mcard,
+.pp-bcard {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pp-vcard:focus,
+.pp-mcard:focus,
+.pp-bcard:focus {
+  outline: none;
+}
+.pp-vcard:focus-visible,
+.pp-mcard:focus-visible,
+.pp-bcard:focus-visible {
+  outline: 2px solid #b79cf5;
+  outline-offset: 2px;
+  border-radius: 12px;
+}
