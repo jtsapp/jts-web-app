@@ -7,11 +7,17 @@
 
 import { timingSafeEqual } from 'node:crypto'
 
+// BOM/пробелы из env вырезаем: значение, вставленное через Windows-пайп,
+// приходит с U+FEFF (BOM) в начале — fetch падает «Invalid URL», и каждый Bearer
+// превращался в 401 «сессия истекла» на всём проде (поймано 17.07.2026).
 const BACKEND_URL = (
   process.env.BACKEND_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   'https://dev-server.justtostudy.kz'
-).replace(/\/+$/, '')
+)
+  .replace(/^\uFEFF/, '')
+  .trim()
+  .replace(/\/+$/, '')
 
 // Profile ids in the `user-<id>` namespace are reserved for authenticated
 // learners. They are guessable (sequential user ids), so they must never be
@@ -61,7 +67,12 @@ export async function verifyToken(token) {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       cache: 'no-store',
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      // Различаем «бэкенд отверг токен» и «бэкенд недоступен» — иначе любая
+      // проблема конфига/сети выглядит как протухшая сессия и разлогинивает.
+      console.error('[auth] backend rejected token:', res.status, BACKEND_URL)
+      return null
+    }
     const user = await res.json()
     if (user?.id == null) return null
     return {
@@ -73,7 +84,12 @@ export async function verifyToken(token) {
       // чтобы уровень не сбрасывался на A1 после перезагрузки.
       languageLevel: user.languageLevel ?? null,
     }
-  } catch {
+  } catch (err) {
+    console.error(
+      '[auth] backend unreachable:',
+      err?.cause?.code || err?.cause?.message || err?.message || err,
+      BACKEND_URL,
+    )
     return null
   }
 }
