@@ -6,6 +6,7 @@ import {
   EyeIcon,
   VolumeIcon,
   ChevronRightCircleIcon,
+  ChevronLeftIcon,
 } from '../components/icons.jsx'
 import {
   getPracticeToken,
@@ -145,6 +146,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const show = (type) => filter === null || filter === type
   const grid = filter !== null
 
+  // Открытый видеоклип (детальная страница с плеером и словами из видео).
+  const [openVideo, setOpenVideo] = useState(null)
+
   // Поиск по видеоклипам (по названию).
   const [videoQuery, setVideoQuery] = useState('')
   const videoResults = useMemo(() => {
@@ -152,6 +156,14 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     if (!q) return videos
     return videos.filter((v) => (v.title || '').toLowerCase().includes(q))
   }, [videos, videoQuery])
+
+  if (openVideo) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <VideoDetail video={openVideo} words={words} onBack={() => setOpenVideo(null)} />
+      </LearningLayout>
+    )
+  }
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
@@ -206,14 +218,8 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
             ) : (
               <Rail grid={grid}>
                 {videoResults.map((v) => (
-                  <a
-                    key={v.id}
-                    className="pp-vcard"
-                    href={v.videoUrl || (v.youtubeKey ? `https://youtu.be/${v.youtubeKey}` : '#')}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Thumb src={v.thumbnailUrl} alt={v.title} className="pp-thumb--16x9">
+                  <button key={v.id} type="button" className="pp-vcard" onClick={() => setOpenVideo(v)}>
+                    <Thumb src={v.thumbnailUrl || youtubeThumb(v)} alt={v.title} className="pp-thumb--16x9">
                       <span className="pp-play"><PlayIcon size={22} /></span>
                     </Thumb>
                     <div className="pp-vcard__title">{v.title}</div>
@@ -221,7 +227,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                       <span className="pp-views"><EyeIcon size={14} /> {formatViews(v.views)}</span>
                       <Dots level={v.level} />
                     </div>
-                  </a>
+                  </button>
                 ))}
               </Rail>
             )}
@@ -396,6 +402,131 @@ function Empty({ loading, text }) {
 // Открыть hosted-библиотеку (книжки/сказки) в новой вкладке.
 function openHosted(href) {
   window.open(href, '_blank', 'noopener')
+}
+
+// Превью YouTube по ключу (у бэкенда thumbnailUrl часто пустой).
+function youtubeThumb(v) {
+  return v?.youtubeKey ? `https://img.youtube.com/vi/${v.youtubeKey}/hqdefault.jpg` : ''
+}
+
+// Приводит слова видео к [{word, translation}] из разных возможных форм
+// (бэкенд-поля words/vocab). Если пусто — демо-набор, чтобы страница выглядела
+// цельно (реальные слова появятся, когда их заведут в админке).
+const DEMO_VOCAB = [
+  { word: 'Big Bang', translation: 'Большой взрыв' },
+  { word: 'Destroy', translation: 'Уничтожить' },
+  { word: 'Knees', translation: 'Колени' },
+  { word: 'Believe', translation: 'Вера' },
+  { word: 'Ask', translation: 'Спросить' },
+  { word: 'Save', translation: 'Сохрани' },
+]
+function videoVocab(video, savedWords) {
+  const raw = (video?.words?.length ? video.words : video?.vocab) || []
+  const norm = raw
+    .map((w) => {
+      if (typeof w === 'string') return { word: w, translation: '' }
+      return {
+        word: w.word || w.en || w.original || w.term || w.text || '',
+        translation: w.translation || w.ru || w.meaning || w.tr || '',
+      }
+    })
+    .filter((w) => w.word)
+  if (norm.length) return norm
+  const saved = (savedWords || []).map((w) => ({ word: w.word, translation: w.translation })).filter((w) => w.word)
+  return saved.length ? saved.slice(0, 8) : DEMO_VOCAB
+}
+
+// Детальная страница видеоклипа: плеер + «Полезные слова из видео».
+function VideoDetail({ video, words, onBack }) {
+  const [playing, setPlaying] = useState(false)
+  const [marked, setMarked] = useState({})
+  const vocab = videoVocab(video, words)
+  const poster = video.thumbnailUrl || youtubeThumb(video)
+
+  return (
+    <div className="vd">
+      <div className="vd__head">
+        <button className="vd__back" onClick={onBack}>
+          <ChevronLeftIcon size={18} /> Назад
+        </button>
+        <div className="vd__headtitle">
+          <b>{video.title}</b>
+          <span>Видеоклипы</span>
+        </div>
+      </div>
+
+      <div className="vd__body">
+        <div className="vd__main">
+          <div className="vd__player">
+            {playing && (video.youtubeKey || video.videoUrl) ? (
+              <iframe
+                className="vd__frame"
+                src={
+                  video.youtubeKey
+                    ? `https://www.youtube.com/embed/${video.youtubeKey}?autoplay=1&rel=0`
+                    : video.videoUrl
+                }
+                title={video.title}
+                allow="accelerator; autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <button
+                type="button"
+                className="vd__poster"
+                onClick={() => setPlaying(true)}
+                style={poster ? { backgroundImage: `url(${poster})` } : undefined}
+                aria-label="Воспроизвести"
+              >
+                <span className="vd__play">
+                  <PlayIcon size={30} />
+                </span>
+              </button>
+            )}
+          </div>
+
+          <h1 className="vd__title">{video.title}</h1>
+          <div className="vd__meta">
+            <span className="pp-views">
+              <EyeIcon size={15} /> {formatViews(video.views)}
+            </span>
+            <Dots level={video.level} />
+          </div>
+        </div>
+
+        <aside className="vd__side">
+          <h2 className="vd__sidetitle">Полезные слова из видео</h2>
+          <div className="vd__words">
+            {vocab.map((w, i) => (
+              <div className="vd-word" key={i}>
+                <div className="vd-word__text">
+                  <b>
+                    {i + 1}. {w.word}
+                  </b>
+                  {w.translation && <span>{w.translation}</span>}
+                </div>
+                <button
+                  type="button"
+                  className={`vd-word__mark ${marked[i] ? 'vd-word__mark--on' : ''}`}
+                  onClick={() => setMarked((m) => ({ ...m, [i]: !m[i] }))}
+                  aria-label="В словарь"
+                >
+                  <svg width="16" height="18" viewBox="0 0 16 18" fill={marked[i] ? 'currentColor' : 'none'}>
+                    <path
+                      d="M2 2.5A1.5 1.5 0 0 1 3.5 1h9A1.5 1.5 0 0 1 14 2.5V17l-6-3.2L2 17V2.5Z"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
 }
 
 // Детерминированный градиент из строки (фолбэк-обложка, когда нет coverImageUrl).
