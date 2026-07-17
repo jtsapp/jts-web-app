@@ -185,12 +185,23 @@ export async function POST(request) {
         send('data: [DONE]\n\n')
       } catch (err) {
         console.error('[voice.brain] stream error', err)
+        // Quota/auth failures are not transient and repeat on every turn — a
+        // "could you repeat that?" there loops forever and reads as the tutor
+        // ignoring the learner. Say the tutor is unavailable instead.
+        const notTransient =
+          err?.status === 401 ||
+          err?.status === 429 ||
+          /usage limits|credit balance|billing/i.test(err?.message ?? '')
         send(
           sseChunk(
             id,
             model,
             created,
-            { content: 'Sorry, I lost my train of thought — could you repeat that?' },
+            {
+              content: notTransient
+                ? "Sorry, the tutor is briefly unavailable. Let's try again later."
+                : 'Sorry, I lost my train of thought — could you repeat that?',
+            },
             null,
           ),
         )

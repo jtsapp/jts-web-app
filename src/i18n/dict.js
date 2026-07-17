@@ -49,11 +49,11 @@ export const DICT = {
       'Тёплый и любопытный гик-друг. Обожает учиться и делиться знаниями, но без занудства. Не строгий учитель, а заряжающий энтузиазмом товарищ, который превращает учёбу в приключение.',
     'tutor.dexter.listen': 'Послушать голос Декстера',
     'tutor.dexter.choose': 'Выбрать Декстера',
-    'tutor.spark.trait1': 'Энергичный',
-    'tutor.spark.trait2': 'Громкий',
-    'tutor.spark.trait3': 'Весёлый',
+    'tutor.spark.trait1': 'Казахскоязычный',
+    'tutor.spark.trait2': 'Энергичный',
+    'tutor.spark.trait3': 'Свой',
     'tutor.spark.desc':
-      'Гиперэнергичный мотиватор. Всегда на позитиве, подгоняет «давай-давай, ты сможешь!». Превращает рутину в челлендж. Шумный, заводной, заряжает на действие.',
+      'Тьютор специально для казахской аудитории. Объясняет по-казахски и свободно переключается между казахским и английским. Энергичный и свой в доску — подаёт английский через понятные примеры и заряжает «алға, сен істейсің!». С ним английский учится на родном языке.',
     'tutor.spark.listen': 'Послушать голос Спарка',
     'tutor.spark.choose': 'Выбрать Спарка',
 
@@ -251,11 +251,11 @@ export const DICT = {
       'Жылы әрі қызығушыл гик-дос. Оқуды және білім бөлісуді жақсы көреді, бірақ жалықтырмайды. Қатал ұстаз емес, оқуды шытырман оқиғаға айналдыратын жігерлі жолдас.',
     'tutor.dexter.listen': 'Декстер дауысын тыңдау',
     'tutor.dexter.choose': 'Декстер таңдау',
-    'tutor.spark.trait1': 'Жігерлі',
-    'tutor.spark.trait2': 'Қатты',
-    'tutor.spark.trait3': 'Көңілді',
+    'tutor.spark.trait1': 'Қазақша',
+    'tutor.spark.trait2': 'Жігерлі',
+    'tutor.spark.trait3': 'Өзіміздікі',
     'tutor.spark.desc':
-      'Аса жігерлі мотиватор. Әрдайым позитивте, «алға-алға, сен істей аласың!» деп ынталандырады. Күнделікті істі челленджге айналдырады. Шулы, қызу, әрекетке жетелейді.',
+      'Қазақ аудиториясына арнайы жасалған тьютор. Ағылшынды қазақша түсіндіреді, қазақша мен ағылшынның арасында еркін ауысады. Жігерлі әрі өзіміздікі — ағылшынды таныс мысалдармен береді және «алға, сен істейсің!» деп жігерлендіреді. Онымен ағылшын ана тіліңде үйреніледі.',
     'tutor.spark.listen': 'Спарк дауысын тыңдау',
     'tutor.spark.choose': 'Спарк таңдау',
 
@@ -438,11 +438,11 @@ export const DICT = {
       'A warm and curious geek friend. Loves learning and sharing knowledge, but without being dull. Not a strict teacher, but an enthusiastic buddy who turns study into an adventure.',
     'tutor.dexter.listen': "Listen to Dexter's voice",
     'tutor.dexter.choose': 'Choose Dexter',
-    'tutor.spark.trait1': 'Energetic',
-    'tutor.spark.trait2': 'Loud',
-    'tutor.spark.trait3': 'Cheerful',
+    'tutor.spark.trait1': 'Kazakh-speaking',
+    'tutor.spark.trait2': 'Energetic',
+    'tutor.spark.trait3': 'One of us',
     'tutor.spark.desc':
-      'A hyper-energetic motivator. Always positive, cheering you on «come on, you can do it!». Turns routine into a challenge. Noisy, upbeat, drives you to act.',
+      'A tutor built specifically for Kazakh learners. Explains English in Kazakh and switches freely between Kazakh and English. Energetic and down-to-earth, he teaches through familiar examples and cheers you on «алға, сен істейсің!». With him you learn English in your own language.',
     'tutor.spark.listen': "Listen to Spark's voice",
     'tutor.spark.choose': 'Choose Spark',
 
