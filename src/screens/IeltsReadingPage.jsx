@@ -54,7 +54,7 @@ export default function IeltsReadingPage({ userLevel = 'A1', userName, token, on
   const gaps = task.questions.filter((q) => q.kind === 'gap')
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ie">
         <button type="button" className="ie-back" onClick={() => onGo?.('ielts')}>
           ← К секциям IELTS

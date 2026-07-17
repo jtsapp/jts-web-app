@@ -90,7 +90,7 @@ export default function IeltsWritingPage({ userLevel = 'A1', userName, token, on
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ie">
         <button type="button" className="ie-back ie-back--icon" onClick={() => onGo?.('ielts')}>
           <ArrowLeftIcon size={16} strokeWidth={2.5} />К секциям IELTS

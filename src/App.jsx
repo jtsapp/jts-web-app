@@ -333,7 +333,7 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} onNav={handleNav} onProfile={() => setScreen('profile')} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':

@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
 import { roleForLevel } from '../kingdoms.js'
+import { getBalance } from '../api.js'
 import {
   LearningIcon,
   PracticeIcon,
@@ -18,11 +20,38 @@ const NAV = [
   { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
 ]
 
-// Левый сайдбар обучающей зоны (статичная оболочка).
-export default function Sidebar({ userName, userLevel = 'A1', active = 'learning', onNav, onProfile }) {
+// 1253 → «1 253» (как в мобильном HUD)
+function groupNum(n) {
+  return String(n ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+}
+
+// Левый сайдбар обучающей зоны. Монеты и стрик — из бэкенда
+// (GET /mobile/balance/info), логика начисления живёт там же.
+export default function Sidebar({ userName, userLevel = 'A1', active = 'learning', token, onNav, onProfile }) {
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const initial = (userName || 'JTS').trim().charAt(0).toUpperCase()
+
+  const [balance, setBalance] = useState({ coins: 0, streak: 0, streakActiveToday: false })
+
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    getBalance(token)
+      .then((b) => {
+        if (alive && b) {
+          setBalance({
+            coins: b.coins ?? 0,
+            streak: b.streak ?? 0,
+            streakActiveToday: !!b.streakActiveToday,
+          })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [token])
 
   return (
     <aside className="sb">
@@ -62,6 +91,24 @@ export default function Sidebar({ userName, userLevel = 'A1', active = 'learning
           {t('nav.you')} {t('role.' + role.key)}
         </span>
         <span className="sb__role-lvl">{(userLevel || 'A1').toUpperCase()}</span>
+      </div>
+
+      {/* Стрик + монеты (данные из бэкенда) */}
+      <div className="sb__balance">
+        <div className="sb__stat">
+          <img
+            className={`sb__flame ${balance.streakActiveToday ? 'sb__flame--hot' : ''}`}
+            src="/assets/world/streak.svg"
+            alt=""
+          />
+          <span className={`sb__stat-num ${balance.streakActiveToday ? 'sb__stat-num--hot' : ''}`}>
+            {balance.streak}
+          </span>
+        </div>
+        <div className="sb__stat">
+          <img className="sb__coin" src="/assets/world/coin.png" alt="" />
+          <span className="sb__stat-num sb__stat-num--coin">{groupNum(balance.coins)}</span>
+        </div>
       </div>
     </aside>
   )
