@@ -4442,3 +4442,146 @@ textarea {
   opacity: 0.4;
   cursor: default;
 }
+
+/* ── Практика: детальная страница книги (обзор / чтение / аудио) ── */
+.bk { padding: 22px 34px 40px; }
+
+/* Обзор */
+.bk-ov {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+}
+.bk-ov__cover {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(23, 19, 38, 0.18);
+}
+.bk-ov__cover--ph {
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+  color: #fff;
+  font-weight: 800;
+  background: linear-gradient(150deg, #7c4dff, #3a1e6e);
+}
+.bk-ov__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+.bk-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.bk-btn--primary { background: #9047ff; color: #fff; }
+.bk-btn--primary:hover { background: #7d33f0; }
+.bk-btn--ghost { background: #f0ebff; color: #9047ff; }
+.bk-btn--ghost:hover { background: #e5dbff; }
+.bk-ov__title { font-size: 28px; font-weight: 800; color: var(--ink); margin: 0 0 6px; }
+.bk-ov__author { font-size: 15px; color: var(--muted); margin-bottom: 18px; }
+.bk-ov__label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+  color: #a6a5b2; margin-bottom: 8px;
+}
+.bk-ov__desc { font-size: 15px; line-height: 1.6; color: #4a4757; margin: 0 0 22px; }
+.bk-ov__progress { margin-bottom: 24px; }
+.bk-ov__progress-top { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+.bk-ov__progress-top b { color: var(--ink); }
+.bk-prog { height: 8px; border-radius: 8px; background: #efeaff; overflow: hidden; }
+.bk-prog__fill { height: 100%; background: #9047ff; border-radius: 8px; transition: width 0.4s ease; }
+.bk-ov__contents-head {
+  display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;
+}
+.bk-ov__count { font-size: 13px; color: var(--muted); }
+
+/* Список глав */
+.bk-chapters { display: flex; flex-direction: column; }
+.bk-chapter {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; border: none; background: transparent; cursor: pointer;
+  padding: 13px 6px; border-bottom: 1px solid #f0f0f3;
+  font-family: inherit; text-align: left; transition: background 0.15s ease;
+}
+.bk-chapter:hover { background: #faf9ff; }
+.bk-chapter--on { background: #f4f0ff; }
+.bk-chapter__idx {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: #f0ebff; color: #9047ff; font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.bk-chapter__title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-chapter__dur { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+
+/* Чтение / аудио — общая сетка (текст|плеер + главы) */
+.bk-read {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 40px;
+  align-items: start;
+}
+.bk-read__text { font-size: 16px; line-height: 1.75; color: #2b2836; }
+.bk-read__text p { margin: 0 0 4px; }
+.bk-read__gap { height: 14px; }
+.bk-w { cursor: pointer; border-radius: 3px; transition: background 0.1s ease; }
+.bk-w:hover { background: #efe6ff; }
+.bk-read__next { margin-top: 28px; }
+.bk-read__side { position: sticky; top: 20px; }
+.bk-read__sidetitle { font-size: 17px; font-weight: 800; color: var(--ink); margin: 0 0 12px; }
+
+/* Тап-перевод */
+.bk-pop {
+  position: fixed; transform: translateX(-50%); z-index: 50;
+  background: #fff; border: 1px solid #ececf1; border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18); padding: 12px 14px; min-width: 150px;
+}
+.bk-pop__word { font-size: 15px; font-weight: 800; color: var(--ink); }
+.bk-pop__tr { font-size: 14px; color: var(--muted); margin: 2px 0 10px; }
+.bk-pop__save {
+  width: 100%; border: none; background: #9047ff; color: #fff; border-radius: 10px;
+  padding: 8px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+
+/* Аудио-плеер */
+.bk-audio {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  max-width: 380px; margin: 10px auto 0;
+}
+.bk-audio__cover {
+  width: 220px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(23, 19, 38, 0.2); margin-bottom: 20px;
+}
+.bk-audio__title { font-size: 18px; font-weight: 800; color: var(--ink); }
+.bk-audio__sub { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
+.bk-audio__bar { width: 100%; height: 6px; border-radius: 6px; background: #efeaff; overflow: hidden; }
+.bk-audio__fill { height: 100%; background: #9047ff; border-radius: 6px; }
+.bk-audio__time {
+  width: 100%; display: flex; justify-content: space-between;
+  font-size: 12px; color: var(--muted); margin: 6px 0 16px;
+}
+.bk-audio__ctrls { display: flex; align-items: center; gap: 22px; }
+.bk-audio__skip {
+  border: none; background: transparent; color: #9047ff; font-family: inherit;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.bk-audio__play {
+  width: 64px; height: 64px; border-radius: 50%; border: none;
+  background: #9047ff; color: #fff; font-size: 22px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 22px rgba(144, 71, 255, 0.4);
+}
+
+@media (max-width: 900px) {
+  .bk-ov, .bk-read { grid-template-columns: 1fr; }
+}

@@ -17,6 +17,7 @@ import {
   getAudiobooks,
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
+import BookDetail from './BookDetail.jsx'
 
 // URL hosted-библиотек. Книжки (109 МБ) хостятся на бэкенде (dev-admin S3,
 // files-api) — в репозиторий такой файл не влезает; сказки (2.9 МБ) лежат в public.
@@ -150,6 +151,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [openVideo, setOpenVideo] = useState(null)
   // Открытый рилс (индекс в clips) — вертикальный плеер с прокруткой.
   const [openReel, setOpenReel] = useState(null)
+  const [openBook, setOpenBook] = useState(null)
 
   // Поиск по видеоклипам (по названию).
   const [videoQuery, setVideoQuery] = useState('')
@@ -171,6 +173,14 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
         <ReelsViewer clips={clips} startIndex={openReel} onBack={() => setOpenReel(null)} />
+      </LearningLayout>
+    )
+  }
+
+  if (openBook) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <BookDetail book={openBook} onBack={() => setOpenBook(null)} />
       </LearningLayout>
     )
   }
@@ -272,13 +282,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
             ) : (
               <Rail grid={grid}>
                 {books.map((b) => (
-                  <a
-                    key={b.id}
-                    className="pp-bcard"
-                    href={BOOKS_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <button key={b.id} type="button" className="pp-bcard" onClick={() => setOpenBook(b)}>
                     <BookCover book={b} />
                     <div className="pp-bcard__title">{b.title}</div>
                     <div className="pp-bcard__meta">
@@ -286,7 +290,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                       {b.level && <span className="pp-bcard__cefr">{b.level}</span>}
                     </div>
                     {b.author && <div className="pp-bcard__author">{b.author}</div>}
-                  </a>
+                  </button>
                 ))}
               </Rail>
             )}
