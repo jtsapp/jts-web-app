@@ -2191,6 +2191,7 @@ textarea {
 /* ======================================================= */
 
 .lp {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 30px;
@@ -4584,4 +4585,53 @@ textarea {
 
 @media (max-width: 900px) {
   .bk-ov, .bk-read { grid-template-columns: 1fr; }
+}
+
+/* ── Обучение заблокировано (нет теста уровня) ── */
+.lp-lock {
+  position: absolute;
+  inset: -30px -34px -40px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(244, 245, 247, 0.55);
+  backdrop-filter: blur(3px);
+}
+.lp-lock__card {
+  max-width: 440px;
+  text-align: left;
+}
+.lp-lock__title {
+  margin: 0 0 14px;
+  font-size: 44px;
+  line-height: 1.05;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+.lp-lock__sub {
+  margin: 0 0 26px;
+  font-size: 17px;
+  line-height: 1.4;
+  color: #4a4757;
+  max-width: 300px;
+}
+.lp-lock__btn {
+  border: none;
+  background: #fff;
+  color: #9047ff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 18px 40px;
+  border-radius: 40px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(23, 19, 38, 0.14);
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
+}
+.lp-lock__btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 36px rgba(23, 19, 38, 0.2);
 }
