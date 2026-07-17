@@ -79,8 +79,10 @@ function SectionHead({ title, onAll }) {
   )
 }
 
-function Rail({ children }) {
-  return <div className="pp-rail">{children}</div>
+// Лента контента. grid=true (когда включён фильтр по типу) раскладывает
+// карточки сеткой вместо горизонтальной прокрутки.
+function Rail({ children, grid }) {
+  return <div className={grid ? 'pp-rail pp-rail--grid' : 'pp-rail'}>{children}</div>
 }
 
 // Проговаривание слова браузером (бэкенд не отдаёт аудио для словаря)
@@ -136,12 +138,12 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const learned = useMemo(() => words.filter((w) => w.learned), [words])
   const list = tab === 'learned' ? learned : saved
 
-  const chips = ['Видеоклипы', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
-  const [chip, setChip] = useState('Видеоклипы')
-
-  const jump = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  const chips = ['Все', 'Видеоклипы', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
+  // Активный фильтр: null = показываем все секции (лентами). Иначе — только
+  // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
+  const [filter, setFilter] = useState(null)
+  const show = (type) => filter === null || filter === type
+  const grid = filter !== null
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
@@ -151,29 +153,30 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           <h1 className="pp__title">Практика</h1>
 
           <div className="pp-chips">
-            {chips.map((c) => (
-              <button
-                key={c}
-                className={`pp-chip ${chip === c ? 'pp-chip--on' : ''}`}
-                onClick={() => {
-                  setChip(c)
-                  jump('sec-' + c)
-                }}
-              >
-                {c}
-              </button>
-            ))}
+            {chips.map((c) => {
+              const on = c === 'Все' ? filter === null : filter === c
+              return (
+                <button
+                  key={c}
+                  className={`pp-chip ${on ? 'pp-chip--on' : ''}`}
+                  onClick={() => setFilter(c === 'Все' ? null : c)}
+                >
+                  {c}
+                </button>
+              )
+            })}
           </div>
 
           {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
 
           {/* Видеоклипы */}
+          {show('Видеоклипы') && (
           <section id="sec-Видеоклипы" className="pp-sec">
-            <SectionHead title="Видеоклипы" onAll={() => jump('sec-Видеоклипы')} />
+            <SectionHead title="Видеоклипы" onAll={() => setFilter('Видеоклипы')} />
             {videos.length === 0 ? (
               <Empty loading={state.loading} />
             ) : (
-              <Rail>
+              <Rail grid={grid}>
                 {videos.map((v) => (
                   <a
                     key={v.id}
@@ -195,14 +198,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               </Rail>
             )}
           </section>
+          )}
 
           {/* Мемы и рилсы */}
+          {show('Мемы и рилсы') && (
           <section id="sec-Мемы и рилсы" className="pp-sec">
-            <SectionHead title="Мемы и рилсы" onAll={() => jump('sec-Мемы и рилсы')} />
+            <SectionHead title="Мемы и рилсы" onAll={() => setFilter('Мемы и рилсы')} />
             {clips.length === 0 ? (
               <Empty loading={state.loading} />
             ) : (
-              <Rail>
+              <Rail grid={grid}>
                 {clips.map((c) => (
                   <a
                     key={c.id}
@@ -218,14 +223,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               </Rail>
             )}
           </section>
+          )}
 
           {/* Книжки — каталог аудиокниг из dev-admin (реальные обложки) */}
+          {show('Книжки') && (
           <section id="sec-Книжки" className="pp-sec">
-            <SectionHead title="Книжки" onAll={() => openHosted(BOOKS_URL)} />
+            <SectionHead title="Книжки" onAll={() => setFilter('Книжки')} />
             {books.length === 0 ? (
               <Empty loading={state.loading} />
             ) : (
-              <Rail>
+              <Rail grid={grid}>
                 {books.map((b) => (
                   <a
                     key={b.id}
@@ -246,11 +253,13 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               </Rail>
             )}
           </section>
+          )}
 
           {/* Сказки — реестр из fairytales.html (title/desc/len/chars + coverGrad) */}
+          {show('Сказки') && (
           <section id="sec-Сказки" className="pp-sec">
-            <SectionHead title="Сказки" onAll={() => openHosted(TALES_URL)} />
-            <Rail>
+            <SectionHead title="Сказки" onAll={() => setFilter('Сказки')} />
+            <Rail grid={grid}>
               {TALES.map((tl) => (
                 <a
                   key={tl.id}
@@ -274,14 +283,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               ))}
             </Rail>
           </section>
+          )}
 
           {/* Ситуации */}
+          {show('Ситуации') && (
           <section id="sec-Ситуации" className="pp-sec">
-            <SectionHead title="Ситуации" onAll={() => jump('sec-Ситуации')} />
+            <SectionHead title="Ситуации" onAll={() => setFilter('Ситуации')} />
             {situations.length === 0 ? (
               <Empty loading={state.loading} />
             ) : (
-              <Rail>
+              <Rail grid={grid}>
                 {situations.map((s) => (
                   <a
                     key={s.id}
@@ -297,6 +308,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               </Rail>
             )}
           </section>
+          )}
         </div>
 
         {/* ───── Правая колонка: Словарь ───── */}
