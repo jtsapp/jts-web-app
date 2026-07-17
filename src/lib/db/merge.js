@@ -82,20 +82,19 @@ export async function mergeDeviceIntoAccount(deviceId, accountId) {
       on conflict (device_id) do nothing
     `,
     // Скаляры аккаунта пусты (проверено выше), но строка learner могла быть
-    // заведена ensureLearner-ом — забираем анкету анонима, не затирая
-    // непустое: coalesce(аккаунт, аноним).
+    // заведена ensureLearner-ом — забираем НЕВИДИМУЮ анкету анонима (уровень,
+    // навыки), не затирая непустое: coalesce(аккаунт, аноним).
+    //
+    // Тьютор/интересы/профессию НЕ переносим намеренно: это явный выбор
+    // человека в онбординге, а новый аккаунт должен пройти онбординг сам —
+    // иначе на общем браузере свежая регистрация молча наследует чужого
+    // тьютора и сразу попадает на dashboard, минуя настройку.
     sql`
       update learner a set
         level           = coalesce(a.level, d.level),
         lang            = coalesce(a.lang, d.lang),
         style           = coalesce(a.style, d.style),
         goal            = coalesce(a.goal, d.goal),
-        tutor           = coalesce(a.tutor, d.tutor),
-        profession      = coalesce(a.profession, d.profession),
-        interests       = case
-                            when a.interests is null or a.interests = '[]'::jsonb
-                            then d.interests else a.interests
-                          end,
         minutes_per_day = coalesce(a.minutes_per_day, d.minutes_per_day),
         skills          = coalesce(a.skills, d.skills),
         writing         = coalesce(a.writing, d.writing),
