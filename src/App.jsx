@@ -531,10 +531,17 @@ export default function App() {
           profession={profession}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-voice-intro')}
+          // После онбординга разговор запускается с dashboard — «Назад» и финиш
+          // возвращают туда же. Экран результата уровня остался только в
+          // placement-цепочке (voice-intro), достижимой диплинком.
+          onBack={() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro')}
           tutor={tutor}
           scenario={scenario}
-          onFinish={() => setScreen(scenario ? 'tutor-scenarios' : 'tutor-level-result')}
+          onFinish={() =>
+            setScreen(
+              scenario ? 'tutor-scenarios' : tutorOnboarded ? 'tutor-dashboard' : 'tutor-level-result',
+            )
+          }
           onSessionExpired={handleLogout}
         />
       )

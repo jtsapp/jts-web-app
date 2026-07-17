@@ -62,6 +62,25 @@ export default function TutorVoiceChatPage({
   // null | 'daily' | 'monthly' | 'mic' | 'expired' | 'generic'
   const [error, setError] = useState(null)
 
+  // Разрешение на микрофон спрашиваем один раз: если браузер его уже помнит,
+  // экран «дайте разрешение» не показываем — стартуем сразу. getUserMedia при
+  // state==='granted' не открывает промпт, поэтому жест пользователя не нужен.
+  // Нет Permissions API (старый Safari) или state 'prompt'/'denied' — как
+  // раньше, кнопка с явным запросом.
+  useEffect(() => {
+    let cancelled = false
+    navigator.permissions
+      ?.query({ name: 'microphone' })
+      .then((st) => {
+        if (!cancelled && st.state === 'granted') requestMic()
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function requestMic() {
     // Реальный запрос доступа к микрофону (жест пользователя).
     try {
