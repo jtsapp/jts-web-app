@@ -112,25 +112,6 @@ function toParas(text) {
   return out
 }
 
-// Демо-текст главы — показываем, пока у главы (track.text) нет собственного
-// текста в админке. Реальный текст подхватится автоматически, когда его заведут.
-const DEMO_TEXT = `Chapter One: The Cosmic Egg
-Before There Was Anything
-
-Imagine a question so simple a child might ask it, yet so profound that the greatest minds of history have struggled to answer: Where did everything come from? Not just the Earth, not just the Sun, not even just our galaxy — but everything. Every star you see at night, every atom in your body, every drop of water in every ocean across every world. Where did it all begin?
-
-The answer, as far as modern science can tell us, lies in an event of unimaginable violence and beauty that scientists call the Big Bang.
-
-Let us begin by clearing up a common misconception. The term "Big Bang" suggests an explosion — a bomb detonating in empty space, hurling debris outward into a pre-existing void. This picture, though intuitive, is profoundly wrong. The Big Bang was not an explosion in space. It was an expansion of space itself.
-
-The Singularity
-
-When scientists trace the expansion of the universe backward in time, like rewinding a film, everything grows closer and closer together. Galaxies converge. Matter compresses. Temperatures soar.
-
-The Journey Ahead
-
-In the chapters that follow, we will unfold this story step by step. But it all starts here, with that single, extraordinary truth: the universe had a beginning.`
-
 // Разбивает текст на слова, чтобы навесить тап-перевод. Знаки препинания
 // остаются частью «токена», но для поиска перевода чистим их.
 function cleanWord(w) {
@@ -276,6 +257,11 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
         onNext={() => ch < total - 1 && openChapter(ch + 1, 'read')}
         onBack={() => setMode('overview')}
         onWordSaved={onWordSaved}
+        onAudio={
+          tracks.some((t) => t.audioUrl)
+            ? (i) => openChapter(Math.min(i, tracks.length - 1), 'audio')
+            : null
+        }
       />
     )
   }
@@ -293,9 +279,12 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
 }
 
 // ── Режим чтения ────────────────────────────────────────────────────────────
-function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onWordSaved }) {
+function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onWordSaved, onAudio }) {
   const chapter = chapters[ch] || {}
-  const text = chapter.text || DEMO_TEXT
+  // Главы без текста (книга не из библиотеки и текст не заведён в админке)
+  // показываем честной заглушкой — раньше тут был общий демо-текст, из-за
+  // которого переход между главами выглядел как «ничего не поменялось».
+  const text = chapter.text || ''
   // {word, translation, alternates, loading, saving, saved, x, y}
   const [pop, setPop] = useState(null)
   // Отсекает ответы перевода/сохранения от уже закрытого или сменённого попапа.
@@ -358,6 +347,13 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
     return () => window.removeEventListener('scroll', close, true)
   }, [])
 
+  // Новая глава: закрываем попап и мотаем наверх — без этого читатель
+  // оставался на прежней позиции скролла и смены главы не было видно.
+  useEffect(() => {
+    setPop(null)
+    window.scrollTo(0, 0)
+  }, [ch])
+
   return (
     <div className="bk">
       <div className="vd__head">
@@ -370,30 +366,48 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
       </div>
 
       <div className="bk-read">
-        <article className="bk-read__text" onClick={() => setPop(null)}>
-          {toParas(text).map((para, pi) =>
-            para.trim() === '' ? (
-              <div key={pi} className="bk-read__gap" />
-            ) : (
-              <p key={pi}>
-                {para.split(/(\s+)/).map((tok, ti) =>
-                  /\s+/.test(tok) || !cleanWord(tok) ? (
-                    tok
-                  ) : (
-                    <span
-                      key={ti}
-                      className="bk-w"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onWord(e, tok)
-                      }}
-                    >
-                      {tok}
-                    </span>
-                  ),
-                )}
+        {/* key={ch} ремоунтит статью при смене главы — CSS-анимация входа
+            проигрывается заново (и отключена при prefers-reduced-motion). */}
+        <article key={ch} className="bk-read__text" onClick={() => setPop(null)}>
+          {text ? (
+            toParas(text).map((para, pi) =>
+              para.trim() === '' ? (
+                <div key={pi} className="bk-read__gap" />
+              ) : (
+                <p key={pi}>
+                  {para.split(/(\s+)/).map((tok, ti) =>
+                    /\s+/.test(tok) || !cleanWord(tok) ? (
+                      tok
+                    ) : (
+                      <span
+                        key={ti}
+                        className="bk-w"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onWord(e, tok)
+                        }}
+                      >
+                        {tok}
+                      </span>
+                    ),
+                  )}
+                </p>
+              ),
+            )
+          ) : (
+            <div className="bk-read__notext">
+              <div className="bk-read__notext-num">Глава {ch + 1}</div>
+              <b>{chapter.title || `Глава ${ch + 1}`}</b>
+              <p>
+                Текст этой главы ещё не добавлен.
+                {onAudio ? ' Её можно послушать в аудио-формате.' : ''}
               </p>
-            ),
+              {onAudio && (
+                <button className="bk-btn bk-btn--primary" onClick={() => onAudio(ch)}>
+                  🎧 Слушать главу
+                </button>
+              )}
+            </div>
           )}
           {ch < chapters.length - 1 && (
             <button className="bk-btn bk-btn--primary bk-read__next" onClick={onNext}>
