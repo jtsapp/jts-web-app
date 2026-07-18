@@ -2626,7 +2626,6 @@ textarea {
 }
 .pp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pp-thumb__ph { width: 100%; height: 100%; }
-.pp-thumb--16x9 { aspect-ratio: 16 / 10; }
 .pp-thumb--portrait { aspect-ratio: 3 / 4; }
 .pp-thumb--situation { aspect-ratio: 3 / 4; }
 .pp-play {
@@ -2644,34 +2643,8 @@ textarea {
   opacity: 0;
   transition: opacity 0.15s ease;
 }
-.pp-vcard:hover .pp-play { opacity: 1; }
-
-/* Карточка видеоклипа */
-.pp-vcard {
-  flex: 0 0 280px;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-.pp-vcard__title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  margin: 10px 0 4px;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.pp-vcard__meta {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.pp-views { display: inline-flex; align-items: center; gap: 5px; }
+.pp-scard:hover .pp-play,
+.pp-scard:focus-visible .pp-play { opacity: 1; }
 
 /* Точки сложности */
 .pp-dots { display: inline-flex; align-items: center; gap: 6px; }
@@ -4160,7 +4133,8 @@ textarea {
 }
 
 /* Практика: при фильтре по типу — карточки сеткой на всю ширину.
-   Видеоклипы — строго по 3 в ряд; остальные типы — плотная авто-раскладка. */
+   Узкие карточки — плотная авто-раскладка, широкие сказки — от 300px;
+   repeat(3) ниже — фолбэк для браузеров без :has(). */
 .pp-rail--grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4190,60 +4164,7 @@ textarea {
   }
 }
 
-/* Практика: поиск по видео */
-.pp-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 4px 0 16px;
-  padding: 12px 16px;
-  background: #fff;
-  border: 1px solid #ececf1;
-  border-radius: 14px;
-  transition: border-color 0.15s ease;
-}
-.pp-search:focus-within {
-  border-color: #b79cf5;
-}
-.pp-search__ic {
-  color: #a6a5b2;
-  display: flex;
-  flex-shrink: 0;
-}
-.pp-search__input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-family: inherit;
-  font-size: 15px;
-  color: var(--ink);
-}
-.pp-search__input::placeholder {
-  color: #b7b6c1;
-}
-.pp-noresult {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 48px 20px;
-  text-align: center;
-}
-.pp-noresult__title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--ink);
-}
-.pp-noresult__sub {
-  font-size: 14px;
-  color: var(--muted);
-}
-
-/* ── Практика: детальная страница видеоклипа ── */
-.vd {
-  padding: 22px 34px 40px;
-}
+/* ── Практика: шапка детальных страниц (книжки, рилсы) ── */
 .vd__head {
   display: flex;
   align-items: center;
@@ -4283,125 +4204,6 @@ textarea {
 .vd__headtitle span {
   font-size: 14px;
   color: var(--muted);
-}
-.vd__body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 34px;
-  align-items: start;
-}
-.vd__player {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  border-radius: 20px;
-  overflow: hidden;
-  border: 3px solid #4c9dff;
-  background: #0c0a14;
-}
-.vd__poster {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-  cursor: pointer;
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.vd__play {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.92);
-  color: #9047ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.3);
-  transition: transform 0.15s ease;
-}
-.vd__poster:hover .vd__play {
-  transform: scale(1.06);
-}
-.vd__frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-.vd__title {
-  margin: 22px 0 8px;
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.vd__meta {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  color: var(--muted);
-  font-size: 14px;
-}
-.vd__sidetitle {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--ink);
-  margin: 0 0 18px;
-}
-.vd__words {
-  display: flex;
-  flex-direction: column;
-}
-.vd-word {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 2px;
-  border-bottom: 1px solid #f0f0f3;
-}
-.vd-word:last-child {
-  border-bottom: none;
-}
-.vd-word__text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.vd-word__text b {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
-}
-.vd-word__text span {
-  font-size: 14px;
-  color: var(--muted);
-}
-.vd-word__mark {
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  color: #c4c2d0;
-  cursor: pointer;
-  padding: 4px;
-  transition: color 0.15s ease;
-}
-.vd-word__mark:hover {
-  color: #9047ff;
-}
-.vd-word__mark--on {
-  color: #9047ff;
-}
-
-@media (max-width: 900px) {
-  .vd__body {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ── Практика: вертикальный просмотр мемов/рилсов ── */
@@ -4640,8 +4442,7 @@ textarea {
 }
 
 /* Сброс дефолтных стилей <button> у карточек-кнопок практики
-   (видео/мемы/книги/ситуации) — убираем рамку, фон, паддинг и обводку фокуса. */
-.pp-vcard,
+   (мемы/книги/ситуации) — убираем рамку, фон, паддинг и обводку фокуса. */
 .pp-mcard,
 .pp-scard,
 .pp-bcard {
@@ -4655,13 +4456,11 @@ textarea {
   text-align: left;
   cursor: pointer;
 }
-.pp-vcard:focus,
 .pp-mcard:focus,
 .pp-scard:focus,
 .pp-bcard:focus {
   outline: none;
 }
-.pp-vcard:focus-visible,
 .pp-mcard:focus-visible,
 .pp-scard:focus-visible,
 .pp-bcard:focus-visible {

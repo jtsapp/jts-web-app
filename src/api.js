@@ -39,6 +39,55 @@ async function authGet(path, token) {
   return res.json()
 }
 
+// ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
+// Админ-каталоги меняются редко (только правками в dev-admin), поэтому повторные
+// открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в
+// фоне — свежие данные подхватятся при следующем открытии. Первый-в-жизни запрос
+// ждёт сеть, как раньше.
+const CATALOG_CACHE_VER = 'v1' // поднять при несовместимой смене формы ответа
+
+// Пользовательская часть ключа: sub из JWT (стабилен между сессиями). Ключ
+// разделяет пользователей — у ситуативок есть per-user флаг completed — и
+// окружения (BASE).
+function tokenIdentity(token) {
+  try {
+    const payload = JSON.parse(atob(String(token).split('.')[1]))
+    return payload.sub || payload.userId || payload.phone || 'anon'
+  } catch {
+    return 'anon'
+  }
+}
+
+function catalogCacheKey(path, token) {
+  return `jts_catalog_${CATALOG_CACHE_VER}:${BASE}:${tokenIdentity(token)}:${path}`
+}
+
+async function cachedAuthGet(path, token) {
+  if (typeof window === 'undefined') return authGet(path, token) // SSR — без кэша
+  const key = catalogCacheKey(path, token)
+  let cached = null
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (raw) cached = JSON.parse(raw)
+  } catch {
+    /* битый кэш → обычный сетевой запрос */
+  }
+  const refresh = () =>
+    authGet(path, token).then((data) => {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(data))
+      } catch {
+        /* квота localStorage исчерпана — работаем без кэша */
+      }
+      return data
+    })
+  if (cached !== null) {
+    refresh().catch(() => {}) // фоновое обновление; его сбой не всплывает в UI
+    return cached
+  }
+  return refresh()
+}
+
 // Учебный путь королевства (уроки из dev-admin) по уровню CEFR
 export function getLearningPath(level, token) {
   return authGet(`/mobile/learning-paths/by-language-level/${encodeURIComponent(level)}`, token)
@@ -56,7 +105,7 @@ export function getLessonModules(token) {
 // Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
 // durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
 export function getAudiobooks(token) {
-  return authGet('/mobile/audio-lessons', token)
+  return cachedAuthGet('/mobile/audio-lessons', token)
 }
 
 // Баланс: монеты и стрик (для HUD)
@@ -187,20 +236,15 @@ export function getPracticeToken(token) {
   return _demoTokenPromise
 }
 
-// Видеоклипы (GET /mobile/video-lessons) → [{title,videoUrl,thumbnailUrl,durationLabel,level,views,youtubeKey}]
-export function getVideoLessons(token) {
-  return authGet('/mobile/video-lessons', token)
-}
-
 // Мемы и рилсы (GET /mobile/media-clips) → [{title,mediaUrl,thumbnailUrl,kind,mediaType,durationLabel,views,level}]
 export function getMediaClips(token) {
-  return authGet('/mobile/media-clips', token)
+  return cachedAuthGet('/mobile/media-clips', token)
 }
 
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
 export function getSituativki(token, level) {
   const q = level ? `?level=${encodeURIComponent(level)}` : ''
-  return authGet('/mobile/situativki' + q, token)
+  return cachedAuthGet('/mobile/situativki' + q, token)
 }
 
 // Словарь пользователя (GET /mobile/saved-words) → [{word,translation,learned,correctCount,language}]
