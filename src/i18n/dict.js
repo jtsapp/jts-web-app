@@ -185,6 +185,7 @@ export const DICT = {
     'scen.title': 'Сценарии',
     'scen.heading':
       'Протестируй свой Speaking в разных ситуациях,\nи получи личный разбор ошибок от тьютора',
+    'scen.adminHeading': 'Ещё сценарии',
     // По ключу на сценарий: 'scen.desc.<scenarioId>'.
     'scen.desc.visa-interview':
       'собеседование в посольстве США: визовый офицер, каверзные вопросы и вердикт в конце',
@@ -389,6 +390,7 @@ export const DICT = {
     'scen.title': 'Сценарийлер',
     'scen.heading':
       'Speaking-іңді әртүрлі жағдайда сынап,\nтьютордан қателердің жеке талдауын ал',
+    'scen.adminHeading': 'Тағы сценарийлер',
     'scen.desc.visa-interview':
       'АҚШ елшілігіндегі сұхбат: виза офицері, қитұрқы сұрақтар және соңында шешім',
     'scen.desc.hotel-check-in':
@@ -590,6 +592,7 @@ export const DICT = {
     'scen.title': 'Scenarios',
     'scen.heading':
       'Test your speaking in different situations\nand get personal mistake feedback from the tutor',
+    'scen.adminHeading': 'More scenarios',
     'scen.desc.visa-interview':
       'a U.S. embassy interview: a consular officer, sharp follow-ups and a verdict at the end',
     'scen.desc.hotel-check-in':

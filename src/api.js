@@ -28,6 +28,14 @@ export function getAdaptiveQuestions() {
   return get('/adaptive-test/questions')
 }
 
+// Ролевые сценарии для голосового тьютора — публичный эндпоинт (INK AI tutor,
+// раздел «Сценарии» в админке). optional level фильтрует по CEFR; без него —
+// все активные. Формат: [{id,slug,emoji,level,titleI18n:{en,ru,kz},setup,orderIndex,isActive}]
+export function getInkScenarios(level) {
+  const q = level ? `?level=${encodeURIComponent(level)}` : ''
+  return get('/ink/practice' + q)
+}
+
 async function authGet(path, token) {
   let res
   try {

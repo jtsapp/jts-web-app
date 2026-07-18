@@ -53,8 +53,15 @@ export default function TutorVoiceChatPage({
   const t = useT()
   const { lang } = useLang()
   // Structured voice scenario id (e.g. 'visa-interview') — when set, the token
-  // route flips the agent into scenario mode and loads the matching prompt.
+  // route flips the agent into scenario mode and loads the matching prompt
+  // from data/scenarios/<id>.md. Mutually exclusive with scenarioPrompt below.
   const scenarioId = typeof scenario === 'string' ? scenario : scenario?.id || ''
+  // Free-text scenario (admin-authored, INK AI tutor "Сценарии"): no local .md
+  // file, no code changes needed on the agent - the "setup" text the admin
+  // wrote goes straight into the room's plain `scenario` field, which the
+  // agent already folds into a generic ROLEPLAY MODE system-prompt block.
+  const scenarioPrompt =
+    scenario && typeof scenario === 'object' && !scenario.id ? scenario.prompt || '' : ''
   const { name: tutorName = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
 
   const [perm, setPerm] = useState('prompt') // 'prompt' | 'granted'
@@ -106,6 +113,7 @@ export default function TutorVoiceChatPage({
           ...(interests.length ? { interests } : {}),
           ...(profession ? { profession } : {}),
           ...(scenarioId ? { scenarioId } : {}),
+          ...(scenarioPrompt ? { scenario: scenarioPrompt } : {}),
         }),
       })
       const data = await res.json().catch(() => ({}))
