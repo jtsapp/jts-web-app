@@ -19,12 +19,10 @@ import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import BookDetail from './BookDetail.jsx'
 
-// URL hosted-библиотек. Книжки (109 МБ) хостятся на бэкенде (dev-admin S3,
-// files-api) — в репозиторий такой файл не влезает; сказки (2.9 МБ) лежат в public.
-const BOOKS_URL =
-  'https://files-api.iqra.space/development/development/practice/books.html'
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
+// Книжки полностью нативные: каталог из dev-admin + тексты и словари из
+// public/practice/books/ (см. scripts/extract-books.js).
 const TALES_URL = '/practice/fairytales.html'
 
 // Просмотры: 1331 → «1 331», 12000 → «12 тыс», 3400000 → «3.4 млн»
@@ -109,12 +107,15 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
   const [tab, setTab] = useState('saved') // 'saved' | 'learned'
+  // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
+  const [apiToken, setApiToken] = useState(token || '')
 
   useEffect(() => {
     let alive = true
     setState({ loading: true, error: '' })
     getPracticeToken(token)
       .then((tok) => {
+        if (alive) setApiToken(tok)
         // Тянем всё параллельно; отдельные сбои не роняют страницу целиком.
         const pull = (fn, set) =>
           fn(tok)
@@ -192,7 +193,14 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   if (openBook) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <BookDetail book={openBook} onBack={() => setOpenBook(null)} />
+        <BookDetail
+          book={openBook}
+          token={apiToken}
+          onBack={() => setOpenBook(null)}
+          onWordSaved={(w) =>
+            w?.word && setWords((ws) => [w, ...ws.filter((x) => x.id !== w.id)])
+          }
+        />
       </LearningLayout>
     )
   }
@@ -387,11 +395,6 @@ function Empty({ loading, text }) {
       {loading ? 'Загрузка…' : text || 'Нет данных'}
     </div>
   )
-}
-
-// Открыть hosted-библиотеку (книжки/сказки) в новой вкладке.
-function openHosted(href) {
-  window.open(href, '_blank', 'noopener')
 }
 
 // Детерминированный градиент из строки (фолбэк-обложка, когда нет coverImageUrl).
