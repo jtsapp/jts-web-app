@@ -10,7 +10,6 @@ import {
 } from '../components/icons.jsx'
 import {
   getPracticeToken,
-  getVideoLessons,
   getMediaClips,
   getSituativki,
   getSavedWords,
@@ -105,7 +104,6 @@ function speak(word) {
 export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
-  const [videos, setVideos] = useState([])
   const [clips, setClips] = useState([])
   const [situations, setSituations] = useState([])
   const [books, setBooks] = useState([])
@@ -123,7 +121,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
             .then((d) => alive && set(Array.isArray(d) ? d : d?.content || d?.items || []))
             .catch(() => {})
         return Promise.all([
-          pull((k) => getVideoLessons(k), setVideos),
           pull((k) => getMediaClips(k), setClips),
           pull((k) => getSituativki(k, userLevel), setSituations),
           pull((k) => getAudiobooks(k), setBooks),
@@ -143,15 +140,15 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const learned = useMemo(() => words.filter((w) => w.learned), [words])
   const list = tab === 'learned' ? learned : saved
 
-  const chips = ['Все', 'Видеоклипы', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
+  // «Видеоклипы» убраны из клиентской части: контент остаётся в dev-admin
+  // (/mobile/video-lessons живёт), но страница его не запрашивает и не рисует.
+  const chips = ['Все', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
   const [filter, setFilter] = useState(null)
   const show = (type) => filter === null || filter === type
   const grid = filter !== null
 
-  // Открытый видеоклип (детальная страница с плеером и словами из видео).
-  const [openVideo, setOpenVideo] = useState(null)
   // Открытый рилс (индекс в clips) — вертикальный плеер с прокруткой.
   const [openReel, setOpenReel] = useState(null)
   const [openBook, setOpenBook] = useState(null)
@@ -182,22 +179,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     } finally {
       taleLoadingRef.current = false
     }
-  }
-
-  // Поиск по видеоклипам (по названию).
-  const [videoQuery, setVideoQuery] = useState('')
-  const videoResults = useMemo(() => {
-    const q = videoQuery.trim().toLowerCase()
-    if (!q) return videos
-    return videos.filter((v) => (v.title || '').toLowerCase().includes(q))
-  }, [videos, videoQuery])
-
-  if (openVideo) {
-    return (
-      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <VideoDetail video={openVideo} words={words} onBack={() => setOpenVideo(null)} />
-      </LearningLayout>
-    )
   }
 
   if (openReel !== null) {
@@ -239,51 +220,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </div>
 
           {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
-
-          {/* Видеоклипы */}
-          {show('Видеоклипы') && (
-          <section id="sec-Видеоклипы" className="pp-sec">
-            <SectionHead title="Видеоклипы" onAll={() => setFilter('Видеоклипы')} />
-            <label className="pp-search">
-              <span className="pp-search__ic">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-                  <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </span>
-              <input
-                type="search"
-                className="pp-search__input"
-                placeholder="Поиск по видео"
-                value={videoQuery}
-                onChange={(e) => setVideoQuery(e.target.value)}
-              />
-            </label>
-            {videos.length === 0 ? (
-              <Empty loading={state.loading} />
-            ) : videoResults.length === 0 ? (
-              <div className="pp-noresult">
-                <div className="pp-noresult__title">Ничего не найдено</div>
-                <div className="pp-noresult__sub">Попробуйте другой запрос</div>
-              </div>
-            ) : (
-              <Rail grid={grid}>
-                {videoResults.map((v) => (
-                  <button key={v.id} type="button" className="pp-vcard" onClick={() => setOpenVideo(v)}>
-                    <Thumb src={v.thumbnailUrl || youtubeThumb(v)} alt={v.title} className="pp-thumb--16x9">
-                      <span className="pp-play"><PlayIcon size={22} /></span>
-                    </Thumb>
-                    <div className="pp-vcard__title">{v.title}</div>
-                    <div className="pp-vcard__meta">
-                      <span className="pp-views"><EyeIcon size={14} /> {formatViews(v.views)}</span>
-                      <Dots level={v.level} />
-                    </div>
-                  </button>
-                ))}
-              </Rail>
-            )}
-          </section>
-          )}
 
           {/* Мемы и рилсы */}
           {show('Мемы и рилсы') && (
@@ -456,131 +392,6 @@ function Empty({ loading, text }) {
 // Открыть hosted-библиотеку (книжки/сказки) в новой вкладке.
 function openHosted(href) {
   window.open(href, '_blank', 'noopener')
-}
-
-// Превью YouTube по ключу (у бэкенда thumbnailUrl часто пустой).
-function youtubeThumb(v) {
-  return v?.youtubeKey ? `https://img.youtube.com/vi/${v.youtubeKey}/hqdefault.jpg` : ''
-}
-
-// Приводит слова видео к [{word, translation}] из разных возможных форм
-// (бэкенд-поля words/vocab). Если пусто — демо-набор, чтобы страница выглядела
-// цельно (реальные слова появятся, когда их заведут в админке).
-const DEMO_VOCAB = [
-  { word: 'Big Bang', translation: 'Большой взрыв' },
-  { word: 'Destroy', translation: 'Уничтожить' },
-  { word: 'Knees', translation: 'Колени' },
-  { word: 'Believe', translation: 'Вера' },
-  { word: 'Ask', translation: 'Спросить' },
-  { word: 'Save', translation: 'Сохрани' },
-]
-function videoVocab(video, savedWords) {
-  const raw = (video?.words?.length ? video.words : video?.vocab) || []
-  const norm = raw
-    .map((w) => {
-      if (typeof w === 'string') return { word: w, translation: '' }
-      return {
-        word: w.word || w.en || w.original || w.term || w.text || '',
-        translation: w.translation || w.ru || w.meaning || w.tr || '',
-      }
-    })
-    .filter((w) => w.word)
-  if (norm.length) return norm
-  const saved = (savedWords || []).map((w) => ({ word: w.word, translation: w.translation })).filter((w) => w.word)
-  return saved.length ? saved.slice(0, 8) : DEMO_VOCAB
-}
-
-// Детальная страница видеоклипа: плеер + «Полезные слова из видео».
-function VideoDetail({ video, words, onBack }) {
-  const [playing, setPlaying] = useState(false)
-  const [marked, setMarked] = useState({})
-  const vocab = videoVocab(video, words)
-  const poster = video.thumbnailUrl || youtubeThumb(video)
-
-  return (
-    <div className="vd">
-      <div className="vd__head">
-        <button className="vd__back" onClick={onBack}>
-          <ChevronLeftIcon size={18} /> Назад
-        </button>
-        <div className="vd__headtitle">
-          <b>{video.title}</b>
-          <span>Видеоклипы</span>
-        </div>
-      </div>
-
-      <div className="vd__body">
-        <div className="vd__main">
-          <div className="vd__player">
-            {playing && (video.youtubeKey || video.videoUrl) ? (
-              <iframe
-                className="vd__frame"
-                src={
-                  video.youtubeKey
-                    ? `https://www.youtube.com/embed/${video.youtubeKey}?autoplay=1&rel=0`
-                    : video.videoUrl
-                }
-                title={video.title}
-                allow="accelerator; autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <button
-                type="button"
-                className="vd__poster"
-                onClick={() => setPlaying(true)}
-                style={poster ? { backgroundImage: `url(${poster})` } : undefined}
-                aria-label="Воспроизвести"
-              >
-                <span className="vd__play">
-                  <PlayIcon size={30} />
-                </span>
-              </button>
-            )}
-          </div>
-
-          <h1 className="vd__title">{video.title}</h1>
-          <div className="vd__meta">
-            <span className="pp-views">
-              <EyeIcon size={15} /> {formatViews(video.views)}
-            </span>
-            <Dots level={video.level} />
-          </div>
-        </div>
-
-        <aside className="vd__side">
-          <h2 className="vd__sidetitle">Полезные слова из видео</h2>
-          <div className="vd__words">
-            {vocab.map((w, i) => (
-              <div className="vd-word" key={i}>
-                <div className="vd-word__text">
-                  <b>
-                    {i + 1}. {w.word}
-                  </b>
-                  {w.translation && <span>{w.translation}</span>}
-                </div>
-                <button
-                  type="button"
-                  className={`vd-word__mark ${marked[i] ? 'vd-word__mark--on' : ''}`}
-                  onClick={() => setMarked((m) => ({ ...m, [i]: !m[i] }))}
-                  aria-label="В словарь"
-                >
-                  <svg width="16" height="18" viewBox="0 0 16 18" fill={marked[i] ? 'currentColor' : 'none'}>
-                    <path
-                      d="M2 2.5A1.5 1.5 0 0 1 3.5 1h9A1.5 1.5 0 0 1 14 2.5V17l-6-3.2L2 17V2.5Z"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        </aside>
-      </div>
-    </div>
-  )
 }
 
 // Детерминированный градиент из строки (фолбэк-обложка, когда нет coverImageUrl).
