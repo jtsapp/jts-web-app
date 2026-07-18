@@ -17,6 +17,7 @@ import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
 import IeltsReadingPage from './screens/IeltsReadingPage.jsx'
 import IeltsSpeakingPage from './screens/IeltsSpeakingPage.jsx'
 import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
+import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
 import VocabularyPage from './screens/VocabularyPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
@@ -38,7 +39,8 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
-import { getTutor } from './tutor/tutors.js'
+import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
+import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
@@ -260,7 +262,8 @@ export default function App() {
     }
   }
 
-  // Завершение теста — сохраняем уровень в профиль и открываем королевство
+  // Завершение письменного CEFR-теста (после регистрации) — сохраняем уровень и
+  // открываем королевство.
   async function handleTestDone(res) {
     setNeedsLevelTest(false)
     if (res?.level) setUserLevel(res.level)
@@ -272,6 +275,21 @@ export default function App() {
       }
     }
     setScreen('kingdom')
+  }
+
+  // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
+  // в профиль и показываем экран результата (кружок с уровнем).
+  async function handlePlacementDone(level) {
+    setNeedsLevelTest(false)
+    if (level) setUserLevel(level)
+    if (token && level) {
+      try {
+        await saveLanguageLevel(token, level)
+      } catch (e) {
+        console.warn('Не удалось сохранить уровень:', e)
+      }
+    }
+    setScreen('tutor-level-result')
   }
 
   // Выход из аккаунта: чистим токен и возвращаем на welcome.
@@ -396,7 +414,7 @@ export default function App() {
       )
     case 'success':
       // Уровень уже взят из профиля; если его там не было (новая регистрация) —
-      // сначала CEFR-тест, иначе сразу в обучение.
+      // сначала письменный CEFR-тест, иначе сразу в обучение.
       return <SuccessPage onDone={() => setScreen(needsLevelTest ? 'test-intro' : 'kingdom')} />
     case 'test-intro':
       return (
@@ -467,6 +485,18 @@ export default function App() {
       return <IeltsSpeakingPage {...ieltsProps} />
     case 'ielts-progress':
       return <IeltsProgressPage {...ieltsProps} />
+    case 'speaking-test':
+      return (
+        <SpeakingTestPage
+          user={{ name, level: userLevel }}
+          tutor={tutor}
+          token={token}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
+          onProfile={() => setScreen('profile')}
+          onBack={() => setScreen('tutor-voice-intro')}
+          onComplete={handlePlacementDone}
+        />
+      )
     case 'vocab':
       return (
         <VocabularyPage
@@ -521,7 +551,8 @@ export default function App() {
             saveTutorPrefs(token, { tutor: key })
             setScreen('tutor-loading')
           }}
-          onListen={() => {}}
+          // Образец голоса: тьютор здоровается своим голосом (Gemini/Soniox).
+          onListen={(key) => speakTutorVoice(key, TUTOR_GREETING[key] || '')}
         />
       )
     case 'tutor-loading':
@@ -532,9 +563,9 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
-          // CEFR-оффер убран из цепочки: после «подстройки» сразу интересы.
-          // Экраны tutor-level-offer/voice-intro остались достижимы диплинком.
-          onDone={() => setScreen('tutor-interests')}
+          // После «подстройки» — голосовой placement-тест (Спарк), затем интересы
+          // и работа. Уровень определяет Sonnet по записи монолога.
+          onDone={() => setScreen('tutor-voice-intro')}
         />
       )
     case 'tutor-level-offer':
@@ -555,12 +586,13 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-level-offer')}
+          onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
           onStart={() => {
             setScenario(null)
-            setScreen('tutor-voice-chat')
+            setScreen('speaking-test')
           }}
+          // «Не могу говорить сейчас» — пропуск теста, дальше по онбордингу.
           onDecline={() => setScreen('tutor-interests')}
         />
       )
@@ -594,11 +626,11 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-voice-chat')}
+          onBack={() => setScreen('speaking-test')}
           tutor={tutor}
-          level="A1"
+          level={userLevel}
           onContinue={() => setScreen('tutor-interests')}
-          onRetry={() => setScreen('tutor-voice-intro')}
+          onRetry={() => setScreen('speaking-test')}
         />
       )
     case 'tutor-interests':
