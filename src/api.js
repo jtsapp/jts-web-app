@@ -260,6 +260,24 @@ export function getSavedWords(token) {
   return authGet('/mobile/saved-words', token)
 }
 
+// Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).
+// alternates — строка «через запятую», language — язык перевода ("ru"/"kk"),
+// source — откуда слово (название книги). Возвращает SavedWordResponse.
+export async function saveWord(token, { word, translation, alternates, language = 'ru', source }) {
+  let res
+  try {
+    res = await fetch(`${BASE}/mobile/saved-words`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ word, translation, alternates, language, source }),
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
+  return res.json().catch(() => ({}))
+}
+
 // Уровень CEFR из профиля пользователя (GET /user/language-level).
 // Бэкенд отдаёт enum как JSON-строку ("A1"); подстраховываемся и на объект.
 export async function getLanguageLevel(token) {

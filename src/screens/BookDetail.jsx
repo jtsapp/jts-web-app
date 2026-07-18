@@ -1,5 +1,116 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
+import { saveWord } from '../api.js'
+
+// ── Контент книг ────────────────────────────────────────────────────────────
+// Полные тексты глав и словари переводов извлечены из hosted-библиотеки
+// «Книжек» (scripts/extract-books.js → public/practice/books/). Каталог там
+// свой, без общих id с бэкендом, поэтому связываем по нормализованному
+// названию. Книга не из библиотеки читается как раньше (track.text/демо).
+let _bookIndexPromise = null
+const _bookContentCache = {}
+
+function normTitle(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+async function loadBookContent(title) {
+  if (!_bookIndexPromise) {
+    _bookIndexPromise = fetch('/practice/books/index.json').then((r) => (r.ok ? r.json() : []))
+  }
+  const index = await _bookIndexPromise.catch(() => [])
+  const want = normTitle(title)
+  if (!want) return null
+  const hit =
+    index.find((b) => normTitle(b.title) === want) ||
+    // «Alice in Wonderland» ↔ «Alice's Adventures in Wonderland» и т.п.
+    index.find((b) => normTitle(b.title).includes(want) || want.includes(normTitle(b.title)))
+  if (!hit) return null
+  if (!_bookContentCache[hit.id]) {
+    _bookContentCache[hit.id] = fetch(`/practice/books/${hit.id}.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)
+  }
+  return _bookContentCache[hit.id]
+}
+
+// ── Перевод слова ───────────────────────────────────────────────────────────
+// Как в мобильной читалке: сначала словарь книги, иначе gtx (dt=t — основной
+// перевод, dt=bd — словарные альтернативы). Кэш в localStorage, чтобы
+// повторные тапы не ходили в сеть.
+const TR_CACHE_KEY = 'jts_word_tr_v1'
+let _trCache = null
+function trCache() {
+  if (_trCache) return _trCache
+  try {
+    _trCache = JSON.parse(window.localStorage.getItem(TR_CACHE_KEY)) || {}
+  } catch {
+    _trCache = {}
+  }
+  return _trCache
+}
+
+async function translateWord(word) {
+  const key = word.toLowerCase()
+  const cache = trCache()
+  if (cache[key]) return cache[key]
+  const url =
+    'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&dt=bd&q=' +
+    encodeURIComponent(word)
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`translate ${res.status}`)
+  const data = await res.json()
+  const primary = String(data?.[0]?.[0]?.[0] || '').trim()
+  const alternates = []
+  if (Array.isArray(data?.[1])) {
+    for (const pos of data[1]) {
+      for (const m of pos?.[1] || []) {
+        const s = String(m).trim()
+        if (s && s.toLowerCase() !== primary.toLowerCase() && !alternates.includes(s)) {
+          alternates.push(s)
+        }
+      }
+    }
+  }
+  const out = { ru: primary, alternates: alternates.slice(0, 4) }
+  if (primary) {
+    cache[key] = out
+    try {
+      window.localStorage.setItem(TR_CACHE_KEY, JSON.stringify(cache))
+    } catch {
+      /* квота localStorage — работаем без кэша */
+    }
+  }
+  return out
+}
+
+// Абзацы: тексты из библиотеки — одна строка без переводов строк, поэтому
+// группируем по 2–3 предложения (как это делает сама hosted-библиотека);
+// тексты с \n (track.text из админки, демо) режем по строкам, как раньше.
+function toParas(text) {
+  if (text.includes('\n')) return text.split('\n')
+  const sents = text.replace(/\s+/g, ' ').trim().match(/[^.!?]+[.!?]*["”']*\s*/g) || [text]
+  const out = []
+  let buf = []
+  for (const raw of sents) {
+    const s = raw.trim()
+    if (!s) continue
+    if (/^["“]/.test(s) && buf.length) {
+      out.push(buf.join(' '))
+      buf = []
+    }
+    buf.push(s)
+    if (buf.length >= 3 || (/["”]\s*$/.test(s) && buf.length >= 2)) {
+      out.push(buf.join(' '))
+      buf = []
+    }
+  }
+  if (buf.length) out.push(buf.join(' '))
+  return out
+}
 
 // Демо-текст главы — показываем, пока у главы (track.text) нет собственного
 // текста в админке. Реальный текст подхватится автоматически, когда его заведут.
@@ -33,10 +144,19 @@ function fmtTime(sec) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export default function BookDetail({ book, onBack }) {
+export default function BookDetail({ book, token, onBack, onWordSaved }) {
   const [mode, setMode] = useState('overview') // overview | read | audio
   const [ch, setCh] = useState(0)
   const [visited, setVisited] = useState(() => new Set())
+  const [content, setContent] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    loadBookContent(book.title).then((c) => alive && setContent(c))
+    return () => {
+      alive = false
+    }
+  }, [book])
 
   const tracks = useMemo(() => {
     const t = book.tracks?.length
@@ -47,8 +167,22 @@ export default function BookDetail({ book, onBack }) {
     return t
   }, [book])
 
-  const total = tracks.length || 1
-  const track = tracks[ch] || {}
+  // Главы для чтения: полный текст из библиотеки. Длительности аудио-треков
+  // привязываем только при совпадении числа глав — иначе они врут.
+  const chapters = useMemo(() => {
+    if (content?.chapters?.length) {
+      const sameCount = tracks.length === content.chapters.length
+      return content.chapters.map((c, i) => ({
+        id: `ch-${c.num}`,
+        title: c.title,
+        text: c.text,
+        durationLabel: sameCount ? tracks[i]?.durationLabel : '',
+      }))
+    }
+    return tracks
+  }, [content, tracks])
+
+  const total = chapters.length || 1
 
   const openChapter = (i, m = 'read') => {
     setCh(i)
@@ -114,7 +248,7 @@ export default function BookDetail({ book, onBack }) {
                 <span className="bk-ov__count">{total} глав</span>
               </div>
               <div className="bk-chapters">
-                {tracks.map((t, i) => (
+                {chapters.map((t, i) => (
                   <button key={t.id || i} className="bk-chapter" onClick={() => openChapter(i, 'read')}>
                     <span className="bk-chapter__idx">{i + 1}</span>
                     <span className="bk-chapter__title">{t.title || `Глава ${i + 1}`}</span>
@@ -134,11 +268,14 @@ export default function BookDetail({ book, onBack }) {
     return (
       <BookRead
         book={book}
-        tracks={tracks}
+        chapters={chapters}
+        dict={content?.dict || {}}
+        token={token}
         ch={ch}
         onPick={(i) => openChapter(i, 'read')}
         onNext={() => ch < total - 1 && openChapter(ch + 1, 'read')}
         onBack={() => setMode('overview')}
+        onWordSaved={onWordSaved}
       />
     )
   }
@@ -156,22 +293,63 @@ export default function BookDetail({ book, onBack }) {
 }
 
 // ── Режим чтения ────────────────────────────────────────────────────────────
-function BookRead({ book, tracks, ch, onPick, onNext, onBack }) {
-  const track = tracks[ch] || {}
-  const text = track.text || DEMO_TEXT
-  const vocab = track.vocab || {}
-  const [pop, setPop] = useState(null) // {word, translation, x, y}
+function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onWordSaved }) {
+  const chapter = chapters[ch] || {}
+  const text = chapter.text || DEMO_TEXT
+  // {word, translation, alternates, loading, saving, saved, x, y}
+  const [pop, setPop] = useState(null)
+  // Отсекает ответы перевода/сохранения от уже закрытого или сменённого попапа.
+  const seqRef = useRef(0)
 
   const onWord = (e, raw) => {
     const w = cleanWord(raw)
     if (!w) return
     const r = e.target.getBoundingClientRect()
-    setPop({
+    const seq = ++seqRef.current
+    // Попап фиксированный: снизу от слова, а у нижнего края экрана — сверху,
+    // чтобы кнопка сохранения не уезжала за вьюпорт. По X прижимаем к краям.
+    const below = r.bottom + 180 < window.innerHeight
+    const base = {
       word: w,
-      translation: vocab[w.toLowerCase()] || '',
-      x: r.left + r.width / 2,
-      y: r.bottom,
-    })
+      alternates: [],
+      loading: false,
+      saving: false,
+      saved: false,
+      x: Math.min(Math.max(r.left + r.width / 2, 140), window.innerWidth - 140),
+      y: below ? r.bottom : r.top,
+      below,
+    }
+    const hit = dict[w.toLowerCase()]
+    if (hit?.ru) {
+      setPop({ ...base, translation: hit.ru })
+      return
+    }
+    setPop({ ...base, translation: '', loading: true })
+    translateWord(w)
+      .then(
+        (t) =>
+          seqRef.current === seq &&
+          setPop((p) => p && { ...p, translation: t.ru, alternates: t.alternates, loading: false }),
+      )
+      .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
+  }
+
+  const onSave = async () => {
+    if (!pop?.translation || pop.saving || pop.saved) return
+    const seq = seqRef.current
+    setPop((p) => p && { ...p, saving: true })
+    try {
+      const saved = await saveWord(token, {
+        word: pop.word,
+        translation: pop.translation,
+        alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
+        source: book.title,
+      })
+      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
+      onWordSaved?.(saved)
+    } catch {
+      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false })
+    }
   }
 
   useEffect(() => {
@@ -184,7 +362,7 @@ function BookRead({ book, tracks, ch, onPick, onNext, onBack }) {
     <div className="bk">
       <div className="vd__head">
         <button className="vd__back" onClick={onBack}>
-          <ChevronLeftIcon size={18} /> {track.title || `Глава ${ch + 1}`}
+          <ChevronLeftIcon size={18} /> {chapter.title || `Глава ${ch + 1}`}
         </button>
         <div className="vd__headtitle">
           <span>{book.title}</span>
@@ -193,7 +371,7 @@ function BookRead({ book, tracks, ch, onPick, onNext, onBack }) {
 
       <div className="bk-read">
         <article className="bk-read__text" onClick={() => setPop(null)}>
-          {text.split('\n').map((para, pi) =>
+          {toParas(text).map((para, pi) =>
             para.trim() === '' ? (
               <div key={pi} className="bk-read__gap" />
             ) : (
@@ -217,7 +395,7 @@ function BookRead({ book, tracks, ch, onPick, onNext, onBack }) {
               </p>
             ),
           )}
-          {ch < tracks.length - 1 && (
+          {ch < chapters.length - 1 && (
             <button className="bk-btn bk-btn--primary bk-read__next" onClick={onNext}>
               Перейти к следующей главе
             </button>
@@ -227,7 +405,7 @@ function BookRead({ book, tracks, ch, onPick, onNext, onBack }) {
         <aside className="bk-read__side">
           <h2 className="bk-read__sidetitle">Главы книги</h2>
           <div className="bk-chapters">
-            {tracks.map((t, i) => (
+            {chapters.map((t, i) => (
               <button
                 key={t.id || i}
                 className={`bk-chapter ${i === ch ? 'bk-chapter--on' : ''}`}
@@ -243,11 +421,20 @@ function BookRead({ book, tracks, ch, onPick, onNext, onBack }) {
       </div>
 
       {pop && (
-        <div className="bk-pop" style={{ left: pop.x, top: pop.y + 8 }} onClick={(e) => e.stopPropagation()}>
+        <div
+          className={`bk-pop ${pop.below ? '' : 'bk-pop--above'}`}
+          style={{ left: pop.x, top: pop.y + (pop.below ? 8 : -8) }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="bk-pop__word">{pop.word}</div>
-          <div className="bk-pop__tr">{pop.translation || '—'}</div>
-          <button className="bk-pop__save" onClick={() => setPop(null)}>
-            Сохранить в словарь
+          <div className="bk-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
+          {pop.alternates.length > 0 && <div className="bk-pop__alts">{pop.alternates.join(', ')}</div>}
+          <button
+            className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
+            onClick={onSave}
+            disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
+          >
+            {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : 'Сохранить в словарь'}
           </button>
         </div>
       )}

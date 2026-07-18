@@ -4456,7 +4456,7 @@ textarea {
   align-items: start;
 }
 .bk-read__text { font-size: 16px; line-height: 1.75; color: #2b2836; }
-.bk-read__text p { margin: 0 0 4px; }
+.bk-read__text p { margin: 0 0 12px; }
 .bk-read__gap { height: 14px; }
 .bk-w { cursor: pointer; border-radius: 3px; transition: background 0.1s ease; }
 .bk-w:hover { background: #efe6ff; }
@@ -4468,14 +4468,20 @@ textarea {
 .bk-pop {
   position: fixed; transform: translateX(-50%); z-index: 50;
   background: #fff; border: 1px solid #ececf1; border-radius: 14px;
-  box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18); padding: 12px 14px; min-width: 150px;
+  box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18); padding: 12px 14px;
+  min-width: 150px; max-width: 260px;
 }
+.bk-pop--above { transform: translate(-50%, -100%); }
 .bk-pop__word { font-size: 15px; font-weight: 800; color: var(--ink); }
-.bk-pop__tr { font-size: 14px; color: var(--muted); margin: 2px 0 10px; }
+.bk-pop__tr { font-size: 14px; color: #4e4b5b; margin: 2px 0 0; }
+.bk-pop__alts { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .bk-pop__save {
   width: 100%; border: none; background: #9047ff; color: #fff; border-radius: 10px;
-  padding: 8px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  margin-top: 10px; padding: 8px; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: background 0.15s ease;
 }
+.bk-pop__save:disabled { background: #cbc6dd; cursor: default; }
+.bk-pop__save--on:disabled { background: #23b061; }
 
 /* Аудио-плеер */
 .bk-audio {
