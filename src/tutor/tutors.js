@@ -23,6 +23,16 @@ export const TUTORS = [
   },
 ]
 
+// Короткое приветствие в характере тьютора — образец голоса на экране выбора
+// («Послушать голос X»). Английский: тьютор говорит по-английски, а озвучка
+// раскрывает тембр (Gemini для Луны/Декстера, Soniox для Спарка).
+export const TUTOR_GREETING = {
+  luna: "Hi, I'm Luna. Take a deep breath — we'll go gently, at your own pace. No pressure here.",
+  dexter:
+    "Hey, I'm Dexter! Learning English is going to be fun — let's explore it together, one step at a time.",
+  spark: "Yo! I'm Spark! Let's go — you've got this! Ready to level up? Let's crush it!",
+}
+
 // Тьютор по умолчанию (если пользователь ещё не выбрал).
 export const DEFAULT_TUTOR = TUTORS[0]
 

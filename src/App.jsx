@@ -39,7 +39,8 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
-import { getTutor } from './tutor/tutors.js'
+import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
+import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
@@ -550,7 +551,8 @@ export default function App() {
             saveTutorPrefs(token, { tutor: key })
             setScreen('tutor-loading')
           }}
-          onListen={() => {}}
+          // Образец голоса: тьютор здоровается своим голосом (Gemini/Soniox).
+          onListen={(key) => speakTutorVoice(key, TUTOR_GREETING[key] || '')}
         />
       )
     case 'tutor-loading':

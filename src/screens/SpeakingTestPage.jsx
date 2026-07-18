@@ -7,7 +7,7 @@ import { PLACEMENT_TASK } from '../data/speaking-test-tasks.js'
 import {
   blobToWav16kMono,
   isMediaRecordingSupported,
-  speakListeningAudio,
+  speakTutorVoice,
   cancelSpeech,
 } from '../lib/ielts-audio.js'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -290,7 +290,7 @@ export default function SpeakingTestPage({
         <button
           className="t-pill t-pill--blue"
           type="button"
-          onClick={() => speakListeningAudio(PLACEMENT_TASK.instruction)}
+          onClick={() => speakTutorVoice(tutor.key, PLACEMENT_TASK.instruction)}
         >
           <VolumeIcon size={20} />
           {t('placeTest.listen')}

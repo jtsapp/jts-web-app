@@ -168,3 +168,48 @@ export async function speakListeningAudio(text, opts = {}) {
   }
   return speakBrowser(text, opts) ? 'fallback' : 'none'
 }
+
+/**
+ * Speak `text` in a specific tutor's voice via /api/tutor-tts (Gemini for
+ * Luna/Dexter, Soniox for Spark). Falls back to browser speech if the server
+ * TTS is unconfigured or fails, so a "listen" button always does something.
+ *
+ * @param {'luna'|'dexter'|'spark'} tutor
+ * @param {string} text
+ * @param {{ lang?: 'en'|'ru'|'kz', volume?: number, onEnd?: () => void }} [opts]
+ * @returns {Promise<"tutor" | "fallback" | "none">}
+ */
+export async function speakTutorVoice(tutor, text, opts = {}) {
+  if (!text.trim()) return 'none'
+  try {
+    stopServerAudio()
+    const res = await fetch('/api/tutor-tts', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tutor, text, lang: opts.lang || 'en' }),
+    })
+    if (res.ok) {
+      const blob = await res.blob()
+      if (blob.size > 0) {
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        if (opts.volume != null) audio.volume = Math.max(0, Math.min(1, opts.volume))
+        currentAudio = audio
+        currentObjectUrl = url
+        audio.onended = () => {
+          stopServerAudio()
+          opts.onEnd?.()
+        }
+        audio.onerror = () => stopServerAudio()
+        await audio.play()
+        return 'tutor'
+      }
+    } else {
+      console.warn(`[tutor-tts] server TTS failed (HTTP ${res.status}); falling back.`)
+    }
+  } catch (e) {
+    console.warn('[tutor-tts] error; falling back:', e)
+    stopServerAudio()
+  }
+  return speakBrowser(text, opts) ? 'fallback' : 'none'
+}
