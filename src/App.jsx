@@ -261,7 +261,8 @@ export default function App() {
     }
   }
 
-  // Завершение теста — сохраняем уровень в профиль и открываем королевство
+  // Завершение письменного CEFR-теста (после регистрации) — сохраняем уровень и
+  // открываем королевство.
   async function handleTestDone(res) {
     setNeedsLevelTest(false)
     if (res?.level) setUserLevel(res.level)
@@ -273,6 +274,21 @@ export default function App() {
       }
     }
     setScreen('kingdom')
+  }
+
+  // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
+  // в профиль и показываем экран результата (кружок с уровнем).
+  async function handlePlacementDone(level) {
+    setNeedsLevelTest(false)
+    if (level) setUserLevel(level)
+    if (token && level) {
+      try {
+        await saveLanguageLevel(token, level)
+      } catch (e) {
+        console.warn('Не удалось сохранить уровень:', e)
+      }
+    }
+    setScreen('tutor-level-result')
   }
 
   // Выход из аккаунта: чистим токен и возвращаем на welcome.
@@ -397,7 +413,7 @@ export default function App() {
       )
     case 'success':
       // Уровень уже взят из профиля; если его там не было (новая регистрация) —
-      // сначала CEFR-тест, иначе сразу в обучение.
+      // сначала письменный CEFR-тест, иначе сразу в обучение.
       return <SuccessPage onDone={() => setScreen(needsLevelTest ? 'test-intro' : 'kingdom')} />
     case 'test-intro':
       return (
@@ -477,10 +493,7 @@ export default function App() {
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-voice-intro')}
-          onComplete={(level) => {
-            setUserLevel(level)
-            setScreen('tutor-level-result')
-          }}
+          onComplete={handlePlacementDone}
         />
       )
     case 'vocab':
@@ -548,9 +561,9 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
-          // CEFR-оффер убран из цепочки: после «подстройки» сразу интересы.
-          // Экраны tutor-level-offer/voice-intro остались достижимы диплинком.
-          onDone={() => setScreen('tutor-interests')}
+          // После «подстройки» — голосовой placement-тест (Спарк), затем интересы
+          // и работа. Уровень определяет Sonnet по записи монолога.
+          onDone={() => setScreen('tutor-voice-intro')}
         />
       )
     case 'tutor-level-offer':
@@ -571,12 +584,13 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-level-offer')}
+          onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
           onStart={() => {
             setScenario(null)
             setScreen('speaking-test')
           }}
+          // «Не могу говорить сейчас» — пропуск теста, дальше по онбордингу.
           onDecline={() => setScreen('tutor-interests')}
         />
       )
