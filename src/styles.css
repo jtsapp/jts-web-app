@@ -4455,8 +4455,27 @@ textarea {
   gap: 40px;
   align-items: start;
 }
-.bk-read__text { font-size: 16px; line-height: 1.75; color: #2b2836; }
+.bk-read__text { font-size: 16px; line-height: 1.75; color: #2b2836; animation: bk-ch-in 0.28s ease-out; }
+@keyframes bk-ch-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bk-read__text { animation: none; }
+}
 .bk-read__text p { margin: 0 0 12px; }
+/* Заглушка главы без текста (книги не из библиотеки) */
+.bk-read__notext {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 64px 24px; text-align: center;
+}
+.bk-read__notext-num {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--purple);
+}
+.bk-read__notext b { font-size: 19px; color: var(--ink); }
+.bk-read__notext p { margin: 0; color: var(--muted); max-width: 360px; }
+.bk-read__notext .bk-btn { margin-top: 12px; }
 .bk-read__gap { height: 14px; }
 .bk-w { cursor: pointer; border-radius: 3px; transition: background 0.1s ease; }
 .bk-w:hover { background: #efe6ff; }
