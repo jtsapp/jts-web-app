@@ -17,6 +17,7 @@ import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
 import IeltsReadingPage from './screens/IeltsReadingPage.jsx'
 import IeltsSpeakingPage from './screens/IeltsSpeakingPage.jsx'
 import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
+import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
 import VocabularyPage from './screens/VocabularyPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
 import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
@@ -467,6 +468,21 @@ export default function App() {
       return <IeltsSpeakingPage {...ieltsProps} />
     case 'ielts-progress':
       return <IeltsProgressPage {...ieltsProps} />
+    case 'speaking-test':
+      return (
+        <SpeakingTestPage
+          user={{ name, level: userLevel }}
+          tutor={tutor}
+          token={token}
+          onNavigate={(key) => handleTutorNav(key, tutorHome)}
+          onProfile={() => setScreen('profile')}
+          onBack={() => setScreen('tutor-voice-intro')}
+          onComplete={(level) => {
+            setUserLevel(level)
+            setScreen('tutor-level-result')
+          }}
+        />
+      )
     case 'vocab':
       return (
         <VocabularyPage
@@ -559,7 +575,7 @@ export default function App() {
           tutor={tutor}
           onStart={() => {
             setScenario(null)
-            setScreen('tutor-voice-chat')
+            setScreen('speaking-test')
           }}
           onDecline={() => setScreen('tutor-interests')}
         />
@@ -594,11 +610,11 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-voice-chat')}
+          onBack={() => setScreen('speaking-test')}
           tutor={tutor}
-          level="A1"
+          level={userLevel}
           onContinue={() => setScreen('tutor-interests')}
-          onRetry={() => setScreen('tutor-voice-intro')}
+          onRetry={() => setScreen('speaking-test')}
         />
       )
     case 'tutor-interests':
