@@ -16,15 +16,17 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   const { t, lang } = useI18n()
 
   // Реплики Декстера после того, как пользователь назвал имя.
-  // {name} подставляется автоматически. delay — сколько «печатать» перед показом.
+  // delay — сколько «печатать» перед показом. В стейте лежат i18n-ключи, а не
+  // готовые строки: перевод происходит при рендере, поэтому смена языка
+  // селектором в шапке мгновенно переводит и уже показанные реплики.
   const dexterScript = [
-    { text: t('dexter.nice'), delay: 900 },
-    { text: t('dexter.motiv'), delay: 1600 },
-    { text: t('dexter.toReg'), delay: 1300 },
+    { key: 'dexter.nice', delay: 900 },
+    { key: 'dexter.motiv', delay: 1600 },
+    { key: 'dexter.toReg', delay: 1300 },
   ]
 
   const [messages, setMessages] = useState([
-    { from: 'dexter', text: t('dexter.greet') },
+    { from: 'dexter', key: 'dexter.greet' },
   ])
   const [typing, setTyping] = useState(false)
   const [value, setValue] = useState('')
@@ -61,12 +63,12 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   // Чистим таймеры при размонтировании
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
-  function pushDexter(text) {
-    setMessages((prev) => [...prev, { from: 'dexter', text }])
+  function pushDexter(key) {
+    setMessages((prev) => [...prev, { from: 'dexter', key }])
   }
 
   // Проигрывает сценарий: печатает -> сообщение -> ... -> показывает кнопки входа
-  function playScript(userName) {
+  function playScript() {
     let elapsed = 0
     dexterScript.forEach((line, i) => {
       timers.current.push(setTimeout(() => setTyping(true), elapsed))
@@ -74,7 +76,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
       timers.current.push(
         setTimeout(() => {
           setTyping(false)
-          pushDexter(line.text.replace('{name}', userName))
+          pushDexter(line.key)
         }, elapsed),
       )
       elapsed += 400
@@ -91,7 +93,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
     setMessages((prev) => [...prev, { from: 'me', text }])
     setValue('')
     setName(text)
-    playScript(text)
+    playScript()
   }
 
   function onKeyDown(e) {
@@ -107,7 +109,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
         {/* Шапка */}
         <header className="reg-header">
           <div className="reg-header__left">
-            <button className="back-btn" onClick={onBack} aria-label="Назад">
+            <button className="back-btn" onClick={onBack} aria-label={t('common.back')}>
               <ChevronLeftIcon size={20} />
             </button>
             <Logo variant="dark" />
@@ -137,12 +139,12 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       key={i}
                       className={`bubble ${m.from === 'me' ? 'bubble--me' : 'bubble--dexter'}`}
                     >
-                      {m.text}
+                      {m.from === 'me' ? m.text : t(m.key, { name })}
                     </div>
                   ))}
 
                   {typing && (
-                    <div className="bubble bubble--dexter bubble--typing" aria-label="Декстер печатает">
+                    <div className="bubble bubble--dexter bubble--typing" aria-label={t('dexter.typing')}>
                       <span className="dot" />
                       <span className="dot" />
                       <span className="dot" />
