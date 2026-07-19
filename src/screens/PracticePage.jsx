@@ -17,7 +17,7 @@ import {
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
-import BookDetail from './BookDetail.jsx'
+import BookDetail, { normTitle } from './BookDetail.jsx'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -99,6 +99,25 @@ function speak(word) {
   }
 }
 
+// У части книг каталога dev-admin нет coverImageUrl — карточка падала на
+// градиент-заглушку. Обложки этих книг лежат в извлечённой библиотеке
+// (extract-books.js → public/practice/covers/books/, пути в index.json);
+// подставляем их по нормализованному названию до рендера каталога.
+async function enrichCovers(list) {
+  const books = Array.isArray(list) ? list : list?.content || list?.items || []
+  if (!books.some((b) => !(b.coverImageUrl || b.coverUrl))) return books
+  try {
+    const idx = await fetch('/practice/books/index.json').then((r) => (r.ok ? r.json() : []))
+    const covers = {}
+    for (const it of idx) if (it.cover) covers[normTitle(it.title)] = it.cover
+    return books.map((b) =>
+      b.coverImageUrl || b.coverUrl ? b : { ...b, coverImageUrl: covers[normTitle(b.title)] || '' },
+    )
+  } catch {
+    return books // нет индекса — карточки останутся с градиентами
+  }
+}
+
 export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
@@ -124,7 +143,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
         return Promise.all([
           pull((k) => getMediaClips(k), setClips),
           pull((k) => getSituativki(k, userLevel), setSituations),
-          pull((k) => getAudiobooks(k), setBooks),
+          pull((k) => getAudiobooks(k).then(enrichCovers), setBooks),
           pull((k) => getSavedWords(k), setWords),
         ])
       })
