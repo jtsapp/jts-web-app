@@ -52,7 +52,8 @@ export default function LevelTestPage({ onClose, onDone }) {
       .then((qs) => {
         if (!alive) return
         if (!Array.isArray(qs) || qs.length === 0) {
-          setErrMsg('Не удалось загрузить вопросы теста.')
+          // Пустой errMsg → рендер возьмёт локализованный t('test.errLoad').
+          setErrMsg('')
           setPhase('error')
           return
         }
@@ -65,7 +66,7 @@ export default function LevelTestPage({ onClose, onDone }) {
       })
       .catch((e) => {
         if (!alive) return
-        setErrMsg(e.message || 'Ошибка загрузки теста.')
+        setErrMsg(e.message || '')
         setPhase('error')
       })
     return () => {

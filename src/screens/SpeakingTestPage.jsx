@@ -11,6 +11,7 @@ import {
   cancelSpeech,
 } from '../lib/ielts-audio.js'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
+import { savePlacementLevel } from '../lib/tutorPrefs.js'
 
 // Records mic audio and resolves a 16 kHz mono WAV blob (the format the
 // transcribe route wants). Same recorder the IELTS Speaking screen uses.
@@ -193,15 +194,7 @@ export default function SpeakingTestPage({
       return
     }
     // 3) Persist the placement level (best-effort) and hand off to the result.
-    try {
-      await fetch('/api/placement/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
-        body: JSON.stringify({ level, deviceId: getDeviceId() }),
-      })
-    } catch {
-      /* non-fatal — the level still flows to the result screen */
-    }
+    await savePlacementLevel(token, level)
     onComplete?.(level)
   }, [recStop, token, onComplete])
 

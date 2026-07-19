@@ -33,8 +33,9 @@ export const TUTOR_GREETING = {
   spark: "Yo! I'm Spark! Let's go — you've got this! Ready to level up? Let's crush it!",
 }
 
-// Тьютор по умолчанию (если пользователь ещё не выбрал).
-export const DEFAULT_TUTOR = TUTORS[0]
+// Тьютор по умолчанию (если пользователь ещё не выбрал). Спарк — им же
+// инициализируется tutorKey в App.jsx и фолбэки всех экранов.
+export const DEFAULT_TUTOR = TUTORS.find((t) => t.key === 'spark')
 
 export function getTutor(key) {
   return TUTORS.find((t) => t.key === key) || DEFAULT_TUTOR
