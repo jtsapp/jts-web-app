@@ -2,14 +2,13 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { saveWord } from '../api.js'
 
-// ── Контент книг и сказок ───────────────────────────────────────────────────
-// Полные тексты глав извлечены из hosted-библиотек в public/practice/books/
-// (scripts/extract-books.js + fetch-gutenberg-books.js) и public/practice/tales/
-// (scripts/extract-tales.js). У книжек каталог бэкенда не делит id с
-// библиотекой — связываем по нормализованному названию; у сказок id совпадает
-// с реестром practiceLibrary.js и передаётся явно (contentId).
-const _indexPromises = {}
-const _contentCache = {}
+// ── Контент книг ────────────────────────────────────────────────────────────
+// Полные тексты глав и словари переводов извлечены из hosted-библиотеки
+// «Книжек» (scripts/extract-books.js → public/practice/books/). Каталог там
+// свой, без общих id с бэкендом, поэтому связываем по нормализованному
+// названию. Книга не из библиотеки читается как раньше (track.text/демо).
+let _bookIndexPromise = null
+const _bookContentCache = {}
 
 function normTitle(s) {
   return String(s || '')
@@ -18,26 +17,24 @@ function normTitle(s) {
     .trim()
 }
 
-async function loadBookContent(title, base = '/practice/books', id = null) {
-  if (!_indexPromises[base]) {
-    _indexPromises[base] = fetch(`${base}/index.json`).then((r) => (r.ok ? r.json() : []))
+async function loadBookContent(title) {
+  if (!_bookIndexPromise) {
+    _bookIndexPromise = fetch('/practice/books/index.json').then((r) => (r.ok ? r.json() : []))
   }
-  const index = await _indexPromises[base].catch(() => [])
+  const index = await _bookIndexPromise.catch(() => [])
   const want = normTitle(title)
+  if (!want) return null
   const hit =
-    (id && index.find((b) => b.id === id)) ||
-    (want &&
-      (index.find((b) => normTitle(b.title) === want) ||
-        // «Alice in Wonderland» ↔ «Alice's Adventures in Wonderland» и т.п.
-        index.find((b) => normTitle(b.title).includes(want) || want.includes(normTitle(b.title)))))
+    index.find((b) => normTitle(b.title) === want) ||
+    // «Alice in Wonderland» ↔ «Alice's Adventures in Wonderland» и т.п.
+    index.find((b) => normTitle(b.title).includes(want) || want.includes(normTitle(b.title)))
   if (!hit) return null
-  const key = `${base}/${hit.id}`
-  if (!_contentCache[key]) {
-    _contentCache[key] = fetch(`${key}.json`)
+  if (!_bookContentCache[hit.id]) {
+    _bookContentCache[hit.id] = fetch(`/practice/books/${hit.id}.json`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
   }
-  return _contentCache[key]
+  return _bookContentCache[hit.id]
 }
 
 // ── Перевод слова ───────────────────────────────────────────────────────────
@@ -128,16 +125,7 @@ function fmtTime(sec) {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-// kind — подписи интерфейса: читалка обслуживает и «Книжки», и «Сказки».
-export default function BookDetail({
-  book,
-  token,
-  onBack,
-  onWordSaved,
-  contentBase = '/practice/books',
-  contentId = null,
-  kind = { label: 'Книжки', gen: 'книги' },
-}) {
+export default function BookDetail({ book, token, onBack, onWordSaved }) {
   const [mode, setMode] = useState('overview') // overview | read | audio
   const [ch, setCh] = useState(0)
   const [visited, setVisited] = useState(() => new Set())
@@ -145,11 +133,11 @@ export default function BookDetail({
 
   useEffect(() => {
     let alive = true
-    loadBookContent(book.title, contentBase, contentId).then((c) => alive && setContent(c))
+    loadBookContent(book.title).then((c) => alive && setContent(c))
     return () => {
       alive = false
     }
-  }, [book, contentBase, contentId])
+  }, [book])
 
   const tracks = useMemo(() => {
     const t = book.tracks?.length
@@ -193,7 +181,7 @@ export default function BookDetail({
           </button>
           <div className="vd__headtitle">
             <b>{book.title}</b>
-            <span>{kind.label}</span>
+            <span>Книжки</span>
           </div>
         </div>
 
@@ -228,7 +216,7 @@ export default function BookDetail({
 
             <div className="bk-ov__progress">
               <div className="bk-ov__progress-top">
-                Прогресс {kind.gen} <b>{visited.size}/{total} глав</b>
+                Прогресс книги <b>{visited.size}/{total} глав</b>
               </div>
               <div className="bk-prog">
                 <div className="bk-prog__fill" style={{ width: `${(visited.size / total) * 100}%` }} />
@@ -261,7 +249,6 @@ export default function BookDetail({
     return (
       <BookRead
         book={book}
-        kind={kind}
         chapters={chapters}
         dict={content?.dict || {}}
         token={token}
@@ -283,7 +270,6 @@ export default function BookDetail({
   return (
     <BookAudio
       book={book}
-      kind={kind}
       tracks={tracks}
       ch={ch}
       onPick={(i) => openChapter(i, 'audio')}
@@ -293,7 +279,7 @@ export default function BookDetail({
 }
 
 // ── Режим чтения ────────────────────────────────────────────────────────────
-function BookRead({ book, kind, chapters, dict, token, ch, onPick, onNext, onBack, onWordSaved, onAudio }) {
+function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onWordSaved, onAudio }) {
   const chapter = chapters[ch] || {}
   // Главы без текста (книга не из библиотеки и текст не заведён в админке)
   // показываем честной заглушкой — раньше тут был общий демо-текст, из-за
@@ -431,7 +417,7 @@ function BookRead({ book, kind, chapters, dict, token, ch, onPick, onNext, onBac
         </article>
 
         <aside className="bk-read__side">
-          <h2 className="bk-read__sidetitle">Главы {kind.gen}</h2>
+          <h2 className="bk-read__sidetitle">Главы книги</h2>
           <div className="bk-chapters">
             {chapters.map((t, i) => (
               <button
@@ -471,7 +457,7 @@ function BookRead({ book, kind, chapters, dict, token, ch, onPick, onNext, onBac
 }
 
 // ── Аудио-плеер ─────────────────────────────────────────────────────────────
-function BookAudio({ book, kind, tracks, ch, onPick, onBack }) {
+function BookAudio({ book, tracks, ch, onPick, onBack }) {
   const track = tracks[ch] || {}
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
@@ -546,7 +532,7 @@ function BookAudio({ book, kind, tracks, ch, onPick, onBack }) {
         </div>
 
         <aside className="bk-read__side">
-          <h2 className="bk-read__sidetitle">Главы {kind.gen}</h2>
+          <h2 className="bk-read__sidetitle">Главы книги</h2>
           <div className="bk-chapters">
             {tracks.map((t, i) => (
               <button
