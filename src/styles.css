@@ -4536,10 +4536,11 @@ textarea {
 }
 
 /* Сброс дефолтных стилей <button> у карточек-кнопок практики
-   (мемы/книги/ситуации) — убираем рамку, фон, паддинг и обводку фокуса. */
+   (мемы/книги/ситуации/сказки) — убираем рамку, фон, паддинг и обводку фокуса. */
 .pp-mcard,
 .pp-scard,
-.pp-bcard {
+.pp-bcard,
+.pp-tcard {
   appearance: none;
   border: none;
   background: transparent;
@@ -4552,12 +4553,14 @@ textarea {
 }
 .pp-mcard:focus,
 .pp-scard:focus,
-.pp-bcard:focus {
+.pp-bcard:focus,
+.pp-tcard:focus {
   outline: none;
 }
 .pp-mcard:focus-visible,
 .pp-scard:focus-visible,
-.pp-bcard:focus-visible {
+.pp-bcard:focus-visible,
+.pp-tcard:focus-visible {
   outline: 2px solid #b79cf5;
   outline-offset: 2px;
   border-radius: 12px;

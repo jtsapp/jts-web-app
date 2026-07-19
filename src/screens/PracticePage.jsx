@@ -19,11 +19,9 @@ import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import BookDetail from './BookDetail.jsx'
 
-// Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
-// открывает мир нативно внутри приложения (src/practice/fairytale/).
-// Книжки полностью нативные: каталог из dev-admin + тексты и словари из
-// public/practice/books/ (см. scripts/extract-books.js).
-const TALES_URL = '/practice/fairytales.html'
+// Книжки и сказки полностью нативные: одна читалка BookDetail. Тексты книжек —
+// public/practice/books/ (extract-books.js + fetch-gutenberg-books.js), сказок —
+// public/practice/tales/ (extract-tales.js из fairytales.html).
 
 // Просмотры: 1331 → «1 331», 12000 → «12 тыс», 3400000 → «3.4 млн»
 function formatViews(n) {
@@ -153,32 +151,20 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Открытый рилс (индекс в clips) — вертикальный плеер с прокруткой.
   const [openReel, setOpenReel] = useState(null)
   const [openBook, setOpenBook] = useState(null)
-
-  // Мир сказок: движок Fairytale's World открывается полноэкранным оверлеем
-  // поверх Практики (deep-link на конкретную сказку). Модуль ~3 МБ (base64-
-  // музыка и арт), поэтому грузим его лениво при первом клике.
-  const taleLoadingRef = useRef(false)
-  const openTale = async (tale) => {
-    if (taleLoadingRef.current) return
-    taleLoadingRef.current = true
-    try {
-      const mod = await import('../practice/fairytale/taleWorld.js')
-      mod.openTaleWorld(tale.id)
-    } finally {
-      taleLoadingRef.current = false
-    }
-  }
+  // Открытая сказка (объект из TALES) — та же нативная читалка, что у книжек.
+  const [openTale, setOpenTale] = useState(null)
 
   // Разговорная практика (Speaking A1–C1): оверлей с уровневыми страницами
   // (src/practice/situations/), открывается на выбранном уровне.
+  const overlayLoadingRef = useRef(false)
   const openSituationsLevel = async (level) => {
-    if (taleLoadingRef.current) return
-    taleLoadingRef.current = true
+    if (overlayLoadingRef.current) return
+    overlayLoadingRef.current = true
     try {
       const mod = await import('../practice/situations/situationsOverlay.js')
       mod.openSituations(level)
     } finally {
-      taleLoadingRef.current = false
+      overlayLoadingRef.current = false
     }
   }
 
@@ -197,6 +183,29 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           book={openBook}
           token={apiToken}
           onBack={() => setOpenBook(null)}
+          onWordSaved={(w) =>
+            w?.word && setWords((ws) => [w, ...ws.filter((x) => x.id !== w.id)])
+          }
+        />
+      </LearningLayout>
+    )
+  }
+
+  if (openTale) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <BookDetail
+          book={{
+            id: openTale.id,
+            title: openTale.title,
+            description: openTale.desc,
+            coverImageUrl: openTale.cover || `/practice/covers/tales/${openTale.id}.png`,
+          }}
+          token={apiToken}
+          contentBase="/practice/tales"
+          contentId={openTale.id}
+          kind={{ label: 'Сказки', gen: 'сказки' }}
+          onBack={() => setOpenTale(null)}
           onWordSaved={(w) =>
             w?.word && setWords((ws) => [w, ...ws.filter((x) => x.id !== w.id)])
           }
@@ -272,22 +281,17 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </section>
           )}
 
-          {/* Сказки — реестр из fairytales.html (title/desc/len/chars + coverGrad) */}
+          {/* Сказки — реестр TALES; читаются той же нативной читалкой, что книжки */}
           {show('Сказки') && (
           <section id="sec-Сказки" className="pp-sec">
             <SectionHead title="Сказки" onAll={() => setFilter('Сказки')} />
             <Rail grid={grid}>
               {TALES.map((tl) => (
-                <a
+                <button
                   key={tl.id}
+                  type="button"
                   className="pp-tcard"
-                  href={TALES_URL}
-                  onClick={(e) => {
-                    // модифицированные клики оставляем браузеру (новая вкладка)
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-                    e.preventDefault()
-                    openTale(tl)
-                  }}
+                  onClick={() => setOpenTale(tl)}
                 >
                   <TaleCover tale={tl} />
                   <div className="pp-tcard__title">{tl.title}</div>
@@ -300,7 +304,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                       Персонажей <b>{tl.chars}</b>
                     </span>
                   </div>
-                </a>
+                </button>
               ))}
             </Rail>
           </section>
