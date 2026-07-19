@@ -229,29 +229,3 @@ export function KzFlagIcon({ size = 18 }) {
   )
 }
 
-export function UserIcon({ size = 24 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="8" r="4" fill="currentColor" />
-      <path
-        d="M4 20.5C4 16.9 7.58 14.5 12 14.5C16.42 14.5 20 16.9 20 20.5C20 21.05 19.55 21.5 19 21.5H5C4.45 21.5 4 21.05 4 20.5Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
-
-export function ScenariosIcon({ size = 24 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path
-        d="M3 6.5C3 4.84 4.34 3.5 6 3.5H14C15.66 3.5 17 4.84 17 6.5V10.5C17 12.16 15.66 13.5 14 13.5H8.41L5.7 16.2C5.07 16.83 4 16.39 4 15.5V13.33C3.39 12.79 3 11.99 3 11.1V6.5Z"
-        fill="currentColor"
-      />
-      <path
-        d="M19 8.5C20.1 8.5 21 9.4 21 10.5V14.6C21 15.49 20.61 16.29 20 16.83V19C20 19.89 18.93 20.33 18.3 19.7L15.59 17H12.5C11.4 17 10.5 16.1 10.5 15H14C16.49 15 18.5 12.99 18.5 10.5V8.5H19Z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}

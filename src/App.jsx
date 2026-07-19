@@ -46,7 +46,6 @@ import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, sav
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
-import HotBar from './components/HotBar.jsx'
 import { TUTOR_ONLY } from './config.js'
 
 export default function App() {
@@ -370,40 +369,14 @@ export default function App() {
     )
   }
 
-  // Мобильный хотбар: показывается на экранах приложения (не в auth-цепочке
-  // и не в полноэкранном голосовом чате). Вкладки — тьюторские разделы;
-  // переходы зеркалят соответствующие setScreen из case'ов ниже.
-  const HOTBAR_HIDDEN = new Set([
-    'welcome', 'chat', 'phone', 'otp', 'success', 'test-intro', 'test',
-    'speaking-test', 'tutor-voice-chat', 'tutor-loading',
-  ])
-  const hotbarActive =
-    screen === 'tutor-lesson-plan' ? 'lessons'
-    : screen === 'tutor-scenarios' ? 'scenarios'
-    : screen === 'tutor-manage' ? 'manage'
-    : screen === 'profile' ? 'profile'
-    : screen.startsWith('tutor') ? 'tutor'
-    : null
-  function handleHotbarNav(key) {
-    if (key === 'lessons') setScreen('tutor-lesson-plan')
-    else if (key === 'scenarios') setScreen('tutor-scenarios')
-    else if (key === 'tutor') setScreen(tutorHome)
-    else if (key === 'manage') setScreen('tutor-manage')
-    else if (key === 'profile') setScreen('profile')
-  }
-
   // Единая анимация перехода между экранами: key={screen} перемонтирует
   // обёртку при каждой смене экрана, и CSS-анимация .scr-in проигрывается
   // заново (fade + лёгкий подъём; отключается при prefers-reduced-motion).
-  // Хотбар — вне анимируемой обёртки, чтобы не мигал на каждом переходе.
   const page = renderScreen()
   return page && (
-    <>
-      <div key={screen} className="scr-in">
-        {page}
-      </div>
-      {!HOTBAR_HIDDEN.has(screen) && <HotBar active={hotbarActive} onNav={handleHotbarNav} />}
-    </>
+    <div key={screen} className="scr-in">
+      {page}
+    </div>
   )
 
   function renderScreen() {

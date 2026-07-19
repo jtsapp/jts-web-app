@@ -2261,61 +2261,50 @@ textarea {
   background: #ffffff;
 }
 
-/* ── Мобильная навигация ────────────────────────────────────────────────────
-   На телефонах сайдбара нет: его заменяет нижний хотбар (components/HotBar.jsx,
-   рендерится в App.jsx). Контенту добавляется нижний отступ под хотбар. */
-.hotbar {
-  display: none;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 900;
-  background: #ffffff;
-  border-top: 1px solid #ececf1;
-  box-shadow: 0 -6px 24px rgba(23, 19, 38, 0.06);
-  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
-  justify-content: space-around;
-}
-.hotbar__item {
-  appearance: none;
-  border: none;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  min-width: 58px;
-  padding: 6px 8px;
-  border-radius: 12px;
-  color: var(--muted);
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-.hotbar__item--active {
-  color: var(--purple);
-}
-.hotbar__item:focus-visible {
-  outline: 2px solid #b79cf5;
-  outline-offset: 2px;
-}
-
-@media (max-width: 820px) {
-  .hotbar {
-    display: flex;
-  }
-  .sb {
-    display: none;
-  }
+/* Адаптив: сайдбар сворачивается в верхнюю строку на узких экранах */
+@media (max-width: 760px) {
   .learn__body {
     flex-direction: column;
   }
-  /* место под фиксированный хотбар */
-  .learn__main {
-    padding-bottom: 92px;
+  .sb {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    border-right: none;
+    border-bottom: 1px solid #efeef4;
+    position: static;
+    align-self: auto;
+    height: auto;
+    overflow-y: visible;
+  }
+  .sb__logo {
+    padding: 0;
+  }
+  .sb__profile {
+    order: 2;
+  }
+  .sb__nav {
+    order: 3;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0;
+    width: 100%;
+  }
+  .sb__item span {
+    display: none;
+  }
+  .sb__item {
+    padding: 10px;
+  }
+  .sb__spacer {
+    display: none;
+  }
+  .sb__role {
+    order: 1;
+    margin-left: auto;
   }
 }
 
