@@ -7,4 +7,4 @@
 // В develop флаг false (полная версия), в main — true. Это единственное
 // намеренное расхождение веток; при мерже develop → main конфликт на этой
 // строке разрешать в пользу true.
-export const TUTOR_ONLY = false
+export const TUTOR_ONLY = true
