@@ -102,9 +102,10 @@ export async function appendMistakes(deviceId, raw) {
 const LEITNER_DAYS = [1, 3, 7, 21, 60]
 
 /**
- * Reschedule a reviewed item after the tutor quizzed the learner on it.
- * correct → advance one Leitner box; wrong → reset to box 0. Matching is fuzzy
- * (like resolved_log): the tutor may echo the item slightly reworded.
+ * Reschedule a reviewed item (mistake OR vocab) after the tutor quizzed the
+ * learner on it. correct → advance one Leitner box; wrong → reset to box 0.
+ * Matching is fuzzy (like resolved_log) and kind-agnostic: the tutor echoes the
+ * item text with log_review and we find it by key across both kinds.
  */
 export async function reviewItem(deviceId, item, correct) {
   const sql = getSql()
@@ -114,7 +115,7 @@ export async function reviewItem(deviceId, item, correct) {
   const key = text.toLowerCase()
   const rows = await sql`
     select id, box from review_item
-    where device_id = ${deviceId} and kind = 'mistake'
+    where device_id = ${deviceId}
       and (item_key = ${key}
            or item_key like ${'%' + key + '%'}
            or ${key} like '%' || item_key || '%')
@@ -238,6 +239,19 @@ export async function appendVocab(deviceId, words) {
       on conflict (device_id, word_key) do nothing
     `
   }
+  // Spaced repetition: schedule each new word for its first review tomorrow,
+  // same Leitner ladder as mistakes. Soft-fail if review_item isn't migrated.
+  try {
+    for (const w of clean) {
+      await sql`
+        insert into review_item (device_id, kind, item, item_key, box, due_at)
+        values (${deviceId}, 'vocab', ${w.word}, ${w.key}, 0, now() + interval '1 day')
+        on conflict (device_id, kind, item_key) do nothing
+      `
+    }
+  } catch {
+    // review_item table absent (migration pending) — SR simply inactive.
+  }
 }
 
 /**
@@ -256,8 +270,10 @@ export async function loadProfile(deviceId) {
   if (baseRows.length === 0) return null
   const base = baseRows[0]
 
-  const [mistakesRows, topicsRows, factsRows, vocabRows, resolvedRows, lessonRows, dueRows] =
-    await Promise.all([
+  const [
+    mistakesRows, topicsRows, factsRows, vocabRows, resolvedRows, lessonRows,
+    dueRows, dueVocabRows,
+  ] = await Promise.all([
       // Берём с запасом (30): после отсева «пройденных» ниже должно остаться
       // полное окно активных ошибок.
       sql`
@@ -307,6 +323,12 @@ export async function loadProfile(deviceId) {
         order by due_at asc
         limit 6
       `.catch(() => []),
+      sql`
+        select item from review_item
+        where device_id = ${deviceId} and kind = 'vocab' and due_at <= now()
+        order by due_at asc
+        limit 6
+      `.catch(() => []),
     ])
 
   const resolved = resolvedRows.map((r) => r.resolved)
@@ -336,6 +358,7 @@ export async function loadProfile(deviceId) {
     writing: base.writing ?? null,
     mistakes: activeMistakes,
     dueReviews: dueRows.map((r) => r.item),
+    dueVocab: dueVocabRows.map((r) => r.item),
     topics: topicsRows.map((r) => r.topic),
     facts: factsRows.map((r) => r.fact),
     vocab: vocabRows.map((r) => r.word),

@@ -86,6 +86,10 @@ function buildMetadata(p, tier, profileId, userName, memory) {
   // поднимает их в уроке и вызывает log_review с результатом (см. reviewItem).
   const dueReviews = trimList(mem.dueReviews, 6)
   if (dueReviews.length) meta.dueReviews = dueReviews
+  // Слова из словаря, чей интервал повторения подошёл — тьютор вплетает их в
+  // речь и вызывает тот же log_review с результатом.
+  const dueVocab = trimList(mem.dueVocab, 6, 40)
+  if (dueVocab.length) meta.dueVocab = dueVocab
   // Диагностика навыков и письменный бейзлайн — объекты как есть; агент читает их
   // через _skills()/_writing() для приоритизации слабых мест.
   if (mem.skills && typeof mem.skills === 'object') meta.skills = mem.skills

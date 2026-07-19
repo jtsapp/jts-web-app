@@ -351,6 +351,8 @@ class LearnerProfile:
     # Spaced-repetition: past mistakes whose scheduled review time has arrived.
     # The tutor drills these and reports the result via log_review.
     due_reviews: list[str] = field(default_factory=list)
+    # Spaced-repetition: vocab words due for reuse. Same log_review reporting.
+    due_vocab: list[str] = field(default_factory=list)
     writing: WritingSummary | None = None
     # "placement" → run the spoken placement interview (Speaking Buddy) and
     # report a confirmed level. Anything else → normal teaching tutor.
@@ -456,6 +458,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         facts=_str_list(data.get("facts"), 10),
         vocab=_str_list(data.get("vocab"), 20),
         due_reviews=_str_list(data.get("dueReviews"), 6),
+        due_vocab=_str_list(data.get("dueVocab"), 6),
         writing=_writing(data.get("writing")),
         mode=str(data.get("mode", "tutor") or "tutor"),
         draft_level=str(data.get("draftLevel", data.get("level", "B1")) or "B1"),
@@ -684,6 +687,14 @@ def format_memory_block(p: LearnerProfile) -> str:
             "at least one or two of these into the lesson, quiz the learner on each, "
             "then silently call log_review with whether they got it right — "
             + "; ".join(p.due_reviews)
+            + "."
+        )
+    if p.due_vocab:
+        lines.append(
+            "DUE vocabulary to reactivate today: naturally use each of these words "
+            "yourself and nudge the learner to use it back, then silently call "
+            "log_review with whether they used it correctly — "
+            + ", ".join(p.due_vocab)
             + "."
         )
     if p.mistakes:
@@ -1572,7 +1583,8 @@ def build_instructions(p: LearnerProfile) -> str:
     memory_block = format_memory_block(p)
 
     has_memory = bool(
-        p.mistakes or p.topics or p.facts or p.skills or p.writing or p.due_reviews
+        p.mistakes or p.topics or p.facts or p.skills or p.writing
+        or p.due_reviews or p.due_vocab
     )
     memory_directive = (
         "MEMORY-DRIVEN OPENING: the FIRST learner-facing turn after greeting must "
@@ -2669,7 +2681,8 @@ def build_greeting_hint(p: LearnerProfile) -> str:
     hello, spoken right away — then the tutor moves on to the offer.
     """
     has_memory = bool(
-        p.mistakes or p.topics or p.facts or p.skills or p.writing or p.due_reviews
+        p.mistakes or p.topics or p.facts or p.skills or p.writing
+        or p.due_reviews or p.due_vocab
     )
     if p.lang == "kz":
         opener = (
