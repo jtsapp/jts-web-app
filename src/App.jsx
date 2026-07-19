@@ -44,7 +44,7 @@ import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
-import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
+import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
 
 export default function App() {
@@ -263,15 +263,20 @@ export default function App() {
   }
 
   // Завершение письменного CEFR-теста (после регистрации) — сохраняем уровень и
-  // открываем королевство.
+  // открываем королевство. Уровень пишем в оба стора: backend — источник правды
+  // при входе, Neon-профиль — то, что читает голосовой тьютор; без второй
+  // записи они расходились.
   async function handleTestDone(res) {
     setNeedsLevelTest(false)
     if (res?.level) setUserLevel(res.level)
-    if (token && res?.level) {
-      try {
-        await saveLanguageLevel(token, res.level)
-      } catch (e) {
-        console.warn('Не удалось сохранить уровень:', e)
+    if (res?.level) {
+      savePlacementLevel(token, res.level) // best-effort, не блокируем переход
+      if (token) {
+        try {
+          await saveLanguageLevel(token, res.level)
+        } catch (e) {
+          console.warn('Не удалось сохранить уровень:', e)
+        }
       }
     }
     setScreen('kingdom')
@@ -360,6 +365,17 @@ export default function App() {
     )
   }
 
+  // Единая анимация перехода между экранами: key={screen} перемонтирует
+  // обёртку при каждой смене экрана, и CSS-анимация .scr-in проигрывается
+  // заново (fade + лёгкий подъём; отключается при prefers-reduced-motion).
+  const page = renderScreen()
+  return page && (
+    <div key={screen} className="scr-in">
+      {page}
+    </div>
+  )
+
+  function renderScreen() {
   switch (screen) {
     case 'welcome':
       return (
@@ -772,5 +788,6 @@ export default function App() {
       )
     default:
       return null
+  }
   }
 }

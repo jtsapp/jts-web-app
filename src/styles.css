@@ -2602,13 +2602,12 @@ textarea {
   padding: 26px 34px 40px;
   align-items: start;
 }
-/* Панель «выезжает» слева при переходе на Практику */
+/* Вход списка Практики — то же семейство, что у остальных переходов
+   (см. блок «Анимации переходов» в конце файла). Отдельный класс нужен,
+   чтобы анимация проигрывалась и при возврате из читалки/рилсов —
+   внутренние переключения не меняют key={screen} обёртки. */
 .pp--enter {
-  animation: pp-slide 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-@keyframes pp-slide {
-  from { opacity: 0; transform: translateX(-26px); }
-  to { opacity: 1; transform: translateX(0); }
+  animation: scr-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 .pp__title {
   font-size: 26px;
@@ -4561,4 +4560,38 @@ textarea {
   outline: 2px solid #b79cf5;
   outline-offset: 2px;
   border-radius: 12px;
+}
+
+/* ── Анимации переходов ──────────────────────────────────────────────────────
+   Единое семейство: fade + лёгкий подъём, ease-out. Обёртка .scr-in (App.jsx,
+   key={screen}) анимирует смену экранов SPA; .bk/.rl — детальные виды Практики
+   (читалка, рилсы) при открытии и смене режима; .pp-sec — секции при
+   переключении чипов-фильтров; .rl__video — смену ролика; .bk-pop — попап
+   перевода. При prefers-reduced-motion всё отключается. */
+.scr-in,
+.bk,
+.rl {
+  animation: scr-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes scr-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.pp-sec { animation: fade-in 0.2s ease-out both; }
+.rl__video { animation: fade-in 0.25s ease-out; }
+.bk-pop { animation: fade-in 0.15s ease-out; }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scr-in,
+  .bk,
+  .rl,
+  .pp-sec,
+  .rl__video,
+  .bk-pop,
+  .pp--enter {
+    animation: none;
+  }
 }
