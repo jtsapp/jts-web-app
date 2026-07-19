@@ -10,7 +10,7 @@ import { saveWord } from '../api.js'
 let _bookIndexPromise = null
 const _bookContentCache = {}
 
-function normTitle(s) {
+export function normTitle(s) {
   return String(s || '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')

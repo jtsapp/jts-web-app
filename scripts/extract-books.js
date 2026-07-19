@@ -14,14 +14,33 @@ const OUT = path.join(ROOT, 'public/practice/books')
 
 const html = fs.readFileSync(SRC, 'utf8')
 
-// Карта id → имя переменной с данными, из `const BOOKS = [ { id:"oz", data: X_DATA, ... } ]`
+// Карта id → имена переменных данных и арта, из
+// `const BOOKS = [ { id:"oz", data: X_DATA, art: X_ART, ... } ]`
 const booksArr = html.match(/const BOOKS = \[[\s\S]*?\];/)
 if (!booksArr) throw new Error('const BOOKS не найден — структура books.html изменилась')
-const mapping = [...booksArr[0].matchAll(/id:"([^"]+)",\s*data:\s*([A-Za-z0-9_.]+)/g)].map((m) => ({
-  id: m[1],
-  varName: m[2],
-}))
+const mapping = [...booksArr[0].matchAll(/id:"([^"]+)",\s*data:\s*([A-Za-z0-9_.]+),\s*art:\s*([A-Za-z0-9_.]+)/g)].map(
+  (m) => ({ id: m[1], varName: m[2], artVar: m[3] }),
+)
 if (mapping.length === 0) throw new Error('пустая карта BOOKS')
+
+// Обложка книги: art.cover — base64-JPEG внутри books.html. Декодируем в
+// обычный файл public/practice/covers/books/<id>.jpg — карточки каталога
+// используют его, когда у книги бэкенда нет coverImageUrl.
+const COVERS = path.join(ROOT, 'public/practice/covers/books')
+function extractCover(artVar, id) {
+  // cover — не всегда первый ключ объекта ({"audioSquare": true, "cover": …}),
+  // поэтому находим объявление и берём ближайший "cover": "data:…" после него.
+  const decl = new RegExp(artVar.replace(/[.$]/g, '\\$&') + '\\s*=\\s*\\{').exec(html)
+  if (!decl) return ''
+  const win = html.slice(decl.index, decl.index + 3_000_000)
+  const m = /"?cover"?\s*:\s*"data:image\/(jpeg|png|webp);base64,([^"]+)"/.exec(win)
+  if (!m) return ''
+  fs.mkdirSync(COVERS, { recursive: true })
+  const ext = m[1] === 'jpeg' ? 'jpg' : m[1]
+  const file = `${id}.${ext}`
+  fs.writeFileSync(path.join(COVERS, file), Buffer.from(m[2], 'base64'))
+  return `/practice/covers/books/${file}`
+}
 
 // Данные книги лежат как `VAR = {чистый JSON}` — находим объявление и вырезаем
 // сбалансированный {...} с учётом строк/экранирования.
@@ -50,8 +69,7 @@ function extractJson(varName) {
 
 fs.mkdirSync(OUT, { recursive: true })
 
-const index = []
-for (const { id, varName } of mapping) {
+for (const { id, varName, artVar } of mapping) {
   const data = extractJson(varName)
   const chapters = (data.chapters || []).map((c) => ({
     num: c.num,
@@ -70,11 +88,27 @@ for (const { id, varName } of mapping) {
     title: data.book?.title || id,
     author: data.book?.author || '',
     level: data.book?.level || '',
+    cover: extractCover(artVar, id),
   }
   fs.writeFileSync(path.join(OUT, `${id}.json`), JSON.stringify({ book, chapters, dict }))
-  index.push({ ...book, chapters: chapters.length })
-  console.log(`${id}: ${chapters.length} глав, ${Object.keys(dict).length} слов словаря`)
+  console.log(`${id}: ${chapters.length} глав, ${Object.keys(dict).length} слов словаря, обложка: ${book.cover || 'нет'}`)
 }
 
+// Индекс пересобираем сканом каталога — здесь лежат и книги из books.html, и
+// загруженные fetch-gutenberg-books.js; скрипты не затирают друг друга.
+const index = fs
+  .readdirSync(OUT)
+  .filter((f) => f.endsWith('.json') && f !== 'index.json')
+  .map((f) => {
+    const { book, chapters } = JSON.parse(fs.readFileSync(path.join(OUT, f), 'utf8'))
+    return {
+      id: book.id || path.basename(f, '.json'),
+      title: book.title,
+      author: book.author,
+      level: book.level,
+      cover: book.cover || '',
+      chapters: chapters.length,
+    }
+  })
 fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify(index))
-console.log(`\nИтого книг: ${index.length} → ${OUT}`)
+console.log(`\nВ индексе книг: ${index.length} → ${OUT}`)

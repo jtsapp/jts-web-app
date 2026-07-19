@@ -187,7 +187,7 @@ async function run() {
     .filter((f) => f.endsWith('.json') && f !== 'index.json')
     .map((f) => {
       const { book, chapters } = JSON.parse(fs.readFileSync(path.join(OUT, f), 'utf8'))
-      return { id: book.id || path.basename(f, '.json'), title: book.title, author: book.author, level: book.level, chapters: chapters.length }
+      return { id: book.id || path.basename(f, '.json'), title: book.title, author: book.author, level: book.level, cover: book.cover || '', chapters: chapters.length }
     })
   fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify(index))
 
