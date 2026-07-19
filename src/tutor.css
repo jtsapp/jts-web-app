@@ -2235,3 +2235,50 @@
     opacity: 0.3;
   }
 }
+
+/* ── Мобильная вёрстка тьютор-зоны ──────────────────────────────────────────
+   Сайдбар на телефонах скрыт (правило .sb в styles.css), навигация — нижний
+   хотбар. Дашборд и внутренние экраны складываются в одну колонку. */
+@media (max-width: 820px) {
+  .t-body {
+    flex-direction: column;
+  }
+  .t-dash {
+    flex-direction: column;
+  }
+  .t-dash__center {
+    padding: 18px 16px 8px;
+  }
+  .t-dash__panel {
+    width: auto;
+    max-width: none;
+    margin: 0 16px 92px;
+  }
+  .t-main {
+    padding-bottom: 92px;
+  }
+  .t-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  /* Фиксированные десктопные ширины карточек — во всю ширину экрана */
+  .t-plan__progress,
+  .t-plan__card,
+  .t-manage__change {
+    width: auto;
+  }
+  .t-plan__list,
+  .t-plan__card {
+    max-width: 100%;
+  }
+  .t-manage {
+    flex-direction: column;
+  }
+  .t-manage__card {
+    width: auto;
+    flex-shrink: 1;
+  }
+  .t-scen__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

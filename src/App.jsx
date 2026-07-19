@@ -46,6 +46,8 @@ import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, sav
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
+import HotBar from './components/HotBar.jsx'
+import { TUTOR_ONLY } from './config.js'
 
 export default function App() {
   const { t } = useI18n()
@@ -94,7 +96,7 @@ export default function App() {
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
         if (deepLink) setScreen(deepLink)
-        else if (session) setScreen('kingdom')
+        else if (session) setScreen(TUTOR_ONLY ? (profile?.tutor ? 'tutor-dashboard' : 'tutor-welcome') : 'kingdom')
       })
       .finally(() => {
         if (!cancelled) setRestoring(false)
@@ -279,7 +281,7 @@ export default function App() {
         }
       }
     }
-    setScreen('kingdom')
+    setScreen(TUTOR_ONLY ? tutorHome : 'kingdom')
   }
 
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
@@ -316,8 +318,10 @@ export default function App() {
   // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
   const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
 
-  // Навигация по левому сайдбару обучающей зоны.
+  // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
+  // скрытые разделы недоступны и через навигацию — только тьютор.
   function handleNav(key) {
+    if (TUTOR_ONLY && key !== 'tutor') return
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen(tutorHome)
@@ -329,6 +333,7 @@ export default function App() {
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
+    if (TUTOR_ONLY && key !== 'tutor') return
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'tutor') setScreen(tutorHome)
@@ -365,14 +370,40 @@ export default function App() {
     )
   }
 
+  // Мобильный хотбар: показывается на экранах приложения (не в auth-цепочке
+  // и не в полноэкранном голосовом чате). Вкладки — тьюторские разделы;
+  // переходы зеркалят соответствующие setScreen из case'ов ниже.
+  const HOTBAR_HIDDEN = new Set([
+    'welcome', 'chat', 'phone', 'otp', 'success', 'test-intro', 'test',
+    'speaking-test', 'tutor-voice-chat', 'tutor-loading',
+  ])
+  const hotbarActive =
+    screen === 'tutor-lesson-plan' ? 'lessons'
+    : screen === 'tutor-scenarios' ? 'scenarios'
+    : screen === 'tutor-manage' ? 'manage'
+    : screen === 'profile' ? 'profile'
+    : screen.startsWith('tutor') ? 'tutor'
+    : null
+  function handleHotbarNav(key) {
+    if (key === 'lessons') setScreen('tutor-lesson-plan')
+    else if (key === 'scenarios') setScreen('tutor-scenarios')
+    else if (key === 'tutor') setScreen(tutorHome)
+    else if (key === 'manage') setScreen('tutor-manage')
+    else if (key === 'profile') setScreen('profile')
+  }
+
   // Единая анимация перехода между экранами: key={screen} перемонтирует
   // обёртку при каждой смене экрана, и CSS-анимация .scr-in проигрывается
   // заново (fade + лёгкий подъём; отключается при prefers-reduced-motion).
+  // Хотбар — вне анимируемой обёртки, чтобы не мигал на каждом переходе.
   const page = renderScreen()
   return page && (
-    <div key={screen} className="scr-in">
-      {page}
-    </div>
+    <>
+      <div key={screen} className="scr-in">
+        {page}
+      </div>
+      {!HOTBAR_HIDDEN.has(screen) && <HotBar active={hotbarActive} onNav={handleHotbarNav} />}
+    </>
   )
 
   function renderScreen() {
