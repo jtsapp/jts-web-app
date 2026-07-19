@@ -21,6 +21,7 @@ import {
   MONTH_LIMIT_SEC,
 } from '@/lib/usage.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
+import { loadProfile } from '@/lib/db/profile.js'
 
 export const runtime = 'nodejs'
 
@@ -43,7 +44,7 @@ function trimList(raw, cap, maxLen = MAX_LEN) {
   return out
 }
 
-function buildMetadata(p, tier, profileId, userName) {
+function buildMetadata(p, tier, profileId, userName, memory) {
   const meta = {
     level: p.level || 'B1',
     lang: p.lang || 'en',
@@ -65,12 +66,26 @@ function buildMetadata(p, tier, profileId, userName) {
   if (interests.length) meta.interests = interests
   if (typeof p.profession === 'string' && p.profession.trim())
     meta.profession = p.profession.trim().slice(0, 120)
-  const mistakes = trimList(p.mistakes, 8)
+  // Долговременная память ученика. Грузится на СЕРВЕРЕ из БД по проверенному
+  // profileId (см. issue → loadProfile), НЕ из тела запроса: иначе клиент мог бы
+  // подставить чужие ошибки/слова. Без этого блока тьютор начинал каждую сессию
+  // с амнезией — журналы (mistake_log/topic_log/…) копились в Neon через write-back
+  // инструменты агента, но обратно в промпт не возвращались. Агент читает эти поля
+  // в parse_metadata → format_memory_block/format_skills_block. mistakes уже
+  // отфильтрованы от «пройденных» внутри loadProfile.
+  const mem = memory || {}
+  const mistakes = trimList(mem.mistakes, 8)
   if (mistakes.length) meta.mistakes = mistakes
-  const topics = trimList(p.topics, 10, 60)
+  const topics = trimList(mem.topics, 10, 60)
   if (topics.length) meta.topics = topics
-  const vocab = trimList(p.vocab, 20, 40)
+  const facts = trimList(mem.facts, 10)
+  if (facts.length) meta.facts = facts
+  const vocab = trimList(mem.vocab, 20, 40)
   if (vocab.length) meta.vocab = vocab
+  // Диагностика навыков и письменный бейзлайн — объекты как есть; агент читает их
+  // через _skills()/_writing() для приоритизации слабых мест.
+  if (mem.skills && typeof mem.skills === 'object') meta.skills = mem.skills
+  if (mem.writing && typeof mem.writing === 'object') meta.writing = mem.writing
   if (p.explanationLang === 'ru' || p.explanationLang === 'kz' || p.explanationLang === 'en')
     meta.explanationLang = p.explanationLang
   if (p.mode === 'placement') {
@@ -142,7 +157,20 @@ async function issue(p, profileId, userName) {
   const identity = p.identity || `learner-${Math.random().toString(36).slice(2, 10)}`
   const room = p.room || `jts-tutor-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`
   const tier = freeTier ? 'free' : 'paid'
-  const metadata = buildMetadata(p, tier, profileId, userName)
+
+  // Долговременная память ученика для агента: ошибки/темы/факты/словарь/навыки,
+  // накопленные write-back инструментами прошлых сессий. Читаем из Neon по
+  // проверенному profileId. Мягкий отказ — при неподнятой БД или отсутствии
+  // ученика память просто пустая (первая сессия), сессия всё равно стартует.
+  let memory = null
+  if (isDbConfigured() && isValidDeviceId(profileId)) {
+    try {
+      memory = await loadProfile(profileId)
+    } catch (err) {
+      console.error('[livekit.token] loadProfile failed', err)
+    }
+  }
+  const metadata = buildMetadata(p, tier, profileId, userName, memory)
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
