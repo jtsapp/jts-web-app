@@ -80,6 +80,61 @@ export async function appendMistakes(deviceId, raw) {
     select ${deviceId}, m
     from unnest(${clean}::text[]) as t(m)
   `
+  // Spaced repetition: schedule each new mistake for its first review tomorrow
+  // (Leitner box 0). on-conflict-do-nothing so re-logging the same mistake keeps
+  // its existing schedule (box movement is log_review's job, not re-logging's).
+  // Soft-fail: if review_item isn't migrated yet, mistake logging must not break.
+  try {
+    for (const m of clean) {
+      await sql`
+        insert into review_item (device_id, kind, item, item_key, box, due_at)
+        values (${deviceId}, 'mistake', ${m}, ${m.toLowerCase()}, 0, now() + interval '1 day')
+        on conflict (device_id, kind, item_key) do nothing
+      `
+    }
+  } catch {
+    // review_item table absent (migration pending) — SR simply inactive.
+  }
+}
+
+// Leitner ladder: box index → days until next review. Correct answer advances a
+// box (longer gap), a wrong answer drops back to box 0 (see tomorrow).
+const LEITNER_DAYS = [1, 3, 7, 21, 60]
+
+/**
+ * Reschedule a reviewed item after the tutor quizzed the learner on it.
+ * correct → advance one Leitner box; wrong → reset to box 0. Matching is fuzzy
+ * (like resolved_log): the tutor may echo the item slightly reworded.
+ */
+export async function reviewItem(deviceId, item, correct) {
+  const sql = getSql()
+  if (!sql) return
+  const text = trimText(item, 240)
+  if (!text) return
+  const key = text.toLowerCase()
+  const rows = await sql`
+    select id, box from review_item
+    where device_id = ${deviceId} and kind = 'mistake'
+      and (item_key = ${key}
+           or item_key like ${'%' + key + '%'}
+           or ${key} like '%' || item_key || '%')
+    order by due_at asc
+    limit 1
+  `
+  if (rows.length === 0) return
+  const box = correct
+    ? Math.min((rows[0].box | 0) + 1, LEITNER_DAYS.length - 1)
+    : 0
+  const days = LEITNER_DAYS[box]
+  await sql`
+    update review_item set
+      box        = ${box},
+      reps       = reps + 1,
+      lapses     = lapses + ${correct ? 0 : 1},
+      due_at     = now() + make_interval(days => ${days}),
+      updated_at = now()
+    where id = ${rows[0].id}
+  `
 }
 
 export async function appendTopics(deviceId, raw) {
@@ -201,7 +256,7 @@ export async function loadProfile(deviceId) {
   if (baseRows.length === 0) return null
   const base = baseRows[0]
 
-  const [mistakesRows, topicsRows, factsRows, vocabRows, resolvedRows, lessonRows] =
+  const [mistakesRows, topicsRows, factsRows, vocabRows, resolvedRows, lessonRows, dueRows] =
     await Promise.all([
       // Берём с запасом (30): после отсева «пройденных» ниже должно остаться
       // полное окно активных ошибок.
@@ -244,6 +299,14 @@ export async function loadProfile(deviceId) {
         order by updated_at desc
         limit 200
       `.catch(() => []),
+      // Spaced repetition: items whose scheduled review time has passed. Soft-fail
+      // if review_item isn't migrated yet — the rest of the profile still loads.
+      sql`
+        select item from review_item
+        where device_id = ${deviceId} and kind = 'mistake' and due_at <= now()
+        order by due_at asc
+        limit 6
+      `.catch(() => []),
     ])
 
   const resolved = resolvedRows.map((r) => r.resolved)
@@ -272,6 +335,7 @@ export async function loadProfile(deviceId) {
     skills: base.skills ?? null,
     writing: base.writing ?? null,
     mistakes: activeMistakes,
+    dueReviews: dueRows.map((r) => r.item),
     topics: topicsRows.map((r) => r.topic),
     facts: factsRows.map((r) => r.fact),
     vocab: vocabRows.map((r) => r.word),

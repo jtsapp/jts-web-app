@@ -348,6 +348,9 @@ class LearnerProfile:
     topics: list[str] = field(default_factory=list)
     facts: list[str] = field(default_factory=list)
     vocab: list[str] = field(default_factory=list)
+    # Spaced-repetition: past mistakes whose scheduled review time has arrived.
+    # The tutor drills these and reports the result via log_review.
+    due_reviews: list[str] = field(default_factory=list)
     writing: WritingSummary | None = None
     # "placement" → run the spoken placement interview (Speaking Buddy) and
     # report a confirmed level. Anything else → normal teaching tutor.
@@ -452,6 +455,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         topics=_str_list(data.get("topics"), 10),
         facts=_str_list(data.get("facts"), 10),
         vocab=_str_list(data.get("vocab"), 20),
+        due_reviews=_str_list(data.get("dueReviews"), 6),
         writing=_writing(data.get("writing")),
         mode=str(data.get("mode", "tutor") or "tutor"),
         draft_level=str(data.get("draftLevel", data.get("level", "B1")) or "B1"),
@@ -674,6 +678,14 @@ def format_memory_block(p: LearnerProfile) -> str:
             + "; ".join(p.topics)
             + "."
         )
+    if p.due_reviews:
+        lines.append(
+            "DUE for spaced-repetition review (scheduled for today): naturally work "
+            "at least one or two of these into the lesson, quiz the learner on each, "
+            "then silently call log_review with whether they got it right — "
+            + "; ".join(p.due_reviews)
+            + "."
+        )
     if p.mistakes:
         lines.append(
             "Recent learner mistakes — revisit and quiz on these: "
@@ -846,6 +858,27 @@ class TutorAgent(Agent):
         await self._post_json(
             "/api/profile/resolved",
             {"deviceId": self._device_id, "items": [corrected_form]},
+        )
+        return "ok"
+
+    @function_tool()
+    async def log_review(self, item: str, correct: bool) -> str:
+        """Report the result of a spaced-repetition review.
+
+        Call this AFTER you quiz the learner on an item that appeared in your
+        memory as DUE for review. The backend reschedules it: correct → longer
+        gap before it comes back, wrong → soon again. Silent — do not announce
+        it or say the word 'review'; just give a quick genuine reaction out loud.
+
+        Args:
+            item: the exact due item text you quizzed — echo it as it was given
+                to you, so the backend can match it.
+            correct: True if the learner produced it correctly this time,
+                else False.
+        """
+        await self._post_json(
+            "/api/profile/review",
+            {"deviceId": self._device_id, "mistake": item, "correct": bool(correct)},
         )
         return "ok"
 
@@ -1538,7 +1571,9 @@ def build_instructions(p: LearnerProfile) -> str:
     skills_block = format_skills_block(p.skills)
     memory_block = format_memory_block(p)
 
-    has_memory = bool(p.mistakes or p.topics or p.facts or p.skills or p.writing)
+    has_memory = bool(
+        p.mistakes or p.topics or p.facts or p.skills or p.writing or p.due_reviews
+    )
     memory_directive = (
         "MEMORY-DRIVEN OPENING: the FIRST learner-facing turn after greeting must "
         "tie back to something from SESSION MEMORY by name — a previous mistake, a "
@@ -1762,9 +1797,9 @@ def build_instructions(p: LearnerProfile) -> str:
             else ""
         )
         + "\n==== MEMORY-WRITE TOOLS (silently log so future-you remembers) ====\n"
-        "You have five tools — log_mistake, log_topic, log_fact, log_resolved and\n"
-        "raise_safety_alert. They write to the learner's long-term profile so the\n"
-        "NEXT session can pick up where this one left off.\n"
+        "You have six tools — log_mistake, log_topic, log_fact, log_resolved,\n"
+        "log_review and raise_safety_alert. They write to the learner's long-term\n"
+        "profile so the NEXT session can pick up where this one left off.\n"
         " - log_mistake(category, learner_said, corrected_form, rule)\n"
         "   Call it every time you correct a concrete error. Do not say\n"
         "   'I'm logging that' out loud — just call it and keep teaching.\n"
@@ -1786,6 +1821,11 @@ def build_instructions(p: LearnerProfile) -> str:
         "   two correct uses, or a clean self-correction). The backend stops\n"
         "   surfacing that error next time so you won't re-drill it. Give a quick\n"
         "   genuine cheer out loud, but don't mention the tool.\n"
+        " - log_review(item, correct)\n"
+        "   Only for items your memory listed as DUE for spaced-repetition review.\n"
+        "   After you quiz the learner on one, call this with the item text (echoed\n"
+        "   as given) and correct=True/False. The backend reschedules it — correct\n"
+        "   pushes it further out, wrong brings it back soon. Silent, as ever.\n"
         " - raise_safety_alert(reason)\n"
         "   Call it ONCE if the learner expresses self-harm, suicidal thoughts,\n"
         "   abuse or real danger. Stay warm and in character, gently steer them to\n"
@@ -2628,7 +2668,9 @@ def build_greeting_hint(p: LearnerProfile) -> str:
     you!") so the very first thing the learner hears on joining is a warm
     hello, spoken right away — then the tutor moves on to the offer.
     """
-    has_memory = bool(p.mistakes or p.topics or p.facts or p.skills or p.writing)
+    has_memory = bool(
+        p.mistakes or p.topics or p.facts or p.skills or p.writing or p.due_reviews
+    )
     if p.lang == "kz":
         opener = (
             "БІРІНШІ кезекте бірден қысқа, жылы амандасу фразасын айт "

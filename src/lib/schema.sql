@@ -69,3 +69,28 @@ create table if not exists ielts_score (
 
 create index if not exists ielts_score_device_idx
   on ielts_score (device_id, created_at desc);
+
+-- ===========================================================================
+-- Spaced-repetition schedule (app-owned; does NOT touch the felix-shared
+-- mistake_log / vocab_bank tables). One row per item under review. The tutor
+-- drills items whose due_at has passed, then log_review moves them along a
+-- Leitner ladder (box 0..4 → 1/3/7/21/60 days). MVP: kind = 'mistake' only.
+-- ===========================================================================
+create table if not exists review_item (
+  id         uuid        primary key default uuid_generate_v4(),
+  device_id  text        not null references learner(device_id) on delete cascade,
+  kind       text        not null default 'mistake',  -- future: 'vocab'
+  item       text        not null,                    -- the text the tutor sees/quizzes
+  item_key   text        not null,                    -- lower(trim(item)) for dedup/match
+  box        integer     not null default 0,          -- Leitner box index 0..4
+  reps       integer     not null default 0,          -- total reviews
+  lapses     integer     not null default 0,          -- times reset by a wrong answer
+  due_at     timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (device_id, kind, item_key)
+);
+
+-- Fast "what's due for this learner" lookup.
+create index if not exists review_item_due_idx
+  on review_item (device_id, kind, due_at);

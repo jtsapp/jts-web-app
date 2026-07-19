@@ -82,6 +82,10 @@ function buildMetadata(p, tier, profileId, userName, memory) {
   if (facts.length) meta.facts = facts
   const vocab = trimList(mem.vocab, 20, 40)
   if (vocab.length) meta.vocab = vocab
+  // Spaced repetition: mistakes whose scheduled review time has passed. Агент
+  // поднимает их в уроке и вызывает log_review с результатом (см. reviewItem).
+  const dueReviews = trimList(mem.dueReviews, 6)
+  if (dueReviews.length) meta.dueReviews = dueReviews
   // Диагностика навыков и письменный бейзлайн — объекты как есть; агент читает их
   // через _skills()/_writing() для приоритизации слабых мест.
   if (mem.skills && typeof mem.skills === 'object') meta.skills = mem.skills
