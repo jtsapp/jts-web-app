@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { saveWord } from '../api.js'
+import { useI18n } from '../i18n.jsx'
 
 // ── Контент книг ────────────────────────────────────────────────────────────
 // Полные тексты глав и словари переводов извлечены из hosted-библиотеки
@@ -39,9 +40,11 @@ async function loadBookContent(title) {
 
 // ── Перевод слова ───────────────────────────────────────────────────────────
 // Как в мобильной читалке: сначала словарь книги, иначе gtx (dt=t — основной
-// перевод, dt=bd — словарные альтернативы). Кэш в localStorage, чтобы
-// повторные тапы не ходили в сеть.
-const TR_CACHE_KEY = 'jts_word_tr_v1'
+// перевод, dt=bd — словарные альтернативы). tl — язык перевода, следует за
+// языком интерфейса ('kk' → казахский, иначе русский). Кэш в localStorage
+// (ключи «tl:слово»), чтобы повторные тапы не ходили в сеть; v2 — смена
+// формата ключей после добавления казахского.
+const TR_CACHE_KEY = 'jts_word_tr_v2'
 let _trCache = null
 function trCache() {
   if (_trCache) return _trCache
@@ -53,12 +56,12 @@ function trCache() {
   return _trCache
 }
 
-async function translateWord(word) {
-  const key = word.toLowerCase()
+async function translateWord(word, tl = 'ru') {
+  const key = `${tl}:${word.toLowerCase()}`
   const cache = trCache()
   if (cache[key]) return cache[key]
   const url =
-    'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&dt=bd&q=' +
+    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${tl}&dt=t&dt=bd&q=` +
     encodeURIComponent(word)
   const res = await fetch(url)
   if (!res.ok) throw new Error(`translate ${res.status}`)
@@ -75,7 +78,7 @@ async function translateWord(word) {
       }
     }
   }
-  const out = { ru: primary, alternates: alternates.slice(0, 4) }
+  const out = { tr: primary, alternates: alternates.slice(0, 4) }
   if (primary) {
     cache[key] = out
     try {
@@ -280,6 +283,9 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
 
 // ── Режим чтения ────────────────────────────────────────────────────────────
 function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onWordSaved, onAudio }) {
+  // Язык перевода следует за языком интерфейса: казахский — en→kk, иначе en→ru.
+  const { lang } = useI18n()
+  const tl = lang === 'kk' ? 'kk' : 'ru'
   const chapter = chapters[ch] || {}
   // Главы без текста (книга не из библиотеки и текст не заведён в админке)
   // показываем честной заглушкой — раньше тут был общий демо-текст, из-за
@@ -308,17 +314,20 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
       y: below ? r.bottom : r.top,
       below,
     }
+    // В словаре книги перевод берём на языке интерфейса; если для казахского
+    // его там нет — не подменяем русским, а переводим сетью на казахский.
     const hit = dict[w.toLowerCase()]
-    if (hit?.ru) {
-      setPop({ ...base, translation: hit.ru })
+    const hitTr = tl === 'kk' ? hit?.kz : hit?.ru
+    if (hitTr) {
+      setPop({ ...base, translation: hitTr })
       return
     }
     setPop({ ...base, translation: '', loading: true })
-    translateWord(w)
+    translateWord(w, tl)
       .then(
         (t) =>
           seqRef.current === seq &&
-          setPop((p) => p && { ...p, translation: t.ru, alternates: t.alternates, loading: false }),
+          setPop((p) => p && { ...p, translation: t.tr, alternates: t.alternates, loading: false }),
       )
       .catch(() => seqRef.current === seq && setPop((p) => p && { ...p, loading: false }))
   }
@@ -332,6 +341,7 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
         word: pop.word,
         translation: pop.translation,
         alternates: pop.alternates.length ? pop.alternates.join(', ') : undefined,
+        language: tl,
         source: book.title,
       })
       if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
