@@ -22,6 +22,7 @@ import {
 } from '@/lib/usage.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { loadProfile } from '@/lib/db/profile.js'
+import { SCENARIOS } from '@/tutor/scenarios.js'
 
 export const runtime = 'nodejs'
 
@@ -90,6 +91,22 @@ function buildMetadata(p, tier, profileId, userName, memory) {
   // речь и вызывает тот же log_review с результатом.
   const dueVocab = trimList(mem.dueVocab, 6, 40)
   if (dueVocab.length) meta.dueVocab = dueVocab
+  // Прогресс по сценариям: тьютор не переигрывает пройденное и знает, что
+  // предложить следующим. Порядок и замки (requires) — из реестра SCENARIOS;
+  // nextUnit = первый непройденный, чьё требование уже сдано. Шлём только при
+  // реальном прогрессе — новичка на диагностике сценариями не пушим.
+  const lessons = Array.isArray(mem.lessons) ? mem.lessons : []
+  const passedIds = new Set(
+    lessons.filter((l) => l && l.status === 'passed').map((l) => l.lessonKey),
+  )
+  const passedUnits = SCENARIOS.filter((s) => passedIds.has(s.id)).map((s) => s.label)
+  if (passedUnits.length) {
+    meta.passedUnits = passedUnits
+    const next = SCENARIOS.find(
+      (s) => !passedIds.has(s.id) && (!s.requires || passedIds.has(s.requires)),
+    )
+    if (next) meta.nextUnit = next.label
+  }
   // Диагностика навыков и письменный бейзлайн — объекты как есть; агент читает их
   // через _skills()/_writing() для приоритизации слабых мест.
   if (mem.skills && typeof mem.skills === 'object') meta.skills = mem.skills
