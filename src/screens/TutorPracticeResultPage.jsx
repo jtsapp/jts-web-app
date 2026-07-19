@@ -50,7 +50,7 @@ export default function TutorPracticeResultPage({
       <div className="t-result2">
         <img
           className="t-result2__mascot"
-          src={fail ? '/tutor/result-fail.png' : '/tutor/result-fail.png'}
+          src={fail ? '/tutor/result-fail.png' : '/tutor/result-pass.png'}
           alt=""
         />
 

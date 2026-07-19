@@ -1952,20 +1952,18 @@ BASE_ADAPTATION_PHRASES = [
 
 # ---- Cascade voice stack ---------------------------------------------------
 # STT=Soniox, VAD=Silero (endpointer), Brain=lib/llm via OpenAI-compat shim,
-# TTS=ElevenLabs (en/ru) / Soniox (kz). Chosen at session start by profile.lang.
+# TTS=Azure Neural by default (CASCADE_TTS=azure|gemini|eleven; kz always Azure
+# kk-KZ, persona hype always Soniox) — see _cascade_tts.
 #
-# SPIKE UNKNOWNS (verify in Phase 0, and confirm plugin constructor kwargs
-# against the INSTALLED plugin versions — signatures below are best-effort):
-#   * end-to-end latency Soniox→brain→TTS vs the Gemini Live baseline.
+# Notes from the spike, kept because they still hold:
 #   * Soniox barge-in: no END_OF_SPEECH event (#4034) → Silero VAD must close
-#     the turn; confirm interrupts actually work.
-#   * kz session: ElevenLabs is skipped, so Soniox TTS also voices the ENGLISH
-#     target sentences — verify English quality is acceptable. If not, upgrade
-#     to a per-utterance language-routing TTS wrapper.
-#   * Tool writeback: the OpenAI-compat brain shim has NO tool calling, so
-#     log_mistake/log_topic/log_fact/report_placement_level DO NOT fire in the
-#     cascade. Voice memory + placement reporting are a follow-up (inline-marker
-#     parsing, like the text channel) — do not run placement mode on cascade yet.
+#     the turn.
+#   * Tool writeback WORKS on cascade: the brain shim (/api/voice/brain)
+#     forwards `tools` to Anthropic and round-trips `tool_calls` in the OpenAI
+#     format, so log_mistake/log_topic/log_fact/report_placement_level fire as
+#     regular function calls. Placement mode is supported on cascade. If the
+#     deployed shim ever predates tool passthrough, tools are silently dropped —
+#     keep shim and agent deploys in sync.
 
 
 # Per-persona ElevenLabs voice settings (cascade TTS). Mirrors the intent of

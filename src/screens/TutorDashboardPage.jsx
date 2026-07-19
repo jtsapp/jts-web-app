@@ -63,7 +63,7 @@ export default function TutorDashboardPage({
                 <img src={avatar} alt="" />
                 <div className="t-dash__tutormeta">
                   <b>{name}</b>
-                  <span>{t('dash.level', { level: 'A1' })}</span>
+                  <span>{t('dash.level', { level: user?.level || 'A1' })}</span>
                 </div>
               </div>
               <button className="t-dash__manage" type="button" onClick={onManage}>

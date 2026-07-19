@@ -28,6 +28,24 @@ export async function loadTutorProfile(token) {
 }
 
 /**
+ * Пишет CEFR-уровень в Neon-профиль (/api/placement/complete) — стор, из
+ * которого голосовой тьютор берёт память ученика. Уровень из письменного
+ * CEFR-теста и из голосового placement должен попадать сюда наравне с
+ * backend'ом (/user/language-level), иначе сторы расходятся. Источник правды
+ * при входе — backend; эта запись best-effort и осечка не фатальна.
+ */
+export function savePlacementLevel(token, level) {
+  return fetch('/api/placement/complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: JSON.stringify({ deviceId: getDeviceId(), level }),
+  }).catch((e) => {
+    console.warn('[tutorPrefs] уровень не сохранился в Neon-профиль:', e)
+    return null
+  })
+}
+
+/**
  * Сохраняет часть профиля (например { tutor: 'dexter' } или { interests }).
  * Fire-and-forget: осечка не должна ломать онбординг — выбор остаётся в
  * стейте, просто не переживёт перезагрузку.
