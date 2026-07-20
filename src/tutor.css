@@ -2235,3 +2235,248 @@
     opacity: 0.3;
   }
 }
+
+/* ======================================================= */
+/* == МОБИЛКА: тьютор welcome/язык — Figma 11,12 ========= */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .t-body { flex-direction: column; }
+  .t-main { padding: 0 20px 24px; }
+  .t-content--center { display: block; padding: 8px 0 0; }
+
+  .t-welcome__title,
+  .t-lang__title { font-size: 28px; line-height: 1.2; }
+  .t-welcome__sub { font-size: 16px; }
+  .t-btn-primary { margin-top: 20px; }
+  .t-lang__list { margin-top: 20px; gap: 10px; }
+
+  /* MascotCard → вертикально: контент сверху, пурпур-карточка с маскотом снизу */
+  .t-card {
+    position: relative;
+    width: 100%;
+    height: auto;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+  }
+  .t-card__content {
+    position: static;
+    transform: none;
+    width: 100%;
+    order: 1;
+  }
+  .t-card__panel {
+    position: relative;
+    order: 2;
+    width: 100%;
+    height: 300px;
+    border-radius: 30px;
+    margin-top: 40px;
+    overflow: hidden;
+  }
+  /* Маскот сидит внутри пурпур-панели, не залезая на кнопку сверху */
+  .t-card__mascot {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    top: auto;
+    transform: translateX(-50%);
+    width: auto;
+    height: 300px;
+    object-fit: cover;
+    object-position: center bottom;
+    z-index: 2;
+  }
+
+  /* Тёмный подвал в мобильном тьюторе не показываем */
+  .t-app > .footer { display: none; }
+}
+
+/* ======================================================= */
+/* == МОБИЛКА: карусель выбора тьютора — Figma frames 91-93 */
+/* ======================================================= */
+@media (max-width: 560px) {
+  /* Десктоп-версия экрана выбора скрыта, показываем карусель */
+  .t-choose__title,
+  .t-choose__pills,
+  .t-choose__grid { display: none; }
+  .t-main:has(.t-choose) { padding: 0 16px 16px; }
+  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; }
+  /* t-choose тянется на всю высоту, чтобы кнопки карусели прижались к низу */
+  .t-choose:has(.t-car) { padding: 0; flex: 1; display: flex; flex-direction: column; }
+
+  /* Топбар: серый back-кружок 32 + центрированный заголовок (Figma 91).
+     Строго в контексте карусели — иначе серый кружок протекал бы на экраны
+     теста уровня (14-18), где «Назад» должна быть фиолетовой плашкой. */
+  .t-main:has(.t-car) .t-topbar { position: relative; justify-content: center; padding: 8px 0 4px; }
+  .t-main:has(.t-car) .t-back {
+    position: absolute;
+    left: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 16px;
+    background: #f6f6f6;
+    font-size: 0;
+    gap: 0;
+  }
+  .t-topbar__title { font-size: 16px; font-weight: 700; color: #181818; }
+
+  /* Карусель тянется на всю высоту, кнопки прижаты к низу (Figma: y734/790) */
+  .t-car { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+  .t-car__stage {
+    position: relative;
+    /* Шире контента на 16px с каждой стороны — соседние аватары выглядывают
+       за края экрана (Figma: prev x-24, next x315 при кадре 402). */
+    width: calc(100% + 32px);
+    margin: 0 -16px;
+    height: 200px;
+    margin-top: 29px;
+    touch-action: pan-y;
+  }
+  /* Слайд-аватар: базовый размер 200 (центр), соседи масштабируются inline
+     (scale 0.555 → 111). Позиция/transition/opacity/z-index — inline из JS. */
+  .t-car__slot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #efe7ff;
+    will-change: transform;
+  }
+  .t-car__slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .t-car__info { width: 100%; animation: t-car-fade 0.34s ease both; }
+
+  .t-car__name {
+    margin-top: 19px; font-size: 24px; font-weight: 700;
+    color: #181818; text-align: center;
+  }
+  .t-car__chips { display: flex; justify-content: center; gap: 2px; margin-top: 8px; }
+  .t-car__chip {
+    height: 32px; display: inline-flex; align-items: center; padding: 0 12px;
+    border-radius: 20px; color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap;
+  }
+  .t-car__desc {
+    margin-top: 18px; max-width: 334px; font-size: 14px; line-height: 1.4;
+    color: #181818; text-align: center;
+  }
+
+  .t-car__actions {
+    margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 12px;
+    padding-top: 24px;
+  }
+  .t-car__listen {
+    height: 44px; border: none; border-radius: 30px; background: #ebdeff;
+    color: #9047ff; font-family: inherit; font-size: 15px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  }
+  .t-car__choose {
+    height: 48px; border: none; border-radius: 80px; background: #9047ff;
+    color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+}
+@media (min-width: 561px) {
+  .t-car { display: none; }
+  .t-main:has(.t-choose) .t-topbar__title { display: none; }
+}
+
+@keyframes t-car-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Пояснительная карточка voiceIntro — только мобилка (Figma frame 16). */
+.t-vintro-hint { display: none; }
+
+/* ======================================================= */
+/* == МОБИЛКА: тест уровня — Figma frames 14-18 =========== */
+/* ======================================================= */
+@media (max-width: 560px) {
+  /* «Назад» — фиолетовая плашка у левого края (main уже даёт 20px) */
+  .t-main:not(:has(.t-car)) .t-topbar { padding: 0; }
+
+  /* Заголовок статуса: 24/700, без отрицательного трекинга (Figma ls=0) */
+  .t-status__heading { font-size: 24px; line-height: 1.2; letter-spacing: 0; }
+  /* Длинный заголовок voiceIntro — межстрочный как в макете (140%) */
+  .t-status:has(.t-btnstack) .t-status__heading { line-height: 1.4; }
+  .t-status--flow { padding-top: 24px; }
+  /* Экран загрузки (center): аватар чуть ниже топбара, как в Figma frame 14 */
+  .t-content--center .t-status { padding-top: 40px; }
+
+  /* Flow-контент: край держит .t-main (20px), сам контент без доп. паддинга */
+  .t-content--flow { padding: 0 0 32px; }
+
+  /* --- Frame 15: карточка предложения теста --- */
+  .t-offer { width: 100%; margin-top: 24px; padding: 24px 14px 16px; }
+  .t-offer__title { font-size: 18px; }
+  .t-offer__sub { font-size: 14px; }
+  .t-offer__cta { height: auto; padding: 14px; }
+  .t-offer__ctaText b { font-size: 18px; }
+  .t-offer__later { width: 100%; margin-top: 36px; padding: 0; }
+
+  /* --- Frame 16: карточка «3-минутный разговор» + кнопки --- */
+  .t-vintro-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    margin-top: 24px;
+    /* Гориз. паддинг ужат с макетных 50 → 36: кадр на мобиле 372 (не 400),
+       так текст ложится в 2 строки, как в Figma frame 16. */
+    padding: 20px 36px;
+    background: #ffffff;
+    border-radius: 20px;
+  }
+  .t-vintro-hint__mic {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #b7f0ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--t-purple);
+    flex-shrink: 0;
+  }
+  .t-vintro-hint__text {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--t-ink);
+    text-align: center;
+  }
+  .t-btnstack { width: 100%; margin-top: 36px; }
+
+  /* --- Frame 18: живой голосовой разговор --- */
+  /* Хедер прижат влево, аватар меньше (56); карточка-фон убрана — орб,
+     подпись и микрофон стоят прямо на сером фоне. */
+  .t-voice { padding-top: 8px; align-items: stretch; }
+  .t-voice .t-status__avatar { width: 56px; height: 56px; }
+  .t-voice__card {
+    width: 100%;
+    height: auto;
+    margin-top: 28px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    gap: 28px;
+  }
+  .t-voice__orb {
+    width: 164px;
+    height: 164px;
+    background: linear-gradient(145deg, #9047ff 0%, #ab88e1 34%, #be9bf2 72%, #bd91ff 100%);
+    border: 1px solid #9d90e9;
+  }
+  .t-voice__text { height: auto; min-height: 0; padding: 0; }
+  .t-voice__cap { font-size: 28px; line-height: 1.1; }
+  /* Отступ орб-группа → микрофон = 72 (28 gap + 44 margin), как в Figma */
+  .t-voice__mic { margin-top: 44px; }
+}

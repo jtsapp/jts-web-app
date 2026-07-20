@@ -1,4 +1,5 @@
 import Sidebar from './Sidebar.jsx'
+import MobileNav from './MobileNav.jsx'
 import Footer from './Footer.jsx'
 
 // Оболочка обучающей зоны: сайдбар слева + контент + подвал снизу.
@@ -14,6 +15,14 @@ export default function LearningLayout({
   return (
     <div className="learn">
       <div className="learn__body">
+        <MobileNav
+          userName={userName}
+          userLevel={userLevel}
+          active={active}
+          token={token}
+          onNav={onNav}
+          onProfile={onProfile}
+        />
         <Sidebar
           userName={userName}
           userLevel={userLevel}

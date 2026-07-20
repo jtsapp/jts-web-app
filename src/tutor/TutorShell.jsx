@@ -1,4 +1,5 @@
 import Sidebar from '../components/Sidebar.jsx'
+import MobileNav from '../components/MobileNav.jsx'
 import Footer from '../components/Footer.jsx'
 import { ArrowLeftIcon } from './TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
@@ -15,12 +16,22 @@ export default function TutorShell({
   onBack,
   title,
   layout = 'center',
+  hideMobileNav = false,
   children,
 }) {
   const t = useT()
   return (
     <div className="t-app">
       <div className="t-body">
+        {!hideMobileNav && (
+          <MobileNav
+            active={active}
+            userName={user?.name}
+            userLevel={user?.level}
+            onNav={onNavigate}
+            onProfile={onProfile}
+          />
+        )}
         <Sidebar
           active={active}
           userName={user?.name}

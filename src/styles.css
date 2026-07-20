@@ -259,6 +259,7 @@ textarea {
 .hero {
   position: relative;
   flex: 1;
+  background-image: url(/assets/hero-london.jpg);
   background-size: cover;
   background-position: center 38%;
   display: flex;
@@ -4593,5 +4594,421 @@ textarea {
   .bk-pop,
   .pp--enter {
     animation: none;
+  }
+}
+
+/* ======================================================= */
+/* ====  МОБИЛКА: лендинг — Figma iPhone 1 (≤560px)  ===== */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .screen { min-height: 100dvh; }
+  .card { min-height: 100dvh; }
+
+  /* Полноэкранный герой: маскот над Лондоном */
+  .hero {
+    background-image: url(/mobile/hero-welcome.jpg);
+    background-position: center bottom;
+    background-size: cover;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .hero::before {
+    background: linear-gradient(
+      180deg,
+      rgba(20, 30, 70, 0.45) 0%,
+      rgba(20, 30, 70, 0.12) 30%,
+      rgba(0, 0, 0, 0) 55%
+    );
+  }
+
+  /* Шапка: лого слева, справа колонка (язык над соцсетями) */
+  .hero-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px;
+    gap: 12px;
+  }
+  .hero-header .logo { font-size: 22px; }
+  .hero-header__right {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  /* Соцсети — 3 равных круглых иконки, пурпур на белом */
+  .socials { gap: 8px; }
+  .social-pill,
+  .social-round {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  }
+  .social-pill span { display: none; }
+  .social-pill,
+  .social-round,
+  .social-round--wa { color: #9047ff; }
+
+  /* Lang-пилюля */
+  .lang-selector { border-radius: 40px; }
+
+  /* Контент — слева, под шапкой */
+  .hero__content {
+    text-align: left;
+    padding: 150px 20px 0;
+    max-width: none;
+    width: 100%;
+  }
+  .hero__title {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.28);
+  }
+  .hero__subtitle {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-top: 20px;
+    max-width: 405px;
+  }
+
+  /* CTA — белая карточка r20, кнопки в столбик full-width */
+  .cta {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-top: 24px;
+    padding: 16px 20px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  }
+  .btn {
+    width: 100%;
+    padding: 18px;
+    font-size: 17px;
+    border-radius: 60px;
+  }
+  .btn--secondary {
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+
+  /* Футер на лендинге прячем — герой во весь экран */
+  .screen > .footer { display: none; }
+}
+
+/* ======================================================= */
+/* ==  МОБИЛКА: экраны-формы (Shell) — Figma iPhone 6,7  == */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .reg-header { padding: 16px 20px 8px; }
+  .reg-header__left { gap: 16px; }
+  .back-btn {
+    width: 36px;
+    height: 36px;
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+
+  .reg-body { padding: 8px 20px 32px; }
+  .form-inner { max-width: none; padding-top: 26px; }
+  .form-card { text-align: center; }
+  .form-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+  }
+  /* Заголовки auth-экранов в Figma — в одну строку; \n из i18n гасим на мобиле */
+  .form-title br { display: none; }
+  .form-sub {
+    color: var(--ink);
+    font-size: 14px;
+    margin-bottom: 22px;
+  }
+
+  /* Поле телефона — серое r20, без бордера, выше */
+  .phone-field {
+    background: #f6f6f6;
+    border: none;
+    border-radius: 20px;
+    padding: 24px 16px;
+    gap: 10px;
+  }
+  .phone-prefix,
+  .phone-field input { font-size: 16px; }
+
+  /* OTP — крупные серые боксы, флюидная ширина */
+  .otp-row {
+    gap: 8px;
+    justify-content: stretch;
+    margin: 4px 0;
+  }
+  .otp-box {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 120px;
+    border: none;
+    border-radius: 20px;
+    background: #f6f6f6;
+    font-size: 56px;
+    font-weight: 500;
+    color: #afafaf;
+  }
+  .otp-box--filled { color: var(--ink); }
+
+  /* Кнопка — пурпур r60 full-width */
+  .form-primary {
+    border-radius: 60px;
+    padding: 17px;
+    font-size: 18px;
+  }
+  .form-note { color: #afafaf; margin-top: 24px; }
+}
+
+/* ======================================================= */
+/* == МОБИЛКА: регистрация-чат (2–5) + success (8) ======= */
+/* ======================================================= */
+@media (max-width: 560px) {
+  /* reg-inner тянется на всю ширину и высоту, чтобы чат заполнил экран,
+     а ввод прижался к низу (Figma: белый лист x0..440, ввод y862). */
+  .reg-inner {
+    max-width: none;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .reg-title { font-size: 28px; font-weight: 700; text-align: center; }
+  .reg-subtitle { color: var(--ink); font-size: 14px; text-align: center; }
+
+  /* Apple/Google — в столбик: полный текст «Войти через Apple ID» + SDK-кнопка
+     Google (мин. ширина ~200px) не помещаются в 2 колонки на экранах <440px. */
+  .auth-row { grid-template-columns: 1fr; gap: 10px; }
+
+  /* Чат — белый лист ВО ВСЮ ШИРИНУ (Figma: x0 w440, без радиуса), тянется на
+     всю высоту; контент с отступом 20px. margin -20 «выламывает» лист из
+     20px-паддинга reg-body. */
+  .chat {
+    flex: 1;
+    min-height: 0;
+    margin: 0 -20px;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .chat__scroll { flex: 1; max-height: none; padding: 24px 20px 8px; }
+  .chat__author { margin-bottom: 18px; }
+  .chat__avatar { width: 56px; height: 56px; }
+  .chat__name { font-size: 18px; }
+  .chat__role { font-size: 15px; }
+  .bubble { font-size: 16px; max-width: 82%; }
+  /* Ввод прижат к низу листа, инсет 20px, текст 18px (Figma) */
+  .chat__input {
+    background: #f6f6f6;
+    border-radius: 20px;
+    margin: 8px 20px calc(4px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 16px 16px 20px;
+  }
+  /* input должен сжиматься (min-width:0), иначе выпихивает кнопку за паддинг */
+  .chat__input input { font-size: 18px; flex: 1; min-width: 0; }
+  .send-btn { border-radius: 18px; padding: 9px 16px; flex-shrink: 0; }
+
+  /* Кнопки авторизации в чате */
+  .auth-primary {
+    border-radius: 60px;
+    padding: 18px;
+    font-size: 17px;
+  }
+  .auth-btn { border-radius: 60px; }
+
+  /* Success — пурпурный квадрат-бейдж r18, заголовок 32 по центру */
+  .success-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: #9047ff;
+    box-shadow: none;
+  }
+  .success-center { text-align: center; }
+  .success-center .form-title { font-size: 32px; text-align: center; }
+}
+
+/* ======================================================= */
+/* == МОБИЛКА: shell (топбар + drawer) — Figma 10–12 ===== */
+/* ======================================================= */
+@media (max-width: 560px) {
+  /* Прячем десктоп-рельс, показываем мобильный топбар */
+  .learn__body > .sb,
+  .t-body > .sb { display: none; }
+
+  .mnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #fff;
+  }
+  .mnav__burger {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 12px;
+    background: #b7f0ff;
+    color: #9047ff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .mnav__profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
+  .mnav__avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #9047ff;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .mnav__meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    text-align: left;
+  }
+  .mnav__meta b { font-size: 15px; font-weight: 700; color: #181818; }
+  .mnav__meta span { font-size: 13px; color: #afafaf; }
+
+  .mnav__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(20, 16, 38, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .mnav__scrim--on { opacity: 1; pointer-events: auto; }
+  .mnav__drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.25);
+  }
+  .mnav__drawer--on { transform: none; }
+
+  /* Sidebar внутри drawer — вертикальный рельс (отменяем 760-рефлоу) */
+  .mnav__drawer .sb {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    position: static;
+    height: 100%;
+    width: 272px;
+    border-right: none;
+  }
+  .mnav__drawer .sb__item span { display: inline; }
+  .mnav__drawer .sb__spacer { display: block; }
+  .mnav__drawer .sb__role { margin-left: 0; }
+
+  /* Learning (10) */
+  .learn__main { padding: 0 20px 24px; }
+  .lp__title { font-size: 28px; }
+}
+
+/* ======================================================= */
+/* == МОБИЛКА: bottom-sheet выбора языка — Figma iPhone 9 = */
+/* ======================================================= */
+@keyframes lsheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+.lsheet__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(2, 2, 2, 0.67);
+  animation: fade-in 0.25s ease both;
+}
+.lsheet__panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  animation: lsheet-up 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.lsheet__title {
+  margin-bottom: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #181818;
+  text-align: center;
+}
+.lsheet__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lsheet__opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 56px;
+  border: 1px solid #e6e6e6;
+  border-radius: 60px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #181818;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.lsheet__opt--active {
+  background: #9047ff;
+  color: #fff;
+  border-color: #9047ff;
+}
+
+/* ======================================================= */
+/* == МОБИЛКА: шрифт PT Root UI (как в Figma-макете) ===== */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .screen,
+  .t-app,
+  .learn,
+  .lsheet__scrim,
+  .lsheet__panel {
+    font-family: 'PT Root UI', 'Manrope', -apple-system, BlinkMacSystemFont,
+      'Segoe UI', Roboto, sans-serif;
   }
 }

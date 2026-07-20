@@ -1,6 +1,6 @@
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorStatus from '../tutor/TutorStatus.jsx'
-import { CloseCircleIcon } from '../tutor/TutorIcons.jsx'
+import { CloseCircleIcon, MicIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
 // Экран «тьютор хочет узнать твой уровень разговорного английского».
@@ -30,6 +30,15 @@ export default function TutorVoiceIntroPage({
         avatar={avatar}
         flow
       >
+        {/* Пояснительная карточка «3-минутный разговор» — только мобилка (Figma
+            frame 16). На десктопе экран остаётся заголовок + кнопки. */}
+        <div className="t-vintro-hint">
+          <span className="t-vintro-hint__mic">
+            <MicIcon size={24} />
+          </span>
+          <p className="t-vintro-hint__text">{t('voiceIntro.hint')}</p>
+        </div>
+
         <div className="t-btnstack">
           <button className="t-pill t-pill--primary t-pill--lg" type="button" onClick={onStart}>
             {t('voiceIntro.start')}
