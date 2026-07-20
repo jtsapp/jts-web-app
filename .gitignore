@@ -19,3 +19,9 @@ __pycache__/
 # локально. fairytales.html (2.9 МБ) и обложки сказок (covers/) — коммитим,
 # чтобы «Практика» с настоящими обложками работала у всех.
 public/practice/books.html
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
