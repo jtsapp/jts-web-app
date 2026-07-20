@@ -8,16 +8,17 @@ import { test, expect } from '@playwright/test'
 test.describe('онбординг тьютора — мобилка', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) > 760, 'только узкий вьюпорт')
 
-  test('язык: маскоты сидят внутри фиолетовой панели', async ({ page }) => {
+  test('язык: в панели карусель тьюторов, опции не перекрыты', async ({ page }) => {
     await page.goto('/?screen=tutor-lang')
+    // Статичная композиция маскотов скрыта (раньше вылезала на кнопки выбора).
+    await expect(page.locator('.t-card__mascot')).toBeHidden()
     const panel = await page.locator('.t-card__panel').boundingBox()
-    const mascot = await page.locator('.t-card__mascot').boundingBox()
-    // Допуск 3px — скругления/субпиксели; ловим прежний вылет на ~145px.
-    expect(mascot.y).toBeGreaterThanOrEqual(panel.y - 3)
-    expect(mascot.y + mascot.height).toBeLessThanOrEqual(panel.y + panel.height + 3)
-    // Опции языка не перекрыты маскотом.
+    const carousel = await page.locator('.t-card__carousel').boundingBox()
+    expect(carousel.y).toBeGreaterThanOrEqual(panel.y - 3)
+    expect(carousel.y + carousel.height).toBeLessThanOrEqual(panel.y + panel.height + 3)
+    // Опции языка выше панели и ничем не перекрыты.
     const lastOption = await page.locator('.t-lang__option').last().boundingBox()
-    expect(lastOption.y + lastOption.height).toBeLessThanOrEqual(mascot.y + 3)
+    expect(lastOption.y + lastOption.height).toBeLessThanOrEqual(panel.y + 3)
   })
 
   test('выбор тьютора: карусель свайпается со снапом внутри экрана', async ({ page, viewport }) => {
@@ -69,5 +70,62 @@ test.describe('онбординг тьютора — мобилка', () => {
     await expect(page.locator('.t-prof__input input')).toHaveValue('Инженер-программист')
     await opts.nth(1).click()
     await expect(opts.nth(1)).toHaveClass(/is-picked/)
+  })
+
+  test('welcome: плашка с тьюторами — свайп-карусель', async ({ page }) => {
+    await page.goto('/?screen=tutor-welcome')
+    const car = page.locator('.t-card__carousel')
+    await expect(car).toBeVisible()
+    await expect(car.locator('.t-card__slide')).toHaveCount(3)
+    const size = await car.evaluate((el) => ({ cw: el.clientWidth, sw: el.scrollWidth }))
+    expect(size.sw).toBeGreaterThan(size.cw)
+    await car.evaluate((el) => el.scrollBy({ left: 250, behavior: 'smooth' }))
+    await page.waitForTimeout(700)
+    expect(await car.evaluate((el) => el.scrollLeft)).toBeGreaterThan(50)
+  })
+})
+
+// Тур по дашборду: раньше поповер ехал вместе со скроллом (обёртка .scr-in с
+// transform ломала position: fixed), ложился на подсвеченный элемент и резался
+// краем экрана, а страница свободно скроллилась под туром.
+test.describe('онбординг-тур по дашборду', () => {
+  test('поповер в экране, не накрывает подсветку, скролл заперт', async ({ page, viewport }) => {
+    await page.goto('/?screen=tutor-profession')
+    // «Пропустить вопрос» ведёт через экран анализа на дашборд с туром.
+    await page.locator('button', { hasText: 'Пропустить' }).first().click()
+    await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
+
+    for (let step = 0; ; step++) {
+      await page.waitForTimeout(600) // дожидаемся transition поповера
+      const { pop, hole, overlap } = await page.evaluate(() => {
+        const pop = document.querySelector('.t-tour__pop').getBoundingClientRect()
+        const hole = document.querySelector('.t-tour__hole')?.getBoundingClientRect()
+        const overlap =
+          hole &&
+          !(pop.right < hole.left || pop.left > hole.right || pop.bottom < hole.top || pop.top > hole.bottom)
+        return { pop: { t: pop.top, b: pop.bottom, l: pop.left, r: pop.right }, hole: Boolean(hole), overlap }
+      })
+      expect(pop.t, `шаг ${step + 1}: поповер вылез за верх`).toBeGreaterThanOrEqual(0)
+      expect(pop.b, `шаг ${step + 1}: поповер вылез за низ`).toBeLessThanOrEqual(viewport.height + 1)
+      expect(pop.l).toBeGreaterThanOrEqual(0)
+      expect(pop.r).toBeLessThanOrEqual(viewport.width + 1)
+      expect(hole, `шаг ${step + 1}: нет прожектора`).toBe(true)
+      expect(overlap, `шаг ${step + 1}: поповер накрывает подсвеченный элемент`).toBe(false)
+
+      // Скролл страницы под туром заперт.
+      const y0 = await page.evaluate(() => scrollY)
+      await page.mouse.move(195, 420)
+      await page.mouse.wheel(0, 300)
+      await page.waitForTimeout(250)
+      expect(await page.evaluate(() => scrollY)).toBe(y0)
+
+      const isLast = (await page.locator('.t-tour__count').textContent()).startsWith('2/')
+      await page.locator('.t-tour__ok').click()
+      if (isLast) break
+    }
+
+    // Тур закрыт, скролл разлочен.
+    await expect(page.locator('.t-tour__pop')).toHaveCount(0)
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('')
   })
 })
