@@ -1,14 +1,25 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Shell from '../components/Shell.jsx'
 import Multiline from '../components/Multiline.jsx'
+import LangSheet from '../components/LangSheet.jsx'
 import { useI18n } from '../i18n.jsx'
 
 export default function SuccessPage({ onDone }) {
   const { t } = useI18n()
-  // Короткая пауза и переход к предложению пройти тест уровня
+  const [sheet, setSheet] = useState(false)
+  // На мобиле показываем bottom-sheet выбора языка (Figma 9) и переходим по
+  // выбору. На десктопе поведение прежнее — короткая пауза и авто-переход.
+  // matchMedia читаем в effect (только клиент) — гидратация не ломается.
   useEffect(() => {
-    const t = setTimeout(() => onDone?.(), 1800)
-    return () => clearTimeout(t)
+    const isMobile =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 560px)').matches
+    if (isMobile) {
+      const s = setTimeout(() => setSheet(true), 900)
+      return () => clearTimeout(s)
+    }
+    const d = setTimeout(() => onDone?.(), 1800)
+    return () => clearTimeout(d)
   }, [onDone])
 
   return (
@@ -31,6 +42,7 @@ export default function SuccessPage({ onDone }) {
         </h2>
       </div>
       </div>
+      {sheet && <LangSheet onPick={() => onDone?.()} />}
     </Shell>
   )
 }

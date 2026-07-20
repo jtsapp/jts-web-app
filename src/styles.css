@@ -4919,3 +4919,62 @@ textarea {
   .learn__main { padding: 0 20px 24px; }
   .lp__title { font-size: 28px; }
 }
+
+/* ======================================================= */
+/* == МОБИЛКА: bottom-sheet выбора языка — Figma iPhone 9 = */
+/* ======================================================= */
+@keyframes lsheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+.lsheet__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(2, 2, 2, 0.67);
+  animation: fade-in 0.25s ease both;
+}
+.lsheet__panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 61;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  animation: lsheet-up 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.lsheet__title {
+  margin-bottom: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #181818;
+  text-align: center;
+}
+.lsheet__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lsheet__opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 56px;
+  border: 1px solid #e6e6e6;
+  border-radius: 60px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #181818;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.lsheet__opt--active {
+  background: #9047ff;
+  color: #fff;
+  border-color: #9047ff;
+}
