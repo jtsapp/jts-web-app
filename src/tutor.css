@@ -2596,9 +2596,19 @@
   .t-choose__pills,
   .t-choose__grid { display: none; }
   .t-main:has(.t-choose) { padding: 0 16px 16px; }
-  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; }
+  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
   /* t-choose тянется на всю высоту, чтобы кнопки карусели прижались к низу */
   .t-choose:has(.t-car) { padding: 0; flex: 1; display: flex; flex-direction: column; }
+
+  /* Экран выбора залочен на один вьюпорт: пользователь не должен случайно
+     смахнуть страницу и потерять карусель из виду. Лочим всю оболочку в
+     100dvh с overflow:hidden и убираем футер — прокрутки (верт. и гориз.)
+     на этом экране нет вообще. Скоуп :has(.t-car) — только экран выбора,
+     остальные экраны тьютора скроллятся как обычно. */
+  html:has(.t-car), body:has(.t-car) { overflow: hidden; overscroll-behavior: none; }
+  .t-app:has(.t-car) { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+  .t-app:has(.t-car) .t-body { flex: 1; min-height: 0; }
+  .t-app:has(.t-car) .footer { display: none; }
 
   /* Топбар: серый back-кружок 32 + центрированный заголовок (Figma 91).
      Строго в контексте карусели — иначе серый кружок протекал бы на экраны
@@ -2628,6 +2638,10 @@
     margin: 0 -16px;
     height: 200px;
     margin-top: 29px;
+    /* Обрезаем дальние слоты цикла (9 копий уезжают на ±550px и держат
+       opacity:0, но раздували scrollWidth сцены → горизонтальный ползунок
+       на .t-content--flow). Соседи ±1 внутри сцены, их выглядывание цело. */
+    overflow: hidden;
     touch-action: pan-y;
   }
   /* Слайд-аватар: базовый размер 200 (центр), соседи масштабируются inline
