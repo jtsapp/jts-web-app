@@ -4717,7 +4717,7 @@ textarea {
   }
 
   .reg-body { padding: 8px 20px 32px; }
-  .form-inner { max-width: none; padding-top: 8px; }
+  .form-inner { max-width: none; padding-top: 26px; }
   .form-card { text-align: center; }
   .form-title {
     font-size: 28px;
@@ -4725,6 +4725,8 @@ textarea {
     letter-spacing: -0.02em;
     line-height: 1.12;
   }
+  /* Заголовки auth-экранов в Figma — в одну строку; \n из i18n гасим на мобиле */
+  .form-title br { display: none; }
   .form-sub {
     color: var(--ink);
     font-size: 14px;
@@ -4736,7 +4738,7 @@ textarea {
     background: #f6f6f6;
     border: none;
     border-radius: 20px;
-    padding: 22px 16px;
+    padding: 24px 16px;
     gap: 10px;
   }
   .phone-prefix,
@@ -4752,11 +4754,11 @@ textarea {
     flex: 1;
     min-width: 0;
     width: auto;
-    height: 96px;
+    height: 120px;
     border: none;
     border-radius: 20px;
     background: #f6f6f6;
-    font-size: 48px;
+    font-size: 56px;
     font-weight: 500;
     color: #afafaf;
   }
@@ -4765,10 +4767,10 @@ textarea {
   /* Кнопка — пурпур r60 full-width */
   .form-primary {
     border-radius: 60px;
-    padding: 18px;
+    padding: 17px;
     font-size: 18px;
   }
-  .form-note { color: #afafaf; }
+  .form-note { color: #afafaf; margin-top: 24px; }
 }
 
 /* ======================================================= */
