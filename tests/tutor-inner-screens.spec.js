@@ -39,11 +39,17 @@ test.describe('внутренние экраны тьютора — мобилк
     await page.goto('/?screen=tutor-scenarios')
     const cards = page.locator('.t-scen__card')
     await expect(cards.first()).toBeVisible()
+    // Даём layout устаканиться: под параллельным прогоном dev-сервер
+    // компилирует страницы на лету и первые замеры ловят переходное состояние.
+    await page.waitForTimeout(400)
     // Первая пара карточек лежит в одном ряду и обе помещаются в экран.
-    const a = await cards.nth(0).boundingBox()
-    const b = await cards.nth(1).boundingBox()
-    expect(Math.abs(a.y - b.y)).toBeLessThan(2)
-    expect(b.x + b.width).toBeLessThanOrEqual(viewport.width + 1)
+    await expect
+      .poll(async () => {
+        const a = await cards.nth(0).boundingBox()
+        const b = await cards.nth(1).boundingBox()
+        return { sameRow: Math.abs(a.y - b.y) < 2, fits: b.x + b.width <= viewport.width + 1 }
+      })
+      .toEqual({ sameRow: true, fits: true })
   })
 })
 

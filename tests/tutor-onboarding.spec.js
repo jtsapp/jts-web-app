@@ -10,6 +10,9 @@ test.describe('онбординг тьютора — мобилка', () => {
 
   test('язык: в панели карусель тьюторов, опции не перекрыты', async ({ page }) => {
     await page.goto('/?screen=tutor-lang')
+    await expect(page.locator('.t-card__carousel')).toBeVisible()
+    // Layout под параллельным прогоном стабилизируется не сразу.
+    await page.waitForTimeout(400)
     // Статичная композиция маскотов скрыта (раньше вылезала на кнопки выбора).
     await expect(page.locator('.t-card__mascot')).toBeHidden()
     const panel = await page.locator('.t-card__panel').boundingBox()
@@ -111,6 +114,13 @@ test.describe('онбординг-тур по дашборду', () => {
       expect(pop.r).toBeLessThanOrEqual(viewport.width + 1)
       expect(hole, `шаг ${step + 1}: нет прожектора`).toBe(true)
       expect(overlap, `шаг ${step + 1}: поповер накрывает подсвеченный элемент`).toBe(false)
+
+      // Кнопка «ОК/Готово» реально видима: портал в body лишал её переменных
+      // темы — фон становился прозрачным, белый текст «исчезал» на белом.
+      const okBg = await page
+        .locator('.t-tour__ok')
+        .evaluate((el) => getComputedStyle(el).backgroundColor)
+      expect(okBg, `шаг ${step + 1}: у кнопки прозрачный фон`).not.toBe('rgba(0, 0, 0, 0)')
 
       // Скролл страницы под туром заперт.
       const y0 = await page.evaluate(() => scrollY)
