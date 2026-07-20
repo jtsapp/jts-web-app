@@ -4814,10 +4814,11 @@ textarea {
     background: #f6f6f6;
     border-radius: 20px;
     margin: 8px 20px calc(4px + env(safe-area-inset-bottom, 0px));
-    padding: 16px 20px;
+    padding: 16px 16px 16px 20px;
   }
-  .chat__input input { font-size: 18px; }
-  .send-btn { border-radius: 18px; padding: 9px 16px; }
+  /* input должен сжиматься (min-width:0), иначе выпихивает кнопку за паддинг */
+  .chat__input input { font-size: 18px; flex: 1; min-width: 0; }
+  .send-btn { border-radius: 18px; padding: 9px 16px; flex-shrink: 0; }
 
   /* Кнопки авторизации в чате */
   .auth-primary {
