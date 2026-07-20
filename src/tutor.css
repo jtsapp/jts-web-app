@@ -2352,4 +2352,57 @@
     margin-top: 18px;
     font-size: 28px;
   }
+
+  /* --- Дашборд: две колонки → вертикаль (герой с микрофоном, ниже сценарии) --- */
+  .t-dash {
+    flex-direction: column;
+  }
+  .t-dash__center {
+    padding: 20px 16px 40px;
+  }
+  .t-dash__tutor img {
+    width: 44px;
+    height: 44px;
+  }
+  .t-dash__tutormeta b {
+    font-size: 16px;
+  }
+  .t-dash__tutormeta span {
+    font-size: 13px;
+  }
+  .t-dash__manage {
+    height: 40px;
+    padding: 0 16px;
+    gap: 8px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .t-dash__cta {
+    margin-top: 44px;
+  }
+  .t-dash__mic {
+    width: 118px;
+    height: 118px;
+  }
+  .t-dash__mic svg {
+    width: 52px;
+    height: 52px;
+  }
+  .t-dash__ctatitle {
+    margin-top: 18px;
+    font-size: clamp(23px, 6.5vw, 28px);
+  }
+  .t-dash__suggest {
+    margin-top: 36px;
+    width: 100%;
+    max-width: 370px;
+  }
+
+  /* Панель сценариев — белый лист во всю ширину под героем */
+  .t-dash__panel {
+    width: 100%;
+    padding: 28px 16px 40px;
+    overflow-y: visible;
+    border-radius: 28px 28px 0 0;
+  }
 }
