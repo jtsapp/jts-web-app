@@ -16,6 +16,8 @@
 // Ассеты проксировать не нужно: аудио уроков встроено как data:base64, CSS/JS
 // инлайновые, внешний только абсолютный Google-шрифт — всё грузится напрямую.
 
+import { SERVER_API_URL } from '../../../../config/backend'
+
 export const runtime = 'nodejs'
 
 const UPSTREAM = 'https://files-api.iqra.space'
@@ -33,7 +35,7 @@ const LESSON_BRIDGE = `<script>(function(){
 function ready(fn){document.readyState!=='loading'?fn():document.addEventListener('DOMContentLoaded',fn);}
 ready(function(){
  var hud=document.querySelector('.hud'); if(!hud) return;
- var API=window.__JTS_API__||'https://dev-server.justtostudy.kz';
+ var API=${JSON.stringify(SERVER_API_URL)};
  function tok(){try{return window.__JTS_TOKEN__||(window.parent&&window.parent.__JTS_TOKEN__)||'';}catch(e){return '';}}
  function call(method,path){var t=tok(); if(!t) return Promise.resolve(null);
   return fetch(API+path,{method:method,headers:{Authorization:'Bearer '+t}}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}

@@ -1,8 +1,7 @@
 // Клиент API регистрации/входа.
-// По умолчанию бьём в dev-бэкенд — тот же, что читает dev-админка
-// (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
-// поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
+// Адрес бэкенда — единый источник в src/config/backend.js. Дефолт там —
+// dev-server (тот же, что читает dev-админка), в проде задаётся NEXT_PUBLIC_API_URL.
+import { API_URL as BASE } from './config/backend'
 
 // Приводим телефон к формату бэкенда: 7XXXXXXXXXX (11 цифр, без "+")
 export function normalizePhone(input) {

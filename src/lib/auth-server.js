@@ -7,17 +7,9 @@
 
 import { timingSafeEqual } from 'node:crypto'
 
-// BOM/пробелы из env вырезаем: значение, вставленное через Windows-пайп,
-// приходит с U+FEFF (BOM) в начале — fetch падает «Invalid URL», и каждый Bearer
-// превращался в 401 «сессия истекла» на всём проде (поймано 17.07.2026).
-const BACKEND_URL = (
-  process.env.BACKEND_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  'https://dev-server.justtostudy.kz'
-)
-  .replace(/^\uFEFF/, '')
-  .trim()
-  .replace(/\/+$/, '')
+// Адрес бэкенда — единый источник в src/config/backend.js (там же чистка BOM,
+// давшая прод-инцидент 17.07.2026). Сервер приоритетно берёт BACKEND_URL.
+import { SERVER_API_URL as BACKEND_URL } from '../config/backend'
 
 // Profile ids in the `user-<id>` namespace are reserved for authenticated
 // learners. They are guessable (sequential user ids), so they must never be
