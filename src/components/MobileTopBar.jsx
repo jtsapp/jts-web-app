@@ -17,7 +17,8 @@ export default function MobileTopBar({ userName, profileLabel, menuLabel, onMenu
         <span className="mtop__avatar">{initial}</span>
         <span className="mtop__meta">
           <b>{userName || profileLabel}</b>
-          <span>{profileLabel}</span>
+          {/* Без имени верхняя строка уже показывает подпись — не дублируем её */}
+          {userName && <span>{profileLabel}</span>}
         </span>
       </button>
 

@@ -178,8 +178,11 @@ export const DICT = {
     // Аналитика ошибок
     'erran.title': 'Аналитика ошибок в разговоре',
     'erran.by': 'Аналитику провёл ваш тьютор:',
+    'erran.empty': 'Здесь появится разбор ошибок после разговора с тьютором',
     'erran.toPlan': 'Вернуться к плану уроков',
     'erran.retry': 'Попробовать ещё раз',
+    'chat.empty': 'Здесь появится расшифровка разговора с тьютором',
+    'pract.title': 'Результат практики',
 
     // Сценарии
     'scen.title': 'Сценарии',
@@ -211,8 +214,6 @@ export const DICT = {
     // План уроков
     'plan.title': 'План уроков',
     'plan.progress': '{done} из {total} пройдено',
-    'plan.desc':
-      'Разберём, как строится форма am/is/are + глагол с -ing, когда её использовать, а когда нет',
 
     // Результат практики
     'pract.headingFail': 'Нужно улучшить\nрезультат',
@@ -384,8 +385,11 @@ export const DICT = {
 
     'erran.title': 'Әңгімедегі қателер талдауы',
     'erran.by': 'Талдауды тьюторың жасады:',
+    'erran.empty': 'Тьютормен сөйлескеннен кейін қателер талдауы осында пайда болады',
     'erran.toPlan': 'Сабақ жоспарына оралу',
     'erran.retry': 'Қайта тырысып көру',
+    'chat.empty': 'Тьютормен әңгіменің жазбасы осында пайда болады',
+    'pract.title': 'Практика нәтижесі',
 
     'scen.title': 'Сценарийлер',
     'scen.heading':
@@ -414,8 +418,6 @@ export const DICT = {
 
     'plan.title': 'Сабақ жоспары',
     'plan.progress': '{total}-тен {done} өтілді',
-    'plan.desc':
-      'am/is/are + -ing жалғаулы етістік формасының қалай құрылатынын, оны қашан қолданатынын талдаймыз',
 
     'pract.headingFail': 'Нәтижені\nжақсарту керек',
     'pract.headingPass': 'Тамаша\nнәтиже',
@@ -586,8 +588,11 @@ export const DICT = {
 
     'erran.title': 'Conversation mistakes analytics',
     'erran.by': 'The analysis was done by your tutor:',
+    'erran.empty': 'Your mistake analysis will appear here after a conversation with your tutor',
     'erran.toPlan': 'Back to lesson plan',
     'erran.retry': 'Try again',
+    'chat.empty': 'The transcript of your conversation with the tutor will appear here',
+    'pract.title': 'Practice result',
 
     'scen.title': 'Scenarios',
     'scen.heading':
@@ -616,8 +621,6 @@ export const DICT = {
 
     'plan.title': 'Lesson plan',
     'plan.progress': '{done} of {total} completed',
-    'plan.desc':
-      'We break down how the am/is/are + verb with -ing form is built, when to use it and when not',
 
     'pract.headingFail': 'You need to improve\nthe result',
     'pract.headingPass': 'Excellent\nresult',

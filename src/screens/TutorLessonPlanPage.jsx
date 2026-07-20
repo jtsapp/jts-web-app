@@ -1,18 +1,23 @@
 import TutorShell from '../tutor/TutorShell.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
+import { SCENARIOS } from '../tutor/scenarios.js'
+import { usePassedScenarios } from '../tutor/scenarioProgress.js'
 
-const LESSONS = [
-  { num: '01', title: 'Практика Present Continious' },
-  { num: '02', title: 'Практика Family Tree' },
-  { num: '03', title: 'Практика Present Continious' },
-  { num: '04', title: 'Практика Family Tree' },
-  { num: '05', title: 'Практика Present Continious' },
-  { num: '06', title: 'Практика Present Continious' },
-  { num: '07', title: 'Практика Present Continious' },
-]
-
+// План уроков — сюжетная цепочка голосовых сценариев (единственный реальный
+// учебный трек тьютора). Раньше тут был хардкод из семи одинаковых «Практика
+// Present Continious»; теперь список и прогресс живут там же, где и на странице
+// «Сценарии»: SCENARIOS + lesson_progress из /api/profile.
 export default function TutorLessonPlanPage({ user, onNavigate, onProfile, onBack }) {
   const t = useT()
+  const passed = usePassedScenarios()
+  const lessons = SCENARIOS.map((s, i) => ({
+    num: String(i + 1).padStart(2, '0'),
+    title: s.label,
+    desc: t(`scen.desc.${s.id}`),
+    done: Boolean(passed?.has(s.id)),
+  }))
+  const done = lessons.filter((l) => l.done).length
+
   return (
     <TutorShell
       active="tutor"
@@ -25,21 +30,21 @@ export default function TutorLessonPlanPage({ user, onNavigate, onProfile, onBac
     >
       <div className="t-plan">
         <div className="t-plan__progress">
-          <b>{t('plan.progress', { done: 0, total: 7 })}</b>
+          <b>{t('plan.progress', { done, total: lessons.length })}</b>
           <div className="t-plan__bar">
-            <span />
+            <span style={{ width: done ? `${(done / lessons.length) * 100}%` : undefined }} />
           </div>
         </div>
 
         <div className="t-plan__list">
-          {LESSONS.map((l) => (
-            <div className="t-plan__card" key={l.num}>
+          {lessons.map((l) => (
+            <div className={'t-plan__card' + (l.done ? ' is-done' : '')} key={l.num}>
               <div className="t-plan__body">
                 <div className="t-plan__head">
                   <span className="t-plan__num">{l.num}</span>
                   <span className="t-plan__title">{l.title}</span>
                 </div>
-                <p className="t-plan__desc">{t('plan.desc')}</p>
+                <p className="t-plan__desc">{l.desc}</p>
               </div>
               <span className="t-radio" />
             </div>

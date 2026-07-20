@@ -6,6 +6,7 @@ import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import { MenuIcon, MicIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 import { SCENARIOS, DASHBOARD_SCENARIO_COUNT } from '../tutor/scenarios.js'
+import { usePassedScenarios } from '../tutor/scenarioProgress.js'
 
 // Виджет-превью: полный список — на странице «Сценарии» по кнопке «Посмотреть все».
 const DASH_SCENARIOS = SCENARIOS.slice(0, DASHBOARD_SCENARIO_COUNT)
@@ -29,6 +30,11 @@ export default function TutorDashboardPage({
   const t = useT()
   const [drawer, setDrawer] = useState(false)
   const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  // «Советуем сегодня» — первый несданный сценарий сюжетной цепочки (пока
+  // прогресс не прочитан, это просто первая сцена). Раньше тут висел хардкод
+  // «Практика Present Continious» с пустым обработчиком.
+  const passed = usePassedScenarios()
+  const suggested = SCENARIOS.find((s) => !passed?.has(s.id)) || SCENARIOS[0]
   const tourSteps = [
     { selector: '.t-dash__mic', title: t('tour.mic.title'), text: t('tour.mic.text') },
     { selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text') },
@@ -75,10 +81,14 @@ export default function TutorDashboardPage({
                 <MicIcon size={64} />
               </button>
               <h1 className="t-dash__ctatitle">{t('dash.ctaTitle')}</h1>
-              <button className="t-dash__suggest" type="button" onClick={onSuggest}>
+              <button
+                className="t-dash__suggest"
+                type="button"
+                onClick={() => onSuggest && onSuggest(suggested.id)}
+              >
                 <span className="t-dash__suggesttext">
                   <small>{t('dash.suggestLabel')}</small>
-                  <b>Практика Present Continious</b>
+                  <b>{suggested.label}</b>
                 </span>
                 <span className="t-dash__suggestarrow">
                   <ArrowRightIcon size={20} />

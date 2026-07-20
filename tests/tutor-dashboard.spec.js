@@ -17,6 +17,12 @@ test.describe('дашборд тьютора — контент', () => {
     await expect(page.locator('.t-progress')).toHaveCount(0)
     await expect(page.locator('.t-scenarios .t-scenario').first()).toBeAttached()
   })
+
+  test('совет дня — реальный сценарий, а не хардкод', async ({ page }) => {
+    await page.goto('/?screen=tutor-dashboard')
+    // Без прогресса предлагается первая сцена сюжетной цепочки.
+    await expect(page.locator('.t-dash__suggesttext b')).toHaveText('U.S. Visa Interview')
+  })
 })
 
 test.describe('дашборд тьютора — мобилка', () => {
