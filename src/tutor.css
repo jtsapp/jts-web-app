@@ -472,8 +472,9 @@
 .t-tcard__avatar {
   width: 124px;
   height: 124px;
-  border-radius: 50%;
-  object-fit: cover;
+  /* У ассетов свой круглый фон и прозрачные углы; CSS-маска 50% резала
+     шапочку и кисточку, выходящие за круг, — показываем картинку целиком. */
+  object-fit: contain;
   margin-bottom: 19px;
 }
 .t-tcard__name {
@@ -2313,6 +2314,9 @@
     width: 100%;
     max-width: 430px;
     height: auto;
+    /* Родитель (.t-content--center) — flex со stretch: без этого карточка
+       растягивается по высоте и панель отрывается от контента. */
+    align-self: flex-start;
     margin: 0 auto;
     background: transparent;
     border-radius: 0;
@@ -2339,12 +2343,23 @@
     bottom: 0;
     top: auto;
     transform: translateX(-50%);
-    width: 250px;
-    height: auto;
+    /* Композиция 824×1270 вертикальная: ограничиваем ВЫСОТОЙ панели, иначе
+       маскоты вылезали вверх и накрывали кнопки контента. */
+    width: auto;
+    height: 240px;
+    object-fit: contain;
   }
 
   /* --- Выбор тьютора: горизонтальный свайп со снапом (виден край соседа) --- */
+  /* Два уровня «роста по контенту» ломали свайп: секция — flex-item
+     родителя-строки, карусель — item колонки с align-items: center. Обе
+     растягивались до ~950px, скроллился весь .t-content, снап не работал. */
+  .t-choose {
+    width: 100%;
+    min-width: 0;
+  }
   .t-choose__grid {
+    align-self: stretch;
     margin: 16px -16px 0;
     padding: 4px 16px 10px;
     overflow-x: auto;
@@ -2452,6 +2467,16 @@
     flex-wrap: wrap;
     row-gap: 4px;
     justify-content: center;
+  }
+
+  /* --- «Кем работаешь»: десктопная сетка 744px в две колонки → колонка во
+     всю ширину (раньше варианты уезжали за левый край экрана) --- */
+  .t-prof__grid {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+  .t-prof__input {
+    width: 100%;
   }
 
   /* --- Управление тьютором: карточка над историей, всё во всю ширину --- */
