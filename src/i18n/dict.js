@@ -72,6 +72,7 @@ export const DICT = {
     'voiceIntro.heading': '{name} хочет узнать твой уровень\nразговорного английского',
     'voiceIntro.start': 'Пройти короткий тест',
     'voiceIntro.decline': 'Не могу говорить сейчас',
+    'voiceIntro.hint': 'Разговор на 3 минуты, чтобы понять твой разговорный уровень',
     'placeTest.heading': 'Ответь на задание — я определю твой уровень',
     'placeTest.hint':
       'Говори 2–3 минуты по-английски. Время не ограничено — заверши, когда будешь готов.',
@@ -286,6 +287,7 @@ export const DICT = {
     'voiceIntro.heading': '{name} сенің ауызша ағылшын\nдеңгейіңді білгісі келеді',
     'voiceIntro.start': 'Қысқа тест тапсыру',
     'voiceIntro.decline': 'Қазір сөйлей алмаймын',
+    'voiceIntro.hint': 'Ауызша деңгейіңді түсіну үшін 3 минуттық әңгіме',
     'placeTest.heading': 'Тапсырманы орында — деңгейіңді анықтаймын',
     'placeTest.hint':
       'Ағылшынша 2–3 минут сөйле. Уақыт шектелмеген — дайын болғанда аяқта.',
@@ -488,6 +490,7 @@ export const DICT = {
     'voiceIntro.heading': '{name} wants to know your\nspoken English level',
     'voiceIntro.start': 'Take a short test',
     'voiceIntro.decline': "I can't talk right now",
+    'voiceIntro.hint': 'A 3-minute conversation to gauge your spoken level',
     'placeTest.heading': 'Do the task — I’ll assess your level',
     'placeTest.hint':
       'Speak in English for 2–3 minutes. No time limit — finish when you’re ready.',
