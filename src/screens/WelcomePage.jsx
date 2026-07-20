@@ -11,7 +11,7 @@ export default function WelcomePage({ onRegister, onLogin }) {
       <div className="card">
         {/* Шапка поверх героя */}
         <header className="hero-header">
-          <Logo variant="dark" />
+          <Logo variant="light" />
 
           <div className="hero-header__right">
             <div className="socials">
@@ -31,10 +31,7 @@ export default function WelcomePage({ onRegister, onLogin }) {
         </header>
 
         {/* Герой */}
-        <section
-          className="hero"
-          style={{ backgroundImage: 'url(/assets/hero-london.jpg)' }}
-        >
+        <section className="hero">
           <div className="hero__content">
             <h1 className="hero__title">
               {t('welcome.title')

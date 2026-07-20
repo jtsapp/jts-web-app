@@ -259,6 +259,7 @@ textarea {
 .hero {
   position: relative;
   flex: 1;
+  background-image: url(/assets/hero-london.jpg);
   background-size: cover;
   background-position: center 38%;
   display: flex;
@@ -4594,4 +4595,110 @@ textarea {
   .pp--enter {
     animation: none;
   }
+}
+
+/* ======================================================= */
+/* ====  МОБИЛКА: лендинг — Figma iPhone 1 (≤560px)  ===== */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .screen { min-height: 100dvh; }
+  .card { min-height: 100dvh; }
+
+  /* Полноэкранный герой: маскот над Лондоном */
+  .hero {
+    background-image: url(/mobile/hero-welcome.jpg);
+    background-position: center bottom;
+    background-size: cover;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .hero::before {
+    background: linear-gradient(
+      180deg,
+      rgba(20, 30, 70, 0.45) 0%,
+      rgba(20, 30, 70, 0.12) 30%,
+      rgba(0, 0, 0, 0) 55%
+    );
+  }
+
+  /* Шапка: лого слева, справа колонка (язык над соцсетями) */
+  .hero-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px;
+    gap: 12px;
+  }
+  .hero-header .logo { font-size: 22px; }
+  .hero-header__right {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  /* Соцсети — 3 равных круглых иконки, пурпур на белом */
+  .socials { gap: 8px; }
+  .social-pill,
+  .social-round {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  }
+  .social-pill span { display: none; }
+  .social-pill,
+  .social-round,
+  .social-round--wa { color: #9047ff; }
+
+  /* Lang-пилюля */
+  .lang-selector { border-radius: 40px; }
+
+  /* Контент — слева, под шапкой */
+  .hero__content {
+    text-align: left;
+    padding: 150px 20px 0;
+    max-width: none;
+    width: 100%;
+  }
+  .hero__title {
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.28);
+  }
+  .hero__subtitle {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-top: 20px;
+    max-width: 405px;
+  }
+
+  /* CTA — белая карточка r20, кнопки в столбик full-width */
+  .cta {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-top: 24px;
+    padding: 16px 20px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  }
+  .btn {
+    width: 100%;
+    padding: 18px;
+    font-size: 17px;
+    border-radius: 60px;
+  }
+  .btn--secondary {
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+
+  /* Футер на лендинге прячем — герой во весь экран */
+  .screen > .footer { display: none; }
 }
