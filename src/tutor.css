@@ -1200,11 +1200,15 @@
     animation: none;
   }
 }
+/* Колонка по центру, но строки выровнены по левому краю — иначе галочки
+   выстраиваются «лесенкой» под текстами разной длины. */
 .t-analysis__list {
-  margin-top: 38px;
+  margin: 38px auto 0;
+  width: max-content;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
 }
 .t-analysis__item {
@@ -1645,6 +1649,23 @@
   font-weight: 500;
   color: #8b8b8b;
 }
+/* Сданный урок: фиолетовая галочка в радио-кружке (как в чек-листе анализа) */
+.t-plan__card.is-done .t-radio {
+  position: relative;
+  border-color: var(--t-purple);
+  background: var(--t-purple);
+}
+.t-plan__card.is-done .t-radio::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 5px;
+  height: 10px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
 
 /* ------------------- Управление тьютором ------------------------- */
 .t-manage {
@@ -1916,6 +1937,16 @@
   line-height: 1.55;
   color: var(--t-ink);
 }
+.t-erran__empty {
+  margin-top: 24px;
+  padding: 28px 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--t-muted);
+  text-align: center;
+}
 .t-erran__btns {
   margin-top: 40px;
   display: flex;
@@ -2053,6 +2084,16 @@
   align-self: flex-end;
   background: #ff7300;
   border-radius: 19px 19px 5px 19px;
+}
+.t-chat__empty {
+  margin-top: 24px;
+  padding: 28px 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--t-muted);
+  text-align: center;
 }
 
 /* ---------------------- Онбординг-тур ---------------------------- */
@@ -2404,5 +2445,73 @@
     padding: 28px 16px 40px;
     overflow-y: visible;
     border-radius: 28px 28px 0 0;
+  }
+
+  /* --- Карточка тьютора: пилюли качеств переносятся, а не режутся краем --- */
+  .t-tcard__chips {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    justify-content: center;
+  }
+
+  /* --- Управление тьютором: карточка над историей, всё во всю ширину --- */
+  .t-manage {
+    flex-direction: column;
+    gap: 28px;
+  }
+  .t-manage__card {
+    width: 100%;
+  }
+
+  /* --- План уроков: прогресс и карточки не шире экрана --- */
+  .t-plan__progress {
+    width: 100%;
+  }
+  .t-plan__card {
+    width: 100%;
+  }
+
+  /* --- Сценарии (страница): десктопные 4 колонки → 2 --- */
+  .t-scen__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 12px;
+  }
+
+  /* --- Результат практики: маскот сверху, панель с кнопками под ним --- */
+  .t-result2 {
+    padding-top: 24px;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .t-result2__mascot {
+    width: min(64vw, 260px);
+  }
+  .t-result2__side {
+    width: 100%;
+    max-width: 370px;
+  }
+  .t-result2__stats {
+    width: 100%;
+  }
+  .t-result2__btn {
+    width: 100%;
+    margin-top: 32px;
+  }
+  .t-result2__btn--tall {
+    margin-top: 7px;
+  }
+
+  /* --- Разбор ошибок: кнопки стопкой во всю ширину --- */
+  .t-erran__btns {
+    flex-direction: column;
+  }
+  .t-erran__btn {
+    width: 100%;
+  }
+
+  /* --- Транскрипт разговора: пузыри пошире на узком экране --- */
+  .t-bubble {
+    max-width: 85%;
   }
 }

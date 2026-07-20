@@ -717,7 +717,10 @@ export default function App() {
             setScenario(null)
             setScreen('tutor-voice-chat')
           }}
-          onSuggest={() => {}}
+          onSuggest={(id) => {
+            setScenario(id || null)
+            setScreen('tutor-voice-chat')
+          }}
           onSeeScenarios={() => setScreen('tutor-scenarios')}
           onScenario={() => setScreen('tutor-scenarios')}
         />

@@ -220,11 +220,15 @@ textarea {
 .social-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   background: #ffffff;
   color: #c13584;
   text-decoration: none;
   border-radius: 999px;
+  /* ≥44px по обеим осям — комфортный тап-таргет на тачскрине */
+  min-width: 44px;
+  min-height: 44px;
   padding: 8px 13px;
   font-size: 13px;
   font-weight: 600;
@@ -1011,6 +1015,9 @@ textarea {
   text-decoration: underline;
   text-underline-offset: 3px;
   justify-self: center;
+  /* Тонкая строка — добираем тап-таргет вертикальным паддингом */
+  display: inline-block;
+  padding: 12px 8px;
 }
 .footer-link:hover {
   color: #fff;

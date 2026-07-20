@@ -1,20 +1,21 @@
 import TutorShell from '../tutor/TutorShell.jsx'
+import { useT } from '../i18n/LanguageContext.jsx'
 
-const MESSAGES = Array.from({ length: 12 }, (_, i) =>
-  i % 2 === 0
-    ? { who: 'tutor', text: 'Hello, Saken! How are you doing?' }
-    : { who: 'me', text: 'Hello, Spark! I’m okay' },
-)
-
+// Транскрипт одного разговора с тьютором. Данные приходят пропсами из истории
+// (бэкенд её пока не отдаёт — см. TutorManagePage); без них показываем пустое
+// состояние вместо демо-переписки, которая раньше была захардкожена.
+// Формат сообщения: { who: 'tutor' | 'me', text }.
 export default function TutorChatHistoryPage({
   user,
   onNavigate,
   onProfile,
   onBack,
-  title = 'Практика Present Continious',
-  date = 'Четверг, 12.06',
-  time = '12:45',
+  title,
+  date,
+  time,
+  messages = [],
 }) {
+  const t = useT()
   return (
     <TutorShell
       active="tutor"
@@ -22,22 +23,28 @@ export default function TutorChatHistoryPage({
       onNavigate={onNavigate}
       onProfile={onProfile}
       onBack={onBack}
-      title={title}
+      title={title || t('manage.history')}
       layout="flow"
     >
       <div className="t-chat">
-        <div className="t-chat__date">
-          {date}
-          <br />
-          {time}
-        </div>
-        <div className="t-chat__list">
-          {MESSAGES.map((m, i) => (
-            <div className={'t-bubble t-bubble--' + m.who} key={i}>
-              {m.text}
-            </div>
-          ))}
-        </div>
+        {(date || time) && (
+          <div className="t-chat__date">
+            {date}
+            {date && time && <br />}
+            {time}
+          </div>
+        )}
+        {messages.length === 0 ? (
+          <p className="t-chat__empty">{t('chat.empty')}</p>
+        ) : (
+          <div className="t-chat__list">
+            {messages.map((m, i) => (
+              <div className={'t-bubble t-bubble--' + m.who} key={i}>
+                {m.text}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </TutorShell>
   )
