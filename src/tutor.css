@@ -2586,7 +2586,11 @@
 /* ======================================================= */
 /* == МОБИЛКА: карусель выбора тьютора — Figma frames 91-93 */
 /* ======================================================= */
-@media (max-width: 560px) {
+/* Брейкпоинт 760, а не 560: мобильный шелл (MobileTopBar + drawer-сайдбар)
+   включается на max-width:760px (styles.css). При 560 в зоне 561–760 был бы
+   мобильный топбар, но десктоп-грид (3 карточки ~966px в ряд) → съезд экрана
+   и горизонтальный скролл. Карусель обязана покрывать весь диапазон шелла. */
+@media (max-width: 760px) {
   /* Десктоп-версия экрана выбора скрыта, показываем карусель */
   .t-choose__title,
   .t-choose__pills,
@@ -2671,7 +2675,7 @@
     color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
   }
 }
-@media (min-width: 561px) {
+@media (min-width: 761px) {
   .t-car { display: none; }
   .t-main:has(.t-choose) .t-topbar__title { display: none; }
 }
