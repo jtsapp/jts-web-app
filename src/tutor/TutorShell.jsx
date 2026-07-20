@@ -16,19 +16,22 @@ export default function TutorShell({
   onBack,
   title,
   layout = 'center',
+  hideMobileNav = false,
   children,
 }) {
   const t = useT()
   return (
     <div className="t-app">
       <div className="t-body">
-        <MobileNav
-          active={active}
-          userName={user?.name}
-          userLevel={user?.level}
-          onNav={onNavigate}
-          onProfile={onProfile}
-        />
+        {!hideMobileNav && (
+          <MobileNav
+            active={active}
+            userName={user?.name}
+            userLevel={user?.level}
+            onNav={onNavigate}
+            onProfile={onProfile}
+          />
+        )}
         <Sidebar
           active={active}
           userName={user?.name}

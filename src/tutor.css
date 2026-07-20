@@ -2292,3 +2292,87 @@
   /* Тёмный подвал в мобильном тьюторе не показываем */
   .t-app > .footer { display: none; }
 }
+
+/* ======================================================= */
+/* == МОБИЛКА: карусель выбора тьютора — Figma frames 91-93 */
+/* ======================================================= */
+@media (max-width: 560px) {
+  /* Десктоп-версия экрана выбора скрыта, показываем карусель */
+  .t-choose__title,
+  .t-choose__pills,
+  .t-choose__grid { display: none; }
+  .t-main:has(.t-choose) { padding: 0 16px 16px; }
+  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; }
+  /* t-choose тянется на всю высоту, чтобы кнопки карусели прижались к низу */
+  .t-choose:has(.t-car) { padding: 0; flex: 1; display: flex; flex-direction: column; }
+
+  /* Топбар: серый back-кружок 32 + центрированный заголовок (Figma 91) */
+  .t-topbar { position: relative; justify-content: center; padding: 8px 0 4px; }
+  .t-back {
+    position: absolute;
+    left: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 16px;
+    background: #f6f6f6;
+    font-size: 0;
+    gap: 0;
+  }
+  .t-topbar__title { font-size: 16px; font-weight: 700; color: #181818; }
+
+  /* Карусель тянется на всю высоту, кнопки прижаты к низу (Figma: y734/790) */
+  .t-car { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+  .t-car__stage {
+    position: relative;
+    /* Шире контента на 16px с каждой стороны — соседние аватары выглядывают
+       за края экрана (Figma: prev x-24, next x315 при кадре 402). */
+    width: calc(100% + 32px);
+    margin: 0 -16px;
+    height: 200px;
+    margin-top: 29px;
+    touch-action: pan-y;
+  }
+  .t-car__ava { position: absolute; border-radius: 50%; overflow: hidden; background: #efe7ff; }
+  .t-car__ava img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .t-car__ava--cur {
+    width: 200px; height: 200px; top: 0; left: 50%;
+    transform: translateX(-50%); z-index: 2;
+  }
+  .t-car__ava--side { width: 111px; height: 111px; top: 45px; z-index: 1; }
+  .t-car__ava--prev { left: -24px; }
+  .t-car__ava--next { right: -24px; }
+
+  .t-car__name {
+    margin-top: 19px; font-size: 24px; font-weight: 700;
+    color: #181818; text-align: center;
+  }
+  .t-car__chips { display: flex; justify-content: center; gap: 2px; margin-top: 8px; }
+  .t-car__chip {
+    height: 32px; display: inline-flex; align-items: center; padding: 0 12px;
+    border-radius: 20px; color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap;
+  }
+  .t-car__desc {
+    margin-top: 18px; max-width: 334px; font-size: 14px; line-height: 1.4;
+    color: #181818; text-align: center;
+  }
+
+  .t-car__actions {
+    margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 12px;
+    padding-top: 24px;
+  }
+  .t-car__listen {
+    height: 44px; border: none; border-radius: 30px; background: #ebdeff;
+    color: #9047ff; font-family: inherit; font-size: 15px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  }
+  .t-car__choose {
+    height: 48px; border: none; border-radius: 80px; background: #9047ff;
+    color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+}
+@media (min-width: 561px) {
+  .t-car { display: none; }
+  .t-main:has(.t-choose) .t-topbar__title { display: none; }
+}
