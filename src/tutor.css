@@ -2307,6 +2307,14 @@
     padding: 24px 16px 36px;
     overflow-y: auto;
   }
+  /* Экран загрузки («тьютор собирает обучение») — по центру вертикали на
+     мобиле. Общий .t-content--center сверху прижат (flex-start) ради высоких
+     center-экранов; загрузочный уникален .t-status__dots — его центрируем,
+     сохранив полную ширину (align-items:stretch, заголовок центрован сам). */
+  .t-content--center:has(.t-status__dots) {
+    flex-direction: column;
+    justify-content: center;
+  }
   .t-content--flow {
     padding: 0 16px 32px;
   }
