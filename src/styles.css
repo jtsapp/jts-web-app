@@ -1813,6 +1813,92 @@ textarea {
   justify-content: center;
 }
 
+/* ============  Мобильная шапка + сайдбар-drawer  ========= */
+/* Базово скрыты — на десктопе сайдбар статичен, шапка не нужна.
+   Показ и off-canvas-поведение включаются в @media (max-width: 760px). */
+.mtop {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border-bottom: 1px solid #efeef4;
+}
+.mtop__menu {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 12px;
+  background: #f5f2fe;
+  color: var(--purple);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.mtop__menu:hover {
+  background: #ece4ff;
+}
+.mtop__profile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+.mtop__avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mtop__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.mtop__meta b {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mtop__meta span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.mtop__right {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Затемнение под открытым drawer и кнопка закрытия внутри него —
+   существуют только на мобилке. */
+.sb-overlay {
+  display: none;
+}
+.sb__close {
+  display: none;
+}
+
 /* ======================================================= */
 /* ====================  УРОКИ / IELTS  =================== */
 /* ======================================================= */
@@ -2261,50 +2347,78 @@ textarea {
   background: #ffffff;
 }
 
-/* Адаптив: сайдбар сворачивается в верхнюю строку на узких экранах */
+/* Адаптив (≤760px): контент на всю ширину, сайдбар — off-canvas drawer,
+   которым управляет мобильная шапка (.mtop). Это чинит обе зоны разом —
+   и обучение (.learn__body), и тьютора (.t-body). */
 @media (max-width: 760px) {
-  .learn__body {
-    flex-direction: column;
+  .mtop {
+    display: flex;
   }
+  .learn__body,
+  .t-body {
+    display: block;
+  }
+  .learn__main,
+  .t-main {
+    width: 100%;
+    min-height: calc(100dvh - 63px - 62px); /* минус шапка и подвал */
+  }
+
+  /* Сайдбар как выезжающая панель поверх контента */
   .sb {
-    width: 100%;
-    flex-direction: row;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100dvh;
+    width: min(320px, 86vw);
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    border-right: 1px solid #efeef4;
+    box-shadow: 8px 0 40px rgba(24, 16, 40, 0.18);
+    padding-top: 64px; /* место под кнопку-крестик */
+  }
+  .sb.is-open {
+    transform: translateX(0);
+  }
+
+  .sb-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(20, 16, 30, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+  .sb-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sb__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: inline-flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 12px 14px;
-    border-right: none;
-    border-bottom: 1px solid #efeef4;
-    position: static;
-    align-self: auto;
-    height: auto;
-    overflow-y: visible;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: #f5f2fe;
+    color: var(--purple);
+    cursor: pointer;
   }
-  .sb__logo {
-    padding: 0;
-  }
-  .sb__profile {
-    order: 2;
-  }
-  .sb__nav {
-    order: 3;
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin: 0;
-    width: 100%;
-  }
-  .sb__item span {
-    display: none;
-  }
-  .sb__item {
-    padding: 10px;
-  }
-  .sb__spacer {
-    display: none;
-  }
-  .sb__role {
-    order: 1;
-    margin-left: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sb,
+  .sb-overlay {
+    transition: none;
   }
 }
 
