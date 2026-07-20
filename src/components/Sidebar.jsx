@@ -13,6 +13,7 @@ import {
   IeltsIcon,
   VocabIcon,
   ChevronRightIcon,
+  CloseIcon,
 } from './icons.jsx'
 
 const NAV_FULL = [
@@ -34,10 +35,27 @@ function groupNum(n) {
 
 // Левый сайдбар обучающей зоны. Монеты и стрик — из бэкенда
 // (GET /mobile/balance/info), логика начисления живёт там же.
-export default function Sidebar({ userName, userLevel = 'A1', active = 'learning', token, onNav, onProfile }) {
+export default function Sidebar({
+  userName,
+  userLevel = 'A1',
+  active = 'learning',
+  token,
+  onNav,
+  onProfile,
+  // Мобильный drawer: `open` выезжает сайдбар поверх контента, `onClose` его прячет.
+  // На десктопе оба не влияют — там сайдбар статичная колонка (управляется CSS).
+  open = false,
+  onClose,
+}) {
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const initial = (userName || 'JTS').trim().charAt(0).toUpperCase()
+
+  // На мобилке любой выбор в сайдбаре сначала закрывает drawer, потом навигирует.
+  const pick = (fn) => (...args) => {
+    onClose?.()
+    fn?.(...args)
+  }
 
   const [balance, setBalance] = useState({ coins: 0, streak: 0, streakActiveToday: false })
 
@@ -65,34 +83,45 @@ export default function Sidebar({ userName, userLevel = 'A1', active = 'learning
   }, [token])
 
   return (
-    <aside className="sb">
-      <div className="sb__logo">
-        <Logo variant="dark" />
-      </div>
+    <>
+      {/* Затемнение под открытым drawer (только мобилка) */}
+      <div
+        className={`sb-overlay ${open ? 'is-open' : ''}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside className={`sb ${open ? 'is-open' : ''}`}>
+        <button className="sb__close" type="button" onClick={onClose} aria-label={t('common.back')}>
+          <CloseIcon size={22} />
+        </button>
 
-      <button className="sb__profile" onClick={onProfile}>
-        <span className="sb__avatar">{initial}</span>
-        <span className="sb__profile-text">
-          <b>{userName || t('kingdom.profile')}</b>
-          <span>{t('kingdom.profile')}</span>
-        </span>
-        <span className="sb__profile-chev">
-          <ChevronRightIcon size={16} />
-        </span>
-      </button>
+        <div className="sb__logo">
+          <Logo variant="dark" />
+        </div>
 
-      <nav className="sb__nav">
-        {NAV.map(({ key, label, Icon }) => (
-          <button
-            key={key}
-            className={`sb__item ${active === key ? 'sb__item--active' : ''}`}
-            onClick={() => onNav?.(key)}
-          >
-            <Icon size={24} />
-            <span>{t(label)}</span>
-          </button>
-        ))}
-      </nav>
+        <button className="sb__profile" onClick={pick(onProfile)}>
+          <span className="sb__avatar">{initial}</span>
+          <span className="sb__profile-text">
+            <b>{userName || t('kingdom.profile')}</b>
+            <span>{t('kingdom.profile')}</span>
+          </span>
+          <span className="sb__profile-chev">
+            <ChevronRightIcon size={16} />
+          </span>
+        </button>
+
+        <nav className="sb__nav">
+          {NAV.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              className={`sb__item ${active === key ? 'sb__item--active' : ''}`}
+              onClick={() => pick(onNav)(key)}
+            >
+              <Icon size={24} />
+              <span>{t(label)}</span>
+            </button>
+          ))}
+        </nav>
 
       <div className="sb__spacer" />
 
@@ -120,7 +149,8 @@ export default function Sidebar({ userName, userLevel = 'A1', active = 'learning
           <img className="sb__coin" src="/assets/world/coin.png" alt="" />
           <span className="sb__stat-num sb__stat-num--coin">{groupNum(balance.coins)}</span>
         </div>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </>
   )
 }
