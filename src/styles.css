@@ -4707,7 +4707,7 @@ textarea {
 /* ==  МОБИЛКА: экраны-формы (Shell) — Figma iPhone 6,7  == */
 /* ======================================================= */
 @media (max-width: 560px) {
-  .reg-header { padding: 20px; }
+  .reg-header { padding: 16px 20px 8px; }
   .reg-header__left { gap: 16px; }
   .back-btn {
     width: 36px;
@@ -4775,7 +4775,14 @@ textarea {
 /* == МОБИЛКА: регистрация-чат (2–5) + success (8) ======= */
 /* ======================================================= */
 @media (max-width: 560px) {
-  .reg-inner { max-width: none; }
+  /* reg-inner тянется на всю ширину и высоту, чтобы чат заполнил экран,
+     а ввод прижался к низу (Figma: белый лист x0..440, ввод y862). */
+  .reg-inner {
+    max-width: none;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
   .reg-title { font-size: 28px; font-weight: 700; text-align: center; }
   .reg-subtitle { color: var(--ink); font-size: 14px; text-align: center; }
 
@@ -4783,26 +4790,32 @@ textarea {
      Google (мин. ширина ~200px) не помещаются в 2 колонки на экранах <440px. */
   .auth-row { grid-template-columns: 1fr; gap: 10px; }
 
-  /* Чат — белый лист во всю ширину, без карточной тени */
+  /* Чат — белый лист ВО ВСЮ ШИРИНУ (Figma: x0 w440, без радиуса), тянется на
+     всю высоту; контент с отступом 20px. margin -20 «выламывает» лист из
+     20px-паддинга reg-body. */
   .chat {
+    flex: 1;
+    min-height: 0;
+    margin: 0 -20px;
     border: none;
-    border-radius: 20px;
+    border-radius: 0;
     box-shadow: none;
-    min-height: 58vh;
   }
-  .chat__scroll { max-height: 60vh; padding: 20px 16px 8px; }
+  .chat__scroll { flex: 1; max-height: none; padding: 24px 20px 8px; }
   .chat__author { margin-bottom: 18px; }
   .chat__avatar { width: 56px; height: 56px; }
   .chat__name { font-size: 18px; }
   .chat__role { font-size: 15px; }
   .bubble { font-size: 16px; max-width: 82%; }
+  /* Ввод прижат к низу листа, инсет 20px, текст 18px (Figma) */
   .chat__input {
     background: #f6f6f6;
     border-radius: 20px;
-    margin: 8px 0 0;
-    padding: 14px 16px;
+    margin: 8px 20px calc(4px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 20px;
   }
-  .send-btn { border-radius: 18px; }
+  .chat__input input { font-size: 18px; }
+  .send-btn { border-radius: 18px; padding: 9px 16px; }
 
   /* Кнопки авторизации в чате */
   .auth-primary {
