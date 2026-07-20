@@ -434,8 +434,16 @@ export default function App() {
       )
     case 'success':
       // Уровень уже взят из профиля; если его там не было (новая регистрация) —
-      // сначала письменный CEFR-тест, иначе сразу в обучение.
-      return <SuccessPage onDone={() => setScreen(needsLevelTest ? 'test-intro' : 'kingdom')} />
+      // сначала письменный CEFR-тест, иначе сразу в обучение. В режиме «только
+      // тьютор» королевств нет: свежий вход ведёт в онбординг тьютора (там свой
+      // голосовой тест уровня), вернувшийся пользователь — сразу на дашборд.
+      return (
+        <SuccessPage
+          onDone={() =>
+            setScreen(TUTOR_ONLY ? tutorHome : needsLevelTest ? 'test-intro' : 'kingdom')
+          }
+        />
+      )
     case 'test-intro':
       return (
         <LevelTestIntroPage
