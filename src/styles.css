@@ -4819,3 +4819,103 @@ textarea {
   .success-center { text-align: center; }
   .success-center .form-title { font-size: 32px; text-align: center; }
 }
+
+/* ======================================================= */
+/* == МОБИЛКА: shell (топбар + drawer) — Figma 10–12 ===== */
+/* ======================================================= */
+@media (max-width: 560px) {
+  /* Прячем десктоп-рельс, показываем мобильный топбар */
+  .learn__body > .sb,
+  .t-body > .sb { display: none; }
+
+  .mnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #fff;
+  }
+  .mnav__burger {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 12px;
+    background: #b7f0ff;
+    color: #9047ff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .mnav__profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
+  .mnav__avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #9047ff;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .mnav__meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    text-align: left;
+  }
+  .mnav__meta b { font-size: 15px; font-weight: 700; color: #181818; }
+  .mnav__meta span { font-size: 13px; color: #afafaf; }
+
+  .mnav__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(20, 16, 38, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .mnav__scrim--on { opacity: 1; pointer-events: auto; }
+  .mnav__drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.25);
+  }
+  .mnav__drawer--on { transform: none; }
+
+  /* Sidebar внутри drawer — вертикальный рельс (отменяем 760-рефлоу) */
+  .mnav__drawer .sb {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    position: static;
+    height: 100%;
+    width: 272px;
+    border-right: none;
+  }
+  .mnav__drawer .sb__item span { display: inline; }
+  .mnav__drawer .sb__spacer { display: block; }
+  .mnav__drawer .sb__role { margin-left: 0; }
+
+  /* Learning (10) */
+  .learn__main { padding: 0 20px 24px; }
+  .lp__title { font-size: 28px; }
+}
