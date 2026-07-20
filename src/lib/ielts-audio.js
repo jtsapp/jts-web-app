@@ -86,8 +86,15 @@ export async function blobToWav16kMono(blob) {
 
 let currentAudio = null
 let currentObjectUrl = null
+// Монотонный токен поколения. Каждый новый speak* инкрементит его; async-хвост
+// (fetch + blob) прошлого вызова видит рассинхрон и молча выходит. Без этого
+// быстрые повторные клики по «послушать голос» шлют 3 fetch-а параллельно —
+// stopServerAudio в начале ловит только уже игравший currentAudio, а не те, что
+// ещё в полёте, — и в итоге играют все три голоса разом.
+let playToken = 0
 
 function stopServerAudio() {
+  playToken++
   if (currentAudio) {
     try {
       currentAudio.pause()
@@ -138,13 +145,17 @@ export async function speakListeningAudio(text, opts = {}) {
   if (!text.trim()) return 'none'
   try {
     stopServerAudio()
+    const myToken = playToken
     const res = await fetch('/api/listening-audio', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ text }),
     })
+    // Пока шёл fetch, юзер мог кликнуть ещё раз — этот вызов устарел, выходим.
+    if (myToken !== playToken) return 'none'
     if (res.ok) {
       const blob = await res.blob()
+      if (myToken !== playToken) return 'none'
       if (blob.size > 0) {
         const url = URL.createObjectURL(blob)
         const audio = new Audio(url)
@@ -183,13 +194,17 @@ export async function speakTutorVoice(tutor, text, opts = {}) {
   if (!text.trim()) return 'none'
   try {
     stopServerAudio()
+    const myToken = playToken
     const res = await fetch('/api/tutor-tts', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ tutor, text, lang: opts.lang || 'en' }),
     })
+    // Пока шёл fetch, юзер мог кликнуть ещё раз — этот вызов устарел, выходим.
+    if (myToken !== playToken) return 'none'
     if (res.ok) {
       const blob = await res.blob()
+      if (myToken !== playToken) return 'none'
       if (blob.size > 0) {
         const url = URL.createObjectURL(blob)
         const audio = new Audio(url)
