@@ -4718,7 +4718,7 @@ textarea {
 
   .reg-body { padding: 8px 20px 32px; }
   .form-inner { max-width: none; padding-top: 8px; }
-  .form-card { text-align: left; }
+  .form-card { text-align: center; }
   .form-title {
     font-size: 28px;
     font-weight: 700;
@@ -4776,8 +4776,12 @@ textarea {
 /* ======================================================= */
 @media (max-width: 560px) {
   .reg-inner { max-width: none; }
-  .reg-title { font-size: 28px; font-weight: 700; }
-  .reg-subtitle { color: var(--ink); font-size: 14px; }
+  .reg-title { font-size: 28px; font-weight: 700; text-align: center; }
+  .reg-subtitle { color: var(--ink); font-size: 14px; text-align: center; }
+
+  /* Apple/Google — в столбик: полный текст «Войти через Apple ID» + SDK-кнопка
+     Google (мин. ширина ~200px) не помещаются в 2 колонки на экранах <440px. */
+  .auth-row { grid-template-columns: 1fr; gap: 10px; }
 
   /* Чат — белый лист во всю ширину, без карточной тени */
   .chat {
