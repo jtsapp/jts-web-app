@@ -2586,15 +2586,29 @@
 /* ======================================================= */
 /* == МОБИЛКА: карусель выбора тьютора — Figma frames 91-93 */
 /* ======================================================= */
-@media (max-width: 560px) {
+/* Брейкпоинт 760, а не 560: мобильный шелл (MobileTopBar + drawer-сайдбар)
+   включается на max-width:760px (styles.css). При 560 в зоне 561–760 был бы
+   мобильный топбар, но десктоп-грид (3 карточки ~966px в ряд) → съезд экрана
+   и горизонтальный скролл. Карусель обязана покрывать весь диапазон шелла. */
+@media (max-width: 760px) {
   /* Десктоп-версия экрана выбора скрыта, показываем карусель */
   .t-choose__title,
   .t-choose__pills,
   .t-choose__grid { display: none; }
   .t-main:has(.t-choose) { padding: 0 16px 16px; }
-  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; }
+  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
   /* t-choose тянется на всю высоту, чтобы кнопки карусели прижались к низу */
   .t-choose:has(.t-car) { padding: 0; flex: 1; display: flex; flex-direction: column; }
+
+  /* Экран выбора залочен на один вьюпорт: пользователь не должен случайно
+     смахнуть страницу и потерять карусель из виду. Лочим всю оболочку в
+     100dvh с overflow:hidden и убираем футер — прокрутки (верт. и гориз.)
+     на этом экране нет вообще. Скоуп :has(.t-car) — только экран выбора,
+     остальные экраны тьютора скроллятся как обычно. */
+  html:has(.t-car), body:has(.t-car) { overflow: hidden; overscroll-behavior: none; }
+  .t-app:has(.t-car) { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+  .t-app:has(.t-car) .t-body { flex: 1; min-height: 0; }
+  .t-app:has(.t-car) .footer { display: none; }
 
   /* Топбар: серый back-кружок 32 + центрированный заголовок (Figma 91).
      Строго в контексте карусели — иначе серый кружок протекал бы на экраны
@@ -2624,6 +2638,10 @@
     margin: 0 -16px;
     height: 200px;
     margin-top: 29px;
+    /* Обрезаем дальние слоты цикла (9 копий уезжают на ±550px и держат
+       opacity:0, но раздували scrollWidth сцены → горизонтальный ползунок
+       на .t-content--flow). Соседи ±1 внутри сцены, их выглядывание цело. */
+    overflow: hidden;
     touch-action: pan-y;
   }
   /* Слайд-аватар: базовый размер 200 (центр), соседи масштабируются inline
@@ -2671,7 +2689,7 @@
     color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
   }
 }
-@media (min-width: 561px) {
+@media (min-width: 761px) {
   .t-car { display: none; }
   .t-main:has(.t-choose) .t-topbar__title { display: none; }
 }
