@@ -262,7 +262,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
       {!loading && !error && (!module || !module.indexUrl) && (
         <div className="li-empty">
-          <img className="li-empty__art" src={`/assets/world/kings/${k.id}.jpg`} alt={k.name} />
+          <img className="li-empty__art" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} />
           <div className="li-empty__title">{t('kingdom.empty')}</div>
           <div className="li-empty__sub">Для уровня {level} пока нет опубликованных уроков в админке</div>
         </div>
@@ -284,7 +284,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               <div className="kh-hero__king">
                 <img
                   className="kh-hero__avatar"
-                  src={`/assets/world/kings/${k.id}_portrait.png`}
+                  src={`/assets/world/kings/${k.id}_portrait.webp`}
                   alt=""
                   onError={(e) => {
                     e.currentTarget.style.visibility = 'hidden'

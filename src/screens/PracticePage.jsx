@@ -7,6 +7,7 @@ import {
   VolumeIcon,
   ChevronRightCircleIcon,
   ChevronLeftIcon,
+  SearchIcon,
 } from '../components/icons.jsx'
 import {
   getPracticeToken,
@@ -70,13 +71,16 @@ function Thumb({ src, alt, className, children }) {
   )
 }
 
-function SectionHead({ title, onAll }) {
+function SectionHead({ title, onAll, children }) {
   return (
     <div className="pp-sec__head">
       <h2>{title}</h2>
-      <button className="pp-all" onClick={onAll}>
-        Посмотреть все <ChevronRightCircleIcon size={18} />
-      </button>
+      <div className="pp-sec__tools">
+        {children}
+        <button className="pp-all" onClick={onAll}>
+          Посмотреть все <ChevronRightCircleIcon size={18} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -103,19 +107,28 @@ function speak(word) {
 // градиент-заглушку. Обложки этих книг лежат в извлечённой библиотеке
 // (extract-books.js → public/practice/covers/books/, пути в index.json);
 // подставляем их по нормализованному названию до рендера каталога.
+// Индекс — маленький статический JSON; промис мемоизируется на модуль, а сам
+// запрос стартует вместе с каталогами (см. эффект загрузки), а не после ответа
+// аудиокниг — раньше тут была последовательная «лестница» из двух запросов.
+let _coversIndexPromise = null
+function fetchCoversIndex() {
+  if (!_coversIndexPromise) {
+    _coversIndexPromise = fetch('/practice/books/index.json')
+      .then((r) => (r.ok ? r.json() : []))
+      .catch(() => []) // нет индекса — карточки останутся с градиентами
+  }
+  return _coversIndexPromise
+}
+
 async function enrichCovers(list) {
   const books = Array.isArray(list) ? list : list?.content || list?.items || []
   if (!books.some((b) => !(b.coverImageUrl || b.coverUrl))) return books
-  try {
-    const idx = await fetch('/practice/books/index.json').then((r) => (r.ok ? r.json() : []))
-    const covers = {}
-    for (const it of idx) if (it.cover) covers[normTitle(it.title)] = it.cover
-    return books.map((b) =>
-      b.coverImageUrl || b.coverUrl ? b : { ...b, coverImageUrl: covers[normTitle(b.title)] || '' },
-    )
-  } catch {
-    return books // нет индекса — карточки останутся с градиентами
-  }
+  const idx = await fetchCoversIndex()
+  const covers = {}
+  for (const it of idx) if (it.cover) covers[normTitle(it.title)] = it.cover
+  return books.map((b) =>
+    b.coverImageUrl || b.coverUrl ? b : { ...b, coverImageUrl: covers[normTitle(b.title)] || '' },
+  )
 }
 
 export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
@@ -132,19 +145,26 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   useEffect(() => {
     let alive = true
     setState({ loading: true, error: '' })
+    fetchCoversIndex() // параллельно с токеном и каталогами, а не после аудиокниг
     getPracticeToken(token)
       .then((tok) => {
         if (alive) setApiToken(tok)
         // Тянем всё параллельно; отдельные сбои не роняют страницу целиком.
-        const pull = (fn, set) =>
-          fn(tok)
-            .then((d) => alive && set(Array.isArray(d) ? d : d?.content || d?.items || []))
-            .catch(() => {})
+        // apply применяется дважды: к кэшу (мгновенный рендер) и к свежим
+        // данным, когда фоновое обновление SWR-кэша доходит до сети.
+        const pull = (start, set, transform) => {
+          const apply = async (d) => {
+            if (!alive || d == null) return
+            const arr = Array.isArray(d) ? d : d?.content || d?.items || []
+            set(transform ? await transform(arr) : arr)
+          }
+          return start(apply).then(apply).catch(() => {})
+        }
         return Promise.all([
-          pull((k) => getMediaClips(k), setClips),
-          pull((k) => getSituativki(k, userLevel), setSituations),
-          pull((k) => getAudiobooks(k).then(enrichCovers), setBooks),
-          pull((k) => getSavedWords(k), setWords),
+          pull((onFresh) => getMediaClips(tok, onFresh), setClips),
+          pull((onFresh) => getSituativki(tok, userLevel, onFresh), setSituations),
+          pull((onFresh) => getAudiobooks(tok, onFresh), setBooks, enrichCovers),
+          pull((onFresh) => getSavedWords(tok, onFresh), setWords),
         ])
       })
       .then(() => alive && setState({ loading: false, error: '' }))
@@ -156,9 +176,35 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     }
   }, [token, userLevel])
 
+  // Тяжёлые оверлеи (мир сказок ~3 МБ, разговорные ситуации) подгружаем на
+  // простое после первого рендера: первый клик открывает их мгновенно и
+  // загрузка не конкурирует с каталогами выше.
+  useEffect(() => {
+    const load = () => {
+      import('../practice/fairytale/taleWorld.js').catch(() => {})
+      import('../practice/situations/situationsOverlay.js').catch(() => {})
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(load, { timeout: 4000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(load, 2500) // Safari: requestIdleCallback нет
+    return () => clearTimeout(id)
+  }, [])
+
   const saved = words
   const learned = useMemo(() => words.filter((w) => w.learned), [words])
   const list = tab === 'learned' ? learned : saved
+
+  // Поиск по книжкам: живой фильтр по названию и автору. Каталог уже загружен
+  // целиком, поэтому без запросов к бэкенду; normTitle не подходит — вырезает
+  // кириллицу, а названия/запросы бывают русскими.
+  const [bookQuery, setBookQuery] = useState('')
+  const visibleBooks = useMemo(() => {
+    const q = bookQuery.trim().toLowerCase()
+    if (!q) return books
+    return books.filter((b) => `${b.title || ''} ${b.author || ''}`.toLowerCase().includes(q))
+  }, [books, bookQuery])
 
   // «Видеоклипы» убраны из клиентской части: контент остаётся в dev-admin
   // (/mobile/video-lessons живёт), но страница его не запрашивает и не рисует.
@@ -253,7 +299,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           <section id="sec-Мемы и рилсы" className="pp-sec">
             <SectionHead title="Мемы и рилсы" onAll={() => setFilter('Мемы и рилсы')} />
             {clips.length === 0 ? (
-              <Empty loading={state.loading} />
+              <Empty loading={state.loading} skeleton="portrait" />
             ) : (
               <Rail grid={grid}>
                 {clips.map((c, i) => (
@@ -270,12 +316,36 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           {/* Книжки — каталог аудиокниг из dev-admin (реальные обложки) */}
           {show('Книжки') && (
           <section id="sec-Книжки" className="pp-sec">
-            <SectionHead title="Книжки" onAll={() => setFilter('Книжки')} />
+            <SectionHead title="Книжки" onAll={() => setFilter('Книжки')}>
+              <label className="pp-search">
+                <SearchIcon size={15} />
+                <input
+                  type="search"
+                  value={bookQuery}
+                  onChange={(e) => setBookQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Escape' && setBookQuery('')}
+                  placeholder="Название или автор"
+                  aria-label="Поиск по книжкам"
+                />
+                {bookQuery && (
+                  <button
+                    type="button"
+                    className="pp-search__clear"
+                    onClick={() => setBookQuery('')}
+                    aria-label="Очистить поиск"
+                  >
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                  </button>
+                )}
+              </label>
+            </SectionHead>
             {books.length === 0 ? (
-              <Empty loading={state.loading} />
+              <Empty loading={state.loading} skeleton="book" />
+            ) : visibleBooks.length === 0 ? (
+              <Empty text={`Ничего не нашлось по запросу «${bookQuery.trim()}»`} />
             ) : (
               <Rail grid={grid}>
-                {books.map((b) => (
+                {visibleBooks.map((b) => (
                   <button key={b.id} type="button" className="pp-bcard" onClick={() => setOpenBook(b)}>
                     <BookCover book={b} />
                     <div className="pp-bcard__title">{b.title}</div>
@@ -383,9 +453,18 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
 
           <div className="pp-voc__list">
             {list.length === 0 ? (
-              <div className="pp-voc__empty">
-                {state.loading ? 'Загрузка…' : 'Пока нет слов'}
-              </div>
+              state.loading ? (
+                <div className="pp-voc__skel" aria-hidden="true">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <div key={i} className="pp-voc__skelrow">
+                      <span className="pp-skel__line" />
+                      <span className="pp-skel__line pp-skel__line--short" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="pp-voc__empty">Пока нет слов</div>
+              )
             ) : (
               list.map((w) => (
                 <div key={w.id} className="pp-word">
@@ -408,7 +487,29 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   )
 }
 
-function Empty({ loading, text }) {
+// Пока секция грузится — скелетон в форме будущих карточек вместо текста:
+// нет прыжка раскладки и ощущения «пустой» страницы. variant повторяет
+// габариты реальных карточек (portrait — мемы 150×3:4, book — обложка + строки).
+function SkeletonRail({ variant = 'portrait' }) {
+  return (
+    <div className="pp-rail" aria-hidden="true">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="pp-skel">
+          <span className="pp-skel__thumb" />
+          {variant === 'book' && (
+            <>
+              <span className="pp-skel__line" />
+              <span className="pp-skel__line pp-skel__line--short" />
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Empty({ loading, text, skeleton }) {
+  if (loading && skeleton) return <SkeletonRail variant={skeleton} />
   return (
     <div className="pp-empty">
       {loading ? 'Загрузка…' : text || 'Нет данных'}

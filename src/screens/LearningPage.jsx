@@ -15,9 +15,11 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
     computeKingdoms(userLevel)
       .filter((k) => !k.comingSoon)
       .forEach((k) => {
-        getLearningPath(k.level, token)
-          .then((p) => alive && setProgress((prev) => ({ ...prev, [k.id]: countProgress(p) })))
-          .catch(() => {})
+        // apply срабатывает и на кэш (мгновенно), и на свежий путь из фона —
+        // так прогресс не отстаёт после пройденного урока.
+        const apply = (p) =>
+          alive && p && setProgress((prev) => ({ ...prev, [k.id]: countProgress(p) }))
+        getLearningPath(k.level, token, apply).then(apply).catch(() => {})
       })
     return () => {
       alive = false
@@ -55,7 +57,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
           <div className="lp__grid">
             {kingdoms.map((k) => (
               <button key={k.id} className="lp-card" onClick={() => onOpenKingdom?.(k)}>
-                <img className="lp-card__img" src={`/assets/world/kings/${k.id}.jpg`} alt={k.name} loading="lazy" />
+                <img className="lp-card__img" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} loading="lazy" />
                 {k.current && <span className="lp-card__here">{t('learn.here')}</span>}
                 <div className="lp-card__bar">
                   <div className="lp-card__meta">
@@ -87,7 +89,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
           </div>
 
           <div className="lp-curking">
-            <img src={`/assets/world/kings/${current.id}.jpg`} alt={current.name} />
+            <img src={`/assets/world/kings/${current.id}.webp`} alt={current.name} />
             <div className="lp-curking__name">{current.name}</div>
           </div>
 
@@ -104,7 +106,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
             <div className="lp-done">
               {completed.map((k) => (
                 <div key={k.id} className="lp-done__row">
-                  <img className="lp-done__av" src={`/assets/world/kings/${k.id}.jpg`} alt="" />
+                  <img className="lp-done__av" src={`/assets/world/kings/${k.id}.webp`} alt="" />
                   <div className="lp-done__meta">
                     <b>{k.name}</b>
                     <span>{t('learn.done')}</span>

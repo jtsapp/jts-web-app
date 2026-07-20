@@ -70,7 +70,11 @@ function catalogCacheKey(path, token) {
   return `jts_catalog_${CATALOG_CACHE_VER}:${BASE}:${tokenIdentity(token)}:${path}`
 }
 
-async function cachedAuthGet(path, token) {
+// onFresh (опционально) вызывается со свежими данными, когда фоновое обновление
+// закончилось ПОСЛЕ того, как вызвавший уже получил кэшированный ответ. Это
+// позволяет кэшировать и изменяемые данные (баланс, прогресс, словарь):
+// экран мгновенно рисует кэш и тихо перерисовывается, когда приходит сеть.
+async function cachedAuthGet(path, token, onFresh) {
   if (typeof window === 'undefined') return authGet(path, token) // SSR — без кэша
   const key = catalogCacheKey(path, token)
   let cached = null
@@ -90,15 +94,19 @@ async function cachedAuthGet(path, token) {
       return data
     })
   if (cached !== null) {
-    refresh().catch(() => {}) // фоновое обновление; его сбой не всплывает в UI
+    refresh()
+      .then((data) => onFresh?.(data))
+      .catch(() => {}) // фоновое обновление; его сбой не всплывает в UI
     return cached
   }
   return refresh()
 }
 
-// Учебный путь королевства (уроки из dev-admin) по уровню CEFR
-export function getLearningPath(level, token) {
-  return authGet(`/mobile/learning-paths/by-language-level/${encodeURIComponent(level)}`, token)
+// Учебный путь королевства (уроки из dev-admin) по уровню CEFR.
+// SWR-кэш: прогресс меняется после уроков, поэтому передавайте onFresh —
+// он донесёт обновлённые счётчики, когда фоновый запрос завершится.
+export function getLearningPath(level, token, onFresh) {
+  return cachedAuthGet(`/mobile/learning-paths/by-language-level/${encodeURIComponent(level)}`, token, onFresh)
 }
 
 // Уроки (контент) — опубликованные Speakout-модули из раздела «Уроки (контент)»
@@ -116,9 +124,11 @@ export function getAudiobooks(token) {
   return cachedAuthGet('/mobile/audio-lessons', token)
 }
 
-// Баланс: монеты и стрик (для HUD)
-export function getBalance(token) {
-  return authGet('/mobile/balance/info', token)
+// Баланс: монеты и стрик (для HUD). SWR-кэш: сайдбар перемонтируется на каждом
+// переходе между экранами (key={screen} в App.jsx), кэш убирает и повторный
+// запрос в блокирующем пути, и «мигание» нулей; свежее значение — через onFresh.
+export function getBalance(token, onFresh) {
+  return cachedAuthGet('/mobile/balance/info', token, onFresh)
 }
 
 // Считает уроки/пройдено по LearningPathModel (modules -> sections -> activities)
@@ -232,32 +242,66 @@ export async function loginWithPassword(phone, password) {
 // (флоу Skip). Кэшируем промис, чтобы не логиниться повторно.
 const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
 const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
+const DEMO_TOKEN_KEY = 'jts_demo_token'
+
+// JWT ещё жив (с запасом), чтобы не отдать протухший кэшированный токен.
+function jwtAlive(token, marginSec = 60) {
+  try {
+    const { exp } = JSON.parse(atob(String(token).split('.')[1]))
+    return typeof exp === 'number' && exp * 1000 > Date.now() + marginSec * 1000
+  } catch {
+    return false
+  }
+}
+
 let _demoTokenPromise = null
 export function getPracticeToken(token) {
   if (token) return Promise.resolve(token)
+  // Демо-токен переживает перезагрузку в localStorage: без этого каждый визит
+  // гостя в Практику начинался с полноценного login-запроса.
+  if (!_demoTokenPromise && typeof window !== 'undefined') {
+    try {
+      const saved = window.localStorage.getItem(DEMO_TOKEN_KEY)
+      if (saved && jwtAlive(saved)) _demoTokenPromise = Promise.resolve(saved)
+    } catch {
+      /* localStorage недоступен — просто логинимся */
+    }
+  }
   if (!_demoTokenPromise) {
-    _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD).catch((e) => {
-      _demoTokenPromise = null // дать шанс на повторную попытку
-      throw e
-    })
+    _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD)
+      .then((tok) => {
+        if (tok) {
+          try {
+            window.localStorage.setItem(DEMO_TOKEN_KEY, tok)
+          } catch {
+            /* квота/приватный режим — работаем без кэша */
+          }
+        }
+        return tok
+      })
+      .catch((e) => {
+        _demoTokenPromise = null // дать шанс на повторную попытку
+        throw e
+      })
   }
   return _demoTokenPromise
 }
 
 // Мемы и рилсы (GET /mobile/media-clips) → [{title,mediaUrl,thumbnailUrl,kind,mediaType,durationLabel,views,level}]
-export function getMediaClips(token) {
-  return cachedAuthGet('/mobile/media-clips', token)
+export function getMediaClips(token, onFresh) {
+  return cachedAuthGet('/mobile/media-clips', token, onFresh)
 }
 
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
-export function getSituativki(token, level) {
+export function getSituativki(token, level, onFresh) {
   const q = level ? `?level=${encodeURIComponent(level)}` : ''
-  return cachedAuthGet('/mobile/situativki' + q, token)
+  return cachedAuthGet('/mobile/situativki' + q, token, onFresh)
 }
 
 // Словарь пользователя (GET /mobile/saved-words) → [{word,translation,learned,correctCount,language}]
-export function getSavedWords(token) {
-  return authGet('/mobile/saved-words', token)
+// SWR-кэш: слова добавляются из читалки — свежий список приходит через onFresh.
+export function getSavedWords(token, onFresh) {
+  return cachedAuthGet('/mobile/saved-words', token, onFresh)
 }
 
 // Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).

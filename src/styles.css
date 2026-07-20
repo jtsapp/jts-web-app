@@ -2674,6 +2674,69 @@ textarea {
 .pp-all:hover { color: var(--purple); border-color: #d9d2f7; }
 .pp-all svg { color: var(--purple); }
 
+/* Инструменты справа в шапке секции (поиск + «Посмотреть все») */
+.pp-sec__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Поиск по книжкам: пилюля в одном семействе с .pp-all/.pp-chip.
+   Поле деликатно расширяется на фокусе — ширину анимируем у input, а не у
+   обёртки, чтобы не дёргать соседнюю кнопку «Посмотреть все» по вертикали. */
+.pp-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: text;
+  transition: border-color 0.15s ease;
+}
+.pp-search > svg { color: var(--muted); flex: none; transition: color 0.15s ease; }
+.pp-search:hover { border-color: #d9d2f7; }
+.pp-search:focus-within { border-color: #b79cf5; }
+.pp-search:focus-within > svg { color: var(--purple); }
+.pp-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  width: 128px;
+  transition: width 0.2s ease;
+}
+.pp-search input:focus { width: 168px; }
+.pp-search input::placeholder { color: var(--muted); font-weight: 600; }
+/* Нативный крестик WebKit убираем — есть свой, единый во всех браузерах */
+.pp-search input::-webkit-search-cancel-button { display: none; }
+.pp-search__clear {
+  border: none;
+  background: #f1ebfe;
+  color: var(--purple);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  cursor: pointer;
+}
+.pp-search__clear:hover { background: #e6dbfd; }
+.pp-search__clear:focus-visible { outline: 2px solid #b79cf5; outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) {
+  .pp-search input { transition: none; }
+}
+
 /* Горизонтальная лента */
 .pp-rail {
   display: flex;
@@ -2758,6 +2821,45 @@ textarea {
   color: #6c6b78;
   margin-top: 8px;
   line-height: 1.3;
+}
+
+/* Скелетоны загрузки: форма будущих карточек, мягкая пульсация. Цвет — тот же
+   нейтральный, что у разделителей (#efeef4-семейство), без шиммер-градиентов. */
+.pp-skel {
+  flex: 0 0 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pp-skel__thumb {
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  background: #efedf6;
+  animation: pp-skel-pulse 1.1s ease-in-out infinite;
+}
+.pp-skel__line {
+  height: 11px;
+  border-radius: 6px;
+  background: #efedf6;
+  width: 90%;
+  animation: pp-skel-pulse 1.1s ease-in-out infinite;
+}
+.pp-skel__line--short { width: 55%; }
+@keyframes pp-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.pp-voc__skel { display: flex; flex-direction: column; }
+.pp-voc__skelrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f2f8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-skel__thumb,
+  .pp-skel__line { animation: none; }
 }
 
 /* Пустые состояния */
