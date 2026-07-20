@@ -4702,3 +4702,120 @@ textarea {
   /* Футер на лендинге прячем — герой во весь экран */
   .screen > .footer { display: none; }
 }
+
+/* ======================================================= */
+/* ==  МОБИЛКА: экраны-формы (Shell) — Figma iPhone 6,7  == */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .reg-header { padding: 20px; }
+  .reg-header__left { gap: 16px; }
+  .back-btn {
+    width: 36px;
+    height: 36px;
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+
+  .reg-body { padding: 8px 20px 32px; }
+  .form-inner { max-width: none; padding-top: 8px; }
+  .form-card { text-align: left; }
+  .form-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+  }
+  .form-sub {
+    color: var(--ink);
+    font-size: 14px;
+    margin-bottom: 22px;
+  }
+
+  /* Поле телефона — серое r20, без бордера, выше */
+  .phone-field {
+    background: #f6f6f6;
+    border: none;
+    border-radius: 20px;
+    padding: 22px 16px;
+    gap: 10px;
+  }
+  .phone-prefix,
+  .phone-field input { font-size: 16px; }
+
+  /* OTP — крупные серые боксы, флюидная ширина */
+  .otp-row {
+    gap: 8px;
+    justify-content: stretch;
+    margin: 4px 0;
+  }
+  .otp-box {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 96px;
+    border: none;
+    border-radius: 20px;
+    background: #f6f6f6;
+    font-size: 48px;
+    font-weight: 500;
+    color: #afafaf;
+  }
+  .otp-box--filled { color: var(--ink); }
+
+  /* Кнопка — пурпур r60 full-width */
+  .form-primary {
+    border-radius: 60px;
+    padding: 18px;
+    font-size: 18px;
+  }
+  .form-note { color: #afafaf; }
+}
+
+/* ======================================================= */
+/* == МОБИЛКА: регистрация-чат (2–5) + success (8) ======= */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .reg-inner { max-width: none; }
+  .reg-title { font-size: 28px; font-weight: 700; }
+  .reg-subtitle { color: var(--ink); font-size: 14px; }
+
+  /* Чат — белый лист во всю ширину, без карточной тени */
+  .chat {
+    border: none;
+    border-radius: 20px;
+    box-shadow: none;
+    min-height: 58vh;
+  }
+  .chat__scroll { max-height: 60vh; padding: 20px 16px 8px; }
+  .chat__author { margin-bottom: 18px; }
+  .chat__avatar { width: 56px; height: 56px; }
+  .chat__name { font-size: 18px; }
+  .chat__role { font-size: 15px; }
+  .bubble { font-size: 16px; max-width: 82%; }
+  .chat__input {
+    background: #f6f6f6;
+    border-radius: 20px;
+    margin: 8px 0 0;
+    padding: 14px 16px;
+  }
+  .send-btn { border-radius: 18px; }
+
+  /* Кнопки авторизации в чате */
+  .auth-primary {
+    border-radius: 60px;
+    padding: 18px;
+    font-size: 17px;
+  }
+  .auth-btn { border-radius: 60px; }
+
+  /* Success — пурпурный квадрат-бейдж r18, заголовок 32 по центру */
+  .success-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: #9047ff;
+    box-shadow: none;
+  }
+  .success-center { text-align: center; }
+  .success-center .form-title { font-size: 32px; text-align: center; }
+}
