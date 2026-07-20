@@ -4978,3 +4978,17 @@ textarea {
   color: #fff;
   border-color: #9047ff;
 }
+
+/* ======================================================= */
+/* == МОБИЛКА: шрифт PT Root UI (как в Figma-макете) ===== */
+/* ======================================================= */
+@media (max-width: 560px) {
+  .screen,
+  .t-app,
+  .learn,
+  .lsheet__scrim,
+  .lsheet__panel {
+    font-family: 'PT Root UI', 'Manrope', -apple-system, BlinkMacSystemFont,
+      'Segoe UI', Roboto, sans-serif;
+  }
+}
