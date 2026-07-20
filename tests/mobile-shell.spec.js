@@ -9,7 +9,8 @@ import { test, expect } from '@playwright/test'
 //   десктоп  → шапки .mtop нет, сайдбар .sb на месте (статичная колонка).
 
 // Экраны обеих зон: тьютор (.t-body) и обучение (.learn__body).
-const SCREENS = ['tutor-welcome', 'kingdom']
+// tutor-dashboard рисует шапку сам (без TutorShell) — держим его в контракте.
+const SCREENS = ['tutor-welcome', 'kingdom', 'tutor-dashboard']
 
 test.describe('адаптивная оболочка — мобилка', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) > 760, 'только узкий вьюпорт')
