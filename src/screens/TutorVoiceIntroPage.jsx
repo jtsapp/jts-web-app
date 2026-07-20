@@ -23,6 +23,7 @@ export default function TutorVoiceIntroPage({
       onProfile={onProfile}
       onBack={onBack}
       layout="flow"
+      hideMobileNav
     >
       <TutorStatus
         heading={t('voiceIntro.heading', { name })}

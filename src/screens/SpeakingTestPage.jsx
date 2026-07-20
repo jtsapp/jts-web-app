@@ -206,6 +206,7 @@ export default function SpeakingTestPage({
       onProfile={onProfile}
       onBack={onBack}
       layout="flow"
+      hideMobileNav
     >
       {children}
     </TutorShell>

@@ -23,6 +23,7 @@ export default function TutorLevelOfferPage({
       onProfile={onProfile}
       onBack={onBack}
       layout="flow"
+      hideMobileNav
     >
       <TutorStatus
         heading={t('offer.heading', { name })}

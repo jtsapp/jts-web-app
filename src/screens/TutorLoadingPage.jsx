@@ -32,6 +32,7 @@ export default function TutorLoadingPage({
       onProfile={onProfile}
       onBack={onBack}
       layout="center"
+      hideMobileNav
     >
       <TutorStatus heading={head} name={name} avatar={avatar} pulse dots />
     </TutorShell>

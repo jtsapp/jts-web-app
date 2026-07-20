@@ -156,7 +156,7 @@ export default function TutorVoiceChatPage({
   const connected = Boolean(tokenData?.token && tokenData?.url)
 
   return (
-    <TutorShell active="tutor" user={user} onNavigate={onNavigate} onProfile={onProfile} onBack={onBack} layout="flow">
+    <TutorShell active="tutor" user={user} onNavigate={onNavigate} onProfile={onProfile} onBack={onBack} layout="flow" hideMobileNav>
       {perm !== 'granted' && !error && (
         <div className="t-micperm" role="dialog" aria-label={t('voice.permHint')}>
           <div className="t-micperm__row">
@@ -349,6 +349,14 @@ function CallStage({ onFinish, t, ttl }) {
         className={'t-voice__orb' + (live ? ' is-live' : '')}
         onClick={onFinish}
         role={onFinish ? 'button' : undefined}
+        tabIndex={onFinish ? 0 : undefined}
+        aria-label={onFinish ? t('voice.end') : undefined}
+        onKeyDown={(e) => {
+          if (onFinish && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault()
+            onFinish()
+          }
+        }}
       />
       <div className="t-voice__text">
         <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>

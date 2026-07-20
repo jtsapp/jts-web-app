@@ -935,6 +935,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 .t-voice__cap {
   font-size: 32px;
@@ -2402,7 +2403,7 @@
   .t-main:not(:has(.t-car)) .t-topbar { padding: 0; }
 
   /* Заголовок статуса: 24/700, без отрицательного трекинга (Figma ls=0) */
-  .t-status__heading { font-size: 24px; line-height: 1.2; letter-spacing: 0; }
+  .t-status__heading { font-size: clamp(20px, 5.6vw, 24px); line-height: 1.2; letter-spacing: 0; }
   /* Длинный заголовок voiceIntro — межстрочный как в макете (140%) */
   .t-status:has(.t-btnstack) .t-status__heading { line-height: 1.4; }
   .t-status--flow { padding-top: 24px; }
@@ -2415,7 +2416,7 @@
   /* --- Frame 15: карточка предложения теста --- */
   .t-offer { width: 100%; margin-top: 24px; padding: 24px 14px 16px; }
   .t-offer__title { font-size: 18px; }
-  .t-offer__sub { font-size: 14px; }
+  .t-offer__sub { font-size: 14px; white-space: pre-line; }
   .t-offer__cta { height: auto; padding: 14px; }
   .t-offer__ctaText b { font-size: 18px; }
   .t-offer__later { width: 100%; margin-top: 36px; padding: 0; }
@@ -2447,7 +2448,8 @@
   }
   .t-vintro-hint__text {
     margin: 0;
-    font-size: 18px;
+    font-size: clamp(15px, 4.2vw, 18px);
+    white-space: pre-line;
     font-weight: 500;
     line-height: 1.2;
     color: var(--t-ink);
@@ -2458,6 +2460,7 @@
   /* --- Frame 18: живой голосовой разговор --- */
   /* Хедер прижат влево, аватар меньше (56); карточка-фон убрана — орб,
      подпись и микрофон стоят прямо на сером фоне. */
+  .t-main:has(.t-voice) .t-topbar { display: none; }
   .t-voice { padding-top: 8px; align-items: stretch; }
   .t-voice .t-status__avatar { width: 56px; height: 56px; }
   .t-voice__card {
@@ -2478,5 +2481,5 @@
   .t-voice__text { height: auto; min-height: 0; padding: 0; }
   .t-voice__cap { font-size: 28px; line-height: 1.1; }
   /* Отступ орб-группа → микрофон = 72 (28 gap + 44 margin), как в Figma */
-  .t-voice__mic { margin-top: 44px; }
+  .t-voice__mic { margin-top: 44px; border-radius: 999px; }
 }

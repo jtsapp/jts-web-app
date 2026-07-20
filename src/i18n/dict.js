@@ -63,7 +63,7 @@ export const DICT = {
     // Предложение теста уровня
     'offer.heading': '{name} подстраивается\nпод твой уровень...',
     'offer.title': '{name} не знает твоего уровня',
-    'offer.sub': 'Это необходимо чтобы построить тебе обучение, под твои нужды',
+    'offer.sub': 'Это необходимо чтобы построить тебе обучение,\nпод твои нужды',
     'offer.cta': 'Пройти короткий тест',
     'offer.ctaTime': '~3 минуты',
     'offer.later': 'Сдать тест позже',
@@ -72,7 +72,7 @@ export const DICT = {
     'voiceIntro.heading': '{name} хочет узнать твой уровень\nразговорного английского',
     'voiceIntro.start': 'Пройти короткий тест',
     'voiceIntro.decline': 'Не могу говорить сейчас',
-    'voiceIntro.hint': 'Разговор на 3 минуты, чтобы понять твой разговорный уровень',
+    'voiceIntro.hint': 'Разговор на 3 минуты, чтобы\nпонять твой разговорный уровень',
     'placeTest.heading': 'Ответь на задание — я определю твой уровень',
     'placeTest.hint':
       'Говори 2–3 минуты по-английски. Время не ограничено — заверши, когда будешь готов.',
@@ -91,6 +91,7 @@ export const DICT = {
     // Голосовой чат
     'voice.micOn': 'Выключить микрофон',
     'voice.micOff': 'Включить микрофон',
+    'voice.end': 'Завершить разговор',
     'voice.permAllow': 'Разрешить, когда я на сайте',
     'voice.permHint': 'Дайте разрешение на использование микрофона в браузере',
     'voice.permDenied':
@@ -305,6 +306,7 @@ export const DICT = {
 
     'voice.micOn': 'Микрофонды өшіру',
     'voice.micOff': 'Микрофонды қосу',
+    'voice.end': 'Әңгімені аяқтау',
     'voice.permAllow': 'Сайтта болғанда рұқсат ету',
     'voice.permHint': 'Браузерде микрофонды пайдалануға рұқсат беріңіз',
     'voice.permDenied':
@@ -508,6 +510,7 @@ export const DICT = {
 
     'voice.micOn': 'Turn off microphone',
     'voice.micOff': 'Turn on microphone',
+    'voice.end': 'End the conversation',
     'voice.permAllow': 'Allow while on the site',
     'voice.permHint': 'Grant microphone permission in the browser',
     'voice.permDenied':
