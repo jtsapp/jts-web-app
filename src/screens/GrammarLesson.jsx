@@ -79,11 +79,8 @@ export default function GrammarLesson({ level, units, unit, onExit, onOpenUnit }
         </div>
       </div>
 
-      {/* Панель: вернуться + вкладки */}
+      {/* Панель вкладок (выход из урока — «Назад» в крошках выше) */}
       <div className="gr-lesson__toolbar">
-        <button className="gr-return" onClick={onExit}>
-          <ChevronLeftIcon size={16} /> Вернуться
-        </button>
         <div className="gr-tabs">
           {TABS.map((tb) => (
             <button

@@ -232,30 +232,15 @@
 .gr-lesson__crumb b { font-size: 15px; font-weight: 800; color: var(--purple); }
 .gr-lesson__crumb span { font-size: 12.5px; color: var(--muted); }
 
-/* Панель: вернуться + вкладки */
+/* Панель вкладок — прижата вправо (выход из урока живёт в крошках выше) */
 .gr-lesson__toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   flex-wrap: wrap;
   padding: 18px 24px 6px;
 }
-.gr-return {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: none;
-  background: #ddf1fa;
-  color: #2a7fa8;
-  border-radius: 999px;
-  padding: 9px 17px 9px 12px;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.gr-return:hover { background: #cbe9f7; }
 .gr-tabs { display: inline-flex; gap: 10px; flex-wrap: wrap; }
 .gr-tab {
   border: none;
