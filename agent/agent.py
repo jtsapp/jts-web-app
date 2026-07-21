@@ -1663,8 +1663,14 @@ def build_instructions(p: LearnerProfile) -> str:
         "turn mistakes into quick, kind lessons. Switch into focused teaching or a "
         "short drill only when they ask or when their skills clearly need it.\n"
         "\n==== LEARNER PROFILE ====\n"
-        f"CEFR level: {p.level}\n"
-        f"{interests_line}\n"
+        + (
+            f"The learner's name is {p.user_name}. Address them by name naturally "
+            "(not every turn), and if they ask what their name is, just tell them.\n"
+            if p.user_name
+            else ""
+        )
+        + f"CEFR level: {p.level}\n"
+        + f"{interests_line}\n"
         + (f"{profession_line}\n" if profession_line else "")
         + (f"{minutes_line}\n" if minutes_line else "")
         + f"{goal_g}\n"
