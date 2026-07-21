@@ -109,6 +109,9 @@ export const DICT = {
     // Результат уровня
     'result.heading': 'Отлично!\nТвой уровень разговорного\nанглийского',
     'result.retry': 'Попробовать пройти тест снова',
+    'result.why': 'Почему такой уровень',
+    'result.strengths': 'Сильные стороны',
+    'result.improvements': 'Что подтянуть',
 
     // Интересы
     'interests.heading': '{name} хочет узнать чем\nты увлекаешься',
@@ -329,6 +332,9 @@ export const DICT = {
 
     'result.heading': 'Тамаша!\nСенің ауызша ағылшын\nдеңгейің',
     'result.retry': 'Тестті қайта тапсырып көру',
+    'result.why': 'Неге осы деңгей',
+    'result.strengths': 'Күшті жақтары',
+    'result.improvements': 'Нені жақсарту керек',
 
     'interests.heading': '{name} немен айналысатыныңды\nбілгісі келеді',
     'interests.sub': 'Өзіңе қызық тақырыптарды таңда',
@@ -539,6 +545,9 @@ export const DICT = {
 
     'result.heading': 'Great!\nYour spoken English\nlevel',
     'result.retry': 'Try the test again',
+    'result.why': 'Why this level',
+    'result.strengths': 'Strengths',
+    'result.improvements': 'What to work on',
 
     'interests.heading': '{name} wants to know\nwhat you are into',
     'interests.sub': 'Pick topics that interest you',

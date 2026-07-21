@@ -167,8 +167,9 @@ export default function SpeakingTestPage({
       setPhase('error')
       return
     }
-    // 2) Grade → CEFR level.
+    // 2) Grade → CEFR level + честное обоснование.
     let level
+    let assessment
     try {
       const res = await fetch('/api/speaking-test/assess', {
         method: 'POST',
@@ -182,7 +183,8 @@ export default function SpeakingTestPage({
       })
       if (!res.ok) throw new Error(String(res.status))
       const data = await res.json()
-      level = data.assessment?.level
+      assessment = data.assessment
+      level = assessment?.level
     } catch {
       setErrKey('placeTest.errGrade')
       setPhase('error')
@@ -195,7 +197,7 @@ export default function SpeakingTestPage({
     }
     // 3) Persist the placement level (best-effort) and hand off to the result.
     await savePlacementLevel(token, level)
-    onComplete?.(level)
+    onComplete?.(level, assessment)
   }, [recStop, token, onComplete])
 
   const shell = (children) => (

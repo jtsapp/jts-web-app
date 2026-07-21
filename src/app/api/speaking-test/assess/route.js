@@ -22,11 +22,12 @@ const PLACEMENT_SCHEMA = {
     vocabulary: { type: 'NUMBER' },
     fluency: { type: 'NUMBER' },
     overall: { type: 'NUMBER' },
+    rationale: { type: 'STRING' },
     strengths: { type: 'ARRAY', items: { type: 'STRING' } },
     improvements: { type: 'ARRAY', items: { type: 'STRING' } },
     feedback: { type: 'STRING' },
   },
-  required: ['level', 'grammar', 'vocabulary', 'fluency', 'overall', 'feedback'],
+  required: ['level', 'grammar', 'vocabulary', 'fluency', 'overall', 'rationale', 'feedback'],
 }
 
 function clamp100(n) {
@@ -64,7 +65,7 @@ RULES:
 - If the candidate spoke partly in another language, judge only the English produced.
 - Do NOT judge pronunciation — you cannot hear the audio.
 
-OUTPUT: level (one of A1–C2); grammar, vocabulary, fluency, overall (numbers 0–100); strengths (0–3 short phrases, empty OK); improvements (0–3 short phrases); feedback (2–3 sentences in ${fb}, lead with the level, name one concrete next step). Return ONLY the JSON object.`
+OUTPUT: level (one of A1–C2); grammar, vocabulary, fluency, overall (numbers 0–100); rationale (3–5 sentences in ${fb}) — an HONEST, evidence-based explanation of WHY this exact level: point to concrete things the candidate ACTUALLY said (the tenses/structures they used or avoided, vocabulary range, linkers, hesitation) and tie them to the CEFR anchors, and state plainly what is MISSING that keeps them below the next level. Do NOT flatter — if the sample is short or weak, say so directly and explain the consequence for the level; strengths (0–3 short phrases, empty OK); improvements (0–3 short phrases); feedback (1–2 sentences in ${fb}, one concrete next step). Return ONLY the JSON object.`
 }
 
 export async function POST(request) {
@@ -109,6 +110,10 @@ export async function POST(request) {
       fluency: clamp100(raw.fluency),
     },
     overall: clamp100(raw.overall),
+    rationale:
+      typeof raw.rationale === 'string' && raw.rationale.trim()
+        ? raw.rationale.trim().slice(0, 1200)
+        : '',
     strengths: strList(raw.strengths, 3),
     improvements: strList(raw.improvements, 3),
     feedback:

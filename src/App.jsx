@@ -129,6 +129,8 @@ export default function App() {
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
   const [selectedCall, setSelectedCall] = useState(null)
+  // Оценка разговорного теста (уровень + честное обоснование от Sonnet).
+  const [placementResult, setPlacementResult] = useState(null)
   // Грузим историю звонков при заходе в «Управление тьютором». Bearer решает
   // чью историю отдать: с токеном — user-<id>, без — deviceId анонима.
   useEffect(() => {
@@ -310,8 +312,9 @@ export default function App() {
 
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
   // в профиль и показываем экран результата (кружок с уровнем).
-  async function handlePlacementDone(level) {
+  async function handlePlacementDone(level, assessment) {
     setNeedsLevelTest(false)
+    setPlacementResult(assessment || null)
     if (level) setUserLevel(level)
     if (token && level) {
       try {
@@ -682,6 +685,7 @@ export default function App() {
           onBack={() => setScreen('speaking-test')}
           tutor={tutor}
           level={userLevel}
+          assessment={placementResult}
           onContinue={() => setScreen('tutor-interests')}
           onRetry={() => setScreen('speaking-test')}
         />

@@ -1060,6 +1060,52 @@
   align-items: center;
   justify-content: center;
 }
+/* Честное обоснование уровня (почему такой) под кружком результата. */
+.t-levelwhy {
+  max-width: 560px;
+  margin: 28px auto 0;
+  text-align: left;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+.t-levelwhy__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--t-ink);
+  margin: 0 0 8px;
+}
+.t-levelwhy__text {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--t-ink);
+  margin: 0;
+  white-space: pre-line;
+}
+.t-levelwhy__block {
+  margin-top: 16px;
+}
+.t-levelwhy__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #8b8b8b;
+  margin-bottom: 6px;
+}
+.t-levelwhy__list {
+  margin: 0;
+  padding-left: 18px;
+}
+.t-levelwhy__list li {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--t-ink);
+  margin-bottom: 4px;
+}
 
 .t-interests__sub {
   margin-top: 24px;
