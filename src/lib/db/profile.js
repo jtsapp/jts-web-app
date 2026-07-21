@@ -35,6 +35,13 @@ export async function upsertProfile(deviceId, patch) {
   await ensureLearner(deviceId)
   // coalesce для скаляров: не переданное поле не затирает сохранённое.
   // case/when для jsonb: явный null должен уметь очистить поле.
+  //
+  // jsonb пишем ТОЛЬКО через sql.json(), никогда не через JSON.stringify():
+  // porsager делает Describe, видит тип параметра jsonb и сам сериализует
+  // значение. Готовая строка получала бы JSON.stringify поверх — в базу легла
+  // бы jsonb-строка вместо массива/объекта, и loadProfile (Array.isArray)
+  // молча отдавал бы пустые interests. Neon-драйвер слал всё текстом и это
+  // прощал; при переезде на porsager 21.07.2026 баг всплыл.
   await sql`
     update learner set
       level           = coalesce(${patch.level ?? null}, level),
@@ -45,7 +52,7 @@ export async function upsertProfile(deviceId, patch) {
       profession      = coalesce(${patch.profession ?? null}, profession),
       interests       = case
                           when ${patch.interests !== undefined}
-                          then ${JSON.stringify(patch.interests ?? [])}::jsonb
+                          then ${sql.json(patch.interests ?? [])}::jsonb
                           else interests
                         end,
       minutes_per_day = case
@@ -55,12 +62,12 @@ export async function upsertProfile(deviceId, patch) {
                         end,
       skills          = case
                           when ${patch.skills !== undefined}
-                          then ${patch.skills ? JSON.stringify(patch.skills) : null}::jsonb
+                          then ${patch.skills ? sql.json(patch.skills) : null}::jsonb
                           else skills
                         end,
       writing         = case
                           when ${patch.writing !== undefined}
-                          then ${patch.writing ? JSON.stringify(patch.writing) : null}::jsonb
+                          then ${patch.writing ? sql.json(patch.writing) : null}::jsonb
                           else writing
                         end,
       updated_at      = now(),
@@ -357,7 +364,15 @@ export async function loadProfile(deviceId) {
     skills: base.skills ?? null,
     writing: base.writing ?? null,
     mistakes: activeMistakes,
-    dueReviews: dueRows.map((r) => r.item),
+    // Тот же отсев «пройденных», что у activeMistakes: приложение помечает ошибку
+    // освоенной через resolved_log, но review_item отдельная таблица и её строка
+    // живёт дальше. Без фильтра тьютор долбил бы ошибку, которую ученик перерос.
+    dueReviews: dueRows
+      .map((r) => r.item)
+      .filter((m) => {
+        const ml = m.toLowerCase()
+        return !resolvedLower.some((r) => r && (ml.includes(r) || r.includes(ml)))
+      }),
     dueVocab: dueVocabRows.map((r) => r.item),
     topics: topicsRows.map((r) => r.topic),
     facts: factsRows.map((r) => r.fact),

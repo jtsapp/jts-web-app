@@ -2,7 +2,7 @@
 // Next.js App Router route handler (Web Request/Response).
 //
 // Added for the cheap-tutor plan:
-//   * usage cap — refuse a token once over 10 min/day or 300 min/month.
+//   * usage cap — refuse a token once over 20 min/day or 300 min/month.
 //   * TTL clamped to the remaining daily budget so a session can't overrun.
 //   * openSession() so the room_finished webhook can bill the minutes.
 //   * JTS tutor keys (dexter/luna/spark) → agent persona ids (bro/gentle/hype).
@@ -153,10 +153,12 @@ async function issue(p, profileId, userName) {
   }
 
   // Testing escape hatch: VOICE_NO_LIMIT=1 skips the free-tier minute cap and
-  // grants a long session. Unset it to restore the 10-min/day limit.
+  // grants a long session. Unset it to restore the daily limit.
   const noLimit = process.env.VOICE_NO_LIMIT === '1' || process.env.VOICE_NO_LIMIT === 'true'
 
-  let ttl = noLimit ? 3600 : 600 // per-session ceiling (1h while testing, else 10 min)
+  // Потолок одной сессии = дневной лимит (раньше здесь стояло 600 числом, и при
+  // подъёме лимита до 20 мин разговор всё равно рвался бы на 10-й минуте).
+  let ttl = noLimit ? 3600 : DAILY_LIMIT_SEC
   const freeTier = p.tier !== 'paid'
   // Лимиты по profileId: у залогиненного минуты держатся за аккаунтом, поэтому
   // их больше не обнулить очисткой localStorage.
@@ -173,7 +175,7 @@ async function issue(p, profileId, userName) {
           { status: 403 },
         )
       }
-      ttl = Math.max(60, Math.min(600, DAILY_LIMIT_SEC - todaySeconds))
+      ttl = Math.max(60, Math.min(DAILY_LIMIT_SEC, DAILY_LIMIT_SEC - todaySeconds))
     } catch (err) {
       console.error('[livekit.token] usage check failed', err)
     }

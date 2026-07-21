@@ -27,9 +27,11 @@ async function writeAttemptAndScore({
 
   await ensureLearner(profileId)
 
+  // jsonb — только через sql.json(): porsager сериализует сам, готовая строка
+  // легла бы двойным кодированием (см. подробности в profile.js/upsertProfile).
   const attemptRows = await sql`
     insert into ielts_attempt (device_id, section, response)
-    values (${profileId}, ${section}, ${JSON.stringify(response)}::jsonb)
+    values (${profileId}, ${section}, ${sql.json(response)}::jsonb)
     returning id
   `
   const attemptId = attemptRows[0].id
@@ -42,8 +44,8 @@ async function writeAttemptAndScore({
       ${profileId},
       ${section},
       ${overallBand},
-      ${JSON.stringify(criteria)}::jsonb,
-      ${JSON.stringify(assessment)}::jsonb,
+      ${sql.json(criteria)}::jsonb,
+      ${sql.json(assessment)}::jsonb,
       ${provider}
     )
     returning id
