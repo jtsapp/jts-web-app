@@ -4753,6 +4753,7 @@ textarea {
 
 /* Чтение / аудио — общая сетка (текст|плеер + главы) */
 .bk-read {
+  position: relative; /* система координат для попапа тап-перевода */
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
   gap: 40px;
@@ -4787,13 +4788,15 @@ textarea {
 .bk-read__sidetitle { font-size: 17px; font-weight: 800; color: var(--ink); margin: 0 0 12px; }
 
 /* Тап-перевод */
+/* absolute (а не fixed): карточка прокручивается вместе со словом.
+   left/top задаёт JS уже по фактическому размеру карточки — без transform,
+   иначе замер и раскладка разъезжаются. */
 .bk-pop {
-  position: fixed; transform: translateX(-50%); z-index: 50;
+  position: absolute; z-index: 50;
   background: #fff; border: 1px solid #ececf1; border-radius: 14px;
   box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18); padding: 12px 14px;
   min-width: 150px; max-width: 260px;
 }
-.bk-pop--above { transform: translate(-50%, -100%); }
 .bk-pop__word { font-size: 15px; font-weight: 800; color: var(--ink); }
 .bk-pop__tr { font-size: 14px; color: #4e4b5b; margin: 2px 0 0; }
 .bk-pop__alts { font-size: 12px; color: var(--muted); margin-top: 2px; }

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { saveWord } from '../api.js'
 import { useI18n } from '../i18n.jsx'
@@ -119,6 +119,10 @@ function toParas(text) {
 // остаются частью «токена», но для поиска перевода чистим их.
 function cleanWord(w) {
   return w.replace(/[^A-Za-zА-Яа-яЁё'-]/g, '')
+}
+
+function clamp(v, min, max) {
+  return Math.min(Math.max(v, min), Math.max(min, max))
 }
 
 function fmtTime(sec) {
@@ -291,28 +295,28 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
   // показываем честной заглушкой — раньше тут был общий демо-текст, из-за
   // которого переход между главами выглядел как «ничего не поменялось».
   const text = chapter.text || ''
-  // {word, translation, alternates, loading, saving, saved, x, y}
+  // {word, translation, alternates, loading, saving, saved, anchor}
   const [pop, setPop] = useState(null)
+  // Координаты попапа в системе .bk-read; считаются после отрисовки — по
+  // фактическому размеру карточки, поэтому до замера её не показываем.
+  const [popPos, setPopPos] = useState(null)
+  const hostRef = useRef(null)
+  const popRef = useRef(null)
   // Отсекает ответы перевода/сохранения от уже закрытого или сменённого попапа.
   const seqRef = useRef(0)
 
   const onWord = (e, raw) => {
     const w = cleanWord(raw)
     if (!w) return
-    const r = e.target.getBoundingClientRect()
     const seq = ++seqRef.current
-    // Попап фиксированный: снизу от слова, а у нижнего края экрана — сверху,
-    // чтобы кнопка сохранения не уезжала за вьюпорт. По X прижимаем к краям.
-    const below = r.bottom + 180 < window.innerHeight
+    setPopPos(null)
     const base = {
       word: w,
       alternates: [],
       loading: false,
       saving: false,
       saved: false,
-      x: Math.min(Math.max(r.left + r.width / 2, 140), window.innerWidth - 140),
-      y: below ? r.bottom : r.top,
-      below,
+      anchor: e.currentTarget,
     }
     // В словаре книги перевод берём на языке интерфейса; если для казахского
     // его там нет — не подменяем русским, а переводим сетью на казахский.
@@ -351,10 +355,45 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
     }
   }
 
+  // Раскладка попапа. Карточка лежит внутри .bk-read (position: absolute),
+  // поэтому при прокрутке едет вместе со словом — раньше она была fixed и
+  // после скролла оставалась висеть далеко от слова. Позицию пересчитываем на
+  // каждый рендер: высота меняется, пока грузится перевод. Ставим под словом,
+  // а если карточка туда не влезает — над ним.
+  useLayoutEffect(() => {
+    const anchor = pop?.anchor
+    const el = popRef.current
+    const host = hostRef.current
+    if (!anchor || !el || !host) return
+    const GAP = 8
+    const EDGE = 8
+    const a = anchor.getBoundingClientRect()
+    const p = el.getBoundingClientRect()
+    const h = host.getBoundingClientRect()
+    const vw = document.documentElement.clientWidth
+    const vh = document.documentElement.clientHeight
+    const fitsBelow = a.bottom + GAP + p.height <= vh - EDGE
+    const fitsAbove = a.top - GAP - p.height >= EDGE
+    const top = fitsBelow || !fitsAbove ? a.bottom + GAP : a.top - GAP - p.height
+    // По X держим карточку внутри зоны чтения: за левой границей .bk-read
+    // начинается сайдбар, и попап уезжал бы под него.
+    const left = clamp(
+      a.left + a.width / 2 - p.width / 2,
+      Math.max(EDGE, h.left),
+      Math.min(vw - EDGE, h.right) - p.width,
+    )
+    const next = { left: left - h.left, top: top - h.top }
+    setPopPos((prev) =>
+      prev && Math.abs(prev.left - next.left) < 0.5 && Math.abs(prev.top - next.top) < 0.5
+        ? prev
+        : next,
+    )
+  })
+
   useEffect(() => {
-    const close = () => setPop(null)
-    window.addEventListener('scroll', close, true)
-    return () => window.removeEventListener('scroll', close, true)
+    const onKey = (e) => e.key === 'Escape' && setPop(null)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   // Новая глава: закрываем попап и мотаем наверх — без этого читатель
@@ -375,7 +414,7 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
         </div>
       </div>
 
-      <div className="bk-read">
+      <div className="bk-read" ref={hostRef}>
         {/* key={ch} ремоунтит статью при смене главы — CSS-анимация входа
             проигрывается заново (и отключена при prefers-reduced-motion). */}
         <article key={ch} className="bk-read__text" onClick={() => setPop(null)}>
@@ -442,26 +481,31 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
             ))}
           </div>
         </aside>
-      </div>
 
-      {pop && (
-        <div
-          className={`bk-pop ${pop.below ? '' : 'bk-pop--above'}`}
-          style={{ left: pop.x, top: pop.y + (pop.below ? 8 : -8) }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="bk-pop__word">{pop.word}</div>
-          <div className="bk-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
-          {pop.alternates.length > 0 && <div className="bk-pop__alts">{pop.alternates.join(', ')}</div>}
-          <button
-            className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
-            onClick={onSave}
-            disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
+        {pop && (
+          <div
+            ref={popRef}
+            className="bk-pop"
+            style={{
+              left: popPos?.left ?? 0,
+              top: popPos?.top ?? 0,
+              visibility: popPos ? 'visible' : 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : 'Сохранить в словарь'}
-          </button>
-        </div>
-      )}
+            <div className="bk-pop__word">{pop.word}</div>
+            <div className="bk-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
+            {pop.alternates.length > 0 && <div className="bk-pop__alts">{pop.alternates.join(', ')}</div>}
+            <button
+              className={`bk-pop__save ${pop.saved ? 'bk-pop__save--on' : ''}`}
+              onClick={onSave}
+              disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
+            >
+              {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : 'Сохранить в словарь'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
