@@ -22,6 +22,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -804,6 +805,9 @@ class TutorAgent(Agent):
         # Keep strong refs to in-flight background POSTs so they aren't GC'd
         # mid-flight (asyncio holds only weak refs to tasks).
         self._bg_tasks: set[asyncio.Task[None]] = set()
+        # Итог структурного сценария (report_task_complete) для call_log.status:
+        # True=passed, False=failed, None=не сценарий/не завершён.
+        self._task_passed: bool | None = None
 
     async def _post_json(self, path: str, body: dict[str, Any]) -> None:
         """Fire-and-forget: schedule the POST and return INSTANTLY.
@@ -993,6 +997,8 @@ class TutorAgent(Agent):
             sc = max(0, min(100, int(score)))
         except (TypeError, ValueError):
             sc = 0
+        # Итог сценария для истории звонков (call_log.status).
+        self._task_passed = bool(passed)
         payload = {
             "scenarioId": self._scenario_id,
             "passed": bool(passed),
@@ -2737,6 +2743,76 @@ async def entrypoint(ctx: JobContext):
             _budget_task.cancel()
 
         ctx.add_shutdown_callback(_cancel_budget_task)
+
+    # ── Захват транскрипта для истории звонков ────────────────────────────────
+    # Копим реплики по ходу (STT ученика + текст ответов тьютора) и в конце
+    # сессии одним awaited POST пишем call_log (/api/profile/calls). Awaited, а не
+    # fire-and-forget: shutdown убивает висящие _bg_tasks, а транскрипт должен
+    # доехать. Пустой транскрипт insertCall не пишет.
+    call_started = time.monotonic()
+    call_transcript: list[dict[str, str]] = []
+
+    @session.on("conversation_item_added")
+    def _on_conversation_item(ev: Any) -> None:
+        try:
+            item = getattr(ev, "item", None) or ev
+            role = getattr(item, "role", None)
+            text = getattr(item, "text_content", None)
+            if text is None:
+                content = getattr(item, "content", None)
+                if isinstance(content, str):
+                    text = content
+                elif isinstance(content, list):
+                    text = " ".join(c for c in content if isinstance(c, str))
+            text = (text or "").strip()
+            if text and role in ("user", "assistant"):
+                call_transcript.append(
+                    {"role": "tutor" if role == "assistant" else "learner", "text": text[:2000]}
+                )
+        except Exception:
+            logger.exception("[transcript] capture failed")
+
+    async def _persist_call() -> None:
+        turns = list(call_transcript)
+        if not turns:
+            # Фолбэк, если conversation_item_added не сработал в этой версии
+            # livekit-agents: сериализуем накопленную историю сессии.
+            try:
+                items = getattr(getattr(session, "history", None), "items", None) or []
+                for item in items:
+                    role = getattr(item, "role", None)
+                    text = (getattr(item, "text_content", None) or "").strip()
+                    if text and role in ("user", "assistant"):
+                        turns.append(
+                            {"role": "tutor" if role == "assistant" else "learner", "text": text[:2000]}
+                        )
+            except Exception:
+                logger.exception("[transcript] history fallback failed")
+        if not profile.device_id or not turns:
+            return
+        mode = "free" if profile.mode == "tutor" else profile.mode
+        scenario_name = ""
+        if is_scenario and scenario_data:
+            fm = scenario_data.get("frontmatter", {})
+            scenario_name = str(fm.get("title") or scenario_data.get("id") or "")[:80]
+        status = "passed" if agent._task_passed is True else "failed" if agent._task_passed is False else None
+        body = {
+            "deviceId": profile.device_id,
+            "tutor": profile.tutor or None,
+            "level": profile.level,
+            "lang": profile.lang,
+            "durationSec": int(time.monotonic() - call_started),
+            "mode": mode,
+            "scenarioName": scenario_name or None,
+            "status": status,
+            "transcript": turns,
+        }
+        try:
+            await agent._do_post("/api/profile/calls", body)
+        except Exception:
+            logger.exception("[transcript] persist failed")
+
+    ctx.add_shutdown_callback(_persist_call)
 
     greeting_hint = (
         build_scenario_greeting(profile, scenario_data)

@@ -1,21 +1,15 @@
 import TutorShell from '../tutor/TutorShell.jsx'
-import { useT } from '../i18n/LanguageContext.jsx'
+import { useLang } from '../i18n/LanguageContext.jsx'
+import { callToMessages, callTitle, callDateTime } from '../tutor/callHistory.js'
 
-// Транскрипт одного разговора с тьютором. Данные приходят пропсами из истории
-// (бэкенд её пока не отдаёт — см. TutorManagePage); без них показываем пустое
-// состояние вместо демо-переписки, которая раньше была захардкожена.
-// Формат сообщения: { who: 'tutor' | 'me', text }.
-export default function TutorChatHistoryPage({
-  user,
-  onNavigate,
-  onProfile,
-  onBack,
-  title,
-  date,
-  time,
-  messages = [],
-}) {
-  const t = useT()
+// Транскрипт одного разговора с тьютором. `call` приходит из истории
+// (TutorManagePage → App → сюда). Реплики берём из call.transcript;
+// формат пузыря — { who: 'tutor' | 'me', text }.
+export default function TutorChatHistoryPage({ user, onNavigate, onProfile, onBack, call }) {
+  const { lang, t } = useLang()
+  const messages = callToMessages(call)
+  const title = call ? callTitle(call, t) : t('manage.history')
+  const { date, time } = callDateTime(call, lang)
   return (
     <TutorShell
       active="tutor"
@@ -23,7 +17,7 @@ export default function TutorChatHistoryPage({
       onNavigate={onNavigate}
       onProfile={onProfile}
       onBack={onBack}
-      title={title || t('manage.history')}
+      title={title}
       layout="flow"
     >
       <div className="t-chat">

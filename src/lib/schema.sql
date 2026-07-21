@@ -17,6 +17,10 @@ create table if not exists call_log (
   mistakes jsonb default '[]'::jsonb not null,
   new_words jsonb default '[]'::jsonb not null,
   focus text,
+  transcript jsonb default '[]'::jsonb not null,
+  mode text,
+  scenario_name text,
+  status text,
   created_at timestamp with time zone default now() not null,
   constraint call_log_pkey PRIMARY KEY (id)
 );
