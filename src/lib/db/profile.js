@@ -357,7 +357,15 @@ export async function loadProfile(deviceId) {
     skills: base.skills ?? null,
     writing: base.writing ?? null,
     mistakes: activeMistakes,
-    dueReviews: dueRows.map((r) => r.item),
+    // Тот же отсев «пройденных», что у activeMistakes: приложение помечает ошибку
+    // освоенной через resolved_log, но review_item отдельная таблица и её строка
+    // живёт дальше. Без фильтра тьютор долбил бы ошибку, которую ученик перерос.
+    dueReviews: dueRows
+      .map((r) => r.item)
+      .filter((m) => {
+        const ml = m.toLowerCase()
+        return !resolvedLower.some((r) => r && (ml.includes(r) || r.includes(ml)))
+      }),
     dueVocab: dueVocabRows.map((r) => r.item),
     topics: topicsRows.map((r) => r.topic),
     facts: factsRows.map((r) => r.fact),

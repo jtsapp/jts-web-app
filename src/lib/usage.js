@@ -7,21 +7,17 @@
 // The token route checks getUsage() before issuing a token and calls
 // openSession(); the LiveKit `room_finished` webhook calls recordSession().
 
-import { neon } from "@neondatabase/serverless";
+// Общий клиент из sql.js — раньше здесь был свой neon() (дубль + новый клиент на
+// каждый вызов). Теперь единый пул postgres, isDbConfigured тоже оттуда.
+import { getSql, isDbConfigured } from "./db/sql.js";
+
+export { isDbConfigured };
 
 export const DAILY_LIMIT_SEC = 600; // 10 min
 export const MONTH_LIMIT_SEC = 18000; // 300 min
 // Cap a single recorded session so a stuck/abusive room can't inflate usage
 // beyond the daily token TTL (10 min) plus a small buffer.
 const SESSION_CAP_SEC = 660;
-
-export function isDbConfigured() {
-  return Boolean(process.env.DATABASE_URL);
-}
-
-function sql() {
-  return neon(process.env.DATABASE_URL);
-}
 
 // device_id sanity — mirrors felix isValidDeviceId (non-empty, bounded, safe).
 export function isValidDeviceId(id) {
@@ -32,7 +28,8 @@ export function isValidDeviceId(id) {
 
 /** Seconds used today (local UTC day) and across the current calendar month. */
 export async function getUsage(deviceId) {
-  const db = sql();
+  const db = getSql();
+  if (!db) return { todaySeconds: 0, monthSeconds: 0 };
   const rows = await db`
     SELECT
       COALESCE(SUM(seconds) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today,
@@ -48,7 +45,8 @@ export async function getUsage(deviceId) {
 
 /** Record an open session so the webhook can compute its duration on finish. */
 export async function openSession(room, deviceId) {
-  const db = sql();
+  const db = getSql();
+  if (!db) return;
   await db`
     INSERT INTO voice_session (room, device_id, started_at)
     VALUES (${room}, ${deviceId}, now())
@@ -62,7 +60,8 @@ export async function openSession(room, deviceId) {
  * unknown (already recorded, or opened before this table existed).
  */
 export async function recordSession(room, fallbackSeconds = 0) {
-  const db = sql();
+  const db = getSql();
+  if (!db) return false;
   const rows = await db`
     SELECT device_id,
            EXTRACT(EPOCH FROM (now() - started_at))::int AS elapsed
