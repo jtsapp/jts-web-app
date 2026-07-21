@@ -19,6 +19,9 @@ import {
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import BookDetail, { normTitle } from './BookDetail.jsx'
+import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
+import GrammarLesson from './GrammarLesson.jsx'
+import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/grammar/grammarData.js'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -206,9 +209,31 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     return books.filter((b) => `${b.title || ''} ${b.author || ''}`.toLowerCase().includes(q))
   }, [books, bookQuery])
 
+  // Грамматика: нативный каталог уроков (данные — public/practice/grammar/,
+  // см. scripts/extract-grammar.js). Лёгкий index грузим один раз при монтировании
+  // — он нужен и рейлу в «Все», и полному каталогу.
+  const [grammarIndex, setGrammarIndex] = useState(null)
+  const [grammarLevel, setGrammarLevel] = useState(() => levelToCourse(userLevel))
+  const [grammarSearch, setGrammarSearch] = useState('')
+  const [openUnit, setOpenUnit] = useState(null) // { level, unit }
+
+  useEffect(() => {
+    let alive = true
+    loadGrammarIndex().then((idx) => alive && idx && setGrammarIndex(idx))
+    return () => {
+      alive = false
+    }
+  }, [])
+  useEffect(() => {
+    setGrammarLevel(levelToCourse(userLevel))
+  }, [userLevel])
+
+  const grammarLevelLabel =
+    (GRAMMAR_LEVELS.find((l) => l.code === grammarLevel) || {}).label || grammarLevel.toUpperCase()
+
   // «Видеоклипы» убраны из клиентской части: контент остаётся в dev-admin
   // (/mobile/video-lessons живёт), но страница его не запрашивает и не рисует.
-  const chips = ['Все', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
+  const chips = ['Все', 'Грамматика', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
   const [filter, setFilter] = useState(null)
@@ -245,6 +270,22 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     } finally {
       taleLoadingRef.current = false
     }
+  }
+
+  // Урок грамматики — полноэкранный takeover (как открытая книга/рилс).
+  if (openUnit) {
+    const lvl = grammarIndex && grammarIndex[openUnit.level]
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <GrammarLesson
+          level={openUnit.level}
+          units={lvl ? lvl.units : null}
+          unit={openUnit.unit}
+          onExit={() => setOpenUnit(null)}
+          onOpenUnit={(u) => setOpenUnit({ level: openUnit.level, unit: u })}
+        />
+      </LearningLayout>
+    )
   }
 
   if (openReel !== null) {
@@ -293,6 +334,32 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </div>
 
           {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
+
+          {/* Грамматика — полный каталог (чип «Грамматика») */}
+          {filter === 'Грамматика' &&
+            (grammarIndex ? (
+              <GrammarCatalog
+                index={grammarIndex}
+                activeLevel={grammarLevel}
+                onLevel={setGrammarLevel}
+                search={grammarSearch}
+                onSearch={setGrammarSearch}
+                onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
+              />
+            ) : (
+              <div className="gr-loading">Загрузка…</div>
+            ))}
+
+          {/* Грамматика — рейл в общем виде «Все» */}
+          {filter === null && grammarIndex && (
+            <GrammarRail
+              index={grammarIndex}
+              courseCode={grammarLevel}
+              levelLabel={grammarLevelLabel}
+              onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
+              onSeeAll={() => setFilter('Грамматика')}
+            />
+          )}
 
           {/* Мемы и рилсы */}
           {show('Мемы и рилсы') && (

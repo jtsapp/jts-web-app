@@ -2,8 +2,10 @@ import { defineConfig, devices } from '@playwright/test'
 
 // E2E-проверки клиентских экранов (регистрация/вход, адаптивная оболочка).
 // Запуск: `npm run test:e2e`. Сервер поднимается сам (или переиспользуется,
-// если dev уже слушает 3100).
-const PORT = 3100
+// если dev уже слушает 3100). Порт переопределяется через E2E_PORT — иначе,
+// если 3100 занят чужим dev-сервером, reuseExistingServer молча прогонит
+// тесты по чужому коду.
+const PORT = Number(process.env.E2E_PORT) || 3100
 const BASE = `http://localhost:${PORT}`
 
 export default defineConfig({
