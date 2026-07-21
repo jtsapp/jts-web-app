@@ -2604,17 +2604,34 @@
   .t-choose__pills,
   .t-choose__grid { display: none; }
   .t-main:has(.t-choose) { padding: 0 16px 16px; }
-  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; }
   /* t-choose тянется на всю высоту, чтобы кнопки карусели прижались к низу */
   .t-choose:has(.t-car) { padding: 0; flex: 1; display: flex; flex-direction: column; }
 
-  /* Экран выбора залочен на один вьюпорт: пользователь не должен случайно
-     смахнуть страницу и потерять карусель из виду. Лочим всю оболочку в
-     100dvh с overflow:hidden и убираем футер — прокрутки (верт. и гориз.)
-     на этом экране нет вообще. Скоуп :has(.t-car) — только экран выбора,
-     остальные экраны тьютора скроллятся как обычно. */
-  html:has(.t-car), body:has(.t-car) { overflow: hidden; overscroll-behavior: none; }
-  .t-app:has(.t-car) { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+  /* Экран выбора: цель — карусель на весь вьюпорт, кнопки «Послушать/Выбрать»
+     прижаты к низу (Figma). Скоуп :has(.t-car) — только этот экран.
+
+     ВАЖНО (два инцидента): раньше шелл лочился в height:100svh/100dvh +
+     overflow:hidden, чтобы юзер не смахнул карусель. Но на мобильном Chrome
+     адресная строка остаётся развёрнутой (страница залочена и не скроллится),
+     реальная высота вьюпорта меньше 100svh/100dvh, и низ шелла с ОБЕИМИ кнопками
+     обрезался за краем БЕЗ возможности доскроллить — кнопки недосягаемы.
+
+     Решение: НЕ лочим высоту и НЕ режем overflow намертво. min-height:100svh
+     (а не height) — на высоком экране контент растягивается и кнопки прижаты к
+     низу; когда контента больше видимой высоты (адресная строка съедает место),
+     документ просто СКРОЛЛИТСЯ по вертикали — кнопка всегда достижима.
+
+     Горизонталь: сама сцена карусели шире вьюпорта на ±16px (соседние аватары
+     выглядывают за края), поэтому body клипаем по X. Используем overflow-x:clip,
+     а НЕ hidden: hidden вынуждает overflow-y стать auto (спецификация CSS), и
+     тогда body/html/оболочка превращаются в отдельные вложенные scroll-контейнеры
+     — тач-скролл цепляет не тот и работает рвано. clip убирает горизонтальное
+     выпирание, не создавая scroll-контекст: вертикальный скролл остаётся
+     единым, на документе. overscroll-behavior:none — против баунса и цепного
+     скролла. 100vh — фолбэк для браузеров без svh. */
+  html:has(.t-car), body:has(.t-car) { overflow-x: clip; overscroll-behavior: none; }
+  .t-app:has(.t-car) { min-height: 100vh; min-height: 100svh; }
   .t-app:has(.t-car) .t-body { flex: 1; min-height: 0; }
   .t-app:has(.t-car) .footer { display: none; }
 
