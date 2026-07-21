@@ -2630,7 +2630,11 @@
      выпирание, не создавая scroll-контекст: вертикальный скролл остаётся
      единым, на документе. overscroll-behavior:none — против баунса и цепного
      скролла. 100vh — фолбэк для браузеров без svh. */
-  html:has(.t-car), body:has(.t-car) { overflow-x: clip; overscroll-behavior: none; }
+  /* overflow-x:clip переехал в styles.css и теперь действует на ВСЕХ мобильных
+     экранах, не только здесь (обоснование clip-вместо-hidden — там же). Тут
+     остаётся только overscroll-behavior: он карусельный, против баунса и
+     цепного скролла. */
+  html:has(.t-car), body:has(.t-car) { overscroll-behavior: none; }
   .t-app:has(.t-car) { min-height: 100vh; min-height: 100svh; }
   .t-app:has(.t-car) .t-body { flex: 1; min-height: 0; }
   .t-app:has(.t-car) .footer { display: none; }
@@ -2695,9 +2699,14 @@
     height: 32px; display: inline-flex; align-items: center; padding: 0 12px;
     border-radius: 20px; color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap;
   }
+  /* margin-inline:auto обязателен: родитель — блочный, а max-width:334px уже
+     ре́жет ширину, поэтому без авто-полей блок прилипал к левому краю и всё
+     описание стояло на 23px левее имени и чипов. text-align центрировал строки
+     ВНУТРИ съехавшего блока, из-за чего перекос выглядел как «неровный текст». */
   .t-car__desc {
-    margin-top: 18px; max-width: 334px; font-size: 14px; line-height: 1.4;
-    color: #181818; text-align: center;
+    margin-top: 18px; margin-inline: auto; max-width: 334px;
+    font-size: 14px; line-height: 1.4;
+    color: #181818; text-align: center; text-wrap: balance;
   }
 
   .t-car__actions {
