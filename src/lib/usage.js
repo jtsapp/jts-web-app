@@ -1,4 +1,4 @@
-// Voice-usage accounting for the free-tier cap (10 min/day, 300 min/month).
+// Voice-usage accounting for the free-tier cap (20 min/day, 300 min/month).
 //
 // Backed by Neon (DATABASE_URL). Two tables (see api/_lib/schema.sql):
 //   voice_usage(device_id, day, seconds)     — accumulated talk time
@@ -13,11 +13,13 @@ import { getSql, isDbConfigured } from "./db/sql.js";
 
 export { isDbConfigured };
 
-export const DAILY_LIMIT_SEC = 600; // 10 min
+export const DAILY_LIMIT_SEC = 1200; // 20 min
 export const MONTH_LIMIT_SEC = 18000; // 300 min
 // Cap a single recorded session so a stuck/abusive room can't inflate usage
-// beyond the daily token TTL (10 min) plus a small buffer.
-const SESSION_CAP_SEC = 660;
+// beyond the daily token TTL (20 min) plus a small buffer. Держим на минуту
+// больше DAILY_LIMIT_SEC: поднимая дневной лимит, поднимай и этот, иначе
+// длинный разговор запишется урезанным и минуты не спишутся полностью.
+const SESSION_CAP_SEC = 1260;
 
 // device_id sanity — mirrors felix isValidDeviceId (non-empty, bounded, safe).
 export function isValidDeviceId(id) {

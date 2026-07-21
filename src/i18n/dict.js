@@ -102,7 +102,7 @@ export const DICT = {
     'voice.unavailable': 'Голосовой режим временно недоступен. Попробуйте позже.',
     'voice.expired': 'Сессия истекла. Войдите заново, чтобы продолжить разговор.',
     'voice.limitDaily':
-      'На сегодня лимит разговора исчерпан (10 минут в день на бесплатном тарифе). Возвращайся завтра!',
+      'На сегодня лимит разговора исчерпан (20 минут в день на бесплатном тарифе). Возвращайся завтра!',
     'voice.limitMonthly':
       'Месячный лимит разговора исчерпан (300 минут). Лимит обновится в начале следующего месяца.',
 
@@ -316,7 +316,7 @@ export const DICT = {
     'voice.unavailable': 'Дауыстық режим уақытша қолжетімсіз. Кейінірек көріңіз.',
     'voice.expired': 'Сессия аяқталды. Әңгімені жалғастыру үшін қайта кіріңіз.',
     'voice.limitDaily':
-      'Бүгінгі әңгіме лимиті бітті (тегін тарифте күніне 10 минут). Ертең қайта келіңіз!',
+      'Бүгінгі әңгіме лимиті бітті (тегін тарифте күніне 20 минут). Ертең қайта келіңіз!',
     'voice.limitMonthly':
       'Айлық лимит бітті (300 минут). Лимит келесі айдың басында жаңарады.',
 
@@ -519,7 +519,7 @@ export const DICT = {
     'voice.unavailable': 'Voice mode is temporarily unavailable. Please try later.',
     'voice.expired': 'Your session has expired. Sign in again to keep talking.',
     'voice.limitDaily':
-      "You've used today's talk limit (10 minutes a day on the free plan). Come back tomorrow!",
+      "You've used today's talk limit (20 minutes a day on the free plan). Come back tomorrow!",
     'voice.limitMonthly':
       "You've reached the monthly talk limit (300 minutes). It resets at the start of next month.",
 
