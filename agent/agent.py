@@ -379,6 +379,10 @@ class LearnerProfile:
     # Billing tier ("free" | "paid"). Free tier skips the paid Krisp BVC add-on
     # (cost). Set by the token route in metadata.
     tier: str = "free"
+    # Серверный потолок длительности сессии в секундах (остаток дневного лимита).
+    # Приходит из /api/livekit/token; агент по нему жёстко закрывает комнату,
+    # чтобы разговор не шёл дольше лимита. 0 → потолок не задан (не закрываем).
+    session_ttl_sec: int = 0
 
 
 def _str_list(raw: Any, cap: int) -> list[str]:
@@ -474,6 +478,11 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         scenario_id=str(data.get("scenarioId", "") or "")[:64],
         debate_topic=str(data.get("debateTopic", "") or "")[:200],
         tier=str(data.get("tier", "free") or "free"),
+        session_ttl_sec=(
+            int(data["sessionTtlSec"])
+            if isinstance(data.get("sessionTtlSec"), (int, float))
+            else 0
+        ),
     )
 
 
@@ -484,11 +493,16 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
 PERSONA_OVERRIDE = {
     # Dexter — the male character. Kept under the existing id 'bro'.
     "bro": (
-        "Persona 'Dexter' — a dynamic, motivating, professional conversation partner (male).\n"
-        "Tone: energetic, clear, direct, structured; an enthusiastic partner who keeps the talk moving.\n"
-        "BALANCE: never strict or intimidating, never passive. Encourage real effort specifically; "
+        "Persona 'Dexter' — a warm geek-friend (male): kind, smart, genuinely curious.\n"
+        "Essence: an enthusiastic buddy who turns studying into an adventure. Starry-eyed about how "
+        "things work; shares knowledge like a friend showing you something cool, never a strict lecturer.\n"
+        "Tone: energetic, clear, direct, structured; speaks WITH the learner, not at them.\n"
+        "Shape of a (short) reply: curiosity hook (why this is interesting) → an everyday analogy → "
+        "the insight → a question that makes them use it. Never one-word: build on what they said and "
+        "end on an open question — but keep it to 1–3 spoken sentences, not a lecture.\n"
+        "BALANCE: never strict or intimidating, never passive, never condescending or dry. "
+        "Encourage real effort specifically; "
         "when they err, kindly explain WHY and how to fix it in natural context — not just 'no'.\n"
-        "SHAPE: no one-word replies; build on what they said, then end with an open question that keeps them talking.\n"
         "EXAMPLES:\n"
         "  Learner: 'I have visited Paris last year.'\n"
         "  You: 'Nice one. Small fix — with a finished time like last year we use past simple: I visited Paris last year. What did you enjoy most there?'\n"
@@ -539,14 +553,22 @@ PERSONA_OVERRIDE = {
         "  You: 'take your time — I'm not going anywhere.'"
     ),
     "hype": (
-        "Persona 'Spark' — short, fast, loud bursts. Pump-up trainer between sets.\n"
-        "Vibe: high voltage. Two-to-six-word sentences.\n"
+        "Persona 'Spark' — high-voltage cheerleader (energetic, loud, cheerful). "
+        "Short, fast, loud bursts. Pump-up trainer between sets.\n"
+        "Essence: turns routine into a challenge and every small win into a celebration; "
+        "charges the learner up to act. Best for procrastination and low motivation.\n"
+        "Vibe: high voltage, punchy, playful, competitive-in-a-fun-way. Two-to-six-word sentences.\n"
+        "Shape: energy burst → frame it as a challenge → fast punchy fix → 'prove it' → loud "
+        "celebration of the win.\n"
         "Signature openers: 'LET'S GO', 'boom', 'alright', 'lock in', 'go'.\n"
         "BANNED: long explanations, gentle phrasing, 'take your time'.\n"
         "HARD RULE: NO sentence over 8 words. Total reply ≤ 4 sentences. First word is a signature opener.\n"
+        "STRESS EXCEPTION — overrides the HARD RULE above: if the learner sounds stressed, anxious or "
+        "overwhelmed, STOP the hype (no signature opener, drop the volume). Say one calm, quiet line that "
+        "it's okay to slow down and that they can switch to the calmer tutor, Luna, any time.\n"
         "EXAMPLES:\n"
         "  Learner: 'she go to school'\n"
-        "  You: 'miss! It's she goes. Third-person s. Run it back.'\n"
+        "  You: 'alright — close! She goes. Third-person s. Run it back.'\n"
         "  Learner: 'she goes to school'\n"
         "  You: 'BOOM. Nailed it. Next — one with he. GO.'\n"
         "  Learner: (silence)\n"
@@ -595,10 +617,16 @@ PERSONA_OVERRIDE = {
         "  You: 'take your time, sweetheart. no rush at all.'"
     ),
     "gentle": (
-        "Persona 'Luna' — calm, soft, zero pressure. For nervous learners.\n"
-        "Vibe: warm, unhurried, like a kind older sister.\n"
+        "Persona 'Luna' — a gentle dreamer (gentle, caring, calm). Zero pressure. "
+        "For nervous, tired or overwhelmed learners.\n"
+        "Essence: soft, patient, imaginative — sees beauty in ideas and invites the learner to "
+        "wonder. Backs every attempt with warmth. Favourite move: 'what if we imagined it like…?'\n"
+        "Vibe: warm, unhurried, reassuring, like a kind older sister. Lots of breathing room.\n"
+        "Shape: gentle reassurance → imaginative framing ('what if…') → soft unhurried explanation "
+        "→ a calm invitation to try.\n"
         "Signature openers: 'let's gently look', 'another version of this is', 'softly,', 'no need to rush', 'lovely try at X'.\n"
-        "BANNED: imperatives, urgency words, the words 'wrong' / 'no' / 'incorrect' / 'mistake'.\n"
+        "BANNED: imperatives, urgency words, the words 'wrong' / 'incorrect' / 'mistake', and a bare 'no' "
+        "used to reject an answer (soft phrases like 'no need to rush' are fine).\n"
         "HARD RULE: when correcting, frame as alternative ('another version is X'), never as failure. First sentence soft.\n"
         "EXAMPLES:\n"
         "  Learner: 'she go to school'\n"
@@ -1556,13 +1584,15 @@ def build_instructions(p: LearnerProfile) -> str:
             "your reply would start with 'жалғастырайық' / 'енді' while the "
             "learner just objected, you are wrong — restart with a clarifying "
             "question instead.\n"
-            "FORMAT: explanations of grammar rules MUST be in clear modern "
-            "Kazakh using Kazakh grammar terminology (етістік, зат есім, шақ, "
-            "септік etc.). When you give an English example or drill item, "
+            "FORMAT: by default, explanations of grammar rules are in clear "
+            "modern Kazakh using Kazakh grammar terminology (етістік, зат есім, "
+            "шақ, септік etc.). When you give an English example or drill item, "
             "keep IT in English. A pure-explanation turn may be fully in "
             "Kazakh if that's what the learner needs. If the learner explicitly "
-            "asks 'қазақша түсіндір' — go fully Kazakh. Do NOT switch to "
-            "Russian unless the learner speaks Russian first."
+            "asks 'қазақша түсіндір' — go fully Kazakh. Do NOT switch to Russian "
+            "on your own — unless the learner speaks Russian first, or the "
+            "explanation-language directive below explicitly sets Russian (that "
+            "directive takes priority over this Kazakh default)."
         )
     elif p.lang == "ru":
         lang_g = (
@@ -1570,7 +1600,9 @@ def build_instructions(p: LearnerProfile) -> str:
             "be in clear Russian — a pure-explanation turn may be fully in "
             "Russian if that helps. When you give an English example or drill "
             "item, keep IT in English. If the learner explicitly asks 'объясни "
-            "на русском' — go fully Russian and don't force English back in."
+            "на русском' — go fully Russian and don't force English back in. Do "
+            "NOT switch to Kazakh on your own — unless the learner speaks Kazakh "
+            "first, or the explanation-language directive below sets Kazakh."
         )
     else:
         lang_g = (
@@ -2356,10 +2388,22 @@ def build_cascade_session(
     # no `model` kwarg — config via params.) Pass the key explicitly.
     stt = soniox.STT(api_key=os.getenv("SONIOX_API_KEY"))
     # Brain: OpenAI-compat shim over lib/llm. The plugin appends /chat/completions
-    # to base_url → hits app/api/voice/brain/chat/completions/route.ts.
+    # to base_url → hits app/api/voice/brain/chat/completions/route.ts, and sends
+    # api_key as `Authorization: Bearer`. Раньше тут стоял "jts-voice", а роут
+    # игнорировал auth — открытый прокси к Anthropic. Теперь роут закрыт
+    # (fail-closed): без верного ключа brain вернёт 401 и тьютор промолчит,
+    # поэтому INTERNAL_API_KEY обязателен на ОБОИХ хостах (Vercel + этот воркер)
+    # и должен совпадать. VOICE_BRAIN_KEY оставлен как запасное имя переменной.
+    brain_key = os.getenv("INTERNAL_API_KEY") or os.getenv("VOICE_BRAIN_KEY")
+    if not brain_key:
+        logger.error(
+            "INTERNAL_API_KEY is not set — the brain shim will reject every call "
+            "and the tutor will stay silent. Set it to the same value as on the "
+            "web app (Vercel)."
+        )
     llm = lk_openai.LLM(
         base_url=f"{api_url.rstrip('/')}/api/voice/brain",
-        api_key=os.getenv("VOICE_BRAIN_KEY", "jts-voice"),  # shim ignores auth
+        api_key=brain_key or "unset",
         model="jts-voice-router",
         temperature=persona_temperature,
     )
@@ -2562,7 +2606,22 @@ async def entrypoint(ctx: JobContext):
     # Feed this learner's own topics + banked vocab to the speech recogniser so
     # their captions get the words they actually use right.
     adaptation_phrases = BASE_ADAPTATION_PHRASES + profile.topics[:15] + profile.vocab[:30]
-    api_url = os.getenv("JTS_API_URL") or "http://localhost:3000"
+    # Раньше тут был молчаливый фолбэк на http://localhost:3000: при потерянном
+    # env в проде cascade-мозг и все log_* write-back тихо уходили в никуда.
+    # cascade без URL работать не может — прерываем; gemini-live озвучивает и без
+    # него (мозг внутри Gemini), но память терялась бы молча — громко предупреждаем.
+    api_url = (os.getenv("JTS_API_URL") or "").strip().rstrip("/")
+    if not api_url:
+        if voice_stack == "cascade":
+            logger.error(
+                "JTS_API_URL is not set — cascade brain has nowhere to call; aborting session."
+            )
+            return
+        logger.error(
+            "JTS_API_URL is not set — memory write-back (log_mistake/log_topic/…) "
+            "will fail. Voice still works on gemini-live. Set JTS_API_URL to the web app URL."
+        )
+        api_url = "http://localhost:3000"
 
     if voice_stack == "cascade":
         # Tool calls (report_placement_level / log_*) flow through the brain
@@ -2623,6 +2682,55 @@ async def entrypoint(ctx: JobContext):
         )
     else:
         await session.start(agent=agent, room=ctx.room)
+
+    # ── Жёсткий серверный потолок длительности сессии ─────────────────────────
+    # Клиентский countdown display-only, а истечение TTL LiveKit-токена уже
+    # установленное соединение штатно не рвёт. Без этого разговор идёт дольше
+    # дневного бюджета, а минуты STT/LLM/TTS сверх SESSION_CAP_SEC не списываются
+    # (usage.js). Бюджет секунд приходит в metadata (sessionTtlSec, уже урезанный
+    # до остатка дневного лимита). По его истечении УДАЛЯЕМ комнату: это выкидывает
+    # и агента, и ученика (клиент словит onDisconnected → выйдет), и триггерит
+    # webhook room_finished, который спишет минуты.
+    ttl_sec = profile.session_ttl_sec
+    if ttl_sec and ttl_sec > 0:
+        room_name = ctx.room.name
+
+        async def _end_session_on_budget(limit: int) -> None:
+            try:
+                await asyncio.sleep(limit)
+            except asyncio.CancelledError:
+                return
+            logger.info("Voice budget %ds reached — ending room %s.", limit, room_name)
+            try:
+                # Короткое прощание — best-effort, не блокирует закрытие.
+                session.generate_reply(
+                    instructions="Time's up for today. Say a short, warm one-line goodbye."
+                )
+                await asyncio.sleep(2.0)
+            except Exception:
+                logger.exception("[watchdog] goodbye failed")
+            try:
+                from livekit import api as lk_api
+
+                lkapi = lk_api.LiveKitAPI()
+                try:
+                    await lkapi.room.delete_room(lk_api.DeleteRoomRequest(room=room_name))
+                finally:
+                    await lkapi.aclose()
+            except Exception:
+                # Фолбэк: хотя бы отключаем агента (webhook придёт, когда уйдёт ученик).
+                logger.exception("[watchdog] delete_room failed; disconnecting agent")
+                try:
+                    await ctx.room.disconnect()
+                except Exception:
+                    logger.exception("[watchdog] room disconnect failed")
+
+        _budget_task = asyncio.create_task(_end_session_on_budget(ttl_sec))
+
+        async def _cancel_budget_task() -> None:
+            _budget_task.cancel()
+
+        ctx.add_shutdown_callback(_cancel_budget_task)
 
     greeting_hint = (
         build_scenario_greeting(profile, scenario_data)
