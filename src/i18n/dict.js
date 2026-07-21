@@ -109,6 +109,9 @@ export const DICT = {
     // Результат уровня
     'result.heading': 'Отлично!\nТвой уровень разговорного\nанглийского',
     'result.retry': 'Попробовать пройти тест снова',
+    'result.why': 'Почему такой уровень',
+    'result.strengths': 'Сильные стороны',
+    'result.improvements': 'Что подтянуть',
 
     // Интересы
     'interests.heading': '{name} хочет узнать чем\nты увлекаешься',
@@ -174,6 +177,13 @@ export const DICT = {
     'manage.change': 'Поменять тьютора',
     'manage.history': 'История разговоров',
     'manage.historyEmpty': 'Здесь появится история ваших разговоров с тьютором',
+    'hist.free': 'Свободный разговор',
+    'hist.freeSub': 'Свободная беседа',
+    'hist.scenario': 'Сценарий {name}',
+    'hist.placement': 'Определение уровня',
+    'hist.debate': 'Дебаты',
+    'hist.passed': 'Успешно пройдено',
+    'hist.failed': 'Не пройдено',
 
     // Аналитика ошибок
     'erran.title': 'Аналитика ошибок в разговоре',
@@ -322,6 +332,9 @@ export const DICT = {
 
     'result.heading': 'Тамаша!\nСенің ауызша ағылшын\nдеңгейің',
     'result.retry': 'Тестті қайта тапсырып көру',
+    'result.why': 'Неге осы деңгей',
+    'result.strengths': 'Күшті жақтары',
+    'result.improvements': 'Нені жақсарту керек',
 
     'interests.heading': '{name} немен айналысатыныңды\nбілгісі келеді',
     'interests.sub': 'Өзіңе қызық тақырыптарды таңда',
@@ -382,6 +395,13 @@ export const DICT = {
     'manage.change': 'Тьюторды ауыстыру',
     'manage.history': 'Әңгімелер тарихы',
     'manage.historyEmpty': 'Мұнда тьютормен әңгімелеріңіздің тарихы пайда болады',
+    'hist.free': 'Еркін әңгіме',
+    'hist.freeSub': 'Еркін әңгіме',
+    'hist.scenario': 'Сценарий {name}',
+    'hist.placement': 'Деңгейді анықтау',
+    'hist.debate': 'Пікірталас',
+    'hist.passed': 'Сәтті өтті',
+    'hist.failed': 'Өтпеді',
 
     'erran.title': 'Әңгімедегі қателер талдауы',
     'erran.by': 'Талдауды тьюторың жасады:',
@@ -525,6 +545,9 @@ export const DICT = {
 
     'result.heading': 'Great!\nYour spoken English\nlevel',
     'result.retry': 'Try the test again',
+    'result.why': 'Why this level',
+    'result.strengths': 'Strengths',
+    'result.improvements': 'What to work on',
 
     'interests.heading': '{name} wants to know\nwhat you are into',
     'interests.sub': 'Pick topics that interest you',
@@ -585,6 +608,13 @@ export const DICT = {
     'manage.change': 'Change tutor',
     'manage.history': 'Conversation history',
     'manage.historyEmpty': 'Your conversation history with the tutor will appear here',
+    'hist.free': 'Free conversation',
+    'hist.freeSub': 'Free conversation',
+    'hist.scenario': 'Scenario: {name}',
+    'hist.placement': 'Level check',
+    'hist.debate': 'Debate',
+    'hist.passed': 'Passed',
+    'hist.failed': 'Not passed',
 
     'erran.title': 'Conversation mistakes analytics',
     'erran.by': 'The analysis was done by your tutor:',

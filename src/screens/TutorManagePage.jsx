@@ -1,6 +1,7 @@
 import TutorShell from '../tutor/TutorShell.jsx'
 import { ArrowRightIcon } from '../tutor/TutorIcons.jsx'
-import { useT } from '../i18n/LanguageContext.jsx'
+import { useLang } from '../i18n/LanguageContext.jsx'
+import { groupCallsByDate } from '../tutor/callHistory.js'
 
 export default function TutorManagePage({
   user,
@@ -9,12 +10,15 @@ export default function TutorManagePage({
   onBack,
   tutor = {},
   onChangeTutor,
-  // Реальная история разговоров. Пока бэкенд её не отдаёт — список пустой.
-  // Формат группы: { date, items: [{ title, sub, time }] }.
-  history = [],
+  // Сырые звонки из GET /api/profile/calls. Группировку по дате и локализацию
+  // заголовков/статусов делаем здесь (зона тьютора: useLang). Строка звонка
+  // кликабельна → onOpenCall(call) открывает транскрипт.
+  calls = [],
+  onOpenCall,
 }) {
-  const t = useT()
+  const { lang, t } = useLang()
   const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const history = groupCallsByDate(calls, t, lang)
   return (
     <TutorShell
       active="tutor"
@@ -48,14 +52,19 @@ export default function TutorManagePage({
             history.map((g) => (
               <div className="t-histgroup" key={g.date}>
                 <div className="t-histgroup__date">{g.date}</div>
-                {g.items.map((it, i) => (
-                  <div className="t-histrow" key={i}>
+                {g.items.map((it) => (
+                  <button
+                    className="t-histrow"
+                    type="button"
+                    key={it.id}
+                    onClick={() => onOpenCall?.(it.call)}
+                  >
                     <div className="t-histrow__text">
                       <b>{it.title}</b>
                       <span>{it.sub}</span>
                     </div>
                     <time>{it.time}</time>
-                  </div>
+                  </button>
                 ))}
               </div>
             ))

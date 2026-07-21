@@ -44,6 +44,7 @@ import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
+import { getDeviceId, authHeaders } from './lib/identity.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY } from './config.js'
@@ -125,6 +126,32 @@ export default function App() {
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
+  // История голосовых звонков (список + транскрипт) для «Управления тьютором».
+  const [callHistory, setCallHistory] = useState([])
+  const [selectedCall, setSelectedCall] = useState(null)
+  // Оценка разговорного теста (уровень + честное обоснование от Sonnet).
+  const [placementResult, setPlacementResult] = useState(null)
+  // Грузим историю звонков при заходе в «Управление тьютором». Bearer решает
+  // чью историю отдать: с токеном — user-<id>, без — deviceId анонима.
+  useEffect(() => {
+    if (screen !== 'tutor-manage') return
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch(
+          '/api/profile/calls?deviceId=' + encodeURIComponent(getDeviceId()),
+          { headers: authHeaders(token) },
+        )
+        const data = await res.json().catch(() => ({}))
+        if (alive) setCallHistory(Array.isArray(data.calls) ? data.calls : [])
+      } catch {
+        if (alive) setCallHistory([])
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -285,8 +312,9 @@ export default function App() {
 
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
   // в профиль и показываем экран результата (кружок с уровнем).
-  async function handlePlacementDone(level) {
+  async function handlePlacementDone(level, assessment) {
     setNeedsLevelTest(false)
+    setPlacementResult(assessment || null)
     if (level) setUserLevel(level)
     if (token && level) {
       try {
@@ -657,6 +685,7 @@ export default function App() {
           onBack={() => setScreen('speaking-test')}
           tutor={tutor}
           level={userLevel}
+          assessment={placementResult}
           onContinue={() => setScreen('tutor-interests')}
           onRetry={() => setScreen('speaking-test')}
         />
@@ -753,6 +782,7 @@ export default function App() {
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-manage')}
+          call={selectedCall}
         />
       )
     case 'tutor-lesson-plan':
@@ -773,6 +803,11 @@ export default function App() {
           onBack={() => setScreen('tutor-dashboard')}
           tutor={tutor}
           onChangeTutor={() => setScreen('tutor-choose')}
+          calls={callHistory}
+          onOpenCall={(call) => {
+            setSelectedCall(call)
+            setScreen('tutor-chat-history')
+          }}
         />
       )
     case 'tutor-practice-result':

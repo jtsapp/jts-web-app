@@ -45,13 +45,19 @@ function trimList(raw, cap, maxLen = MAX_LEN) {
   return out
 }
 
-function buildMetadata(p, tier, profileId, userName, memory) {
+function buildMetadata(p, tier, profileId, userName, memory, ttl) {
   const meta = {
     level: p.level || 'B1',
     lang: p.lang || 'en',
     style: p.style || 'friendly',
     goal: p.goal || 'general',
     tier,
+    // Серверный бюджет сессии в секундах (ttl уже урезан до остатка дневного
+    // лимита). Агент ставит по нему watchdog и удаляет комнату по истечении —
+    // клиентский countdown display-only, а TTL LiveKit-токена established-
+    // соединение не рвёт. Без этого разговор шёл дольше лимита, а минуты сверх
+    // SESSION_CAP_SEC не списывались (см. usage.js).
+    sessionTtlSec: ttl,
   }
   // Именно resolveProfileId, а не p.deviceId из тела: у залогиненного это
   // user-<id>, и агент запишет память в аккаунт, а не в device-корзину.
@@ -159,7 +165,13 @@ async function issue(p, profileId, userName) {
   // Потолок одной сессии = дневной лимит (раньше здесь стояло 600 числом, и при
   // подъёме лимита до 20 мин разговор всё равно рвался бы на 10-й минуте).
   let ttl = noLimit ? 3600 : DAILY_LIMIT_SEC
-  const freeTier = p.tier !== 'paid'
+  // tier НИКОГДА не берётся из тела/query запроса: клиент слал {tier:'paid'} и
+  // целиком обходил проверку лимита ниже (плюс включал платный Krisp BVC у агента).
+  // Платного тарифа сейчас нет — сервер авторитетно держит free, поэтому лимит
+  // проверяется всегда. Появится реальный энтайтлмент — выводить его из
+  // проверенного источника (роль в токене через resolveProfileId / флаг в БД),
+  // но НЕ из `p`.
+  const freeTier = true
   // Лимиты по profileId: у залогиненного минуты держатся за аккаунтом, поэтому
   // их больше не обнулить очисткой localStorage.
   if (!noLimit && freeTier && isDbConfigured() && isValidDeviceId(profileId)) {
@@ -197,7 +209,7 @@ async function issue(p, profileId, userName) {
       console.error('[livekit.token] loadProfile failed', err)
     }
   }
-  const metadata = buildMetadata(p, tier, profileId, userName, memory)
+  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl)
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
