@@ -810,8 +810,11 @@
 .t-voice__card {
   position: relative;
   margin-top: 18px;
-  width: 876px;
-  height: 520px;
+  width: min(876px, 100%);
+  /* min-height, а не height: карточка вердикта живёт в этой же раме, но её
+     содержимое переменной высоты. С фиксированной высотой длинный разбор
+     выдавливал значок на аватар тьютора, а «Готово» — за скруглённый край. */
+  min-height: 520px;
   background: #ffffff;
   border-radius: 40px;
   display: flex;
@@ -823,47 +826,122 @@
   gap: 28px;
   padding: 48px 0;
 }
-/* Scenario verdict card (report_task_complete → topic "lesson"). */
+/* Scenario verdict card (report_task_complete → topic "lesson").
+   Порядок чтения: знак-медальон → вердикт → разбор → что улучшить → «Готово».
+   Итог и разбор центрированы, советы — влево: их читают построчно. */
 .t-verdict {
-  gap: 20px;
-  padding: 48px 64px;
+  justify-content: center;
+  gap: 0;
+  padding: 56px 64px 48px;
   text-align: center;
+  --t-verdict-accent: #16a34a;
+  --t-verdict-tint: rgba(22, 163, 74, 0.1);
+  --t-verdict-ring: rgba(22, 163, 74, 0.2);
 }
+.t-verdict.is-fail {
+  --t-verdict-accent: #dc2626;
+  --t-verdict-tint: rgba(220, 38, 38, 0.1);
+  --t-verdict-ring: rgba(220, 38, 38, 0.2);
+}
+/* Медальон — единственный акцент карточки: кольцо цвета исхода вокруг знака. */
 .t-verdict__badge {
-  font-size: 72px;
-  line-height: 1;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  color: var(--t-verdict-accent);
+  background: var(--t-verdict-tint);
+  box-shadow: inset 0 0 0 1px var(--t-verdict-ring);
+  animation: t-verdict-settle 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+@keyframes t-verdict-settle {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-verdict__badge {
+    animation: none;
+  }
 }
 .t-verdict__title {
-  font-size: 34px;
+  margin: 28px 0 0;
+  font-size: 32px;
   font-weight: 700;
-  color: #1a1430;
-}
-.t-verdict.is-pass .t-verdict__title {
-  color: #16a34a;
-}
-.t-verdict.is-fail .t-verdict__title {
-  color: #dc2626;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--t-ink);
 }
 .t-verdict__summary {
-  max-width: 560px;
-  font-size: 18px;
-  line-height: 1.5;
-  color: #4a4460;
+  max-width: 600px;
+  margin: 14px 0 0;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #5b5670;
+}
+/* Советы отделены от разбора линией и подписью: это не продолжение текста,
+   а список действий к следующему разговору. */
+.t-verdict__advice {
+  width: 100%;
+  max-width: 600px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--t-border);
+  text-align: left;
+}
+/* Подпись списка — нейтральная в обоих исходах: цвет вердикта несёт медальон,
+   а советы одинаково полезны и после успеха, и после провала. */
+.t-verdict__eyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6f6a80;
 }
 .t-verdict__tips {
-  max-width: 560px;
-  margin: 0;
-  padding-left: 22px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
   font-size: 16px;
-  line-height: 1.4;
-  color: #4a4460;
+  line-height: 1.5;
+  color: #5b5670;
+}
+.t-verdict__tips li + li {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--t-border);
 }
 .t-verdict__done {
-  margin-top: 8px;
+  margin-top: 36px;
+  width: 260px;
+  height: 56px;
+}
+
+@media (max-width: 720px) {
+  .t-verdict {
+    padding: 40px 24px 32px;
+  }
+  .t-verdict__badge {
+    width: 72px;
+    height: 72px;
+  }
+  .t-verdict__title {
+    margin-top: 24px;
+    font-size: 26px;
+  }
+  .t-verdict__summary {
+    font-size: 16px;
+  }
+  .t-verdict__done {
+    width: 100%;
+  }
 }
 .t-voice__orb {
   width: 220px;
