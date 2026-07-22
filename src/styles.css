@@ -1752,6 +1752,47 @@ textarea {
   border: 0;
 }
 
+/* Экран обзора выборки. vocab.css генерируется scripts/extract-vocab.js из
+   прототипа, поэтому надстройки сайта живут здесь.
+   .v-ovw-cta — старт сессии сразу под карточками статистики: в прототипе
+   кнопка стояла под списком, а в вебе список уровня (~900 слов) не имеет
+   своей прокрутки, и до кнопки надо было мотать всю лексику.
+   .v-ovw-more — догрузка списка порциями. */
+.vc .v-ovw-cta {
+  padding: 12px 34px 2px;
+}
+/* Подпись карточки не должна залезать под бейдж-эмодзи в правом верхнем углу. */
+.vc .v-ovw-stat .v-k {
+  padding-right: 30px;
+}
+.vc .v-ovw-cta .v-btn {
+  max-width: 360px;
+  margin: 0 auto;
+}
+.vc .v-ovw-more {
+  display: block;
+  width: 100%;
+  margin: 4px 0 6px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: #fff;
+  color: var(--violet);
+  font-size: 13.5px;
+  font-weight: 800;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.vc .v-ovw-more:hover {
+  border-color: var(--line-hover);
+  background: var(--violet-50);
+}
+@media (max-width: 640px) {
+  .vc .v-ovw-cta {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
 /* Сайдбар: статичен при прокрутке страницы — липнет к верху вьюпорта
    и скроллится внутри себя, если пунктов больше, чем влезает по высоте. */
 .sb {

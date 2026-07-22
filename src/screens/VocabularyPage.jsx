@@ -41,6 +41,12 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     loadVocabIndex().then(setIndex)
   }, [])
 
+  // Смена экрана: мотаем страницу наверх — иначе после клика по кнопке внизу
+  // настроек следующий экран открывался уже прокрученным.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [screen])
+
   // Выборка слов под текущие настройки (уровень или проф. сфера).
   useEffect(() => {
     let alive = true
@@ -128,7 +134,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 
   if (screen === 'overview') {
     return shell(
-      <Overview T={T} scope={scope} S={S} tr={tr} speak={speak} onStart={startCollect} onBack={() => setScreen('setup')} />,
+      <Overview T={T} lang={vlang} scope={scope} S={S} tr={tr} speak={speak} onStart={startCollect} onBack={() => setScreen('setup')} />,
     )
   }
 
@@ -320,16 +326,22 @@ function Fields({ T, index, current, onPick, onBack }) {
 }
 
 /* ─────────────── Обзор выборки ─────────────── */
-const OV_CAP = 6000
-function Overview({ T, scope, S, tr, speak, onStart, onBack }) {
+// Список уровня — это ~900 слов: рисуем их порциями, иначе экран превращается
+// в бесконечную простыню (57 000 px), а кнопка старта уезжает в самый низ.
+const OV_PAGE = 24
+// Строки «Показать ещё» нет в strings.js: тот файл генерируется
+// scripts/extract-vocab.js из прототипа и правки руками затрутся.
+const MORE = { ru: 'Показать ещё', kk: 'Тағы көрсету' }
+function Overview({ T, lang, scope, S, tr, speak, onStart, onBack }) {
   const [q, setQ] = useState('')
+  const [limit, setLimit] = useState(OV_PAGE)
   const personal = S.mode === 'personalized'
   const full = useMemo(() => {
     const query = q.trim().toLowerCase()
     if (!query) return scope
     return scope.filter((w) => (w.en + ' ' + w.ru + ' ' + w.kk).toLowerCase().includes(query))
   }, [scope, q])
-  const shown = full.slice(0, OV_CAP)
+  const shown = full.slice(0, limit)
   const fieldName = (T.field_names && T.field_names[S.field]) || S.field
 
   return (
@@ -349,21 +361,33 @@ function Overview({ T, scope, S, tr, speak, onStart, onBack }) {
           <div className="v-v">{scope.length}</div>
           <div className="v-s">{personal ? T.ovFieldLine(fieldName) : T.ovLevelLine(S.level)}</div>
         </div>
-        <div className="v-ovw-stat">
+        <div className="v-ovw-stat v-ses">
           <div className="v-badge">🎯</div>
           <div className="v-k">{T.ovSession(S.goalMin)}</div>
           <div className="v-v">{collectCount(S.goalMin)}</div>
           <div className="v-s">{T.ovSessionWords}</div>
         </div>
       </div>
-      <div className="v-ovw-listhd">
-        <div className="v-ovw-lbl">{personal ? T.ovListField || T.ovListLabel : T.ovListLabel}</div>
-        <div className="v-ovw-count">
+      {/* Главное действие — сразу под карточками: до списка слов, чтобы к
+          старту не приходилось прокручивать всю лексику уровня. */}
+      <div className="v-ovw-cta">
+        <button className="v-btn" onClick={onStart}>{T.ovStart}</button>
+      </div>
+      <div className="v-ovw-listlbl">
+        <div className="v-lbl">{personal ? T.ovListField || T.ovListLabel : T.ovListLabel}</div>
+        <div className="v-cnt">
           {full.length > shown.length ? T.ovShown(shown.length, full.length) : String(full.length)}
         </div>
       </div>
       <div className="v-ovw-search">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={T.ovSearch} />
+        <input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value)
+            setLimit(OV_PAGE)
+          }}
+          placeholder={T.ovSearch}
+        />
       </div>
       <div className="v-ovw-list">
         {shown.length ? (
@@ -380,9 +404,11 @@ function Overview({ T, scope, S, tr, speak, onStart, onBack }) {
         ) : (
           <div className="v-ovw-empty">{T.fldEmpty}</div>
         )}
-      </div>
-      <div className="v-ob-foot">
-        <button className="v-btn" onClick={onStart}>{T.ovStart}</button>
+        {full.length > shown.length && (
+          <button className="v-ovw-more" onClick={() => setLimit((n) => n + OV_PAGE)}>
+            {MORE[lang] || MORE.ru} · {full.length - shown.length}
+          </button>
+        )}
       </div>
     </section>
   )
