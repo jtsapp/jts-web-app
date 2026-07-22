@@ -11,7 +11,7 @@ import {
 import { ConnectionState } from 'livekit-client'
 import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
-import { MicIcon } from '../tutor/TutorIcons.jsx'
+import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
 
@@ -319,19 +319,29 @@ function CallStage({ onFinish, t, ttl }) {
 
   if (verdict) {
     const passed = Boolean(verdict.passed)
+    const tips = Array.isArray(verdict.tips) ? verdict.tips.filter(Boolean) : []
     return (
-      <div className={'t-voice__card t-verdict' + (passed ? ' is-pass' : ' is-fail')}>
-        <div className="t-verdict__badge">{passed ? '✅' : '❌'}</div>
-        <div className="t-verdict__title">
+      <div
+        className={'t-voice__card t-verdict' + (passed ? ' is-pass' : ' is-fail')}
+        role="status"
+        aria-live="polite"
+      >
+        <span className="t-verdict__badge" aria-hidden="true">
+          {passed ? <CheckIcon size={44} /> : <CrossIcon size={44} />}
+        </span>
+        <h2 className="t-verdict__title">
           {passed ? t('scen.verdictPass') : t('scen.verdictFail')}
-        </div>
+        </h2>
         {verdict.summary && <p className="t-verdict__summary">{verdict.summary}</p>}
-        {Array.isArray(verdict.tips) && verdict.tips.length > 0 && (
-          <ul className="t-verdict__tips">
-            {verdict.tips.map((tip, i) => (
-              <li key={i}>{tip}</li>
-            ))}
-          </ul>
+        {tips.length > 0 && (
+          <div className="t-verdict__advice">
+            <span className="t-verdict__eyebrow">{t('scen.verdictTips')}</span>
+            <ul className="t-verdict__tips">
+              {tips.map((tip, i) => (
+                <li key={i}>{tip}</li>
+              ))}
+            </ul>
+          </div>
         )}
         <button className="t-pill t-pill--primary t-verdict__done" type="button" onClick={onFinish}>
           {t('scen.verdictDone')}
