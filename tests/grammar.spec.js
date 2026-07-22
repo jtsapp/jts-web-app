@@ -11,12 +11,12 @@ import { test, expect } from '@playwright/test'
 const openCatalog = async (page) => {
   await page.goto('/?screen=practice')
   await page.locator('.pp-chip', { hasText: 'Грамматика' }).click()
-  await expect(page.locator('.gr-catalog .gr-card').first()).toBeVisible()
+  await expect(page.locator('.gr-catalog .gr-gcard').first()).toBeVisible()
 }
 
 const openUnit1 = async (page) => {
   await openCatalog(page)
-  await page.locator('.gr-catalog .gr-card').first().click()
+  await page.locator('.gr-catalog .gr-gcard').first().click()
   await expect(page.locator('.gr-block').first()).toBeVisible()
 }
 
@@ -85,19 +85,24 @@ test.describe('Грамматика — каталог', () => {
     await expect(firstSection.locator('.gr-unitpill')).toHaveText('Unit 1-9')
 
     // Карточка: тема на обложке + «Unit N» + описание из данных.
-    const card = page.locator('.gr-catalog .gr-card').first()
-    await expect(card.locator('.gr-card__topic')).toHaveText('am / is / are')
-    await expect(card.locator('.gr-card__title')).toHaveText('Unit 1')
-    await expect(card.locator('.gr-card__desc')).not.toBeEmpty()
+    // Обложка курса: номер, лого, название темы и секция; в теле — Unit N и время.
+    const card = page.locator('.gr-catalog .gr-gcard').first()
+    await expect(card.locator('.gr-cov-no')).toHaveText('01')
+    await expect(card.locator('.gr-cov-ttl')).toHaveText('am / is / are')
+    await expect(card.locator('.gr-cov-tag')).toHaveText('Present')
+    await expect(card.locator('.gr-cov-wm')).toHaveText('Just to Study')
+    await expect(card.locator('.gr-unit-no')).toHaveText('Unit 1')
+    await expect(card.locator('.gr-gcard__t')).toContainText('m')
+    await expect(card.locator('.gr-gcard__desc')).not.toBeEmpty()
   })
 
   test('поиск фильтрует юниты, переключение уровня меняет секции', async ({ page }) => {
     await openCatalog(page)
-    const all = await page.locator('.gr-catalog .gr-card').count()
+    const all = await page.locator('.gr-catalog .gr-gcard').count()
 
     await page.locator('.gr-search input').fill('continuous')
-    await expect.poll(() => page.locator('.gr-catalog .gr-card').count()).toBeLessThan(all)
-    await expect(page.locator('.gr-catalog .gr-card').first()).toBeVisible()
+    await expect.poll(() => page.locator('.gr-catalog .gr-gcard').count()).toBeLessThan(all)
+    await expect(page.locator('.gr-catalog .gr-gcard').first()).toBeVisible()
 
     await page.locator('.gr-search input').fill('')
     await page.locator('.gr-levelchip', { hasText: 'Уровень A2' }).click()

@@ -83,71 +83,172 @@
 }
 .gr-levelpill { margin-left: 0; background: #e4f3fb; }
 
-.gr-card {
-  flex: 0 0 200px;
-  width: 200px;
+/* ===== Карточка юнита — перенос обложек курса (premium-redesign) ===== */
+
+/* В каталоге секции раскладываются сеткой, как в исходном курсе; в рейле
+   «Все» карточки живут лентой и получают фиксированную ширину. */
+.gr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 18px;
+}
+.pp-rail .gr-gcard { flex: 0 0 272px; width: 272px; }
+
+.gr-gcard {
   display: flex;
   flex-direction: column;
   text-align: left;
-  border: none;
-  background: none;
   padding: 0;
   font-family: inherit;
-  cursor: pointer;
   color: inherit;
-}
-.gr-card__cover {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  height: 132px;
-  border-radius: 16px;
-  padding: 13px 15px;
-  color: #fff;
+  background: #fff;
+  border: 1px solid #ececf3;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 6px 16px rgba(23, 19, 38, 0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 10px rgba(23, 19, 38, 0.05);
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.22s ease,
+    border-color 0.22s ease;
 }
-.gr-card__cover::after {
-  content: '';
+.gr-gcard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(23, 19, 38, 0.12);
+  border-color: #ded9ee;
+}
+.gr-gcard:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* Обложка: градиент по теме секции + текстура, орб, дуга, номер и подписи */
+.gr-cover {
+  position: relative;
+  display: block;
+  height: 158px;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(var(--ang, 150deg), var(--c1), var(--c2));
+}
+.gr-cover[data-th='0'] { --c1: #6a5ae0; --c2: #8e7ef2; }
+.gr-cover[data-th='1'] { --c1: #2f6e70; --c2: #469c97; }
+.gr-cover[data-th='2'] { --c1: #b0743c; --c2: #d89f63; }
+.gr-cover[data-th='3'] { --c1: #be5a78; --c2: #e38da4; }
+.gr-cover[data-th='4'] { --c1: #3a5ba6; --c2: #5e80c6; }
+.gr-cover[data-th='5'] { --c1: #6a4e9e; --c2: #9070c4; }
+.gr-cover[data-th='6'] { --c1: #43855f; --c2: #66a883; }
+.gr-cover[data-th='7'] { --c1: #7a5a4c; --c2: #a07c68; }
+.gr-cov-tex {
   position: absolute;
   inset: 0;
-  background: radial-gradient(90% 120% at 82% 18%, rgba(255, 255, 255, 0.2), transparent 55%),
-    linear-gradient(0deg, rgba(0, 0, 0, 0.42), transparent 62%);
-}
-.gr-card__topic {
-  position: relative;
   z-index: 1;
-  font-size: 15.5px;
-  font-weight: 800;
-  line-height: 1.2;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  opacity: 0.5;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1.4px);
+  background-size: 15px 15px;
 }
-.gr-card__topic em { font-style: normal; text-decoration: underline; text-underline-offset: 3px; }
-.gr-card:hover .gr-card__cover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(23, 19, 38, 0.26);
+.gr-cov-orb {
+  position: absolute;
+  z-index: 1;
+  width: var(--os, 180px);
+  height: var(--os, 180px);
+  right: var(--ox, -46px);
+  top: var(--oy, -58px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 32%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 68%);
 }
-.gr-card:focus-visible .gr-card__cover { outline: 2px solid var(--purple); outline-offset: 3px; }
-.gr-card__title {
-  margin-top: 10px;
-  font-size: 15px;
+.gr-cov-arc {
+  position: absolute;
+  z-index: 1;
+  width: 150px;
+  height: 150px;
+  left: -52px;
+  bottom: -64px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+}
+.gr-cov-no {
+  position: absolute;
+  z-index: 1;
+  right: 12px;
+  bottom: 2px;
   font-weight: 800;
+  font-size: 74px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.13);
+  letter-spacing: -0.04em;
+}
+.gr-cov-brand {
+  position: absolute;
+  z-index: 3;
+  left: 15px;
+  top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.gr-cov-mark {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
+  font-weight: 800;
+  font-size: 9.5px;
 }
-.gr-card__desc {
-  margin-top: 4px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.gr-cov-wm {
+  color: rgba(255, 255, 255, 0.94);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+.gr-cov-ttl {
+  position: absolute;
+  z-index: 3;
+  left: 15px;
+  right: 15px;
+  bottom: 30px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.gr-cov-tag {
+  position: absolute;
+  z-index: 3;
+  left: 15px;
+  bottom: 12px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Тело: номер юнита, описание, длительность */
+.gr-gcard__body { display: flex; align-items: center; gap: 8px; padding: 13px 15px 15px; }
+.gr-unit-no {
+  flex: none;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--purple);
+  background: #f1ebfe;
+  padding: 3px 9px;
+  border-radius: 7px;
+  letter-spacing: -0.01em;
+}
+.gr-gcard__desc { flex: 1; color: var(--muted); font-size: 13px; line-height: 1.3; }
+.gr-gcard__desc em { font-style: italic; }
+.gr-gcard__t { flex: none; color: #a9a6b8; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+@media (max-width: 560px) {
+  .gr-grid { grid-template-columns: 1fr; }
+  .gr-cover { height: 130px; }
+  .gr-cov-ttl { font-size: 18px; bottom: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gr-gcard { transition: none; }
+  .gr-gcard:hover { transform: none; }
 }
 
 .gr-empty,
@@ -167,9 +268,7 @@
 .gr-note--err { background: #fdecec; color: #c0392b; }
 
 @media (prefers-reduced-motion: reduce) {
-  .gr-card__cover,
   .gr-levelchip { transition: none; }
-  .gr-card:hover .gr-card__cover { transform: none; }
 }
 
 /* ===== Экран урока ===== */

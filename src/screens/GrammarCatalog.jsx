@@ -4,20 +4,47 @@ import {
   GRAMMAR_LEVELS,
   groupBySection,
   sectionRange,
-  themeGradient,
   stripTags,
 } from '../practice/grammar/grammarData.js'
 
-// Карточка юнита: обложка-градиент по теме секции + тема грамматики оверлеем
-// (в стиле обложек сказок/книг сайта) → «Unit N» + описание.
-export function GrammarCard({ level, unit, onOpen }) {
+// Карточка юнита — обложка курса 1-в-1 из грамматика_практика.html (coverHTML/
+// cardHTML): градиент по теме секции, точечная текстура, орб и дуга, крупный
+// номер, лого JTS, название и секция; в теле — «Unit N», описание и время.
+// Геометрия бликов детерминированно разводится по id, как в источнике, чтобы
+// соседние карточки не выглядели одинаково.
+export function GrammarCard({ unit, onOpen }) {
+  const ang = 120 + ((unit.id * 37) % 90)
+  const ox = -70 + ((unit.id * 29) % 80)
+  const oy = -80 + ((unit.id * 23) % 60)
+  const os = 150 + ((unit.id * 13) % 80)
   return (
-    <button type="button" className="gr-card" onClick={() => onOpen(unit)}>
-      <span className="gr-card__cover" style={{ background: themeGradient(level.themes, unit.theme) }}>
-        <span className="gr-card__topic" dangerouslySetInnerHTML={{ __html: unit.title }} />
+    <button
+      type="button"
+      className="gr-gcard"
+      onClick={() => onOpen(unit)}
+      aria-label={`Unit ${unit.id}: ${stripTags(unit.title)}`}
+    >
+      <span
+        className="gr-cover"
+        data-th={unit.theme}
+        style={{ '--ang': `${ang}deg`, '--ox': `${ox}px`, '--oy': `${oy}px`, '--os': `${os}px` }}
+      >
+        <span className="gr-cov-tex" />
+        <span className="gr-cov-orb" />
+        <span className="gr-cov-arc" />
+        <span className="gr-cov-no">{String(unit.id).padStart(2, '0')}</span>
+        <span className="gr-cov-brand">
+          <span className="gr-cov-mark">JTS</span>
+          <span className="gr-cov-wm">Just to Study</span>
+        </span>
+        <span className="gr-cov-ttl">{stripTags(unit.title)}</span>
+        <span className="gr-cov-tag">{unit.secName}</span>
       </span>
-      <span className="gr-card__title">Unit {unit.id}</span>
-      <span className="gr-card__desc">{stripTags(unit.desc)}</span>
+      <span className="gr-gcard__body">
+        <span className="gr-unit-no">Unit {unit.id}</span>
+        <span className="gr-gcard__desc" dangerouslySetInnerHTML={{ __html: unit.desc }} />
+        <span className="gr-gcard__t">⏱ {unit.min}m</span>
+      </span>
     </button>
   )
 }
@@ -41,7 +68,7 @@ export function GrammarRail({ index, courseCode, levelLabel, onOpen, onSeeAll })
       </div>
       <div className="pp-rail">
         {units.map((u) => (
-          <GrammarCard key={u.id} level={level} unit={u} onOpen={onOpen} />
+          <GrammarCard key={u.id} unit={u} onOpen={onOpen} />
         ))}
       </div>
     </section>
@@ -108,9 +135,9 @@ export default function GrammarCatalog({ index, activeLevel, onLevel, search, on
                 {g.name} <span className="gr-unitpill">{sectionRange(g.units)}</span>
               </h2>
             </div>
-            <div className="pp-rail">
+            <div className="gr-grid">
               {g.units.map((u) => (
-                <GrammarCard key={u.id} level={level} unit={u} onOpen={onOpen} />
+                <GrammarCard key={u.id} unit={u} onOpen={onOpen} />
               ))}
             </div>
           </section>
