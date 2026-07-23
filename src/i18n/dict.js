@@ -220,6 +220,7 @@ export const DICT = {
     'scen.verdictPass': 'Задача пройдена',
     'scen.verdictFail': 'Задача не пройдена',
     'scen.verdictDone': 'Готово',
+    'scen.verdictTips': 'Что улучшить',
 
     // План уроков
     'plan.title': 'План уроков',
@@ -435,6 +436,7 @@ export const DICT = {
     'scen.verdictPass': 'Тапсырма орындалды',
     'scen.verdictFail': 'Тапсырма орындалмады',
     'scen.verdictDone': 'Дайын',
+    'scen.verdictTips': 'Нені жақсарту керек',
 
     'plan.title': 'Сабақ жоспары',
     'plan.progress': '{total}-тен {done} өтілді',
@@ -648,6 +650,7 @@ export const DICT = {
     'scen.verdictPass': 'Task complete',
     'scen.verdictFail': 'Task not passed',
     'scen.verdictDone': 'Done',
+    'scen.verdictTips': 'What to improve',
 
     'plan.title': 'Lesson plan',
     'plan.progress': '{done} of {total} completed',
