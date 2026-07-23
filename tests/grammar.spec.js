@@ -54,13 +54,19 @@ async function answerCorrectly(page, a) {
     }
     await page.locator('.gr-check').click()
   } else if (a.type === 'dialogue') {
-    // Ведём диалог, на каждом шаге выбирая верную реплику (o.ok из данных).
+    // Живой чат: варианты появляются после того, как бот «допечатал». На каждом
+    // шаге дожидаемся вариантов и выбираем верную реплику (o.ok из данных).
     const stripHtml = (s) => String(s || '').replace(/<[^>]+>/g, '').trim()
     const okTexts = new Set(
       a.steps.flatMap((st) => st.options.filter((o) => o.ok).map((o) => stripHtml(o.t))),
     )
-    for (let guard = 0; guard < a.steps.length + 2; guard++) {
-      if (await page.locator('.gr-fb').isVisible()) break
+    for (let guard = 0; guard < a.steps.length + 3; guard++) {
+      if (await page.locator('.gr-fb.show').isVisible()) break
+      await page
+        .locator('.gr-dlg-opts .gr-opt')
+        .first()
+        .waitFor({ state: 'visible', timeout: 6000 })
+        .catch(() => {})
       const opts = page.locator('.gr-dlg-opts .gr-opt')
       const n = await opts.count()
       if (n === 0) break
@@ -73,7 +79,12 @@ async function answerCorrectly(page, a) {
         }
       }
       if (!clicked) await opts.first().click()
-      await page.waitForTimeout(150)
+      // ждём реакцию: следующие варианты или итоговый фидбек
+      await page
+        .locator('.gr-dlg-opts .gr-opt, .gr-fb.show')
+        .first()
+        .waitFor({ timeout: 6000 })
+        .catch(() => {})
     }
   } else {
     throw new Error(`answerCorrectly: тип ${a.type} не поддержан`)

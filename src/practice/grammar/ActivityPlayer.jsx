@@ -679,36 +679,90 @@ function Timeline({ a, lang, answered, finish }) {
 }
 
 // ——— dialogue (ролевая игра) ———
+// Живой чат: реплики появляются по одной, бот «печатает…» перед своими
+// сообщениями, автоскролл вниз, варианты — только когда очередь пользователя.
+const DLG_FINISH = {
+  ok: 'Flawless conversation! You used the grammar naturally. 🗣️',
+  bad: 'You completed the conversation — review the corrected choices above.',
+}
 function Dialogue({ a, lang, answered, feedback, finish }) {
+  const [messages, setMessages] = useState([]) // раскрытые реплики {who,text,id}
+  // Стартовая реплика NPC уже в очереди — так эффект обработки не срабатывает на
+  // пустой очереди при монтировании (иначе варианты показывались бы до реплики).
+  const [queue, setQueue] = useState(() => (a.steps[0] ? [{ text: a.steps[0].npc }] : []))
+  const [typing, setTyping] = useState(false)
   const [step, setStep] = useState(0)
-  const [log, setLog] = useState(() => (a.steps[0] ? [{ who: 'a', text: a.steps[0].npc }] : []))
+  const [showOpts, setShowOpts] = useState(false)
   const [bad, setBad] = useState(false)
   const [inlineWhy, setInlineWhy] = useState(null)
+  const pendingRef = useRef(a.steps[0] ? 0 : null) // шаг для показа вариантов, либо 'finish'
+  const badRef = useRef(false)
+  const finishRef = useRef(finish)
+  const idRef = useRef(0)
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    finishRef.current = finish
+    badRef.current = bad
+  })
+
+  const endConversation = () => finishRef.current(!badRef.current, badRef.current ? DLG_FINISH.bad : DLG_FINISH.ok)
+
+  // Обработка очереди: «печатает…» → реплика; когда очередь пуста — показываем
+  // варианты для текущего шага (или завершаем диалог).
+  useEffect(() => {
+    if (queue.length === 0) {
+      if (pendingRef.current === 'finish') {
+        pendingRef.current = null
+        endConversation()
+      } else if (pendingRef.current != null) {
+        pendingRef.current = null
+        setShowOpts(true)
+      }
+      return
+    }
+    setShowOpts(false)
+    setTyping(true)
+    const head = queue[0]
+    const plain = String(head.text).replace(/<[^>]+>/g, '')
+    const delay = 480 + Math.min(plain.length * 16, 900)
+    const t = setTimeout(() => {
+      setTyping(false)
+      setMessages((m) => [...m, { who: 'a', text: head.text, id: idRef.current++ }])
+      setQueue((q) => q.slice(1))
+    }, delay)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue])
+
+  // Автоскролл к последней реплике.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [messages, typing])
 
   const pick = (i) => {
-    if (answered) return
-    const s = a.steps[step]
-    const o = s.options[i]
-    if (o.ok) {
-      setInlineWhy(null)
-      const next = [...log, { who: 'b', text: o.t }]
-      if (o.reply) next.push({ who: 'a', text: o.reply })
-      const ns = step + 1
-      const nextStep = a.steps[ns]
-      if (nextStep) next.push({ who: 'a', text: nextStep.npc })
-      setLog(next)
-      setStep(ns)
-      if (!nextStep) {
-        finish(
-          !bad,
-          bad
-            ? 'You completed the conversation — review the corrected choices above.'
-            : 'Flawless conversation! You used the grammar naturally. 🗣️',
-        )
-      }
-    } else {
+    if (answered || typing || !showOpts) return
+    const o = a.steps[step].options[i]
+    if (!o.ok) {
       setBad(true)
       setInlineWhy(o.why)
+      return
+    }
+    setInlineWhy(null)
+    setShowOpts(false)
+    setMessages((m) => [...m, { who: 'b', text: o.t, id: idRef.current++ }])
+    const bot = []
+    if (o.reply) bot.push({ text: o.reply })
+    const ns = step + 1
+    const nextStep = a.steps[ns]
+    if (nextStep) bot.push({ text: nextStep.npc })
+    setStep(ns)
+    if (bot.length === 0) {
+      endConversation() // последний шаг без ответа NPC — завершаем сразу
+    } else {
+      pendingRef.current = nextStep ? ns : 'finish'
+      setQueue(bot)
     }
   }
 
@@ -716,12 +770,19 @@ function Dialogue({ a, lang, answered, feedback, finish }) {
   return (
     <>
       <Html className="gr-actq" as="div" html={a.scene} />
-      <div className="gr-chat">
-        {log.map((m, i) => (
-          <Html key={i} className={`gr-msg ${m.who}`} as="div" html={m.text} />
+      <div className="gr-chat gr-chat--live" ref={scrollRef}>
+        {messages.map((m) => (
+          <Html key={m.id} className={`gr-msg ${m.who} gr-msg--in`} as="div" html={m.text} />
         ))}
+        {typing && (
+          <div className="gr-msg a gr-typing" aria-label="печатает">
+            <span />
+            <span />
+            <span />
+          </div>
+        )}
       </div>
-      {!answered && current && (
+      {!answered && showOpts && current && (
         <div className="gr-dlg-opts">
           {current.options.map((o, i) => (
             <button key={i} className="gr-opt" onClick={() => pick(i)}>
@@ -732,9 +793,12 @@ function Dialogue({ a, lang, answered, feedback, finish }) {
       )}
       {inlineWhy && !feedback && (
         <div className="gr-fb show no">
-          <span className="gr-fb__ic">💡</span>
-          <div>
-            <b>{uiStr(lang, 'dlg_notquite')}</b> <Html html={inlineWhy} /> {uiStr(lang, 'dlg_tryother')}
+          <span className="gr-fb__ic">✕</span>
+          <div className="gr-fb__text">
+            <b>{uiStr(lang, 'dlg_notquite')}</b>
+            <span className="gr-fb__why">
+              <Html html={inlineWhy} /> {uiStr(lang, 'dlg_tryother')}
+            </span>
           </div>
         </div>
       )}
