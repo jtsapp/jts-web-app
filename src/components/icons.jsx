@@ -85,6 +85,23 @@ export function MenuIcon({ size = 24 }) {
   )
 }
 
+// Нейтральный аватар для пользователя без имени — вместо случайной буквы
+// («J» из 'JTS' или «П» из подписи «Профиль»), чтобы шапка и сам профиль
+// показывали один и тот же силуэт, а не разные буквы.
+export function UserIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8.5" r="3.6" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M5 19.2c0-3.5 3.1-5.7 7-5.7s7 2.2 7 5.7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
 export function CloseIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">

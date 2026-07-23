@@ -1,4 +1,4 @@
-import { MenuIcon } from './icons.jsx'
+import { MenuIcon, UserIcon } from './icons.jsx'
 
 // Мобильная шапка обучающей/тьютор-зоны (видна только на узких экранах —
 // управление через CSS `.mtop`, десктоп её прячет). Слева гамбургер, который
@@ -6,7 +6,10 @@ import { MenuIcon } from './icons.jsx'
 // кнопка «Назад» тьютора). Компонент презентационный и i18n-агностичный:
 // подписи приходят пропсами, чтобы работать в обеих языковых системах.
 export default function MobileTopBar({ userName, profileLabel, menuLabel, onMenu, onProfile, right }) {
-  const initial = (userName || profileLabel || 'JTS').trim().charAt(0).toUpperCase()
+  // Без имени показываем силуэт, а не первую букву подписи «Профиль» — иначе
+  // в шапке была бы «П», а на самом профиле — «J»: две несвязанные буквы.
+  const trimmedName = (userName || '').trim()
+  const initial = trimmedName ? trimmedName.charAt(0).toUpperCase() : null
   return (
     <header className="mtop">
       <button className="mtop__menu" type="button" onClick={onMenu} aria-label={menuLabel}>
@@ -14,7 +17,7 @@ export default function MobileTopBar({ userName, profileLabel, menuLabel, onMenu
       </button>
 
       <button className="mtop__profile" type="button" onClick={onProfile}>
-        <span className="mtop__avatar">{initial}</span>
+        <span className="mtop__avatar">{initial || <UserIcon size={18} />}</span>
         <span className="mtop__meta">
           <b>{userName || profileLabel}</b>
           {/* Без имени верхняя строка уже показывает подпись — не дублируем её */}
