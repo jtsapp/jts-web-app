@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { loadGrammarLevel } from '../practice/grammar/grammarData.js'
+import { uiStr } from '../practice/grammar/strings.js'
 import RichBlock from '../practice/grammar/RichContent.jsx'
 import ActivityPlayer from '../practice/grammar/ActivityPlayer.jsx'
 
@@ -9,11 +10,7 @@ import ActivityPlayer from '../practice/grammar/ActivityPlayer.jsx'
 // Три вкладки — Теория (карусель блоков) / Примеры / Практика (движок упражнений).
 // Тяжёлый контент уровня подгружается по требованию и кэшируется в grammarData.
 
-const TABS = [
-  { key: 'theory', label: 'Теория' },
-  { key: 'examples', label: 'Примеры' },
-  { key: 'practice', label: 'Практика' },
-]
+const TABS = [{ key: 'theory' }, { key: 'examples' }, { key: 'practice' }]
 
 // Блок теории считается «примером», если несёт разговор/ситуации/разбор/таблицу
 // примеров — по классам внутри HTML или по смыслу заголовка. Раздельной вкладки
@@ -29,14 +26,14 @@ function isExampleBlock(b) {
 export default function GrammarLesson({ level, units, unit, token, onExit, onOpenUnit }) {
   const { lang } = useI18n()
   const [data, setData] = useState(null) // {learn, learnTr, activities}
-  const [error, setError] = useState('')
+  const [error, setError] = useState(false)
   const [tab, setTab] = useState('theory')
   const [slide, setSlide] = useState(0)
 
   useEffect(() => {
     let alive = true
     setData(null)
-    setError('')
+    setError(false)
     setTab('theory')
     setSlide(0)
     // Каталог мог быть прокручен — урок открываем с начала.
@@ -46,9 +43,9 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
         if (!alive) return
         const u = lvl && lvl.units ? lvl.units[unit.id] : null
         if (u) setData(u)
-        else setError('Не удалось загрузить урок')
+        else setError(true)
       })
-      .catch(() => alive && setError('Не удалось загрузить урок'))
+      .catch(() => alive && setError(true))
     return () => {
       alive = false
     }
@@ -71,11 +68,11 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
       {/* Крошки: назад к каталогу + Unit N / Грамматика */}
       <div className="gr-lesson__bar">
         <button className="gr-back" onClick={onExit}>
-          <ChevronLeftIcon size={18} /> Назад
+          <ChevronLeftIcon size={18} /> {uiStr(lang, 'nav_back')}
         </button>
         <div className="gr-lesson__crumb">
           <b>Unit {unit.id}</b>
-          <span>Грамматика</span>
+          <span>{uiStr(lang, 'crumb_grammar')}</span>
         </div>
       </div>
 
@@ -88,14 +85,14 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
               className={`gr-tab ${tab === tb.key ? 'on' : ''}`}
               onClick={() => setTab(tb.key)}
             >
-              {tb.label}
+              {uiStr(lang, 'tab_' + tb.key)}
             </button>
           ))}
         </div>
       </div>
 
-      {error && <div className="gr-note gr-note--err">{error}</div>}
-      {!data && !error && <div className="gr-loading">Загрузка урока…</div>}
+      {error && <div className="gr-note gr-note--err">{uiStr(lang, 'lesson_error')}</div>}
+      {!data && !error && <div className="gr-loading">{uiStr(lang, 'lesson_loading')}</div>}
 
       {data && tab === 'theory' && (
         <Theory
@@ -149,7 +146,7 @@ function Theory({ unit, learn, learnTr, lang, slide, setSlide, onFinish }) {
         <RichBlock block={block} tr={learnTr[cur]} lang={lang} />
       </div>
 
-      <div className="gr-dots" role="tablist" aria-label="Слайды теории">
+      <div className="gr-dots" role="tablist" aria-label={uiStr(lang, 'theory_slides')}>
         {learn.map((_, i) => (
           <button
             key={i}
@@ -164,14 +161,14 @@ function Theory({ unit, learn, learnTr, lang, slide, setSlide, onFinish }) {
       <div className="gr-slide-nav">
         {cur > 0 && (
           <button className="gr-btn gr-btn--soft" onClick={() => setSlide(cur - 1)}>
-            Назад
+            {uiStr(lang, 'nav_back')}
           </button>
         )}
         <button
           className="gr-btn gr-btn--primary"
           onClick={() => (last ? onFinish() : setSlide(cur + 1))}
         >
-          {last ? 'К практике →' : 'Дальше'}
+          {last ? uiStr(lang, 'theory_to_practice') : uiStr(lang, 'theory_next')}
         </button>
       </div>
     </div>
@@ -183,7 +180,7 @@ function Examples({ unit, blocks, learnTr, lang }) {
   return (
     <div className="gr-examples">
       <div className="gr-block">
-        <h2 className="gr-block__h">Модельные предложения</h2>
+        <h2 className="gr-block__h">{uiStr(lang, 'examples_model')}</h2>
         {/* классы g-* — как в извлечённом HTML (см. extract-grammar.js) */}
         <div className="gr-rich">
           <div className="g-chat">
@@ -196,7 +193,7 @@ function Examples({ unit, blocks, learnTr, lang }) {
       {blocks.length ? (
         blocks.map(({ b, i }) => <RichBlock key={i} block={b} tr={learnTr[i]} lang={lang} />)
       ) : (
-        <div className="gr-note">Дополнительные примеры смотрите во вкладке «Теория».</div>
+        <div className="gr-note">{uiStr(lang, 'examples_more')}</div>
       )}
     </div>
   )

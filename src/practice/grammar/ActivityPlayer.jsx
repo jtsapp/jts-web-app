@@ -319,7 +319,7 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
   return (
     <>
       <div className="gr-actq">{uiStr(lang, 'dictation_instr')}</div>
-      <button className="gr-media-btn" onClick={speakText} aria-label="Play audio">
+      <button className="gr-media-btn" onClick={speakText} aria-label={uiStr(lang, 'aria_play')}>
         🔊
       </button>
       <div style={{ textAlign: 'center' }}>{field}</div>
@@ -410,7 +410,7 @@ function ErrorPick({ a, lang, answered, finish, setCanCheck, bind }) {
 }
 
 // ——— categorize ———
-function Categorize({ a, answered, finish }) {
+function Categorize({ a, lang, answered, finish }) {
   const [placed, setPlaced] = useState({}) // itemIndex -> bucketIndex
   const [sel, setSel] = useState(null)
   const [marked, setMarked] = useState(false)
@@ -421,12 +421,7 @@ function Categorize({ a, answered, finish }) {
       const id = setTimeout(() => {
         setMarked(true)
         const allOk = a.items.every((it, i) => placed[i] === it.b)
-        finish(
-          allOk,
-          allOk
-            ? 'Every word is in the right group. 🎯'
-            : 'Some words are in the wrong group — green = right, red = wrong spot.',
-        )
+        finish(allOk, allOk ? uiStr(lang, 'cat_ok') : uiStr(lang, 'cat_no'))
       }, 250)
       return () => clearTimeout(id)
     }
@@ -495,12 +490,7 @@ function Matching({ a, lang, answered, finish }) {
       const id = setTimeout(() => {
         setMarked(true)
         const allOk = a.pairs.every((_, i) => paired[i] === i)
-        finish(
-          allOk,
-          (allOk
-            ? 'Every match is correct! '
-            : 'Some pairs were wrong — the correct answer is shown. ') + (a.why || ''),
-        )
+        finish(allOk, (allOk ? uiStr(lang, 'match_ok') : uiStr(lang, 'match_no')) + (a.why || ''))
       }, 220)
       return () => clearTimeout(id)
     }
@@ -597,12 +587,7 @@ function TrueFalse({ a, lang, answered, finish }) {
   useEffect(() => {
     if (done === a.items.length && !answered) {
       const all = a.items.every((_, i) => picks[i] && picks[i].ok)
-      finish(
-        all,
-        all
-          ? 'Perfect — you spotted them all!'
-          : 'The correct answers are marked. Notice which sentences broke the rule.',
-      )
+      finish(all, all ? uiStr(lang, 'tf_ok') : uiStr(lang, 'tf_no'))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done])
@@ -681,10 +666,6 @@ function Timeline({ a, lang, answered, finish }) {
 // ——— dialogue (ролевая игра) ———
 // Живой чат: реплики появляются по одной, бот «печатает…» перед своими
 // сообщениями, автоскролл вниз, варианты — только когда очередь пользователя.
-const DLG_FINISH = {
-  ok: 'Flawless conversation! You used the grammar naturally. 🗣️',
-  bad: 'You completed the conversation — review the corrected choices above.',
-}
 function Dialogue({ a, lang, answered, feedback, finish }) {
   const [messages, setMessages] = useState([]) // раскрытые реплики {who,text,id}
   // Стартовая реплика NPC уже в очереди — так эффект обработки не срабатывает на
@@ -706,7 +687,8 @@ function Dialogue({ a, lang, answered, feedback, finish }) {
     badRef.current = bad
   })
 
-  const endConversation = () => finishRef.current(!badRef.current, badRef.current ? DLG_FINISH.bad : DLG_FINISH.ok)
+  const endConversation = () =>
+    finishRef.current(!badRef.current, badRef.current ? uiStr(lang, 'dlg_bad') : uiStr(lang, 'dlg_ok'))
 
   // Обработка очереди: «печатает…» → реплика; когда очередь пуста — показываем
   // варианты для текущего шага (или завершаем диалог).
@@ -812,27 +794,28 @@ function Speaking({ a, lang, finish }) {
 
   const start = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    const said = { btn: uiStr(lang, 'btn_isaidit') }
     if (!SR) {
-      setHeard('Say it out loud, then tap “' + uiStr(lang, 'btn_isaidit') + '”.')
+      setHeard(fmt(uiStr(lang, 'spk_sayit'), said))
       return
     }
     const r = new SR()
     r.lang = 'en-US'
     r.interimResults = false
-    setHeard('Listening…')
+    setHeard(uiStr(lang, 'spk_listening'))
     r.onresult = (e) => {
-      const said = e.results[0][0].transcript
-      setHeard(`You said: “${said}”`)
+      const heardText = e.results[0][0].transcript
+      setHeard(fmt(uiStr(lang, 'spk_yousaid'), { said: heardText }))
       const tw = norm(a.target).split(' ')
-      const sw = norm(said).split(' ')
+      const sw = norm(heardText).split(' ')
       const hit = tw.filter((w) => sw.includes(w)).length / tw.length
-      finish(hit >= 0.5, hit >= 0.5 ? a.why : 'Close! Try again slowly and clearly — match the target.')
+      finish(hit >= 0.5, hit >= 0.5 ? a.why : uiStr(lang, 'spk_close'))
     }
-    r.onerror = () => setHeard('Mic not available — tap “' + uiStr(lang, 'btn_isaidit') + '”.')
+    r.onerror = () => setHeard(fmt(uiStr(lang, 'spk_nomic'), said))
     try {
       r.start()
     } catch {
-      setHeard('Tap “' + uiStr(lang, 'btn_isaidit') + '” when done.')
+      setHeard(fmt(uiStr(lang, 'spk_tapdone'), said))
     }
   }
 
@@ -840,10 +823,10 @@ function Speaking({ a, lang, finish }) {
     <>
       <div className="gr-actq">{uiStr(lang, 'speaking_instr')}</div>
       <div className="gr-media-target">🗣️ “{a.target}”</div>
-      <button className="gr-media-btn" onClick={start} aria-label="Record">
+      <button className="gr-media-btn" onClick={start} aria-label={uiStr(lang, 'aria_record')}>
         🎤
       </button>
-      <div className="gr-heard">{heard || 'Tap the mic and speak'}</div>
+      <div className="gr-heard">{heard || uiStr(lang, 'spk_tapmic')}</div>
     </>
   )
 }
