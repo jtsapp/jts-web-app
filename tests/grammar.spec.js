@@ -53,6 +53,39 @@ async function answerCorrectly(page, a) {
       await page.locator('.gr-bank .gr-word', { hasText: new RegExp(`^${w}$`) }).first().click()
     }
     await page.locator('.gr-check').click()
+  } else if (a.type === 'dialogue') {
+    // Живой чат: варианты появляются после того, как бот «допечатал». На каждом
+    // шаге дожидаемся вариантов и выбираем верную реплику (o.ok из данных).
+    const stripHtml = (s) => String(s || '').replace(/<[^>]+>/g, '').trim()
+    const okTexts = new Set(
+      a.steps.flatMap((st) => st.options.filter((o) => o.ok).map((o) => stripHtml(o.t))),
+    )
+    for (let guard = 0; guard < a.steps.length + 3; guard++) {
+      if (await page.locator('.gr-fb.show').isVisible()) break
+      await page
+        .locator('.gr-dlg-opts .gr-opt')
+        .first()
+        .waitFor({ state: 'visible', timeout: 6000 })
+        .catch(() => {})
+      const opts = page.locator('.gr-dlg-opts .gr-opt')
+      const n = await opts.count()
+      if (n === 0) break
+      let clicked = false
+      for (let si = 0; si < n; si++) {
+        if (okTexts.has((await opts.nth(si).textContent()).trim())) {
+          await opts.nth(si).click()
+          clicked = true
+          break
+        }
+      }
+      if (!clicked) await opts.first().click()
+      // ждём реакцию: следующие варианты или итоговый фидбек
+      await page
+        .locator('.gr-dlg-opts .gr-opt, .gr-fb.show')
+        .first()
+        .waitFor({ timeout: 6000 })
+        .catch(() => {})
+    }
   } else {
     throw new Error(`answerCorrectly: тип ${a.type} не поддержан`)
   }
@@ -194,6 +227,26 @@ test.describe('Грамматика — движок упражнений', () =
     await expect(page.locator('.gr-chip-in.no')).toHaveCount(0)
   })
 
+  test('дизайн практики: прогресс в %, скрытые бейджи, награда +10 и «Молодец!» на верном ответе', async ({
+    page,
+  }) => {
+    await openUnit1(page)
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
+
+    // По дизайну: прогресс показывает проценты, бейджи типа/этапа/счётчика скрыты.
+    await expect(page.locator('.gr-lprog__pct')).toBeVisible()
+    await expect(page.locator('.gr-lprog__pct')).toHaveText(/^\d+%$/)
+    await expect(page.locator('.gr-act__top')).toBeHidden()
+
+    // Верный ответ → зелёный фидбек «Молодец!» + монетная награда +10.
+    const acts = await a1Activities(page)
+    await answerCorrectly(page, acts[0])
+    await expect(page.locator('.gr-fb')).toHaveClass(/ok/)
+    await expect(page.locator('.gr-fb__text b')).toHaveText('Молодец!')
+    await expect(page.locator('.gr-reward')).toContainText('+10')
+  })
+
   test('gap: неверный ответ показывает правильный, альтернативная форма засчитывается', async ({
     page,
   }) => {
@@ -224,5 +277,47 @@ test.describe('Грамматика — движок упражнений', () =
     await page.locator('.gr-gap-input').fill(acts[alt].alts[0])
     await page.locator('.gr-check').click()
     await expect(page.locator('.gr-fb')).toHaveClass(/ok/)
+  })
+
+  test('финальный экран: {title}/{c}/{n} подставлены, показаны заработанные монеты', async ({
+    page,
+  }) => {
+    await openUnit1(page)
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
+
+    const acts = await a1Activities(page)
+    for (let i = 0; i < acts.length; i++) {
+      await answerCorrectly(page, acts[i])
+      await page.locator('.gr-next').click()
+    }
+
+    const cele = page.locator('.gr-celebrate')
+    await expect(cele).toBeVisible()
+    // Регрессия на сломанную regex в fmt(): плейсхолдеры должны быть подставлены.
+    await expect(cele).not.toContainText('{')
+    await expect(cele.locator('.gr-score')).toHaveText(`✓ ${acts.length} / ${acts.length} верно`)
+    await expect(cele.locator('.gr-earned')).toContainText(`+${acts.length * 10}`)
+  })
+
+  test('пройденный урок отмечается бейджем «Пройдено» в каталоге', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => localStorage.removeItem('jts_grammar_done'))
+    await openUnit1(page)
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
+
+    const acts = await a1Activities(page)
+    for (let i = 0; i < acts.length; i++) {
+      await answerCorrectly(page, acts[i])
+      await page.locator('.gr-next').click()
+    }
+    await expect(page.locator('.gr-celebrate')).toBeVisible()
+
+    // «Назад к грамматике» → каталог; первая карточка (Unit 1) помечена «Пройдено».
+    await page.locator('.gr-celebrate .gr-btn--soft').click()
+    const firstCard = page.locator('.gr-catalog .gr-gcard').first()
+    await expect(firstCard).toHaveClass(/is-done/)
+    await expect(firstCard.locator('.gr-gcard__done')).toHaveText(/Пройдено/)
   })
 })

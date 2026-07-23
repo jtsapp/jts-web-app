@@ -241,6 +241,22 @@
 .gr-gcard__desc em { font-style: italic; }
 .gr-gcard__t { flex: none; color: #a9a6b8; font-size: 12px; font-weight: 600; white-space: nowrap; }
 
+/* Бейдж «Пройдено» — зелёная полоса снизу карточки пройденного урока */
+.gr-gcard.is-done { border-color: #cfe9c2; }
+.gr-gcard__done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: var(--correct-bg);
+  color: #2f6b1e;
+  font-weight: 800;
+  font-size: 12.5px;
+  border-top: 1px solid #d3edc6;
+}
+.gr-gcard__done svg { color: #2f9e44; flex: none; }
+
 @media (max-width: 560px) {
   .gr-grid { grid-template-columns: 1fr; }
   .gr-cover { height: 130px; }
@@ -647,26 +663,30 @@
 }
 
 /* ===== Упражнения ===== */
-.gr-lprog { height: 6px; border-radius: 999px; background: #ece8fa; overflow: hidden; }
+.gr-lprog-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.gr-lprog { flex: 1; height: 10px; border-radius: 999px; background: #ece8fa; overflow: hidden; }
 .gr-lprog__bar {
   height: 100%;
   background: linear-gradient(90deg, var(--violet), var(--cyan));
   border-radius: 999px;
   transition: width 0.3s ease;
 }
+.gr-lprog__pct { flex-shrink: 0; min-width: 36px; text-align: right; font-size: 13px; font-weight: 800; color: var(--slate); }
 .gr-lstep { margin: 8px 0 16px; font-size: 12.5px; font-weight: 700; color: var(--slate); }
 
 .gr-act {
   background: #fff;
-  border: 1px solid #f0eff5;
-  border-radius: 22px;
-  padding: 24px;
-  box-shadow: 0 12px 34px rgba(26, 23, 48, 0.08);
-  min-height: 300px;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 10px 4px;
+  box-shadow: none;
+  min-height: 340px;
   display: flex;
   flex-direction: column;
 }
-.gr-act__top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+/* По дизайну — без бейджей типа/этапа и счётчика над упражнением. */
+.gr-act__top { display: none; }
+.gr-act__top--legacy { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
 .gr-act__type {
   font-size: 12px;
   font-weight: 800;
@@ -684,14 +704,23 @@
 .gr-act__stage.st4 { background: #f27a21; }
 .gr-act__count { margin-left: auto; font-size: 13px; color: var(--slate); font-weight: 700; }
 .gr-act__body { flex: 1; }
-.gr-actq { font-size: 19px; font-weight: 700; margin: 12px 0 18px; line-height: 1.35; color: var(--ink); }
-.gr-act__foot { display: flex; gap: 12px; margin-top: 18px; }
+.gr-actq {
+  font-size: 21px;
+  font-weight: 800;
+  margin: 8px auto 26px;
+  max-width: 580px;
+  line-height: 1.35;
+  color: var(--ink);
+  text-align: center;
+}
+.gr-act__foot { display: flex; justify-content: center; gap: 12px; margin-top: 26px; }
 
 .gr-check {
-  flex: 1;
-  height: 52px;
+  width: 100%;
+  max-width: 360px;
+  height: 54px;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--violet);
   color: #fff;
   font-family: inherit;
@@ -702,42 +731,44 @@
   box-shadow: 0 8px 18px rgba(135, 75, 248, 0.3);
 }
 .gr-check:hover:not(:disabled) { filter: brightness(1.06); }
-.gr-check:disabled { background: #e6e3f2; color: #a9a5be; box-shadow: none; cursor: default; }
+.gr-check:disabled { background: #ebe7fb; color: #b7b1d6; box-shadow: none; cursor: default; }
 .gr-next {
-  height: 52px;
+  width: 100%;
+  max-width: 360px;
+  height: 54px;
   padding: 0 26px;
   border: none;
-  border-radius: 14px;
-  background: var(--ink);
+  border-radius: 16px;
+  background: var(--violet);
   color: #fff;
   font-family: inherit;
   font-weight: 800;
   font-size: 16px;
   cursor: pointer;
-  flex: 1;
+  box-shadow: 0 8px 18px rgba(135, 75, 248, 0.3);
 }
-.gr-next:hover { background: #000; }
+.gr-next:hover { filter: brightness(1.06); }
 
 /* варианты ответа */
-.gr-opts { display: flex; flex-direction: column; gap: 10px; }
+.gr-opts { display: flex; flex-direction: column; gap: 10px; max-width: 440px; margin: 0 auto; }
 .gr-opt {
-  text-align: left;
-  padding: 15px 18px;
-  border-radius: 14px;
+  text-align: center;
+  padding: 15px 40px;
+  border-radius: 999px;
   border: 2px solid var(--line);
   background: #fff;
   font-family: inherit;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--ink);
   cursor: pointer;
   transition: 0.15s;
   position: relative;
 }
 .gr-opt:hover:not(:disabled) { border-color: var(--violet); background: var(--violet-100); }
-.gr-opt.sel { border-color: var(--violet); background: var(--violet-100); }
-.gr-opt.correct { border-color: var(--correct); background: var(--correct-bg); color: #2f6b1e; }
-.gr-opt.wrong { border-color: var(--incorrect); background: var(--incorrect-bg); color: #8f2f2b; }
+.gr-opt.sel { border-color: var(--violet); background: var(--violet); color: #fff; }
+.gr-opt.correct { border-color: var(--correct); background: var(--correct); color: #fff; }
+.gr-opt.wrong { border-color: var(--incorrect); background: var(--incorrect); color: #fff; }
 .gr-opt__mk { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-weight: 800; }
 .gr-dlg-opts { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
 
@@ -807,9 +838,9 @@
 .gr-error-sentence { font-size: 20px; line-height: 2; font-weight: 700; text-align: center; margin: 14px 0; color: var(--ink); }
 .gr-eword { padding: 2px 6px; border-radius: 7px; cursor: pointer; transition: 0.12s; border-bottom: 2px dotted transparent; }
 .gr-eword:hover { background: var(--violet-100); border-bottom-color: var(--violet); }
-.gr-eword.sel { background: var(--violet-100); }
-.gr-eword.correct { background: var(--correct-bg); color: var(--correct); }
-.gr-eword.wrong { background: var(--incorrect-bg); color: var(--incorrect); }
+.gr-eword.sel { background: var(--violet); color: #fff; }
+.gr-eword.correct { background: var(--correct); color: #fff; }
+.gr-eword.wrong { background: var(--incorrect); color: #fff; }
 
 /* сортировка по группам */
 .gr-cat-items { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-bottom: 18px; min-height: 20px; }
@@ -911,6 +942,7 @@
 }
 .gr-fchip:hover:not(:disabled) { border-color: var(--violet); color: var(--violet-ink); }
 .gr-fchip.reveal { background: var(--correct); border-color: var(--correct); color: #fff; }
+.gr-tf-row.no .gr-fchip.reveal { background: var(--incorrect); border-color: var(--incorrect); color: #fff; }
 
 /* когда это происходит */
 .gr-tzones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
@@ -929,14 +961,43 @@
 }
 .gr-tzone__em { font-size: 26px; display: block; margin-bottom: 6px; }
 .gr-tzone:hover:not(:disabled) { border-color: var(--violet); background: var(--violet-100); }
-.gr-tzone.correct { border-color: var(--correct); background: var(--correct-bg); color: #2f6b1e; }
-.gr-tzone.wrong { border-color: var(--incorrect); background: var(--incorrect-bg); color: #8f2f2b; }
+.gr-tzone.correct { border-color: var(--correct); background: var(--correct); color: #fff; }
+.gr-tzone.wrong { border-color: var(--incorrect); background: var(--incorrect); color: #fff; }
 
 /* диалог-упражнение */
 .gr-chat { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .gr-msg { max-width: 80%; padding: 11px 15px; border-radius: 16px; font-size: 15px; line-height: 1.35; }
 .gr-msg.a { align-self: flex-start; background: var(--violet); color: #fff; border-bottom-left-radius: 5px; }
 .gr-msg.b { align-self: flex-end; background: #fff; border: 1.5px solid var(--line); border-bottom-right-radius: 5px; }
+
+/* живой чат: скролл-контейнер, появление реплик по одной, «печатает…» */
+.gr-chat--live { max-height: 54vh; overflow-y: auto; padding: 4px 2px; scroll-behavior: smooth; }
+.gr-msg--in { animation: gr-msg-in 0.32s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+@keyframes gr-msg-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.gr-typing { display: inline-flex; align-items: center; gap: 5px; padding: 15px 16px; }
+.gr-typing span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  animation: gr-typing-bounce 1s infinite ease-in-out both;
+}
+.gr-typing span:nth-child(2) { animation-delay: 0.16s; }
+.gr-typing span:nth-child(3) { animation-delay: 0.32s; }
+@keyframes gr-typing-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+  40% { transform: translateY(-5px); opacity: 1; }
+}
+.gr-dlg-opts { animation: gr-msg-in 0.3s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .gr-msg--in,
+  .gr-dlg-opts { animation: none; }
+  .gr-typing span { animation: none; opacity: 0.7; }
+  .gr-chat--live { scroll-behavior: auto; }
+}
 
 /* аудио и речь */
 .gr-media-btn {
@@ -977,22 +1038,69 @@
 .gr-flip__back { background: #fff; border: 2px solid var(--violet); color: var(--violet-ink); transform: rotateY(180deg); font-size: 19px; }
 .gr-flip__hint { text-align: center; font-size: 13px; color: var(--slate); margin-bottom: 14px; }
 
-/* фидбек */
+/* фидбек — зелёный «Молодец! +10» / красный «Неверный ответ» (порт из мобилки) */
 .gr-fb {
-  margin-top: 16px;
-  padding: 15px 18px;
-  border-radius: 14px;
+  margin: 22px auto 0;
+  max-width: 520px;
+  padding: 13px 16px;
+  border-radius: 18px;
   font-size: 15px;
   display: none;
-  align-items: flex-start;
-  gap: 11px;
-  line-height: 1.45;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.4;
 }
 .gr-fb.show { display: flex; animation: gr-pop 0.3s; }
-.gr-fb.ok { background: var(--correct-bg); color: #2f6b1e; border: 1.5px solid #b6e3a3; }
-.gr-fb.no { background: var(--incorrect-bg); color: #8f2f2b; border: 1.5px solid #f1b7b4; }
-.gr-fb__ic { font-size: 20px; flex-shrink: 0; }
-.gr-fb b { font-weight: 800; }
+.gr-fb.ok { background: var(--correct-bg); border: 1.5px solid #b6e3a3; }
+.gr-fb.no { background: var(--incorrect-bg); border: 1.5px solid #f1b7b4; }
+.gr-fb__ic {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 900;
+  color: #fff;
+}
+.gr-fb.ok .gr-fb__ic { background: var(--correct); }
+.gr-fb.no .gr-fb__ic { background: var(--incorrect); }
+.gr-fb__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.gr-fb__text b { font-weight: 800; font-size: 15.5px; }
+.gr-fb.ok .gr-fb__text b { color: #2f6b1e; }
+.gr-fb.no .gr-fb__text b { color: #8f2f2b; }
+.gr-fb__why { font-size: 13px; font-weight: 600; color: var(--slate); }
+.gr-fb__why b { font-weight: 800; }
+/* «монетная» пилюля награды +10 */
+.gr-reward {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #b8860b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.gr-reward__coin { width: 18px; height: 18px; object-fit: contain; vertical-align: middle; flex-shrink: 0; }
+.gr-earned .gr-reward__coin { width: 22px; height: 22px; }
+/* заработанные монеты на финальном экране */
+.gr-earned {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px auto 2px;
+  background: #fff7e0;
+  color: #b8860b;
+  font-weight: 800;
+  font-size: 18px;
+  padding: 8px 18px;
+  border-radius: 999px;
+}
 
 /* финальный экран */
 .gr-celebrate {

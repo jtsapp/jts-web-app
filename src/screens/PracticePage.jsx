@@ -281,6 +281,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           level={openUnit.level}
           units={lvl ? lvl.units : null}
           unit={openUnit.unit}
+          token={token}
           onExit={() => setOpenUnit(null)}
           onOpenUnit={(u) => setOpenUnit({ level: openUnit.level, unit: u })}
         />

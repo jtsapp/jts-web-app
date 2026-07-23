@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { uiStr, typeLabel, fmt } from './strings.js'
+import { completeLessonModule } from '../../api.js'
+import { markUnitDone } from './grammarProgress.js'
+
+// Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
+const REWARD = 10
 
 // Плеер упражнений урока — нативный порт движка грамматика_практика.html
 // (renderActivity + check-функции). Логика проверки каждого типа сохранена
@@ -34,9 +39,19 @@ function Html({ html, as = 'span', className, ...rest }) {
   return <Tag className={className} {...rest} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-export default function ActivityPlayer({ activities, unitTitle, lang, onExit, onNextLesson }) {
+export default function ActivityPlayer({
+  activities,
+  unitTitle,
+  lang,
+  token,
+  level,
+  unitId,
+  onExit,
+  onNextLesson,
+}) {
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
+  const [points, setPoints] = useState(0)
   const total = activities.length
 
   if (idx >= total) {
@@ -44,21 +59,26 @@ export default function ActivityPlayer({ activities, unitTitle, lang, onExit, on
       <Celebrate
         correct={correct}
         total={total}
+        points={points}
         unitTitle={unitTitle}
         lang={lang}
+        token={token}
+        level={level}
+        unitId={unitId}
         onExit={onExit}
         onNextLesson={onNextLesson}
       />
     )
   }
 
+  const pct = Math.round((idx / total) * 100)
   return (
     <div className="gr-practice">
-      <div className="gr-lprog">
-        <div className="gr-lprog__bar" style={{ width: `${(idx / total) * 100}%` }} />
-      </div>
-      <div className="gr-lstep">
-        {uiStr(lang, 'lbl_practice')} {idx + 1}/{total}
+      <div className="gr-lprog-row">
+        <div className="gr-lprog">
+          <div className="gr-lprog__bar" style={{ width: `${pct}%` }} />
+        </div>
+        <span className="gr-lprog__pct">{pct}%</span>
       </div>
       <Activity
         key={idx}
@@ -66,7 +86,12 @@ export default function ActivityPlayer({ activities, unitTitle, lang, onExit, on
         idx={idx}
         total={total}
         lang={lang}
-        onResult={(ok) => ok && setCorrect((c) => c + 1)}
+        onResult={(ok) => {
+          if (ok) {
+            setCorrect((c) => c + 1)
+            setPoints((p) => p + REWARD)
+          }
+        }}
         onNext={() => setIdx((i) => i + 1)}
       />
     </div>
@@ -119,10 +144,20 @@ function Activity({ a, idx, total, lang, onResult, onNext }) {
       </div>
       {feedback && (
         <div className={`gr-fb show ${feedback.ok ? 'ok' : 'no'}`}>
-          <span className="gr-fb__ic">{feedback.ok ? '🎉' : '💡'}</span>
-          <div>
-            <b>{feedback.ok ? t('fb_correct') : t('fb_wrong')}</b> <Html html={feedback.why} />
+          <span className="gr-fb__ic">{feedback.ok ? '✓' : '✕'}</span>
+          <div className="gr-fb__text">
+            <b>{feedback.ok ? t('fb_correct') : t('fb_wrong')}</b>
+            {feedback.why ? (
+              <span className="gr-fb__why">
+                <Html html={feedback.why} />
+              </span>
+            ) : null}
           </div>
+          {feedback.ok && (
+            <span className="gr-reward">
+              <img className="gr-reward__coin" src="/assets/coin-star.png" alt="" />+{REWARD}
+            </span>
+          )}
         </div>
       )}
       <div className="gr-act__foot">
@@ -296,7 +331,7 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
   return (
     <>
       <div className="gr-actq">{uiStr(lang, 'dictation_instr')}</div>
-      <button className="gr-media-btn" onClick={speakText} aria-label="Play audio">
+      <button className="gr-media-btn" onClick={speakText} aria-label={uiStr(lang, 'aria_play')}>
         🔊
       </button>
       <div style={{ textAlign: 'center' }}>{field}</div>
@@ -387,7 +422,7 @@ function ErrorPick({ a, lang, answered, finish, setCanCheck, bind }) {
 }
 
 // ——— categorize ———
-function Categorize({ a, answered, finish }) {
+function Categorize({ a, lang, answered, finish }) {
   const [placed, setPlaced] = useState({}) // itemIndex -> bucketIndex
   const [sel, setSel] = useState(null)
   const [marked, setMarked] = useState(false)
@@ -398,12 +433,7 @@ function Categorize({ a, answered, finish }) {
       const id = setTimeout(() => {
         setMarked(true)
         const allOk = a.items.every((it, i) => placed[i] === it.b)
-        finish(
-          allOk,
-          allOk
-            ? 'Every word is in the right group. 🎯'
-            : 'Some words are in the wrong group — green = right, red = wrong spot.',
-        )
+        finish(allOk, allOk ? uiStr(lang, 'cat_ok') : uiStr(lang, 'cat_no'))
       }, 250)
       return () => clearTimeout(id)
     }
@@ -472,12 +502,7 @@ function Matching({ a, lang, answered, finish }) {
       const id = setTimeout(() => {
         setMarked(true)
         const allOk = a.pairs.every((_, i) => paired[i] === i)
-        finish(
-          allOk,
-          (allOk
-            ? 'Every match is correct! '
-            : 'Some pairs were wrong — the correct answer is shown. ') + (a.why || ''),
-        )
+        finish(allOk, (allOk ? uiStr(lang, 'match_ok') : uiStr(lang, 'match_no')) + (a.why || ''))
       }, 220)
       return () => clearTimeout(id)
     }
@@ -574,12 +599,7 @@ function TrueFalse({ a, lang, answered, finish }) {
   useEffect(() => {
     if (done === a.items.length && !answered) {
       const all = a.items.every((_, i) => picks[i] && picks[i].ok)
-      finish(
-        all,
-        all
-          ? 'Perfect — you spotted them all!'
-          : 'The correct answers are marked. Notice which sentences broke the rule.',
-      )
+      finish(all, all ? uiStr(lang, 'tf_ok') : uiStr(lang, 'tf_no'))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done])
@@ -656,36 +676,87 @@ function Timeline({ a, lang, answered, finish }) {
 }
 
 // ——— dialogue (ролевая игра) ———
+// Живой чат: реплики появляются по одной, бот «печатает…» перед своими
+// сообщениями, автоскролл вниз, варианты — только когда очередь пользователя.
 function Dialogue({ a, lang, answered, feedback, finish }) {
+  const [messages, setMessages] = useState([]) // раскрытые реплики {who,text,id}
+  // Стартовая реплика NPC уже в очереди — так эффект обработки не срабатывает на
+  // пустой очереди при монтировании (иначе варианты показывались бы до реплики).
+  const [queue, setQueue] = useState(() => (a.steps[0] ? [{ text: a.steps[0].npc }] : []))
+  const [typing, setTyping] = useState(false)
   const [step, setStep] = useState(0)
-  const [log, setLog] = useState(() => (a.steps[0] ? [{ who: 'a', text: a.steps[0].npc }] : []))
+  const [showOpts, setShowOpts] = useState(false)
   const [bad, setBad] = useState(false)
   const [inlineWhy, setInlineWhy] = useState(null)
+  const pendingRef = useRef(a.steps[0] ? 0 : null) // шаг для показа вариантов, либо 'finish'
+  const badRef = useRef(false)
+  const finishRef = useRef(finish)
+  const idRef = useRef(0)
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    finishRef.current = finish
+    badRef.current = bad
+  })
+
+  const endConversation = () =>
+    finishRef.current(!badRef.current, badRef.current ? uiStr(lang, 'dlg_bad') : uiStr(lang, 'dlg_ok'))
+
+  // Обработка очереди: «печатает…» → реплика; когда очередь пуста — показываем
+  // варианты для текущего шага (или завершаем диалог).
+  useEffect(() => {
+    if (queue.length === 0) {
+      if (pendingRef.current === 'finish') {
+        pendingRef.current = null
+        endConversation()
+      } else if (pendingRef.current != null) {
+        pendingRef.current = null
+        setShowOpts(true)
+      }
+      return
+    }
+    setShowOpts(false)
+    setTyping(true)
+    const head = queue[0]
+    const plain = String(head.text).replace(/<[^>]+>/g, '')
+    const delay = 480 + Math.min(plain.length * 16, 900)
+    const t = setTimeout(() => {
+      setTyping(false)
+      setMessages((m) => [...m, { who: 'a', text: head.text, id: idRef.current++ }])
+      setQueue((q) => q.slice(1))
+    }, delay)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue])
+
+  // Автоскролл к последней реплике.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [messages, typing])
 
   const pick = (i) => {
-    if (answered) return
-    const s = a.steps[step]
-    const o = s.options[i]
-    if (o.ok) {
-      setInlineWhy(null)
-      const next = [...log, { who: 'b', text: o.t }]
-      if (o.reply) next.push({ who: 'a', text: o.reply })
-      const ns = step + 1
-      const nextStep = a.steps[ns]
-      if (nextStep) next.push({ who: 'a', text: nextStep.npc })
-      setLog(next)
-      setStep(ns)
-      if (!nextStep) {
-        finish(
-          !bad,
-          bad
-            ? 'You completed the conversation — review the corrected choices above.'
-            : 'Flawless conversation! You used the grammar naturally. 🗣️',
-        )
-      }
-    } else {
+    if (answered || typing || !showOpts) return
+    const o = a.steps[step].options[i]
+    if (!o.ok) {
       setBad(true)
       setInlineWhy(o.why)
+      return
+    }
+    setInlineWhy(null)
+    setShowOpts(false)
+    setMessages((m) => [...m, { who: 'b', text: o.t, id: idRef.current++ }])
+    const bot = []
+    if (o.reply) bot.push({ text: o.reply })
+    const ns = step + 1
+    const nextStep = a.steps[ns]
+    if (nextStep) bot.push({ text: nextStep.npc })
+    setStep(ns)
+    if (bot.length === 0) {
+      endConversation() // последний шаг без ответа NPC — завершаем сразу
+    } else {
+      pendingRef.current = nextStep ? ns : 'finish'
+      setQueue(bot)
     }
   }
 
@@ -693,12 +764,19 @@ function Dialogue({ a, lang, answered, feedback, finish }) {
   return (
     <>
       <Html className="gr-actq" as="div" html={a.scene} />
-      <div className="gr-chat">
-        {log.map((m, i) => (
-          <Html key={i} className={`gr-msg ${m.who}`} as="div" html={m.text} />
+      <div className="gr-chat gr-chat--live" ref={scrollRef}>
+        {messages.map((m) => (
+          <Html key={m.id} className={`gr-msg ${m.who} gr-msg--in`} as="div" html={m.text} />
         ))}
+        {typing && (
+          <div className="gr-msg a gr-typing" aria-label="печатает">
+            <span />
+            <span />
+            <span />
+          </div>
+        )}
       </div>
-      {!answered && current && (
+      {!answered && showOpts && current && (
         <div className="gr-dlg-opts">
           {current.options.map((o, i) => (
             <button key={i} className="gr-opt" onClick={() => pick(i)}>
@@ -709,9 +787,12 @@ function Dialogue({ a, lang, answered, feedback, finish }) {
       )}
       {inlineWhy && !feedback && (
         <div className="gr-fb show no">
-          <span className="gr-fb__ic">💡</span>
-          <div>
-            <b>{uiStr(lang, 'dlg_notquite')}</b> <Html html={inlineWhy} /> {uiStr(lang, 'dlg_tryother')}
+          <span className="gr-fb__ic">✕</span>
+          <div className="gr-fb__text">
+            <b>{uiStr(lang, 'dlg_notquite')}</b>
+            <span className="gr-fb__why">
+              <Html html={inlineWhy} /> {uiStr(lang, 'dlg_tryother')}
+            </span>
           </div>
         </div>
       )}
@@ -725,27 +806,28 @@ function Speaking({ a, lang, finish }) {
 
   const start = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    const said = { btn: uiStr(lang, 'btn_isaidit') }
     if (!SR) {
-      setHeard('Say it out loud, then tap “' + uiStr(lang, 'btn_isaidit') + '”.')
+      setHeard(fmt(uiStr(lang, 'spk_sayit'), said))
       return
     }
     const r = new SR()
     r.lang = 'en-US'
     r.interimResults = false
-    setHeard('Listening…')
+    setHeard(uiStr(lang, 'spk_listening'))
     r.onresult = (e) => {
-      const said = e.results[0][0].transcript
-      setHeard(`You said: “${said}”`)
+      const heardText = e.results[0][0].transcript
+      setHeard(fmt(uiStr(lang, 'spk_yousaid'), { said: heardText }))
       const tw = norm(a.target).split(' ')
-      const sw = norm(said).split(' ')
+      const sw = norm(heardText).split(' ')
       const hit = tw.filter((w) => sw.includes(w)).length / tw.length
-      finish(hit >= 0.5, hit >= 0.5 ? a.why : 'Close! Try again slowly and clearly — match the target.')
+      finish(hit >= 0.5, hit >= 0.5 ? a.why : uiStr(lang, 'spk_close'))
     }
-    r.onerror = () => setHeard('Mic not available — tap “' + uiStr(lang, 'btn_isaidit') + '”.')
+    r.onerror = () => setHeard(fmt(uiStr(lang, 'spk_nomic'), said))
     try {
       r.start()
     } catch {
-      setHeard('Tap “' + uiStr(lang, 'btn_isaidit') + '” when done.')
+      setHeard(fmt(uiStr(lang, 'spk_tapdone'), said))
     }
   }
 
@@ -753,10 +835,10 @@ function Speaking({ a, lang, finish }) {
     <>
       <div className="gr-actq">{uiStr(lang, 'speaking_instr')}</div>
       <div className="gr-media-target">🗣️ “{a.target}”</div>
-      <button className="gr-media-btn" onClick={start} aria-label="Record">
+      <button className="gr-media-btn" onClick={start} aria-label={uiStr(lang, 'aria_record')}>
         🎤
       </button>
-      <div className="gr-heard">{heard || 'Tap the mic and speak'}</div>
+      <div className="gr-heard">{heard || uiStr(lang, 'spk_tapmic')}</div>
     </>
   )
 }
@@ -780,11 +862,17 @@ function Flashcard({ a, lang }) {
 }
 
 // ——— финальный экран урока ———
-function Celebrate({ correct, total, unitTitle, lang, onExit, onNextLesson }) {
+function Celebrate({ correct, total, points, unitTitle, lang, token, level, unitId, onExit, onNextLesson }) {
   const perfect = correct === total
   const containerRef = useRef(null)
   useEffect(() => {
     confettiBurst(containerRef.current, 80)
+    // Отмечаем урок пройденным локально — каталог покажет бейдж «Пройдено».
+    if (level != null && unitId != null) markUnitDone(level, unitId)
+    // Начисляем заработанные монеты в реальный баланс (best-effort — как мобилка
+    // на завершении урока). Осечка не должна ломать финальный экран.
+    if (token && points > 0) completeLessonModule(token, points).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   return (
     <div className="gr-practice">
@@ -797,6 +885,11 @@ function Celebrate({ correct, total, unitTitle, lang, onExit, onNextLesson }) {
         <h1>{uiStr(lang, 'cel_title')}</h1>
         <p>{fmt(uiStr(lang, 'cel_desc'), { title: stripTags(unitTitle) })}</p>
         <div className="gr-score">{fmt(uiStr(lang, 'cel_score'), { c: correct, n: total })}</div>
+        {points > 0 && (
+          <div className="gr-earned">
+            <img className="gr-reward__coin" src="/assets/coin-star.png" alt="" /> +{points}
+          </div>
+        )}
         <div className="gr-cta-row">
           {onNextLesson && (
             <button className="gr-btn gr-btn--primary" onClick={onNextLesson}>

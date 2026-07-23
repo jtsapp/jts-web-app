@@ -136,6 +136,18 @@ export function getBalance(token, onFresh) {
   return cachedAuthGet('/mobile/balance/info', token, onFresh)
 }
 
+// Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
+// бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
+// свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
+export async function completeLessonModule(token, xp) {
+  const res = await fetch(`${BASE}/mobile/lesson-modules/complete?xp=${encodeURIComponent(xp)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`complete failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
 // Считает уроки/пройдено по LearningPathModel (modules -> sections -> activities)
 const LESSON_TYPES = new Set(['LESSON', 'QUIZ', 'PRACTICE', 'REVIEW', 'ASSESSMENT', 'ORDINARY', 'MNEMOTECHNIC'])
 export function countProgress(path) {
