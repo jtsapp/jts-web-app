@@ -106,6 +106,7 @@ const dict = {
     'learn.here': 'Вы здесь',
     // Профиль (порт мобильного экрана профиля)
     'profile.rankPrefix': 'Текущий уровень: ',
+    'profile.noName': 'Без имени',
     'profile.keepLearning': 'Продолжайте учиться',
     'profile.levelComplete': 'Уровень пройден!',
     'profile.remaining': 'До следующего звания: {n} модулей',
@@ -247,6 +248,7 @@ const dict = {
     'learn.done': 'Completed',
     'learn.here': 'You are here',
     'profile.rankPrefix': 'Current rank: ',
+    'profile.noName': 'No name',
     'profile.keepLearning': 'Keep learning',
     'profile.levelComplete': 'Level complete!',
     'profile.remaining': '{n} modules to the next rank',
@@ -388,6 +390,7 @@ const dict = {
     'learn.done': 'Аяқталды',
     'learn.here': 'Сіз осындасыз',
     'profile.rankPrefix': 'Ағымдағы атақ: ',
+    'profile.noName': 'Аты жоқ',
     'profile.keepLearning': 'Оқуды жалғастырыңыз',
     'profile.levelComplete': 'Деңгей аяқталды!',
     'profile.remaining': 'Келесі атаққа дейін: {n} модуль',

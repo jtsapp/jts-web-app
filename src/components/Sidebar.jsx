@@ -14,6 +14,7 @@ import {
   VocabIcon,
   ChevronRightIcon,
   CloseIcon,
+  UserIcon,
 } from './icons.jsx'
 
 const NAV_FULL = [
@@ -49,7 +50,8 @@ export default function Sidebar({
 }) {
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
-  const initial = (userName || 'JTS').trim().charAt(0).toUpperCase()
+  const trimmedName = (userName || '').trim()
+  const initial = trimmedName ? trimmedName.charAt(0).toUpperCase() : null
 
   // На мобилке любой выбор в сайдбаре сначала закрывает drawer, потом навигирует.
   const pick = (fn) => (...args) => {
@@ -99,7 +101,7 @@ export default function Sidebar({
         </div>
 
         <button className="sb__profile" onClick={pick(onProfile)}>
-          <span className="sb__avatar">{initial}</span>
+          <span className="sb__avatar">{initial || <UserIcon size={18} />}</span>
           <span className="sb__profile-text">
             <b>{userName || t('kingdom.profile')}</b>
             <span>{t('kingdom.profile')}</span>
