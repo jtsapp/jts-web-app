@@ -1041,7 +1041,8 @@
   color: #b8860b;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
-.gr-reward__coin { font-size: 15px; }
+.gr-reward__coin { width: 18px; height: 18px; object-fit: contain; vertical-align: middle; flex-shrink: 0; }
+.gr-earned .gr-reward__coin { width: 22px; height: 22px; }
 /* заработанные монеты на финальном экране */
 .gr-earned {
   display: inline-flex;

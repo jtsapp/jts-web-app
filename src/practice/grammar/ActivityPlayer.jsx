@@ -143,7 +143,7 @@ function Activity({ a, idx, total, lang, onResult, onNext }) {
           </div>
           {feedback.ok && (
             <span className="gr-reward">
-              <span className="gr-reward__coin">🪙</span>+{REWARD}
+              <img className="gr-reward__coin" src="/assets/coin-star.png" alt="" />+{REWARD}
             </span>
           )}
         </div>
@@ -826,7 +826,7 @@ function Celebrate({ correct, total, points, unitTitle, lang, token, onExit, onN
         <div className="gr-score">{fmt(uiStr(lang, 'cel_score'), { c: correct, n: total })}</div>
         {points > 0 && (
           <div className="gr-earned">
-            <span className="gr-reward__coin">🪙</span> +{points}
+            <img className="gr-reward__coin" src="/assets/coin-star.png" alt="" /> +{points}
           </div>
         )}
         <div className="gr-cta-row">
