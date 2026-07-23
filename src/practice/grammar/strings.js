@@ -380,5 +380,5 @@ export function typeLabel(lang, s) {
 
 // Подстановка {placeholders}.
 export function fmt(str, map) {
-  return String(str || "").replace(/{(w+)}/g, (_, k) => (k in map ? map[k] : ""))
+  return String(str || "").replace(/{(\w+)}/g, (_, k) => (k in map ? map[k] : ""))
 }

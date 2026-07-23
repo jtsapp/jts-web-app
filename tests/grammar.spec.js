@@ -53,6 +53,28 @@ async function answerCorrectly(page, a) {
       await page.locator('.gr-bank .gr-word', { hasText: new RegExp(`^${w}$`) }).first().click()
     }
     await page.locator('.gr-check').click()
+  } else if (a.type === 'dialogue') {
+    // Ведём диалог, на каждом шаге выбирая верную реплику (o.ok из данных).
+    const stripHtml = (s) => String(s || '').replace(/<[^>]+>/g, '').trim()
+    const okTexts = new Set(
+      a.steps.flatMap((st) => st.options.filter((o) => o.ok).map((o) => stripHtml(o.t))),
+    )
+    for (let guard = 0; guard < a.steps.length + 2; guard++) {
+      if (await page.locator('.gr-fb').isVisible()) break
+      const opts = page.locator('.gr-dlg-opts .gr-opt')
+      const n = await opts.count()
+      if (n === 0) break
+      let clicked = false
+      for (let si = 0; si < n; si++) {
+        if (okTexts.has((await opts.nth(si).textContent()).trim())) {
+          await opts.nth(si).click()
+          clicked = true
+          break
+        }
+      }
+      if (!clicked) await opts.first().click()
+      await page.waitForTimeout(150)
+    }
   } else {
     throw new Error(`answerCorrectly: тип ${a.type} не поддержан`)
   }
@@ -244,5 +266,26 @@ test.describe('Грамматика — движок упражнений', () =
     await page.locator('.gr-gap-input').fill(acts[alt].alts[0])
     await page.locator('.gr-check').click()
     await expect(page.locator('.gr-fb')).toHaveClass(/ok/)
+  })
+
+  test('финальный экран: {title}/{c}/{n} подставлены, показаны заработанные монеты', async ({
+    page,
+  }) => {
+    await openUnit1(page)
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
+
+    const acts = await a1Activities(page)
+    for (let i = 0; i < acts.length; i++) {
+      await answerCorrectly(page, acts[i])
+      await page.locator('.gr-next').click()
+    }
+
+    const cele = page.locator('.gr-celebrate')
+    await expect(cele).toBeVisible()
+    // Регрессия на сломанную regex в fmt(): плейсхолдеры должны быть подставлены.
+    await expect(cele).not.toContainText('{')
+    await expect(cele.locator('.gr-score')).toHaveText(`✓ ${acts.length} / ${acts.length} верно`)
+    await expect(cele.locator('.gr-earned')).toContainText(`+${acts.length * 10}`)
   })
 })
