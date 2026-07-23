@@ -1053,22 +1053,17 @@ textarea {
   }
   .cta {
     flex-direction: column;
-    width: calc(100% - 20px);
+    width: calc(100% - 32px);
+    gap: 12px;
+    padding: 12px;
+    border-radius: 30px;
   }
   .btn {
     width: 100%;
   }
+  /* Чёрный футер прячем на мобиле — на всех экранах, где он рендерится */
   .footer {
-    grid-template-columns: 1fr;
-    height: auto;
-    padding: 16px;
-    gap: 8px;
-    text-align: center;
-  }
-  .footer .logo,
-  .footer-link,
-  .footer-copy {
-    justify-self: center;
+    display: none;
   }
 }
 
