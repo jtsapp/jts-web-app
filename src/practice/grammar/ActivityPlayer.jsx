@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { uiStr, typeLabel, fmt } from './strings.js'
+import { completeLessonModule } from '../../api.js'
+
+// Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
+const REWARD = 10
 
 // Плеер упражнений урока — нативный порт движка грамматика_практика.html
 // (renderActivity + check-функции). Логика проверки каждого типа сохранена
@@ -34,9 +38,10 @@ function Html({ html, as = 'span', className, ...rest }) {
   return <Tag className={className} {...rest} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-export default function ActivityPlayer({ activities, unitTitle, lang, onExit, onNextLesson }) {
+export default function ActivityPlayer({ activities, unitTitle, lang, token, onExit, onNextLesson }) {
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
+  const [points, setPoints] = useState(0)
   const total = activities.length
 
   if (idx >= total) {
@@ -44,21 +49,24 @@ export default function ActivityPlayer({ activities, unitTitle, lang, onExit, on
       <Celebrate
         correct={correct}
         total={total}
+        points={points}
         unitTitle={unitTitle}
         lang={lang}
+        token={token}
         onExit={onExit}
         onNextLesson={onNextLesson}
       />
     )
   }
 
+  const pct = Math.round((idx / total) * 100)
   return (
     <div className="gr-practice">
-      <div className="gr-lprog">
-        <div className="gr-lprog__bar" style={{ width: `${(idx / total) * 100}%` }} />
-      </div>
-      <div className="gr-lstep">
-        {uiStr(lang, 'lbl_practice')} {idx + 1}/{total}
+      <div className="gr-lprog-row">
+        <div className="gr-lprog">
+          <div className="gr-lprog__bar" style={{ width: `${pct}%` }} />
+        </div>
+        <span className="gr-lprog__pct">{pct}%</span>
       </div>
       <Activity
         key={idx}
@@ -66,7 +74,12 @@ export default function ActivityPlayer({ activities, unitTitle, lang, onExit, on
         idx={idx}
         total={total}
         lang={lang}
-        onResult={(ok) => ok && setCorrect((c) => c + 1)}
+        onResult={(ok) => {
+          if (ok) {
+            setCorrect((c) => c + 1)
+            setPoints((p) => p + REWARD)
+          }
+        }}
         onNext={() => setIdx((i) => i + 1)}
       />
     </div>
@@ -119,10 +132,20 @@ function Activity({ a, idx, total, lang, onResult, onNext }) {
       </div>
       {feedback && (
         <div className={`gr-fb show ${feedback.ok ? 'ok' : 'no'}`}>
-          <span className="gr-fb__ic">{feedback.ok ? '🎉' : '💡'}</span>
-          <div>
-            <b>{feedback.ok ? t('fb_correct') : t('fb_wrong')}</b> <Html html={feedback.why} />
+          <span className="gr-fb__ic">{feedback.ok ? '✓' : '✕'}</span>
+          <div className="gr-fb__text">
+            <b>{feedback.ok ? t('fb_correct') : t('fb_wrong')}</b>
+            {feedback.why ? (
+              <span className="gr-fb__why">
+                <Html html={feedback.why} />
+              </span>
+            ) : null}
           </div>
+          {feedback.ok && (
+            <span className="gr-reward">
+              <span className="gr-reward__coin">🪙</span>+{REWARD}
+            </span>
+          )}
         </div>
       )}
       <div className="gr-act__foot">
@@ -780,11 +803,15 @@ function Flashcard({ a, lang }) {
 }
 
 // ——— финальный экран урока ———
-function Celebrate({ correct, total, unitTitle, lang, onExit, onNextLesson }) {
+function Celebrate({ correct, total, points, unitTitle, lang, token, onExit, onNextLesson }) {
   const perfect = correct === total
   const containerRef = useRef(null)
   useEffect(() => {
     confettiBurst(containerRef.current, 80)
+    // Начисляем заработанные монеты в реальный баланс (best-effort — как мобилка
+    // на завершении урока). Осечка не должна ломать финальный экран.
+    if (token && points > 0) completeLessonModule(token, points).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   return (
     <div className="gr-practice">
@@ -797,6 +824,11 @@ function Celebrate({ correct, total, unitTitle, lang, onExit, onNextLesson }) {
         <h1>{uiStr(lang, 'cel_title')}</h1>
         <p>{fmt(uiStr(lang, 'cel_desc'), { title: stripTags(unitTitle) })}</p>
         <div className="gr-score">{fmt(uiStr(lang, 'cel_score'), { c: correct, n: total })}</div>
+        {points > 0 && (
+          <div className="gr-earned">
+            <span className="gr-reward__coin">🪙</span> +{points}
+          </div>
+        )}
         <div className="gr-cta-row">
           {onNextLesson && (
             <button className="gr-btn gr-btn--primary" onClick={onNextLesson}>

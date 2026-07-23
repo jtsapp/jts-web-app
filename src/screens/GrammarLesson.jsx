@@ -26,7 +26,7 @@ function isExampleBlock(b) {
   return /example|conversation|real-life|situation|context|breakdown|everyday/i.test(b.title || '')
 }
 
-export default function GrammarLesson({ level, units, unit, onExit, onOpenUnit }) {
+export default function GrammarLesson({ level, units, unit, token, onExit, onOpenUnit }) {
   const { lang } = useI18n()
   const [data, setData] = useState(null) // {learn, learnTr, activities}
   const [error, setError] = useState('')
@@ -118,6 +118,7 @@ export default function GrammarLesson({ level, units, unit, onExit, onOpenUnit }
           activities={data.activities}
           unitTitle={unit.title}
           lang={lang}
+          token={token}
           onExit={onExit}
           onNextLesson={nextUnit ? () => onOpenUnit(nextUnit) : null}
         />

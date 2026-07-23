@@ -194,6 +194,26 @@ test.describe('Грамматика — движок упражнений', () =
     await expect(page.locator('.gr-chip-in.no')).toHaveCount(0)
   })
 
+  test('дизайн практики: прогресс в %, скрытые бейджи, награда +10 и «Молодец!» на верном ответе', async ({
+    page,
+  }) => {
+    await openUnit1(page)
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
+
+    // По дизайну: прогресс показывает проценты, бейджи типа/этапа/счётчика скрыты.
+    await expect(page.locator('.gr-lprog__pct')).toBeVisible()
+    await expect(page.locator('.gr-lprog__pct')).toHaveText(/^\d+%$/)
+    await expect(page.locator('.gr-act__top')).toBeHidden()
+
+    // Верный ответ → зелёный фидбек «Молодец!» + монетная награда +10.
+    const acts = await a1Activities(page)
+    await answerCorrectly(page, acts[0])
+    await expect(page.locator('.gr-fb')).toHaveClass(/ok/)
+    await expect(page.locator('.gr-fb__text b')).toHaveText('Молодец!')
+    await expect(page.locator('.gr-reward')).toContainText('+10')
+  })
+
   test('gap: неверный ответ показывает правильный, альтернативная форма засчитывается', async ({
     page,
   }) => {
