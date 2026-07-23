@@ -339,6 +339,21 @@ export async function saveWord(token, { word, translation, alternates, language 
   return res.json().catch(() => ({}))
 }
 
+// Удаление сохранённого слова (DELETE /mobile/saved-words/{id}, Bearer).
+export async function deleteSavedWord(token, id) {
+  let res
+  try {
+    res = await fetch(`${BASE}/mobile/saved-words/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  } catch {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`Не удалось удалить слово (${res.status})`)
+  return true
+}
+
 // Уровень CEFR из профиля пользователя (GET /user/language-level).
 // Бэкенд отдаёт enum как JSON-строку ("A1"); подстраховываемся и на объект.
 export async function getLanguageLevel(token) {
