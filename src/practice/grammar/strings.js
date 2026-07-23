@@ -71,7 +71,8 @@ export const UI = {
     "spk_tapmic": "Нажмите на микрофон и говорите",
     "spk_yousaid": "Вы сказали: «{said}»",
     "aria_play": "Воспроизвести аудио",
-    "aria_record": "Записать"
+    "aria_record": "Записать",
+    "lesson_done": "Пройдено"
   },
   "en": {
     "gap_instr": "Complete the sentence",
@@ -141,7 +142,8 @@ export const UI = {
     "spk_tapmic": "Tap the mic and speak",
     "spk_yousaid": "You said: “{said}”",
     "aria_play": "Play audio",
-    "aria_record": "Record"
+    "aria_record": "Record",
+    "lesson_done": "Completed"
   },
   "kk": {
     "gap_instr": "Сөйлемді толықтырыңыз",
@@ -211,7 +213,8 @@ export const UI = {
     "spk_tapmic": "Микрофонды басып сөйлеңіз",
     "spk_yousaid": "Сіз айттыңыз: «{said}»",
     "aria_play": "Аудионы ойнату",
-    "aria_record": "Жазу"
+    "aria_record": "Жазу",
+    "lesson_done": "Өтілді"
   }
 }
 

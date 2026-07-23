@@ -299,4 +299,25 @@ test.describe('Грамматика — движок упражнений', () =
     await expect(cele.locator('.gr-score')).toHaveText(`✓ ${acts.length} / ${acts.length} верно`)
     await expect(cele.locator('.gr-earned')).toContainText(`+${acts.length * 10}`)
   })
+
+  test('пройденный урок отмечается бейджем «Пройдено» в каталоге', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => localStorage.removeItem('jts_grammar_done'))
+    await openUnit1(page)
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
+
+    const acts = await a1Activities(page)
+    for (let i = 0; i < acts.length; i++) {
+      await answerCorrectly(page, acts[i])
+      await page.locator('.gr-next').click()
+    }
+    await expect(page.locator('.gr-celebrate')).toBeVisible()
+
+    // «Назад к грамматике» → каталог; первая карточка (Unit 1) помечена «Пройдено».
+    await page.locator('.gr-celebrate .gr-btn--soft').click()
+    const firstCard = page.locator('.gr-catalog .gr-gcard').first()
+    await expect(firstCard).toHaveClass(/is-done/)
+    await expect(firstCard.locator('.gr-gcard__done')).toHaveText(/Пройдено/)
+  })
 })

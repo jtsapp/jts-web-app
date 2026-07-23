@@ -116,6 +116,8 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
           unitTitle={unit.title}
           lang={lang}
           token={token}
+          level={level}
+          unitId={unit.id}
           onExit={onExit}
           onNextLesson={nextUnit ? () => onOpenUnit(nextUnit) : null}
         />

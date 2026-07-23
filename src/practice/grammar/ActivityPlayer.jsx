@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { uiStr, typeLabel, fmt } from './strings.js'
 import { completeLessonModule } from '../../api.js'
+import { markUnitDone } from './grammarProgress.js'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
@@ -38,7 +39,16 @@ function Html({ html, as = 'span', className, ...rest }) {
   return <Tag className={className} {...rest} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
-export default function ActivityPlayer({ activities, unitTitle, lang, token, onExit, onNextLesson }) {
+export default function ActivityPlayer({
+  activities,
+  unitTitle,
+  lang,
+  token,
+  level,
+  unitId,
+  onExit,
+  onNextLesson,
+}) {
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [points, setPoints] = useState(0)
@@ -53,6 +63,8 @@ export default function ActivityPlayer({ activities, unitTitle, lang, token, onE
         unitTitle={unitTitle}
         lang={lang}
         token={token}
+        level={level}
+        unitId={unitId}
         onExit={onExit}
         onNextLesson={onNextLesson}
       />
@@ -850,11 +862,13 @@ function Flashcard({ a, lang }) {
 }
 
 // ——— финальный экран урока ———
-function Celebrate({ correct, total, points, unitTitle, lang, token, onExit, onNextLesson }) {
+function Celebrate({ correct, total, points, unitTitle, lang, token, level, unitId, onExit, onNextLesson }) {
   const perfect = correct === total
   const containerRef = useRef(null)
   useEffect(() => {
     confettiBurst(containerRef.current, 80)
+    // Отмечаем урок пройденным локально — каталог покажет бейдж «Пройдено».
+    if (level != null && unitId != null) markUnitDone(level, unitId)
     // Начисляем заработанные монеты в реальный баланс (best-effort — как мобилка
     // на завершении урока). Осечка не должна ломать финальный экран.
     if (token && points > 0) completeLessonModule(token, points).catch(() => {})

@@ -241,6 +241,22 @@
 .gr-gcard__desc em { font-style: italic; }
 .gr-gcard__t { flex: none; color: #a9a6b8; font-size: 12px; font-weight: 600; white-space: nowrap; }
 
+/* Бейдж «Пройдено» — зелёная полоса снизу карточки пройденного урока */
+.gr-gcard.is-done { border-color: #cfe9c2; }
+.gr-gcard__done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: var(--correct-bg);
+  color: #2f6b1e;
+  font-weight: 800;
+  font-size: 12.5px;
+  border-top: 1px solid #d3edc6;
+}
+.gr-gcard__done svg { color: #2f9e44; flex: none; }
+
 @media (max-width: 560px) {
   .gr-grid { grid-template-columns: 1fr; }
   .gr-cover { height: 130px; }
