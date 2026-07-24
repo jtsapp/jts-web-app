@@ -8,6 +8,7 @@ import {
   ChevronRightCircleIcon,
   ChevronLeftIcon,
   SearchIcon,
+  TrashIcon,
 } from '../components/icons.jsx'
 import {
   getPracticeToken,
@@ -15,6 +16,7 @@ import {
   getSituativki,
   getSavedWords,
   getAudiobooks,
+  deleteSavedWord,
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
@@ -141,7 +143,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [situations, setSituations] = useState([])
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
-  const [tab, setTab] = useState('saved') // 'saved' | 'learned'
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
   const [apiToken, setApiToken] = useState(token || '')
 
@@ -196,8 +197,18 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   }, [])
 
   const saved = words
-  const learned = useMemo(() => words.filter((w) => w.learned), [words])
-  const list = tab === 'learned' ? learned : saved
+
+  // Удаление сохранённого слова: убираем сразу (оптимистично), при ошибке —
+  // возвращаем список с сервера. Нужен токен авторизации.
+  const removeWord = async (w) => {
+    if (!token) return
+    setWords((ws) => ws.filter((x) => x.id !== w.id))
+    try {
+      await deleteSavedWord(token, w.id)
+    } catch {
+      getSavedWords(token).then(setWords).catch(() => {})
+    }
+  }
 
   // Поиск по книжкам: живой фильтр по названию и автору. Каталог уже загружен
   // целиком, поэтому без запросов к бэкенду; normTitle не подходит — вырезает
@@ -504,23 +515,12 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
         <aside className="pp__side">
           <h2 className="pp-voc__title">Словарь</h2>
 
-          <div className="pp-voc__tabs">
-            <button
-              className={`pp-voc__tab ${tab === 'saved' ? 'on' : ''}`}
-              onClick={() => setTab('saved')}
-            >
-              Сохранено <b>{saved.length}</b>
-            </button>
-            <button
-              className={`pp-voc__tab ${tab === 'learned' ? 'on' : ''}`}
-              onClick={() => setTab('learned')}
-            >
-              Изучено <b>{learned.length}</b>
-            </button>
+          <div className="pp-voc__count">
+            Сохранено <b>{saved.length}</b>
           </div>
 
           <div className="pp-voc__list">
-            {list.length === 0 ? (
+            {saved.length === 0 ? (
               state.loading ? (
                 <div className="pp-voc__skel" aria-hidden="true">
                   {Array.from({ length: 3 }, (_, i) => (
@@ -534,7 +534,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                 <div className="pp-voc__empty">Пока нет слов</div>
               )
             ) : (
-              list.map((w) => (
+              saved.map((w) => (
                 <div key={w.id} className="pp-word">
                   <div className="pp-word__text">
                     <b>{w.word}</b>
@@ -543,12 +543,17 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   <button className="pp-word__say" onClick={() => speak(w.word)} aria-label="Прослушать">
                     <VolumeIcon size={18} />
                   </button>
+                  <button
+                    className="pp-word__del"
+                    onClick={() => removeWord(w)}
+                    aria-label={`Удалить слово «${w.word}»`}
+                  >
+                    <TrashIcon size={17} />
+                  </button>
                 </div>
               ))
             )}
           </div>
-
-          <button className="pp-voc__cta">Практика по словарю</button>
         </aside>
       </div>
     </LearningLayout>
