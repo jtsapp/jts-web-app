@@ -86,8 +86,8 @@
   margin: 0 auto;
 }
 .lt-intro__mascot {
-  width: 168px;
-  height: 168px;
+  width: 224px;
+  height: 224px;
   margin: 0 auto 20px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 35%, #a06bff, #6a2fd6);
@@ -95,8 +95,7 @@
   place-items: center;
   overflow: hidden;
 }
-/* img крупнее круга → прозрачные поля модельки обрезаются, эффект «приближения» */
-.lt-intro__mascot img { width: 190px; height: 190px; object-fit: contain; transform: rotate(10deg); }
+.lt-intro__mascot img { width: 210px; height: 210px; object-fit: contain; transform: rotate(10deg); }
 .lt-intro__title { margin: 0; color: var(--lt-purple); font-size: 24px; font-weight: 800; }
 .lt-intro__sub { margin: 10px auto 0; max-width: 380px; color: #6c6b78; font-size: 14.5px; line-height: 1.5; }
 .lt-intro__hint {
