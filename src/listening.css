@@ -102,7 +102,7 @@
   height: 300px;
   object-fit: contain;
   object-position: center;
-  transform: rotate(10deg);
+  transform: translate(-16px, -22px) rotate(10deg);
 }
 .lt-intro__title { margin: 0; color: var(--lt-purple); font-size: 24px; font-weight: 800; }
 .lt-intro__sub { margin: 10px auto 0; max-width: 380px; color: #6c6b78; font-size: 14.5px; line-height: 1.5; }
