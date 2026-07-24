@@ -95,7 +95,15 @@
   place-items: center;
   overflow: hidden;
 }
-.lt-intro__mascot img { width: 210px; height: 210px; object-fit: contain; transform: rotate(10deg); }
+/* img заметно крупнее круга → моделька заполняет кадр (как в референсе);
+   object-position center держит её по центру, круг обрезает поля. */
+.lt-intro__mascot img {
+  width: 300px;
+  height: 300px;
+  object-fit: contain;
+  object-position: center;
+  transform: rotate(10deg);
+}
 .lt-intro__title { margin: 0; color: var(--lt-purple); font-size: 24px; font-weight: 800; }
 .lt-intro__sub { margin: 10px auto 0; max-width: 380px; color: #6c6b78; font-size: 14.5px; line-height: 1.5; }
 .lt-intro__hint {
