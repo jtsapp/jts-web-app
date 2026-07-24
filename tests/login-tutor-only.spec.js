@@ -8,15 +8,16 @@ import { test, expect } from '@playwright/test'
 test('после входа открывается тьютор-зона, а не королевства', async ({ page }) => {
   const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
   await page.route('**/auth/otp/request', (r) => r.fulfill(json({ ok: true })))
-  // Номер «занят» — иначе UI уходит в ветку регистрации вместо входа.
-  await page.route('**/registration/initiate', (r) => r.fulfill(json({ error: 'exists' }, 400)))
   await page.route('**/auth/otp/verify', (r) => r.fulfill(json({ accessToken: 'e2e-token', name: 'Тест' })))
   // Уровень в профиле уже есть — именно этот случай раньше вёл в 'kingdom'.
   await page.route('**/user/language-level', (r) => r.fulfill(json({ languageLevel: 'B1' })))
   await page.route('**/api/profile/merge', (r) => r.fulfill(json({ ok: true })))
   await page.route('**/api/profile?**', (r) => r.fulfill(json({ configured: true, profile: null })))
 
-  await page.goto('/?screen=phone')
+  // Заходим именно как «Войти» (intent=login): вход бьёт только в /auth/otp/*,
+  // без /registration/initiate — это возвращающийся пользователь.
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
   await page.locator('.phone-field input').fill('7771234567')
   await page.locator('.form-primary').click()
 

@@ -171,8 +171,9 @@ async function post(path, body) {
   return data
 }
 
-// Шаг 1: отправка кода. Возвращает режим — 'register' или 'login'
-// (если телефон уже зарегистрирован, переходим на вход по OTP).
+// Шаг 1 (регистрация): отправка кода. Возвращает режим 'register'. Если номер
+// уже занят — НЕ уводим молча в вход, а помечаем ошибку кодом USER_EXISTS, и UI
+// просит пользователя войти или взять другой номер (см. handlePhoneSubmit).
 export async function sendOtp(phone, name) {
   const p = normalizePhone(phone)
   try {
@@ -180,8 +181,7 @@ export async function sendOtp(phone, name) {
     return 'register'
   } catch (e) {
     if ((e.message || '').toLowerCase().includes('exist')) {
-      await post('/auth/otp/request', { phone: p })
-      return 'login'
+      e.code = 'USER_EXISTS'
     }
     throw e
   }
@@ -189,10 +189,19 @@ export async function sendOtp(phone, name) {
 
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
 // номер молча зарегистрировался бы «Гостем». Незарегистрированный номер здесь
-// даёт 400 «User with this phone not found», и мы показываем это пользователю.
+// даёт 400 «User with this phone not found» — помечаем кодом USER_NOT_FOUND,
+// чтобы UI показал «Пользователь не существует» вместо сырого текста бэкенда.
 export async function requestLoginOtp(phone) {
-  await post('/auth/otp/request', { phone: normalizePhone(phone) })
-  return 'login'
+  try {
+    await post('/auth/otp/request', { phone: normalizePhone(phone) })
+    return 'login'
+  } catch (e) {
+    const msg = (e.message || '').toLowerCase()
+    if (msg.includes('not found') || msg.includes('no account')) {
+      e.code = 'USER_NOT_FOUND'
+    }
+    throw e
+  }
 }
 
 // Шаг 2: проверка кода. В режиме register создаёт пользователя (без токена),

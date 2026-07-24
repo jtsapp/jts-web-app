@@ -49,6 +49,16 @@ import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tuto
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY } from './config.js'
 
+// Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
+// если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
+// проставляет api.js: USER_EXISTS (регистрация занятого номера) и
+// USER_NOT_FOUND (вход незарегистрированным номером).
+function phoneErrorKey(e) {
+  if (e?.code === 'USER_EXISTS') return 'err.userExists'
+  if (e?.code === 'USER_NOT_FOUND') return 'err.userNotFound'
+  return null
+}
+
 export default function App() {
   const { t } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
@@ -173,7 +183,8 @@ export default function App() {
       setPhone(fullPhone)
       setScreen('otp')
     } catch (e) {
-      setError(e.message || t('err.send'))
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || t('err.send'))
     } finally {
       setLoading(false)
     }
