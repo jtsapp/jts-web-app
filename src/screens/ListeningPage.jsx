@@ -219,24 +219,62 @@ function Intro({ level, loading, onStart }) {
 }
 
 // ───────────────────────── Result ─────────────────────────
-function Result({ correct, total, coins, onAgain, onHome }) {
-  const pct = total ? Math.round((correct / total) * 100) : 0
-  const good = pct >= 60
+// ≥50% → «победа» (зелёный %, маскот-победитель); ниже → «проигрыш».
+function Result({ correct, wrong, onAgain, onHome }) {
+  const answered = correct + wrong
+  const pct = answered ? Math.round((correct / answered) * 100) : 0
+  const good = pct >= 50
   return (
-    <div className="lt-result">
-      <div className="lt-result__mascot">
-        <img src="/practice/listening-mascot.png" alt="" />
+    <div className={`lt-res ${good ? 'lt-res--good' : 'lt-res--bad'}`}>
+      <div className="lt-res__hero">
+        <img src={good ? '/practice/listening/win.png' : '/practice/listening/lose.png'} alt="" />
       </div>
-      <div className="lt-result__pct" data-good={good}>{pct}%</div>
-      <h2 className="lt-result__title">{good ? 'Отличный результат!' : 'Можно лучше'}</h2>
-      <div className="lt-result__stats">
-        <div className="lt-stat"><b>{correct}/{total}</b><span>верных ответов</span></div>
-        <div className="lt-stat">
-          <b><img src="/practice/listening/coin.png" alt="" />{coins}</b><span>монет</span>
+      <div className="lt-res__info">
+        <div className="lt-res__pct">{pct}%</div>
+        <h2 className="lt-res__title">{good ? 'Отличный результат' : 'Нужно улучшить результат'}</h2>
+        <div className="lt-res__stats">
+          <div className="lt-res__stat">
+            <span className="lt-res__num">
+              <span className="lt-res__badge lt-res__badge--bad">☹</span>
+              {wrong}
+            </span>
+            <span className="lt-res__label">Неверных ответов</span>
+          </div>
+          <div className="lt-res__stat">
+            <span className="lt-res__num">
+              <span className="lt-res__badge lt-res__badge--good">✓</span>
+              {correct}
+            </span>
+            <span className="lt-res__label">Верных ответов</span>
+          </div>
         </div>
+        <button type="button" className="lt-primary lt-res__btn" onClick={onAgain}>
+          Попробовать ещё раз
+        </button>
+        <button type="button" className="lt-ghost" onClick={onHome}>На главную</button>
       </div>
-      <button type="button" className="lt-primary" onClick={onAgain}>Ещё тренировка</button>
-      <button type="button" className="lt-ghost" onClick={onHome}>На главную</button>
+    </div>
+  )
+}
+
+// ───────────────────────── Exit confirm ─────────────────────────
+// Показывается при попытке выйти из НЕзавершённой тренировки.
+function ExitModal({ onStay, onLeave }) {
+  return (
+    <div className="lt-modal" role="dialog" aria-modal="true">
+      <div className="lt-modal__backdrop" onClick={onStay} />
+      <div className="lt-modal__card">
+        <button type="button" className="lt-modal__close" aria-label="Закрыть" onClick={onStay}>
+          ✕
+        </button>
+        <div className="lt-modal__icon">
+          <img src="/practice/listening/coin.png" alt="" />
+        </div>
+        <div className="lt-modal__title">Вы уверены что хотите выйти?</div>
+        <div className="lt-modal__sub">Тренировка не будет засчитана</div>
+        <button type="button" className="lt-primary" onClick={onStay}>Продолжить обучение</button>
+        <button type="button" className="lt-modal__leave" onClick={onLeave}>Выйти в меню</button>
+      </div>
     </div>
   )
 }
@@ -254,8 +292,10 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   const [answered, setAnswered] = useState(null) // { ok, body }
   const [coins, setCoins] = useState(0)
   const [correct, setCorrect] = useState(0)
+  const [wrong, setWrong] = useState(0)
   const [stepsDone, setStepsDone] = useState(0)
   const [stepsTotal, setStepsTotal] = useState(0)
+  const [exitOpen, setExitOpen] = useState(false)
 
   const current = queue[0] || null
 
@@ -286,8 +326,10 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     setAnswered(null)
     setCoins(0)
     setCorrect(0)
+    setWrong(0)
     setStepsDone(0)
     setStepsTotal(session.length)
+    setExitOpen(false)
     setPhase('task')
   }, [content, loadContent])
 
@@ -298,10 +340,13 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     if (ok) {
       setCoins((c) => c + COINS_PER_TASK)
       setCorrect((c) => c + 1)
-    } else if (!current._retry) {
-      requeued = true
-      setStepsTotal((s) => s + 1)
-      setQueue((q) => [...q, { ...current, _retry: true }])
+    } else {
+      setWrong((w) => w + 1)
+      if (!current._retry) {
+        requeued = true
+        setStepsTotal((s) => s + 1)
+        setQueue((q) => [...q, { ...current, _retry: true }])
+      }
     }
     setAnswered({ ok, body: feedbackBody(current, ok, requeued) })
   }, [current, answered, response])
@@ -328,12 +373,14 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   const progress = stepsTotal ? Math.round((stepsDone / stepsTotal) * 100) : 0
 
   const back = () => onNav?.('practice')
+  // выход из НЕзавершённой тренировки требует подтверждения
+  const requestBack = () => (phase === 'task' ? setExitOpen(true) : back())
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="lt">
         <div className="lt-top">
-          <button type="button" className="lt-back" onClick={back}>
+          <button type="button" className="lt-back" onClick={requestBack}>
             <ChevronLeftIcon size={16} /> Назад
           </button>
           <div className="lt-crumb"><b>Аудирование</b><span>Практика</span></div>
@@ -341,10 +388,12 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
 
         {error && <div className="lt-note lt-note--err">{error}</div>}
 
+        {exitOpen && <ExitModal onStay={() => setExitOpen(false)} onLeave={back} />}
+
         {phase === 'intro' && <Intro level={level} loading={loading} onStart={startSession} />}
 
         {phase === 'result' && (
-          <Result correct={correct} total={stepsDone} coins={coins} onAgain={startSession} onHome={back} />
+          <Result correct={correct} wrong={wrong} onAgain={startSession} onHome={back} />
         )}
 
         {phase === 'task' && current && (
