@@ -94,6 +94,58 @@ function Rail({ children, grid }) {
   return <div className={grid ? 'pp-rail pp-rail--grid' : 'pp-rail'}>{children}</div>
 }
 
+// Фигурная «печать» бейджа уровня (14 округлых фестонов), путь сгенерирован
+// детерминированно. См. .pp-listen__seal-bg.
+const SEAL_PATH =
+  'M50.00 10.00 Q60.90 2.23 67.36 13.96 Q80.55 11.69 81.27 25.06 Q94.15 28.74 89.00 41.10 ' +
+  'Q99.00 50.00 89.00 58.90 Q94.15 71.26 81.27 74.94 Q80.55 88.31 67.36 86.04 ' +
+  'Q60.90 97.77 50.00 90.00 Q39.10 97.77 32.64 86.04 Q19.45 88.31 18.73 74.94 ' +
+  'Q5.85 71.26 11.00 58.90 Q1.00 50.00 11.00 41.10 Q5.85 28.74 18.73 25.06 ' +
+  'Q19.45 11.69 32.64 13.96 Q39.10 2.23 50.00 10.00Z'
+
+// Баннер «Аудирование»: промо мини-игры listening. Бейдж уровня синхронизирован
+// с уровнем пользователя (проп userLevel). Кнопки — заглушки; поведение
+// «Посмотреть все» / «Перейти к тренировке» подключим позже.
+function ListeningBanner({ userLevel = 'A1', onAll, onStart }) {
+  const level = String(userLevel || 'A1').toUpperCase()
+  const noop = () => {}
+  return (
+    <section id="sec-Аудирование" className="pp-sec pp-listen">
+      <SectionHead title="Аудирование" onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            Тренируй Listening
+            <br />в мини-игре
+          </h3>
+          <p className="pp-listen__desc">
+            Слушай и разбирай английскую речь: собери фразу, напиши диктант,
+            различи похожие слова
+          </p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            Перейти к тренировке
+          </button>
+        </div>
+        <img
+          className="pp-listen__art"
+          src="/practice/listening-mascot.png"
+          alt=""
+          aria-hidden="true"
+        />
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">Собран по вашему уровню</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level">{level}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Проговаривание слова браузером (бэкенд не отдаёт аудио для словаря)
 function speak(word) {
   try {
@@ -335,6 +387,15 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </div>
 
           {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
+
+          {/* Аудирование — промо мини-игры listening (только на вкладке «Все») */}
+          {filter === null && (
+            <ListeningBanner
+              userLevel={userLevel}
+              onAll={() => onNav?.('listening')}
+              onStart={() => onNav?.('listening')}
+            />
+          )}
 
           {/* Грамматика — полный каталог (чип «Грамматика») */}
           {filter === 'Грамматика' &&
