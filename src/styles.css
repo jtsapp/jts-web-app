@@ -2912,6 +2912,126 @@ textarea {
 .pp-all:hover { color: var(--purple); border-color: #d9d2f7; }
 .pp-all svg { color: var(--purple); }
 
+/* ───── Баннер «Аудирование» (промо мини-игры listening) ───── */
+.pp-listen__card {
+  position: relative;
+  overflow: hidden;
+  min-height: 150px;
+  border-radius: 24px;
+  padding: 20px 44px;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #7b46f0 0%, #6a2fd6 100%);
+  box-shadow: 0 18px 40px rgba(94, 47, 194, 0.28);
+}
+.pp-listen__body {
+  position: relative;
+  z-index: 3;
+  max-width: 460px;
+}
+.pp-listen__title {
+  margin: 0;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+.pp-listen__desc {
+  margin: 8px 0 0;
+  max-width: 400px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.pp-listen__cta {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: #fff;
+  color: var(--purple);
+  border-radius: 999px;
+  padding: 11px 30px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(23, 19, 38, 0.16);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pp-listen__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(23, 19, 38, 0.22);
+}
+.pp-listen__cta:active { transform: translateY(0); }
+.pp-listen__cta:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+.pp-listen__art {
+  position: absolute;
+  right: 88px;
+  top: 50%;
+  transform: translateY(-42%) rotate(10deg);
+  height: 296px;
+  width: auto;
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 24px rgba(23, 19, 38, 0.3));
+}
+.pp-listen__aside {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 40px;
+  z-index: 3;
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.pp-listen__hint {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  max-width: 132px;
+}
+.pp-listen__seal {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  display: grid;
+  place-items: center;
+}
+.pp-listen__seal-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 14px rgba(23, 19, 38, 0.22));
+}
+.pp-listen__level {
+  position: relative;
+  z-index: 1;
+  color: var(--purple);
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+
+/* Узкие вьюпорты десктопа: убираем наложение маскота на текст */
+@media (max-width: 1120px) {
+  .pp-listen__art { right: 150px; height: 216px; }
+}
+@media (max-width: 960px) {
+  .pp-listen__art { display: none; }
+  .pp-listen__body { max-width: none; }
+}
+
 /* Инструменты справа в шапке секции (поиск + «Посмотреть все») */
 .pp-sec__tools {
   display: inline-flex;

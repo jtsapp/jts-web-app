@@ -10,6 +10,7 @@ import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
+import ListeningPage from './screens/ListeningPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -323,6 +324,7 @@ export default function App() {
     if (TUTOR_ONLY && key !== 'tutor') return
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
+    else if (key === 'listening') setScreen('listening')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
@@ -335,6 +337,7 @@ export default function App() {
     if (TUTOR_ONLY && key !== 'tutor') return
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
+    else if (key === 'listening') setScreen('listening')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
@@ -482,6 +485,16 @@ export default function App() {
     case 'practice':
       return (
         <PracticePage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'listening':
+      return (
+        <ListeningPage
           userLevel={userLevel}
           userName={name}
           token={token}
