@@ -267,9 +267,7 @@ function ExitModal({ onStay, onLeave }) {
         <button type="button" className="lt-modal__close" aria-label="Закрыть" onClick={onStay}>
           ✕
         </button>
-        <div className="lt-modal__icon">
-          <img src="/practice/listening/coin.png" alt="" />
-        </div>
+        <div className="lt-modal__icon" role="img" aria-label="" />
         <div className="lt-modal__title">Вы уверены что хотите выйти?</div>
         <div className="lt-modal__sub">Тренировка не будет засчитана</div>
         <button type="button" className="lt-primary" onClick={onStay}>Продолжить обучение</button>

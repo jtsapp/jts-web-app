@@ -364,17 +364,19 @@
   place-items: center;
 }
 .lt-modal__close:hover { background: #e7e4f0; }
+/* крупный план головы модели-проигрыша, обрезанный по кругу */
 .lt-modal__icon {
-  width: 78px;
-  height: 78px;
+  width: 84px;
+  height: 84px;
   margin: 4px auto 14px;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 35%, #a06bff, #6a2fd6);
-  display: grid;
-  place-items: center;
   overflow: hidden;
+  background-color: #efeaf9;
+  background-image: url('/practice/listening/lose.png');
+  background-repeat: no-repeat;
+  background-size: 240%;
+  background-position: 50% 27%;
 }
-.lt-modal__icon img { width: 66px; height: 66px; object-fit: contain; }
 .lt-modal__title { font-size: 17px; font-weight: 800; color: var(--ink, #171326); }
 .lt-modal__sub { margin: 6px 0 20px; font-size: 13.5px; color: #9a99a6; }
 .lt-modal .lt-primary { margin-top: 0; max-width: none; }
