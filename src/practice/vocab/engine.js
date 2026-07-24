@@ -81,9 +81,13 @@ export function nextTask(L) {
     .sort((a, b) => a.strength - b.strength || a.reps - b.reps || (Math.random() < 0.5 ? -1 : 1))
   const target = cand.find((i) => i.w.id !== L.lastId) || cand[0] || L.items[0]
   const w = target.w
-  const types = poolForStrength(target.strength).filter((ty) => ty !== L.lastType)
-  let type
   const enough = L.items.length >= 3
+  // Групповые механики требуют ≥3 слов, иначе match/dragmatch вырождаются
+  // в «соедините одну пару» — при малом наборе убираем их и из пула типов.
+  const types = poolForStrength(target.strength)
+    .filter((ty) => ty !== L.lastType)
+    .filter((ty) => enough || (ty !== 'match' && ty !== 'dragmatch'))
+  let type
   if (enough && L.since >= 3 && Math.random() < 0.5) {
     type = shuffle(['memory', 'match', 'dragmatch'])[0]
     L.since = 0
