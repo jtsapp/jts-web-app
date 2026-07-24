@@ -11,9 +11,7 @@
   --lt-green-bg: #e6f6ec;
   --lt-red: #e0574f;
   --lt-red-bg: #fdeceb;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 8px 0 40px;
+  padding: 8px 24px 40px;
 }
 
 /* верхняя навигация: Назад + хлебная крошка */
@@ -118,7 +116,7 @@
 .lt-intro__level { margin-top: 16px; color: #9a99a6; font-size: 13px; font-weight: 700; }
 
 /* ───────────────── Task ───────────────── */
-.lt-task { animation: fade-in 0.2s ease-out both; }
+.lt-task { max-width: 640px; margin: 0 auto; animation: fade-in 0.2s ease-out both; }
 .lt-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }
 .lt-bar__track { flex: 1; height: 14px; border-radius: 999px; background: #efe9fb; overflow: hidden; }
 .lt-bar__track span { display: block; height: 100%; border-radius: 999px; background: var(--lt-purple); transition: width 0.35s ease; }
