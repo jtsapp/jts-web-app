@@ -10,6 +10,7 @@ import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
+import ListeningPage from './screens/ListeningPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -47,7 +48,7 @@ import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from '.
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
-import { TUTOR_ONLY } from './config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 
 // Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
 // если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
@@ -357,11 +358,13 @@ export default function App() {
   const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
-  // скрытые разделы недоступны и через навигацию — только тьютор.
+  // скрытые разделы недоступны и через навигацию — только разделы
+  // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь).
   function handleNav(key) {
-    if (TUTOR_ONLY && key !== 'tutor') return
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
+    else if (key === 'listening') setScreen('listening')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
@@ -371,9 +374,10 @@ export default function App() {
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
-    if (TUTOR_ONLY && key !== 'tutor') return
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
+    else if (key === 'listening') setScreen('listening')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
@@ -529,6 +533,16 @@ export default function App() {
     case 'practice':
       return (
         <PracticePage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'listening':
+      return (
+        <ListeningPage
           userLevel={userLevel}
           userName={name}
           token={token}

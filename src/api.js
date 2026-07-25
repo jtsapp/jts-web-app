@@ -75,7 +75,7 @@ function catalogCacheKey(path, token) {
   return `jts_catalog_${CATALOG_CACHE_VER}:${BASE}:${tokenIdentity(token)}:${path}`
 }
 
-async function cachedAuthGet(path, token) {
+async function cachedAuthGet(path, token, onFresh) {
   if (typeof window === 'undefined') return authGet(path, token) // SSR — без кэша
   const key = catalogCacheKey(path, token)
   let cached = null
@@ -95,7 +95,9 @@ async function cachedAuthGet(path, token) {
       return data
     })
   if (cached !== null) {
-    refresh().catch(() => {}) // фоновое обновление; его сбой не всплывает в UI
+    refresh()
+      .then((data) => onFresh?.(data))
+      .catch(() => {}) // фоновое обновление; его сбой не всплывает в UI
     return cached
   }
   return refresh()
@@ -112,6 +114,18 @@ export function getLearningPath(level, token) {
 // модуль, чей CEFR-уровень совпадает с уровнем королевства (Sunhaven → A1).
 export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
+}
+
+// Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
+// бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
+// свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
+export async function completeLessonModule(token, xp) {
+  const res = await fetch(`${BASE}/mobile/lesson-modules/complete?xp=${encodeURIComponent(xp)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`complete failed: ${res.status}`)
+  return res.json().catch(() => null)
 }
 
 // Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
@@ -246,32 +260,65 @@ export async function loginWithPassword(phone, password) {
 // (флоу Skip). Кэшируем промис, чтобы не логиниться повторно.
 const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
 const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
+const DEMO_TOKEN_KEY = 'jts_demo_token'
 let _demoTokenPromise = null
+
+// Жив ли JWT (exp с запасом marginSec); битый токен считаем мёртвым.
+function jwtAlive(token, marginSec = 60) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp === 'number' && payload.exp * 1000 > Date.now() + marginSec * 1000
+  } catch {
+    return false
+  }
+}
+
 export function getPracticeToken(token) {
   if (token) return Promise.resolve(token)
+  // Демо-токен переживает перезагрузку в localStorage: без этого каждый визит
+  // гостя в Практику начинался с полноценного login-запроса.
+  if (!_demoTokenPromise && typeof window !== 'undefined') {
+    try {
+      const saved = window.localStorage.getItem(DEMO_TOKEN_KEY)
+      if (saved && jwtAlive(saved)) _demoTokenPromise = Promise.resolve(saved)
+    } catch {
+      /* localStorage недоступен — просто логинимся */
+    }
+  }
   if (!_demoTokenPromise) {
-    _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD).catch((e) => {
-      _demoTokenPromise = null // дать шанс на повторную попытку
-      throw e
-    })
+    _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD)
+      .then((tok) => {
+        if (tok) {
+          try {
+            window.localStorage.setItem(DEMO_TOKEN_KEY, tok)
+          } catch {
+            /* квота/приватный режим — работаем без кэша */
+          }
+        }
+        return tok
+      })
+      .catch((e) => {
+        _demoTokenPromise = null // дать шанс на повторную попытку
+        throw e
+      })
   }
   return _demoTokenPromise
 }
 
 // Мемы и рилсы (GET /mobile/media-clips) → [{title,mediaUrl,thumbnailUrl,kind,mediaType,durationLabel,views,level}]
-export function getMediaClips(token) {
-  return cachedAuthGet('/mobile/media-clips', token)
+export function getMediaClips(token, onFresh) {
+  return cachedAuthGet('/mobile/media-clips', token, onFresh)
 }
 
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
-export function getSituativki(token, level) {
+export function getSituativki(token, level, onFresh) {
   const q = level ? `?level=${encodeURIComponent(level)}` : ''
-  return cachedAuthGet('/mobile/situativki' + q, token)
+  return cachedAuthGet('/mobile/situativki' + q, token, onFresh)
 }
 
 // Словарь пользователя (GET /mobile/saved-words) → [{word,translation,learned,correctCount,language}]
-export function getSavedWords(token) {
-  return authGet('/mobile/saved-words', token)
+export function getSavedWords(token, onFresh) {
+  return cachedAuthGet('/mobile/saved-words', token, onFresh)
 }
 
 // Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).
@@ -290,6 +337,21 @@ export async function saveWord(token, { word, translation, alternates, language 
   }
   if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
   return res.json().catch(() => ({}))
+}
+
+// Удалить сохранённое слово (DELETE /mobile/saved-words/:id).
+export async function deleteSavedWord(token, id) {
+  let res
+  try {
+    res = await fetch(`${BASE}/mobile/saved-words/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  } catch {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`Не удалось удалить слово (${res.status})`)
+  return true
 }
 
 // Уровень CEFR из профиля пользователя (GET /user/language-level).

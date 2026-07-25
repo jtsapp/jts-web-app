@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
-import { TUTOR_ONLY } from '../config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance } from '../api.js'
 import { loadToken } from '../lib/session.js'
@@ -25,9 +25,10 @@ const NAV_FULL = [
   { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
   { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
-// Тьютор-онли (прод, main): в сайдбаре остаётся только «Тьютор» — остальные
-// разделы скрыты от обычных пользователей (доступны диплинком для отладки).
-const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => i.key === 'tutor') : NAV_FULL
+// Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
+// TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от
+// обычных пользователей (доступны диплинком ?screen=… для отладки).
+const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
