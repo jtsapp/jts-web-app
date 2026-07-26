@@ -83,6 +83,7 @@ export function GrammarCard({ unit, done = false, onOpen }) {
 // Горизонтальный рейл «Грамматика» для вида «Все» Практики: заголовок + пилюля
 // уровня + «Посмотреть все» + карточки юнитов курса пользователя.
 export function GrammarRail({ index, courseCode, levelLabel, onOpen, onSeeAll }) {
+  const { t } = useI18n()
   const level = index && index[courseCode]
   const units = level ? level.units.slice(0, 12) : []
   const done = useDoneUnits(courseCode)
@@ -90,11 +91,11 @@ export function GrammarRail({ index, courseCode, levelLabel, onOpen, onSeeAll })
   return (
     <section className="pp-sec">
       <div className="pp-sec__head">
-        <h2>Грамматика</h2>
+        <h2>{t('practice.chip.grammar')}</h2>
         <div className="pp-sec__tools">
-          <span className="gr-levelpill">Уровень {levelLabel}</span>
+          <span className="gr-levelpill">{t('practice.grammar.level', { label: levelLabel })}</span>
           <button className="pp-all" onClick={onSeeAll}>
-            Посмотреть все <ChevronRightCircleIcon size={18} />
+            {t('practice.seeAll')} <ChevronRightCircleIcon size={18} />
           </button>
         </div>
       </div>
@@ -110,6 +111,7 @@ export function GrammarRail({ index, courseCode, levelLabel, onOpen, onSeeAll })
 // Полный каталог грамматики: чипы уровней A1–C2, поиск, секции с пилюлей
 // «Unit X-Y» и рейлами карточек.
 export default function GrammarCatalog({ index, activeLevel, onLevel, search, onSearch, onOpen }) {
+  const { t } = useI18n()
   const level = index && index[activeLevel]
   const done = useDoneUnits(activeLevel)
 
@@ -137,8 +139,8 @@ export default function GrammarCatalog({ index, activeLevel, onLevel, search, on
           value={search}
           onChange={(e) => onSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && onSearch('')}
-          placeholder="Поиск по грамматике"
-          aria-label="Поиск по грамматике"
+          placeholder={t('practice.grammar.search')}
+          aria-label={t('practice.grammar.search')}
         />
       </label>
 
@@ -149,17 +151,19 @@ export default function GrammarCatalog({ index, activeLevel, onLevel, search, on
             className={`gr-levelchip ${l.code === activeLevel ? 'on' : ''}`}
             onClick={() => onLevel(l.code)}
           >
-            Уровень {l.label}
+            {t('practice.grammar.level', { label: l.label })}
           </button>
         ))}
       </div>
 
       {!level ? (
         <div className="gr-empty">
-          Уровень {GRAMMAR_LEVELS.find((l) => l.code === activeLevel)?.label} скоро появится.
+          {t('practice.grammar.soon', {
+            label: GRAMMAR_LEVELS.find((l) => l.code === activeLevel)?.label,
+          })}
         </div>
       ) : groups.length === 0 ? (
-        <div className="gr-empty">Ничего не нашлось по запросу «{search.trim()}».</div>
+        <div className="gr-empty">{t('practice.grammar.nothing', { q: search.trim() })}</div>
       ) : (
         groups.map((g) => (
           <section key={g.key} className="pp-sec">

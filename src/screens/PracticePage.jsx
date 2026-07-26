@@ -32,22 +32,24 @@ import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/gra
 const TALES_URL = '/practice/fairytales.html'
 
 // Просмотры: 1331 → «1 331», 12000 → «12 тыс», 3400000 → «3.4 млн»
-function formatViews(n) {
+function formatViews(n, t) {
   const v = Number(n) || 0
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(v % 1_000_000 ? 1 : 0)} млн`
-  if (v >= 10_000) return `${Math.round(v / 1000)} тыс`
+  if (v >= 1_000_000)
+    return `${(v / 1_000_000).toFixed(v % 1_000_000 ? 1 : 0)} ${t('practice.views.mln')}`
+  if (v >= 10_000) return `${Math.round(v / 1000)} ${t('practice.views.k')}`
   return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
 }
 
-// CEFR-уровень → сложность (кол-во точек + подпись)
+// CEFR-уровень → сложность (кол-во точек + ключ подписи)
 function difficulty(level) {
   const l = String(level || '').toUpperCase()
-  if (l.startsWith('C')) return { dots: 3, label: 'Тяжело' }
-  if (l.startsWith('B')) return { dots: 2, label: 'Средне' }
-  return { dots: 1, label: 'Легко' }
+  if (l.startsWith('C')) return { dots: 3, label: 'practice.diff.hard' }
+  if (l.startsWith('B')) return { dots: 2, label: 'practice.diff.mid' }
+  return { dots: 1, label: 'practice.diff.easy' }
 }
 
 function Dots({ level }) {
+  const { t } = useI18n()
   const { dots, label } = difficulty(level)
   return (
     <span className="pp-dots">
@@ -56,7 +58,7 @@ function Dots({ level }) {
           <i key={i} className={i < dots ? 'on' : ''} />
         ))}
       </span>
-      {label}
+      {t(label)}
     </span>
   )
 }
@@ -77,13 +79,14 @@ function Thumb({ src, alt, className, children }) {
 }
 
 function SectionHead({ title, onAll, children }) {
+  const { t } = useI18n()
   return (
     <div className="pp-sec__head">
       <h2>{title}</h2>
       <div className="pp-sec__tools">
         {children}
         <button className="pp-all" onClick={onAll}>
-          Посмотреть все <ChevronRightCircleIcon size={18} />
+          {t('practice.seeAll')} <ChevronRightCircleIcon size={18} />
         </button>
       </div>
     </div>
@@ -109,23 +112,27 @@ const SEAL_PATH =
 // с уровнем пользователя (проп userLevel). Кнопки — заглушки; поведение
 // «Посмотреть все» / «Перейти к тренировке» подключим позже.
 function ListeningBanner({ userLevel = 'A1', onAll, onStart }) {
+  const { t } = useI18n()
   const level = String(userLevel || 'A1').toUpperCase()
   const noop = () => {}
+  const [headTop, headRest] = t('practice.listening.heading').split('\n')
   return (
-    <section id="sec-Аудирование" className="pp-sec pp-listen">
-      <SectionHead title="Аудирование" onAll={onAll || noop} />
+    <section id="sec-listening" className="pp-sec pp-listen">
+      <SectionHead title={t('practice.listening.title')} onAll={onAll || noop} />
       <div className="pp-listen__card">
         <div className="pp-listen__body">
           <h3 className="pp-listen__title">
-            Тренируй Listening
-            <br />в мини-игре
+            {headTop}
+            {headRest && (
+              <>
+                <br />
+                {headRest}
+              </>
+            )}
           </h3>
-          <p className="pp-listen__desc">
-            Слушай и разбирай английскую речь: собери фразу, напиши диктант,
-            различи похожие слова
-          </p>
+          <p className="pp-listen__desc">{t('practice.listening.desc')}</p>
           <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
-            Перейти к тренировке
+            {t('practice.listening.cta')}
           </button>
         </div>
         <img
@@ -135,7 +142,7 @@ function ListeningBanner({ userLevel = 'A1', onAll, onStart }) {
           aria-hidden="true"
         />
         <div className="pp-listen__aside">
-          <span className="pp-listen__hint">Собран по вашему уровню</span>
+          <span className="pp-listen__hint">{t('practice.listening.hint')}</span>
           <div className="pp-listen__seal">
             <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
               <path d={SEAL_PATH} fill="#fff" />
@@ -225,7 +232,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
       })
       .then(() => alive && setState({ loading: false, error: '' }))
       .catch((e) =>
-        alive && setState({ loading: false, error: e?.message || 'Не удалось загрузить контент' })
+        alive && setState({ loading: false, error: e?.message || t('practice.loadError') })
       )
     return () => {
       alive = false
@@ -296,7 +303,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
 
   // «Видеоклипы» убраны из клиентской части: контент остаётся в dev-admin
   // (/mobile/video-lessons живёт), но страница его не запрашивает и не рисует.
-  const chips = ['Все', 'Грамматика', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
+  // Ключи чипов стабильные (латиница) — подписи локализуются через t(),
+  // а фильтр и id секций от языка не зависят.
+  const chips = [
+    { key: null, label: t('practice.chip.all') },
+    { key: 'grammar', label: t('practice.chip.grammar') },
+    { key: 'situations', label: t('practice.chip.situations') },
+    { key: 'tales', label: t('practice.chip.tales') },
+    { key: 'memes', label: t('practice.chip.memes') },
+    { key: 'books', label: t('practice.chip.books') },
+  ]
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
   const [filter, setFilter] = useState(null)
@@ -380,21 +396,18 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
       <div className="pp pp--enter">
         {/* ───── Центр: ленты контента ───── */}
         <div className="pp__center">
-          <h1 className="pp__title">Практика</h1>
+          <h1 className="pp__title">{t('practice.title')}</h1>
 
           <div className="pp-chips">
-            {chips.map((c) => {
-              const on = c === 'Все' ? filter === null : filter === c
-              return (
-                <button
-                  key={c}
-                  className={`pp-chip ${on ? 'pp-chip--on' : ''}`}
-                  onClick={() => setFilter(c === 'Все' ? null : c)}
-                >
-                  {c}
-                </button>
-              )
-            })}
+            {chips.map((c) => (
+              <button
+                key={c.key || 'all'}
+                className={`pp-chip ${filter === c.key ? 'pp-chip--on' : ''}`}
+                onClick={() => setFilter(c.key)}
+              >
+                {c.label}
+              </button>
+            ))}
           </div>
 
           {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
@@ -409,7 +422,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           )}
 
           {/* Грамматика — полный каталог (чип «Грамматика») */}
-          {filter === 'Грамматика' &&
+          {filter === 'grammar' &&
             (grammarIndex ? (
               <GrammarCatalog
                 index={grammarIndex}
@@ -420,7 +433,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                 onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
               />
             ) : (
-              <div className="gr-loading">Загрузка…</div>
+              <div className="gr-loading">{t('practice.loading')}</div>
             ))}
 
           {/* Грамматика — рейл в общем виде «Все» */}
@@ -430,14 +443,14 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               courseCode={grammarLevel}
               levelLabel={grammarLevelLabel}
               onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
-              onSeeAll={() => setFilter('Грамматика')}
+              onSeeAll={() => setFilter('grammar')}
             />
           )}
 
           {/* Мемы и рилсы */}
-          {show('Мемы и рилсы') && (
-          <section id="sec-Мемы и рилсы" className="pp-sec">
-            <SectionHead title="Мемы и рилсы" onAll={() => setFilter('Мемы и рилсы')} />
+          {show('memes') && (
+          <section id="sec-memes" className="pp-sec">
+            <SectionHead title={t('practice.chip.memes')} onAll={() => setFilter('memes')} />
             {clips.length === 0 ? (
               <Empty loading={state.loading} skeleton="portrait" />
             ) : (
@@ -445,7 +458,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                 {clips.map((c, i) => (
                   <button key={c.id} type="button" className="pp-mcard" onClick={() => setOpenReel(i)}>
                     <Thumb src={c.thumbnailUrl} alt={c.title} className="pp-thumb--portrait" />
-                    <span className="pp-mcard__views"><EyeIcon size={13} /> {formatViews(c.views)}</span>
+                    <span className="pp-mcard__views"><EyeIcon size={13} /> {formatViews(c.views, t)}</span>
                   </button>
                 ))}
               </Rail>
@@ -454,9 +467,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           )}
 
           {/* Книжки — каталог аудиокниг из dev-admin (реальные обложки) */}
-          {show('Книжки') && (
-          <section id="sec-Книжки" className="pp-sec">
-            <SectionHead title="Книжки" onAll={() => setFilter('Книжки')}>
+          {show('books') && (
+          <section id="sec-books" className="pp-sec">
+            <SectionHead title={t('practice.chip.books')} onAll={() => setFilter('books')}>
               <label className="pp-search">
                 <SearchIcon size={15} />
                 <input
@@ -464,15 +477,15 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   value={bookQuery}
                   onChange={(e) => setBookQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Escape' && setBookQuery('')}
-                  placeholder="Название или автор"
-                  aria-label="Поиск по книжкам"
+                  placeholder={t('practice.books.search')}
+                  aria-label={t('practice.books.searchAria')}
                 />
                 {bookQuery && (
                   <button
                     type="button"
                     className="pp-search__clear"
                     onClick={() => setBookQuery('')}
-                    aria-label="Очистить поиск"
+                    aria-label={t('practice.books.clear')}
                   >
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
                   </button>
@@ -482,7 +495,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
             {books.length === 0 ? (
               <Empty loading={state.loading} skeleton="book" />
             ) : visibleBooks.length === 0 ? (
-              <Empty text={`Ничего не нашлось по запросу «${bookQuery.trim()}»`} />
+              <Empty text={t('practice.books.nothing', { q: bookQuery.trim() })} />
             ) : (
               <Rail grid={grid}>
                 {visibleBooks.map((b) => (
@@ -502,9 +515,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           )}
 
           {/* Сказки — реестр из fairytales.html (title/desc/len/chars + coverGrad) */}
-          {show('Сказки') && (
-          <section id="sec-Сказки" className="pp-sec">
-            <SectionHead title="Сказки" onAll={() => setFilter('Сказки')} />
+          {show('tales') && (
+          <section id="sec-tales" className="pp-sec">
+            <SectionHead title={t('practice.chip.tales')} onAll={() => setFilter('tales')} />
             <Rail grid={grid}>
               {TALES.map((tl) => (
                 <a
@@ -523,10 +536,10 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   <p className="pp-tcard__desc">{tl.desc}</p>
                   <div className="pp-tcard__meta">
                     <span className="pp-chip-meta">
-                      Длительность <b>{tl.len}</b>
+                      {t('practice.tales.duration')} <b>{tl.len}</b>
                     </span>
                     <span className="pp-chip-meta">
-                      Персонажей <b>{tl.chars}</b>
+                      {t('practice.tales.chars')} <b>{tl.chars}</b>
                     </span>
                   </div>
                 </a>
@@ -536,9 +549,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           )}
 
           {/* Ситуации: разговорная практика A1–C1 (нативный оверлей) + ситуативки из бэкенда */}
-          {show('Ситуации') && (
-          <section id="sec-Ситуации" className="pp-sec">
-            <SectionHead title="Ситуации" onAll={() => setFilter('Ситуации')} />
+          {show('situations') && (
+          <section id="sec-situations" className="pp-sec">
+            <SectionHead title={t('practice.chip.situations')} onAll={() => setFilter('situations')} />
             <Rail grid={grid}>
               {SITUATION_LEVELS.map((l) => (
                 <button
@@ -574,10 +587,10 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
 
         {/* ───── Правая колонка: Словарь ───── */}
         <aside className="pp__side">
-          <h2 className="pp-voc__title">Словарь</h2>
+          <h2 className="pp-voc__title">{t('nav.vocab')}</h2>
 
           <div className="pp-voc__count">
-            Сохранено <b>{saved.length}</b>
+            {t('practice.vocab.saved')} <b>{saved.length}</b>
           </div>
 
           <div className="pp-voc__list">
@@ -592,7 +605,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   ))}
                 </div>
               ) : (
-                <div className="pp-voc__empty">Пока нет слов</div>
+                <div className="pp-voc__empty">{t('practice.vocab.empty')}</div>
               )
             ) : (
               saved.map((w) => (
@@ -601,13 +614,13 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                     <b>{w.word}</b>
                     <span>{w.translation}</span>
                   </div>
-                  <button className="pp-word__say" onClick={() => speak(w.word)} aria-label="Прослушать">
+                  <button className="pp-word__say" onClick={() => speak(w.word)} aria-label={t('practice.vocab.say')}>
                     <VolumeIcon size={18} />
                   </button>
                   <button
                     className="pp-word__del"
                     onClick={() => removeWord(w)}
-                    aria-label={`Удалить слово «${w.word}»`}
+                    aria-label={t('practice.vocab.delete', { word: w.word })}
                   >
                     <TrashIcon size={17} />
                   </button>
@@ -643,10 +656,11 @@ function SkeletonRail({ variant = 'portrait' }) {
 }
 
 function Empty({ loading, text, skeleton }) {
+  const { t } = useI18n()
   if (loading && skeleton) return <SkeletonRail variant={skeleton} />
   return (
     <div className="pp-empty">
-      {loading ? 'Загрузка…' : text || 'Нет данных'}
+      {loading ? t('practice.loading') : text || t('practice.empty')}
     </div>
   )
 }
@@ -662,6 +676,7 @@ function gradFor(seed) {
 // Вертикальный просмотр мемов/рилсов (как TikTok): плеер 9:16, переключение
 // колёсиком мыши / стрелками / кнопками вверх-вниз.
 function ReelsViewer({ clips, startIndex, onBack }) {
+  const { t } = useI18n()
   const [i, setI] = useState(startIndex)
   const [hint, setHint] = useState(true)
   const [paused, setPaused] = useState(false)
@@ -714,10 +729,10 @@ function ReelsViewer({ clips, startIndex, onBack }) {
     <div className="rl">
       <div className="vd__head">
         <button className="vd__back" onClick={onBack}>
-          <ChevronLeftIcon size={18} /> Назад
+          <ChevronLeftIcon size={18} /> {t('common.back')}
         </button>
         <div className="vd__headtitle">
-          <b>Мемы и рилсы</b>
+          <b>{t('practice.chip.memes')}</b>
         </div>
       </div>
 
@@ -735,7 +750,7 @@ function ReelsViewer({ clips, startIndex, onBack }) {
             onClick={togglePlay}
           />
           {paused && (
-            <button className="rl__playbtn" onClick={togglePlay} aria-label="Играть">
+            <button className="rl__playbtn" onClick={togglePlay} aria-label={t('practice.reels.play')}>
               <PlayIcon size={30} />
             </button>
           )}
@@ -745,16 +760,16 @@ function ReelsViewer({ clips, startIndex, onBack }) {
                 <rect x="1.5" y="1.5" width="23" height="31" rx="11.5" stroke="currentColor" strokeWidth="2" />
                 <rect x="12" y="7" width="2" height="7" rx="1" fill="currentColor" />
               </svg>
-              <span>Крутите колесиком вверх и вниз для переключения видео</span>
+              <span>{t('practice.reels.hint')}</span>
             </div>
           )}
         </div>
 
         <div className="rl__nav">
-          <button className="rl__navbtn" disabled={i === 0} onClick={() => go(-1)} aria-label="Предыдущее">
+          <button className="rl__navbtn" disabled={i === 0} onClick={() => go(-1)} aria-label={t('practice.reels.prev')}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="m6 15 6-6 6 6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <button className="rl__navbtn" disabled={i === clips.length - 1} onClick={() => go(1)} aria-label="Следующее">
+          <button className="rl__navbtn" disabled={i === clips.length - 1} onClick={() => go(1)} aria-label={t('practice.reels.next')}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
