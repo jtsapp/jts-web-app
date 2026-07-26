@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
+import { useI18n } from '../i18n.jsx'
 import { VolumeIcon, ChevronLeftIcon } from '../components/icons.jsx'
 import {
   buildSession,
@@ -26,6 +27,7 @@ function Rich({ html }) {
 // ───────────────────────── Audio ─────────────────────────
 // Segment clip player: normal ▶ + a sky-blue "Прослушать медленно" (0.7×).
 function AudioBlock({ src }) {
+  const { t } = useI18n()
   const ref = useRef(null)
   const startedRef = useRef(false)
   const [playing, setPlaying] = useState(false)
@@ -76,13 +78,13 @@ function AudioBlock({ src }) {
         type="button"
         className="lt-audio__btn"
         data-playing={playing}
-        aria-label="Прослушать"
+        aria-label={t('listening.listen')}
         onClick={() => play(1)}
       >
         <VolumeIcon size={26} />
       </button>
       <button type="button" className="lt-audio__slow" onClick={() => play(0.7)}>
-        🐢 Прослушать медленно
+        🐢 {t('listening.listenSlow')}
       </button>
     </div>
   )
@@ -118,6 +120,7 @@ function ChoiceTask({ task, response, setResponse, disabled, result }) {
 }
 
 function AssembleTask({ task, response, setResponse, disabled }) {
+  const { t } = useI18n()
   const bank = useMemo(() => mix([...(task.tokens || []), ...(task.distractors || [])]), [task.id])
   const chosen = response || []
   const used = useMemo(() => {
@@ -132,7 +135,7 @@ function AssembleTask({ task, response, setResponse, disabled }) {
   return (
     <div className="lt-asm">
       <div className="lt-asm__slot">
-        {chosen.length === 0 && <span className="lt-asm__ph">Нажимайте на слова, чтобы собрать фразу…</span>}
+        {chosen.length === 0 && <span className="lt-asm__ph">{t('listening.asmPh')}</span>}
         {chosen.map((w, i) => (
           <button key={i} type="button" className="lt-tile lt-tile--on" disabled={disabled} onClick={() => removeAt(i)}>
             {w}
@@ -161,13 +164,14 @@ function AssembleTask({ task, response, setResponse, disabled }) {
 }
 
 function TypeTask({ task, response, setResponse, disabled, onEnter }) {
+  const { t } = useI18n()
   return (
     <input
       className="lt-input"
       type="text"
       value={response || ''}
       disabled={disabled}
-      placeholder="Что вы услышали?"
+      placeholder={t('listening.typePh')}
       autoComplete="off"
       autoCorrect="off"
       spellCheck={false}
@@ -179,11 +183,12 @@ function TypeTask({ task, response, setResponse, disabled, onEnter }) {
 
 // ───────────────────────── Feedback ─────────────────────────
 function Feedback({ ok, body }) {
+  const { t } = useI18n()
   return (
     <div className={`lt-fb ${ok ? 'lt-fb--ok' : 'lt-fb--no'}`}>
       <div className="lt-fb__icon">{ok ? '✓' : '☹'}</div>
       <div className="lt-fb__text">
-        <div className="lt-fb__title">{ok ? 'Молодец!' : 'Неверный ответ'}</div>
+        <div className="lt-fb__title">{ok ? t('listening.good') : t('listening.bad')}</div>
         <div className="lt-fb__body"><Rich html={body} /></div>
       </div>
       {ok && (
@@ -198,22 +203,21 @@ function Feedback({ ok, body }) {
 
 // ───────────────────────── Intro ─────────────────────────
 function Intro({ level, loading, onStart }) {
+  const { t } = useI18n()
   return (
     <div className="lt-intro">
       <div className="lt-intro__mascot">
         <img src="/practice/listening-mascot.png" alt="" />
       </div>
-      <h2 className="lt-intro__title">Тренировка Listening</h2>
-      <p className="lt-intro__sub">
-        Слушай и разбирай английскую речь: собери фразу, напиши диктант, различи похожие слова
-      </p>
-      <div className="lt-intro__hint">
-        🎧 Оденьте наушники для комфортного прохождения и установите правильную громкость
-      </div>
+      <h2 className="lt-intro__title">{t('listening.introTitle')}</h2>
+      <p className="lt-intro__sub">{t('practice.listening.desc')}</p>
+      <div className="lt-intro__hint">🎧 {t('listening.headphones')}</div>
       <button type="button" className="lt-primary" disabled={loading} onClick={onStart}>
-        {loading ? 'Загрузка…' : 'Начать тренировку'}
+        {loading ? t('practice.loading') : t('listening.start')}
       </button>
-      <div className="lt-intro__level">Уровень {level.toUpperCase()}</div>
+      <div className="lt-intro__level">
+        {t('kingdom.levelBadge', { label: level.toUpperCase() })}
+      </div>
     </div>
   )
 }
@@ -221,6 +225,7 @@ function Intro({ level, loading, onStart }) {
 // ───────────────────────── Result ─────────────────────────
 // ≥50% → «победа» (зелёный %, маскот-победитель); ниже → «проигрыш».
 function Result({ correct, wrong, onAgain, onHome }) {
+  const { t } = useI18n()
   const answered = correct + wrong
   const pct = answered ? Math.round((correct / answered) * 100) : 0
   const good = pct >= 50
@@ -231,27 +236,27 @@ function Result({ correct, wrong, onAgain, onHome }) {
       </div>
       <div className="lt-res__info">
         <div className="lt-res__pct">{pct}%</div>
-        <h2 className="lt-res__title">{good ? 'Отличный результат' : 'Нужно улучшить результат'}</h2>
+        <h2 className="lt-res__title">{good ? t('listening.resGood') : t('listening.resBad')}</h2>
         <div className="lt-res__stats">
           <div className="lt-res__stat">
             <span className="lt-res__num">
               <span className="lt-res__badge lt-res__badge--bad">☹</span>
               {wrong}
             </span>
-            <span className="lt-res__label">Неверных ответов</span>
+            <span className="lt-res__label">{t('listening.wrongCount')}</span>
           </div>
           <div className="lt-res__stat">
             <span className="lt-res__num">
               <span className="lt-res__badge lt-res__badge--good">✓</span>
               {correct}
             </span>
-            <span className="lt-res__label">Верных ответов</span>
+            <span className="lt-res__label">{t('listening.correctCount')}</span>
           </div>
         </div>
         <button type="button" className="lt-primary lt-res__btn" onClick={onAgain}>
-          Попробовать ещё раз
+          {t('listening.again')}
         </button>
-        <button type="button" className="lt-ghost" onClick={onHome}>На главную</button>
+        <button type="button" className="lt-ghost" onClick={onHome}>{t('listening.home')}</button>
       </div>
     </div>
   )
@@ -260,18 +265,19 @@ function Result({ correct, wrong, onAgain, onHome }) {
 // ───────────────────────── Exit confirm ─────────────────────────
 // Показывается при попытке выйти из НЕзавершённой тренировки.
 function ExitModal({ onStay, onLeave }) {
+  const { t } = useI18n()
   return (
     <div className="lt-modal" role="dialog" aria-modal="true">
       <div className="lt-modal__backdrop" onClick={onStay} />
       <div className="lt-modal__card">
-        <button type="button" className="lt-modal__close" aria-label="Закрыть" onClick={onStay}>
+        <button type="button" className="lt-modal__close" aria-label={t('listening.close')} onClick={onStay}>
           ✕
         </button>
         <div className="lt-modal__icon" role="img" aria-label="" />
-        <div className="lt-modal__title">Вы уверены что хотите выйти?</div>
-        <div className="lt-modal__sub">Тренировка не будет засчитана</div>
-        <button type="button" className="lt-primary" onClick={onStay}>Продолжить обучение</button>
-        <button type="button" className="lt-modal__leave" onClick={onLeave}>Выйти в меню</button>
+        <div className="lt-modal__title">{t('listening.exitTitle')}</div>
+        <div className="lt-modal__sub">{t('listening.exitSub')}</div>
+        <button type="button" className="lt-primary" onClick={onStay}>{t('listening.exitStay')}</button>
+        <button type="button" className="lt-modal__leave" onClick={onLeave}>{t('listening.exitLeave')}</button>
       </div>
     </div>
   )
@@ -279,6 +285,7 @@ function ExitModal({ onStay, onLeave }) {
 
 // ───────────────────────── Screen ─────────────────────────
 export default function ListeningPage({ userLevel, userName, token, onNav, onProfile }) {
+  const { t } = useI18n()
   const level = normLevel(userLevel)
   const [phase, setPhase] = useState('intro') // 'intro' | 'task' | 'result'
   const [content, setContent] = useState(null)
@@ -308,12 +315,12 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
       setContent(data)
       return data
     } catch (e) {
-      setError('Не удалось загрузить материалы аудирования.')
+      setError(t('listening.loadError'))
       return null
     } finally {
       setLoading(false)
     }
-  }, [content, level])
+  }, [content, level, t])
 
   const startSession = useCallback(async () => {
     const data = content || (await loadContent())
@@ -346,8 +353,8 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
         setQueue((q) => [...q, { ...current, _retry: true }])
       }
     }
-    setAnswered({ ok, body: feedbackBody(current, ok, requeued) })
-  }, [current, answered, response])
+    setAnswered({ ok, body: feedbackBody(current, ok, requeued, t) })
+  }, [current, answered, response, t])
 
   const next = useCallback(() => {
     setStepsDone((s) => s + 1)
@@ -379,9 +386,12 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
       <div className="lt">
         <div className="lt-top">
           <button type="button" className="lt-back" onClick={requestBack}>
-            <ChevronLeftIcon size={16} /> Назад
+            <ChevronLeftIcon size={16} /> {t('common.back')}
           </button>
-          <div className="lt-crumb"><b>Аудирование</b><span>Практика</span></div>
+          <div className="lt-crumb">
+            <b>{t('practice.listening.title')}</b>
+            <span>{t('practice.title')}</span>
+          </div>
         </div>
 
         {error && <div className="lt-note lt-note--err">{error}</div>}
@@ -401,7 +411,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
               <span className="lt-bar__pct">{progress}%</span>
             </div>
 
-            <h3 className="lt-heading">{headingFor(current)}</h3>
+            <h3 className="lt-heading">{headingFor(current, t)}</h3>
 
             <AudioBlock src={audioUrl(level, current.audio)} />
 
@@ -418,10 +428,12 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
             {answered && <Feedback ok={answered.ok} body={answered.body} />}
 
             {answered ? (
-              <button type="button" className="lt-primary" onClick={next}>Продолжить</button>
+              <button type="button" className="lt-primary" onClick={next}>
+                {t('listening.continue')}
+              </button>
             ) : (
               <button type="button" className="lt-primary" disabled={!canSubmit} onClick={submit}>
-                Проверить
+                {t('listening.check')}
               </button>
             )}
           </div>
