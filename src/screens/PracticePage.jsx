@@ -674,7 +674,7 @@ function gradFor(seed) {
 }
 
 // Вертикальный просмотр мемов/рилсов (как TikTok): плеер 9:16, переключение
-// колёсиком мыши / стрелками / кнопками вверх-вниз.
+// колёсиком мыши / стрелками / кнопками вверх-вниз, на таче — свайпом.
 function ReelsViewer({ clips, startIndex, onBack }) {
   const { t } = useI18n()
   const [i, setI] = useState(startIndex)
@@ -682,7 +682,11 @@ function ReelsViewer({ clips, startIndex, onBack }) {
   const [paused, setPaused] = useState(false)
   const lockRef = useRef(false)
   const videoRef = useRef(null)
+  const touchRef = useRef(null)
   const clip = clips[i]
+  // Тач-экран → в подсказке свайп, а не колесо (matchMedia безопасен и в SSR-гарде)
+  const coarse =
+    typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
 
   const go = (dir) => {
     setI((cur) => {
@@ -701,6 +705,24 @@ function ReelsViewer({ clips, startIndex, onBack }) {
       lockRef.current = false
     }, 600)
     go(e.deltaY > 0 ? 1 : -1)
+  }
+
+  // Тач-свайп: вертикальный жест ≥48px переключает ролик (вверх — следующий,
+  // как в TikTok). Горизонтальные и короткие жесты игнорируем — это тап по
+  // видео (пауза) или случайное смещение пальца.
+  const onTouchStart = (e) => {
+    const t = e.touches[0]
+    touchRef.current = { x: t.clientX, y: t.clientY }
+  }
+  const onTouchEnd = (e) => {
+    const start = touchRef.current
+    touchRef.current = null
+    if (!start) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (Math.abs(dy) < 48 || Math.abs(dy) < Math.abs(dx) * 1.2) return
+    go(dy < 0 ? 1 : -1)
   }
 
   // Стрелки клавиатуры.
@@ -736,7 +758,12 @@ function ReelsViewer({ clips, startIndex, onBack }) {
         </div>
       </div>
 
-      <div className="rl__stage" onWheel={onWheel}>
+      <div
+        className="rl__stage"
+        onWheel={onWheel}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         <div className="rl__player">
           <video
             key={clip.id}
@@ -756,11 +783,17 @@ function ReelsViewer({ clips, startIndex, onBack }) {
           )}
           {hint && (
             <div className="rl__hint">
-              <svg width="26" height="34" viewBox="0 0 26 34" fill="none">
-                <rect x="1.5" y="1.5" width="23" height="31" rx="11.5" stroke="currentColor" strokeWidth="2" />
-                <rect x="12" y="7" width="2" height="7" rx="1" fill="currentColor" />
-              </svg>
-              <span>{t('practice.reels.hint')}</span>
+              {coarse ? (
+                <svg width="26" height="34" viewBox="0 0 26 34" fill="none">
+                  <path d="M13 6v22M13 6l-5 5M13 6l5 5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="26" height="34" viewBox="0 0 26 34" fill="none">
+                  <rect x="1.5" y="1.5" width="23" height="31" rx="11.5" stroke="currentColor" strokeWidth="2" />
+                  <rect x="12" y="7" width="2" height="7" rx="1" fill="currentColor" />
+                </svg>
+              )}
+              <span>{t(coarse ? 'practice.reels.hintTouch' : 'practice.reels.hint')}</span>
             </div>
           )}
         </div>
