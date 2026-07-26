@@ -34,16 +34,16 @@ const openVocab = async (page) => {
 
 // Детерминированный Math.random (mulberry32): подбор заданий в engine.js
 // случайный, а тестам нужно стабильно дожидаться конкретной механики.
-const seedRandom = (page, seed = 42) =>
-  page.addInitScript((s) => {
-    let t = s >>> 0
-    Math.random = () => {
-      t += 0x6d2b79f5
-      let r = Math.imul(t ^ (t >>> 15), 1 | t)
-      r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r
-      return ((r ^ (r >>> 14)) >>> 0) / 4294967296
-    }
-  }, seed)
+const SEED_FN = (s) => {
+  let t = s >>> 0
+  Math.random = () => {
+    t += 0x6d2b79f5
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+}
+const seedRandom = (page, seed = 42) => page.addInitScript(SEED_FN, seed)
 
 // Решает один шаг текущего задания сессии — общий для потоковых тестов.
 const solveOneTask = (page) =>
@@ -192,21 +192,19 @@ test.describe('Словарь — нативный экран', () => {
     // горизонтального скролла. Ручная проверка движка Safari — на реальном
     // Safari 26 (Playwright WebKit баг не воспроизводит).
     test.slow()
-    test.setTimeout(360_000) // до трёх полных сессий подряд, с запасом на параллельный прогон
+    test.setTimeout(540_000) // до пяти коротких сессий, с запасом на параллельный прогон
     await seedRandom(page)
     await openVocab(page)
 
-    // Групповая механика подмешивается случайно (~⅙ заданий), одна сессия
-    // может пройти и без memory — тогда стартуем следующую с экрана итогов.
+    // Групповая механика подмешивается случайно (~⅙ заданий). Охотимся за
+    // memory короткими сессиями (до 40 заданий), пересеивая random перед
+    // каждой: рестарт на том же потоке повторял бы «безпарную» траекторию.
     let found = false
-    for (let attempt = 0; attempt < 3 && !found; attempt++) {
+    for (let attempt = 0; attempt < 5 && !found; attempt++) {
+      await page.evaluate(SEED_FN, 1000 + attempt)
       await startLearnPhase(page)
-      for (let i = 0; i < 120 && !found; i++) {
-        if (await page.locator('.v-res-h').count()) {
-          await page.locator('.v-res-foot .v-btn').click()
-          await expect(page.locator('.v-setup-title')).toBeVisible()
-          break
-        }
+      for (let i = 0; i < 40 && !found; i++) {
+        if (await page.locator('.v-res-h').count()) break
         found = (await page.locator('.v-mem-grid').count()) > 0
         if (found) break
         await solveOneTask(page)
@@ -216,8 +214,14 @@ test.describe('Словарь — нативный экран', () => {
           await page.waitForTimeout(300)
         }
       }
+      if (!found) {
+        // Сессия не подкинула memory — выходим крестиком (или из итогов) и заново.
+        if (await page.locator('.v-res-h').count()) await page.locator('.v-res-foot .v-btn').click()
+        else await page.locator('.v-sess-x').click()
+        await expect(page.locator('.v-setup-title')).toBeVisible()
+      }
     }
-    expect(found, 'memory-задание должно встретиться за три сессии').toBe(true)
+    expect(found, 'memory-задание должно встретиться за пять сессий').toBe(true)
 
     const m = await page.evaluate(() => {
       const r = (el) => el.getBoundingClientRect()
