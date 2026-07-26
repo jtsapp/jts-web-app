@@ -1,6 +1,9 @@
 import '../styles.css'
 import '../tutor.css'
 import '../ielts.css'
+import '../grammar.css'
+import '../vocab.css'
+import '../listening.css'
 import Providers from './providers.jsx'
 
 export const metadata = {

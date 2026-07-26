@@ -7,6 +7,8 @@ import {
   VolumeIcon,
   ChevronRightCircleIcon,
   ChevronLeftIcon,
+  SearchIcon,
+  TrashIcon,
 } from '../components/icons.jsx'
 import {
   getPracticeToken,
@@ -14,10 +16,14 @@ import {
   getSituativki,
   getSavedWords,
   getAudiobooks,
+  deleteSavedWord,
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import BookDetail, { normTitle } from './BookDetail.jsx'
+import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
+import GrammarLesson from './GrammarLesson.jsx'
+import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/grammar/grammarData.js'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -70,13 +76,16 @@ function Thumb({ src, alt, className, children }) {
   )
 }
 
-function SectionHead({ title, onAll }) {
+function SectionHead({ title, onAll, children }) {
   return (
     <div className="pp-sec__head">
       <h2>{title}</h2>
-      <button className="pp-all" onClick={onAll}>
-        Посмотреть все <ChevronRightCircleIcon size={18} />
-      </button>
+      <div className="pp-sec__tools">
+        {children}
+        <button className="pp-all" onClick={onAll}>
+          Посмотреть все <ChevronRightCircleIcon size={18} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -85,6 +94,58 @@ function SectionHead({ title, onAll }) {
 // карточки сеткой вместо горизонтальной прокрутки.
 function Rail({ children, grid }) {
   return <div className={grid ? 'pp-rail pp-rail--grid' : 'pp-rail'}>{children}</div>
+}
+
+// Фигурная «печать» бейджа уровня (14 округлых фестонов), путь сгенерирован
+// детерминированно. См. .pp-listen__seal-bg.
+const SEAL_PATH =
+  'M50.00 10.00 Q60.90 2.23 67.36 13.96 Q80.55 11.69 81.27 25.06 Q94.15 28.74 89.00 41.10 ' +
+  'Q99.00 50.00 89.00 58.90 Q94.15 71.26 81.27 74.94 Q80.55 88.31 67.36 86.04 ' +
+  'Q60.90 97.77 50.00 90.00 Q39.10 97.77 32.64 86.04 Q19.45 88.31 18.73 74.94 ' +
+  'Q5.85 71.26 11.00 58.90 Q1.00 50.00 11.00 41.10 Q5.85 28.74 18.73 25.06 ' +
+  'Q19.45 11.69 32.64 13.96 Q39.10 2.23 50.00 10.00Z'
+
+// Баннер «Аудирование»: промо мини-игры listening. Бейдж уровня синхронизирован
+// с уровнем пользователя (проп userLevel). Кнопки — заглушки; поведение
+// «Посмотреть все» / «Перейти к тренировке» подключим позже.
+function ListeningBanner({ userLevel = 'A1', onAll, onStart }) {
+  const level = String(userLevel || 'A1').toUpperCase()
+  const noop = () => {}
+  return (
+    <section id="sec-Аудирование" className="pp-sec pp-listen">
+      <SectionHead title="Аудирование" onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            Тренируй Listening
+            <br />в мини-игре
+          </h3>
+          <p className="pp-listen__desc">
+            Слушай и разбирай английскую речь: собери фразу, напиши диктант,
+            различи похожие слова
+          </p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            Перейти к тренировке
+          </button>
+        </div>
+        <img
+          className="pp-listen__art"
+          src="/practice/listening-mascot.png"
+          alt=""
+          aria-hidden="true"
+        />
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">Собран по вашему уровню</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level">{level}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
 }
 
 // Проговаривание слова браузером (бэкенд не отдаёт аудио для словаря)
@@ -103,19 +164,28 @@ function speak(word) {
 // градиент-заглушку. Обложки этих книг лежат в извлечённой библиотеке
 // (extract-books.js → public/practice/covers/books/, пути в index.json);
 // подставляем их по нормализованному названию до рендера каталога.
+// Индекс — маленький статический JSON; промис мемоизируется на модуль, а сам
+// запрос стартует вместе с каталогами (см. эффект загрузки), а не после ответа
+// аудиокниг — раньше тут была последовательная «лестница» из двух запросов.
+let _coversIndexPromise = null
+function fetchCoversIndex() {
+  if (!_coversIndexPromise) {
+    _coversIndexPromise = fetch('/practice/books/index.json')
+      .then((r) => (r.ok ? r.json() : []))
+      .catch(() => []) // нет индекса — карточки останутся с градиентами
+  }
+  return _coversIndexPromise
+}
+
 async function enrichCovers(list) {
   const books = Array.isArray(list) ? list : list?.content || list?.items || []
   if (!books.some((b) => !(b.coverImageUrl || b.coverUrl))) return books
-  try {
-    const idx = await fetch('/practice/books/index.json').then((r) => (r.ok ? r.json() : []))
-    const covers = {}
-    for (const it of idx) if (it.cover) covers[normTitle(it.title)] = it.cover
-    return books.map((b) =>
-      b.coverImageUrl || b.coverUrl ? b : { ...b, coverImageUrl: covers[normTitle(b.title)] || '' },
-    )
-  } catch {
-    return books // нет индекса — карточки останутся с градиентами
-  }
+  const idx = await fetchCoversIndex()
+  const covers = {}
+  for (const it of idx) if (it.cover) covers[normTitle(it.title)] = it.cover
+  return books.map((b) =>
+    b.coverImageUrl || b.coverUrl ? b : { ...b, coverImageUrl: covers[normTitle(b.title)] || '' },
+  )
 }
 
 export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
@@ -125,26 +195,32 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [situations, setSituations] = useState([])
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
-  const [tab, setTab] = useState('saved') // 'saved' | 'learned'
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
   const [apiToken, setApiToken] = useState(token || '')
 
   useEffect(() => {
     let alive = true
     setState({ loading: true, error: '' })
+    fetchCoversIndex() // параллельно с токеном и каталогами, а не после аудиокниг
     getPracticeToken(token)
       .then((tok) => {
         if (alive) setApiToken(tok)
         // Тянем всё параллельно; отдельные сбои не роняют страницу целиком.
-        const pull = (fn, set) =>
-          fn(tok)
-            .then((d) => alive && set(Array.isArray(d) ? d : d?.content || d?.items || []))
-            .catch(() => {})
+        // apply применяется дважды: к кэшу (мгновенный рендер) и к свежим
+        // данным, когда фоновое обновление SWR-кэша доходит до сети.
+        const pull = (start, set, transform) => {
+          const apply = async (d) => {
+            if (!alive || d == null) return
+            const arr = Array.isArray(d) ? d : d?.content || d?.items || []
+            set(transform ? await transform(arr) : arr)
+          }
+          return start(apply).then(apply).catch(() => {})
+        }
         return Promise.all([
-          pull((k) => getMediaClips(k), setClips),
-          pull((k) => getSituativki(k, userLevel), setSituations),
-          pull((k) => getAudiobooks(k).then(enrichCovers), setBooks),
-          pull((k) => getSavedWords(k), setWords),
+          pull((onFresh) => getMediaClips(tok, onFresh), setClips),
+          pull((onFresh) => getSituativki(tok, userLevel, onFresh), setSituations),
+          pull((onFresh) => getAudiobooks(tok, onFresh), setBooks, enrichCovers),
+          pull((onFresh) => getSavedWords(tok, onFresh), setWords),
         ])
       })
       .then(() => alive && setState({ loading: false, error: '' }))
@@ -156,13 +232,71 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     }
   }, [token, userLevel])
 
+  // Тяжёлые оверлеи (мир сказок ~3 МБ, разговорные ситуации) подгружаем на
+  // простое после первого рендера: первый клик открывает их мгновенно и
+  // загрузка не конкурирует с каталогами выше.
+  useEffect(() => {
+    const load = () => {
+      import('../practice/fairytale/taleWorld.js').catch(() => {})
+      import('../practice/situations/situationsOverlay.js').catch(() => {})
+    }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(load, { timeout: 4000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(load, 2500) // Safari: requestIdleCallback нет
+    return () => clearTimeout(id)
+  }, [])
+
   const saved = words
-  const learned = useMemo(() => words.filter((w) => w.learned), [words])
-  const list = tab === 'learned' ? learned : saved
+
+  // Удаление сохранённого слова: убираем сразу (оптимистично), при ошибке —
+  // возвращаем список с сервера. Нужен токен авторизации.
+  const removeWord = async (w) => {
+    if (!token) return
+    setWords((ws) => ws.filter((x) => x.id !== w.id))
+    try {
+      await deleteSavedWord(token, w.id)
+    } catch {
+      getSavedWords(token).then(setWords).catch(() => {})
+    }
+  }
+
+  // Поиск по книжкам: живой фильтр по названию и автору. Каталог уже загружен
+  // целиком, поэтому без запросов к бэкенду; normTitle не подходит — вырезает
+  // кириллицу, а названия/запросы бывают русскими.
+  const [bookQuery, setBookQuery] = useState('')
+  const visibleBooks = useMemo(() => {
+    const q = bookQuery.trim().toLowerCase()
+    if (!q) return books
+    return books.filter((b) => `${b.title || ''} ${b.author || ''}`.toLowerCase().includes(q))
+  }, [books, bookQuery])
+
+  // Грамматика: нативный каталог уроков (данные — public/practice/grammar/,
+  // см. scripts/extract-grammar.js). Лёгкий index грузим один раз при монтировании
+  // — он нужен и рейлу в «Все», и полному каталогу.
+  const [grammarIndex, setGrammarIndex] = useState(null)
+  const [grammarLevel, setGrammarLevel] = useState(() => levelToCourse(userLevel))
+  const [grammarSearch, setGrammarSearch] = useState('')
+  const [openUnit, setOpenUnit] = useState(null) // { level, unit }
+
+  useEffect(() => {
+    let alive = true
+    loadGrammarIndex().then((idx) => alive && idx && setGrammarIndex(idx))
+    return () => {
+      alive = false
+    }
+  }, [])
+  useEffect(() => {
+    setGrammarLevel(levelToCourse(userLevel))
+  }, [userLevel])
+
+  const grammarLevelLabel =
+    (GRAMMAR_LEVELS.find((l) => l.code === grammarLevel) || {}).label || grammarLevel.toUpperCase()
 
   // «Видеоклипы» убраны из клиентской части: контент остаётся в dev-admin
   // (/mobile/video-lessons живёт), но страница его не запрашивает и не рисует.
-  const chips = ['Все', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
+  const chips = ['Все', 'Грамматика', 'Ситуации', 'Сказки', 'Мемы и рилсы', 'Книжки']
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
   const [filter, setFilter] = useState(null)
@@ -199,6 +333,23 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     } finally {
       taleLoadingRef.current = false
     }
+  }
+
+  // Урок грамматики — полноэкранный takeover (как открытая книга/рилс).
+  if (openUnit) {
+    const lvl = grammarIndex && grammarIndex[openUnit.level]
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <GrammarLesson
+          level={openUnit.level}
+          units={lvl ? lvl.units : null}
+          unit={openUnit.unit}
+          token={token}
+          onExit={() => setOpenUnit(null)}
+          onOpenUnit={(u) => setOpenUnit({ level: openUnit.level, unit: u })}
+        />
+      </LearningLayout>
+    )
   }
 
   if (openReel !== null) {
@@ -248,12 +399,47 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
 
           {state.error && <div className="pp-note pp-note--err">{state.error}</div>}
 
+          {/* Аудирование — промо мини-игры listening (только на вкладке «Все») */}
+          {filter === null && (
+            <ListeningBanner
+              userLevel={userLevel}
+              onAll={() => onNav?.('listening')}
+              onStart={() => onNav?.('listening')}
+            />
+          )}
+
+          {/* Грамматика — полный каталог (чип «Грамматика») */}
+          {filter === 'Грамматика' &&
+            (grammarIndex ? (
+              <GrammarCatalog
+                index={grammarIndex}
+                activeLevel={grammarLevel}
+                onLevel={setGrammarLevel}
+                search={grammarSearch}
+                onSearch={setGrammarSearch}
+                onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
+              />
+            ) : (
+              <div className="gr-loading">Загрузка…</div>
+            ))}
+
+          {/* Грамматика — рейл в общем виде «Все» */}
+          {filter === null && grammarIndex && (
+            <GrammarRail
+              index={grammarIndex}
+              courseCode={grammarLevel}
+              levelLabel={grammarLevelLabel}
+              onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
+              onSeeAll={() => setFilter('Грамматика')}
+            />
+          )}
+
           {/* Мемы и рилсы */}
           {show('Мемы и рилсы') && (
           <section id="sec-Мемы и рилсы" className="pp-sec">
             <SectionHead title="Мемы и рилсы" onAll={() => setFilter('Мемы и рилсы')} />
             {clips.length === 0 ? (
-              <Empty loading={state.loading} />
+              <Empty loading={state.loading} skeleton="portrait" />
             ) : (
               <Rail grid={grid}>
                 {clips.map((c, i) => (
@@ -270,12 +456,36 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           {/* Книжки — каталог аудиокниг из dev-admin (реальные обложки) */}
           {show('Книжки') && (
           <section id="sec-Книжки" className="pp-sec">
-            <SectionHead title="Книжки" onAll={() => setFilter('Книжки')} />
+            <SectionHead title="Книжки" onAll={() => setFilter('Книжки')}>
+              <label className="pp-search">
+                <SearchIcon size={15} />
+                <input
+                  type="search"
+                  value={bookQuery}
+                  onChange={(e) => setBookQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Escape' && setBookQuery('')}
+                  placeholder="Название или автор"
+                  aria-label="Поиск по книжкам"
+                />
+                {bookQuery && (
+                  <button
+                    type="button"
+                    className="pp-search__clear"
+                    onClick={() => setBookQuery('')}
+                    aria-label="Очистить поиск"
+                  >
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                  </button>
+                )}
+              </label>
+            </SectionHead>
             {books.length === 0 ? (
-              <Empty loading={state.loading} />
+              <Empty loading={state.loading} skeleton="book" />
+            ) : visibleBooks.length === 0 ? (
+              <Empty text={`Ничего не нашлось по запросу «${bookQuery.trim()}»`} />
             ) : (
               <Rail grid={grid}>
-                {books.map((b) => (
+                {visibleBooks.map((b) => (
                   <button key={b.id} type="button" className="pp-bcard" onClick={() => setOpenBook(b)}>
                     <BookCover book={b} />
                     <div className="pp-bcard__title">{b.title}</div>
@@ -366,28 +576,26 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
         <aside className="pp__side">
           <h2 className="pp-voc__title">Словарь</h2>
 
-          <div className="pp-voc__tabs">
-            <button
-              className={`pp-voc__tab ${tab === 'saved' ? 'on' : ''}`}
-              onClick={() => setTab('saved')}
-            >
-              Сохранено <b>{saved.length}</b>
-            </button>
-            <button
-              className={`pp-voc__tab ${tab === 'learned' ? 'on' : ''}`}
-              onClick={() => setTab('learned')}
-            >
-              Изучено <b>{learned.length}</b>
-            </button>
+          <div className="pp-voc__count">
+            Сохранено <b>{saved.length}</b>
           </div>
 
           <div className="pp-voc__list">
-            {list.length === 0 ? (
-              <div className="pp-voc__empty">
-                {state.loading ? 'Загрузка…' : 'Пока нет слов'}
-              </div>
+            {saved.length === 0 ? (
+              state.loading ? (
+                <div className="pp-voc__skel" aria-hidden="true">
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <div key={i} className="pp-voc__skelrow">
+                      <span className="pp-skel__line" />
+                      <span className="pp-skel__line pp-skel__line--short" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="pp-voc__empty">Пока нет слов</div>
+              )
             ) : (
-              list.map((w) => (
+              saved.map((w) => (
                 <div key={w.id} className="pp-word">
                   <div className="pp-word__text">
                     <b>{w.word}</b>
@@ -396,19 +604,46 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   <button className="pp-word__say" onClick={() => speak(w.word)} aria-label="Прослушать">
                     <VolumeIcon size={18} />
                   </button>
+                  <button
+                    className="pp-word__del"
+                    onClick={() => removeWord(w)}
+                    aria-label={`Удалить слово «${w.word}»`}
+                  >
+                    <TrashIcon size={17} />
+                  </button>
                 </div>
               ))
             )}
           </div>
-
-          <button className="pp-voc__cta">Практика по словарю</button>
         </aside>
       </div>
     </LearningLayout>
   )
 }
 
-function Empty({ loading, text }) {
+// Пока секция грузится — скелетон в форме будущих карточек вместо текста:
+// нет прыжка раскладки и ощущения «пустой» страницы. variant повторяет
+// габариты реальных карточек (portrait — мемы 150×3:4, book — обложка + строки).
+function SkeletonRail({ variant = 'portrait' }) {
+  return (
+    <div className="pp-rail" aria-hidden="true">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="pp-skel">
+          <span className="pp-skel__thumb" />
+          {variant === 'book' && (
+            <>
+              <span className="pp-skel__line" />
+              <span className="pp-skel__line pp-skel__line--short" />
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Empty({ loading, text, skeleton }) {
+  if (loading && skeleton) return <SkeletonRail variant={skeleton} />
   return (
     <div className="pp-empty">
       {loading ? 'Загрузка…' : text || 'Нет данных'}
