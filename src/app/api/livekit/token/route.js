@@ -17,6 +17,7 @@ import {
   isValidDeviceId,
   getUsage,
   openSession,
+  closeStaleSessions,
   DAILY_LIMIT_SEC,
   MONTH_LIMIT_SEC,
 } from '@/lib/usage.js'
@@ -176,6 +177,9 @@ async function issue(p, profileId, userName) {
   // их больше не обнулить очисткой localStorage.
   if (!noLimit && freeTier && isDbConfigured() && isValidDeviceId(profileId)) {
     try {
+      // Сначала дозакрываем зависшие комнаты этого ученика (потерянный
+      // room_finished), иначе их минуты не спишутся никогда и лимит поедет.
+      await closeStaleSessions(profileId)
       const { todaySeconds, monthSeconds } = await getUsage(profileId)
       if (monthSeconds >= MONTH_LIMIT_SEC || todaySeconds >= DAILY_LIMIT_SEC) {
         return Response.json(
