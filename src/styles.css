@@ -3379,11 +3379,108 @@ textarea {
 .pp-voc__cta:hover { filter: brightness(1.05); }
 
 @media (max-width: 1000px) {
-  .pp { grid-template-columns: 1fr; }
-  .pp__side { position: static; order: -1; }
+  /* minmax(0, …), а не просто 1fr: иначе min-content нераскрытых лент
+     (чипсы nowrap, рейлы карточек) распирает колонку шире экрана и
+     внутренняя прокрутка лент перестаёт работать. */
+  .pp { grid-template-columns: minmax(0, 1fr); }
+  /* Словарь — вторичный контент: на узких экранах уходит под ленты (раньше
+     order: -1 ставил его первым, и длинный список выталкивал Практику вниз). */
+  .pp__side {
+    position: static;
+    border-top: 1px solid #efeef4;
+    padding-top: 20px;
+  }
 }
-@media (max-width: 560px) {
-  .pp { padding: 20px 16px 32px; }
+
+/* ── Мобильная Практика (брейкпоинт оболочки — 760px, см. .mtop) ── */
+@media (max-width: 760px) {
+  .pp { padding: 16px 16px 32px; gap: 24px; }
+  .pp__title { font-size: 22px; margin-bottom: 12px; }
+
+  /* Чипсы-фильтры: одна строка с прокруткой от края до края экрана вместо
+     переноса на 2–3 ряда; последний чип выглядывает — это и есть аффорданс. */
+  .pp-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    margin: 0 -16px 16px;
+    padding: 2px 16px 6px;
+    scrollbar-width: none;
+  }
+  .pp-chips::-webkit-scrollbar { display: none; }
+  .pp-chip { flex: none; padding: 9px 16px; }
+
+  /* Ленты уезжают «под край» экрана; скроллбар не нужен — палец. */
+  .pp-rail {
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 16px;
+  }
+  .pp-rail::-webkit-scrollbar { display: none; }
+  .pp-rail > * { scroll-snap-align: start; }
+  /* Сеточный режим (включён чип-фильтр) — обычная вертикальная сетка */
+  .pp-rail--grid { margin: 0; padding: 0; gap: 12px; }
+
+  .pp-sec { margin-bottom: 22px; }
+
+  /* Шапка секции: заголовок и «Посмотреть все» в строке, поиск по книжкам
+     переносится вниз на всю ширину — иначе трём элементам тесно. */
+  .pp-sec__head { flex-wrap: wrap; row-gap: 10px; }
+  .pp-search { order: 3; flex-basis: 100%; padding: 9px 14px; }
+  .pp-search input,
+  .pp-search input:focus { width: 100%; flex: 1; }
+
+  /* Баннер «Аудирование»: колонка — текст, CTA на всю ширину, внизу строка
+     «Собран по вашему уровню» + печать уровня за разделителем. */
+  .pp-listen__card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px;
+    border-radius: 20px;
+  }
+  .pp-listen__body { max-width: none; }
+  .pp-listen__title { font-size: 21px; }
+  .pp-listen__desc { font-size: 13.5px; max-width: none; }
+  .pp-listen__cta {
+    width: 100%;
+    justify-content: center;
+    margin-top: 16px;
+    padding: 13px 20px;
+  }
+  .pp-listen__aside {
+    position: static;
+    transform: none;
+    width: auto;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.22);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    gap: 14px;
+  }
+  .pp-listen__hint { max-width: 190px; font-size: 13px; }
+  .pp-listen__seal { width: 62px; height: 62px; flex: none; }
+  .pp-listen__level { font-size: 22px; letter-spacing: -0.5px; }
+
+  /* Словарь: кнопкам прослушивания/удаления — тач-размер */
+  .pp-word { padding: 12px 2px; }
+  .pp-word__say,
+  .pp-word__del { padding: 10px; }
+}
+
+/* Тач-устройства: hover-состояний нет — кнопка Play на карточках ситуаций
+   видна всегда, а «подъём» карточек по hover не залипает после тапа. */
+@media (hover: none) {
+  .pp-play { opacity: 1; background: rgba(0, 0, 0, 0.38); }
+  .pp-bcard:hover .pp-bcard__cover,
+  .pp-tcard:hover .pp-tcard__cover {
+    transform: none;
+    box-shadow: 0 6px 16px rgba(23, 19, 38, 0.18);
+  }
 }
 
 /* ===== Hosted-уроки в королевствах (#11): арт-шапка, iframe-сцена,
@@ -5057,6 +5154,34 @@ textarea {
 
 @media (max-width: 900px) {
   .bk-ov, .bk-read { grid-template-columns: 1fr; }
+}
+
+/* ── Мобильные детальные виды Практики: рилсы и книга ── */
+@media (max-width: 760px) {
+  .vd__head { gap: 12px; padding-bottom: 12px; margin-bottom: 16px; }
+  .vd__back { font-size: 14px; padding: 9px 14px 9px 10px; }
+
+  /* Рилсы: плеер по центру на всю доступную ширину (с запасом по высоте под
+     шапку и кнопки), стрелки — рядом под плеером, в зоне большого пальца. */
+  .rl { padding: 14px 16px 28px; }
+  .rl__stage { flex-direction: column; gap: 14px; min-height: 0; }
+  .rl__player {
+    width: min(100%, calc((100vh - 250px) * 9 / 16));
+    height: auto;
+    border-radius: 20px;
+  }
+  @supports (height: 100dvh) {
+    .rl__player { width: min(100%, calc((100dvh - 250px) * 9 / 16)); }
+  }
+  .rl__nav { flex-direction: row; gap: 18px; }
+  .rl__hint { width: 190px; font-size: 13px; bottom: 16%; }
+
+  /* Книга: обложка не растягивается на весь экран, текст читается плотнее */
+  .bk { padding: 14px 16px 32px; }
+  .bk-ov { gap: 20px; }
+  .bk-ov__cover { display: block; width: min(220px, 62%); margin: 0 auto; }
+  .bk-ov__title { font-size: 22px; }
+  .bk-read { gap: 24px; }
 }
 
 /* Сброс дефолтных стилей <button> у карточек-кнопок практики
