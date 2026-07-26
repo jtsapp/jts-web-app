@@ -468,7 +468,9 @@
   flex-direction: column;
   align-items: center;
   width: 322px;
-  height: 571px;
+  /* min-height, а не height: длинные трейты («Русскоязычная», «Kazakh-speaking»)
+     переносятся на вторую строку — при фиксированной высоте карточка бы потекла. */
+  min-height: 571px;
   padding: 41px 21px 31px;
   background: #ffffff;
   border-radius: 20px;
@@ -490,17 +492,22 @@
 }
 .t-tcard__chips {
   display: flex;
-  gap: 2px;
+  /* Три трейта в ряд по 280px внутренней ширины: с длинными словами
+     («Русскоязычная») ряд не влезал и вылезал за края карточки. Ужимаем чипы и
+     разрешаем перенос — на казахском/английском строки ещё длиннее. */
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
   margin-bottom: 19px;
 }
 .t-chip {
   display: inline-flex;
   align-items: center;
-  height: 32px;
-  padding: 0 14px;
+  height: 30px;
+  padding: 0 9px;
   border-radius: 100px;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1057,6 +1064,27 @@
 .t-voice__mic:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+/* Завершить разговор — вторичная по весу кнопка под микрофоном: действие
+   необратимое, поэтому не должна конкурировать по акценту с мьютом. */
+.t-voice__end {
+  margin-top: 12px;
+  height: 48px;
+  padding: 0 28px;
+  border: 1.5px solid rgba(214, 69, 69, 0.45);
+  border-radius: 24px;
+  background: transparent;
+  color: #d64545;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.t-voice__end:hover {
+  background: rgba(214, 69, 69, 0.08);
+  border-color: #d64545;
 }
 
 /* Плашка запроса доступа к микрофону — имитирует всплывашку браузера из
@@ -2403,6 +2431,25 @@
   background: #d64545;
   animation: t-placetest-pulse 1s ease-in-out infinite;
 }
+/* Шаги разбора ответа: три сегмента заливаются по мере прогресса, чтобы
+   ожидание оценки не выглядело зависанием. */
+.t-placetest__steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 22px auto 0;
+  width: min(320px, 80%);
+}
+.t-placetest__step {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(124, 77, 255, 0.15);
+  transition: background 0.4s ease;
+}
+.t-placetest__step.is-done {
+  background: var(--t-purple);
+}
 .t-placetest__rec-hint {
   font-size: 13px;
   font-weight: 600;
@@ -2823,10 +2870,14 @@
     margin-top: 19px; font-size: 24px; font-weight: 700;
     color: #181818; text-align: center;
   }
-  .t-car__chips { display: flex; justify-content: center; gap: 2px; margin-top: 8px; }
+  /* Как и на десктопной карточке: длинные трейты не влезают в ряд из трёх —
+     ужимаем чип и разрешаем перенос вместо выезда за края. */
+  .t-car__chips {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 8px;
+  }
   .t-car__chip {
-    height: 32px; display: inline-flex; align-items: center; padding: 0 12px;
-    border-radius: 20px; color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap;
+    height: 32px; display: inline-flex; align-items: center; padding: 0 10px;
+    border-radius: 20px; color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap;
   }
   /* margin-inline:auto обязателен: родитель — блочный, а max-width:334px уже
      ре́жет ширину, поэтому без авто-полей блок прилипал к левому краю и всё

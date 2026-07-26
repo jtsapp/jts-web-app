@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { ArrowLeftIcon, LoaderIcon, SparklesIcon } from '../components/ieltsIcons.jsx'
+import { useI18n } from '../i18n.jsx'
 
 // IELTS Writing flow. Learner reads the prompt (Task 1 also shows a chart),
 // writes, submits → real Sonnet band-scoring via /api/ielts/assess-writing.
@@ -44,6 +45,10 @@ export default function IeltsWritingPage({ userLevel = 'A1', userName, token, on
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+  // Язык разбора = язык приложения (раньше был жёстко 'ru', и казахоязычный
+  // ученик получал фидбек по-русски).
+  const { lang } = useI18n()
+  const uiLang = lang === 'kk' ? 'kk' : lang === 'en' ? 'en' : 'ru'
 
   const prompt = task === 'task1' ? TASK1_PROMPT : TASK2_PROMPT
   const minWords = MIN_WORDS[task]
@@ -72,7 +77,7 @@ export default function IeltsWritingPage({ userLevel = 'A1', userName, token, on
           essay,
           task,
           promptShown: prompt,
-          uiLang: 'ru',
+          uiLang,
           deviceId: getDeviceId(),
         }),
       })
