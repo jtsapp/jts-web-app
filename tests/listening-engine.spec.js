@@ -12,6 +12,24 @@ import {
 // Pure-logic unit tests for the listening engine (no DOM). These run in the
 // node context of Playwright, so they need no browser.
 
+// Движок берёт строки через t() вызывающего (i18n.jsx); тестам достаточно
+// стаба с русскими значениями нужных ключей — композицию проверяем на них.
+const RU = {
+  'listening.fbNice': 'Отлично услышано.',
+  'listening.fbAnswer': 'Правильный ответ: <b>{answer}</b>. ',
+  'listening.fbHeard': 'Вы услышали: «<b>{text}</b>». ',
+  'listening.fbHeardType': 'Вы услышали: <b>{answer}</b>. ',
+  'listening.fbRetry': 'Это задание вернётся в конце.',
+  'listening.headAssemble': 'Соберите предложение',
+  'listening.headType': 'Напишите, что вы услышали',
+  'listening.headDefault': 'Что вы слышите?',
+}
+const tr = (key, vars) => {
+  let out = RU[key] ?? key
+  if (vars) for (const k in vars) out = out.split('{' + k + '}').join(vars[k])
+  return out
+}
+
 test.describe('listening engine — norm()', () => {
   test('нормализует регистр, кавычки, пунктуацию и апострофы', () => {
     expect(norm("I'm from the UK")).toBe('im from the uk')
@@ -43,25 +61,25 @@ test.describe('listening engine — checkAnswer()', () => {
 test.describe('listening engine — feedbackBody()', () => {
   test('верный ответ показывает объяснение', () => {
     const t = { type: 'listen_choice', answer: 'A', explanation: 'потому что A' }
-    expect(feedbackBody(t, true, false)).toBe('потому что A')
+    expect(feedbackBody(t, true, false, tr)).toBe('потому что A')
   })
   test('неверный ответ добавляет правильный ответ и метку реквью', () => {
     const t = { type: 'listen_choice', answer: 'In Shanghai', explanation: 'см. запись' }
-    const body = feedbackBody(t, false, true)
+    const body = feedbackBody(t, false, true, tr)
     expect(body).toContain('Правильный ответ: <b>In Shanghai</b>')
     expect(body).toContain('Это задание вернётся в конце.')
   })
   test('type неверный — показывает услышанное', () => {
     const t = { type: 'listen_type', answer: "I'm from the UK", explanation: '' }
-    expect(feedbackBody(t, false, false)).toContain('Вы услышали: <b>I’m from the UK</b>'.replace('’', "'"))
+    expect(feedbackBody(t, false, false, tr)).toContain('Вы услышали: <b>I’m from the UK</b>'.replace('’', "'"))
   })
 })
 
 test.describe('listening engine — headingFor()', () => {
   test('русские заголовки для assemble/type, промпт для choice', () => {
-    expect(headingFor({ type: 'listen_assemble' })).toBe('Соберите предложение')
-    expect(headingFor({ type: 'listen_type' })).toBe('Напишите, что вы услышали')
-    expect(headingFor({ type: 'listen_choice', prompt: 'Where is Li?' })).toBe('Where is Li?')
+    expect(headingFor({ type: 'listen_assemble' }, tr)).toBe('Соберите предложение')
+    expect(headingFor({ type: 'listen_type' }, tr)).toBe('Напишите, что вы услышали')
+    expect(headingFor({ type: 'listen_choice', prompt: 'Where is Li?' }, tr)).toBe('Where is Li?')
   })
 })
 
