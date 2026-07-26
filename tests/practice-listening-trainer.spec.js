@@ -67,8 +67,54 @@ test.describe('Практика — тренажёр «Аудирование»'
     await expect(fb.locator('.lt-fb__coin')).toContainText('+10')
 
     await page.getByRole('button', { name: 'Продолжить' }).click()
-    await expect(page.locator('.lt-result')).toBeVisible()
-    await expect(page.locator('.lt-result__stats')).toContainText('монет')
+    // 1/1 верно → ≥50% → экран «победа»
+    const res = page.locator('.lt-res')
+    await expect(res).toBeVisible()
+    await expect(res).toHaveClass(/lt-res--good/)
+    await expect(res.locator('.lt-res__pct')).toHaveText('100%')
+    await expect(res).toContainText('Отличный результат')
+    await expect(res).toContainText('Верных ответов')
+  })
+
+  test('неверный ответ ниже 50% → экран «проигрыш»', async ({ page }) => {
+    await boot(page)
+    await page.goto('/?screen=listening')
+    await page.getByRole('button', { name: 'Начать тренировку' }).click()
+    // отвечаем неверно (задание вернётся один раз, снова неверно) → 0%
+    for (let i = 0; i < 2; i++) {
+      await page.getByRole('button', { name: 'In Beijing', exact: true }).click()
+      await page.getByRole('button', { name: 'Проверить' }).click()
+      await page.locator('.lt-fb').waitFor({ state: 'visible' })
+      await page.getByRole('button', { name: 'Продолжить' }).click()
+      if (await page.locator('.lt-res').count()) break
+    }
+    const res = page.locator('.lt-res')
+    await expect(res).toBeVisible()
+    await expect(res).toHaveClass(/lt-res--bad/)
+    await expect(res).toContainText('Нужно улучшить результат')
+  })
+
+  test('выход из незавершённой тренировки требует подтверждения', async ({ page }) => {
+    await boot(page)
+    await page.goto('/?screen=listening')
+    await page.getByRole('button', { name: 'Начать тренировку' }).click()
+    await expect(page.locator('.lt-heading')).toBeVisible()
+
+    // «Назад» во время тренировки → модалка, а не выход
+    await page.getByRole('button', { name: 'Назад' }).click()
+    const modal = page.locator('.lt-modal')
+    await expect(modal).toBeVisible()
+    await expect(modal).toContainText('Вы уверены что хотите выйти')
+
+    // «Продолжить обучение» закрывает модалку, тренировка на месте
+    await page.getByRole('button', { name: 'Продолжить обучение' }).click()
+    await expect(modal).toHaveCount(0)
+    await expect(page.locator('.lt-task')).toBeVisible()
+
+    // «Выйти в меню» уводит из тренажёра
+    await page.getByRole('button', { name: 'Назад' }).click()
+    await page.getByRole('button', { name: 'Выйти в меню' }).click()
+    await expect(page.locator('.lt-task')).toHaveCount(0)
   })
 
   test('каждое задание проигрывает своё аудио (нет залипания прошлого клипа)', async ({ page }) => {
