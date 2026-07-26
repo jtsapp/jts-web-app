@@ -111,6 +111,54 @@ test.describe('Словарь — нативный экран', () => {
     await expect(page.locator('.v-ob-foot .v-btn')).toContainText('1500')
   })
 
+  test('тапы по интерфейсу беззвучны, фидбек-звуки живы', async ({ page }) => {
+    // Щелчок sfx('tap') на каждое нажатие выпилен. Осталась озвучка слов и
+    // звуки фидбека (reveal/good/bad) — у них есть тумблер в сессии. Звук в
+    // настройках НЕ выключаем: считающая заглушка WebAudio меряет осцилляторы.
+    await page.addInitScript(() => {
+      window.__osc = 0
+      const Counting = function () {
+        return {
+          state: 'running', currentTime: 0, destination: {}, resume() {},
+          createOscillator: () => {
+            window.__osc += 1
+            return { connect() {}, start() {}, stop() {}, frequency: {}, type: '' }
+          },
+          createGain: () => ({ connect() {}, gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} } }),
+        }
+      }
+      window.AudioContext = Counting
+      window.webkitAudioContext = Counting
+      try {
+        window.speechSynthesis.speak = () => {}
+        window.speechSynthesis.cancel = () => {}
+        window.speechSynthesis.getVoices = () => []
+      } catch (e) {
+        /* нет Web Speech API — и не надо */
+      }
+    })
+    await page.goto('/?screen=vocab')
+    await expect(page.locator('.v-setup-title')).toBeVisible()
+
+    // Прокликиваем настройку и первую карточку сбора — тишина.
+    await page.locator('.v-lvl-cell', { hasText: 'B1' }).click()
+    await page.locator('.v-lvl-cell', { hasText: 'A1' }).click()
+    await page.locator('.v-time-cell:has(b:text-is("5"))').click()
+    await page.locator('.v-ob-foot .v-btn').click()
+    await expect(page.locator('.v-ovw-row').first()).toBeVisible()
+    await page.locator('.v-ovw-cta .v-btn').click()
+    await expect(page.locator('.v-ff-word')).toBeVisible()
+    await page.locator('.v-flip').click()
+    await expect(page.locator('.v-flip')).toHaveClass(/v-flipped/)
+    await page.locator('.v-btn.v-dont').click()
+    await expect(page.locator('.v-sess-timer')).toHaveText('2 / 6')
+    expect(await page.evaluate(() => window.__osc), 'тапы не запускают осцилляторы').toBe(0)
+
+    // «Я знаю» играет reveal — заглушка рабочая, фидбек-звук не задет.
+    await page.locator('.v-btn.v-green').click()
+    await expect.poll(() => page.evaluate(() => window.__osc), { message: 'reveal слышен' }).toBeGreaterThan(0)
+  })
+
   test('обзор: счётчики, порционный список и живой поиск', async ({ page }) => {
     await openVocab(page)
     await page.locator('.v-ob-foot .v-btn').click()
