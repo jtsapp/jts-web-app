@@ -257,7 +257,6 @@ export function Assemble({ item, ctx, mode }) {
 
   const put = (b) => {
     if (placed.includes(b) || full) return
-    ctx.sfx('tap')
     setPlaced((p) => [...p, b])
   }
   const pop = () => placed.length && setPlaced((p) => p.slice(0, -1))

@@ -160,8 +160,6 @@ export function sfx(kind, on = true) {
   } else if (kind === 'bad') {
     tone(200, 0, 0.18, 'sawtooth', 0.12)
     tone(150, 0.08, 0.2, 'sawtooth', 0.1)
-  } else if (kind === 'tap') {
-    tone(420, 0, 0.05, 'square', 0.08)
   } else if (kind === 'reveal') {
     tone(520, 0, 0.1, 'sine', 0.12)
     tone(780, 0.06, 0.12, 'sine', 0.12)

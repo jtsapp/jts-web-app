@@ -123,7 +123,6 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         index={index}
         current={S.field}
         onPick={(key) => {
-          sfx('tap')
           set({ field: key })
           setScreen('setup')
         }}
@@ -149,13 +148,11 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       count={scope.length}
       onFields={() => {
         ac()
-        sfx('tap')
         setScreen('fields')
       }}
       onNext={() => {
         ac()
         if (!scope.length) return toast(T.noWords)
-        sfx('tap')
         setScreen('overview')
       }}
     />,
@@ -184,10 +181,7 @@ function Setup({ T, S, set, sfx, speak, loading, count, onFields, onNext }) {
                 <button
                   key={l}
                   className={`v-lvl-cell${S.level === l ? ' v-sel' : ''}`}
-                  onClick={() => {
-                    set({ level: l })
-                    sfx('tap')
-                  }}
+                  onClick={() => set({ level: l })}
                 >
                   <b>{l}</b>
                   <span>{(T.lvl_d && T.lvl_d[l]) || ''}</span>
@@ -206,10 +200,7 @@ function Setup({ T, S, set, sfx, speak, loading, count, onFields, onNext }) {
             <button
               key={m}
               className={`v-opt${S.mode === m ? ' v-sel' : ''}`}
-              onClick={() => {
-                set({ mode: m })
-                sfx('tap')
-              }}
+              onClick={() => set({ mode: m })}
             >
               <span className="v-ic">{ic}</span>
               <span className="v-tx"><b>{tt}</b><span>{dd}</span></span>
@@ -247,10 +238,7 @@ function Setup({ T, S, set, sfx, speak, loading, count, onFields, onNext }) {
               <button
                 key={m}
                 className={`v-time-cell${S.goalMin === m ? ' v-sel' : ''}`}
-                onClick={() => {
-                  set({ goalMin: m })
-                  sfx('tap')
-                }}
+                onClick={() => set({ goalMin: m })}
               >
                 <b>{m}</b>
                 <span>{T.min}</span>
@@ -439,7 +427,7 @@ function Collect({ list, ctx, onDone, onExit }) {
 
   const choose = (known) => {
     item.known = known
-    ctx.sfx(known ? 'reveal' : 'tap')
+    if (known) ctx.sfx('reveal')
     buzz(known ? 15 : 25)
     setIdx((i) => i + 1)
   }
@@ -463,7 +451,6 @@ function Collect({ list, ctx, onDone, onExit }) {
           onClick={(e) => {
             if (e.target.closest('.v-spk')) return
             setFlipped((f) => {
-              ctx.sfx('tap')
               if (!f) ctx.speak(w.en)
               return !f
             })
