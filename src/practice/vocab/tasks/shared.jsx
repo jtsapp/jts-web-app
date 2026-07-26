@@ -74,7 +74,6 @@ export function PickOne({ ask, small, prompt, options, grid, onPicked, ctx, w, w
 
   const choose = (opt) => {
     if (picked) return
-    ctx.sfx('tap')
     setPicked(opt)
     const ok = !!opt.correct
     onPicked && onPicked(ok, opt)
