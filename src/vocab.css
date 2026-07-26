@@ -255,9 +255,13 @@
 .vc .v-mcard.v-sel{ border-color:var(--violet); background:#faf8ff; transform:scale(1.02) }
 .vc .v-mcard.v-ok{ border-color:var(--green); background:var(--green-50) }
 .vc .v-mcard.v-no{ border-color:var(--red); background:var(--red-50); animation:v-shake .35s }
-.vc .v-mem-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:8px }
-.vc .v-mem{ aspect-ratio:3/4; perspective:700px; cursor:pointer }
-.vc .v-mem-inner{ position:relative; width:100%;height:100%; transition:transform .5s var(--spring); transform-style:preserve-3d }
+.vc .v-mem-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:8px; align-items:start }
+/* Пропорция карты 3:4 задаётся паддинг-хаком, а не aspect-ratio: Safari выводит
+   aspect-ratio грид-плитки из растянутой высоты ряда и раздувает карточки за
+   пределы колонок; процент паддинга во всех движках считается от ширины. */
+.vc .v-mem{ position:relative; perspective:700px; cursor:pointer }
+.vc .v-mem::before{ content:''; display:block; padding-top:133.33% }
+.vc .v-mem-inner{ position:absolute; inset:0; transition:transform .5s var(--spring); transform-style:preserve-3d }
 .vc .v-mem.v-flip .v-mem-inner, .vc .v-mem.v-done .v-mem-inner{ transform:rotateY(180deg) }
 .vc .v-mem-face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:var(--r); display:grid; place-items:center;
   box-shadow:var(--shadow-sm); padding:6px; text-align:center }
@@ -501,7 +505,7 @@
 .vc .v-col-step{ font-weight:800; font-size:13px; color:var(--ink-60); min-width:46px; text-align:center; font-variant-numeric:tabular-nums }
 .vc .v-col-title{ text-align:center; font-size:13px; font-weight:800; color:var(--violet); letter-spacing:.02em; margin:8px 0 2px }
 .vc .v-col-stage{ flex:1; display:flex; flex-direction:column; justify-content:safe center; padding:8px 34px 0; min-height:0 }
-.vc .v-flip{ flex:0 1 540px; min-height:340px; perspective:1700px; margin-bottom:4px; animation:v-pop .3s var(--ease) }
+.vc .v-flip{ flex:0 0 auto; height:clamp(340px,56vh,540px); perspective:1700px; margin-bottom:4px; animation:v-pop .3s var(--ease) }
 .vc .v-flip-inner{ position:relative; width:100%; height:100%; transition:transform .62s var(--spring); transform-style:preserve-3d }
 .vc .v-flip.v-flipped .v-flip-inner{ transform:rotateY(180deg) }
 .vc .v-flip-face{ position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:var(--r-lg);
