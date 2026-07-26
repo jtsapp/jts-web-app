@@ -61,8 +61,7 @@ export function DragMatch({ item, ctx }) {
             style={shake === w.id ? { animation: 'v-shake .28s' } : undefined}
             disabled={!!placed[w.id]}
             onClick={() => {
-              ctx.sfx('tap')
-              setSel(sel && sel.id === w.id ? null : w)
+                        setSel(sel && sel.id === w.id ? null : w)
             }}
           >
             {w.en}
@@ -111,7 +110,6 @@ export function Match({ item, ctx }) {
 
   const tap = (w, col) => {
     if (okIds.includes(w.id)) return
-    ctx.sfx('tap')
     if (!pick) {
       setPick({ id: w.id, col })
       ctx.speak(w.en)
@@ -196,7 +194,6 @@ export function Memory({ item, ctx }) {
 
   const flip = (c) => {
     if (lock.current || open.includes(c.key) || done.includes(c.id)) return
-    ctx.sfx('tap')
     if (c.face === 'en') ctx.speak(c.w.en)
     const next = [...open, c.key]
     setOpen(next)
@@ -285,7 +282,6 @@ export function Trace({ item, ctx }) {
     const node = el.closest('.v-tnode')
     if (!node || node.classList.contains('v-on')) return
     if (+node.dataset.ord !== ord) return
-    ctx.sfx('tap')
     const r = node.getBoundingClientRect()
     const s = svgRef.current.getBoundingClientRect()
     setPts((p) => [...p, { x: r.left + r.width / 2 - s.left, y: r.top + r.height / 2 - s.top }])
