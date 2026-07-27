@@ -5,9 +5,8 @@
 import { getSql } from './sql.js'
 import { isValidModule, emptyState, mergeModuleState } from '../practiceContract.js'
 
-export async function loadPracticeState(profileId) {
+export async function loadPracticeState(profileId, sql = getSql()) {
   const out = { vocab: {}, grammar: { done: [] }, listening: { done: [] } }
-  const sql = getSql()
   if (!sql) return out
   const rows = await sql`
     select module, state from practice_state where profile_id = ${profileId}
@@ -16,8 +15,7 @@ export async function loadPracticeState(profileId) {
   return out
 }
 
-export async function savePracticeState(profileId, module, state) {
-  const sql = getSql()
+export async function savePracticeState(profileId, module, state, sql = getSql()) {
   if (!sql) return
   if (!isValidModule(module)) throw new Error(`unknown practice module: ${module}`)
   // read-merge-write: union для done-модулей не теряет прохождение при синке

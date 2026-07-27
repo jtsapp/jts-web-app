@@ -13,6 +13,12 @@ export function isValidModule(m) {
   return PRACTICE_MODULES.includes(m)
 }
 
+// state должен быть объектом-словарём, но не массивом: typeof [] === 'object'
+// пропустил бы массив, который для vocab сохранился бы мусорным jsonb.
+export function isValidStateShape(state) {
+  return !!state && typeof state === 'object' && !Array.isArray(state)
+}
+
 // Множество пройденных id: только непустые строки, без дублей, стабильный порядок.
 export function normalizeDone(arr) {
   if (!Array.isArray(arr)) return []
