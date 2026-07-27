@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
+import TrainerResult from '../components/TrainerResult.jsx'
 import { useI18n } from '../i18n.jsx'
 import { tx, LEVELS, FIELD_CATS, TIMES } from '../practice/vocab/strings.js'
 import { loadScope, loadVocabIndex, tr as trW, altTr as altTrW, exampleHtml } from '../practice/vocab/vocabData.js'
@@ -114,7 +115,23 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     )
   }
 
-  if (screen === 'results') return shell(<Results r={results} T={T} onHome={() => setScreen('setup')} />)
+  // Итоги — общий с аудированием экран (lt-res). Рендерим вне обёртки .vc:
+  // её сбросы для button (.vc button { background:none; color:inherit })
+  // перебивали бы стили lt-кнопок, а экран должен быть 1-в-1 как в listening.
+  if (screen === 'results') {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="vocab" token={token} onNav={onNav} onProfile={onProfile}>
+        <div className="lt">
+          <TrainerResult
+            correct={results ? results.correct : 0}
+            wrong={results ? results.mistakes : 0}
+            onAgain={startCollect}
+            onHome={() => setScreen('setup')}
+          />
+        </div>
+      </LearningLayout>
+    )
+  }
 
   if (screen === 'fields') {
     return shell(
@@ -501,28 +518,3 @@ function Collect({ list, ctx, onDone, onExit }) {
   )
 }
 
-/* ─────────────── Итоги ─────────────── */
-function Results({ r, T, onHome }) {
-  if (!r) return null
-  const acc = r.answered ? Math.round((r.correct / r.answered) * 100) : 0
-  const mins = Math.max(1, Math.round(r.elapsed / 60000))
-  return (
-    <section className="v-screen v-show">
-      <div className="v-res-wrap">
-        <div className="v-res-emo">🎉</div>
-        <div className="v-res-h">{T.resH_done}</div>
-        <div className="v-res-sub">{T.resSub}</div>
-        <div className="v-res-stats">
-          <div className="v-res-stat"><div className="v-v">{r.newLearned}</div><div className="v-l">{T.r_learned}</div></div>
-          <div className="v-res-stat"><div className="v-v">{acc}%</div><div className="v-l">{T.r_acc}</div></div>
-          <div className="v-res-stat"><div className="v-v">{r.xp}</div><div className="v-l">{T.r_xp}</div></div>
-          <div className="v-res-stat"><div className="v-v">{r.bestCombo}</div><div className="v-l">{T.r_combo}</div></div>
-          <div className="v-res-stat"><div className="v-v">{mins}</div><div className="v-l">{T.r_time}</div></div>
-        </div>
-      </div>
-      <div className="v-res-foot">
-        <button className="v-btn" onClick={onHome}>{T.backHome}</button>
-      </div>
-    </section>
-  )
-}
