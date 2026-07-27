@@ -1,7 +1,8 @@
 'use client'
 
-// Две системы i18n сосуществуют: I18nProvider (миры/обучение, useI18n) и
-// LanguageProvider (экраны тьютора, useT/useLang). Оба контекста нужны App'у.
+// Язык приложения хранит I18nProvider (useI18n, ключ 'lang'); LanguageProvider
+// (экраны тьютора, useT/useLang) — тонкий адаптер над ним с маппингом kk↔kz,
+// поэтому порядок вложенности важен: LanguageProvider строго внутри.
 import { useEffect } from 'react'
 import { I18nProvider } from '../i18n.jsx'
 import { LanguageProvider } from '../i18n/LanguageContext.jsx'
