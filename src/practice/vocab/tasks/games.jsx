@@ -430,7 +430,11 @@ export function Pronounce({ item, ctx }) {
 
 /* ── 16. challenge: финальный раунд на скорость ── */
 export function Challenge({ item, ctx, onFinish }) {
-  const qs = useMemo(() => ctx.shuffle(item.pool), [item])
+  // Порядок вопросов фиксируем на маунт. Родительская сессия ре-рендерится
+  // каждую секунду (тикает общий таймер) и собирает item заново — завязка
+  // useMemo на item перетасовывала бы пул на каждый тик: слово и варианты
+  // подменялись через секунду, ответить было невозможно.
+  const [qs] = useState(() => ctx.shuffle(item.pool))
   const [idx, setIdx] = useState(0)
   const [score, setScore] = useState(0)
   const [ccombo, setCombo] = useState(0)
