@@ -279,25 +279,44 @@ test.describe('Грамматика — движок упражнений', () =
     await expect(page.locator('.gr-fb')).toHaveClass(/ok/)
   })
 
-  test('финальный экран: {title}/{c}/{n} подставлены, показаны заработанные монеты', async ({
+  test('финальный экран: общий с аудированием lt-res — счёт, монеты, рестарт и следующий урок', async ({
     page,
   }) => {
     await openUnit1(page)
     await page.locator('.gr-tab', { hasText: 'Практика' }).click()
     await expect(page.locator('.gr-act')).toBeVisible()
 
-    const acts = await a1Activities(page)
-    for (let i = 0; i < acts.length; i++) {
-      await answerCorrectly(page, acts[i])
-      await page.locator('.gr-next').click()
+    const passPractice = async () => {
+      const acts = await a1Activities(page)
+      for (let i = 0; i < acts.length; i++) {
+        await answerCorrectly(page, acts[i])
+        await page.locator('.gr-next').click()
+      }
+      return acts
     }
+    const acts = await passPractice()
 
-    const cele = page.locator('.gr-celebrate')
-    await expect(cele).toBeVisible()
-    // Регрессия на сломанную regex в fmt(): плейсхолдеры должны быть подставлены.
-    await expect(cele).not.toContainText('{')
-    await expect(cele.locator('.gr-score')).toHaveText(`✓ ${acts.length} / ${acts.length} верно`)
-    await expect(cele.locator('.gr-earned')).toContainText(`+${acts.length * 10}`)
+    // Итоги — общий экран тренажёров (как в аудировании/словаре): маскот,
+    // процент, счётчики неверных/верных и чип заработанных монет.
+    const res = page.locator('.lt-res')
+    await expect(res).toBeVisible()
+    await expect(res).toHaveClass(/lt-res--good/)
+    await expect(res.locator('.lt-res__pct')).toHaveText('100%')
+    await expect(res.locator('.lt-res__num').nth(0)).toContainText('0')
+    await expect(res.locator('.lt-res__num').nth(1)).toContainText(String(acts.length))
+    await expect(res.locator('.lt-res__coins')).toContainText(`+${acts.length * 10}`)
+
+    // «Попробовать ещё раз» перезапускает практику с нулевым прогрессом.
+    await res.locator('.lt-ghost', { hasText: 'Попробовать ещё раз' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
+    await expect(page.locator('.gr-lprog__pct')).toHaveText('0%')
+
+    // Повторный проход завершается тем же экраном, «Следующий урок» —
+    // главная CTA и открывает Unit 2.
+    await passPractice()
+    await expect(page.locator('.lt-res')).toBeVisible()
+    await page.locator('.lt-primary', { hasText: 'Следующий урок' }).click()
+    await expect(page.locator('.gr-lesson__crumb b')).toHaveText('Unit 2')
   })
 
   test('пройденный урок отмечается бейджем «Пройдено» в каталоге', async ({ page }) => {
@@ -312,10 +331,10 @@ test.describe('Грамматика — движок упражнений', () =
       await answerCorrectly(page, acts[i])
       await page.locator('.gr-next').click()
     }
-    await expect(page.locator('.gr-celebrate')).toBeVisible()
+    await expect(page.locator('.lt-res')).toBeVisible()
 
-    // «Назад к грамматике» → каталог; первая карточка (Unit 1) помечена «Пройдено».
-    await page.locator('.gr-celebrate .gr-btn--soft').click()
+    // «На главную» → каталог; первая карточка (Unit 1) помечена «Пройдено».
+    await page.locator('.lt-ghost', { hasText: 'На главную' }).click()
     const firstCard = page.locator('.gr-catalog .gr-gcard').first()
     await expect(firstCard).toHaveClass(/is-done/)
     await expect(firstCard.locator('.gr-gcard__done')).toHaveText(/Пройдено/)

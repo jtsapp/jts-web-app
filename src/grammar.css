@@ -1087,58 +1087,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 .gr-reward__coin { width: 18px; height: 18px; object-fit: contain; vertical-align: middle; flex-shrink: 0; }
-.gr-earned .gr-reward__coin { width: 22px; height: 22px; }
-/* заработанные монеты на финальном экране */
-.gr-earned {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin: 6px auto 2px;
-  background: #fff7e0;
-  color: #b8860b;
-  font-weight: 800;
-  font-size: 18px;
-  padding: 8px 18px;
-  border-radius: 999px;
-}
 
-/* финальный экран */
-.gr-celebrate {
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-  background: #fff;
-  border: 1px solid #f0eff5;
-  border-radius: 26px;
-  box-shadow: 0 12px 34px rgba(26, 23, 48, 0.08);
-  padding: 38px 30px;
-}
-.gr-medal {
-  width: 118px;
-  height: 118px;
-  margin: 0 auto 20px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #c9b4ff, var(--violet));
-  display: grid;
-  place-items: center;
-  font-size: 54px;
-  box-shadow: 0 16px 40px rgba(135, 75, 248, 0.42);
-}
-.gr-celebrate h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.025em; color: var(--ink); margin-bottom: 8px; }
-.gr-celebrate p { color: var(--slate); font-size: 16px; margin-bottom: 24px; }
-.gr-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--correct-bg);
-  color: #2f6b1e;
-  font-weight: 800;
-  padding: 10px 20px;
-  border-radius: 999px;
-  font-size: 18px;
-  margin-bottom: 26px;
-}
-.gr-cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .gr-btn {
   display: inline-flex;
   align-items: center;
@@ -1159,14 +1108,9 @@
 .gr-btn--soft { background: var(--cloud); border: 1.5px solid var(--line); color: var(--ink); }
 .gr-btn--soft:hover { background: #ece7fb; }
 
-.gr-conf { position: absolute; width: 11px; height: 11px; top: -20px; border-radius: 2px; animation: gr-fall linear forwards; }
-
 @keyframes gr-pop {
   from { transform: scale(0.96); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
-}
-@keyframes gr-fall {
-  to { transform: translateY(560px) rotate(540deg); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
