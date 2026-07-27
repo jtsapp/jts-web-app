@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { uiStr, typeLabel, fmt } from './strings.js'
 import { completeLessonModule } from '../../api.js'
 import { markUnitDone } from './grammarProgress.js'
+import TrainerResult from '../../components/TrainerResult.jsx'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
@@ -29,10 +30,6 @@ function shuffle(arr) {
   return a
 }
 
-function stripTags(s) {
-  return String(s || '').replace(/<[^>]+>/g, '')
-}
-
 // Доверенный HTML из данных курса (подсветки <b>/<em>/<span class="hl">).
 function Html({ html, as = 'span', className, ...rest }) {
   const Tag = as
@@ -41,7 +38,6 @@ function Html({ html, as = 'span', className, ...rest }) {
 
 export default function ActivityPlayer({
   activities,
-  unitTitle,
   lang,
   token,
   level,
@@ -53,21 +49,36 @@ export default function ActivityPlayer({
   const [correct, setCorrect] = useState(0)
   const [points, setPoints] = useState(0)
   const total = activities.length
+  const finished = idx >= total
 
-  if (idx >= total) {
+  // Побочные эффекты завершения: локальная отметка «Пройдено» для каталога и
+  // начисление монет в реальный баланс (best-effort — как мобилка; осечка не
+  // должна ломать итоги). Живут в плеере, а не в экране итогов: тот теперь
+  // общий с аудированием/словарём и чисто презентационный.
+  useEffect(() => {
+    if (!finished) return
+    if (level != null && unitId != null) markUnitDone(level, unitId)
+    if (token && points > 0) completeLessonModule(token, points).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished])
+
+  if (finished) {
     return (
-      <Celebrate
-        correct={correct}
-        total={total}
-        points={points}
-        unitTitle={unitTitle}
-        lang={lang}
-        token={token}
-        level={level}
-        unitId={unitId}
-        onExit={onExit}
-        onNextLesson={onNextLesson}
-      />
+      <div className="lt">
+        <TrainerResult
+          correct={correct}
+          wrong={total - correct}
+          coins={points}
+          onAgain={() => {
+            setIdx(0)
+            setCorrect(0)
+            setPoints(0)
+          }}
+          onHome={onExit}
+          onNext={onNextLesson}
+          nextLabel={uiStr(lang, 'btn_next_lesson')}
+        />
+      </div>
     )
   }
 
@@ -861,65 +872,3 @@ function Flashcard({ a, lang }) {
   )
 }
 
-// ——— финальный экран урока ———
-function Celebrate({ correct, total, points, unitTitle, lang, token, level, unitId, onExit, onNextLesson }) {
-  const perfect = correct === total
-  const containerRef = useRef(null)
-  useEffect(() => {
-    confettiBurst(containerRef.current, 80)
-    // Отмечаем урок пройденным локально — каталог покажет бейдж «Пройдено».
-    if (level != null && unitId != null) markUnitDone(level, unitId)
-    // Начисляем заработанные монеты в реальный баланс (best-effort — как мобилка
-    // на завершении урока). Осечка не должна ломать финальный экран.
-    if (token && points > 0) completeLessonModule(token, points).catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  return (
-    <div className="gr-practice">
-      <div className="gr-lprog">
-        <div className="gr-lprog__bar" style={{ width: '100%' }} />
-      </div>
-      <div className="gr-lstep">{uiStr(lang, 'lbl_complete')}</div>
-      <div className="gr-celebrate" ref={containerRef}>
-        <div className="gr-medal">{perfect ? '🏆' : '🎉'}</div>
-        <h1>{uiStr(lang, 'cel_title')}</h1>
-        <p>{fmt(uiStr(lang, 'cel_desc'), { title: stripTags(unitTitle) })}</p>
-        <div className="gr-score">{fmt(uiStr(lang, 'cel_score'), { c: correct, n: total })}</div>
-        {points > 0 && (
-          <div className="gr-earned">
-            <img className="gr-reward__coin" src="/assets/coin-star.png" alt="" /> +{points}
-          </div>
-        )}
-        <div className="gr-cta-row">
-          {onNextLesson && (
-            <button className="gr-btn gr-btn--primary" onClick={onNextLesson}>
-              {uiStr(lang, 'btn_next_lesson')}
-            </button>
-          )}
-          <button className="gr-btn gr-btn--soft" onClick={onExit}>
-            {uiStr(lang, 'btn_back')}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Лёгкое конфетти на финальном экране (уважает prefers-reduced-motion).
-const CFX = ['#874BF8', '#0AAFFF', '#00D441', '#FFAD00', '#FF631E', '#B7FF5A']
-function confettiBurst(host, n) {
-  if (!host) return
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  for (let i = 0; i < n; i++) {
-    const d = document.createElement('div')
-    d.className = 'gr-conf'
-    d.style.left = Math.random() * 100 + '%'
-    d.style.background = CFX[i % CFX.length]
-    d.style.animationDuration = 1.6 + Math.random() * 1.4 + 's'
-    d.style.animationDelay = Math.random() * 0.3 + 's'
-    d.style.transform = 'rotate(' + Math.random() * 360 + 'deg)'
-    if (Math.random() > 0.5) d.style.borderRadius = '50%'
-    host.appendChild(d)
-    setTimeout(() => d.remove(), 3200)
-  }
-}
