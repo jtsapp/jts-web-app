@@ -259,7 +259,7 @@ test.describe('Словарь — нативный экран', () => {
       await page.evaluate(SEED_FN, 1000 + attempt)
       await startLearnPhase(page)
       for (let i = 0; i < 40 && !found; i++) {
-        if (await page.locator('.v-res-h').count()) break
+        if (await page.locator('.lt-res').count()) break
         found = (await page.locator('.v-mem-grid').count()) > 0
         if (found) break
         await solveOneTask(page)
@@ -271,7 +271,7 @@ test.describe('Словарь — нативный экран', () => {
       }
       if (!found) {
         // Сессия не подкинула memory — выходим крестиком (или из итогов) и заново.
-        if (await page.locator('.v-res-h').count()) await page.locator('.v-res-foot .v-btn').click()
+        if (await page.locator('.lt-res').count()) await page.locator('.lt-ghost').click()
         else await page.locator('.v-sess-x').click()
         await expect(page.locator('.v-setup-title')).toBeVisible()
       }
@@ -386,8 +386,9 @@ test.describe('Словарь — нативный экран', () => {
 
     // Проходим сессию до итогов, решая парные задания по data-id.
     const types = new Set()
+    let challengeChecked = false
     for (let i = 0; i < 160; i++) {
-      if (await page.locator('.v-res-h').count()) break
+      if (await page.locator('.lt-res').count()) break
       const kind = await page.evaluate(() => {
         const q = (s) => document.querySelector(s)
         if (q('.v-mem-grid')) return 'memory'
@@ -404,6 +405,21 @@ test.describe('Словарь — нативный экран', () => {
         return null
       })
       if (kind) types.add(kind)
+      if (kind === 'challenge' && !challengeChecked) {
+        challengeChecked = true
+        // Регрессия: сессия ре-рендерится каждую секунду (общий таймер), и
+        // финальный раунд перетасовывал пул на каждый тик — слово и варианты
+        // подменялись через ~секунду. Вопрос обязан жить весь свой таймер
+        // (6–7 с): за 2,5 с ни слово, ни варианты меняться не должны.
+        const snap = () =>
+          page.evaluate(() => ({
+            word: document.querySelector('.v-stage .v-card').textContent,
+            opts: [...document.querySelectorAll('.v-choice')].map((b) => b.textContent),
+          }))
+        const before = await snap()
+        await page.waitForTimeout(2500)
+        expect(await snap(), 'вопрос финального раунда не подменяется на тиках таймера').toEqual(before)
+      }
       await solveOneTask(page)
       await page.waitForTimeout(450)
       if (await page.locator('.v-feedback .v-btn').count()) {
@@ -412,9 +428,14 @@ test.describe('Словарь — нативный экран', () => {
       }
     }
 
-    // Дошли до итогов, и в них — те же 6 слов, что были в сессии.
-    await expect(page.locator('.v-res-h')).toBeVisible()
-    await expect(page.locator('.v-res-stat').first().locator('.v-v')).toHaveText('6')
+    // Дошли до итогов — теперь это общий с аудированием экран (lt-res):
+    // маскот, процент и счётчики верных/неверных вместо старого 🎉-экрана.
+    await expect(page.locator('.lt-res')).toBeVisible()
+    expect(challengeChecked, 'финальный раунд встретился и проверен').toBe(true)
+    await expect(page.locator('.lt-res__pct')).toHaveText(/^\d+%$/)
+    await expect(page.locator('.lt-res__stat')).toHaveCount(2)
+    await expect(page.locator('.lt-res__num').nth(0)).toContainText(/\d/)
+    await expect(page.locator('.lt-res__num').nth(1)).toContainText(/\d/)
     expect(types.size).toBeGreaterThan(2)
 
     // Прогресс лёг в localStorage под ключом прототипа — старые пользователи
@@ -422,6 +443,10 @@ test.describe('Словарь — нативный экран', () => {
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('jts_vocab2') || '{}'))
     expect(Object.keys(saved.srs || {}).length).toBe(6)
     expect(saved.seenCount).toBe(6)
+
+    // «Попробовать ещё раз» перезапускает тренировку: свежий набор карточек.
+    await page.locator('.lt-primary').click()
+    await expect(page.locator('.v-ff-word')).toBeVisible()
   })
 
   test('раскладка не разъезжается по ширине', async ({ page }) => {
