@@ -91,34 +91,50 @@ test.describe('Практика — мобильная адаптация', () =
     await expect(page.locator('.pp-listen__level')).toHaveText('A2')
   })
 
-  test('рилсы: вертикальный свайп переключает видео', async ({ page }) => {
+  test('рилсы: полноэкранная TikTok-лента со snap-скроллом, без стрелок', async ({ page }) => {
     await openPractice(page)
-
     await page.locator('.pp-mcard').first().click()
-    const video = page.locator('.rl__video')
-    await expect(video).toHaveAttribute('src', CLIPS[0].mediaUrl)
 
-    // Синтетический тач-жест: палец ведёт вверх на 140px по центру сцены.
-    const swipe = (dy) =>
-      page.locator('.rl__stage').evaluate((stage, delta) => {
-        const mk = (type, y) =>
-          new TouchEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            [type === 'touchend' ? 'changedTouches' : 'touches']: [
-              new Touch({ identifier: 1, target: stage, clientX: 195, clientY: y }),
-            ],
-          })
-        stage.dispatchEvent(mk('touchstart', 500))
-        stage.dispatchEvent(mk('touchend', 500 + delta))
-      }, dy)
+    // Ждём конца входной анимации (scr-in двигает .rl по Y) — иначе замер
+    // геометрии попадает в середину transform-а.
+    await page.locator('.rl').evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
 
-    await swipe(-140) // вверх → следующий ролик
-    await expect(video).toHaveAttribute('src', CLIPS[1].mediaUrl)
-    await swipe(140) // вниз → обратно
-    await expect(video).toHaveAttribute('src', CLIPS[0].mediaUrl)
-    await swipe(-20) // короткое движение — не переключает (это тап)
-    await expect(video).toHaveAttribute('src', CLIPS[0].mediaUrl)
+    // Полноэкранный оверлей: лента накрывает весь вьюпорт (поверх оболочки).
+    const vp = page.viewportSize()
+    const rl = await page.locator('.rl').boundingBox()
+    expect(rl.x).toBe(0)
+    expect(rl.y).toBe(0)
+    expect(Math.round(rl.width)).toBe(vp.width)
+    expect(Math.round(rl.height)).toBe(vp.height)
+
+    // Стрелок вверх/вниз на телефоне нет.
+    await expect(page.locator('.rl__nav')).toBeHidden()
+
+    // Лента — нативный скролл со snap, каждый ролик занимает полный кадр.
+    const feed = page.locator('.rl__feed')
+    const snap = await feed.evaluate((el) => getComputedStyle(el).scrollSnapType)
+    expect(snap).toContain('y')
+    expect(snap).toContain('mandatory')
+    await expect(page.locator('.rl__item')).toHaveCount(CLIPS.length)
+    const item = await page.locator('.rl__item').first().boundingBox()
+    expect(Math.round(item.height)).toBe(vp.height)
+    await expect(page.locator('.rl__item').first().locator('.rl__video')).toHaveAttribute(
+      'src',
+      CLIPS[0].mediaUrl,
+    )
+
+    // Активный ролик ведёт IntersectionObserver: прокрутили ленту на кадр —
+    // активен второй, вернулись — снова первый.
+    const active = page.locator('.rl__item[data-active]')
+    await expect(active).toHaveAttribute('data-idx', '0')
+    await feed.evaluate((el) => el.scrollTo(0, el.clientHeight))
+    await expect(active).toHaveAttribute('data-idx', '1')
+    await feed.evaluate((el) => el.scrollTo(0, 0))
+    await expect(active).toHaveAttribute('data-idx', '0')
+
+    // «Назад» плавает поверх ленты и закрывает просмотр.
+    await page.locator('.vd__back').click()
+    await expect(page.locator('.rl')).toHaveCount(0)
   })
 })
 
@@ -133,5 +149,23 @@ test.describe('Практика — десктоп не пострадал', () 
     // Колонки стоят рядом: словарь правее контента и на той же высоте.
     expect(side.x).toBeGreaterThan(center.x + center.width - 10)
     expect(Math.abs(side.y - center.y)).toBeLessThan(120)
+  })
+
+  test('рилсы: кнопки вверх/вниз остались и листают ленту', async ({ page }) => {
+    await openPractice(page)
+    await page.locator('.pp-mcard').first().click()
+
+    // На десктопе лента в кадре 9:16 (не оверлей), стрелки видны.
+    await expect(page.locator('.rl__nav')).toBeVisible()
+    const active = page.locator('.rl__item[data-active]')
+    await expect(active).toHaveAttribute('data-idx', '0')
+    await expect(page.locator('.rl__navbtn').first()).toBeDisabled() // вверх некуда
+
+    // «Вниз» плавно домётывает ленту до следующего ролика (scroll-snap).
+    await page.locator('.rl__navbtn').nth(1).click()
+    await expect(active).toHaveAttribute('data-idx', '1')
+    await expect(page.locator('.rl__navbtn').nth(1)).toBeDisabled() // роликов два
+    await page.locator('.rl__navbtn').first().click()
+    await expect(active).toHaveAttribute('data-idx', '0')
   })
 })
