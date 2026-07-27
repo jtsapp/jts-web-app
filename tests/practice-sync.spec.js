@@ -40,7 +40,7 @@ test.describe('practiceSync — импурные обёртки', () => {
 
   test('hydratePractice при ответе не-ok не трогает localStorage', async () => {
     const { setCalls } = installStubs()
-    globalThis.fetch = async () => ({ ok: false, json: async () => ({}) })
+    globalThis.fetch = async () => ({ ok: false, json: async () => ({ state: { grammar: { done: ['x'] } } }) })
     const { hydratePractice } = await import('../src/practice/practiceSync.js')
     await hydratePractice('test-token')
     expect(setCalls).toEqual([])
