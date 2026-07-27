@@ -673,59 +673,73 @@ function gradFor(seed) {
   return `linear-gradient(150deg, hsl(${a} 45% 42%), hsl(${(a + 40) % 360} 55% 18%))`
 }
 
-// Вертикальный просмотр мемов/рилсов (как TikTok): плеер 9:16, переключение
-// колёсиком мыши / стрелками / кнопками вверх-вниз, на таче — свайпом.
+// Вертикальная лента мемов/рилсов как в TikTok. Ролики лежат в нативно
+// скроллируемой ленте со scroll-snap: палец «везёт» видео за собой, отпустил —
+// лента сама доводится до ближайшего ролика (никакого JS-переключения кадров).
+// Активный ролик определяет IntersectionObserver (занял ≥60% кадра): он
+// играет, остальные стоят. На десктопе остаются кнопки/колесо/стрелки —
+// кнопки и клавиши мотают ленту плавным scrollTo; на мобиле кнопок нет
+// (спрятаны в CSS), сама лента — полноэкранный оверлей.
 function ReelsViewer({ clips, startIndex, onBack }) {
   const { t } = useI18n()
   const [i, setI] = useState(startIndex)
   const [hint, setHint] = useState(true)
   const [paused, setPaused] = useState(false)
-  const lockRef = useRef(false)
-  const videoRef = useRef(null)
-  const touchRef = useRef(null)
-  const clip = clips[i]
+  const feedRef = useRef(null)
+  const iRef = useRef(startIndex)
   // Тач-экран → в подсказке свайп, а не колесо (matchMedia безопасен и в SSR-гарде)
   const coarse =
     typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches
 
-  const go = (dir) => {
-    setI((cur) => {
-      const next = Math.min(clips.length - 1, Math.max(0, cur + dir))
-      if (next !== cur) setHint(false)
-      return next
+  // Лента открывается сразу на выбранном ролике, без прокрутки к нему.
+  useEffect(() => {
+    const feed = feedRef.current
+    if (feed) feed.scrollTop = startIndex * feed.clientHeight
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Кто в кадре — тот и активен: индекс ведёт IntersectionObserver.
+  useEffect(() => {
+    const feed = feedRef.current
+    if (!feed) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return
+          const k = Number(en.target.dataset.idx)
+          iRef.current = k
+          setI((cur) => {
+            if (cur !== k) setHint(false)
+            return k
+          })
+          setPaused(false)
+        })
+      },
+      { root: feed, threshold: 0.6 },
+    )
+    feed.querySelectorAll('.rl__item').forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [clips.length])
+
+  // Играет только активный ролик. Автоплей со звуком браузер может не дать
+  // без жеста — тогда показываем кнопку Play, как раньше.
+  useEffect(() => {
+    const feed = feedRef.current
+    if (!feed) return
+    feed.querySelectorAll('.rl__video').forEach((v, k) => {
+      if (k === i) v.play().catch(() => setPaused(true))
+      else if (!v.paused) v.pause()
     })
+  }, [i])
+
+  // Кнопки на десктопе и клавиши: плавно домотать ленту до соседнего ролика.
+  const go = (dir) => {
+    const feed = feedRef.current
+    if (!feed) return
+    const next = Math.min(clips.length - 1, Math.max(0, iRef.current + dir))
+    feed.scrollTo({ top: next * feed.clientHeight, behavior: 'smooth' })
   }
 
-  // Колёсико: один «щелчок» = одно переключение (с блокировкой на время).
-  const onWheel = (e) => {
-    if (Math.abs(e.deltaY) < 8) return
-    if (lockRef.current) return
-    lockRef.current = true
-    setTimeout(() => {
-      lockRef.current = false
-    }, 600)
-    go(e.deltaY > 0 ? 1 : -1)
-  }
-
-  // Тач-свайп: вертикальный жест ≥48px переключает ролик (вверх — следующий,
-  // как в TikTok). Горизонтальные и короткие жесты игнорируем — это тап по
-  // видео (пауза) или случайное смещение пальца.
-  const onTouchStart = (e) => {
-    const t = e.touches[0]
-    touchRef.current = { x: t.clientX, y: t.clientY }
-  }
-  const onTouchEnd = (e) => {
-    const start = touchRef.current
-    touchRef.current = null
-    if (!start) return
-    const t = e.changedTouches[0]
-    const dx = t.clientX - start.x
-    const dy = t.clientY - start.y
-    if (Math.abs(dy) < 48 || Math.abs(dy) < Math.abs(dx) * 1.2) return
-    go(dy < 0 ? 1 : -1)
-  }
-
-  // Стрелки клавиатуры.
   useEffect(() => {
     const h = (e) => {
       if (e.key === 'ArrowDown') go(1)
@@ -733,10 +747,11 @@ function ReelsViewer({ clips, startIndex, onBack }) {
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clips.length])
 
   const togglePlay = () => {
-    const v = videoRef.current
+    const v = feedRef.current?.querySelectorAll('.rl__video')[iRef.current]
     if (!v) return
     if (v.paused) {
       v.play()
@@ -758,29 +773,28 @@ function ReelsViewer({ clips, startIndex, onBack }) {
         </div>
       </div>
 
-      <div
-        className="rl__stage"
-        onWheel={onWheel}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        <div className="rl__player">
-          <video
-            key={clip.id}
-            ref={videoRef}
-            className="rl__video"
-            src={clip.mediaUrl}
-            poster={clip.thumbnailUrl}
-            autoPlay
-            loop
-            playsInline
-            onClick={togglePlay}
-          />
-          {paused && (
-            <button className="rl__playbtn" onClick={togglePlay} aria-label={t('practice.reels.play')}>
-              <PlayIcon size={30} />
-            </button>
-          )}
+      <div className="rl__stage">
+        <div className="rl__frame">
+          <div className="rl__feed" ref={feedRef}>
+            {clips.map((clip, k) => (
+              <div key={clip.id} className="rl__item" data-idx={k} data-active={k === i || undefined}>
+                <video
+                  className="rl__video"
+                  src={clip.mediaUrl}
+                  poster={clip.thumbnailUrl}
+                  loop
+                  playsInline
+                  preload={Math.abs(k - i) <= 1 ? 'auto' : 'none'}
+                  onClick={togglePlay}
+                />
+                {paused && k === i && (
+                  <button className="rl__playbtn" onClick={togglePlay} aria-label={t('practice.reels.play')}>
+                    <PlayIcon size={30} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
           {hint && (
             <div className="rl__hint">
               {coarse ? (
