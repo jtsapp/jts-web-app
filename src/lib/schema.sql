@@ -94,3 +94,16 @@ create table if not exists review_item (
 -- Fast "what's due for this learner" lookup.
 create index if not exists review_item_due_idx
   on review_item (device_id, kind, due_at);
+
+-- ===========================================================================
+-- Прогресс разделов практики (аудирование / словарь / грамматика), по аккаунту.
+-- Один блоб на модуль; содержимое зеркалит клиентские localStorage-payload'ы.
+-- profile_id = 'user-<id>' из resolveProfileId. Независимо от таблиц тьютора.
+-- ===========================================================================
+create table if not exists practice_state (
+  profile_id text        not null,
+  module     text        not null,   -- 'vocab' | 'grammar' | 'listening'
+  state      jsonb       not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (profile_id, module)
+);
