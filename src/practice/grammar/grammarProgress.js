@@ -4,8 +4,8 @@
 // public/practice/grammar/*.json), отдельного бэкенда завершения у него нет,
 // поэтому «пройдено» держим в localStorage. Ключ — «<level>:<unitId>».
 
-const KEY = 'jts_grammar_done'
-const EVENT = 'grammar-progress'
+import { GRAMMAR_KEY as KEY, GRAMMAR_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
+import { pushModule } from '../practiceSync.js'
 
 function read() {
   try {
@@ -46,6 +46,7 @@ export function markUnitDone(level, unitId) {
   if (set.has(key)) return
   set.add(key)
   write(set)
+  pushModule('grammar', set) // best-effort серверный синк (no-op для гостя)
   try {
     window.dispatchEvent(new Event(EVENT))
   } catch {
