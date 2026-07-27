@@ -45,6 +45,7 @@ import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
+import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY } from './config.js'
@@ -76,6 +77,7 @@ export default function App() {
         if (cancelled) return
         if (session) {
           setToken(session.token)
+          hydratePractice(session.token)
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
           if (session.languageLevel) setUserLevel(session.languageLevel)
@@ -211,6 +213,7 @@ export default function App() {
             setInterestIds(enToInterestIds(profile.interests))
             if (profile.profession) setProfession(profile.profession)
           })
+        hydratePractice(tok)
       }
       setScreen('success')
     } catch (e) {
@@ -256,6 +259,7 @@ export default function App() {
           setInterestIds(enToInterestIds(profile.interests))
           if (profile.profession) setProfession(profile.profession)
         })
+      hydratePractice(tok)
       setScreen('success')
     } catch (e) {
       setError(e.message || t('err.otp'))
@@ -302,6 +306,7 @@ export default function App() {
   // Выход из аккаунта: чистим токен и возвращаем на welcome.
   function handleLogout() {
     clearToken()
+    clearLocalPractice()
     setToken(null)
     setName('')
     setPhone('')
