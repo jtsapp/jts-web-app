@@ -113,7 +113,6 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
       {data && tab === 'practice' && (
         <ActivityPlayer
           activities={data.activities}
-          unitTitle={unit.title}
           lang={lang}
           token={token}
           level={level}

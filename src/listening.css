@@ -332,6 +332,20 @@
 .lt-res__badge--bad { background: var(--lt-red); }
 .lt-res__badge--good { background: var(--lt-green); }
 .lt-res__label { font-size: 13px; color: #9a99a6; line-height: 1.3; }
+/* заработанные монеты (грамматика начисляет их в реальный баланс) */
+.lt-res__coins {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 22px;
+  background: #fff7e0;
+  color: #b8860b;
+  font-weight: 800;
+  font-size: 18px;
+  padding: 8px 18px;
+  border-radius: 999px;
+}
+.lt-res__coins img { width: 26px; height: 26px; object-fit: contain; }
 .lt-res__btn { margin-top: 0; max-width: none; }
 
 /* ── модалка подтверждения выхода ── */
