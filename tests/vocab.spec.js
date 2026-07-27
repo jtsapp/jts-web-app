@@ -47,7 +47,7 @@ const seedRandom = (page, seed = 42) => page.addInitScript(SEED_FN, seed)
 
 // Решает один шаг текущего задания сессии — общий для потоковых тестов.
 const solveOneTask = (page) =>
-  page.evaluate(() => {
+  page.evaluate(async () => {
     const q = (s) => document.querySelector(s)
     const qa = (s) => [...document.querySelectorAll(s)]
     if (q('.v-match-wrap')) {
@@ -56,9 +56,16 @@ const solveOneTask = (page) =>
       return
     }
     if (q('.v-mem-grid')) {
-      const closed = qa('.v-mem:not(.v-done)').filter((m) => !m.classList.contains('v-flip'))
-      const a = closed[0]
-      if (a) { a.click(); const b = closed.find((m) => m !== a && m.dataset.id === a.dataset.id); if (b) b.click() }
+      const free = qa('.v-mem:not(.v-done)')
+      const a = free[0]
+      if (a) {
+        a.click()
+        // React 19 флашит клик-апдейты в микротаске: без паузы второй клик
+        // ловит устаревший обработчик, где первая карточка ещё не выбрана.
+        await Promise.resolve()
+        const b = free.find((m) => m !== a && m.dataset.id === a.dataset.id)
+        if (b) b.click()
+      }
       return
     }
     if (q('.v-drag-imgs')) {
@@ -232,13 +239,13 @@ test.describe('Словарь — нативный экран', () => {
     await check('низкий вьюпорт')
   })
 
-  test('memory: карточки пар не раздуваются за колонки сетки', async ({ page }) => {
-    // Регрессия «экран приближается»: Safari выводил aspect-ratio грид-плитки
-    // из растянутой высоты ряда — карточки 353×470 вместо 156×207 вылезали за
-    // экран. Пропорция теперь задана паддинг-хаком (от ширины); тест держит
-    // геометрию: карта = ширине колонки, сетка не шире сцены, страница без
-    // горизонтального скролла. Ручная проверка движка Safari — на реальном
-    // Safari 26 (Playwright WebKit баг не воспроизводит).
+  test('memory: карточки открыты сразу, фидбек — цветом обводки, геометрия не плывёт', async ({ page }) => {
+    // Пары «слово/перевод» без рубашек: слова видны сразу (никаких 💬 и
+    // переворотов), размер карточки одинаков во всех состояниях, а фидбек —
+    // только цветом обводки: v-sel — выбор, v-done — верно, v-no — промах.
+    // Заодно держим геометрию времён регрессии «экран приближается» в Safari:
+    // карта = ширине колонки, сетка не шире сцены, страница без
+    // горизонтального скролла.
     test.slow()
     test.setTimeout(540_000) // до пяти коротких сессий, с запасом на параллельный прогон
     await seedRandom(page)
@@ -271,23 +278,104 @@ test.describe('Словарь — нативный экран', () => {
     }
     expect(found, 'memory-задание должно встретиться за пять сессий').toBe(true)
 
-    const m = await page.evaluate(() => {
+    // Доска: слова видны сразу, рубашек и flip-обвязки в DOM больше нет.
+    const board = await page.evaluate(() => {
       const r = (el) => el.getBoundingClientRect()
       const stage = r(document.querySelector('.v-stage'))
-      const grid = r(document.querySelector('.v-mem-grid'))
-      const card = r(document.querySelector('.v-mem'))
+      const gridEl = document.querySelector('.v-mem-grid')
+      const grid = r(gridEl)
       return {
         iw: window.innerWidth,
         sw: document.documentElement.scrollWidth,
-        stageRight: stage.right, grid: { w: grid.width, right: grid.right },
-        card: { w: card.width, h: card.height },
+        stageRight: stage.right,
+        grid: { w: grid.width, right: grid.right },
+        cols: getComputedStyle(gridEl).gridTemplateColumns.split(' ').length,
+        shirts: document.querySelectorAll('.v-mem-inner, .v-mem-back, .v-mem.v-flip').length,
+        cards: [...document.querySelectorAll('.v-mem')].map((el) => ({
+          txt: el.textContent.trim(),
+          w: r(el).width,
+          h: r(el).height,
+        })),
       }
     })
-    const track = (m.grid.w - 30) / 4 // 4 колонки, три зазора по 10px
-    expect(Math.abs(m.card.w - track), 'карта занимает ровно свою колонку').toBeLessThanOrEqual(2)
-    expect(Math.abs(m.card.h - (m.card.w * 4) / 3), 'карта держит пропорцию 3:4').toBeLessThanOrEqual(3)
-    expect(m.grid.right, 'сетка не шире сцены').toBeLessThanOrEqual(m.stageRight + 1)
-    expect(m.sw, 'страница без горизонтальной прокрутки').toBeLessThanOrEqual(m.iw + 1)
+    expect(board.shirts, 'рубашек и переворотов больше нет').toBe(0)
+    expect(board.cards.length).toBeGreaterThanOrEqual(6)
+    for (const c of board.cards) expect(c.txt, 'слово видно сразу').not.toBe('')
+
+    // Открытым словам тесно в 4 колонках узкого экрана — там пары в 2 колонки.
+    expect(board.cols, 'колонки по вьюпорту').toBe(page.viewportSize().width <= 640 ? 2 : 4)
+    const track = (board.grid.w - (board.cols - 1) * 10) / board.cols // зазоры по 10px
+    for (const c of board.cards) {
+      expect(Math.abs(c.w - track), 'карта занимает ровно свою колонку').toBeLessThanOrEqual(2)
+      expect(Math.abs(c.h - board.cards[0].h), 'все карточки одной высоты').toBeLessThanOrEqual(1)
+    }
+    expect(board.grid.right, 'сетка не шире сцены').toBeLessThanOrEqual(board.stageRight + 1)
+    expect(board.sw, 'страница без горизонтальной прокрутки').toBeLessThanOrEqual(board.iw + 1)
+
+    // Дальше читаем цвет обводки сразу после кликов. У рамки transition 150мс,
+    // поэтому включаем reduced motion (vocab.css схлопывает переходы до .01мс)
+    // и ждём два кадра — цвет гарантированно долетел до целевого.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+
+    // Промах: клики и чтение состояния в одном evaluate — классы React ставит
+    // синхронно, а красная подсветка сама гаснет через 380 мс.
+    const miss = await page.evaluate(async () => {
+      const settle = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+      const size = (el) => {
+        const r = el.getBoundingClientRect()
+        return { w: r.width, h: r.height }
+      }
+      const free = [...document.querySelectorAll('.v-mem:not(.v-done)')]
+      const a = free[0]
+      const b = free.find((x) => x.dataset.id !== a.dataset.id)
+      const before = [size(a), size(b)]
+      a.click()
+      await settle() // React 19: клик-апдейты долетают до DOM в микротаске
+      const selPicked = a.classList.contains('v-sel')
+      const selColor = getComputedStyle(a).borderTopColor
+      b.click()
+      await settle()
+      return {
+        selPicked,
+        selColor,
+        red: [a, b].map((el) => el.classList.contains('v-no')),
+        redColor: getComputedStyle(a).borderTopColor,
+        after: [size(a), size(b)],
+        before,
+      }
+    })
+    expect(miss.selPicked, 'выбранная карточка помечена v-sel').toBe(true)
+    expect(miss.selColor, 'обводка выбора — фиолетовая (--violet)').toBe('rgb(144, 71, 255)')
+    expect(miss.red, 'обе карточки промаха — с красной обводкой').toEqual([true, true])
+    expect(miss.redColor, 'обводка промаха — красная (--red)').toBe('rgb(229, 103, 95)')
+    expect(miss.after, 'размеры карточек при промахе не изменились').toEqual(miss.before)
+    await expect(page.locator('.v-mem.v-no'), 'красная подсветка гаснет сама').toHaveCount(0)
+
+    // Верная пара: обе карточки — с зелёной обводкой, размеры прежние.
+    const hit = await page.evaluate(async () => {
+      const settle = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+      const size = (el) => {
+        const r = el.getBoundingClientRect()
+        return { w: r.width, h: r.height }
+      }
+      const free = [...document.querySelectorAll('.v-mem:not(.v-done)')]
+      const a = free[0]
+      const b = free.find((x) => x !== a && x.dataset.id === a.dataset.id)
+      const before = [size(a), size(b)]
+      a.click()
+      await settle() // иначе клик по паре попадает в устаревший обработчик
+      b.click()
+      await settle()
+      return {
+        green: [a, b].map((el) => el.classList.contains('v-done')),
+        greenColor: getComputedStyle(a).borderTopColor,
+        after: [size(a), size(b)],
+        before,
+      }
+    })
+    expect(hit.green, 'верная пара — с зелёной обводкой').toEqual([true, true])
+    expect(hit.greenColor, 'обводка верной пары — зелёная (--green)').toBe('rgb(52, 168, 83)')
+    expect(hit.after, 'размеры карточек при верной паре не изменились').toEqual(hit.before)
   })
 
   test('сессия: задания идут потоком, прогресс SRS сохраняется', async ({ page }) => {

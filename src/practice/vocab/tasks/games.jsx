@@ -176,7 +176,9 @@ export function Match({ item, ctx }) {
   )
 }
 
-/* ── 13. memory: найти пары слово/перевод ── */
+/* ── 13. memory: найти пары слово/перевод. Карточки открыты сразу, без
+   переворотов и смены размеров — весь фидбек цветом обводки, классы как в
+   Match: v-sel — выбрана, v-done — пара сошлась, v-no — промах. ── */
 export function Memory({ item, ctx }) {
   const set = useMemo(() => item.pool.slice(0, 4), [item])
   const cards = useMemo(() => {
@@ -187,60 +189,52 @@ export function Memory({ item, ctx }) {
     })
     return ctx.shuffle(c).map((x, i) => ({ ...x, key: i }))
   }, [set])
-  const [open, setOpen] = useState([])
+  const [sel, setSel] = useState(null) // key выбранной карточки
+  const [bad, setBad] = useState([])
   const [done, setDone] = useState([])
-  const lock = useRef(false)
   const doneRef = useRef(false)
 
-  const flip = (c) => {
-    if (lock.current || open.includes(c.key) || done.includes(c.id)) return
+  const tap = (c) => {
+    if (done.includes(c.id)) return
     if (c.face === 'en') ctx.speak(c.w.en)
-    const next = [...open, c.key]
-    setOpen(next)
-    if (next.length < 2) return
-    lock.current = true
-    const [a, b] = next.map((k) => cards.find((x) => x.key === k))
-    if (a.id === b.id) {
-      setTimeout(() => {
-        ctx.sfx('good')
-        ctx.buzz(12)
-        const nd = [...done, a.id]
-        setDone(nd)
-        setOpen([])
-        lock.current = false
-        if (nd.length === set.length && !doneRef.current) {
-          doneRef.current = true
-          ctx.groupWin(set, 16)
-        }
-      }, 420)
+    if (sel == null) return setSel(c.key)
+    if (sel === c.key) return setSel(null)
+    const a = cards.find((x) => x.key === sel)
+    if (a.id === c.id) {
+      ctx.sfx('good')
+      ctx.buzz(12)
+      const nd = [...done, c.id]
+      setDone(nd)
+      setSel(null)
+      if (nd.length === set.length && !doneRef.current) {
+        doneRef.current = true
+        ctx.groupWin(set, 16)
+      }
     } else {
       ctx.sfx('bad')
-      setTimeout(() => {
-        setOpen([])
-        lock.current = false
-      }, 720)
+      ctx.buzz([10, 30, 10])
+      setBad([sel, c.key])
+      setTimeout(() => setBad([]), 380)
+      setSel(null)
     }
   }
 
   return (
     <>
       <div className="v-q-ask">{ctx.T.ask_memory}</div>
-      <div className="v-mem-grid">
+      <div className="v-mem-grid v-mem-open">
         {cards.map((c) => {
           const isDone = done.includes(c.id)
-          const isOpen = open.includes(c.key) || isDone
           return (
-            <div
+            <button
               key={c.key}
+              type="button"
               data-id={c.id}
-              className={`v-mem${isOpen ? ' v-flip' : ''}${isDone ? ' v-done' : ''}`}
-              onClick={() => flip(c)}
+              className={`v-mem${sel === c.key ? ' v-sel' : ''}${bad.includes(c.key) ? ' v-no' : ''}${isDone ? ' v-done' : ''}`}
+              onClick={() => tap(c)}
             >
-              <div className="v-mem-inner">
-                <div className="v-mem-face v-mem-back">💬</div>
-                <div className="v-mem-face v-mem-front">{c.txt}</div>
-              </div>
-            </div>
+              {c.txt}
+            </button>
           )
         })}
       </div>
