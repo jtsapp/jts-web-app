@@ -1788,6 +1788,62 @@ textarea {
   }
 }
 
+/* Память (пары слово/перевод): карточки открыты сразу, без переворотов.
+   Геометрия неизменна во всех состояниях (постоянная ширина рамки, без
+   transform/animation) — фидбек только цветом обводки, палитра как у
+   .v-mcard в Match. Селектор через .v-mem-open перебивает генерённые
+   правила vocab.css (он подключается после styles.css). */
+.vc .v-mem-grid.v-mem-open {
+  /* Ряды одной высоты: слово в 2 строки не должно рвать сетку. */
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+.vc .v-mem-open .v-mem {
+  perspective: none;
+  min-height: 74px;
+  padding: 10px 12px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: #fff;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  font-weight: 700;
+  font-size: 14.5px;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+/* Гасим распорку 3:4 из vocab.css — высоту держат min-height и ряды сетки. */
+.vc .v-mem-open .v-mem::before {
+  content: none;
+}
+.vc .v-mem-open .v-mem:hover {
+  border-color: var(--line-hover);
+}
+.vc .v-mem-open .v-mem.v-sel {
+  border-color: var(--violet);
+  background: #faf8ff;
+}
+.vc .v-mem-open .v-mem.v-no {
+  border-color: var(--red);
+  background: var(--red-50);
+}
+.vc .v-mem-open .v-mem.v-done {
+  border-color: var(--green);
+  background: var(--green-50);
+  color: var(--green);
+  animation: none;
+  cursor: default;
+}
+@media (max-width: 640px) {
+  /* 4 колонки узкому экрану тесны для видимых слов — пары в 2 колонки. */
+  .vc .v-mem-grid.v-mem-open {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Сайдбар: статичен при прокрутке страницы — липнет к верху вьюпорта
    и скроллится внутри себя, если пунктов больше, чем влезает по высоте. */
 .sb {
