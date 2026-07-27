@@ -251,6 +251,7 @@ export default function App() {
             setInterestIds(enToInterestIds(profile.interests))
             if (profile.profession) setProfession(profile.profession)
           })
+        clearLocalPractice()
         hydratePractice(tok)
       }
       setScreen('success')
@@ -297,6 +298,7 @@ export default function App() {
           setInterestIds(enToInterestIds(profile.interests))
           if (profile.profession) setProfession(profile.profession)
         })
+      clearLocalPractice()
       hydratePractice(tok)
       setScreen('success')
     } catch (e) {

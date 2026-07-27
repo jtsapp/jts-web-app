@@ -5,7 +5,7 @@
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { loadPracticeState, savePracticeState } from '@/lib/db/practice.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
-import { isValidModule, unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
+import { isValidModule, isValidStateShape, unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 
 export const runtime = 'nodejs'
 
@@ -46,7 +46,7 @@ export async function POST(request) {
   if (!isValidModule(body.module)) {
     return Response.json({ configured: true, error: 'Unknown module.' }, { status: 400 })
   }
-  if (!body.state || typeof body.state !== 'object') {
+  if (!isValidStateShape(body.state)) {
     return Response.json({ configured: true, error: 'Invalid state.' }, { status: 400 })
   }
 

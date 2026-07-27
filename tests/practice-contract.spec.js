@@ -2,11 +2,19 @@ import { test, expect } from '@playwright/test'
 import {
   PRACTICE_MODULES,
   isValidModule,
+  isValidStateShape,
   normalizeDone,
   emptyState,
   mergeModuleState,
   unauthorizedIfNoBearer,
 } from '../src/lib/practiceContract.js'
+import {
+  VOCAB_KEY,
+  GRAMMAR_KEY,
+  LISTENING_KEY,
+  GRAMMAR_PROGRESS_EVENT,
+  LISTENING_PROGRESS_EVENT,
+} from '../src/practice/practiceKeys.js'
 
 test.describe('practiceContract — валидация и merge', () => {
   test('модули: белый список', () => {
@@ -48,5 +56,24 @@ test.describe('practiceContract — валидация и merge', () => {
     const res = unauthorizedIfNoBearer(noTok)
     expect(res).not.toBeNull()
     expect(res.status).toBe(401)
+  })
+
+  test('isValidStateShape: объект-словарь — да, массив/null/примитив — нет', () => {
+    expect(isValidStateShape({})).toBe(true)
+    expect(isValidStateShape({ a: 1 })).toBe(true)
+    expect(isValidStateShape([])).toBe(false)
+    expect(isValidStateShape(null)).toBe(false)
+    expect(isValidStateShape('x')).toBe(false)
+    expect(isValidStateShape(undefined)).toBe(false)
+  })
+})
+
+test.describe('practiceKeys — ключи localStorage и имена событий закреплены', () => {
+  test('константы не меняются без замеченного ревью', () => {
+    expect(VOCAB_KEY).toBe('jts_vocab2')
+    expect(GRAMMAR_KEY).toBe('jts_grammar_done')
+    expect(LISTENING_KEY).toBe('jts_listening_done')
+    expect(GRAMMAR_PROGRESS_EVENT).toBe('grammar-progress')
+    expect(LISTENING_PROGRESS_EVENT).toBe('listening-progress')
   })
 })
