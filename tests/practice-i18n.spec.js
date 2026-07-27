@@ -42,6 +42,17 @@ test.describe('Практика — локализация', () => {
     await expect(page.locator('.pp-voc__title')).toHaveText('Словарь')
   })
 
+  test('аудирование: интро и шапка тренажёра на казахском', async ({ page }) => {
+    await page.addInitScript((l) => localStorage.setItem('lang', l), 'kk')
+    await page.goto('/?screen=listening')
+    await expect(page.locator('.lt-crumb b')).toHaveText('Тыңдалым')
+    await expect(page.locator('.lt-crumb span')).toHaveText('Тәжірибе')
+    await expect(page.locator('.lt-back')).toContainText('Артқа')
+    await expect(page.locator('.lt-intro__title')).toHaveText('Listening жаттығуы')
+    await expect(page.locator('.lt-primary')).toHaveText('Жаттығуды бастау')
+    await expect(page.locator('.lt-intro__level')).toContainText('деңгейі')
+  })
+
   test('фильтр на стабильных ключах: чипы работают на любом языке', async ({ page }) => {
     await openPractice(page, 'kk')
     // «Кітаптар» (Книжки) — остаётся только секция книг.

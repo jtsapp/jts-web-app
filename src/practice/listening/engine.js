@@ -74,22 +74,24 @@ export function checkAnswer(task, response) {
   }
 }
 
-// Compose the Russian feedback body (may contain <b> from `explanation`).
-export function feedbackBody(task, ok, requeued) {
+// Compose the feedback body (may contain <b> from `explanation`). UI strings
+// come from the caller's t() (i18n.jsx) — the engine keeps no dictionary of
+// its own; `explanation` and `prompt` are content data and stay as authored.
+export function feedbackBody(task, ok, requeued, t) {
   const exp = task.explanation || ''
-  if (ok) return exp || 'Отлично услышано.'
+  if (ok) return exp || t('listening.fbNice')
   let prefix = ''
-  if (task.type === 'listen_choice') prefix = `Правильный ответ: <b>${task.answer}</b>. `
-  else if (task.type === 'listen_assemble') prefix = `Вы услышали: «<b>${task.text}</b>». `
-  else if (task.type === 'listen_type') prefix = `Вы услышали: <b>${task.answer}</b>. `
+  if (task.type === 'listen_choice') prefix = t('listening.fbAnswer', { answer: task.answer })
+  else if (task.type === 'listen_assemble') prefix = t('listening.fbHeard', { text: task.text })
+  else if (task.type === 'listen_type') prefix = t('listening.fbHeardType', { answer: task.answer })
   let body = prefix + exp
-  if (requeued) body += ' Это задание вернётся в конце.'
+  if (requeued) body += ' ' + t('listening.fbRetry')
   return body.trim()
 }
 
 // Heading shown above each task type (matches the trainer designs).
-export function headingFor(task) {
-  if (task.type === 'listen_assemble') return 'Соберите предложение'
-  if (task.type === 'listen_type') return 'Напишите, что вы услышали'
-  return task.prompt || 'Что вы слышите?'
+export function headingFor(task, t) {
+  if (task.type === 'listen_assemble') return t('listening.headAssemble')
+  if (task.type === 'listen_type') return t('listening.headType')
+  return task.prompt || t('listening.headDefault')
 }
