@@ -12,6 +12,7 @@ import {
   SESSION_SIZE,
   COINS_PER_TASK,
 } from '../practice/listening/engine.js'
+import { markTaskDone, getListeningDone, LISTENING_PROGRESS_EVENT } from '../practice/listening/listeningProgress.js'
 
 const LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 const normLevel = (lvl) => {
@@ -203,7 +204,7 @@ function Feedback({ ok, body }) {
 }
 
 // ───────────────────────── Intro ─────────────────────────
-function Intro({ level, loading, onStart }) {
+function Intro({ level, loading, onStart, doneCount }) {
   const { t } = useI18n()
   return (
     <div className="lt-intro">
@@ -219,6 +220,9 @@ function Intro({ level, loading, onStart }) {
       <div className="lt-intro__level">
         {t('kingdom.levelBadge', { label: level.toUpperCase() })}
       </div>
+      {doneCount > 0 && (
+        <div className="lt-intro__done">{t('listening.doneCount', { count: doneCount })}</div>
+      )}
     </div>
   )
 }
@@ -263,6 +267,16 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   const [stepsTotal, setStepsTotal] = useState(0)
   const [exitOpen, setExitOpen] = useState(false)
 
+  // Счётчик пройденных заданий уровня — обновляется на отметку и на гидратацию
+  // (событие LISTENING_PROGRESS_EVENT шлёт и локальная отметка, и синк при входе).
+  const [doneCount, setDoneCount] = useState(() => getListeningDone(level).size)
+  useEffect(() => {
+    const refresh = () => setDoneCount(getListeningDone(level).size)
+    refresh()
+    window.addEventListener(LISTENING_PROGRESS_EVENT, refresh)
+    return () => window.removeEventListener(LISTENING_PROGRESS_EVENT, refresh)
+  }, [level])
+
   const current = queue[0] || null
 
   const loadContent = useCallback(async () => {
@@ -306,6 +320,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     if (ok) {
       setCoins((c) => c + COINS_PER_TASK)
       setCorrect((c) => c + 1)
+      markTaskDone(current.id)
     } else {
       setWrong((w) => w + 1)
       if (!current._retry) {
@@ -359,7 +374,9 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
 
         {exitOpen && <ExitModal onStay={() => setExitOpen(false)} onLeave={back} />}
 
-        {phase === 'intro' && <Intro level={level} loading={loading} onStart={startSession} />}
+        {phase === 'intro' && (
+          <Intro level={level} loading={loading} onStart={startSession} doneCount={doneCount} />
+        )}
 
         {phase === 'result' && (
           <TrainerResult correct={correct} wrong={wrong} onAgain={startSession} onHome={back} />
