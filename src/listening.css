@@ -122,6 +122,7 @@
   line-height: 1.4;
 }
 .lt-intro__level { margin-top: 16px; color: #9a99a6; font-size: 13px; font-weight: 700; }
+.lt-intro__done { margin-top: 6px; color: #9a99a6; font-size: 13px; font-weight: 600; }
 
 /* ───────────────── Task ───────────────── */
 .lt-task { max-width: 640px; margin: 0 auto; animation: fade-in 0.2s ease-out both; }
