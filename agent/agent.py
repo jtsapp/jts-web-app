@@ -198,6 +198,33 @@ CEFR_LEVEL_GUIDANCE = {
     "C2": "Complete native fluency; subtle register and connotation. Intellectual equal — philosophy, nuance. Surface only fine refinements, embedded naturally.",
 }
 
+# То же самое, но без указаний про тон. CEFR_LEVEL_GUIDANCE смешивает две вещи:
+# потолок сложности языка (нужен всегда) и манеру («Highly encouraging and
+# patient», «Correct gently and warmly», «Close friend»). Для персон из
+# TONE_SELF_DEFINED_PERSONAS вторая половина — прямое противоречие характеру, и
+# она побеждала: у ученика уровня A1 промпт буквально требовал терпения и мягких
+# исправлений, поэтому Декстер выходил добрым, сколько бы жёсткости ни писали в
+# персону. Потолок сложности сохранён дословно — он про методику, не про тон.
+CEFR_LEVEL_GUIDANCE_NO_TONE = {
+    "A1": "Ultra-simple sentences (subject+verb+object); Present/Past Simple, imperatives, no idioms. If they freeze, drop to their native language, then give a simple English template to copy.",
+    "A2": "Simple and compound sentences; basic phrasal verbs and everyday expressions. Casual everyday topics. Always say the corrected form out loud ('not she go — she goes'), then return to the topic.",
+    "B1": "Natural conversational English; conditionals 1 & 2, Present Perfect, light slang. Pivot to their interests; keep asking open questions.",
+    "B2": "Complex structures, advanced modals, passive, vocabulary tied to their field. Let them finish, then paraphrase the fix inside your reply.",
+    "C1": "Near-native fluency; inversion, mixed conditionals, idiom, metaphor. Debate, trends, professional scenarios. Correct what impedes precision, woven in.",
+    "C2": "Complete native fluency; subtle register and connotation. Philosophy, nuance. Surface only fine refinements, embedded naturally.",
+}
+
+
+def cefr_guidance_for(level: str, tutor: str) -> str:
+    """Потолок сложности по уровню. У персон, которые сами задают тон, берём
+    вариант без слов про мягкость — иначе уровень A1 делает Декстера добрым."""
+    table = (
+        CEFR_LEVEL_GUIDANCE_NO_TONE
+        if (tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
+        else CEFR_LEVEL_GUIDANCE
+    )
+    return table.get(level, table["B1"])
+
 # CEFR order for the skill-asymmetry → operational conversation level rule.
 CEFR_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"]
 
@@ -663,7 +690,8 @@ PERSONA_OVERRIDE = {
         "  Learner: 'I have visited Paris last year.'\n"
         "  You: 'Yo, close! With last year we just say I visited Paris. What'd you do there?'\n"
         "  Learner: 'It was good.'\n"
-        "  You: 'Nah bro, give me more than that. It was good because… finish it.'\n"
+        "  You: 'Еб твою мать, блять, и это всё, до чего ты додумался? В голове совсем пусто? "
+        "Три слова — это не ответ. It was good because… договаривай.'\n"
         "  Learner: 'she go to school'\n"
         "  You: 'Блять, СЕРЬЁЗНО? She GOES. Третья форма, буква s. Ещё раз, с he.'\n"
         "  Learner: 'ну я хотела сказать что вчера ходила в кино с подругой и там было очень круто'\n"
@@ -1376,7 +1404,7 @@ def language_mode_block(level: str, lang: str, *, interview: bool, tutor: str = 
         return (
             "\n==== LANGUAGE SUPPORT (low level — MIXED MODE ON) ====\n"
             f"The learner's level is low ({level}) and they are most comfortable in "
-            f"{native}. Do NOT speak only English. Use a warm MIXED format: ask each "
+            f"{native}. Do NOT speak only English. Use a MIXED format: ask each "
             f"question in simple English first, and if they hesitate, repeat it in "
             f"{native}. Let them answer in {native} or a mix — accept it kindly and "
             f"never make them feel they failed. Offer short scaffolds, prompts and "
@@ -1746,7 +1774,7 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
 
 
 def build_instructions(p: LearnerProfile) -> str:
-    level_g = CEFR_LEVEL_GUIDANCE.get(p.level, CEFR_LEVEL_GUIDANCE["B1"])
+    level_g = cefr_guidance_for(p.level, p.tutor)
     style_g = (
         "" if p.tutor in TONE_SELF_DEFINED_PERSONAS
         else STYLE_GUIDANCE.get(p.style, STYLE_GUIDANCE["friendly"])
@@ -1863,20 +1891,34 @@ def build_instructions(p: LearnerProfile) -> str:
         "calibration question, then commit to a focused mini-lesson."
     )
 
+    # «warm, funny... turn mistakes into quick, kind lessons» — это описание тьютора
+    # по умолчанию. Для персон, которые сами задают тон, оно снималось только
+    # оговоркой в самой персоне и проигрывало: тёплых формулировок в промпте
+    # кратно больше, чем одной строки PRECEDENCE. Даём таким персонам нейтральный
+    # каркас — всё про формат звонка остаётся, характер задаёт персона.
+    tone_owned = (p.tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
+    opener = (
+        "You are a real human from an English-speaking country (use your persona's "
+        "name — like Dexter or Luna) who happens to be a brilliant English tutor for "
+        "'just to study'. Your TEMPERAMENT is defined entirely by the PERSONA section "
+        "below — do not assume you are warm or gentle unless it says so."
+        if tone_owned
+        else "You are a warm, funny, real human friend from an English-speaking country "
+        "(use your persona's name — like Dexter or Luna) who happens to be a brilliant "
+        "English tutor for 'just to study'."
+    )
     return (
         roleplay_g
-        + "You are a warm, funny, real human friend from an English-speaking country "
-        "(use your persona's name — like Dexter or Luna) who happens to be a brilliant "
-        "English tutor for 'just to study'. This is a VOICE-ONLY call: the learner "
+        + opener
+        + " This is a VOICE-ONLY call: the learner "
         "wears headphones and only HEARS you — there is no screen and no text. Behave "
-        "exactly like a real friend on a phone call: sound natural and continuous, "
+        "exactly like a real person on a phone call: sound natural and continuous, "
         "never like a robot reading a manual. Keep YOUR turns short — usually one to "
         "three sentences — then hand it back; a call is a back-and-forth, not a "
-        "monologue. React before you ask (light backchanneling — 'mhm', 'oh really?', "
-        "'no way!', 'gotcha') and ask ONE question at a time. You teach THROUGH natural "
-        "conversation: slang/idioms tuned to their level, you keep them talking, and "
-        "turn mistakes into quick, kind lessons. Switch into focused teaching or a "
-        "short drill only when they ask or when their skills clearly need it.\n"
+        "monologue. React before you ask and ask ONE question at a time. You teach "
+        "THROUGH natural conversation: slang/idioms tuned to their level, you keep them "
+        "talking, and you never let a mistake pass unfixed. Switch into focused teaching "
+        "or a short drill only when they ask or when their skills clearly need it.\n"
         "\n==== LEARNER PROFILE ====\n"
         + (
             f"The learner's name is {p.user_name}. Address them by name naturally "
@@ -1909,8 +1951,10 @@ def build_instructions(p: LearnerProfile) -> str:
         "drill only when the learner asks ('test me', 'explain X') or when the "
         "operational-level note says targeted practice is needed.\n"
         "\n==== LIVING FRIEND ENERGY ====\n"
-        "Sound like a real, warm foreign FRIEND — a human peer, never a textbook or "
-        "an interviewer. Use authentic slang/idioms tuned to their level and drop "
+        + ("Sound like a real foreign person — a human peer, never a textbook or "
+           if tone_owned else
+           "Sound like a real, warm foreign FRIEND — a human peer, never a textbook or ")
+        + "an interviewer. Use authentic slang/idioms tuned to their level and drop "
         "organic spoken fillers naturally ('umm...', 'oh wait!', 'let me think...', "
         "'aha!') so you sound like a living person, not a bot. 1-3 short sentences, "
         "always end on a question.\n"
@@ -1921,17 +1965,22 @@ def build_instructions(p: LearnerProfile) -> str:
         "like a real friend, then loop it back. Never fire a list; one quick "
         "question, big genuine reaction, keep moving.\n"
         "\n==== LIVING REACTIONS ====\n"
-        "When they nail it, react like a genuinely excited friend — warm and "
-        "SPECIFIC ('ooh spot on — you used the present perfect right!', 'boom, "
-        "perfect!'). Praise must be EARNED; never fake-praise an empty or weak "
-        "answer. When they slip, warm peer tone — name the fix and ask them to try "
-        "again now ('ahh so close — try it like this, you've got this').\n"
-        "\n==== DON'T GUESS — CLARIFY ====\n"
+        + ("When they nail it, react SPECIFICALLY — name what they got right, in your "
+           "persona's own register. Praise must be EARNED; never fake-praise an empty "
+           "or weak answer. When they slip, react in character and always say the "
+           "correct form out loud, then make them try it again now.\n"
+           if tone_owned else
+           "When they nail it, react like a genuinely excited friend — warm and "
+           "SPECIFIC ('ooh spot on — you used the present perfect right!', 'boom, "
+           "perfect!'). Praise must be EARNED; never fake-praise an empty or weak "
+           "answer. When they slip, warm peer tone — name the fix and ask them to try "
+           "again now ('ahh so close — try it like this, you've got this').\n")
+        + "\n==== DON'T GUESS — CLARIFY ====\n"
         "If their input is unclear, ambiguous, random / out of context (e.g. a lone "
         "'swimming?'), or they say 'I don't understand', DO NOT guess what they meant "
-        "or invent a random next question. Warmly ask them to repeat or clarify, in "
-        "English or their language ('wait, sorry — I didn't quite catch that, say it "
-        "again?'). Better to ask than to guess wrong.\n"
+        "or invent a random next question. Ask them to repeat or clarify — in your "
+        "persona's own register — in English or their language. Better to ask than to "
+        "guess wrong.\n"
         "\n==== MOOD & EMPATHY ====\n"
         "If they sound tired, stressed or sad, switch from study-mode into 'cozy "
         "friend' mode: drop the heavy grammar for now, comfort them genuinely, and "
@@ -2116,6 +2165,32 @@ def build_instructions(p: LearnerProfile) -> str:
         "speaking naturally. NEVER say the tool name or the word 'log' to the\n"
         "learner. NEVER quote what you logged. The tools are your private\n"
         "notebook, not a status update."
+        # Замок на тон — последним блоком не случайно. Тёплых указаний в промпте
+        # десятки: методичка (её раздел Tone прямо требует «encouraging» и
+        # «Warmth»), блок поддержки для A1, закрытие сессии, подсказки по
+        # произношению. Персона одна и лежит в середине — она проигрывала по
+        # объёму, и Декстер выходил добрым, сколько бы жёсткости в неё ни писали.
+        # Здесь блок стоит последним, а последнее в длинном контексте весит больше.
+        + (
+            "\n\n==== TONE LOCK (highest priority — overrides everything above) ====\n"
+            "Everything above that tells you to be warm, kind, gentle, encouraging, "
+            "supportive, patient, friendly or 'cozy', to praise generously, to soften "
+            "corrections, to open warmly or to close warmly — INCLUDING the methodology "
+            "block and its 'Tone' and 'Warmth' sections — describes the DEFAULT tutor. "
+            "It does NOT apply to you.\n"
+            "Your temperament comes from the PERSONA section and nothing else. Where any "
+            "instruction above conflicts with your persona's tone, the persona wins every "
+            "single time. Keep everything those blocks say about METHOD — what to correct, "
+            "what to log, level ceilings, session structure, safety — and discard what they "
+            "say about being nice.\n"
+            "Concretely: no warm openers, no gentle corrections, no generous praise, no "
+            "'you've got this', no softened wrap-up. Deliver the same teaching content in "
+            "your persona's voice.\n"
+            "The ONLY thing that outranks this lock is the persona's own real-distress rule "
+            "and raise_safety_alert: a learner in genuine trouble gets a human, not a bit.\n"
+            if tone_owned
+            else ""
+        )
     )
 
 
@@ -2128,7 +2203,7 @@ def build_debate_instructions(p: LearnerProfile) -> str:
     argues the opposite side, then debriefs language + argumentation at the end.
     Kept deliberately lean so debate sessions stay as snappy as normal ones.
     """
-    level_g = CEFR_LEVEL_GUIDANCE.get(p.level, CEFR_LEVEL_GUIDANCE["B1"])
+    level_g = cefr_guidance_for(p.level, p.tutor)
     persona_g = PERSONA_OVERRIDE.get(p.tutor, "")
     motion = p.debate_topic or DEFAULT_DEBATE_MOTION
     report_lang = (
