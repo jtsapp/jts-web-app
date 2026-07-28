@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef } from 'react'
+import { pushModule } from '../practiceSync.js'
+import { VOCAB_KEY as KEY } from '../practiceKeys.js'
 
 // Настройки и долговременный прогресс Словаря.
 // Ключ localStorage тот же, что был у прототипа в iframe (`jts_vocab2`), —
 // прогресс пользователей переезжает на нативную версию без потерь.
-
-const KEY = 'jts_vocab2'
 export const DEFAULT = {
   level: 'A1',
   mode: 'essential',
@@ -31,6 +31,7 @@ function persist(s) {
   } catch {
     /* приватный режим / переполнение — прогресс просто не сохранится */
   }
+  pushModule('vocab', s) // debounced серверный синк (no-op для гостя)
 }
 
 // Прототип держал состояние в мутируемом объекте S и звал save() вручную.
