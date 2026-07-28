@@ -29,7 +29,7 @@ export const TUTORS = [
 export const TUTOR_GREETING = {
   luna: "Hi, I'm Luna. Take a deep breath — we'll go gently, at your own pace. No pressure here.",
   dexter:
-    "Hey, I'm Dexter! Learning English is going to be fun — let's explore it together, one step at a time.",
+    "Yo, wassup! I'm Dexter. Chill, we're just gonna talk — no textbooks, no stress. Let's get it.",
   spark: "Yo! I'm Spark! Let's go — you've got this! Ready to level up? Let's crush it!",
 }
 
