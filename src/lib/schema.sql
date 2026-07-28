@@ -203,3 +203,16 @@ alter table resolved_log add constraint resolved_log_device_id_fkey FOREIGN KEY 
 alter table review_item add constraint review_item_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
 alter table topic_log add constraint topic_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
 alter table vocab_bank add constraint vocab_bank_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+
+-- ===========================================================================
+-- Прогресс разделов практики (аудирование / словарь / грамматика), по аккаунту.
+-- Один блоб на модуль; содержимое зеркалит клиентские localStorage-payload'ы.
+-- profile_id = 'user-<id>' из resolveProfileId. Независимо от таблиц тьютора.
+-- ===========================================================================
+create table if not exists practice_state (
+  profile_id text        not null,
+  module     text        not null,   -- 'vocab' | 'grammar' | 'listening'
+  state      jsonb       not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (profile_id, module)
+);

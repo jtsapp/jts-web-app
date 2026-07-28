@@ -66,6 +66,13 @@ test.describe('Практика — тренажёр «Аудирование»'
     await expect(fb.locator('.lt-fb__title')).toHaveText('Молодец!')
     await expect(fb.locator('.lt-fb__coin')).toContainText('+10')
 
+    // верный ответ отмечает задание пройденным (jts_listening_done) для прогресса/синка
+    const doneAfterCorrect = JSON.parse(
+      (await page.evaluate(() => localStorage.getItem('jts_listening_done'))) || '[]',
+    )
+    expect(doneAfterCorrect.length).toBeGreaterThanOrEqual(1)
+    expect(doneAfterCorrect).toContain(CHOICE.id)
+
     await page.getByRole('button', { name: 'Продолжить' }).click()
     // 1/1 верно → ≥50% → экран «победа»
     const res = page.locator('.lt-res')
@@ -92,6 +99,11 @@ test.describe('Практика — тренажёр «Аудирование»'
     await expect(res).toBeVisible()
     await expect(res).toHaveClass(/lt-res--bad/)
     await expect(res).toContainText('Нужно улучшить результат')
+
+    // весь заход — неверные ответы (единственное задание ни разу не пройдено верно) →
+    // jts_listening_done не заводится, отметка «пройдено» ставится только на верный ответ
+    const doneAfterWrong = await page.evaluate(() => localStorage.getItem('jts_listening_done'))
+    expect(doneAfterWrong === null || doneAfterWrong === '[]').toBe(true)
   })
 
   test('выход из незавершённой тренировки требует подтверждения', async ({ page }) => {
