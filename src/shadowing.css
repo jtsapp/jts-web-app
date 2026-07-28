@@ -1,0 +1,282 @@
+/* ============================================================
+   Shadowing — нативный тренажёр Практики. Классы с префиксом .sh-.
+   Палитра берётся из styles.css (--purple, --ink); локальные акценты
+   (green/red) объявлены на .sh — как .lt в listening.css. Все кнопки —
+   pill (999px), карточки 22–24px, тени и цвета совпадают с проектом.
+   ============================================================ */
+.sh {
+  --sh-purple: var(--purple, #9047ff);
+  --sh-grad: linear-gradient(135deg, #7b46f0, #6a2fd6);
+  --sh-soft: #f1ebfe;
+  --sh-border: #d9d2f7;
+  --sh-green: #37a15f;
+  --sh-green-bg: #e6f6ec;
+  --sh-red: #e0574f;
+  --sh-red-bg: #fdeceb;
+  --sh-line: #ececf3;
+  --sh-ink-sub: #6c6b78;
+  --sh-ink-mute: #9a99a6;
+  padding: 8px 24px 48px;
+}
+
+/* верхняя навигация: Назад + хлебная крошка (паттерн .lt-top) */
+.sh-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.sh-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: var(--sh-purple);
+  color: #fff;
+  border-radius: 999px;
+  padding: 9px 16px 9px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sh-back:hover { filter: brightness(1.05); }
+.sh-crumb { display: flex; flex-direction: column; line-height: 1.2; }
+.sh-crumb b { color: var(--sh-purple); font-size: 15px; font-weight: 800; }
+.sh-crumb span { color: var(--sh-ink-mute); font-size: 12px; }
+
+/* табы уроков — .pp-chip + номер */
+.sh-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-bottom: 6px;
+  scrollbar-width: none;
+}
+.sh-tabs::-webkit-scrollbar { display: none; }
+.sh-tabs .pp-chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; }
+.sh-tab__n {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--sh-soft);
+  color: var(--sh-purple);
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+}
+.pp-chip--on .sh-tab__n { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+.sh-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; margin: 4px 0 14px; background: var(--sh-soft); color: var(--sh-ink-sub); }
+.sh-note--err { background: var(--sh-red-bg); color: var(--sh-red); }
+.sh-note__link { color: inherit; font-weight: 700; text-decoration: underline; }
+
+/* карточки-секции */
+.sh-card {
+  background: #fff;
+  border: 1px solid var(--sh-line);
+  border-radius: 22px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 18px 40px rgba(23, 19, 38, 0.06);
+}
+.sh-sec__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.sh-sec__head h2 { font-size: 18px; margin: 0; color: var(--ink, #171326); }
+.sh-sec__hint { margin-left: auto; color: var(--sh-ink-mute); font-size: 12px; }
+
+/* видео 16:9 */
+.sh-video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+}
+.sh-video__player,
+.sh-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* панель управления видео — pill-чипы */
+.sh-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.sh-controls__lbl { font-size: 12px; color: var(--sh-ink-mute); margin-left: 4px; }
+.sh-controls__spacer { flex: 1 1 auto; }
+.sh-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--sh-line);
+  background: #fff;
+  color: var(--sh-ink-sub);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.sh-chip:hover:not(:disabled) { border-color: var(--sh-border); }
+.sh-chip--on { background: var(--sh-purple); border-color: var(--sh-purple); color: #fff; }
+.sh-chip:disabled { opacity: 0.4; cursor: default; }
+
+/* прогресс */
+.sh-prog { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.sh-prog__bar { flex: 1; height: 8px; border-radius: 999px; background: var(--sh-soft); overflow: hidden; }
+.sh-prog__bar span { display: block; height: 100%; border-radius: 999px; background: var(--sh-grad); transition: width 0.3s ease; }
+.sh-prog__val { font-size: 12px; color: var(--sh-ink-mute); font-weight: 600; white-space: nowrap; }
+
+/* скрипт — список фраз */
+.sh-script { display: flex; flex-direction: column; gap: 9px; }
+.sh-seg {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 11px;
+  border: 1px solid var(--sh-line);
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.sh-seg.is-active { background: var(--sh-soft); border-color: var(--sh-purple); }
+.sh-seg.is-done { border-color: #bfe8cd; }
+.sh-seg__num {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--sh-soft);
+  color: var(--sh-purple);
+  font-weight: 800;
+  font-size: 11px;
+  display: grid;
+  place-items: center;
+  margin-top: 6px;
+}
+.sh-seg.is-active .sh-seg__num { background: var(--sh-purple); color: #fff; }
+.sh-seg.is-done .sh-seg__num { background: var(--sh-green); color: #fff; }
+.sh-seg__body { flex: 1; min-width: 0; padding-top: 2px; }
+.sh-seg__txt { display: block; font-size: 16px; line-height: 1.4; font-weight: 500; color: var(--ink, #171326); }
+.sh-seg__time { display: block; font-size: 11px; color: var(--sh-ink-mute); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.sh-seg__mine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: var(--sh-green-bg);
+}
+.sh-seg__mine button {
+  border: 0;
+  background: transparent;
+  color: #0e7a52;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px;
+  font-family: inherit;
+}
+.sh-seg__sep { width: 1px; height: 14px; background: #bfe8cd; }
+.sh-seg__acts { display: flex; gap: 6px; flex: 0 0 auto; padding-top: 2px; }
+.sh-seg__act {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #faf9fd;
+  color: var(--sh-ink-mute);
+  border: 1px solid var(--sh-line);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.sh-seg__act:hover { background: var(--sh-soft); color: var(--sh-purple); border-color: var(--sh-border); }
+.sh-seg.is-active .sh-seg__act:first-child { background: var(--sh-purple); color: #fff; border-color: var(--sh-purple); }
+.sh-seg__act.has-take { background: var(--sh-green-bg); color: #0e7a52; border-color: #bfe8cd; }
+.sh-seg__act.is-rec { background: var(--sh-red); color: #fff; border-color: var(--sh-red); animation: sh-blink 1s infinite; }
+@keyframes sh-blink { 50% { opacity: 0.55; } }
+
+/* запись всего отрывка — большой микрофон */
+.sh-mic { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 4px 0; }
+.sh-mic__btn {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  color: #fff;
+  background: var(--sh-grad);
+  box-shadow: 0 12px 28px rgba(144, 71, 255, 0.4);
+  display: grid;
+  place-items: center;
+  transition: transform 0.12s ease;
+}
+.sh-mic__btn:active { transform: scale(0.96); }
+.sh-mic__btn.is-rec { background: linear-gradient(135deg, #ff5a5f, #e0574f); box-shadow: 0 12px 28px rgba(224, 87, 79, 0.45); }
+.sh-mic__label { margin-top: 12px; font-size: 14px; color: var(--sh-ink-sub); min-height: 20px; }
+.sh-mic__label.is-rec { color: var(--sh-red); font-weight: 600; }
+.sh-mic__denied { margin-top: 14px; text-align: left; }
+
+.sh-take { display: flex; gap: 10px; margin-top: 16px; width: 100%; max-width: 420px; }
+.sh-take button {
+  flex: 1;
+  height: 48px;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14.5px;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.sh-take__listen { background: var(--sh-purple); color: #fff; }
+.sh-take__again { background: var(--sh-soft); color: var(--sh-purple); border: 1px solid var(--sh-border); }
+
+/* dev-инструмент (?dev=1) */
+.sh-dev__area {
+  width: 100%;
+  min-height: 150px;
+  border: 1px solid var(--sh-line);
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-family: inherit;
+  background: #fcfbfe;
+  color: var(--ink, #171326);
+  resize: vertical;
+}
+.sh-dev__area:focus { border-color: var(--sh-border); outline: none; }
+.sh-dev__row { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 12px; }
+
+/* карточка урока в ленте Практики (рендерится в PracticePage; классы .sh-lcard,
+   чтобы все стили Shadowing жили здесь и styles.css не трогать) */
+.sh-lcard { flex: 0 0 220px; text-decoration: none; color: inherit; display: block; text-align: left; border: 0; background: none; padding: 0; cursor: pointer; }
+.sh-lcard__thumb { aspect-ratio: 16 / 9; border-radius: 14px; }
+.sh-lcard:hover .pp-play,
+.sh-lcard:focus-visible .pp-play { opacity: 1; }
+.sh-lcard__title { font-size: 14px; font-weight: 700; color: var(--ink, #171326); margin-top: 8px; line-height: 1.3; }
+.sh-lcard__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.sh-lcard__speaker { font-size: 12.5px; color: var(--sh-ink-sub); }
+.sh-lcard__count { font-size: 12px; font-weight: 700; color: var(--sh-purple); background: var(--sh-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.pp-rail--grid .sh-lcard { flex: none; width: 100%; }
+
+/* мобильная вёрстка */
+@media (max-width: 480px) {
+  .sh-lcard { flex: 0 0 200px; }
+  .sh { padding: 6px 14px 44px; }
+  .sh-card { padding: 14px; border-radius: 18px; }
+  .sh-seg__txt { font-size: 15px; }
+  .sh-seg__act { width: 34px; height: 34px; }
+  .sh-mic__btn { width: 84px; height: 84px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sh-seg__act.is-rec { animation: none; }
+  .sh-prog__bar span { transition: none; }
+}

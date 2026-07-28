@@ -11,6 +11,7 @@ import LevelTestPage from './screens/LevelTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
+import ShadowingPage from './screens/ShadowingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -129,6 +130,7 @@ export default function App() {
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
   const [kingdom, setKingdom] = useState(null)
+  const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -327,11 +329,13 @@ export default function App() {
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только тьютор.
-  function handleNav(key) {
+  function handleNav(key, payload) {
     if (TUTOR_ONLY && key !== 'tutor') return
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
+    // Shadowing открывается с карточки Практики — payload несёт id урока.
+    else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
@@ -345,6 +349,7 @@ export default function App() {
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
+    else if (key === 'shadowing') setScreen('shadowing')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'ielts') setScreen('ielts')
@@ -505,6 +510,17 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'shadowing':
+      return (
+        <ShadowingPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          lessonId={shadowingLesson}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
