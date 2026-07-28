@@ -109,20 +109,39 @@ logging.basicConfig(level=logging.INFO)
 import re as _re
 
 _HERE = Path(__file__).resolve().parent
-_METHODOLOGY_CANDIDATES = [
-    Path(os.environ["METHODOLOGY_PATH"]) if os.getenv("METHODOLOGY_PATH") else None,
-    ROOT / "data" / "methodology.md",
-    _HERE / "methodology.md",
-]
-_METHODOLOGY_PATH = next(
-    (p for p in _METHODOLOGY_CANDIDATES if p and p.exists()),
-    ROOT / "data" / "methodology.md",
+
+
+def _methodology_candidates(filename: str) -> list[Path]:
+    return [
+        ROOT / "data" / filename,
+        _HERE / filename,
+    ]
+
+
+def _resolve_methodology(filename: str) -> Path:
+    cands = _methodology_candidates(filename)
+    return next((p for p in cands if p.exists()), cands[0])
+
+
+_METHODOLOGY_PATH = (
+    Path(os.environ["METHODOLOGY_PATH"])
+    if os.getenv("METHODOLOGY_PATH")
+    else _resolve_methodology("methodology.md")
 )
 
+# Своя методичка на персону. Базовый документ ведёт методист, и его раздел
+# «Identity & Tone» прямо требует быть encouraging/supportive — для Декстера это
+# ровно противоположность характеру, а весит методичка больше самой персоны
+# (12k символов). Спорить с ней из промпта дорого и ненадёжно, поэтому у него
+# свой файл: разделы 2 и 4 (программа по уровням, таблица ошибок) перенесены
+# дословно, переписаны только те, что про тон. Файлы держать синхронными по
+# методической части — см. шапку methodology-dexter.md.
+_PERSONA_METHODOLOGY_FILES = {"bro": "methodology-dexter.md"}
 
-def _load_methodology() -> str:
+
+def _load_methodology_file(path: Path) -> str:
     try:
-        raw = _METHODOLOGY_PATH.read_text(encoding="utf-8")
+        raw = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         return ""
     stripped = _re.sub(r"<!--[\s\S]*?-->", "", raw)
@@ -131,7 +150,40 @@ def _load_methodology() -> str:
     return stripped
 
 
+def _load_methodology() -> str:
+    return _load_methodology_file(_METHODOLOGY_PATH)
+
+
 METHODOLOGY_BLOCK = _load_methodology()
+
+# Персональные методички читаем один раз на старте: файл на диске не меняется,
+# а промпт собирается на каждую сессию.
+PERSONA_METHODOLOGY_BLOCKS: dict[str, str] = {}
+for _persona, _fname in _PERSONA_METHODOLOGY_FILES.items():
+    _path = _resolve_methodology(_fname)
+    _text = _load_methodology_file(_path)
+    if _text:
+        PERSONA_METHODOLOGY_BLOCKS[_persona] = _text
+        logger.info(
+            "Persona methodology loaded for %s: %d chars from %s",
+            _persona, len(_text), _path,
+        )
+    else:
+        # Не падаем: без своего файла персона получит общую методичку. Это
+        # заметно мягче задуманного, поэтому пишем предупреждение, а не молчим.
+        logger.warning(
+            "Persona methodology for %s missing at %s — falling back to the shared one",
+            _persona, _path,
+        )
+
+
+def methodology_for(tutor: str) -> str:
+    """Методичка сессии: своя у персоны, если есть, иначе общая."""
+    return PERSONA_METHODOLOGY_BLOCKS.get(
+        (tutor or "").strip().lower(), METHODOLOGY_BLOCK
+    )
+
+
 if METHODOLOGY_BLOCK:
     logger.info(
         "Methodology loaded: %d chars from %s",
@@ -1406,10 +1458,16 @@ def language_mode_block(level: str, lang: str, *, interview: bool, tutor: str = 
             f"The learner's level is low ({level}) and they are most comfortable in "
             f"{native}. Do NOT speak only English. Use a MIXED format: ask each "
             f"question in simple English first, and if they hesitate, repeat it in "
-            f"{native}. Let them answer in {native} or a mix — accept it kindly and "
-            f"never make them feel they failed. Offer short scaffolds, prompts and "
-            f"translations in {native}. Encourage just one or two English words or a "
-            f"short phrase per turn, gently. "
+            f"{native}. Let them answer in {native} or a mix — take it and keep going. "
+            f"Give short scaffolds, prompts and translations in {native}. "
+            + (
+                # Тон здесь задаёт персона: у Декстера «gently/kindly» из этого блока
+                # прямо противоречат характеру, а требование тянуть из ученика
+                # английский — нет, оно методическое и остаётся.
+                f"Push for at least one or two English words or a short phrase per turn. "
+                if (tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
+                else f"Encourage just one or two English words or a short phrase per turn, gently. "
+            )
             + (
                 "Keep measuring their ENGLISH (what English they can produce), but "
                 "comfort and keeping them talking come first.\n"
@@ -1897,6 +1955,7 @@ def build_instructions(p: LearnerProfile) -> str:
     # кратно больше, чем одной строки PRECEDENCE. Даём таким персонам нейтральный
     # каркас — всё про формат звонка остаётся, характер задаёт персона.
     tone_owned = (p.tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
+    methodology_block = methodology_for(p.tutor)
     opener = (
         "You are a real human from an English-speaking country (use your persona's "
         "name — like Dexter or Luna) who happens to be a brilliant English tutor for "
@@ -2052,7 +2111,10 @@ def build_instructions(p: LearnerProfile) -> str:
         "\n==== SOURCE MATERIAL ====\n"
         "Speakout 3rd Edition (A1-C2) grammar syllabus. Don't invent rules outside Speakout's coverage. "
         "If a topic is above the learner's level, name it and offer the at-level adjacent concept instead.\n"
-        "OFF-TOPIC: redirect in one warm sentence, then propose a concrete next step from memory or the weak skill.\n"
+        + ("OFF-TOPIC: redirect in one blunt sentence, then propose a concrete next step from memory or the weak skill.\n"
+           if tone_owned else
+           "OFF-TOPIC: redirect in one warm sentence, then propose a concrete next step from memory or the weak skill.\n")
+        +
         "\n==== SESSION SHAPE & COUNTERS ====\n"
         "One TURN = one learner utterance plus your reply. A session runs about "
         "fifteen turns. A Mystery Scenario runs exactly four to five turns, and there "
@@ -2095,7 +2157,10 @@ def build_instructions(p: LearnerProfile) -> str:
         "builds real production and rapport.\n"
         "\n==== SHADOWING & ACCENT COACH (optional) ====\n"
         "When pronunciation matters, give a short natural phrase, ask them to repeat it, "
-        "and offer ONE encouraging tip — but base it ONLY on what you can actually "
+        + ("and give ONE concrete tip — but base it ONLY on what you can actually "
+           if tone_owned else
+           "and offer ONE encouraging tip — but base it ONLY on what you can actually ")
+        +
         "verify from what you heard. Never fabricate a precise phonetic verdict you "
         "can't confirm; if unsure, encourage and move on.\n"
         "\n==== SLANG / POP-CULTURE (when casual) ====\n"
@@ -2104,17 +2169,26 @@ def build_instructions(p: LearnerProfile) -> str:
         "contemporary English.\n"
         "\n==== DON'T FABRICATE WHAT YOU CAN'T VERIFY ====\n"
         "If the transcription is garbled, nonsensical, or you genuinely didn't catch "
-        "it, do NOT guess a meaning — warmly ask them to repeat, in English or their "
+        + ("it, do NOT guess a meaning — tell them to say it again, in English or their "
+           if tone_owned else
+           "it, do NOT guess a meaning — warmly ask them to repeat, in English or their ")
+        +
         "explanation language ('sorry, I didn't quite catch that — say it again?'). "
         "Comment on tone or pronunciation only when you actually heard something "
         "specific; never invent acoustic verdicts.\n"
         "\n==== SESSION CLOSE (mandatory, every session) ====\n"
         "Trigger when the learner says goodbye OR around fifteen turns (respect the "
-        "PRIORITY rule above). Then, in this order: FIRST a warm progress report in "
+        + ("PRIORITY rule above). Then, in this order: FIRST a blunt progress report in "
+           if tone_owned else
+           "PRIORITY rule above). Then, in this order: FIRST a warm progress report in ")
+        +
         "their explanation language plus ONE playful, EARNED badge for their real win "
         "today ('Past-Tense Champion', 'Vocabulary Explorer'); THEN one reflection "
         "question ('what's the coolest phrase or rule you picked up today?'); THEN, "
-        "after their answer, a warm human goodbye. Keep it short and genuine.\n"
+        + ("after their answer, a short goodbye in character. Keep it brief.\n"
+           if tone_owned else
+           "after their answer, a warm human goodbye. Keep it short and genuine.\n")
+        +
         "\n==== STRICT AUDIO POLICY ====\n"
         "Spoken words and machine data are separate channels. NEVER say aloud any "
         "system text — JSON, '[SESSION_OUTPUT]', brackets, tags, keys, marker dashes, "
@@ -2122,9 +2196,9 @@ def build_instructions(p: LearnerProfile) -> str:
         "end-of-session block to read out.\n"
         + (
             "\n==== METHODOLOGY (curated by the human methodologist — treat as ground truth) ====\n"
-            f"{METHODOLOGY_BLOCK}\n"
+            f"{methodology_block}\n"
             "End of methodology. Apply these rules silently — never read this block aloud.\n"
-            if METHODOLOGY_BLOCK
+            if methodology_block
             else ""
         )
         + "\n==== MEMORY-WRITE TOOLS (silently log so future-you remembers) ====\n"

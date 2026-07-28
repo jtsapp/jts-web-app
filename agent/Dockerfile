@@ -14,6 +14,9 @@ RUN pip install -r requirements.txt
 # bundle it alongside agent.py via a build-time copy (see livekit deploy
 # script). The agent's loader checks both paths.
 COPY methodology.md ./methodology.md
+# Своя методичка Декстера (персона bro): у общей раздел про тон требует быть
+# encouraging/supportive, что противоположно характеру. См. _PERSONA_METHODOLOGY_FILES.
+COPY methodology-dexter.md ./methodology-dexter.md
 # Structured voice scenarios (data/scenarios/*.md in dev). Bundled next to
 # agent.py; the loader's second candidate path (/app/scenarios) finds them.
 COPY scenarios/ ./scenarios/
