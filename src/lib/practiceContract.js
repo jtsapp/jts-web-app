@@ -2,12 +2,12 @@
 // проверяем на Web Request — поэтому здесь нет ни импортов алиаса `@`, ни доступа
 // к localStorage: всё unit-тестируется в node.
 
-export const PRACTICE_MODULES = ['vocab', 'grammar', 'listening']
+export const PRACTICE_MODULES = ['vocab', 'grammar', 'listening', 'shadowing']
 
 // Модули, чей state — это растущее множество пройденных id: прохождение нельзя
 // терять при синхронизации двух устройств, поэтому их POST объединяет, а не
 // заменяет.
-const DONE_MODULES = ['grammar', 'listening']
+const DONE_MODULES = ['grammar', 'listening', 'shadowing']
 
 export function isValidModule(m) {
   return PRACTICE_MODULES.includes(m)

@@ -5,6 +5,8 @@
 export const VOCAB_KEY = 'jts_vocab2'
 export const GRAMMAR_KEY = 'jts_grammar_done'
 export const LISTENING_KEY = 'jts_listening_done'
+export const SHADOWING_KEY = 'jts_shadowing_done'
 
 export const GRAMMAR_PROGRESS_EVENT = 'grammar-progress'
 export const LISTENING_PROGRESS_EVENT = 'listening-progress'
+export const SHADOWING_PROGRESS_EVENT = 'shadowing-progress'

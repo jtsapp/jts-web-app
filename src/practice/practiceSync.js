@@ -7,7 +7,7 @@
 
 import { loadToken } from '../lib/session.js'
 import { applyHydratedState, serializeForPush } from './practiceSyncCore.js'
-import { VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY } from './practiceKeys.js'
+import { VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY } from './practiceKeys.js'
 
 export function isSyncEnabled() {
   return !!loadToken()
@@ -57,7 +57,7 @@ export async function hydratePractice(token) {
 }
 
 export function clearLocalPractice() {
-  for (const k of [VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY]) {
+  for (const k of [VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY]) {
     try { localStorage.removeItem(k) } catch {}
   }
 }
