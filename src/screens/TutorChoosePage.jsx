@@ -56,7 +56,14 @@ export default function TutorChoosePage({
           {TUTORS.map((tt) => (
             <div className="t-tcard" key={tt.key}>
               <img className="t-tcard__avatar" src={tt.avatar} alt="" />
-              <div className="t-tcard__name">{tt.name}</div>
+              <div className="t-tcard__name">
+                {tt.name}
+                {tt.adult && (
+                  <span className="t-adult" title={t('tutor.adultHint')}>
+                    {t('tutor.adult')}
+                  </span>
+                )}
+              </div>
               <div className="t-tcard__chips">
                 {tt.traitColors.map((color, i) => {
                   const label = t(`tutor.${tt.key}.trait${i + 1}`)

@@ -490,6 +490,26 @@
   color: var(--t-ink);
   margin-bottom: 8px;
 }
+/* Метка 18+ у имени тьютора, который матерится (tutors.js → adult: true).
+   Общая для десктопной карточки и мобильной карусели. Красный не берём: рядом
+   лежат разноцветные трейт-чипы, и ещё одно яркое пятно читалось бы как
+   четвёртый трейт. Нейтральная тёмная плашка — это пометка, а не украшение. */
+.t-adult {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #2b2b33;
+  color: #fff;
+  /* Имя 24px — метка не должна с ним конкурировать. */
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  /* Курсор-подсказка: у span есть title с расшифровкой. */
+  cursor: help;
+}
 .t-tcard__chips {
   display: flex;
   /* Три трейта в ряд по 280px внутренней ширины: с длинными словами

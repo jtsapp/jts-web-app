@@ -84,7 +84,14 @@ export default function TutorCarousel({ onChoose, onListen }) {
       </div>
 
       <div className="t-car__info" key={cur.key}>
-        <div className="t-car__name">{cur.name}</div>
+        <div className="t-car__name">
+          {cur.name}
+          {cur.adult && (
+            <span className="t-adult" title={t('tutor.adultHint')}>
+              {t('tutor.adult')}
+            </span>
+          )}
+        </div>
         <div className="t-car__chips">
           {cur.traitColors.map((c, i) => (
             <span className="t-car__chip" key={i} style={{ background: c }}>
