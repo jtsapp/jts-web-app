@@ -493,22 +493,36 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
 # description. Keep mirrored with `personaOverride` in lib/prompts.ts.
 PERSONA_OVERRIDE = {
     # Dexter — the male character. Kept under the existing id 'bro'.
+    # Переписан по запросу клиента (июль 2026): был «тёплый друг-гик», стал
+    # молодым американским парнем со сленгом. Сленг — это его АНГЛИЙСКИЙ регистр;
+    # объяснения всё так же идут на языке ученика (explanation_lang), и сленгом
+    # русские грамматические пояснения не засоряем.
     "bro": (
-        "Persona 'Dexter' — a warm geek-friend (male): kind, smart, genuinely curious.\n"
-        "Essence: an enthusiastic buddy who turns studying into an adventure. Starry-eyed about how "
-        "things work; shares knowledge like a friend showing you something cool, never a strict lecturer.\n"
-        "Tone: energetic, clear, direct, structured; speaks WITH the learner, not at them.\n"
-        "Shape of a (short) reply: curiosity hook (why this is interesting) → an everyday analogy → "
-        "the insight → a question that makes them use it. Never one-word: build on what they said and "
-        "end on an open question — but keep it to 1–3 spoken sentences, not a lecture.\n"
-        "BALANCE: never strict or intimidating, never passive, never condescending or dry. "
-        "Encourage real effort specifically; "
-        "when they err, kindly explain WHY and how to fix it in natural context — not just 'no'.\n"
+        "Persona 'Dexter' — a young American guy (male, early twenties). Talks like a friend you hang "
+        "out with, not a teacher. Chill, confident, casual, zero pressure.\n"
+        "Essence: makes English feel like hanging out. Slang is his native register — he uses it "
+        "naturally, never forced, and unpacks a slang word the moment the learner looks lost.\n"
+        "Vibe: relaxed, playful, low-key hyped. Contractions always. Short spoken sentences.\n"
+        "Signature openers: 'yo', 'ayy', 'wassup', 'aight', 'okay okay', 'nah nah', 'bro', 'my guy'.\n"
+        "Signature slang: 'chill', 'no cap', 'bet', 'that's fire', 'you good?', 'my bad', 'lowkey', "
+        "'straight up', 'let's get it', 'you crushed that', 'run it back'.\n"
+        "Shape of a (short) reply: slangy reaction → the fix said casually, inside the flow → a laid-back "
+        "question that makes them talk more. 1–3 spoken sentences, never a lecture.\n"
+        "TEACHING BEATS VIBE: the casual register never eats the correction. Every error gets fixed in "
+        "the same turn, said the right way — 'my bad, we'd say X' — not skipped to stay cool.\n"
+        "BANNED: teacher voice ('observe', 'note that', 'let us'), formal register, lecturing, "
+        "condescension, profanity, and slang aimed AT the learner as a put-down.\n"
+        "HARD RULE: first sentence starts with a signature opener. Contractions always. No sentence "
+        "over 12 words.\n"
         "EXAMPLES:\n"
         "  Learner: 'I have visited Paris last year.'\n"
-        "  You: 'Nice one. Small fix — with a finished time like last year we use past simple: I visited Paris last year. What did you enjoy most there?'\n"
+        "  You: 'Yo, close! With last year we just say I visited Paris. What'd you do there?'\n"
         "  Learner: 'It was good.'\n"
-        "  You: 'Good is a start — give me two things that made it good. Try a full sentence: it was good because…'"
+        "  You: 'Nah bro, give me more than that. It was good because… finish it.'\n"
+        "  Learner: 'she go to school'\n"
+        "  You: 'Ayy almost — she goes. That little s, my guy. Run it back with he.'\n"
+        "  Learner: (silence)\n"
+        "  You: 'You good? Take your time, no rush.'"
     ),
     # Sarah — the female character. Kept under the existing id 'coach'.
     "coach": (
@@ -644,7 +658,9 @@ PERSONA_OVERRIDE = {
 # formal precision, Luna's predictable softness).
 PERSONA_TEMPERATURE = {
     "hype": 0.85,
-    "bro": 0.8,
+    # Слэнг живёт на вариативности: на 0.8 Декстер сваливался в одни и те же
+    # «yo/nice» из примеров.
+    "bro": 0.88,
     "snark": 0.8,
     "velvet": 0.75,
     "coach": 0.7,
@@ -655,8 +671,8 @@ PERSONA_TEMPERATURE = {
 }
 
 # Gemini voice per persona. Written for the Live API, but _cascade_tts_gemini
-# reads the same table — so under CASCADE_TTS=gemini this is what every learner
-# actually hears.
+# reads the same table — так что это то, что реально слышат тьюторы, у которых
+# провайдер gemini (сегодня Луна, см. TUTOR_TTS_PROVIDER).
 #
 # Available voices: Puck (M), Charon (M), Fenrir (M), Kore (F), Aoede (F), Leda (F).
 #
@@ -2013,8 +2029,8 @@ BASE_ADAPTATION_PHRASES = [
 
 # ---- Cascade voice stack ---------------------------------------------------
 # STT=Soniox, VAD=Silero (endpointer), Brain=lib/llm via OpenAI-compat shim,
-# TTS=Azure Neural by default (CASCADE_TTS=azure|gemini|eleven; kz always Azure
-# kk-KZ, persona hype always Soniox) — see _cascade_tts.
+# TTS — свой провайдер у каждого тьютора (TUTOR_TTS_PROVIDER: Декстер→ElevenLabs,
+# Луна→Gemini, Спарк→Soniox), см. _cascade_tts.
 #
 # Notes from the spike, kept because they still hold:
 #   * Soniox barge-in: no END_OF_SPEECH event (#4034) → Silero VAD must close
@@ -2038,8 +2054,10 @@ BASE_ADAPTATION_PHRASES = [
 PERSONA_VOICE_SETTINGS: dict[str, dict[str, Any]] = {
     # Spark — fast, punchy, high-voltage bursts.
     "hype": {"stability": 0.30, "similarity_boost": 0.75, "style": 0.60, "speed": 1.12, "use_speaker_boost": True},
-    # Dexter — dynamic, clear, direct.
-    "bro": {"stability": 0.45, "similarity_boost": 0.75, "style": 0.35, "speed": 1.05, "use_speaker_boost": True},
+    # Dexter — casual American guy: loose delivery, high style, conversational pace.
+    # stability ниже и style выше, чем у прежнего «чёткого» Декстера: ровная подача
+    # убивает сленг — «yo, chill bro» на stability 0.45 звучит как диктор.
+    "bro": {"stability": 0.32, "similarity_boost": 0.75, "style": 0.60, "speed": 1.04, "use_speaker_boost": True},
     # Sarah — warm, supportive mentor.
     "coach": {"stability": 0.55, "similarity_boost": 0.78, "style": 0.30, "speed": 1.0},
     # Snark — dry, deadpan, mild irony.
@@ -2086,7 +2104,8 @@ def _cascade_tts_azure(profile: LearnerProfile):
     region = os.getenv("AZURE_SPEECH_REGION")
     if not key or not region:
         raise RuntimeError(
-            "AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set (cascade TTS is Azure)"
+            "AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set (у проекта нет Azure — "
+            "провайдер выбирается в TUTOR_TTS_PROVIDER)"
         )
     if profile.lang == "kz":
         voice = AZURE_KZ_FEMALE if profile.tutor in FEMALE_TUTORS else AZURE_KZ_MALE
@@ -2109,7 +2128,9 @@ def _cascade_tts_azure(profile: LearnerProfile):
 # that field, so profile.eleven_voice_id is always "" and every tutor would
 # collapse onto one env voice — hence the table lives here instead.
 ELEVEN_VOICE = {
-    "bro": "Gubgw9l4dtIoQA9YZHgx",       # Dexter
+    # Dexter. Голос меняется через env ELEVEN_VOICE_ID_BRO (см. _eleven_voice_for) —
+    # id ниже остаётся фолбэком, чтобы смена голоса не требовала деплоя агента.
+    "bro": "rHWSYoq8UlV0YIBKMryp",       # Dexter
     "coach": "XrExE9yKIg1WjnnlVkGX",
     "professor": "onwK4e9ZLuTAKqWW03F9",
     "sage": "JBFqnCBsd6RMkjVDRZzb",
@@ -2121,18 +2142,33 @@ ELEVEN_VOICE = {
 }
 DEFAULT_ELEVEN_VOICE = ELEVEN_VOICE["bro"]
 
+
+def _eleven_voice_for(tutor: str) -> str:
+    """Voice id персоны: env ELEVEN_VOICE_ID_<PERSONA> важнее таблицы.
+    Голоса подбираются в ElevenLabs-кабинете, а не в коде, — env позволяет
+    поменять тембр Декстера без деплоя агента."""
+    if tutor:
+        env = (os.getenv(f"ELEVEN_VOICE_ID_{tutor.upper()}") or "").strip()
+        if env:
+            return env
+    return ELEVEN_VOICE.get(tutor, DEFAULT_ELEVEN_VOICE)
+
 DEFAULT_GEMINI_TTS_VOICE = "Puck"
 DEFAULT_GEMINI_TTS_MODEL = "gemini-2.5-flash-tts"
 
-# Soniox TTS voice per persona. Only Spark (hype) is routed here today (see the
-# persona override in _cascade_tts); every other persona stays on the CASCADE_TTS
-# choice. A single Soniox voice keeps one timbre across all 60+ languages, so a
-# Spark kz session sounds like Spark instead of swapping to Azure's kk-KZ voice
-# the way the Gemini path has to. Voices (28): male Daniel/Noah/Jack/Adrian/Owen/
-# Kenji/Rafael/Mateo/Oliver/Arthur/Cooper/Mason/Arjun/Rohan; female Maya/Nina/
-# Emma/Claire/Grace/Mina/Lucia/Sofia/Isla/Victoria/Ruby/Elise/Priya/Meera.
+# Soniox TTS voice per persona. Постоянно здесь только Спарк (TUTOR_TTS_PROVIDER),
+# остальные попадают сюда лишь откатом, когда их провайдер не настроен на деплое
+# (см. _cascade_tts). Таблица всё равно покрывает тройку: без своей строки Луна
+# на откате заговорила бы мужским Owen. Один голос Soniox держит тембр на всех
+# 60+ языках — потому Спарк и звучит одинаково на kk и en.
+# Voices (28): male Daniel/Noah/Jack/Adrian/Owen/Kenji/Rafael/Mateo/Oliver/
+# Arthur/Cooper/Mason/Arjun/Rohan; female Maya/Nina/Emma/Claire/Grace/Mina/
+# Lucia/Sofia/Isla/Victoria/Ruby/Elise/Priya/Meera.
 SONIOX_TTS_VOICE = {
-    "hype": "Owen",  # Spark — punchy male, matches the Fenrir/fast-bursts energy
+    "hype": "Owen",    # Spark  — punchy male, matches the fast-bursts energy
+    "bro": "Noah",     # Dexter — younger, looser male; не путать с Owen Спарка
+    "gentle": "Grace", # Luna   — calm female
+    "coach": "Emma",   # Sarah  — warm female (в UI её нет, но агент знает)
 }
 DEFAULT_SONIOX_TTS_VOICE = "Owen"
 DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
@@ -2140,10 +2176,6 @@ DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
 # the app carries the country code "kz", Soniox expects ISO 639-1 "kk". en/ru are
 # identical, so they need no entry (the .get() fallback returns them unchanged).
 SONIOX_LANG_CODE = {"kz": "kk"}
-# Personas that ALWAYS speak through Soniox TTS regardless of CASCADE_TTS. Spark
-# lives here so its voice is one provider across en/ru/kz. Comma-separated env
-# override (persona ids) so it can be widened or disabled ("") without a redeploy.
-DEFAULT_SONIOX_TTS_PERSONAS = {"hype"}
 
 # Gemini-TTS synthesises audio with an LLM, so a long tutor turn takes far
 # longer to generate than Azure's vocoder does. livekit's default request
@@ -2234,6 +2266,13 @@ def _cascade_tts_gemini(profile: LearnerProfile):
     # redeploy; "global" restores the plugin default.
     location = os.getenv("GEMINI_TTS_LOCATION", "us-central1").strip()
     creds = _gemini_tts_credentials()
+    # Без креды плагин молча строится на ADC и падает уже В СЕРЕДИНЕ урока —
+    # тьютор просто перестаёт звучать. Проверяем на этапе сборки, чтобы сессия
+    # успела уйти в фолбэк (_cascade_tts) вместо тишины.
+    if not creds and not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+        raise RuntimeError(
+            "TTS gemini needs GOOGLE_CREDENTIALS_JSON (or ADC via GOOGLE_APPLICATION_CREDENTIALS)"
+        )
     logger.info(
         "Cascade TTS: Gemini (%s, voice=%s, creds=%s, timeout=%.0fs, loc=%s), lang=%s, tutor=%s",
         model, voice, "env" if creds else "ADC", GEMINI_TTS_CONN.timeout, location,
@@ -2258,10 +2297,10 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     not theoretical.
     """
     if elevenlabs is None:
-        raise RuntimeError("CASCADE_TTS=eleven needs livekit-plugins-elevenlabs")
+        raise RuntimeError("TTS eleven needs livekit-plugins-elevenlabs")
     key = os.getenv("ELEVENLABS_API_KEY")
     if not key:
-        raise RuntimeError("CASCADE_TTS=eleven needs ELEVENLABS_API_KEY")
+        raise RuntimeError("TTS eleven needs ELEVENLABS_API_KEY")
     # Flash is the default for concurrency, not quality: Pro allows 20 parallel
     # requests on Flash/Turbo but only 10 on multilingual_v2. felix runs Flash
     # too. Set ELEVENLABS_MODEL=eleven_multilingual_v2 to trade headroom for
@@ -2272,7 +2311,7 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     voice_id = (
         profile.eleven_voice_id
         or os.getenv("ELEVENLABS_VOICE_ID")
-        or ELEVEN_VOICE.get(profile.tutor, DEFAULT_ELEVEN_VOICE)
+        or _eleven_voice_for(profile.tutor)
     )
     vs = PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
     logger.info(
@@ -2323,55 +2362,92 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     return soniox.TTS(api_key=key, model=model, voice=voice, language=language)
 
 
-def _soniox_tts_personas() -> set[str]:
-    """Persona ids forced onto Soniox TTS. Env override (comma-separated) wins so
-    the routing can be widened or turned off ("") without redeploying."""
-    raw = os.getenv("SONIOX_TTS_PERSONAS")
-    if raw is None:
-        return DEFAULT_SONIOX_TTS_PERSONAS
-    return {p.strip().lower() for p in raw.split(",") if p.strip()}
+# ── Кто чем говорит ─────────────────────────────────────────────────────────
+# Стек один на всех — cascade (VOICE_STACK=cascade). А вот TTS-провайдер СВОЙ у
+# каждого тьютора: голос — часть характера, а не глобальный рубильник. Раньше
+# здесь был один CASCADE_TTS на всех плюс два списка-исключения (Spark→Soniox,
+# Dexter→Eleven); осталась одна таблица.
+TUTOR_TTS_PROVIDER = {
+    "bro": "eleven",     # Декстер — клиентский голос выбран в ElevenLabs
+    "gentle": "gemini",  # Луна    — лучшее качество на en/ru, один голос на оба
+    "hype": "soniox",    # Спарк   — один тембр на всех 60+ языках, включая kk
+}
+# Azure в таблице нет НАМЕРЕННО: аккаунта Azure Speech у проекта нет, ключи
+# AZURE_SPEECH_* не заданы ни на одном деплое. Раньше "azure" стоял дефолтом
+# CASCADE_TTS — то есть при незаданной переменной агент шёл в провайдера,
+# которого не существует. Код azure-пути рабочий и оставлен, но попасть в него
+# теперь можно только явно: TTS_PROVIDER_<PERSONA>=azure или CASCADE_TTS=azure.
+TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure")
+# Дефолт для персон вне таблицы (professor/sage/snark/edge/velvet/coach — в UI
+# их нет, но агент их знает) и для пустого tutor. CASCADE_TTS сохранён как имя
+# переменной, но сменил смысл: это ДЕФОЛТ для нераспределённых, не рубильник.
+DEFAULT_TTS_PROVIDER = "gemini"
+# Казахского правила здесь НЕТ намеренно. По-казахски говорит только Спарк, и он
+# уже на Soniox — единственном провайдере, который реально произносит kk.
+# У Луны и Декстера "kz" — это язык ИНТЕРФЕЙСА: сами они русскоязычные (см.
+# tutor.*.trait1 в src/i18n/dict.js), говорят по-английски и объясняют по-русски,
+# казахского текста в их репликах не бывает. Раньше kz перекидывал на TTS всех
+# подряд — сперва на Azure (которого у проекта нет, отчего kz+Луна падала с
+# RuntimeError), потом на Soniox. И то и другое лечило проблему, которой нет:
+# менялся тембр тьютора там, где язык озвучки не менялся вовсе.
+# Куда падать, если выбранный провайдер не настроен на этом деплое. Soniox,
+# потому что SONIOX_API_KEY обязателен для STT — если его нет, сессия и так
+# не поднимется, так что фолбэк не может «тоже отвалиться».
+TTS_FALLBACK_PROVIDER = "soniox"
+
+
+def _tts_provider_for(profile: LearnerProfile) -> str:
+    """Провайдер TTS этой сессии: env персоны → таблица → дефолт.
+    От языка сессии НЕ зависит: тьютор озвучивается своим голосом всегда."""
+    tutor = (profile.tutor or "").strip().lower()
+    if tutor:
+        # Сменить голос одному тьютору без редеплоя: TTS_PROVIDER_BRO=gemini.
+        env = (os.getenv(f"TTS_PROVIDER_{tutor.upper()}") or "").strip().lower()
+        if env:
+            return env
+        if tutor in TUTOR_TTS_PROVIDER:
+            return TUTOR_TTS_PROVIDER[tutor]
+    return (os.getenv("CASCADE_TTS") or DEFAULT_TTS_PROVIDER).strip().lower()
 
 
 def _cascade_tts(profile: LearnerProfile):
-    """Cascade TTS, picked by CASCADE_TTS so both legs can be measured on live
-    sessions and rolled back with one env var.
+    """TTS одной сессии. Провайдер выбирается ПО ТЬЮТОРУ (_tts_provider_for).
 
-    azure (default) — $15/1M chars, native kk-KZ voices. Its en<->ru transitions
-      were rated bad in testing, and a persona changes timbre on a kz session
-      because there is no multilingual voice covering Kazakh.
-    gemini — best quality on en/ru and one voice across both, but the Vertex
-      quota is 10 req/min per project per region, i.e. ~6 concurrent lessons.
-      Raising it is a support request measured in days. Needs
-      GOOGLE_CREDENTIALS_JSON (or ADC). Kazakh is unusable → routed to Azure.
-    eleven — $50/1M chars, the expensive one, but concurrency is bought not
-      requested: Pro = 20 parallel on Flash/Turbo (the default here), 10 on
-      multilingual_v2. Needs ELEVENLABS_API_KEY.
+    soniox — ключ уже нужен для STT, отдельных денег не стоит. Один голос
+      держит тембр на en/ru/kz — поэтому он и достался Спарку, единственному
+      казахскоязычному тьютору, и он же общий фолбэк.
+    gemini — лучшее качество на en/ru и один голос на оба, но квота Vertex —
+      10 req/min на проект/регион, то есть ~6 параллельных уроков. Поднятие
+      квоты — тикет в поддержку на дни. Нужен GOOGLE_CREDENTIALS_JSON (или ADC).
+    eleven — $50/1M символов, самый дорогой, но параллельность там покупается,
+      а не выпрашивается: Pro = 20 на Flash/Turbo (дефолт здесь), 10 на
+      multilingual_v2. Нужен ELEVENLABS_API_KEY.
+    azure  — $15/1M и родные kk-KZ голоса, но аккаунта у проекта нет (см.
+      TUTOR_TTS_PROVIDER). Переходы en<->ru тестеры оценили плохо.
     """
-    # Per-persona override BEFORE the CASCADE_TTS switch: Spark (hype) always
-    # speaks through Soniox TTS, whatever CASCADE_TTS is set to — one provider,
-    # one voice, en/ru/kz. Others fall through to the global CASCADE_TTS choice.
-    if profile.tutor in _soniox_tts_personas():
-        return _cascade_tts_soniox(profile)
-
-    which = (os.getenv("CASCADE_TTS") or "azure").strip().lower()
-    if which not in ("azure", "gemini", "eleven"):
+    which = _tts_provider_for(profile)
+    if which not in TTS_PROVIDERS:
         raise RuntimeError(
-            f"CASCADE_TTS={which!r} not recognised (expected 'azure', 'gemini' or 'eleven')"
+            f"TTS provider {which!r} not recognised (expected one of {', '.join(TTS_PROVIDERS)})"
         )
-    if which == "eleven":
-        return _cascade_tts_eleven(profile)
-    # kz always falls back to Azure: Gemini-TTS is multilingual with no dedicated
-    # Kazakh voice and testers rated its kk output unintelligible, while Azure has
-    # native kk-KZ voices. The cost is that a kz session breaks the one-voice-per-
-    # persona property this whole path exists for — an intelligible stranger beats
-    # Dexter reciting mush. Flip GEMINI_TTS_ALLOW_KZ=1 to re-measure after a model
-    # update.
-    if which == "gemini" and profile.lang == "kz" and os.getenv("GEMINI_TTS_ALLOW_KZ") != "1":
-        logger.info("Cascade TTS: kz session → Azure (Gemini kk quality unusable)")
-        return _cascade_tts_azure(profile)
-    if which == "gemini":
-        return _cascade_tts_gemini(profile)
-    return _cascade_tts_azure(profile)
+    builders = {
+        "soniox": _cascade_tts_soniox,
+        "gemini": _cascade_tts_gemini,
+        "eleven": _cascade_tts_eleven,
+        "azure": _cascade_tts_azure,
+    }
+    try:
+        return builders[which](profile)
+    except RuntimeError as e:
+        # Провайдер не настроен на этом деплое. Урок чужим голосом лучше, чем
+        # урок молчащий, — предупреждаем и падаем на Soniox.
+        if which == TTS_FALLBACK_PROVIDER:
+            raise
+        logger.warning(
+            "TTS %s unavailable (tutor=%s lang=%s): %s — falling back to %s",
+            which, profile.tutor or "<none>", profile.lang, e, TTS_FALLBACK_PROVIDER,
+        )
+        return builders[TTS_FALLBACK_PROVIDER](profile)
 
 
 def build_cascade_session(
@@ -2394,7 +2470,7 @@ def build_cascade_session(
             "(pip install -r requirements.txt)"
         )
     logger.info("Session stack: CASCADE (Soniox STT / bundled Silero VAD / lib/llm brain / %s TTS)",
-                (os.getenv("CASCADE_TTS") or "azure").strip().lower())
+                _tts_provider_for(profile))
 
     # Soniox auto-detects across en/ru/kz with code-switching. (soniox.STT takes
     # no `model` kwarg — config via params.) Pass the key explicitly.
