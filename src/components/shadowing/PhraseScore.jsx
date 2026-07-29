@@ -5,7 +5,7 @@
 // Чистый презентационный компонент; логику/сеть держит экран.
 
 import { useI18n } from '../../i18n.jsx'
-import { PlayIcon, MicIcon } from '../icons.jsx'
+import { PlayIcon, StopIcon, MicIcon } from '../icons.jsx'
 import { wordLevel, MASTERY_THRESHOLD } from '../../practice/shadowing/mastery.js'
 
 function band(score) {
@@ -14,7 +14,7 @@ function band(score) {
   return 'bad'
 }
 
-export default function PhraseScore({ result, refText, assessing, onRetry, onPlayMine }) {
+export default function PhraseScore({ result, refText, assessing, playing, onRetry, onPlayMine }) {
   const { t } = useI18n()
 
   if (assessing) {
@@ -60,7 +60,8 @@ export default function PhraseScore({ result, refText, assessing, onRetry, onPla
 
       <div className="sh-score__acts">
         <button type="button" className="sh-chip" onClick={onPlayMine}>
-          <PlayIcon size={14} /> {t('shadowing.yourTake')}
+          {playing ? <StopIcon size={14} /> : <PlayIcon size={14} />}{' '}
+          {playing ? t('shadowing.stop') : t('shadowing.yourTake')}
         </button>
         <button type="button" className="sh-chip" onClick={onRetry}>
           <MicIcon size={14} /> {t('shadowing.retry')}
