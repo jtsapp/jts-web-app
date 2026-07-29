@@ -8,6 +8,7 @@ import { getLearningPath, countProgress } from '../api.js'
 export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom, onNav, onProfile }) {
   const { t } = useI18n()
   const [progress, setProgress] = useState({}) // id -> {done,total}
+  const [view, setView] = useState('map') // 'map' | 'list'
 
   useEffect(() => {
     if (!token) return
@@ -48,32 +49,91 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="lp">
-        {/* Центр: заголовок + сетка миров */}
+      <div className={`lp${view === 'map' ? ' lp--map' : ''}`}>
+        {/* Центр: заголовок + переключатель + карта / список миров */}
         <div className="lp__center">
-          <h1 className="lp__title">{t('nav.learning')}</h1>
-          <p className="lp__sub">{t('learn.subtitle')}</p>
-
-          <div className="lp__grid">
-            {kingdoms.map((k) => (
-              <button key={k.id} className="lp-card" onClick={() => onOpenKingdom?.(k)}>
-                <img className="lp-card__img" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} loading="lazy" />
-                {k.current && <span className="lp-card__here">{t('learn.here')}</span>}
-                <div className="lp-card__bar">
-                  <div className="lp-card__meta">
-                    <b>{k.name}</b>
-                    <span>{t('kingdom.levelBadge', { label: k.level })}</span>
-                  </div>
-                  <span className="lp-card__go">
-                    <ChevronRightIcon size={16} />
-                  </span>
-                </div>
+          <div className="lp__head">
+            <div>
+              <h1 className="lp__title">{t('nav.learning')}</h1>
+              <p className="lp__sub">{t('learn.subtitle')}</p>
+            </div>
+            <div className="lp-viewtoggle" role="tablist" aria-label={t('nav.learning')}>
+              <button
+                role="tab"
+                aria-selected={view === 'map'}
+                className={`lp-viewtoggle__btn${view === 'map' ? ' is-active' : ''}`}
+                onClick={() => setView('map')}
+              >
+                {t('learn.viewMap')}
               </button>
-            ))}
+              <button
+                role="tab"
+                aria-selected={view === 'list'}
+                className={`lp-viewtoggle__btn${view === 'list' ? ' is-active' : ''}`}
+                onClick={() => setView('list')}
+              >
+                {t('learn.viewList')}
+              </button>
+            </div>
           </div>
+
+          {view === 'map' ? (
+            <div className="lp-map">
+              <div className="lp-map__canvas">
+                {kingdoms.map((k) => {
+                  const locked = !k.unlocked
+                  const cls = `lp-node${k.current ? ' is-current' : ''}${locked ? ' is-locked' : ''}`
+                  return (
+                    <button
+                      key={k.id}
+                      className={cls}
+                      style={{ left: `${k.map.x}%`, top: `${k.map.y}%`, '--ring': k.ring }}
+                      disabled={locked}
+                      aria-disabled={locked}
+                      title={locked ? t('learn.locked', { label: k.level }) : k.name}
+                      onClick={() => !locked && onOpenKingdom?.(k)}
+                    >
+                      <span className="lp-node__ring">
+                        <img className="lp-node__av" src={`/assets/world/levels/${k.level.toLowerCase()}.webp`} alt={k.name} loading="lazy" />
+                        {locked && (
+                          <span className="lp-node__lock" aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                              <rect x="5" y="10.5" width="14" height="9.5" rx="2.2" fill="#fff" />
+                              <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" />
+                            </svg>
+                          </span>
+                        )}
+                      </span>
+                      <span className="lp-node__label">{t('kingdom.levelBadge', { label: k.level })}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="lp__grid">
+              {kingdoms.map((k) => (
+                <button key={k.id} className="lp-card" onClick={() => onOpenKingdom?.(k)}>
+                  <img className="lp-card__img" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} loading="lazy" />
+                  {k.current && <span className="lp-card__here">{t('learn.here')}</span>}
+                  <div className="lp-card__bar">
+                    <div className="lp-card__meta">
+                      <b>{k.name}</b>
+                      <span>{t('kingdom.levelBadge', { label: k.level })}</span>
+                    </div>
+                    <span className="lp-card__go">
+                      <ChevronRightIcon size={16} />
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Правая панель: статус / уровень / текущее королевство / прогресс */}
+        {/* Правая панель: статус / уровень / прогресс — только в режиме «Список»
+            (в режиме «Карта» статус берётся из сайдбара, карта — во всю ширину) */}
+        {view === 'list' && (
         <aside className="lp__side">
           <div className="lp-status">
             <span className="lp-status__ic">
@@ -122,6 +182,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
             </div>
           )}
         </aside>
+        )}
       </div>
     </LearningLayout>
   )

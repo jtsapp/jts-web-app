@@ -2631,6 +2631,182 @@ textarea {
   gap: 20px;
 }
 
+/* Заголовок + переключатель Карта/Список */
+.lp__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.lp__head .lp__sub {
+  margin-bottom: 0;
+}
+.lp-viewtoggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  background: #f1ecfb;
+  border-radius: 999px;
+  flex: none;
+}
+.lp-viewtoggle__btn {
+  border: none;
+  background: none;
+  padding: 7px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.lp-viewtoggle__btn.is-active {
+  background: #fff;
+  color: var(--purple);
+  box-shadow: 0 2px 6px rgba(23, 19, 38, 0.12);
+}
+
+/* Остров-карта с нодами уровней */
+.lp-map {
+  max-width: 460px;
+  margin: 24px auto 0;
+}
+.lp-map__canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1600 / 2111;
+  background: url('/assets/world/island_map.webp') center top / cover no-repeat #37b6ef;
+  border-radius: 24px;
+  box-shadow: 0 18px 44px rgba(23, 19, 38, 0.22);
+  container-type: inline-size;
+}
+
+/* Режим «Карта» (как в дизайне): карта во всю ширину контента, крупная,
+   край-в-край; заголовок липнет сверху при прокрутке высокой карты.
+   Правой панели статуса нет — роль/монеты/стрик берутся из сайдбара */
+.lp.lp--map {
+  display: block;
+  padding: 0;
+}
+.lp--map .lp__center {
+  max-width: none;
+}
+.lp--map .lp__head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0;
+  padding: 22px 34px 16px;
+  background: #fff;
+  border-bottom: 1px solid rgba(23, 19, 38, 0.07);
+}
+.lp--map .lp-map {
+  max-width: none;
+  margin: 0;
+}
+.lp--map .lp-map__canvas {
+  border-radius: 0;
+  box-shadow: none;
+}
+.lp-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4cqw;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.lp-node__ring {
+  position: relative;
+  display: block;
+  width: 16cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--ring);
+  border: 0.9cqw solid #fff;
+  box-shadow: 0 0.8cqw 1.8cqw rgba(20, 16, 40, 0.35);
+  overflow: hidden;
+  transition: transform 0.15s ease;
+}
+.lp-node__av {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.lp-node__label {
+  margin-top: 0;
+  background: #fff;
+  color: var(--purple);
+  font-weight: 800;
+  font-size: 3.3cqw;
+  line-height: 1;
+  padding: 1.1cqw 2.8cqw;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 0.4cqw 1.1cqw rgba(20, 16, 40, 0.2);
+}
+.lp-node:not(.is-locked):hover .lp-node__ring {
+  transform: scale(1.06);
+}
+/* Текущий уровень — светящееся кольцо */
+.lp-node.is-current .lp-node__ring {
+  box-shadow: 0 0 0 0.7cqw color-mix(in srgb, var(--ring) 45%, transparent),
+    0 0.8cqw 1.8cqw rgba(20, 16, 40, 0.4);
+  animation: lp-node-pulse 2s ease-in-out infinite;
+}
+@keyframes lp-node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0.4cqw color-mix(in srgb, var(--ring) 45%, transparent),
+      0 0.8cqw 1.8cqw rgba(20, 16, 40, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 1.3cqw color-mix(in srgb, var(--ring) 22%, transparent),
+      0 0.8cqw 1.8cqw rgba(20, 16, 40, 0.4);
+  }
+}
+/* Закрытые уровни */
+.lp-node.is-locked {
+  cursor: default;
+}
+.lp-node.is-locked .lp-node__ring {
+  background: #98a0b3;
+  border-color: rgba(255, 255, 255, 0.85);
+}
+.lp-node.is-locked .lp-node__av {
+  filter: grayscale(1) brightness(0.72);
+}
+.lp-node.is-locked .lp-node__label {
+  color: var(--muted);
+}
+.lp-node__lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 16, 40, 0.4);
+}
+.lp-node__lock svg {
+  width: 42%;
+  height: 42%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-node.is-current .lp-node__ring {
+    animation: none;
+  }
+  .lp-node__ring,
+  .lp-viewtoggle__btn {
+    transition: none;
+  }
+}
+
 /* Карточка мира */
 .lp-card {
   position: relative;
