@@ -524,6 +524,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
           </div>
         )}
 
+        {denied && <div className="sh-note sh-note--err">{t('shadowing.micDenied')}</div>}
+
         {/* Видео */}
         <section className="sh-card">
           <div className="sh-video">
@@ -708,7 +710,9 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
           </div>
         </section>
 
-        {/* Запись всего отрывка */}
+        {/* Запись всего отрывка — только в режиме «Синхрон» (говоришь поверх
+            аудио целиком). В обычном режиме тренируемся пофразно. */}
+        {syncMode && (
         <section className="sh-card">
           <div className="sh-sec__head">
             <h2>{t('shadowing.recordAll')}</h2>
@@ -741,9 +745,9 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                 </button>
               </div>
             )}
-            {denied && <div className="sh-note sh-note--err sh-mic__denied">{t('shadowing.micDenied')}</div>}
           </div>
         </section>
+        )}
 
         {dev && (
           <DevTools
