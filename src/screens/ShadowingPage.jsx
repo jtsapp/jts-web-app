@@ -106,9 +106,10 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const syncRef = useRef(false)
   useEffect(() => { syncRef.current = syncMode }, [syncMode])
 
-  // Поэтапный показ скрипта: не все фразы сразу, а по одной — следующая
-  // открывается после записи текущей или кнопкой «Показать следующую» (пропуск).
-  const [stepMode, setStepMode] = useState(false)
+  // Поэтапный показ скрипта (по умолчанию включён): фразы открываются строго по
+  // одной — следующую видно ТОЛЬКО после записи текущей (пропуска вперёд нет).
+  // Тумблер «Поэтапно» можно выключить, чтобы увидеть весь скрипт сразу.
+  const [stepMode, setStepMode] = useState(true)
   const [revealed, setRevealed] = useState(1)
 
   // Что сейчас проигрывается из записей: индекс фразы, 'whole' или null. Нужно,
@@ -702,13 +703,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
               )
             })}
             {stepMode && revealed < total && (
-              <button
-                type="button"
-                className="sh-reveal"
-                onClick={() => setRevealed((r) => Math.min(total, r + 1))}
-              >
-                {t('shadowing.reveal')}
-              </button>
+              <div className="sh-locked">{t('shadowing.locked')}</div>
             )}
           </div>
         </section>
