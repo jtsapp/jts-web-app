@@ -2682,31 +2682,49 @@ textarea {
   container-type: inline-size;
 }
 
-/* Режим «Карта»: карта во всю ширину контента, без правой панели,
-   заголовок липнет сверху (статус берётся из сайдбара) */
+/* Режим «Карта»: вся карта видна целиком без прокрутки — канвас
+   вписывается по высоте доступной области, без правой панели статуса
+   (роль/монеты/стрик берутся из сайдбара) */
 .lp.lp--map {
   display: block;
   padding: 0;
+  /* вертикальная «обвязка» вокруг карты: заголовок + подвал (+ шапка на мобиле) */
+  --map-chrome: 140px;
 }
 .lp--map .lp__center {
   max-width: none;
 }
 .lp--map .lp__head {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   margin: 0;
-  padding: 22px 34px 16px;
+  padding: 16px 34px 8px;
   background: #fff;
-  border-bottom: 1px solid rgba(23, 19, 38, 0.07);
 }
 .lp--map .lp-map {
+  display: flex;
+  justify-content: center;
   max-width: none;
   margin: 0;
+  padding: 6px 16px 16px;
 }
+/* Ширину ограничиваем по доступной высоте, чтобы вся карта влезала в
+   экран без прокрутки (и по ширине, и по высоте); высота — из соотношения */
 .lp--map .lp-map__canvas {
-  border-radius: 0;
-  box-shadow: none;
+  width: min(100%, calc((100dvh - var(--map-chrome)) * 1600 / 2111));
+  height: auto;
+  aspect-ratio: 1600 / 2111;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(23, 19, 38, 0.18);
+}
+@media (max-width: 760px) {
+  .lp.lp--map {
+    --map-chrome: 196px;
+  }
+  .lp--map .lp__head {
+    padding: 12px 18px 6px;
+  }
+  .lp--map .lp-map {
+    padding: 4px 10px 12px;
+  }
 }
 .lp-node {
   position: absolute;
