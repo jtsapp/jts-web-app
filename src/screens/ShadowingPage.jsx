@@ -21,6 +21,11 @@ import {
   markSegmentDone,
   SHADOWING_PROGRESS_EVENT,
 } from '../practice/shadowing/shadowingProgress.js'
+import { blobToWav16kMono } from '../lib/ielts-audio.js'
+import { assessTake } from '../practice/shadowing/assessClient.js'
+import { saveTake, getTakeBlob, getLessonScores } from '../practice/shadowing/recordings.js'
+import { lessonMastery, isPhraseMastered } from '../practice/shadowing/mastery.js'
+import PhraseScore from '../components/shadowing/PhraseScore.jsx'
 
 // Загрузка YouTube IFrame API — один раз на модуль (как _coversIndexPromise в
 // PracticePage). SSR-гард: на сервере window нет, отдаём null и грузим плеер уже
@@ -57,7 +62,7 @@ function pickMime() {
 const SPEEDS = [0.5, 0.75, 1]
 
 export default function ShadowingPage({ userLevel, userName, token, onNav, onProfile, lessonId }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
 
   // Текущий урок: стартовый id из пропса (диплинк-выбор карточки), дальше —
   // переключение табами. getLesson с фолбэком не даст упасть на битом id.
@@ -86,6 +91,21 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const [wholeUrl, setWholeUrl] = useState(null)
   const [denied, setDenied] = useState(false)
 
+  // Оценка произношения: результат на фразу (в памяти сессии) + индекс, что
+  // сейчас оценивается. scores — лучший балл на фразу (Map segId→score, из
+  // IndexedDB), из него считается мастерство.
+  const [results, setResults] = useState({}) // segIndex → assessTake-результат
+  const [assessingIdx, setAssessingIdx] = useState(-1)
+  const [scores, setScores] = useState(() => new Map())
+
+  // Режимы тренировки. syncMode — говорить ПОВЕРХ играющей фразы (настоящий
+  // shadowing) vs «по очереди» (пауза → запись). blind — «слепой» parrot-режим:
+  // текст скрыт, тренируется ухо.
+  const [syncMode, setSyncMode] = useState(false)
+  const [blind, setBlind] = useState(false)
+  const syncRef = useRef(false)
+  useEffect(() => { syncRef.current = syncMode }, [syncMode])
+
   // Императивные рефы плеера/таймера/записи — не должны триггерить рендер.
   const playerRef = useRef(null)
   const timerRef = useRef(null)
@@ -113,11 +133,17 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     setLoopIdx(null)
     loopRef.current = null
     setDone(getLessonDone(curId))
-    // сбрасываем записи предыдущего урока
-    for (const url of Object.values(takesRef.current)) {
-      try { URL.revokeObjectURL(url) } catch {}
+    setResults({})
+    setAssessingIdx(-1)
+    // сбрасываем записи предыдущего урока (in-memory url'ы)
+    for (const take of Object.values(takesRef.current)) {
+      try { URL.revokeObjectURL(take?.url) } catch {}
     }
     takesRef.current = {}
+    // лучшие баллы урока из IndexedDB (для мастерства и «освоено»)
+    let alive = true
+    getLessonScores(curId).then((m) => { if (alive) setScores(m) })
+    return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [curId])
 
@@ -279,7 +305,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
         clearTimeout(autoStopRef.current)
         recTargetRef.current = null
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
-        onDone(URL.createObjectURL(blob))
+        onDone(blob)
       }
       recorderRef.current = rec
       recTargetRef.current = target
@@ -291,31 +317,79 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     }
   }
 
-  // Запись одной фразы: пишем → сохраняем take → отмечаем фразу пройденной.
+  // Запись одной фразы: пишем → сохраняем take → отмечаем попытку → на оценку.
+  // syncMode: видео играет, микрофон пишет ОДНОВРЕМЕННО (говоришь поверх), стоп
+  // ~на конце фразы. Иначе «по очереди»: пауза видео, тихая запись.
   async function segRecord(i) {
     if (recTargetRef.current) { stopRec(); return }
-    pauseVideo()
-    const ok = await startRec({ type: 'seg', i }, (url) => {
+    const sync = syncRef.current
+    if (!sync) pauseVideo()
+    const ok = await startRec({ type: 'seg', i }, (blob) => {
       setRecSeg(null)
       const prev = takesRef.current[i]
-      if (prev) { try { URL.revokeObjectURL(prev) } catch {} }
-      takesRef.current[i] = url
-      // Прогресс считаем по факту записи фразы (верного/неверного тут нет).
+      if (prev?.url) { try { URL.revokeObjectURL(prev.url) } catch {} }
+      takesRef.current[i] = { url: URL.createObjectURL(blob), blob }
+      // Попытка засчитана сразу (синкается в аккаунт), балл придёт от оценки.
       markSegmentDone(segmentId(curId, i))
       setDone(getLessonDone(curId))
-      playMine(i)
+      assessAndStore(i, blob)
     })
     if (!ok) return
     setRecSeg(i)
-    // авто-стоп чуть длиннее фразы, но не дольше 20с
-    const dur = Math.min(20, segments[i][1] - segments[i][0] + 3) * 1000
-    autoStopRef.current = setTimeout(() => {
-      if (recTargetRef.current && recTargetRef.current.type === 'seg' && recTargetRef.current.i === i) stopRec()
-    }, dur)
+    const s = segments[i]
+    if (sync) {
+      // играем фразу (видео стопнется на её конце самим трекингом), а запись
+      // обрываем чуть позже — чтобы поймать хвост речи ученика.
+      playSegment(i, true)
+      const dur = ((s[1] - s[0]) / rateRef.current + 0.6) * 1000
+      autoStopRef.current = setTimeout(() => {
+        if (recTargetRef.current?.type === 'seg' && recTargetRef.current.i === i) stopRec()
+      }, dur)
+    } else {
+      const dur = Math.min(20, s[1] - s[0] + 3) * 1000
+      autoStopRef.current = setTimeout(() => {
+        if (recTargetRef.current?.type === 'seg' && recTargetRef.current.i === i) stopRec()
+      }, dur)
+    }
   }
 
-  function playMine(i) {
-    const url = takesRef.current[i]
+  // Оценка записанной фразы: webm → 16кГц WAV → Azure (эталон = текст фразы) →
+  // балл/послово/совет. Результат в памяти сессии; blob + лучший балл — в
+  // IndexedDB (переживут перезагрузку). Осечки не критичны — без падения экрана.
+  async function assessAndStore(i, blob) {
+    setAssessingIdx(i)
+    try {
+      const wav = await blobToWav16kMono(blob)
+      if (!wav) return
+      const res = await assessTake(wav, segments[i][2], lang)
+      setResults((r) => ({ ...r, [i]: res }))
+      const segId = segmentId(curId, i)
+      saveTake(segId, blob, res.overall) // best-effort persist (max балла внутри)
+      setScores((m) => {
+        const n = new Map(m)
+        n.set(segId, Math.max(n.get(segId) || 0, res.overall))
+        return n
+      })
+    } catch (e) {
+      console.warn('[shadowing] assess failed', e)
+    } finally {
+      setAssessingIdx(-1)
+    }
+  }
+
+  // URL записи фразы: из памяти или, после перезагрузки, из IndexedDB.
+  async function resolveTakeUrl(i) {
+    let url = takesRef.current[i]?.url
+    if (url) return url
+    const blob = await getTakeBlob(segmentId(curId, i))
+    if (!blob) return null
+    url = URL.createObjectURL(blob)
+    takesRef.current[i] = { url, blob }
+    return url
+  }
+
+  async function playMine(i) {
+    const url = await resolveTakeUrl(i)
     if (!url || !audioRef.current) return
     pauseVideo()
     audioRef.current.src = url
@@ -323,8 +397,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   }
 
   // Сравнить: проигрываем фразу оригинала, затем свою запись.
-  function compare(i) {
-    const url = takesRef.current[i]
+  async function compare(i) {
+    const url = await resolveTakeUrl(i)
     if (!url) return
     playSegment(i, true)
     const wait = ((segments[i][1] - segments[i][0]) / rateRef.current) * 1000 + 450
@@ -340,9 +414,12 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   // Запись всего отрывка (нижний большой микрофон).
   async function wholeRecord() {
     if (recTargetRef.current) { stopRec(); return }
-    const ok = await startRec({ type: 'whole' }, (url) => {
+    const ok = await startRec({ type: 'whole' }, (blob) => {
       setWholeRec(false)
-      setWholeUrl((prev) => { if (prev) { try { URL.revokeObjectURL(prev) } catch {} } return url })
+      setWholeUrl((prev) => {
+        if (prev) { try { URL.revokeObjectURL(prev) } catch {} }
+        return URL.createObjectURL(blob)
+      })
     })
     if (!ok) return
     setWholeRec(true)
@@ -355,7 +432,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
       try { recorderRef.current && recorderRef.current.state !== 'inactive' && recorderRef.current.stop() } catch {}
       try { streamRef.current && streamRef.current.getTracks().forEach((tr) => tr.stop()) } catch {}
       try { audioRef.current && audioRef.current.pause() } catch {}
-      for (const url of Object.values(takesRef.current)) { try { URL.revokeObjectURL(url) } catch {} }
+      for (const take of Object.values(takesRef.current)) { try { URL.revokeObjectURL(take?.url) } catch {} }
       if (wholeUrl) { try { URL.revokeObjectURL(wholeUrl) } catch {} }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -376,10 +453,11 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const back = () => onNav?.('practice')
 
   const progressPct = total ? Math.round((doneCount / total) * 100) : 0
+  const mastery = lessonMastery(scores, total) // { mastered, pct } — локально
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="sh">
+      <div className={`sh ${blind ? 'sh--blind' : ''}`}>
         <div className="sh-top">
           <button type="button" className="sh-back" onClick={back}>
             <ChevronLeftIcon size={16} /> {t('common.back')}
@@ -423,6 +501,24 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
         <section className="sh-card">
           <div className="sh-video">
             <div ref={mountRef} className="sh-video__player" />
+          </div>
+          <div className="sh-modes">
+            <button
+              type="button"
+              className={`sh-chip ${syncMode ? 'sh-chip--on' : ''}`}
+              onClick={() => setSyncMode((v) => !v)}
+              title={t('shadowing.syncHint')}
+            >
+              <MicIcon size={14} /> {t('shadowing.sync')}
+            </button>
+            <button
+              type="button"
+              className={`sh-chip ${blind ? 'sh-chip--on' : ''}`}
+              onClick={() => setBlind((v) => !v)}
+              title={t('shadowing.blindHint')}
+            >
+              {t(blind ? 'shadowing.showText' : 'shadowing.hideText')}
+            </button>
           </div>
           <div className="sh-controls">
             <button
@@ -470,6 +566,11 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
           <div className="sh-prog">
             <div className="sh-prog__bar"><span style={{ width: `${progressPct}%` }} /></div>
             <span className="sh-prog__val">{t('shadowing.recorded', { done: doneCount, total })}</span>
+            {mastery.mastered > 0 && (
+              <span className="sh-prog__mastery" title={t('shadowing.masteredHint')}>
+                ★ {t('shadowing.mastered', { done: mastery.mastered, total })}
+              </span>
+            )}
           </div>
         </section>
 
@@ -481,21 +582,35 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
           </div>
           <div className="sh-script">
             {segments.map((s, i) => {
-              const isDone = done.has(segmentId(curId, i))
-              const hasTake = !!takesRef.current[i]
+              const segId = segmentId(curId, i)
+              const isDone = done.has(segId)
+              const bestScore = scores.get(segId)
+              const mastered = isPhraseMastered(bestScore)
+              const hasTake = !!takesRef.current[i] || isDone
               const active = i === activeIdx
               const recording = recSeg === i
+              const result = results[i]
+              const assessing = assessingIdx === i
               return (
                 <div
                   key={i}
-                  className={`sh-seg ${active ? 'is-active' : ''} ${isDone ? 'is-done' : ''}`}
+                  className={`sh-seg ${active ? 'is-active' : ''} ${isDone ? 'is-done' : ''} ${mastered ? 'is-mastered' : ''}`}
                   onClick={() => playSegment(i)}
                 >
                   <span className="sh-seg__num">{i + 1}</span>
                   <div className="sh-seg__body">
                     <span className="sh-seg__txt">{s[2]}</span>
-                    <span className="sh-seg__time">{fmt(s[0])} – {fmt(s[1])}</span>
-                    {hasTake && (
+                    <span className="sh-seg__time">
+                      {fmt(s[0])} – {fmt(s[1])}
+                      {typeof bestScore === 'number' && (
+                        <span
+                          className={`sh-seg__score sh-seg__score--${bestScore >= 80 ? 'good' : bestScore >= 60 ? 'mid' : 'bad'}`}
+                        >
+                          {mastered ? '★ ' : ''}{bestScore}
+                        </span>
+                      )}
+                    </span>
+                    {hasTake && !result && !assessing && (
                       <div className="sh-seg__mine">
                         <button type="button" onClick={(e) => { e.stopPropagation(); playMine(i) }}>
                           <PlayIcon size={14} /> {t('shadowing.yourTake')}
@@ -504,6 +619,17 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                         <button type="button" onClick={(e) => { e.stopPropagation(); compare(i) }}>
                           <RepeatIcon size={14} /> {t('shadowing.compare')}
                         </button>
+                      </div>
+                    )}
+                    {(result || assessing) && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <PhraseScore
+                          result={result}
+                          refText={s[2]}
+                          assessing={assessing}
+                          onRetry={() => segRecord(i)}
+                          onPlayMine={() => playMine(i)}
+                        />
                       </div>
                     )}
                   </div>
