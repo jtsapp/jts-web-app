@@ -265,6 +265,7 @@
 .sh-lcard__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
 .sh-lcard__speaker { font-size: 12.5px; color: var(--sh-ink-sub); }
 .sh-lcard__count { font-size: 12px; font-weight: 700; color: var(--sh-purple); background: var(--sh-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.sh-lcard__count--mastered { color: #8a6d00; background: #fbf1c9; }
 .pp-rail--grid .sh-lcard { flex: none; width: 100%; }
 
 /* мобильная вёрстка */
@@ -279,4 +280,115 @@
 @media (prefers-reduced-motion: reduce) {
   .sh-seg__act.is-rec { animation: none; }
   .sh-prog__bar span { transition: none; }
+  .sh-score__spin { animation: none; }
 }
+
+/* ── оценка произношения: балл на строке, карточка результата, карта слов ── */
+.sh-prog__mastery { font-size: 12px; font-weight: 700; color: #b8860b; white-space: nowrap; }
+
+.sh-seg__score {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 11px;
+  vertical-align: middle;
+}
+.sh-seg__score--good { background: var(--sh-green-bg); color: #0e7a52; }
+.sh-seg__score--mid { background: #fff4d6; color: #a5720a; }
+.sh-seg__score--bad { background: var(--sh-red-bg); color: var(--sh-red); }
+.sh-seg.is-mastered { border-color: #e7c65a; box-shadow: inset 3px 0 0 #e7c65a; }
+.sh-seg.is-mastered .sh-seg__num { background: #e7c65a; color: #6a4e00; }
+
+.sh-score {
+  margin-top: 10px;
+  border: 1px solid var(--sh-line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fcfbff;
+}
+.sh-score--good { border-color: #bfe8cd; background: #f4fbf6; }
+.sh-score--mid { border-color: #f0dfa8; background: #fffdf5; }
+.sh-score--bad { border-color: #f3d0cd; background: #fef7f6; }
+.sh-score--wait {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--sh-ink-sub);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.sh-score__spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--sh-border);
+  border-top-color: var(--sh-purple);
+  animation: sh-spin 0.7s linear infinite;
+}
+@keyframes sh-spin { to { transform: rotate(360deg); } }
+
+.sh-score__head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.sh-score__ring {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+  color: #fff;
+}
+.sh-score__ring[data-band='good'] { background: var(--sh-green); }
+.sh-score__ring[data-band='mid'] { background: #d9a400; }
+.sh-score__ring[data-band='bad'] { background: var(--sh-red); }
+.sh-score__ring b { font-size: 20px; font-weight: 900; }
+.sh-score__ring span { font-size: 9px; opacity: 0.85; }
+.sh-score__stats { display: flex; gap: 14px; flex-wrap: wrap; }
+.sh-score__stats span { font-size: 13px; font-weight: 700; color: var(--ink, #171326); }
+.sh-score__stats i { display: block; font-style: normal; font-size: 11px; font-weight: 600; color: var(--sh-ink-mute); }
+.sh-score__mock {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sh-ink-mute);
+  background: #f1f0f6;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.sh-score__words { margin-top: 10px; line-height: 1.9; }
+.sh-w { padding: 1px 5px; border-radius: 6px; margin: 0 2px 2px 0; display: inline-block; font-size: 15px; font-weight: 600; }
+.sh-w--good { background: var(--sh-green-bg); color: #0e7a52; }
+.sh-w--mid { background: #fff4d6; color: #8f6300; }
+.sh-w--bad { background: var(--sh-red-bg); color: var(--sh-red); }
+.sh-w--miss { background: #eeedf3; color: #9a99a6; text-decoration: line-through; }
+.sh-w--plain { background: none; color: var(--ink, #171326); padding: 0; }
+.sh-score__tip {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sh-soft);
+  color: #4a3d7a;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.sh-score__acts { display: flex; gap: 8px; margin-top: 12px; }
+
+/* режимы тренировки + «слепой» parrot-режим */
+.sh-modes { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+/* Поэтапный показ: подсказка «запиши текущую, чтобы открыть следующую» */
+.sh-locked {
+  margin-top: 4px;
+  border: 1px dashed var(--sh-border);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  color: var(--sh-ink-mute);
+  font-size: 13px;
+  font-weight: 600;
+}
+/* Слепой: текст фразы размыт (присутствует, но не читается — тренируем ухо);
+   тепловая карта-фидбек после оценки размытию не подвержена. */
+.sh--blind .sh-seg__txt { filter: blur(6px); user-select: none; }
+@media (prefers-reduced-motion: reduce) { .sh--blind .sh-seg__txt { filter: blur(5px); } }
