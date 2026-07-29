@@ -251,6 +251,121 @@ export async function transcribeWav(wav) {
   })
 }
 
+// Reference-based pronunciation assessment for ONE short phrase (Shadowing). В
+// отличие от assessPronunciation (без сценария, continuous) здесь известен целевой
+// текст: передаём его эталоном → Azure возвращает послово accuracy + errorType
+// (Mispronunciation/Omission/Insertion), из чего строится тепловая карта. Фраза
+// короткая (<15с) → recognizeOnce достаточно и быстрее continuous.
+// Возвращает null при неконфигурации/сбое/тишине — вызывающий подставит mock.
+export async function assessAgainstReference(wav, refText) {
+  const key = process.env.AZURE_SPEECH_KEY
+  const region = process.env.AZURE_SPEECH_REGION
+  if (!key || !region) return null
+
+  const parsed = extractPcm(wav)
+  if (!parsed || parsed.pcm.length === 0) return null
+
+  let sdk
+  try {
+    sdk = await import('microsoft-cognitiveservices-speech-sdk')
+  } catch (e) {
+    console.error('[azure-pa-ref] SDK import failed', e)
+    return null
+  }
+
+  return new Promise((resolve) => {
+    let settled = false
+    const done = (v) => {
+      if (settled) return
+      settled = true
+      resolve(v)
+    }
+    try {
+      const speechConfig = sdk.SpeechConfig.fromSubscription(key, region)
+      speechConfig.speechRecognitionLanguage = 'en-US'
+      const format = sdk.AudioStreamFormat.getWaveFormatPCM(parsed.sampleRate, 16, 1)
+      const pushStream = sdk.AudioInputStream.createPushStream(format)
+      pushStream.write(
+        parsed.pcm.buffer.slice(
+          parsed.pcm.byteOffset,
+          parsed.pcm.byteOffset + parsed.pcm.byteLength,
+        ),
+      )
+      pushStream.close()
+      const audioConfig = sdk.AudioConfig.fromStreamInput(pushStream)
+
+      const paConfig = new sdk.PronunciationAssessmentConfig(
+        (refText || '').slice(0, 1000),
+        sdk.PronunciationAssessmentGradingSystem.HundredMark,
+        sdk.PronunciationAssessmentGranularity.Phoneme,
+        true, // enableMiscue: штрафует пропуски/вставки относительно эталона
+      )
+      paConfig.enableProsodyAssessment = true
+
+      const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig)
+      paConfig.applyTo(recognizer)
+
+      recognizer.recognizeOnceAsync(
+        (result) => {
+          try {
+            if (result.reason !== sdk.ResultReason.RecognizedSpeech) return done(null)
+            const pa = sdk.PronunciationAssessmentResult.fromResult(result)
+            // Послово — из сырого JSON-ответа (NBest[0].Words), с accuracy и типом ошибки.
+            let words = []
+            try {
+              const raw = result.properties.getProperty(
+                sdk.PropertyId.SpeechServiceResponse_JsonResult,
+              )
+              const nb = JSON.parse(raw || '{}')?.NBest?.[0]?.Words || []
+              words = nb.map((w) => ({
+                word: w.Word,
+                accuracy: Math.round(w.PronunciationAssessment?.AccuracyScore ?? 0),
+                error: w.PronunciationAssessment?.ErrorType || 'None',
+              }))
+            } catch {
+              /* карта слов не построится — числа всё равно вернём */
+            }
+            done({
+              overall: Math.round(pa.pronunciationScore),
+              accuracy: Math.round(pa.accuracyScore),
+              fluency: Math.round(pa.fluencyScore),
+              completeness: Math.round(pa.completenessScore),
+              prosody: Math.round(pa.prosodyScore ?? pa.accuracyScore),
+              words,
+              transcript: result.text || '',
+              mock: false,
+            })
+          } catch (e) {
+            console.error('[azure-pa-ref] parse failed', e)
+            done(null)
+          } finally {
+            try {
+              recognizer.close()
+            } catch {
+              /* ignore */
+            }
+          }
+        },
+        (err) => {
+          console.error('[azure-pa-ref] recognize failed', err)
+          try {
+            recognizer.close()
+          } catch {
+            /* ignore */
+          }
+          done(null)
+        },
+      )
+
+      // Safety valve: короткая фраза оценивается быстро; не висим дольше 20с.
+      setTimeout(() => done(null), 20_000)
+    } catch (e) {
+      console.error('[azure-pa-ref] setup failed', e)
+      done(null)
+    }
+  })
+}
+
 // Deterministic pronunciation stand-in when Azure is unconfigured/unavailable.
 // A neutral mid score so the overall band isn't skewed either way; clearly
 // flagged mock so the UI can label it «оценочно».
