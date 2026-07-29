@@ -22,6 +22,8 @@ import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
+import { getLessonScores } from '../practice/shadowing/recordings.js'
+import { lessonMastery } from '../practice/shadowing/mastery.js'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -319,6 +321,24 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
   const [filter, setFilter] = useState(null)
+
+  // Мастерство Shadowing на карточках — локально из IndexedDB (best-effort,
+  // async, не блокирует рендер лент; см. fetchCoversIndex по духу). Возврат из
+  // урока перемонтирует страницу, поэтому подгружаем при монтировании.
+  const [shadowMastered, setShadowMastered] = useState({})
+  useEffect(() => {
+    let alive = true
+    Promise.all(
+      SHADOWING_LESSONS.map((l) =>
+        getLessonScores(l.id).then((m) => [l.id, lessonMastery(m, l.segments.length).mastered]),
+      ),
+    )
+      .then((pairs) => alive && setShadowMastered(Object.fromEntries(pairs)))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
   const show = (type) => filter === null || filter === type
   const grid = filter !== null
 
@@ -469,9 +489,18 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   <div className="sh-lcard__title">{l.title}</div>
                   <div className="sh-lcard__meta">
                     <span className="sh-lcard__speaker">{l.short}</span>
-                    <span className="sh-lcard__count">
-                      {t('shadowing.card.count', { done: countLessonDone(l.id), total: l.segments.length })}
-                    </span>
+                    {(shadowMastered[l.id] || 0) > 0 ? (
+                      <span
+                        className="sh-lcard__count sh-lcard__count--mastered"
+                        title={t('shadowing.masteredHint')}
+                      >
+                        ★ {shadowMastered[l.id]} / {l.segments.length}
+                      </span>
+                    ) : (
+                      <span className="sh-lcard__count">
+                        {t('shadowing.card.count', { done: countLessonDone(l.id), total: l.segments.length })}
+                      </span>
+                    )}
                   </div>
                 </button>
               ))}
