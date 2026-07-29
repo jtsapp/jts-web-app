@@ -49,7 +49,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="lp">
+      <div className={`lp${view === 'map' ? ' lp--map' : ''}`}>
         {/* Центр: заголовок + переключатель + карта / список миров */}
         <div className="lp__center">
           <div className="lp__head">
@@ -131,7 +131,9 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
           )}
         </div>
 
-        {/* Правая панель: статус / уровень / текущее королевство / прогресс */}
+        {/* Правая панель: статус / уровень / прогресс — только в режиме «Список»
+            (в режиме «Карта» статус берётся из сайдбара, карта — во всю ширину) */}
+        {view === 'list' && (
         <aside className="lp__side">
           <div className="lp-status">
             <span className="lp-status__ic">
@@ -180,6 +182,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
             </div>
           )}
         </aside>
+        )}
       </div>
     </LearningLayout>
   )
