@@ -106,6 +106,17 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const syncRef = useRef(false)
   useEffect(() => { syncRef.current = syncMode }, [syncMode])
 
+  // Поэтапный показ скрипта: не все фразы сразу, а по одной — следующая
+  // открывается после записи текущей или кнопкой «Показать следующую» (пропуск).
+  const [stepMode, setStepMode] = useState(false)
+  const [revealed, setRevealed] = useState(1)
+
+  // Что сейчас проигрывается из записей: индекс фразы, 'whole' или null. Нужно,
+  // чтобы «Твоя запись»/«Прослушать» работали как play/stop-тумблер.
+  const [playingId, setPlayingId] = useState(null)
+  const playingIdRef = useRef(null)
+  useEffect(() => { playingIdRef.current = playingId }, [playingId])
+
   // Императивные рефы плеера/таймера/записи — не должны триггерить рендер.
   const playerRef = useRef(null)
   const timerRef = useRef(null)
@@ -135,6 +146,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     setDone(getLessonDone(curId))
     setResults({})
     setAssessingIdx(-1)
+    setRevealed(1)
     // сбрасываем записи предыдущего урока (in-memory url'ы)
     for (const take of Object.values(takesRef.current)) {
       try { URL.revokeObjectURL(take?.url) } catch {}
@@ -149,7 +161,11 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
 
   useEffect(() => {
     setDev(new URLSearchParams(window.location.search).get('dev') === '1')
-    if (!audioRef.current) audioRef.current = new Audio()
+    if (!audioRef.current) {
+      audioRef.current = new Audio()
+      // Дослушали запись до конца — снимаем «играет», кнопка снова «play».
+      audioRef.current.addEventListener('ended', () => setPlayingId(null))
+    }
   }, [])
 
   useEffect(() => { rateRef.current = rate }, [rate])
@@ -332,6 +348,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
       // Попытка засчитана сразу (синкается в аккаунт), балл придёт от оценки.
       markSegmentDone(segmentId(curId, i))
       setDone(getLessonDone(curId))
+      // Поэтапный режим: записал фразу → открываем следующую.
+      setRevealed((r) => Math.min(total, Math.max(r, i + 2)))
       assessAndStore(i, blob)
     })
     if (!ok) return
@@ -388,27 +406,35 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     return url
   }
 
-  async function playMine(i) {
-    const url = await resolveTakeUrl(i)
-    if (!url || !audioRef.current) return
+  // Проигрывание записи как play/stop-тумблер. id — индекс фразы или 'whole'.
+  function startTakeAudio(id, url) {
+    if (!audioRef.current) return
     pauseVideo()
     audioRef.current.src = url
+    audioRef.current.currentTime = 0
     audioRef.current.play().catch(() => {})
+    setPlayingId(id)
+  }
+  function stopTakeAudio() {
+    try { audioRef.current && audioRef.current.pause() } catch {}
+    setPlayingId(null)
   }
 
-  // Сравнить: проигрываем фразу оригинала, затем свою запись.
+  // «Твоя запись»: играет → повторный клик останавливает.
+  async function playMine(i) {
+    if (playingIdRef.current === i) { stopTakeAudio(); return }
+    const url = await resolveTakeUrl(i)
+    if (!url) return
+    startTakeAudio(i, url)
+  }
+
+  // Сравнить: проигрываем фразу оригинала, затем свою запись (тоже останавливаемо).
   async function compare(i) {
     const url = await resolveTakeUrl(i)
     if (!url) return
     playSegment(i, true)
     const wait = ((segments[i][1] - segments[i][0]) / rateRef.current) * 1000 + 450
-    setTimeout(() => {
-      pauseVideo()
-      if (audioRef.current) {
-        audioRef.current.src = url
-        audioRef.current.play().catch(() => {})
-      }
-    }, wait)
+    setTimeout(() => startTakeAudio(i, url), wait)
   }
 
   // Запись всего отрывка (нижний большой микрофон).
@@ -519,6 +545,25 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
             >
               {t(blind ? 'shadowing.showText' : 'shadowing.hideText')}
             </button>
+            <button
+              type="button"
+              className={`sh-chip ${stepMode ? 'sh-chip--on' : ''}`}
+              onClick={() =>
+                setStepMode((v) => {
+                  const on = !v
+                  if (on) {
+                    // показать уже отработанные фразы + следующую
+                    let furthest = 0
+                    for (let k = 0; k < total; k++) if (done.has(segmentId(curId, k))) furthest = k + 1
+                    setRevealed(Math.max(1, Math.min(total, furthest + 1)))
+                  }
+                  return on
+                })
+              }
+              title={t('shadowing.stepHint')}
+            >
+              {t('shadowing.step')}
+            </button>
           </div>
           <div className="sh-controls">
             <button
@@ -581,7 +626,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
             <span className="sh-sec__hint">{t('shadowing.scriptHint')}</span>
           </div>
           <div className="sh-script">
-            {segments.map((s, i) => {
+            {(stepMode ? segments.slice(0, Math.min(revealed, total)) : segments).map((s, i) => {
               const segId = segmentId(curId, i)
               const isDone = done.has(segId)
               const bestScore = scores.get(segId)
@@ -613,7 +658,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                     {hasTake && !result && !assessing && (
                       <div className="sh-seg__mine">
                         <button type="button" onClick={(e) => { e.stopPropagation(); playMine(i) }}>
-                          <PlayIcon size={14} /> {t('shadowing.yourTake')}
+                          {playingId === i ? <StopIcon size={14} /> : <PlayIcon size={14} />}{' '}
+                          {playingId === i ? t('shadowing.stop') : t('shadowing.yourTake')}
                         </button>
                         <span className="sh-seg__sep" />
                         <button type="button" onClick={(e) => { e.stopPropagation(); compare(i) }}>
@@ -627,6 +673,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                           result={result}
                           refText={s[2]}
                           assessing={assessing}
+                          playing={playingId === i}
                           onRetry={() => segRecord(i)}
                           onPlayMine={() => playMine(i)}
                         />
@@ -654,6 +701,15 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                 </div>
               )
             })}
+            {stepMode && revealed < total && (
+              <button
+                type="button"
+                className="sh-reveal"
+                onClick={() => setRevealed((r) => Math.min(total, r + 1))}
+              >
+                {t('shadowing.reveal')}
+              </button>
+            )}
           </div>
         </section>
 
@@ -677,8 +733,13 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
             </div>
             {wholeUrl && !wholeRec && (
               <div className="sh-take">
-                <button type="button" className="sh-take__listen" onClick={() => { pauseVideo(); if (audioRef.current) { audioRef.current.src = wholeUrl; audioRef.current.currentTime = 0; audioRef.current.play().catch(() => {}) } }}>
-                  <PlayIcon size={18} /> {t('shadowing.listenMine')}
+                <button
+                  type="button"
+                  className="sh-take__listen"
+                  onClick={() => (playingId === 'whole' ? stopTakeAudio() : startTakeAudio('whole', wholeUrl))}
+                >
+                  {playingId === 'whole' ? <StopIcon size={18} /> : <PlayIcon size={18} />}{' '}
+                  {playingId === 'whole' ? t('shadowing.stop') : t('shadowing.listenMine')}
                 </button>
                 <button type="button" className="sh-take__again" onClick={() => setWholeUrl(null)}>
                   <RepeatIcon size={18} /> {t('shadowing.again')}

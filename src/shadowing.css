@@ -377,6 +377,22 @@
 
 /* режимы тренировки + «слепой» parrot-режим */
 .sh-modes { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+/* Поэтапный показ: кнопка раскрытия следующей фразы */
+.sh-reveal {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  border: 1px dashed var(--sh-border);
+  background: var(--sh-soft);
+  color: var(--sh-purple);
+  border-radius: 12px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sh-reveal:hover { filter: brightness(0.98); }
 /* Слепой: текст фразы размыт (присутствует, но не читается — тренируем ухо);
    тепловая карта-фидбек после оценки размытию не подвержена. */
 .sh--blind .sh-seg__txt { filter: blur(6px); user-select: none; }
