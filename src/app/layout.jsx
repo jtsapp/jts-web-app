@@ -4,6 +4,7 @@ import '../ielts.css'
 import '../grammar.css'
 import '../vocab.css'
 import '../listening.css'
+import '../shadowing.css'
 import Providers from './providers.jsx'
 
 export const metadata = {

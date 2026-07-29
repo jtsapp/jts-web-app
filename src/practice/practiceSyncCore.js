@@ -7,8 +7,10 @@ import {
   VOCAB_KEY,
   GRAMMAR_KEY,
   LISTENING_KEY,
+  SHADOWING_KEY,
   GRAMMAR_PROGRESS_EVENT,
   LISTENING_PROGRESS_EVENT,
+  SHADOWING_PROGRESS_EVENT,
 } from './practiceKeys.js'
 
 // raw: для vocab — объект стейта; для grammar/listening — Set или массив id.
@@ -32,5 +34,9 @@ export function applyHydratedState(serverState, { setItem, dispatch }) {
   if (serverState.listening) {
     setItem(LISTENING_KEY, JSON.stringify(normalizeDone(serverState.listening.done)))
     dispatch(LISTENING_PROGRESS_EVENT)
+  }
+  if (serverState.shadowing) {
+    setItem(SHADOWING_KEY, JSON.stringify(normalizeDone(serverState.shadowing.done)))
+    dispatch(SHADOWING_PROGRESS_EVENT)
   }
 }

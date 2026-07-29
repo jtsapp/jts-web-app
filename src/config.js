@@ -11,7 +11,8 @@ export const TUTOR_ONLY = true
 
 // Разделы, открытые в тьютор-онли режиме: сайдбар (Sidebar.jsx) показывает
 // только их, навигация (App.jsx handleNav/handleTutorNav) пропускает только их.
-// 'listening' — не пункт сайдбара, а внутренний экран Практики (баннер
-// «Аудирование» ведёт onNav('listening')), поэтому тоже в списке.
+// 'listening' и 'shadowing' — не пункты сайдбара, а внутренние экраны Практики
+// (баннер «Аудирование» → onNav('listening'), карточки Shadowing →
+// onNav('shadowing')), поэтому тоже в списке.
 // При TUTOR_ONLY = false список не используется.
-export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening']
+export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening', 'shadowing']

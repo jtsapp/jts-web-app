@@ -20,6 +20,8 @@ import {
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
+import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
+import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -308,6 +310,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const chips = [
     { key: null, label: t('practice.chip.all') },
     { key: 'grammar', label: t('practice.chip.grammar') },
+    { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
     { key: 'tales', label: t('practice.chip.tales') },
     { key: 'memes', label: t('practice.chip.memes') },
@@ -447,6 +450,35 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
             />
           )}
 
+          {/* Shadowing — повторяй за спикером (рейл из 5 уроков-речей). Сразу после
+              грамматики: оба раздела — «делай сам», в отличие от лент ниже. */}
+          {show('shadowing') && (
+          <section id="sec-shadowing" className="pp-sec">
+            <SectionHead title={t('shadowing.title')} onAll={() => setFilter('shadowing')} />
+            <Rail grid={grid}>
+              {SHADOWING_LESSONS.map((l) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  className="sh-lcard"
+                  onClick={() => onNav?.('shadowing', l.id)}
+                >
+                  <Thumb src={l.cover} alt={l.short} className="sh-lcard__thumb">
+                    <span className="pp-play"><PlayIcon size={22} /></span>
+                  </Thumb>
+                  <div className="sh-lcard__title">{l.title}</div>
+                  <div className="sh-lcard__meta">
+                    <span className="sh-lcard__speaker">{l.short}</span>
+                    <span className="sh-lcard__count">
+                      {t('shadowing.card.count', { done: countLessonDone(l.id), total: l.segments.length })}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </Rail>
+          </section>
+          )}
+
           {/* Мемы и рилсы */}
           {show('memes') && (
           <section id="sec-memes" className="pp-sec">
@@ -583,6 +615,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
             </Rail>
           </section>
           )}
+
         </div>
 
         {/* ───── Правая колонка: Словарь ───── */}
