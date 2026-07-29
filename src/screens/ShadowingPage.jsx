@@ -351,7 +351,14 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
       setDone(getLessonDone(curId))
       // Поэтапный режим: записал фразу → открываем следующую.
       setRevealed((r) => Math.min(total, Math.max(r, i + 2)))
-      assessAndStore(i, blob)
+      // Оценка НЕ автоматом (экономия Azure) — по кнопке «Оценить». Новая запись
+      // сбрасывает прошлый результат этой фразы, чтобы можно было оценить заново.
+      setResults((r) => {
+        if (!(i in r)) return r
+        const n = { ...r }
+        delete n[i]
+        return n
+      })
     })
     if (!ok) return
     setRecSeg(i)
@@ -394,6 +401,15 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     } finally {
       setAssessingIdx(-1)
     }
+  }
+
+  // Оценить фразу по кнопке (blob — из памяти или IndexedDB). Кэш: если результат
+  // уже есть и запись не менялась — повторно не гоняем Azure.
+  async function assessSeg(i) {
+    if (assessingIdx !== -1 || results[i]) return
+    let blob = takesRef.current[i]?.blob
+    if (!blob) blob = await getTakeBlob(segmentId(curId, i))
+    if (blob) assessAndStore(i, blob)
   }
 
   // URL записи фразы: из памяти или, после перезагрузки, из IndexedDB.
@@ -660,6 +676,14 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                     </span>
                     {hasTake && !result && !assessing && (
                       <div className="sh-seg__mine">
+                        <button
+                          type="button"
+                          className="sh-seg__assess"
+                          onClick={(e) => { e.stopPropagation(); assessSeg(i) }}
+                        >
+                          ★ {t('shadowing.assess')}
+                        </button>
+                        <span className="sh-seg__sep" />
                         <button type="button" onClick={(e) => { e.stopPropagation(); playMine(i) }}>
                           {playingId === i ? <StopIcon size={14} /> : <PlayIcon size={14} />}{' '}
                           {playingId === i ? t('shadowing.stop') : t('shadowing.yourTake')}
