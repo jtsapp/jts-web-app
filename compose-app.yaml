@@ -1,0 +1,43 @@
+# Сам Next.js-сервис. Комбинируется с compose.yaml (Postgres) в одном
+# `-p $APP_ENV` проекте — тогда DATABASE_URL можно указывать на internal-имя
+# сервиса `postgres`, без выхода наружу (см. compose.yaml).
+#
+# ВАЖНО (урок из миграции backend): пустой env на CI незаметно подставляется
+# как пустая строка, а не «переменная отсутствует» — поэтому все секреты ниже
+# ДОЛЖНЫ быть явно заданы в GitLab CI/CD Variables (per-environment scope),
+# без надежды на дефолты внутри контейнера.
+services:
+  web:
+    build:
+      context: .
+      args:
+        # NEXT_PUBLIC_* вшивается в бандл на этапе `next build` — должен быть
+        # доступен уже на build-стадии, обычный `environment:` тут не поможет.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    environment:
+      # Мозг тьютора + оценка IELTS
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # LiveKit — токены + подпись webhook (сам голосовой агент деплоится
+      # отдельно на LiveKit Cloud, сюда не относится)
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      LIVEKIT_URL: ${LIVEKIT_URL}
+      # Своя БД (см. compose.yaml) — заменяет Neon
+      DATABASE_URL: ${DATABASE_URL}
+      # Сервисный ключ агент↔Next (Bearer на /api/voice/brain)
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      # IELTS — опционально, каждая часть деградирует сама при пустом ключе
+      SONIOX_API_KEY: ${SONIOX_API_KEY}
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
+      AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID}
+      ELEVEN_VOICE_ID_DEXTER: ${ELEVEN_VOICE_ID_DEXTER}
+      GOOGLE_CREDENTIALS_JSON: ${GOOGLE_CREDENTIALS_JSON}
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - ${APP_PORT}:3000
+    mem_limit: 1g
+    memswap_limit: 2g
