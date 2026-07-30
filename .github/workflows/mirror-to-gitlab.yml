@@ -1,0 +1,31 @@
+name: Mirror to GitLab
+
+# Зеркалит каждый push в GitLab, чтобы там отработал существующий CI/CD
+# (docker compose деплой на self-hosted раннере justtostudy.kz).
+on:
+  push:
+    branches: [main, develop]
+    tags: ['*']
+
+# Не запускать два зеркалирования одной ветки параллельно
+concurrency:
+  group: mirror-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (полная история)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Push ref в GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git push --force \
+            "https://oauth2:${GITLAB_TOKEN}@gitlab.com/just-to-study-group/jts-web-app.git" \
+            "${GITHUB_REF}:${GITHUB_REF}"
