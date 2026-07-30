@@ -2991,9 +2991,15 @@ def _cascade_tts(profile: LearnerProfile):
 #   различать: «ученик ответил по-русски» — триггер персоны, и транскрипт
 #   обязан донести русский текст русским, а не выдумать английский.
 STT_PROVIDERS = ("soniox", "azure")
-TUTOR_STT_PROVIDER = {
-    "bro": "azure",  # Декстер
-}
+# Декстера пробовали на Azure STT и вернули на Soniox. Причина замерена, а не
+# предположена: плагин при СПИСКЕ языков жёстко ставит LanguageIdMode=Continuous
+# (см. _create_speech_recognizer в livekit-plugins-azure), а тот на коротких
+# репликах ошибается языком — «Да» уезжает как «The» с меткой en-US, «Нет» как
+# «Yet». На 18 синтезированных коротких фразах: Continuous 2 ошибки, AtStart 1,
+# один язык без LID — 0 языковых. Выставить AtStart через плагин нельзя, режим
+# захардкожен. Soniox же переключает языки внутри фразы — ради этого его и брали.
+# Azure-путь рабочий и оставлен: STT_PROVIDER_BRO=azure включает его обратно.
+TUTOR_STT_PROVIDER: dict[str, str] = {}
 DEFAULT_STT_PROVIDER = "soniox"
 # Фолбэк тот же и по той же причине, что у TTS: SONIOX_API_KEY нужен всегда.
 STT_FALLBACK_PROVIDER = "soniox"
