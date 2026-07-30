@@ -179,6 +179,8 @@
   font-family: inherit;
 }
 .sh-seg__sep { width: 1px; height: 14px; background: #bfe8cd; }
+/* «Оценить» — единственная платная кнопка (Azure), выделяем фиолетовым */
+.sh-seg__mine .sh-seg__assess { color: var(--sh-purple); font-weight: 800; }
 .sh-seg__acts { display: flex; gap: 6px; flex: 0 0 auto; padding-top: 2px; }
 .sh-seg__act {
   width: 36px;

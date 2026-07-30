@@ -109,15 +109,18 @@ export function MenuIcon({ size = 24 }) {
   )
 }
 
-export function TrashIcon({ size = 18 }) {
+// Нейтральный аватар для пользователя без имени — вместо случайной буквы
+// («J» из 'JTS' или «П» из подписи «Профиль»), чтобы шапка и сам профиль
+// показывали один и тот же силуэт, а не разные буквы.
+export function UserIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8.5" r="3.6" stroke="currentColor" strokeWidth="1.8" />
       <path
-        d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6M14 11v6"
+        d="M5 19.2c0-3.5 3.1-5.7 7-5.7s7 2.2 7 5.7"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   )
@@ -289,6 +292,20 @@ export function SearchIcon({ size = 16 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
       <path d="m20.5 20.5-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function TrashIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 7h16M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M10 11v6M14 11v6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }

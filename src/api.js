@@ -122,6 +122,18 @@ export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
 }
 
+// Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
+// бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
+// свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
+export async function completeLessonModule(token, xp) {
+  const res = await fetch(`${BASE}/mobile/lesson-modules/complete?xp=${encodeURIComponent(xp)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`complete failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
 // Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
 // Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
 // durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
@@ -134,18 +146,6 @@ export function getAudiobooks(token) {
 // запрос в блокирующем пути, и «мигание» нулей; свежее значение — через onFresh.
 export function getBalance(token, onFresh) {
   return cachedAuthGet('/mobile/balance/info', token, onFresh)
-}
-
-// Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
-// бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
-// свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
-export async function completeLessonModule(token, xp) {
-  const res = await fetch(`${BASE}/mobile/lesson-modules/complete?xp=${encodeURIComponent(xp)}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!res.ok) throw new Error(`complete failed: ${res.status}`)
-  return res.json().catch(() => null)
 }
 
 // Считает уроки/пройдено по LearningPathModel (modules -> sections -> activities)
@@ -193,8 +193,9 @@ async function post(path, body) {
   return data
 }
 
-// Шаг 1: отправка кода. Возвращает режим — 'register' или 'login'
-// (если телефон уже зарегистрирован, переходим на вход по OTP).
+// Шаг 1 (регистрация): отправка кода. Возвращает режим 'register'. Если номер
+// уже занят — НЕ уводим молча в вход, а помечаем ошибку кодом USER_EXISTS, и UI
+// просит пользователя войти или взять другой номер (см. handlePhoneSubmit).
 export async function sendOtp(phone, name) {
   const p = normalizePhone(phone)
   try {
@@ -202,8 +203,7 @@ export async function sendOtp(phone, name) {
     return 'register'
   } catch (e) {
     if ((e.message || '').toLowerCase().includes('exist')) {
-      await post('/auth/otp/request', { phone: p })
-      return 'login'
+      e.code = 'USER_EXISTS'
     }
     throw e
   }
@@ -211,10 +211,19 @@ export async function sendOtp(phone, name) {
 
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
 // номер молча зарегистрировался бы «Гостем». Незарегистрированный номер здесь
-// даёт 400 «User with this phone not found», и мы показываем это пользователю.
+// даёт 400 «User with this phone not found» — помечаем кодом USER_NOT_FOUND,
+// чтобы UI показал «Пользователь не существует» вместо сырого текста бэкенда.
 export async function requestLoginOtp(phone) {
-  await post('/auth/otp/request', { phone: normalizePhone(phone) })
-  return 'login'
+  try {
+    await post('/auth/otp/request', { phone: normalizePhone(phone) })
+    return 'login'
+  } catch (e) {
+    const msg = (e.message || '').toLowerCase()
+    if (msg.includes('not found') || msg.includes('no account')) {
+      e.code = 'USER_NOT_FOUND'
+    }
+    throw e
+  }
 }
 
 // Шаг 2: проверка кода. В режиме register создаёт пользователя (без токена),
@@ -261,17 +270,18 @@ const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
 const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
 const DEMO_TOKEN_KEY = 'jts_demo_token'
 
-// JWT ещё жив (с запасом), чтобы не отдать протухший кэшированный токен.
+let _demoTokenPromise = null
+
+// Жив ли JWT (exp с запасом marginSec); битый токен считаем мёртвым.
 function jwtAlive(token, marginSec = 60) {
   try {
-    const { exp } = JSON.parse(atob(String(token).split('.')[1]))
-    return typeof exp === 'number' && exp * 1000 > Date.now() + marginSec * 1000
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof payload.exp === 'number' && payload.exp * 1000 > Date.now() + marginSec * 1000
   } catch {
     return false
   }
 }
 
-let _demoTokenPromise = null
 export function getPracticeToken(token) {
   if (token) return Promise.resolve(token)
   // Демо-токен переживает перезагрузку в localStorage: без этого каждый визит

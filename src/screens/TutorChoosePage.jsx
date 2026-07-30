@@ -1,10 +1,15 @@
 import TutorShell from '../tutor/TutorShell.jsx'
+import TutorCarousel from '../tutor/TutorCarousel.jsx'
 import { WindowIcon, SpeakIcon, VolumeIcon } from '../tutor/TutorIcons.jsx'
 import { TUTORS } from '../tutor/tutors.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
 
 // Отображаемые названия языков (для плашек «Язык интерфейса/объяснения»).
 const LANG_LABEL = { kz: 'Қазақша', ru: 'Русский', en: 'English' }
+
+// Короткий заголовок для мобильного топбара (Figma frame 91: «Выбор тьютора»).
+// Десктоп прячет его через CSS и показывает длинный t('choose.title') как h1.
+const CHOOSE_TITLE_SHORT = { ru: 'Выбор тьютора', kz: 'Тьютор таңдау', en: 'Choose a tutor' }
 
 export default function TutorChoosePage({
   user,
@@ -27,10 +32,14 @@ export default function TutorChoosePage({
       onNavigate={onNavigate}
       onProfile={onProfile}
       onBack={onBack}
+      title={CHOOSE_TITLE_SHORT[lang] || CHOOSE_TITLE_SHORT.ru}
       layout="flow"
     >
       <div className="t-choose">
         <h1 className="t-choose__title">{t('choose.title')}</h1>
+
+        {/* Мобильная coverflow-карусель (свайп + бесконечный цикл); десктоп — сетка ниже */}
+        <TutorCarousel onChoose={onChoose} onListen={onListen} />
 
         <div className="t-choose__pills">
           <span className="t-ipill">
@@ -47,7 +56,14 @@ export default function TutorChoosePage({
           {TUTORS.map((tt) => (
             <div className="t-tcard" key={tt.key}>
               <img className="t-tcard__avatar" src={tt.avatar} alt="" />
-              <div className="t-tcard__name">{tt.name}</div>
+              <div className="t-tcard__name">
+                {tt.name}
+                {tt.adult && (
+                  <span className="t-adult" title={t('tutor.adultHint')}>
+                    {t('tutor.adult')}
+                  </span>
+                )}
+              </div>
               <div className="t-tcard__chips">
                 {tt.traitColors.map((color, i) => {
                   const label = t(`tutor.${tt.key}.trait${i + 1}`)

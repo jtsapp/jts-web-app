@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
-import { TUTOR_ONLY } from '../config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance } from '../api.js'
 import { loadToken } from '../lib/session.js'
@@ -14,6 +14,7 @@ import {
   VocabIcon,
   ChevronRightIcon,
   CloseIcon,
+  UserIcon,
 } from './icons.jsx'
 
 const NAV_FULL = [
@@ -24,9 +25,10 @@ const NAV_FULL = [
   { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
   { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
-// Тьютор-онли (прод, main): в сайдбаре остаётся только «Тьютор» — остальные
-// разделы скрыты от обычных пользователей (доступны диплинком для отладки).
-const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => i.key === 'tutor') : NAV_FULL
+// Тьютор-онли (прод, main): в сайдбаре остаются только разделы из
+// TUTOR_ONLY_SECTIONS (Тьютор, Практика, Словарь) — остальные скрыты от
+// обычных пользователей (доступны диплинком ?screen=… для отладки).
+const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
@@ -49,7 +51,8 @@ export default function Sidebar({
 }) {
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
-  const initial = (userName || 'JTS').trim().charAt(0).toUpperCase()
+  const trimmedName = (userName || '').trim()
+  const initial = trimmedName ? trimmedName.charAt(0).toUpperCase() : null
 
   // На мобилке любой выбор в сайдбаре сначала закрывает drawer, потом навигирует.
   const pick = (fn) => (...args) => {
@@ -100,7 +103,7 @@ export default function Sidebar({
         </div>
 
         <button className="sb__profile" onClick={pick(onProfile)}>
-          <span className="sb__avatar">{initial}</span>
+          <span className="sb__avatar">{initial || <UserIcon size={18} />}</span>
           <span className="sb__profile-text">
             <b>{userName || t('kingdom.profile')}</b>
             <span>{t('kingdom.profile')}</span>

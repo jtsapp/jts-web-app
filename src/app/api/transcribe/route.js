@@ -7,15 +7,26 @@
 // empty transcript.
 
 import { transcribeWav } from '@/lib/ielts/azure-pronunciation.js'
+import { transcribeWavSoniox, isSonioxConfigured } from '@/lib/soniox-stt.js'
 
 export const runtime = 'nodejs'
+// Soniox async — upload+poll+fetch; даём запас по времени сверх дефолтных 10с.
+export const maxDuration = 30
 
 // 16 kHz mono WAV runs ~32 KB/s, so 10 MB covers ~5 min — well beyond the short
 // clips the recorder produces, while still rejecting runaway uploads.
 const MAX_BYTES = 10 * 1024 * 1024
 
-function isConfigured() {
+// Приоритет — Azure: и тест уровня, и IELTS Speaking английские, а на этом же
+// ключе уже сидит оценка произношения, так что два провайдера на один экран
+// не нужны. Soniox остаётся фолбэком (и единственным вариантом там, где надо
+// распознать казахский — голосовой тьютор, у него свой стек в agent/).
+function isAzureConfigured() {
   return Boolean(process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_REGION)
+}
+
+function isConfigured() {
+  return isAzureConfigured() || isSonioxConfigured()
 }
 
 export async function GET() {
@@ -60,7 +71,10 @@ export async function POST(request) {
   }
 
   try {
-    const text = await transcribeWav(Buffer.from(await file.arrayBuffer()))
+    const buf = Buffer.from(await file.arrayBuffer())
+    const text = isAzureConfigured()
+      ? await transcribeWav(buf)
+      : await transcribeWavSoniox(buf)
     return Response.json({ text })
   } catch (e) {
     console.error('[transcribe] failed', e)

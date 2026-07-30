@@ -14,6 +14,10 @@ export const TUTORS = [
     name: 'Декстер',
     avatar: '/tutor/tutor-dexter.png',
     traitColors: ['#2cbf45', '#4a40c3', '#c39520'],
+    // Персона матерится (см. PERSONA_OVERRIDE['bro'] в agent/agent.py) — метка
+    // 18+ у имени во всех местах, где карточка тьютора показывается. Это именно
+    // ПОМЕТКА, а не возрастной гейт: проверки возраста в приложении нет.
+    adult: true,
   },
   {
     key: 'spark',
@@ -29,7 +33,7 @@ export const TUTORS = [
 export const TUTOR_GREETING = {
   luna: "Hi, I'm Luna. Take a deep breath — we'll go gently, at your own pace. No pressure here.",
   dexter:
-    "Hey, I'm Dexter! Learning English is going to be fun — let's explore it together, one step at a time.",
+    "Yo, wassup! I'm Dexter. Chill, we're just gonna talk — no textbooks, no damn stress. Let's get it.",
   spark: "Yo! I'm Spark! Let's go — you've got this! Ready to level up? Let's crush it!",
 }
 

@@ -280,6 +280,10 @@
   pointer-events: none;
   z-index: 2;
 }
+/* Мобильная карусель тьюторов в панели — на десктопе скрыта */
+.t-card__carousel {
+  display: none;
+}
 .t-card__content {
   position: absolute;
   left: 431px;
@@ -464,7 +468,9 @@
   flex-direction: column;
   align-items: center;
   width: 322px;
-  height: 571px;
+  /* min-height, а не height: длинные трейты («Русскоязычная», «Kazakh-speaking»)
+     переносятся на вторую строку — при фиксированной высоте карточка бы потекла. */
+  min-height: 571px;
   padding: 41px 21px 31px;
   background: #ffffff;
   border-radius: 20px;
@@ -472,8 +478,9 @@
 .t-tcard__avatar {
   width: 124px;
   height: 124px;
-  border-radius: 50%;
-  object-fit: cover;
+  /* У ассетов свой круглый фон и прозрачные углы; CSS-маска 50% резала
+     шапочку и кисточку, выходящие за круг, — показываем картинку целиком. */
+  object-fit: contain;
   margin-bottom: 19px;
 }
 .t-tcard__name {
@@ -483,19 +490,44 @@
   color: var(--t-ink);
   margin-bottom: 8px;
 }
+/* Метка 18+ у имени тьютора, который матерится (tutors.js → adult: true).
+   Общая для десктопной карточки и мобильной карусели. Красный не берём: рядом
+   лежат разноцветные трейт-чипы, и ещё одно яркое пятно читалось бы как
+   четвёртый трейт. Нейтральная тёмная плашка — это пометка, а не украшение. */
+.t-adult {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #2b2b33;
+  color: #fff;
+  /* Имя 24px — метка не должна с ним конкурировать. */
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  /* Курсор-подсказка: у span есть title с расшифровкой. */
+  cursor: help;
+}
 .t-tcard__chips {
   display: flex;
-  gap: 2px;
+  /* Три трейта в ряд по 280px внутренней ширины: с длинными словами
+     («Русскоязычная») ряд не влезал и вылезал за края карточки. Ужимаем чипы и
+     разрешаем перенос — на казахском/английском строки ещё длиннее. */
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
   margin-bottom: 19px;
 }
 .t-chip {
   display: inline-flex;
   align-items: center;
-  height: 32px;
-  padding: 0 14px;
+  height: 30px;
+  padding: 0 9px;
   border-radius: 100px;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1053,6 +1085,27 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+/* Завершить разговор — вторичная по весу кнопка под микрофоном: действие
+   необратимое, поэтому не должна конкурировать по акценту с мьютом. */
+.t-voice__end {
+  margin-top: 12px;
+  height: 48px;
+  padding: 0 28px;
+  border: 1.5px solid rgba(214, 69, 69, 0.45);
+  border-radius: 24px;
+  background: transparent;
+  color: #d64545;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.t-voice__end:hover {
+  background: rgba(214, 69, 69, 0.08);
+  border-color: #d64545;
+}
 
 /* Плашка запроса доступа к микрофону — имитирует всплывашку браузера из
    адресной строки: плавает в левом-верхнем углу окна поверх сайдбара. */
@@ -1132,6 +1185,52 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* Честное обоснование уровня (почему такой) под кружком результата. */
+.t-levelwhy {
+  max-width: 560px;
+  margin: 28px auto 0;
+  text-align: left;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+.t-levelwhy__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--t-ink);
+  margin: 0 0 8px;
+}
+.t-levelwhy__text {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--t-ink);
+  margin: 0;
+  white-space: pre-line;
+}
+.t-levelwhy__block {
+  margin-top: 16px;
+}
+.t-levelwhy__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #8b8b8b;
+  margin-bottom: 6px;
+}
+.t-levelwhy__list {
+  margin: 0;
+  padding-left: 18px;
+}
+.t-levelwhy__list li {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--t-ink);
+  margin-bottom: 4px;
 }
 
 .t-interests__sub {
@@ -1278,11 +1377,15 @@
     animation: none;
   }
 }
+/* Колонка по центру, но строки выровнены по левому краю — иначе галочки
+   выстраиваются «лесенкой» под текстами разной длины. */
 .t-analysis__list {
-  margin-top: 38px;
+  margin: 38px auto 0;
+  width: max-content;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
 }
 .t-analysis__item {
@@ -1723,6 +1826,23 @@
   font-weight: 500;
   color: #8b8b8b;
 }
+/* Сданный урок: фиолетовая галочка в радио-кружке (как в чек-листе анализа) */
+.t-plan__card.is-done .t-radio {
+  position: relative;
+  border-color: var(--t-purple);
+  background: var(--t-purple);
+}
+.t-plan__card.is-done .t-radio::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 4px;
+  width: 5px;
+  height: 10px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
 
 /* ------------------- Управление тьютором ------------------------- */
 .t-manage {
@@ -1820,10 +1940,15 @@
   align-items: center;
   justify-content: space-between;
   min-height: 71px;
+  width: 100%;
   background: #ffffff;
+  border: none;
   border-radius: 10px;
   padding: 16px 12px;
   margin-bottom: 6px;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
 }
 .t-histrow__text {
   display: flex;
@@ -1994,6 +2119,16 @@
   line-height: 1.55;
   color: var(--t-ink);
 }
+.t-erran__empty {
+  margin-top: 24px;
+  padding: 28px 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--t-muted);
+  text-align: center;
+}
 .t-erran__btns {
   margin-top: 40px;
   display: flex;
@@ -2132,9 +2267,26 @@
   background: #ff7300;
   border-radius: 19px 19px 5px 19px;
 }
+.t-chat__empty {
+  margin-top: 24px;
+  padding: 28px 24px;
+  background: #ffffff;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--t-muted);
+  text-align: center;
+}
 
 /* ---------------------- Онбординг-тур ---------------------------- */
 .t-tour {
+  /* Тур рендерится порталом в body — вне .t-app, где объявлены переменные
+     темы; без своих копий кнопка «Готово» и прогресс-бар теряли фон
+     (белый текст на белом — «кнопка пропала»). */
+  --t-purple: #9047ff;
+  --t-ink: #181818;
+  --t-muted: #afafaf;
+
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -2299,6 +2451,25 @@
   background: #d64545;
   animation: t-placetest-pulse 1s ease-in-out infinite;
 }
+/* Шаги разбора ответа: три сегмента заливаются по мере прогресса, чтобы
+   ожидание оценки не выглядело зависанием. */
+.t-placetest__steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 22px auto 0;
+  width: min(320px, 80%);
+}
+.t-placetest__step {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(124, 77, 255, 0.15);
+  transition: background 0.4s ease;
+}
+.t-placetest__step.is-done {
+  background: var(--t-purple);
+}
 .t-placetest__rec-hint {
   font-size: 13px;
   font-weight: 600;
@@ -2332,6 +2503,14 @@
     padding: 24px 16px 36px;
     overflow-y: auto;
   }
+  /* Экран загрузки («тьютор собирает обучение») — по центру вертикали на
+     мобиле. Общий .t-content--center сверху прижат (flex-start) ради высоких
+     center-экранов; загрузочный уникален .t-status__dots — его центрируем,
+     сохранив полную ширину (align-items:stretch, заголовок центрован сам). */
+  .t-content--center:has(.t-status__dots) {
+    flex-direction: column;
+    justify-content: center;
+  }
   .t-content--flow {
     padding: 0 16px 32px;
   }
@@ -2350,6 +2529,9 @@
     width: 100%;
     max-width: 430px;
     height: auto;
+    /* Родитель (.t-content--center) — flex со stretch: без этого карточка
+       растягивается по высоте и панель отрывается от контента. */
+    align-self: flex-start;
     margin: 0 auto;
     background: transparent;
     border-radius: 0;
@@ -2370,18 +2552,57 @@
     height: 240px;
     border-radius: 30px;
   }
+  /* Статичную композицию маскотов заменяет свайп-карусель тьюторов */
   .t-card__mascot {
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    top: auto;
-    transform: translateX(-50%);
-    width: 250px;
-    height: auto;
+    display: none;
+  }
+  .t-card__carousel {
+    display: flex;
+    height: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .t-card__carousel::-webkit-scrollbar {
+    display: none;
+  }
+  .t-card__slide {
+    flex: 0 0 56%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+  }
+  .t-card__slide img {
+    width: 128px;
+    height: 128px;
+    object-fit: contain;
+  }
+  .t-card__slide b {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .t-card__slide span {
+    margin-top: 2px;
+    font-size: 13px;
+    opacity: 0.8;
   }
 
   /* --- Выбор тьютора: горизонтальный свайп со снапом (виден край соседа) --- */
+  /* Два уровня «роста по контенту» ломали свайп: секция — flex-item
+     родителя-строки, карусель — item колонки с align-items: center. Обе
+     растягивались до ~950px, скроллился весь .t-content, снап не работал. */
+  .t-choose {
+    width: 100%;
+    min-width: 0;
+  }
   .t-choose__grid {
+    align-self: stretch;
     margin: 16px -16px 0;
     padding: 4px 16px 10px;
     overflow-x: auto;
@@ -2394,6 +2615,8 @@
     height: auto;
     min-height: 520px;
     scroll-snap-align: center;
+    /* Резкий флик не пролистывает мимо соседа — по одной карточке за свайп */
+    scroll-snap-stop: always;
   }
 
   /* --- Статус-экраны (загрузка/уровень): меньше верхний отступ --- */
@@ -2430,4 +2653,282 @@
     margin-top: 18px;
     font-size: 28px;
   }
+
+  /* --- Дашборд: две колонки → вертикаль (герой с микрофоном, ниже сценарии) --- */
+  .t-dash {
+    flex-direction: column;
+  }
+  .t-dash__center {
+    padding: 20px 16px 40px;
+  }
+  .t-dash__tutor img {
+    width: 44px;
+    height: 44px;
+  }
+  .t-dash__tutormeta b {
+    font-size: 16px;
+  }
+  .t-dash__tutormeta span {
+    font-size: 13px;
+  }
+  .t-dash__manage {
+    height: 40px;
+    padding: 0 16px;
+    gap: 8px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .t-dash__cta {
+    margin-top: 44px;
+  }
+  .t-dash__mic {
+    width: 118px;
+    height: 118px;
+  }
+  .t-dash__mic svg {
+    width: 52px;
+    height: 52px;
+  }
+  .t-dash__ctatitle {
+    margin-top: 18px;
+    font-size: clamp(23px, 6.5vw, 28px);
+  }
+  .t-dash__suggest {
+    margin-top: 36px;
+    width: 100%;
+    max-width: 370px;
+  }
+
+  /* Панель сценариев — белый лист во всю ширину под героем */
+  .t-dash__panel {
+    width: 100%;
+    padding: 28px 16px 40px;
+    overflow-y: visible;
+    border-radius: 28px 28px 0 0;
+  }
+
+  /* --- Карточка тьютора: пилюли качеств переносятся, а не режутся краем --- */
+  .t-tcard__chips {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    justify-content: center;
+  }
+
+  /* --- «Кем работаешь»: десктопная сетка 744px в две колонки → колонка во
+     всю ширину (раньше варианты уезжали за левый край экрана) --- */
+  .t-prof__grid {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+  .t-prof__input {
+    width: 100%;
+  }
+
+  /* --- Управление тьютором: карточка над историей, всё во всю ширину --- */
+  .t-manage {
+    flex-direction: column;
+    gap: 28px;
+  }
+  .t-manage__card {
+    width: 100%;
+  }
+
+  /* --- План уроков: прогресс и карточки не шире экрана --- */
+  .t-plan__progress {
+    width: 100%;
+  }
+  .t-plan__card {
+    width: 100%;
+  }
+
+  /* --- Сценарии (страница): десктопные 4 колонки → 2 --- */
+  .t-scen__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 12px;
+  }
+
+  /* --- Результат практики: маскот сверху, панель с кнопками под ним --- */
+  .t-result2 {
+    padding-top: 24px;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .t-result2__mascot {
+    width: min(64vw, 260px);
+  }
+  .t-result2__side {
+    width: 100%;
+    max-width: 370px;
+  }
+  .t-result2__stats {
+    width: 100%;
+  }
+  .t-result2__btn {
+    width: 100%;
+    margin-top: 32px;
+  }
+  .t-result2__btn--tall {
+    margin-top: 7px;
+  }
+
+  /* --- Разбор ошибок: кнопки стопкой во всю ширину --- */
+  .t-erran__btns {
+    flex-direction: column;
+  }
+  .t-erran__btn {
+    width: 100%;
+  }
+
+  /* --- Транскрипт разговора: пузыри пошире на узком экране --- */
+  .t-bubble {
+    max-width: 85%;
+  }
+}
+
+
+/* ======================================================= */
+/* == МОБИЛКА: карусель выбора тьютора — Figma frames 91-93 */
+/* ======================================================= */
+/* Брейкпоинт 760, а не 560: мобильный шелл (MobileTopBar + drawer-сайдбар)
+   включается на max-width:760px (styles.css). При 560 в зоне 561–760 был бы
+   мобильный топбар, но десктоп-грид (3 карточки ~966px в ряд) → съезд экрана
+   и горизонтальный скролл. Карусель обязана покрывать весь диапазон шелла. */
+@media (max-width: 760px) {
+  /* Десктоп-версия экрана выбора скрыта, показываем карусель */
+  .t-choose__title,
+  .t-choose__pills,
+  .t-choose__grid { display: none; }
+  .t-main:has(.t-choose) { padding: 0 16px 16px; }
+  .t-content:has(.t-car) { display: flex; flex-direction: column; padding: 0; }
+  /* t-choose тянется на всю высоту, чтобы кнопки карусели прижались к низу */
+  .t-choose:has(.t-car) { padding: 0; flex: 1; display: flex; flex-direction: column; }
+
+  /* Экран выбора: цель — карусель на весь вьюпорт, кнопки «Послушать/Выбрать»
+     прижаты к низу (Figma). Скоуп :has(.t-car) — только этот экран.
+
+     ВАЖНО (два инцидента): раньше шелл лочился в height:100svh/100dvh +
+     overflow:hidden, чтобы юзер не смахнул карусель. Но на мобильном Chrome
+     адресная строка остаётся развёрнутой (страница залочена и не скроллится),
+     реальная высота вьюпорта меньше 100svh/100dvh, и низ шелла с ОБЕИМИ кнопками
+     обрезался за краем БЕЗ возможности доскроллить — кнопки недосягаемы.
+
+     Решение: НЕ лочим высоту и НЕ режем overflow намертво. min-height:100svh
+     (а не height) — на высоком экране контент растягивается и кнопки прижаты к
+     низу; когда контента больше видимой высоты (адресная строка съедает место),
+     документ просто СКРОЛЛИТСЯ по вертикали — кнопка всегда достижима.
+
+     Горизонталь: сама сцена карусели шире вьюпорта на ±16px (соседние аватары
+     выглядывают за края), поэтому body клипаем по X. Используем overflow-x:clip,
+     а НЕ hidden: hidden вынуждает overflow-y стать auto (спецификация CSS), и
+     тогда body/html/оболочка превращаются в отдельные вложенные scroll-контейнеры
+     — тач-скролл цепляет не тот и работает рвано. clip убирает горизонтальное
+     выпирание, не создавая scroll-контекст: вертикальный скролл остаётся
+     единым, на документе. overscroll-behavior:none — против баунса и цепного
+     скролла. 100vh — фолбэк для браузеров без svh. */
+  /* overflow-x:clip переехал в styles.css и теперь действует на ВСЕХ мобильных
+     экранах, не только здесь (обоснование clip-вместо-hidden — там же). Тут
+     остаётся только overscroll-behavior: он карусельный, против баунса и
+     цепного скролла. */
+  html:has(.t-car), body:has(.t-car) { overscroll-behavior: none; }
+  .t-app:has(.t-car) { min-height: 100vh; min-height: 100svh; }
+  .t-app:has(.t-car) .t-body { flex: 1; min-height: 0; }
+  .t-app:has(.t-car) .footer { display: none; }
+
+  /* Топбар: серый back-кружок 32 + центрированный заголовок (Figma 91).
+     Строго в контексте карусели — иначе серый кружок протекал бы на экраны
+     теста уровня (14-18), где «Назад» должна быть фиолетовой плашкой. */
+  .t-main:has(.t-car) .t-topbar { position: relative; justify-content: center; padding: 8px 0 4px; }
+  .t-main:has(.t-car) .t-back {
+    position: absolute;
+    left: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 16px;
+    background: #f6f6f6;
+    font-size: 0;
+    gap: 0;
+  }
+  .t-topbar__title { font-size: 16px; font-weight: 700; color: #181818; }
+
+  /* Карусель тянется на всю высоту, кнопки прижаты к низу (Figma: y734/790) */
+  .t-car { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+  .t-car__stage {
+    position: relative;
+    /* Шире контента на 16px с каждой стороны — соседние аватары выглядывают
+       за края экрана (Figma: prev x-24, next x315 при кадре 402). */
+    width: calc(100% + 32px);
+    margin: 0 -16px;
+    height: 200px;
+    margin-top: 29px;
+    /* Обрезаем дальние слоты цикла (9 копий уезжают на ±550px и держат
+       opacity:0, но раздували scrollWidth сцены → горизонтальный ползунок
+       на .t-content--flow). Соседи ±1 внутри сцены, их выглядывание цело. */
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+  /* Слайд-аватар: базовый размер 200 (центр), соседи масштабируются inline
+     (scale 0.555 → 111). Позиция/transition/opacity/z-index — inline из JS. */
+  .t-car__slot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #efe7ff;
+    will-change: transform;
+  }
+  .t-car__slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .t-car__info { width: 100%; animation: t-car-fade 0.34s ease both; }
+
+  .t-car__name {
+    margin-top: 19px; font-size: 24px; font-weight: 700;
+    color: #181818; text-align: center;
+  }
+  /* Как и на десктопной карточке: длинные трейты не влезают в ряд из трёх —
+     ужимаем чип и разрешаем перенос вместо выезда за края. */
+  .t-car__chips {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 8px;
+  }
+  .t-car__chip {
+    height: 32px; display: inline-flex; align-items: center; padding: 0 10px;
+    border-radius: 20px; color: #fff; font-size: 13px; font-weight: 600; white-space: nowrap;
+  }
+  /* margin-inline:auto обязателен: родитель — блочный, а max-width:334px уже
+     ре́жет ширину, поэтому без авто-полей блок прилипал к левому краю и всё
+     описание стояло на 23px левее имени и чипов. text-align центрировал строки
+     ВНУТРИ съехавшего блока, из-за чего перекос выглядел как «неровный текст». */
+  .t-car__desc {
+    margin-top: 18px; margin-inline: auto; max-width: 334px;
+    font-size: 14px; line-height: 1.4;
+    color: #181818; text-align: center; text-wrap: balance;
+  }
+
+  .t-car__actions {
+    margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 12px;
+    padding-top: 24px;
+  }
+  .t-car__listen {
+    height: 44px; border: none; border-radius: 30px; background: #ebdeff;
+    color: #9047ff; font-family: inherit; font-size: 15px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  }
+  .t-car__choose {
+    height: 48px; border: none; border-radius: 80px; background: #9047ff;
+    color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+}
+@media (min-width: 761px) {
+  .t-car { display: none; }
+  .t-main:has(.t-choose) .t-topbar__title { display: none; }
+}
+
+@keyframes t-car-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }
