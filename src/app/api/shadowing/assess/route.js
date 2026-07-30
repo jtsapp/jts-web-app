@@ -7,6 +7,7 @@
 
 import {
   assessAgainstReference,
+  assessPronunciation,
   mockPronunciation,
   isAzureSpeechConfigured,
 } from '@/lib/ielts/azure-pronunciation.js'
@@ -14,7 +15,7 @@ import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 
 export const runtime = 'nodejs'
 
-const MAX_BYTES = 10 * 1024 * 1024 // ~5 мин 16кГц mono WAV; фразы куда короче
+const MAX_BYTES = 40 * 1024 * 1024 // до ~20 мин 16кГц mono WAV (целый отрывок)
 const LANG_NAME = { ru: 'Russian', en: 'English', kk: 'Kazakh' }
 
 const TIP_SCHEMA = {
@@ -66,6 +67,9 @@ export async function POST(request) {
   const file = form.get('audio')
   const text = String(form.get('text') || '').trim()
   const lang = String(form.get('lang') || 'ru')
+  // 'whole' — оценка целого отрывка: длинное аудио, поэтому continuous без
+  // эталона (recognizeOnce эталон-режима обрезал бы на ~15с). Послово-карты нет.
+  const mode = String(form.get('mode') || 'phrase')
 
   if (!(file instanceof File)) {
     return Response.json({ error: "Missing 'audio' file field." }, { status: 400 })
@@ -83,12 +87,15 @@ export async function POST(request) {
   // Оценка: реальная Azure, иначе mock (без падения).
   let score = null
   if (isAzureSpeechConfigured()) {
-    score = await assessAgainstReference(Buffer.from(await file.arrayBuffer()), text).catch(
-      (e) => {
-        console.error('[shadowing.assess] azure failed', e)
-        return null
-      },
-    )
+    const buf = Buffer.from(await file.arrayBuffer())
+    const run =
+      mode === 'whole'
+        ? assessPronunciation(buf).then((r) => (r ? { ...r, words: [] } : null))
+        : assessAgainstReference(buf, text)
+    score = await run.catch((e) => {
+      console.error('[shadowing.assess] azure failed', e)
+      return null
+    })
   }
   if (!score) {
     score = { ...mockPronunciation(), words: [], transcript: '' }
@@ -96,9 +103,9 @@ export async function POST(request) {
 
   // Совет — best-effort, только по реальным баллам.
   let tip = ''
-  if (!score.mock && hasAnthropicKey() && text) {
+  if (!score.mock && hasAnthropicKey() && (text || mode === 'whole')) {
     try {
-      tip = await makeTip(score, text, lang)
+      tip = await makeTip(score, text || '(целый отрывок)', lang)
     } catch (e) {
       console.error('[shadowing.assess] tip failed', e)
     }

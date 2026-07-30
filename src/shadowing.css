@@ -239,6 +239,22 @@
 }
 .sh-take__listen { background: var(--sh-purple); color: #fff; }
 .sh-take__again { background: var(--sh-soft); color: var(--sh-purple); border: 1px solid var(--sh-border); }
+.sh-whole-assess {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 12px;
+  border: 1px solid var(--sh-border);
+  background: var(--sh-soft);
+  color: var(--sh-purple);
+  border-radius: 999px;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.sh-whole-assess:hover { filter: brightness(0.98); }
+.sh-whole-score { width: 100%; max-width: 520px; margin-top: 12px; }
 
 /* dev-инструмент (?dev=1) */
 .sh-dev__area {
