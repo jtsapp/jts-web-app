@@ -32,5 +32,11 @@ services:
     mem_limit: 512m
     volumes:
       - jts-web-app-data:/var/lib/postgresql
+      # Официальный образ postgres сам выполняет любой .sql из этой папки —
+      # но ТОЛЬКО один раз, при самой первой инициализации пустого volume.
+      # Так схема применяется автоматически на любом чистом деплое (прод
+      # в том числе) — без ручного psql. На уже проинициализированный volume
+      # это не подействует задним числом (см. HANDOFF/память об этом).
+      - ./src/lib/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
 volumes:
   jts-web-app-data:
