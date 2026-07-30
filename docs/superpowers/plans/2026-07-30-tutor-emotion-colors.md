@@ -419,16 +419,20 @@ git add agent/agent.py && git commit -m "feat(voice): агент публику�
 В `src/screens/TutorVoiceChatPage.jsx` после функции `fmtClock` (строка 244) добавить:
 
 ```javascript
-// Эмоции тьютора, приходящие от агента (топик "mood"). Словарь ЗАКРЫТЫЙ и имя
-// из сети в CSS не подставляется: иначе вывод модели стал бы вектором
-// CSS-инъекции. Незнакомое имя молча игнорируется.
-const MOOD_CLASS = {
-  anger: 'is-mood-anger',
-  disgust: 'is-mood-disgust',
-  joy: 'is-mood-joy',
-  sadness: 'is-mood-sadness',
-  gloat: 'is-mood-gloat',
-}
+// Эмоции тьютора, приходящие от агента (топик "mood"). Имя из сети в CSS не
+// подставляется: иначе вывод модели стал бы вектором CSS-инъекции.
+//
+// Именно Map, а не объектный литерал: у литерала есть цепочка прототипов, и
+// MOOD_CLASS['constructor'] вернул бы функцию Object — truthy, то есть
+// «незнакомое» имя прошло бы проверку и уехало в className. У Map ключи не
+// наследуются, поэтому словарь закрыт на самом деле, а не на словах.
+const MOOD_CLASS = new Map([
+  ['anger', 'is-mood-anger'],
+  ['disgust', 'is-mood-disgust'],
+  ['joy', 'is-mood-joy'],
+  ['sadness', 'is-mood-sadness'],
+  ['gloat', 'is-mood-gloat'],
+])
 ```
 
 - [ ] **Step 2: Подписаться на топик**
@@ -442,9 +446,13 @@ const MOOD_CLASS = {
   useDataChannel('mood', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
-      const cls = MOOD_CLASS[data?.mood]
+      const cls = MOOD_CLASS.get(data?.mood)
       const level = Number(data?.intensity)
-      if (cls && level >= 1 && level <= 3) setMood({ cls, level })
+      // Number.isInteger, а не только диапазон: 1.5 прошло бы `>= 1 && <= 3`
+      // и дало класс is-mood-1.5, которого в CSS нет.
+      if (cls && Number.isInteger(level) && level >= 1 && level <= 3) {
+        setMood({ cls, level })
+      }
     } catch {
       /* ignore malformed payloads */
     }
