@@ -1131,12 +1131,15 @@ class TutorAgent(Agent):
         api_url: str,
         room: Any = None,
         scenario_id: str = "",
+        tutor: str = "",
     ):
         super().__init__(instructions=instructions)
         self._device_id = device_id
         self._api_url = api_url.rstrip("/")
         # Which structured scenario this call is running (for report_task_complete).
         self._scenario_id = scenario_id
+        # Персона этой сессии — от неё зависит, какие эмоции разрешены (TUTOR_MOODS).
+        self._tutor = (tutor or "").strip().lower()
         # Room handle so placement mode can push the confirmed level straight to
         # the web client over a LiveKit data message (topic "placement").
         self._room = room
@@ -1179,6 +1182,70 @@ class TutorAgent(Agent):
                 await client.post(url, json=body, headers=headers)
         except Exception:
             logger.exception("Tool POST failed: %s", path)
+
+    async def _publish_mood(self, mood: str, intensity: int) -> None:
+        """Отправить эмоцию в браузер (топик "mood"). Best-effort.
+
+        Падение публикации не должно ронять реплику: цвет — украшение, голос —
+        продукт. Поэтому исключение только логируется.
+        """
+        if self._room is None:
+            return
+        try:
+            await self._room.local_participant.publish_data(
+                json.dumps({"mood": mood, "intensity": intensity}),
+                reliable=True,
+                topic="mood",
+            )
+        except Exception:
+            logger.exception("publish mood failed")
+
+    async def llm_node(self, chat_ctx, tools, model_settings):
+        """Снять mood-тег с потока ответа до того, как он уйдёт в TTS.
+
+        Именно llm_node, а не tts_node: этот хук стоит выше И озвучки, И
+        субтитров, поэтому тег вырезается один раз и не всплывает ни в голосе,
+        ни в тексте на экране.
+        """
+        allowed = TUTOR_MOODS.get(self._tutor)
+        if not allowed:
+            # Тьютору эмоции не выданы — не трогаем поток вообще.
+            async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+                yield chunk
+            return
+
+        stripper = _MoodStripper(allowed)
+        published = False
+        async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+            if isinstance(chunk, str):
+                out = stripper.feed(chunk)
+                if out:
+                    yield out
+            else:
+                delta = getattr(chunk, "delta", None)
+                content = getattr(delta, "content", None) if delta is not None else None
+                if content:
+                    delta.content = stripper.feed(content)
+                    # Чанк опустел (текст ушёл в буфер) и не несёт вызова
+                    # инструмента — придержать его, иначе вниз уйдёт пустышка.
+                    if not delta.content and not delta.tool_calls:
+                        chunk = None
+                if chunk is not None:
+                    yield chunk
+            # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
+            # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
+            if stripper.mood and not published:
+                published = True
+                task = asyncio.create_task(
+                    self._publish_mood(stripper.mood, stripper.intensity)
+                )
+                self._bg_tasks.add(task)
+                task.add_done_callback(self._bg_tasks.discard)
+
+        # Короткая реплика без тега целиком лежит в буфере — отдать её.
+        tail = stripper.flush()
+        if tail:
+            yield tail
 
     @function_tool()
     async def log_mistake(
@@ -2080,6 +2147,7 @@ def build_instructions(p: LearnerProfile) -> str:
         f"{operational_level_line(p.level, p.skills)}\n"
         f"{style_g}\n"
         + (f"{persona_g}\n" if persona_g else "")
+        + build_mood_block(p.tutor)
         + f"{lang_g}\n"
         + explanation_language_block(p.explanation_lang or p.lang, p.tutor)
         + (
@@ -3286,6 +3354,7 @@ async def entrypoint(ctx: JobContext):
         api_url=api_url,
         room=ctx.room,
         scenario_id=scenario_data["id"] if is_scenario else "",
+        tutor=profile.tutor,
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
