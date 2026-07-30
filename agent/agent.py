@@ -22,6 +22,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1006,6 +1007,111 @@ def format_memory_block(p: LearnerProfile) -> str:
     if not lines:
         return "Start of session. No prior memory yet — get a feel for them in the first 1-2 turns before drilling."
     return "\n".join(lines)
+
+
+# ── Эмоции тьютора: тег в реплике → цвет рамки у ученика ─────────────────────
+# Эмоцию метит САМ мозг тегом в начале реплики, а не питон по словам. Причина:
+# у Декстера мат стоит в КАЖДОЙ реплике по промпту, то есть мат — это фон его
+# речи, а не сигнал. Отличить «бля какой же ты тупой» (злость) от «ну и ну, я
+# так и знал» (злорадство) списками слов надёжно нельзя. Отдельный tool-call
+# тоже не годится: модели забывают звать инструменты, а тег едет в том же
+# ответе бесплатно.
+MOOD_NAMES = ("anger", "disgust", "joy", "sadness", "gloat")
+
+# Кому какие эмоции положены. Злорадство и отвращение противоречат характерам
+# Луны («чуткая, спокойная») и Спарка («энергичный»), а радость и грусть идут
+# всем. Инструкция для промпта генерится ИЗ этой таблицы, поэтому тьютор просто
+# не узнаёт про эмоции, которых ему не выдали.
+TUTOR_MOODS: dict[str, frozenset[str]] = {
+    "bro": frozenset(MOOD_NAMES),            # Декстер — весь набор
+    "gentle": frozenset({"joy", "sadness"}),  # Луна
+    "hype": frozenset({"joy", "sadness"}),    # Спарк
+}
+
+MOOD_TAG_RE = re.compile(r"^\s*\[mood:([a-z]+):([1-3])\]\s*", re.IGNORECASE)
+# Сколько символов головы реплики ждать, прежде чем решить, что тега нет.
+# Держит два риска сразу: (1) чанки стрима рвут тег в произвольном месте,
+# поэтому решать по первому чанку нельзя; (2) без верхней границы парсер копил
+# бы всю реплику и мог сожрать реальную речь.
+MOOD_SCAN_LIMIT = 40
+
+
+def parse_mood_tag(text: str) -> tuple[str, int, str]:
+    """Снять `[mood:имя:сила]` с ГОЛОВЫ текста.
+
+    Возвращает `(имя, сила, остаток)`. Тега нет или он битый → `("", 0, text)`
+    и текст не тронут: парсер никогда не должен есть реальную речь.
+    """
+    m = MOOD_TAG_RE.match(text)
+    if not m:
+        return "", 0, text
+    return m.group(1).lower(), int(m.group(2)), text[m.end():]
+
+
+class _MoodStripper:
+    """Снимает mood-тег с потока реплики, накапливая голову до решения.
+
+    Живёт одну реплику. `feed()` отдаёт текст, который можно пускать дальше в
+    TTS; пока тег может быть ещё не дочитан, отдаёт пустую строку и копит.
+    `flush()` в конце реплики ОБЯЗАТЕЛЕН — без него короткий ответ без тега
+    (меньше MOOD_SCAN_LIMIT символов) не был бы озвучен вообще.
+    """
+
+    def __init__(self, allowed: frozenset[str]):
+        self._allowed = allowed
+        self._buf = ""
+        self._done = False  # тег снят либо ясно, что его нет
+        self.mood = ""
+        self.intensity = 0
+
+    def feed(self, text: str) -> str:
+        if self._done:
+            return text
+        self._buf += text
+        mood, intensity, rest = parse_mood_tag(self._buf)
+        if mood:
+            self._done = True
+            self._buf = ""
+            # Тег вырезаем ВСЕГДА, даже если эмоция не положена этому тьютору:
+            # иначе модель, придумавшая лишнее имя, заставит TTS его произнести.
+            if mood in self._allowed:
+                self.mood, self.intensity = mood, intensity
+            return rest
+        if len(self._buf) >= MOOD_SCAN_LIMIT:
+            self._done = True
+            out, self._buf = self._buf, ""
+            return out
+        return ""
+
+    def flush(self) -> str:
+        """Реплика кончилась, не добрав до лимита — отдать накопленное."""
+        if self._done:
+            return ""
+        self._done = True
+        out, self._buf = self._buf, ""
+        return out
+
+
+def build_mood_block(tutor: str) -> str:
+    """Блок промпта про mood-тег. Пусто, если тьютору эмоции не выданы.
+
+    Отдельным блоком, а не внутрь PERSONA_OVERRIDE: персона Декстера сжата
+    намеренно (см. комментарий над ней), и любая добавка её размывает.
+    """
+    allowed = TUTOR_MOODS.get((tutor or "").strip().lower())
+    if not allowed:
+        return ""
+    names = ", ".join(sorted(allowed))
+    return (
+        "\n==== MOOD TAG (silent) ====\n"
+        f"Начинай реплику с тега [mood:<имя>:<сила>], где имя — одно из: {names}; "
+        "сила — 1 (слабо), 2 (заметно) или 3 (сильно).\n"
+        "Тег определяется СМЫСЛОМ сказанного, не лексикой: ругательства сами по "
+        "себе ничего не значат, они могут сопровождать любую эмоцию.\n"
+        "Настроение ровное — тег не ставь вообще.\n"
+        "Тег служебный: он вырезается до озвучки, ученик его не слышит и не "
+        "видит. Никогда не упоминай его вслух и не ставь в середину реплики.\n"
+    )
 
 
 class TutorAgent(Agent):
