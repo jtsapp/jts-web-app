@@ -28,3 +28,5 @@ public/practice/books.html
 
 # Local staging of extracted lesson media — uploaded to files-api via mc, not committed
 public/learning/media/
+# Локальный venv питон-агента (ставится из agent/requirements.txt)
+agent/venv/
