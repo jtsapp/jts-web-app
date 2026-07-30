@@ -82,10 +82,13 @@
 .sh-sec__head h2 { font-size: 18px; margin: 0; color: var(--ink, #171326); }
 .sh-sec__hint { margin-left: auto; color: var(--sh-ink-mute); font-size: 12px; }
 
-/* видео 16:9 */
+/* видео 16:9 — ограничиваем ширину и центрируем, чтобы плеер не разрастался
+   на широких экранах (на мобиле max-width больше вьюпорта — без изменений) */
 .sh-video {
   position: relative;
   width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
   aspect-ratio: 16 / 9;
   border-radius: 18px;
   overflow: hidden;
