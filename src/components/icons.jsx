@@ -309,3 +309,62 @@ export function TrashIcon({ size = 18 }) {
     </svg>
   )
 }
+
+// Замок королевства — в пилюле-навигации шапки «Обучения»
+export function CastleIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 21v-9l2 1V8l2 1V5h2v2l3-2 3 2V5h2v4l2-1v2l2-1v9h-6v-4a2 2 0 0 0-4 0v4H3Zm8-9.5a1 1 0 1 0 2 0 1 1 0 0 0-2 0Z" />
+    </svg>
+  )
+}
+
+/* ——— Иконки типов уроков (печеньки на тропе «Обучения») ——— */
+// Выбор вариантов ответа — лист
+export function LeafIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 20c0-9 6.5-15 16-15 0 9.5-6.5 15-16 15Z" fill="currentColor" />
+      <path d="M8.5 15.5C11 13 14 11.5 17 11" stroke="#fff" strokeOpacity="0.55" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+// Аудио — эквалайзер
+export function WaveIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {[
+        [5, 9, 6],
+        [9, 5, 14],
+        [13, 7, 10],
+        [17, 3, 18],
+      ].map(([x, y, h]) => (
+        <rect key={x} x={x} y={y} width="2.6" height={h} rx="1.3" fill="currentColor" />
+      ))}
+    </svg>
+  )
+}
+// Видео — полумесяц (как в макете)
+export function CrescentIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M14.5 3a9 9 0 1 0 5.5 16.5A7.5 7.5 0 0 1 14.5 3Z" fill="currentColor" />
+    </svg>
+  )
+}
+// Объяснение темы — звезда
+export function StarIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 18.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7L12 3Z" fill="currentColor" />
+    </svg>
+  )
+}
+// Финальный экзамен — «взрыв»/звёздочка
+export function BurstIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="m12 2 2.2 4.3 4.6-1.6-1.6 4.6L21.9 12l-4.7 2.7 1.6 4.6-4.6-1.6L12 22l-2.2-4.3-4.6 1.6 1.6-4.6L2.1 12l4.7-2.7L5.2 4.7l4.6 1.6L12 2Z" fill="currentColor" />
+    </svg>
+  )
+}
