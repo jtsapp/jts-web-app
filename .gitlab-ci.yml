@@ -28,7 +28,12 @@ deploy:
   stage: deploy
   script:
     - echo $APP_ENV
-    - docker compose -f compose.yaml -f compose-app.yaml -p $APP_ENV up -d --build --force-recreate
+    # ВАЖНО: НЕ переиспользовать голое "-p $APP_ENV", как у backend — сервис
+    # тут тоже называется "postgres", и с одинаковым project name Docker
+    # Compose считает это ТЕМ ЖЕ контейнером, что и у backend, и пересоздаёт
+    # его под наш образ (реальный инцидент 2026-07-30 — снёс development-
+    # postgres-1 бэкенда). "jts-$APP_ENV" даёт отдельное namespace.
+    - docker compose -f compose.yaml -f compose-app.yaml -p jts-$APP_ENV up -d --build --force-recreate
   # Пока сознательно только develop — prod ещё не разворачиваем (см. HANDOFF/
   # память по нехватке RAM на VPS: 3.8 GiB на 4 проекта впритык, сначала
   # смотрим реальное потребление dev, потом добавляем main).
