@@ -33,11 +33,14 @@ assert s.feed("od:gl") == ""
 assert s.feed("oat:2]ну и ну") == "ну и ну"
 assert (s.mood, s.intensity) == ("gloat", 2)
 
-# --- _MoodStripper: тега нет, реплика короче лимита -------------------------
-# flush() обязателен: без него короткая реплика без тега пропала бы целиком.
+# --- _MoodStripper: реплика обрывается на возможном начале тега -------------
+# flush() обязателен: пока буфер ещё МОЖЕТ стать тегом (_could_be_tag), feed()
+# ничего не отдаёт; если реплика на этом и кончилась, без flush() эти символы
+# потерялись бы совсем. (Обычный короткий текст без «[» отдаётся из feed()
+# сразу — см. блок «реплика без тега уходит вниз СРАЗУ» ниже.)
 s = _MoodStripper(TUTOR_MOODS["bro"])
-assert s.feed("Хорош") == ""
-assert s.flush() == "Хорош"
+assert s.feed("[mo") == ""
+assert s.flush() == "[mo"
 assert s.mood == ""
 
 # --- _MoodStripper: тега нет, реплика длиннее лимита ------------------------
@@ -61,5 +64,49 @@ gentle_block = build_mood_block("gentle")
 assert "joy" in gentle_block and "sadness" in gentle_block
 assert "gloat" not in gentle_block and "anger" not in gentle_block
 assert build_mood_block("professor") == ""
+
+# --- _could_be_tag: ранний отпуск буфера ------------------------------------
+from agent import _could_be_tag  # noqa: E402
+
+assert _could_be_tag("") is True
+assert _could_be_tag("  ") is True
+assert _could_be_tag("[") is True
+assert _could_be_tag("[mo") is True
+assert _could_be_tag("[mood:") is True
+assert _could_be_tag("[mood:anger:3]") is True
+assert _could_be_tag("  [mood:joy:1]") is True
+assert _could_be_tag("Yo") is False
+assert _could_be_tag("[x") is False
+assert _could_be_tag("[moon") is False
+
+# Реплика без тега уходит вниз СРАЗУ, не дожидаясь MOOD_SCAN_LIMIT.
+s = _MoodStripper(TUTOR_MOODS["bro"])
+assert s.feed("Yo") == "Yo"
+assert s.feed(" bro") == " bro"
+assert s.mood == ""
+
+# Разрыв тега между чанками по-прежнему собирается.
+s = _MoodStripper(TUTOR_MOODS["bro"])
+assert s.feed("[mo") == ""
+assert s.feed("od:anger:2]давай") == "давай"
+assert (s.mood, s.intensity) == ("anger", 2)
+
+# --- битый тег: снимается молча, эмоции нет ---------------------------------
+# Сила вне шкалы.
+s = _MoodStripper(TUTOR_MOODS["bro"])
+out = s.feed("[mood:anger:9]Ты чё тупишь, братан, соберись давай")
+assert not out.startswith("[mood"), out
+assert out.startswith("Ты чё"), out
+assert s.mood == ""
+
+# Лишний пробел в имени.
+s = _MoodStripper(TUTOR_MOODS["bro"])
+out = s.feed("[mood: joy:2]Хорооош, вот это другое дело уже совсем")
+assert not out.startswith("[mood"), out
+assert s.mood == ""
+
+# Текст, похожий на тег, но им не являющийся, речь не теряет.
+s = _MoodStripper(TUTOR_MOODS["bro"])
+assert s.feed("[note] смотри сюда") == "[note] смотри сюда"
 
 print("mood-парсер: все ассерты прошли")

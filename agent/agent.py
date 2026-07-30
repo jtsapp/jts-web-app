@@ -22,7 +22,6 @@ import asyncio
 import json
 import logging
 import os
-import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1028,12 +1027,34 @@ TUTOR_MOODS: dict[str, frozenset[str]] = {
     "hype": frozenset({"joy", "sadness"}),    # Спарк
 }
 
-MOOD_TAG_RE = re.compile(r"^\s*\[mood:([a-z]+):([1-3])\]\s*", re.IGNORECASE)
+MOOD_TAG_RE = _re.compile(r"^\s*\[mood:([a-z]+):([1-3])\]\s*", _re.IGNORECASE)
+# Тег, который НЕ прошёл разбор (сила вне 1-3, лишний пробел, мусор в имени),
+# всё равно надо снять: иначе он уедет в озвучку и ученик услышит «mood anger
+# four» посреди урока. Съесть реальную речь этот регекс не может — она не
+# начинается с «[mood:».
+MOOD_TAG_JUNK_RE = _re.compile(r"^\s*\[mood:[^\]\n]{0,24}\]\s*", _re.IGNORECASE)
 # Сколько символов головы реплики ждать, прежде чем решить, что тега нет.
 # Держит два риска сразу: (1) чанки стрима рвут тег в произвольном месте,
 # поэтому решать по первому чанку нельзя; (2) без верхней границы парсер копил
 # бы всю реплику и мог сожрать реальную речь.
 MOOD_SCAN_LIMIT = 40
+
+_MOOD_PREFIX = "[mood:"
+
+
+def _could_be_tag(buf: str) -> bool:
+    """Может ли накопленное ЕЩЁ оказаться началом тега.
+
+    Нужно, чтобы не держать голову реплики зря: промпт велит не ставить тег
+    при ровном настроении, поэтому у большинства реплик его нет, и ждать ради
+    них полный MOOD_SCAN_LIMIT — лишняя задержка до первого звука на каждой
+    фразе. Как только первый непробельный символ разошёлся с «[mood:», ждать
+    больше нечего.
+    """
+    s = buf.lstrip().lower()
+    if not s:
+        return True  # пока только пробелы — судить рано
+    return s.startswith(_MOOD_PREFIX) or s == _MOOD_PREFIX[: len(s)]
 
 
 def parse_mood_tag(text: str) -> tuple[str, int, str]:
@@ -1077,10 +1098,11 @@ class _MoodStripper:
             if mood in self._allowed:
                 self.mood, self.intensity = mood, intensity
             return rest
-        if len(self._buf) >= MOOD_SCAN_LIMIT:
+        if len(self._buf) >= MOOD_SCAN_LIMIT or not _could_be_tag(self._buf):
             self._done = True
             out, self._buf = self._buf, ""
-            return out
+            # Разбор не прошёл, но на тег похоже — срезаем молча, без эмоции.
+            return MOOD_TAG_JUNK_RE.sub("", out, count=1)
         return ""
 
     def flush(self) -> str:
@@ -1093,11 +1115,19 @@ class _MoodStripper:
 
 
 def build_mood_block(tutor: str) -> str:
-    """Блок промпта про mood-тег. Пусто, если тьютору эмоции не выданы.
+    """Блок промпта про mood-тег. Пусто, если тег этой сессии не положен.
 
     Отдельным блоком, а не внутрь PERSONA_OVERRIDE: персона Декстера сжата
     намеренно (см. комментарий над ней), и любая добавка её размывает.
+
+    Стек проверяется ЗДЕСЬ, а не у вызывающего: тег снимает llm_node, а он
+    работает только в каскадном пайплайне — у realtime-модели свой тракт, и
+    там инструкция про тег означала бы, что тьютор проговорит его вслух.
+    Эта же функция — единственный источник правды для гейта в entrypoint,
+    чтобы промпт и код не могли разойтись.
     """
+    if (os.getenv("VOICE_STACK") or "gemini-live").strip().lower() != "cascade":
+        return ""
     allowed = TUTOR_MOODS.get((tutor or "").strip().lower())
     if not allowed:
         return ""
@@ -3361,7 +3391,12 @@ async def entrypoint(ctx: JobContext):
         room=ctx.room,
         scenario_id=scenario_data["id"] if is_scenario else "",
         tutor=profile.tutor,
-        moods_enabled=not (is_scenario or is_placement or is_debate),
+        # Гейт кода выведен из гейта промпта, а не написан заново: без блока с
+        # инструкцией тега не будет, а значит стриппер только зря придерживал
+        # бы голову каждой реплики. build_mood_block сам проверяет стек и
+        # тьютора, здесь остаётся только режим.
+        moods_enabled=bool(build_mood_block(profile.tutor))
+        and not (is_scenario or is_placement or is_debate),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
