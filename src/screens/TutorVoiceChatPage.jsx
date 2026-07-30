@@ -243,6 +243,17 @@ function fmtClock(sec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+// Эмоции тьютора, приходящие от агента (топик "mood"). Словарь ЗАКРЫТЫЙ и имя
+// из сети в CSS не подставляется: иначе вывод модели стал бы вектором
+// CSS-инъекции. Незнакомое имя молча игнорируется.
+const MOOD_CLASS = {
+  anger: 'is-mood-anger',
+  disgust: 'is-mood-disgust',
+  joy: 'is-mood-joy',
+  sadness: 'is-mood-sadness',
+  gloat: 'is-mood-gloat',
+}
+
 // Внутри LiveKitRoom: состояние агента → класс орба, живая подпись, тумблер мика.
 function CallStage({ onFinish, t, ttl }) {
   const state = useConnectionState()
@@ -260,6 +271,20 @@ function CallStage({ onFinish, t, ttl }) {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
       if (data && typeof data === 'object') setVerdict(data)
+    } catch {
+      /* ignore malformed payloads */
+    }
+  })
+
+  // Эмоция тьютора. Держится до следующего тега — пока ученик отвечает,
+  // настроение остаётся тем же, и рамка не мигает между репликами.
+  const [mood, setMood] = useState(null)
+  useDataChannel('mood', (msg) => {
+    try {
+      const data = JSON.parse(new TextDecoder().decode(msg.payload))
+      const cls = MOOD_CLASS[data?.mood]
+      const level = Number(data?.intensity)
+      if (cls && level >= 1 && level <= 3) setMood({ cls, level })
     } catch {
       /* ignore malformed payloads */
     }
@@ -362,7 +387,11 @@ function CallStage({ onFinish, t, ttl }) {
   }
 
   return (
-    <div className="t-voice__card">
+    <div
+      className={
+        't-voice__card' + (mood ? ` ${mood.cls} is-mood-${mood.level}` : '')
+      }
+    >
       {left !== null && (
         <span className={'t-voice__timer' + (left <= 30 ? ' is-low' : '')}>{fmtClock(left)}</span>
       )}
