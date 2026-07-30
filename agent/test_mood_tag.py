@@ -109,4 +109,37 @@ assert s.mood == ""
 s = _MoodStripper(TUTOR_MOODS["bro"])
 assert s.feed("[note] смотри сюда") == "[note] смотри сюда"
 
+# --- тег без префикса «mood:» ------------------------------------------------
+# Модель на живых прогонах писала и так; раньше это уезжало в озвучку.
+assert parse_mood_tag("[anger:2]Ты чё тупишь") == ("anger", 2, "Ты чё тупишь")
+assert parse_mood_tag("[JOY:1]Хорооош") == ("joy", 1, "Хорооош")
+assert parse_mood_tag("[mood:anger:2]Ты чё") == ("anger", 2, "Ты чё")
+
+# Незнакомое имя без префикса — НЕ тег, речь не трогаем.
+assert parse_mood_tag("[note:2] смотри") == ("", 0, "[note:2] смотри")
+assert parse_mood_tag("[1:2] раз два") == ("", 0, "[1:2] раз два")
+
+s = _MoodStripper(TUTOR_MOODS["bro"])
+assert s.feed("[anger:3]Соберись") == "Соберись"
+assert (s.mood, s.intensity) == ("anger", 3)
+
+# Разрыв между чанками для формы без префикса тоже собирается.
+s = _MoodStripper(TUTOR_MOODS["bro"])
+assert s.feed("[ang") == ""
+assert s.feed("er:1]давай") == "давай"
+assert (s.mood, s.intensity) == ("anger", 1)
+
+# Битая форма без префикса снимается молча.
+s = _MoodStripper(TUTOR_MOODS["bro"])
+out = s.feed("[anger:9]Ты чё тупишь совсем уже, соберись давай быстро")
+assert not out.startswith("[anger"), out
+assert s.mood == ""
+
+# _could_be_tag знает обе формы.
+assert _could_be_tag("[a") is True
+assert _could_be_tag("[anger:") is True
+assert _could_be_tag("[mood:") is True
+assert _could_be_tag("[note") is False
+assert _could_be_tag("Yo") is False
+
 print("mood-парсер: все ассерты прошли")
