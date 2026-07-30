@@ -2683,8 +2683,9 @@ TUTOR_TTS_PROVIDER = {
     "gentle": "gemini",  # Луна    — лучшее качество на en/ru, один голос на оба
     "hype": "soniox",    # Спарк   — один тембр на всех 60+ языках, включая kk
 }
-# Azure в таблице нет НАМЕРЕННО: аккаунта Azure Speech у проекта нет, ключи
-# AZURE_SPEECH_* не заданы ни на одном деплое. Раньше "azure" стоял дефолтом
+# Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
+# (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
+# переходы en<->ru у Azure тестеры оценили плохо. Раньше "azure" стоял дефолтом
 # CASCADE_TTS — то есть при незаданной переменной агент шёл в провайдера,
 # которого не существует. Код azure-пути рабочий и оставлен, но попасть в него
 # теперь можно только явно: TTS_PROVIDER_<PERSONA>=azure или CASCADE_TTS=azure.
@@ -2761,12 +2762,114 @@ def _cascade_tts(profile: LearnerProfile):
         return builders[TTS_FALLBACK_PROVIDER](profile)
 
 
+# ── STT: провайдер выбирается ПО ТЬЮТОРУ, как и TTS ──────────────────────────
+# soniox — дефолт: авто-детект en/ru/kk с переключением языка ВНУТРИ фразы.
+#   Единственный вариант для Спарка: по-казахски говорят только с ним.
+# azure  — континуальный LID по списку языков: язык определяется на отрезке
+#   речи, а не пословно, и список ограничен (4 языка максимум). Декстеру этого
+#   достаточно — казахского в его сессиях не бывает (kz у него это язык
+#   ИНТЕРФЕЙСА, см. комментарий к TUTOR_TTS_PROVIDER), а ru+en он и так должен
+#   различать: «ученик ответил по-русски» — триггер персоны, и транскрипт
+#   обязан донести русский текст русским, а не выдумать английский.
+STT_PROVIDERS = ("soniox", "azure")
+TUTOR_STT_PROVIDER = {
+    "bro": "azure",  # Декстер
+}
+DEFAULT_STT_PROVIDER = "soniox"
+# Фолбэк тот же и по той же причине, что у TTS: SONIOX_API_KEY нужен всегда.
+STT_FALLBACK_PROVIDER = "soniox"
+# Кандидаты для Azure LID. Держать список коротким: каждый лишний язык
+# ухудшает детект, а kk сюда добавлять нельзя — казахские сессии на Soniox.
+AZURE_STT_LANGUAGES = ["en-US", "ru-RU"]
+
+
+def _stt_provider_for(profile: LearnerProfile) -> str:
+    """Провайдер STT этой сессии: env персоны → таблица → дефолт."""
+    tutor = (profile.tutor or "").strip().lower()
+    if tutor:
+        # Сменить распознавание одному тьютору без редеплоя: STT_PROVIDER_BRO=soniox.
+        env = (os.getenv(f"STT_PROVIDER_{tutor.upper()}") or "").strip().lower()
+        if env:
+            return env
+        if tutor in TUTOR_STT_PROVIDER:
+            return TUTOR_STT_PROVIDER[tutor]
+    return (os.getenv("CASCADE_STT") or DEFAULT_STT_PROVIDER).strip().lower()
+
+
+def _cascade_stt_soniox(profile: LearnerProfile):
+    """Soniox auto-detects across en/ru/kz with code-switching. (soniox.STT takes
+    no `model` kwarg — config via params.) Pass the key explicitly."""
+    if soniox is None:
+        raise RuntimeError("VOICE_STACK=cascade needs livekit-plugins-soniox")
+    key = os.getenv("SONIOX_API_KEY")
+    if not key:
+        raise RuntimeError("SONIOX_API_KEY not set")
+    logger.info("Cascade STT: Soniox (auto en/ru/kk), tutor=%s", profile.tutor or "<none>")
+    return soniox.STT(api_key=key)
+
+
+def _cascade_stt_azure(profile: LearnerProfile):
+    """Azure Speech STT. `language` списком включает континуальный LID."""
+    if azure is None:
+        raise RuntimeError("VOICE_STACK=cascade needs livekit-plugins-azure")
+    key = os.getenv("AZURE_SPEECH_KEY")
+    region = os.getenv("AZURE_SPEECH_REGION")
+    if not key or not region:
+        raise RuntimeError("AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set")
+    env_langs = (os.getenv("AZURE_STT_LANGUAGES") or "").strip()
+    langs = [x.strip() for x in env_langs.split(",") if x.strip()] or AZURE_STT_LANGUAGES
+    kwargs: dict[str, Any] = {
+        "speech_key": key,
+        "speech_region": region,
+        "language": langs,
+    }
+    # Azure по умолчанию маскирует мат: "fuck" приезжает как "f***". Декстеру
+    # это ломает и разбор ошибок, и саму персону — мат в речи ученика для него
+    # нормальный ввод, а не то, что надо прятать. Просим сырой транскрипт.
+    # Пакет тянется зависимостью livekit-plugins-azure; если его вдруг нет —
+    # работаем с дефолтной маскировкой, а не падаем.
+    try:
+        import azure.cognitiveservices.speech as speechsdk
+
+        kwargs["profanity"] = speechsdk.enums.ProfanityOption.Raw
+    except Exception:  # pragma: no cover
+        logger.warning("azure-cognitiveservices-speech missing — STT profanity stays masked")
+    logger.info(
+        "Cascade STT: Azure (%s), tutor=%s", "/".join(langs), profile.tutor or "<none>"
+    )
+    return azure.STT(**kwargs)
+
+
+def _cascade_stt(profile: LearnerProfile):
+    """STT одной сессии. Тот же контракт, что у _cascade_tts: провайдер не
+    настроен на этом деплое → предупреждение и откат на Soniox."""
+    which = _stt_provider_for(profile)
+    if which not in STT_PROVIDERS:
+        raise RuntimeError(
+            f"STT provider {which!r} not recognised (expected one of {', '.join(STT_PROVIDERS)})"
+        )
+    builders = {
+        "soniox": _cascade_stt_soniox,
+        "azure": _cascade_stt_azure,
+    }
+    try:
+        return builders[which](profile)
+    except RuntimeError as e:
+        if which == STT_FALLBACK_PROVIDER:
+            raise
+        logger.warning(
+            "STT %s unavailable (tutor=%s lang=%s): %s — falling back to %s",
+            which, profile.tutor or "<none>", profile.lang, e, STT_FALLBACK_PROVIDER,
+        )
+        return builders[STT_FALLBACK_PROVIDER](profile)
+
+
 def build_cascade_session(
     profile: LearnerProfile,
     persona_temperature: float,
     api_url: str,
 ) -> AgentSession:
-    """Full cascade: Soniox STT → (bundled Silero VAD endpointer) → lib/llm brain
+    """Full cascade: Soniox/Azure STT → (bundled Silero VAD endpointer) → lib/llm brain
     → ElevenLabs/Soniox TTS. The agent's `instructions` (persona/system prompt,
     built in Python) are injected by AgentSession as the LLM system message; the
     brain shim forwards them to the same router as the text chat (Sonnet/Gemini)."""
@@ -2780,12 +2883,10 @@ def build_cascade_session(
             f"VOICE_STACK=cascade missing plugins: {', '.join(missing)} "
             "(pip install -r requirements.txt)"
         )
-    logger.info("Session stack: CASCADE (Soniox STT / bundled Silero VAD / lib/llm brain / %s TTS)",
-                _tts_provider_for(profile))
+    logger.info("Session stack: CASCADE (%s STT / bundled Silero VAD / lib/llm brain / %s TTS)",
+                _stt_provider_for(profile), _tts_provider_for(profile))
 
-    # Soniox auto-detects across en/ru/kz with code-switching. (soniox.STT takes
-    # no `model` kwarg — config via params.) Pass the key explicitly.
-    stt = soniox.STT(api_key=os.getenv("SONIOX_API_KEY"))
+    stt = _cascade_stt(profile)
     # Brain: OpenAI-compat shim over lib/llm. The plugin appends /chat/completions
     # to base_url → hits app/api/voice/brain/chat/completions/route.ts, and sends
     # api_key as `Authorization: Bearer`. Раньше тут стоял "jts-voice", а роут
