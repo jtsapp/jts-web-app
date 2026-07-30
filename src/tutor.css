@@ -1118,13 +1118,13 @@
    долях и масштабируется сама. */
 @media (max-width: 907px) {
   .t-voice__card.is-mood-1 {
-    --mood-blur: max(24px, calc(24.2vw - 61px));
+    --mood-blur: max(16px, calc(24.2vw - 61px));
   }
   .t-voice__card.is-mood-2 {
-    --mood-blur: max(44px, calc(45.4vw - 114px));
+    --mood-blur: max(30px, calc(45.4vw - 114px));
   }
   .t-voice__card.is-mood-3 {
-    --mood-blur: max(68px, calc(69.6vw - 175px));
+    --mood-blur: max(46px, calc(69.6vw - 175px));
   }
 }
 
