@@ -858,6 +858,131 @@
   gap: 28px;
   padding: 48px 0;
 }
+/* ── Эмоции тьютора: свечение по внутренним границам карточки ──────────────
+   box-shadow ставится на САМУ карточку, а не на ::after. Фон и тень элемента
+   красятся ПОД всеми его детьми, поэтому свечение не замажет орб; у ::after
+   порядок обратный и пришлось бы городить z-index всем детям.
+
+   Цвета взяты глубже, чем нужный итог: на белом фоне при альфе 0.16-0.40 цвет
+   вымывается в пастель, и системные яркие оттенки (жёлтый особенно) просто
+   исчезают. Плюс они подобраны в одной хроме с брендовым #9047ff — иначе
+   жёлтый читается как warning-плашка, а зелёный как «успех». */
+.t-voice__card {
+  --mood-rgb: 0 0 0;
+  --mood-alpha: 0;
+  --mood-blur: 0px;
+  transition: box-shadow 600ms ease;
+}
+.t-voice__card.is-mood-anger {
+  --mood-rgb: 224 27 60;
+} /* глубокий кармин с синим подтоном */
+.t-voice__card.is-mood-disgust {
+  --mood-rgb: 109 155 31;
+} /* болотно-оливковый, не «зелёный успеха» */
+.t-voice__card.is-mood-joy {
+  --mood-rgb: 255 196 0;
+} /* золото — выживает на белом */
+.t-voice__card.is-mood-sadness {
+  --mood-rgb: 31 75 184;
+} /* глубокий индиго, не «инфо-синий» */
+.t-voice__card.is-mood-gloat {
+  --mood-rgb: 255 106 0;
+} /* жжёный апельсин — разводит с жёлтым */
+
+/* Сила = насколько близко свечение подходит к орбу. От края карточки до края
+   орба по вертикали ~150px (min-height 520 минус орб 220, пополам). Максимум
+   альфы 0.40, а не выше: на белом глубокий кармин начинает спорить с орбом за
+   внимание, а орб здесь главный. */
+.t-voice__card.is-mood-1 {
+  --mood-blur: 56px;
+  --mood-alpha: 0.16;
+}
+.t-voice__card.is-mood-2 {
+  --mood-blur: 104px;
+  --mood-alpha: 0.26;
+}
+.t-voice__card.is-mood-3 {
+  --mood-blur: 168px;
+  --mood-alpha: 0.4;
+}
+
+/* Повадка эмоции — не украшение, а второй канал информации. Пять эмоций,
+   различимых только оттенком, боком зрения сливаются (ученик смотрит на орб и
+   слушает), а красный с зелёным — самая частая пара путаницы при дальтонизме.
+   Поэтому у каждой эмоции своя геометрия: она читается и без различения цвета.
+
+   Повадка СТАРШЕ шкалы силы: у отвращения зазор до орба не закрывается ни на
+   какой силе, у грусти верх остаётся пустым — это их смысл, а не недоработка. */
+
+/* Злость жмёт со всех сторон: тугая кромка + частый мелкий пульс.
+
+   У всех трёх анимаций ниже НЕТ кадров 0%/100% — и это намеренно: когда кадр
+   не объявлен, браузер берёт значение из вычисленного стиля самого элемента
+   (implicit keyframes, CSS Animations Level 1). Так базовое правило остаётся
+   единственным местом, где записана геометрия эмоции, и правка не может
+   разъехаться с копией внутри keyframes. */
+.t-voice__card.is-mood-anger {
+  box-shadow: inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
+  animation: t-mood-press 1.6s ease-in-out infinite;
+}
+@keyframes t-mood-press {
+  50% {
+    box-shadow: inset 0 0 calc(var(--mood-blur) * 0.78)
+      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.25));
+  }
+}
+
+/* Отвращение отшатывается: свечение жмётся к внешнему краю и держит зазор до
+   орба. Отрицательный spread поджимает тень к границе. */
+.t-voice__card.is-mood-disgust {
+  box-shadow: inset 0 0 calc(var(--mood-blur) * 0.6) calc(var(--mood-blur) * -0.28)
+    rgb(var(--mood-rgb) / var(--mood-alpha));
+}
+
+/* Радость: широко, ровно, мягко, медленный вдох-выдох. */
+.t-voice__card.is-mood-joy {
+  box-shadow: inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
+  animation: t-mood-breathe 4.2s ease-in-out infinite;
+}
+@keyframes t-mood-breathe {
+  50% {
+    box-shadow: inset 0 0 calc(var(--mood-blur) * 1.15)
+      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.8));
+  }
+}
+
+/* Грусть оседает книзу: снизу до гало орба, сверху почти пусто. Пульса нет. */
+.t-voice__card.is-mood-sadness {
+  box-shadow:
+    inset 0 calc(var(--mood-blur) * -0.5) var(--mood-blur)
+      calc(var(--mood-blur) * -0.2) rgb(var(--mood-rgb) / var(--mood-alpha)),
+    inset 0 calc(var(--mood-blur) * 0.3) calc(var(--mood-blur) * 0.5)
+      calc(var(--mood-blur) * -0.35)
+      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.35));
+}
+
+/* Злорадство ухмыляется вбок: справа сильно, слева заметно слабее. Сторона
+   выбрана по направлению чтения, а не «на выбор реализации». */
+.t-voice__card.is-mood-gloat {
+  box-shadow:
+    inset calc(var(--mood-blur) * -0.45) 0 var(--mood-blur)
+      calc(var(--mood-blur) * -0.15) rgb(var(--mood-rgb) / var(--mood-alpha)),
+    inset calc(var(--mood-blur) * 0.3) 0 calc(var(--mood-blur) * 0.6)
+      calc(var(--mood-blur) * -0.3)
+      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.4));
+  animation: t-mood-drift 5.5s ease-in-out infinite;
+}
+@keyframes t-mood-drift {
+  50% {
+    box-shadow:
+      inset calc(var(--mood-blur) * -0.55) 0 calc(var(--mood-blur) * 1.1)
+        calc(var(--mood-blur) * -0.1)
+        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.15)),
+      inset calc(var(--mood-blur) * 0.2) 0 calc(var(--mood-blur) * 0.6)
+        calc(var(--mood-blur) * -0.34)
+        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.3));
+  }
+}
 /* Scenario verdict card (report_task_complete → topic "lesson").
    Порядок чтения: знак-медальон → вердикт → разбор → что улучшить → «Готово».
    Итог и разбор центрированы, советы — влево: их читают построчно. */
@@ -1013,6 +1138,16 @@
   .t-voice__orb,
   .t-voice__orb.is-live {
     animation: none;
+  }
+  /* Пульс и дрейф эмоции гаснут, оттенок и охват остаются: информация в этом
+     режиме не теряется, уходит только движение. */
+  .t-voice__card.is-mood-anger,
+  .t-voice__card.is-mood-joy,
+  .t-voice__card.is-mood-gloat {
+    animation: none;
+  }
+  .t-voice__card {
+    transition: none;
   }
 }
 /* Мелкий таймер остатка сессии — правый верхний угол карточки звонка */
