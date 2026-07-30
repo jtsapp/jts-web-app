@@ -4,6 +4,7 @@ import { IELTS_SPEAKING_TASK } from '../data/ielts-tasks.js'
 import { blobToWav16kMono, isMediaRecordingSupported } from '../lib/ielts-audio.js'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { MicIcon, SquareIcon, LoaderIcon } from '../components/ieltsIcons.jsx'
+import { useI18n } from '../i18n.jsx'
 
 // Records mic audio and hands back a 16 kHz mono WAV blob (the format Azure
 // Pronunciation Assessment takes).
@@ -110,6 +111,9 @@ export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, o
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
   const [saved, setSaved] = useState(null)
+  // Язык разбора = язык приложения (раньше был жёстко 'ru').
+  const { lang } = useI18n()
+  const uiLang = lang === 'kk' ? 'kk' : lang === 'en' ? 'en' : 'ru'
 
   // Ticks the prep/record countdown once per second while either phase is
   // active. Stops itself at zero; the boundary effect below handles the
@@ -178,7 +182,7 @@ export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, o
         const form = new FormData()
         form.append('audio', wav, 'part2.wav')
         form.append('answers', JSON.stringify(answers))
-        form.append('uiLang', 'ru')
+        form.append('uiLang', uiLang)
         form.append('deviceId', getDeviceId())
         const res = await fetch('/api/ielts/assess-speaking', {
           method: 'POST',
@@ -194,7 +198,7 @@ export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, o
       }
       setPhase('result')
     },
-    [p1Transcripts, task, token],
+    [p1Transcripts, task, token, uiLang],
   )
 
   // --- Part 2: prep → record → submit ---------------------------------------

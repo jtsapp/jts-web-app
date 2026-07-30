@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorStatus from '../tutor/TutorStatus.jsx'
 import { MicIcon, VolumeIcon, CloseCircleIcon } from '../tutor/TutorIcons.jsx'
-import { useT } from '../i18n/LanguageContext.jsx'
+import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { PLACEMENT_TASK } from '../data/speaking-test-tasks.js'
 import {
   blobToWav16kMono,
@@ -111,10 +111,17 @@ export default function SpeakingTestPage({
   onComplete,
 }) {
   const t = useT()
+  const { lang } = useLang()
+  // Язык фидбека = язык интерфейса: раньше здесь стояло 'ru' числом, и казахский
+  // ученик получал разбор уровня по-русски. Роут ждёт ISO 'kk', в приложении 'kz'.
+  const uiLang = lang === 'kz' ? 'kk' : lang === 'en' ? 'en' : 'ru'
   const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
   const [supported] = useState(() => isMediaRecordingSupported())
   const rec = useWavRecorder()
   const [phase, setPhase] = useState('ready') // ready | recording | processing | error
+  // Этап разбора: анализ идёт 10–30 с, и один статичный заголовок читался как
+  // «зависло». Показываем, что именно сейчас происходит.
+  const [stage, setStage] = useState('stt') // stt | grade | almost
   const [elapsed, setElapsed] = useState(0)
   const [errKey, setErrKey] = useState(null)
 
@@ -126,6 +133,14 @@ export default function SpeakingTestPage({
   }, [phase])
 
   useEffect(() => () => cancelSpeech(), [])
+
+  // Sonnet думает дольше расшифровки, поэтому на оценке через 8 с переключаемся
+  // на «уже почти» — иначе экран стоит на одном тексте до самого ответа.
+  useEffect(() => {
+    if (phase !== 'processing' || stage !== 'grade') return
+    const id = setTimeout(() => setStage('almost'), 8000)
+    return () => clearTimeout(id)
+  }, [phase, stage])
 
   const recStart = rec.start
   const recStop = rec.stop
@@ -145,6 +160,7 @@ export default function SpeakingTestPage({
 
   const finish = useCallback(async () => {
     const wav = await recStop()
+    setStage('stt')
     setPhase('processing')
     if (!wav) {
       setErrKey('placeTest.errRecognize')
@@ -167,8 +183,10 @@ export default function SpeakingTestPage({
       setPhase('error')
       return
     }
-    // 2) Grade → CEFR level.
+    // 2) Grade → CEFR level + честное обоснование.
+    setStage('grade')
     let level
+    let assessment
     try {
       const res = await fetch('/api/speaking-test/assess', {
         method: 'POST',
@@ -176,13 +194,14 @@ export default function SpeakingTestPage({
         body: JSON.stringify({
           mode: 'placement',
           transcript,
-          uiLang: 'ru',
+          uiLang,
           deviceId: getDeviceId(),
         }),
       })
       if (!res.ok) throw new Error(String(res.status))
       const data = await res.json()
-      level = data.assessment?.level
+      assessment = data.assessment
+      level = assessment?.level
     } catch {
       setErrKey('placeTest.errGrade')
       setPhase('error')
@@ -195,8 +214,8 @@ export default function SpeakingTestPage({
     }
     // 3) Persist the placement level (best-effort) and hand off to the result.
     await savePlacementLevel(token, level)
-    onComplete?.(level)
-  }, [recStop, token, onComplete])
+    onComplete?.(level, assessment)
+  }, [recStop, token, uiLang, onComplete])
 
   const shell = (children) => (
     <TutorShell
@@ -212,8 +231,27 @@ export default function SpeakingTestPage({
   )
 
   if (phase === 'processing') {
+    // Три шага с прогресс-полосой: ученик видит, на чём стоим и сколько осталось.
+    const stages = ['stt', 'grade', 'almost']
+    const idx = stages.indexOf(stage)
+    const headingKey =
+      stage === 'stt'
+        ? 'placeTest.stageStt'
+        : stage === 'grade'
+          ? 'placeTest.stageGrade'
+          : 'placeTest.stageAlmost'
     return shell(
-      <TutorStatus name={name} avatar={avatar} heading={t('placeTest.processing')} flow dots pulse />,
+      <TutorStatus name={name} avatar={avatar} heading={t(headingKey)} flow dots pulse>
+        <div className="t-placetest__steps" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={idx + 1}>
+          {stages.map((s, i) => (
+            <span
+              key={s}
+              className={'t-placetest__step' + (i <= idx ? ' is-done' : '')}
+            />
+          ))}
+        </div>
+        <p className="t-placetest__hint">{t('placeTest.stageHint')}</p>
+      </TutorStatus>,
     )
   }
 

@@ -68,8 +68,8 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         const forLevel = (Array.isArray(all) ? all : [])
           .filter((m) => String(m.level || '').toUpperCase() === want)
           .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-        const module = forLevel.find((m) => m.indexUrl) || forLevel[0] || null
-        setState({ loading: false, error: null, module })
+        const lessonModule = forLevel.find((m) => m.indexUrl) || forLevel[0] || null
+        setState({ loading: false, error: null, module: lessonModule })
       } catch (e) {
         if (!alive) return
         setState({ loading: false, error: e.message || 'Не удалось загрузить уроки', module: null })

@@ -35,20 +35,23 @@ export const DICT = {
     'choose.title': 'Теперь необходимо выбрать себе тьютора',
     'choose.langUi': 'Язык интерфейса',
     'choose.langExplain': 'Язык объяснения',
-    'tutor.luna.trait1': 'Нежная',
+    'tutor.luna.trait1': 'Русскоязычная',
     'tutor.luna.trait2': 'Чуткая',
     'tutor.luna.trait3': 'Спокойная',
     'tutor.luna.desc':
-      'Нежная мечтательница. Витает в облаках, видит красоту во всём, вдохновляет фантазировать. Мягкая, чуткая, поддерживает любую безумную идею.',
+      'Нежная мечтательница. Витает в облаках, видит красоту во всём, вдохновляет фантазировать. Мягкая, чуткая, поддерживает любую безумную идею. Общается и объясняет на русском, а английский даёт примерами.',
     'tutor.luna.listen': 'Послушать голос Луны',
     'tutor.luna.choose': 'Выбрать Луну',
-    'tutor.dexter.trait1': 'Добрый',
-    'tutor.dexter.trait2': 'Умный',
-    'tutor.dexter.trait3': 'Тёплый',
+    'tutor.dexter.trait1': 'Русскоязычный',
+    'tutor.dexter.trait2': 'Вайбовый',
+    'tutor.dexter.trait3': 'Свой парень',
     'tutor.dexter.desc':
-      'Тёплый и любопытный гик-друг. Обожает учиться и делиться знаниями, но без занудства. Не строгий учитель, а заряжающий энтузиазмом товарищ, который превращает учёбу в приключение.',
+      'Свой парень из Америки. Говорит как в жизни, а не как в учебнике: сленг, шутки, крепкое словцо. Не поправляет свысока — просто по ходу подсказывает, как сказать по-человечески. С ним не стыдно ошибаться. Объясняет на русском, английский показывает на живых примерах.',
     'tutor.dexter.listen': 'Послушать голос Декстера',
     'tutor.dexter.choose': 'Выбрать Декстера',
+    // Метка у имени тьютора, который матерится (tutors.js → adult: true).
+    'tutor.adult': '18+',
+    'tutor.adultHint': 'Разговор со сленгом и матом — для взрослых',
     'tutor.spark.trait1': 'Казахскоязычный',
     'tutor.spark.trait2': 'Энергичный',
     'tutor.spark.trait3': 'Свой',
@@ -80,6 +83,12 @@ export const DICT = {
     'placeTest.recordingHeading': 'Идёт запись — говори',
     'placeTest.stop': 'Закончить и оценить',
     'placeTest.processing': 'Слушаю и определяю твой уровень…',
+    // Этапы разбора ответа: анализ занимает 10–30 с, и без них экран выглядел
+    // зависшим — теперь видно, что именно сейчас происходит.
+    'placeTest.stageStt': 'Расшифровываю твою запись…',
+    'placeTest.stageGrade': 'Разбираю грамматику, словарь и беглость…',
+    'placeTest.stageAlmost': 'Уже почти — собираю обоснование уровня…',
+    'placeTest.stageHint': 'Обычно это занимает 10–30 секунд',
     'placeTest.retry': 'Записать заново',
     'placeTest.cancel': 'Не сейчас',
     'placeTest.errMic': 'Микрофон недоступен. Разреши доступ в браузере и попробуй снова.',
@@ -88,6 +97,7 @@ export const DICT = {
     'placeTest.errUnsupported': 'Запись с микрофона не поддерживается в этом браузере.',
 
     // Голосовой чат
+    'voice.end': 'Завершить разговор',
     'voice.micOn': 'Выключить микрофон',
     'voice.micOff': 'Включить микрофон',
     'voice.permAllow': 'Разрешить, когда я на сайте',
@@ -102,13 +112,16 @@ export const DICT = {
     'voice.unavailable': 'Голосовой режим временно недоступен. Попробуйте позже.',
     'voice.expired': 'Сессия истекла. Войдите заново, чтобы продолжить разговор.',
     'voice.limitDaily':
-      'На сегодня лимит разговора исчерпан (10 минут в день на бесплатном тарифе). Возвращайся завтра!',
+      'На сегодня лимит разговора исчерпан (20 минут в день на бесплатном тарифе). Возвращайся завтра!',
     'voice.limitMonthly':
       'Месячный лимит разговора исчерпан (300 минут). Лимит обновится в начале следующего месяца.',
 
     // Результат уровня
     'result.heading': 'Отлично!\nТвой уровень разговорного\nанглийского',
     'result.retry': 'Попробовать пройти тест снова',
+    'result.why': 'Почему такой уровень',
+    'result.strengths': 'Сильные стороны',
+    'result.improvements': 'Что подтянуть',
 
     // Интересы
     'interests.heading': '{name} хочет узнать чем\nты увлекаешься',
@@ -125,16 +138,18 @@ export const DICT = {
     'interests.topic.fashion': '👔 Мода и стиль',
 
     // Профессия
-    'prof.heading': '{name} хочет узнать кем ты\nработаешь, или на кого учишься',
-    'prof.placeholder': 'Рассказать тут ...',
+    // Спрашиваем социальный статус, а не профессию: тьютору важнее роль ученика
+    // (школьник/студент/работаю), чем отрасль — от неё зависят темы и регистр.
+    'prof.heading': '{name} хочет узнать,\nчем ты сейчас занимаешься',
+    'prof.placeholder': 'Рассказать о себе тут ...',
     'prof.or': 'Или выберите',
     'prof.skip': 'Пропустить вопрос',
-    'prof.opt.it': 'IT/Разработка',
-    'prof.opt.management': 'Менеджмент',
-    'prof.opt.marketing': 'Маркетинг',
-    'prof.opt.logist': 'Логист',
-    'prof.opt.design': 'Дизайн',
-    'prof.opt.actor': 'Актёр',
+    'prof.opt.pupil': 'Школьник',
+    'prof.opt.student': 'Студент',
+    'prof.opt.working': 'Работаю',
+    'prof.opt.business': 'Свой бизнес',
+    'prof.opt.jobsearch': 'Ищу работу',
+    'prof.opt.retired': 'На пенсии',
 
     // Анализ
     'analysis.heading': '{name} заканчивает\nс вашим анализом',
@@ -174,12 +189,22 @@ export const DICT = {
     'manage.change': 'Поменять тьютора',
     'manage.history': 'История разговоров',
     'manage.historyEmpty': 'Здесь появится история ваших разговоров с тьютором',
+    'hist.free': 'Свободный разговор',
+    'hist.freeSub': 'Свободная беседа',
+    'hist.scenario': 'Сценарий {name}',
+    'hist.placement': 'Определение уровня',
+    'hist.debate': 'Дебаты',
+    'hist.passed': 'Успешно пройдено',
+    'hist.failed': 'Не пройдено',
 
     // Аналитика ошибок
     'erran.title': 'Аналитика ошибок в разговоре',
     'erran.by': 'Аналитику провёл ваш тьютор:',
+    'erran.empty': 'Здесь появится разбор ошибок после разговора с тьютором',
     'erran.toPlan': 'Вернуться к плану уроков',
     'erran.retry': 'Попробовать ещё раз',
+    'chat.empty': 'Здесь появится расшифровка разговора с тьютором',
+    'pract.title': 'Результат практики',
 
     // Сценарии
     'scen.title': 'Сценарии',
@@ -212,8 +237,6 @@ export const DICT = {
     // План уроков
     'plan.title': 'План уроков',
     'plan.progress': '{done} из {total} пройдено',
-    'plan.desc':
-      'Разберём, как строится форма am/is/are + глагол с -ing, когда её использовать, а когда нет',
 
     // Результат практики
     'pract.headingFail': 'Нужно улучшить\nрезультат',
@@ -253,20 +276,22 @@ export const DICT = {
     'choose.title': 'Енді өзіңе тьютор таңдау керек',
     'choose.langUi': 'Интерфейс тілі',
     'choose.langExplain': 'Түсіндіру тілі',
-    'tutor.luna.trait1': 'Нәзік',
+    'tutor.luna.trait1': 'Орысша',
     'tutor.luna.trait2': 'Сезімтал',
     'tutor.luna.trait3': 'Байсалды',
     'tutor.luna.desc':
-      'Нәзік армандаушы. Бұлтта қалықтайды, бәрінен сұлулық көреді, қиялдауға шабыттандырады. Жұмсақ, сезімтал, кез келген батыл идеяны қолдайды.',
+      'Нәзік армандаушы. Бұлтта қалықтайды, бәрінен сұлулық көреді, қиялдауға шабыттандырады. Жұмсақ, сезімтал, кез келген батыл идеяны қолдайды. Орысша сөйлесіп, орысша түсіндіреді, ағылшынды мысалдармен береді.',
     'tutor.luna.listen': 'Луна дауысын тыңдау',
     'tutor.luna.choose': 'Луна таңдау',
-    'tutor.dexter.trait1': 'Мейірімді',
-    'tutor.dexter.trait2': 'Ақылды',
-    'tutor.dexter.trait3': 'Жылы',
+    'tutor.dexter.trait1': 'Орысша',
+    'tutor.dexter.trait2': 'Вайбты',
+    'tutor.dexter.trait3': 'Өз жігіті',
     'tutor.dexter.desc':
-      'Жылы әрі қызығушыл гик-дос. Оқуды және білім бөлісуді жақсы көреді, бірақ жалықтырмайды. Қатал ұстаз емес, оқуды шытырман оқиғаға айналдыратын жігерлі жолдас.',
+      'Америкадан келген өз жігіті. Оқулықтағыдай емес, өмірдегідей сөйлейді: сленг, әзіл, кейде қатқыл сөз. Жоғарыдан қарап түзетпейді — әңгіме үстінде «мынау былай айтылады» деп қана қояды. Онымен қателесуден ұялмайсың. Орысша түсіндіреді, ағылшынды тірі мысалдармен көрсетеді.',
     'tutor.dexter.listen': 'Декстер дауысын тыңдау',
     'tutor.dexter.choose': 'Декстер таңдау',
+    'tutor.adult': '18+',
+    'tutor.adultHint': 'Сленг пен боқтық сөзі бар әңгіме — ересектерге',
     'tutor.spark.trait1': 'Қазақша',
     'tutor.spark.trait2': 'Жігерлі',
     'tutor.spark.trait3': 'Өзіміздікі',
@@ -295,6 +320,10 @@ export const DICT = {
     'placeTest.recordingHeading': 'Жазылып жатыр — сөйле',
     'placeTest.stop': 'Аяқтап, бағалау',
     'placeTest.processing': 'Тыңдап, деңгейіңді анықтап жатырмын…',
+    'placeTest.stageStt': 'Жазбаңды мәтінге айналдырудамын…',
+    'placeTest.stageGrade': 'Грамматика, сөздік қор мен еркін сөйлеуді талдаудамын…',
+    'placeTest.stageAlmost': 'Дайын болуға аз қалды — деңгей негіздемесін жинаудамын…',
+    'placeTest.stageHint': 'Әдетте 10–30 секунд алады',
     'placeTest.retry': 'Қайта жазу',
     'placeTest.cancel': 'Қазір емес',
     'placeTest.errMic': 'Микрофон қолжетімсіз. Браузерде рұқсат беріп, қайта көр.',
@@ -302,6 +331,7 @@ export const DICT = {
     'placeTest.errGrade': 'Деңгейді анықтау мүмкін болмады. Қайта көр.',
     'placeTest.errUnsupported': 'Бұл браузерде микрофоннан жазу қолдау таппайды.',
 
+    'voice.end': 'Әңгімені аяқтау',
     'voice.micOn': 'Микрофонды өшіру',
     'voice.micOff': 'Микрофонды қосу',
     'voice.permAllow': 'Сайтта болғанда рұқсат ету',
@@ -316,12 +346,15 @@ export const DICT = {
     'voice.unavailable': 'Дауыстық режим уақытша қолжетімсіз. Кейінірек көріңіз.',
     'voice.expired': 'Сессия аяқталды. Әңгімені жалғастыру үшін қайта кіріңіз.',
     'voice.limitDaily':
-      'Бүгінгі әңгіме лимиті бітті (тегін тарифте күніне 10 минут). Ертең қайта келіңіз!',
+      'Бүгінгі әңгіме лимиті бітті (тегін тарифте күніне 20 минут). Ертең қайта келіңіз!',
     'voice.limitMonthly':
       'Айлық лимит бітті (300 минут). Лимит келесі айдың басында жаңарады.',
 
     'result.heading': 'Тамаша!\nСенің ауызша ағылшын\nдеңгейің',
     'result.retry': 'Тестті қайта тапсырып көру',
+    'result.why': 'Неге осы деңгей',
+    'result.strengths': 'Күшті жақтары',
+    'result.improvements': 'Нені жақсарту керек',
 
     'interests.heading': '{name} немен айналысатыныңды\nбілгісі келеді',
     'interests.sub': 'Өзіңе қызық тақырыптарды таңда',
@@ -336,16 +369,16 @@ export const DICT = {
     'interests.topic.movies': '🎥 Фильмдер мен сериалдар',
     'interests.topic.fashion': '👔 Сән және стиль',
 
-    'prof.heading': '{name} кім болып жұмыс істейтініңді\nнемесе оқитыныңды білгісі келеді',
+    'prof.heading': '{name} қазір немен\nайналысатыныңды білгісі келеді',
     'prof.placeholder': 'Осы жерде айт ...',
     'prof.or': 'Немесе таңда',
     'prof.skip': 'Сұрақты өткізіп жіберу',
-    'prof.opt.it': 'IT/Әзірлеу',
-    'prof.opt.management': 'Менеджмент',
-    'prof.opt.marketing': 'Маркетинг',
-    'prof.opt.logist': 'Логист',
-    'prof.opt.design': 'Дизайн',
-    'prof.opt.actor': 'Актёр',
+    'prof.opt.pupil': 'Оқушымын',
+    'prof.opt.student': 'Студентпін',
+    'prof.opt.working': 'Жұмыс істеймін',
+    'prof.opt.business': 'Өз ісім бар',
+    'prof.opt.jobsearch': 'Жұмыс іздеп жүрмін',
+    'prof.opt.retired': 'Зейнеткермін',
 
     'analysis.heading': '{name} талдауыңды\nаяқтап жатыр',
     'analysis.step.tutor': 'Тьюторды сақтаймыз',
@@ -382,11 +415,21 @@ export const DICT = {
     'manage.change': 'Тьюторды ауыстыру',
     'manage.history': 'Әңгімелер тарихы',
     'manage.historyEmpty': 'Мұнда тьютормен әңгімелеріңіздің тарихы пайда болады',
+    'hist.free': 'Еркін әңгіме',
+    'hist.freeSub': 'Еркін әңгіме',
+    'hist.scenario': 'Сценарий {name}',
+    'hist.placement': 'Деңгейді анықтау',
+    'hist.debate': 'Пікірталас',
+    'hist.passed': 'Сәтті өтті',
+    'hist.failed': 'Өтпеді',
 
     'erran.title': 'Әңгімедегі қателер талдауы',
     'erran.by': 'Талдауды тьюторың жасады:',
+    'erran.empty': 'Тьютормен сөйлескеннен кейін қателер талдауы осында пайда болады',
     'erran.toPlan': 'Сабақ жоспарына оралу',
     'erran.retry': 'Қайта тырысып көру',
+    'chat.empty': 'Тьютормен әңгіменің жазбасы осында пайда болады',
+    'pract.title': 'Практика нәтижесі',
 
     'scen.title': 'Сценарийлер',
     'scen.heading':
@@ -416,8 +459,6 @@ export const DICT = {
 
     'plan.title': 'Сабақ жоспары',
     'plan.progress': '{total}-тен {done} өтілді',
-    'plan.desc':
-      'am/is/are + -ing жалғаулы етістік формасының қалай құрылатынын, оны қашан қолданатынын талдаймыз',
 
     'pract.headingFail': 'Нәтижені\nжақсарту керек',
     'pract.headingPass': 'Тамаша\nнәтиже',
@@ -456,20 +497,22 @@ export const DICT = {
     'choose.title': 'Now you need to choose a tutor',
     'choose.langUi': 'Interface language',
     'choose.langExplain': 'Explanation language',
-    'tutor.luna.trait1': 'Gentle',
+    'tutor.luna.trait1': 'Russian-speaking',
     'tutor.luna.trait2': 'Sensitive',
     'tutor.luna.trait3': 'Calm',
     'tutor.luna.desc':
-      'A gentle dreamer. Has her head in the clouds, sees beauty in everything, inspires you to imagine. Soft, sensitive, supports any wild idea.',
+      'A gentle dreamer. Has her head in the clouds, sees beauty in everything, inspires you to imagine. Soft, sensitive, supports any wild idea. Talks and explains in Russian, and gives English through examples.',
     'tutor.luna.listen': "Listen to Luna's voice",
     'tutor.luna.choose': 'Choose Luna',
-    'tutor.dexter.trait1': 'Kind',
-    'tutor.dexter.trait2': 'Smart',
-    'tutor.dexter.trait3': 'Warm',
+    'tutor.dexter.trait1': 'Russian-speaking',
+    'tutor.dexter.trait2': 'Slangy',
+    'tutor.dexter.trait3': 'Your boy',
     'tutor.dexter.desc':
-      'A warm and curious geek friend. Loves learning and sharing knowledge, but without being dull. Not a strict teacher, but an enthusiastic buddy who turns study into an adventure.',
+      'Your boy from the States. Talks like people actually talk, not like a textbook: slang, jokes, the odd swear word. He won\'t correct you from above — he just drops the natural way to say it mid-conversation. Nothing is embarrassing with him. Explains in Russian, shows English through real examples.',
     'tutor.dexter.listen': "Listen to Dexter's voice",
     'tutor.dexter.choose': 'Choose Dexter',
+    'tutor.adult': '18+',
+    'tutor.adultHint': 'Slang and swearing — adults only',
     'tutor.spark.trait1': 'Kazakh-speaking',
     'tutor.spark.trait2': 'Energetic',
     'tutor.spark.trait3': 'One of us',
@@ -498,6 +541,10 @@ export const DICT = {
     'placeTest.recordingHeading': 'Recording — keep talking',
     'placeTest.stop': 'Finish & assess',
     'placeTest.processing': 'Listening and assessing your level…',
+    'placeTest.stageStt': 'Transcribing your recording…',
+    'placeTest.stageGrade': 'Analysing grammar, vocabulary and fluency…',
+    'placeTest.stageAlmost': 'Almost there — writing up why this level…',
+    'placeTest.stageHint': 'This usually takes 10–30 seconds',
     'placeTest.retry': 'Record again',
     'placeTest.cancel': 'Not now',
     'placeTest.errMic': 'Microphone unavailable. Allow access in your browser and try again.',
@@ -505,6 +552,7 @@ export const DICT = {
     'placeTest.errGrade': 'Could not assess your level. Try again.',
     'placeTest.errUnsupported': 'Mic recording is not supported in this browser.',
 
+    'voice.end': 'End the call',
     'voice.micOn': 'Turn off microphone',
     'voice.micOff': 'Turn on microphone',
     'voice.permAllow': 'Allow while on the site',
@@ -519,12 +567,15 @@ export const DICT = {
     'voice.unavailable': 'Voice mode is temporarily unavailable. Please try later.',
     'voice.expired': 'Your session has expired. Sign in again to keep talking.',
     'voice.limitDaily':
-      "You've used today's talk limit (10 minutes a day on the free plan). Come back tomorrow!",
+      "You've used today's talk limit (20 minutes a day on the free plan). Come back tomorrow!",
     'voice.limitMonthly':
       "You've reached the monthly talk limit (300 minutes). It resets at the start of next month.",
 
     'result.heading': 'Great!\nYour spoken English\nlevel',
     'result.retry': 'Try the test again',
+    'result.why': 'Why this level',
+    'result.strengths': 'Strengths',
+    'result.improvements': 'What to work on',
 
     'interests.heading': '{name} wants to know\nwhat you are into',
     'interests.sub': 'Pick topics that interest you',
@@ -539,16 +590,16 @@ export const DICT = {
     'interests.topic.movies': '🎥 Movies and series',
     'interests.topic.fashion': '👔 Fashion and style',
 
-    'prof.heading': '{name} wants to know what you\ndo or what you are studying',
+    'prof.heading': '{name} wants to know what\nyou are doing these days',
     'prof.placeholder': 'Tell it here ...',
     'prof.or': 'Or choose',
     'prof.skip': 'Skip the question',
-    'prof.opt.it': 'IT/Development',
-    'prof.opt.management': 'Management',
-    'prof.opt.marketing': 'Marketing',
-    'prof.opt.logist': 'Logistics',
-    'prof.opt.design': 'Design',
-    'prof.opt.actor': 'Actor',
+    'prof.opt.pupil': 'School student',
+    'prof.opt.student': 'University student',
+    'prof.opt.working': 'Working',
+    'prof.opt.business': 'Running my own business',
+    'prof.opt.jobsearch': 'Looking for a job',
+    'prof.opt.retired': 'Retired',
 
     'analysis.heading': '{name} is finishing\nyour analysis',
     'analysis.step.tutor': 'Saving the tutor',
@@ -585,11 +636,21 @@ export const DICT = {
     'manage.change': 'Change tutor',
     'manage.history': 'Conversation history',
     'manage.historyEmpty': 'Your conversation history with the tutor will appear here',
+    'hist.free': 'Free conversation',
+    'hist.freeSub': 'Free conversation',
+    'hist.scenario': 'Scenario: {name}',
+    'hist.placement': 'Level check',
+    'hist.debate': 'Debate',
+    'hist.passed': 'Passed',
+    'hist.failed': 'Not passed',
 
     'erran.title': 'Conversation mistakes analytics',
     'erran.by': 'The analysis was done by your tutor:',
+    'erran.empty': 'Your mistake analysis will appear here after a conversation with your tutor',
     'erran.toPlan': 'Back to lesson plan',
     'erran.retry': 'Try again',
+    'chat.empty': 'The transcript of your conversation with the tutor will appear here',
+    'pract.title': 'Practice result',
 
     'scen.title': 'Scenarios',
     'scen.heading':
@@ -619,8 +680,6 @@ export const DICT = {
 
     'plan.title': 'Lesson plan',
     'plan.progress': '{done} of {total} completed',
-    'plan.desc':
-      'We break down how the am/is/are + verb with -ing form is built, when to use it and when not',
 
     'pract.headingFail': 'You need to improve\nthe result',
     'pract.headingPass': 'Excellent\nresult',

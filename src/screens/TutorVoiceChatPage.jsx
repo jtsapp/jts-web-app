@@ -7,6 +7,7 @@ import {
   useLocalParticipant,
   useTranscriptions,
   useDataChannel,
+  useRoomContext,
 } from '@livekit/components-react'
 import { ConnectionState } from 'livekit-client'
 import '@livekit/components-styles'
@@ -246,6 +247,7 @@ function fmtClock(sec) {
 function CallStage({ onFinish, t, ttl }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
+  const room = useRoomContext()
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
   const transcriptions = useTranscriptions()
   const left = useCountdown(ttl)
@@ -317,6 +319,15 @@ function CallStage({ onFinish, t, ttl }) {
     void localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)
   }
 
+  // Явное завершение разговора. Раньше выйти можно было только кликом по орбу
+  // (ничем не подписанным) или «назад», и минуты списывались только когда комната
+  // закрывалась сама. Рвём соединение → onDisconnected у LiveKitRoom уводит на
+  // onFinish, а room_finished-вебхук биллит сессию.
+  const endCall = () => {
+    if (room) void room.disconnect()
+    else onFinish?.()
+  }
+
   if (verdict) {
     const passed = Boolean(verdict.passed)
     const tips = Array.isArray(verdict.tips) ? verdict.tips.filter(Boolean) : []
@@ -355,17 +366,18 @@ function CallStage({ onFinish, t, ttl }) {
       {left !== null && (
         <span className={'t-voice__timer' + (left <= 30 ? ' is-low' : '')}>{fmtClock(left)}</span>
       )}
-      <div
-        className={'t-voice__orb' + (live ? ' is-live' : '')}
-        onClick={onFinish}
-        role={onFinish ? 'button' : undefined}
-      />
+      {/* Орб больше не завершает звонок по клику: неподписанный клик по картинке
+          рвал разговор случайным тапом. Завершение — явной кнопкой ниже. */}
+      <div className={'t-voice__orb' + (live ? ' is-live' : '')} />
       <div className="t-voice__text">
         <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>
       </div>
       <button className="t-voice__mic" type="button" onClick={toggleMic}>
         <MicIcon size={28} />
         {micOn ? t('voice.micOn') : t('voice.micOff')}
+      </button>
+      <button className="t-voice__end" type="button" onClick={endCall}>
+        {t('voice.end')}
       </button>
     </div>
   )

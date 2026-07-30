@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
+import { UserIcon } from '../components/icons.jsx'
 import { useI18n, LANGS } from '../i18n.jsx'
 import {
   computeKingdoms,
@@ -92,7 +93,10 @@ export default function ProfilePage({
 
   const role = roleForLevel(userLevel)
   const nextRole = useMemo(() => nextRoleFor(userLevel), [userLevel])
-  const initial = (name || 'JTS').trim().charAt(0).toUpperCase()
+  // Пустое имя → силуэт вместо буквы «J» (из 'JTS'), а сам заголовок —
+  // локализованное «Без имени» вместо голого прочерка «—».
+  const trimmedName = (name || '').trim()
+  const initial = trimmedName ? trimmedName.charAt(0).toUpperCase() : null
   const phone = formatPhone(userPhone)
 
   // Персистентные настройки из localStorage.
@@ -262,7 +266,9 @@ export default function ProfilePage({
               {avatar ? (
                 <img className="pf-avatar__img" src={avatar} alt="" />
               ) : (
-                <span className="pf-avatar__initial" style={{ background: avatarBg }}>{initial}</span>
+                <span className="pf-avatar__initial" style={{ background: avatarBg }}>
+                  {initial || <UserIcon size={44} />}
+                </span>
               )}
               <button className="pf-avatar__cam" onClick={() => fileRef.current?.click()} aria-label="Сменить фото">
                 <PfCameraIcon />
@@ -270,7 +276,7 @@ export default function ProfilePage({
               <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickAvatar} />
             </div>
 
-            <h1 className="pf-name">{name?.trim() || '—'}</h1>
+            <h1 className="pf-name">{trimmedName || t('profile.noName')}</h1>
             {phone && (
               <div className="pf-phone">
                 <PfPhoneIcon />
@@ -444,7 +450,7 @@ export default function ProfilePage({
               <img className="pf-avatar__img" src={avatar} alt="" style={{ width: 80, height: 80 }} />
             ) : (
               <span className="pf-avatar__initial" style={{ width: 80, height: 80, background: avatarBg, fontSize: 32 }}>
-                {initial}
+                {initial || <UserIcon size={38} />}
               </span>
             )}
           </div>

@@ -72,15 +72,16 @@ export async function mergeDeviceIntoAccount(deviceId, accountId) {
   if (!(await isAccountEmpty(accountId))) return { merged: false, reason: 'account-not-empty' }
 
   // Одной транзакцией: наполовину перенесённый прогресс хуже, чем непере-
-  // несённый — его уже не отличить от нормального состояния.
-  await sql.transaction([
+  // несённый — его уже не отличить от нормального состояния. porsager: sql.begin
+  // даёт scoped-клиент tx; если колбэк бросит — вся транзакция откатывается.
+  await sql.begin(async (tx) => {
     // FK: *_log.device_id ссылаются на learner, поэтому строка аккаунта должна
     // существовать до переноса.
-    sql`
+    await tx`
       insert into learner (device_id)
       values (${accountId})
       on conflict (device_id) do nothing
-    `,
+    `
     // Скаляры аккаунта пусты (проверено выше), но строка learner могла быть
     // заведена ensureLearner-ом — забираем НЕВИДИМУЮ анкету анонима (уровень,
     // навыки), не затирая непустое: coalesce(аккаунт, аноним).
@@ -89,7 +90,7 @@ export async function mergeDeviceIntoAccount(deviceId, accountId) {
     // человека в онбординге, а новый аккаунт должен пройти онбординг сам —
     // иначе на общем браузере свежая регистрация молча наследует чужого
     // тьютора и сразу попадает на dashboard, минуя настройку.
-    sql`
+    await tx`
       update learner a set
         level           = coalesce(a.level, d.level),
         lang            = coalesce(a.lang, d.lang),
@@ -102,24 +103,27 @@ export async function mergeDeviceIntoAccount(deviceId, accountId) {
         updated_at      = now()
       from learner d
       where a.device_id = ${accountId} and d.device_id = ${deviceId}
-    `,
-    ...REKEY_TABLES.map(
-      (t) => sql(`update ${t} set device_id = $1 where device_id = $2`, [accountId, deviceId]),
-    ),
+    `
+    // Простой rekey тех таблиц, где по device_id нет уникальных ключей. Имя
+    // таблицы из хардкод-списка REKEY_TABLES; tx(t) экранирует идентификатор
+    // (porsager), значений из ввода тут нет.
+    for (const t of REKEY_TABLES) {
+      await tx`update ${tx(t)} set device_id = ${accountId} where device_id = ${deviceId}`
+    }
     // vocab_bank: unique (device_id, word_key) — слово, которое у аккаунта уже
     // есть, переносить нельзя.
-    sql`
+    await tx`
       update vocab_bank v set device_id = ${accountId}
       where v.device_id = ${deviceId}
         and not exists (
           select 1 from vocab_bank o
           where o.device_id = ${accountId} and o.word_key = v.word_key
         )
-    `,
-    sql`delete from vocab_bank where device_id = ${deviceId}`,
+    `
+    await tx`delete from vocab_bank where device_id = ${deviceId}`
     // lesson_progress: unique (device_id, lesson_key). Правила те же, что у
     // upsertLessonProgress — passed не разжаловать, счёт лучший, попытки сложить.
-    sql`
+    await tx`
       insert into lesson_progress (device_id, lesson_key, status, score, attempts, next_variant)
       select ${accountId}, lesson_key, status, score, attempts, next_variant
       from lesson_progress where device_id = ${deviceId}
@@ -132,21 +136,21 @@ export async function mergeDeviceIntoAccount(deviceId, accountId) {
         attempts = lesson_progress.attempts + excluded.attempts,
         next_variant = greatest(lesson_progress.next_variant, excluded.next_variant),
         updated_at = now()
-    `,
-    sql`delete from lesson_progress where device_id = ${deviceId}`,
+    `
+    await tx`delete from lesson_progress where device_id = ${deviceId}`
     // voice_usage: unique (device_id, day). Минуты складываем — иначе вход
     // обнулял бы дневной лимит.
-    sql`
+    await tx`
       insert into voice_usage (device_id, day, seconds)
       select ${accountId}, day, seconds
       from voice_usage where device_id = ${deviceId}
       on conflict (device_id, day) do update set
         seconds = voice_usage.seconds + excluded.seconds
-    `,
-    sql`delete from voice_usage where device_id = ${deviceId}`,
+    `
+    await tx`delete from voice_usage where device_id = ${deviceId}`
     // Аноним осушён — убираем, иначе повторный вход слил бы пустышку заново.
-    sql`delete from learner where device_id = ${deviceId}`,
-  ])
+    await tx`delete from learner where device_id = ${deviceId}`
+  })
 
   return { merged: true }
 }

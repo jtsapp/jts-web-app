@@ -2,7 +2,7 @@
 // Next.js App Router route handler (Web Request/Response).
 //
 // Added for the cheap-tutor plan:
-//   * usage cap — refuse a token once over 10 min/day or 300 min/month.
+//   * usage cap — refuse a token once over 20 min/day or 300 min/month.
 //   * TTL clamped to the remaining daily budget so a session can't overrun.
 //   * openSession() so the room_finished webhook can bill the minutes.
 //   * JTS tutor keys (dexter/luna/spark) → agent persona ids (bro/gentle/hype).
@@ -17,6 +17,7 @@ import {
   isValidDeviceId,
   getUsage,
   openSession,
+  closeStaleSessions,
   DAILY_LIMIT_SEC,
   MONTH_LIMIT_SEC,
 } from '@/lib/usage.js'
@@ -45,13 +46,19 @@ function trimList(raw, cap, maxLen = MAX_LEN) {
   return out
 }
 
-function buildMetadata(p, tier, profileId, userName, memory) {
+function buildMetadata(p, tier, profileId, userName, memory, ttl) {
   const meta = {
     level: p.level || 'B1',
     lang: p.lang || 'en',
     style: p.style || 'friendly',
     goal: p.goal || 'general',
     tier,
+    // Серверный бюджет сессии в секундах (ttl уже урезан до остатка дневного
+    // лимита). Агент ставит по нему watchdog и удаляет комнату по истечении —
+    // клиентский countdown display-only, а TTL LiveKit-токена established-
+    // соединение не рвёт. Без этого разговор шёл дольше лимита, а минуты сверх
+    // SESSION_CAP_SEC не списывались (см. usage.js).
+    sessionTtlSec: ttl,
   }
   // Именно resolveProfileId, а не p.deviceId из тела: у залогиненного это
   // user-<id>, и агент запишет память в аккаунт, а не в device-корзину.
@@ -153,15 +160,26 @@ async function issue(p, profileId, userName) {
   }
 
   // Testing escape hatch: VOICE_NO_LIMIT=1 skips the free-tier minute cap and
-  // grants a long session. Unset it to restore the 10-min/day limit.
+  // grants a long session. Unset it to restore the daily limit.
   const noLimit = process.env.VOICE_NO_LIMIT === '1' || process.env.VOICE_NO_LIMIT === 'true'
 
-  let ttl = noLimit ? 3600 : 600 // per-session ceiling (1h while testing, else 10 min)
-  const freeTier = p.tier !== 'paid'
+  // Потолок одной сессии = дневной лимит (раньше здесь стояло 600 числом, и при
+  // подъёме лимита до 20 мин разговор всё равно рвался бы на 10-й минуте).
+  let ttl = noLimit ? 3600 : DAILY_LIMIT_SEC
+  // tier НИКОГДА не берётся из тела/query запроса: клиент слал {tier:'paid'} и
+  // целиком обходил проверку лимита ниже (плюс включал платный Krisp BVC у агента).
+  // Платного тарифа сейчас нет — сервер авторитетно держит free, поэтому лимит
+  // проверяется всегда. Появится реальный энтайтлмент — выводить его из
+  // проверенного источника (роль в токене через resolveProfileId / флаг в БД),
+  // но НЕ из `p`.
+  const freeTier = true
   // Лимиты по profileId: у залогиненного минуты держатся за аккаунтом, поэтому
   // их больше не обнулить очисткой localStorage.
   if (!noLimit && freeTier && isDbConfigured() && isValidDeviceId(profileId)) {
     try {
+      // Сначала дозакрываем зависшие комнаты этого ученика (потерянный
+      // room_finished), иначе их минуты не спишутся никогда и лимит поедет.
+      await closeStaleSessions(profileId)
       const { todaySeconds, monthSeconds } = await getUsage(profileId)
       if (monthSeconds >= MONTH_LIMIT_SEC || todaySeconds >= DAILY_LIMIT_SEC) {
         return Response.json(
@@ -173,7 +191,7 @@ async function issue(p, profileId, userName) {
           { status: 403 },
         )
       }
-      ttl = Math.max(60, Math.min(600, DAILY_LIMIT_SEC - todaySeconds))
+      ttl = Math.max(60, Math.min(DAILY_LIMIT_SEC, DAILY_LIMIT_SEC - todaySeconds))
     } catch (err) {
       console.error('[livekit.token] usage check failed', err)
     }
@@ -195,7 +213,7 @@ async function issue(p, profileId, userName) {
       console.error('[livekit.token] loadProfile failed', err)
     }
   }
-  const metadata = buildMetadata(p, tier, profileId, userName, memory)
+  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl)
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })

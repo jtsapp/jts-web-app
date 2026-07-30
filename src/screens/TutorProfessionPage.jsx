@@ -3,27 +3,30 @@ import TutorShell from '../tutor/TutorShell.jsx'
 import { SendIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
+// Спрашиваем СОЦИАЛЬНЫЙ СТАТУС, а не отрасль: тьютору для тем, регистра и
+// примеров важно «школьник / студент / работаю», а не «маркетинг vs логистика».
+// Отрасль при желании ученик допишет текстом в поле выше.
 const PROF_KEYS = [
-  'prof.opt.it',
-  'prof.opt.management',
-  'prof.opt.marketing',
-  'prof.opt.logist',
-  'prof.opt.design',
-  'prof.opt.actor',
+  'prof.opt.pupil',
+  'prof.opt.student',
+  'prof.opt.working',
+  'prof.opt.business',
+  'prof.opt.jobsearch',
+  'prof.opt.retired',
 ]
 
 // Каноническая (английская) метка для профиля: её читает голосовой тьютор в
 // промпте, поэтому сохраняем не локализованный текст кнопки.
 const PROF_EN = {
-  'prof.opt.it': 'IT/Development',
-  'prof.opt.management': 'Management',
-  'prof.opt.marketing': 'Marketing',
-  'prof.opt.logist': 'Logistics',
-  'prof.opt.design': 'Design',
-  'prof.opt.actor': 'Actor',
+  'prof.opt.pupil': 'School student (teen)',
+  'prof.opt.student': 'University student',
+  'prof.opt.working': 'Working professional',
+  'prof.opt.business': 'Business owner / entrepreneur',
+  'prof.opt.jobsearch': 'Job seeker',
+  'prof.opt.retired': 'Retired',
 }
 
-// Экран «тьютор хочет узнать кем ты работаешь» — ввод или выбор профессии.
+// Экран «тьютор хочет узнать, чем ты занимаешься» — ввод или выбор статуса.
 export default function TutorProfessionPage({
   user,
   onNavigate,

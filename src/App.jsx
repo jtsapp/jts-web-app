@@ -46,10 +46,21 @@ import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
+import { getDeviceId, authHeaders } from './lib/identity.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
-import { TUTOR_ONLY } from './config.js'
+import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
+
+// Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
+// если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
+// проставляет api.js: USER_EXISTS (регистрация занятого номера) и
+// USER_NOT_FOUND (вход незарегистрированным номером).
+function phoneErrorKey(e) {
+  if (e?.code === 'USER_EXISTS') return 'err.userExists'
+  if (e?.code === 'USER_NOT_FOUND') return 'err.userNotFound'
+  return null
+}
 
 export default function App() {
   const { t } = useI18n()
@@ -129,6 +140,32 @@ export default function App() {
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
   const [scenario, setScenario] = useState(null) // выбранный сценарий (id) или null = свободный чат
+  // История голосовых звонков (список + транскрипт) для «Управления тьютором».
+  const [callHistory, setCallHistory] = useState([])
+  const [selectedCall, setSelectedCall] = useState(null)
+  // Оценка разговорного теста (уровень + честное обоснование от Sonnet).
+  const [placementResult, setPlacementResult] = useState(null)
+  // Грузим историю звонков при заходе в «Управление тьютором». Bearer решает
+  // чью историю отдать: с токеном — user-<id>, без — deviceId анонима.
+  useEffect(() => {
+    if (screen !== 'tutor-manage') return
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch(
+          '/api/profile/calls?deviceId=' + encodeURIComponent(getDeviceId()),
+          { headers: authHeaders(token) },
+        )
+        const data = await res.json().catch(() => ({}))
+        if (alive) setCallHistory(Array.isArray(data.calls) ? data.calls : [])
+      } catch {
+        if (alive) setCallHistory([])
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   const [loading, setLoading] = useState(false)
@@ -151,7 +188,8 @@ export default function App() {
       setPhone(fullPhone)
       setScreen('otp')
     } catch (e) {
-      setError(e.message || t('err.send'))
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || t('err.send'))
     } finally {
       setLoading(false)
     }
@@ -294,8 +332,9 @@ export default function App() {
 
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
   // в профиль и показываем экран результата (кружок с уровнем).
-  async function handlePlacementDone(level) {
+  async function handlePlacementDone(level, assessment) {
     setNeedsLevelTest(false)
+    setPlacementResult(assessment || null)
     if (level) setUserLevel(level)
     if (token && level) {
       try {
@@ -328,9 +367,10 @@ export default function App() {
   const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
-  // скрытые разделы недоступны и через навигацию — только тьютор.
+  // скрытые разделы недоступны и через навигацию — только разделы
+  // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
   function handleNav(key, payload) {
-    if (TUTOR_ONLY && key !== 'tutor') return
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -345,7 +385,7 @@ export default function App() {
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
-    if (TUTOR_ONLY && key !== 'tutor') return
+    if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -449,8 +489,16 @@ export default function App() {
       )
     case 'success':
       // Уровень уже взят из профиля; если его там не было (новая регистрация) —
-      // сначала письменный CEFR-тест, иначе сразу в обучение.
-      return <SuccessPage onDone={() => setScreen(needsLevelTest ? 'test-intro' : 'kingdom')} />
+      // сначала письменный CEFR-тест, иначе сразу в обучение. В режиме «только
+      // тьютор» королевств нет: свежий вход ведёт в онбординг тьютора (там свой
+      // голосовой тест уровня), вернувшийся пользователь — сразу на дашборд.
+      return (
+        <SuccessPage
+          onDone={() =>
+            setScreen(TUTOR_ONLY ? tutorHome : needsLevelTest ? 'test-intro' : 'kingdom')
+          }
+        />
+      )
     case 'test-intro':
       return (
         <LevelTestIntroPage
@@ -685,6 +733,7 @@ export default function App() {
           onBack={() => setScreen('speaking-test')}
           tutor={tutor}
           level={userLevel}
+          assessment={placementResult}
           onContinue={() => setScreen('tutor-interests')}
           onRetry={() => setScreen('speaking-test')}
         />
@@ -753,8 +802,10 @@ export default function App() {
             setScenario(null)
             setScreen('tutor-voice-chat')
           }}
-          onSuggest={() => {}}
-          onSeeLessons={() => setScreen('tutor-lesson-plan')}
+          onSuggest={(id) => {
+            setScenario(id || null)
+            setScreen('tutor-voice-chat')
+          }}
           onSeeScenarios={() => setScreen('tutor-scenarios')}
           onScenario={() => setScreen('tutor-scenarios')}
         />
@@ -779,6 +830,7 @@ export default function App() {
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-manage')}
+          call={selectedCall}
         />
       )
     case 'tutor-lesson-plan':
@@ -799,6 +851,11 @@ export default function App() {
           onBack={() => setScreen('tutor-dashboard')}
           tutor={tutor}
           onChangeTutor={() => setScreen('tutor-choose')}
+          calls={callHistory}
+          onOpenCall={(call) => {
+            setSelectedCall(call)
+            setScreen('tutor-chat-history')
+          }}
         />
       )
     case 'tutor-practice-result':

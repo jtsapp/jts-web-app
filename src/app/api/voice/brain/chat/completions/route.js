@@ -6,9 +6,32 @@
 // completions` — this route. We translate the OpenAI request into an Anthropic
 // call (Haiku 4.5 + prompt caching) and stream the reply back as OpenAI SSE.
 
+import { timingSafeEqual } from 'node:crypto'
 import { chatStreamRich, hasAnthropicKey } from '@/lib/anthropic.js'
 
 export const runtime = 'nodejs'
+
+// Только доверенный сервер-к-серверу вызов (голосовой агент LiveKit). Агент
+// шлёт общий секрет как `Authorization: Bearer <INTERNAL_API_KEY>` (это api_key
+// у livekit-plugins-openai). Раньше проверки НЕ было вообще — роут был открытым
+// OpenAI-совместимым прокси к Anthropic Haiku: любой POST жёг наш ANTHROPIC_API_KEY.
+// Пустой INTERNAL_API_KEY → канал закрыт (fail-closed): забытый env не должен
+// открывать прокси всему миру. Тот же секрет и та же семантика, что у
+// isTrustedInternalCaller в auth-server.js (там заголовок x-internal-key —
+// здесь Bearer, потому что его шлёт openai-плагин).
+function isTrustedBrainCaller(request) {
+  const expected = process.env.INTERNAL_API_KEY
+  if (!expected) return false
+  const header = request.headers.get('authorization') || ''
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim())
+  if (!match) return false
+  const got = Buffer.from(match[1].trim())
+  const exp = Buffer.from(expected)
+  // timingSafeEqual падает на разной длине — сравниваем её отдельно, сам ключ
+  // всегда постоянным временем.
+  if (got.length !== exp.length) return false
+  return timingSafeEqual(got, exp)
+}
 
 function toRichConversation(messages) {
   let systemPrompt = ''
@@ -58,6 +81,10 @@ function sseChunk(id, model, created, delta, finishReason) {
 }
 
 export async function POST(request) {
+  if (!isTrustedBrainCaller(request)) {
+    return Response.json({ error: 'Unauthorized.' }, { status: 401 })
+  }
+
   let body = {}
   try {
     body = await request.json()
