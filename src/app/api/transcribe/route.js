@@ -17,13 +17,16 @@ export const maxDuration = 30
 // clips the recorder produces, while still rejecting runaway uploads.
 const MAX_BYTES = 10 * 1024 * 1024
 
-// STT берём с Soniox (AZURE_SPEECH_KEY на проде не задан). Azure оставлен
-// фолбэком: если однажды заведут Azure и снимут Soniox — маршрут не сломается.
+// Приоритет — Azure: и тест уровня, и IELTS Speaking английские, а на этом же
+// ключе уже сидит оценка произношения, так что два провайдера на один экран
+// не нужны. Soniox остаётся фолбэком (и единственным вариантом там, где надо
+// распознать казахский — голосовой тьютор, у него свой стек в agent/).
+function isAzureConfigured() {
+  return Boolean(process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_REGION)
+}
+
 function isConfigured() {
-  return (
-    isSonioxConfigured() ||
-    Boolean(process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_REGION)
-  )
+  return isAzureConfigured() || isSonioxConfigured()
 }
 
 export async function GET() {
@@ -69,9 +72,9 @@ export async function POST(request) {
 
   try {
     const buf = Buffer.from(await file.arrayBuffer())
-    const text = isSonioxConfigured()
-      ? await transcribeWavSoniox(buf)
-      : await transcribeWav(buf)
+    const text = isAzureConfigured()
+      ? await transcribeWav(buf)
+      : await transcribeWavSoniox(buf)
     return Response.json({ text })
   } catch (e) {
     console.error('[transcribe] failed', e)
