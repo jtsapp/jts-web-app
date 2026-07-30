@@ -564,16 +564,18 @@ git add src/screens/TutorVoiceChatPage.jsx && git commit -m "feat(tutor): при
    Повадка СТАРШЕ шкалы силы: у отвращения зазор до орба не закрывается ни на
    какой силе, у грусти верх остаётся пустым — это их смысл, а не недоработка. */
 
-/* Злость жмёт со всех сторон: тугая кромка + частый мелкий пульс. */
+/* Злость жмёт со всех сторон: тугая кромка + частый мелкий пульс.
+
+   У всех трёх анимаций ниже НЕТ кадров 0%/100% — и это намеренно: когда кадр
+   не объявлен, браузер берёт значение из вычисленного стиля самого элемента
+   (implicit keyframes, CSS Animations Level 1). Так базовое правило остаётся
+   единственным местом, где записана геометрия эмоции, и правка не может
+   разъехаться с копией внутри keyframes. */
 .t-voice__card.is-mood-anger {
   box-shadow: inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
   animation: t-mood-press 1.6s ease-in-out infinite;
 }
 @keyframes t-mood-press {
-  0%,
-  100% {
-    box-shadow: inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
-  }
   50% {
     box-shadow: inset 0 0 calc(var(--mood-blur) * 0.78)
       rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.25));
@@ -593,10 +595,6 @@ git add src/screens/TutorVoiceChatPage.jsx && git commit -m "feat(tutor): при
   animation: t-mood-breathe 4.2s ease-in-out infinite;
 }
 @keyframes t-mood-breathe {
-  0%,
-  100% {
-    box-shadow: inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
-  }
   50% {
     box-shadow: inset 0 0 calc(var(--mood-blur) * 1.15)
       rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.8));
@@ -625,15 +623,6 @@ git add src/screens/TutorVoiceChatPage.jsx && git commit -m "feat(tutor): при
   animation: t-mood-drift 5.5s ease-in-out infinite;
 }
 @keyframes t-mood-drift {
-  0%,
-  100% {
-    box-shadow:
-      inset calc(var(--mood-blur) * -0.45) 0 var(--mood-blur)
-        calc(var(--mood-blur) * -0.15) rgb(var(--mood-rgb) / var(--mood-alpha)),
-      inset calc(var(--mood-blur) * 0.3) 0 calc(var(--mood-blur) * 0.6)
-        calc(var(--mood-blur) * -0.3)
-        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.4));
-  }
   50% {
     box-shadow:
       inset calc(var(--mood-blur) * -0.55) 0 calc(var(--mood-blur) * 1.1)
