@@ -89,6 +89,9 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const [recSeg, setRecSeg] = useState(null) // индекс фразы, что сейчас пишется
   const [wholeRec, setWholeRec] = useState(false) // идёт запись всего отрывка
   const [wholeUrl, setWholeUrl] = useState(null)
+  const [wholeResult, setWholeResult] = useState(null) // оценка целого отрывка
+  const [wholeAssessing, setWholeAssessing] = useState(false)
+  const wholeBlobRef = useRef(null)
   const [denied, setDenied] = useState(false)
 
   // Оценка произношения: результат на фразу (в памяти сессии) + индекс, что
@@ -137,6 +140,15 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const doneCount = done.size
 
   // ── синхронизация состояния при смене урока ─────────────────────────────
+  // Сколько фраз показывать в поэтапном режиме: до первой НЕзаписанной
+  // включительно (= самый дальний пройденный индекс + 2), в пределах урока.
+  function revealUpTo(doneSet) {
+    const n = getLesson(curId).segments.length
+    let furthest = 0
+    for (let k = 0; k < n; k++) if (doneSet.has(segmentId(curId, k))) furthest = k + 1
+    return Math.max(1, Math.min(n, furthest + 1))
+  }
+
   useEffect(() => {
     setSegments(lesson.segments)
     setActiveIdx(-1)
@@ -144,10 +156,13 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     stopAtRef.current = null
     setLoopIdx(null)
     loopRef.current = null
-    setDone(getLessonDone(curId))
+    const freshDone = getLessonDone(curId)
+    setDone(freshDone)
     setResults({})
     setAssessingIdx(-1)
-    setRevealed(1)
+    // Поэтапно: открываем до первой НЕзаписанной фразы (а не в 1), иначе
+    // вернувшийся пользователь с уже пройденными фразами застревал бы на первой.
+    setRevealed(revealUpTo(freshDone))
     // сбрасываем записи предыдущего урока (in-memory url'ы)
     for (const take of Object.values(takesRef.current)) {
       try { URL.revokeObjectURL(take?.url) } catch {}
@@ -172,11 +187,18 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   useEffect(() => { rateRef.current = rate }, [rate])
   useEffect(() => { loopRef.current = loopIdx }, [loopIdx])
 
-  // Прогресс аккаунта прилетел с сервера (hydratePractice) — перечитываем.
+  // Прогресс аккаунта прилетел с сервера (hydratePractice) — перечитываем и
+  // раскрываем поэтапный показ до первой незаписанной (иначе после входа с
+  // другого устройства фразы остались бы скрытыми).
   useEffect(() => {
-    const onProgress = () => setDone(getLessonDone(curId))
+    const onProgress = () => {
+      const fresh = getLessonDone(curId)
+      setDone(fresh)
+      setRevealed((r) => Math.max(r, revealUpTo(fresh)))
+    }
     window.addEventListener(SHADOWING_PROGRESS_EVENT, onProgress)
     return () => window.removeEventListener(SHADOWING_PROGRESS_EVENT, onProgress)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [curId])
 
   // ── YouTube player ──────────────────────────────────────────────────────
@@ -459,6 +481,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     if (recTargetRef.current) { stopRec(); return }
     const ok = await startRec({ type: 'whole' }, (blob) => {
       setWholeRec(false)
+      wholeBlobRef.current = blob
+      setWholeResult(null) // новая запись → прошлая оценка неактуальна
       setWholeUrl((prev) => {
         if (prev) { try { URL.revokeObjectURL(prev) } catch {} }
         return URL.createObjectURL(blob)
@@ -466,6 +490,21 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     })
     if (!ok) return
     setWholeRec(true)
+  }
+
+  // Оценить весь отрывок по кнопке (continuous, без послово-карты).
+  async function assessWhole() {
+    if (wholeAssessing || wholeResult || !wholeBlobRef.current) return
+    setWholeAssessing(true)
+    try {
+      const wav = await blobToWav16kMono(wholeBlobRef.current)
+      if (!wav) return
+      setWholeResult(await assessTake(wav, '', lang, 'whole'))
+    } catch (e) {
+      console.warn('[shadowing] whole assess failed', e)
+    } finally {
+      setWholeAssessing(false)
+    }
   }
 
   // Полная остановка при уходе с экрана: таймер, запись, видео, свои аудио.
@@ -755,19 +794,42 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
               {wholeRec ? t('shadowing.recording') : wholeUrl ? t('shadowing.recorded1') : t('shadowing.micHint')}
             </div>
             {wholeUrl && !wholeRec && (
-              <div className="sh-take">
-                <button
-                  type="button"
-                  className="sh-take__listen"
-                  onClick={() => (playingId === 'whole' ? stopTakeAudio() : startTakeAudio('whole', wholeUrl))}
-                >
-                  {playingId === 'whole' ? <StopIcon size={18} /> : <PlayIcon size={18} />}{' '}
-                  {playingId === 'whole' ? t('shadowing.stop') : t('shadowing.listenMine')}
-                </button>
-                <button type="button" className="sh-take__again" onClick={() => setWholeUrl(null)}>
-                  <RepeatIcon size={18} /> {t('shadowing.again')}
-                </button>
-              </div>
+              <>
+                <div className="sh-take">
+                  <button
+                    type="button"
+                    className="sh-take__listen"
+                    onClick={() => (playingId === 'whole' ? stopTakeAudio() : startTakeAudio('whole', wholeUrl))}
+                  >
+                    {playingId === 'whole' ? <StopIcon size={18} /> : <PlayIcon size={18} />}{' '}
+                    {playingId === 'whole' ? t('shadowing.stop') : t('shadowing.listenMine')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sh-take__again"
+                    onClick={() => { setWholeUrl(null); setWholeResult(null); wholeBlobRef.current = null }}
+                  >
+                    <RepeatIcon size={18} /> {t('shadowing.again')}
+                  </button>
+                </div>
+                {!wholeResult && !wholeAssessing && (
+                  <button type="button" className="sh-whole-assess" onClick={assessWhole}>
+                    ★ {t('shadowing.assess')}
+                  </button>
+                )}
+                {(wholeResult || wholeAssessing) && (
+                  <div className="sh-whole-score">
+                    <PhraseScore
+                      result={wholeResult}
+                      refText=""
+                      assessing={wholeAssessing}
+                      playing={playingId === 'whole'}
+                      onRetry={() => { setWholeResult(null); wholeRecord() }}
+                      onPlayMine={() => (playingId === 'whole' ? stopTakeAudio() : startTakeAudio('whole', wholeUrl))}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

@@ -13,13 +13,15 @@ function num(v) {
 
 // wavBlob — 16кГц mono WAV (blobToWav16kMono из lib/ielts-audio.js).
 // refText — текст фразы (эталон). lang — язык интерфейса для совета.
-export async function assessTake(wavBlob, refText, lang = 'ru') {
+// mode: 'phrase' (эталон-режим, послово) или 'whole' (целый отрывок, continuous).
+export async function assessTake(wavBlob, refText, lang = 'ru', mode = 'phrase') {
   // Обрезаем тишину перед отправкой: Azure берёт за секунды аудио (best-effort).
   const audio = await trimSilenceWav(wavBlob)
   const form = new FormData()
   form.append('audio', audio, 'take.wav')
   form.append('text', refText || '')
   form.append('lang', lang)
+  form.append('mode', mode)
 
   const res = await fetch('/api/shadowing/assess', { method: 'POST', body: form })
   if (!res.ok) throw new Error(`assess failed ${res.status}`)
