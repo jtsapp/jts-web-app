@@ -25,3 +25,6 @@ public/practice/books.html
 /playwright-report/
 /blob-report/
 /.playwright/
+
+# Локальный venv питон-агента (ставится из agent/requirements.txt)
+agent/venv/
