@@ -881,8 +881,12 @@
 .t-voice__card {
   --mood-rgb: 0 0 0;
   --mood-alpha: 0;
+  --mood-rim: 0;
   --mood-blur: 0px;
-  transition: box-shadow 600ms ease;
+  /* 600мс на такое большое мягкое свечение читались как щелчок, особенно на
+     скачке оттенка (кармин -> золото). Кривая с длинным хвостом: основное
+     движение в начале, доводка медленная. */
+  transition: box-shadow 1400ms cubic-bezier(0.33, 0, 0.2, 1);
 }
 .t-voice__card.is-mood-anger {
   --mood-rgb: 224 27 60;
@@ -926,15 +930,24 @@
 .t-voice__card.is-mood-1 {
   --mood-blur: max(16px, calc(24.2cqw - 53px));
   --mood-alpha: 0.26;
+  --mood-rim: 0.4;
 }
 .t-voice__card.is-mood-2 {
   --mood-blur: max(30px, calc(45.4cqw - 100px));
   --mood-alpha: 0.4;
+  --mood-rim: 0.62;
 }
 .t-voice__card.is-mood-3 {
   --mood-blur: max(46px, calc(69.6cqw - 153px));
   --mood-alpha: 0.58;
+  --mood-rim: 0.85;
 }
+
+/* --mood-rim — плотная кромка у самого края поверх мягкого свечения. Мягкое
+   свечение по построению теряет половину полосы на отсечке по границе, поэтому
+   у края выходило 0.29-0.42 и читалось как прозрачное. Кромка узкая (0.12-0.14
+   от blur), поэтому она делает край насыщенным, не съедая зазор до орба.
+   Композитно у края получается 0.54-0.67 в зависимости от повадки. */
 
 /* Повадка эмоции — не украшение, а второй канал информации. Пять эмоций,
    различимых только оттенком, боком зрения сливаются (ученик смотрит на орб и
@@ -952,14 +965,19 @@
    единственным местом, где записана геометрия эмоции, и правка не может
    разъехаться с копией внутри keyframes. */
 .t-voice__card.is-mood-anger {
-  box-shadow: inset 0 0 calc(var(--mood-blur) * 0.55) calc(var(--mood-blur) * 0.12)
-    rgb(var(--mood-rgb) / var(--mood-alpha));
+  box-shadow:
+    inset 0 0 calc(var(--mood-blur) * 0.12) rgb(var(--mood-rgb) / var(--mood-rim)),
+    inset 0 0 calc(var(--mood-blur) * 0.55) calc(var(--mood-blur) * 0.12)
+      rgb(var(--mood-rgb) / var(--mood-alpha));
   animation: t-mood-press 1.6s ease-in-out infinite;
 }
 @keyframes t-mood-press {
   50% {
-    box-shadow: inset 0 0 calc(var(--mood-blur) * 0.44) calc(var(--mood-blur) * 0.16)
-      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.2));
+    box-shadow:
+      inset 0 0 calc(var(--mood-blur) * 0.1)
+        rgb(var(--mood-rgb) / calc(var(--mood-rim) * 1.1)),
+      inset 0 0 calc(var(--mood-blur) * 0.44) calc(var(--mood-blur) * 0.16)
+        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.2));
   }
 }
 
@@ -968,25 +986,37 @@
    Сверху зазор всего 48px, его перекрывает любая эмоция, включая эту.
    Отрицательный spread поджимает тень к границе. */
 .t-voice__card.is-mood-disgust {
-  box-shadow: inset 0 0 calc(var(--mood-blur) * 0.5) calc(var(--mood-blur) * -0.08)
-    rgb(var(--mood-rgb) / var(--mood-alpha));
+  box-shadow:
+    inset 0 0 calc(var(--mood-blur) * 0.12) rgb(var(--mood-rgb) / var(--mood-rim)),
+    inset 0 0 calc(var(--mood-blur) * 0.5) calc(var(--mood-blur) * -0.08)
+      rgb(var(--mood-rgb) / var(--mood-alpha));
 }
 
 /* Радость: широко, ровно, мягко, медленный вдох-выдох. */
 .t-voice__card.is-mood-joy {
-  box-shadow: inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
+  box-shadow:
+    inset 0 0 calc(var(--mood-blur) * 0.12) rgb(var(--mood-rgb) / var(--mood-rim)),
+    inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
   animation: t-mood-breathe 4.2s ease-in-out infinite;
 }
 @keyframes t-mood-breathe {
   50% {
-    box-shadow: inset 0 0 calc(var(--mood-blur) * 1.15)
-      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.8));
+    box-shadow:
+      inset 0 0 calc(var(--mood-blur) * 0.14)
+        rgb(var(--mood-rgb) / calc(var(--mood-rim) * 0.85)),
+      inset 0 0 calc(var(--mood-blur) * 1.15)
+        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.8));
   }
 }
 
 /* Грусть оседает книзу: снизу до гало орба, сверху почти пусто. Пульса нет. */
+/* Кромка у грусти и злорадства смещена по направлению повадки, а не идёт
+   ровным кольцом: ровная стёрла бы асимметрию, которая тут работает вторым,
+   не-цветовым каналом информации. */
 .t-voice__card.is-mood-sadness {
   box-shadow:
+    inset 0 calc(var(--mood-blur) * -0.1) calc(var(--mood-blur) * 0.14)
+      calc(var(--mood-blur) * -0.04) rgb(var(--mood-rgb) / var(--mood-rim)),
     inset 0 calc(var(--mood-blur) * -0.5) var(--mood-blur)
       calc(var(--mood-blur) * -0.2)
       rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.75)),
@@ -999,6 +1029,8 @@
    выбрана по направлению чтения, а не «на выбор реализации». */
 .t-voice__card.is-mood-gloat {
   box-shadow:
+    inset calc(var(--mood-blur) * -0.1) 0 calc(var(--mood-blur) * 0.14)
+      calc(var(--mood-blur) * -0.04) rgb(var(--mood-rgb) / var(--mood-rim)),
     inset calc(var(--mood-blur) * -0.45) 0 var(--mood-blur)
       calc(var(--mood-blur) * -0.15) rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.75)),
     inset calc(var(--mood-blur) * 0.3) 0 calc(var(--mood-blur) * 0.6)
@@ -1009,6 +1041,8 @@
 @keyframes t-mood-drift {
   50% {
     box-shadow:
+      inset calc(var(--mood-blur) * -0.1) 0 calc(var(--mood-blur) * 0.14)
+        calc(var(--mood-blur) * -0.04) rgb(var(--mood-rgb) / var(--mood-rim)),
       inset calc(var(--mood-blur) * -0.55) 0 calc(var(--mood-blur) * 1.1)
         calc(var(--mood-blur) * -0.1)
         rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.86)),
