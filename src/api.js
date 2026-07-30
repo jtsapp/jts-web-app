@@ -134,6 +134,27 @@ export async function completeLessonModule(token, xp) {
   return res.json().catch(() => null)
 }
 
+// Per-lesson прогресс модуля «Обучения» (нативные уроки). Бэкенд помнит, какие
+// уроки модуля пройдены — синхрон между устройствами/мобилкой (раньше жило
+// только в localStorage). Отметка идемпотентна; xp начисляет монеты/стрик как
+// completeLessonModule.
+export async function getLessonProgress(token, moduleId) {
+  const res = await fetch(`${BASE}/mobile/lesson-modules/${encodeURIComponent(moduleId)}/progress`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`progress failed: ${res.status}`)
+  return res.json() // { done: [<code>], total }
+}
+
+export async function completeLesson(token, moduleId, code, xp = 0) {
+  const res = await fetch(
+    `${BASE}/mobile/lesson-modules/${encodeURIComponent(moduleId)}/lessons/${encodeURIComponent(code)}/complete?xp=${encodeURIComponent(xp)}`,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+  )
+  if (!res.ok) throw new Error(`lesson complete failed: ${res.status}`)
+  return res.json().catch(() => null) // { done: [<code>], total, balance? }
+}
+
 // Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
 // Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
 // durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
