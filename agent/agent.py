@@ -1132,6 +1132,7 @@ class TutorAgent(Agent):
         room: Any = None,
         scenario_id: str = "",
         tutor: str = "",
+        moods_enabled: bool = False,
     ):
         super().__init__(instructions=instructions)
         self._device_id = device_id
@@ -1140,6 +1141,12 @@ class TutorAgent(Agent):
         self._scenario_id = scenario_id
         # Персона этой сессии — от неё зависит, какие эмоции разрешены (TUTOR_MOODS).
         self._tutor = (tutor or "").strip().lower()
+        # Эмоции включены только в обычном режиме тьютора: три других билдера
+        # промпта блок с тегом не получают, поэтому тег там не появится
+        # никогда — а стриппер вхолостую придерживал бы голову каждой реплики
+        # до MOOD_SCAN_LIMIT символов. Флаг отдельный, а не пустой self._tutor:
+        # персона в тех режимах задана, и врать про неё нельзя.
+        self._moods_enabled = moods_enabled
         # Room handle so placement mode can push the confirmed level straight to
         # the web client over a LiveKit data message (topic "placement").
         self._room = room
@@ -1207,7 +1214,7 @@ class TutorAgent(Agent):
         субтитров, поэтому тег вырезается один раз и не всплывает ни в голосе,
         ни в тексте на экране.
         """
-        allowed = TUTOR_MOODS.get(self._tutor)
+        allowed = TUTOR_MOODS.get(self._tutor) if self._moods_enabled else None
         if not allowed:
             # Тьютору эмоции не выданы — не трогаем поток вообще.
             async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
@@ -1225,11 +1232,11 @@ class TutorAgent(Agent):
                 delta = getattr(chunk, "delta", None)
                 content = getattr(delta, "content", None) if delta is not None else None
                 if content:
-                    # Опустевший чанк (текст целиком ушёл в буфер) отдаём вниз
-                    # как есть: пустая строка ничего не добавляет, а вот
-                    # delta.extra — провайдерские данные вроде thought
-                    # signatures — при отбрасывании чанка потерялось бы.
                     delta.content = stripper.feed(content)
+                # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
+                # ниже по потоку ничего не добавит, а delta.extra
+                # (провайдерские данные вроде thought signatures) потребитель
+                # читает и терять его нельзя.
                 yield chunk
             # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
             # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
@@ -3354,6 +3361,7 @@ async def entrypoint(ctx: JobContext):
         room=ctx.room,
         scenario_id=scenario_data["id"] if is_scenario else "",
         tutor=profile.tutor,
+        moods_enabled=not (is_scenario or is_placement or is_debate),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
