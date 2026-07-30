@@ -889,21 +889,29 @@
   --mood-rgb: 255 106 0;
 } /* жжёный апельсин — разводит с жёлтым */
 
-/* Сила = насколько близко свечение подходит к орбу. От края карточки до края
-   орба по вертикали ~150px (min-height 520 минус орб 220, пополам). Максимум
-   альфы 0.40, а не выше: на белом глубокий кармин начинает спорить с орбом за
-   внимание, а орб здесь главный. */
+/* Сила = насколько близко свечение подходит к орбу.
+
+   Зазоры измерены на живой вёрстке, а не выведены из min-height: карточка
+   876x616, орб 220px прижат к ВЕРХУ стека, поэтому до него сверху 48px,
+   снизу 348px, по бокам 328px. Шкала привязана к боковым 328px — это
+   основная ось на широкой карточке; сверху свечение упирается в край на
+   любой силе, и это нормально.
+
+   Глубина захода = spread + blur/2, альфа у края = alpha * (spread+blur/2)/blur.
+   Поэтому одна и та же --mood-alpha даёт РАЗНУЮ плотность у разных повадок:
+   у эмоций со spread 0 половина полосы отсекается, у смещённых — нет. Это
+   осознанно: злость должна быть плотнее грусти. */
 .t-voice__card.is-mood-1 {
-  --mood-blur: 56px;
-  --mood-alpha: 0.16;
-}
-.t-voice__card.is-mood-2 {
-  --mood-blur: 104px;
+  --mood-blur: 160px;
   --mood-alpha: 0.26;
 }
-.t-voice__card.is-mood-3 {
-  --mood-blur: 168px;
+.t-voice__card.is-mood-2 {
+  --mood-blur: 300px;
   --mood-alpha: 0.4;
+}
+.t-voice__card.is-mood-3 {
+  --mood-blur: 460px;
+  --mood-alpha: 0.58;
 }
 
 /* Повадка эмоции — не украшение, а второй канал информации. Пять эмоций,
@@ -922,20 +930,21 @@
    единственным местом, где записана геометрия эмоции, и правка не может
    разъехаться с копией внутри keyframes. */
 .t-voice__card.is-mood-anger {
-  box-shadow: inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
+  box-shadow: inset 0 0 calc(var(--mood-blur) * 0.55) calc(var(--mood-blur) * 0.12)
+    rgb(var(--mood-rgb) / var(--mood-alpha));
   animation: t-mood-press 1.6s ease-in-out infinite;
 }
 @keyframes t-mood-press {
   50% {
-    box-shadow: inset 0 0 calc(var(--mood-blur) * 0.78)
-      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.25));
+    box-shadow: inset 0 0 calc(var(--mood-blur) * 0.44) calc(var(--mood-blur) * 0.16)
+      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.2));
   }
 }
 
 /* Отвращение отшатывается: свечение жмётся к внешнему краю и держит зазор до
    орба. Отрицательный spread поджимает тень к границе. */
 .t-voice__card.is-mood-disgust {
-  box-shadow: inset 0 0 calc(var(--mood-blur) * 0.6) calc(var(--mood-blur) * -0.28)
+  box-shadow: inset 0 0 calc(var(--mood-blur) * 0.5) calc(var(--mood-blur) * -0.08)
     rgb(var(--mood-rgb) / var(--mood-alpha));
 }
 
@@ -955,7 +964,8 @@
 .t-voice__card.is-mood-sadness {
   box-shadow:
     inset 0 calc(var(--mood-blur) * -0.5) var(--mood-blur)
-      calc(var(--mood-blur) * -0.2) rgb(var(--mood-rgb) / var(--mood-alpha)),
+      calc(var(--mood-blur) * -0.2)
+      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.75)),
     inset 0 calc(var(--mood-blur) * 0.3) calc(var(--mood-blur) * 0.5)
       calc(var(--mood-blur) * -0.35)
       rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.35));
@@ -966,7 +976,7 @@
 .t-voice__card.is-mood-gloat {
   box-shadow:
     inset calc(var(--mood-blur) * -0.45) 0 var(--mood-blur)
-      calc(var(--mood-blur) * -0.15) rgb(var(--mood-rgb) / var(--mood-alpha)),
+      calc(var(--mood-blur) * -0.15) rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.75)),
     inset calc(var(--mood-blur) * 0.3) 0 calc(var(--mood-blur) * 0.6)
       calc(var(--mood-blur) * -0.3)
       rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.4));
@@ -977,7 +987,7 @@
     box-shadow:
       inset calc(var(--mood-blur) * -0.55) 0 calc(var(--mood-blur) * 1.1)
         calc(var(--mood-blur) * -0.1)
-        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.15)),
+        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.86)),
       inset calc(var(--mood-blur) * 0.2) 0 calc(var(--mood-blur) * 0.6)
         calc(var(--mood-blur) * -0.34)
         rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.3));
