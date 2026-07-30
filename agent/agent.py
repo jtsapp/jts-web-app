@@ -1225,13 +1225,12 @@ class TutorAgent(Agent):
                 delta = getattr(chunk, "delta", None)
                 content = getattr(delta, "content", None) if delta is not None else None
                 if content:
+                    # Опустевший чанк (текст целиком ушёл в буфер) отдаём вниз
+                    # как есть: пустая строка ничего не добавляет, а вот
+                    # delta.extra — провайдерские данные вроде thought
+                    # signatures — при отбрасывании чанка потерялось бы.
                     delta.content = stripper.feed(content)
-                    # Чанк опустел (текст ушёл в буфер) и не несёт вызова
-                    # инструмента — придержать его, иначе вниз уйдёт пустышка.
-                    if not delta.content and not delta.tool_calls:
-                        chunk = None
-                if chunk is not None:
-                    yield chunk
+                yield chunk
             # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
             # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
             if stripper.mood and not published:
