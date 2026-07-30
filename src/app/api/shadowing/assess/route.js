@@ -12,11 +12,11 @@ import {
   isAzureSpeechConfigured,
 } from '@/lib/ielts/azure-pronunciation.js'
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
+import { buildTipPrompt } from '@/lib/shadowing/tipPrompt.js'
 
 export const runtime = 'nodejs'
 
 const MAX_BYTES = 40 * 1024 * 1024 // до ~20 мин 16кГц mono WAV (целый отрывок)
-const LANG_NAME = { ru: 'Russian', en: 'English', kk: 'Kazakh' }
 
 const TIP_SCHEMA = {
   type: 'object',
@@ -25,23 +25,13 @@ const TIP_SCHEMA = {
 }
 
 // Короткий совет тренера по данным Azure. Быстрый/дешёвый haiku, 1–2 фразы на
-// языке интерфейса. Осечка не критична — вызывающий отдаст пустой совет.
+// языке интерфейса (промпт — в lib/shadowing/tipPrompt.js). Осечка не критична —
+// вызывающий отдаст пустой совет.
 async function makeTip(score, refText, lang) {
-  const weak = (score.words || [])
-    .filter((w) => w.error !== 'None' || w.accuracy < 70)
-    .map((w) => w.word)
-    .slice(0, 6)
-  const langName = LANG_NAME[lang] || 'Russian'
+  const { systemPrompt, userMessage } = buildTipPrompt(score, refText, lang)
   const raw = await structured({
-    systemPrompt:
-      `You are a warm, concrete English pronunciation coach. Give exactly ONE short, ` +
-      `encouraging tip (max 2 sentences) in ${langName}. Target the biggest issue: ` +
-      `prosody/intonation or the specific weak words. No preamble, no numbers, no scores.`,
-    userMessage:
-      `Reference phrase: "${refText}"\n` +
-      `Scores (0-100): accuracy ${score.accuracy}, fluency ${score.fluency}, ` +
-      `prosody ${score.prosody}, overall ${score.overall}.\n` +
-      `Weak or incorrect words: ${weak.join(', ') || 'none'}.`,
+    systemPrompt,
+    userMessage,
     schema: TIP_SCHEMA,
     model: 'claude-haiku-4-5-20251001',
     maxOutputTokens: 200,
