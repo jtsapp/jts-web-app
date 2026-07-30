@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
-import { ChevronLeftIcon } from '../components/icons.jsx'
+import { ChevronLeftIcon, CastleIcon, LeafIcon, WaveIcon, CrescentIcon, StarIcon, BurstIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules, getPracticeToken, completeLessonModule } from '../api.js'
 import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
@@ -9,20 +9,32 @@ import LessonPlayer from '../learning/LessonPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
-function ProgressRing({ done = 0, total = 0 }) {
+function ProgressRing({ done = 0, total = 0, size = 54, showLabel = true }) {
   const r = 22
   const c = 2 * Math.PI * r
   const pct = total > 0 ? Math.min(1, done / total) : 0
   const offset = c * (1 - pct)
   return (
-    <svg className="kh-ring" width="54" height="54" viewBox="0 0 54 54">
+    <svg className="kh-ring" width={size} height={size} viewBox="0 0 54 54">
       <circle cx="27" cy="27" r={r} className="kh-ring__track" />
       <circle cx="27" cy="27" r={r} className="kh-ring__value" strokeDasharray={c} strokeDashoffset={offset} transform="rotate(-90 27 27)" />
-      <text x="27" y="28" className="kh-ring__label" dominantBaseline="middle" textAnchor="middle">
-        {done}/{total}
-      </text>
+      {showLabel && (
+        <text x="27" y="28" className="kh-ring__label" dominantBaseline="middle" textAnchor="middle">
+          {done}/{total}
+        </text>
+      )}
     </svg>
   )
+}
+
+// Тип урока (l.type из index.json, считается экстрактором по первому заданию) →
+// «печенька» узла тропы: иконка + цветовой класс. Закрытые узлы серые (CSS).
+const COOKIE = {
+  choice: { Icon: LeafIcon, cls: 'is-choice' },
+  audio: { Icon: WaveIcon, cls: 'is-audio' },
+  video: { Icon: CrescentIcon, cls: 'is-video' },
+  info: { Icon: StarIcon, cls: 'is-info' },
+  final: { Icon: BurstIcon, cls: 'is-final' },
 }
 
 // Интерьер королевства: нативная тропа уроков уровня + нативный плеер урока
@@ -84,6 +96,22 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
   const total = lessons.length
   const doneCount = lessons.filter((l) => done.has(l.code)).length
+
+  // Группировка тропы по юнитам (l.unit): подряд идущие уроки с одним unit —
+  // один юнит; gi — глобальный индекс урока (нужен для блокировки).
+  const units = useMemo(() => {
+    const out = []
+    lessons.forEach((l, gi) => {
+      const key = l.unit ?? 1
+      let g = out[out.length - 1]
+      if (!g || g.unit !== key) {
+        g = { unit: key, items: [] }
+        out.push(g)
+      }
+      g.items.push({ l, gi })
+    })
+    return out
+  }, [lessons])
 
   // Урок разблокирован, если это первый или предыдущий пройден.
   const isUnlocked = useCallback(
@@ -152,16 +180,20 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" onNav={onNav} onProfile={onProfile}>
-      <div className="li-top">
-        <button className="li-back" onClick={handleBack}>
-          <ChevronLeftIcon size={18} />
-          {t('common.back')}
-        </button>
-        <div className="li-crumb">
-          <b>{t('kingdom.title', { name: k.name })}</b>
-          <span>{t('kingdom.levelBadge', { label: level })}</span>
+      {/* Верхняя навигация — только для состояний без шапки-баннера (загрузка/
+          ошибка/пусто). В основном виде «Назад» живёт в самой шапке. */}
+      {(loading || !!error) && (
+        <div className="li-top">
+          <button className="li-back" onClick={handleBack}>
+            <ChevronLeftIcon size={18} />
+            {t('common.back')}
+          </button>
+          <div className="li-crumb">
+            <b>{t('kingdom.title', { name: k.name })}</b>
+            <span>{t('kingdom.levelBadge', { label: level })}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {loading && (
         <div className="ki-state">
@@ -187,47 +219,106 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         <div className="km-scroll">
           <div
             className="kh-hero"
-            style={{ backgroundImage: `url(/assets/world/hero/${String(level).toLowerCase()}.png), linear-gradient(135deg, #7c4dff, #4a2b9e)` }}
+            style={{ background: `linear-gradient(180deg, rgba(255,255,255,0.14), rgba(0,0,0,0.10)), ${k.ring}` }}
           >
-            <div className="kh-hero__scrim" />
-            <div className="kh-hero__info">
-              <div className="kh-hero__king">
-                <img className="kh-hero__avatar" src={`/assets/world/kings/${k.id}_portrait.webp`} alt="" onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
-                <span className="kh-hero__kingname">Король {k.king}</span>
+            <div className="kh-hero__nav">
+              <button className="kh-hero__back" onClick={handleBack} aria-label={t('common.back')}>
+                <ChevronLeftIcon size={18} />
+              </button>
+              <span className="kh-hero__castle" style={{ color: k.ring }} aria-hidden="true">
+                <CastleIcon size={18} />
+              </span>
+              <div className="kh-hero__place">
+                <b>{k.name}</b>
+                <span>{t('kingdom.levelBadge', { label: level })}</span>
               </div>
-              <div className="kh-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
             </div>
-            <div className="kh-hero__ring">
-              <ProgressRing done={doneCount} total={total} />
+            <div className="kh-hero__main">
+              <div className="kh-hero__text">
+                <div className="kh-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
+                <div className="kh-hero__prog">
+                  <ProgressRing done={doneCount} total={total} size={22} showLabel={false} />
+                  <span>{t('learn.done')} {doneCount}/{total}</span>
+                </div>
+              </div>
+              <img
+                className="kh-hero__mascot"
+                src={`/assets/world/levels/${String(level).toLowerCase()}.webp`}
+                alt=""
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
             </div>
           </div>
 
-          {/* Нативная тропа: список узлов-уроков с состоянием. */}
-          <ol className="kt-trail">
-            {lessons.map((l, i) => {
-              const isDone = done.has(l.code)
-              const unlocked = isUnlocked(i)
-              const current = !isDone && unlocked
-              const cls =
-                'kt-node' + (isDone ? ' is-done' : '') + (current ? ' is-current' : '') + (!unlocked ? ' is-locked' : '')
+          {/* Нативная тропа: узлы сгруппированы по юнитам (l.unit из index.json),
+              внутри юнита — «лесенка»-серпантин. */}
+          <div className="kt-units">
+            {units.map((g) => {
+              const isExam = g.unit === 0
+              const doneN = g.items.filter(({ l }) => done.has(l.code)).length
+              const node = ({ l, gi }, j) => {
+                const isDone = done.has(l.code)
+                const unlocked = isUnlocked(gi)
+                const current = !isDone && unlocked
+                const cls =
+                  'kt-node' + (isDone ? ' is-done' : '') + (current ? ' is-current' : '') + (!unlocked ? ' is-locked' : '')
+                const cookie = COOKIE[l.type] || COOKIE.choice
+                const CookieIcon = cookie.Icon
+                // «Лесенка»: узлы серпантином влево-вправо (период 6); экзамен — по центру.
+                const dx = isExam ? 0 : Math.round(Math.sin((j / 3) * Math.PI) * 82)
+                return (
+                  <li key={l.code} className={cls} style={{ '--dx': `${dx}px` }}>
+                    <button
+                      className="kt-node__btn"
+                      disabled={!unlocked || busy}
+                      onClick={() => openLesson(l.code)}
+                      title={!unlocked ? t('lesson.locked') : l.title || l.code}
+                    >
+                      <span className={`kt-node__cookie ${cookie.cls}`} aria-hidden="true">
+                        <CookieIcon size={22} />
+                        {isDone && (
+                          <span className="kt-node__done">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                              <path d="m5 12.5 4 4L19 7" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </span>
+                        )}
+                      </span>
+                      <span className="kt-node__label">{isExam ? t('lesson.examUnit') : l.title || l.code}</span>
+                    </button>
+                  </li>
+                )
+              }
+
+              // Финальный экзамен — особый узел: печенька на белой карточке над
+              // красными «горами»-вершиной (как в дизайне).
+              if (isExam) {
+                return (
+                  <section key="exam" className="kt-exam">
+                    <svg className="kt-exam__peaks" viewBox="0 0 1200 210" preserveAspectRatio="none" aria-hidden="true">
+                      <path
+                        d="M0 210V150L70 60 140 150 210 30 300 150 370 95 450 150 540 20 630 150 700 85 780 150 870 45 960 150 1040 100 1120 150 1200 55V210Z"
+                        fill="#c9463f"
+                      />
+                    </svg>
+                    <ol className="kt-trail kt-trail--exam">{g.items.map(node)}</ol>
+                  </section>
+                )
+              }
+
               return (
-                <li key={l.code} className={cls}>
-                  <button
-                    className="kt-node__btn"
-                    disabled={!unlocked || busy}
-                    onClick={() => openLesson(l.code)}
-                    title={!unlocked ? t('lesson.locked') : ''}
-                  >
-                    <span className="kt-node__mark">{isDone ? '✓' : unlocked ? i + 1 : '🔒'}</span>
-                    <span className="kt-node__meta">
-                      <b>{l.title || l.code}</b>
-                      <span>{current ? t('lesson.start') : isDone ? t('learn.done') : t('lesson.locked')}</span>
+                <section key={g.unit} className="kt-unit">
+                  <div className="kt-unit__head">
+                    <span className="kt-unit__title">{t('lesson.unit', { n: g.unit })}</span>
+                    <span className="kt-unit__count">
+                      {doneN}/{g.items.length}
                     </span>
-                  </button>
-                </li>
+                  </div>
+                  <ol className="kt-trail">{g.items.map(node)}</ol>
+                </section>
               )
             })}
-          </ol>
+          </div>
         </div>
       )}
 

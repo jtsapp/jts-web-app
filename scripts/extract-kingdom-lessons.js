@@ -40,6 +40,35 @@ const LEVELS = [
   { code: 'c1', label: 'C1' },
 ]
 
+// «Тип» урока для иконки-печеньки на тропе: код FINAL_TEST → final, иначе группа
+// ПЕРВОГО задания урока (чем урок открывается): listen→audio, watch/video→video,
+// info→info, остальное (choice/chips/gap/check) → choice. Преобладающий тип не
+// годится — почти все уроки состоят в основном из choice, тропа была бы
+// одноцветной. Держим ту же группировку, что и UI
+// (src/screens/KingdomInteriorPage.jsx: taskGroup).
+function taskGroup(type) {
+  if (type === 'listen') return 'audio'
+  if (type === 'watch' || type === 'video') return 'video'
+  if (type === 'info') return 'info'
+  return 'choice'
+}
+function lessonType(code, tasks) {
+  if (/FINAL_TEST/i.test(code)) return 'final'
+  const first = tasks && tasks[0]
+  return first ? taskGroup(first.type) : 'choice'
+}
+
+// Юниты тропы. Разделение живёт в контенте: у каждого уровня есть уроки-«ревью»
+// в конце юнита (названия разнятся: «Unit N Review», «Review & progress check»,
+// «Mid-course Checkpoint», «Course Consolidation»). Такой урок ЗАКРЫВАЕТ юнит.
+// Экзамены (FINAL_TEST / Progress Test) выносятся в отдельную группу (unit 0).
+function isExam(code, title) {
+  return /FINAL_TEST|PROGRESS_TEST/i.test(code) || /итоговый тест|final test|cumulative final/i.test(title || '')
+}
+function isUnitEnd(code, title) {
+  return !isExam(code, title) && /review|checkpoint|consolidation|progress\s*check/i.test(title || '')
+}
+
 // --src <dir|url>; по умолчанию — локальная копия курсов на Desktop.
 function parseSrc() {
   const i = process.argv.indexOf('--src')
@@ -172,6 +201,7 @@ async function extractLevel(browser, code, label) {
   const catalog = []
   const typeCounts = {}
   let mediaFiles = 0
+  let unitNo = 1
 
   for (let order = 0; order < all.length; order++) {
     const lessonCode = all[order]
@@ -210,7 +240,10 @@ async function extractLevel(browser, code, label) {
       }
       const title = raw.title || lessonCode
       lessons[lessonCode] = { code: lessonCode, title, tasks }
-      catalog.push({ code: lessonCode, order, title, taskCount: tasks.length })
+      const exam = isExam(lessonCode, title)
+      const unit = exam ? 0 : unitNo
+      catalog.push({ code: lessonCode, order, title, taskCount: tasks.length, type: lessonType(lessonCode, tasks), unit })
+      if (!exam && isUnitEnd(lessonCode, title)) unitNo++
     } finally {
       await page.close()
     }
