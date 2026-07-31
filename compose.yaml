@@ -1,0 +1,42 @@
+# Свой Postgres для jts-web-app (замена Neon). Изолирован от Postgres бэкенда
+# (backend/compose.yaml) — свой контейнер, свой volume, свой хост-порт, чтобы
+# падение/переполнение одного проекта не задевало другой.
+#
+# dev/prod разводятся так же, как у backend: один и тот же файл, но
+# `docker compose -p development`/`-p production` даёт каждому окружению
+# отдельный контейнер и volume (project name — часть их имён).
+#
+# ВАЖНО: POSTGRES_PORT здесь по умолчанию 5433 — это ПРЕДПОЛАГАЕМОЕ свободное
+# значение (backend уже занимает 5431 под dev). Перед реальным деплоем на VPS
+# нужно свериться с `docker ps` — если 5433 занят, переопределить через env
+# (POSTGRES_PORT), как это уже делает backend.
+#
+# Версия 18 (не 15, как у backend) — потому что реальный Neon-инстанс сейчас
+# на PostgreSQL 18.4 (см. schema.sql); совпадающая версия убирает любой риск
+# несовместимости при pg_dump/pg_restore переноса данных.
+#
+# Начиная с образа postgres:18 volume монтируется на /var/lib/postgresql
+# целиком (без /data) — сам образ кладёт данные во внутреннюю подпапку
+# версии (pg_ctlcluster-совместимый layout). Старый путь .../data/ (как у
+# backend, там ещё postgres:15) больше не подходит.
+services:
+  postgres:
+    image: 'postgres:18'
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jts_web_app}
+      POSTGRES_USER: ${POSTGRES_USER:-jts_web_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+    ports:
+      - ${POSTGRES_PORT:-5433}:5432
+    mem_limit: 512m
+    volumes:
+      - jts-web-app-data:/var/lib/postgresql
+      # Официальный образ postgres сам выполняет любой .sql из этой папки —
+      # но ТОЛЬКО один раз, при самой первой инициализации пустого volume.
+      # Так схема применяется автоматически на любом чистом деплое (прод
+      # в том числе) — без ручного psql. На уже проинициализированный volume
+      # это не подействует задним числом (см. HANDOFF/память об этом).
+      - ./src/lib/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+volumes:
+  jts-web-app-data:

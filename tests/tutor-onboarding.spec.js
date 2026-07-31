@@ -24,37 +24,49 @@ test.describe('онбординг тьютора — мобилка', () => {
     expect(lastOption.y + lastOption.height).toBeLessThanOrEqual(panel.y + 3)
   })
 
+  // Раньше тест проверял свайп-грид .t-choose__grid со нативным scroll-snap.
+  // Его заменила coverflow-карусель (TutorCarousel.jsx): слоты позиционированы
+  // абсолютно и двигаются transform'ом из JS, нативного скролла у неё нет, а
+  // десктопный грид на мобиле спрятан (tutor.css, @media max-width:760px).
+  // Поэтому проверяем сам .t-car: грид скрыт, страница не ездит по горизонтали,
+  // кнопки в экране, а drag дальше порога 40px переключает тьютора.
   test('выбор тьютора: карусель свайпается со снапом внутри экрана', async ({ page, viewport }) => {
     await page.goto('/?screen=tutor-choose')
-    const grid = page.locator('.t-choose__grid')
-    await expect(grid).toBeVisible()
+    const car = page.locator('.t-car')
+    await expect(car).toBeVisible()
+    await expect(page.locator('.t-choose__grid')).toBeHidden()
 
-    // Скроллится сама карусель, а не вся страница.
-    const size = await grid.evaluate((el) => ({ cw: el.clientWidth, sw: el.scrollWidth }))
-    expect(size.cw).toBeLessThanOrEqual(viewport.width)
-    expect(size.sw).toBeGreaterThan(size.cw)
+    // Сцена шире вьюпорта на ±16px (соседи выглядывают за края), но это
+    // обрезается — горизонтального скролла у страницы быть не должно.
+    const doc = await page.evaluate(() => ({
+      sw: document.documentElement.scrollWidth,
+      iw: window.innerWidth,
+    }))
+    expect(doc.sw).toBeLessThanOrEqual(doc.iw)
 
-    // Свайп переключает карточку: центр меняется и скролл реально сдвигается.
-    const centerName = () =>
-      page.evaluate(() => {
-        const mid = window.innerWidth / 2
-        return [...document.querySelectorAll('.t-tcard')]
-          .map((c) => {
-            const r = c.getBoundingClientRect()
-            return { n: c.querySelector('.t-tcard__name').textContent, d: Math.abs(r.left + r.width / 2 - mid) }
-          })
-          .sort((a, b) => a.d - b.d)[0].n
-      })
-    // Кнопка «Выбрать» стартовой карточки целиком в экране (до свайпа).
-    const btn = await page.locator('.t-tcard__choose').first().boundingBox()
-    expect(btn.x).toBeGreaterThanOrEqual(0)
-    expect(btn.x + btn.width).toBeLessThanOrEqual(viewport.width + 1)
+    // Обе кнопки целиком в экране (инцидент: уезжали под адресную строку).
+    for (const sel of ['.t-car__listen', '.t-car__choose']) {
+      const box = await page.locator(sel).boundingBox()
+      expect(box.x).toBeGreaterThanOrEqual(0)
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1)
+    }
 
-    const first = await centerName()
-    await grid.evaluate((el) => el.scrollBy({ left: 320, behavior: 'smooth' }))
+    const name = () => page.locator('.t-car__name').innerText()
+    const first = await name()
+
+    // Drag влево на 120px — заметно больше порога 40px в onEnd. steps обязательны:
+    // без промежуточных mousemove обработчик не накопит смещение.
+    const stage = await page.locator('.t-car__stage').boundingBox()
+    const y = stage.y + stage.height / 2
+    await page.mouse.move(stage.x + stage.width * 0.7, y)
+    await page.mouse.down()
+    await page.mouse.move(stage.x + stage.width * 0.7 - 120, y, { steps: 10 })
+    await page.mouse.up()
+
+    // 340ms — transition слота, плюс столько же на тихий возврат индекса в
+    // среднюю копию списка (бесконечный цикл в TutorCarousel).
     await page.waitForTimeout(800)
-    expect(await centerName()).not.toBe(first)
-    expect(await grid.evaluate((el) => el.scrollLeft)).toBeGreaterThan(100)
+    expect(await name()).not.toBe(first)
   })
 
   test('профессия: поле и варианты во всю ширину, ввод работает', async ({ page, viewport }) => {

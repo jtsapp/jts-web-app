@@ -1,11 +1,12 @@
 // Модель королевств (по мобильному приложению, kKingdoms).
+// map: позиция ноды на острове-карте в процентах (x,y), ring — цвет кольца ноды.
 export const KINGDOMS = [
-  { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' },
-  { id: 'greendale', name: 'Greendale', king: 'Барни', level: 'A2' },
-  { id: 'bridgeport', name: 'Bridgeport', king: 'Ди Флотио', level: 'B1' },
-  { id: 'highspire', name: 'Highspire', king: 'Эван Доу', level: 'B2' },
-  { id: 'frostcrystal', name: 'Frostcrystal', king: 'Шелли Бумер', level: 'C1' },
-  { id: 'goldcrown', name: 'Goldcrown', king: 'Атлас Дон', level: 'C2', comingSoon: true },
+  { id: 'sunhaven', name: 'Redtown', king: 'Майкл Флот', level: 'A1', map: { x: 45, y: 85 }, ring: '#EF6C2E' },
+  { id: 'greendale', name: 'Bluewave Town', king: 'Барни', level: 'A2', map: { x: 63, y: 71 }, ring: '#2E86D6' },
+  { id: 'bridgeport', name: 'Green Peace Town', king: 'Ди Флотио', level: 'B1', map: { x: 39, y: 57 }, ring: '#3AA35A' },
+  { id: 'highspire', name: 'Music Town', king: 'Эван Доу', level: 'B2', map: { x: 57, y: 43 }, ring: '#7C43B4' },
+  { id: 'frostcrystal', name: 'Cocalastic Town', king: 'Шелли Бумер', level: 'C1', map: { x: 40, y: 28 }, ring: '#E0A21F' },
+  { id: 'goldcrown', name: 'Rosewind Town', king: 'Атлас Дон', level: 'C2', comingSoon: true, map: { x: 58, y: 15 }, ring: '#C43C93' },
 ]
 
 export const LEVEL_ORDER = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']

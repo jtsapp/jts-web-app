@@ -1,10 +1,18 @@
 import { test, expect } from '@playwright/test'
+import { TUTOR_ONLY } from '../src/config.js'
 
 // Регрессия разгейта TUTOR_ONLY_SECTIONS: на проде (TUTOR_ONLY=true) помимо
 // тьютора открыты Практика и Словарь — они видны в сайдбаре и открываются
 // кликом, включая внутренний экран «Аудирование» (баннер в Практике).
 // Скрытые разделы (Обучение, Уроки, IELTS) в сайдбаре отсутствуют.
 // Бэкенд замокан: интересует только видимость пунктов и маршрутизация.
+
+// Контракт действует только при TUTOR_ONLY=true (main). В develop флаг false,
+// сайдбар показывает все разделы — там эти ожидания заведомо ложны, поэтому
+// спек скипается, а не краснеет.
+test.beforeEach(() => {
+  test.skip(!TUTOR_ONLY, 'Контракт режима «только тьютор»: TUTOR_ONLY=false')
+})
 
 async function loginToTutorZone(page) {
   const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
