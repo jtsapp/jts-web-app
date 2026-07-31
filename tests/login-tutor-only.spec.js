@@ -1,9 +1,16 @@
 import { test, expect } from '@playwright/test'
+import { TUTOR_ONLY } from '../src/config.js'
 
 // Регрессия: в режиме «только тьютор» (main) свежий вход по телефону вёл в
 // королевства — экран success игнорировал TUTOR_ONLY и слал в 'kingdom',
 // а до тьюторского голосового теста уровня пользователь не добирался вовсе.
 // Бэкенд замокан: интересует только маршрутизация после успешного входа.
+
+// В develop (TUTOR_ONLY=false) вход в королевства — штатное поведение, а не баг,
+// который этот спек ловит. Скипаем, чтобы не красить прогон впустую.
+test.beforeEach(() => {
+  test.skip(!TUTOR_ONLY, 'Контракт режима «только тьютор»: TUTOR_ONLY=false')
+})
 
 test('после входа открывается тьютор-зона, а не королевства', async ({ page }) => {
   const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })

@@ -17,15 +17,16 @@ export default function KingdomPage({ userLevel = 'A1', userName, token, onOpenK
   useEffect(() => {
     if (!token) return
     let alive = true
-    getBalance(token)
-      .then((b) => alive && b && setBalance({ coins: b.coins ?? 0, streak: b.streak ?? 0, streakActiveToday: !!b.streakActiveToday }))
-      .catch(() => {})
+    // apply-колбэки получают и кэш (мгновенный рендер), и свежие данные из фона.
+    const applyBalance = (b) =>
+      alive && b && setBalance({ coins: b.coins ?? 0, streak: b.streak ?? 0, streakActiveToday: !!b.streakActiveToday })
+    getBalance(token, applyBalance).then(applyBalance).catch(() => {})
     computeKingdoms(userLevel)
       .filter((k) => !k.comingSoon)
       .forEach((k) => {
-        getLearningPath(k.level, token)
-          .then((p) => alive && setProgress((prev) => ({ ...prev, [k.id]: countProgress(p) })))
-          .catch(() => {})
+        const apply = (p) =>
+          alive && p && setProgress((prev) => ({ ...prev, [k.id]: countProgress(p) }))
+        getLearningPath(k.level, token, apply).then(apply).catch(() => {})
       })
     return () => {
       alive = false
@@ -57,7 +58,7 @@ export default function KingdomPage({ userLevel = 'A1', userName, token, onOpenK
                 onClick={() => !locked && onOpenKingdom?.(k)}
               >
                 <div className={`kd-card__img ${locked ? 'kd-card__img--locked' : ''}`}>
-                  <img src={`/assets/world/kings/${k.id}.jpg`} alt={k.name} loading="lazy" />
+                  <img src={`/assets/world/kings/${k.id}.webp`} alt={k.name} loading="lazy" />
                   {locked && (
                     <span className="kd-locked">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none">

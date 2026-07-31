@@ -68,17 +68,18 @@ export default function Sidebar({
     const authToken = token || loadToken()
     if (!authToken) return
     let alive = true
-    getBalance(authToken)
-      .then((b) => {
-        if (alive && b) {
-          setBalance({
-            coins: b.coins ?? 0,
-            streak: b.streak ?? 0,
-            streakActiveToday: !!b.streakActiveToday,
-          })
-        }
-      })
-      .catch(() => {})
+    // apply получает и кэш (мгновенно, без «мигания» нулей при перемонтировании
+    // сайдбара на смене экрана), и свежий баланс, когда фоновый запрос дойдёт.
+    const apply = (b) => {
+      if (alive && b) {
+        setBalance({
+          coins: b.coins ?? 0,
+          streak: b.streak ?? 0,
+          streakActiveToday: !!b.streakActiveToday,
+        })
+      }
+    }
+    getBalance(authToken, apply).then(apply).catch(() => {})
     return () => {
       alive = false
     }

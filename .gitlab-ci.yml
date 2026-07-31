@@ -1,0 +1,54 @@
+variables:
+  GITLAB_RUNNER_TAG: justtostudy.kz
+  GIT_STRATEGY: fetch
+  GIT_CHECKOUT: fetch
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_COMMIT_BRANCH/$CI_PIPELINE_ID/$CI_PROJECT_NAME'
+
+stages:
+  - deploy
+  - trash
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      variables:
+        APP_ENV: production
+    - if: $CI_COMMIT_BRANCH == "develop"
+      variables:
+        APP_ENV: development
+
+# Отдельного build-стейджа, в отличие от backend, не нужно — сборка Next.js
+# (`npm ci` + `npm run build`) целиком внутри Dockerfile (multi-stage), её
+# запускает сам `docker compose ... --build` на шаге deploy.
+deploy:
+  environment:
+    name: $APP_ENV
+  tags:
+    - $GITLAB_RUNNER_TAG
+  stage: deploy
+  script:
+    - echo $APP_ENV
+    # ВАЖНО: НЕ переиспользовать голое "-p $APP_ENV", как у backend — сервис
+    # тут тоже называется "postgres", и с одинаковым project name Docker
+    # Compose считает это ТЕМ ЖЕ контейнером, что и у backend, и пересоздаёт
+    # его под наш образ (реальный инцидент 2026-07-30 — снёс development-
+    # postgres-1 бэкенда). "jts-$APP_ENV" даёт отдельное namespace.
+    - docker compose -f compose.yaml -f compose-app.yaml -p jts-$APP_ENV up -d --build --force-recreate
+  # dev отработал стабильно (реальное потребление RAM проверено) — добавляем
+  # main для прода. POSTGRES_PORT/APP_PORT для production ДОЛЖНЫ быть заданы
+  # отдельными от dev значениями в GitLab CI/CD Variables (иначе конфликт
+  # портов на одном хосте — dev уже держит 5433/8090).
+  only:
+    - develop
+    - main
+
+trash:
+  when: manual
+  tags:
+    - $GITLAB_RUNNER_TAG
+  stage: trash
+  script:
+    - docker system prune -f --all --filter "until=720h"
+
+after_script:
+  - echo "End CI"

@@ -216,3 +216,18 @@ create table if not exists practice_state (
   updated_at timestamptz not null default now(),
   primary key (profile_id, module)
 );
+
+-- ===========================================================================
+-- Недельный лимит платных оценок Shadowing. Оценка (Azure + Claude) стоит денег,
+-- поэтому на аккаунт даём фиксированное число «кредитов» в неделю. 1 кредит ≈ до
+-- 30 с аудио; пофразная оценка = 1 кредит, «целиком» = ceil(сек/30). Лимит 10 →
+-- потолок ~$0.09/нед. profile_id = 'user-<id>'; week_key — ISO ('2026-W31').
+-- Аналог voice_usage, но по неделям. См. lib/db/shadowingBudget.js.
+-- ===========================================================================
+create table if not exists shadowing_assess (
+  profile_id text        not null,
+  week_key   text        not null,   -- ISO week, '2026-W31'
+  used       integer     not null default 0,   -- потрачено кредитов
+  updated_at timestamptz not null default now(),
+  primary key (profile_id, week_key)
+);

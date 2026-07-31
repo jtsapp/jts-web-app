@@ -75,6 +75,10 @@ function catalogCacheKey(path, token) {
   return `jts_catalog_${CATALOG_CACHE_VER}:${BASE}:${tokenIdentity(token)}:${path}`
 }
 
+// onFresh (опционально) вызывается со свежими данными, когда фоновое обновление
+// закончилось ПОСЛЕ того, как вызвавший уже получил кэшированный ответ. Это
+// позволяет кэшировать и изменяемые данные (баланс, прогресс, словарь):
+// экран мгновенно рисует кэш и тихо перерисовывается, когда приходит сеть.
 async function cachedAuthGet(path, token, onFresh) {
   if (typeof window === 'undefined') return authGet(path, token) // SSR — без кэша
   const key = catalogCacheKey(path, token)
@@ -103,9 +107,11 @@ async function cachedAuthGet(path, token, onFresh) {
   return refresh()
 }
 
-// Учебный путь королевства (уроки из dev-admin) по уровню CEFR
-export function getLearningPath(level, token) {
-  return authGet(`/mobile/learning-paths/by-language-level/${encodeURIComponent(level)}`, token)
+// Учебный путь королевства (уроки из dev-admin) по уровню CEFR.
+// SWR-кэш: прогресс меняется после уроков, поэтому передавайте onFresh —
+// он донесёт обновлённые счётчики, когда фоновый запрос завершится.
+export function getLearningPath(level, token, onFresh) {
+  return cachedAuthGet(`/mobile/learning-paths/by-language-level/${encodeURIComponent(level)}`, token, onFresh)
 }
 
 // Уроки (контент) — опубликованные Speakout-модули из раздела «Уроки (контент)»
@@ -128,6 +134,27 @@ export async function completeLessonModule(token, xp) {
   return res.json().catch(() => null)
 }
 
+// Per-lesson прогресс модуля «Обучения» (нативные уроки). Бэкенд помнит, какие
+// уроки модуля пройдены — синхрон между устройствами/мобилкой (раньше жило
+// только в localStorage). Отметка идемпотентна; xp начисляет монеты/стрик как
+// completeLessonModule.
+export async function getLessonProgress(token, moduleId) {
+  const res = await fetch(`${BASE}/mobile/lesson-modules/${encodeURIComponent(moduleId)}/progress`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error(`progress failed: ${res.status}`)
+  return res.json() // { done: [<code>], total }
+}
+
+export async function completeLesson(token, moduleId, code, xp = 0) {
+  const res = await fetch(
+    `${BASE}/mobile/lesson-modules/${encodeURIComponent(moduleId)}/lessons/${encodeURIComponent(code)}/complete?xp=${encodeURIComponent(xp)}`,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+  )
+  if (!res.ok) throw new Error(`lesson complete failed: ${res.status}`)
+  return res.json().catch(() => null) // { done: [<code>], total, balance? }
+}
+
 // Аудиокниги (GET /mobile/audio-lessons) — каталог «Книжек» из dev-admin.
 // Отдаёт [{id,title,author,description,level,topic,genre,year,coverImageUrl,
 // durationLabel,audioUrl,tracks,...}] с настоящими обложками (coverImageUrl).
@@ -135,9 +162,11 @@ export function getAudiobooks(token) {
   return cachedAuthGet('/mobile/audio-lessons', token)
 }
 
-// Баланс: монеты и стрик (для HUD)
-export function getBalance(token) {
-  return authGet('/mobile/balance/info', token)
+// Баланс: монеты и стрик (для HUD). SWR-кэш: сайдбар перемонтируется на каждом
+// переходе между экранами (key={screen} в App.jsx), кэш убирает и повторный
+// запрос в блокирующем пути, и «мигание» нулей; свежее значение — через onFresh.
+export function getBalance(token, onFresh) {
+  return cachedAuthGet('/mobile/balance/info', token, onFresh)
 }
 
 // Считает уроки/пройдено по LearningPathModel (modules -> sections -> activities)
@@ -261,6 +290,7 @@ export async function loginWithPassword(phone, password) {
 const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
 const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
 const DEMO_TOKEN_KEY = 'jts_demo_token'
+
 let _demoTokenPromise = null
 
 // Жив ли JWT (exp с запасом marginSec); битый токен считаем мёртвым.
@@ -317,6 +347,7 @@ export function getSituativki(token, level, onFresh) {
 }
 
 // Словарь пользователя (GET /mobile/saved-words) → [{word,translation,learned,correctCount,language}]
+// SWR-кэш: слова добавляются из читалки — свежий список приходит через onFresh.
 export function getSavedWords(token, onFresh) {
   return cachedAuthGet('/mobile/saved-words', token, onFresh)
 }
@@ -339,7 +370,7 @@ export async function saveWord(token, { word, translation, alternates, language 
   return res.json().catch(() => ({}))
 }
 
-// Удалить сохранённое слово (DELETE /mobile/saved-words/:id).
+// Удаление сохранённого слова (DELETE /mobile/saved-words/{id}, Bearer).
 export async function deleteSavedWord(token, id) {
   let res
   try {
