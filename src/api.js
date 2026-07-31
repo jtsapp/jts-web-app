@@ -17,6 +17,24 @@ export function normalizePhone(input) {
   return d
 }
 
+// Различает почту и телефон во входной строке идентификатора. ВАЖНО: не
+// пытаться отличить их через normalizePhone (пустой/не-цифровой результат) —
+// email, в котором случайно есть цифры (user2024@mail.com), после зачистки
+// нецифровых символов превратился бы в "2024", а не остался бы пустым.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export function isEmailIdentifier(input) {
+  return EMAIL_RE.test(String(input).trim())
+}
+
+// Приводит идентификатор (телефон или email, с логина/регистрации) к телу
+// запроса { phone } или { email } — бэкенд принимает ровно один из двух.
+function identifierBody(identifier) {
+  return isEmailIdentifier(identifier)
+    ? { email: String(identifier).trim() }
+    : { phone: normalizePhone(identifier) }
+}
+
 async function get(path) {
   let res
   try {
@@ -214,13 +232,13 @@ async function post(path, body) {
   return data
 }
 
-// Шаг 1 (регистрация): отправка кода. Возвращает режим 'register'. Если номер
-// уже занят — НЕ уводим молча в вход, а помечаем ошибку кодом USER_EXISTS, и UI
-// просит пользователя войти или взять другой номер (см. handlePhoneSubmit).
-export async function sendOtp(phone, name) {
-  const p = normalizePhone(phone)
+// Шаг 1 (регистрация): отправка кода на телефон ИЛИ email. Возвращает режим
+// 'register'. Если идентификатор уже занят — НЕ уводим молча в вход, а
+// помечаем ошибку кодом USER_EXISTS, и UI просит пользователя войти или взять
+// другой телефон/email (см. handlePhoneSubmit).
+export async function sendOtp(identifier, name) {
   try {
-    await post('/registration/initiate', { name: name || 'Гость', phone: p })
+    await post('/registration/initiate', { name: name || 'Гость', ...identifierBody(identifier) })
     return 'register'
   } catch (e) {
     if ((e.message || '').toLowerCase().includes('exist')) {
@@ -231,12 +249,12 @@ export async function sendOtp(phone, name) {
 }
 
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
-// номер молча зарегистрировался бы «Гостем». Незарегистрированный номер здесь
-// даёт 400 «User with this phone not found» — помечаем кодом USER_NOT_FOUND,
-// чтобы UI показал «Пользователь не существует» вместо сырого текста бэкенда.
-export async function requestLoginOtp(phone) {
+// телефон/email молча зарегистрировался бы «Гостем». Незарегистрированный
+// идентификатор здесь даёт 400 — помечаем кодом USER_NOT_FOUND, чтобы UI
+// показал «Пользователь не существует» вместо сырого текста бэкенда.
+export async function requestLoginOtp(identifier) {
   try {
-    await post('/auth/otp/request', { phone: normalizePhone(phone) })
+    await post('/auth/otp/request', identifierBody(identifier))
     return 'login'
   } catch (e) {
     const msg = (e.message || '').toLowerCase()
@@ -249,12 +267,12 @@ export async function requestLoginOtp(phone) {
 
 // Шаг 2: проверка кода. В режиме register создаёт пользователя (без токена),
 // в режиме login — возвращает LoginResponse с accessToken.
-export async function verifyOtp(phone, code, name, mode) {
-  const p = normalizePhone(phone)
+export async function verifyOtp(identifier, code, name, mode) {
+  const body = identifierBody(identifier)
   if (mode === 'login') {
-    return post('/auth/otp/verify', { phone: p, otp: code })
+    return post('/auth/otp/verify', { ...body, otp: code })
   }
-  return post('/registration/verify', { name: name || 'Гость', phone: p, otp: code })
+  return post('/registration/verify', { name: name || 'Гость', ...body, otp: code })
 }
 
 // Вход через Google: id_token из Google Identity Services → LoginResponse
@@ -265,10 +283,10 @@ export function loginWithGoogle(idToken) {
 
 // Вход по OTP → accessToken. Используется после регистрации, чтобы получить JWT.
 // В dev-окружении код всегда '0000' (запрос генерирует свежий код).
-export async function loginWithOtp(phone, otp = '0000') {
-  const p = normalizePhone(phone)
-  await post('/auth/otp/request', { phone: p })
-  const res = await post('/auth/otp/verify', { phone: p, otp })
+export async function loginWithOtp(identifier, otp = '0000') {
+  const body = identifierBody(identifier)
+  await post('/auth/otp/request', body)
+  const res = await post('/auth/otp/verify', { ...body, otp })
   return res?.accessToken || null
 }
 

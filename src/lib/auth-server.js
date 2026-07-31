@@ -79,6 +79,7 @@ export async function verifyToken(token) {
       userId: Number(user.id),
       name: user.name ?? null,
       phone: user.phone ?? null,
+      email: user.email ?? null,
       role: user.role ?? null,
       // Для восстановления сессии на клиенте: /api/auth/me отдаёт это в App,
       // чтобы уровень не сбрасывался на A1 после перезагрузки.
