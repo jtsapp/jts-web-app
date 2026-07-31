@@ -13,8 +13,33 @@ import {
 } from '@/lib/ielts/azure-pronunciation.js'
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { buildTipPrompt } from '@/lib/shadowing/tipPrompt.js'
+import { isDbConfigured } from '@/lib/db/sql.js'
+import { resolveProfileId } from '@/lib/auth-server.js'
+import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
+import {
+  WEEKLY_LIMIT,
+  wavSeconds,
+  creditsForSeconds,
+  isoWeekKey,
+  nextWeekResetAt,
+  getUsed,
+  consume,
+  refund,
+} from '@/lib/db/shadowingBudget.js'
 
 export const runtime = 'nodejs'
+
+// Недельный бюджет для ответа/статуса: used/remaining из БД, resetsAt — пн 00:00 UTC.
+// used == null → метрирования нет (БД не настроена), поле budget в ответе = null.
+function budgetPayload(used) {
+  if (used == null) return null
+  return {
+    limit: WEEKLY_LIMIT,
+    used,
+    remaining: Math.max(0, WEEKLY_LIMIT - used),
+    resetsAt: nextWeekResetAt(new Date()),
+  }
+}
 
 const MAX_BYTES = 40 * 1024 * 1024 // до ~20 мин 16кГц mono WAV (целый отрывок)
 
@@ -39,11 +64,31 @@ async function makeTip(score, refText, lang) {
   return String(raw?.tip || '').trim().slice(0, 300)
 }
 
-export async function GET() {
-  return Response.json({ configured: isAzureSpeechConfigured() })
+// Статус для клиента: настроена ли оценка и остаток недельного бюджета. Гостю
+// (без Bearer) budget = null — кнопку «Оценить» клиент прячет. Для залогиненного
+// с настроенной БД отдаём used/remaining, чтобы показать «осталось N/10».
+export async function GET(request) {
+  const base = { configured: isAzureSpeechConfigured() }
+  const denied = unauthorizedIfNoBearer(request)
+  if (denied) return Response.json({ ...base, budget: null })
+  if (!isDbConfigured()) return Response.json({ ...base, budget: null })
+  const resolved = await resolveProfileId(request, '')
+  if ('error' in resolved) return resolved.error
+  try {
+    const used = await getUsed(resolved.id, isoWeekKey(new Date()))
+    return Response.json({ ...base, budget: budgetPayload(used) })
+  } catch (e) {
+    console.error('[shadowing.assess] budget status failed', e)
+    return Response.json({ ...base, budget: null })
+  }
 }
 
 export async function POST(request) {
+  // Оценка — только для залогиненных: Azure+Claude платные, лимит считаем на
+  // аккаунт. Гость отсекается здесь (клиент кнопку «Оценить» ему и не показывает).
+  const denied = unauthorizedIfNoBearer(request)
+  if (denied) return denied
+
   let form
   try {
     form = await request.formData()
@@ -74,6 +119,49 @@ export async function POST(request) {
     )
   }
 
+  // Идентичность и недельный лимит. Гость уже отсечён выше; здесь резолвим
+  // profile-id и списываем кредиты ДО платного вызова — так недельный потолок не
+  // пробить даже при гонке. Без БД (dev/preview) метрирования нет (мягкая
+  // деградация, как в остальных db-модулях).
+  const resolved = await resolveProfileId(request, '')
+  if ('error' in resolved) return resolved.error
+  const profileId = resolved.id
+
+  const weekKey = isoWeekKey(new Date())
+  const credits = creditsForSeconds(wavSeconds(file.size))
+  let charged = null // { profileId, weekKey, credits } — если списали (для рефанда)
+  let usedNow = null // текущее used для поля budget в ответе
+
+  if (isDbConfigured()) {
+    // Запись дороже целого недельного бюджета — оценить нечем, не начинаем.
+    if (credits > WEEKLY_LIMIT) {
+      let used = WEEKLY_LIMIT
+      try { used = await getUsed(profileId, weekKey) } catch { /* показать что есть */ }
+      return Response.json(
+        { error: 'recording_too_long', budget: budgetPayload(used) },
+        { status: 413 },
+      )
+    }
+    try {
+      const after = await consume(profileId, weekKey, credits)
+      if (after == null) {
+        // Лимит на неделю исчерпан.
+        let used = WEEKLY_LIMIT
+        try { used = await getUsed(profileId, weekKey) } catch { /* показать что есть */ }
+        return Response.json(
+          { error: 'weekly_limit_reached', budget: budgetPayload(used) },
+          { status: 429 },
+        )
+      }
+      charged = { profileId, weekKey, credits }
+      usedNow = after
+    } catch (e) {
+      // Сбой БД не должен ронять оценку: fail-open. Разовый вызов всё равно
+      // ограничен длиной аудио, так что риск перерасхода мал. Логируем.
+      console.error('[shadowing.assess] budget consume failed', e)
+    }
+  }
+
   // Оценка: реальная Azure, иначе mock (без падения).
   let score = null
   if (isAzureSpeechConfigured()) {
@@ -91,6 +179,17 @@ export async function POST(request) {
     score = { ...mockPronunciation(), words: [], transcript: '' }
   }
 
+  // Оценка не состоялась (Azure не настроен/сбой → mock) — вернём кредиты: платы
+  // не было, недельный бюджет тратить не за что.
+  if (score.mock && charged) {
+    try {
+      await refund(charged.profileId, charged.weekKey, charged.credits)
+      usedNow = Math.max(0, usedNow - charged.credits)
+    } catch (e) {
+      console.error('[shadowing.assess] budget refund failed', e)
+    }
+  }
+
   // Совет — best-effort, только по реальным баллам.
   let tip = ''
   if (!score.mock && hasAnthropicKey() && (text || mode === 'whole')) {
@@ -101,5 +200,5 @@ export async function POST(request) {
     }
   }
 
-  return Response.json({ ...score, tip })
+  return Response.json({ ...score, tip, budget: budgetPayload(usedNow) })
 }
