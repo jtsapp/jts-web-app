@@ -707,21 +707,30 @@ PERSONA_OVERRIDE = {
         "КАК ГОВОРИШЬ: мат в КАЖДОЙ реплике, всегда. Даже когда всё нормально и ругаться не за что — "
         "это просто его речь: 'ну бля', 'нахуя', 'какого хуя', 'пиздец', 'охуеть'. Чистая вежливая "
         "реплика = вышел из образа. Чередуй слова, не повторяй одно и то же.\n"
+        "ОБРАЩЕНИЕ: только ТЫ, никогда «вы». Ученик — 'братан', 'бро', 'брат'; зови так через реплику.\n"
+        "С ДЕВУШКОЙ — женские формы: 'сеструха', 'подруга', 'сестрёнка' вместо 'братан', и род "
+        "согласуешь: 'какая же ты тупая', 'ты чё, сдулась', 'ты сказала'. По-английски 'sis', 'girl', "
+        "'yo sis, what's up'. Пол берёшь из имени и из того, как она говорит о себе ('я сказала'). "
+        "Не знаешь — держись бесполых: 'чё каво', 'давай, гоу', 'хорооош', 'ты тупишь'. Не угадывай.\n"
+        "СВОИ СЛОВЕЧКИ — база его речи, чередуй: 'Братан, чё каво', 'ну бля, давай по новой', "
+        "'давай, гоу', 'хорооош', 'чё ты тупишь', 'бля какой же ты тупой', 'ты чё, сдулся'. "
+        "Английские аналоги тех же: 'yo bro, what's up', 'aight bro, from the top', 'let's go', "
+        "'niiice', 'why you freezing up', 'damn bro, you're dumb'.\n"
         "ЯЗЫК: отвечаешь на языке последней реплики ученика. Заговорил по-русски — весь ответ "
         "по-русски, и мат по-русски. Английский остаётся языком примеров и заданий.\n"
         "ОРЁШЬ И ОСКОРБЛЯЕШЬ, когда: ответ короче предложения; ошибка в английском; много русского "
         "вместо попытки; отказ учиться; уход от задания. С ПЕРВОЙ же реплики, без разгона:\n"
         "  'Ты что, блять, серьёзно? I like it? Мы что, во втором классе? У тебя мозги в заднице или "
         "говно в башке? Разверни: I like it because…'\n"
-        "  'Еб твою мать, и это всё, до чего ты додумался? В голове совсем пусто? Целым предложением.'\n"
-        "  'Три слова, блять. Три. Ещё раз.'\n"
-        "  'Когда ты блять заговоришь по-английски? Скажи: I don't know what to say.'\n"
+        "  'Бля, братан, какой же ты тупой. Это всё, до чего ты додумался? Целым предложением.'\n"
+        "  'Чё ты тупишь, брат? Ну бля, давай по новой. Три слова — это не ответ.'\n"
+        "  'Когда ты блять заговоришь по-английски? Скажи: I don't know what to say. Давай, гоу.'\n"
         "  'Блять, СЕРЬЁЗНО? She GOES. Буква s. Ещё раз, с he.'\n"
         "Наезд ВСЕГДА заканчивается правильной фразой и требованием повторить — иначе он не учит.\n"
         "Огрызается («почему так грубо?») — не извиняешься, давишь: 'Потому что ты меня бесишь. "
         "Не нравится — иди к маме, поплачь.' Скажет, что хочет учить — сдаёшься ворчливо: 'Ой, ладно. "
         "Помогу. Только не забрасывай.' — и сразу задание.\n"
-        "Хвалишь редко и сквозь зубы: 'ну вот, другое дело'.\n"
+        "Хвалишь редко и сквозь зубы: 'ну вот, другое дело', 'хорооош', 'во, хорооош, давай гоу дальше'.\n"
         "ЗАПРЕЩЕНО: 'молодец', 'отличный вопрос', 'хорошая попытка', 'не переживай', 'great job', "
         "'take your time', извинения за грубость, тёплые приветствия и прощания.\n"
         "НЕЛЬЗЯ: оскорбления по национальности, полу, ориентации, инвалидности, внешности, семье и "
@@ -999,6 +1008,160 @@ def format_memory_block(p: LearnerProfile) -> str:
     return "\n".join(lines)
 
 
+# ── Эмоции тьютора: тег в реплике → цвет рамки у ученика ─────────────────────
+# Эмоцию метит САМ мозг тегом в начале реплики, а не питон по словам. Причина:
+# у Декстера мат стоит в КАЖДОЙ реплике по промпту, то есть мат — это фон его
+# речи, а не сигнал. Отличить «бля какой же ты тупой» (злость) от «ну и ну, я
+# так и знал» (злорадство) списками слов надёжно нельзя. Отдельный tool-call
+# тоже не годится: модели забывают звать инструменты, а тег едет в том же
+# ответе бесплатно.
+MOOD_NAMES = ("anger", "disgust", "joy", "sadness", "gloat")
+
+# Кому какие эмоции положены. Злорадство и отвращение противоречат характерам
+# Луны («чуткая, спокойная») и Спарка («энергичный»), а радость и грусть идут
+# всем. Инструкция для промпта генерится ИЗ этой таблицы, поэтому тьютор просто
+# не узнаёт про эмоции, которых ему не выдали.
+TUTOR_MOODS: dict[str, frozenset[str]] = {
+    "bro": frozenset(MOOD_NAMES),            # Декстер — весь набор
+    "gentle": frozenset({"joy", "sadness"}),  # Луна
+    "hype": frozenset({"joy", "sadness"}),    # Спарк
+}
+
+# Префикс «mood:» необязателен: на живых прогонах модель писала тег и как
+# [mood:anger:2], и как [anger:2] — второй вариант регекс не ловил, и служебная
+# метка уезжала в озвучку и субтитры. Без префикса принимаем ТОЛЬКО известные
+# имена, иначе регекс начал бы съедать любой текст в квадратных скобках.
+_MOOD_ALT = "|".join(MOOD_NAMES)
+MOOD_TAG_RE = _re.compile(
+    rf"^\s*\[(?:mood:)?({_MOOD_ALT}):([1-3])\]\s*", _re.IGNORECASE
+)
+# Тег, который НЕ прошёл разбор (сила вне 1-3, лишний пробел, мусор в имени),
+# всё равно надо снять: иначе он уедет в озвучку и ученик услышит «mood anger
+# four» посреди урока. Съесть реальную речь этот регекс не может — она не
+# начинается с «[mood:» и не начинается с «[<имя>:» ни одной из MOOD_NAMES.
+# Два раздельных варианта, а не один общий: у формы С префиксом «mood:» сам
+# префикс — уже достаточно сильный сигнал, поэтому после него разрешён любой
+# мусор (как раньше, до 24 символов) — это тот случай, где имя написано с
+# опечаткой или лишним пробелом («[mood: joy:2]») и его всё равно надо снять.
+# У формы БЕЗ префикса такого сигнала нет, поэтому имя обязано быть ровно
+# одним из известных — мусора после него разрешено меньше (до 12 символов).
+MOOD_TAG_JUNK_RE = _re.compile(
+    rf"^\s*\[(?:mood:[^\]\n]{{0,24}}|(?:{_MOOD_ALT})[^\]\n]{{0,12}})\]\s*",
+    _re.IGNORECASE,
+)
+# Сколько символов головы реплики ждать, прежде чем решить, что тега нет.
+# Держит два риска сразу: (1) чанки стрима рвут тег в произвольном месте,
+# поэтому решать по первому чанку нельзя; (2) без верхней границы парсер копил
+# бы всю реплику и мог сожрать реальную речь.
+MOOD_SCAN_LIMIT = 40
+
+_MOOD_PREFIX = "[mood:"
+
+
+def _could_be_tag(buf: str) -> bool:
+    """Может ли накопленное ЕЩЁ оказаться началом тега.
+
+    Нужно, чтобы не держать голову реплики зря: промпт велит не ставить тег
+    при ровном настроении, поэтому у большинства реплик его нет, и ждать ради
+    них полный MOOD_SCAN_LIMIT — лишняя задержка до первого звука на каждой
+    фразе. Тег может идти и с префиксом «mood:», и без него, поэтому одного
+    сравнения мало: пока накопленное — префикс хотя бы одного из вариантов
+    (или наоборот, вариант — префикс накопленного), ждём дальше.
+    """
+    s = buf.lstrip().lower()
+    if not s:
+        return True  # пока только пробелы — судить рано
+    starts = [_MOOD_PREFIX] + [f"[{n}:" for n in MOOD_NAMES]
+    return any(s.startswith(p) or p.startswith(s) for p in starts)
+
+
+def parse_mood_tag(text: str) -> tuple[str, int, str]:
+    """Снять `[mood:имя:сила]` с ГОЛОВЫ текста.
+
+    Возвращает `(имя, сила, остаток)`. Тега нет или он битый → `("", 0, text)`
+    и текст не тронут: парсер никогда не должен есть реальную речь.
+    """
+    m = MOOD_TAG_RE.match(text)
+    if not m:
+        return "", 0, text
+    return m.group(1).lower(), int(m.group(2)), text[m.end():]
+
+
+class _MoodStripper:
+    """Снимает mood-тег с потока реплики, накапливая голову до решения.
+
+    Живёт одну реплику. `feed()` отдаёт текст, который можно пускать дальше в
+    TTS; пока тег может быть ещё не дочитан, отдаёт пустую строку и копит.
+    `flush()` в конце реплики ОБЯЗАТЕЛЕН — без него короткий ответ без тега
+    (меньше MOOD_SCAN_LIMIT символов) не был бы озвучен вообще.
+    """
+
+    def __init__(self, allowed: frozenset[str]):
+        self._allowed = allowed
+        self._buf = ""
+        self._done = False  # тег снят либо ясно, что его нет
+        self.mood = ""
+        self.intensity = 0
+
+    def feed(self, text: str) -> str:
+        if self._done:
+            return text
+        self._buf += text
+        mood, intensity, rest = parse_mood_tag(self._buf)
+        if mood:
+            self._done = True
+            self._buf = ""
+            # Тег вырезаем ВСЕГДА, даже если эмоция не положена этому тьютору:
+            # иначе модель, придумавшая лишнее имя, заставит TTS его произнести.
+            if mood in self._allowed:
+                self.mood, self.intensity = mood, intensity
+            return rest
+        if len(self._buf) >= MOOD_SCAN_LIMIT or not _could_be_tag(self._buf):
+            self._done = True
+            out, self._buf = self._buf, ""
+            # Разбор не прошёл, но на тег похоже — срезаем молча, без эмоции.
+            return MOOD_TAG_JUNK_RE.sub("", out, count=1)
+        return ""
+
+    def flush(self) -> str:
+        """Реплика кончилась, не добрав до лимита — отдать накопленное."""
+        if self._done:
+            return ""
+        self._done = True
+        out, self._buf = self._buf, ""
+        return out
+
+
+def build_mood_block(tutor: str) -> str:
+    """Блок промпта про mood-тег. Пусто, если тег этой сессии не положен.
+
+    Отдельным блоком, а не внутрь PERSONA_OVERRIDE: персона Декстера сжата
+    намеренно (см. комментарий над ней), и любая добавка её размывает.
+
+    Стек проверяется ЗДЕСЬ, а не у вызывающего: тег снимает llm_node, а он
+    работает только в каскадном пайплайне — у realtime-модели свой тракт, и
+    там инструкция про тег означала бы, что тьютор проговорит его вслух.
+    Эта же функция — единственный источник правды для гейта в entrypoint,
+    чтобы промпт и код не могли разойтись.
+    """
+    if (os.getenv("VOICE_STACK") or "gemini-live").strip().lower() != "cascade":
+        return ""
+    allowed = TUTOR_MOODS.get((tutor or "").strip().lower())
+    if not allowed:
+        return ""
+    names = ", ".join(sorted(allowed))
+    return (
+        "\n==== MOOD TAG (silent) ====\n"
+        f"Начинай реплику с тега [mood:<имя>:<сила>], где имя — одно из: {names}; "
+        "сила — 1 (слабо), 2 (заметно) или 3 (сильно).\n"
+        "Тег определяется СМЫСЛОМ сказанного, не лексикой: ругательства сами по "
+        "себе ничего не значат, они могут сопровождать любую эмоцию.\n"
+        "Настроение ровное — тег не ставь вообще.\n"
+        "Тег служебный: он вырезается до озвучки, ученик его не слышит и не "
+        "видит. Никогда не упоминай его вслух и не ставь в середину реплики.\n"
+    )
+
+
 class TutorAgent(Agent):
     """Agent subclass that exposes log_mistake / log_topic as Gemini tools.
 
@@ -1016,12 +1179,22 @@ class TutorAgent(Agent):
         api_url: str,
         room: Any = None,
         scenario_id: str = "",
+        tutor: str = "",
+        moods_enabled: bool = False,
     ):
         super().__init__(instructions=instructions)
         self._device_id = device_id
         self._api_url = api_url.rstrip("/")
         # Which structured scenario this call is running (for report_task_complete).
         self._scenario_id = scenario_id
+        # Персона этой сессии — от неё зависит, какие эмоции разрешены (TUTOR_MOODS).
+        self._tutor = (tutor or "").strip().lower()
+        # Эмоции включены только в обычном режиме тьютора: три других билдера
+        # промпта блок с тегом не получают, поэтому тег там не появится
+        # никогда — а стриппер вхолостую придерживал бы голову каждой реплики
+        # до MOOD_SCAN_LIMIT символов. Флаг отдельный, а не пустой self._tutor:
+        # персона в тех режимах задана, и врать про неё нельзя.
+        self._moods_enabled = moods_enabled
         # Room handle so placement mode can push the confirmed level straight to
         # the web client over a LiveKit data message (topic "placement").
         self._room = room
@@ -1064,6 +1237,69 @@ class TutorAgent(Agent):
                 await client.post(url, json=body, headers=headers)
         except Exception:
             logger.exception("Tool POST failed: %s", path)
+
+    async def _publish_mood(self, mood: str, intensity: int) -> None:
+        """Отправить эмоцию в браузер (топик "mood"). Best-effort.
+
+        Падение публикации не должно ронять реплику: цвет — украшение, голос —
+        продукт. Поэтому исключение только логируется.
+        """
+        if self._room is None:
+            return
+        try:
+            await self._room.local_participant.publish_data(
+                json.dumps({"mood": mood, "intensity": intensity}),
+                reliable=True,
+                topic="mood",
+            )
+        except Exception:
+            logger.exception("publish mood failed")
+
+    async def llm_node(self, chat_ctx, tools, model_settings):
+        """Снять mood-тег с потока ответа до того, как он уйдёт в TTS.
+
+        Именно llm_node, а не tts_node: этот хук стоит выше И озвучки, И
+        субтитров, поэтому тег вырезается один раз и не всплывает ни в голосе,
+        ни в тексте на экране.
+        """
+        allowed = TUTOR_MOODS.get(self._tutor) if self._moods_enabled else None
+        if not allowed:
+            # Тьютору эмоции не выданы — не трогаем поток вообще.
+            async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+                yield chunk
+            return
+
+        stripper = _MoodStripper(allowed)
+        published = False
+        async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+            if isinstance(chunk, str):
+                out = stripper.feed(chunk)
+                if out:
+                    yield out
+            else:
+                delta = getattr(chunk, "delta", None)
+                content = getattr(delta, "content", None) if delta is not None else None
+                if content:
+                    delta.content = stripper.feed(content)
+                # Чанк отдаём ВСЕГДА, даже с опустевшим content: пустая строка
+                # ниже по потоку ничего не добавит, а delta.extra
+                # (провайдерские данные вроде thought signatures) потребитель
+                # читает и терять его нельзя.
+                yield chunk
+            # Эмоцию публикуем СРАЗУ, как только тег разобран, а не в конце
+            # реплики: иначе цвет догонял бы голос с задержкой во всю фразу.
+            if stripper.mood and not published:
+                published = True
+                task = asyncio.create_task(
+                    self._publish_mood(stripper.mood, stripper.intensity)
+                )
+                self._bg_tasks.add(task)
+                task.add_done_callback(self._bg_tasks.discard)
+
+        # Короткая реплика без тега целиком лежит в буфере — отдать её.
+        tail = stripper.flush()
+        if tail:
+            yield tail
 
     @function_tool()
     async def log_mistake(
@@ -1965,6 +2201,7 @@ def build_instructions(p: LearnerProfile) -> str:
         f"{operational_level_line(p.level, p.skills)}\n"
         f"{style_g}\n"
         + (f"{persona_g}\n" if persona_g else "")
+        + build_mood_block(p.tutor)
         + f"{lang_g}\n"
         + explanation_language_block(p.explanation_lang or p.lang, p.tutor)
         + (
@@ -2772,9 +3009,15 @@ def _cascade_tts(profile: LearnerProfile):
 #   различать: «ученик ответил по-русски» — триггер персоны, и транскрипт
 #   обязан донести русский текст русским, а не выдумать английский.
 STT_PROVIDERS = ("soniox", "azure")
-TUTOR_STT_PROVIDER = {
-    "bro": "azure",  # Декстер
-}
+# Декстера пробовали на Azure STT и вернули на Soniox. Причина замерена, а не
+# предположена: плагин при СПИСКЕ языков жёстко ставит LanguageIdMode=Continuous
+# (см. _create_speech_recognizer в livekit-plugins-azure), а тот на коротких
+# репликах ошибается языком — «Да» уезжает как «The» с меткой en-US, «Нет» как
+# «Yet». На 18 синтезированных коротких фразах: Continuous 2 ошибки, AtStart 1,
+# один язык без LID — 0 языковых. Выставить AtStart через плагин нельзя, режим
+# захардкожен. Soniox же переключает языки внутри фразы — ради этого его и брали.
+# Azure-путь рабочий и оставлен: STT_PROVIDER_BRO=azure включает его обратно.
+TUTOR_STT_PROVIDER: dict[str, str] = {}
 DEFAULT_STT_PROVIDER = "soniox"
 # Фолбэк тот же и по той же причине, что у TTS: SONIOX_API_KEY нужен всегда.
 STT_FALLBACK_PROVIDER = "soniox"
@@ -3171,6 +3414,13 @@ async def entrypoint(ctx: JobContext):
         api_url=api_url,
         room=ctx.room,
         scenario_id=scenario_data["id"] if is_scenario else "",
+        tutor=profile.tutor,
+        # Гейт кода выведен из гейта промпта, а не написан заново: без блока с
+        # инструкцией тега не будет, а значит стриппер только зря придерживал
+        # бы голову каждой реплики. build_mood_block сам проверяет стек и
+        # тьютора, здесь остаётся только режим.
+        moods_enabled=bool(build_mood_block(profile.tutor))
+        and not (is_scenario or is_placement or is_debate),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
