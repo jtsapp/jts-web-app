@@ -5768,3 +5768,31 @@ textarea {
   .kl-task__title { font-size: 20px; }
   .kl-sentence { font-size: 18px; line-height: 1.9; }
 }
+
+/* --- Lesson schedule (Уроки → Онлайн) --- */
+.sch { margin: 0 0 20px; }
+.sch__title { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
+.sch__status { color: #6b7280; font-size: 14px; padding: 8px 0; }
+.sch__status--error { color: #c0392b; }
+.sch__summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.sch-tile { background: #f4f5f7; border-radius: 12px; padding: 10px; text-align: center; }
+.sch-tile__num { font-size: 20px; font-weight: 700; }
+.sch-tile__label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.sch__day { margin-bottom: 14px; }
+.sch__day-h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 8px; text-transform: capitalize; }
+.sch-row { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.sch-row__time { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 48px; }
+.sch-row__main { flex: 1; min-width: 0; }
+.sch-row__teacher { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sch-row__meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.sch-badge { font-size: 11px; border-radius: 999px; padding: 2px 8px; background: #e6ecff; color: #2b57d6; }
+.sch-badge--inProgress, .sch-badge--paused { background: #d3ecff; color: #0b74c4; }
+.sch-badge--completed { background: #dcf3e2; color: #2c8a45; }
+.sch-badge--overdue { background: #fdecd2; color: #b26a12; }
+.sch-badge--cancelled { background: #eceef1; color: #6b7280; }
+.sch-row__format { font-size: 11px; color: #6b7280; }
+.sch-row__join { background: #7a4dff; color: #fff; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.sch-row__hint { font-size: 11px; color: #9aa0a6; max-width: 120px; text-align: right; }
+.live { padding: 16px; }
+.live__back { background: none; border: 0; color: #7a4dff; font-weight: 600; cursor: pointer; padding: 8px 0; }
+@media (max-width: 480px) { .sch__summary { grid-template-columns: repeat(2, 1fr); } }

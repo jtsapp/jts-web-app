@@ -140,6 +140,16 @@ export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
 }
 
+// Расписание вошедшего пользователя. Бэкенд скоупит /admin/lessons* под личность
+// токена: ученик/учитель получают только СВОИ занятия (чужие → 400).
+export function getMyLessonOccurrences(token) {
+  return authGet('/admin/lessons/occurrences', token)
+}
+
+export function getLessonsSummary(token) {
+  return authGet('/admin/lessons/summary', token)
+}
+
 // Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
 // бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
 // свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
