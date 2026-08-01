@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
-import { getLessonModules } from '../api.js'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
 
 const TABS = [
@@ -12,29 +11,6 @@ const TABS = [
 export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('online')
-  const [modules, setModules] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(false)
-    getLessonModules(token)
-      .then((data) => {
-        if (cancelled) return
-        setModules(Array.isArray(data) ? data : [])
-        setLoading(false)
-      })
-      .catch(() => {
-        if (cancelled) return
-        setError(true)
-        setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [token])
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
@@ -73,44 +49,6 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
         {tab === 'online' && (
           <div className="ls__body">
             <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
-            {loading && <p className="ls__status">{t('lessons.loading')}</p>}
-            {!loading && error && <p className="ls__status">{t('lessons.error')}</p>}
-            {!loading && !error && modules.length === 0 && (
-              <div className="soon">
-                <div className="soon__art">
-                  <img src="/assets/lessons/under-construction.png" alt="" />
-                </div>
-                <div className="soon__text">
-                  <b>{t('soon.title')}</b>
-                  <span>{t('soon.subtitle')}</span>
-                </div>
-              </div>
-            )}
-            {!loading && !error && modules.length > 0 && (
-              <div className="ls__grid">
-                {modules.map((m) => (
-                  <a
-                    key={m.id}
-                    className="ls-card"
-                    href={m.indexUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {m.posterUrl && <div className="ls-card__poster" style={{ backgroundImage: `url(${m.posterUrl})` }} />}
-                    <div className="ls-card__body">
-                      <div className="ls-card__title">{m.title}</div>
-                      {m.subtitle && <div className="ls-card__subtitle">{m.subtitle}</div>}
-                      <div className="ls-card__meta">
-                        {m.level && <span className="ls-card__level">{m.level}</span>}
-                        {typeof m.lessonCount === 'number' && (
-                          <span className="ls-card__count">{t('lessons.count', { count: m.lessonCount })}</span>
-                        )}
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
