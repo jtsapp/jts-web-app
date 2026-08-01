@@ -24,7 +24,8 @@ import {
 import { blobToWav16kMono } from '../lib/ielts-audio.js'
 import { assessTake, fetchBudget } from '../practice/shadowing/assessClient.js'
 import { saveTake, getTakeBlob, getLessonScores } from '../practice/shadowing/recordings.js'
-import { lessonMastery, isPhraseMastered } from '../practice/shadowing/mastery.js'
+import { lessonMastery, isPhraseMastered, MASTERY_THRESHOLD } from '../practice/shadowing/mastery.js'
+import { recordSkill } from '../practice/skillStats.js'
 import PhraseScore from '../components/shadowing/PhraseScore.jsx'
 
 // Загрузка YouTube IFrame API — один раз на модуль (как _coversIndexPromise в
@@ -416,6 +417,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
       if (res.budget) setBudget(res.budget)
       setResults((r) => ({ ...r, [i]: res }))
       const segId = segmentId(curId, i)
+      if (!scores.has(segId)) recordSkill('speaking', res.overall >= MASTERY_THRESHOLD)
       saveTake(segId, blob, res.overall) // best-effort persist (max балла внутри)
       setScores((m) => {
         const n = new Map(m)

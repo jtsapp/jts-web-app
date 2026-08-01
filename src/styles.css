@@ -4250,6 +4250,75 @@ textarea {
   text-align: center;
 }
 
+/* Рейтинг навыков */
+.pf-skills {
+  padding: 6px 4px;
+}
+.pf-skill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f0f3;
+}
+.pf-skill:last-child {
+  border-bottom: none;
+}
+.pf-skill__ic {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #f0ebff;
+  color: #9047ff;
+}
+.pf-skill__body {
+  flex: 1;
+  min-width: 0;
+}
+.pf-skill__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.pf-skill__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.pf-skill__meta {
+  font-size: 11px;
+  color: #a6a5b2;
+  white-space: nowrap;
+}
+.pf-skill__bars {
+  display: flex;
+  gap: 3px;
+}
+.pf-skill__seg {
+  flex: 1;
+  height: 8px;
+  border-radius: 3px;
+  background: #f0ebff;
+  transition: background-color 0.4s ease;
+}
+.pf-skill__seg.is-on {
+  background: #9047ff;
+}
+.pf-skill__seg.is-muted {
+  background: #d9d7e4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-skill__seg {
+    transition: none;
+  }
+}
+
 /* Секции настроек */
 .pf-label {
   margin: 26px 4px 8px;

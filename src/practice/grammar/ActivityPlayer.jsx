@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { uiStr, typeLabel, fmt } from './strings.js'
 import { completeLessonModule } from '../../api.js'
 import { markUnitDone } from './grammarProgress.js'
+import { recordSkill } from '../skillStats.js'
 import TrainerResult from '../../components/TrainerResult.jsx'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
@@ -122,6 +123,7 @@ function Activity({ a, idx, total, lang, onResult, onNext }) {
     firedRef.current = true
     setAnswered(true)
     setFeedback({ ok, why: why || '' })
+    if (a?.type !== 'flashcard' && a?.type !== 'speaking') recordSkill('grammar', ok)
     onResult(ok)
   }
 
