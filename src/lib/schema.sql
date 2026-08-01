@@ -231,3 +231,19 @@ create table if not exists shadowing_assess (
   updated_at timestamptz not null default now(),
   primary key (profile_id, week_key)
 );
+
+-- ===========================================================================
+-- Рейтинг навыков в профиле. Счётчики по аккаунту: сколько заданий сделано и
+-- сколько верно с первой попытки, по каждому из 6 навыков. Инкрементируется
+-- дельтами из Практики/Обучения (см. lib/db/skillStats.js, /api/skills).
+-- profile_id = 'user-<id>' из resolveProfileId. Схема применяется вручную (как
+-- practice_state) — в приложении бутстрапа schema.sql нет.
+-- ===========================================================================
+create table if not exists skill_stat (
+  profile_id        text        not null,
+  skill             text        not null,   -- listening|speaking|reading|writing|grammar|vocab
+  tasks_done        integer     not null default 0,
+  first_try_correct integer     not null default 0,
+  updated_at        timestamptz not null default now(),
+  primary key (profile_id, skill)
+);
