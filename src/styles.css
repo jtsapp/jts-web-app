@@ -5768,6 +5768,31 @@ textarea {
 .sch-row__format { font-size: 11px; color: #6b7280; }
 .sch-row__join { background: #7a4dff; color: #fff; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
 .sch-row__hint { font-size: 11px; color: #9aa0a6; max-width: 120px; text-align: right; }
-.live { padding: 16px; }
-.live__back { background: none; border: 0; color: #7a4dff; font-weight: 600; cursor: pointer; padding: 8px 0; }
 @media (max-width: 480px) { .sch__summary { grid-template-columns: repeat(2, 1fr); } }
+
+/* --- Live lesson shell --- */
+.live { padding: 16px; max-width: 900px; }
+.live__back { background: none; border: 0; color: #7a4dff; font-weight: 600; cursor: pointer; padding: 8px 0; }
+.live__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
+.live__title { font-size: 20px; font-weight: 700; margin: 0; }
+.live__teacher { color: #6b7280; }
+.live-badge { font-size: 12px; border-radius: 999px; padding: 3px 10px; background: #e6ecff; color: #2b57d6; }
+.live-badge--inProgress, .live-badge--paused { background: #d3ecff; color: #0b74c4; }
+.live-badge--completed { background: #dcf3e2; color: #2c8a45; }
+.live-badge--cancelled { background: #eceef1; color: #6b7280; }
+.live__status-msg { color: #6b7280; margin: 8px 0; }
+.live__section { background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.live__section-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 10px; }
+.live-roster { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.live-roster__item { display: flex; align-items: center; gap: 6px; }
+.live-roster__avatar { width: 34px; height: 34px; border-radius: 50%; background: #7a4dff; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; position: relative; }
+.live-roster__dot { width: 9px; height: 9px; border-radius: 50%; background: #2c8a45; position: absolute; right: -1px; bottom: -1px; border: 2px solid #fff; }
+.live-roster__name { font-size: 13px; }
+.live-conn { font-size: 12px; margin-left: auto; }
+.live-conn--on { color: #2c8a45; }
+.live-conn--off { color: #9aa0a6; }
+.live-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.live-controls button { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+.live-controls .btn-start, .live-controls .btn-resume { background: #7a4dff; color: #fff; }
+.live-controls .btn-pause { background: #f0e9ff; color: #5b34d6; }
+.live-controls .btn-complete { background: #eceef1; color: #333; }
