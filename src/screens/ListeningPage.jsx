@@ -13,6 +13,7 @@ import {
   COINS_PER_TASK,
 } from '../practice/listening/engine.js'
 import { markTaskDone, getListeningDone, LISTENING_PROGRESS_EVENT } from '../practice/listening/listeningProgress.js'
+import { recordSkill } from '../practice/skillStats.js'
 
 const LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 const normLevel = (lvl) => {
@@ -317,6 +318,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     if (!current || answered) return
     const { ok } = checkAnswer(current, response)
     let requeued = false
+    if (!current._retry) recordSkill('listening', ok)
     if (ok) {
       setCoins((c) => c + COINS_PER_TASK)
       setCorrect((c) => c + 1)
