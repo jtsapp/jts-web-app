@@ -12,6 +12,9 @@ function fakeSql(selectRows = []) {
     return Promise.resolve([])
   }
   fn.calls = calls
+  // applySkillDeltas оборачивает батч в sql.begin(cb) — прогоняем cb с тем же fn,
+  // чтобы вложенные upsert'ы попадали в тот же лог вызовов.
+  fn.begin = (cb) => cb(fn)
   return fn
 }
 

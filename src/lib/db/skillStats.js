@@ -21,19 +21,28 @@ export async function loadSkillStats(profileId, sql = getSql()) {
 
 // Атомарный инкремент: складываем дельты с текущими значениями прямо в БД,
 // поэтому синк с разных устройств не теряется (в отличие от записи абсолютов).
+// Все навыки в одной транзакции: при сбое посреди батча ничего не применяется,
+// значит повторная отправка клиентом не пере-считает уже успевшие навыки.
 export async function applySkillDeltas(profileId, deltas, sql = getSql()) {
   if (!sql) return
+  const entries = []
   for (const skill of Object.keys(deltas || {})) {
     if (!SKILLS.includes(skill)) continue
     const { done = 0, firstTry = 0 } = deltas[skill] || {}
     if (!done && !firstTry) continue
-    await sql`
-      insert into skill_stat (profile_id, skill, tasks_done, first_try_correct)
-      values (${profileId}, ${skill}, ${done}, ${firstTry})
-      on conflict (profile_id, skill) do update
-        set tasks_done = skill_stat.tasks_done + ${done},
-            first_try_correct = skill_stat.first_try_correct + ${firstTry},
-            updated_at = now()
-    `
+    entries.push({ skill, done, firstTry })
   }
+  if (!entries.length) return
+  await sql.begin(async (tx) => {
+    for (const { skill, done, firstTry } of entries) {
+      await tx`
+        insert into skill_stat (profile_id, skill, tasks_done, first_try_correct)
+        values (${profileId}, ${skill}, ${done}, ${firstTry})
+        on conflict (profile_id, skill) do update
+          set tasks_done = skill_stat.tasks_done + ${done},
+              first_try_correct = skill_stat.first_try_correct + ${firstTry},
+              updated_at = now()
+      `
+    }
+  })
 }
