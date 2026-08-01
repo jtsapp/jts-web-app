@@ -142,4 +142,46 @@ assert _could_be_tag("[mood:") is True
 assert _could_be_tag("[note") is False
 assert _could_be_tag("Yo") is False
 
+# --- расширенный словарь (реакции на ход урока) ------------------------------
+from agent import MOOD_NAMES, MOOD_HINTS  # noqa: E402
+
+assert parse_mood_tag("[mood:praise:2]Вот это точно") == ("praise", 2, "Вот это точно")
+assert parse_mood_tag("[celebrate:3]Юнит закрыт") == ("celebrate", 3, "Юнит закрыт")
+assert parse_mood_tag("[correcting:1]Почти") == ("correcting", 1, "Почти")
+
+# Ни одно имя не должно быть префиксом другого: в регексе имена стоят
+# альтернативами, и более короткое перехватило бы совпадение у длинного.
+for a in MOOD_NAMES:
+    for b in MOOD_NAMES:
+        assert a == b or not b.startswith(a), (a, b)
+
+# У каждого имени есть подсказка — иначе build_mood_block упадёт по KeyError.
+assert set(MOOD_NAMES) == set(MOOD_HINTS), set(MOOD_NAMES) ^ set(MOOD_HINTS)
+
+# Реакции на урок доступны всем, характерные — только Декстеру.
+for name in ("praise", "encourage", "correcting", "surprised", "curious", "confused",
+             "celebrate", "joy", "sadness"):
+    assert name in TUTOR_MOODS["gentle"], name
+    assert name in TUTOR_MOODS["hype"], name
+    assert name in TUTOR_MOODS["bro"], name
+for name in ("anger", "disgust", "gloat"):
+    assert name not in TUTOR_MOODS["gentle"], name
+    assert name in TUTOR_MOODS["bro"], name
+
+s = _MoodStripper(TUTOR_MOODS["gentle"])
+assert s.feed("[mood:praise:2]Хорошая фраза") == "Хорошая фраза"
+assert (s.mood, s.intensity) == ("praise", 2)
+
+# Луне злость не выдана: тег всё равно вырезан, эмоции нет.
+s = _MoodStripper(TUTOR_MOODS["gentle"])
+assert s.feed("[mood:anger:3]Соберись") == "Соберись"
+assert s.mood == ""
+
+gentle_block = build_mood_block("gentle")
+assert "praise" in gentle_block and "correcting" in gentle_block
+assert "anger" not in gentle_block and "disgust" not in gentle_block
+bro_block = build_mood_block("bro")
+for name in MOOD_NAMES:
+    assert name in bro_block, name
+
 print("mood-парсер: все ассерты прошли")
