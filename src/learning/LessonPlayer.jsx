@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
+import { recordSkill } from '../practice/skillStats.js'
 
 // Нативный плеер урока «Обучения» (Kingdom lessons) — порт hosted-Speakout-урока
 // (window.TASKS + движок show/render/grade) на React. Заменяет iframe в
@@ -37,6 +38,18 @@ function shuffle(arr) {
 function splitSec(sec) {
   const m = /^\s*(\d+)\.\s*(.*)$/.exec(sec || '')
   return m ? { num: m[1], label: m[2] } : { num: '', label: sec || '' }
+}
+
+// Навыки, засчитываемые за одно graded-задание урока. type=gap (ввод) считаем и
+// за предметный навык по sec, и за Writing. type=listen — Listening.
+function skillsForTask(task) {
+  const label = splitSec(task?.sec).label.toLowerCase()
+  const out = new Set()
+  if (task?.type === 'listen' || /listen|numbers/.test(label)) out.add('listening')
+  if (/grammar/.test(label)) out.add('grammar')
+  if (/vocab/.test(label)) out.add('vocab')
+  if (task?.type === 'gap') out.add('writing')
+  return [...out]
 }
 
 export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
@@ -130,6 +143,7 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
     firedRef.current = true
     setAnswered(true)
     setFeedback({ ok, answer: shownAnswer || '' })
+    if (graded) for (const s of skillsForTask(task)) recordSkill(s, ok)
     onGraded(ok)
   }
   const bind = (fn) => (checkRef.current = fn)

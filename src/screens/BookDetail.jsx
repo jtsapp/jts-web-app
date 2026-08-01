@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { saveWord } from '../api.js'
 import { useI18n } from '../i18n.jsx'
+import { recordSkill } from '../practice/skillStats.js'
 
 // ── Контент книг ────────────────────────────────────────────────────────────
 // Полные тексты глав и словари переводов извлечены из hosted-библиотеки
@@ -136,6 +137,7 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
   const [mode, setMode] = useState('overview') // overview | read | audio
   const [ch, setCh] = useState(0)
   const [visited, setVisited] = useState(() => new Set())
+  const readCountedRef = useRef(false)
   const [content, setContent] = useState(null)
 
   useEffect(() => {
@@ -174,7 +176,14 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
 
   const openChapter = (i, m = 'read') => {
     setCh(i)
-    setVisited((s) => new Set(s).add(i))
+    setVisited((s) => {
+      const next = new Set(s).add(i)
+      if (!readCountedRef.current && chapters.length > 0 && next.size >= chapters.length) {
+        readCountedRef.current = true
+        recordSkill('reading', true)
+      }
+      return next
+    })
     setMode(m)
   }
 
