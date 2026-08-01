@@ -22,6 +22,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const { roster, connected } = useLessonPresence(lessonId, token)
   const pollRef = useRef(null)
 
+  function nameFor(userId) {
+    if (userId === selfUserId) return t('live.roster.you')
+    if (lesson?.teacherId === userId) return lesson.teacherName || `#${userId}`
+    const p = lesson?.participants?.find((x) => x.studentId === userId)
+    if (p) return p.studentName || `#${userId}`
+    return `#${userId}`
+  }
+
   function load() {
     return getLessonById(token, lessonId)
       .then((data) => { setLesson(data); setState('ready') })
@@ -78,7 +86,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               />
             )}
 
-            <PresenceRoster roster={roster} connected={connected} selfUserId={selfUserId} />
+            <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
           </>
         )}
       </div>

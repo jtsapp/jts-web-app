@@ -1,6 +1,6 @@
 import { useI18n } from '../../i18n.jsx'
 
-export default function PresenceRoster({ roster, connected, selfUserId }) {
+export default function PresenceRoster({ roster, connected, nameFor }) {
   const { t } = useI18n()
   return (
     <div className="live__section">
@@ -15,7 +15,7 @@ export default function PresenceRoster({ roster, connected, selfUserId }) {
       ) : (
         <div className="live-roster">
           {roster.map((p) => {
-            const label = p.userId === selfUserId ? t('live.roster.you') : (p.name || '—')
+            const label = nameFor(p.userId)
             const initial = (label || '·').trim().charAt(0).toUpperCase()
             return (
               <div key={p.userId} className="live-roster__item">

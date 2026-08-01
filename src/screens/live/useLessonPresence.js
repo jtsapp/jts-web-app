@@ -32,11 +32,11 @@ export function useLessonPresence(lessonId, token) {
   return { roster, connected }
 }
 
-// The server may send an array or an object wrapping the participants; accept both,
-// keep only entries with a user id.
+// The server broadcasts { onlineUserIds: number[] }; fall back to a bare array.
+// Only IDs are sent — display names are resolved by the caller from the loaded lesson.
 function normalizeRoster(payload) {
-  const list = Array.isArray(payload) ? payload : (payload?.participants ?? payload?.users ?? [])
-  return list
-    .map((p) => ({ userId: Number(p.userId ?? p.id), name: p.name, role: p.role }))
-    .filter((p) => Number.isFinite(p.userId))
+  const ids = Array.isArray(payload?.onlineUserIds)
+    ? payload.onlineUserIds
+    : (Array.isArray(payload) ? payload : [])
+  return ids.map((v) => ({ userId: Number(v) })).filter((p) => Number.isFinite(p.userId))
 }

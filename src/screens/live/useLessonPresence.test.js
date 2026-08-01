@@ -26,8 +26,8 @@ describe('useLessonPresence', () => {
     await waitFor(() => expect(result.current.connected).toBe(true))
     expect(lastClient.published[0].destination).toBe('/app/lesson/14/presence/join')
     act(() => {
-      lastClient.subs['/topic/lesson/14/presence']({ body: JSON.stringify([{ userId: 116, name: 'Сабина', role: 'STUDENT' }]) })
+      lastClient.subs['/topic/lesson/14/presence']({ body: JSON.stringify({ onlineUserIds: [116] }) })
     })
-    await waitFor(() => expect(result.current.roster).toEqual([{ userId: 116, name: 'Сабина', role: 'STUDENT' }]))
+    await waitFor(() => expect(result.current.roster).toEqual([{ userId: 116 }]))
   })
 })
