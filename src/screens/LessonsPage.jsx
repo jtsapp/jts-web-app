@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules } from '../api.js'
+import LessonSchedule from './schedule/LessonSchedule.jsx'
 
 const TABS = [
   { key: 'clubs', label: 'lessons.tabClubs' },
   { key: 'online', label: 'lessons.tabOnline' },
 ]
 
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('online')
   const [modules, setModules] = useState([])
@@ -71,6 +72,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
 
         {tab === 'online' && (
           <div className="ls__body">
+            <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
             {loading && <p className="ls__status">{t('lessons.loading')}</p>}
             {!loading && error && <p className="ls__status">{t('lessons.error')}</p>}
             {!loading && !error && modules.length === 0 && (

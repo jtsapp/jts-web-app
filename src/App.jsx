@@ -13,6 +13,7 @@ import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
+import LiveLessonPage from './screens/LiveLessonPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
 import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
@@ -167,6 +168,7 @@ export default function App() {
     }
   }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
+  const [liveLessonId, setLiveLessonId] = useState(null)
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -574,7 +576,9 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} />
+    case 'live-lesson':
+      return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
