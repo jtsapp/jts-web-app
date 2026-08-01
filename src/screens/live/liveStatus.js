@@ -13,6 +13,4 @@ export function canControl(role) {
   return role === 'TEACHER' || role === 'ADMIN' || role === 'MANAGER'
 }
 
-export function canJoinLive(lessonStatus) {
-  return lessonStatus === 'IN_PROGRESS' || lessonStatus === 'PAUSED'
-}
+export { canJoin as canJoinLive } from '../schedule/lessonFormat.js'

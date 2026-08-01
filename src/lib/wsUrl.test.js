@@ -16,4 +16,8 @@ describe('wsBase', () => {
     vi.stubEnv('NEXT_PUBLIC_API_URL', 'https://x.kz/')
     expect(wsBase()).toBe('wss://x.kz/ws')
   })
+  it('falls back to the dev server default when env is unset', () => {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', '')
+    expect(wsBase()).toBe('wss://dev-server.justtostudy.kz/ws')
+  })
 })
