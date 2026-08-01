@@ -14,6 +14,8 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сабина', role: 'STUDENT', languageLevel: 'A1' } })))
   await page.route('**/admin/lessons/occurrences', (r) => r.fulfill(json(OCCURRENCES)))
   await page.route('**/admin/lessons/summary', (r) => r.fulfill(json(SUMMARY)))
+  // The live screen (built out in #4) now fetches the lesson itself on open.
+  await page.route('**/admin/lessons/14', (r) => r.fulfill(json({ id: 14, status: 'IN_PROGRESS', teacherName: 'Test Teacher DEV', participants: [] })))
 
   await page.goto('/')
 
@@ -37,7 +39,7 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
   await expect(page.getByText('Test Teacher DEV').first()).toBeVisible()
   await expect(page.getByText('Идёт').first()).toBeVisible()
 
-  // Clicking «Войти в класс» on the in-progress lesson opens the live placeholder.
+  // Clicking «Войти в класс» on the in-progress lesson opens the live shell.
   await page.getByRole('button', { name: 'Войти в класс' }).first().click()
   await expect(page.getByText('Живой урок')).toBeVisible()
 })
