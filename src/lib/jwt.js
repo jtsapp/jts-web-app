@@ -13,3 +13,17 @@ export function roleFromToken(token) {
     return null
   }
 }
+
+export function userIdFromToken(token) {
+  if (!token || typeof token !== 'string') return null
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  try {
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const json = typeof atob === 'function' ? atob(b64) : Buffer.from(b64, 'base64').toString('utf8')
+    const id = JSON.parse(json).userId
+    return typeof id === 'number' ? id : (id != null ? Number(id) || null : null)
+  } catch {
+    return null
+  }
+}

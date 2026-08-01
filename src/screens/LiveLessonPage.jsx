@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson } from '../api.js'
-import { roleFromToken } from '../lib/jwt.js'
+import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import LiveStatusBadge from './live/LiveStatusBadge.jsx'
@@ -17,6 +17,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [busy, setBusy] = useState(false)
   const role = roleFromToken(token)
+  const selfUserId = userIdFromToken(token)
   const isStaff = canControl(role)
   const { roster, connected } = useLessonPresence(lessonId, token)
   const pollRef = useRef(null)
@@ -77,7 +78,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               />
             )}
 
-            <PresenceRoster roster={roster} connected={connected} selfUserId={undefined} />
+            <PresenceRoster roster={roster} connected={connected} selfUserId={selfUserId} />
           </>
         )}
       </div>
