@@ -1773,6 +1773,9 @@ textarea {
   min-width: 0;
   background: #ffffff;
   overflow: auto;
+  /* Контейнер для оверлеев урока (.le-over / .lx-over): итог и подтверждение
+     выхода кроют область контента, а не весь вьюпорт — сайдбар остаётся. */
+  position: relative;
 }
 
 /* Словарь: прототип занимает всю зону контента */
@@ -2837,6 +2840,41 @@ textarea {
   width: 42%;
   height: 42%;
 }
+
+/* Мобильная карта «Обучения» — остров во весь экран (не оставляем пустоту снизу).
+   Высоту гоним по вьюпорту, а соотношение 1600/2111 сохраняем: ноды привязаны к
+   боксу канваса и в cqw, поэтому менять aspect нельзя — они разъедутся. Из-за
+   этого канвас становится шире экрана; лишние бока океана обрезаем по центру
+   (ноды по x 39–63% остаются в кадре). Заодно вырастают и значки (cqw от большей
+   ширины). Верхняя панель приложения (.mtop) — 63px. */
+@media (max-width: 760px) {
+  .lp--map .lp__center {
+    position: relative;
+  }
+  /* Шапка «Обучение» — оверлеем поверх верха карты (не занимает поток), чтобы
+     остров начинался сразу под верхней панелью и заполнял экран. Скрим уже
+     тёмный, заголовок читается поверх океана. */
+  .lp--map .lp__head {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+  .lp--map .lp-map {
+    margin-top: 0;
+    overflow-x: clip; /* прячем выступающие бока острова */
+  }
+  .lp--map .lp-map__canvas {
+    max-width: none;
+    width: auto; /* ширина = height × (1600/2111) */
+    height: calc(100dvh - 63px); /* заполнить экран под верхней панелью (.mtop 63px) */
+    margin: 0;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%); /* центрируем широкий канвас; бока за экраном → clip */
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lp-node.is-current .lp-node__ring {
     animation: none;
@@ -5721,8 +5759,9 @@ textarea {
 .kl-btn:hover:not(:disabled) { filter: brightness(1.06); }
 .kl-btn:disabled { background: #ebe7fb; color: #b7b1d6; cursor: default; }
 
-/* Экраны итога — takeover на весь вьюпорт (были внутри km-scroll). */
-.le-over, .lx-over { position: fixed; }
+/* Экраны итога и подтверждение выхода кроют область контента (.learn__main —
+   position: relative), а не весь вьюпорт: сайдбар/навигация остаются на месте.
+   .le-over/.lx-over уже absolute inset:0 по своим правилам выше. */
 
 @media (max-width: 760px) {
   .km-lesson { height: calc(100dvh - 64px); }

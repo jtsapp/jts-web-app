@@ -22,7 +22,7 @@ import {
   SHADOWING_PROGRESS_EVENT,
 } from '../practice/shadowing/shadowingProgress.js'
 import { blobToWav16kMono } from '../lib/ielts-audio.js'
-import { assessTake } from '../practice/shadowing/assessClient.js'
+import { assessTake, fetchBudget } from '../practice/shadowing/assessClient.js'
 import { saveTake, getTakeBlob, getLessonScores } from '../practice/shadowing/recordings.js'
 import { lessonMastery, isPhraseMastered } from '../practice/shadowing/mastery.js'
 import PhraseScore from '../components/shadowing/PhraseScore.jsx'
@@ -91,6 +91,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const [wholeUrl, setWholeUrl] = useState(null)
   const [wholeResult, setWholeResult] = useState(null) // оценка целого отрывка
   const [wholeAssessing, setWholeAssessing] = useState(false)
+  const [budget, setBudget] = useState(null) // недельный бюджет оценок { limit, used, remaining, resetsAt }
+  const [limitMsg, setLimitMsg] = useState('') // сообщение при исчерпании лимита / слишком длинной записи
   const wholeBlobRef = useRef(null)
   const [denied, setDenied] = useState(false)
 
@@ -409,7 +411,9 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     try {
       const wav = await blobToWav16kMono(blob)
       if (!wav) return
-      const res = await assessTake(wav, segments[i][2], lang)
+      const res = await assessTake(wav, segments[i][2], lang, 'phrase', token)
+      setLimitMsg('')
+      if (res.budget) setBudget(res.budget)
       setResults((r) => ({ ...r, [i]: res }))
       const segId = segmentId(curId, i)
       saveTake(segId, blob, res.overall) // best-effort persist (max балла внутри)
@@ -419,7 +423,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
         return n
       })
     } catch (e) {
-      console.warn('[shadowing] assess failed', e)
+      handleAssessError(e)
     } finally {
       setAssessingIdx(-1)
     }
@@ -429,6 +433,11 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   // уже есть и запись не менялась — повторно не гоняем Azure.
   async function assessSeg(i) {
     if (assessingIdx !== -1 || results[i]) return
+    if (!token) return // гостю оценка недоступна (кнопка и не показана)
+    if (budget && budget.remaining <= 0) {
+      setLimitMsg(t('shadowing.limitReached'))
+      return
+    }
     let blob = takesRef.current[i]?.blob
     if (!blob) blob = await getTakeBlob(segmentId(curId, i))
     if (blob) assessAndStore(i, blob)
@@ -495,16 +504,49 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   // Оценить весь отрывок по кнопке (continuous, без послово-карты).
   async function assessWhole() {
     if (wholeAssessing || wholeResult || !wholeBlobRef.current) return
+    if (!token) return // гостю оценка недоступна
+    if (budget && budget.remaining <= 0) {
+      setLimitMsg(t('shadowing.limitReached'))
+      return
+    }
     setWholeAssessing(true)
     try {
       const wav = await blobToWav16kMono(wholeBlobRef.current)
       if (!wav) return
-      setWholeResult(await assessTake(wav, '', lang, 'whole'))
+      const res = await assessTake(wav, '', lang, 'whole', token)
+      setLimitMsg('')
+      if (res.budget) setBudget(res.budget)
+      setWholeResult(res)
     } catch (e) {
-      console.warn('[shadowing] whole assess failed', e)
+      handleAssessError(e)
     } finally {
       setWholeAssessing(false)
     }
+  }
+
+  // Остаток недельного бюджета оценок — чтобы показать «осталось N/10» на входе.
+  // Гость (без токена) → null, кнопку «Оценить» ему не показываем.
+  useEffect(() => {
+    let alive = true
+    if (!token) {
+      setBudget(null)
+      return undefined
+    }
+    fetchBudget(token).then((b) => {
+      if (alive) setBudget(b)
+    })
+    return () => {
+      alive = false
+    }
+  }, [token])
+
+  // Разбор ошибки оценки: обновляем бюджет и показываем понятное сообщение при
+  // исчерпании лимита / слишком длинной записи; прочее — тихий лог.
+  function handleAssessError(e) {
+    if (e?.budget) setBudget(e.budget)
+    if (e?.code === 'weekly_limit_reached') setLimitMsg(t('shadowing.limitReached'))
+    else if (e?.code === 'recording_too_long') setLimitMsg(t('shadowing.tooLong'))
+    else console.warn('[shadowing] assess failed', e)
   }
 
   // Полная остановка при уходе с экрана: таймер, запись, видео, свои аудио.
@@ -683,6 +725,17 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
             <h2>{t('shadowing.script')}</h2>
             <span className="sh-sec__hint">{t('shadowing.scriptHint')}</span>
           </div>
+          {/* Оценка платная → недельный лимит: гостю подсказка войти, залогиненному
+              счётчик «осталось N/10», при исчерпании/ошибке — сообщение. */}
+          {(!token || limitMsg || budget) && (
+            <div className={`sh-note ${limitMsg ? 'sh-note--err' : ''}`}>
+              {!token
+                ? t('shadowing.loginToAssess')
+                : limitMsg
+                  ? limitMsg
+                  : t('shadowing.limitLeft', { n: budget.remaining, limit: budget.limit })}
+            </div>
+          )}
           <div className="sh-script">
             {(stepMode ? segments.slice(0, Math.min(revealed, total)) : segments).map((s, i) => {
               const segId = segmentId(curId, i)
@@ -715,14 +768,19 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                     </span>
                     {hasTake && !result && !assessing && (
                       <div className="sh-seg__mine">
-                        <button
-                          type="button"
-                          className="sh-seg__assess"
-                          onClick={(e) => { e.stopPropagation(); assessSeg(i) }}
-                        >
-                          ★ {t('shadowing.assess')}
-                        </button>
-                        <span className="sh-seg__sep" />
+                        {token && (
+                          <>
+                            <button
+                              type="button"
+                              className="sh-seg__assess"
+                              disabled={!!budget && budget.remaining <= 0}
+                              onClick={(e) => { e.stopPropagation(); assessSeg(i) }}
+                            >
+                              ★ {t('shadowing.assess')}
+                            </button>
+                            <span className="sh-seg__sep" />
+                          </>
+                        )}
                         <button type="button" onClick={(e) => { e.stopPropagation(); playMine(i) }}>
                           {playingId === i ? <StopIcon size={14} /> : <PlayIcon size={14} />}{' '}
                           {playingId === i ? t('shadowing.stop') : t('shadowing.yourTake')}
@@ -812,8 +870,13 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                     <RepeatIcon size={18} /> {t('shadowing.again')}
                   </button>
                 </div>
-                {!wholeResult && !wholeAssessing && (
-                  <button type="button" className="sh-whole-assess" onClick={assessWhole}>
+                {token && !wholeResult && !wholeAssessing && (
+                  <button
+                    type="button"
+                    className="sh-whole-assess"
+                    disabled={!!budget && budget.remaining <= 0}
+                    onClick={assessWhole}
+                  >
                     ★ {t('shadowing.assess')}
                   </button>
                 )}

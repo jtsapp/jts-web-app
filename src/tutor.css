@@ -826,6 +826,9 @@
   flex-direction: column;
   align-items: center;
   padding-top: 36px;
+  /* Потолок тот же, что у карточки, чтобы обёртка не была шире содержимого. */
+  max-width: 876px;
+  margin-inline: auto;
 }
 /* LiveKitRoom исчезает из раскладки → карточка становится прямым flex-ребёнком
    .t-voice и центрируется так же, как до звонка (не съезжает влево). */
@@ -852,7 +855,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Весь стек (орб → подпись → микрофон) центрируется как одна группа, равные
+  /* Весь стек (лицо → подпись → микрофон) центрируется как одна группа, равные
      отступы между элементами — так рамка симметрична, без пустой полосы снизу. */
   justify-content: center;
   gap: 28px;
@@ -975,45 +978,27 @@
     width: 100%;
   }
 }
-.t-voice__orb {
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  flex-shrink: 0; /* орб не плющится, когда подписи много */
-  /* Плоский фирменный фиолетовый (без градиентов — единый брендинг #9047ff) */
-  background: #9047ff;
-  /* Always breathing — the tutor feels alive even while idle. A stronger ping
-     pulse takes over when the agent is actively speaking/listening (.is-live). */
-  animation: t-orb-breathe 3.4s ease-in-out infinite;
+/* Лицо тьютора — canvas на месте прежнего плоского орба. Бокс намеренно
+   больше самой формы: по краям лежит мягкая тень и летает конфетти, и
+   обрезать их канвой нельзя. Лишнее поле съедается отрицательным margin,
+   поэтому в потоке лицо занимает те же ~220px, что занимал орб, и раскладка
+   карточки не поехала.
+
+   Доля поля (18.2%) держится за R = 0.318 * size в avatarEngine.js: меняешь
+   там — правь здесь, иначе появится пустая полоса или тень обрежется.
+
+   Движения тут нет вообще: дыхание, подскоки и дрейф градиента живут внутри
+   канвы. prefers-reduced-motion движок читает сам и гасит движение, оставляя
+   выражение лица и цвет — они несут информацию, а не украшают. */
+.t-voice__face {
+  --face: min(340px, 78vw);
+  width: var(--face);
+  height: var(--face);
+  margin: calc(var(--face) * -0.182) 0;
+  flex-shrink: 0; /* лицо не плющится, когда подписи много */
 }
-@keyframes t-orb-breathe {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 46px 6px rgba(144, 71, 255, 0.22);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 72px 14px rgba(144, 71, 255, 0.42);
-  }
-}
-.t-voice__orb.is-live {
-  animation: t-orb-pulse 2s ease-in-out infinite;
-}
-@keyframes t-orb-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(144, 71, 255, 0.35);
-  }
-  50% {
-    transform: scale(1.06);
-    box-shadow: 0 0 0 22px rgba(144, 71, 255, 0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-voice__orb,
-  .t-voice__orb.is-live {
-    animation: none;
-  }
+.t-voice__face canvas {
+  display: block;
 }
 /* Мелкий таймер остатка сессии — правый верхний угол карточки звонка */
 .t-voice__timer {
