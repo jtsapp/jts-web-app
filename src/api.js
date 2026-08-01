@@ -70,6 +70,24 @@ async function authGet(path, token) {
   return res.json()
 }
 
+async function authPut(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
 // ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
 // Админ-каталоги меняются редко (только правками в dev-admin), поэтому повторные
 // открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в
@@ -148,6 +166,28 @@ export function getMyLessonOccurrences(token) {
 
 export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
+}
+
+// Живой урок: загрузка одного урока и управление жизненным циклом (учитель/админ).
+// Бэкенд скоупит /admin/lessons/{id} под личность токена.
+export function getLessonById(token, id) {
+  return authGet(`/admin/lessons/${id}`, token)
+}
+
+export function startLiveLesson(token, id) {
+  return authPut(`/admin/lessons/${id}/start`, token)
+}
+
+export function pauseLiveLesson(token, id, minutes) {
+  return authPut(`/admin/lessons/${id}/pause?minutes=${encodeURIComponent(minutes)}`, token)
+}
+
+export function resumeLiveLesson(token, id) {
+  return authPut(`/admin/lessons/${id}/resume`, token)
+}
+
+export function completeLiveLesson(token, id) {
+  return authPut(`/admin/lessons/${id}/complete`, token)
 }
 
 // Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
