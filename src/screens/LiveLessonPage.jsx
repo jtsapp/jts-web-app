@@ -34,7 +34,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // No STOMP status topic exists; a student polls so "teacher started" appears on its own.
     if (!isStaff) {
       pollRef.current = setInterval(() => {
-        getLessonById(token, lessonId).then((d) => setLesson(d)).catch(() => {})
+        getLessonById(token, lessonId).then((d) => { setLesson(d); setState('ready') }).catch(() => {})
       }, 5000)
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current) }

@@ -5782,7 +5782,7 @@ textarea {
 .live-badge--cancelled { background: #eceef1; color: #6b7280; }
 .live__status-msg { color: #6b7280; margin: 8px 0; }
 .live__section { background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-.live__section-h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 10px; }
+.live__section-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 10px; }
 .live-roster { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .live-roster__item { display: flex; align-items: center; gap: 6px; }
 .live-roster__avatar { width: 34px; height: 34px; border-radius: 50%; background: #7a4dff; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; position: relative; }

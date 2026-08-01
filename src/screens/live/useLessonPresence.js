@@ -37,6 +37,6 @@ export function useLessonPresence(lessonId, token) {
 function normalizeRoster(payload) {
   const list = Array.isArray(payload) ? payload : (payload?.participants ?? payload?.users ?? [])
   return list
-    .map((p) => ({ userId: p.userId ?? p.id, name: p.name, role: p.role }))
-    .filter((p) => p.userId != null)
+    .map((p) => ({ userId: Number(p.userId ?? p.id), name: p.name, role: p.role }))
+    .filter((p) => Number.isFinite(p.userId))
 }
