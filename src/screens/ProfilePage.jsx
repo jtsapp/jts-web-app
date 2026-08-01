@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { UserIcon } from '../components/icons.jsx'
+import SkillRatings from '../components/SkillRatings.jsx'
 import { useI18n, LANGS } from '../i18n.jsx'
 import {
   computeKingdoms,
@@ -10,6 +11,7 @@ import {
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
 import { getBalance, getLearningPath, countProgress, updateUser } from '../api.js'
+import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 
 // Ключи localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
 const AVATAR_KEY = 'jts_profile_avatar'
@@ -79,6 +81,7 @@ export default function ProfilePage({
   const [lessons, setLessons] = useState(0)
   const [levelProg, setLevelProg] = useState(null)
   const [toast, setToast] = useState('')
+  const [skillStats, setSkillStats] = useState(null)
 
   // Модалки
   const [langOpen, setLangOpen] = useState(false)
@@ -137,6 +140,20 @@ export default function ProfilePage({
       alive = false
     }
   }, [token, userLevel])
+
+  // Рейтинг навыков: сперва локальный мираж (мгновенно, работает и для гостя),
+  // затем серверные агрегаты для залогиненного (источник истины).
+  useEffect(() => {
+    setSkillStats(readLocalSkillStats())
+    if (!token) return
+    let alive = true
+    loadSkillStatsRemote(token).then((s) => {
+      if (alive && s) setSkillStats(s)
+    })
+    return () => {
+      alive = false
+    }
+  }, [token])
 
   function showToast(msg) {
     setToast(msg)
@@ -327,6 +344,8 @@ export default function ProfilePage({
             </div>
           </div>
         </section>
+
+        <SkillRatings stats={skillStats} loading={skillStats === null} />
 
         <div className="pf-label">{t('profile.sectionPersonalization')}</div>
         <div className="pf-card">
