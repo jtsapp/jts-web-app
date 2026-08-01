@@ -12,6 +12,8 @@ import {
 import { ConnectionState } from 'livekit-client'
 import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
+import TutorFace from '../tutor/TutorFace.jsx'
+import { moodToEmotion } from '../tutor/avatarEmotions.js'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -188,7 +190,7 @@ export default function TutorVoiceChatPage({
 
         {error ? (
           <div className="t-voice__card">
-            <div className="t-voice__orb" />
+            <TutorFace emotion="idle" />
             <div className="t-voice__text">{errorText}</div>
           </div>
         ) : connected ? (
@@ -210,7 +212,7 @@ export default function TutorVoiceChatPage({
           </LiveKitRoom>
         ) : (
           <div className="t-voice__card">
-            <div className="t-voice__orb" />
+            <TutorFace emotion="idle" />
             <div className="t-voice__text">
               {perm === 'granted' ? t('voice.connecting') : t('voice.permHint')}
             </div>
@@ -243,22 +245,19 @@ function fmtClock(sec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-// Эмоции тьютора, приходящие от агента (топик "mood"). Имя из сети в CSS не
-// подставляется: иначе вывод модели стал бы вектором CSS-инъекции.
+// Сколько держать реакцию на лице после того, как тьютор договорил. Эмоцию
+// агент помечает в НАЧАЛЕ реплики, а показывать её во время речи нельзя: там
+// рот работает по амплитуде звука (состояние talking). Поэтому тег ждёт конца
+// озвучки и живёт окном — дальше лицо возвращается к «слушаю», иначе ученик
+// не видит, что микрофон снова его.
 //
-// Именно Map, а не объектный литерал: у литерала есть цепочка прототипов, и
-// MOOD_CLASS['constructor'] вернул бы функцию Object — truthy, то есть
-// «незнакомое» имя прошло бы проверку и уехало в className. У Map ключи не
-// наследуются, поэтому словарь закрыт на самом деле, а не на словах.
-const MOOD_CLASS = new Map([
-  ['anger', 'is-mood-anger'],
-  ['disgust', 'is-mood-disgust'],
-  ['joy', 'is-mood-joy'],
-  ['sadness', 'is-mood-sadness'],
-  ['gloat', 'is-mood-gloat'],
-])
+// Окно считается ОТ НАЧАЛА перехода, а цвет доезжает примерно за 1.6с
+// (TAU_COLOR в avatarEngine.js). При 3.2с эмоция едва успевала доехать и сразу
+// уходила — читалось как вспышка, особенно у Декстера, который метит реплику
+// почти каждый раз. Держим дольше, чтобы на полной силе она реально постояла.
+const REACTION_MS = 4500
 
-// Внутри LiveKitRoom: состояние агента → класс орба, живая подпись, тумблер мика.
+// Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
 function CallStage({ onFinish, t, ttl }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
@@ -280,18 +279,19 @@ function CallStage({ onFinish, t, ttl }) {
     }
   })
 
-  // Эмоция тьютора. Держится до следующего тега — пока ученик отвечает,
-  // настроение остаётся тем же, и рамка не мигает между репликами.
-  const [mood, setMood] = useState(null)
+  // Эмоция тьютора. Тег приходит в начале реплики, а на лицо попадает после
+  // озвучки (см. REACTION_MS), поэтому ждёт своей очереди в ref, а не в стейте:
+  // перерисовывать экран на приход тега нечего.
+  const pendingMood = useRef(null)
   useDataChannel('mood', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
-      const cls = MOOD_CLASS.get(data?.mood)
+      const key = moodToEmotion(data?.mood, Number(data?.intensity))
       const level = Number(data?.intensity)
-      // Number.isInteger, а не только диапазон: 1.5 прошло бы `>= 1 && <= 3`
-      // и дало класс is-mood-1.5, которого в CSS нет.
-      if (cls && Number.isInteger(level) && level >= 1 && level <= 3) {
-        setMood({ cls, level })
+      // Number.isInteger, а не только диапазон: 1.5 прошло бы `>= 1 && <= 3`,
+      // а сила — это индекс в таблице подвижности, дробной она не бывает.
+      if (key && Number.isInteger(level) && level >= 1 && level <= 3) {
+        pendingMood.current = { key, level }
       }
     } catch {
       /* ignore malformed payloads */
@@ -300,7 +300,45 @@ function CallStage({ onFinish, t, ttl }) {
 
   const connected = state === ConnectionState.Connected
   const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
-  const live = connected && agentPresent && (va.state === 'speaking' || va.state === 'listening')
+  const speaking = va.state === 'speaking'
+
+  // Реакция показывается ровно тогда, когда тьютор замолчал: до этого на лице
+  // липсинк, и подменять его эмоцией — значит потерять и то, и другое.
+  const [reaction, setReaction] = useState(null)
+  const wasSpeaking = useRef(false)
+  useEffect(() => {
+    if (speaking) {
+      // Гасить прошлую реакцию тут не нужно: во время речи её всё равно
+      // перекрывает talking, а лишний setState в эффекте — лишний рендер.
+      wasSpeaking.current = true
+      return
+    }
+    if (!wasSpeaking.current) return
+    wasSpeaking.current = false
+    const m = pendingMood.current
+    pendingMood.current = null
+    // Именно `m || null`, а не ранний выход: реплика без тега обязана СТЕРЕТЬ
+    // прошлую реакцию, иначе после неё на лице всплывёт позапрошлая эмоция.
+    setReaction(m || null)
+    if (!m) return
+    const id = setTimeout(() => setReaction(null), REACTION_MS)
+    return () => clearTimeout(id)
+  }, [speaking])
+
+  // Голос тьютора для липсинка. Берём сырой MediaStreamTrack: TrackReference
+  // пересоздаётся на каждый ререндер, а трек внутри тот же — иначе эффект с
+  // AudioContext пересобирался бы вхолостую по десятку раз за реплику.
+  const agentTrack = va.audioTrack?.publication?.track?.mediaStreamTrack || null
+
+  let emotion = 'idle'
+  let intensity = 2
+  if (!connected || !agentPresent) emotion = 'idle'
+  else if (speaking) emotion = 'talking'
+  else if (va.state === 'thinking') emotion = 'thinking'
+  else if (reaction) {
+    emotion = reaction.key
+    intensity = reaction.level
+  } else if (va.state === 'listening') emotion = 'listening'
 
   // Субтитры ТЬЮТОРА — из agentTranscriptions (синхрон с аудио). Показываем
   // предложение, которое он произносит сейчас; держится, пока не дойдёт до
@@ -333,7 +371,7 @@ function CallStage({ onFinish, t, ttl }) {
 
   // Тьютор говорит → его строка (тёмная). Иначе — строка ученика (фиолетовая,
   // как в макете). Фолбэк-статусы, пока ни у кого нет реплики.
-  const tutorSpeaking = va.state === 'speaking'
+  const tutorSpeaking = speaking
   let text
   let isUser = false
   if (tutorSpeaking && tutorCaption) {
@@ -395,17 +433,13 @@ function CallStage({ onFinish, t, ttl }) {
   }
 
   return (
-    <div
-      className={
-        't-voice__card' + (mood ? ` ${mood.cls} is-mood-${mood.level}` : '')
-      }
-    >
+    <div className="t-voice__card">
       {left !== null && (
         <span className={'t-voice__timer' + (left <= 30 ? ' is-low' : '')}>{fmtClock(left)}</span>
       )}
-      {/* Орб больше не завершает звонок по клику: неподписанный клик по картинке
+      {/* Лицо не завершает звонок по клику: неподписанный клик по картинке
           рвал разговор случайным тапом. Завершение — явной кнопкой ниже. */}
-      <div className={'t-voice__orb' + (live ? ' is-live' : '')} />
+      <TutorFace emotion={emotion} intensity={intensity} audioTrack={agentTrack} />
       <div className="t-voice__text">
         <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>
       </div>
