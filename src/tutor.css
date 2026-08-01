@@ -826,15 +826,7 @@
   flex-direction: column;
   align-items: center;
   padding-top: 36px;
-  /* Контейнер для cqw-единиц масштаба свечения эмоций (см. --mood-blur ниже).
-     Меряем ширину САМОЙ карточки, а не окна: на десктопе сайдбар 272px
-     занимает место в потоке от 761px, поэтому карточка при окне 900 всего
-     549px, а не 868. Формула по vw этого не видела и на десктопе давала
-     свечение шире зазора до орба. */
-  container-type: inline-size;
-  /* Потолок тот же, что у карточки: без него .t-voice продолжает расти за
-     876px, cqw начинает считаться от контейнера шире карточки, и свечение
-     снова выходит за зазор — на мониторе 1920 это давало 113%. */
+  /* Потолок тот же, что у карточки, чтобы обёртка не была шире содержимого. */
   max-width: 876px;
   margin-inline: auto;
 }
@@ -863,193 +855,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Весь стек (орб → подпись → микрофон) центрируется как одна группа, равные
+  /* Весь стек (лицо → подпись → микрофон) центрируется как одна группа, равные
      отступы между элементами — так рамка симметрична, без пустой полосы снизу. */
   justify-content: center;
   gap: 28px;
   padding: 48px 0;
-}
-/* ── Эмоции тьютора: свечение по внутренним границам карточки ──────────────
-   box-shadow ставится на САМУ карточку, а не на ::after. Фон и тень элемента
-   красятся ПОД всеми его детьми, поэтому свечение не замажет орб; у ::after
-   порядок обратный и пришлось бы городить z-index всем детям.
-
-   Цвета взяты глубже, чем нужный итог: на белом фоне при альфе 0.16-0.40 цвет
-   вымывается в пастель, и системные яркие оттенки (жёлтый особенно) просто
-   исчезают. Плюс они подобраны в одной хроме с брендовым #9047ff — иначе
-   жёлтый читается как warning-плашка, а зелёный как «успех». */
-.t-voice__card {
-  --mood-rgb: 0 0 0;
-  --mood-alpha: 0;
-  --mood-rim: 0;
-  --mood-blur: 0px;
-  /* 600мс на такое большое мягкое свечение читались как щелчок, особенно на
-     скачке оттенка (кармин -> золото). Кривая с длинным хвостом: основное
-     движение в начале, доводка медленная. */
-  transition: box-shadow 1400ms cubic-bezier(0.33, 0, 0.2, 1);
-}
-.t-voice__card.is-mood-anger {
-  --mood-rgb: 224 27 60;
-} /* глубокий кармин с синим подтоном */
-.t-voice__card.is-mood-disgust {
-  --mood-rgb: 109 155 31;
-} /* болотно-оливковый, не «зелёный успеха» */
-.t-voice__card.is-mood-joy {
-  --mood-rgb: 255 196 0;
-} /* золото — выживает на белом */
-.t-voice__card.is-mood-sadness {
-  --mood-rgb: 31 75 184;
-} /* глубокий индиго, не «инфо-синий» */
-.t-voice__card.is-mood-gloat {
-  --mood-rgb: 255 106 0;
-} /* жжёный апельсин — разводит с жёлтым */
-
-/* Сила = насколько близко свечение подходит к орбу.
-
-   Зазоры измерены на живой вёрстке, а не выведены из min-height: при полной
-   ширине карточка 876x616, орб 220px прижат к ВЕРХУ стека, поэтому до него
-   сверху 48px, снизу 348px, по бокам 328px. Шкала привязана к боковым — это
-   основная ось на широкой карточке; сверху свечение упирается в край на
-   любой силе, и это нормально.
-
-   Боковой зазор = (ширина карточки - 220) / 2, то есть он резиновый: 328px
-   при полной ширине, 224 при карточке 668, 62 при 343. Поэтому blur задан в
-   cqw и проходит одну и ту же долю зазора на любой ширине (~55% у злости на
-   силе 3), а не фиксированную величину.
-
-   Глубина захода = spread + blur/2, альфа у края = alpha * (spread+blur/2)/blur.
-   Поэтому одна и та же --mood-alpha даёт РАЗНУЮ плотность у разных повадок:
-   у эмоций со spread 0 половина полосы отсекается, у смещённых срезается
-   лишь пятая часть. Это осознанно: злость должна быть плотнее грусти.
-
-   Потолок держится по альфе У КРАЯ, а не по сырой: у самой плотной эмоции
-   (злость) это 0.42 в базе и 0.60 в пике пульса. Выше поднимать нельзя —
-   на белом глубокий кармин начинает спорить с орбом за внимание, а орб
-   здесь главный. Сырые числа в is-mood-* выглядят больше именно потому,
-   что часть полосы срезается отсечкой. */
-.t-voice__card.is-mood-1 {
-  --mood-blur: max(16px, calc(24.2cqw - 53px));
-  --mood-alpha: 0.26;
-  --mood-rim: 0.4;
-}
-.t-voice__card.is-mood-2 {
-  --mood-blur: max(30px, calc(45.4cqw - 100px));
-  --mood-alpha: 0.4;
-  --mood-rim: 0.62;
-}
-.t-voice__card.is-mood-3 {
-  --mood-blur: max(46px, calc(69.6cqw - 153px));
-  --mood-alpha: 0.58;
-  --mood-rim: 0.85;
-}
-
-/* --mood-rim — плотная кромка у самого края поверх мягкого свечения. Мягкое
-   свечение по построению теряет половину полосы на отсечке по границе, поэтому
-   у края выходило 0.29-0.42 и читалось как прозрачное. Кромка узкая (0.12-0.14
-   от blur), поэтому она делает край насыщенным, не съедая зазор до орба.
-   Композитно у края получается 0.54-0.67 в зависимости от повадки. */
-
-/* Повадка эмоции — не украшение, а второй канал информации. Пять эмоций,
-   различимых только оттенком, боком зрения сливаются (ученик смотрит на орб и
-   слушает), а красный с зелёным — самая частая пара путаницы при дальтонизме.
-   Поэтому у каждой эмоции своя геометрия: она читается и без различения цвета.
-
-   Повадка СТАРШЕ шкалы силы: у отвращения зазор до орба не закрывается ни на
-   какой силе, у грусти верх остаётся пустым — это их смысл, а не недоработка. */
-
-/* Злость жмёт со всех сторон: тугая кромка + частый мелкий пульс.
-
-   У всех трёх анимаций ниже НЕТ кадров 0%/100% — и это намеренно: когда кадр
-   не объявлен, браузер берёт значение из вычисленного стиля самого элемента
-   (implicit keyframes, CSS Animations Level 1). Так базовое правило остаётся
-   единственным местом, где записана геометрия эмоции, и правка не может
-   разъехаться с копией внутри keyframes. */
-.t-voice__card.is-mood-anger {
-  box-shadow:
-    inset 0 0 calc(var(--mood-blur) * 0.12) rgb(var(--mood-rgb) / var(--mood-rim)),
-    inset 0 0 calc(var(--mood-blur) * 0.55) calc(var(--mood-blur) * 0.12)
-      rgb(var(--mood-rgb) / var(--mood-alpha));
-  animation: t-mood-press 1.6s ease-in-out infinite;
-}
-@keyframes t-mood-press {
-  50% {
-    box-shadow:
-      inset 0 0 calc(var(--mood-blur) * 0.1)
-        rgb(var(--mood-rgb) / calc(var(--mood-rim) * 1.1)),
-      inset 0 0 calc(var(--mood-blur) * 0.44) calc(var(--mood-blur) * 0.16)
-        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 1.2));
-  }
-}
-
-/* Отвращение отшатывается: свечение жмётся к внешнему краю и держит зазор до
-   орба по боковой и нижней оси — там оно проходит меньше четверти пути.
-   Сверху зазор всего 48px, его перекрывает любая эмоция, включая эту.
-   Отрицательный spread поджимает тень к границе. */
-.t-voice__card.is-mood-disgust {
-  box-shadow:
-    inset 0 0 calc(var(--mood-blur) * 0.12) rgb(var(--mood-rgb) / var(--mood-rim)),
-    inset 0 0 calc(var(--mood-blur) * 0.5) calc(var(--mood-blur) * -0.08)
-      rgb(var(--mood-rgb) / var(--mood-alpha));
-}
-
-/* Радость: широко, ровно, мягко, медленный вдох-выдох. */
-.t-voice__card.is-mood-joy {
-  box-shadow:
-    inset 0 0 calc(var(--mood-blur) * 0.12) rgb(var(--mood-rgb) / var(--mood-rim)),
-    inset 0 0 var(--mood-blur) rgb(var(--mood-rgb) / var(--mood-alpha));
-  animation: t-mood-breathe 4.2s ease-in-out infinite;
-}
-@keyframes t-mood-breathe {
-  50% {
-    box-shadow:
-      inset 0 0 calc(var(--mood-blur) * 0.14)
-        rgb(var(--mood-rgb) / calc(var(--mood-rim) * 0.85)),
-      inset 0 0 calc(var(--mood-blur) * 1.15)
-        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.8));
-  }
-}
-
-/* Грусть оседает книзу: снизу до гало орба, сверху почти пусто. Пульса нет. */
-/* Кромка у грусти и злорадства смещена по направлению повадки, а не идёт
-   ровным кольцом: ровная стёрла бы асимметрию, которая тут работает вторым,
-   не-цветовым каналом информации. */
-.t-voice__card.is-mood-sadness {
-  box-shadow:
-    inset 0 calc(var(--mood-blur) * -0.1) calc(var(--mood-blur) * 0.14)
-      calc(var(--mood-blur) * -0.04) rgb(var(--mood-rgb) / var(--mood-rim)),
-    inset 0 calc(var(--mood-blur) * -0.5) var(--mood-blur)
-      calc(var(--mood-blur) * -0.2)
-      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.75)),
-    inset 0 calc(var(--mood-blur) * 0.3) calc(var(--mood-blur) * 0.5)
-      calc(var(--mood-blur) * -0.35)
-      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.35));
-}
-
-/* Злорадство ухмыляется вбок: справа сильно, слева заметно слабее. Сторона
-   выбрана по направлению чтения, а не «на выбор реализации». */
-.t-voice__card.is-mood-gloat {
-  box-shadow:
-    inset calc(var(--mood-blur) * -0.1) 0 calc(var(--mood-blur) * 0.14)
-      calc(var(--mood-blur) * -0.04) rgb(var(--mood-rgb) / var(--mood-rim)),
-    inset calc(var(--mood-blur) * -0.45) 0 var(--mood-blur)
-      calc(var(--mood-blur) * -0.15) rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.75)),
-    inset calc(var(--mood-blur) * 0.3) 0 calc(var(--mood-blur) * 0.6)
-      calc(var(--mood-blur) * -0.3)
-      rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.4));
-  animation: t-mood-drift 5.5s ease-in-out infinite;
-}
-@keyframes t-mood-drift {
-  50% {
-    box-shadow:
-      inset calc(var(--mood-blur) * -0.1) 0 calc(var(--mood-blur) * 0.14)
-        calc(var(--mood-blur) * -0.04) rgb(var(--mood-rgb) / var(--mood-rim)),
-      inset calc(var(--mood-blur) * -0.55) 0 calc(var(--mood-blur) * 1.1)
-        calc(var(--mood-blur) * -0.1)
-        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.86)),
-      inset calc(var(--mood-blur) * 0.2) 0 calc(var(--mood-blur) * 0.6)
-        calc(var(--mood-blur) * -0.34)
-        rgb(var(--mood-rgb) / calc(var(--mood-alpha) * 0.3));
-  }
 }
 /* Scenario verdict card (report_task_complete → topic "lesson").
    Порядок чтения: знак-медальон → вердикт → разбор → что улучшить → «Готово».
@@ -1168,55 +978,27 @@
     width: 100%;
   }
 }
-.t-voice__orb {
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  flex-shrink: 0; /* орб не плющится, когда подписи много */
-  /* Плоский фирменный фиолетовый (без градиентов — единый брендинг #9047ff) */
-  background: #9047ff;
-  /* Always breathing — the tutor feels alive even while idle. A stronger ping
-     pulse takes over when the agent is actively speaking/listening (.is-live). */
-  animation: t-orb-breathe 3.4s ease-in-out infinite;
+/* Лицо тьютора — canvas на месте прежнего плоского орба. Бокс намеренно
+   больше самой формы: по краям лежит мягкая тень и летает конфетти, и
+   обрезать их канвой нельзя. Лишнее поле съедается отрицательным margin,
+   поэтому в потоке лицо занимает те же ~220px, что занимал орб, и раскладка
+   карточки не поехала.
+
+   Доля поля (18.2%) держится за R = 0.318 * size в avatarEngine.js: меняешь
+   там — правь здесь, иначе появится пустая полоса или тень обрежется.
+
+   Движения тут нет вообще: дыхание, подскоки и дрейф градиента живут внутри
+   канвы. prefers-reduced-motion движок читает сам и гасит движение, оставляя
+   выражение лица и цвет — они несут информацию, а не украшают. */
+.t-voice__face {
+  --face: min(340px, 78vw);
+  width: var(--face);
+  height: var(--face);
+  margin: calc(var(--face) * -0.182) 0;
+  flex-shrink: 0; /* лицо не плющится, когда подписи много */
 }
-@keyframes t-orb-breathe {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 46px 6px rgba(144, 71, 255, 0.22);
-  }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 72px 14px rgba(144, 71, 255, 0.42);
-  }
-}
-.t-voice__orb.is-live {
-  animation: t-orb-pulse 2s ease-in-out infinite;
-}
-@keyframes t-orb-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(144, 71, 255, 0.35);
-  }
-  50% {
-    transform: scale(1.06);
-    box-shadow: 0 0 0 22px rgba(144, 71, 255, 0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .t-voice__orb,
-  .t-voice__orb.is-live {
-    animation: none;
-  }
-  /* Пульс и дрейф эмоции гаснут, оттенок и охват остаются: информация в этом
-     режиме не теряется, уходит только движение. */
-  .t-voice__card.is-mood-anger,
-  .t-voice__card.is-mood-joy,
-  .t-voice__card.is-mood-gloat {
-    animation: none;
-  }
-  .t-voice__card {
-    transition: none;
-  }
+.t-voice__face canvas {
+  display: block;
 }
 /* Мелкий таймер остатка сессии — правый верхний угол карточки звонка */
 .t-voice__timer {
