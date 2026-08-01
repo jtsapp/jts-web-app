@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { speak as ttsSpeak, sfx as playSfx, buzz as vibrate } from './audio.js'
 import { shuffle, tr as trW, altTr as altTrW } from './vocabData.js'
+import { recordSkill } from '../skillStats.js'
 import {
   buildLearn, processBuf, nextTask, learnDone, masteredCount, isMastered,
   distractors as pickDistractors, progressPct, mmss,
@@ -83,6 +84,8 @@ export default function Session({ collected, scope, S, set, setQuiet, T, lang, o
         return { srs: { ...cur.srs, [w.id]: st }, seenCount: cur.seenCount + (wasNew ? 1 : 0) }
       })
       if (becameNew) statsRef.current.newLearned++
+      const it = L.items.find((i) => String(i.w.id) === String(w.id))
+      if (!it || it.reps === 0) recordSkill('vocab', !!correct)
       L.buf.push({ id: w.id, ok: !!correct })
     },
     [setQuiet, L],
