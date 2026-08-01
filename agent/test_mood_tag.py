@@ -190,15 +190,25 @@ for name in MOOD_NAMES:
 # тон как эмоцию. Обе страховки должны быть в промпте у всех тьюторов.
 for block in (bro_block, gentle_block):
     assert "ПО УМОЛЧАНИЮ ТЕГА НЕТ" in block
-    assert "Один и тот же тег подряд не ставь" in block
     assert not block.lstrip().startswith("Начинай реплику с тега")
+    # Повтор запрещён по ОТСУТСТВИЮ повода, а не по совпадению имени: две
+    # ошибки подряд — это два повода, и злость на второй законна.
+    assert "ничего не изменилось — тега нет" in block
+    assert "даже если тег тот же самый" in block
 
-# Оговорка про тон — только тем, кому выдана злость: остальным это лишняя
+# Оговорка про тон — только тьюторам с резкой манерой: остальным это лишняя
 # развилка в промпте.
-assert "anger ставь, только когда злит СОБЫТИЕ" in bro_block
-assert "СОБЫТИЕ" not in gentle_block
+from agent import HARSH_TUTORS  # noqa: E402
 
-# Имя эмоции описывает СОБЫТИЕ, а не манеру речи персонажа.
+assert "bro" in HARSH_TUTORS and "gentle" not in HARSH_TUTORS
+assert "Но повод должен БЫТЬ" in bro_block
+assert "Но повод должен БЫТЬ" not in gentle_block
+
+# Злость у Декстера остаётся: орать на ошибку и отказ — это его продукт.
+# Чинили злость НА РОВНОМ МЕСТЕ, а не саму злость.
+assert "anger" in TUTOR_MOODS["bro"]
+assert "ошибся" in MOOD_HINTS["anger"]
+# Но имя описывает ПОВОД, а не манеру речи персонажа.
 assert "по характеру персонажа" not in MOOD_HINTS["anger"]
 
 print("mood-парсер: все ассерты прошли")
