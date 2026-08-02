@@ -63,10 +63,8 @@ prompt caching, лимиты 20 мин/день · 300 мин/мес). TTS — �
    npm install
    ```
 
-2. **БД (Neon)** — один раз применить схему:
-   ```
-   psql "$DATABASE_URL" -f src/lib/schema.sql
-   ```
+2. **БД** — ничего катить руками не нужно: миграции из `src/lib/migrations/`
+   применяются сами при первом старте приложения (`src/instrumentation.js`).
 
 3. **Vercel env** — прописать серверные ключи (список выше), задеплоить (`vercel --prod`).
 

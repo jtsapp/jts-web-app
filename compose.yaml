@@ -12,13 +12,19 @@
 # (POSTGRES_PORT), как это уже делает backend.
 #
 # Версия 18 (не 15, как у backend) — потому что реальный Neon-инстанс сейчас
-# на PostgreSQL 18.4 (см. schema.sql); совпадающая версия убирает любой риск
-# несовместимости при pg_dump/pg_restore переноса данных.
+# на PostgreSQL 18.4 (см. src/lib/migrations/0001_baseline.sql); совпадающая
+# версия убирает любой риск несовместимости при pg_dump/pg_restore переноса данных.
 #
 # Начиная с образа postgres:18 volume монтируется на /var/lib/postgresql
 # целиком (без /data) — сам образ кладёт данные во внутреннюю подпапку
 # версии (pg_ctlcluster-совместимый layout). Старый путь .../data/ (как у
 # backend, там ещё postgres:15) больше не подходит.
+#
+# Схему больше не бутстрапим через docker-entrypoint-initdb.d (тот механизм
+# срабатывает только на пустом volume, задним числом схему не докатывает —
+# см. git-историю). Вместо него — src/lib/migrations/ + runMigrations()
+# (src/lib/migrate.js), которые приложение само прогоняет при старте
+# (src/instrumentation.js), аналог Flyway в бэкенде.
 services:
   postgres:
     image: 'postgres:18'
@@ -32,11 +38,5 @@ services:
     mem_limit: 512m
     volumes:
       - jts-web-app-data:/var/lib/postgresql
-      # Официальный образ postgres сам выполняет любой .sql из этой папки —
-      # но ТОЛЬКО один раз, при самой первой инициализации пустого volume.
-      # Так схема применяется автоматически на любом чистом деплое (прод
-      # в том числе) — без ручного psql. На уже проинициализированный volume
-      # это не подействует задним числом (см. HANDOFF/память об этом).
-      - ./src/lib/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
 volumes:
   jts-web-app-data:

@@ -3,7 +3,7 @@
 // payload for the progress screen and teacher calibration). Best-effort:
 // callers wrap this so a DB failure never blocks returning the assessment.
 //
-// Ported from felix lib/db/ielts.ts. Tables: see src/lib/schema.sql.
+// Ported from felix lib/db/ielts.ts. Tables: see src/lib/migrations/0001_baseline.sql.
 
 import { getSql, isDbConfigured } from './sql.js'
 import { ensureLearner } from './profile.js'
