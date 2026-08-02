@@ -196,7 +196,24 @@
 
 .lw-route__step:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 
+/* На телефонах маршрут схлопывается в узкую «рельсу» из одних маркеров —
+   заголовки/подписи шагов прячутся, прогресс дублирован в шапке
+   (.lw-header__progress). Не display:none: обязательный e2e
+   (tests/lesson-workspace.spec.js, --project=mobile, viewport 390×844)
+   кликает по .lw-route__step на этой ширине — маршрут обязан оставаться
+   видимым/кликабельным на стандартных телефонных экранах, а полная
+   240px-колонка на 390px попросту не оставила бы места центру. */
 @media (max-width: 720px) {
+  .lw-route { width: 64px; padding: 20px 6px; }
+  .lw-route__head { display: none; }
+  .lw-route__step { justify-content: center; padding: 8px 0; gap: 0; }
+  .lw-route__body { display: none; }
+  .lw-route__item:not(:last-child)::after { left: 50%; transform: translateX(-1px); }
+}
+
+/* Совсем узкие устройства (<380px) — прячем маршрут целиком, прогресс
+   остаётся только в шапке; сюда обычный e2e-вьюпорт (390px) не попадает. */
+@media (max-width: 380px) {
   .lw-route { display: none; }
 }
 
@@ -424,8 +441,22 @@
 }
 
 /* ===== Правая колонка (.lw-aside) — плитка звонка + топики + чат, три
-   .lw-card друг под другом. ===== */
-.lw-aside { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+   .lw-card друг под другом. На широких экранах — липкая (держится под
+   шапкой, пока скроллится центр в .lw__main); при укладке в один столбец
+   (≤1100px, колонка уходит вниз под контент) липкость выключаем — иначе
+   короткая правая колонка «догоняла» бы центр при скролле длинного шага. */
+.lw-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  position: sticky;
+  top: var(--lw-header-h);
+  align-self: start;
+}
+@media (max-width: 1100px) {
+  .lw-aside { position: static; }
+}
 
 /* ===== Плитка звонка (.lw-call) — визуальная заглушка, см. дизайн-спеку:
    реальное видео вне области №1 (роадмап — внешний Meet). Превью учителя —
