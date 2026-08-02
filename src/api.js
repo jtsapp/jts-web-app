@@ -84,7 +84,7 @@ async function authPut(path, token, body) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`)
   return res.json().catch(() => null)
 }
 

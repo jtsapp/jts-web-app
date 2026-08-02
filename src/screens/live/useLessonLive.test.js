@@ -61,4 +61,14 @@ describe('useLessonLive', () => {
     expect(onFocus).toHaveBeenCalledWith(focus)
     expect(onSectionsChanged).toHaveBeenCalledTimes(1)
   })
+
+  it('drops connected on socket close, and ignores a malformed focus frame', async () => {
+    const onFocus = vi.fn()
+    const { result } = renderHook(() => useLessonLive(14, 'TOK', 116, { onFocus }))
+    await waitFor(() => expect(result.current.connected).toBe(true))
+    act(() => { lastClient.subs['/topic/lesson/14/focus']({ body: '}{bad' }) })
+    expect(onFocus).not.toHaveBeenCalled()
+    act(() => { lastClient.cfg.onWebSocketClose() })
+    await waitFor(() => expect(result.current.connected).toBe(false))
+  })
 })
