@@ -30,6 +30,9 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# .sql миграции читаются через fs.readdirSync (src/lib/migrate.js), не через
+# import — трассировщик standalone-сборки их не видит и не копирует сам.
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib/migrations ./src/lib/migrations
 
 USER nextjs
 EXPOSE 3000
