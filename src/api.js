@@ -190,6 +190,25 @@ export function completeLiveLesson(token, id) {
   return authPut(`/admin/lessons/${id}/complete`, token)
 }
 
+// Живой урок — доска (Fabric). REST только для начальной гидрации; дальнейшие
+// изменения летят по STOMP (см. useLessonBoard). Возвращает список объектов
+// { id, objectId, type, json }, где json — непрозрачная сериализация Fabric-объекта.
+export function getBoardObjects(token, id) {
+  return authGet(`/admin/lessons/${id}/board/objects`, token)
+}
+
+// «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
+// STOMP-топику board-settings (см. useLessonBoard).
+export function getBoardSettings(token, id) {
+  return authGet(`/admin/lessons/${id}/board/settings`, token)
+}
+
+// Учитель меняет ограничения доски (частичный патч, напр. { drawingDisabled: true });
+// сервер сохраняет и ретранслирует настройки всем участникам по STOMP.
+export function updateBoardSettings(token, id, patch) {
+  return authPut(`/admin/lessons/${id}/board/settings`, token, patch)
+}
+
 // Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
 // бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
 // свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
