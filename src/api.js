@@ -276,6 +276,17 @@ export function materialRenderUrl(id, materialId, { mode = 'live', token, studen
   return `${BASE}/student/lessons/${id}/materials/${materialId}/render?${params.toString()}`
 }
 
+// URL плеера материала для зеркалирования экрана (#5): отдельный бэкенд-роут
+// /student/materials/{materialId}/render с assignmentId. Тот же техдолг токена в query,
+// что и у materialRenderUrl. mode: 'live' (ученик решает) | 'readOnly' (учитель смотрит).
+export function materialMirrorUrl(materialId, { assignmentId, mode = 'live', token, sessionId } = {}) {
+  const params = new URLSearchParams({ mode })
+  if (assignmentId != null) params.set('assignmentId', String(assignmentId))
+  if (token) params.set('access_token', token)
+  if (sessionId != null) params.set('sessionId', String(sessionId))
+  return `${BASE}/student/materials/${materialId}/render?${params.toString()}`
+}
+
 // Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
 // бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
 // свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
