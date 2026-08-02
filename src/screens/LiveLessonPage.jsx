@@ -9,6 +9,7 @@ import LiveStatusBadge from './live/LiveStatusBadge.jsx'
 import PresenceRoster from './live/PresenceRoster.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
+import SectionsPanel from './live/SectionsPanel.jsx'
 
 const PAUSE_MINUTES = 5
 
@@ -90,7 +91,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
 
             {(status === 'IN_PROGRESS' || status === 'PAUSED') && (
-              <LiveBoard lessonId={lessonId} token={token} selfUserId={selfUserId} isStaff={isStaff} />
+              <>
+                <SectionsPanel lessonId={lessonId} token={token} selfUserId={selfUserId} isStaff={isStaff} />
+                <LiveBoard lessonId={lessonId} token={token} selfUserId={selfUserId} isStaff={isStaff} />
+              </>
             )}
           </>
         )}
