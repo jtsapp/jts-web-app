@@ -1495,22 +1495,98 @@
   flex-direction: column;
   align-items: center;
 }
-.t-dash__mic {
-  width: 142px;
-  height: 142px;
-  border-radius: 50%;
+/* Кнопка «поболтать» — живой орб-лицо тьютора вместо плоского микрофона.
+   Круглый фон не рисуем: форму и цвет даёт сама канва аватара. */
+.t-dash__orb {
   border: none;
-  background: #9047ff;
-  color: #ffffff;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 18px 40px rgba(144, 71, 255, 0.32);
   transition: transform 0.15s ease;
 }
-.t-dash__mic:hover {
+.t-dash__orb:hover {
   transform: translateY(-2px);
+}
+/* Форма занимает ~2/3 канвы, остальное — прозрачное поле под тень и конфетти;
+   его съедает отрицательный margin (та же схема, что у .t-voice__face). */
+.t-dash__face {
+  --face: 220px;
+  width: var(--face);
+  height: var(--face);
+  margin: calc(var(--face) * -0.182) 0;
+  flex-shrink: 0;
+}
+.t-dash__face canvas {
+  display: block;
+}
+
+/* Тумблер «только английский» */
+.t-dash__engonly {
+  margin-top: 24px;
+  width: 370px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid rgba(144, 71, 255, 0.16);
+  border-radius: 20px;
+  background: rgba(144, 71, 255, 0.06);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.t-dash__engonly:hover {
+  background: rgba(144, 71, 255, 0.1);
+}
+.t-dash__engonly.is-on {
+  border-color: rgba(144, 71, 255, 0.45);
+  background: rgba(144, 71, 255, 0.12);
+}
+.t-dash__engonlytext {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.t-dash__engonlytext b {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t-purple);
+}
+.t-dash__engonlytext small {
+  font-size: 13px;
+  font-weight: 500;
+  color: #8b8b8b;
+}
+.t-dash__switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #d8d3e6;
+  transition: background 0.15s ease;
+}
+.t-dash__switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+.t-dash__engonly.is-on .t-dash__switch {
+  background: var(--t-purple);
+}
+.t-dash__engonly.is-on .t-dash__switch::after {
+  transform: translateX(20px);
 }
 .t-dash__ctatitle {
   margin-top: 20px;
@@ -1522,8 +1598,10 @@
   color: var(--t-purple);
   text-align: center;
 }
+/* Оранжевый, а не фиолетовый: «советуем сегодня» — акцент дня, и он не должен
+   сливаться с фиолетовым орбом и остальным брендовым UI. */
 .t-dash__suggest {
-  margin-top: 56px;
+  margin-top: 32px;
   width: 370px;
   display: flex;
   align-items: center;
@@ -1532,7 +1610,7 @@
   padding: 16px;
   border: none;
   border-radius: 20px;
-  background: #9047ff;
+  background: linear-gradient(90deg, #ff9a2e 0%, #ff6a00 100%);
   cursor: pointer;
   transition: filter 0.15s ease;
 }
@@ -1559,18 +1637,25 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f6f6f6;
-  color: var(--t-purple);
+  background: #ffffff;
+  color: #ff6a00;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-/* --- Правая панель --- */
+/* --- Правая панель ---
+   Список сценариев полный (все 7), поэтому панель — собственный скроллер во всю
+   высоту экрана: прилипает к верху и прокручивается внутри себя, а не тянет
+   страницу вниз на четыре ряда карточек. */
 .t-dash__panel {
   width: 378px;
   flex-shrink: 0;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
   background: #ffffff;
   padding: 32px 20px;
   overflow-y: auto;
@@ -1705,9 +1790,11 @@
   padding: 0;
   cursor: pointer;
 }
+/* 150px, а не 199: карточек в панели теперь семь, и при старой высоте четыре
+   ряда не помещались в экран даже со скроллом внутри панели. */
 .t-scenario__img {
   position: relative;
-  height: 199px;
+  height: 150px;
   border-radius: 24px;
   background-size: cover;
   background-position: center;
@@ -1715,6 +1802,14 @@
 }
 .t-scenario:hover .t-scenario__img {
   filter: brightness(0.95);
+}
+/* Заперт цепочкой (requires) — гасим карточку, как на странице «Сценарии». */
+.t-scenario.is-locked {
+  cursor: default;
+  opacity: 0.5;
+}
+.t-scenario.is-locked:hover .t-scenario__img {
+  filter: none;
 }
 .t-scenario__badge {
   position: absolute;
@@ -2666,27 +2761,31 @@
   .t-dash__cta {
     margin-top: 44px;
   }
-  .t-dash__mic {
-    width: 118px;
-    height: 118px;
-  }
-  .t-dash__mic svg {
-    width: 52px;
-    height: 52px;
+  .t-dash__face {
+    --face: min(180px, 52vw);
   }
   .t-dash__ctatitle {
     margin-top: 18px;
     font-size: clamp(23px, 6.5vw, 28px);
   }
+  .t-dash__engonly {
+    margin-top: 20px;
+    width: 100%;
+    max-width: 370px;
+  }
   .t-dash__suggest {
-    margin-top: 36px;
+    margin-top: 24px;
     width: 100%;
     max-width: 370px;
   }
 
-  /* Панель сценариев — белый лист во всю ширину под героем */
+  /* Панель сценариев — белый лист во всю ширину под героем. Липкий скроллер
+     десктопа тут не нужен: страница и так одна колонка. */
   .t-dash__panel {
     width: 100%;
+    position: static;
+    max-height: none;
+    align-self: stretch;
     padding: 28px 16px 40px;
     overflow-y: visible;
     border-radius: 28px 28px 0 0;
