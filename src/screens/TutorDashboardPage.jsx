@@ -3,13 +3,12 @@ import Sidebar from '../components/Sidebar.jsx'
 import MobileTopBar from '../components/MobileTopBar.jsx'
 import Footer from '../components/Footer.jsx'
 import OnboardingTour from '../tutor/OnboardingTour.jsx'
-import { MenuIcon, MicIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
+import TutorFace from '../tutor/TutorFace.jsx'
+import { MenuIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
-import { SCENARIOS, DASHBOARD_SCENARIO_COUNT } from '../tutor/scenarios.js'
-import { usePassedScenarios } from '../tutor/scenarioProgress.js'
-
-// Виджет-превью: полный список — на странице «Сценарии» по кнопке «Посмотреть все».
-const DASH_SCENARIOS = SCENARIOS.slice(0, DASHBOARD_SCENARIO_COUNT)
+import { SCENARIOS, LABEL_BY_ID } from '../tutor/scenarios.js'
+import { NO_LOCK, usePassedScenarios } from '../tutor/scenarioProgress.js'
+import { useEnglishOnly } from '../lib/englishOnly.js'
 
 export default function TutorDashboardPage({
   user,
@@ -29,14 +28,23 @@ export default function TutorDashboardPage({
 }) {
   const t = useT()
   const [drawer, setDrawer] = useState(false)
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', mood = 'idle' } = tutor
+  // Тумблер «только английский» — общий для всех тьюторов, читается при выдаче
+  // токена комнаты (см. TutorVoiceChatPage → englishOnly в metadata).
+  const [englishOnly, toggleEnglishOnly] = useEnglishOnly()
   // «Советуем сегодня» — первый несданный сценарий сюжетной цепочки (пока
   // прогресс не прочитан, это просто первая сцена). Раньше тут висел хардкод
   // «Практика Present Continious» с пустым обработчиком.
   const passed = usePassedScenarios()
   const suggested = SCENARIOS.find((s) => !passed?.has(s.id)) || SCENARIOS[0]
+  // Заперт только если точно знаем, что предыдущий не сдан — та же логика, что
+  // на странице «Сценарии»: неизвестный прогресс открывает всё.
+  const lockedBy = (s) => {
+    if (NO_LOCK || !s.requires || !passed) return null
+    return passed.has(s.requires) ? null : s.requires
+  }
   const tourSteps = [
-    { selector: '.t-dash__mic', title: t('tour.mic.title'), text: t('tour.mic.text') },
+    { selector: '.t-dash__orb', title: t('tour.mic.title'), text: t('tour.mic.text') },
     { selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text') },
   ]
 
@@ -77,10 +85,33 @@ export default function TutorDashboardPage({
             </div>
 
             <div className="t-dash__cta">
-              <button className="t-dash__mic" type="button" onClick={onTalk} aria-label="Поболтать с тьютором">
-                <MicIcon size={64} />
+              {/* Орб вместо микрофона: у кнопки лицо выбранного тьютора в его
+                  характере (Декстер злится, Луна спокойна, Спарк радуется) —
+                  то же лицо, что потом ведёт разговор. */}
+              <button
+                className="t-dash__orb"
+                type="button"
+                onClick={onTalk}
+                aria-label={t('dash.ctaTitle').replace('\n', ' ')}
+              >
+                <TutorFace className="t-dash__face" emotion={mood} />
               </button>
               <h1 className="t-dash__ctatitle">{t('dash.ctaTitle')}</h1>
+
+              <button
+                className={'t-dash__engonly' + (englishOnly ? ' is-on' : '')}
+                type="button"
+                role="switch"
+                aria-checked={englishOnly}
+                onClick={() => toggleEnglishOnly()}
+              >
+                <span className="t-dash__engonlytext">
+                  <b>{t('dash.englishOnly')}</b>
+                  <small>{t('dash.englishOnlyHint')}</small>
+                </span>
+                <span className="t-dash__switch" aria-hidden="true" />
+              </button>
+
               <button
                 className="t-dash__suggest"
                 type="button"
@@ -110,23 +141,32 @@ export default function TutorDashboardPage({
               </div>
               <p className="t-panel__sub">{t('dash.scenariosSub')}</p>
 
+              {/* Панель отдаёт ВСЕ сценарии и скроллится: раньше висели два
+                  превью, а остальное было только за «Посмотреть все». */}
               <div className="t-scenarios">
-                {DASH_SCENARIOS.map((s) => (
-                  <button
-                    className="t-scenario"
-                    key={s.id}
-                    type="button"
-                    onClick={() => onScenario && onScenario(s.id)}
-                  >
-                    <span
-                      className="t-scenario__img"
-                      style={{ backgroundImage: `url(${s.img})` }}
+                {SCENARIOS.map((s) => {
+                  const locked = lockedBy(s)
+                  return (
+                    <button
+                      className={'t-scenario' + (locked ? ' is-locked' : '')}
+                      key={s.id}
+                      type="button"
+                      disabled={Boolean(locked)}
+                      title={
+                        locked ? t('scen.locked', { label: LABEL_BY_ID[locked] || locked }) : undefined
+                      }
+                      onClick={() => !locked && onScenario && onScenario(s.id)}
                     >
-                      <span className="t-scenario__badge">{s.badge}</span>
-                    </span>
-                    <span className="t-scenario__label">{s.label}</span>
-                  </button>
-                ))}
+                      <span
+                        className="t-scenario__img"
+                        style={{ backgroundImage: `url(${s.img})` }}
+                      >
+                        <span className="t-scenario__badge">{locked ? '🔒' : s.badge}</span>
+                      </span>
+                      <span className="t-scenario__label">{s.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </aside>

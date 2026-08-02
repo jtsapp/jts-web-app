@@ -120,6 +120,10 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl) {
   if (mem.writing && typeof mem.writing === 'object') meta.writing = mem.writing
   if (p.explanationLang === 'ru' || p.explanationLang === 'kz' || p.explanationLang === 'en')
     meta.explanationLang = p.explanationLang
+  // Тумблер «только английский» с дашборда. GET-вариант роута отдаёт строки
+  // (Object.fromEntries над searchParams), поэтому принимаем и 'true'.
+  if (p.englishOnly === true || p.englishOnly === 'true' || p.englishOnly === '1')
+    meta.englishOnly = true
   if (p.mode === 'placement') {
     meta.mode = 'placement'
     meta.draftLevel = p.draftLevel || meta.level
