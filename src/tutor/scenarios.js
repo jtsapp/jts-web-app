@@ -63,7 +63,3 @@ export const SCENARIOS = [
 ]
 
 export const LABEL_BY_ID = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.label]))
-
-// Сколько карточек показывает виджет на дашборде. Сетка .t-scenarios — две
-// колонки, поэтому два: одна карточка оставляла половину ряда пустой.
-export const DASHBOARD_SCENARIO_COUNT = 2

@@ -811,7 +811,12 @@ export default function App() {
             setScreen('tutor-voice-chat')
           }}
           onSeeScenarios={() => setScreen('tutor-scenarios')}
-          onScenario={() => setScreen('tutor-scenarios')}
+          // Карточка в панели запускает свою сцену сразу: панель показывает весь
+          // список, и переброс на страницу «Сценарии» ради того же выбора лишний.
+          onScenario={(id) => {
+            setScenario(id || null)
+            setScreen('tutor-voice-chat')
+          }}
         />
       )
     case 'tutor-scenarios':

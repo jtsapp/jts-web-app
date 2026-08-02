@@ -17,6 +17,7 @@ import { moodToEmotion } from '../tutor/avatarEmotions.js'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
+import { getEnglishOnly } from '../lib/englishOnly.js'
 
 function ArrowUpIcon({ size = 22 }) {
   return (
@@ -113,6 +114,10 @@ export default function TutorVoiceChatPage({
           level: user?.level || 'B1',
           lang,
           tutor: tutor.key,
+          // Тумблер с дашборда. Читаем в момент выдачи токена: внутри уже
+          // начатого разговора настройка не меняется — промпт агента собирается
+          // один раз на старте комнаты.
+          ...(getEnglishOnly() ? { englishOnly: true } : {}),
           ...(interests.length ? { interests } : {}),
           ...(profession ? { profession } : {}),
           ...(scenarioId ? { scenarioId } : {}),
