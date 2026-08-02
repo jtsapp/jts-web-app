@@ -1,0 +1,8 @@
+/* Клиентский workspace живого урока (.lw-*). Только светлая тема. */
+.lw { min-height: 100vh; display: flex; flex-direction: column; background: #f4f5f7; color: var(--ink); }
+.lw__body { flex: 1; display: flex; align-items: stretch; min-height: 0; }
+.lw__main { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; padding: 24px 28px 40px; align-items: start; overflow: auto; }
+.lw-card { background: #fff; border: 1px solid #efeef4; border-radius: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+@media (max-width: 1100px) {
+  .lw__main { grid-template-columns: minmax(0, 1fr); }
+}
