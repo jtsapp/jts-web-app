@@ -6,3 +6,222 @@
 @media (max-width: 1100px) {
   .lw__main { grid-template-columns: minmax(0, 1fr); }
 }
+
+.lw-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ===== Баннер шага (.lw-banner) — форма/тень/скругление как .kh-hero,
+   градиент задаётся инлайном в BannerBlock. ===== */
+.lw-banner {
+  position: relative;
+  width: 100%;
+  min-height: 148px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(23, 19, 38, 0.18);
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 0;
+}
+.lw-banner__text {
+  padding-bottom: 24px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: pre-line;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.lw-banner__mascot {
+  flex: none;
+  align-self: flex-end;
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  object-position: center bottom;
+  margin-bottom: -36px;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.18));
+}
+@media (max-width: 520px) {
+  .lw-banner__mascot { width: 118px; height: 118px; margin-bottom: -24px; }
+  .lw-banner__text { font-size: 18px; }
+}
+
+/* ===== Карточка теории (.lw-theory) ===== */
+.lw-theory { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 14px; }
+.lw-theory__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lw-theory__kicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--purple);
+}
+.lw-theory__minutes { font-size: 13px; font-weight: 700; color: var(--muted); }
+.lw-theory__title { margin: 0; font-size: 19px; font-weight: 800; color: var(--ink); }
+.lw-theory__text { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+
+.lw-forms { display: flex; flex-wrap: wrap; gap: 8px; }
+.lw-form-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #f4f5f7;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.lw-form-chip b { font-weight: 800; }
+.lw-form-chip.accent { background: #f0ebff; color: var(--purple); }
+
+.lw-table { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #efeef4; padding-top: 12px; }
+.lw-table__row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: baseline; font-size: 14px; }
+.lw-table__kind { font-weight: 800; color: var(--ink); }
+.lw-table__example { color: var(--muted); }
+.lw-table__accent { color: var(--purple); font-weight: 800; }
+@media (max-width: 640px) {
+  .lw-table__row { grid-template-columns: 1fr; gap: 2px; }
+}
+
+.lw-mistake {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff7df;
+  border: 1px solid #ffe6a8;
+}
+.lw-mistake__icon { flex: none; font-size: 16px; line-height: 1.4; }
+.lw-mistake__body { font-size: 13px; line-height: 1.5; color: var(--ink); }
+.lw-mistake__body b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #a67c00;
+}
+
+/* ===== Карточка практики (.lw-practice) ===== */
+.lw-practice { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 18px; }
+.lw-practice__title { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
+.lw-practice__hint { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.lw-practice__list { display: flex; flex-direction: column; gap: 20px; }
+.lw-practice__check {
+  align-self: flex-start;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 14px;
+  background: var(--purple);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.12s, transform 0.05s;
+}
+.lw-practice__check:hover { filter: brightness(1.06); }
+.lw-practice__check:active { transform: scale(0.98); }
+
+/* ===== Вопросы практики (.lw-q*) — общее ===== */
+.lw-q__prompt { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-q__sentence { margin: 0; font-size: 15px; line-height: 1.9; font-weight: 600; color: var(--ink); }
+.lw-q__answer { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* choice */
+.lw-opts { display: flex; flex-wrap: wrap; gap: 10px; }
+.lw-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 2px solid #efeef4;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.lw-opt:hover:not(:disabled) { border-color: var(--purple); background: #f7f4ff; }
+.lw-opt.is-selected { border-color: var(--purple); background: #f0ebff; color: var(--purple); }
+.lw-opt.is-correct { border-color: #34a853; background: #e9f6ee; color: #1f7a3c; }
+.lw-opt.is-wrong { border-color: #e5675f; background: #fdecec; color: #b23932; }
+.lw-opt:disabled { cursor: default; }
+.lw-opt__mark { font-weight: 800; }
+.lw-opt.is-correct :where(svg) { color: #1f7a3c; }
+
+/* chips */
+.lw-gap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+  padding: 2px 10px;
+  border-bottom: 2px dashed #c9c3e0;
+  color: var(--muted);
+  font-weight: 700;
+}
+.lw-gap.is-filled { color: var(--purple); border-bottom-color: var(--purple); }
+.lw-gap.is-correct { color: #1f7a3c; border-bottom-color: #34a853; }
+.lw-gap.is-wrong { color: #b23932; border-bottom-color: #e5675f; }
+.lw-gap.is-correct :where(svg) { color: #1f7a3c; }
+
+.lw-bank { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.lw-chip {
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 2px solid #efeef4;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.lw-chip:hover:not(:disabled) { border-color: var(--purple); }
+.lw-chip.is-selected { border-color: var(--purple); background: #f0ebff; color: var(--purple); }
+.lw-chip.is-correct { border-color: #34a853; background: #e9f6ee; color: #1f7a3c; }
+.lw-chip.is-wrong { border-color: #e5675f; background: #fdecec; color: #b23932; }
+.lw-chip:disabled { cursor: default; opacity: 0.85; }
+
+/* gap (текстовый ввод) */
+.lw-gap-input-wrap { display: inline-flex; align-items: center; gap: 4px; }
+.lw-gap-input {
+  min-width: 110px;
+  padding: 4px 10px;
+  border: none;
+  border-bottom: 2px solid #c9c3e0;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+  color: var(--purple);
+  outline: none;
+}
+.lw-gap-input.is-correct { color: #1f7a3c; border-bottom-color: #34a853; }
+.lw-gap-input.is-wrong { color: #b23932; border-bottom-color: #e5675f; }
+.lw-gap-input:disabled { cursor: default; }
+.lw-gap-input__check { display: inline-flex; color: #1f7a3c; }
+
+/* Фокус — видимый, единый для интерактивных элементов практики. */
+.lw-opt:focus-visible,
+.lw-chip:focus-visible,
+.lw-practice__check:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+.lw-gap-input:focus-visible { outline: none; border-bottom-color: var(--purple); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-opt, .lw-chip, .lw-practice__check { transition: none; }
+  .lw-practice__check:active { transform: none; }
+}
