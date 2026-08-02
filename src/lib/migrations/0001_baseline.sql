@@ -1,6 +1,10 @@
--- Схема jts-web-app. Снята с живой Neon (PostgreSQL 18.4) 21.07.2026 из
--- pg_catalog — это источник истины, а не реконструкция по коду.
--- FK вынесены в конец: порядок создания таблиц тогда не важен.
+-- Baseline: полная схема jts-web-app на момент введения авто-миграций
+-- (2026-08-02). Снята с живой Neon 21.07.2026 из pg_catalog, дополнена
+-- practice_state/shadowing_assess/skill_stat. Идемпотентна по конструкции
+-- (CREATE TABLE IF NOT EXISTS + DO-блоки на ALTER), поэтому безопасно
+-- прогоняется и на уже существующей БД (dev/prod, где всё это уже было
+-- создано вручную через docker-entrypoint-initdb.d) — реально создаст
+-- только то, чего там ещё нет (например skill_stat).
 
 create extension if not exists "uuid-ossp";
 
@@ -190,19 +194,45 @@ create table if not exists voice_usage (
 );
 create index if not exists voice_usage_device_day_idx ON public.voice_usage USING btree (device_id, day);
 
--- Внешние ключи
-alter table call_log add constraint call_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table fact_log add constraint fact_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table ielts_attempt add constraint ielts_attempt_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table ielts_attempt add constraint ielts_attempt_task_id_fkey FOREIGN KEY (task_id) REFERENCES ielts_task(id) ON DELETE SET NULL;
-alter table ielts_score add constraint ielts_score_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES ielts_attempt(id) ON DELETE CASCADE;
-alter table ielts_score add constraint ielts_score_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table lesson_progress add constraint lesson_progress_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table mistake_log add constraint mistake_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table resolved_log add constraint resolved_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table review_item add constraint review_item_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table topic_log add constraint topic_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
-alter table vocab_bank add constraint vocab_bank_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+-- Внешние ключи. ALTER ... ADD CONSTRAINT не поддерживает IF NOT EXISTS,
+-- поэтому каждый оборачиваем в DO-блок, глотающий duplicate_object —
+-- иначе повторный прогон на уже существующей БД падает на первом же ALTER.
+do $$ begin
+  alter table call_log add constraint call_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table fact_log add constraint fact_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table ielts_attempt add constraint ielts_attempt_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table ielts_attempt add constraint ielts_attempt_task_id_fkey FOREIGN KEY (task_id) REFERENCES ielts_task(id) ON DELETE SET NULL;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table ielts_score add constraint ielts_score_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES ielts_attempt(id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table ielts_score add constraint ielts_score_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table lesson_progress add constraint lesson_progress_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table mistake_log add constraint mistake_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table resolved_log add constraint resolved_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table review_item add constraint review_item_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table topic_log add constraint topic_log_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table vocab_bank add constraint vocab_bank_device_id_fkey FOREIGN KEY (device_id) REFERENCES learner(device_id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $$;
 
 -- ===========================================================================
 -- Прогресс разделов практики (аудирование / словарь / грамматика), по аккаунту.
@@ -236,8 +266,7 @@ create table if not exists shadowing_assess (
 -- Рейтинг навыков в профиле. Счётчики по аккаунту: сколько заданий сделано и
 -- сколько верно с первой попытки, по каждому из 6 навыков. Инкрементируется
 -- дельтами из Практики/Обучения (см. lib/db/skillStats.js, /api/skills).
--- profile_id = 'user-<id>' из resolveProfileId. Схема применяется вручную (как
--- practice_state) — в приложении бутстрапа schema.sql нет.
+-- profile_id = 'user-<id>' из resolveProfileId.
 -- ===========================================================================
 create table if not exists skill_stat (
   profile_id        text        not null,

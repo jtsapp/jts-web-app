@@ -1,6 +1,6 @@
 // Voice-usage accounting for the free-tier cap (20 min/day, 300 min/month).
 //
-// Backed by Neon (DATABASE_URL). Two tables (see api/_lib/schema.sql):
+// Backed by self-host Postgres (DATABASE_URL). Two tables (see src/lib/migrations/0001_baseline.sql):
 //   voice_usage(device_id, day, seconds)     — accumulated talk time
 //   voice_session(room, device_id, started_at) — open sessions, closed by webhook
 //
