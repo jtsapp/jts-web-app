@@ -422,3 +422,137 @@
   .lw-opt, .lw-chip, .lw-practice__check { transition: none; }
   .lw-practice__check:active { transform: none; }
 }
+
+/* ===== Правая колонка (.lw-aside) — плитка звонка + топики + чат, три
+   .lw-card друг под другом. ===== */
+.lw-aside { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ===== Плитка звонка (.lw-call) — визуальная заглушка, см. дизайн-спеку:
+   реальное видео вне области №1 (роадмап — внешний Meet). Превью учителя —
+   градиент вместо потока, PiP ученика и кнопки — статичные. ===== */
+.lw-call { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.lw-call__preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #9047ff 0%, #6c2bd9 55%, #211339 100%);
+}
+.lw-call__student-pip {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 56px;
+  height: 42px;
+  border-radius: 8px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.08));
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+}
+.lw-call__name {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(23, 19, 38, 0.35);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.lw-call__controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.lw-call__btn {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #f4f5f7;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+}
+.lw-call__btn:disabled { cursor: default; opacity: 0.85; }
+.lw-call__btn--leave { background: #fdecec; color: #b23932; }
+.lw-call__btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* ===== Топики урока (.lw-topics) ===== */
+.lw-topics { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.lw-topics__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.lw-topics__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-topics__count { font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.lw-topics__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lw-topics__item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.lw-topics__item.is-active { background: #f0ebff; color: var(--purple); font-weight: 800; }
+
+/* ===== Чат с учителем (.lw-chat) ===== */
+.lw-chat { padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.lw-chat__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-chat__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.lw-chat__empty { margin: 0; padding: 22px 6px; font-size: 13px; line-height: 1.5; color: var(--muted); text-align: center; }
+.lw-chat__msg {
+  max-width: 82%;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.lw-chat__msg.is-teacher { align-self: flex-start; background: #f0ebff; border-bottom-left-radius: 4px; }
+.lw-chat__msg.is-student { align-self: flex-end; background: #f4f5f7; border-bottom-right-radius: 4px; }
+.lw-chat__composer { display: flex; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid #efeef4; }
+.lw-chat__input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #efeef4;
+  background: #f4f5f7;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.lw-chat__input::placeholder { color: var(--muted); }
+.lw-chat__input:focus-visible { border-color: var(--purple); background: #fff; }
+.lw-chat__send {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--purple);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 0.12s ease, transform 0.05s ease, opacity 0.12s ease;
+}
+.lw-chat__send:hover:not(:disabled) { filter: brightness(1.06); }
+.lw-chat__send:active:not(:disabled) { transform: scale(0.94); }
+.lw-chat__send:disabled { opacity: 0.4; cursor: default; }
+.lw-chat__send:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-call__btn, .lw-topics__item, .lw-chat__input, .lw-chat__send { transition: none; }
+  .lw-chat__send:active { transform: none; }
+}
