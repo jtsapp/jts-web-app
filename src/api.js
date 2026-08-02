@@ -88,6 +88,29 @@ async function authPut(path, token, body) {
   return res.json().catch(() => null)
 }
 
+// Общий отправитель для POST/PATCH/DELETE с Bearer-токеном. Пустое тело у DELETE и
+// пустой ответ сервера допустимы (json().catch → null).
+async function authSend(method, path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`)
+  return res.json().catch(() => null)
+}
+const authPost = (path, token, body) => authSend('POST', path, token, body)
+const authPatch = (path, token, body) => authSend('PATCH', path, token, body)
+const authDelete = (path, token) => authSend('DELETE', path, token)
+
 // ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
 // Админ-каталоги меняются редко (только правками в dev-admin), поэтому повторные
 // открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в
@@ -207,6 +230,50 @@ export function getBoardSettings(token, id) {
 // сервер сохраняет и ретранслирует настройки всем участникам по STOMP.
 export function updateBoardSettings(token, id, patch) {
   return authPut(`/admin/lessons/${id}/board/settings`, token, patch)
+}
+
+// ─── Живой урок — разделы («Разделы» в стиле Edvibe) и материалы ──────────────
+// Все мутирующие вызовы возвращают полный, свежеотсортированный список разделов —
+// вызывающему достаточно заменить состояние. Бэкенд скоупит /admin/lessons* под
+// личность токена: учитель правит, ученик получает только видимое (не hidden).
+export function getLessonSections(token, id) {
+  return authGet(`/admin/lessons/${id}/sections`, token)
+}
+export function createSection(token, id, title) {
+  return authPost(`/admin/lessons/${id}/sections`, token, { title })
+}
+export function renameSection(token, id, sectionId, title) {
+  return authPatch(`/admin/lessons/${id}/sections/${sectionId}`, token, { title })
+}
+export function setSectionCompleted(token, id, sectionId, completed) {
+  return authPatch(`/admin/lessons/${id}/sections/${sectionId}`, token, { completed })
+}
+export function deleteSection(token, id, sectionId) {
+  return authDelete(`/admin/lessons/${id}/sections/${sectionId}`, token)
+}
+export function getLessonMaterials(token, id) {
+  return authGet(`/admin/lessons/${id}/materials`, token)
+}
+export function attachSectionMaterial(token, id, sectionId, materialId) {
+  return authPost(`/admin/lessons/${id}/sections/${sectionId}/materials`, token, { materialId })
+}
+export function detachSectionMaterial(token, id, sectionId, sectionMaterialId) {
+  return authDelete(`/admin/lessons/${id}/sections/${sectionId}/materials/${sectionMaterialId}`, token)
+}
+export function setSectionMaterialHidden(token, id, sectionId, sectionMaterialId, hidden) {
+  return authPatch(`/admin/lessons/${id}/sections/${sectionId}/materials/${sectionMaterialId}/visibility?hidden=${hidden ? 'true' : 'false'}`, token)
+}
+
+// URL встроенного плеера материала. Бэкенд-страница /render аутентифицируется токеном
+// из query — осознанный паритет с web-admin (под-проект #4). ТЕХДОЛГ БЕЗОПАСНОСТИ:
+// JWT в URL может утечь в логи/Referer/историю; заменить на короткоживущий тикет,
+// когда бэкенд его предоставит. mode: 'live' (ученик решает) | 'review' (учитель смотрит).
+export function materialRenderUrl(id, materialId, { mode = 'live', token, studentId, nonce } = {}) {
+  const params = new URLSearchParams({ mode })
+  if (token) params.set('access_token', token)
+  if (mode === 'review' && studentId != null) params.set('studentId', String(studentId))
+  if (nonce != null) params.set('_r', String(nonce))
+  return `${BASE}/student/lessons/${id}/materials/${materialId}/render?${params.toString()}`
 }
 
 // Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на

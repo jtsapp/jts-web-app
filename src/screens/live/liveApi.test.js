@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson, getBoardObjects, getBoardSettings, updateBoardSettings } from '../../api.js'
+import { getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson, getBoardObjects, getBoardSettings, updateBoardSettings, getLessonSections, createSection, setSectionCompleted, deleteSection, attachSectionMaterial, detachSectionMaterial, setSectionMaterialHidden, materialRenderUrl } from '../../api.js'
 
 beforeEach(() => {
   global.fetch = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 14, status: 'IN_PROGRESS' }) }))
@@ -44,5 +44,51 @@ describe('live lesson api', () => {
     expect(String(url)).toContain('/admin/lessons/14/board/settings')
     expect(opts.method).toBe('PUT')
     expect(JSON.parse(opts.body)).toEqual({ drawingDisabled: true })
+  })
+})
+
+describe('lesson sections api', () => {
+  it('getLessonSections GETs /sections; createSection POSTs { title }', async () => {
+    await getLessonSections('TOK', 14)
+    expect(String(global.fetch.mock.calls[0][0])).toContain('/admin/lessons/14/sections')
+    await createSection('TOK', 14, 'Intro')
+    const [, opts] = global.fetch.mock.calls[1]
+    expect(opts.method).toBe('POST')
+    expect(JSON.parse(opts.body)).toEqual({ title: 'Intro' })
+  })
+  it('setSectionCompleted PATCHes { completed }; deleteSection DELETEs the section', async () => {
+    await setSectionCompleted('TOK', 14, 7, true)
+    let [url, opts] = global.fetch.mock.calls[0]
+    expect(opts.method).toBe('PATCH')
+    expect(String(url)).toContain('/admin/lessons/14/sections/7')
+    expect(JSON.parse(opts.body)).toEqual({ completed: true })
+    await deleteSection('TOK', 14, 7)
+    ;[url, opts] = global.fetch.mock.calls[1]
+    expect(opts.method).toBe('DELETE')
+    expect(String(url)).toContain('/admin/lessons/14/sections/7')
+  })
+  it('attach/detach material and visibility toggle hit the right paths', async () => {
+    await attachSectionMaterial('TOK', 14, 7, 42)
+    expect(global.fetch.mock.calls[0][1].method).toBe('POST')
+    expect(String(global.fetch.mock.calls[0][0])).toContain('/admin/lessons/14/sections/7/materials')
+    await detachSectionMaterial('TOK', 14, 7, 99)
+    expect(global.fetch.mock.calls[1][1].method).toBe('DELETE')
+    expect(String(global.fetch.mock.calls[1][0])).toContain('/admin/lessons/14/sections/7/materials/99')
+    await setSectionMaterialHidden('TOK', 14, 7, 99, true)
+    expect(String(global.fetch.mock.calls[2][0])).toContain('/materials/99/visibility?hidden=true')
+  })
+})
+
+describe('materialRenderUrl', () => {
+  it('builds a live URL with the token in the query (documented web-admin parity)', () => {
+    const url = materialRenderUrl(14, 42, { mode: 'live', token: 'TOK' })
+    expect(url).toContain('/student/lessons/14/materials/42/render')
+    expect(url).toContain('mode=live')
+    expect(url).toContain('access_token=TOK')
+  })
+  it('builds a review URL with studentId for the teacher', () => {
+    const url = materialRenderUrl(14, 42, { mode: 'review', token: 'TOK', studentId: 5 })
+    expect(url).toContain('mode=review')
+    expect(url).toContain('studentId=5')
   })
 })
