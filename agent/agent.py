@@ -452,10 +452,34 @@ def _mirror_language_rules(tutor: str) -> str:
     return _MIRROR_LEARNER_LANGUAGE + _KAZAKH_NOT_MY_LANGUAGE
 
 
-def explanation_language_block(exp: str, tutor: str = "") -> str:
+# Тумблер «только английский» на дашборде. Перебивает ВСЁ языковое: и выбранный
+# язык объяснений, и зеркалирование языка ученика. Это осознанный выбор ученика —
+# погружение, — поэтому тьютор не «помогает» переходом на русский, даже когда тот
+# буксует: он упрощает английский, а не меняет язык.
+_ENGLISH_ONLY_BLOCK = (
+    "\n==== ENGLISH ONLY (learner turned this on — HIGHEST-PRIORITY LANGUAGE RULE) ====\n"
+    "Speak ENGLISH and ONLY English for this entire call. This OVERRIDES every other "
+    "language instruction in this prompt, including any explanation-language setting "
+    "and any rule about mirroring the learner's language.\n"
+    "- Explanations, scaffolds, corrections, praise, small talk: all in English.\n"
+    "- If the learner speaks Russian or Kazakh, DO NOT switch. Stay in English, but "
+    "make the English easier: shorter sentences, simpler words, say it again another "
+    "way, or give them the English phrase they were reaching for.\n"
+    "- Never scold them for using their own language and never lecture them about the "
+    "rule; just keep going in English.\n"
+    "- The ONE exception: if they explicitly ask you to switch languages, tell them in "
+    "one short English sentence that English-only mode is on and they can turn it off "
+    "on the tutor screen. Then carry on in English.\n"
+)
+
+
+def explanation_language_block(exp: str, tutor: str = "", english_only: bool = False) -> str:
     """Directive for the language the tutor EXPLAINS in (the student's choice,
     independent of the UI / what they speak). English always stays the target.
-    `tutor` — persona id: казахский умеет только Спарк (см. KZ_TUTOR_PERSONA)."""
+    `tutor` — persona id: казахский умеет только Спарк (см. KZ_TUTOR_PERSONA).
+    `english_only` — тумблер ученика: короткое замыкание на английский."""
+    if english_only:
+        return _ENGLISH_ONLY_BLOCK
     speaks_kz = (tutor or "").strip().lower() == KZ_TUTOR_PERSONA
     mirror = _mirror_language_rules(tutor)
     # Настройку «объясняй по-казахски» может выставить кто угодно, включая ученика,
@@ -564,6 +588,10 @@ class LearnerProfile:
     # Preferred language for the tutor's explanations (independent of UI/STT
     # language). "" → fall back to `lang`.
     explanation_lang: str = ""
+    # Тумблер «только английский» с дашборда (общий для всех тьюторов). Перебивает
+    # и explanation_lang, и зеркалирование языка ученика, и смешанный режим A1/A2:
+    # весь разговор идёт по-английски. Приходит в metadata как englishOnly.
+    english_only: bool = False
     # Roleplay scenario setup (English role description). "" → normal tutoring.
     scenario: str = ""
     # Structured voice scenario id (loads data/scenarios/<id>.md). Set together
@@ -670,6 +698,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         draft_level=str(data.get("draftLevel", data.get("level", "B1")) or "B1"),
         tuning=_tuning(data.get("tuning")),
         explanation_lang=str(data.get("explanationLang", "") or ""),
+        english_only=bool(data.get("englishOnly", False)),
         scenario=str(data.get("scenario", "") or "")[:400],
         scenario_id=str(data.get("scenarioId", "") or "")[:64],
         debate_topic=str(data.get("debateTopic", "") or "")[:200],
@@ -1724,10 +1753,16 @@ ORAL_RUBRIC_TEXT = (
 )
 
 
-def language_mode_block(level: str, lang: str, *, interview: bool, tutor: str = "") -> str:
+def language_mode_block(
+    level: str, lang: str, *, interview: bool, tutor: str = "", english_only: bool = False
+) -> str:
     """Mixed-language guidance. Low levels (A1/A2) with a ru/kz interface get a
     supportive bilingual format instead of English-only; higher levels stay in
-    English with rare native clarifications. Auto-derived from level + UI lang."""
+    English with rare native clarifications. Auto-derived from level + UI lang.
+    `english_only` — тумблер ученика: смешанный режим не включаем ни на каком
+    уровне, иначе он прямо противоречит выбранному погружению."""
+    if english_only:
+        return _ENGLISH_ONLY_BLOCK
     native = "Russian" if lang == "ru" else "Kazakh" if lang == "kz" else None
     # Казахский интерфейс ещё не значит казахскоязычный тьютор: у Луны и Декстера
     # его нет (см. KZ_TUTOR_PERSONA). Иначе этот блок велел бы им подсказывать и
@@ -1839,8 +1874,9 @@ def build_placement_instructions(p: LearnerProfile) -> str:
     target_level = _POINTS_CEFR[target_points]
 
     # Scaffolding/closing language follows the student's explanation preference,
-    # independent of UI; falls back to the UI language.
-    exp_lang = p.explanation_lang or p.lang
+    # independent of UI; falls back to the UI language. Тумблер «только
+    # английский» отменяет и подпорки на родном: native станет None ниже.
+    exp_lang = "en" if p.english_only else (p.explanation_lang or p.lang)
     if exp_lang == "kz":
         native = "Kazakh"
         confused = "'Түсінбедім' or 'Қалай айтады?'"
@@ -2028,7 +2064,9 @@ def build_scenario_instructions(p: LearnerProfile, scenario: dict[str, Any]) -> 
     body = scenario.get("body", "")
     fm = scenario.get("frontmatter", {})
     max_q = str(fm.get("maxQuestions", "5"))
-    exp_block = explanation_language_block(p.explanation_lang or p.lang, p.tutor)
+    exp_block = explanation_language_block(
+        p.explanation_lang or p.lang, p.tutor, english_only=p.english_only
+    )
     name_block = scenario_name_block(p.user_name)
     return (
         "==== VOICE SCENARIO MODE (this whole call) ====\n"
@@ -2293,10 +2331,12 @@ def build_instructions(p: LearnerProfile) -> str:
         + (f"{persona_g}\n" if persona_g else "")
         + build_mood_block(p.tutor)
         + f"{lang_g}\n"
-        + explanation_language_block(p.explanation_lang or p.lang, p.tutor)
+        + explanation_language_block(
+            p.explanation_lang or p.lang, p.tutor, english_only=p.english_only
+        )
         + (
             language_mode_block(p.level, p.lang, interview=False, tutor=p.tutor)
-            if p.level in {"A1", "A2"} and p.lang in {"ru", "kz"}
+            if p.level in {"A1", "A2"} and p.lang in {"ru", "kz"} and not p.english_only
             else ""
         )
         + build_tuning_block(p.tuning)
@@ -2615,7 +2655,9 @@ def build_debate_instructions(p: LearnerProfile) -> str:
         "\n==== SILENT TOOL ====\n"
         "log_mistake records a learner error; it returns 'ok' instantly so keep "
         "talking. NEVER say the tool name or that you are logging anything.\n"
-        + language_mode_block(p.level, p.lang, interview=False, tutor=p.tutor)
+        + language_mode_block(
+            p.level, p.lang, interview=False, tutor=p.tutor, english_only=p.english_only
+        )
     )
 
 
@@ -3159,6 +3201,11 @@ def _cascade_stt_soniox(profile: LearnerProfile):
     # сделать секретом воркера, без сборки и деплоя агента (он катится вручную).
     env_langs = (os.getenv("SONIOX_STT_LANGUAGES") or "").strip()
     langs = [x.strip() for x in env_langs.split(",") if x.strip()] or SONIOX_STT_LANGUAGES
+    # «Только английский» сужает и распознавание: русский/казахский в подсказках
+    # оставлять незачем, а без них короткие английские реплики ученика больше не
+    # уезжают в чужой язык.
+    if profile.english_only:
+        langs = ["en"]
     env_strict = (os.getenv("SONIOX_STT_STRICT") or "").strip().lower()
     strict = SONIOX_STT_STRICT_DEFAULT if not env_strict else env_strict not in ("0", "false", "no")
     logger.info(
@@ -3181,6 +3228,9 @@ def _cascade_stt_azure(profile: LearnerProfile):
         raise RuntimeError("AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set")
     env_langs = (os.getenv("AZURE_STT_LANGUAGES") or "").strip()
     langs = [x.strip() for x in env_langs.split(",") if x.strip()] or AZURE_STT_LANGUAGES
+    # См. Soniox: при «только английском» LID сводим к одному языку.
+    if profile.english_only:
+        langs = ["en-US"]
     kwargs: dict[str, Any] = {
         "speech_key": key,
         "speech_region": region,
@@ -3399,11 +3449,12 @@ async def entrypoint(ctx: JobContext):
     participant = await ctx.wait_for_participant()
     profile = parse_metadata(participant.metadata)
     logger.info(
-        "Learner joined: %s | level=%s lang=%s style=%s goal=%s tutor=%s "
+        "Learner joined: %s | level=%s lang=%s english_only=%s style=%s goal=%s tutor=%s "
         "skills=%s mistakes=%d topics=%d vocab=%d writing=%s",
         participant.identity,
         profile.level,
         profile.lang,
+        profile.english_only,
         profile.style,
         profile.goal,
         profile.tutor or "<none>",
@@ -3721,14 +3772,15 @@ def build_placement_greeting(p: LearnerProfile) -> str:
     Always LEADS with a short basic greeting phrase so the learner hears a warm
     hello the moment they join — then introduces the format and asks question 1.
     """
-    if p.lang == "kz":
+    # См. build_greeting_hint: при «только английском» родные ветки не берём.
+    if not p.english_only and p.lang == "kz":
         return (
             "БІРІНШІ кезекте бірден қысқа, жылы амандасу фразасын айт "
             "(мысалы: «Hi! Great to meet you!»). Содан кейін өзіңді таныстыр, бір "
             "сөйлеммен деңгейін анықтау үшін қысқа ауызша әңгіме болатынын айт, "
             "содан кейін БІРІНШІ қарапайым сұрақты қой. Бір уақытта бір ғана сұрақ."
         )
-    if p.lang == "ru":
+    if not p.english_only and p.lang == "ru":
         return (
             "СНАЧАЛА сразу скажи короткую тёплую фразу-приветствие "
             "(например: «Hi! Great to meet you!»). Затем представься, одной фразой "
@@ -3754,7 +3806,11 @@ def build_greeting_hint(p: LearnerProfile) -> str:
         p.mistakes or p.topics or p.facts or p.skills or p.writing
         or p.due_reviews or p.due_vocab or p.passed_units
     )
-    if p.lang == "kz":
+    # Русская/казахская ветки прямо велят делать предложение на родном языке —
+    # при «только английском» это первое же, что сломало бы режим ещё до первой
+    # реплики ученика. Берём английскую ветку.
+    lang = "en" if p.english_only else p.lang
+    if lang == "kz":
         opener = (
             "БІРІНШІ кезекте бірден қысқа, жылы амандасу фразасын айт "
             "(мысалы: «Hi! Great to see you!»). Содан кейін "
@@ -3772,7 +3828,7 @@ def build_greeting_hint(p: LearnerProfile) -> str:
             "оның қызығушылықтарының бірі бойынша әңгіме. Ұсыныстарды қазақша жаз, "
             "бірақ ағылшын мысалдары ағылшынша қалсын."
         )
-    if p.lang == "ru":
+    if lang == "ru":
         opener = (
             "СНАЧАЛА сразу скажи короткую тёплую фразу-приветствие по-английски "
             "(например: «Hi! Great to see you! How are you today?»). Затем "

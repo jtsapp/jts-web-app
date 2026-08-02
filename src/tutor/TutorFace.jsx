@@ -13,8 +13,16 @@ import { EMOTIONS } from './avatarEmotions.js'
  * @param intensity  сила 1..3 (из тега агента); двигает подвижность
  * @param audioTrack MediaStreamTrack голоса тьютора — рот открывается по
  *                   реальной амплитуде вместо имитации
+ * @param className  класс обёртки: размер лица задаёт вёрстка (в канве ~1/3
+ *                   бокса — прозрачное поле под тень и конфетти, его съедает
+ *                   отрицательный margin). Дефолт — экран звонка.
  */
-export default function TutorFace({ emotion = 'idle', intensity = 2, audioTrack = null }) {
+export default function TutorFace({
+  emotion = 'idle',
+  intensity = 2,
+  audioTrack = null,
+  className = 't-voice__face',
+}) {
   const boxRef = useRef(null)
   const canvasRef = useRef(null)
   const avRef = useRef(null)
@@ -89,7 +97,7 @@ export default function TutorFace({ emotion = 'idle', intensity = 2, audioTrack 
   }, [audioTrack])
 
   return (
-    <div className="t-voice__face" ref={boxRef}>
+    <div className={className} ref={boxRef}>
       <canvas ref={canvasRef} role="img" aria-label={EMOTIONS[emotion]?.label || ''} />
     </div>
   )
