@@ -1,10 +1,207 @@
-/* Клиентский workspace живого урока (.lw-*). Только светлая тема. */
-.lw { min-height: 100vh; display: flex; flex-direction: column; background: #f4f5f7; color: var(--ink); }
+/* Клиентский workspace живого урока (.lw-*). Только светлая тема.
+   .lw занимает ровно высоту экрана (100dvh, как и другие "полноэкранные"
+   разделы в styles.css) — так шапка и левый маршрут остаются на месте, а
+   скроллится только .lw__main (центр + правая колонка), см. дизайн-спеку:
+   «скролл только центральной колонки; шапка и боковые липкие». */
+.lw { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; background: #f4f5f7; color: var(--ink); --lw-header-h: 76px; }
 .lw__body { flex: 1; display: flex; align-items: stretch; min-height: 0; }
 .lw__main { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; padding: 24px 28px 40px; align-items: start; overflow: auto; }
 .lw-card { background: #fff; border: 1px solid #efeef4; border-radius: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
 @media (max-width: 1100px) {
   .lw__main { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ===== Шапка (.lw-header) ===== */
+.lw-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  flex: none;
+  min-height: var(--lw-header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  background: #fff;
+  border-bottom: 1px solid #efeef4;
+}
+.lw-header__left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 auto; }
+.lw-header__left .logo { font-size: 18px; flex: none; }
+.lw-header__badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--purple);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.lw-header__unit {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lw-header__progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: none;
+}
+.lw-header__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #e9e6f5;
+  transition: width 0.15s ease, background 0.15s ease;
+}
+.lw-header__dot.is-done { background: var(--purple); }
+.lw-header__dot.is-current { width: 22px; background: var(--purple); }
+
+.lw-header__right { display: flex; align-items: center; gap: 16px; flex: none; }
+.lw-header__timer {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.lw-header__timer-sep { color: #d8d6e4; padding: 0 2px; }
+.lw-header__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #f4f5f7;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.lw-header__exit:hover { background: #efeef4; color: #b23932; }
+.lw-header__exit:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+@media (max-width: 720px) {
+  .lw-header { padding: 14px 16px; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
+  .lw-header__unit { display: none; }
+  .lw-header__progress { order: 3; flex-basis: 100%; justify-content: center; }
+}
+@media (max-width: 480px) {
+  .lw-header__exit-label { display: none; }
+  .lw-header__exit { padding: 9px 12px; }
+}
+
+/* ===== Левая колонка «Маршрут урока» (.lw-route) =====
+   Ширина/бордер/фон — по бризу; sticky + height:100% + overflow-y:auto —
+   тот же приём, что у общего сайдбара .sb (styles.css), на случай если
+   список шагов не влезет по высоте. */
+.lw-route {
+  flex: none;
+  width: 240px;
+  position: sticky;
+  top: var(--lw-header-h);
+  align-self: flex-start;
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+  border-right: 1px solid #efeef4;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lw-route__head { padding: 0 10px 16px; display: flex; flex-direction: column; gap: 4px; }
+.lw-route__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-route__count { font-size: 12.5px; color: var(--muted); }
+
+.lw-route__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lw-route__item { position: relative; }
+.lw-route__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 36px;
+  bottom: 0;
+  width: 2px;
+  background: #efeef4;
+}
+.lw-route__item.is-done:not(:last-child)::after { background: #bfe6cd; }
+
+.lw-route__step {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.lw-route__step:hover { background: #f7f5ff; }
+.lw-route__step.is-active { background: #f7f5ff; }
+.lw-route__step.is-locked { cursor: default; opacity: 0.5; }
+.lw-route__step.is-locked:hover,
+.lw-route__step.is-locked.is-active { background: transparent; }
+
+.lw-route__marker {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9e6f5;
+  color: #fff;
+}
+.lw-route__step.is-current .lw-route__marker { background: var(--purple); box-shadow: 0 0 0 4px #f0ebff; }
+.lw-route__step.is-done .lw-route__marker { background: #34a853; }
+
+.lw-route__body { display: flex; flex-direction: column; gap: 2px; padding-top: 2px; min-width: 0; }
+.lw-route__num {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lw-route__title-text { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.lw-route__step.is-current .lw-route__num { color: var(--purple); }
+.lw-route__step.is-current .lw-route__title-text { font-weight: 800; }
+.lw-route__step.is-locked .lw-route__num,
+.lw-route__step.is-locked .lw-route__title-text { color: var(--muted); }
+
+.lw-route__step:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+@media (max-width: 720px) {
+  .lw-route { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-header__dot, .lw-header__exit, .lw-route__step { transition: none; }
 }
 
 .lw-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
