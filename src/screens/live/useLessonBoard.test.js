@@ -94,4 +94,21 @@ describe('useLessonBoard', () => {
       result.current.sendCursor(1, 2, 'pen')
     }).not.toThrow()
   })
+
+  it('drops connected on socket close / stomp error', async () => {
+    const { result } = renderHook(() => useLessonBoard(14, 'TOK', 116, {}))
+    await waitFor(() => expect(result.current.connected).toBe(true))
+    act(() => { lastClient.cfg.onWebSocketClose() })
+    await waitFor(() => expect(result.current.connected).toBe(false))
+    act(() => { lastClient.cfg.onStompError() })
+    expect(result.current.connected).toBe(false)
+  })
+
+  it('ignores a malformed board frame without calling the handler', async () => {
+    const onBoardEvent = vi.fn()
+    renderHook(() => useLessonBoard(14, 'TOK', 116, { onBoardEvent }))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+    act(() => { lastClient.subs['/topic/lesson/14/board']({ body: 'not-json{' }) })
+    expect(onBoardEvent).not.toHaveBeenCalled()
+  })
 })

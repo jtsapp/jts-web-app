@@ -81,4 +81,14 @@ describe('useMaterialSession', () => {
     expect(Object.keys(clients[0].subs)).toContain('/topic/material-assignment/11/mirror')
     expect(Object.keys(clients[1].subs)).toContain('/topic/material-assignment/22/mirror')
   })
+
+  it('drops connected on socket close, and ignores a malformed mirror frame', async () => {
+    const onMirror = vi.fn()
+    const { result } = renderHook(() => useMaterialSession(9, { token: 'TOK', handlers: { onMirror } }))
+    await waitFor(() => expect(result.current.connected).toBe(true))
+    act(() => { clients[0].subs['/topic/material-assignment/9/mirror']({ body: 'oops' }) })
+    expect(onMirror).not.toHaveBeenCalled()
+    act(() => { clients[0].cfg.onWebSocketClose() })
+    await waitFor(() => expect(result.current.connected).toBe(false))
+  })
 })
