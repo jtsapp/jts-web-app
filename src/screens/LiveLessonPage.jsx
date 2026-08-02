@@ -10,6 +10,9 @@ import PresenceRoster from './live/PresenceRoster.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionsPanel from './live/SectionsPanel.jsx'
+import LessonChat from './live/LessonChat.jsx'
+import VideoCall from './live/VideoCall.jsx'
+import TeacherTools from './live/TeacherTools.jsx'
 
 const PAUSE_MINUTES = 5
 
@@ -96,6 +99,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 <LiveBoard lessonId={lessonId} token={token} selfUserId={selfUserId} isStaff={isStaff} />
               </>
             )}
+
+            <div className="live-panels">
+              <LessonChat lessonId={lessonId} token={token} selfUserId={selfUserId} />
+              <VideoCall lessonId={lessonId} token={token} meetingUrl={lesson.meetingUrl} isStaff={isStaff} onRefresh={load} />
+              {isStaff && <TeacherTools lessonId={lessonId} token={token} participants={lesson.participants} onRefresh={load} />}
+            </div>
           </>
         )}
       </div>

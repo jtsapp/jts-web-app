@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson, getBoardObjects, getBoardSettings, updateBoardSettings, getLessonSections, createSection, setSectionCompleted, deleteSection, attachSectionMaterial, detachSectionMaterial, setSectionMaterialHidden, materialRenderUrl } from '../../api.js'
+import { getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson, getBoardObjects, getBoardSettings, updateBoardSettings, getLessonSections, createSection, setSectionCompleted, deleteSection, attachSectionMaterial, detachSectionMaterial, setSectionMaterialHidden, materialRenderUrl, getLessonMessages, sendLessonMessage, getLessonNote, saveLessonNote, markNoShow, markParticipantCancelled, setLessonMeetingUrl } from '../../api.js'
 
 beforeEach(() => {
   global.fetch = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ id: 14, status: 'IN_PROGRESS' }) }))
@@ -76,6 +76,43 @@ describe('lesson sections api', () => {
     expect(String(global.fetch.mock.calls[1][0])).toContain('/admin/lessons/14/sections/7/materials/99')
     await setSectionMaterialHidden('TOK', 14, 7, 99, true)
     expect(String(global.fetch.mock.calls[2][0])).toContain('/materials/99/visibility?hidden=true')
+  })
+})
+
+describe('lesson chat / notes / attendance / meeting url', () => {
+  it('getLessonMessages GETs /messages; sendLessonMessage POSTs { body }', async () => {
+    await getLessonMessages('TOK', 14)
+    expect(String(global.fetch.mock.calls[0][0])).toContain('/admin/lessons/14/messages')
+    await sendLessonMessage('TOK', 14, 'hi')
+    const [, opts] = global.fetch.mock.calls[1]
+    expect(opts.method).toBe('POST')
+    expect(JSON.parse(opts.body)).toEqual({ body: 'hi' })
+  })
+  it('getLessonNote GETs; saveLessonNote PUTs { body } to /notes/{studentId}', async () => {
+    await getLessonNote('TOK', 14, 5)
+    expect(String(global.fetch.mock.calls[0][0])).toContain('/admin/lessons/14/notes/5')
+    await saveLessonNote('TOK', 14, 5, 'text')
+    const [url, opts] = global.fetch.mock.calls[1]
+    expect(opts.method).toBe('PUT')
+    expect(String(url)).toContain('/admin/lessons/14/notes/5')
+    expect(JSON.parse(opts.body)).toEqual({ body: 'text' })
+  })
+  it('markNoShow and markParticipantCancelled PUT the participant endpoints', async () => {
+    await markNoShow('TOK', 14, 5)
+    expect(global.fetch.mock.calls[0][1].method).toBe('PUT')
+    expect(String(global.fetch.mock.calls[0][0])).toContain('/admin/lessons/14/participants/5/no-show')
+    await markParticipantCancelled('TOK', 14, 5)
+    expect(String(global.fetch.mock.calls[1][0])).toContain('/admin/lessons/14/participants/5/cancel')
+  })
+  it('setLessonMeetingUrl PUTs { meetingUrl, wholeSeries }, trimming and nulling empty', async () => {
+    await setLessonMeetingUrl('TOK', 14, '  https://meet.example/x  ', true)
+    let [url, opts] = global.fetch.mock.calls[0]
+    expect(String(url)).toContain('/admin/lessons/14/meeting-url')
+    expect(opts.method).toBe('PUT')
+    expect(JSON.parse(opts.body)).toEqual({ meetingUrl: 'https://meet.example/x', wholeSeries: true })
+    await setLessonMeetingUrl('TOK', 14, '   ')
+    ;[, opts] = global.fetch.mock.calls[1]
+    expect(JSON.parse(opts.body)).toEqual({ meetingUrl: null, wholeSeries: false })
   })
 })
 

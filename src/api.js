@@ -287,6 +287,38 @@ export function materialMirrorUrl(materialId, { assignmentId, mode = 'live', tok
   return `${BASE}/student/materials/${materialId}/render?${params.toString()}`
 }
 
+// ─── Живой урок — чат, заметки, посещаемость, видео-ссылка (#6) ───────────────
+// Чат урока. sendLessonMessage возвращает полный список сообщений. Доступен обеим ролям.
+export function getLessonMessages(token, id) {
+  return authGet(`/admin/lessons/${id}/messages`, token)
+}
+export function sendLessonMessage(token, id, body) {
+  return authPost(`/admin/lessons/${id}/messages`, token, { body })
+}
+
+// Заметки преподавателя по конкретному ученику (учитель).
+export function getLessonNote(token, id, studentId) {
+  return authGet(`/admin/lessons/${id}/notes/${studentId}`, token)
+}
+export function saveLessonNote(token, id, studentId, body) {
+  return authPut(`/admin/lessons/${id}/notes/${studentId}`, token, { body })
+}
+
+// Посещаемость: отметить ученика как неявившегося / отменить участие (учитель).
+export function markNoShow(token, id, studentId) {
+  return authPut(`/admin/lessons/${id}/participants/${studentId}/no-show`, token, {})
+}
+export function markParticipantCancelled(token, id, studentId) {
+  return authPut(`/admin/lessons/${id}/participants/${studentId}/cancel`, token, {})
+}
+
+// Видеозвонок = внешняя ссылка (Google Meet/Zoom) в lesson.meetingUrl — как в web-admin,
+// без реального WebRTC. wholeSeries применяет ссылку ко всем занятиям серии.
+export function setLessonMeetingUrl(token, id, meetingUrl, wholeSeries = false) {
+  const trimmed = meetingUrl && meetingUrl.trim() ? meetingUrl.trim() : null
+  return authPut(`/admin/lessons/${id}/meeting-url`, token, { meetingUrl: trimmed, wholeSeries })
+}
+
 // Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
 // бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
 // свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
