@@ -5942,3 +5942,23 @@ textarea {
 .sections__following { margin: 0; padding: 6px 12px; background: #f4f0ff; color: #5b34d6; font-size: 12px; font-weight: 600; }
 .sections__frame { flex: 1; width: 100%; border: 0; min-height: 420px; background: #fff; }
 .sections__viewer-empty { margin: auto; padding: 24px; text-align: center; }
+
+/* Screen mirroring monitor (sub-project #5) */
+.mirror { display: grid; grid-template-columns: 1fr minmax(0, 220px); gap: 12px; margin-top: 16px; }
+.mirror:has(.mirror__answers) { grid-template-columns: 1fr minmax(0, 220px); }
+.mirror:not(:has(.mirror__answers)) { grid-template-columns: 1fr; }
+@media (max-width: 720px) { .mirror { grid-template-columns: 1fr; } }
+.mirror__stage { position: relative; background: #f3f4f6; border: 1px solid #eceef1; border-radius: 12px; overflow: hidden; min-height: 420px; display: flex; }
+.mirror__stage .board__conn { position: absolute; top: 8px; right: 10px; z-index: 2; }
+.mirror__frame { flex: 1; width: 100%; min-height: 420px; border: 0; background: #fff; }
+.mirror__answers { background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 12px; }
+.mirror__answers-title { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
+.mirror__answers-empty { color: #9aa0a6; font-size: 13px; }
+.mirror__answers-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.mirror__answer { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 8px; border-radius: 8px; background: #f7f7f9; }
+.mirror__answer.is-right { background: #f1f9f3; }
+.mirror__answer.is-wrong { background: #fdf2f1; }
+.mirror__answer-q { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mirror__answer.is-right .mirror__answer-mark { color: #2c8a45; font-weight: 700; }
+.mirror__answer.is-wrong .mirror__answer-mark { color: #b42318; font-weight: 700; }
+.mirror__answer-pts { color: #6b7280; font-variant-numeric: tabular-nums; }
