@@ -5890,3 +5890,24 @@ textarea {
 .live-controls .btn-start, .live-controls .btn-resume { background: #7a4dff; color: #fff; }
 .live-controls .btn-pause { background: #f0e9ff; color: #5b34d6; }
 .live-controls .btn-complete { background: #eceef1; color: #333; }
+
+/* Live whiteboard (sub-project #3) */
+.board { margin-top: 16px; }
+.board__toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px; background: #fff; border: 1px solid #eceef1; border-radius: 12px 12px 0 0; }
+.board__tool { border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; }
+.board__tool:hover:not(:disabled) { border-color: #c7b8ff; }
+.board__tool.is-active { background: #7a4dff; border-color: #7a4dff; color: #fff; }
+.board__tool:disabled { opacity: .45; cursor: not-allowed; }
+.board__tool--danger { color: #b42318; border-color: #f3c9c4; }
+.board__sep { width: 1px; align-self: stretch; background: #eceef1; margin: 2px 4px; }
+.board__spacer { flex: 1; }
+.board__toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
+.board__conn { font-size: 12px; color: #9aa0a6; padding: 0 4px; }
+.board__conn.is-on { color: #2c8a45; }
+.board__notice { margin: 0; padding: 8px 12px; background: #fff7ed; color: #9a3412; font-size: 13px; border: 1px solid #eceef1; border-top: 0; }
+.board__stage { position: relative; overflow: auto; border: 1px solid #eceef1; border-top: 0; border-radius: 0 0 12px 12px; background: #f3f4f6; max-width: 100%; }
+.board__canvas { display: block; }
+.board__cursor { position: absolute; transform: translate(-2px, -2px); pointer-events: none; z-index: 5; }
+.board__cursor-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: #7a4dff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+.board__cursor-name { position: absolute; left: 12px; top: -2px; white-space: nowrap; font-size: 11px; font-weight: 600; color: #fff; background: #7a4dff; border-radius: 6px; padding: 1px 6px; }
+@media (prefers-reduced-motion: reduce) { .board__cursor { transition: none; } }
