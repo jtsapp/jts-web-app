@@ -1,11 +1,13 @@
 import BannerBlock from './blocks/BannerBlock.jsx'
 import TheoryBlock from './blocks/TheoryBlock.jsx'
+import InfoBlock from './blocks/InfoBlock.jsx'
 import PracticeBlock from './blocks/PracticeBlock.jsx'
 
 // `practice` — обрабатывается отдельно ниже (нужны answers/checked/onAnswer/onCheck).
 const BLOCK_BY_TYPE = {
   banner: BannerBlock,
   theory: TheoryBlock,
+  info: InfoBlock,
 }
 
 // Центр workspace: рендерит блоки активного шага диспетчером по `block.type`.

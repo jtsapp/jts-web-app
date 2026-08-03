@@ -82,7 +82,13 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false
-    const deepLink = new URLSearchParams(window.location.search).get('screen')
+    const searchParams = new URLSearchParams(window.location.search)
+    const deepLink = searchParams.get('screen')
+    // ?lesson=<id> — id живого урока для lesson-workspace (диплинк
+    // ?screen=lesson-workspace&lesson=<id>). Не завязано на deepLink, чтобы
+    // работать и когда screen меняется навигацией уже после первого рендера.
+    const lessonParam = searchParams.get('lesson')
+    if (lessonParam) setLiveWorkspaceId(lessonParam)
 
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
@@ -170,6 +176,10 @@ export default function App() {
   }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
   const [liveLessonId, setLiveLessonId] = useState(null)
+  // id живого урока для workspace-экрана (диплинк ?screen=lesson-workspace&lesson=<id>,
+  // см. эффект восстановления сессии ниже). Без диплинка остаётся null —
+  // LessonWorkspacePage тогда показывает SAMPLE_LESSON.
+  const [liveWorkspaceId, setLiveWorkspaceId] = useState(null)
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -894,7 +904,7 @@ export default function App() {
         />
       )
     case 'lesson-workspace':
-      return <LessonWorkspacePage onExit={() => setScreen('lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} onExit={() => setScreen('lessons')} />
     default:
       return null
   }
