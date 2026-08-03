@@ -42,6 +42,7 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
+import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
 import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
@@ -892,6 +893,8 @@ export default function App() {
           onRetry={() => setScreen('tutor-voice-chat')}
         />
       )
+    case 'lesson-workspace':
+      return <LessonWorkspacePage onExit={() => setScreen('lessons')} />
     default:
       return null
   }
