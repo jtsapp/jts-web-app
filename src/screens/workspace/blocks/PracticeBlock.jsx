@@ -2,11 +2,13 @@ import { useI18n } from '../../../i18n.jsx'
 import ChoiceQuestion from '../practice/ChoiceQuestion.jsx'
 import ChipsQuestion from '../practice/ChipsQuestion.jsx'
 import GapQuestion from '../practice/GapQuestion.jsx'
+import MatchQuestion from '../practice/MatchQuestion.jsx'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
   chips: ChipsQuestion,
   gap: GapQuestion,
+  match: MatchQuestion,
 }
 
 // Карточка практики: заголовок + подсказка, список вопросов, кнопка

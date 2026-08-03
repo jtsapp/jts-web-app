@@ -29,10 +29,16 @@ export const SAMPLE_LESSON = {
           { kind: 'Вопрос', example: 'Does she get up at seven?', accent: 'Does get' },
         ],
         mistake: 'В отрицании и вопросе -s уходит к does, а глагол остаётся чистым: Does she gets up? → Does she get up?' },
+      { type: 'info', title: 'Быстрая заметка', html: '<p>Present Simple используем для <strong>привычек и расписания</strong> — слова-маркеры: <em>every day</em>, <em>on Sundays</em>, <em>never</em>.</p>' },
       { type: 'practice', title: 'Выбери верную форму', minutes: 5, hint: 'Один клик — сразу видно, попал или нет', questions: [
         { id: 'p1q1', type: 'choice', prompt: 'My brother ____ to the office by bus every morning.', options: ['commute', 'commutes', 'is commute'], answer: 'commutes' },
         { id: 'p1q2', type: 'chips', gapBefore: '', gapAfter: ' she rush in the mornings?', bank: ['Does', 'Do', 'Is'], answer: 'Does' },
         { id: 'p1q3', type: 'chips', gapBefore: 'We ', gapAfter: ' chores on Sundays.', bank: ["doesn't do", 'not do', "don't do"], answer: "don't do" },
+        { id: 'p1q4', type: 'match', prompt: 'Сопоставь слово и перевод', pairs: [
+          { left: 'commute', right: 'добираться' },
+          { left: 'rush', right: 'спешить' },
+          { left: 'chores', right: 'дела по дому' },
+        ] },
       ] },
     ] },
     { id: 's2', order: 2, title: 'Слова дня', topicId: 't1', blocks: [

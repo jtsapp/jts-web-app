@@ -158,6 +158,14 @@ export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
 }
 
+// Живой урок (новый admin-пайплайн «live lessons»): метаданные урока,
+// включая jsonUrl — публичную files-api ссылку на расширенный JSON
+// (steps/blocks/questions + info/match/gap.open), который сам контент
+// грузит отдельным fetch без авторизации (см. loadLiveLesson).
+export function getLiveLesson(id, token) {
+  return authGet(`/mobile/live-lessons/${id}`, token)
+}
+
 // Расписание вошедшего пользователя. Бэкенд скоупит /admin/lessons* под личность
 // токена: ученик/учитель получают только СВОИ занятия (чужие → 400).
 export function getMyLessonOccurrences(token) {

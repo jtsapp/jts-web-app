@@ -32,6 +32,6 @@ test.describe('practiceGrading', () => {
     // хотя бы один practice-блок с вопросами
     const qs = SAMPLE_LESSON.steps.flatMap((s) => s.blocks).filter((b) => b.type === 'practice').flatMap((b) => b.questions)
     expect(qs.length).toBeGreaterThan(0)
-    for (const q of qs) expect(['choice', 'chips', 'gap']).toContain(q.type)
+    for (const q of qs) expect(['choice', 'chips', 'gap', 'match']).toContain(q.type)
   })
 })

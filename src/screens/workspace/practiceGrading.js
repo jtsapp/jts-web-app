@@ -8,14 +8,22 @@ export function norm(s) {
     .trim()
 }
 
-// answer: для choice/chips — выбранная строка; для gap — введённый текст.
+// answer: для choice/chips — выбранная строка; для gap — введённый текст;
+// для match (live-уроки) — карта left→выбранный right.
 export function gradeQuestion(question, answer) {
   if (!question || answer == null) return { correct: false }
   if (question.type === 'choice') return { correct: answer === question.answer }
   if (question.type === 'chips') return { correct: answer === question.answer }
   if (question.type === 'gap') {
+    // open-гэп (live-уроки, свободный ответ без эталонов): принимаем любой непустой ответ.
+    if (question.open === true) return { correct: norm(answer) !== '' }
     const good = (question.answers || []).map(norm)
     return { correct: norm(answer) !== '' && good.includes(norm(answer)) }
+  }
+  if (question.type === 'match') {
+    const pairs = question.pairs || []
+    if (pairs.length === 0 || typeof answer !== 'object') return { correct: false }
+    return { correct: pairs.every((pair) => answer[pair.left] === pair.right) }
   }
   return { correct: false }
 }

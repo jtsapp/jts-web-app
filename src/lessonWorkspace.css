@@ -4,6 +4,8 @@
    скроллится только .lw__main (центр + правая колонка), см. дизайн-спеку:
    «скролл только центральной колонки; шапка и боковые липкие». */
 .lw { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; background: #f4f5f7; color: var(--ink); --lw-header-h: 76px; }
+.lw--loading { align-items: center; justify-content: center; }
+.lw-loading { margin: 0; font-size: 14px; font-weight: 700; color: var(--muted); }
 .lw__body { flex: 1; display: flex; align-items: stretch; min-height: 0; }
 .lw__main { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; padding: 24px 28px 40px; align-items: start; overflow: auto; }
 .lw-card { background: #fff; border: 1px solid #efeef4; border-radius: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
@@ -321,6 +323,19 @@
   color: #a67c00;
 }
 
+/* ===== Инфо-блок (.lw-info) — read-only rich-html от учителя/экстрактора,
+   тот же рецепт карточки, что у .lw-theory (текст только чуть свободнее,
+   поэтому стили заданы для внутреннего .lw-info__body, а не жёстким набором
+   тегов). ===== */
+.lw-info { padding: 18px 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+.lw-info__title { margin: 0; font-size: 16px; font-weight: 800; color: var(--ink); }
+.lw-info__body { font-size: 14px; line-height: 1.65; color: var(--muted); }
+.lw-info__body :where(p) { margin: 0 0 10px; }
+.lw-info__body :where(p:last-child) { margin-bottom: 0; }
+.lw-info__body :where(strong, b) { color: var(--ink); font-weight: 800; }
+.lw-info__body :where(ul, ol) { margin: 0 0 10px; padding-left: 20px; }
+.lw-info__body :where(a) { color: var(--purple); text-decoration: underline; text-underline-offset: 2px; }
+
 /* ===== Карточка практики (.lw-practice) ===== */
 .lw-practice { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 18px; }
 .lw-practice__title { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
@@ -426,9 +441,55 @@
 .lw-gap-input:disabled { cursor: default; }
 .lw-gap-input__check { display: inline-flex; color: #1f7a3c; }
 
+/* match — два столбца кнопок: слева слово вопроса, справа перемешанный
+   банк переводов; клик слева выделяет, клик справа сопоставляет пару
+   (см. MatchQuestion.jsx). Раскраска — тот же словарь состояний, что у
+   choice/chips: is-selected/is-filled/is-correct/is-wrong. */
+.lw-match__hint { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); }
+.lw-match { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.lw-match__col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.lw-match__left,
+.lw-match__right {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 2px solid #efeef4;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.lw-match__left-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lw-match__chosen { flex: none; font-size: 13px; font-weight: 800; color: var(--muted); }
+.lw-match__left:hover:not(:disabled) { border-color: var(--purple); background: #f7f4ff; }
+.lw-match__left.is-selected { border-color: var(--purple); background: #f0ebff; color: var(--purple); }
+.lw-match__left.is-filled .lw-match__chosen { color: var(--purple); }
+.lw-match__left.is-correct { border-color: #34a853; background: #e9f6ee; color: #1f7a3c; }
+.lw-match__left.is-correct .lw-match__chosen { color: #1f7a3c; }
+.lw-match__left.is-wrong { border-color: #e5675f; background: #fdecec; color: #b23932; }
+.lw-match__left.is-wrong .lw-match__chosen { color: #b23932; }
+.lw-match__mark { font-weight: 800; }
+.lw-match__right { justify-content: center; }
+.lw-match__right:hover:not(:disabled) { border-color: var(--purple); background: #f7f4ff; }
+.lw-match__right.is-used { border-color: var(--purple); background: #f0ebff; color: var(--purple); opacity: 0.7; }
+.lw-match__left:disabled,
+.lw-match__right:disabled { cursor: default; }
+@media (max-width: 520px) {
+  .lw-match { grid-template-columns: 1fr; }
+}
+
 /* Фокус — видимый, единый для интерактивных элементов практики. */
 .lw-opt:focus-visible,
 .lw-chip:focus-visible,
+.lw-match__left:focus-visible,
+.lw-match__right:focus-visible,
 .lw-practice__check:focus-visible {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
@@ -436,7 +497,7 @@
 .lw-gap-input:focus-visible { outline: none; border-bottom-color: var(--purple); }
 
 @media (prefers-reduced-motion: reduce) {
-  .lw-opt, .lw-chip, .lw-practice__check { transition: none; }
+  .lw-opt, .lw-chip, .lw-match__left, .lw-match__right, .lw-practice__check { transition: none; }
   .lw-practice__check:active { transform: none; }
 }
 

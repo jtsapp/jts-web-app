@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useI18n } from '../i18n.jsx'
 import { SAMPLE_LESSON } from './workspace/sampleLesson.js'
 import { stepProgress } from './workspace/practiceGrading.js'
+import { loadLiveLesson } from './workspace/liveLessonData.js'
 import WorkspaceHeader from './workspace/WorkspaceHeader.jsx'
 import LessonRoute from './workspace/LessonRoute.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
@@ -16,14 +18,49 @@ const ELAPSED_SEC = 103
 // отмеченные «Проверить» шаги, чат) и раздаёт его в три колонки —
 // LessonRoute / LessonContent / LessonAside — плюс шапку. Дочерние
 // компоненты остаются управляемыми и без собственного состояния прогресса.
-export default function LessonWorkspacePage({ onExit }) {
-  const lesson = SAMPLE_LESSON
-  const steps = lesson.steps
+//
+// `lessonId` — id живого урока (диплинк `?screen=lesson-workspace&lesson=…`
+// в App.jsx). Если передан — грузим реальный контент через loadLiveLesson
+// (jsonUrl с files-api); без сети/lessonId или при ошибке падаем на
+// SAMPLE_LESSON, чтобы экран не оставался пустым.
+export default function LessonWorkspacePage({ onExit, lessonId, token }) {
+  const { t } = useI18n()
+  const [lesson, setLesson] = useState(() => (lessonId ? null : SAMPLE_LESSON))
+  const [loading, setLoading] = useState(() => Boolean(lessonId))
 
-  const [activeStepId, setActiveStepId] = useState(steps[0].id)
+  useEffect(() => {
+    let cancelled = false
+    if (!lessonId) {
+      setLesson(SAMPLE_LESSON)
+      setLoading(false)
+      return undefined
+    }
+    setLoading(true)
+    loadLiveLesson(lessonId, token).then((loaded) => {
+      if (cancelled) return
+      setLesson(loaded || SAMPLE_LESSON)
+      setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [lessonId, token])
+
+  const steps = useMemo(() => lesson?.steps || [], [lesson])
+
+  const [activeStepId, setActiveStepId] = useState(() => (lessonId ? null : SAMPLE_LESSON.steps[0].id))
   const [answers, setAnswers] = useState({})
   const [checkedSteps, setCheckedSteps] = useState(() => new Set())
-  const [messages, setMessages] = useState(lesson.chat || [])
+  const [messages, setMessages] = useState(() => (lessonId ? [] : SAMPLE_LESSON.chat || []))
+
+  // Как только урок (за)гружен — выставляем первый шаг и чат урока. Для
+  // мгновенного SAMPLE_LESSON это отработает один раз при монтировании; для
+  // живого урока — когда loadLiveLesson резолвится.
+  useEffect(() => {
+    if (!lesson) return
+    setActiveStepId((prev) => (prev && lesson.steps.some((s) => s.id === prev) ? prev : lesson.steps[0]?.id ?? null))
+    setMessages(lesson.chat || [])
+  }, [lesson])
 
   const activeIndex = steps.findIndex((step) => step.id === activeStepId)
   const activeStep = activeIndex >= 0 ? steps[activeIndex] : null
@@ -31,7 +68,10 @@ export default function LessonWorkspacePage({ onExit }) {
   // Статусы шагов маршрута — визуальные (клик по любому шагу не блокируется,
   // см. LessonRoute): текущий — активный; всё до него — done; после него —
   // done только если practice-вопросы этого шага уже отвечены верно
-  // (stepProgress на массиве из одного шага), иначе — locked.
+  // (stepProgress на массиве из одного шага), иначе — locked. Хук должен
+  // отработать на каждом рендере (даже во время загрузки) — иначе порядок
+  // хуков между рендерами разъедется; ранний return на loading — ниже, уже
+  // после всех хуков.
   const statusById = useMemo(() => {
     const map = {}
     steps.forEach((step, i) => {
@@ -45,6 +85,14 @@ export default function LessonWorkspacePage({ onExit }) {
     })
     return map
   }, [steps, activeStepId, activeIndex, answers])
+
+  if (loading || !lesson) {
+    return (
+      <div className="lw lw--loading" data-testid="lesson-workspace">
+        <p className="lw-loading">{t('lesson.ws.loading')}</p>
+      </div>
+    )
+  }
 
   function handleAnswer(questionId, value) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
