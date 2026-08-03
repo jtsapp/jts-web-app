@@ -2,6 +2,7 @@
 
 **Дата:** 2026-08-04
 **Статус:** approved (brainstorming), в реализацию
+**Ревизия:** 2 — после code-review первой версии (15 находок, все учтены ниже)
 
 ## Проблема
 
@@ -12,9 +13,9 @@
 
 При этом полный транскрипт **уже лежит в базе** и его никто не читает:
 `insertCall` пишет `call_log.transcript`, а `loadProfile` эту таблицу не
-запрашивает. Колонка `call_log.recap` существует с первой миграции и всегда
-`NULL` — экран истории показывает вместо подписи дефолтную строку
-(`callHistory.js:18`).
+запрашивает. Колонка `call_log.recap` есть в INSERT с первой миграции, но агент
+её никогда не шлёт — она всегда `NULL`, и экран истории показывает вместо
+подписи дефолтную строку (`callHistory.js:18`).
 
 ## Цель
 
@@ -22,22 +23,38 @@
 
 - **факты** → `fact_log` (долгая память, попадает в промпт следующей сессии)
 - **темы** → `topic_log` (то же) и `call_log.topics` (запись о звонке)
-- **recap** → `call_log.recap` (подпись в экране истории)
+- **recap** → `call_log.recap` (подпись в существующем экране истории)
+
+Экраны и вёрстка не меняются: `recap` заполняет слот, который уже отрисован.
 
 ## Не входит в скоуп
 
-**Ошибки и новые слова не извлекаем.** Транскрипт голосовой, в нём слипы STT —
-агент сам об этом предупреждён в системном промпте («expect transcription
-slips», `agent.py:1951`). Ложная «ошибка», вытащенная из перевранного
-распознавалкой текста, попадёт в `review_item`, и spaced repetition начнёт
-гонять ученика по правилу, которое он не нарушал. Ошибки продолжает ловить
-агент вживую — он слышит звук, а не читает текст.
+**Ошибки и новые слова не извлекаем.** Транскрипт голосовой, в нём слипы STT.
+Ложная «ошибка», вытащенная из перевранного распознавалкой текста, попадёт в
+`review_item`, и spaced repetition начнёт гонять ученика по правилу, которое он
+не нарушал. Ошибки продолжает ловить агент вживую — он слышит звук, а не читает
+текст.
 
 Факты и темы к слипам устойчивы: даже если распознавалка перепутала слово,
 смысл «учится на врача, едет в Астану» читается.
 
 **RAG/векторный поиск по транскриптам** — отдельный проект, отдельная спека.
-Здесь только выжимка в существующие таблицы.
+
+## Платформа: обе
+
+`main` катится на Vercel, `develop` — self-host VPS + GitLab CI
+(`compose-app.yaml`, `next start` в Docker). Фича приедет на Vercel при мерже
+`develop → main`, поэтому дизайн обязан жить в обеих средах:
+
+| | Vercel (main) | self-host (develop) |
+|---|---|---|
+| `after()` держится | через `waitUntil` | процесс долгоживущий, промис просто дорабатывает |
+| чем убивается | таймаутом функции | рестартом контейнера, OOM |
+| защита | `export const maxDuration = 60` на роуте | попутный подбор (ниже) |
+
+`maxDuration` на self-host игнорируется, попутный подбор на Vercel работает —
+обе меры безвредны на «чужой» платформе. Прецедент `maxDuration` в проекте уже
+есть: `src/app/api/transcribe/route.js:14`.
 
 ## Модель данных
 
@@ -49,87 +66,180 @@ alter table call_log add column if not exists summary_status text;
 
 | значение | смысл |
 |---|---|
-| `null` | звонок записан до этой фичи |
-| `pending` | строка вставлена, выжимка ещё не отработала |
+| `null` | звонок до фичи **или** процесс умер до первой записи статуса |
+| `pending` | выжимка начата |
 | `done` | факты/темы/recap записаны |
-| `skipped` | нечего или нечем суммаризовать (короткий транскрипт, нет ключа Anthropic) |
+| `skipped` | суммаризовать нечего или незачем (см. таблицу отказов) |
 | `failed` | LLM или запись упали, звонок при этом цел |
 
-Новых таблиц нет. `recap` и `topics` уже есть в `0001_baseline.sql` — их просто
-никогда не заполняли. Факты и темы в долгую память идут через существующие
-`appendFacts` / `appendTopics`.
+**Колонки нет в `INSERT`.** `insertCall` меняется только на `returning id`.
+Статус пишет исключительно суммаризатор. Причина: `runMigrations` глотает
+ошибки (`instrumentation.js`), и если 0002 не доехала на инстанс, `insert into
+call_log (… summary_status …)` упал бы с `column does not exist` → 500 → **весь
+звонок вместе с транскриптом потерян**. Путь сохранения звонка не должен
+зависеть от новой колонки.
+
+Новых таблиц нет. `recap` и `topics` уже есть в `0001_baseline.sql`.
 
 ## Поток данных
 
 ```
-агент (shutdown-колбэк, agent.py:3691)
-   │ awaited POST /api/profile/calls {deviceId, transcript, lang, ...}
+агент (shutdown-колбэк, agent.py:3691, X-Internal-Key на каждом POST)
+   │ awaited POST /api/profile/calls {deviceId, transcript, lang, mode, ...}
    ▼
-src/app/api/profile/calls/route.js
-   ├─ insertCall(...) → id            (summary_status='pending' прямо в insert)
-   ├─ Response.json({ok:true})        ← агент свободен, shutdown продолжается
-   └─ after(() => summarizeCall({...}))
-          │
-          ├─ loadProfile(deviceId) → известные facts/topics
-          ├─ structured({model: Haiku 4.5, schema}) → {recap, facts[], topics[]}
-          ├─ appendFacts(deviceId, facts)
-          ├─ appendTopics(deviceId, topics)
-          └─ update call_log set recap, topics, summary_status='done'
+src/app/api/profile/calls/route.js         (export const maxDuration = 60)
+   ├─ resolved = resolveProfileId(request, body.deviceId)
+   ├─ id = insertCall(resolved.id, body)   ← returning id, БЕЗ summary_status
+   ├─ Response.json({ok:true})             ← агент свободен
+   └─ after(async () => {
+          await summarizeCall({ callId: id, profileId: resolved.id,
+                                trusted, transcript, lang, mode })
+          await sweepStaleSummaries(1)     ← добираем один зависший звонок
+      })
 ```
 
-`after()` из `next/server` (Next 16.2.6, стабилен) исполняет колбэк **после
-отправки ответа**; на Vercel держится через `waitUntil`. Агент получает 200
-мгновенно и умирает как раньше — **`agent.py` не меняется вообще**.
+`resolved.id`, **не** `body.deviceId`: у залогиненного это `user-<id>`, и память
+обязана лечь в аккаунт, а не в device-корзину. Та же причина, что в комментарии
+`livekit/token/route.js:63-64`.
 
-`summary_status='pending'` ставится в самом `insert`, а не после: если инстанс
-умрёт на середине выжимки, строка останется `pending` и провал будет виден.
+### Внутри summarizeCall
 
-`call_log.topics` — `jsonb`, значит **только через `sql.json(...)`**: porsager
-иначе положит jsonb-строку вместо массива (та же ловушка, что в `upsertProfile`
-и `insertCall`, оба уже с комментарием на эту тему).
+```
+1. гейты (см. «Отказы») → 'skipped' и выход
+2. update call_log set summary_status='pending' where id = $callId   (try/catch)
+3. known = loadKnownMemory(profileId)        ← 2 запроса, по 50 фактов и тем
+4. structured({ model: SUMMARY_MODEL, timeoutMs: 30_000, schema })
+5. validate() — обрезка длин и количеств на нашей стороне
+6. sql.begin(tx => {
+     ownerId = select device_id from call_log where id = $callId  ← merge-safe
+     appendFacts(ownerId, facts)     // только mode free|placement
+     appendTopics(ownerId, topics)
+     update call_log set recap, topics, summary_status='done' where id = $callId
+   })
+```
+
+**Почему `device_id` перечитывается внутри транзакции.** Пока крутится `after()`,
+аноним может залогиниться: `mergeDeviceIntoAccount` перекидывает `call_log` и
+`fact_log` на `user-<id>` и **удаляет анонимную строку `learner`**
+(`merge.js:152`, FK `on delete cascade`). Если писать по исходному `deviceId`,
+`appendFacts` → `ensureLearner` воскресит удалённую строку, факты лягут в мёртвую
+корзину, а повторный мерж уже не пройдёт никогда — `isAccountEmpty` вернёт false
+(`merge.js:72`). Читая владельца из самой строки звонка внутри транзакции, мы
+следуем за мержем, а не спорим с ним.
+
+**`where id = $callId`** и только id. Добавить `and device_id = …` нельзя: после
+мержа условие не совпадёт, апдейт тихо тронет 0 строк и звонок навсегда зависнет
+в `pending`.
+
+**Все три записи в одной `sql.begin`.** Иначе возможен разрыв: факты уже в
+долгой памяти, а строка в `pending` — от «не отработало» неотличимо, и повторный
+прогон допишет near-дубликаты.
+
+### Попутный подбор зависших
+
+`sweepStaleSummaries(limit = 1)` берёт один звонок, у которого выжимка не
+доехала, и прогоняет его тем же кодом:
+
+```sql
+select id from call_log
+where (summary_status is null or summary_status = 'pending')
+  and created_at < now() - interval '15 minutes'
+  and created_at > now() - interval '7 days'
+order by created_at asc
+limit 1
+```
+
+`15 minutes` — чтобы не хватать звонок, который прямо сейчас обрабатывается на
+другом инстансе. `7 days` — чтобы дозапись не поползла по звонкам, записанным до
+этой фичи (у них тоже `summary_status is null`).
+
+Новой инфраструктуры ноль, работает одинаково на Vercel и в Docker. Цена — один
+дешёвый индексируемый SELECT на звонок.
 
 ## Контракт извлечения
 
-Один вызов `structured()` (`src/lib/anthropic.js:239` — форсит ответ через
-tool-use, JSON гарантирован). Схема:
+Один вызов `structured()` (`anthropic.js:239` — форсит ответ через tool-use).
 
 | поле | тип | ограничения |
 |---|---|---|
-| `recap` | string | 1–2 предложения, ≤240 символов (лимит `trimText` в `insertCall`) |
-| `facts` | string[] | до 5, только новые |
-| `topics` | string[] | до 5 |
+| `recap` | string | 1–2 предложения, ≤240 символов |
+| `facts` | string[] | до 5, только новые, ≤240 символов каждый |
+| `topics` | string[] | до 5, ≤120 символов каждый |
 
-### Язык раздвоен
+**Лимиты проверяем сами, схеме их доверить нельзя.** `toJsonSchema`
+(`anthropic.js:208-227`) копирует из схемы только `type`/`enum`/`description`/
+`properties`/`required`/`items` — `maxItems`, `minItems` и `maxLength` молча
+теряются. Длины режем в чистом модуле, той же семантикой, что `trimText`
+(обрезка с многоточием). Полагаться на `trimText` внутри `insertCall` тоже
+нельзя: recap пишет новый `UPDATE`, а не тот `INSERT`.
+
+### Факты — не из всех режимов
+
+`mode` берём из тела звонка (`free|scenario|placement|debate`, `calls.js:44`):
+
+| режим | recap | topics | facts |
+|---|---|---|---|
+| `free` | да | да | **да** |
+| `placement` | да | да | **да** |
+| `scenario` | да | да | нет |
+| `debate` | да | да | нет |
+
+В сценариях ученик говорит от лица персонажа («I'd like to book a table for
+four», «I work for an oil company»). Одна такая реплика, принятая за биографию,
+навсегда поселится в блоке `SESSION MEMORY` — удалить её нечем, `delete from
+fact_log` в коде не существует вообще.
+
+### Язык
 
 - `facts` и `topics` — **по-английски**, третьим лицом: `works as a nurse`,
   `planning a trip to London`. Они возвращаются в англоязычный блок
-  `SESSION MEMORY` промпта, и формат обязан совпасть с тем, что пишет `log_fact`
-  вживую (`agent.py:1471`).
-- `recap` — **на языке ученика**, он показывается в экране истории. Язык берём
-  из `call.lang`, который агент уже шлёт в теле POST'а. Неизвестное значение →
-  `ru` (дефолт проекта).
+  `SESSION MEMORY`, формат обязан совпасть с тем, что пишет `log_fact` вживую
+  (`agent.py:1471`).
+- `recap` — на языке **интерфейса**, `call.lang`: строка ложится в список
+  истории, который весь рисуется на языке UI (`callHistory.js`). Это не то же
+  самое, что `explanation_lang` агента (язык устных объяснений) — того в БД нет
+  вообще, он живёт только в метаданных сессии.
 
-### Дедуп — промптом, не SQL
+**Ловушка `kz` против `kk`.** Зона тьютора использует коды `ru|kz|en`, а
+существующий хелпер `resolveLangName` (`src/lib/shadowing/tipPrompt.js:10-15`)
+собран под коды приложения `ru|en|kk` и на `'kz'` возвращает **Russian** — это
+зафиксировано тестом `tests/shadowing-tip-prompt.spec.js:26`. Переиспользовать
+его нельзя, нужна своя карта `{ru, kz, en}`. Неизвестное значение → `ru`; на
+практике не сработает, потому что `lang` дефолтится в `'en'`
+(`livekit/token/route.js:52`) — и это правильно, `en` осознанный выбор.
 
-`appendFacts` дедупит **точным совпадением строки** по последним 50
-(`profile.js:184`). Для SQL `works as a nurse` и `is a nurse at the city
-hospital` — разные строки, обе запишутся.
+### Модель и таймаут
 
-Поэтому в системный промпт кладём уже известные факты и темы (из `loadProfile`)
-и требуем вернуть только то, чего там нет. SQL-дедуп остаётся вторым рубежом от
-точных повторов.
+Отдельная константа в `anthropic.js`:
 
-### Модель и порог
+```js
+export const SUMMARY_MODEL =
+  process.env.CALL_SUMMARY_MODEL || "claude-haiku-4-5-20251001";
+```
 
-Haiku 4.5, передаём `model` явно: дефолт `structured()` — Sonnet, он выбран под
-IELTS-грейдинг (`anthropic.js:22`) и для выжимки избыточен. Константу Haiku
-нужно заэкспортить из `anthropic.js` — сейчас `DEFAULT_MODEL` приватная.
+**Не** экспортировать и не переиспользовать `DEFAULT_MODEL`: он завязан на
+`VOICE_BRAIN_MODEL`, чей документированный смысл — модель живого тьютора. Кто
+переключит тьютора на Sonnet для эксперимента, молча переключит и суммаризацию
+(×3 по цене на обоих направлениях), не увидев этого нигде в конфиге.
 
-Транскрипт короче **6 реплик** не суммаризуем — `skipped`, без вызова LLM. Из
-«алло, привет, ой пока» фактов не будет, а вызов оплатим.
+`structured()` получает новый необязательный `timeoutMs` (прокидывается в
+`client.messages.create(..., { timeout })`), суммаризатор ставит 30 с. Без него
+дефолт SDK — 10 минут с ретраями, и зависший вызов держит `after()` вместе с
+памятью процесса на контейнере с `mem_limit: 1g`.
 
-Транскрипт в промпт идёт целиком: `cleanTranscript` уже режет до 500 реплик по
-2000 символов, 20-минутный звонок — порядка 4–6k токенов.
+### Бюджет транскрипта
+
+Потолок — **40 000 символов** (примерно 10k токенов). Влезает без урезания:
+типовой 20-минутный звонок это 15–25k символов.
+
+Если больше — выкидываем середину, оставляя начало и конец, и вставляем маркер
+`[… omitted N turns …]`. Начало нужно потому, что личное обычно всплывает в
+первых репликах; конец — потому что там подводят итог.
+
+Ссылаться на `cleanTranscript` как на границу **нельзя**: его потолок 500 реплик
+× 2000 символов = миллион символов ≈ 250k токенов, это больше контекстного окна
+Haiku. Первая ревизия спеки называла эту границу доказательством, что промпт
+ограничен — неверно.
 
 ## Отказы
 
@@ -138,55 +248,100 @@ IELTS-грейдинг (`anthropic.js:22`) и для выжимки избыто
 
 | отказ | поведение |
 |---|---|
-| нет `DATABASE_URL` | `getSql()` → `null`, выходим молча (общий паттерн проекта) |
+| **вызывающий не предъявил `X-Internal-Key`** | `skipped`, LLM не трогаем |
 | нет `ANTHROPIC_API_KEY` | `hasAnthropicKey()` false → `skipped` |
-| Anthropic упал / таймаут | `catch` → `failed`, `console.error`. Звонок цел |
-| транскрипт короткий | `skipped`, без вызова LLM |
-| модель вернула мусор | валидируем типы, режем длины; пусто → `failed` |
-| `insertCall` не вернул id | транскрипт был пустой — выжимку не запускаем |
+| транскрипт короче 6 реплик | `skipped`, без вызова LLM |
+| `insertCall` не вернул id | пустой транскрипт или нет БД — выжимку не запускаем |
+| Anthropic упал / таймаут 30 с | `catch` → `failed`, `console.error`. Звонок цел |
+| модель вернула мусор | валидация обрезает; всё пусто → `failed` |
+| процесс умер посреди `after()` | строка остаётся `pending`/`null` → попутный подбор |
 
-Мониторинг одним запросом:
+**Про ключ отдельно.** `resolveProfileId` пускает любой анонимный device-id без
+аутентификации — `auth-server.js:180` возвращает `{ id: clientDeviceId }`, весь
+контроль это регулярка `/^[A-Za-z0-9_-]{6,64}$/`. Сегодня подделанный POST стоит
+одной вставки в БД; с выжимкой он стоил бы вызова Haiku с текстом, который
+прислал сам злоумышленник. Это ровно та дыра, которую brain-роут уже закрыл —
+см. его комментарий (`voice/brain/chat/completions/route.js:16-20`): «Раньше
+проверки НЕ было вообще… любой POST жёг наш ANTHROPIC_API_KEY».
+
+Гейт: суммаризуем только при `isTrustedInternalCaller(request)`. Агент шлёт
+ключ на каждом POST (`agent.py:1346`), так что легальный путь не страдает и
+`agent.py` не меняется. `isTrustedInternalCaller` сейчас приватная в
+`auth-server.js:38` — её надо заэкспортить (аддитивно, поведение прежнее).
+
+Логируем одной JSON-строкой в стиле существующего `llm_cost`:
+`{kind:'call_summary', callId, mode, status, facts, topics, ms}`.
+
+Мониторинг: `select summary_status, count(*) from call_log group by 1;`
+
+## Тесты
+
+**CLAUDE.md:27 («Тест-раннера в проекте нет») устарел** — в `package.json` есть
+`"test": "vitest run"` и `"test:e2e": "playwright test"`, в `tests/` 41 файл.
+Строку в CLAUDE.md правим тем же PR.
+
+Поэтому модуль делится надвое, ровно как `src/lib/shadowing/tipPrompt.js` был
+вынесен из своего роута ради тестируемости:
+
+- `src/lib/callSummary/prompt.js` — **чистый**: сборка промпта, JSON-схема, выбор
+  языка recap, бюджет транскрипта, валидация и обрезка ответа. Без БД и сети.
+- `src/lib/callSummary/index.js` — IO: гейты, `loadKnownMemory`, вызов
+  `structured`, транзакция, статусы, `sweepStaleSummaries`.
+
+`tests/call-summary-prompt.spec.js` (vitest) покрывает чистый модуль:
+
+1. `kz` → Kazakh, **не** Russian (та самая ловушка)
+2. неизвестный код → `ru`
+3. `mode=scenario` → в промпте нет запроса фактов; `free` → есть
+4. известные факты попадают в промпт (дедуп-инструкция)
+5. транскрипт больше бюджета → середина выкинута, маркер на месте, начало и
+   конец сохранены
+6. валидация: 900-символьный recap обрезан до 240; 12 фактов срезаны до 5;
+   не-строки отброшены
+
+Дальше — `npm run build`, `npm run lint`, `npm test`, и ручной прогон:
 
 ```sql
-select summary_status, count(*) from call_log group by 1;
+select recap, summary_status from call_log order by created_at desc limit 1;
+select fact from fact_log order by created_at desc limit 5;
 ```
 
-## Проверка
-
-Тест-раннера в проекте нет (см. CLAUDE.md), поэтому:
-
-1. `npm run build` + `npm run lint`
-2. Скрипт в scratchpad: берёт существующую строку `call_log` с транскриптом,
-   гоняет `summarizeCall` — глазами смотрим, что извлеклось
-3. Живой прогон (`npm run dev`, звонок тьютору):
-   ```sql
-   select recap, summary_status from call_log order by created_at desc limit 1;
-   select fact from fact_log order by created_at desc limit 5;
-   ```
-4. Дедуп: второй звонок про то же самое **не** должен продублировать факт
-5. Деградация: снять `ANTHROPIC_API_KEY` → звонок пишется, `summary_status`
-   = `skipped`, ошибок в консоли нет
+Отдельно проверить руками: (а) второй звонок про то же самое не дублирует факт;
+(б) без `ANTHROPIC_API_KEY` звонок пишется и получает `skipped`; (в) POST без
+`X-Internal-Key` пишет звонок, но не жжёт LLM.
 
 ## Отвергнутые варианты
 
-**Синхронно, до ответа.** Проще и атомарнее, но агент висит лишние 2–5 с в
-shutdown-колбэке на каждом звонке, а при тормозах Anthropic — дольше. Воркер
-держит слот сессии впустую.
+**Синхронно, до ответа.** Агент ждал бы LLM в shutdown-колбэке, а его
+HTTP-клиент живёт с `timeout=4.0` (`agent.py:1351`) и глотает исключения — то
+есть при выжимке в 3–8 с он бы не «немного тормозил», а обрывал соединение по
+таймауту, не зная, записался звонок или нет.
 
-**Очередь + Vercel Cron.** Надёжнее (ретраи, батчи), но новая инфраструктура и
-факты приезжают с задержкой: ученик закончил звонок и тут же начал следующий —
-тьютор ещё не знает, о чём говорили минуту назад. Для продукта про «я тебя
-помню» это плохо. Колонка `summary_status` оставляет этот вариант доступным
-без миграции, если в логах увидим частые `failed`.
+**Очередь + внешний планировщик.** Надёжнее, но расписание пришлось бы заводить
+по-разному на двух платформах (Vercel Cron против systemd/GitLab на VPS), а
+факты приезжали бы с задержкой. Попутный подбор даёт ту же живучесть без внешних
+зависимостей. Колонка `summary_status` оставляет этот вариант доступным без
+миграции.
+
+**Дедуп через `loadProfile`.** Отвергнут по двум причинам: он отдаёт только
+последние **12** фактов (`profile.js:302`), тогда как SQL-дедуп в `appendFacts`
+смотрит на 50 — щель между 12 и 50 и есть место, где заводятся дубликаты; и он
+делает 9 запросов при пуле `max: 10` (`sql.js:29`), забирая соединения у
+фонового звонка. Вместо него — `loadKnownMemory`: два запроса, по 50 строк.
 
 ## Файлы
 
 | файл | правка |
 |---|---|
 | `src/lib/migrations/0002_call_summary.sql` | новый, одна `alter table` |
-| `src/lib/callSummary.js` | новый — промпт, схема, `summarizeCall()` |
-| `src/lib/db/calls.js` | `insertCall` → `returning id`, `summary_status='pending'`; новая `saveCallSummary()` |
-| `src/app/api/profile/calls/route.js` | `after()` → `summarizeCall` |
-| `src/lib/anthropic.js` | экспорт константы Haiku |
+| `src/lib/callSummary/prompt.js` | новый, чистый — промпт, схема, язык, бюджет, валидация |
+| `src/lib/callSummary/index.js` | новый, IO — гейты, транзакция, статусы, подбор |
+| `tests/call-summary-prompt.spec.js` | новый, vitest |
+| `src/lib/db/calls.js` | `insertCall` → `returning id`; `saveCallSummary()` |
+| `src/lib/db/profile.js` | новая `loadKnownMemory()` — 50 фактов + 50 тем |
+| `src/app/api/profile/calls/route.js` | `maxDuration`, `after()`, передача `trusted` |
+| `src/lib/auth-server.js` | экспорт `isTrustedInternalCaller` |
+| `src/lib/anthropic.js` | `SUMMARY_MODEL`, опция `timeoutMs` в `structured()` |
+| `CLAUDE.md` | строка 27 — тест-раннер в проекте есть |
 
-`agent/` не трогаем.
+`agent/` не трогаем. Экраны и CSS не трогаем.
