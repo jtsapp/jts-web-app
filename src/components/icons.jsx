@@ -368,3 +368,20 @@ export function BurstIcon({ size = 22 }) {
     </svg>
   )
 }
+
+export function CameraIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.4l1-1.6A1 1 0 0 1 8.75 4h6.5a1 1 0 0 1 .85.4l1 1.6h1.4A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="12" cy="12.5" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
+
+export function CheckIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="m5 12.5 4.5 4.5L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}

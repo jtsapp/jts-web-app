@@ -1,0 +1,589 @@
+/* Клиентский workspace живого урока (.lw-*). Только светлая тема.
+   .lw занимает ровно высоту экрана (100dvh, как и другие "полноэкранные"
+   разделы в styles.css) — так шапка и левый маршрут остаются на месте, а
+   скроллится только .lw__main (центр + правая колонка), см. дизайн-спеку:
+   «скролл только центральной колонки; шапка и боковые липкие». */
+.lw { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; background: #f4f5f7; color: var(--ink); --lw-header-h: 76px; }
+.lw__body { flex: 1; display: flex; align-items: stretch; min-height: 0; }
+.lw__main { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; padding: 24px 28px 40px; align-items: start; overflow: auto; }
+.lw-card { background: #fff; border: 1px solid #efeef4; border-radius: 16px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
+@media (max-width: 1100px) {
+  .lw__main { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ===== Шапка (.lw-header) ===== */
+.lw-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  flex: none;
+  min-height: var(--lw-header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  background: #fff;
+  border-bottom: 1px solid #efeef4;
+}
+.lw-header__left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 auto; }
+.lw-header__left .logo { font-size: 18px; flex: none; }
+.lw-header__badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--purple);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+.lw-header__unit {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lw-header__progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: none;
+}
+.lw-header__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #e9e6f5;
+  transition: width 0.15s ease, background 0.15s ease;
+}
+.lw-header__dot.is-done { background: var(--purple); }
+.lw-header__dot.is-current { width: 22px; background: var(--purple); }
+
+.lw-header__right { display: flex; align-items: center; gap: 16px; flex: none; }
+.lw-header__timer {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.lw-header__timer-sep { color: #d8d6e4; padding: 0 2px; }
+.lw-header__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #f4f5f7;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.lw-header__exit:hover { background: #efeef4; color: #b23932; }
+.lw-header__exit:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+@media (max-width: 720px) {
+  .lw-header { padding: 14px 16px; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
+  .lw-header__unit { display: none; }
+  .lw-header__progress { order: 3; flex-basis: 100%; justify-content: center; }
+}
+@media (max-width: 480px) {
+  .lw-header__exit-label { display: none; }
+  .lw-header__exit { padding: 9px 12px; }
+}
+
+/* ===== Левая колонка «Маршрут урока» (.lw-route) =====
+   Ширина/бордер/фон — по бризу; sticky + height:100% + overflow-y:auto —
+   тот же приём, что у общего сайдбара .sb (styles.css), на случай если
+   список шагов не влезет по высоте. */
+.lw-route {
+  flex: none;
+  width: 240px;
+  position: sticky;
+  top: var(--lw-header-h);
+  align-self: flex-start;
+  height: 100%;
+  overflow-y: auto;
+  background: #fff;
+  border-right: 1px solid #efeef4;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lw-route__head { padding: 0 10px 16px; display: flex; flex-direction: column; gap: 4px; }
+.lw-route__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-route__count { font-size: 12.5px; color: var(--muted); }
+
+.lw-route__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lw-route__item { position: relative; }
+.lw-route__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 36px;
+  bottom: 0;
+  width: 2px;
+  background: #efeef4;
+}
+.lw-route__item.is-done:not(:last-child)::after { background: #bfe6cd; }
+
+.lw-route__step {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.lw-route__step:hover { background: #f7f5ff; }
+.lw-route__step.is-active { background: #f7f5ff; }
+.lw-route__step.is-locked { cursor: default; opacity: 0.5; }
+.lw-route__step.is-locked:hover,
+.lw-route__step.is-locked.is-active { background: transparent; }
+
+.lw-route__marker {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9e6f5;
+  color: #fff;
+}
+.lw-route__step.is-current .lw-route__marker { background: var(--purple); box-shadow: 0 0 0 4px #f0ebff; }
+.lw-route__step.is-done .lw-route__marker { background: #34a853; }
+
+.lw-route__body { display: flex; flex-direction: column; gap: 2px; padding-top: 2px; min-width: 0; }
+.lw-route__num {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lw-route__title-text { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.35; }
+.lw-route__step.is-current .lw-route__num { color: var(--purple); }
+.lw-route__step.is-current .lw-route__title-text { font-weight: 800; }
+.lw-route__step.is-locked .lw-route__num,
+.lw-route__step.is-locked .lw-route__title-text { color: var(--muted); }
+
+.lw-route__step:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* На телефонах маршрут схлопывается в узкую «рельсу» из одних маркеров —
+   заголовки/подписи шагов прячутся, прогресс дублирован в шапке
+   (.lw-header__progress). Не display:none: обязательный e2e
+   (tests/lesson-workspace.spec.js, --project=mobile, viewport 390×844)
+   кликает по .lw-route__step на этой ширине — маршрут обязан оставаться
+   видимым/кликабельным на стандартных телефонных экранах, а полная
+   240px-колонка на 390px попросту не оставила бы места центру. */
+@media (max-width: 720px) {
+  .lw-route { width: 64px; padding: 20px 6px; }
+  .lw-route__head { display: none; }
+  .lw-route__step { justify-content: center; padding: 8px 0; gap: 0; }
+  .lw-route__body { display: none; }
+  .lw-route__item:not(:last-child)::after { left: 50%; transform: translateX(-1px); }
+}
+
+/* Совсем узкие устройства (<380px) — прячем маршрут целиком, прогресс
+   остаётся только в шапке; сюда обычный e2e-вьюпорт (390px) не попадает. */
+@media (max-width: 380px) {
+  .lw-route { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-header__dot, .lw-header__exit, .lw-route__step { transition: none; }
+}
+
+.lw-content { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ===== Баннер шага (.lw-banner) — форма/тень/скругление как .kh-hero,
+   градиент задаётся инлайном в BannerBlock. ===== */
+.lw-banner {
+  position: relative;
+  width: 100%;
+  min-height: 148px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(23, 19, 38, 0.18);
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 0;
+}
+.lw-banner__text {
+  padding-bottom: 24px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: pre-line;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.lw-banner__mascot {
+  flex: none;
+  align-self: flex-end;
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  object-position: center bottom;
+  margin-bottom: -36px;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.18));
+}
+@media (max-width: 520px) {
+  .lw-banner__mascot { width: 118px; height: 118px; margin-bottom: -24px; }
+  .lw-banner__text { font-size: 18px; }
+}
+
+/* ===== Карточка теории (.lw-theory) ===== */
+.lw-theory { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 14px; }
+.lw-theory__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lw-theory__kicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--purple);
+}
+.lw-theory__minutes { font-size: 13px; font-weight: 700; color: var(--muted); }
+.lw-theory__title { margin: 0; font-size: 19px; font-weight: 800; color: var(--ink); }
+.lw-theory__text { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+
+.lw-forms { display: flex; flex-wrap: wrap; gap: 8px; }
+.lw-form-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #f4f5f7;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.lw-form-chip b { font-weight: 800; }
+.lw-form-chip.accent { background: #f0ebff; color: var(--purple); }
+
+.lw-table { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #efeef4; padding-top: 12px; }
+.lw-table__row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: baseline; font-size: 14px; }
+.lw-table__kind { font-weight: 800; color: var(--ink); }
+.lw-table__example { color: var(--muted); }
+.lw-table__accent { color: var(--purple); font-weight: 800; }
+@media (max-width: 640px) {
+  .lw-table__row { grid-template-columns: 1fr; gap: 2px; }
+}
+
+.lw-mistake {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff7df;
+  border: 1px solid #ffe6a8;
+}
+.lw-mistake__icon { flex: none; font-size: 16px; line-height: 1.4; }
+.lw-mistake__body { font-size: 13px; line-height: 1.5; color: var(--ink); }
+.lw-mistake__body b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #a67c00;
+}
+
+/* ===== Карточка практики (.lw-practice) ===== */
+.lw-practice { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 18px; }
+.lw-practice__title { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
+.lw-practice__hint { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.lw-practice__list { display: flex; flex-direction: column; gap: 20px; }
+.lw-practice__check {
+  align-self: flex-start;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 14px;
+  background: var(--purple);
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: filter 0.12s, transform 0.05s;
+}
+.lw-practice__check:hover { filter: brightness(1.06); }
+.lw-practice__check:active { transform: scale(0.98); }
+
+/* ===== Вопросы практики (.lw-q*) — общее ===== */
+.lw-q__prompt { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-q__sentence { margin: 0; font-size: 15px; line-height: 1.9; font-weight: 600; color: var(--ink); }
+.lw-q__answer { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* choice */
+.lw-opts { display: flex; flex-wrap: wrap; gap: 10px; }
+.lw-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 2px solid #efeef4;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.lw-opt:hover:not(:disabled) { border-color: var(--purple); background: #f7f4ff; }
+.lw-opt.is-selected { border-color: var(--purple); background: #f0ebff; color: var(--purple); }
+.lw-opt.is-correct { border-color: #34a853; background: #e9f6ee; color: #1f7a3c; }
+.lw-opt.is-wrong { border-color: #e5675f; background: #fdecec; color: #b23932; }
+.lw-opt:disabled { cursor: default; }
+.lw-opt__mark { font-weight: 800; }
+.lw-opt.is-correct :where(svg) { color: #1f7a3c; }
+
+/* chips */
+.lw-gap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+  padding: 2px 10px;
+  border-bottom: 2px dashed #c9c3e0;
+  color: var(--muted);
+  font-weight: 700;
+}
+.lw-gap.is-filled { color: var(--purple); border-bottom-color: var(--purple); }
+.lw-gap.is-correct { color: #1f7a3c; border-bottom-color: #34a853; }
+.lw-gap.is-wrong { color: #b23932; border-bottom-color: #e5675f; }
+.lw-gap.is-correct :where(svg) { color: #1f7a3c; }
+
+.lw-bank { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.lw-chip {
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 2px solid #efeef4;
+  background: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.lw-chip:hover:not(:disabled) { border-color: var(--purple); }
+.lw-chip.is-selected { border-color: var(--purple); background: #f0ebff; color: var(--purple); }
+.lw-chip.is-correct { border-color: #34a853; background: #e9f6ee; color: #1f7a3c; }
+.lw-chip.is-wrong { border-color: #e5675f; background: #fdecec; color: #b23932; }
+.lw-chip:disabled { cursor: default; opacity: 0.85; }
+
+/* gap (текстовый ввод) */
+.lw-gap-input-wrap { display: inline-flex; align-items: center; gap: 4px; }
+.lw-gap-input {
+  min-width: 110px;
+  padding: 4px 10px;
+  border: none;
+  border-bottom: 2px solid #c9c3e0;
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+  color: var(--purple);
+  outline: none;
+}
+.lw-gap-input.is-correct { color: #1f7a3c; border-bottom-color: #34a853; }
+.lw-gap-input.is-wrong { color: #b23932; border-bottom-color: #e5675f; }
+.lw-gap-input:disabled { cursor: default; }
+.lw-gap-input__check { display: inline-flex; color: #1f7a3c; }
+
+/* Фокус — видимый, единый для интерактивных элементов практики. */
+.lw-opt:focus-visible,
+.lw-chip:focus-visible,
+.lw-practice__check:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+.lw-gap-input:focus-visible { outline: none; border-bottom-color: var(--purple); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-opt, .lw-chip, .lw-practice__check { transition: none; }
+  .lw-practice__check:active { transform: none; }
+}
+
+/* ===== Правая колонка (.lw-aside) — плитка звонка + топики + чат, три
+   .lw-card друг под другом. На широких экранах — липкая (держится под
+   шапкой, пока скроллится центр в .lw__main); при укладке в один столбец
+   (≤1100px, колонка уходит вниз под контент) липкость выключаем — иначе
+   короткая правая колонка «догоняла» бы центр при скролле длинного шага. */
+.lw-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  position: sticky;
+  top: var(--lw-header-h);
+  align-self: start;
+}
+@media (max-width: 1100px) {
+  .lw-aside { position: static; }
+}
+
+/* ===== Плитка звонка (.lw-call) — визуальная заглушка, см. дизайн-спеку:
+   реальное видео вне области №1 (роадмап — внешний Meet). Превью учителя —
+   градиент вместо потока, PiP ученика и кнопки — статичные. ===== */
+.lw-call { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.lw-call__preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #9047ff 0%, #6c2bd9 55%, #211339 100%);
+}
+.lw-call__student-pip {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 56px;
+  height: 42px;
+  border-radius: 8px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.08));
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+}
+.lw-call__name {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(23, 19, 38, 0.35);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.lw-call__controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.lw-call__btn {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #f4f5f7;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease;
+}
+.lw-call__btn:disabled { cursor: default; opacity: 0.85; }
+.lw-call__btn--leave { background: #fdecec; color: #b23932; }
+.lw-call__btn:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* ===== Топики урока (.lw-topics) ===== */
+.lw-topics { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.lw-topics__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.lw-topics__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-topics__count { font-size: 12.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.lw-topics__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lw-topics__item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.lw-topics__item.is-active { background: #f0ebff; color: var(--purple); font-weight: 800; }
+
+/* ===== Чат с учителем (.lw-chat) ===== */
+.lw-chat { padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.lw-chat__title { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+.lw-chat__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.lw-chat__empty { margin: 0; padding: 22px 6px; font-size: 13px; line-height: 1.5; color: var(--muted); text-align: center; }
+.lw-chat__msg {
+  max-width: 82%;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.lw-chat__msg.is-teacher { align-self: flex-start; background: #f0ebff; border-bottom-left-radius: 4px; }
+.lw-chat__msg.is-student { align-self: flex-end; background: #f4f5f7; border-bottom-right-radius: 4px; }
+.lw-chat__composer { display: flex; align-items: center; gap: 8px; padding-top: 4px; border-top: 1px solid #efeef4; }
+.lw-chat__input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #efeef4;
+  background: #f4f5f7;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.lw-chat__input::placeholder { color: var(--muted); }
+.lw-chat__input:focus-visible { border-color: var(--purple); background: #fff; }
+.lw-chat__send {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--purple);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 0.12s ease, transform 0.05s ease, opacity 0.12s ease;
+}
+.lw-chat__send:hover:not(:disabled) { filter: brightness(1.06); }
+.lw-chat__send:active:not(:disabled) { transform: scale(0.94); }
+.lw-chat__send:disabled { opacity: 0.4; cursor: default; }
+.lw-chat__send:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-call__btn, .lw-topics__item, .lw-chat__input, .lw-chat__send { transition: none; }
+  .lw-chat__send:active { transform: none; }
+}
