@@ -43,7 +43,7 @@ export default function MonthCalendar({
               key={k}
               type="button"
               className={cls}
-              aria-selected={k === selectedDayKey}
+              aria-pressed={k === selectedDayKey}
               aria-label={date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })}
               onClick={() => onSelectDay(k)}
             >
@@ -51,7 +51,7 @@ export default function MonthCalendar({
               {items.length > 0 && (
                 <span className="cal__dots">
                   {items.slice(0, MAX_DOTS).map((o, i) => (
-                    <span key={i} className={`cal__dot cal__dot--${lessonStateKey(o)}`} />
+                    <span key={o.participantId ?? o.lessonId ?? i} className={`cal__dot cal__dot--${lessonStateKey(o)}`} />
                   ))}
                   {items.length > MAX_DOTS && <span className="cal__more">+{items.length - MAX_DOTS}</span>}
                 </span>

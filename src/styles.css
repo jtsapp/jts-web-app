@@ -5909,7 +5909,7 @@ textarea {
 .cal__dot--inProgress, .cal__dot--paused { background: #0b74c4; }
 .cal__dot--completed { background: #2c8a45; }
 .cal__dot--overdue { background: #b26a12; }
-.cal__dot--cancelled { background: #9aa0a6; }
+.cal__dot--cancelled { background: #6b7280; }
 .cal__more { font-size: 9px; color: #8b8a97; }
 .cal-day { background: #fff; border: 1px solid #eceef1; border-radius: 16px; padding: 12px; }
 .cal-day__h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 8px; text-transform: capitalize; }
