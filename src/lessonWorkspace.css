@@ -587,3 +587,47 @@
   .lw-call__btn, .lw-topics__item, .lw-chat__input, .lw-chat__send { transition: none; }
   .lw-chat__send:active { transform: none; }
 }
+
+/* ===== Живой урок в jts-web-app (.lw-live-*) — тот же контент/синхронизация,
+   что и в web-admin lesson-workspace, но встроен в уже существующий экран
+   LiveLessonPage (внутри .live, max-width 900px) вместо полноэкранного .lw. */
+.lw-live-body { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-top: 12px; }
+.lw-live-route { flex: 1 1 220px; min-width: 200px; max-width: 260px; }
+.lw-live-main { flex: 2 1 360px; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+.lw-live-aside { flex: 1 1 260px; min-width: 240px; max-width: 320px; display: flex; flex-direction: column; gap: 16px; }
+
+.lw-material-frame { border: 1px solid #efeef4; border-radius: 16px; overflow: hidden; background: #fff; }
+.lw-material-iframe { width: 100%; height: 520px; border: 0; display: block; }
+.lw-material-empty { padding: 24px; color: var(--muted); text-align: center; }
+
+.lw-focus-btn {
+  align-self: flex-start;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: var(--purple);
+  cursor: pointer;
+}
+.lw-focus-btn:disabled { opacity: 0.5; cursor: default; }
+
+.lw-meet { padding: 16px; text-align: center; }
+.lw-meet__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--purple);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+@media (max-width: 720px) {
+  .lw-live-route, .lw-live-aside { max-width: none; flex-basis: 100%; }
+}
