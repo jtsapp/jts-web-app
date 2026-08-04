@@ -43,25 +43,6 @@ export function dayLabelKey(date, now = new Date()) {
   return null
 }
 
-// Day buckets ascending by date; items within a day ascending by start time.
-export function groupByDay(occurrences) {
-  const buckets = new Map()
-  for (const occ of occurrences) {
-    const d = parseLessonDate(occ.scheduledAt)
-    const k = dayKey(d)
-    if (!buckets.has(k)) {
-      buckets.set(k, { dayKey: k, date: new Date(d.getFullYear(), d.getMonth(), d.getDate()), items: [] })
-    }
-    buckets.get(k).items.push(occ)
-  }
-  const groups = [...buckets.values()]
-  groups.sort((a, b) => a.date - b.date)
-  for (const g of groups) {
-    g.items.sort((a, b) => parseLessonDate(a.scheduledAt) - parseLessonDate(b.scheduledAt))
-  }
-  return groups
-}
-
 // 6-week (42-day) Monday-first grid covering `month` (0-based) of `year`.
 // Leading/trailing cells come from the adjacent months; `inMonth` flags the target month.
 export function buildMonthMatrix(year, month) {

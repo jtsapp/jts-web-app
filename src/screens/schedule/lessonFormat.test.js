@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  parseLessonDate, canJoin, lessonStateKey, dayKey, groupByDay,
+  parseLessonDate, canJoin, lessonStateKey, dayKey,
   buildMonthMatrix, occurrencesByDayKey, monthShift, dateFromKey,
 } from './lessonFormat.js'
 
@@ -44,16 +44,6 @@ describe('lessonFormat', () => {
     expect(dayKey(new Date(2026, 7, 1, 3, 9))).toBe('2026-08-01')
   })
 
-  it('groupByDay buckets by local day (ascending) and sorts items by time', () => {
-    const occ = [
-      { lessonId: 2, scheduledAt: '2026-08-10T11:30:00', durationMinutes: 60, lessonStatus: 'SCHEDULED' },
-      { lessonId: 1, scheduledAt: '2026-08-01T03:09:00', durationMinutes: 60, lessonStatus: 'IN_PROGRESS' },
-      { lessonId: 3, scheduledAt: '2026-08-10T09:00:00', durationMinutes: 60, lessonStatus: 'SCHEDULED' },
-    ]
-    const groups = groupByDay(occ)
-    expect(groups.map((g) => g.dayKey)).toEqual(['2026-08-01', '2026-08-10'])
-    expect(groups[1].items.map((i) => i.lessonId)).toEqual([3, 2])
-  })
 })
 
 describe('buildMonthMatrix', () => {
