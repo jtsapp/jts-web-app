@@ -196,6 +196,13 @@ export function startLiveLesson(token, id) {
   return authPut(`/admin/lessons/${id}/start`, token)
 }
 
+// Учитель/админ вписывает или меняет ссылку на видеозвонок (Google Meet или
+// любую другую) для этого занятия. wholeSeries=true проставляет её сразу на
+// все будущие занятия той же еженедельной серии.
+export function setLessonMeetingUrl(token, id, meetingUrl, wholeSeries = false) {
+  return authPut(`/admin/lessons/${id}/meeting-url`, token, { meetingUrl, wholeSeries })
+}
+
 export function pauseLiveLesson(token, id, minutes) {
   return authPut(`/admin/lessons/${id}/pause?minutes=${encodeURIComponent(minutes)}`, token)
 }

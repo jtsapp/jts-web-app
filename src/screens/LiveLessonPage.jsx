@@ -3,7 +3,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import {
   getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson,
-  getLessonSections, getLessonMessages, sendLessonMessage,
+  getLessonSections, getLessonMessages, sendLessonMessage, setLessonMeetingUrl,
 } from '../api.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { canControl } from './live/liveStatus.js'
@@ -67,6 +67,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setActiveSectionId(sectionId)
     setFollowMode(false)
     if (isStaff) setPresenting(false)
+  }
+
+  // --- Ссылка на видеозвонок (учитель может вписать/поменять) -------------
+  const [editingMeetingUrl, setEditingMeetingUrl] = useState(false)
+  const [meetingUrlDraft, setMeetingUrlDraft] = useState('')
+
+  function openMeetingUrlEditor() {
+    setMeetingUrlDraft(lesson?.meetingUrl || '')
+    setEditingMeetingUrl(true)
+  }
+
+  function saveMeetingUrl() {
+    const url = meetingUrlDraft.trim()
+    setLessonMeetingUrl(token, lessonId, url || null).then((updated) => {
+      if (updated) setLesson(updated)
+      setEditingMeetingUrl(false)
+    }).catch(() => {})
   }
 
   // --- Чат с учителем (поллинг, как в web-admin) --------------------------
@@ -162,7 +179,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const status = lesson?.status
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="live">
+      <div className={`live ${tab === 'lesson' ? 'live--wide' : ''}`}>
         <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
 
         {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
@@ -240,10 +257,31 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
                     <div className="lw-live-aside">
                       <div className="lw-card lw-meet">
-                        {lesson.meetingUrl ? (
-                          <a className="lw-meet__link" href={lesson.meetingUrl} target="_blank" rel="noreferrer">
-                            {t('lesson.ws.call')}
-                          </a>
+                        {editingMeetingUrl ? (
+                          <div className="lw-meet__form">
+                            <input
+                              className="lw-meet__input"
+                              value={meetingUrlDraft}
+                              onChange={(e) => setMeetingUrlDraft(e.target.value)}
+                              placeholder={t('lesson.ws.meetPlaceholder')}
+                              autoFocus
+                            />
+                            <div className="lw-meet__form-actions">
+                              <button className="lw-meet__save" onClick={saveMeetingUrl}>{t('lesson.ws.meetSave')}</button>
+                              <button className="lw-meet__cancel" onClick={() => setEditingMeetingUrl(false)}>{t('lesson.ws.meetCancel')}</button>
+                            </div>
+                          </div>
+                        ) : lesson.meetingUrl ? (
+                          <>
+                            <a className="lw-meet__link" href={lesson.meetingUrl} target="_blank" rel="noreferrer">
+                              {t('lesson.ws.call')}
+                            </a>
+                            {isStaff && (
+                              <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetEdit')}</button>
+                            )}
+                          </>
+                        ) : isStaff ? (
+                          <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetAdd')}</button>
                         ) : (
                           <p className="live__status-msg">{t('lesson.ws.call')}</p>
                         )}
