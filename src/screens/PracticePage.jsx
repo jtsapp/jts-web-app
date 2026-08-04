@@ -641,18 +641,33 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   </div>
                 </button>
               ))}
-              {situations.map((s) => (
-                <a
-                  key={s.id}
-                  className="pp-scard"
-                  href={s.videoUrl || '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
-                  <div className="pp-scard__title">{s.title}</div>
-                </a>
-              ))}
+              {situations.map((s) =>
+                s.locked ? (
+                  <div
+                    key={s.id}
+                    className="pp-scard pp-scard--locked"
+                    aria-disabled="true"
+                    title={t('practice.situations.locked')}
+                  >
+                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
+                      <span className="pp-lock">🔒</span>
+                    </Thumb>
+                    <div className="pp-scard__title">{s.title}</div>
+                    <div className="pp-scard__locked-label">{t('practice.situations.locked')}</div>
+                  </div>
+                ) : (
+                  <a
+                    key={s.id}
+                    className="pp-scard"
+                    href={s.videoUrl || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
+                    <div className="pp-scard__title">{s.title}</div>
+                  </a>
+                )
+              )}
             </Rail>
           </section>
           )}

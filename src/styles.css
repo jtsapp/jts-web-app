@@ -3233,6 +3233,30 @@ textarea {
   line-height: 1.3;
 }
 
+/* Ситуативка, заблокированная админом для этого студента (см.
+   StudentRestrictionsComponent) - обложка затемняется, замок поверх,
+   карточка не кликабельна (div, не <a>). */
+.pp-scard--locked {
+  cursor: not-allowed;
+}
+.pp-scard--locked .pp-thumb--situation {
+  position: relative;
+  filter: grayscale(0.6) brightness(0.7);
+}
+.pp-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+.pp-scard__locked-label {
+  font-size: 11px;
+  color: #a3a1ad;
+  margin-top: 2px;
+}
+
 /* Скелетоны загрузки: форма будущих карточек, мягкая пульсация. Цвет — тот же
    нейтральный, что у разделителей (#efeef4-семейство), без шиммер-градиентов. */
 .pp-skel {
