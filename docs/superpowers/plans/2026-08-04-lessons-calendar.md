@@ -424,7 +424,8 @@ describe('MonthCalendar', () => {
     const onSelectDay = vi.fn()
     renderCal({ onSelectDay })
     // Aug 4 2026 has aria-label containing "4" and the month; find by role + name.
-    const cell = screen.getByRole('button', { name: /4 август/i })
+    // Anchor the regex (^) so it matches day 4 only, not 14/24.
+    const cell = screen.getByRole('button', { name: /^4 август/i })
     fireEvent.click(cell)
     expect(onSelectDay).toHaveBeenCalledWith('2026-08-04')
   })
@@ -685,7 +686,7 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 Create `src/screens/schedule/LessonSchedule.test.jsx`:
 
 ```jsx
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 
@@ -707,7 +708,16 @@ function renderSchedule() {
 }
 
 describe('LessonSchedule container', () => {
-  beforeEach(() => vi.clearAllMocks())
+  // Freeze only Date (not the timer functions RTL's waitFor relies on) so the
+  // default view-month and selected-day are deterministic on every run date.
+  // Aug 10 2026 = same month as the mocked lesson (Aug 4) but NOT the lesson day,
+  // so the day-selection click below is load-bearing every run.
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 7, 10, 12, 0, 0))
+  })
+  afterEach(() => { vi.useRealTimers() })
 
   it('renders the summary tiles and the calendar after loading', async () => {
     const { container } = renderSchedule()
@@ -716,11 +726,14 @@ describe('LessonSchedule container', () => {
     expect(container.querySelectorAll('.cal__day')).toHaveLength(42)
   })
 
-  it('shows the occurrence in the day panel for the day that has a lesson', async () => {
+  it('day selection drives the day panel (default empty day → lesson day shows it)', async () => {
     const { container } = renderSchedule()
     await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    // Today defaults to the current date; select Aug 4 2026 explicitly.
-    fireEvent.click(screen.getByRole('button', { name: /4 август/i }))
+    // Default selected day is "today" = Aug 10 2026, which has no lesson.
+    expect(container.querySelectorAll('.cal-day .sch-row')).toHaveLength(0)
+    // Clicking Aug 4 must invoke onSelectDay for the row to appear — anchor (^)
+    // matches day 4 only, not 14/24.
+    fireEvent.click(screen.getByRole('button', { name: /^4 август/i }))
     await waitFor(() => expect(container.querySelectorAll('.cal-day .sch-row')).toHaveLength(1))
   })
 
@@ -895,14 +908,19 @@ to:
 
 - [ ] **Step 4: Pass `rail` from `LearningLayout.jsx`**
 
-In `src/components/LearningLayout.jsx`, add `rail={active === 'lessons'}` to the `<Sidebar>` props (after the `active={active}` line, ~line 34):
+In `src/components/LearningLayout.jsx`: (a) compute `const rail = active === 'lessons'`; (b) add the `learn--rail` modifier to the root `.learn` wrapper (the CSS reserves the collapsed rail's 72px on `.learn__body` via this modifier so `<main>` never reflows); (c) pass `rail` to `<Sidebar>`.
 
+Change the root wrapper from `<div className="learn">` to:
+```jsx
+      <div className={`learn ${rail ? 'learn--rail' : ''}`}>
+```
+Add `const rail = active === 'lessons'` inside the component body (e.g. right after `const [drawer, setDrawer] = useState(false)`), and add `rail={rail}` to the `<Sidebar>` props:
 ```jsx
         <Sidebar
           userName={userName}
           userLevel={userLevel}
           active={active}
-          rail={active === 'lessons'}
+          rail={rail}
           token={token}
           onNav={onNav}
           onProfile={onProfile}
@@ -921,49 +939,60 @@ Expected: PASS (2 tests).
 Append to `src/styles.css` (after the calendar CSS from Task 3):
 
 ```css
-/* Sidebar icon rail — desktop only, used on the Lessons screen. Collapses to
-   an icon strip that expands on hover/focus as an overlay, so <main> keeps
-   its full width and the calendar does not reflow. */
-@media (min-width: 861px) {
-  .sb--rail { width: 72px; overflow: visible; transition: width .18s ease; }
-  .sb--rail .sb__logo,
-  .sb--rail .sb__item span,
-  .sb--rail .sb__profile-text,
-  .sb--rail .sb__profile-chev,
-  .sb--rail .sb__role-text,
-  .sb--rail .sb__role-lvl,
-  .sb--rail .sb__stat-num { opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .12s ease; }
-  .sb--rail .sb__item { justify-content: center; }
-  .sb--rail:hover,
-  .sb--rail:focus-within { width: 272px; position: absolute; z-index: 40; height: 100%; box-shadow: 8px 0 24px rgba(20, 16, 31, 0.12); }
-  .sb--rail:hover .sb__logo,
-  .sb--rail:hover .sb__item span,
-  .sb--rail:hover .sb__profile-text,
-  .sb--rail:hover .sb__profile-chev,
-  .sb--rail:hover .sb__role-text,
-  .sb--rail:hover .sb__role-lvl,
-  .sb--rail:hover .sb__stat-num,
-  .sb--rail:focus-within .sb__logo,
-  .sb--rail:focus-within .sb__item span,
-  .sb--rail:focus-within .sb__profile-text,
-  .sb--rail:focus-within .sb__profile-chev,
-  .sb--rail:focus-within .sb__role-text,
-  .sb--rail:focus-within .sb__role-lvl,
-  .sb--rail:focus-within .sb__stat-num { opacity: 1; pointer-events: auto; }
-  .sb--rail:hover .sb__item,
-  .sb--rail:focus-within .sb__item { justify-content: flex-start; }
+/* Sidebar icon rail — desktop only, used on the Lessons screen. The sidebar is
+   pulled OUT of the flex flow (absolute) and the body reserves its collapsed
+   width via padding-left, so expanding the rail on hover/focus overlays the
+   content and NEVER reflows <main> or the calendar. Anchored to .learn__body
+   (position: relative); .learn__main scrolls internally (overflow:auto), so the
+   full-height absolute rail stays visible without needing sticky. */
+@media (min-width: 761px) {
+  .learn--rail .learn__body { position: relative; padding-left: 72px; }
+  .learn--rail .sb--rail {
+    position: absolute; top: 0; left: 0;
+    width: 72px; height: 100%;
+    z-index: 40; overflow: hidden;
+    transition: width .18s ease;
+  }
+  .learn--rail .sb--rail .sb__logo,
+  .learn--rail .sb--rail .sb__item span,
+  .learn--rail .sb--rail .sb__profile-text,
+  .learn--rail .sb--rail .sb__profile-chev,
+  .learn--rail .sb--rail .sb__role-text,
+  .learn--rail .sb--rail .sb__role-lvl,
+  .learn--rail .sb--rail .sb__stat-num { opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .12s ease; }
+  .learn--rail .sb--rail .sb__item { justify-content: center; }
+  .learn--rail .sb--rail:hover,
+  .learn--rail .sb--rail:focus-within { width: 272px; overflow: visible; box-shadow: 8px 0 24px rgba(20, 16, 31, 0.12); }
+  .learn--rail .sb--rail:hover .sb__logo,
+  .learn--rail .sb--rail:hover .sb__item span,
+  .learn--rail .sb--rail:hover .sb__profile-text,
+  .learn--rail .sb--rail:hover .sb__profile-chev,
+  .learn--rail .sb--rail:hover .sb__role-text,
+  .learn--rail .sb--rail:hover .sb__role-lvl,
+  .learn--rail .sb--rail:hover .sb__stat-num,
+  .learn--rail .sb--rail:focus-within .sb__logo,
+  .learn--rail .sb--rail:focus-within .sb__item span,
+  .learn--rail .sb--rail:focus-within .sb__profile-text,
+  .learn--rail .sb--rail:focus-within .sb__profile-chev,
+  .learn--rail .sb--rail:focus-within .sb__role-text,
+  .learn--rail .sb--rail:focus-within .sb__role-lvl,
+  .learn--rail .sb--rail:focus-within .sb__stat-num { opacity: 1; pointer-events: auto; }
+  .learn--rail .sb--rail:hover .sb__item,
+  .learn--rail .sb--rail:focus-within .sb__item { justify-content: flex-start; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sb--rail, .sb--rail .sb__item span { transition: none; }
 }
 ```
 
-Note: the `@media (min-width: 861px)` guard keeps the rail desktop-only; below that the existing mobile drawer (`.sb.is-open`) is untouched. If the repo's desktop breakpoint differs from 861px, match the value used by the existing `.sb` mobile media query (styles.css ~line 2266) so rail and drawer never both apply.
+Why this shape (not width-toggle-with-position-on-hover): switching the aside to `position: absolute` only on `:hover` drops it out of the flex row on hover, so `<main>` reclaims the 72px and the calendar jumps. Keeping the aside absolute at ALL times and reserving 72px on `.learn__body` means only the rail's own width animates; `<main>`'s box is constant, so there is zero reflow on hover-in/out.
+
+Note: the `@media (min-width: 761px)` guard keeps the rail desktop-only; below it the existing mobile off-canvas drawer (`.sb.is-open`, enabled at `@media (max-width: 760px)`, styles.css:2573) is untouched. 761px is exactly one pixel above the mobile drawer's 760px ceiling, so rail and drawer never both apply and there is no dead gap.
 
 - [ ] **Step 7: Verify the mobile breakpoint value**
 
 Run: `grep -nE "max-width:.*\.sb|\.sb \{" src/styles.css | head`
-Then confirm the rail's `min-width: 861px` is exactly one pixel above the mobile drawer's `max-width`. If the mobile query is `max-width: 720px`, change the rail guard to `min-width: 721px`. Adjust and re-run `npm test -- Sidebar` (should still PASS).
+Confirm the mobile off-canvas query is `@media (max-width: 760px)` (styles.css:2573) and that the rail guard `min-width: 761px` sits exactly one pixel above it. If the repo value differs, match it (guard = mobile-max + 1). Re-run `npm test -- Sidebar` (should still PASS).
 
 - [ ] **Step 8: Commit**
 
@@ -1118,3 +1147,11 @@ EOF
 **Type consistency:** `occByDay: Map<string, occ[]>` produced by `occurrencesByDayKey` (Task 1) and consumed by `MonthCalendar` (Task 3) and `LessonSchedule` (Task 5). `onSelectDay(dayKey)` fires a string; `selectedDayKey` is a string; `dateFromKey` converts it to a `Date` for `DayPanel`. `rail` boolean produced by `LearningLayout` and consumed by `Sidebar` (Task 6). Consistent. ✓
 
 **Known-open item carried from spec:** if `/admin/lessons/occurrences` returns only upcoming occurrences, past calendar days render empty — accepted, no backend change.
+
+## Refinements during execution (recorded post-review)
+
+- **vitest.config.js** gained `esbuild.jsx: 'automatic'` + `test.globals: true` — prerequisites for the repo's first @testing-library/react render test (Tasks 3–6). Verified safe against the full suite.
+- **Task 5** day-selection test made deterministic (freeze `Date` to 2026-08-10 via `vi.useFakeTimers({ toFake: ['Date'] })`) and load-bearing (default empty day → click lesson day shows the row).
+- **Task 6** rail CSS reworked: the aside is pulled out of flex flow at all times (`position: absolute` under a `.learn--rail` modifier on `.learn`), with `.learn__body { padding-left: 72px }` reserving the collapsed width, so hover-expand overlays content and never reflows `<main>` (Playwright-verified: main rect constant on hover).
+- **Task 7** fullscreen exit centralized: instead of an `else if (screen === 'lessons') exitAppFullscreen()` in the nav handlers, an effect `useEffect(() => { if (screen !== 'lessons') exitAppFullscreen() }, [screen])` handles every leave path (including the profile button and opening a lesson, which bypass the handlers). The fullscreen *request* stays in the click handlers (needs a user gesture).
+- **Cleanup:** `groupByDay` removed from `lessonFormat.js` (dead after the Task 5 refactor).
