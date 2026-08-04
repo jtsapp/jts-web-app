@@ -28,6 +28,8 @@ import BookDetail, { normTitle } from './BookDetail.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
 import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/grammar/grammarData.js'
+import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
+import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -208,6 +210,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [words, setWords] = useState([])
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
   const [apiToken, setApiToken] = useState(token || '')
+  // Открытие конкретного урока грамматики гейтится квотой (см. openUnit ниже) —
+  // сам каталог/список юнитов остаётся доступным для просмотра.
+  const grammarEntitlement = usePracticeEntitlement('grammar', token)
 
   useEffect(() => {
     let alive = true
@@ -376,6 +381,13 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
 
   // Урок грамматики — полноэкранный takeover (как открытая книга/рилс).
   if (openUnit) {
+    if (!grammarEntitlement.loading && !grammarEntitlement.allowed) {
+      return (
+        <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+          <PracticeLimitScreen limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} />
+        </LearningLayout>
+      )
+    }
     const lvl = grammarIndex && grammarIndex[openUnit.level]
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
@@ -629,18 +641,33 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   </div>
                 </button>
               ))}
-              {situations.map((s) => (
-                <a
-                  key={s.id}
-                  className="pp-scard"
-                  href={s.videoUrl || '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
-                  <div className="pp-scard__title">{s.title}</div>
-                </a>
-              ))}
+              {situations.map((s) =>
+                s.locked ? (
+                  <div
+                    key={s.id}
+                    className="pp-scard pp-scard--locked"
+                    aria-disabled="true"
+                    title={t('practice.situations.locked')}
+                  >
+                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
+                      <span className="pp-lock">🔒</span>
+                    </Thumb>
+                    <div className="pp-scard__title">{s.title}</div>
+                    <div className="pp-scard__locked-label">{t('practice.situations.locked')}</div>
+                  </div>
+                ) : (
+                  <a
+                    key={s.id}
+                    className="pp-scard"
+                    href={s.videoUrl || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
+                    <div className="pp-scard__title">{s.title}</div>
+                  </a>
+                )
+              )}
             </Rail>
           </section>
           )}

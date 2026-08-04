@@ -100,6 +100,68 @@ export function profileIdForUser(userId) {
 }
 
 /**
+ * Per-student admin override of the voice-tutor time limit (see backend's
+ * AdminStudentRestrictionController / GET /mobile/aitutor/limit). Both fields
+ * null means "no override, use this app's own DAILY_LIMIT_SEC/MONTH_LIMIT_SEC"
+ * (see usage.js) — that is also the fallback on any error here, so a backend
+ * hiccup degrades to the existing free-tier default rather than failing the
+ * call. Anonymous (no token) callers never have an override — the backend
+ * limit is keyed by its own User id, not by the anonymous deviceId.
+ */
+export async function fetchTutorLimitOverride(token) {
+  if (!token) return null
+  try {
+    const res = await fetch(`${BACKEND_URL}/mobile/aitutor/limit`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return {
+      dailyLimitSeconds: data?.dailyLimitSeconds ?? null,
+      monthlyLimitSeconds: data?.monthlyLimitSeconds ?? null,
+    }
+  } catch (err) {
+    console.error(
+      '[auth] tutor-limit fetch failed:',
+      err?.cause?.code || err?.cause?.message || err?.message || err,
+    )
+    return null
+  }
+}
+
+/**
+ * Effective completion-quota cap for the current student for one content type
+ * (see backend's ContentQuotaService/GET /mobile/content-quota) - `null` means
+ * no cap. This app owns its own completion count for these areas (grammar/
+ * vocab/listening/shadowing done-arrays, IELTS attempt rows) - the backend is
+ * only the policy source, so callers fetch the number here and compare it
+ * themselves. Same fail-open contract as fetchTutorLimitOverride: any error
+ * (network, non-2xx, malformed body) returns null, i.e. "no cap", rather than
+ * blocking the caller over a backend hiccup. Anonymous (no token) callers
+ * never have a cap - quotas are keyed by the backend's own User id.
+ */
+export async function fetchContentQuota(token, contentType) {
+  if (!token) return null
+  try {
+    const res = await fetch(
+      `${BACKEND_URL}/mobile/content-quota?contentType=${encodeURIComponent(contentType)}&contentId=0`,
+      { method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, cache: 'no-store' },
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.limit ?? null
+  } catch (err) {
+    console.error(
+      '[auth] content-quota fetch failed:',
+      err?.cause?.code || err?.cause?.message || err?.message || err,
+    )
+    return null
+  }
+}
+
+/**
  * Resolves the profile id a request is allowed to act on:
  * - With a valid Bearer token → the authenticated `user-<id>` (the client's
  *   deviceId is ignored, so a learner can't read/write someone else's data).

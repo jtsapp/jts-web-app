@@ -8,8 +8,8 @@
 // fall back to the mock.
 
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
-import { resolveProfileId } from '@/lib/auth-server.js'
 import { isDbConfigured, recordIeltsSpeaking } from '@/lib/db/ielts.js'
+import { checkIeltsQuota } from '@/lib/ielts/quota.js'
 import {
   assessPronunciation,
   mockPronunciation,
@@ -121,6 +121,16 @@ export async function POST(request) {
     form.get('uiLang') === 'ru' ? 'ru' : form.get('uiLang') === 'kk' ? 'kk' : 'en'
   const deviceId = typeof form.get('deviceId') === 'string' ? form.get('deviceId') : undefined
 
+  // Demo accounts get a monthly cap - checked BEFORE the expensive Azure/Sonnet
+  // calls below, not after.
+  const quota = await checkIeltsQuota(request, deviceId)
+  if (quota.blocked) {
+    return Response.json(
+      { error: 'Monthly IELTS submission limit reached for this account.' },
+      { status: 429 },
+    )
+  }
+
   const wav = Buffer.from(await file.arrayBuffer())
 
   // 1) Pronunciation + Part 2 transcript. Azure, else mock (no Gemini here).
@@ -218,11 +228,12 @@ export async function POST(request) {
   const providerLabel = `${langEngine}+${pronEngine}`
   const mode = langEngine !== 'mock' && pronEngine === 'azure' ? 'live' : 'mock'
 
-  // 4) Best-effort persist.
+  // 4) Best-effort persist. Reuses the identity resolved for the quota check
+  // above - no second token-verification round-trip.
   let saved = false
   if (isDbConfigured()) {
     try {
-      const resolved = await resolveProfileId(request, deviceId ?? null)
+      const resolved = quota.resolved
       if (!('error' in resolved)) {
         const written = await recordIeltsSpeaking({
           profileId: resolved.id,

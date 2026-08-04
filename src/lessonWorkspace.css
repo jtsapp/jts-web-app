@@ -648,3 +648,99 @@
   .lw-call__btn, .lw-topics__item, .lw-chat__input, .lw-chat__send { transition: none; }
   .lw-chat__send:active { transform: none; }
 }
+
+/* ===== Живой урок в jts-web-app (.lw-live-*) — тот же контент/синхронизация,
+   что и в web-admin lesson-workspace, но встроен в уже существующий экран
+   LiveLessonPage. `.live--wide` снимает узкий max-width:900px у `.live` на
+   время вкладки "Урок", чтобы материалу было где развернуться. Строка
+   route/main/aside держит фиксированную высоту (не растёт вместе с высоким
+   материалом) — каждая колонка скроллится САМА внутри себя, поэтому чат и
+   кнопка звонка в aside всегда на виду, а не «утекают» вниз страницы вслед
+   за высоким iframe материала. */
+.lw-live-body {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  margin-top: 12px;
+  height: min(78vh, 760px);
+  min-height: 420px;
+}
+.lw-live-route { flex: 0 0 240px; min-width: 200px; overflow-y: auto; }
+.lw-live-main { flex: 3 1 480px; min-width: 320px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.lw-live-aside { flex: 0 0 300px; min-width: 260px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+
+.lw-material-frame { flex: 1; min-height: 0; border: 1px solid #efeef4; border-radius: 16px; overflow: hidden; background: #fff; }
+.lw-material-iframe { width: 100%; height: 100%; border: 0; display: block; }
+.lw-material-empty { padding: 24px; color: var(--muted); text-align: center; }
+
+.lw-focus-btn {
+  align-self: flex-start;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: var(--purple);
+  cursor: pointer;
+}
+.lw-focus-btn:disabled { opacity: 0.5; cursor: default; }
+
+.lw-meet { padding: 16px; text-align: center; flex: none; }
+.lw-meet__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--purple);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+}
+.lw-meet__edit-btn {
+  margin-top: 8px;
+  border: none;
+  background: none;
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.lw-meet__form { display: flex; flex-direction: column; gap: 8px; }
+.lw-meet__input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e3e1ec;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.lw-meet__form-actions { display: flex; gap: 8px; }
+.lw-meet__form-actions button {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+.lw-meet__save { background: var(--purple); color: #fff; }
+.lw-meet__cancel { background: #f4f5f7; color: var(--ink); }
+
+/* TeacherChat не рассчитан на растяжку на всю высоту колонки (моковая
+   верстка держит его гибким внутри 100dvh-страницы) — здесь у него
+   собственная высота и внутренний скролл списка сообщений. */
+.lw-live-aside .lw-chat { flex: 1; min-height: 260px; }
+.lw-live-aside .lw-chat__list { max-height: none; flex: 1; overflow-y: auto; }
+
+@media (max-width: 900px) {
+  .live--wide { max-width: 900px; }
+  .lw-live-body { height: auto; flex-wrap: wrap; }
+  .lw-live-route, .lw-live-aside { flex-basis: 100%; max-width: none; overflow-y: visible; }
+  .lw-live-main { flex-basis: 100%; }
+  .lw-material-frame { min-height: 480px; }
+}

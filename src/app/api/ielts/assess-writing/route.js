@@ -8,7 +8,7 @@
 
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { isDbConfigured, recordIeltsWriting } from '@/lib/db/ielts.js'
-import { resolveProfileId } from '@/lib/auth-server.js'
+import { checkIeltsQuota } from '@/lib/ielts/quota.js'
 import { DEMO_TASK1_CHART_PNG_BASE64 } from '@/lib/ielts/demo-task1-chart.js'
 
 export const runtime = 'nodejs'
@@ -224,6 +224,17 @@ export async function POST(request) {
       ? body.promptShown.slice(0, 600)
       : '(prompt unknown)'
 
+  // Demo accounts get a monthly cap on IELTS submissions - checked BEFORE the
+  // expensive grading call, not after. Anonymous/invalid identity is never
+  // gated (see checkIeltsQuota) - only a resolved learner can have a quota.
+  const quota = await checkIeltsQuota(request, body.deviceId)
+  if (quota.blocked) {
+    return Response.json(
+      { error: 'Monthly IELTS submission limit reached for this account.' },
+      { status: 429 },
+    )
+  }
+
   // Produce the assessment (live Sonnet, or deterministic fallback). Recording
   // and the response shape are unified below so every path persists.
   let assessment
@@ -254,8 +265,10 @@ export async function POST(request) {
   }
 
   // Best-effort persistence. Scoring must never fail because of the DB, so we
-  // only save when identity resolves cleanly and swallow write errors.
-  const saved = await persistAttempt(request, body.deviceId, {
+  // only save when identity resolves cleanly and swallow write errors. Reuses
+  // the identity already resolved for the quota check above - no second
+  // network round-trip to verify the token.
+  const saved = await persistAttempt(quota.resolved, {
     promptShown,
     essay,
     assessment,
@@ -268,10 +281,9 @@ export async function POST(request) {
 // Save the attempt + score, returning whether it persisted. Never throws:
 // unconfigured DB, unresolved/forbidden identity, or a write error all → false,
 // leaving the caller's assessment response intact.
-async function persistAttempt(request, deviceId, data) {
+async function persistAttempt(resolved, data) {
   if (!isDbConfigured()) return false
   try {
-    const resolved = await resolveProfileId(request, deviceId ?? null)
     if ('error' in resolved) return false // anonymous-without-id or forbidden
     const result = await recordIeltsWriting({
       profileId: resolved.id,

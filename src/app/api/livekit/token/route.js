@@ -21,7 +21,7 @@ import {
   DAILY_LIMIT_SEC,
   MONTH_LIMIT_SEC,
 } from '@/lib/usage.js'
-import { resolveProfileId } from '@/lib/auth-server.js'
+import { resolveProfileId, bearerFromRequest, fetchTutorLimitOverride } from '@/lib/auth-server.js'
 import { loadProfile } from '@/lib/db/profile.js'
 import { SCENARIOS } from '@/tutor/scenarios.js'
 
@@ -148,7 +148,7 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl) {
   return JSON.stringify(meta)
 }
 
-async function issue(p, profileId, userName) {
+async function issue(p, profileId, userName, limitOverride) {
   const apiKey = process.env.LIVEKIT_API_KEY
   const apiSecret = process.env.LIVEKIT_API_SECRET
   const wsUrl = process.env.LIVEKIT_URL
@@ -167,15 +167,21 @@ async function issue(p, profileId, userName) {
   // grants a long session. Unset it to restore the daily limit.
   const noLimit = process.env.VOICE_NO_LIMIT === '1' || process.env.VOICE_NO_LIMIT === 'true'
 
+  // Admin-set per-student override (see AdminStudentRestrictionController /
+  // GET /mobile/aitutor/limit), fetched by the caller from the verified JWT -
+  // never from `p`, same reasoning as `freeTier` below. `??` (not `||`) so an
+  // admin-set 0 (fully blocked) is respected rather than falling back to the
+  // global default.
+  const dailyLimitSec = limitOverride?.dailyLimitSeconds ?? DAILY_LIMIT_SEC
+  const monthLimitSec = limitOverride?.monthlyLimitSeconds ?? MONTH_LIMIT_SEC
+
   // Потолок одной сессии = дневной лимит (раньше здесь стояло 600 числом, и при
   // подъёме лимита до 20 мин разговор всё равно рвался бы на 10-й минуте).
-  let ttl = noLimit ? 3600 : DAILY_LIMIT_SEC
+  let ttl = noLimit ? 3600 : dailyLimitSec
   // tier НИКОГДА не берётся из тела/query запроса: клиент слал {tier:'paid'} и
   // целиком обходил проверку лимита ниже (плюс включал платный Krisp BVC у агента).
   // Платного тарифа сейчас нет — сервер авторитетно держит free, поэтому лимит
-  // проверяется всегда. Появится реальный энтайтлмент — выводить его из
-  // проверенного источника (роль в токене через resolveProfileId / флаг в БД),
-  // но НЕ из `p`.
+  // проверяется всегда (с поправкой на персональный override выше).
   const freeTier = true
   // Лимиты по profileId: у залогиненного минуты держатся за аккаунтом, поэтому
   // их больше не обнулить очисткой localStorage.
@@ -185,17 +191,17 @@ async function issue(p, profileId, userName) {
       // room_finished), иначе их минуты не спишутся никогда и лимит поедет.
       await closeStaleSessions(profileId)
       const { todaySeconds, monthSeconds } = await getUsage(profileId)
-      if (monthSeconds >= MONTH_LIMIT_SEC || todaySeconds >= DAILY_LIMIT_SEC) {
+      if (monthSeconds >= monthLimitSec || todaySeconds >= dailyLimitSec) {
         return Response.json(
           {
             configured: true,
             limited: true,
-            error: monthSeconds >= MONTH_LIMIT_SEC ? 'monthly_limit' : 'daily_limit',
+            error: monthSeconds >= monthLimitSec ? 'monthly_limit' : 'daily_limit',
           },
           { status: 403 },
         )
       }
-      ttl = Math.max(60, Math.min(DAILY_LIMIT_SEC, DAILY_LIMIT_SEC - todaySeconds))
+      ttl = Math.max(60, Math.min(dailyLimitSec, dailyLimitSec - todaySeconds))
     } catch (err) {
       console.error('[livekit.token] usage check failed', err)
     }
@@ -244,7 +250,8 @@ export async function POST(request) {
   }
   const resolved = await resolveProfileId(request, body.deviceId)
   if ('error' in resolved) return resolved.error
-  return issue(body, resolved.id, resolved.name)
+  const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
+  return issue(body, resolved.id, resolved.name, limitOverride)
 }
 
 export async function GET(request) {
@@ -252,5 +259,6 @@ export async function GET(request) {
   const p = Object.fromEntries(params)
   const resolved = await resolveProfileId(request, p.deviceId)
   if ('error' in resolved) return resolved.error
-  return issue(p, resolved.id, resolved.name)
+  const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
+  return issue(p, resolved.id, resolved.name, limitOverride)
 }

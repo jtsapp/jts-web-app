@@ -88,6 +88,24 @@ async function authPut(path, token, body) {
   return res.json().catch(() => null)
 }
 
+async function authPost(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
 // ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
 // Админ-каталоги меняются редко (только правками в dev-admin), поэтому повторные
 // открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в
@@ -199,6 +217,13 @@ export function startLiveLesson(token, id) {
   return authPut(`/admin/lessons/${id}/start`, token)
 }
 
+// Учитель/админ вписывает или меняет ссылку на видеозвонок (Google Meet или
+// любую другую) для этого занятия. wholeSeries=true проставляет её сразу на
+// все будущие занятия той же еженедельной серии.
+export function setLessonMeetingUrl(token, id, meetingUrl, wholeSeries = false) {
+  return authPut(`/admin/lessons/${id}/meeting-url`, token, { meetingUrl, wholeSeries })
+}
+
 export function pauseLiveLesson(token, id, minutes) {
   return authPut(`/admin/lessons/${id}/pause?minutes=${encodeURIComponent(minutes)}`, token)
 }
@@ -216,6 +241,36 @@ export function completeLiveLesson(token, id) {
 // { id, objectId, type, json }, где json — непрозрачная сериализация Fabric-объекта.
 export function getBoardObjects(token, id) {
   return authGet(`/admin/lessons/${id}/board/objects`, token)
+}
+
+// Живой урок — разделы (Разделы/«Маршрут урока») с прикреплёнными материалами.
+// Путь начинается с /admin/, но это общий эндпоинт воркспейса — доступен и
+// ученику (LESSON_JOIN), и учителю (LESSON_CONDUCT); скрытые от ученика
+// материалы и служебный раздел «Дополнительно» бэкенд уже фильтрует сам.
+export function getLessonSections(token, lessonId) {
+  return authGet(`/admin/lessons/${lessonId}/sections`, token)
+}
+
+export function getLessonMessages(token, lessonId) {
+  return authGet(`/admin/lessons/${lessonId}/messages`, token)
+}
+
+export function sendLessonMessage(token, lessonId, body) {
+  return authPost(`/admin/lessons/${lessonId}/messages`, token, { body })
+}
+
+// URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление
+// ответов + живой follow-me), см. LessonMaterialProgressController на бэкенде.
+// GET идёт по iframe-навигации (не fetch), поэтому токен передаётся в query,
+// а не в заголовке — тот же приём, что и в web-admin (buildProgressRenderUrl).
+// forceReload добавляет nonce, чтобы iframe гарантированно перезагрузился
+// (нужно студенту, догоняющему учителя через follow=1).
+export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', follow = false, forceReload = false, studentId } = {}) {
+  const params = new URLSearchParams({ mode, access_token: token || '' })
+  if (follow) params.set('follow', '1')
+  if (studentId != null) params.set('studentId', String(studentId))
+  if (forceReload) params.set('_r', String(Date.now()))
+  return `${BASE}/student/lessons/${lessonId}/materials/${materialId}/render?${params.toString()}`
 }
 
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
