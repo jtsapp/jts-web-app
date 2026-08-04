@@ -43,6 +43,8 @@ import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
+import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
+import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
 import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
@@ -88,7 +90,17 @@ export default function App() {
     // ?screen=lesson-workspace&lesson=<id>). Не завязано на deepLink, чтобы
     // работать и когда screen меняется навигацией уже после первого рендера.
     const lessonParam = searchParams.get('lesson')
-    if (lessonParam) setLiveWorkspaceId(lessonParam)
+    if (lessonParam) {
+      setLiveWorkspaceId(lessonParam)
+      setWorkspaceSource('live')
+    }
+    // ?catalog=<id> — id урока каталога для lesson-workspace (диплинк
+    // ?screen=lesson-workspace&catalog=<id>): грузим через loadCatalogLesson.
+    const catalogParam = searchParams.get('catalog')
+    if (catalogParam) {
+      setLiveWorkspaceId(catalogParam)
+      setWorkspaceSource('catalog')
+    }
 
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
@@ -180,6 +192,9 @@ export default function App() {
   // см. эффект восстановления сессии ниже). Без диплинка остаётся null —
   // LessonWorkspacePage тогда показывает SAMPLE_LESSON.
   const [liveWorkspaceId, setLiveWorkspaceId] = useState(null)
+  // 'live' — id из LiveLesson (jsonUrl), 'catalog' — id урока каталога (сырой
+  // L*.html + клиентское извлечение). Определяет, чем workspace грузит контент.
+  const [workspaceSource, setWorkspaceSource] = useState('live')
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -587,7 +602,9 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+    case 'course-catalog':
+      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
     case 'live-lesson':
       return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
@@ -904,7 +921,7 @@ export default function App() {
         />
       )
     case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} onExit={() => setScreen('lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} loadLesson={workspaceSource === 'catalog' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     default:
       return null
   }

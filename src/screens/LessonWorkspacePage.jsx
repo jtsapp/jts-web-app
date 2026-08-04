@@ -19,11 +19,12 @@ const ELAPSED_SEC = 103
 // LessonRoute / LessonContent / LessonAside — плюс шапку. Дочерние
 // компоненты остаются управляемыми и без собственного состояния прогресса.
 //
-// `lessonId` — id живого урока (диплинк `?screen=lesson-workspace&lesson=…`
-// в App.jsx). Если передан — грузим реальный контент через loadLiveLesson
-// (jsonUrl с files-api); без сети/lessonId или при ошибке падаем на
-// SAMPLE_LESSON, чтобы экран не оставался пустым.
-export default function LessonWorkspacePage({ onExit, lessonId, token }) {
+// `lessonId` — id урока (диплинк `?screen=lesson-workspace&lesson=…` в App.jsx).
+// `loadLesson` — как достать контент по id: по умолчанию loadLiveLesson
+// (LiveLesson → jsonUrl с files-api); для урока каталога App передаёт
+// loadCatalogLesson (сырой L*.html → клиентское извлечение + E6). Без
+// сети/lessonId или при ошибке падаем на SAMPLE_LESSON, чтобы экран не пустовал.
+export default function LessonWorkspacePage({ onExit, lessonId, token, loadLesson = loadLiveLesson }) {
   const { t } = useI18n()
   const [lesson, setLesson] = useState(() => (lessonId ? null : SAMPLE_LESSON))
   const [loading, setLoading] = useState(() => Boolean(lessonId))
@@ -36,7 +37,7 @@ export default function LessonWorkspacePage({ onExit, lessonId, token }) {
       return undefined
     }
     setLoading(true)
-    loadLiveLesson(lessonId, token).then((loaded) => {
+    loadLesson(lessonId, token).then((loaded) => {
       if (cancelled) return
       setLesson(loaded || SAMPLE_LESSON)
       setLoading(false)
@@ -44,7 +45,7 @@ export default function LessonWorkspacePage({ onExit, lessonId, token }) {
     return () => {
       cancelled = true
     }
-  }, [lessonId, token])
+  }, [lessonId, token, loadLesson])
 
   const steps = useMemo(() => lesson?.steps || [], [lesson])
 
