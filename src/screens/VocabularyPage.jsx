@@ -9,6 +9,8 @@ import { collectCount, pickCollectWords } from '../practice/vocab/engine.js'
 import { initVoices, speak as ttsSpeak, sfx as playSfx, ac, buzz } from '../practice/vocab/audio.js'
 import { Illus, SpeakBtn } from '../practice/vocab/tasks/shared.jsx'
 import Session from '../practice/vocab/Session.jsx'
+import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
+import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
 // Словарь — нативный экран (раньше прототип public/vocab/index.html в iframe).
 // Слова и строки собираются scripts/extract-vocab.js; вёрстка и логика
@@ -87,6 +89,11 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   )
 
   const ctx = { T, lang: vlang, speak, sfx, tr, S }
+
+  const entitlement = usePracticeEntitlement('vocab', token)
+  if (!entitlement.loading && !entitlement.allowed) {
+    return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} />)
+  }
 
   if (screen === 'session') {
     return shell(

@@ -26,11 +26,16 @@ export async function savePracticeState(profileId, module, state, sql = getSql()
   `
   const existing = rows[0]?.state ?? emptyState(module)
   const merged = mergeModuleState(module, existing, state)
+  // jsonb пишем ТОЛЬКО через sql.json() (см. тот же приём в profile.js/ielts.js) —
+  // JSON.stringify(...)::jsonb даёт двойное кодирование: porsager сериализует
+  // параметр сам, а ::jsonb-каст на уже готовую строку кладёт в колонку JSON-СТРОКУ
+  // ("{\"done\":[...]}"), а не объект. Дальше .done у неё undefined — вся история
+  // прохождения молча обнуляется при каждом мерже вместо накопления.
   await sql`
     insert into practice_state (profile_id, module, state)
-    values (${profileId}, ${module}, ${JSON.stringify(merged)}::jsonb)
+    values (${profileId}, ${module}, ${sql.json(merged)}::jsonb)
     on conflict (profile_id, module) do update
-      set state = ${JSON.stringify(merged)}::jsonb, updated_at = now()
+      set state = ${sql.json(merged)}::jsonb, updated_at = now()
   `
   return merged
 }
