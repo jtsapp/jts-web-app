@@ -32,6 +32,7 @@ export default function LearningLayout({
           userName={userName}
           userLevel={userLevel}
           active={active}
+          rail={active === 'lessons'}
           token={token}
           onNav={onNav}
           onProfile={onProfile}

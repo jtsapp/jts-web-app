@@ -5916,6 +5916,42 @@ textarea {
 @media (max-width: 720px) { .cal-layout { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .cal__day { transition: none; } }
 
+/* Sidebar icon rail — desktop only, used on the Lessons screen. Collapses to
+   an icon strip that expands on hover/focus as an overlay, so <main> keeps
+   its full width and the calendar does not reflow. */
+@media (min-width: 761px) {
+  .sb--rail { width: 72px; overflow: visible; transition: width .18s ease; }
+  .sb--rail .sb__logo,
+  .sb--rail .sb__item span,
+  .sb--rail .sb__profile-text,
+  .sb--rail .sb__profile-chev,
+  .sb--rail .sb__role-text,
+  .sb--rail .sb__role-lvl,
+  .sb--rail .sb__stat-num { opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .12s ease; }
+  .sb--rail .sb__item { justify-content: center; }
+  .sb--rail:hover,
+  .sb--rail:focus-within { width: 272px; position: absolute; z-index: 40; height: 100%; box-shadow: 8px 0 24px rgba(20, 16, 31, 0.12); }
+  .sb--rail:hover .sb__logo,
+  .sb--rail:hover .sb__item span,
+  .sb--rail:hover .sb__profile-text,
+  .sb--rail:hover .sb__profile-chev,
+  .sb--rail:hover .sb__role-text,
+  .sb--rail:hover .sb__role-lvl,
+  .sb--rail:hover .sb__stat-num,
+  .sb--rail:focus-within .sb__logo,
+  .sb--rail:focus-within .sb__item span,
+  .sb--rail:focus-within .sb__profile-text,
+  .sb--rail:focus-within .sb__profile-chev,
+  .sb--rail:focus-within .sb__role-text,
+  .sb--rail:focus-within .sb__role-lvl,
+  .sb--rail:focus-within .sb__stat-num { opacity: 1; pointer-events: auto; }
+  .sb--rail:hover .sb__item,
+  .sb--rail:focus-within .sb__item { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb--rail, .sb--rail .sb__item span { transition: none; }
+}
+
 /* --- Live lesson shell --- */
 .live { padding: 16px; max-width: 900px; }
 /* Вкладка "Урок" внутри живого урока — материалу и боковой колонке нужно
