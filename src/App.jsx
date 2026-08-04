@@ -49,6 +49,7 @@ import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
+import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
@@ -374,6 +375,8 @@ export default function App() {
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
   function handleNav(key, payload) {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    if (key === 'lessons') requestAppFullscreen()
+    else if (screen === 'lessons') exitAppFullscreen()
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -389,6 +392,8 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    if (key === 'lessons') requestAppFullscreen()
+    else if (screen === 'lessons') exitAppFullscreen()
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
