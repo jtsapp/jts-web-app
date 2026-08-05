@@ -134,17 +134,6 @@
   background: #f7f5ff;
 }
 
-/* Урок закрыт админом для этого студента: остаётся в дереве, но не кликается. */
-.cc-lesson--locked,
-.cc-lesson--locked:hover {
-  background: #faf9fc;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-.cc-lesson--locked .cc-lesson__open {
-  color: #8a5a12;
-}
-
 .cc-lesson:focus-visible {
   outline: 2px solid #874bf8;
   outline-offset: -2px;

@@ -82,6 +82,12 @@ export default function IeltsWritingPage({ userLevel = 'A1', userName, token, on
         }),
       })
       const data = await res.json()
+      if (res.status === 429) {
+        // Бэкенд отдаёт английскую строку про limit — студенту показываем
+        // человеческое объяснение, а не служебное сообщение.
+        setError('Месячный лимит IELTS исчерпан — эссе не будет проверено и сохранено. Обратитесь к преподавателю.')
+        return
+      }
       if (!res.ok || data.error) {
         setError(data.error || 'Не удалось оценить эссе.')
         return

@@ -572,6 +572,31 @@
   font-size: 12px;
   color: var(--ie-muted);
 }
+/* Отказ по месячному лимиту — не серая сноска, как «офлайн-режим», а заметное
+   предупреждение: результат студента никуда не запишется. */
+.ie-res__saved--limit {
+  padding: 12px 14px;
+  border: 1px solid #f0c98a;
+  border-radius: 12px;
+  background: #fff6e8;
+  color: #8a5a12;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Плашка «попытки кончились» на хабе IELTS — до входа в секцию. */
+.ie-limit {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #f0c98a;
+  border-radius: 14px;
+  background: #fff6e8;
+  color: #8a5a12;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
 .ie-res .ie-cta {
   margin-top: 20px;
   align-items: stretch;

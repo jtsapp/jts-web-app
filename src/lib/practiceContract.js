@@ -2,12 +2,16 @@
 // проверяем на Web Request — поэтому здесь нет ни импортов алиаса `@`, ни доступа
 // к localStorage: всё unit-тестируется в node.
 
-export const PRACTICE_MODULES = ['vocab', 'grammar', 'listening', 'shadowing']
+// 'situations' — статический движок «Speaking Practice A1–C1»
+// (public/practice/situations/), не путать с ситуативками из Java-бэкенда: те
+// адресуются по id и ограничиваются через ContentType.SITUATIVKA. Здесь
+// единица прохождения — уровень (их 5), других событий у статики нет.
+export const PRACTICE_MODULES = ['vocab', 'grammar', 'listening', 'shadowing', 'situations']
 
 // Модули, чей state — это растущее множество пройденных id: прохождение нельзя
 // терять при синхронизации двух устройств, поэтому их POST объединяет, а не
 // заменяет.
-const DONE_MODULES = ['grammar', 'listening', 'shadowing']
+const DONE_MODULES = ['grammar', 'listening', 'shadowing', 'situations']
 
 export function isValidModule(m) {
   return PRACTICE_MODULES.includes(m)

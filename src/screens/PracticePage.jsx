@@ -20,6 +20,7 @@ import {
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
+import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
@@ -210,6 +211,8 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Открытая ситуативка — смотрим внутри приложения, чтобы было где отметить
   // прохождение (внешняя вкладка такого события не давала, см. SituativkaOverlay).
   const [openSituation, setOpenSituation] = useState(null)
+  // Студент упёрся в квоту статических уровней — показываем экран лимита.
+  const [situationsBlocked, setSituationsBlocked] = useState(false)
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
@@ -217,6 +220,10 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Открытие конкретного урока грамматики гейтится квотой (см. openUnit ниже) —
   // сам каталог/список юнитов остаётся доступным для просмотра.
   const grammarEntitlement = usePracticeEntitlement('grammar', token)
+  // Квота на статические уровни «Speaking A1–C1» (см. ContentType.PRACTICE_SITUATIONS).
+  // Ситуативки из бэкенда ограничиваются отдельно, флагом locked на карточке —
+  // в этой же секции лежат оба источника, внешне неразличимые.
+  const situationsEntitlement = usePracticeEntitlement('situations', token)
 
   useEffect(() => {
     let alive = true
@@ -374,13 +381,31 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // (src/practice/situations/), открывается на выбранном уровне.
   const openSituationsLevel = async (level) => {
     if (taleLoadingRef.current) return
+    // Уровень, уже открывавшийся раньше, не упирается в лимит: квота считает
+    // РАЗНЫЕ уровни, а не повторные заходы (иначе студент терял бы доступ к
+    // тому, что ему уже разрешили).
+    const seen = readSituationsDone()
+    if (!seen.includes(level) && !situationsEntitlement.allowed) {
+      setSituationsBlocked(true)
+      return
+    }
     taleLoadingRef.current = true
     try {
       const mod = await import('../practice/situations/situationsOverlay.js')
       mod.openSituations(level)
+      if (!seen.includes(level)) markSituationLevelDone(level)
     } finally {
       taleLoadingRef.current = false
     }
+  }
+
+  // Лимит на разговорную практику — тот же takeover, что у грамматики.
+  if (situationsBlocked) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} />
+      </LearningLayout>
+    )
   }
 
   // Урок грамматики — полноэкранный takeover (как открытая книга/рилс).
@@ -645,34 +670,21 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   </div>
                 </button>
               ))}
-              {situations.map((s) =>
-                s.locked ? (
-                  <div
-                    key={s.id}
-                    className="pp-scard pp-scard--locked"
-                    aria-disabled="true"
-                    title={t('practice.situations.locked')}
-                  >
-                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
-                      <span className="pp-lock">🔒</span>
-                    </Thumb>
-                    <div className="pp-scard__title">{s.title}</div>
-                    <div className="pp-scard__locked-label">{t('practice.situations.locked')}</div>
-                  </div>
-                ) : (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className={`pp-scard${s.completed ? ' pp-scard--done' : ''}`}
-                    onClick={() => setOpenSituation(s)}
-                  >
-                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
-                      {s.completed && <span className="pp-scard__check">✓</span>}
-                    </Thumb>
-                    <div className="pp-scard__title">{s.title}</div>
-                  </button>
-                )
-              )}
+              {/* Заблокированные сценарии не показываем вовсе (раньше висели
+                  замком): преподаватель закрывает контент, а не дразнит им. */}
+              {situations.filter((s) => !s.locked).map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`pp-scard${s.completed ? ' pp-scard--done' : ''}`}
+                  onClick={() => setOpenSituation(s)}
+                >
+                  <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
+                    {s.completed && <span className="pp-scard__check">✓</span>}
+                  </Thumb>
+                  <div className="pp-scard__title">{s.title}</div>
+                </button>
+              ))}
             </Rail>
           </section>
           )}

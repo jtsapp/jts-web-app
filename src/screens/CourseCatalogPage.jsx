@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getCourseCatalog } from '../api.js'
@@ -12,6 +12,20 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
   const { t } = useI18n()
   const [levels, setLevels] = useState(null) // null = ещё грузим
   const [error, setError] = useState(false)
+
+  // Закрытые преподавателем уроки не показываем совсем, а не замком: юнит без
+  // единого доступного урока и уровень без юнитов тоже исчезают, иначе в дереве
+  // остаются пустые заголовки. Бэкенд всё равно отдаёт 403 на попытке открыть.
+  const visibleLevels = useMemo(() => {
+    return (levels || [])
+      .map((level) => ({
+        ...level,
+        units: (level.units || [])
+          .map((unit) => ({ ...unit, lessons: (unit.lessons || []).filter((l) => !l.locked) }))
+          .filter((unit) => unit.lessons.length > 0),
+      }))
+      .filter((level) => level.units.length > 0)
+  }, [levels])
 
   useEffect(() => {
     let alive = true
@@ -34,15 +48,17 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
 
         {levels === null && !error && <div className="cc__state">{t('catalog.loading')}</div>}
         {error && <div className="cc__state cc__state--error">{t('catalog.error')}</div>}
-        {levels !== null && !error && levels.length === 0 && (
+        {/* Считаем по видимым: если всё, что было, закрыто преподавателем,
+            экран не должен выглядеть «загрузка не удалась». */}
+        {levels !== null && !error && visibleLevels.length === 0 && (
           <div className="cc__state">{t('catalog.empty')}</div>
         )}
 
-        {levels?.map((level) => (
+        {visibleLevels.map((level) => (
           <section key={level.id} className="cc-level">
             <h2 className="cc-level__title">{level.label || level.code}</h2>
 
-            {(level.units || []).map((unit) => (
+            {level.units.map((unit) => (
               <div key={unit.id} className="cc-unit">
                 <div className="cc-unit__head">
                   {unit.emoji && <span className="cc-unit__emoji" aria-hidden="true">{unit.emoji}</span>}
@@ -51,26 +67,19 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
                 </div>
 
                 <ul className="cc-lessons">
-                  {(unit.lessons || []).map((lesson) => (
+                  {unit.lessons.map((lesson) => (
                     <li key={lesson.id}>
-                      {/* Закрытый админом урок остаётся в дереве (бэкенд его не
-                          вырезает — иначе структура курса «поедет»), но кнопка
-                          неактивна. Сервер всё равно отдаст 403 на открытии. */}
                       <button
                         type="button"
-                        className={`cc-lesson${lesson.locked ? ' cc-lesson--locked' : ''}`}
-                        disabled={!!lesson.locked}
-                        title={lesson.locked ? t('catalog.locked') : undefined}
-                        onClick={() => !lesson.locked && onOpenLesson?.(lesson.id)}
+                        className="cc-lesson"
+                        onClick={() => onOpenLesson?.(lesson.id)}
                       >
                         <span className={`cc-lesson__type cc-lesson__type--${lesson.type}`}>
                           <span aria-hidden="true">{TYPE_ICON[lesson.type] || TYPE_ICON.lesson}</span>
                           {t(`catalog.type.${lesson.type}`)}
                         </span>
                         <span className="cc-lesson__title">{lesson.title}</span>
-                        <span className="cc-lesson__open">
-                          {lesson.locked ? `🔒 ${t('catalog.locked')}` : t('catalog.open')}
-                        </span>
+                        <span className="cc-lesson__open">{t('catalog.open')}</span>
                       </button>
                     </li>
                   ))}

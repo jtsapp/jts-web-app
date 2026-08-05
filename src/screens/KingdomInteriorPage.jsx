@@ -241,7 +241,22 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {!loading && !error && !open && (
+      {/* Модуль закрыт преподавателем — тропу не показываем вообще (раньше
+          рисовали её серой): закрытый контент не должен маячить перед глазами.
+          Экран в том же стиле, что «в королевстве пока пусто». */}
+      {!loading && !error && !open && moduleLocked && (
+        <div className="li-empty">
+          <div className="li-top">
+            <button className="li-back" onClick={onBack}>
+              <ChevronLeftIcon size={18} />
+              {t('common.back')}
+            </button>
+          </div>
+          <div className="li-empty__title">🔒 {t('learn.moduleLocked')}</div>
+        </div>
+      )}
+
+      {!loading && !error && !open && !moduleLocked && (
         <div className="km-scroll">
           <div
             className="kh-hero"
@@ -275,15 +290,6 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               />
             </div>
           </div>
-
-          {/* Модуль закрыт админом для этого студента: тропа остаётся видимой
-              (чтобы было понятно, что именно закрыто), но все узлы серые и
-              некликабельные — см. isUnlocked. */}
-          {moduleLocked && (
-            <div className="kt-locked-note" role="status">
-              🔒 {t('learn.moduleLocked')}
-            </div>
-          )}
 
           {/* Нативная тропа: узлы сгруппированы по юнитам (l.unit из index.json),
               внутри юнита — «лесенка»-серпантин. */}

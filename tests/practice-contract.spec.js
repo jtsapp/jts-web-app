@@ -18,8 +18,9 @@ import {
 
 test.describe('practiceContract — валидация и merge', () => {
   test('модули: белый список', () => {
-    expect(PRACTICE_MODULES).toEqual(['vocab', 'grammar', 'listening'])
+    expect(PRACTICE_MODULES).toEqual(['vocab', 'grammar', 'listening', 'shadowing', 'situations'])
     expect(isValidModule('grammar')).toBe(true)
+    expect(isValidModule('situations')).toBe(true)
     expect(isValidModule('tutor')).toBe(false)
     expect(isValidModule(undefined)).toBe(false)
   })
@@ -32,7 +33,15 @@ test.describe('practiceContract — валидация и merge', () => {
   test('emptyState: done-модули пустой массив, vocab — объект', () => {
     expect(emptyState('grammar')).toEqual({ done: [] })
     expect(emptyState('listening')).toEqual({ done: [] })
+    expect(emptyState('situations')).toEqual({ done: [] })
     expect(emptyState('vocab')).toEqual({})
+  })
+
+  test('mergeModuleState: situations объединяет открытые уровни', () => {
+    // Квота считает РАЗНЫЕ уровни, поэтому список должен расти, а не заменяться:
+    // иначе вход с другого устройства обнулял бы потраченную квоту.
+    expect(mergeModuleState('situations', { done: ['a1'] }, { done: ['a2', 'a1'] }))
+      .toEqual({ done: ['a1', 'a2'] })
   })
 
   test('mergeModuleState: grammar/listening объединяют done', () => {

@@ -19,6 +19,9 @@ const CONTENT_TYPE_BY_MODULE = {
   vocab: 'PRACTICE_VOCAB',
   listening: 'PRACTICE_LISTENING',
   shadowing: 'PRACTICE_SHADOWING',
+  // Статические уровни «Speaking Practice A1–C1»; единица счёта — открытый
+  // уровень (из 5), см. ContentType.PRACTICE_SITUATIONS на бэкенде.
+  situations: 'PRACTICE_SITUATIONS',
 }
 
 function completedCountFor(moduleName, state) {
