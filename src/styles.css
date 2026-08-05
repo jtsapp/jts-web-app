@@ -575,6 +575,22 @@ textarea {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+/* Тот же ряд на экране входа: там форма уже, поэтому на узких экранах
+   кнопки становятся в столбик, а не сжимаются до нечитаемых. */
+.auth-row--center {
+  margin-top: 12px;
+}
+@media (max-width: 420px) {
+  .auth-row--center {
+    grid-template-columns: 1fr;
+  }
+}
+/* Неподключённый провайдер (сейчас Apple ID) — кнопка видна, но явно не
+   активна, чтобы не выглядела рабочей. */
+.auth-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .auth-btn {
   display: flex;

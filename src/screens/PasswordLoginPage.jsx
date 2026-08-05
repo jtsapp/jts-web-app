@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import Shell from '../components/Shell.jsx'
 import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
+import { AppleIcon, GoogleIcon } from '../components/icons.jsx'
 import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 import { isEmailIdentifier } from '../api.js'
 
@@ -93,12 +94,38 @@ export default function PasswordLoginPage({ onBack, onSubmit, onOtpLogin, onGoog
             </a>
           </p>
 
-          {googleReady && <div className="auth-divider">{t('auth.or')}</div>}
-          <div
-            className="google-slot google-slot--center"
-            ref={googleRef}
-            style={googleReady ? undefined : { display: 'none' }}
-          />
+          <div className="auth-divider">{t('auth.or')}</div>
+
+          <div className="auth-row auth-row--center">
+            {/* Apple ID пока не подключён: нет ни бэкенд-эндпоинта, ни SDK
+                (на экране регистрации такая же кнопка висит вообще без
+                обработчика). Рисуем неактивной — тем же приёмом, что уже
+                применён к Google при ненастроенном client ID, — чтобы не
+                делать вид, будто вход работает. */}
+            <button
+              className="auth-btn auth-btn--apple"
+              type="button"
+              disabled
+              title={t('auth.appleSoon')}
+            >
+              <AppleIcon size={17} />
+              <span>{t('auth.apple')}</span>
+            </button>
+
+            {/* Кнопку рисует сам Google (GIS); пока не отрисована или client ID
+                не настроен — неактивный фолбэк, как в RegistrationPage. */}
+            <div
+              className="google-slot"
+              ref={googleRef}
+              style={googleReady ? undefined : { display: 'none' }}
+            />
+            {!googleReady && (
+              <button className="auth-btn auth-btn--google" type="button" disabled>
+                <GoogleIcon size={17} />
+                <span>{t('auth.google')}</span>
+              </button>
+            )}
+          </div>
         </form>
       </div>
     </Shell>
