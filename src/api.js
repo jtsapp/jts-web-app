@@ -314,7 +314,14 @@ export async function completeLesson(token, moduleId, code, xp = 0) {
     `${BASE}/mobile/lesson-modules/${encodeURIComponent(moduleId)}/lessons/${encodeURIComponent(code)}/complete?xp=${encodeURIComponent(xp)}`,
     { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
   )
-  if (!res.ok) throw new Error(`lesson complete failed: ${res.status}`)
+  if (!res.ok) {
+    // Статус кладём на саму ошибку: 403 здесь — не сбой сети, а осознанный
+    // отказ бэкенда (админ закрыл модуль или исчерпана квота «N из M»), и
+    // вызывающий код обязан отличать его от офлайна — см. markDone.
+    const err = new Error(`lesson complete failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null) // { done: [<code>], total, balance? }
 }
 

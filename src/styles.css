@@ -3833,6 +3833,19 @@ textarea {
 .le-btn:hover {
   filter: brightness(1.06);
 }
+/* Урок решён верно, но не засчитан — исчерпана квота из админки. */
+.le-restricted {
+  margin: 4px 0 10px;
+  padding: 10px 14px;
+  border: 1px solid #f0c98a;
+  border-radius: 12px;
+  background: #fff6e8;
+  color: #8a5a12;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
 .le-again {
   background: none;
   border: none;
@@ -5456,6 +5469,20 @@ textarea {
    Заменяют iframe hosted-Speakout в KingdomInteriorPage. Палитра — токены
    styles.css (--purple/--ink/--muted) + явные green/red фидбэка.
    ========================================================================== */
+
+/* Плашка «модуль закрыт админом» над тропой: сама тропа остаётся видимой,
+   но все узлы серые (is-locked) и некликабельные. */
+.kt-locked-note {
+  margin: 18px 16px 0;
+  padding: 12px 16px;
+  border: 1px solid #f0c98a;
+  border-radius: 14px;
+  background: #fff6e8;
+  color: #8a5a12;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
 
 /* ——— Тропа уроков уровня ——— */
 /* Юниты: секции с заголовком-баром (название + прогресс), внутри — «лесенка». */

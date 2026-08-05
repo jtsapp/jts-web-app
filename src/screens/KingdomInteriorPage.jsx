@@ -4,7 +4,7 @@ import { ChevronLeftIcon, CastleIcon, LeafIcon, WaveIcon, CrescentIcon, StarIcon
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules, getPracticeToken, completeLessonModule } from '../api.js'
 import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
-import { loadDone, markDone } from '../learning/lessonProgress.js'
+import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -50,6 +50,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const [moduleId, setModuleId] = useState(null)
   const [lessons, setLessons] = useState([]) // [{code,order,title,taskCount}]
   const [done, setDone] = useState(new Set()) // пройденные коды
+  // Модуль закрыт админом для ЭТОГО студента (флаг locked из
+  // GET /mobile/lesson-modules) — тропа целиком недоступна.
+  const [moduleLocked, setModuleLocked] = useState(false)
+  // Квота «N из M» исчерпана: бэкенд отдал 403 на завершении урока. Урок
+  // не засчитан, показываем это на экране итогов вместо тихой синхронизации.
+  const [restricted, setRestricted] = useState(false)
 
   const [open, setOpen] = useState(null) // { code, data, attempt } — открытый урок
   const [busy, setBusy] = useState(false) // грузим данные урока
@@ -80,6 +86,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))[0]
         const mid = mod ? mod.id : null
         setModuleId(mid)
+        setModuleLocked(!!mod?.locked)
         setLessons(trail)
         const d = await loadDone(level, authToken, mid)
         if (!alive) return
@@ -113,16 +120,22 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     return out
   }, [lessons])
 
-  // Урок разблокирован, если это первый или предыдущий пройден.
+  // Урок разблокирован, если это первый или предыдущий пройден. Блокировка
+  // модуля админом перекрывает всю тропу разом, независимо от прогресса.
   const isUnlocked = useCallback(
-    (i) => i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code)),
-    [lessons, done],
+    (i) => !moduleLocked && (i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    [lessons, done, moduleLocked],
   )
 
   const openLesson = useCallback(
     async (code) => {
+      // Урок рендерится из статики (public/learning/<level>.json), а не с
+      // бэкенда, поэтому 403 на модуле сам по себе его не закрывает —
+      // проверяем здесь, иначе диплинк/гонка загрузки откроют закрытый урок.
+      if (moduleLocked) return
       setBusy(true)
       setEnd(null)
+      setRestricted(false)
       try {
         const data = await loadLesson(level, code)
         if (data) setOpen({ code, data, attempt: 0 })
@@ -130,7 +143,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setBusy(false)
       }
     },
-    [level],
+    [level, moduleLocked],
   )
 
   const retry = () => {
@@ -149,12 +162,25 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const onDone = useCallback(
     async (stats) => {
       setEnd(stats)
+      setRestricted(false)
       if (stats.outcome !== 'success' || !open) return
       // Отмечаем урок пройденным (бэкенд + локально). Монеты/XP/стрик начисляет
       // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
       // найден (moduleId=null), падаем на модульный complete, чтобы награда не
       // пропала; двойного начисления нет — ветки взаимоисключающие.
-      const next = await markDone(level, token, moduleId, open.code, stats.points)
+      let next
+      try {
+        next = await markDone(level, token, moduleId, open.code, stats.points)
+      } catch (e) {
+        // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
+        // исключение просто гасилось внутри markDone, урок падал в localStorage
+        // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
+        if (e instanceof ContentRestrictedError) {
+          setRestricted(true)
+          return
+        }
+        throw e
+      }
       setDone(new Set(next))
       if (moduleId == null && token && stats.points > 0) {
         completeLessonModule(token, stats.points).catch(() => {})
@@ -249,6 +275,15 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               />
             </div>
           </div>
+
+          {/* Модуль закрыт админом для этого студента: тропа остаётся видимой
+              (чтобы было понятно, что именно закрыто), но все узлы серые и
+              некликабельные — см. isUnlocked. */}
+          {moduleLocked && (
+            <div className="kt-locked-note" role="status">
+              🔒 {t('learn.moduleLocked')}
+            </div>
+          )}
 
           {/* Нативная тропа: узлы сгруппированы по юнитам (l.unit из index.json),
               внутри юнита — «лесенка»-серпантин. */}
@@ -357,12 +392,27 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                   <span>Верных ответов</span>
                 </div>
               </div>
-              <button className="le-btn" onClick={goNext}>
-                Перейти на следующий урок
-              </button>
-              <button className="le-again" onClick={retry}>
-                Пройти снова
-              </button>
+              {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
+                  «следующий урок» — он всё равно упрётся в тот же отказ. */}
+              {restricted ? (
+                <>
+                  <div className="le-restricted" role="status">
+                    🔒 {t('learn.quotaReached')}
+                  </div>
+                  <button className="le-btn" onClick={exitLesson}>
+                    {t('common.back')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="le-btn" onClick={goNext}>
+                    Перейти на следующий урок
+                  </button>
+                  <button className="le-again" onClick={retry}>
+                    Пройти снова
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
