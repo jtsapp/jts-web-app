@@ -5,6 +5,8 @@ import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
 import OtpPage from './screens/OtpPage.jsx'
+import SetPasswordPage from './screens/SetPasswordPage.jsx'
+import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
@@ -48,7 +50,7 @@ import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
 import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
-import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
+import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -284,9 +286,68 @@ export default function App() {
         clearLocalPractice()
         hydratePractice(tok)
       }
-      setScreen('success')
+      // Свежий аккаунт заводится без пароля (RegistrationService пишет null) —
+      // сразу просим задать его, иначе войти потом можно будет только новым
+      // OTP-кодом. Без токена шаг пропускаем: ставить пароль нечем.
+      setScreen(mode === 'register' && tok ? 'set-password' : 'success')
     } catch (e) {
       setError(e.message || t('err.otp'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Постоянный пароль сразу после регистрации. Токен уже есть (получен по OTP
+  // строчкой выше), поэтому эндпоинт авторизованный и текущий пароль не нужен.
+  async function handleSetPassword(password) {
+    setError('')
+    setLoading(true)
+    try {
+      await setPassword(token, password)
+      setScreen('success')
+    } catch (e) {
+      setError(e.message || t('setpass.error'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Вход по паролю (телефон или почта). Пост-логин — тот же, что у Google и
+  // OTP: уровень из профиля, перенос анонимного прогресса, тьютор-профиль.
+  async function handlePasswordLogin(identifier, password) {
+    setError('')
+    setLoading(true)
+    try {
+      const tok = await loginWithPassword(identifier, password)
+      if (!tok) throw new Error(t('login.failed'))
+      setPhone(identifier)
+      setToken(tok)
+      saveToken(tok)
+      try {
+        const lvl = await getLanguageLevel(tok)
+        if (lvl) setUserLevel(lvl)
+        setNeedsLevelTest(!lvl)
+      } catch (e) {
+        console.warn('Не удалось получить уровень из профиля:', e)
+      }
+      mergeAnonymousProgress(tok)
+        .then(() => loadTutorProfile(tok))
+        .then((profile) => {
+          if (!profile) return
+          if (profile.tutor) {
+            setTutorKey(profile.tutor)
+            setTutorOnboarded(true)
+          }
+          setInterestIds(enToInterestIds(profile.interests))
+          if (profile.profession) setProfession(profile.profession)
+        })
+      clearLocalPractice()
+      hydratePractice(tok)
+      setScreen('success')
+    } catch (e) {
+      // Бэкенд на неверную пару отдаёт 401 с техническим текстом — показываем
+      // человеческую формулировку.
+      setError(e?.status === 401 ? t('login.failed') : e.message || t('login.failed'))
     } finally {
       setLoading(false)
     }
@@ -472,12 +533,14 @@ export default function App() {
             setAuthIntent('register')
             setScreen('chat')
           }}
-          // Вход не требует знакомства — сразу телефон + OTP.
+          // Вход — телефон/почта + пароль. Вход по коду остался запасным
+          // путём (ссылка на самом экране): у аккаунтов, заведённых до
+          // появления шага «задай пароль», пароля нет вовсе.
           onLogin={() => {
             setError('')
             setName('')
             setAuthIntent('login')
-            setScreen('phone')
+            setScreen('login-password')
           }}
         />
       )
@@ -511,6 +574,25 @@ export default function App() {
           onBack={() => { setError(''); setScreen('phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'login-password':
+      return (
+        <PasswordLoginPage
+          onBack={() => { setError(''); setScreen('welcome') }}
+          onSubmit={handlePasswordLogin}
+          onOtpLogin={() => { setError(''); setScreen('phone') }}
+          onGoogleToken={handleGoogleCredential}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'set-password':
+      return (
+        <SetPasswordPage
+          onSubmit={handleSetPassword}
           loading={loading}
           error={error}
         />

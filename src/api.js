@@ -448,11 +448,31 @@ export async function loginWithOtp(identifier, otp = '0000') {
 // заведено в админке, приходит сюда.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Вход по телефону + паролю (тот же логин, что у dev-админки) → accessToken.
-export async function loginWithPassword(phone, password) {
-  const p = normalizePhone(phone)
-  const res = await post('/auth/login', { phone: p, password })
+// Вход по паролю. Идентификатор — телефон ИЛИ email: бэкенд принимает оба
+// (AuthService сам решает, по какому полю искать), поэтому здесь тот же
+// identifierBody, что у OTP-флоу — раньше уходил только phone, и войти по
+// почте было нельзя, хотя аккаунт с ней заводился.
+export async function loginWithPassword(identifier, password) {
+  const res = await post('/auth/login', { ...identifierBody(identifier), password })
   return res?.accessToken || null
+}
+
+// Первый пароль для аккаунта, заведённого саморегистрацией по OTP (у него
+// пароля нет вовсе). Требует уже полученный после подтверждения кода токен.
+// Отдельный эндпоинт, а не смена пароля: текущего пароля тут не существует.
+export async function setPassword(token, password) {
+  const res = await fetch(`${BASE}/user/set-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ password }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    const err = new Error(body?.messages?.[0] || body?.message || 'Не удалось сохранить пароль')
+    err.status = res.status
+    throw err
+  }
+  return true
 }
 
 // Демо-доступ для витрины «Практика», когда пользователь ещё не залогинен

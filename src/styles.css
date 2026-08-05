@@ -742,6 +742,35 @@ textarea {
   color: #b7b6c1;
   font-weight: 500;
 }
+/* Формы пароля (вход и «придумайте пароль») — два поля подряд и чекбокс
+   «показать»; у .email-field своих отступов нет, задаём их здесь. */
+.email-field + .email-field {
+  margin-top: 10px;
+}
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+.form-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--purple);
+  cursor: pointer;
+}
+/* Подсказка о том, что не так с вводом (короткий пароль, несовпадение) —
+   мягче, чем .form-error: это ещё не отказ сервера. */
+.form-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a5a12;
+}
 
 /* Селектор кода страны внутри телефонного поля */
 .phone-country {
