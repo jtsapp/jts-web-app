@@ -3225,6 +3225,25 @@ textarea {
   color: inherit;
   display: block;
 }
+/* Пройденная ситуативка — галочка поверх обложки. */
+.pp-scard__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #29b96b;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp-scard--done .pp-thumb--situation {
+  position: relative;
+}
 .pp-scard__title {
   font-size: 13px;
   font-weight: 600;
@@ -5417,6 +5436,11 @@ textarea {
   text-align: left;
   cursor: pointer;
 }
+/* Заблокированная ситуативка: этот сброс идёт в файле ПОСЛЕ .pp-scard--locked,
+   поэтому его cursor:pointer перебивал not-allowed — возвращаем. */
+.pp-scard--locked {
+  cursor: not-allowed;
+}
 .pp-mcard:focus,
 .pp-scard:focus,
 .pp-bcard:focus {
@@ -5965,3 +5989,104 @@ textarea {
 .board__cursor-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: #7a4dff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
 .board__cursor-name { position: absolute; left: 12px; top: -2px; white-space: nowrap; font-size: 11px; font-weight: 600; color: #fff; background: #7a4dff; border-radius: 6px; padding: 1px 6px; }
 @media (prefers-reduced-motion: reduce) { .board__cursor { transition: none; } }
+
+/* ==========================================================================
+   Оверлей ситуативки — просмотр внутри приложения. Раньше карточка вела на
+   внешнюю вкладку, из-за чего у прохождения не было события и общая квота
+   ситуативок из админки никогда не проверялась (см. SituativkaOverlay.jsx).
+   ========================================================================== */
+.sv-over {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(20, 18, 34, 0.62);
+}
+.sv-card {
+  width: min(760px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sv-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sv-card__title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.sv-card__close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f2f0f8;
+  color: #6c6b78;
+  font-size: 15px;
+  cursor: pointer;
+}
+.sv-card__close:hover {
+  background: #e8e5f3;
+}
+.sv-card__video {
+  width: 100%;
+  max-height: 60vh;
+  border-radius: 12px;
+  background: #000;
+}
+.sv-card__novideo {
+  padding: 32px;
+  border-radius: 12px;
+  background: #f7f5ff;
+  color: var(--muted);
+  text-align: center;
+}
+.sv-card__note {
+  padding: 10px 14px;
+  border: 1px solid #f0c98a;
+  border-radius: 12px;
+  background: #fff6e8;
+  color: #8a5a12;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.sv-card__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.sv-card__btn {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 12px;
+  background: var(--purple);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sv-card__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Видео досмотрено — подсказываем, что пора отметить. */
+.sv-card__btn--ready {
+  box-shadow: 0 0 0 4px rgba(135, 75, 248, 0.18);
+}
+.sv-card__done {
+  color: #29b96b;
+  font-weight: 700;
+}

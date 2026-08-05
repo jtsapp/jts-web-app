@@ -24,6 +24,7 @@ import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
 import { lessonMastery } from '../practice/shadowing/mastery.js'
+import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -206,6 +207,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [state, setState] = useState({ loading: true, error: '' })
   const [clips, setClips] = useState([])
   const [situations, setSituations] = useState([])
+  // Открытая ситуативка — смотрим внутри приложения, чтобы было где отметить
+  // прохождение (внешняя вкладка такого события не давала, см. SituativkaOverlay).
+  const [openSituation, setOpenSituation] = useState(null)
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
@@ -656,16 +660,17 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                     <div className="pp-scard__locked-label">{t('practice.situations.locked')}</div>
                   </div>
                 ) : (
-                  <a
+                  <button
                     key={s.id}
-                    className="pp-scard"
-                    href={s.videoUrl || '#'}
-                    target="_blank"
-                    rel="noreferrer"
+                    type="button"
+                    className={`pp-scard${s.completed ? ' pp-scard--done' : ''}`}
+                    onClick={() => setOpenSituation(s)}
                   >
-                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
+                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
+                      {s.completed && <span className="pp-scard__check">✓</span>}
+                    </Thumb>
                     <div className="pp-scard__title">{s.title}</div>
-                  </a>
+                  </button>
                 )
               )}
             </Rail>
@@ -719,6 +724,17 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </div>
         </aside>
       </div>
+
+      {openSituation && (
+        <SituativkaOverlay
+          situativka={openSituation}
+          token={apiToken}
+          onClose={() => setOpenSituation(null)}
+          onCompleted={(id) =>
+            setSituations((list) => list.map((x) => (x.id === id ? { ...x, completed: true } : x)))
+          }
+        />
+      )}
     </LearningLayout>
   )
 }

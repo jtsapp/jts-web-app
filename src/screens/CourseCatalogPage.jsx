@@ -53,17 +53,24 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
                 <ul className="cc-lessons">
                   {(unit.lessons || []).map((lesson) => (
                     <li key={lesson.id}>
+                      {/* Закрытый админом урок остаётся в дереве (бэкенд его не
+                          вырезает — иначе структура курса «поедет»), но кнопка
+                          неактивна. Сервер всё равно отдаст 403 на открытии. */}
                       <button
                         type="button"
-                        className="cc-lesson"
-                        onClick={() => onOpenLesson?.(lesson.id)}
+                        className={`cc-lesson${lesson.locked ? ' cc-lesson--locked' : ''}`}
+                        disabled={!!lesson.locked}
+                        title={lesson.locked ? t('catalog.locked') : undefined}
+                        onClick={() => !lesson.locked && onOpenLesson?.(lesson.id)}
                       >
                         <span className={`cc-lesson__type cc-lesson__type--${lesson.type}`}>
                           <span aria-hidden="true">{TYPE_ICON[lesson.type] || TYPE_ICON.lesson}</span>
                           {t(`catalog.type.${lesson.type}`)}
                         </span>
                         <span className="cc-lesson__title">{lesson.title}</span>
-                        <span className="cc-lesson__open">{t('catalog.open')}</span>
+                        <span className="cc-lesson__open">
+                          {lesson.locked ? `🔒 ${t('catalog.locked')}` : t('catalog.open')}
+                        </span>
                       </button>
                     </li>
                   ))}

@@ -516,6 +516,24 @@ export function getSituativki(token, level, onFresh) {
   return cachedAuthGet('/mobile/situativki' + q, token, onFresh)
 }
 
+// Отметить ситуативку пройденной (POST /mobile/situativki/{id}/complete,
+// идемпотентно). Именно здесь на бэкенде живёт проверка общей квоты ситуативок
+// — пока веб не звал этот эндпоинт, лимит из админки не срабатывал никогда.
+// 403 = квота исчерпана либо сценарий закрыт админом; статус кладём на ошибку,
+// чтобы вызывающий отличил отказ от сетевой осечки.
+export async function completeSituativka(token, id) {
+  const res = await fetch(`${BASE}/mobile/situativki/${encodeURIComponent(id)}/complete`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const err = new Error(`situativka complete failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
+  return res.json().catch(() => null)
+}
+
 // Словарь пользователя (GET /mobile/saved-words) → [{word,translation,learned,correctCount,language}]
 // SWR-кэш: слова добавляются из читалки — свежий список приходит через onFresh.
 export function getSavedWords(token, onFresh) {
