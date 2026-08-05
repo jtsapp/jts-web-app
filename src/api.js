@@ -176,6 +176,27 @@ export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
 }
 
+// Живой урок (новый admin-пайплайн «live lessons»): метаданные урока,
+// включая jsonUrl — публичную files-api ссылку на расширенный JSON
+// (steps/blocks/questions + info/match/gap.open), который сам контент
+// грузит отдельным fetch без авторизации (см. loadLiveLesson).
+export function getLiveLesson(id, token) {
+  return authGet(`/mobile/live-lessons/${id}`, token)
+}
+
+// Каталог живых уроков (уровень → юнит → урок), опубликованное дерево для пикера
+// учителя. SWR-кэш: структура меняется редко (админ регистрирует уровень), так
+// что отдаём мгновенно из кэша и обновляем в фоне через onFresh.
+export function getCourseCatalog(token, onFresh) {
+  return cachedAuthGet('/mobile/course-catalog', token, onFresh)
+}
+
+// Один урок каталога: fileUrl (сырой L*.html на files-api) + type/title. Сам
+// контент извлекается на клиенте из fileUrl (см. loadCatalogLesson).
+export function getCourseCatalogLesson(id, token) {
+  return authGet(`/mobile/course-catalog/lessons/${id}`, token)
+}
+
 // Расписание вошедшего пользователя. Бэкенд скоупит /admin/lessons* под личность
 // токена: ученик/учитель получают только СВОИ занятия (чужие → 400).
 export function getMyLessonOccurrences(token) {

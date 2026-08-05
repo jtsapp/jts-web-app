@@ -36,7 +36,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer }) {
         </span>
         {question.gapAfter}
       </p>
-      {checked && !userCorrect && (
+      {checked && !userCorrect && !question.open && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}
         </p>

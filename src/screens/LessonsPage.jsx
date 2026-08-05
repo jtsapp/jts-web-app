@@ -8,7 +8,7 @@ const TABS = [
   { key: 'online', label: 'lessons.tabOnline' },
 ]
 
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson }) {
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('online')
 
@@ -17,6 +17,11 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
       <div className="ls">
         <header className="ls__head">
           <h1 className="ls__title">{t('nav.lessons')}</h1>
+          {onOpenCatalog && (
+            <button type="button" className="cc-entry" onClick={onOpenCatalog}>
+              🗂️ {t('catalog.title')}
+            </button>
+          )}
         </header>
 
         <div className="ls__tabs">
