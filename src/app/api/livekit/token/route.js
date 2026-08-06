@@ -24,7 +24,7 @@ import {
 import { resolveProfileId, bearerFromRequest, fetchTutorLimitOverride } from '@/lib/auth-server.js'
 import { loadProfile } from '@/lib/db/profile.js'
 import { SCENARIOS, getScenario } from '@/tutor/scenarios.js'
-import { clampTtlForScenario } from '@/tutor/scenarioClock.js'
+import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
 
 export const runtime = 'nodejs'
 
@@ -57,7 +57,7 @@ function scenarioSlug(raw) {
   return raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64)
 }
 
-function buildMetadata(p, tier, profileId, userName, memory, ttl) {
+function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec = 0) {
   const meta = {
     level: p.level || 'B1',
     lang: p.lang || 'en',
@@ -153,10 +153,9 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl) {
   if (sid) {
     meta.scenarioId = sid
     meta.mode = 'scenario'
-    // Бюджет времени сцены берём из реестра НА СЕРВЕРЕ, а не из тела запроса:
-    // клиент иначе выписал бы себе час на пятиминутную сцену.
-    const limit = getScenario(sid)?.timeLimitSec
-    if (Number.isFinite(limit) && limit > 0) meta.scenarioLimitSec = limit
+    // Бюджет сцены считает issue() и передаёт сюда уже урезанным по дневному
+    // остатку: у агента и у экрана должно быть одно и то же число секунд.
+    if (scenarioLimitSec > 0) meta.scenarioLimitSec = scenarioLimitSec
   }
   return JSON.stringify(meta)
 }
@@ -240,10 +239,17 @@ async function issue(p, profileId, userName, limitOverride) {
   // экране живут по её бюджету. Запас поверх бюджета нужен, чтобы связь рвал
   // таймер сцены, а не протухший токен — истёкший токен рвёт комнату молча, и
   // вердикт до ученика уже не доедет.
-  const scenarioLimitSec = getScenario(scenarioSlug(p.scenarioId))?.timeLimitSec || 0
-  ttl = clampTtlForScenario(ttl, scenarioLimitSec)
+  const sceneBudgetSec = getScenario(scenarioSlug(p.scenarioId))?.timeLimitSec || 0
+  ttl = clampTtlForScenario(ttl, sceneBudgetSec)
+  // Если дневного остатка меньше, чем просит сцена, побеждает остаток — и на
+  // экране должен идти он. Иначе таймер отсчитывает обещанные пять минут, а
+  // комнату на второй минуте убивает дневной сторож: ученика выкидывает без
+  // надписи про связь и без вердикта.
+  const scenarioLimitSec = sceneBudgetSec
+    ? Math.max(0, Math.min(sceneBudgetSec, ttl - CLOCK_GRACE_SEC))
+    : 0
 
-  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl)
+  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec)
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
