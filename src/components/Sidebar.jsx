@@ -48,6 +48,7 @@ export default function Sidebar({
   // На десктопе оба не влияют — там сайдбар статичная колонка (управляется CSS).
   open = false,
   onClose,
+  rail = false,
 }) {
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
@@ -93,7 +94,7 @@ export default function Sidebar({
         onClick={onClose}
         aria-hidden="true"
       />
-      <aside className={`sb ${open ? 'is-open' : ''}`}>
+      <aside className={`sb ${open ? 'is-open' : ''} ${rail ? 'sb--rail' : ''}`}>
         <button className="sb__close" type="button" onClick={onClose} aria-label={t('common.back')}>
           <CloseIcon size={22} />
         </button>

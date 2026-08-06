@@ -5941,6 +5941,79 @@ textarea {
 .sch-row__hint { font-size: 11px; color: #9aa0a6; max-width: 120px; text-align: right; }
 @media (max-width: 480px) { .sch__summary { grid-template-columns: repeat(2, 1fr); } }
 
+/* Lessons calendar */
+.cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 16px; align-items: start; }
+.cal { background: #fff; border: 1px solid #eceef1; border-radius: 16px; padding: 12px 12px 8px; }
+.cal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal__title { font-weight: 700; text-transform: capitalize; }
+.cal__nav { width: 32px; height: 32px; border: 0; background: #f4f5f7; border-radius: 8px; font-size: 18px; line-height: 1; cursor: pointer; color: var(--ink); }
+.cal__nav:hover { background: #e9eaf0; }
+.cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal__grid--head { margin-bottom: 4px; }
+.cal__wd { text-align: center; font-size: 11px; color: #8b8a97; text-transform: capitalize; padding: 2px 0; }
+.cal__day { position: relative; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 6px 2px; border: 1px solid transparent; border-radius: 10px; background: #fafafc; cursor: pointer; color: var(--ink); transition: background .15s ease, border-color .15s ease; }
+.cal__day:hover { background: #f1f0f7; }
+.cal__day--out { color: #c3c2cc; background: transparent; }
+.cal__day--today .cal__num { color: var(--purple); font-weight: 700; }
+.cal__day--sel { border-color: var(--purple); background: #f3eefe; }
+.cal__num { font-size: 13px; font-variant-numeric: tabular-nums; }
+.cal__dots { display: flex; align-items: center; gap: 3px; }
+.cal__dot { width: 6px; height: 6px; border-radius: 999px; background: #2b57d6; }
+.cal__dot--inProgress, .cal__dot--paused { background: #0b74c4; }
+.cal__dot--completed { background: #2c8a45; }
+.cal__dot--overdue { background: #b26a12; }
+.cal__dot--cancelled { background: #6b7280; }
+.cal__more { font-size: 9px; color: #8b8a97; }
+.cal-day { background: #fff; border: 1px solid #eceef1; border-radius: 16px; padding: 12px; }
+.cal-day__h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 8px; text-transform: capitalize; }
+@media (max-width: 720px) { .cal-layout { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .cal__day { transition: none; } }
+
+/* Sidebar icon rail — desktop only, used on the Lessons screen. The sidebar is
+   pulled OUT of the flex flow (absolute) and the body reserves its collapsed
+   width via padding-left, so expanding the rail on hover/focus overlays the
+   content and NEVER reflows <main> or the calendar. Anchored to .learn__body
+   (position: relative); .learn__main scrolls internally (overflow:auto), so the
+   full-height absolute rail stays visible without needing sticky. */
+@media (min-width: 761px) {
+  .learn--rail .learn__body { position: relative; padding-left: 72px; }
+  .learn--rail .sb--rail {
+    position: absolute; top: 0; left: 0;
+    width: 72px; height: 100%;
+    z-index: 40; overflow: hidden;
+    transition: width .18s ease;
+  }
+  .learn--rail .sb--rail .sb__logo,
+  .learn--rail .sb--rail .sb__item span,
+  .learn--rail .sb--rail .sb__profile-text,
+  .learn--rail .sb--rail .sb__profile-chev,
+  .learn--rail .sb--rail .sb__role-text,
+  .learn--rail .sb--rail .sb__role-lvl,
+  .learn--rail .sb--rail .sb__stat-num { opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .12s ease; }
+  .learn--rail .sb--rail .sb__item { justify-content: center; }
+  .learn--rail .sb--rail:hover,
+  .learn--rail .sb--rail:focus-within { width: 272px; overflow: visible; box-shadow: 8px 0 24px rgba(20, 16, 31, 0.12); }
+  .learn--rail .sb--rail:hover .sb__logo,
+  .learn--rail .sb--rail:hover .sb__item span,
+  .learn--rail .sb--rail:hover .sb__profile-text,
+  .learn--rail .sb--rail:hover .sb__profile-chev,
+  .learn--rail .sb--rail:hover .sb__role-text,
+  .learn--rail .sb--rail:hover .sb__role-lvl,
+  .learn--rail .sb--rail:hover .sb__stat-num,
+  .learn--rail .sb--rail:focus-within .sb__logo,
+  .learn--rail .sb--rail:focus-within .sb__item span,
+  .learn--rail .sb--rail:focus-within .sb__profile-text,
+  .learn--rail .sb--rail:focus-within .sb__profile-chev,
+  .learn--rail .sb--rail:focus-within .sb__role-text,
+  .learn--rail .sb--rail:focus-within .sb__role-lvl,
+  .learn--rail .sb--rail:focus-within .sb__stat-num { opacity: 1; pointer-events: auto; }
+  .learn--rail .sb--rail:hover .sb__item,
+  .learn--rail .sb--rail:focus-within .sb__item { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb--rail, .sb--rail .sb__item span { transition: none; }
+}
+
 /* --- Live lesson shell --- */
 .live { padding: 16px; max-width: 900px; }
 /* Вкладка "Урок" внутри живого урока — материалу и боковой колонке нужно
