@@ -5969,49 +5969,111 @@ textarea {
 @media (max-width: 720px) { .cal-layout { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .cal__day { transition: none; } }
 
-/* Sidebar icon rail — desktop only, used on the Lessons screen. The sidebar is
-   pulled OUT of the flex flow (absolute) and the body reserves its collapsed
-   width via padding-left, so expanding the rail on hover/focus overlays the
-   content and NEVER reflows <main> or the calendar. Anchored to .learn__body
-   (position: relative); .learn__main scrolls internally (overflow:auto), so the
-   full-height absolute rail stays visible without needing sticky. */
+/* Sidebar icon rail — только десктоп, экраны раздела «Уроки». Сайдбар вынут из
+   потока (absolute), а .learn__body резервирует его свёрнутую ширину через
+   padding-left — поэтому раскрытие по наведению кроет контент и НИКОГДА не
+   перекладывает <main> и календарь. Якорь — .learn__body (position: relative);
+   .learn__main скроллится внутри себя, так что абсолютный рейл во всю высоту
+   виден без sticky.
+
+   Свёрнутое состояние — самостоятельная компактная раскладка, а не обрезанный
+   полноразмерный сайдбар. Раньше подписи гасились через opacity: 0 и продолжали
+   занимать место: flex считал ширину по ним и выдавливал иконки за левый край
+   (первая иконка оказывалась на x = -21px при рейле 72px), аватар 48px не влезал
+   в 39px контента, а монета баланса улетала на x = 102 — целиком за пределы
+   рейла. Поэтому здесь подписи убираются ИЗ ПОТОКА (display: none), а каждому
+   блоку задана своя форма под колонку 48px. */
 @media (min-width: 761px) {
   .learn--rail .learn__body { position: relative; padding-left: 72px; }
   .learn--rail .sb--rail {
     position: absolute; top: 0; left: 0;
     width: 72px; height: 100%;
     z-index: 40; overflow: hidden;
+    padding: 24px 12px;
+    gap: 14px;
+    align-items: center;
     transition: width .18s ease;
   }
+
+  /* Подписи: из потока, иначе они резервируют ширину и ломают раскладку. */
   .learn--rail .sb--rail .sb__logo,
   .learn--rail .sb--rail .sb__item span,
   .learn--rail .sb--rail .sb__profile-text,
   .learn--rail .sb--rail .sb__profile-chev,
   .learn--rail .sb--rail .sb__role-text,
   .learn--rail .sb--rail .sb__role-lvl,
-  .learn--rail .sb--rail .sb__stat-num { opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .12s ease; }
-  .learn--rail .sb--rail .sb__item { justify-content: center; }
+  .learn--rail .sb--rail .sb__stat-num { display: none; }
+
+  /* Компактная форма каждого блока под 48px колонку. */
+  .learn--rail .sb--rail .sb__profile { padding: 0; background: none; justify-content: center; }
+  .learn--rail .sb--rail .sb__avatar { width: 44px; height: 44px; font-size: 16px; }
+  .learn--rail .sb--rail .sb__nav { width: 100%; align-items: center; }
+  .learn--rail .sb--rail .sb__item {
+    width: 48px; height: 48px;
+    padding: 0; gap: 0;
+    justify-content: center;
+    border-radius: 16px;
+  }
+  .learn--rail .sb--rail .sb__item svg { flex: none; }
+  .learn--rail .sb--rail .sb__role { padding: 0; background: none; justify-content: center; }
+  .learn--rail .sb--rail .sb__role-ic { width: 34px; height: 34px; }
+  .learn--rail .sb--rail .sb__balance {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+  }
+  .learn--rail .sb--rail .sb__stat { gap: 0; }
+
+  /* Раскрытие по наведению и с клавиатуры — возврат к обычной раскладке. */
   .learn--rail .sb--rail:hover,
-  .learn--rail .sb--rail:focus-within { width: 272px; overflow: visible; box-shadow: 8px 0 24px rgba(20, 16, 31, 0.12); }
+  .learn--rail .sb--rail:focus-within {
+    width: 272px; overflow: visible;
+    padding: 30px 17px 30px 15px;
+    gap: 20px;
+    align-items: stretch;
+    box-shadow: 8px 0 24px rgba(20, 16, 31, 0.12);
+  }
   .learn--rail .sb--rail:hover .sb__logo,
+  .learn--rail .sb--rail:focus-within .sb__logo { display: block; }
   .learn--rail .sb--rail:hover .sb__item span,
-  .learn--rail .sb--rail:hover .sb__profile-text,
-  .learn--rail .sb--rail:hover .sb__profile-chev,
-  .learn--rail .sb--rail:hover .sb__role-text,
-  .learn--rail .sb--rail:hover .sb__role-lvl,
-  .learn--rail .sb--rail:hover .sb__stat-num,
-  .learn--rail .sb--rail:focus-within .sb__logo,
   .learn--rail .sb--rail:focus-within .sb__item span,
-  .learn--rail .sb--rail:focus-within .sb__profile-text,
-  .learn--rail .sb--rail:focus-within .sb__profile-chev,
+  .learn--rail .sb--rail:hover .sb__role-text,
   .learn--rail .sb--rail:focus-within .sb__role-text,
-  .learn--rail .sb--rail:focus-within .sb__role-lvl,
-  .learn--rail .sb--rail:focus-within .sb__stat-num { opacity: 1; pointer-events: auto; }
+  .learn--rail .sb--rail:hover .sb__stat-num,
+  .learn--rail .sb--rail:focus-within .sb__stat-num { display: block; }
+  .learn--rail .sb--rail:hover .sb__profile-text,
+  .learn--rail .sb--rail:focus-within .sb__profile-text { display: flex; }
+  .learn--rail .sb--rail:hover .sb__profile-chev,
+  .learn--rail .sb--rail:focus-within .sb__profile-chev,
+  .learn--rail .sb--rail:hover .sb__role-lvl,
+  .learn--rail .sb--rail:focus-within .sb__role-lvl { display: inline-flex; }
+  .learn--rail .sb--rail:hover .sb__profile,
+  .learn--rail .sb--rail:focus-within .sb__profile { padding: 10px; background: #f8f8f8; justify-content: flex-start; }
+  .learn--rail .sb--rail:hover .sb__avatar,
+  .learn--rail .sb--rail:focus-within .sb__avatar { width: 48px; height: 48px; font-size: 18px; }
+  .learn--rail .sb--rail:hover .sb__nav,
+  .learn--rail .sb--rail:focus-within .sb__nav { align-items: stretch; }
   .learn--rail .sb--rail:hover .sb__item,
-  .learn--rail .sb--rail:focus-within .sb__item { justify-content: flex-start; }
+  .learn--rail .sb--rail:focus-within .sb__item {
+    width: auto; height: auto;
+    padding: 16px 20px; gap: 10px;
+    justify-content: flex-start;
+    border-radius: 20px;
+  }
+  .learn--rail .sb--rail:hover .sb__role,
+  .learn--rail .sb--rail:focus-within .sb__role { padding: 11px 12px; background: #f8f8f8; justify-content: flex-start; }
+  .learn--rail .sb--rail:hover .sb__role-ic,
+  .learn--rail .sb--rail:focus-within .sb__role-ic { width: 38px; height: 38px; }
+  .learn--rail .sb--rail:hover .sb__balance,
+  .learn--rail .sb--rail:focus-within .sb__balance {
+    flex-direction: row; align-items: center; gap: 26px; padding: 10px 14px 2px;
+  }
+  .learn--rail .sb--rail:hover .sb__stat,
+  .learn--rail .sb--rail:focus-within .sb__stat { gap: 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sb--rail, .sb--rail .sb__item span { transition: none; }
+  .sb--rail { transition: none; }
 }
 
 /* --- Live lesson shell --- */
