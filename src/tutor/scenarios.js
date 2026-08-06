@@ -63,3 +63,11 @@ export const SCENARIOS = [
 ]
 
 export const LABEL_BY_ID = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.label]))
+
+// Доступ по слагу. Нужен и клиенту (есть ли у сцены брифинг и свои часы), и
+// токен-роуту (сколько секунд выдавать) — поэтому живёт рядом с самим списком,
+// а не дублируется поиском по массиву в каждом месте.
+export function getScenario(id) {
+  if (typeof id !== 'string' || !id) return null
+  return SCENARIOS.find((s) => s.id === id) || null
+}
