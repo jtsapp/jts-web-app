@@ -11,6 +11,9 @@ import { EMOTIONS } from './avatarEmotions.js'
  *
  * @param emotion    ключ пресета из avatarEmotions.js
  * @param intensity  сила 1..3 (из тега агента); двигает подвижность
+ * @param speaking   тьютор сейчас озвучивает реплику. Не эмоция, а слой поверх
+ *                   неё: рот открывается у ЛЮБОГО выражения, мимика остаётся
+ *                   той, что прислал агент
  * @param audioTrack MediaStreamTrack голоса тьютора — рот открывается по
  *                   реальной амплитуде вместо имитации
  * @param className  класс обёртки: размер лица задаёт вёрстка (в канве ~1/3
@@ -20,6 +23,7 @@ import { EMOTIONS } from './avatarEmotions.js'
 export default function TutorFace({
   emotion = 'idle',
   intensity = 2,
+  speaking = false,
   audioTrack = null,
   className = 't-voice__face',
 }) {
@@ -67,6 +71,10 @@ export default function TutorFace({
   useEffect(() => {
     avRef.current?.setEmotion(emotion, intensity)
   }, [emotion, intensity])
+
+  useEffect(() => {
+    avRef.current?.setSpeaking(speaking)
+  }, [speaking])
 
   // Липсинк по реальному звуку. AudioContext заводим только когда трек реально
   // пришёл: до разговора он не нужен, а лишний «висящий» контекст в Safari ещё

@@ -61,13 +61,10 @@ export const EMOTIONS = {
     eyeH: 0.5, eyeW: 1.05, lookX: 0.9, lookY: -0.5, curve: -0.15, bounce: 0.25,
     speed: 0.8, mouth: 'line',
   },
-  talking: {
-    label: 'Говорит',
-    c1: [176, 134, 255],
-    c2: [144, 71, 255],
-    eyeH: 1.0, curve: 0.2, open: 1.0, bounce: 0.5, speed: 1.1, mouth: 'open',
-    voice: 1,
-  },
+  // Пресета «говорит» тут нет и быть не должно: речь — не эмоция, а слой
+  // поверх любой из них (TutorAvatar.setSpeaking). Пока он был эмоцией, лицо на
+  // время реплики подменялось нейтральным фиолетовым, и то, что пометил агент,
+  // ученик видел только после озвучки — когда тьютор уже замолчал.
   sleepy: {
     label: 'Скучает',
     c1: [178, 175, 200],
@@ -171,7 +168,7 @@ export const EMOTIONS = {
 }
 
 // Служебные состояния фронт ставит сам; остальное имеет право прислать модель.
-export const SERVICE_EMOTIONS = ['idle', 'listening', 'thinking', 'talking', 'sleepy']
+export const SERVICE_EMOTIONS = ['idle', 'listening', 'thinking', 'sleepy']
 
 // Имя от агента (топик "mood") → ключ пресета. Именно Map, а не литерал:
 // у литерала есть цепочка прототипов, и MOOD_EMOTION['constructor'] вернул бы
