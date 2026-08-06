@@ -1,14 +1,29 @@
 import { useI18n } from '../../i18n.jsx'
-import { MicIcon, CameraIcon, CloseIcon } from '../../components/icons.jsx'
+import { MicIcon, CameraIcon, CloseIcon, PhoneIcon } from '../../components/icons.jsx'
 
-// Плитка звонка (заглушка №1): область превью учителя (градиент — реального
-// видео нет, см. дизайн-спека «плитка звонка — визуальная заглушка»), малое
-// PiP ученика поверх, подпись имени учителя, ряд круглых кнопок
-// Mic/Camera/Leave. Кнопки нефункциональны — это ожидаемо для под-проекта №1
-// (роадмап: внешний Meet), но остаются доступными: title/aria-label заданы,
-// disabled — чтобы не создавать ложное ощущение рабочего управления звонком.
-export default function CallTile({ teacherName }) {
+// Плитка звонка — два состояния из спеки (§5.1):
+//
+//   A. активный звонок — превью учителя, PiP ученика, ряд Mic/Camera/Leave;
+//   B. свёрнутый — одна карточка-CTA «Позвонить учителю», когда учителя ещё
+//      нет на связи или звонок завершён.
+//
+// Превью — плоская заливка, а не градиент: реального видеопотока в №1 нет
+// (роадмап: внешний Meet), а спека запрещает градиенты явным правилом.
+// Кнопки управления нефункциональны и потому disabled — чтобы не создавать
+// ложное ощущение рабочего звонка, — но остаются подписанными для скринридера.
+export default function CallTile({ teacherName, connected = true, onCall }) {
   const { t } = useI18n()
+
+  if (!connected) {
+    return (
+      <div className="lw-card lw-call lw-call--collapsed">
+        <button type="button" className="lw-call__cta" onClick={onCall}>
+          <PhoneIcon size={20} />
+          {t('lesson.ws.callTeacher')}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="lw-card lw-call">

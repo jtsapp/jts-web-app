@@ -116,7 +116,13 @@ export default function LessonWorkspacePage({ onExit, lessonId, token, loadLesso
     <div className="lw" data-testid="lesson-workspace">
       <WorkspaceHeader lesson={lesson} stepIndex={Math.max(activeIndex, 0)} elapsedSec={ELAPSED_SEC} onExit={onExit} />
       <div className="lw__body">
-        <LessonRoute steps={steps} activeStepId={activeStepId} statusById={statusById} onSelect={setActiveStepId} />
+        <LessonRoute
+          steps={steps}
+          activeStepId={activeStepId}
+          statusById={statusById}
+          onSelect={setActiveStepId}
+          teacherStepId={lesson?.teacherStepId}
+        />
         <div className="lw__main">
           <LessonContent
             step={activeStep}
