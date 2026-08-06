@@ -14,6 +14,8 @@ import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
 import { moodToEmotion } from '../tutor/avatarEmotions.js'
+import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
+import { hasBrief } from '../tutor/scenarioBrief.js'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -69,6 +71,11 @@ export default function TutorVoiceChatPage({
   const { name: tutorName = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
 
   const [perm, setPerm] = useState('prompt') // 'prompt' | 'granted'
+  // Сцены с брифингом не стартуют сами: сначала ученик читает ситуацию и
+  // нажимает «я готов». Влетать в звонок в 911, не зная, что ты видишь из
+  // окна, — это провал не по английскому.
+  const briefId = hasBrief(scenarioId) ? scenarioId : ''
+  const [briefAck, setBriefAck] = useState(false)
   const [tokenData, setTokenData] = useState(null)
   // null | 'daily' | 'monthly' | 'mic' | 'expired' | 'generic'
   const [error, setError] = useState(null)
@@ -79,6 +86,9 @@ export default function TutorVoiceChatPage({
   // Нет Permissions API (старый Safari) или state 'prompt'/'denied' — как
   // раньше, кнопка с явным запросом.
   useEffect(() => {
+    // Разрешение уже есть, но сцена с брифингом ждёт кнопку — иначе гейт
+    // мелькнёт и пропадёт.
+    if (briefId && !briefAck) return
     let cancelled = false
     navigator.permissions
       ?.query({ name: 'microphone' })
@@ -90,7 +100,7 @@ export default function TutorVoiceChatPage({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [briefAck])
 
   async function requestMic() {
     // Реальный запрос доступа к микрофону (жест пользователя).
@@ -193,7 +203,26 @@ export default function TutorVoiceChatPage({
           </div>
         </div>
 
-        {error ? (
+        {briefId && !briefAck ? (
+          <ScenarioBrief
+            scenarioId={briefId}
+            action={
+              <button
+                className="t-pill t-pill--primary"
+                type="button"
+                onClick={() => {
+                  setBriefAck(true)
+                  // Разрешение мог уже дать браузер — тогда эффект выше его не
+                  // трогал, и запрос надо сделать здесь.
+                  if (perm !== 'granted') return
+                  void requestMic()
+                }}
+              >
+                {t('scen.briefReady')}
+              </button>
+            }
+          />
+        ) : error ? (
           <div className="t-voice__card">
             <TutorFace emotion="idle" />
             <div className="t-voice__text">{errorText}</div>
@@ -213,7 +242,7 @@ export default function TutorVoiceChatPage({
             <div className="t-voice__audio">
               <RoomAudioRenderer />
             </div>
-            <CallStage onFinish={onFinish} t={t} ttl={tokenData.ttl} />
+            <CallStage onFinish={onFinish} t={t} ttl={tokenData.ttl} briefId={briefId} />
           </LiveKitRoom>
         ) : (
           <div className="t-voice__card">
@@ -263,7 +292,7 @@ function fmtClock(sec) {
 const REACTION_MS = 4500
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
-function CallStage({ onFinish, t, ttl }) {
+function CallStage({ onFinish, t, ttl, briefId = '' }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
   const room = useRoomContext()
@@ -275,6 +304,8 @@ function CallStage({ onFinish, t, ttl }) {
   // (report_task_complete) when a structured scenario ends. We render it as a
   // pass/fail card over the call.
   const [verdict, setVerdict] = useState(null)
+  // Шпаргалка со ситуацией. Свёрнута по умолчанию: развёрнутая перекрывает лицо.
+  const [peek, setPeek] = useState(false)
   useDataChannel('lesson', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
@@ -441,6 +472,23 @@ function CallStage({ onFinish, t, ttl }) {
     <div className="t-voice__card">
       {left !== null && (
         <span className={'t-voice__timer' + (left <= 30 ? ' is-low' : '')}>{fmtClock(left)}</span>
+      )}
+      {briefId && (
+        <button className="t-voice__peek" type="button" onClick={() => setPeek((v) => !v)}>
+          {t('scen.briefPeek')}
+        </button>
+      )}
+      {briefId && peek && (
+        <div className="t-voice__peekpanel">
+          <ScenarioBrief
+            scenarioId={briefId}
+            action={
+              <button className="t-pill" type="button" onClick={() => setPeek(false)}>
+                {t('scen.briefClose')}
+              </button>
+            }
+          />
+        </div>
       )}
       {/* Лицо не завершает звонок по клику: неподписанный клик по картинке
           рвал разговор случайным тапом. Завершение — явной кнопкой ниже. */}
