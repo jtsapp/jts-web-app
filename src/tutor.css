@@ -3073,3 +3073,17 @@
     font-size: 14px;
   }
 }
+
+/* Обрыв связи: экран намеренно почти пустой — это удар, а не сообщение. */
+.t-linedead {
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+.t-linedead__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #6b6480;
+  letter-spacing: 0.01em;
+}
