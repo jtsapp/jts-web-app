@@ -14,6 +14,7 @@ import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
 import { moodToEmotion } from '../tutor/avatarEmotions.js'
+import { cutAtSec } from '../tutor/scenarioClock.js'
 import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
 import { hasBrief } from '../tutor/scenarioBrief.js'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
@@ -76,6 +77,10 @@ export default function TutorVoiceChatPage({
   // окна, — это провал не по английскому.
   const briefId = hasBrief(scenarioId) ? scenarioId : ''
   const [briefAck, setBriefAck] = useState(false)
+  // Комнату по концу сцены удаляет агент, и до клиента это доезжает как обычный
+  // разрыв. Без флага onDisconnected увёл бы ученика с экрана раньше, чем он
+  // увидел «связь пропала» и результат. Снимает флаг только кнопка «Готово».
+  const holdRef = useRef(false)
   const [tokenData, setTokenData] = useState(null)
   // null | 'daily' | 'monthly' | 'mic' | 'expired' | 'generic'
   const [error, setError] = useState(null)
@@ -234,7 +239,10 @@ export default function TutorVoiceChatPage({
             connect
             audio
             video={false}
-            onDisconnected={() => onFinish?.()}
+            onDisconnected={() => {
+              if (holdRef.current) return
+              onFinish?.()
+            }}
             className="t-voice__room"
           >
             {/* Аудио-элементы вне визуального потока — иначе они расширяют
@@ -242,7 +250,14 @@ export default function TutorVoiceChatPage({
             <div className="t-voice__audio">
               <RoomAudioRenderer />
             </div>
-            <CallStage onFinish={onFinish} t={t} ttl={tokenData.ttl} briefId={briefId} />
+            <CallStage
+              onFinish={onFinish}
+              t={t}
+              ttl={tokenData.ttl}
+              briefId={briefId}
+              limitSec={tokenData.scenarioLimitSec || 0}
+              holdRef={holdRef}
+            />
           </LiveKitRoom>
         ) : (
           <div className="t-voice__card">
@@ -292,13 +307,15 @@ function fmtClock(sec) {
 const REACTION_MS = 4500
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
-function CallStage({ onFinish, t, ttl, briefId = '' }) {
+function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
   const room = useRoomContext()
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
   const transcriptions = useTranscriptions()
-  const left = useCountdown(ttl)
+  // У сцены со своими часами на экране идёт её бюджет, а не остаток дневного
+  // лимита: ученику обещали пять минут — он и должен видеть пять минут.
+  const left = useCountdown(limitSec > 0 ? limitSec : ttl)
 
   // Scenario outcome — the agent publishes a JSON verdict on topic "lesson"
   // (report_task_complete) when a structured scenario ends. We render it as a
@@ -314,6 +331,29 @@ function CallStage({ onFinish, t, ttl, briefId = '' }) {
       /* ignore malformed payloads */
     }
   })
+
+  // Обрыв на исходе бюджета сцены. По картинке авторитетен клиент: агент в этот
+  // же момент шлёт вердикт и удаляет комнату, но экран результата не должен
+  // зависеть от того, успел ли он.
+  const [lineDead, setLineDead] = useState(false)
+  const cutAt = cutAtSec(limitSec)
+  useEffect(() => {
+    if (cutAt === null || left === null || verdict) return
+    const elapsed = limitSec - left
+    if (elapsed < cutAt) return
+    if (holdRef) holdRef.current = true
+    setLineDead(true)
+  }, [left, cutAt, limitSec, verdict, holdRef])
+
+  // Вердикт от агента ждём три секунды после обрыва, дальше рисуем свой: «не
+  // успел» — это тоже результат, и ученик обязан его увидеть.
+  useEffect(() => {
+    if (!lineDead || verdict) return
+    const id = setTimeout(() => {
+      setVerdict({ passed: false, summary: t('scen.lineDeadHint'), tips: [] })
+    }, 3000)
+    return () => clearTimeout(id)
+  }, [lineDead, verdict, t])
 
   // Эмоция тьютора. Тег приходит в начале реплики, а на лицо попадает после
   // озвучки (см. REACTION_MS), поэтому ждёт своей очереди в ref, а не в стейте:
@@ -435,6 +475,16 @@ function CallStage({ onFinish, t, ttl, briefId = '' }) {
     else onFinish?.()
   }
 
+  // Пауза между обрывом и результатом намеренная: удар должен дойти отдельно
+  // от разбора, иначе «связь пропала» проскочит незамеченным.
+  if (lineDead && !verdict) {
+    return (
+      <div className="t-voice__card t-linedead" role="status" aria-live="polite">
+        <h2 className="t-linedead__title">{t('scen.lineDead')}</h2>
+      </div>
+    )
+  }
+
   if (verdict) {
     const passed = Boolean(verdict.passed)
     const tips = Array.isArray(verdict.tips) ? verdict.tips.filter(Boolean) : []
@@ -461,7 +511,14 @@ function CallStage({ onFinish, t, ttl, briefId = '' }) {
             </ul>
           </div>
         )}
-        <button className="t-pill t-pill--primary t-verdict__done" type="button" onClick={onFinish}>
+        <button
+          className="t-pill t-pill--primary t-verdict__done"
+          type="button"
+          onClick={() => {
+            if (holdRef) holdRef.current = false
+            onFinish?.()
+          }}
+        >
           {t('scen.verdictDone')}
         </button>
       </div>
