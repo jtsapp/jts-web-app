@@ -337,16 +337,20 @@ describe('ScenarioBrief', () => {
     const { container } = renderBrief({ scenarioId: 'hotel-check-in' })
     expect(container).toBeEmptyDOMElement()
   })
-  it('рисует переданное действие', () => {
+  it('без текста не рисует и переданное действие', () => {
+    // Плашка либо целая, либо её нет вовсе: голая кнопка без ситуации —
+    // это половина интерфейса.
     renderBrief({
       scenarioId: 'hotel-check-in',
       action: <button type="button">Поехали</button>,
     })
-    // Текста у сцены нет — значит и кнопки быть не должно: плашка либо целая,
-    // либо её нет вовсе.
     expect(screen.queryByText('Поехали')).toBeNull()
   })
 })
+
+// Тест на положительный случай (плашка с текстом и действием) появится в
+// Task 7 вместе с первой сценой, у которой брифинг есть: раньше в словаре
+// просто нет ни одного ключа scen.brief.*.
 ```
 
 - [ ] **Step 7: Прогнать — тест должен упасть**
@@ -1150,6 +1154,24 @@ describe('911-call', () => {
 
 Run: `npm test -- src/tutor/scenarioBrief.test.js`
 Expected: PASS.
+
+Дописать в `src/tutor/ScenarioBrief.test.jsx` положительный случай — теперь в словаре есть первый ключ `scen.brief.*`:
+
+```jsx
+  it('рисует пункты ситуации и переданное действие', () => {
+    renderBrief({
+      scenarioId: '911-call',
+      action: <button type="button">Поехали</button>,
+    })
+    expect(screen.getByRole('note')).toBeTruthy()
+    // Пять строк брифинга — по строке на пункт.
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    expect(screen.getByText('Поехали')).toBeTruthy()
+  })
+```
+
+Run: `npm test -- src/tutor/ScenarioBrief.test.jsx`
+Expected: PASS, 3 теста.
 
 - [ ] **Step 7: Сборка, линт, полный vitest**
 
