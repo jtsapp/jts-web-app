@@ -107,12 +107,23 @@ export default function TutorVoiceChatPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [briefAck])
 
+  // Комнату запрашиваем ровно один раз за экран. К этой функции ведут три
+  // дороги — кнопка «разрешить», кнопка «я готов» и эффект по briefAck, — и
+  // каждый лишний проход открывал ВТОРУЮ комнату со своим openSession. Брошенную
+  // комнату потом добивал closeStaleSessions и списывал ученику минуты, которых
+  // он не говорил.
+  const micStartedRef = useRef(false)
+
   async function requestMic() {
+    if (micStartedRef.current) return
+    micStartedRef.current = true
     // Реальный запрос доступа к микрофону (жест пользователя).
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       stream.getTracks().forEach((tr) => tr.stop())
     } catch {
+      // Отказ микрофона — не финал: ученик может разрешить и нажать ещё раз.
+      micStartedRef.current = false
       setError('mic')
       return
     }
@@ -180,7 +191,9 @@ export default function TutorVoiceChatPage({
 
   return (
     <TutorShell active="tutor" user={user} onNavigate={onNavigate} onProfile={onProfile} onBack={onBack} layout="flow">
-      {perm !== 'granted' && !error && (
+      {/* Пока висит гейт со ситуацией, просьбы про микрофон быть не должно:
+          иначе ученик жмёт «разрешить», следом «я готов» — и это два звонка. */}
+      {perm !== 'granted' && !error && !(briefId && !briefAck) && (
         <div className="t-micperm" role="dialog" aria-label={t('voice.permHint')}>
           <div className="t-micperm__row">
             <span className="t-micperm__chips">
@@ -215,13 +228,10 @@ export default function TutorVoiceChatPage({
               <button
                 className="t-pill t-pill--primary"
                 type="button"
-                onClick={() => {
-                  setBriefAck(true)
-                  // Разрешение мог уже дать браузер — тогда эффект выше его не
-                  // трогал, и запрос надо сделать здесь.
-                  if (perm !== 'granted') return
-                  void requestMic()
-                }}
+                // Микрофон здесь НЕ запрашиваем: briefAck перезапускает эффект
+                // выше, и он сделает это сам. Дублирующий вызов открывал вторую
+                // комнату.
+                onClick={() => setBriefAck(true)}
               >
                 {t('scen.briefReady')}
               </button>
@@ -326,7 +336,10 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
   useDataChannel('lesson', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
-      if (data && typeof data === 'object') setVerdict(data)
+      // Первый вердикт побеждает. Сторож часов сцены просит агента закрыть сцену
+      // отказом, и если ученик уже прошёл её на третьей минуте, второй вердикт
+      // перевернул бы карточку с «пройдено» на «не пройдено» у него на глазах.
+      if (data && typeof data === 'object') setVerdict((prev) => prev || data)
     } catch {
       /* ignore malformed payloads */
     }
@@ -344,6 +357,13 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
     if (holdRef) holdRef.current = true
     setLineDead(true)
   }, [left, cutAt, limitSec, verdict, holdRef])
+
+  // Показанный вердикт держит экран так же, как обрыв: комнату после сцены
+  // удаляет агент, и без этого onDisconnected уводил ученика с карточки
+  // результата раньше, чем он успевал её прочитать.
+  useEffect(() => {
+    if (verdict && holdRef) holdRef.current = true
+  }, [verdict, holdRef])
 
   // Вердикт от агента ждём три секунды после обрыва, дальше рисуем свой: «не
   // успел» — это тоже результат, и ученик обязан его увидеть.

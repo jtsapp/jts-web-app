@@ -3693,6 +3693,14 @@ async def entrypoint(ctx: JobContext):
                 await asyncio.sleep(limit)
             except asyncio.CancelledError:
                 return
+            # Сцена уже завершилась своим финалом (report_task_complete проставил
+            # исход) — резать нечего. Без этой проверки ученик, прошедший сцену на
+            # третьей минуте, слышал «связь обрывается», видел, как карточка
+            # переворачивается с «пройдено» на «не пройдено», и его выкидывало с
+            # экрана результата.
+            if agent._task_passed is not None:
+                logger.info("[scene-clock] scene already finished — no cut.")
+                return
             logger.info("Scene clock %ds reached — cutting room %s.", limit, scene_room)
             try:
                 session.generate_reply(
