@@ -387,8 +387,11 @@ export default class TutorAvatar {
     }
     if (s.zzz > 0.3) this._drawZzz(rb * 0.42, -rb * 0.3, s.zzz, mt, rb)
     if (s.steam > 0.3 && !this.reduced) {
-      this._drawSteam(-rb * 0.58, -rb * 0.22, s.steam, mt, rb)
-      this._drawSteam(rb * 0.58, -rb * 0.22, s.steam, mt, rb)
+      // Дальше от формы, чем кажется нужным: ближе клубы срастаются с внешними
+      // концами бровей в одну фигуру. Дальше уводить нельзя — прозрачного поля
+      // канвы хватает ровно до сюда, за ним пар режется краем.
+      this._drawSteam(-rb * 1.18, -rb * 0.62, s.steam, mt, rb, -1)
+      this._drawSteam(rb * 1.18, -rb * 0.62, s.steam, mt, rb, 1)
     }
 
     ctx.restore()
@@ -459,16 +462,24 @@ export default class TutorAvatar {
     if (a < 0.03) return
     const ctx = this.ctx
     const k = this.k
-    const half = 15 * k
-    const lift = 9 * k * v
+    // Сдвинутая вниз бровь тем толще и длиннее, чем сильнее v: у злости (v=-1)
+    // это тяжёлый мультяшный клин, а не та же тонкая чёрточка, что у отвращения.
+    const rage = Math.max(0, -v)
+    const half = (15 + 3 * rage) * k
+    // Знак был перепутан относительно контракта в комментарии выше: при b<0
+    // внутренние концы уезжали ВВЕРХ, и «злость» получала брови домиком, то есть
+    // мимику испуга. Отсюда же было «удивлённое» лицо у curious/confused.
+    const lift = -9 * k * v
+    // Чем злее, тем ниже бровь садится на глаз — нависает, а не парит над ним.
+    const yy = y + 8 * k * rage
     ctx.save()
     ctx.globalAlpha = a
     ctx.strokeStyle = this.INK
-    ctx.lineWidth = 8 * k
+    ctx.lineWidth = (8 + 5 * rage) * k
     ctx.lineCap = 'round'
     ctx.beginPath()
-    ctx.moveTo(x - side * half, y + lift * 0.45)
-    ctx.lineTo(x + side * half, y - lift)
+    ctx.moveTo(x - side * half, yy + lift * 0.45)
+    ctx.lineTo(x + side * half, yy - lift)
     ctx.stroke()
     ctx.restore()
   }
@@ -495,6 +506,37 @@ export default class TutorAvatar {
       const mw = (25 + openAmt * 11) * k
       this._caps(x, y + mh * 0.28, mw, mh, Math.min(mw, mh) / 2)
       ctx.fill()
+    } else if (s.mouth === 'grit') {
+      // Оскал стиснутых зубов — единственный рот с белой заливкой. В мультяшной
+      // злости именно он делает эмоцию читаемой на мелком орбе: одна хмурая
+      // линия на таком размере теряется, а белый блок с изломом — нет.
+      const mw = 62 * k
+      const mh = 30 * k
+      const r = 9 * k
+      this._caps(x, y, mw, mh, r)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+
+      // Излом зубов режем по форме рта, иначе концы торчат из-под обводки.
+      ctx.save()
+      this._caps(x, y, mw, mh, r)
+      ctx.clip()
+      ctx.beginPath()
+      const teeth = 6
+      for (let i = 0; i <= teeth; i++) {
+        const px = x - mw / 2 + (mw / teeth) * i
+        const py = y + (i % 2 === 0 ? -mh * 0.22 : mh * 0.22)
+        if (i === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      }
+      ctx.lineWidth = 6 * k
+      ctx.stroke()
+      ctx.restore()
+
+      this._caps(x, y, mw, mh, r)
+      ctx.lineWidth = 7 * k
+      ctx.stroke()
+      ctx.fillStyle = this.INK
     } else if (s.mouth === 'wave') {
       ctx.beginPath()
       ctx.moveTo(x - 23 * k, y)
@@ -587,24 +629,42 @@ export default class TutorAvatar {
     ctx.restore()
   }
 
-  // Пар держим ВНУТРИ формы: белые эффекты за её краем сливаются со светлым фоном.
-  _drawSteam(x, y, a, mt, rb) {
+  // Пар из «ушей»: облачко из трёх долек с чернильной обводкой. Обводка тут не
+  // украшение — она и позволяет вынести пар ЗА форму, к ушам, как у злого
+  // эмодзи. Раньше пар был белым без контура, и держать его приходилось внутри
+  // формы (за краем светлый фон его съедал) — там он ложился прямо на глаза.
+  //
+  // Рисуем в два прохода: сначала все дольки чернилами, потом поверх белым.
+  // Так у облачка ровный общий контур, а не сетка швов от пересечений.
+  _drawSteam(x, y, a, mt, rb, side) {
     const ctx = this.ctx
     const k = this.k
+    const lobes = [
+      [0, 0, 1],
+      [-0.72, 0.34, 0.7],
+      [0.72, 0.3, 0.66],
+    ]
     ctx.save()
-    ctx.fillStyle = '#fff'
     for (let i = 0; i < 3; i++) {
       const pr = (mt * 0.85 + i * 0.34) % 1
-      ctx.globalAlpha = Math.min(1, a) * (1 - pr) * 0.55
-      ctx.beginPath()
-      ctx.arc(
-        x + Math.sin(mt * 2.2 + i) * 6 * k * pr,
-        y - pr * rb * 0.4,
-        (4 + pr * 9) * k * 0.85,
-        0,
-        6.283
-      )
-      ctx.fill()
+      // Клубы уходят вверх и наружу от головы, а не строго вверх.
+      const px = x + side * pr * rb * 0.12 + Math.sin(mt * 2.2 + i) * 5 * k * pr
+      const py = y - pr * rb * 0.3
+      // Клуб не растворяется, а схлопывается в конце пути: белое поверх
+      // чернильного контура полупрозрачным даёт серую кашу вместо облачка.
+      const fade = pr > 0.78 ? (1 - pr) / 0.22 : 1
+      const r = (5 + pr * 7) * k * fade
+      ctx.globalAlpha = Math.min(1, a)
+      const paint = (grow, color) => {
+        ctx.fillStyle = color
+        lobes.forEach(([dx, dy, rs]) => {
+          ctx.beginPath()
+          ctx.arc(px + dx * r, py + dy * r, r * rs + grow, 0, 6.283)
+          ctx.fill()
+        })
+      }
+      paint(3 * k, this.INK)
+      paint(0, '#ffffff')
     }
     ctx.restore()
   }

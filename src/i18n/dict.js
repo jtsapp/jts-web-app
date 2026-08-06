@@ -229,8 +229,6 @@ export const DICT = {
     'scen.desc.doctors-office':
       'приём у врача: описываем симптомы точно — ache, pain, hurt, sore — и говорим о длительности',
     'scen.start': 'Начать разговор',
-    'scen.locked': 'Откроется, когда пройдёшь «{label}» — это следующий шаг истории',
-    'scen.lockedBtn': 'Закрыто',
     'scen.verdictPass': 'Задача пройдена',
     'scen.verdictFail': 'Задача не пройдена',
     'scen.verdictDone': 'Готово',
@@ -454,8 +452,6 @@ export const DICT = {
     'scen.desc.doctors-office':
       'дәрігер қабылдауы: симптомдарды дәл сипаттаймыз — ache, pain, hurt, sore — және ұзақтығы',
     'scen.start': 'Әңгімені бастау',
-    'scen.locked': '«{label}» өткен соң ашылады — бұл әңгіменің келесі қадамы',
-    'scen.lockedBtn': 'Жабық',
     'scen.verdictPass': 'Тапсырма орындалды',
     'scen.verdictFail': 'Тапсырма орындалмады',
     'scen.verdictDone': 'Дайын',
@@ -677,8 +673,6 @@ export const DICT = {
     'scen.desc.doctors-office':
       'a doctor’s visit: describing symptoms precisely — ache, pain, hurt, sore — and how long',
     'scen.start': 'Start conversation',
-    'scen.locked': 'Unlocks once you pass “{label}” — it’s the next step of the story',
-    'scen.lockedBtn': 'Locked',
     'scen.verdictPass': 'Task complete',
     'scen.verdictFail': 'Task not passed',
     'scen.verdictDone': 'Done',
