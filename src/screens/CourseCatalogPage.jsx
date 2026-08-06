@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getCourseCatalog } from '../api.js'
+import { ChevronRightIcon } from '../components/icons.jsx'
 
 const TYPE_ICON = { lesson: '📘', video: '▶', review: '🏆', leadin: '★', test: '🎓' }
 
 // Пикер живых уроков: опубликованное дерево уровень → юнит → урок из
 // /mobile/course-catalog. Выбор урока отдаёт его id наверх (onOpenLesson),
 // App грузит его в LessonWorkspacePage.
-export default function CourseCatalogPage({ userName, userLevel = 'A1', token, onNav, onProfile, onOpenLesson }) {
+export default function CourseCatalogPage({ userName, userLevel = 'A1', token, onNav, onProfile, onOpenLesson, onBack }) {
   const { t } = useI18n()
   const [levels, setLevels] = useState(null) // null = ещё грузим
   const [error, setError] = useState(false)
@@ -41,6 +42,16 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="cc">
+        {/* Каталог открывается с экрана «Уроки». Без этой кнопки уйти отсюда можно
+            было только через сайдбар, а на узком экране он спрятан в drawer — то
+            есть выхода не было вовсе. */}
+        {onBack && (
+          <button type="button" className="cc__back" onClick={onBack}>
+            <ChevronRightIcon size={16} />
+            {t('catalog.back')}
+          </button>
+        )}
+
         <header className="cc__head">
           <h1 className="cc__title">{t('catalog.title')}</h1>
           <p className="cc__subtitle">{t('catalog.subtitle')}</p>

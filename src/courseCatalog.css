@@ -30,6 +30,39 @@
   outline-offset: 2px;
 }
 
+/* Выход из каталога. Иконка — общий ChevronRightIcon, развёрнутый на 180°:
+   отдельной «стрелки влево» в наборе нет, а заводить её ради одной кнопки
+   значило бы держать две иконки на одну форму. */
+.cc__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 7px 14px 7px 8px;
+  border: none;
+  border-radius: 999px;
+  background: #f3f0fd;
+  color: #874bf8;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cc__back svg {
+  transform: rotate(180deg);
+}
+
+.cc__back:hover {
+  background: #eae2fb;
+}
+
+.cc__back:focus-visible {
+  outline: 2px solid #874bf8;
+  outline-offset: 2px;
+}
+
 .cc__head {
   margin-bottom: 20px;
 }
