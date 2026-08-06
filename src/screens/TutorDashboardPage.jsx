@@ -99,6 +99,30 @@ export default function TutorDashboardPage({
                 {t('scen.start')}
               </button>
 
+              {/* Порядок в стопке = порядок важности: разговор → что делать
+                  дальше → настройка. Тумблер стоял вторым и разрывал связку
+                  кнопки с подсказкой дня. */}
+
+              {/* Контекстная карточка: превью сцены здесь не украшение — по нему
+                  видно, КУДА ведёт нажатие, до перехода на экран сценария. */}
+              <button
+                className="t-dash__suggest"
+                type="button"
+                onClick={() => onSuggest && onSuggest(suggested.id)}
+              >
+                <span
+                  className="t-dash__suggestthumb"
+                  style={{ backgroundImage: `url(${suggested.img})` }}
+                />
+                <span className="t-dash__suggesttext">
+                  <small>{t('dash.suggestLabel')}</small>
+                  <b>{suggested.label}</b>
+                </span>
+                <span className="t-dash__suggestarrow">
+                  <ArrowRightIcon size={18} />
+                </span>
+              </button>
+
               <button
                 className={'t-dash__engonly' + (englishOnly ? ' is-on' : '')}
                 type="button"
@@ -111,20 +135,6 @@ export default function TutorDashboardPage({
                   <small>{t('dash.englishOnlyHint')}</small>
                 </span>
                 <span className="t-dash__switch" aria-hidden="true" />
-              </button>
-
-              <button
-                className="t-dash__suggest"
-                type="button"
-                onClick={() => onSuggest && onSuggest(suggested.id)}
-              >
-                <span className="t-dash__suggesttext">
-                  <small>{t('dash.suggestLabel')}</small>
-                  <b>{suggested.label}</b>
-                </span>
-                <span className="t-dash__suggestarrow">
-                  <ArrowRightIcon size={20} />
-                </span>
               </button>
             </div>
           </section>
