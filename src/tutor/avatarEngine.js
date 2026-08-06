@@ -25,7 +25,7 @@ const INTENSITY_GAIN = { 1: 0.75, 2: 1, 3: 1.3 }
 
 // Нейтральное значение ключа, если пресет его не задал. Для МНОЖИТЕЛЕЙ это
 // единица, а не ноль: пресет без eyeW когда-то давал ширину глаза 0, и на
-// talking/listening глаза просто исчезали с лица.
+// listening/thinking глаза просто исчезали с лица.
 const KEY_DEFAULTS = { eyeH: 1, eyeW: 1, speed: 1 }
 
 const lerp = (a, b, f) => a + (b - a) * f
@@ -53,6 +53,13 @@ export default class TutorAvatar {
     this.voiceEnv = 0
     this.voiceTarget = 0
     this.voiceTick = 0
+    // Речь — не эмоция, а СЛОЙ поверх неё: говорить умеет любое выражение.
+    // Раньше на время реплики лицо подменялось пресетом talking, и эмоция,
+    // которую пометил агент, показывалась только ПОСЛЕ озвучки — то есть ровно
+    // тогда, когда тьютор уже молчал. speak — сглаженные 0..1, чтобы рот
+    // закрывался плавно, а не обрубался на конце фразы.
+    this.speak = 0
+    this.speakTarget = 0
     this.popT = 0
     this.analyser = null
     this.audioBuf = null
@@ -145,10 +152,15 @@ export default class TutorAvatar {
     if (this.onChange) this.onChange(key, preset)
   }
 
-  /** AnalyserNode с голосом тьютора: в talking рот открывается по амплитуде. */
+  /** AnalyserNode с голосом тьютора: рот открывается по реальной амплитуде. */
   attachAnalyser(analyser) {
     this.analyser = analyser || null
     this.audioBuf = analyser ? new Uint8Array(analyser.frequencyBinCount) : null
+  }
+
+  /** Тьютор сейчас говорит. Ортогонально эмоции: мимику не трогает, только рот. */
+  setSpeaking(on) {
+    this.speakTarget = on ? 1 : 0
   }
 
   setReducedMotion(on) {
@@ -196,7 +208,9 @@ export default class TutorAvatar {
     this.popT = Math.max(0, this.popT - dt * 1.9)
 
     const live = this._audioLevel()
-    const voice = get(this.target, 'voice', 0)
+    // Признак речи берём из setSpeaking, а не из пресета эмоции: пресета
+    // «говорит» больше нет, говорить может любая эмоция.
+    const voice = this.speakTarget
     if (live !== null && voice > 0) {
       this.voiceEnv = lerp(this.voiceEnv, live, 0.4)
     } else {
@@ -229,6 +243,7 @@ export default class TutorAvatar {
       s.c2[i] = lerp(s.c2[i], tg.c2[i], fColor)
     }
     s.mouth = tg.mouth
+    this.speak = lerp(this.speak, this.speakTarget, fShape)
 
     // Фазу дыхания КОПИМ, а не считаем как sin(t * speed): при смене эмоции
     // speed меняется, и в такой формуле вместе с ним скачком меняется весь
@@ -494,10 +509,15 @@ export default class TutorAvatar {
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
-    const openAmt = Math.max(s.open * 0.35, this.voiceEnv * get(this.target, 'voice', 0))
+    // Речь открывает рот У ЛЮБОЙ эмоции: this.speak приходит от setSpeaking и с
+    // мимикой никак не связан. Форму рта при этом задаёт эмоция — открывается
+    // именно ЕЁ рот, поэтому радость говорит улыбаясь, а злость — оскалившись.
+    const openAmt = Math.max(s.open * 0.35, this.voiceEnv * this.speak)
+    // Челюсть — глубина, на которую уезжает нижняя губа у «линейных» ртов.
+    const jaw = openAmt * 22 * k
 
     if (s.mouth === 'o') {
-      const r = (9 + s.open * 6) * k
+      const r = (9 + s.open * 6 + openAmt * 9) * k
       ctx.beginPath()
       ctx.ellipse(x, y + 3 * k, r * 0.88, r, 0, 0, 6.283)
       ctx.fill()
@@ -511,7 +531,9 @@ export default class TutorAvatar {
       // злости именно он делает эмоцию читаемой на мелком орбе: одна хмурая
       // линия на таком размере теряется, а белый блок с изломом — нет.
       const mw = 62 * k
-      const mh = 30 * k
+      // Оскал не открывается «челюстью», а разжимается: блок зубов растёт в
+      // высоту, излом вместе с ним. Иначе на реплике злость теряет зубы.
+      const mh = (30 + openAmt * 16) * k
       const r = 9 * k
       this._caps(x, y, mw, mh, r)
       ctx.fillStyle = '#ffffff'
@@ -538,19 +560,32 @@ export default class TutorAvatar {
       ctx.stroke()
       ctx.fillStyle = this.INK
     } else if (s.mouth === 'wave') {
+      // Волна — это верхняя губа, кривизну эмоции держит она. Нижняя — ровная
+      // дуга: если отзеркалить ей волну, при открытом рте выходит клякса, а не
+      // рот. При jaw = 0 дуга ложится на волну, и рот выглядит как прежде.
       ctx.beginPath()
       ctx.moveTo(x - 23 * k, y)
       ctx.quadraticCurveTo(x - 11 * k, y - 9 * k, x, y)
       ctx.quadraticCurveTo(x + 11 * k, y + 9 * k, x + 23 * k, y)
+      ctx.quadraticCurveTo(x, y + jaw * 1.7, x - 23 * k, y)
+      ctx.fill()
       ctx.stroke()
     } else {
       // skew перекашивает улыбку: один угол выше другого. Так делается ухмылка
       // злорадства и скривлённый рот отвращения — без отдельного типа рта.
+      //
+      // Путь ЗАМКНУТЫЙ: верхняя губа — кривая эмоции, нижняя — она же, опущенная
+      // на челюсть. При jaw = 0 обе совпадают, и заливка вырождается в ту же
+      // одну линию, что была раньше, — молчащий рот выглядит ровно как прежде.
       const c = s.curve
       const sk = s.skew || 0
+      const cx = x + sk * 9 * k
+      const cy = y + c * 26 * k
       ctx.beginPath()
       ctx.moveTo(x - 26 * k, y - c * 6 * k * (1 - sk))
-      ctx.quadraticCurveTo(x + sk * 9 * k, y + c * 26 * k, x + 26 * k, y - c * 6 * k * (1 + sk))
+      ctx.quadraticCurveTo(cx, cy, x + 26 * k, y - c * 6 * k * (1 + sk))
+      ctx.quadraticCurveTo(cx, cy + jaw * 1.6, x - 26 * k, y - c * 6 * k * (1 - sk))
+      ctx.fill()
       ctx.stroke()
     }
   }
