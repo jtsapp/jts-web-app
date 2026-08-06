@@ -1588,15 +1588,24 @@
 .t-dash__engonly.is-on .t-dash__switch::after {
   transform: translateX(20px);
 }
-.t-dash__ctatitle {
+/* Главное действие экрана. Тот же оранжевый, что у «Советуем сегодня»: на
+   фиолетовом орбе и фиолетовом UI кнопка старта обязана читаться первой. */
+.t-dash__talk {
   margin-top: 20px;
-  white-space: pre-line;
-  font-size: 32px;
+  width: 370px;
+  height: 60px;
+  border: none;
+  border-radius: 20px;
+  background: linear-gradient(90deg, #ff9a2e 0%, #ff6a00 100%);
+  color: #ffffff;
+  font-size: 18px;
   font-weight: 700;
-  line-height: 1.19;
-  letter-spacing: -0.03em;
-  color: var(--t-purple);
-  text-align: center;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.t-dash__talk:hover {
+  filter: brightness(1.04);
 }
 /* Оранжевый, а не фиолетовый: «советуем сегодня» — акцент дня, и он не должен
    сливаться с фиолетовым орбом и остальным брендовым UI. */
@@ -1802,14 +1811,6 @@
 }
 .t-scenario:hover .t-scenario__img {
   filter: brightness(0.95);
-}
-/* Заперт цепочкой (requires) — гасим карточку, как на странице «Сценарии». */
-.t-scenario.is-locked {
-  cursor: default;
-  opacity: 0.5;
-}
-.t-scenario.is-locked:hover .t-scenario__img {
-  filter: none;
 }
 .t-scenario__badge {
   position: absolute;
@@ -2273,17 +2274,6 @@
   margin-top: 12px;
   width: 100%;
   height: 44px;
-}
-/* Заперто до прохождения предыдущего сценария: карточка глушится, но остаётся
-   читаемой — она должна дразнить, а не исчезать. */
-.t-scen__card--locked .t-scen__img {
-  filter: grayscale(1) brightness(0.9);
-}
-.t-scen__card--locked:hover .t-scen__img {
-  filter: grayscale(1) brightness(0.9);
-}
-.t-scen__card--locked .t-scen__label {
-  color: var(--t-muted);
 }
 .t-scen__btn:disabled {
   opacity: 0.45;
@@ -2764,9 +2754,12 @@
   .t-dash__face {
     --face: min(180px, 52vw);
   }
-  .t-dash__ctatitle {
+  .t-dash__talk {
     margin-top: 18px;
-    font-size: clamp(23px, 6.5vw, 28px);
+    width: 100%;
+    max-width: 370px;
+    height: 56px;
+    font-size: 17px;
   }
   .t-dash__engonly {
     margin-top: 20px;
