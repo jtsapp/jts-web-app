@@ -3119,3 +3119,81 @@
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+
+/* Плашка «Ситуация»: вводные, которые ученик держит перед глазами и
+   пересказывает вслух. Читаемость важнее компактности — это рабочий текст,
+   а не подпись. */
+.t-brief {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: #f7f5fd;
+  border: 1px solid #e7e1f7;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.t-brief__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9047ff;
+}
+.t-brief__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #2b2440;
+}
+/* Кнопка-шпаргалка поверх звонка: рядом с таймером, но слева, чтобы не
+   перекрывать отсчёт. */
+.t-voice__peek {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9047ff;
+  background: #f4f1fb;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+/* Развёрнутая шпаргалка перекрывает лицо — во время звонка это осознанный
+   размен: ученику нужен текст, а не мимика. */
+.t-voice__peekpanel {
+  position: absolute;
+  inset: 56px 16px auto 16px;
+  z-index: 3;
+}
+@media (max-width: 560px) {
+  .t-brief {
+    padding: 18px;
+    border-radius: 20px;
+  }
+  .t-brief__list {
+    font-size: 14px;
+  }
+}
+
+/* Обрыв связи: экран намеренно почти пустой — это удар, а не сообщение. */
+.t-linedead {
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+.t-linedead__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #6b6480;
+  letter-spacing: 0.01em;
+}

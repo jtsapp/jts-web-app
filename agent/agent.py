@@ -607,6 +607,9 @@ class LearnerProfile:
     # Приходит из /api/livekit/token; агент по нему жёстко закрывает комнату,
     # чтобы разговор не шёл дольше лимита. 0 → потолок не задан (не закрываем).
     session_ttl_sec: int = 0
+    # Бюджет времени СЦЕНЫ (не дневного лимита) в секундах. Приходит из реестра
+    # сценариев через /api/livekit/token. 0 → у сцены своих часов нет.
+    scenario_limit_sec: int = 0
 
 
 def _str_list(raw: Any, cap: int) -> list[str]:
@@ -706,6 +709,11 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         session_ttl_sec=(
             int(data["sessionTtlSec"])
             if isinstance(data.get("sessionTtlSec"), (int, float))
+            else 0
+        ),
+        scenario_limit_sec=(
+            int(data["scenarioLimitSec"])
+            if isinstance(data.get("scenarioLimitSec"), (int, float))
             else 0
         ),
     )
@@ -2110,7 +2118,14 @@ def build_scenario_instructions(p: LearnerProfile, scenario: dict[str, Any]) -> 
         "failure, with a short summary and up to 3 tips) — then speak your verdict "
         "and closing feedback out loud. Do NOT call the tool before the real "
         "ending, and do NOT announce that you are calling any tool.\n"
-        "GRADING — two DIFFERENT questions, do not merge them:\n"
+        + (
+            f"HARD TIME LIMIT: this scene lasts about {p.scenario_limit_sec // 60} "
+            "minutes and the learner can see the clock. Keep the pace up, do not "
+            "let the scene idle, and never mention the timer out loud.\n"
+            if p.scenario_limit_sec
+            else ""
+        )
+        + "GRADING — two DIFFERENT questions, do not merge them:\n"
         "passed = did the SCENE reach its own ending? Read the script's 'Passed =' "
         "line: it asks only whether the business of the scene got done (the "
         "check-in completed, the order served, the offer made or refused). That is "
@@ -3659,6 +3674,58 @@ async def entrypoint(ctx: JobContext):
             _budget_task.cancel()
 
         ctx.add_shutdown_callback(_cancel_budget_task)
+
+    # ── Часы сцены ────────────────────────────────────────────────────────────
+    # Отдельный от дневного лимита бюджет: у звонка в 911 пять минут. Считает его
+    # сторож, а не модель: модель секунды не считает, а списание минут завязано на
+    # удаление комнаты (webhook room_finished), ровно как у бюджета выше.
+    scene_limit = profile.scenario_limit_sec
+    if scene_limit and scene_limit > 0:
+        scene_room = ctx.room.name
+        # Те же десять секунд, что и у клиента (CLOCK_CUT_LEAD_SEC в
+        # src/tutor/scenarioClock.js). Питон JS не импортирует, поэтому число
+        # продублировано — менять только парой, иначе надпись «связь пропала»
+        # появится не тогда, когда связь реально оборвалась.
+        cut_at = max(0, scene_limit - 10)
+
+        async def _end_scene_on_clock(limit: int) -> None:
+            try:
+                await asyncio.sleep(limit)
+            except asyncio.CancelledError:
+                return
+            logger.info("Scene clock %ds reached — cutting room %s.", limit, scene_room)
+            try:
+                session.generate_reply(
+                    instructions=(
+                        "The line is breaking up and the call is about to drop. "
+                        "Call report_task_complete NOW with passed=false, a one-line "
+                        "summary of what was missing, and up to 3 tips. Say nothing else."
+                    )
+                )
+                await asyncio.sleep(2.5)
+            except Exception:
+                logger.exception("[scene-clock] final verdict failed")
+            try:
+                from livekit import api as lk_api
+
+                lkapi = lk_api.LiveKitAPI()
+                try:
+                    await lkapi.room.delete_room(lk_api.DeleteRoomRequest(room=scene_room))
+                finally:
+                    await lkapi.aclose()
+            except Exception:
+                logger.exception("[scene-clock] delete_room failed; disconnecting agent")
+                try:
+                    await ctx.room.disconnect()
+                except Exception:
+                    logger.exception("[scene-clock] room disconnect failed")
+
+        _scene_task = asyncio.create_task(_end_scene_on_clock(cut_at))
+
+        async def _cancel_scene_task() -> None:
+            _scene_task.cancel()
+
+        ctx.add_shutdown_callback(_cancel_scene_task)
 
     # ── Захват транскрипта для истории звонков ────────────────────────────────
     # Копим реплики по ходу (STT ученика + текст ответов тьютора) и в конце
