@@ -191,10 +191,15 @@ export function getCourseCatalog(token, onFresh) {
   return cachedAuthGet('/mobile/course-catalog', token, onFresh)
 }
 
-// Один урок каталога: fileUrl (сырой L*.html на files-api) + type/title. Сам
-// контент извлекается на клиенте из fileUrl (см. loadCatalogLesson).
+// Один урок каталога: fileUrl (сырой L*.html) + type/title.
 export function getCourseCatalogLesson(id, token) {
   return authGet(`/mobile/course-catalog/lessons/${id}`, token)
+}
+
+// Структура урока, разобранная один раз при регистрации уровня и сохранённая на
+// бэкенде. content === null — структуры нет, урок открывается как файл (fileUrl).
+export function getCourseCatalogLessonContent(id, token) {
+  return authGet(`/mobile/course-catalog/lessons/${id}/content`, token)
 }
 
 // Расписание вошедшего пользователя. Бэкенд скоупит /admin/lessons* под личность
