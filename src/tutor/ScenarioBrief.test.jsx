@@ -34,8 +34,14 @@ describe('ScenarioBrief', () => {
     })
     expect(screen.queryByText('Поехали')).toBeNull()
   })
+  it('рисует пункты ситуации и переданное действие', () => {
+    renderBrief({
+      scenarioId: '911-call',
+      action: <button type="button">Поехали</button>,
+    })
+    expect(screen.getByRole('note')).toBeTruthy()
+    // Пять строк брифинга — по пункту на строку.
+    expect(screen.getAllByRole('listitem')).toHaveLength(5)
+    expect(screen.getByText('Поехали')).toBeTruthy()
+  })
 })
-
-// Тест на положительный случай (плашка с текстом и действием) появится в
-// Task 7 вместе с первой сценой, у которой брифинг есть: раньше в словаре
-// просто нет ни одного ключа scen.brief.*.

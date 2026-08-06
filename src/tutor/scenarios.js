@@ -60,6 +60,20 @@ export const SCENARIOS = [
     badge: '🩺',
     requires: 'household-store',
   },
+  {
+    id: '911-call',
+    label: 'Emergency Call',
+    img: '/tutor/911-call.jpg',
+    badge: '🚨',
+    // Сцена вне сюжета «Newcomer in the USA», поэтому requires ей не нужен.
+    // brief — вводные, которых в самом разговоре нет: диспетчер не может
+    // рассказать ученику, что тот видит из окна, это ученик рассказывает
+    // диспетчеру.
+    brief: true,
+    // Пять минут, дальше связь рвётся. Успеть вызвать помощь — это и есть
+    // задача сцены, а не украшение.
+    timeLimitSec: 300,
+  },
 ]
 
 export const LABEL_BY_ID = Object.fromEntries(SCENARIOS.map((s) => [s.id, s.label]))
