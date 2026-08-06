@@ -26,7 +26,7 @@ const INTENSITY_GAIN = { 1: 0.75, 2: 1, 3: 1.3 }
 // Нейтральное значение ключа, если пресет его не задал. Для МНОЖИТЕЛЕЙ это
 // единица, а не ноль: пресет без eyeW когда-то давал ширину глаза 0, и на
 // listening/thinking глаза просто исчезали с лица.
-const KEY_DEFAULTS = { eyeH: 1, eyeW: 1, speed: 1 }
+const KEY_DEFAULTS = { eyeH: 1, eyeW: 1, speed: 1, spread: 1 }
 
 const lerp = (a, b, f) => a + (b - a) * f
 const get = (o, k, d) => (o[k] === undefined ? d : o[k])
@@ -385,11 +385,14 @@ export default class TutorAvatar {
 
     const lx = s.lookX * 10 * k
     const ly = s.lookY * 8 * k
-    this._drawEye(-this.eyeSpread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 1.12 : 1)
-    this._drawEye(this.eyeSpread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 0.58 : 1)
+    // spread сдвигает глаза к переносице: у ярости они сходятся к центру, и без
+    // этого разлёт ±44 держал бы лицо спокойным при любом рте и бровях.
+    const spread = this.eyeSpread * s.spread
+    this._drawEye(-spread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 1.12 : 1)
+    this._drawEye(spread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 0.58 : 1)
     // Брови ходят за взглядом слабее глаз — они на «черепе», а не в глазнице.
-    this._drawBrow(-this.eyeSpread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, -1, s.brow)
-    this._drawBrow(this.eyeSpread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, 1, s.brow)
+    this._drawBrow(-spread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, -1, s.brow)
+    this._drawBrow(spread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, 1, s.brow)
     this._drawMouth(lx * 0.5, this.mouthY + ly * 0.4)
 
     // Эффекты позиционируем от РЕАЛЬНОГО радиуса формы, а не от R: они белые,
@@ -525,6 +528,18 @@ export default class TutorAvatar {
       const mh = (8 + openAmt * 30) * k
       const mw = (25 + openAmt * 11) * k
       this._caps(x, y + mh * 0.28, mw, mh, Math.min(mw, mh) / 2)
+      ctx.fill()
+    } else if (s.mouth === 'roar') {
+      // Ор во весь рот: единственный рот ВЫШЕ, чем шире. Он и делает ярость
+      // яростью — на остальных лицах рот максимум 38 в высоту.
+      //
+      // Размер НЕ копия макетных 56×65: там черты нарисованы в половинном
+      // масштабе от собственных чисел спеки (шар 300px при «R 150»), и рот
+      // по этим числам вылезал бы за нижний край формы. Держим ту же долю от
+      // шара, что на карточке, — примерно 0.6 его высоты.
+      const mw = 46 * k
+      const mh = (44 + openAmt * 10) * k
+      this._caps(x, y - 4 * k, mw, mh, 14 * k)
       ctx.fill()
     } else if (s.mouth === 'grit') {
       // Оскал стиснутых зубов — единственный рот с белой заливкой. В мультяшной
