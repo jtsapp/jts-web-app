@@ -229,6 +229,10 @@ export const DICT = {
     'scen.desc.doctors-office':
       'приём у врача: описываем симптомы точно — ache, pain, hurt, sore — и говорим о длительности',
     'scen.start': 'Начать разговор',
+    'scen.briefTitle': 'Ситуация',
+    'scen.briefReady': 'Я готов, звоню',
+    'scen.briefPeek': 'Ситуация',
+    'scen.briefClose': 'Закрыть',
     'scen.verdictPass': 'Задача пройдена',
     'scen.verdictFail': 'Задача не пройдена',
     'scen.verdictDone': 'Готово',
@@ -452,6 +456,10 @@ export const DICT = {
     'scen.desc.doctors-office':
       'дәрігер қабылдауы: симптомдарды дәл сипаттаймыз — ache, pain, hurt, sore — және ұзақтығы',
     'scen.start': 'Әңгімені бастау',
+    'scen.briefTitle': 'Жағдай',
+    'scen.briefReady': 'Дайынмын, қоңырау шаламын',
+    'scen.briefPeek': 'Жағдай',
+    'scen.briefClose': 'Жабу',
     'scen.verdictPass': 'Тапсырма орындалды',
     'scen.verdictFail': 'Тапсырма орындалмады',
     'scen.verdictDone': 'Дайын',
@@ -673,6 +681,10 @@ export const DICT = {
     'scen.desc.doctors-office':
       'a doctor’s visit: describing symptoms precisely — ache, pain, hurt, sore — and how long',
     'scen.start': 'Start conversation',
+    'scen.briefTitle': 'The situation',
+    'scen.briefReady': "I'm ready — call",
+    'scen.briefPeek': 'Situation',
+    'scen.briefClose': 'Close',
     'scen.verdictPass': 'Task complete',
     'scen.verdictFail': 'Task not passed',
     'scen.verdictDone': 'Done',
