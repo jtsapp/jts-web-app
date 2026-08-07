@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { SCENARIOS } from '../src/tutor/scenarios.js'
 
 // Внутренние экраны тьютор-зоны. До мобильной адаптации они рисовались
 // десктопными колонками/сетками: manage резал историю, план уроков — карточки,
@@ -56,7 +57,10 @@ test.describe('внутренние экраны тьютора — мобилк
 test.describe('внутренние экраны тьютора — контент', () => {
   test('план уроков — сюжетная цепочка сценариев, без демо-уроков', async ({ page }) => {
     await page.goto('/?screen=tutor-lesson-plan')
-    await expect(page.locator('.t-plan__card')).toHaveCount(7)
+    // Число берём из реестра, а не константой: тест уже краснел на восьмом
+    // сценарии («Emergency Call»), хотя проверяет он не количество сцен, а то,
+    // что план строится по реестру, а не по демо-заглушкам.
+    await expect(page.locator('.t-plan__card')).toHaveCount(SCENARIOS.length)
     await expect(page.locator('.t-plan__title').first()).toHaveText('U.S. Visa Interview')
     // Демо-заглушка «Практика Present Continious» ушла вместе с опечаткой.
     await expect(page.locator('.t-plan')).not.toContainText('Continious')
