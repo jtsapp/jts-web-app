@@ -141,14 +141,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     if (!activeSectionId || catalogBusy) return
     setCatalogBusy(true)
     try {
-      const material = await attachLessonMaterial(token, lessonId, {
+      // Ручка отдаёт весь список материалов урока, а не созданный: ищем свой
+      // по url и берём последний — тот же урок могли прикреплять и раньше.
+      const list = await attachLessonMaterial(token, lessonId, {
         fileName: lesson.title,
         url: lesson.fileUrl,
       })
-      const materialId = material?.id ?? material?.materialId
+      const created = Array.isArray(list)
+        ? [...list].reverse().find((m) => m.url === lesson.fileUrl)
+        : list
+      const materialId = created?.id
+      if (!materialId) throw new Error('material not created')
       await attachSectionMaterial(token, lessonId, activeSectionId, materialId)
-      const list = await getLessonSections(token, lessonId)
-      setSections(list || [])
+      const refreshed = await getLessonSections(token, lessonId)
+      setSections(refreshed || [])
       sendFocus(activeSectionId, materialId)
       setPresenting(true)
       setCatalogOpen(false)
