@@ -5,7 +5,7 @@ import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance } from '../api.js'
 import { loadToken } from '../lib/session.js'
-import { isTeacher } from '../lib/role.js'
+import { isTeacher } from '../lib/jwt.js'
 import {
   LearningIcon,
   PracticeIcon,
