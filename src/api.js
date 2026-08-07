@@ -256,6 +256,19 @@ export function getLessonSections(token, lessonId) {
   return authGet(`/admin/lessons/${lessonId}/sections`, token)
 }
 
+// Прикрепление урока каталога к живому уроку. Материал воркспейса — это
+// {fileName, url}, а у урока каталога есть fileUrl, поэтому отдельный канал
+// «показать урок каталога» не нужен: урок становится обычным материалом
+// раздела, и дальше работает существующий follow-me (sendFocus). Заодно выбор
+// переживает перезагрузку у ученика — он сохранён, а не разослан событием.
+export function attachLessonMaterial(token, lessonId, { fileName, url }) {
+  return authPost(`/admin/lessons/${lessonId}/materials`, token, { fileName, url })
+}
+
+export function attachSectionMaterial(token, lessonId, sectionId, materialId) {
+  return authPost(`/admin/lessons/${lessonId}/sections/${sectionId}/materials`, token, { materialId })
+}
+
 export function getLessonMessages(token, lessonId) {
   return authGet(`/admin/lessons/${lessonId}/messages`, token)
 }

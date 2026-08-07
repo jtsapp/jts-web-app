@@ -4,6 +4,8 @@ import { useI18n } from '../i18n.jsx'
 import {
   getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson,
   getLessonSections, getLessonMessages, sendLessonMessage, setLessonMeetingUrl,
+  attachLessonMaterial,
+  attachSectionMaterial,
 } from '../api.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { canControl } from './live/liveStatus.js'
@@ -16,6 +18,7 @@ import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
 import LessonRoute from './workspace/LessonRoute.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
+import CatalogPicker from './live/CatalogPicker.jsx'
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
@@ -43,6 +46,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
   const [presenting, setPresenting] = useState(false)
   const materialFrameRef = useRef(null)
+  // Выбор урока из каталога — только у ведущего (design-spec §4.10).
+  const [catalogOpen, setCatalogOpen] = useState(false)
+  const [catalogBusy, setCatalogBusy] = useState(false)
+  const [toast, setToast] = useState(null)
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
   const activeMaterial = activeSection?.materials?.[0] || null
@@ -127,6 +134,32 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     sendPresent(activeMaterial.materialId, events)
   }
 
+  // Урок из каталога прикрепляется к активному разделу обычным материалом, и
+  // только потом транслируется. Порядок важен: focus указывает на materialId,
+  // которого до прикрепления не существует.
+  async function pickCatalogLesson(lesson) {
+    if (!activeSectionId || catalogBusy) return
+    setCatalogBusy(true)
+    try {
+      const material = await attachLessonMaterial(token, lessonId, {
+        fileName: lesson.title,
+        url: lesson.fileUrl,
+      })
+      const materialId = material?.id ?? material?.materialId
+      await attachSectionMaterial(token, lessonId, activeSectionId, materialId)
+      const list = await getLessonSections(token, lessonId)
+      setSections(list || [])
+      sendFocus(activeSectionId, materialId)
+      setPresenting(true)
+      setCatalogOpen(false)
+      setToast(t('live.catalog.attached', { title: lesson.title }))
+    } catch {
+      setToast(t('live.catalog.failed'))
+    } finally {
+      setCatalogBusy(false)
+    }
+  }
+
   function handleFocusClick() {
     if (!activeSectionId) return
     sendFocus(activeSectionId, activeMaterial?.materialId ?? null)
@@ -204,6 +237,40 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 onResume={() => act(resumeLiveLesson)}
                 onComplete={() => act(completeLiveLesson)}
               />
+            )}
+
+            {/* Выбор урока каталога доступен только ведущему и только когда
+                есть раздел, к которому его прикрепить. */}
+            {isStaff && (status === 'IN_PROGRESS' || status === 'PAUSED') && (
+              <div className="live__section">
+                <button
+                  type="button"
+                  className="live-catalog__open"
+                  disabled={!activeSectionId || catalogBusy}
+                  onClick={() => setCatalogOpen(true)}
+                >
+                  {t('live.catalog.open')}
+                </button>
+              </div>
+            )}
+
+            {catalogOpen && (
+              <div className="cp__backdrop" onClick={() => !catalogBusy && setCatalogOpen(false)}>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <CatalogPicker
+                    token={token}
+                    busy={catalogBusy}
+                    onPick={pickCatalogLesson}
+                    onClose={() => setCatalogOpen(false)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {toast && (
+              <p className="live__toast" role="status" onAnimationEnd={() => setToast(null)}>
+                {toast}
+              </p>
             )}
 
             <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
