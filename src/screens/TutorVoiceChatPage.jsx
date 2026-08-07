@@ -250,16 +250,15 @@ function fmtClock(sec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-// Сколько держать реакцию на лице после того, как тьютор договорил. Эмоцию
-// агент помечает в НАЧАЛЕ реплики, а показывать её во время речи нельзя: там
-// рот работает по амплитуде звука (состояние talking). Поэтому тег ждёт конца
-// озвучки и живёт окном — дальше лицо возвращается к «слушаю», иначе ученик
-// не видит, что микрофон снова его.
+// Сколько держать реакцию на лице ПОСЛЕ того, как тьютор договорил. Сам тег
+// приходит в начале реплики и попадает на лицо сразу: речь больше не занимает
+// мимику (см. setSpeaking в avatarEngine.js), поэтому эмоция живёт всю реплику
+// и ещё это окно. Раньше тег ждал конца озвучки — эмоцию, которой агент пометил
+// фразу, ученик видел только когда фраза уже кончилась.
 //
-// Окно считается ОТ НАЧАЛА перехода, а цвет доезжает примерно за 1.6с
-// (TAU_COLOR в avatarEngine.js). При 3.2с эмоция едва успевала доехать и сразу
-// уходила — читалось как вспышка, особенно у Декстера, который метит реплику
-// почти каждый раз. Держим дольше, чтобы на полной силе она реально постояла.
+// Окно нужно, чтобы лицо потом вернулось к «слушаю»: иначе ученик не видит,
+// что микрофон снова его. Цвет доезжает примерно за 1.6с (TAU_COLOR), так что
+// окно короче ~3с читалось бы как вспышка.
 const REACTION_MS = 4500
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
@@ -284,10 +283,17 @@ function CallStage({ onFinish, t, ttl }) {
     }
   })
 
-  // Эмоция тьютора. Тег приходит в начале реплики, а на лицо попадает после
-  // озвучки (см. REACTION_MS), поэтому ждёт своей очереди в ref, а не в стейте:
-  // перерисовывать экран на приход тега нечего.
-  const pendingMood = useRef(null)
+  // Эмоция тьютора. Тег приходит в начале реплики и сразу идёт на лицо — с ним
+  // же тьютор её и произносит.
+  const [reaction, setReaction] = useState(null)
+  const reactionTimer = useRef(null)
+  const stopReactionTimer = () => {
+    if (reactionTimer.current) {
+      clearTimeout(reactionTimer.current)
+      reactionTimer.current = null
+    }
+  }
+
   useDataChannel('mood', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
@@ -296,7 +302,8 @@ function CallStage({ onFinish, t, ttl }) {
       // Number.isInteger, а не только диапазон: 1.5 прошло бы `>= 1 && <= 3`,
       // а сила — это индекс в таблице подвижности, дробной она не бывает.
       if (key && Number.isInteger(level) && level >= 1 && level <= 3) {
-        pendingMood.current = { key, level }
+        stopReactionTimer()
+        setReaction({ key, level })
       }
     } catch {
       /* ignore malformed payloads */
@@ -307,38 +314,31 @@ function CallStage({ onFinish, t, ttl }) {
   const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
   const speaking = va.state === 'speaking'
 
-  // Реакция показывается ровно тогда, когда тьютор замолчал: до этого на лице
-  // липсинк, и подменять его эмоцией — значит потерять и то, и другое.
-  const [reaction, setReaction] = useState(null)
-  const wasSpeaking = useRef(false)
+  // Реакция держится всю реплику, а гаснет через окно после неё.
   useEffect(() => {
-    if (speaking) {
-      // Гасить прошлую реакцию тут не нужно: во время речи её всё равно
-      // перекрывает talking, а лишний setState в эффекте — лишний рендер.
-      wasSpeaking.current = true
-      return
-    }
-    if (!wasSpeaking.current) return
-    wasSpeaking.current = false
-    const m = pendingMood.current
-    pendingMood.current = null
-    // Именно `m || null`, а не ранний выход: реплика без тега обязана СТЕРЕТЬ
-    // прошлую реакцию, иначе после неё на лице всплывёт позапрошлая эмоция.
-    setReaction(m || null)
-    if (!m) return
-    const id = setTimeout(() => setReaction(null), REACTION_MS)
-    return () => clearTimeout(id)
-  }, [speaking])
+    if (speaking || !reaction || reactionTimer.current) return
+    reactionTimer.current = setTimeout(() => {
+      reactionTimer.current = null
+      setReaction(null)
+    }, REACTION_MS)
+    // Таймер НАМЕРЕННО не снимается на смену speaking. Снять его — значит
+    // оставить эмоцию от прошлой реплики висеть на следующей, если та пришла
+    // без тега: гасить её тогда будет некому.
+  }, [speaking, reaction])
+
+  useEffect(() => stopReactionTimer, [])
 
   // Голос тьютора для липсинка. Берём сырой MediaStreamTrack: TrackReference
   // пересоздаётся на каждый ререндер, а трек внутри тот же — иначе эффект с
   // AudioContext пересобирался бы вхолостую по десятку раз за реплику.
   const agentTrack = va.audioTrack?.publication?.track?.mediaStreamTrack || null
 
+  // Речи в этой лесенке нет: она не эмоция, а отдельный флаг ниже. Во время
+  // реплики на лице то, чем её пометил агент, — а без тега просто нейтраль,
+  // которая говорит.
   let emotion = 'idle'
   let intensity = 2
   if (!connected || !agentPresent) emotion = 'idle'
-  else if (speaking) emotion = 'talking'
   else if (va.state === 'thinking') emotion = 'thinking'
   else if (reaction) {
     emotion = reaction.key
@@ -444,7 +444,12 @@ function CallStage({ onFinish, t, ttl }) {
       )}
       {/* Лицо не завершает звонок по клику: неподписанный клик по картинке
           рвал разговор случайным тапом. Завершение — явной кнопкой ниже. */}
-      <TutorFace emotion={emotion} intensity={intensity} audioTrack={agentTrack} />
+      <TutorFace
+        emotion={emotion}
+        intensity={intensity}
+        speaking={speaking}
+        audioTrack={agentTrack}
+      />
       <div className="t-voice__text">
         <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>
       </div>

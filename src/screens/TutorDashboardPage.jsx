@@ -6,8 +6,8 @@ import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
 import { MenuIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
-import { SCENARIOS, LABEL_BY_ID } from '../tutor/scenarios.js'
-import { NO_LOCK, usePassedScenarios } from '../tutor/scenarioProgress.js'
+import { SCENARIOS } from '../tutor/scenarios.js'
+import { usePassedScenarios } from '../tutor/scenarioProgress.js'
 import { useEnglishOnly } from '../lib/englishOnly.js'
 
 export default function TutorDashboardPage({
@@ -37,12 +37,8 @@ export default function TutorDashboardPage({
   // «Практика Present Continious» с пустым обработчиком.
   const passed = usePassedScenarios()
   const suggested = SCENARIOS.find((s) => !passed?.has(s.id)) || SCENARIOS[0]
-  // Заперт только если точно знаем, что предыдущий не сдан — та же логика, что
-  // на странице «Сценарии»: неизвестный прогресс открывает всё.
-  const lockedBy = (s) => {
-    if (NO_LOCK || !s.requires || !passed) return null
-    return passed.has(s.requires) ? null : s.requires
-  }
+  // Замков нет: все сценарии открыты сразу, независимо от уровня и прогресса.
+  // Прогресс нужен только чтобы выбрать «Советуем сегодня».
   const tourSteps = [
     { selector: '.t-dash__orb', title: t('tour.mic.title'), text: t('tour.mic.text') },
     { selector: '.t-scenarios', title: t('tour.scenarios.title'), text: t('tour.scenarios.text') },
@@ -96,7 +92,36 @@ export default function TutorDashboardPage({
               >
                 <TutorFace className="t-dash__face" emotion={mood} />
               </button>
-              <h1 className="t-dash__ctatitle">{t('dash.ctaTitle')}</h1>
+              {/* Раньше тут висел заголовок «Нажмите, чтобы поболтать» — надпись,
+                  по которой половина людей и не пробовала кликнуть. Теперь явная
+                  кнопка старта в цвете «Советуем сегодня»; орб остался кликабельным. */}
+              <button className="t-dash__talk" type="button" onClick={onTalk}>
+                {t('scen.start')}
+              </button>
+
+              {/* Порядок в стопке = порядок важности: разговор → что делать
+                  дальше → настройка. Тумблер стоял вторым и разрывал связку
+                  кнопки с подсказкой дня. */}
+
+              {/* Контекстная карточка: превью сцены здесь не украшение — по нему
+                  видно, КУДА ведёт нажатие, до перехода на экран сценария. */}
+              <button
+                className="t-dash__suggest"
+                type="button"
+                onClick={() => onSuggest && onSuggest(suggested.id)}
+              >
+                <span
+                  className="t-dash__suggestthumb"
+                  style={{ backgroundImage: `url(${suggested.img})` }}
+                />
+                <span className="t-dash__suggesttext">
+                  <small>{t('dash.suggestLabel')}</small>
+                  <b>{suggested.label}</b>
+                </span>
+                <span className="t-dash__suggestarrow">
+                  <ArrowRightIcon size={18} />
+                </span>
+              </button>
 
               <button
                 className={'t-dash__engonly' + (englishOnly ? ' is-on' : '')}
@@ -110,20 +135,6 @@ export default function TutorDashboardPage({
                   <small>{t('dash.englishOnlyHint')}</small>
                 </span>
                 <span className="t-dash__switch" aria-hidden="true" />
-              </button>
-
-              <button
-                className="t-dash__suggest"
-                type="button"
-                onClick={() => onSuggest && onSuggest(suggested.id)}
-              >
-                <span className="t-dash__suggesttext">
-                  <small>{t('dash.suggestLabel')}</small>
-                  <b>{suggested.label}</b>
-                </span>
-                <span className="t-dash__suggestarrow">
-                  <ArrowRightIcon size={20} />
-                </span>
               </button>
             </div>
           </section>
@@ -144,29 +155,22 @@ export default function TutorDashboardPage({
               {/* Панель отдаёт ВСЕ сценарии и скроллится: раньше висели два
                   превью, а остальное было только за «Посмотреть все». */}
               <div className="t-scenarios">
-                {SCENARIOS.map((s) => {
-                  const locked = lockedBy(s)
-                  return (
-                    <button
-                      className={'t-scenario' + (locked ? ' is-locked' : '')}
-                      key={s.id}
-                      type="button"
-                      disabled={Boolean(locked)}
-                      title={
-                        locked ? t('scen.locked', { label: LABEL_BY_ID[locked] || locked }) : undefined
-                      }
-                      onClick={() => !locked && onScenario && onScenario(s.id)}
+                {SCENARIOS.map((s) => (
+                  <button
+                    className="t-scenario"
+                    key={s.id}
+                    type="button"
+                    onClick={() => onScenario && onScenario(s.id)}
+                  >
+                    <span
+                      className="t-scenario__img"
+                      style={{ backgroundImage: `url(${s.img})` }}
                     >
-                      <span
-                        className="t-scenario__img"
-                        style={{ backgroundImage: `url(${s.img})` }}
-                      >
-                        <span className="t-scenario__badge">{locked ? '🔒' : s.badge}</span>
-                      </span>
-                      <span className="t-scenario__label">{s.label}</span>
-                    </button>
-                  )
-                })}
+                      <span className="t-scenario__badge">{s.badge}</span>
+                    </span>
+                    <span className="t-scenario__label">{s.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </aside>

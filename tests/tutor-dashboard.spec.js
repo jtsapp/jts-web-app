@@ -1,15 +1,17 @@
 import { test, expect } from '@playwright/test'
 
 // Дашборд тьютора: виджет «План уроков» (хардкод-заглушка) убран, остались
-// герой с микрофоном и превью сценариев. На мобилке раньше десктопные две
-// колонки сжимались в кашу — контракт ниже фиксирует вертикальную раскладку.
+// герой (орб-лицо + кнопка «Начать разговор») и превью сценариев. На мобилке
+// раньше десктопные две колонки сжимались в кашу — контракт ниже фиксирует
+// вертикальную раскладку.
 
 test.describe('дашборд тьютора — контент', () => {
   test('плана уроков нет, сценарии на месте', async ({ page }) => {
     await page.goto('/?screen=tutor-dashboard')
 
     // Герой: микрофон и подсказка занятия.
-    await expect(page.locator('.t-dash__mic')).toBeVisible()
+    await expect(page.locator('.t-dash__orb')).toBeVisible()
+    await expect(page.locator('.t-dash__talk')).toBeVisible()
 
     // Секция в панели ровно одна — «Сценарии»; от плана уроков не осталось следов.
     await expect(page.locator('.t-panel__section')).toHaveCount(1)
@@ -30,7 +32,8 @@ test.describe('дашборд тьютора — мобилка', () => {
 
   test('вертикальная раскладка без горизонтального скролла', async ({ page, viewport }) => {
     await page.goto('/?screen=tutor-dashboard')
-    await expect(page.locator('.t-dash__mic')).toBeVisible()
+    await expect(page.locator('.t-dash__orb')).toBeVisible()
+    await expect(page.locator('.t-dash__talk')).toBeVisible()
 
     // Страница не расползается вширь (раньше десктопная сетка давала overflow).
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
