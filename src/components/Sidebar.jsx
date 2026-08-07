@@ -5,6 +5,7 @@ import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
 import { getBalance } from '../api.js'
 import { loadToken } from '../lib/session.js'
+import { isTeacher } from '../lib/role.js'
 import {
   LearningIcon,
   PracticeIcon,
@@ -30,6 +31,10 @@ const NAV_FULL = [
 // обычных пользователей (доступны диплинком ?screen=… для отладки).
 const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
 
+// Разделы преподавателя. Остальное в списке — его собственное обучение, которого
+// у него нет: Практика, Тьютор, IELTS и Словарь ученические (design-spec §4.2).
+const TEACHER_SECTIONS = ['lessons']
+
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
   return String(n ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
@@ -50,6 +55,10 @@ export default function Sidebar({
   onClose,
   rail = false,
 }) {
+  // Роль читается из токена прямо здесь: сайдбар и так его получает, а
+  // прокидывать признак сверху пришлось бы через полдюжины экранов.
+  const teacher = isTeacher(token)
+  const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : NAV
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()
@@ -115,7 +124,7 @@ export default function Sidebar({
         </button>
 
         <nav className="sb__nav">
-          {NAV.map(({ key, label, Icon }) => (
+          {nav.map(({ key, label, Icon }) => (
             <button
               key={key}
               className={`sb__item ${active === key ? 'sb__item--active' : ''}`}
@@ -129,6 +138,8 @@ export default function Sidebar({
 
       <div className="sb__spacer" />
 
+      {!teacher && (
+        <>
       <div className="sb__role">
         <img className="sb__role-ic" src={`/assets/world/roles/${role.key}.png`} alt="" />
         <span className="sb__role-text">
@@ -154,6 +165,8 @@ export default function Sidebar({
           <span className="sb__stat-num sb__stat-num--coin">{groupNum(balance.coins)}</span>
         </div>
         </div>
+        </>
+      )}
       </aside>
     </>
   )
