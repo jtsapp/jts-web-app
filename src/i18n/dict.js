@@ -228,7 +228,17 @@ export const DICT = {
       'закупка для новой квартиры: как объяснить предмет, название которого не знаешь',
     'scen.desc.doctors-office':
       'приём у врача: описываем симптомы точно — ache, pain, hurt, sore — и говорим о длительности',
+    'scen.desc.911-call':
+      'звонок в 911: объяснить диспетчеру, где ты, не зная адреса — пять минут',
+    'scen.brief.911-call':
+      'Ты на втором этаже заброшенной бумажной фабрики на окраине города.\nАдреса ты не знаешь. Телефон почти разряжен.\nВнизу трое мужчин — они ищут тебя. Слышны шаги на лестнице.\nИз окна видно: река, красная кирпичная труба, ржавая вывеска MILLER & SONS PAPER MILL, вдалеке жёлтый мост. На двери рядом — номер GATE 4.\nЗадача: за 5 минут добиться, чтобы полиция выехала. Говори тихо.',
     'scen.start': 'Начать разговор',
+    'scen.briefTitle': 'Ситуация',
+    'scen.briefReady': 'Я готов, звоню',
+    'scen.briefPeek': 'Ситуация',
+    'scen.briefClose': 'Закрыть',
+    'scen.lineDead': 'Связь пропала',
+    'scen.lineDeadHint': 'Помощь вызвать не успели',
     'scen.verdictPass': 'Задача пройдена',
     'scen.verdictFail': 'Задача не пройдена',
     'scen.verdictDone': 'Готово',
@@ -451,7 +461,17 @@ export const DICT = {
       'жаңа пәтерге керек-жарақ: атауын білмейтін затты қалай түсіндіру',
     'scen.desc.doctors-office':
       'дәрігер қабылдауы: симптомдарды дәл сипаттаймыз — ache, pain, hurt, sore — және ұзақтығы',
+    'scen.desc.911-call':
+      '911-ге қоңырау: мекенжайды білмей тұрып, диспетчерге қайдасың екенін түсіндір — бес минут',
+    'scen.brief.911-call':
+      'Сен қала шетіндегі тасталған қағаз фабрикасының екінші қабатындасың.\nМекенжайды білмейсің. Телефон отыруға жақын.\nТөменде үш еркек — олар сені іздеп жүр. Баспалдақтан қадам дыбысы естіледі.\nТерезеден көрінеді: өзен, қызыл кірпіш мұржа, тот басқан MILLER & SONS PAPER MILL жазуы, алыста сары көпір. Қасындағы есікте — GATE 4 нөмірі.\nМіндет: 5 минут ішінде полицияны шақыру. Ақырын сөйле.',
     'scen.start': 'Әңгімені бастау',
+    'scen.briefTitle': 'Жағдай',
+    'scen.briefReady': 'Дайынмын, қоңырау шаламын',
+    'scen.briefPeek': 'Жағдай',
+    'scen.briefClose': 'Жабу',
+    'scen.lineDead': 'Байланыс үзілді',
+    'scen.lineDeadHint': 'Көмекті шақырып үлгермедіңіз',
     'scen.verdictPass': 'Тапсырма орындалды',
     'scen.verdictFail': 'Тапсырма орындалмады',
     'scen.verdictDone': 'Дайын',
@@ -672,7 +692,17 @@ export const DICT = {
       'stocking an empty apartment: how to describe an object when you don’t know its name',
     'scen.desc.doctors-office':
       'a doctor’s visit: describing symptoms precisely — ache, pain, hurt, sore — and how long',
+    'scen.desc.911-call':
+      'a 911 call: make the dispatcher understand where you are without an address — five minutes',
+    'scen.brief.911-call':
+      "You're on the second floor of an abandoned paper mill on the edge of town.\nYou don't know the address. Your phone is almost dead.\nThree men are downstairs, looking for you. You can hear steps on the stairs.\nFrom the window: a river, a red brick chimney, a rusted sign reading MILLER & SONS PAPER MILL, a yellow bridge in the distance. The nearest door is marked GATE 4.\nYour task: get the police on the way within 5 minutes. Keep your voice down.",
     'scen.start': 'Start conversation',
+    'scen.briefTitle': 'The situation',
+    'scen.briefReady': "I'm ready — call",
+    'scen.briefPeek': 'Situation',
+    'scen.briefClose': 'Close',
+    'scen.lineDead': 'The line went dead',
+    'scen.lineDeadHint': 'Help was never dispatched',
     'scen.verdictPass': 'Task complete',
     'scen.verdictFail': 'Task not passed',
     'scen.verdictDone': 'Done',
