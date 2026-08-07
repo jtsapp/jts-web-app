@@ -2,6 +2,7 @@ import { useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
+import { isTeacher } from '../lib/role.js'
 
 const TABS = [
   { key: 'clubs', label: 'lessons.tabClubs' },
@@ -10,6 +11,10 @@ const TABS = [
 
 export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog }) {
   const { t } = useI18n()
+  // Каталог уровней — инструмент преподавателя: он выбирает из него, что вести
+  // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
+  // поэтому вход в него только по роли.
+  const teacher = isTeacher(token)
   const [tab, setTab] = useState('online')
 
   return (
@@ -17,7 +22,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
       <div className="ls">
         <header className="ls__head">
           <h1 className="ls__title">{t('nav.lessons')}</h1>
-          {onOpenCatalog && (
+          {teacher && onOpenCatalog && (
             <button type="button" className="cc-entry" onClick={onOpenCatalog}>
               🗂️ {t('catalog.title')}
             </button>
