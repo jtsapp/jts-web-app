@@ -39,11 +39,16 @@ export default function WorkspaceHeader({ lesson, stepIndex, elapsedSec, onExit 
       )}
 
       <div className="lw-header__right">
-        <span className="lw-header__timer">
-          {formatTime(elapsedSec)}
-          <span className="lw-header__timer-sep"> / </span>
-          {formatTime(lesson?.durationSec)}
-        </span>
+        {/* Таймер показывается только когда у урока есть длительность. У урока
+            из каталога её нет, и пара «01:43 / 00:00» была бы имитацией: время
+            слева от мок-урока, ноль справа — от отсутствующих данных. */}
+        {lesson?.durationSec > 0 && (
+          <span className="lw-header__timer">
+            {formatTime(elapsedSec)}
+            <span className="lw-header__timer-sep"> / </span>
+            {formatTime(lesson.durationSec)}
+          </span>
+        )}
         <button type="button" className="lw-header__exit" onClick={onExit}>
           <CloseIcon size={16} />
           <span className="lw-header__exit-label">{t('lesson.ws.exit')}</span>
