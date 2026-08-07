@@ -16,6 +16,7 @@ import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
 import LessonRoute from './workspace/LessonRoute.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
+import { knowsFocusTarget } from './live/followFocus.js'
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
@@ -106,6 +107,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const { sendFocus, sendMirror, sendPresent } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onFocus: (evt) => {
       if (isStaff || evt.sectionId == null) return
+      // Учитель мог прикрепить урок из каталога уже после того, как ученик
+      // открыл занятие: раздел и материал из события тогда ученику незнакомы,
+      // и переключаться было бы не на что. Перечитываем разделы — иначе он
+      // молча остаётся на прежнем уроке.
+      if (!knowsFocusTarget(sections, evt)) loadSections()
       setActiveSectionId(evt.sectionId)
       setFollowMode(true)
       setReloadToken((n) => n + 1)
