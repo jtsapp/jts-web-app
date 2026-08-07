@@ -11,6 +11,11 @@ import { EMOTIONS, LERP_KEYS, FX_KEYS } from './avatarEmotions.js'
 // Эталонный радиус, под который подобраны все числа пресетов и геометрии лица.
 const REF_R = 150
 
+// Во сколько раз черты лица мельче своего числового масштаба. Ровно 0.5 —
+// см. развёрнутое объяснение в setSize: числа геометрии в дизайн-листе
+// заданы для формы вдвое крупнее нашей R.
+const FEATURE_SCALE = 0.5
+
 // Постоянные времени перехода между эмоциями, в секундах (сходимость ≈ 3·tau).
 // Цвет медленнее геометрии осознанно: у Декстера эмоция прилетает почти на
 // каждую реплику, и скачок кармин→циан за те же 200мс, что и смена мимики,
@@ -25,8 +30,8 @@ const INTENSITY_GAIN = { 1: 0.75, 2: 1, 3: 1.3 }
 
 // Нейтральное значение ключа, если пресет его не задал. Для МНОЖИТЕЛЕЙ это
 // единица, а не ноль: пресет без eyeW когда-то давал ширину глаза 0, и на
-// talking/listening глаза просто исчезали с лица.
-const KEY_DEFAULTS = { eyeH: 1, eyeW: 1, speed: 1 }
+// listening/thinking глаза просто исчезали с лица.
+const KEY_DEFAULTS = { eyeH: 1, eyeW: 1, speed: 1, spread: 1 }
 
 const lerp = (a, b, f) => a + (b - a) * f
 const get = (o, k, d) => (o[k] === undefined ? d : o[k])
@@ -53,6 +58,13 @@ export default class TutorAvatar {
     this.voiceEnv = 0
     this.voiceTarget = 0
     this.voiceTick = 0
+    // Речь — не эмоция, а СЛОЙ поверх неё: говорить умеет любое выражение.
+    // Раньше на время реплики лицо подменялось пресетом talking, и эмоция,
+    // которую пометил агент, показывалась только ПОСЛЕ озвучки — то есть ровно
+    // тогда, когда тьютор уже молчал. speak — сглаженные 0..1, чтобы рот
+    // закрывался плавно, а не обрубался на конце фразы.
+    this.speak = 0
+    this.speakTarget = 0
     this.popT = 0
     this.analyser = null
     this.audioBuf = null
@@ -107,9 +119,20 @@ export default class TutorAvatar {
     this.R = size * 0.636
     this.pad = size * 0.5 - this.R * 0.5
     this.k = this.R / REF_R
-    this.eyeY = -18 * this.k
-    this.mouthY = 34 * this.k
-    this.eyeSpread = 44 * this.k
+    // Черты рисуются в СВОЁМ масштабе — вдвое мельче k. Числа макета (глаз
+    // 19×32, разлёт ±44, рот на +34, линия 8) заданы для формы ДИАМЕТРОМ 300,
+    // а R у нас — диаметр 150, и те же числа давали черты ровно вдвое крупнее
+    // макета: глаз занимал 0.127 диаметра вместо 0.063, рот 0.347 вместо 0.173.
+    // Лицо выходило «мультяшной маской», а не спокойным орбом с дизайн-листа.
+    //
+    // Правится одним множителем, а не пересчётом полусотни констант: числа в
+    // коде остаются теми же, что в спеке, и сверять их с макетом по-прежнему
+    // можно глазами. Всё, что позиционируется от радиуса формы (rb) — эффекты,
+    // конфетти, пар, — не трогаем: они и так ходят долями шара.
+    this.fk = this.k * FEATURE_SCALE
+    this.eyeY = -18 * this.fk
+    this.mouthY = 34 * this.fk
+    this.eyeSpread = 44 * this.fk
     this._initBlobLayer()
   }
 
@@ -145,10 +168,15 @@ export default class TutorAvatar {
     if (this.onChange) this.onChange(key, preset)
   }
 
-  /** AnalyserNode с голосом тьютора: в talking рот открывается по амплитуде. */
+  /** AnalyserNode с голосом тьютора: рот открывается по реальной амплитуде. */
   attachAnalyser(analyser) {
     this.analyser = analyser || null
     this.audioBuf = analyser ? new Uint8Array(analyser.frequencyBinCount) : null
+  }
+
+  /** Тьютор сейчас говорит. Ортогонально эмоции: мимику не трогает, только рот. */
+  setSpeaking(on) {
+    this.speakTarget = on ? 1 : 0
   }
 
   setReducedMotion(on) {
@@ -196,7 +224,9 @@ export default class TutorAvatar {
     this.popT = Math.max(0, this.popT - dt * 1.9)
 
     const live = this._audioLevel()
-    const voice = get(this.target, 'voice', 0)
+    // Признак речи берём из setSpeaking, а не из пресета эмоции: пресета
+    // «говорит» больше нет, говорить может любая эмоция.
+    const voice = this.speakTarget
     if (live !== null && voice > 0) {
       this.voiceEnv = lerp(this.voiceEnv, live, 0.4)
     } else {
@@ -229,6 +259,7 @@ export default class TutorAvatar {
       s.c2[i] = lerp(s.c2[i], tg.c2[i], fColor)
     }
     s.mouth = tg.mouth
+    this.speak = lerp(this.speak, this.speakTarget, fShape)
 
     // Фазу дыхания КОПИМ, а не считаем как sin(t * speed): при смене эмоции
     // speed меняется, и в такой формуле вместе с ним скачком меняется весь
@@ -368,13 +399,18 @@ export default class TutorAvatar {
 
     if (s.confetti > 0.3 && !this.reduced) this._drawConfetti(sx, s.confetti, mt)
 
-    const lx = s.lookX * 10 * k
-    const ly = s.lookY * 8 * k
-    this._drawEye(-this.eyeSpread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 1.12 : 1)
-    this._drawEye(this.eyeSpread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 0.58 : 1)
+    // Взгляд ходит в масштабе черт, а не формы: иначе зрачки уезжали бы
+    // на пол-лица от того, что глаза стали вдвое мельче.
+    const lx = s.lookX * 10 * this.fk
+    const ly = s.lookY * 8 * this.fk
+    // spread сдвигает глаза к переносице: у ярости они сходятся к центру, и без
+    // этого разлёт ±44 держал бы лицо спокойным при любом рте и бровях.
+    const spread = this.eyeSpread * s.spread
+    this._drawEye(-spread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 1.12 : 1)
+    this._drawEye(spread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 0.58 : 1)
     // Брови ходят за взглядом слабее глаз — они на «черепе», а не в глазнице.
-    this._drawBrow(-this.eyeSpread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, -1, s.brow)
-    this._drawBrow(this.eyeSpread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, 1, s.brow)
+    this._drawBrow(-spread + lx * 0.5, this.eyeY - 32 * this.fk + ly * 0.3, -1, s.brow)
+    this._drawBrow(spread + lx * 0.5, this.eyeY - 32 * this.fk + ly * 0.3, 1, s.brow)
     this._drawMouth(lx * 0.5, this.mouthY + ly * 0.4)
 
     // Эффекты позиционируем от РЕАЛЬНОГО радиуса формы, а не от R: они белые,
@@ -387,8 +423,11 @@ export default class TutorAvatar {
     }
     if (s.zzz > 0.3) this._drawZzz(rb * 0.42, -rb * 0.3, s.zzz, mt, rb)
     if (s.steam > 0.3 && !this.reduced) {
-      this._drawSteam(-rb * 0.58, -rb * 0.22, s.steam, mt, rb)
-      this._drawSteam(rb * 0.58, -rb * 0.22, s.steam, mt, rb)
+      // Дальше от формы, чем кажется нужным: ближе клубы срастаются с внешними
+      // концами бровей в одну фигуру. Дальше уводить нельзя — прозрачного поля
+      // канвы хватает ровно до сюда, за ним пар режется краем.
+      this._drawSteam(-rb * 1.02, -rb * 0.72, s.steam, mt, rb, -1)
+      this._drawSteam(rb * 1.02, -rb * 0.72, s.steam, mt, rb, 1)
     }
 
     ctx.restore()
@@ -397,7 +436,7 @@ export default class TutorAvatar {
   _drawEye(x, y, blinkK, asymScale) {
     const ctx = this.ctx
     const s = this.state
-    const k = this.k
+    const k = this.fk
     const w = (s.round * (25 - 19) + 19) * s.eyeW * k
     const h = 32 * k * s.eyeH * asymScale * (1 - blinkK)
     const a = s.arc
@@ -458,17 +497,25 @@ export default class TutorAvatar {
     const a = Math.min(1, Math.abs(v)) * (1 - Math.min(1, Math.abs(this.state.arc)))
     if (a < 0.03) return
     const ctx = this.ctx
-    const k = this.k
-    const half = 15 * k
-    const lift = 9 * k * v
+    const k = this.fk
+    // Сдвинутая вниз бровь тем толще и длиннее, чем сильнее v: у злости (v=-1)
+    // это тяжёлый мультяшный клин, а не та же тонкая чёрточка, что у отвращения.
+    const rage = Math.max(0, -v)
+    const half = (15 + 3 * rage) * k
+    // Знак был перепутан относительно контракта в комментарии выше: при b<0
+    // внутренние концы уезжали ВВЕРХ, и «злость» получала брови домиком, то есть
+    // мимику испуга. Отсюда же было «удивлённое» лицо у curious/confused.
+    const lift = -9 * k * v
+    // Чем злее, тем ниже бровь садится на глаз — нависает, а не парит над ним.
+    const yy = y + 8 * k * rage
     ctx.save()
     ctx.globalAlpha = a
     ctx.strokeStyle = this.INK
-    ctx.lineWidth = 8 * k
+    ctx.lineWidth = (8 + 5 * rage) * k
     ctx.lineCap = 'round'
     ctx.beginPath()
-    ctx.moveTo(x - side * half, y + lift * 0.45)
-    ctx.lineTo(x + side * half, y - lift)
+    ctx.moveTo(x - side * half, yy + lift * 0.45)
+    ctx.lineTo(x + side * half, yy - lift)
     ctx.stroke()
     ctx.restore()
   }
@@ -476,17 +523,22 @@ export default class TutorAvatar {
   _drawMouth(x, y) {
     const ctx = this.ctx
     const s = this.state
-    const k = this.k
+    const k = this.fk
     ctx.strokeStyle = this.INK
     ctx.fillStyle = this.INK
     ctx.lineWidth = 8 * k
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
 
-    const openAmt = Math.max(s.open * 0.35, this.voiceEnv * get(this.target, 'voice', 0))
+    // Речь открывает рот У ЛЮБОЙ эмоции: this.speak приходит от setSpeaking и с
+    // мимикой никак не связан. Форму рта при этом задаёт эмоция — открывается
+    // именно ЕЁ рот, поэтому радость говорит улыбаясь, а злость — оскалившись.
+    const openAmt = Math.max(s.open * 0.35, this.voiceEnv * this.speak)
+    // Челюсть — глубина, на которую уезжает нижняя губа у «линейных» ртов.
+    const jaw = openAmt * 22 * k
 
     if (s.mouth === 'o') {
-      const r = (9 + s.open * 6) * k
+      const r = (9 + s.open * 6 + openAmt * 9) * k
       ctx.beginPath()
       ctx.ellipse(x, y + 3 * k, r * 0.88, r, 0, 0, 6.283)
       ctx.fill()
@@ -495,27 +547,85 @@ export default class TutorAvatar {
       const mw = (25 + openAmt * 11) * k
       this._caps(x, y + mh * 0.28, mw, mh, Math.min(mw, mh) / 2)
       ctx.fill()
+    } else if (s.mouth === 'roar') {
+      // Ор во весь рот: единственный рот ВЫШЕ, чем шире. Он и делает ярость
+      // яростью — на остальных лицах рот максимум 38 в высоту.
+      //
+      // Размер НЕ копия макетных 56×65: там черты нарисованы в половинном
+      // масштабе от собственных чисел спеки (шар 300px при «R 150»), и рот
+      // по этим числам вылезал бы за нижний край формы. Держим ту же долю от
+      // шара, что на карточке, — примерно 0.6 его высоты.
+      const mw = 46 * k
+      const mh = (44 + openAmt * 10) * k
+      this._caps(x, y - 4 * k, mw, mh, 14 * k)
+      ctx.fill()
+    } else if (s.mouth === 'grit') {
+      // Оскал стиснутых зубов — единственный рот с белой заливкой. В мультяшной
+      // злости именно он делает эмоцию читаемой на мелком орбе: одна хмурая
+      // линия на таком размере теряется, а белый блок с изломом — нет.
+      const mw = 62 * k
+      // Оскал не открывается «челюстью», а разжимается: блок зубов растёт в
+      // высоту, излом вместе с ним. Иначе на реплике злость теряет зубы.
+      const mh = (30 + openAmt * 16) * k
+      const r = 9 * k
+      this._caps(x, y, mw, mh, r)
+      ctx.fillStyle = '#ffffff'
+      ctx.fill()
+
+      // Излом зубов режем по форме рта, иначе концы торчат из-под обводки.
+      ctx.save()
+      this._caps(x, y, mw, mh, r)
+      ctx.clip()
+      ctx.beginPath()
+      const teeth = 6
+      for (let i = 0; i <= teeth; i++) {
+        const px = x - mw / 2 + (mw / teeth) * i
+        const py = y + (i % 2 === 0 ? -mh * 0.22 : mh * 0.22)
+        if (i === 0) ctx.moveTo(px, py)
+        else ctx.lineTo(px, py)
+      }
+      ctx.lineWidth = 6 * k
+      ctx.stroke()
+      ctx.restore()
+
+      this._caps(x, y, mw, mh, r)
+      ctx.lineWidth = 7 * k
+      ctx.stroke()
+      ctx.fillStyle = this.INK
     } else if (s.mouth === 'wave') {
+      // Волна — это верхняя губа, кривизну эмоции держит она. Нижняя — ровная
+      // дуга: если отзеркалить ей волну, при открытом рте выходит клякса, а не
+      // рот. При jaw = 0 дуга ложится на волну, и рот выглядит как прежде.
       ctx.beginPath()
       ctx.moveTo(x - 23 * k, y)
       ctx.quadraticCurveTo(x - 11 * k, y - 9 * k, x, y)
       ctx.quadraticCurveTo(x + 11 * k, y + 9 * k, x + 23 * k, y)
+      ctx.quadraticCurveTo(x, y + jaw * 1.7, x - 23 * k, y)
+      ctx.fill()
       ctx.stroke()
     } else {
       // skew перекашивает улыбку: один угол выше другого. Так делается ухмылка
       // злорадства и скривлённый рот отвращения — без отдельного типа рта.
+      //
+      // Путь ЗАМКНУТЫЙ: верхняя губа — кривая эмоции, нижняя — она же, опущенная
+      // на челюсть. При jaw = 0 обе совпадают, и заливка вырождается в ту же
+      // одну линию, что была раньше, — молчащий рот выглядит ровно как прежде.
       const c = s.curve
       const sk = s.skew || 0
+      const cx = x + sk * 9 * k
+      const cy = y + c * 26 * k
       ctx.beginPath()
       ctx.moveTo(x - 26 * k, y - c * 6 * k * (1 - sk))
-      ctx.quadraticCurveTo(x + sk * 9 * k, y + c * 26 * k, x + 26 * k, y - c * 6 * k * (1 + sk))
+      ctx.quadraticCurveTo(cx, cy, x + 26 * k, y - c * 6 * k * (1 + sk))
+      ctx.quadraticCurveTo(cx, cy + jaw * 1.6, x - 26 * k, y - c * 6 * k * (1 - sk))
+      ctx.fill()
       ctx.stroke()
     }
   }
 
   _drawDots(x, y, a, mt) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     ctx.save()
     ctx.fillStyle = '#fff'
     for (let i = 0; i < 3; i++) {
@@ -530,7 +640,7 @@ export default class TutorAvatar {
 
   _drawSpark(x, y, a, mt) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     ctx.save()
     ctx.globalAlpha = Math.min(1, a) * (0.55 + 0.45 * Math.sin(mt * 5))
     ctx.fillStyle = '#fff'
@@ -570,7 +680,7 @@ export default class TutorAvatar {
   // на мелком боксе «z» улетает за край, а на крупном топчется на месте.
   _drawZzz(x, y, a, mt, rb) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     ctx.save()
     ctx.fillStyle = '#fff'
     ctx.textAlign = 'center'
@@ -587,24 +697,44 @@ export default class TutorAvatar {
     ctx.restore()
   }
 
-  // Пар держим ВНУТРИ формы: белые эффекты за её краем сливаются со светлым фоном.
-  _drawSteam(x, y, a, mt, rb) {
+  // Пар из «ушей»: облачко из трёх долек с чернильной обводкой. Обводка тут не
+  // украшение — она и позволяет вынести пар ЗА форму, к ушам, как у злого
+  // эмодзи. Раньше пар был белым без контура, и держать его приходилось внутри
+  // формы (за краем светлый фон его съедал) — там он ложился прямо на глаза.
+  //
+  // Рисуем в два прохода: сначала все дольки чернилами, потом поверх белым.
+  // Так у облачка ровный общий контур, а не сетка швов от пересечений.
+  _drawSteam(x, y, a, mt, rb, side) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
+    const lobes = [
+      [0, 0, 1],
+      [-0.72, 0.34, 0.7],
+      [0.72, 0.3, 0.66],
+    ]
     ctx.save()
-    ctx.fillStyle = '#fff'
     for (let i = 0; i < 3; i++) {
       const pr = (mt * 0.85 + i * 0.34) % 1
-      ctx.globalAlpha = Math.min(1, a) * (1 - pr) * 0.55
-      ctx.beginPath()
-      ctx.arc(
-        x + Math.sin(mt * 2.2 + i) * 6 * k * pr,
-        y - pr * rb * 0.4,
-        (4 + pr * 9) * k * 0.85,
-        0,
-        6.283
-      )
-      ctx.fill()
+      // Клубы уходят вверх и наружу от головы, а не строго вверх.
+      const px = x + side * pr * rb * 0.12 + Math.sin(mt * 2.2 + i) * 5 * k * pr
+      const py = y - pr * rb * 0.3
+      // Клуб не растворяется, а схлопывается в конце пути: белое поверх
+      // чернильного контура полупрозрачным даёт серую кашу вместо облачка.
+      const fade = pr > 0.78 ? (1 - pr) / 0.22 : 1
+      // Клубы крупнее черт лица: это не черта, а вынесенный за форму эффект —
+      // в масштабе глаз он превращается в три пылинки у края.
+      const r = (9 + pr * 12) * k * fade
+      ctx.globalAlpha = Math.min(1, a)
+      const paint = (grow, color) => {
+        ctx.fillStyle = color
+        lobes.forEach(([dx, dy, rs]) => {
+          ctx.beginPath()
+          ctx.arc(px + dx * r, py + dy * r, r * rs + grow, 0, 6.283)
+          ctx.fill()
+        })
+      }
+      paint(3 * k, this.INK)
+      paint(0, '#ffffff')
     }
     ctx.restore()
   }

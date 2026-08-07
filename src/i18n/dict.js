@@ -233,8 +233,6 @@ export const DICT = {
     'scen.brief.911-call':
       'Ты на втором этаже заброшенной бумажной фабрики на окраине города.\nАдреса ты не знаешь. Телефон почти разряжен.\nВнизу трое мужчин — они ищут тебя. Слышны шаги на лестнице.\nИз окна видно: река, красная кирпичная труба, ржавая вывеска MILLER & SONS PAPER MILL, вдалеке жёлтый мост. На двери рядом — номер GATE 4.\nЗадача: за 5 минут добиться, чтобы полиция выехала. Говори тихо.',
     'scen.start': 'Начать разговор',
-    'scen.locked': 'Откроется, когда пройдёшь «{label}» — это следующий шаг истории',
-    'scen.lockedBtn': 'Закрыто',
     'scen.briefTitle': 'Ситуация',
     'scen.briefReady': 'Я готов, звоню',
     'scen.briefPeek': 'Ситуация',
@@ -468,8 +466,6 @@ export const DICT = {
     'scen.brief.911-call':
       'Сен қала шетіндегі тасталған қағаз фабрикасының екінші қабатындасың.\nМекенжайды білмейсің. Телефон отыруға жақын.\nТөменде үш еркек — олар сені іздеп жүр. Баспалдақтан қадам дыбысы естіледі.\nТерезеден көрінеді: өзен, қызыл кірпіш мұржа, тот басқан MILLER & SONS PAPER MILL жазуы, алыста сары көпір. Қасындағы есікте — GATE 4 нөмірі.\nМіндет: 5 минут ішінде полицияны шақыру. Ақырын сөйле.',
     'scen.start': 'Әңгімені бастау',
-    'scen.locked': '«{label}» өткен соң ашылады — бұл әңгіменің келесі қадамы',
-    'scen.lockedBtn': 'Жабық',
     'scen.briefTitle': 'Жағдай',
     'scen.briefReady': 'Дайынмын, қоңырау шаламын',
     'scen.briefPeek': 'Жағдай',
@@ -701,8 +697,6 @@ export const DICT = {
     'scen.brief.911-call':
       "You're on the second floor of an abandoned paper mill on the edge of town.\nYou don't know the address. Your phone is almost dead.\nThree men are downstairs, looking for you. You can hear steps on the stairs.\nFrom the window: a river, a red brick chimney, a rusted sign reading MILLER & SONS PAPER MILL, a yellow bridge in the distance. The nearest door is marked GATE 4.\nYour task: get the police on the way within 5 minutes. Keep your voice down.",
     'scen.start': 'Start conversation',
-    'scen.locked': 'Unlocks once you pass “{label}” — it’s the next step of the story',
-    'scen.lockedBtn': 'Locked',
     'scen.briefTitle': 'The situation',
     'scen.briefReady': "I'm ready — call",
     'scen.briefPeek': 'Situation',
