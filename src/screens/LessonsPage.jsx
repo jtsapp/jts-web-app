@@ -2,7 +2,7 @@ import { useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
-import { isTeacher } from '../lib/role.js'
+import { isTeacher } from '../lib/jwt.js'
 
 const TABS = [
   { key: 'clubs', label: 'lessons.tabClubs' },
