@@ -14,6 +14,9 @@ import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
 import { moodToEmotion } from '../tutor/avatarEmotions.js'
+import { cutAtSec } from '../tutor/scenarioClock.js'
+import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
+import { hasBrief } from '../tutor/scenarioBrief.js'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -69,6 +72,15 @@ export default function TutorVoiceChatPage({
   const { name: tutorName = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
 
   const [perm, setPerm] = useState('prompt') // 'prompt' | 'granted'
+  // Сцены с брифингом не стартуют сами: сначала ученик читает ситуацию и
+  // нажимает «я готов». Влетать в звонок в 911, не зная, что ты видишь из
+  // окна, — это провал не по английскому.
+  const briefId = hasBrief(scenarioId) ? scenarioId : ''
+  const [briefAck, setBriefAck] = useState(false)
+  // Комнату по концу сцены удаляет агент, и до клиента это доезжает как обычный
+  // разрыв. Без флага onDisconnected увёл бы ученика с экрана раньше, чем он
+  // увидел «связь пропала» и результат. Снимает флаг только кнопка «Готово».
+  const holdRef = useRef(false)
   const [tokenData, setTokenData] = useState(null)
   // null | 'daily' | 'monthly' | 'mic' | 'expired' | 'generic'
   const [error, setError] = useState(null)
@@ -79,6 +91,9 @@ export default function TutorVoiceChatPage({
   // Нет Permissions API (старый Safari) или state 'prompt'/'denied' — как
   // раньше, кнопка с явным запросом.
   useEffect(() => {
+    // Разрешение уже есть, но сцена с брифингом ждёт кнопку — иначе гейт
+    // мелькнёт и пропадёт.
+    if (briefId && !briefAck) return
     let cancelled = false
     navigator.permissions
       ?.query({ name: 'microphone' })
@@ -90,14 +105,25 @@ export default function TutorVoiceChatPage({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [briefAck])
+
+  // Комнату запрашиваем ровно один раз за экран. К этой функции ведут три
+  // дороги — кнопка «разрешить», кнопка «я готов» и эффект по briefAck, — и
+  // каждый лишний проход открывал ВТОРУЮ комнату со своим openSession. Брошенную
+  // комнату потом добивал closeStaleSessions и списывал ученику минуты, которых
+  // он не говорил.
+  const micStartedRef = useRef(false)
 
   async function requestMic() {
+    if (micStartedRef.current) return
+    micStartedRef.current = true
     // Реальный запрос доступа к микрофону (жест пользователя).
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       stream.getTracks().forEach((tr) => tr.stop())
     } catch {
+      // Отказ микрофона — не финал: ученик может разрешить и нажать ещё раз.
+      micStartedRef.current = false
       setError('mic')
       return
     }
@@ -165,7 +191,9 @@ export default function TutorVoiceChatPage({
 
   return (
     <TutorShell active="tutor" user={user} onNavigate={onNavigate} onProfile={onProfile} onBack={onBack} layout="flow">
-      {perm !== 'granted' && !error && (
+      {/* Пока висит гейт со ситуацией, просьбы про микрофон быть не должно:
+          иначе ученик жмёт «разрешить», следом «я готов» — и это два звонка. */}
+      {perm !== 'granted' && !error && !(briefId && !briefAck) && (
         <div className="t-micperm" role="dialog" aria-label={t('voice.permHint')}>
           <div className="t-micperm__row">
             <span className="t-micperm__chips">
@@ -193,7 +221,23 @@ export default function TutorVoiceChatPage({
           </div>
         </div>
 
-        {error ? (
+        {briefId && !briefAck ? (
+          <ScenarioBrief
+            scenarioId={briefId}
+            action={
+              <button
+                className="t-pill t-pill--primary"
+                type="button"
+                // Микрофон здесь НЕ запрашиваем: briefAck перезапускает эффект
+                // выше, и он сделает это сам. Дублирующий вызов открывал вторую
+                // комнату.
+                onClick={() => setBriefAck(true)}
+              >
+                {t('scen.briefReady')}
+              </button>
+            }
+          />
+        ) : error ? (
           <div className="t-voice__card">
             <TutorFace emotion="idle" />
             <div className="t-voice__text">{errorText}</div>
@@ -205,7 +249,10 @@ export default function TutorVoiceChatPage({
             connect
             audio
             video={false}
-            onDisconnected={() => onFinish?.()}
+            onDisconnected={() => {
+              if (holdRef.current) return
+              onFinish?.()
+            }}
             className="t-voice__room"
           >
             {/* Аудио-элементы вне визуального потока — иначе они расширяют
@@ -213,7 +260,14 @@ export default function TutorVoiceChatPage({
             <div className="t-voice__audio">
               <RoomAudioRenderer />
             </div>
-            <CallStage onFinish={onFinish} t={t} ttl={tokenData.ttl} />
+            <CallStage
+              onFinish={onFinish}
+              t={t}
+              ttl={tokenData.ttl}
+              briefId={briefId}
+              limitSec={tokenData.scenarioLimitSec || 0}
+              holdRef={holdRef}
+            />
           </LiveKitRoom>
         ) : (
           <div className="t-voice__card">
@@ -250,44 +304,87 @@ function fmtClock(sec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-// Сколько держать реакцию на лице после того, как тьютор договорил. Эмоцию
-// агент помечает в НАЧАЛЕ реплики, а показывать её во время речи нельзя: там
-// рот работает по амплитуде звука (состояние talking). Поэтому тег ждёт конца
-// озвучки и живёт окном — дальше лицо возвращается к «слушаю», иначе ученик
-// не видит, что микрофон снова его.
+// Сколько держать реакцию на лице ПОСЛЕ того, как тьютор договорил. Сам тег
+// приходит в начале реплики и попадает на лицо сразу: речь больше не занимает
+// мимику (см. setSpeaking в avatarEngine.js), поэтому эмоция живёт всю реплику
+// и ещё это окно. Раньше тег ждал конца озвучки — эмоцию, которой агент пометил
+// фразу, ученик видел только когда фраза уже кончилась.
 //
-// Окно считается ОТ НАЧАЛА перехода, а цвет доезжает примерно за 1.6с
-// (TAU_COLOR в avatarEngine.js). При 3.2с эмоция едва успевала доехать и сразу
-// уходила — читалось как вспышка, особенно у Декстера, который метит реплику
-// почти каждый раз. Держим дольше, чтобы на полной силе она реально постояла.
+// Окно нужно, чтобы лицо потом вернулось к «слушаю»: иначе ученик не видит,
+// что микрофон снова его. Цвет доезжает примерно за 1.6с (TAU_COLOR), так что
+// окно короче ~3с читалось бы как вспышка.
 const REACTION_MS = 4500
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
-function CallStage({ onFinish, t, ttl }) {
+function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
   const room = useRoomContext()
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
   const transcriptions = useTranscriptions()
-  const left = useCountdown(ttl)
+  // У сцены со своими часами на экране идёт её бюджет, а не остаток дневного
+  // лимита: ученику обещали пять минут — он и должен видеть пять минут.
+  const left = useCountdown(limitSec > 0 ? limitSec : ttl)
 
   // Scenario outcome — the agent publishes a JSON verdict on topic "lesson"
   // (report_task_complete) when a structured scenario ends. We render it as a
   // pass/fail card over the call.
   const [verdict, setVerdict] = useState(null)
+  // Шпаргалка со ситуацией. Свёрнута по умолчанию: развёрнутая перекрывает лицо.
+  const [peek, setPeek] = useState(false)
   useDataChannel('lesson', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
-      if (data && typeof data === 'object') setVerdict(data)
+      // Первый вердикт побеждает. Сторож часов сцены просит агента закрыть сцену
+      // отказом, и если ученик уже прошёл её на третьей минуте, второй вердикт
+      // перевернул бы карточку с «пройдено» на «не пройдено» у него на глазах.
+      if (data && typeof data === 'object') setVerdict((prev) => prev || data)
     } catch {
       /* ignore malformed payloads */
     }
   })
 
-  // Эмоция тьютора. Тег приходит в начале реплики, а на лицо попадает после
-  // озвучки (см. REACTION_MS), поэтому ждёт своей очереди в ref, а не в стейте:
-  // перерисовывать экран на приход тега нечего.
-  const pendingMood = useRef(null)
+  // Эмоция тьютора. Тег приходит в начале реплики и сразу идёт на лицо — с ним
+  // же тьютор её и произносит.
+  const [reaction, setReaction] = useState(null)
+  const reactionTimer = useRef(null)
+  const stopReactionTimer = () => {
+    if (reactionTimer.current) {
+      clearTimeout(reactionTimer.current)
+      reactionTimer.current = null
+    }
+  }
+
+  // Обрыв на исходе бюджета сцены. По картинке авторитетен клиент: агент в этот
+  // же момент шлёт вердикт и удаляет комнату, но экран результата не должен
+  // зависеть от того, успел ли он.
+  const [lineDead, setLineDead] = useState(false)
+  const cutAt = cutAtSec(limitSec)
+  useEffect(() => {
+    if (cutAt === null || left === null || verdict) return
+    const elapsed = limitSec - left
+    if (elapsed < cutAt) return
+    if (holdRef) holdRef.current = true
+    setLineDead(true)
+  }, [left, cutAt, limitSec, verdict, holdRef])
+
+  // Показанный вердикт держит экран так же, как обрыв: комнату после сцены
+  // удаляет агент, и без этого onDisconnected уводил ученика с карточки
+  // результата раньше, чем он успевал её прочитать.
+  useEffect(() => {
+    if (verdict && holdRef) holdRef.current = true
+  }, [verdict, holdRef])
+
+  // Вердикт от агента ждём три секунды после обрыва, дальше рисуем свой: «не
+  // успел» — это тоже результат, и ученик обязан его увидеть.
+  useEffect(() => {
+    if (!lineDead || verdict) return
+    const id = setTimeout(() => {
+      setVerdict({ passed: false, summary: t('scen.lineDeadHint'), tips: [] })
+    }, 3000)
+    return () => clearTimeout(id)
+  }, [lineDead, verdict, t])
+
   useDataChannel('mood', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
@@ -296,7 +393,8 @@ function CallStage({ onFinish, t, ttl }) {
       // Number.isInteger, а не только диапазон: 1.5 прошло бы `>= 1 && <= 3`,
       // а сила — это индекс в таблице подвижности, дробной она не бывает.
       if (key && Number.isInteger(level) && level >= 1 && level <= 3) {
-        pendingMood.current = { key, level }
+        stopReactionTimer()
+        setReaction({ key, level })
       }
     } catch {
       /* ignore malformed payloads */
@@ -307,38 +405,31 @@ function CallStage({ onFinish, t, ttl }) {
   const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
   const speaking = va.state === 'speaking'
 
-  // Реакция показывается ровно тогда, когда тьютор замолчал: до этого на лице
-  // липсинк, и подменять его эмоцией — значит потерять и то, и другое.
-  const [reaction, setReaction] = useState(null)
-  const wasSpeaking = useRef(false)
+  // Реакция держится всю реплику, а гаснет через окно после неё.
   useEffect(() => {
-    if (speaking) {
-      // Гасить прошлую реакцию тут не нужно: во время речи её всё равно
-      // перекрывает talking, а лишний setState в эффекте — лишний рендер.
-      wasSpeaking.current = true
-      return
-    }
-    if (!wasSpeaking.current) return
-    wasSpeaking.current = false
-    const m = pendingMood.current
-    pendingMood.current = null
-    // Именно `m || null`, а не ранний выход: реплика без тега обязана СТЕРЕТЬ
-    // прошлую реакцию, иначе после неё на лице всплывёт позапрошлая эмоция.
-    setReaction(m || null)
-    if (!m) return
-    const id = setTimeout(() => setReaction(null), REACTION_MS)
-    return () => clearTimeout(id)
-  }, [speaking])
+    if (speaking || !reaction || reactionTimer.current) return
+    reactionTimer.current = setTimeout(() => {
+      reactionTimer.current = null
+      setReaction(null)
+    }, REACTION_MS)
+    // Таймер НАМЕРЕННО не снимается на смену speaking. Снять его — значит
+    // оставить эмоцию от прошлой реплики висеть на следующей, если та пришла
+    // без тега: гасить её тогда будет некому.
+  }, [speaking, reaction])
+
+  useEffect(() => stopReactionTimer, [])
 
   // Голос тьютора для липсинка. Берём сырой MediaStreamTrack: TrackReference
   // пересоздаётся на каждый ререндер, а трек внутри тот же — иначе эффект с
   // AudioContext пересобирался бы вхолостую по десятку раз за реплику.
   const agentTrack = va.audioTrack?.publication?.track?.mediaStreamTrack || null
 
+  // Речи в этой лесенке нет: она не эмоция, а отдельный флаг ниже. Во время
+  // реплики на лице то, чем её пометил агент, — а без тега просто нейтраль,
+  // которая говорит.
   let emotion = 'idle'
   let intensity = 2
   if (!connected || !agentPresent) emotion = 'idle'
-  else if (speaking) emotion = 'talking'
   else if (va.state === 'thinking') emotion = 'thinking'
   else if (reaction) {
     emotion = reaction.key
@@ -404,6 +495,16 @@ function CallStage({ onFinish, t, ttl }) {
     else onFinish?.()
   }
 
+  // Пауза между обрывом и результатом намеренная: удар должен дойти отдельно
+  // от разбора, иначе «связь пропала» проскочит незамеченным.
+  if (lineDead && !verdict) {
+    return (
+      <div className="t-voice__card t-linedead" role="status" aria-live="polite">
+        <h2 className="t-linedead__title">{t('scen.lineDead')}</h2>
+      </div>
+    )
+  }
+
   if (verdict) {
     const passed = Boolean(verdict.passed)
     const tips = Array.isArray(verdict.tips) ? verdict.tips.filter(Boolean) : []
@@ -430,7 +531,14 @@ function CallStage({ onFinish, t, ttl }) {
             </ul>
           </div>
         )}
-        <button className="t-pill t-pill--primary t-verdict__done" type="button" onClick={onFinish}>
+        <button
+          className="t-pill t-pill--primary t-verdict__done"
+          type="button"
+          onClick={() => {
+            if (holdRef) holdRef.current = false
+            onFinish?.()
+          }}
+        >
           {t('scen.verdictDone')}
         </button>
       </div>
@@ -442,9 +550,31 @@ function CallStage({ onFinish, t, ttl }) {
       {left !== null && (
         <span className={'t-voice__timer' + (left <= 30 ? ' is-low' : '')}>{fmtClock(left)}</span>
       )}
+      {briefId && (
+        <button className="t-voice__peek" type="button" onClick={() => setPeek((v) => !v)}>
+          {t('scen.briefPeek')}
+        </button>
+      )}
+      {briefId && peek && (
+        <div className="t-voice__peekpanel">
+          <ScenarioBrief
+            scenarioId={briefId}
+            action={
+              <button className="t-pill" type="button" onClick={() => setPeek(false)}>
+                {t('scen.briefClose')}
+              </button>
+            }
+          />
+        </div>
+      )}
       {/* Лицо не завершает звонок по клику: неподписанный клик по картинке
           рвал разговор случайным тапом. Завершение — явной кнопкой ниже. */}
-      <TutorFace emotion={emotion} intensity={intensity} audioTrack={agentTrack} />
+      <TutorFace
+        emotion={emotion}
+        intensity={intensity}
+        speaking={speaking}
+        audioTrack={agentTrack}
+      />
       <div className="t-voice__text">
         <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>
       </div>

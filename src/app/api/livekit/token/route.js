@@ -23,7 +23,8 @@ import {
 } from '@/lib/usage.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { loadProfile } from '@/lib/db/profile.js'
-import { SCENARIOS } from '@/tutor/scenarios.js'
+import { SCENARIOS, getScenario } from '@/tutor/scenarios.js'
+import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
 
 export const runtime = 'nodejs'
 
@@ -46,7 +47,17 @@ function trimList(raw, cap, maxLen = MAX_LEN) {
   return out
 }
 
-function buildMetadata(p, tier, profileId, userName, memory, ttl) {
+// Слаг структурного сценария из запроса. Приводится к [a-z0-9_-], чтобы не
+// утащить агента за пределы папки со сценариями (он читает <slug>.md), и
+// вынесен в функцию, потому что нужен дважды: в metadata и при расчёте ttl.
+// Раньше нормализация жила только внутри buildMetadata — и «911-CALL» уехал бы
+// в metadata сценарием, а лимит времени по нему не нашёлся бы.
+function scenarioSlug(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) return ''
+  return raw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64)
+}
+
+function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec = 0) {
   const meta = {
     level: p.level || 'B1',
     lang: p.lang || 'en',
@@ -138,12 +149,13 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl) {
   // Structured voice scenario: only the small id travels in metadata — the
   // agent loads the full prompt from data/scenarios/<id>.md. Sanitised to a
   // safe slug so it can't reference anything outside that directory.
-  if (typeof p.scenarioId === 'string' && p.scenarioId.trim()) {
-    const sid = p.scenarioId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 64)
-    if (sid) {
-      meta.scenarioId = sid
-      meta.mode = 'scenario'
-    }
+  const sid = scenarioSlug(p.scenarioId)
+  if (sid) {
+    meta.scenarioId = sid
+    meta.mode = 'scenario'
+    // Бюджет сцены считает issue() и передаёт сюда уже урезанным по дневному
+    // остатку: у агента и у экрана должно быть одно и то же число секунд.
+    if (scenarioLimitSec > 0) meta.scenarioLimitSec = scenarioLimitSec
   }
   return JSON.stringify(meta)
 }
@@ -217,7 +229,21 @@ async function issue(p, profileId, userName) {
       console.error('[livekit.token] loadProfile failed', err)
     }
   }
-  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl)
+  // Сцена со своими часами не занимает весь дневной лимит: и токен, и отсчёт на
+  // экране живут по её бюджету. Запас поверх бюджета нужен, чтобы связь рвал
+  // таймер сцены, а не протухший токен — истёкший токен рвёт комнату молча, и
+  // вердикт до ученика уже не доедет.
+  const sceneBudgetSec = getScenario(scenarioSlug(p.scenarioId))?.timeLimitSec || 0
+  ttl = clampTtlForScenario(ttl, sceneBudgetSec)
+  // Если дневного остатка меньше, чем просит сцена, побеждает остаток — и на
+  // экране должен идти он. Иначе таймер отсчитывает обещанные пять минут, а
+  // комнату на второй минуте убивает дневной сторож: ученика выкидывает без
+  // надписи про связь и без вердикта.
+  const scenarioLimitSec = sceneBudgetSec
+    ? Math.max(0, Math.min(sceneBudgetSec, ttl - CLOCK_GRACE_SEC))
+    : 0
+
+  const metadata = buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitSec)
 
   const at = new AccessToken(apiKey, apiSecret, { identity, ttl, metadata })
   at.addGrant({ room, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true })
@@ -231,7 +257,15 @@ async function issue(p, profileId, userName) {
     }
   }
 
-  return Response.json({ configured: true, token, url: wsUrl, room, identity, ttl })
+  return Response.json({
+    configured: true,
+    token,
+    url: wsUrl,
+    room,
+    identity,
+    ttl,
+    scenarioLimitSec,
+  })
 }
 
 export async function POST(request) {

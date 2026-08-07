@@ -1423,11 +1423,40 @@
   }
 }
 
-/* ========================= Дашборд =============================== */
+/* ========================= Дашборд ===============================
+   Стиль — «AI-Native UI»: голосовой ассистент, минимум хрома, амбиентный свет
+   и контекстные карточки вместо плотной сетки картинок. Палитра прежняя:
+   всё ниже — тинты брендового #9047ff, других цветов не заводим.
+
+   Что чинит эта раскладка:
+   • центр перестал быть «шапка + герой + пустота на пол-экрана» — сцена
+     центрируется по вертикали и занимает всю высоту колонки;
+   • правая панель была стеной из семи фото 150px со скроллом внутри карточки;
+     стала списком строк — все сцены видны разом, картинка ушла в 48px-превью;
+   • «Советуем сегодня» из плашки-баннера стало контекстной карточкой с
+     превью сцены — то же, что предлагает стиль для AI-интерфейсов. */
 .t-dash {
+  /* Локальные токены дашборда: заводим здесь, чтобы не трогать общие
+     переменные раздела — остальные экраны тьютора остаются как были. */
+  --d-accent: var(--t-purple);
+  --d-accent-deep: #7a2fe6;
+  --d-tint: #f4efff;
+  --d-tint-strong: #e9dcff;
+  --d-surface: #ffffff;
+  --d-ink: #1b1524;
+  --d-ink-soft: #6f6885;
+  --d-ink-faint: #b6afc7;
+
   flex: 1;
   min-width: 0;
   display: flex;
+  /* Амбиентный свет вместо карточки под героем: пятно брендового пурпура,
+     на котором «висит» орб. Правая панель непрозрачная и его перекрывает. */
+  background: radial-gradient(
+    720px 560px at 42% 34%,
+    rgba(144, 71, 255, 0.18),
+    rgba(144, 71, 255, 0) 66%
+  );
 }
 
 /* --- Центр --- */
@@ -1436,13 +1465,14 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 30px 32px 0;
+  padding: 24px 32px 32px;
 }
 .t-dash__topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
+  gap: 16px;
+  min-height: 52px;
 }
 .t-dash__tutor {
   display: flex;
@@ -1450,54 +1480,66 @@
   gap: 12px;
 }
 .t-dash__tutor img {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   object-fit: cover;
 }
 .t-dash__tutormeta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: flex-start;
+  gap: 4px;
 }
 .t-dash__tutormeta b {
   font-size: 18px;
-  font-weight: 700;
-  color: var(--t-ink);
+  font-weight: 800;
+  color: var(--d-ink);
 }
+/* Уровень — бейдж, а не строчка текста: так он читается как свойство ученика,
+   а не как вторая строка имени тьютора. */
 .t-dash__tutormeta span {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--t-purple);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--d-tint-strong);
+  color: var(--d-accent-deep);
+  font-size: 12px;
+  font-weight: 700;
 }
 .t-dash__manage {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  height: 48px;
-  padding: 0 28px;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
   border: none;
-  border-radius: 78px;
-  background: #b7f0ff;
-  color: var(--t-purple);
+  border-radius: 999px;
+  background: var(--d-tint);
+  color: var(--d-accent-deep);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: filter 0.15s ease;
+  transition: background 0.15s ease;
 }
 .t-dash__manage:hover {
-  filter: brightness(0.98);
+  background: var(--d-tint-strong);
 }
 
+/* Сцена разговора. justify-content: center — ключевая правка: раньше блок
+   отбивался фиксированным margin-top: 100px, и на 900px экрана под ним
+   оставалась мёртвая треть. */
 .t-dash__cta {
-  margin-top: 100px;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: 16px 0;
 }
 /* Кнопка «поболтать» — живой орб-лицо тьютора вместо плоского микрофона.
    Круглый фон не рисуем: форму и цвет даёт сама канва аватара. */
 .t-dash__orb {
+  position: relative;
   border: none;
   background: transparent;
   padding: 0;
@@ -1505,15 +1547,38 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.15s ease;
+  transition: transform 0.2s ease;
 }
 .t-dash__orb:hover {
   transform: translateY(-2px);
 }
+/* Дыхание ореола: единственная декоративная анимация экрана. Она же —
+   подсказка, что орб живой и кликабельный. */
+.t-dash__orb::before {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(144, 71, 255, 0.22), rgba(144, 71, 255, 0) 64%);
+  animation: t-orb-breath 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes t-orb-breath {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.9;
+  }
+}
 /* Форма занимает ~2/3 канвы, остальное — прозрачное поле под тень и конфетти;
    его съедает отрицательный margin (та же схема, что у .t-voice__face). */
 .t-dash__face {
-  --face: 220px;
+  --face: 224px;
+  position: relative;
   width: var(--face);
   height: var(--face);
   margin: calc(var(--face) * -0.182) 0;
@@ -1523,51 +1588,150 @@
   display: block;
 }
 
-/* Тумблер «только английский» */
-.t-dash__engonly {
-  margin-top: 24px;
-  width: 370px;
+/* Главное действие экрана: одна пилюля брендового цвета. Тень цветная и
+   мягкая — она поднимает кнопку над амбиентным пятном, но остаётся плоской
+   (никаких многослойных теней и объёма). */
+.t-dash__talk {
+  margin-top: 20px;
+  min-width: 304px;
+  height: 58px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 999px;
+  background: var(--d-accent);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(144, 71, 255, 0.26);
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.t-dash__talk:hover {
+  background: var(--d-accent-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(144, 71, 255, 0.32);
+}
+.t-dash__talk:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 16px rgba(144, 71, 255, 0.26);
+}
+
+/* Контекстная карточка «что делать дальше»: превью сцены + название.
+   Оранжевого баннера тут больше нет — на экране один акцент. */
+.t-dash__suggest {
+  margin-top: 28px;
+  width: 380px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid rgba(144, 71, 255, 0.16);
+  gap: 14px;
+  padding: 12px 14px;
+  border: none;
   border-radius: 20px;
-  background: rgba(144, 71, 255, 0.06);
+  background: var(--d-surface);
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 2px 14px rgba(27, 21, 36, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.t-dash__engonly:hover {
-  background: rgba(144, 71, 255, 0.1);
+.t-dash__suggest:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(27, 21, 36, 0.1);
 }
-.t-dash__engonly.is-on {
-  border-color: rgba(144, 71, 255, 0.45);
-  background: rgba(144, 71, 255, 0.12);
+.t-dash__suggestthumb {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background-color: var(--d-tint);
+  background-size: cover;
+  background-position: center;
 }
-.t-dash__engonlytext {
+.t-dash__suggesttext {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.t-dash__engonlytext b {
-  font-size: 15px;
+.t-dash__suggesttext small {
+  font-size: 11.5px;
   font-weight: 700;
-  color: var(--t-purple);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--d-accent);
+}
+.t-dash__suggesttext b {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--d-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.t-dash__suggestarrow {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--d-tint);
+  color: var(--d-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.t-dash__suggest:hover .t-dash__suggestarrow {
+  background: var(--d-tint-strong);
+}
+
+/* Тумблер «только английский» — настройка, а не действие: самая лёгкая
+   плашка в стопке, пилюлей и без рамки. */
+.t-dash__engonly {
+  margin-top: 12px;
+  width: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: var(--d-tint);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.t-dash__engonly:hover,
+.t-dash__engonly.is-on {
+  background: var(--d-tint-strong);
+}
+.t-dash__engonlytext {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.t-dash__engonlytext b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-accent-deep);
 }
 .t-dash__engonlytext small {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #8b8b8b;
+  color: var(--d-ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .t-dash__switch {
   position: relative;
-  width: 46px;
+  width: 44px;
   height: 26px;
   flex-shrink: 0;
   border-radius: 999px;
-  background: #d8d3e6;
+  background: #ffffff;
   transition: background 0.15s ease;
 }
 .t-dash__switch::after {
@@ -1578,71 +1742,21 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s ease;
+  background: var(--d-ink-faint);
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 .t-dash__engonly.is-on .t-dash__switch {
-  background: var(--t-purple);
+  background: var(--d-accent);
 }
 .t-dash__engonly.is-on .t-dash__switch::after {
-  transform: translateX(20px);
-}
-.t-dash__ctatitle {
-  margin-top: 20px;
-  white-space: pre-line;
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.19;
-  letter-spacing: -0.03em;
-  color: var(--t-purple);
-  text-align: center;
-}
-/* Оранжевый, а не фиолетовый: «советуем сегодня» — акцент дня, и он не должен
-   сливаться с фиолетовым орбом и остальным брендовым UI. */
-.t-dash__suggest {
-  margin-top: 32px;
-  width: 370px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
-  border: none;
-  border-radius: 20px;
-  background: linear-gradient(90deg, #ff9a2e 0%, #ff6a00 100%);
-  cursor: pointer;
-  transition: filter 0.15s ease;
-}
-.t-dash__suggest:hover {
-  filter: brightness(1.04);
-}
-.t-dash__suggesttext {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: left;
-}
-.t-dash__suggesttext small {
-  font-size: 16px;
-  font-weight: 400;
-  color: #ffffff;
-}
-.t-dash__suggesttext b {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffffff;
-}
-.t-dash__suggestarrow {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
   background: #ffffff;
-  color: #ff6a00;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  transform: translateX(18px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-dash__orb::before {
+    animation: none;
+  }
 }
 
 /* --- Правая панель ---
@@ -1802,14 +1916,6 @@
 }
 .t-scenario:hover .t-scenario__img {
   filter: brightness(0.95);
-}
-/* Заперт цепочкой (requires) — гасим карточку, как на странице «Сценарии». */
-.t-scenario.is-locked {
-  cursor: default;
-  opacity: 0.5;
-}
-.t-scenario.is-locked:hover .t-scenario__img {
-  filter: none;
 }
 .t-scenario__badge {
   position: absolute;
@@ -2273,17 +2379,6 @@
   margin-top: 12px;
   width: 100%;
   height: 44px;
-}
-/* Заперто до прохождения предыдущего сценария: карточка глушится, но остаётся
-   читаемой — она должна дразнить, а не исчезать. */
-.t-scen__card--locked .t-scen__img {
-  filter: grayscale(1) brightness(0.9);
-}
-.t-scen__card--locked:hover .t-scen__img {
-  filter: grayscale(1) brightness(0.9);
-}
-.t-scen__card--locked .t-scen__label {
-  color: var(--t-muted);
 }
 .t-scen__btn:disabled {
   opacity: 0.45;
@@ -2749,32 +2844,40 @@
     font-size: 16px;
   }
   .t-dash__tutormeta span {
-    font-size: 13px;
+    font-size: 11.5px;
   }
   .t-dash__manage {
     height: 40px;
-    padding: 0 16px;
+    padding: 0 14px;
     gap: 8px;
     font-size: 13px;
     flex-shrink: 0;
   }
+  /* На мобилке колонка не растянута на высоту экрана — центрировать нечего,
+     сцена просто идёт под шапкой. */
   .t-dash__cta {
-    margin-top: 44px;
+    flex: none;
+    justify-content: flex-start;
+    padding: 28px 0 0;
   }
   .t-dash__face {
     --face: min(180px, 52vw);
   }
-  .t-dash__ctatitle {
+  .t-dash__talk {
     margin-top: 18px;
-    font-size: clamp(23px, 6.5vw, 28px);
+    width: 100%;
+    min-width: 0;
+    max-width: 370px;
+    height: 56px;
+    font-size: 16px;
   }
-  .t-dash__engonly {
-    margin-top: 20px;
+  .t-dash__suggest {
+    margin-top: 22px;
     width: 100%;
     max-width: 370px;
   }
-  .t-dash__suggest {
-    margin-top: 24px;
+  .t-dash__engonly {
+    margin-top: 10px;
     width: 100%;
     max-width: 370px;
   }
@@ -3015,4 +3118,82 @@
 @keyframes t-car-fade {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
+}
+
+/* Плашка «Ситуация»: вводные, которые ученик держит перед глазами и
+   пересказывает вслух. Читаемость важнее компактности — это рабочий текст,
+   а не подпись. */
+.t-brief {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: #f7f5fd;
+  border: 1px solid #e7e1f7;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.t-brief__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9047ff;
+}
+.t-brief__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #2b2440;
+}
+/* Кнопка-шпаргалка поверх звонка: рядом с таймером, но слева, чтобы не
+   перекрывать отсчёт. */
+.t-voice__peek {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9047ff;
+  background: #f4f1fb;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+/* Развёрнутая шпаргалка перекрывает лицо — во время звонка это осознанный
+   размен: ученику нужен текст, а не мимика. */
+.t-voice__peekpanel {
+  position: absolute;
+  inset: 56px 16px auto 16px;
+  z-index: 3;
+}
+@media (max-width: 560px) {
+  .t-brief {
+    padding: 18px;
+    border-radius: 20px;
+  }
+  .t-brief__list {
+    font-size: 14px;
+  }
+}
+
+/* Обрыв связи: экран намеренно почти пустой — это удар, а не сообщение. */
+.t-linedead {
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+.t-linedead__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #6b6480;
+  letter-spacing: 0.01em;
 }
