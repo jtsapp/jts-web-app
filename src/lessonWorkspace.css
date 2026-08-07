@@ -20,7 +20,12 @@
    Здесь то же решение: гарнитура общая, а размеры и веса — из спеки, включая
    Bold там, где спека ставит акцентный Manrope Bold. */
 
-.lw {
+/* Токены классрума. Живой урок (.live) — та же поверхность, но своя обёртка,
+   поэтому переменные объявляются на обоих корнях: одно место значений, без
+   дубля. Размеры/фон остаются только на .lw — .live лежит внутри LearningLayout
+   и свой фон уже имеет. */
+.lw,
+.live {
   /* --- цвет ---------------------------------------------------- */
   --lw-bg: #f8f8f8;
   --lw-surface: #ffffff;
@@ -68,6 +73,11 @@
      линии трека, и позиция бегунков. */
   --lw-marker-center: 17px;
 
+}
+
+/* Размеры и фон — только у страницы классрума; .live лежит внутри LearningLayout
+   и свой фон уже получил. */
+.lw {
   min-height: 100vh;
   background: var(--lw-bg);
   color: var(--lw-ink);
@@ -1249,6 +1259,231 @@
   .lw-practice__check,
   .lw-chat__send,
   .lw-call__btn {
+    transition: none;
+  }
+}
+
+/* ================================================================== */
+/* ==============  ЖИВОЙ УРОК — СТОРОНА УЧЕНИКА  ==================== */
+/* ================================================================== */
+
+/* Экран собирался из новых имён классов, а стилей к ним не написали: браузер
+   укладывал маршрут, материал, звонок и чат стопкой по левому краю, а сам
+   материал рисовался дефолтным размером iframe — 300×150 с системной рамкой.
+   Отсюда «зажатая коробка с обводкой» и обрезанное задание.
+
+   Раскладка повторяет сетку классрума (.lw__body) теми же токенами и теми же
+   двумя точками перелома, чтобы урок у ученика и доска выглядели одним
+   продуктом. Правила спеки соблюдаются: плоские заливки, скругления по шкале,
+   разделение фоном и отступами вместо рамок. */
+
+.lw-live-body {
+  display: grid;
+  grid-template-columns: var(--lw-col-left) minmax(0, 1fr) var(--lw-col-right);
+  gap: var(--lw-gutter);
+  align-items: start;
+  /* Материалу нужна ширина больше центральной колонки доски, но не вся
+     сверхширокая витрина — иначе строки задания уезжают в бесконечность. */
+  max-width: 1600px;
+  margin-top: 16px;
+}
+
+.lw-live-route {
+  position: sticky;
+  top: 16px;
+  min-width: 0;
+}
+
+.lw-live-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lw-live-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+}
+
+/* --- материал урока ------------------------------------------------ */
+
+/* Высота считается от окна: задание должно быть читаемым без прокрутки всей
+   страницы, но не растягиваться на трёхметровом мониторе. */
+.lw-material-frame {
+  background: var(--lw-surface);
+  border-radius: var(--lw-r-step);
+  padding: 8px;
+  height: clamp(420px, calc(100vh - 300px), 860px);
+  overflow: hidden;
+}
+
+.lw-material-iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-surface);
+}
+
+.lw-material-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 24px;
+  background: var(--lw-surface);
+  border-radius: var(--lw-r-step);
+  color: var(--lw-muted);
+  text-align: center;
+}
+
+/* --- «Внимание на упражнение» (только преподаватель) ---------------- */
+
+.lw-focus-btn {
+  align-self: flex-start;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.lw-focus-btn:hover:not(:disabled) {
+  background: var(--lw-primary-ink);
+}
+
+.lw-focus-btn:disabled {
+  background: var(--lw-track);
+  color: var(--lw-muted);
+  cursor: default;
+}
+
+/* --- звонок --------------------------------------------------------- */
+
+.lw-meet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Для ученика это главное действие карточки — поэтому кнопка, а не ссылка
+   текстом, как было. */
+.lw-meet__link {
+  display: block;
+  padding: 12px 18px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.lw-meet__link:hover {
+  background: var(--lw-primary-ink);
+}
+
+.lw-meet__empty {
+  color: var(--lw-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.lw-meet__edit-btn,
+.lw-meet__save,
+.lw-meet__cancel {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lw-meet__save {
+  background: var(--lw-primary);
+  color: #fff;
+}
+
+.lw-meet__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lw-meet__form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lw-meet__form-actions > * {
+  flex: 1;
+}
+
+.lw-meet__input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-3);
+  color: var(--lw-ink);
+  font: inherit;
+}
+
+.lw-meet__input::placeholder {
+  color: var(--lw-muted);
+}
+
+/* --- адаптив: те же точки перелома, что у доски --------------------- */
+
+@media (max-width: 1420px) {
+  .lw-live-body {
+    grid-template-columns: var(--lw-col-left) minmax(0, 1fr);
+  }
+
+  /* Правая колонка вспомогательная — уходит вниз первой и раскладывается в ряд. */
+  .lw-live-aside {
+    grid-column: 2;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .lw-live-aside > * {
+    flex: 1 1 320px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .lw-live-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lw-live-route,
+  .lw-live-aside {
+    position: static;
+    grid-column: 1;
+  }
+
+  .lw-material-frame {
+    height: clamp(360px, calc(100vh - 240px), 640px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-focus-btn {
     transition: none;
   }
 }

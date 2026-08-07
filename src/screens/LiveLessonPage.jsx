@@ -289,7 +289,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         ) : isStaff ? (
                           <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetAdd')}</button>
                         ) : (
-                          <p className="live__status-msg">{t('lesson.ws.call')}</p>
+                          // Ученику нечего нажимать, пока учитель не дал ссылку: писать
+                          // «Позвонить учителю» здесь — обещание кнопки, которой нет.
+                          <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
                         )}
                       </div>
                       <TeacherChat messages={chatMessages} onSend={handleSendMessage} />
