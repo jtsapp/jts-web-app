@@ -19,10 +19,13 @@ export default function TopicsList({ topics, activeTopicId }) {
         </span>
       </div>
       <ul className="lw-topics__list">
-        {list.map((topic) => {
+        {list.map((topic, i) => {
           const isActive = topic.id === activeTopicId
           return (
             <li key={topic.id} className={`lw-topics__item${isActive ? ' is-active' : ''}`}>
+              {/* Номер — часть строки по спеке: он же служит якорем при
+                  устном «переходим к третьему». */}
+              <span className="lw-topics__num" aria-hidden="true">{i + 1}</span>
               {topic.title}
             </li>
           )
