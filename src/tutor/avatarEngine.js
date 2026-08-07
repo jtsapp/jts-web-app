@@ -11,6 +11,11 @@ import { EMOTIONS, LERP_KEYS, FX_KEYS } from './avatarEmotions.js'
 // Эталонный радиус, под который подобраны все числа пресетов и геометрии лица.
 const REF_R = 150
 
+// Во сколько раз черты лица мельче своего числового масштаба. Ровно 0.5 —
+// см. развёрнутое объяснение в setSize: числа геометрии в дизайн-листе
+// заданы для формы вдвое крупнее нашей R.
+const FEATURE_SCALE = 0.5
+
 // Постоянные времени перехода между эмоциями, в секундах (сходимость ≈ 3·tau).
 // Цвет медленнее геометрии осознанно: у Декстера эмоция прилетает почти на
 // каждую реплику, и скачок кармин→циан за те же 200мс, что и смена мимики,
@@ -114,9 +119,20 @@ export default class TutorAvatar {
     this.R = size * 0.636
     this.pad = size * 0.5 - this.R * 0.5
     this.k = this.R / REF_R
-    this.eyeY = -18 * this.k
-    this.mouthY = 34 * this.k
-    this.eyeSpread = 44 * this.k
+    // Черты рисуются в СВОЁМ масштабе — вдвое мельче k. Числа макета (глаз
+    // 19×32, разлёт ±44, рот на +34, линия 8) заданы для формы ДИАМЕТРОМ 300,
+    // а R у нас — диаметр 150, и те же числа давали черты ровно вдвое крупнее
+    // макета: глаз занимал 0.127 диаметра вместо 0.063, рот 0.347 вместо 0.173.
+    // Лицо выходило «мультяшной маской», а не спокойным орбом с дизайн-листа.
+    //
+    // Правится одним множителем, а не пересчётом полусотни констант: числа в
+    // коде остаются теми же, что в спеке, и сверять их с макетом по-прежнему
+    // можно глазами. Всё, что позиционируется от радиуса формы (rb) — эффекты,
+    // конфетти, пар, — не трогаем: они и так ходят долями шара.
+    this.fk = this.k * FEATURE_SCALE
+    this.eyeY = -18 * this.fk
+    this.mouthY = 34 * this.fk
+    this.eyeSpread = 44 * this.fk
     this._initBlobLayer()
   }
 
@@ -383,16 +399,18 @@ export default class TutorAvatar {
 
     if (s.confetti > 0.3 && !this.reduced) this._drawConfetti(sx, s.confetti, mt)
 
-    const lx = s.lookX * 10 * k
-    const ly = s.lookY * 8 * k
+    // Взгляд ходит в масштабе черт, а не формы: иначе зрачки уезжали бы
+    // на пол-лица от того, что глаза стали вдвое мельче.
+    const lx = s.lookX * 10 * this.fk
+    const ly = s.lookY * 8 * this.fk
     // spread сдвигает глаза к переносице: у ярости они сходятся к центру, и без
     // этого разлёт ±44 держал бы лицо спокойным при любом рте и бровях.
     const spread = this.eyeSpread * s.spread
     this._drawEye(-spread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 1.12 : 1)
     this._drawEye(spread + lx, this.eyeY + ly, blinkK, s.asym > 0.5 ? 0.58 : 1)
     // Брови ходят за взглядом слабее глаз — они на «черепе», а не в глазнице.
-    this._drawBrow(-spread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, -1, s.brow)
-    this._drawBrow(spread + lx * 0.5, this.eyeY - 32 * k + ly * 0.3, 1, s.brow)
+    this._drawBrow(-spread + lx * 0.5, this.eyeY - 32 * this.fk + ly * 0.3, -1, s.brow)
+    this._drawBrow(spread + lx * 0.5, this.eyeY - 32 * this.fk + ly * 0.3, 1, s.brow)
     this._drawMouth(lx * 0.5, this.mouthY + ly * 0.4)
 
     // Эффекты позиционируем от РЕАЛЬНОГО радиуса формы, а не от R: они белые,
@@ -408,8 +426,8 @@ export default class TutorAvatar {
       // Дальше от формы, чем кажется нужным: ближе клубы срастаются с внешними
       // концами бровей в одну фигуру. Дальше уводить нельзя — прозрачного поля
       // канвы хватает ровно до сюда, за ним пар режется краем.
-      this._drawSteam(-rb * 1.18, -rb * 0.62, s.steam, mt, rb, -1)
-      this._drawSteam(rb * 1.18, -rb * 0.62, s.steam, mt, rb, 1)
+      this._drawSteam(-rb * 1.02, -rb * 0.72, s.steam, mt, rb, -1)
+      this._drawSteam(rb * 1.02, -rb * 0.72, s.steam, mt, rb, 1)
     }
 
     ctx.restore()
@@ -418,7 +436,7 @@ export default class TutorAvatar {
   _drawEye(x, y, blinkK, asymScale) {
     const ctx = this.ctx
     const s = this.state
-    const k = this.k
+    const k = this.fk
     const w = (s.round * (25 - 19) + 19) * s.eyeW * k
     const h = 32 * k * s.eyeH * asymScale * (1 - blinkK)
     const a = s.arc
@@ -479,7 +497,7 @@ export default class TutorAvatar {
     const a = Math.min(1, Math.abs(v)) * (1 - Math.min(1, Math.abs(this.state.arc)))
     if (a < 0.03) return
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     // Сдвинутая вниз бровь тем толще и длиннее, чем сильнее v: у злости (v=-1)
     // это тяжёлый мультяшный клин, а не та же тонкая чёрточка, что у отвращения.
     const rage = Math.max(0, -v)
@@ -505,7 +523,7 @@ export default class TutorAvatar {
   _drawMouth(x, y) {
     const ctx = this.ctx
     const s = this.state
-    const k = this.k
+    const k = this.fk
     ctx.strokeStyle = this.INK
     ctx.fillStyle = this.INK
     ctx.lineWidth = 8 * k
@@ -607,7 +625,7 @@ export default class TutorAvatar {
 
   _drawDots(x, y, a, mt) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     ctx.save()
     ctx.fillStyle = '#fff'
     for (let i = 0; i < 3; i++) {
@@ -622,7 +640,7 @@ export default class TutorAvatar {
 
   _drawSpark(x, y, a, mt) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     ctx.save()
     ctx.globalAlpha = Math.min(1, a) * (0.55 + 0.45 * Math.sin(mt * 5))
     ctx.fillStyle = '#fff'
@@ -662,7 +680,7 @@ export default class TutorAvatar {
   // на мелком боксе «z» улетает за край, а на крупном топчется на месте.
   _drawZzz(x, y, a, mt, rb) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     ctx.save()
     ctx.fillStyle = '#fff'
     ctx.textAlign = 'center'
@@ -688,7 +706,7 @@ export default class TutorAvatar {
   // Так у облачка ровный общий контур, а не сетка швов от пересечений.
   _drawSteam(x, y, a, mt, rb, side) {
     const ctx = this.ctx
-    const k = this.k
+    const k = this.fk
     const lobes = [
       [0, 0, 1],
       [-0.72, 0.34, 0.7],
@@ -703,7 +721,9 @@ export default class TutorAvatar {
       // Клуб не растворяется, а схлопывается в конце пути: белое поверх
       // чернильного контура полупрозрачным даёт серую кашу вместо облачка.
       const fade = pr > 0.78 ? (1 - pr) / 0.22 : 1
-      const r = (5 + pr * 7) * k * fade
+      // Клубы крупнее черт лица: это не черта, а вынесенный за форму эффект —
+      // в масштабе глаз он превращается в три пылинки у края.
+      const r = (9 + pr * 12) * k * fade
       ctx.globalAlpha = Math.min(1, a)
       const paint = (grow, color) => {
         ctx.fillStyle = color
