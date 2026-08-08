@@ -176,6 +176,22 @@ export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
 }
 
+// Эффективный лимит "N из M" для области/элемента (см. ContentQuotaService.
+// getEffectiveLimit на бэкенде: точечная квота студента → тариф → демо-дефолт
+// → без лимита). contentId=0 — для областей без адресных элементов (IELTS,
+// Практика); для LESSON_MODULE передаём реальный id модуля. null = лимита нет.
+// Используется, чтобы жёстко скрыть/заблокировать контент СВЕРХ лимита ДО
+// попытки его открыть, а не только отказывать при завершении.
+export async function getContentQuota(token, contentType, contentId = 0) {
+  if (!token) return null
+  try {
+    const res = await authGet(`/mobile/content-quota?contentType=${encodeURIComponent(contentType)}&contentId=${contentId}`, token)
+    return res?.limit ?? null
+  } catch {
+    return null
+  }
+}
+
 // Живой урок (новый admin-пайплайн «live lessons»): метаданные урока,
 // включая jsonUrl — публичную files-api ссылку на расширенный JSON
 // (steps/blocks/questions + info/match/gap.open), который сам контент

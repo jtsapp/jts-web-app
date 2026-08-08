@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon, LeafIcon, WaveIcon, CrescentIcon, StarIcon, BurstIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { getLessonModules, getPracticeToken, completeLessonModule } from '../api.js'
+import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
 import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
@@ -54,6 +54,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // Модуль закрыт админом для ЭТОГО студента (флаг locked из
   // GET /mobile/lesson-modules) — тропа целиком недоступна.
   const [moduleLocked, setModuleLocked] = useState(false)
+  // Квота «сколько уроков модуля можно пройти» (см. ContentQuotaService на
+  // бэкенде) — null значит без лимита. В отличие от moduleLocked (весь модуль
+  // разом), это блокирует уроки НАЧИНАЯ с индекса moduleQuota, а не в конце.
+  const [moduleQuota, setModuleQuota] = useState(null)
   // Квота «N из M» исчерпана: бэкенд отдал 403 на завершении урока. Урок
   // не засчитан, показываем это на экране итогов вместо тихой синхронизации.
   const [restricted, setRestricted] = useState(false)
@@ -88,6 +92,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         const mid = mod ? mod.id : null
         setModuleId(mid)
         setModuleLocked(!!mod?.locked)
+        setModuleQuota(mid != null ? await getContentQuota(authToken, 'LESSON_MODULE', mid) : null)
         setLessons(trail)
         const d = await loadDone(level, authToken, mid)
         if (!alive) return
@@ -121,11 +126,19 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     return out
   }, [lessons])
 
-  // Урок разблокирован, если это первый или предыдущий пройден. Блокировка
-  // модуля админом перекрывает всю тропу разом, независимо от прогресса.
+  // Урок разблокирован, если это первый или предыдущий пройден, модуль не
+  // закрыт админом целиком, и индекс урока не упирается в квоту "сколько
+  // уроков этого модуля можно пройти" (moduleQuota=null — без лимита). Раньше
+  // квота проверялась только В МОМЕНТ завершения урока (403 от бэкенда) — тропа
+  // при этом всё равно рисовала следующие уроки открытыми для клика, и студент
+  // мог их пройти вплоть до конца, просто без начисления награды. Теперь узлы
+  // сверх квоты не открываются вовсе, как и просил менеджер.
   const isUnlocked = useCallback(
-    (i) => !moduleLocked && (i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
-    [lessons, done, moduleLocked],
+    (i) =>
+      !moduleLocked &&
+      (moduleQuota == null || i < moduleQuota) &&
+      (i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    [lessons, done, moduleLocked, moduleQuota],
   )
 
   const openLesson = useCallback(
@@ -133,7 +146,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       // Урок рендерится из статики (public/learning/<level>.json), а не с
       // бэкенда, поэтому 403 на модуле сам по себе его не закрывает —
       // проверяем здесь, иначе диплинк/гонка загрузки откроют закрытый урок.
+      // Кнопка узла тропы уже disabled при !unlocked — эта проверка на случай
+      // прямого вызова (goNext, диплинк) в обход клика по узлу.
       if (moduleLocked) return
+      const i = lessons.findIndex((l) => l.code === code)
+      if (i >= 0 && !isUnlocked(i)) return
       setBusy(true)
       setEnd(null)
       setRestricted(false)
@@ -144,7 +161,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setBusy(false)
       }
     },
-    [level, moduleLocked],
+    [level, moduleLocked, lessons, isUnlocked],
   )
 
   const retry = () => {
@@ -155,6 +172,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const goNext = () => {
     const i = lessons.findIndex((l) => l.code === open?.code)
     const next = i >= 0 ? lessons[i + 1] : null
+    // Квота исчерпана ровно на границе (только что прошли последний доступный
+    // урок): следующий уже заблокирован isUnlocked. Не открываем его молча —
+    // остаёмся на экране итогов, переключая на тот же "🔒 квота" вид, что и
+    // при отказе бэкенда на завершении (см. onDone/ContentRestrictedError).
+    if (next && !isUnlocked(i + 1)) {
+      setRestricted(true)
+      return
+    }
     setEnd(null)
     if (next) openLesson(next.code)
     else setOpen(null) // последний урок — назад на тропу
