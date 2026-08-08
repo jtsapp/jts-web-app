@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { getMyLessonOccurrences, getLessonsSummary } from '../../api.js'
 import { occurrencesByDayKey, monthShift, dayKey, dateFromKey } from './lessonFormat.js'
+import { findLiveOccurrence } from './liveNow.js'
 import ScheduleSummary from './ScheduleSummary.jsx'
 import MonthCalendar from './MonthCalendar.jsx'
 import DayPanel from './DayPanel.jsx'
+import LiveNowBanner from './LiveNowBanner.jsx'
 
 export default function LessonSchedule({ token, onOpenLesson }) {
   const { t } = useI18n()
@@ -32,6 +34,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
   }, [token])
 
   const occByDay = useMemo(() => occurrencesByDayKey(occ), [occ])
+  const liveNow = useMemo(() => findLiveOccurrence(occ), [occ])
 
   if (!token) return null
 
@@ -42,6 +45,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
       {state === 'error' && <p className="sch__status sch__status--error">{t('schedule.error')}</p>}
       {state === 'ready' && (
         <>
+          <LiveNowBanner occ={liveNow} onOpenLesson={onOpenLesson} />
           <ScheduleSummary summary={summary} />
           <div className="cal-layout">
             <MonthCalendar

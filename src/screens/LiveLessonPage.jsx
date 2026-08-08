@@ -57,11 +57,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return map
   }, [sections, activeSectionId])
 
+  // Ошибку загрузки разделов раньше глотали молча, и любой сбой выглядел как
+  // «преподаватель ещё ничего не открыл» — ученик ждал материал, которого не
+  // будет. Теперь пустой урок и неудачный запрос — это разные сообщения.
+  const [sectionsFailed, setSectionsFailed] = useState(false)
+
   function loadSections() {
     getLessonSections(token, lessonId).then((list) => {
       setSections(list)
+      setSectionsFailed(false)
       setActiveSectionId((prev) => (prev != null && list.some((s) => s.id === prev)) ? prev : (list[0]?.id ?? null))
-    }).catch(() => {})
+    }).catch(() => setSectionsFailed(true))
   }
 
   function selectSection(sectionId) {
@@ -229,10 +235,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   <div className="lw-live-body">
                     <div className="lw-live-route">
                       {sections.length === 0 ? (
-                        <p className="live__status-msg">{t('lesson.ws.noSections')}</p>
+                        <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
+                          {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
+                        </p>
                       ) : (
                         <LessonRoute
-                          steps={sections.map((s) => ({ id: s.id, order: s.position, title: s.title }))}
+                          // Нумеруем по месту в списке, а не по position из базы:
+                          // тот считается с нуля, и первый шаг подписывался «ШАГ 00».
+                          steps={sections.map((s, i) => ({ id: s.id, order: i + 1, title: s.title }))}
                           activeStepId={activeSectionId}
                           statusById={sectionStatusById}
                           onSelect={selectSection}
