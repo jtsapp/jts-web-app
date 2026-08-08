@@ -1277,6 +1277,17 @@
    продуктом. Правила спеки соблюдаются: плоские заливки, скругления по шкале,
    разделение фоном и отступами вместо рамок. */
 
+/* Фон классрума (§1.1): страница #f8f8f8, карточки #ffffff. Без него белые
+   карточки лежат на белом, и экран читается как сплошное полотно — разделение
+   в спеке держится на фоне и отступах, а не на рамках, которых там нет.
+   Заливка растянута на всю ширину контента и уходит под футер, чтобы полоса
+   не обрывалась там, где заканчивается сетка. */
+.live--wide {
+  background: var(--lw-bg);
+  border-radius: var(--lw-r-card);
+  padding: 16px;
+}
+
 .lw-live-body {
   display: grid;
   grid-template-columns: var(--lw-col-left) minmax(0, 1fr) var(--lw-col-right);
@@ -1370,23 +1381,39 @@
 
 /* --- звонок --------------------------------------------------------- */
 
+/* Карточка звонка живёт по своим меркам спеки (§1.4): скругление карточки 24
+   и паддинг 12, а не паддинг шага 16/22 — иначе CTA внутри теряет 20px ширины
+   и перестаёт совпадать с макетом. */
 .lw-meet {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border-radius: var(--lw-r-card);
+  padding: 12px;
 }
 
-/* Для ученика это главное действие карточки — поэтому кнопка, а не ссылка
-   текстом, как было. */
+/* Свёрнутый звонок — состояние B спеки (§5.1): карточка-CTA высотой 64,
+   плоская заливка primary, скругление по шкале блоков (16, не пилюля).
+   Для ученика это главное действие правой колонки, поэтому блок, а не
+   строка-ссылка. */
 .lw-meet__link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 64px;
   padding: 12px 18px;
-  border-radius: var(--lw-r-pill);
+  border-radius: var(--lw-r-block);
   background: var(--lw-primary);
   color: #fff;
+  font-size: 16px;
   font-weight: 700;
   text-align: center;
   text-decoration: none;
+}
+
+.lw-meet__icon {
+  flex: none;
 }
 
 .lw-meet__link:hover {
