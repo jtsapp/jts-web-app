@@ -6,10 +6,10 @@ import Multiline from '../components/Multiline.jsx'
 import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
 
 /**
- * Шаг саморегистрации после email+кода: аккаунт уже создан (email — первый,
- * почта→код→телефон→пароль), но телефона у него ещё нет. Здесь его собираем
- * и сохраняем через авторизованный PUT /user/update (App.jsx: onSubmit),
- * тем же путём, что и профиль на экране «Мои данные».
+ * Шаг 1 саморегистрации: номер телефона. Код подтверждения сюда не идёт —
+ * следом собираем почту (RegisterEmailPage), и именно на неё бэкенд шлёт OTP
+ * (см. RegistrationService: email — канал по умолчанию, когда есть оба поля).
+ * Порядок: номер → почта → код на почту → пароль.
  */
 export default function RegisterPhonePage({ onSubmit, loading, error }) {
   const { t } = useI18n()

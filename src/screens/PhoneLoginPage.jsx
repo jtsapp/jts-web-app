@@ -7,16 +7,16 @@ import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
 import { isEmailIdentifier } from '../api.js'
 
-export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loading, error, defaultMode = 'phone' }) {
+export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loading, error }) {
   const { t, lang } = useI18n()
   // 'phone' — прежняя форма со страной/маской; 'email' — простое поле почты.
   // Одна и та же onSubmit(identifier) обслуживает оба режима — App.jsx/api.js
   // сами определяют, что пришло, и шлют { phone } или { email } на бэкенд.
-  // При регистрации App.jsx передаёт defaultMode="email" — сперва почта, а
-  // телефон студент вводит позже отдельным шагом (RegisterPhonePage), уже
-  // после кода подтверждения. При входе (defaultMode не задан) поведение то же,
-  // что и раньше — по умолчанию телефон.
-  const [mode, setMode] = useState(defaultMode)
+  // Телефон по умолчанию и при входе, и при регистрации; почта — через
+  // переключатель. Если ввели почту при регистрации, недостающий телефон
+  // App.jsx попросит отдельным шагом после кода (см. RegisterPhonePage) —
+  // и наоборот для почты (RegisterEmailPage), см. needsPhoneStep/needsEmailStep.
+  const [mode, setMode] = useState('phone')
   const [country, setCountry] = useState(DEFAULT_COUNTRY)
   const [digits, setDigits] = useState('') // только цифры нац. номера, без кода страны
   const [email, setEmail] = useState('')

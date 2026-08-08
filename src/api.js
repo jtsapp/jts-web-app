@@ -389,13 +389,15 @@ async function post(path, body) {
   return data
 }
 
-// Шаг 1 (регистрация): отправка кода на телефон ИЛИ email. Возвращает режим
-// 'register'. Если идентификатор уже занят — НЕ уводим молча в вход, а
-// помечаем ошибку кодом USER_EXISTS, и UI просит пользователя войти или взять
-// другой телефон/email (см. handlePhoneSubmit).
-export async function sendOtp(identifier, name) {
+// Шаг 3 регистрации (после того как собрали номер и почту — см.
+// RegisterPhonePage/RegisterEmailPage): отправляет оба идентификатора сразу.
+// Бэкенд шлёт код на почту, когда она есть (RegistrationService: email
+// предпочтительнее телефона как канал OTP при обоих полях) — таков порядок
+// веб-формы: номер → почта → код на почту → пароль. Если телефон или почта
+// уже заняты — не уводим молча в вход, а помечаем ошибку кодом USER_EXISTS.
+export async function sendRegistrationOtp(name, phone, email) {
   try {
-    await post('/registration/initiate', { name: name || 'Гость', ...identifierBody(identifier) })
+    await post('/registration/initiate', { name: name || 'Гость', phone: normalizePhone(phone), email })
     return 'register'
   } catch (e) {
     if ((e.message || '').toLowerCase().includes('exist')) {
@@ -403,6 +405,14 @@ export async function sendOtp(identifier, name) {
     }
     throw e
   }
+}
+
+// Шаг 4: проверка кода, присланного на почту. Создаёт пользователя сразу с
+// обоими идентификаторами и возвращает accessToken/refreshToken (см.
+// RegistrationVerifyResponse на бэкенде) — отдельного входа после регистрации
+// больше не требуется.
+export async function verifyRegistrationOtp(name, phone, email, code) {
+  return post('/registration/verify', { name: name || 'Гость', phone: normalizePhone(phone), email, otp: code })
 }
 
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
@@ -422,29 +432,15 @@ export async function requestLoginOtp(identifier) {
   }
 }
 
-// Шаг 2: проверка кода. В режиме register создаёт пользователя (без токена),
-// в режиме login — возвращает LoginResponse с accessToken.
-export async function verifyOtp(identifier, code, name, mode) {
-  const body = identifierBody(identifier)
-  if (mode === 'login') {
-    return post('/auth/otp/verify', { ...body, otp: code })
-  }
-  return post('/registration/verify', { name: name || 'Гость', ...body, otp: code })
+// Шаг 2 входа по коду: проверка кода → LoginResponse с accessToken.
+export async function verifyLoginOtp(identifier, code) {
+  return post('/auth/otp/verify', { ...identifierBody(identifier), otp: code })
 }
 
 // Вход через Google: id_token из Google Identity Services → LoginResponse
 // с accessToken. Бэкенд сам создаёт пользователя при первом входе.
 export function loginWithGoogle(idToken) {
   return post('/auth/google', { idToken })
-}
-
-// Вход по OTP → accessToken. Используется после регистрации, чтобы получить JWT.
-// В dev-окружении код всегда '0000' (запрос генерирует свежий код).
-export async function loginWithOtp(identifier, otp = '0000') {
-  const body = identifierBody(identifier)
-  await post('/auth/otp/request', body)
-  const res = await post('/auth/otp/verify', { ...body, otp })
-  return res?.accessToken || null
 }
 
 // ─────────────────────────────────────────────────────────────────────────

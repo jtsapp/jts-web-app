@@ -6,6 +6,7 @@ import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
 import OtpPage from './screens/OtpPage.jsx'
 import RegisterPhonePage from './screens/RegisterPhonePage.jsx'
+import RegisterEmailPage from './screens/RegisterEmailPage.jsx'
 import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
@@ -51,7 +52,7 @@ import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
 import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
-import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, loginWithPassword, setPassword, updateUser, isEmailIdentifier, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
@@ -147,10 +148,11 @@ export default function App() {
   }, [])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  // Почта студента при регистрации: номер → почта → код (на почту) → пароль,
+  // оба идентификатора собираются ДО запроса кода (см. handleRegEmailSubmit).
+  // Для входа не используется — там всё ещё один идентификатор в `phone`.
+  const [email, setEmail] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
-  // Что пользователь нажал на welcome. Вход бьёт в /auth/otp/request напрямую,
-  // регистрация — в /registration/initiate. Определяет и «назад» с экрана телефона.
-  const [authIntent, setAuthIntent] = useState('register')
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
@@ -211,19 +213,43 @@ export default function App() {
 
   const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
 
-  // Запрос кода: вход — строго /auth/otp/request, регистрация — с фолбэком
-  // на вход, если номер уже занят. Бэкенд решает итоговый режим.
-  function requestCode(fullPhone) {
-    return authIntent === 'login' ? requestLoginOtp(fullPhone) : sendOtp(fullPhone, name)
-  }
-
+  // Экран 'phone' — только вход по коду (фолбэк для аккаунтов без пароля,
+  // см. onOtpLogin в PasswordLoginPage). Регистрация через него больше не
+  // идёт — там свой путь: 'reg-phone' → 'reg-email' → 'otp', см. ниже.
   async function handlePhoneSubmit(fullPhone) {
     setError('')
     setLoading(true)
     try {
-      const m = await requestCode(fullPhone)
+      const m = await requestLoginOtp(fullPhone)
       setMode(m)
       setPhone(fullPhone)
+      setScreen('otp')
+    } catch (e) {
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || t('err.send'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Шаг 1 регистрации: только номер — код ещё не запрашиваем, сперва нужна
+  // почта (см. handleRegEmailSubmit), она и есть канал OTP.
+  function handleRegPhoneSubmit(fullPhone) {
+    setError('')
+    setPhone(fullPhone)
+    setScreen('reg-email')
+  }
+
+  // Шаг 2 регистрации: почта собрана — оба идентификатора известны, теперь
+  // запрашиваем код. Бэкенд шлёт его на почту (RegistrationService
+  // предпочитает email каналом OTP, когда есть оба поля).
+  async function handleRegEmailSubmit(emailValue) {
+    setError('')
+    setLoading(true)
+    try {
+      const m = await sendRegistrationOtp(name, phone, emailValue)
+      setEmail(emailValue)
+      setMode(m)
       setScreen('otp')
     } catch (e) {
       const key = phoneErrorKey(e)
@@ -237,16 +263,17 @@ export default function App() {
     setError('')
     setLoading(true)
     try {
-      const data = await verifyOtp(phone, code, name, mode)
-      // токен: в login-режиме приходит сразу; после регистрации — отдельным входом
-      let tok = mode === 'login' ? data?.accessToken : null
-      if (!tok) {
-        try {
-          tok = await loginWithOtp(phone)
-        } catch (e) {
-          console.warn('Не удалось получить токен:', e)
-        }
-      }
+      // Регистрация шлёт номер и почту вместе (оба уже собраны на предыдущих
+      // шагах) и создаёт аккаунт сразу с обоими; вход проверяет код по тому
+      // единственному идентификатору, с которого начали. Оба пути отдают
+      // токен прямо в ответе — код теперь настоящий случайный (см. бэкенд,
+      // RandomOtpGeneratorService), получить токен повторным запросом OTP и
+      // угадыванием кода, как раньше, больше нельзя.
+      const data =
+        mode === 'register'
+          ? await verifyRegistrationOtp(name, phone, email, code)
+          : await verifyLoginOtp(phone, code)
+      const tok = data?.accessToken || null
       setToken(tok || null)
       saveToken(tok || null) // без этого сессия умрёт на первой перезагрузке
       // Уровень берём из профиля на backend. Если его там нет — аккаунт новый
@@ -295,36 +322,14 @@ export default function App() {
         clearLocalPractice()
         hydratePractice(tok)
       }
-      // Регистрация теперь идёт «почта → код → телефон → пароль»: если
-      // подтверждали именно почту, телефона у аккаунта ещё нет — ведём на
-      // отдельный шаг RegisterPhonePage, а «задать пароль» — уже после него
-      // (см. handleRegisterPhone). Если же пользователь переключился на
-      // телефон ещё на первом экране, номер уже есть — шаг не нужен.
-      // Свежий аккаунт заводится без пароля (RegistrationService пишет null) —
-      // просим задать его, иначе войти потом можно будет только новым
-      // OTP-кодом. Без токена оба шага пропускаем: сохранять нечем.
-      const needsPhoneStep = mode === 'register' && !!tok && isEmailIdentifier(phone)
-      setScreen(needsPhoneStep ? 'register-phone' : mode === 'register' && tok ? 'set-password' : 'success')
+      // Оба идентификатора уже собраны и отправлены на верификацию выше —
+      // после кода сразу «задать пароль». Свежий аккаунт заводится без
+      // пароля (RegistrationService пишет null) — просим задать его, иначе
+      // войти потом можно будет только новым OTP-кодом. Без токена шаг
+      // пропускаем: ставить пароль нечем.
+      setScreen(mode === 'register' && tok ? 'set-password' : 'success')
     } catch (e) {
       setError(e.message || t('err.otp'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Шаг «телефон» после email+кода: аккаунт уже создан, но без телефона.
-  // Переиспользуем self-service PUT /user/update (тот же путь, что и
-  // редактирование телефона в профиле) вместо отдельного backend-эндпоинта —
-  // имя уже известно из чата-приветствия, шлём его вместе с телефоном.
-  async function handleRegisterPhone(fullPhone) {
-    setError('')
-    setLoading(true)
-    try {
-      await updateUser(token, { name, phone: fullPhone })
-      setPhone(fullPhone)
-      setScreen('set-password')
-    } catch (e) {
-      setError(e.message || t('regphone.error'))
     } finally {
       setLoading(false)
     }
@@ -477,6 +482,7 @@ export default function App() {
     setToken(null)
     setName('')
     setPhone('')
+    setEmail('')
     setIsDemoAccount(false)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
@@ -544,8 +550,12 @@ export default function App() {
   async function handleResend() {
     setError('')
     try {
-      const m = await requestCode(phone)
-      setMode(m)
+      if (mode === 'register') {
+        await sendRegistrationOtp(name, phone, email)
+      } else {
+        const m = await requestLoginOtp(phone)
+        setMode(m)
+      }
     } catch (e) {
       setError(e.message || 'Не удалось отправить код повторно.')
     }
@@ -576,7 +586,6 @@ export default function App() {
         <WelcomePage
           onRegister={() => {
             setError('')
-            setAuthIntent('register')
             setScreen('chat')
           }}
           // Вход — телефон/почта + пароль. Вход по коду остался запасным
@@ -585,7 +594,6 @@ export default function App() {
           onLogin={() => {
             setError('')
             setName('')
-            setAuthIntent('login')
             setScreen('login-password')
           }}
         />
@@ -597,41 +605,47 @@ export default function App() {
           onPhoneLogin={(userName) => {
             setName(userName || '')
             setError('')
-            setScreen('phone')
+            setScreen('reg-phone')
           }}
           onGoogleToken={handleGoogleCredential}
           error={error}
         />
       )
+    // Только вход по коду (фолбэк для аккаунтов без пароля) — регистрация
+    // сюда больше не заходит, у неё свой путь: reg-phone → reg-email → otp.
     case 'phone':
       return (
         <PhoneLoginPage
-          onBack={() => { setError(''); setScreen(authIntent === 'login' ? 'welcome' : 'chat') }}
+          onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePhoneSubmit}
           onGoogleToken={handleGoogleCredential}
           loading={loading}
           error={error}
-          // Регистрация теперь ведёт с почты: телефон студент введёт отдельным
-          // шагом после кода (RegisterPhonePage). Вход по-прежнему начинается
-          // с телефона — там defaultMode не передаём, используется дефолт.
-          defaultMode={authIntent === 'register' ? 'email' : 'phone'}
+        />
+      )
+    case 'reg-phone':
+      return (
+        <RegisterPhonePage
+          onSubmit={handleRegPhoneSubmit}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'reg-email':
+      return (
+        <RegisterEmailPage
+          onSubmit={handleRegEmailSubmit}
+          loading={loading}
+          error={error}
         />
       )
     case 'otp':
       return (
         <OtpPage
-          phone={phone}
-          onBack={() => { setError(''); setScreen('phone') }}
+          phone={mode === 'register' ? email : phone}
+          onBack={() => { setError(''); setScreen(mode === 'register' ? 'reg-email' : 'phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
-          loading={loading}
-          error={error}
-        />
-      )
-    case 'register-phone':
-      return (
-        <RegisterPhonePage
-          onSubmit={handleRegisterPhone}
           loading={loading}
           error={error}
         />
