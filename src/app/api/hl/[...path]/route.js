@@ -1,6 +1,6 @@
 // Прокси hosted-Speakout-страниц (тропа index.html + страницы уроков).
 //
-// Зачем: курс хостится на files-api.iqra.space (cross-origin), поэтому из iframe
+// Зачем: курс хостится на files-dev.justtostudy.kz (cross-origin), поэтому из iframe
 // туда нельзя внедрить CSS, чтобы убрать нижний «бренд-футер» тропы (brandbar +
 // «Just To Study · …» + кнопка «Сбросить прогресс»). Роут отдаёт те же
 // страницы с нашего origin, дописав в <head>:
@@ -18,7 +18,7 @@
 
 export const runtime = 'nodejs'
 
-const UPSTREAM = 'https://files-api.iqra.space'
+const UPSTREAM = 'https://files-dev.justtostudy.kz'
 // Ограничиваем прокси только Speakout-курсами и только .html (SSRF-защита).
 const ALLOWED_PREFIX = 'development/speakout/'
 

@@ -64,7 +64,7 @@ function pickMime() {
 
 const SPEEDS = [0.5, 0.75, 1]
 
-export default function ShadowingPage({ userLevel, userName, token, onNav, onProfile, lessonId }) {
+export default function ShadowingPage({ userLevel, userName, token, onNav, onProfile, lessonId, isDemoAccount }) {
   const { t, lang } = useI18n()
 
   // Текущий урок: стартовый id из пропса (диплинк-выбор карточки), дальше —
@@ -587,7 +587,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   if (!entitlement.loading && !entitlement.allowed) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={back} />
+        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} />
       </LearningLayout>
     )
   }

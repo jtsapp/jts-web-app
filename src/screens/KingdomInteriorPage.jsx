@@ -6,6 +6,7 @@ import { getLessonModules, getPracticeToken, completeLessonModule } from '../api
 import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
+import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
@@ -41,7 +42,7 @@ const COOKIE = {
 // (LessonPlayer). Раньше здесь был iframe hosted-Speakout — теперь весь урок
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onProfile, onBack }) {
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onProfile, onBack, isDemoAccount }) {
   const { t } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
@@ -403,7 +404,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               {restricted ? (
                 <>
                   <div className="le-restricted" role="status">
-                    🔒 {t('learn.quotaReached')}
+                    🔒{' '}
+                    {isDemoAccount ? (
+                      <>
+                        {t('learn.quotaReachedDemo')}{' '}
+                        <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                          {t('demo.cta')}
+                        </a>
+                      </>
+                    ) : (
+                      t('learn.quotaReached')
+                    )}
                   </div>
                   <button className="le-btn" onClick={exitLesson}>
                     {t('common.back')}

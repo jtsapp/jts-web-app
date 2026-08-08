@@ -20,7 +20,7 @@ import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 // Прототип знает только ru/kk; для английского интерфейса сайта берём ru.
 const vocabLang = (lang) => (lang === 'kk' ? 'kk' : 'ru')
 
-export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
+export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
   const { lang } = useI18n()
   const vlang = vocabLang(lang)
   const T = tx(vlang)
@@ -92,7 +92,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 
   const entitlement = usePracticeEntitlement('vocab', token)
   if (!entitlement.loading && !entitlement.allowed) {
-    return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} />)
+    return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} />)
   }
 
   if (screen === 'session') {

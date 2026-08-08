@@ -8,7 +8,7 @@ vi.mock('../../api.js', () => ({
 import { getCourseCatalogLessonContent } from '../../api.js'
 import { loadCatalogLesson } from './loadCatalogLesson.js'
 
-const FILE_URL = 'https://files-api.iqra.space/development/course-catalog/a1/lessons/L01.html'
+const FILE_URL = 'https://files-dev.justtostudy.kz/development/course-catalog/a1/lessons/L01.html'
 
 function stored(overrides = {}) {
   return {
@@ -59,7 +59,7 @@ describe('loadCatalogLesson', () => {
     const lesson = await loadCatalogLesson(nextId, 'token')
 
     expect(lesson.steps[0].blocks[0].html).toContain(
-      'https://files-api.iqra.space/development/course-catalog/a1/lessons/audio/track.mp3',
+      'https://files-dev.justtostudy.kz/development/course-catalog/a1/lessons/audio/track.mp3',
     )
   })
 

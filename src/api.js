@@ -606,15 +606,31 @@ export async function getLanguageLevel(token) {
   return data?.languageLevel || data?.level || data?.value || null
 }
 
+// Демо-статус аккаунта (GET /user/me, Bearer) — решает, показывать ли на
+// экранах «лимит исчерпан» демо-CTA со ссылкой на WhatsApp или обычный текст:
+// лимит может быть и не демо-природы (персональный override от менеджера).
+// При сетевой осечке считаем аккаунт не демо — это не критично (просто не
+// покажем CTA), а не наоборот.
+export async function getIsDemoAccount(token) {
+  if (!token) return false
+  try {
+    const data = await authGet('/user/me', token)
+    return !!data?.isDemoAccount
+  } catch {
+    return false
+  }
+}
+
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest
 // мобилки: name обязателен, остальные поля шлём только если заданы, чтобы не
 // затирать то, что уже хранит бэкенд. Возвращает обновлённый UserInfo.
-export async function updateUser(token, { name, email, city, gender, birthDate }) {
+export async function updateUser(token, { name, email, city, gender, birthDate, phone }) {
   const payload = { name }
   if (email) payload.email = email
   if (city) payload.city = city
   if (gender) payload.gender = gender
   if (birthDate) payload.birthDate = birthDate
+  if (phone) payload.phone = normalizePhone(phone)
   let res
   try {
     res = await fetch(`${BASE}/user/update`, {

@@ -203,7 +203,7 @@ async function enrichCovers(list) {
   )
 }
 
-export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
+export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
   const [clips, setClips] = useState([])
@@ -403,7 +403,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   if (situationsBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} />
+        <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} />
       </LearningLayout>
     )
   }
@@ -413,7 +413,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     if (!grammarEntitlement.loading && !grammarEntitlement.allowed) {
       return (
         <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-          <PracticeLimitScreen limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} />
+          <PracticeLimitScreen limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} isDemoAccount={isDemoAccount} />
         </LearningLayout>
       )
     }
@@ -745,6 +745,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           onCompleted={(id) =>
             setSituations((list) => list.map((x) => (x.id === id ? { ...x, completed: true } : x)))
           }
+          isDemoAccount={isDemoAccount}
         />
       )}
     </LearningLayout>

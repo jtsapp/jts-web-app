@@ -252,7 +252,7 @@ function ExitModal({ onStay, onLeave }) {
 }
 
 // ───────────────────────── Screen ─────────────────────────
-export default function ListeningPage({ userLevel, userName, token, onNav, onProfile }) {
+export default function ListeningPage({ userLevel, userName, token, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
   const level = normLevel(userLevel)
   const [phase, setPhase] = useState('intro') // 'intro' | 'task' | 'result'
@@ -365,7 +365,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   if (!entitlement.loading && !entitlement.allowed) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={back} />
+        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} />
       </LearningLayout>
     )
   }

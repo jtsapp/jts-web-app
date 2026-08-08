@@ -5,6 +5,7 @@ import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
 import OtpPage from './screens/OtpPage.jsx'
+import RegisterPhonePage from './screens/RegisterPhonePage.jsx'
 import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
@@ -50,7 +51,7 @@ import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
 import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
-import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel } from './api.js'
+import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, loginWithPassword, setPassword, updateUser, isEmailIdentifier, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
@@ -116,6 +117,7 @@ export default function App() {
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
           if (session.languageLevel) setUserLevel(session.languageLevel)
+          getIsDemoAccount(session.token).then((v) => { if (!cancelled) setIsDemoAccount(v) })
         }
         // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
         // device-id) — восстанавливаем, чтобы перезагрузка не гоняла онбординг
@@ -159,6 +161,11 @@ export default function App() {
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
   const [userLevel, setUserLevel] = useState('A1')
+  // Демо-статус текущего аккаунта — решает, показывать ли на экранах «лимит
+  // исчерпан» демо-CTA со ссылкой на WhatsApp поддержки (см. src/lib/support.js)
+  // или обычный текст. Саморегистрация всегда демо (см. RegistrationService на
+  // бэкенде); менеджер снимает флаг вручную.
+  const [isDemoAccount, setIsDemoAccount] = useState(false)
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
@@ -255,6 +262,7 @@ export default function App() {
         }
       }
       if (lvl) setUserLevel(lvl)
+      if (tok) getIsDemoAccount(tok).then(setIsDemoAccount)
       // При сетевой осечке уровень неизвестен — тестом не пристаём, кроме
       // свежей регистрации: у неё уровня заведомо ещё нет.
       setNeedsLevelTest(lvlKnown ? !lvl : mode !== 'login')
@@ -287,12 +295,36 @@ export default function App() {
         clearLocalPractice()
         hydratePractice(tok)
       }
+      // Регистрация теперь идёт «почта → код → телефон → пароль»: если
+      // подтверждали именно почту, телефона у аккаунта ещё нет — ведём на
+      // отдельный шаг RegisterPhonePage, а «задать пароль» — уже после него
+      // (см. handleRegisterPhone). Если же пользователь переключился на
+      // телефон ещё на первом экране, номер уже есть — шаг не нужен.
       // Свежий аккаунт заводится без пароля (RegistrationService пишет null) —
-      // сразу просим задать его, иначе войти потом можно будет только новым
-      // OTP-кодом. Без токена шаг пропускаем: ставить пароль нечем.
-      setScreen(mode === 'register' && tok ? 'set-password' : 'success')
+      // просим задать его, иначе войти потом можно будет только новым
+      // OTP-кодом. Без токена оба шага пропускаем: сохранять нечем.
+      const needsPhoneStep = mode === 'register' && !!tok && isEmailIdentifier(phone)
+      setScreen(needsPhoneStep ? 'register-phone' : mode === 'register' && tok ? 'set-password' : 'success')
     } catch (e) {
       setError(e.message || t('err.otp'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Шаг «телефон» после email+кода: аккаунт уже создан, но без телефона.
+  // Переиспользуем self-service PUT /user/update (тот же путь, что и
+  // редактирование телефона в профиле) вместо отдельного backend-эндпоинта —
+  // имя уже известно из чата-приветствия, шлём его вместе с телефоном.
+  async function handleRegisterPhone(fullPhone) {
+    setError('')
+    setLoading(true)
+    try {
+      await updateUser(token, { name, phone: fullPhone })
+      setPhone(fullPhone)
+      setScreen('set-password')
+    } catch (e) {
+      setError(e.message || t('regphone.error'))
     } finally {
       setLoading(false)
     }
@@ -331,6 +363,7 @@ export default function App() {
       } catch (e) {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
+      getIsDemoAccount(tok).then(setIsDemoAccount)
       mergeAnonymousProgress(tok)
         .then(() => loadTutorProfile(tok))
         .then((profile) => {
@@ -377,6 +410,7 @@ export default function App() {
       } catch (e) {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
+      getIsDemoAccount(tok).then(setIsDemoAccount)
       // Как и после OTP: перенос анонимного прогресса, затем тьютор-профиль
       // аккаунта (тьютор/интересы/профессия с прошлых сессий).
       mergeAnonymousProgress(tok)
@@ -443,6 +477,7 @@ export default function App() {
     setToken(null)
     setName('')
     setPhone('')
+    setIsDemoAccount(false)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -503,6 +538,7 @@ export default function App() {
     onNav: handleNav,
     onGo: setScreen,
     onProfile: () => setScreen('profile'),
+    isDemoAccount,
   }
 
   async function handleResend() {
@@ -575,6 +611,10 @@ export default function App() {
           onGoogleToken={handleGoogleCredential}
           loading={loading}
           error={error}
+          // Регистрация теперь ведёт с почты: телефон студент введёт отдельным
+          // шагом после кода (RegisterPhonePage). Вход по-прежнему начинается
+          // с телефона — там defaultMode не передаём, используется дефолт.
+          defaultMode={authIntent === 'register' ? 'email' : 'phone'}
         />
       )
     case 'otp':
@@ -584,6 +624,14 @@ export default function App() {
           onBack={() => { setError(''); setScreen('phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'register-phone':
+      return (
+        <RegisterPhonePage
+          onSubmit={handleRegisterPhone}
           loading={loading}
           error={error}
         />
@@ -670,6 +718,7 @@ export default function App() {
           token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'listening':
@@ -680,6 +729,7 @@ export default function App() {
           token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'shadowing':
@@ -691,6 +741,7 @@ export default function App() {
           lessonId={shadowingLesson}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'lessons':
@@ -733,6 +784,7 @@ export default function App() {
           token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'kingdom-interior':
@@ -745,6 +797,7 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('kingdom')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'tutor-welcome':

@@ -65,7 +65,7 @@ lint` + ручной прогон затронутого экрана (`npm run 
   (`compose.yaml`+`compose-app.yaml`); DEPLOY.md описывает старую схему
   (Vercel + LiveKit + Neon) и помечен как устаревший.
 - `src/app/api/hl/[...path]/route.js` — прокси Speakout-курса с
-  files-api.iqra.space; ограничен `ALLOWED_PREFIX` и .html (SSRF-защита) —
+  files-dev.justtostudy.kz; ограничен `ALLOWED_PREFIX` и .html (SSRF-защита) —
   не расширять без причины.
 
 ## Конвенции

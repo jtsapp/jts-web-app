@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { completeSituativka } from '../api.js'
+import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 
 /**
  * Просмотр ситуативки внутри приложения вместо прежней внешней ссылки
@@ -13,7 +14,7 @@ import { completeSituativka } from '../api.js'
  * (кодек/автоплей/сеть), и тогда студент остался бы без возможности отметить
  * прохождение. Окончание видео лишь подсвечивает кнопку.
  */
-export default function SituativkaOverlay({ situativka: s, token, onClose, onCompleted }) {
+export default function SituativkaOverlay({ situativka: s, token, onClose, onCompleted, isDemoAccount }) {
   const { t } = useI18n()
   const [saving, setSaving] = useState(false)
   const [watched, setWatched] = useState(false)
@@ -69,7 +70,19 @@ export default function SituativkaOverlay({ situativka: s, token, onClose, onCom
         )}
 
         {failure === 'quota' && (
-          <div className="sv-card__note" role="status">🔒 {t('situativka.quotaReached')}</div>
+          <div className="sv-card__note" role="status">
+            🔒{' '}
+            {isDemoAccount ? (
+              <>
+                {t('situativka.quotaReachedDemo')}{' '}
+                <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                  {t('demo.cta')}
+                </a>
+              </>
+            ) : (
+              t('situativka.quotaReached')
+            )}
+          </div>
         )}
         {failure === 'error' && (
           <div className="sv-card__note" role="status">{t('situativka.saveError')}</div>

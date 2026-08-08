@@ -2,14 +2,14 @@
 import { describe, it, expect } from 'vitest'
 import { rewriteMediaUrls, rewriteHtml } from './rewriteMediaUrls.js'
 
-const BASE = 'https://files-api.iqra.space/development/speakout/a1/lessons/L01.html'
+const BASE = 'https://files-dev.justtostudy.kz/development/speakout/a1/lessons/L01.html'
 
 describe('rewriteHtml', () => {
   it('resolves relative src/href against the base URL', () => {
     const out = rewriteHtml('<audio src="audio/x.mp3"></audio><img src="images/a.png"><a href="notes.pdf">n</a>', BASE)
-    expect(out).toContain('https://files-api.iqra.space/development/speakout/a1/lessons/audio/x.mp3')
-    expect(out).toContain('https://files-api.iqra.space/development/speakout/a1/lessons/images/a.png')
-    expect(out).toContain('https://files-api.iqra.space/development/speakout/a1/lessons/notes.pdf')
+    expect(out).toContain('https://files-dev.justtostudy.kz/development/speakout/a1/lessons/audio/x.mp3')
+    expect(out).toContain('https://files-dev.justtostudy.kz/development/speakout/a1/lessons/images/a.png')
+    expect(out).toContain('https://files-dev.justtostudy.kz/development/speakout/a1/lessons/notes.pdf')
   })
 
   it('leaves absolute, protocol-relative, data and anchor URLs untouched', () => {
