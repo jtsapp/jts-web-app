@@ -1843,12 +1843,22 @@
   .live--wide {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
+    /* Не 100dvh: экран уже внутри LearningLayout (топбар + сайдбар + футер).
+       Иначе низ правой колонки (чат) уезжает за край и «пропадает». */
+    height: 100%;
+    min-height: 0;
+    max-height: calc(100dvh - 120px);
   }
 
   /* Кнопка «Назад» во флекс-колонке растянулась бы во всю ширину. */
   .live--wide > .live__back {
     align-self: flex-start;
+    flex: none;
+  }
+
+  .live--wide > .live__head,
+  .live--wide > .ls__tabs {
+    flex: none;
   }
 
   /* Сетка забирает остаток высоты; min-height:0 обязателен — без него
@@ -1865,12 +1875,38 @@
   }
 
   .lw-live-route,
-  .lw-live-main,
-  .lw-live-aside {
+  .lw-live-main {
     min-height: 0;
     overflow-y: auto;
-    /* Докрутив колонку до конца, не утягиваем за собой страницу. */
     overscroll-behavior: contain;
+  }
+
+  /* Правая колонка: звонок + топики сверху, чат растягивается и всегда на экране. */
+  .lw-live-aside {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lw-live-aside > .lw-meet,
+  .lw-live-aside > .lw-summary,
+  .lw-live-aside > .lw-topics {
+    flex: none;
+  }
+
+  .lw-live-aside .lw-chat {
+    flex: 1 1 auto;
+    min-height: 220px;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .lw-live-aside .lw-chat__list {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 120px;
+    overflow-y: auto;
   }
 }
 
