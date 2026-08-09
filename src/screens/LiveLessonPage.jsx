@@ -89,11 +89,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // --- Чат с учителем (поллинг, как в web-admin) --------------------------
   const [messages, setMessages] = useState([])
-  const chatMessages = messages.map((m) => ({
-    id: m.id,
-    from: m.senderUserId === lesson?.teacherId ? 'teacher' : 'student',
-    text: m.body,
-  }))
+  const chatMessages = messages.map((m) => {
+    const isTeacher = m.senderUserId === lesson?.teacherId
+    return {
+      id: m.id,
+      from: isTeacher ? 'teacher' : 'student',
+      text: m.body,
+      // Своё сообщение подписываем как «Вы» (см. TeacherChat) — реальное имя
+      // нужно только для входящих, иначе легко перепутать, кто пишет.
+      senderName: isTeacher ? m.senderName : undefined,
+    }
+  })
 
   function refreshMessages() {
     getLessonMessages(token, lessonId).then(setMessages).catch(() => {})

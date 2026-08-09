@@ -112,6 +112,14 @@ export default function LessonWorkspacePage({ onExit, lessonId, token, loadLesso
     setMessages((prev) => [...prev, { id: `student-${Date.now()}-${prev.length}`, from: 'student', text }])
   }
 
+  // Подпись отправителя в пузыре (см. TeacherChat) — своё сообщение
+  // остаётся без имени (компонент подставит «Вы»), входящие подписываются
+  // именем учителя из урока.
+  const chatMessages = useMemo(
+    () => messages.map((m) => (m.from === 'teacher' ? { ...m, senderName: lesson?.teacher?.name } : m)),
+    [messages, lesson],
+  )
+
   return (
     <div className="lw" data-testid="lesson-workspace">
       <WorkspaceHeader lesson={lesson} stepIndex={Math.max(activeIndex, 0)} elapsedSec={ELAPSED_SEC} onExit={onExit} />
@@ -131,7 +139,7 @@ export default function LessonWorkspacePage({ onExit, lessonId, token, loadLesso
             onAnswer={handleAnswer}
             onCheck={handleCheck}
           />
-          <LessonAside lesson={lesson} activeTopicId={activeStep?.topicId} messages={messages} onSend={handleSend} />
+          <LessonAside lesson={lesson} activeTopicId={activeStep?.topicId} messages={chatMessages} onSend={handleSend} />
         </div>
       </div>
     </div>

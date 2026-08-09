@@ -43,6 +43,13 @@ export default function TeacherChat({ messages, onSend }) {
         ) : (
           list.map((message) => (
             <div key={message.id} className={`lw-chat__msg is-${message.from}`}>
+              {/* Цвет и сторона пузыря кодируют отправителя по спеке, но
+                  без подписи это неотличимо на скриншоте/для нового
+                  собеседника — особенно когда несколько сообщений подряд
+                  от одного. Показываем имя явным текстом. */}
+              <span className="lw-chat__sender">
+                {message.senderName || (message.from === 'student' ? t('lesson.ws.you') : t('lesson.ws.teacher'))}
+              </span>
               {message.text}
             </div>
           ))

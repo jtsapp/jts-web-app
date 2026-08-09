@@ -1157,6 +1157,16 @@
   border-bottom-right-radius: 6px;
 }
 
+/* Подпись отправителя — цвет/сторона пузыря спекой не читаются однозначно
+   без контекста (см. дизайн-тест выше), имя снимает эту неоднозначность. */
+.lw-chat__sender {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
 .lw-chat__empty {
   margin: 0 0 12px;
   font-size: 13.5px;
