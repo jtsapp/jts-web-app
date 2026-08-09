@@ -67,6 +67,11 @@
   --lw-col-center: 678px;
   --lw-col-right: 328px;
   --lw-gutter: 20px;
+  /* Маршрут в живом уроке (.lw-live-body) уже, чем в статичном классруме —
+     там ему нужно место под материал, а сама карточка маршрута показывает
+     только короткие названия разделов, не таблицы/формулы. Отдельный токен,
+     а не --lw-col-left: дизайн-тест держит его в 329px для .lw. */
+  --lw-live-col-left: 232px;
 
   /* Центр точки шага от верха строки: паддинг кнопки 6 + отступ точки 7 +
      половина её высоты 4. Держим одним токеном — от него зависят и концы
@@ -1300,7 +1305,7 @@
 
 .lw-live-body {
   display: grid;
-  grid-template-columns: var(--lw-col-left) minmax(0, 1fr) var(--lw-col-right);
+  grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr) var(--lw-col-right);
   gap: var(--lw-gutter);
   align-items: start;
   /* Раньше сетка была жёстко зажата в max-width 1600 без центрирования —
@@ -1501,7 +1506,7 @@
 
 @media (max-width: 1420px) {
   .lw-live-body {
-    grid-template-columns: var(--lw-col-left) minmax(0, 1fr);
+    grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr);
   }
 
   /* Правая колонка вспомогательная — уходит вниз первой и раскладывается в ряд. */

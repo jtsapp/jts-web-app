@@ -81,7 +81,15 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     return <div className="lw-material-empty">{t('lesson.ws.noMaterial')}</div>
   }
 
-  if (material.materialType !== 'INTERACTIVE_HTML') {
+  // "Урок из каталога" attaches as a LINK material pointing at the catalog's own storage, not an
+  // uploaded INTERACTIVE_HTML file - but it's still an HTML page and the backend can now fetch and
+  // bridge it the same way (see TeachingMaterialService.getRawHtmlForRender). Without this, it fell
+  // back to the plain iframe below: no mirror to the teacher, no saved answers/stop position.
+  // The backend is the actual gatekeeper (only its own catalog URLs get fetched server-side) -
+  // this is just routing, so a loose match here is fine.
+  const isCatalogHtml = material.materialType === 'LINK' && /\/course-catalog\/.*\.html?(?:[?#]|$)/i.test(material.fileUrl || '')
+
+  if (material.materialType !== 'INTERACTIVE_HTML' && !isCatalogHtml) {
     return (
       <div className="lw-material-frame">
         <iframe
