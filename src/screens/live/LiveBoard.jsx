@@ -22,6 +22,7 @@ function serialize(obj) {
 
 export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
   const { t } = useI18n()
+  const stageRef = useRef(null)
   const canvasElRef = useRef(null)
   const canvasRef = useRef(null)
   const applyingRemoteRef = useRef(false)
@@ -115,7 +116,13 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
 
   // ── canvas lifecycle: create, hydrate, wire local edits ────────────────────
   useEffect(() => {
+    // Размер холста берём от .board__stage, а не от жёстких 1200×680 -
+    // иначе доска остаётся мелкой в углу широкой .live--wide вёрстки, пока
+    // сам материал урока (.lw-material-frame) занимает всю колонку.
+    const stageRect = stageRef.current?.getBoundingClientRect()
     const canvas = new fabric.Canvas(canvasElRef.current, {
+      width: Math.max(stageRect?.width ?? 0, 600),
+      height: Math.max(stageRect?.height ?? 0, 480),
       backgroundColor: '#ffffff',
       preserveObjectStacking: true,
       selection: true,
@@ -323,8 +330,8 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
 
       {drawingBlocked && <p className="board__notice">{t('board.locked')}</p>}
 
-      <div className="board__stage">
-        <canvas ref={canvasElRef} width={1200} height={680} className="board__canvas" />
+      <div className="board__stage" ref={stageRef}>
+        <canvas ref={canvasElRef} className="board__canvas" />
         {!settings.cursorsHidden && Object.entries(cursors).map(([userId, c]) => (
           <span key={userId} className="board__cursor" style={{ left: c.x, top: c.y }}>
             <span className="board__cursor-dot" aria-hidden="true" />

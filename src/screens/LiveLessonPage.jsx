@@ -210,7 +210,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const status = lesson?.status
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className={`live ${tab === 'lesson' ? 'live--wide' : ''}`}>
+      <div className="live live--wide">
         <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
 
         {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
