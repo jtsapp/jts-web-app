@@ -1843,11 +1843,14 @@
   .live--wide {
     display: flex;
     flex-direction: column;
-    /* Не 100dvh: экран уже внутри LearningLayout (топбар + сайдбар + футер).
-       Иначе низ правой колонки (чат) уезжает за край и «пропадает». */
-    height: 100%;
+    /* Явный dvh, не height:100%: .learn__main — overflow:auto без явной
+       height в каскаде, и процентная высота у .live--wide часто схлопывалась
+       в auto → колонка росла по контенту, топики съедали экран, чат
+       обрезался нижним краем окна. */
+    height: calc(100dvh - 132px);
+    max-height: calc(100dvh - 132px);
     min-height: 0;
-    max-height: calc(100dvh - 120px);
+    box-sizing: border-box;
   }
 
   /* Кнопка «Назад» во флекс-колонке растянулась бы во всю ширину. */
@@ -1857,7 +1860,10 @@
   }
 
   .live--wide > .live__head,
-  .live--wide > .ls__tabs {
+  .live--wide > .ls__tabs,
+  .live--wide > .live__status-msg,
+  .live--wide > .live-controls,
+  .live--wide > .lw-sysbanner {
     flex: none;
   }
 
@@ -1866,7 +1872,7 @@
      внутри колонок не включается. */
   .live--wide .lw-live-body,
   .live--wide .board {
-    flex: 1;
+    flex: 1 1 0;
     min-height: 0;
   }
 
@@ -1875,31 +1881,58 @@
   }
 
   .lw-live-route,
-  .lw-live-main {
+  .lw-live-main,
+  .lw-live-aside {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
 
-  /* Правая колонка: звонок + топики сверху, чат растягивается и всегда на экране. */
+  /* Правая колонка: звонок + компактные топики, чат — основной блок снизу.
+     Список топиков на 10+ шагах раньше раздувался и при overflow:hidden
+     срезал чат до заголовка + полоски инпута. */
   .lw-live-aside {
-    min-height: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
   }
 
   .lw-live-aside > .lw-meet,
-  .lw-live-aside > .lw-summary,
-  .lw-live-aside > .lw-topics {
+  .lw-live-aside > .lw-summary {
     flex: none;
   }
 
-  .lw-live-aside .lw-chat {
+  .lw-live-aside > .lw-topics {
+    flex: 0 1 auto;
+    min-height: 0;
+    /* px/vh, не %: % от auto-высоты родителя игнорируется браузером. */
+    max-height: min(220px, 28vh);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lw-live-aside .lw-topics__head {
+    flex: none;
+  }
+
+  .lw-live-aside .lw-topics__list {
     flex: 1 1 auto;
-    min-height: 220px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lw-live-aside .lw-chat {
+    flex: 1 1 0;
+    min-height: 280px;
     max-height: none;
     overflow: hidden;
+  }
+
+  .lw-live-aside .lw-chat__head,
+  .lw-live-aside .lw-chat__composer {
+    flex: none;
   }
 
   .lw-live-aside .lw-chat__list {
@@ -2165,6 +2198,23 @@
 
   .lw-live-aside > * {
     flex: 1 1 320px;
+  }
+
+  .lw-live-aside .lw-chat {
+    min-height: 300px;
+  }
+
+  .lw-live-aside > .lw-topics {
+    max-height: 240px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lw-live-aside .lw-topics__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
 }
 

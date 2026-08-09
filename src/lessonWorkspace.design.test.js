@@ -212,12 +212,20 @@ describe('классрум — живой урок: колонки и перех
     // Только там, где колонки действительно три: ниже 1420 правая уходит под
     // центр второй строкой сетки, и фиксированная высота делится между ними —
     // центр сжимается до полосы в пару абзацев.
-    expect(css).toMatch(/@media \(min-width: 1421px\) {[\s\S]*?\.live--wide\s*{[^}]*height:\s*100dvh/)
+    // calc(100dvh − chrome), не сырой 100dvh: экран внутри LearningLayout.
+    expect(css).toMatch(
+      /@media \(min-width: 1421px\) {[\s\S]*?\.live--wide\s*{[^}]*height:\s*calc\(100dvh/,
+    )
     const columns = css.match(/\.lw-live-route,\n {2}\.lw-live-main,\n {2}\.lw-live-aside\s*{([^}]+)}/)[1]
     expect(columns).toMatch(/overflow-y:\s*auto/)
     // Без min-height:0 флекс-элемент не даёт детям стать меньше контента,
     // и прокрутка внутри колонок молча не включается.
     expect(columns).toMatch(/min-height:\s*0/)
+  })
+
+  it('в правой колонке топики ограничены по высоте, чат не схлопывается', () => {
+    expect(css).toMatch(/\.lw-live-aside > \.lw-topics\s*{[^}]*max-height:\s*min\(220px/)
+    expect(css).toMatch(/\.lw-live-aside \.lw-chat\s*{[^}]*min-height:\s*280px/)
   })
 
   it('sticky для колонок живого урока не используется — над экраном он не работает', () => {
