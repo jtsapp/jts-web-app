@@ -270,6 +270,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       materialFrameRef.current?.replay(evt.events)
     },
     onSectionsChanged: loadSections,
+    // Учительский канал шагов слушает только преподаватель (см. хук).
+    isStaff,
     // Урок, открытый шагами: что делает собеседник прямо сейчас.
     //
     // Событие описывает ровно одно действие, поэтому каждое поле проверяем
