@@ -298,6 +298,24 @@ export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'l
   return `${BASE}/student/lessons/${lessonId}/materials/${materialId}/render?${params.toString()}`
 }
 
+// Прогресс по материалу урока. Тот же эндпоинт, что дёргает бридж внутри
+// отрендеренного iframe, — он не привязан к типу материала и хранит
+// произвольную строку eventsJson по ключу (урок, материал, ученик). Уроку,
+// открытому шагами, этого достаточно: свой материал у него есть, а заводить
+// вторую таблицу под то же самое значило бы держать два места для одного
+// ответа.
+//
+// studentId читает преподаватель, чтобы увидеть работу участника; ученику
+// сервер и так отдаёт только его собственную (assertAccess).
+export function getLessonMaterialProgress(token, lessonId, materialId, studentId) {
+  const q = studentId != null ? `?studentId=${encodeURIComponent(studentId)}` : ''
+  return authGet(`/student/lessons/${lessonId}/materials/${materialId}/progress${q}`, token)
+}
+
+export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson) {
+  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson })
+}
+
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
 // STOMP-топику board-settings (см. useLessonBoard).
 export function getBoardSettings(token, id) {
