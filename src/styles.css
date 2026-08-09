@@ -6130,9 +6130,10 @@ textarea {
 
 /* --- Live lesson shell --- */
 .live { padding: 16px; max-width: 900px; }
-/* Вкладка "Урок" внутри живого урока — материалу и боковой колонке нужно
-   больше места, чем обычному контенту .live (900px было слишком тесно). */
-.live--wide { max-width: 1360px; }
+/* Вкладка "Урок" (.live--wide) переопределена в lessonWorkspace.css под сетку
+   .lw-live-body — там же и предел читаемой ширины материала. Раньше здесь ещё
+   стоял max-width:1360px, который зажимал сетку туже, чем считала сама сетка,
+   и сводил на нет её собственные пределы ширины (см. .lw-material-frame). */
 .live__back { background: none; border: 0; color: #7a4dff; font-weight: 600; cursor: pointer; padding: 8px 0; }
 .live__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
 .live__title { font-size: 20px; font-weight: 700; margin: 0; }
