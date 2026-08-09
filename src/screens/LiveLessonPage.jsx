@@ -234,6 +234,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       stepId: activeStepId,
       questionId,
       value: typeof value === 'string' ? value : JSON.stringify(value),
+      sectionId: activeSectionId,
+      materialId: activeMaterial?.materialId ?? null,
     })
   }
 
@@ -242,7 +244,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     next.add(activeStepId)
     setCheckedSteps(next)
     persistProgress({ answers, checkedSteps: next, stepId: activeStepId })
-    sendStepProgress({ stepId: activeStepId, checked: true })
+    sendStepProgress({
+      stepId: activeStepId,
+      checked: true,
+      sectionId: activeSectionId,
+      materialId: activeMaterial?.materialId ?? null,
+    })
   }
 
   // --- Ссылка на видеозвонок (учитель может вписать/поменять) -------------
@@ -300,6 +307,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // молча остаётся на прежнем уроке.
       if (!knowsFocusTarget(sections, evt)) loadSections()
       setActiveSectionId(evt.sectionId)
+      // Без materialId ученик оставался на старом материале прошлого раздела.
+      setActiveMaterialId(evt.materialId ?? null)
       setFollowMode(true)
       setReloadToken((n) => n + 1)
     },
@@ -416,10 +425,27 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Эффект стоит именно здесь, ниже useLessonLiveSocket: sendStepProgress —
   // const из его результата, и упоминание в списке зависимостей выше по файлу
   // читается на рендере, до инициализации (уже ловили ReferenceError).
+  //
+  // У ученика дополнительно шлём sectionId/materialId: иначе преподаватель
+  // узнаёт о смене раздела только после ответа на шаге.
   useEffect(() => {
-    if (!onLessonSteps || !activeStepId) return
-    sendStepProgress({ stepId: activeStepId })
-  }, [onLessonSteps, activeStepId, sendStepProgress])
+    if (!activeSectionId) return
+    if (isStaff) {
+      if (!onLessonSteps || !activeStepId) return
+      sendStepProgress({
+        stepId: activeStepId,
+        sectionId: activeSectionId,
+        materialId: activeMaterial?.materialId ?? null,
+      })
+      return
+    }
+    const payload = {
+      sectionId: activeSectionId,
+      materialId: activeMaterial?.materialId ?? null,
+    }
+    if (onLessonSteps && activeStepId) payload.stepId = activeStepId
+    sendStepProgress(payload)
+  }, [isStaff, onLessonSteps, activeStepId, activeSectionId, activeMaterial?.materialId, sendStepProgress])
 
   function handleBridgeMirror(event) {
     if (!activeMaterial) return
@@ -436,8 +462,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     sendFocus(activeSectionId, activeMaterial?.materialId ?? null)
     // Своё эхо брокера сокет глушит, поэтому onFocus здесь не сработает —
     // бегунок «Т» ставим сразу, иначе преподаватель не увидит себя на треке.
-    setTeacherStepId(activeSectionId)
+    setTeacherStepId(onLessonSteps ? activeStepId : activeSectionId)
     setPresenting(true)
+    // На шагах каталога iframe нет — достаточно focus + позиция шага.
+    if (onLessonSteps && activeStepId) {
+      sendStepProgress({
+        stepId: activeStepId,
+        sectionId: activeSectionId,
+        materialId: activeMaterial?.materialId ?? null,
+      })
+    }
     // Switch to the bridged iframe (catalog React steps have no DOM for the
     // mirror) and ask it for the stream that reached the teacher's stage —
     // same catch-up path as web-admin's focusOnExercise().
