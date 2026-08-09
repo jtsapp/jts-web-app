@@ -130,6 +130,112 @@ describe('классрум — сетка', () => {
   })
 })
 
+describe('классрум — разметка урока каталога', () => {
+  // Экстрактор отдаёт куски разметки файла урока (.vlist, .instruction, .gtable…).
+  // Правил на них не было ни одного: словарь приезжал маркированным списком с
+  // картинками 480×480 в колонке 678, а у преподавателя тот же урок открывается
+  // файлом, где эти классы оформлены. Отсюда «разные картинки» на двух экранах.
+  // Секция целиком: `.lw-info__body` объявлен и раньше — в типографике
+  // info-блока, — поэтому искать по всему файлу нельзя, поймается не то правило.
+  const section = css.slice(
+    css.indexOf('==========  РАЗМЕТКА УРОКА КАТАЛОГА ВНУТРИ INFO-БЛОКА'),
+    css.indexOf('/* Формула')
+  )
+
+  /** Тело правила по селектору внутри секции. */
+  function rule(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const match = section.match(new RegExp(`${escaped}\\s*{([^}]+)}`))
+    return match ? match[1] : null
+  }
+
+  it('словарь — сетка карточек, а не маркированный список', () => {
+    const vlist = rule('.lw-info__body .vlist')
+    expect(vlist).toMatch(/display:\s*grid/)
+    expect(vlist).toMatch(/list-style:\s*none/)
+  })
+
+  it('картинке словаря задана высота — иначе она приезжает 480×480', () => {
+    const vimg = rule('.lw-info__body .vimg')
+    expect(vimg).toMatch(/height:\s*\d+px/)
+    expect(vimg).toMatch(/object-fit:\s*cover/)
+    expect(vimg).toMatch(/width:\s*100%/)
+  })
+
+  it('любая картинка урока не шире колонки', () => {
+    expect(section).toMatch(/\.lw-info__body img,[\s\S]{0,40}{[^}]*max-width:\s*100%/)
+  })
+
+  it('инструкция читается заголовком, подсказка — приглушённой', () => {
+    expect(rule('.lw-info__body .instruction')).toMatch(/font-weight:\s*700/)
+    expect(rule('.lw-info__body .subline,\n.lw-info__body .ohint')).toMatch(
+      /color:\s*var\(--lw-muted\)/
+    )
+  })
+
+  it('переменные исходного курса объявлены — иначе инлайн-стили пустые', () => {
+    const body = rule('.lw-info__body')
+    expect(body).toMatch(/--grey:\s*var\(--lw-muted\)/)
+    expect(body).toMatch(/--violet-lt:\s*var\(--lw-tint-2\)/)
+    expect(body).toMatch(/--cyan-lt:\s*var\(--lw-track\)/)
+  })
+
+  it('таблица разделяется фоном, а не рамками (правило §0.3)', () => {
+    expect(rule('.lw-info__body th')).toMatch(/background:\s*var\(--lw-tint-3\)/)
+    expect(section).toMatch(/\.lw-info__body tbody tr:nth-child\(even\) td\s*{[^}]*background:/)
+    // Ни одной рамки во всей секции — разделение только фоном и отступами.
+    // `border: 0` — снятие рамки с <button>, оно правилу не противоречит.
+    expect(section).not.toMatch(/border:(?!\s*0;)/)
+    expect(section).not.toMatch(/border-(top|right|bottom|left):/)
+  })
+
+  // §0.6: элемента, который выглядит рабочим и не работает, на экране нет.
+  it('пустые контейнеры рантайма курса скрыты', () => {
+    for (const cls of ['slide', 'dots', 'snav', 'seglist', 'wave', 'res']) {
+      expect(section).toContain(`.lw-info__body .${cls}:empty`)
+    }
+    expect(section).toMatch(/\.lw-info__body \.res:empty\s*{\s*display:\s*none/)
+  })
+
+  it('мёртвые кнопки из файла урока не выглядят нажимаемыми', () => {
+    const chip = rule('.lw-info__body .ochip,\n.lw-info__body .opt')
+    expect(chip).toMatch(/pointer-events:\s*none/)
+    expect(chip).toMatch(/cursor:\s*default/)
+  })
+})
+
+describe('классрум — живой урок: колонки и переходы', () => {
+  // sticky держит колонку, только пока она помещается в окно. Маршрут на десятке
+  // шагов и колонка со звонком/темами/чатом окно перерастают — и дальше едут
+  // вместе со страницей. Предел по высоте + своя прокрутка убирают причину.
+  it('экран урока занимает окно, прокрутка уезжает внутрь колонок', () => {
+    // Только там, где колонки действительно три: ниже 1420 правая уходит под
+    // центр второй строкой сетки, и фиксированная высота делится между ними —
+    // центр сжимается до полосы в пару абзацев.
+    expect(css).toMatch(/@media \(min-width: 1421px\) {[\s\S]*?\.live--wide\s*{[^}]*height:\s*100dvh/)
+    const columns = css.match(/\.lw-live-route,\n {2}\.lw-live-main,\n {2}\.lw-live-aside\s*{([^}]+)}/)[1]
+    expect(columns).toMatch(/overflow-y:\s*auto/)
+    // Без min-height:0 флекс-элемент не даёт детям стать меньше контента,
+    // и прокрутка внутри колонок молча не включается.
+    expect(columns).toMatch(/min-height:\s*0/)
+  })
+
+  it('sticky для колонок живого урока не используется — над экраном он не работает', () => {
+    const live = css.slice(css.indexOf('.lw-live-body {'))
+    expect(live).not.toMatch(/\.lw-live-(route|aside)[^{]*{[^}]*position:\s*sticky/)
+  })
+
+  it('кнопки шагов — пилюли из палитры спеки, без градиентов', () => {
+    const btn = css.match(/\.lw-stepnav__btn\s*{([^}]+)}/)[1]
+    expect(btn).toMatch(/border-radius:\s*var\(--lw-r-pill\)/)
+    expect(btn).toMatch(/padding:\s*11px 22px/)
+
+    expect(css).toMatch(/\.lw-stepnav__btn--primary\s*{[^}]*background:\s*var\(--lw-primary\)/)
+    expect(css).toMatch(/\.lw-stepnav__btn--ghost\s*{[^}]*background:\s*var\(--lw-tint-1\)/)
+    expect(css).toMatch(/\.lw-stepnav__btn:disabled\s*{[^}]*background:\s*var\(--lw-track\)/)
+  })
+})
+
 describe('классрум — доступность', () => {
   // Спека молчит про фокус, но экран управляется с клавиатуры: без видимого
   // кольца шаги маршрута и варианты ответа не пройти табом.
@@ -139,6 +245,7 @@ describe('классрум — доступность', () => {
       '.lw-route__step',
       '.lw-opt',
       '.lw-practice__check',
+      '.lw-stepnav__btn',
       '.lw-chat__input',
       '.lw-chat__send',
     ]) {

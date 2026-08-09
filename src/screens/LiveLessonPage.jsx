@@ -17,6 +17,7 @@ import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
 import LessonRoute from './workspace/LessonRoute.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
 import TopicsList from './workspace/TopicsList.jsx'
+import StepNav from './workspace/StepNav.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
@@ -134,6 +135,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     })
     return map
   }, [lessonSteps, activeStepId, activeStepIndex, answers])
+
+  // Маршрут урока — один список на два потребителя: карточку слева и кнопки
+  // «Назад/Далее» под заданием. Раньше он собирался прямо в разметке, и добавить
+  // второй способ переходить по шагам значило бы продублировать выбор ветки
+  // (шаги урока или разделы занятия) — вместе с шансом, что они разъедутся.
+  //
+  // Шаги внутри урока (разминка, слова, правило, практика) — это то, что видит
+  // ученик, когда материал разобран; разделами занятия маршрут остаётся, только
+  // если материал не из каталога и разбирать нечего. Нумеруем по месту в списке:
+  // position из базы считается с нуля («ШАГ 00»).
+  const onLessonSteps = lessonSteps.length > 0
+  const routeSteps = useMemo(
+    () => (onLessonSteps ? lessonSteps : sections.map((s, i) => ({ id: s.id, order: i + 1, title: s.title }))),
+    [onLessonSteps, lessonSteps, sections]
+  )
+  const routeActiveId = onLessonSteps ? activeStepId : activeSectionId
+  const selectRouteStep = onLessonSteps ? setActiveStepId : selectSection
 
   function handleAnswer(questionId, value) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
@@ -326,27 +344,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
                           {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
                         </p>
-                      ) : lessonSteps.length > 0 ? (
-                        // Маршрут — это шаги внутри урока (разминка, слова, правило,
-                        // практика), как в спеке классрума. Разделами занятия он был
-                        // раньше, и тогда «ШАГ 01» означал целый прикреплённый
-                        // материал: по такому маршруту не видно, где ты в уроке.
-                        <LessonRoute
-                          steps={lessonSteps}
-                          activeStepId={activeStepId}
-                          statusById={stepStatusById}
-                          onSelect={setActiveStepId}
-                        />
                       ) : (
                         <LessonRoute
-                          // Материал не из каталога — разбирать нечего, маршрут
-                          // остаётся списком прикреплённого. Нумеруем по месту в
-                          // списке: position из базы считается с нуля («ШАГ 00»).
-                          steps={sections.map((s, i) => ({ id: s.id, order: i + 1, title: s.title }))}
-                          activeStepId={activeSectionId}
-                          statusById={sectionStatusById}
-                          onSelect={selectSection}
-                          teacherStepId={teacherStepId}
+                          steps={routeSteps}
+                          activeStepId={routeActiveId}
+                          statusById={onLessonSteps ? stepStatusById : sectionStatusById}
+                          onSelect={selectRouteStep}
+                          {...(onLessonSteps
+                            // Бегунок «Т» приходит событием focus и несёт id раздела
+                            // занятия — на маршруте из шагов урока ему не с чем
+                            // совпасть, и рисовать его там значило бы выдумывать
+                            // преподавателю позицию.
+                            ? {}
+                            : { teacherStepId })}
                         />
                       )}
                     </div>
@@ -380,6 +390,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           onPresentEvent={handleBridgePresentEvent}
                         />
                       )}
+
+                      {/* Урок проходится кнопками под заданием, а не только
+                          кликом по маршруту сбоку — см. StepNav. */}
+                      <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
                     </div>
 
                     <div className="lw-live-aside">

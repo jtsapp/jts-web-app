@@ -491,6 +491,353 @@
   margin-top: 10px;
 }
 
+/* Блоки внутри одной info-карточки разделяются отступом, а не рамкой: у
+   преподавателя это `.ex-body > * + *` того же файла урока. */
+.lw-info__item + .lw-info__item {
+  margin-top: 14px;
+}
+
+/* ================================================================== */
+/* ==========  РАЗМЕТКА УРОКА КАТАЛОГА ВНУТРИ INFO-БЛОКА  =========== */
+/* ================================================================== */
+
+/* Экстрактор снимает с файла урока не текст, а куски его разметки: словарные
+   карточки, инструкции, таблицы форм, тексты для чтения, реплики для обсуждения.
+   Классы у них свои — те, что расставляет конвертация в web-admin
+   (convert-course.ts), — и в приложении на них не было ни одного правила.
+   Ученик получал `<ul class="vlist">` маркированным списком с картинками
+   480×480 в колонке 678, а инструкция, подсказка и текст читались одинаковым
+   серым 15px. У преподавателя тот же урок открывается файлом, где эти классы
+   оформлены, — отсюда «учитель и ученик видят разные картинки».
+
+   Здесь та же разметка переведена на токены классрума: плоские заливки, без
+   рамок, скругления по шкале (правила §0 спеки). Всё заскоплено в
+   `.lw-info__body`, чтобы классы урока не протекали в остальной интерфейс. */
+
+.lw-info__body {
+  /* Курс подставляет свои переменные инлайном (`style="color:var(--grey)"`).
+     Без объявления они пустые, и текст уезжает в чёрный, а плашки — в прозрачные. */
+  --grey: var(--lw-muted);
+  --violet-lt: var(--lw-tint-2);
+  --cyan-lt: var(--lw-track);
+}
+
+/* --- заголовки упражнений внутри шага ------------------------------ */
+
+/* Нумерованная инструкция («1 · Match each word to its meaning.») — заголовок
+   упражнения, а не абзац: в шаге их до семи, и без веса шаг читается сплошняком. */
+.lw-info__body .instruction {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .subline,
+.lw-info__body .ohint {
+  font-size: 14px;
+  color: var(--lw-muted);
+}
+
+/* Подсказка идёт сразу под своей инструкцией — прижимаем к ней. */
+.lw-info__body .instruction + .subline,
+.lw-info__body .instruction + .ohint {
+  margin-top: 4px;
+}
+
+/* --- словарь ------------------------------------------------------- */
+
+.lw-info__body .vocab .vhead h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .vlist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lw-info__body .vlist li {
+  padding: 12px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+  font-size: 14px;
+}
+
+/* Карточки приходят 480×480: без явной высоты каждая занимала бы экран. */
+.lw-info__body .vimg {
+  display: block;
+  width: 100%;
+  height: 116px;
+  margin-bottom: 8px;
+  border-radius: var(--lw-r-inner);
+  object-fit: cover;
+}
+
+.lw-info__body .vlist b {
+  color: var(--lw-ink);
+}
+
+.lw-info__body .tr {
+  display: block;
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--lw-muted);
+}
+
+/* --- текст, таблицы, медиа ------------------------------------------ */
+
+.lw-info__body img,
+.lw-info__body video {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--lw-r-inner);
+}
+
+.lw-info__body audio {
+  width: 100%;
+}
+
+.lw-info__body .track b {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lw-muted);
+}
+
+/* Таблица форм. Рамок нет (правило §0.3) — строки разделяет чередование фона. */
+.lw-info__body table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.lw-info__body th,
+.lw-info__body td {
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.lw-info__body th {
+  background: var(--lw-tint-3);
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body tbody tr:nth-child(even) td {
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body td.k {
+  font-weight: 600;
+  color: var(--lw-ink);
+}
+
+/* Подсветка вспомогательного глагола — то, на что показывает легенда под
+   таблицей; без неё легенда объясняет отсутствующий цвет. */
+.lw-info__body table b {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--violet-lt);
+  color: var(--lw-primary-ink);
+}
+
+.lw-info__body .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--lw-muted);
+}
+
+.lw-info__body .legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 4px;
+  vertical-align: -1px;
+}
+
+/* Текст для чтения — отдельная поверхность внутри карточки, читается абзацами. */
+.lw-info__body .reading {
+  display: block;
+  padding: 16px 18px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body .reading h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .reading p + p {
+  margin-top: 10px;
+}
+
+/* Разбор правила. */
+.lw-info__body .card {
+  padding: 14px 16px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body .card p + p {
+  margin-top: 8px;
+}
+
+.lw-info__body .egs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.lw-info__body .egs li {
+  padding: 8px 12px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-answer-bg);
+}
+
+/* Полный грамматический справочник — свёрнут по умолчанию, разворачивается
+   нативным <details>; работает без скриптов, поэтому оставлен как есть. */
+.lw-info__body .gref summary {
+  padding: 8px 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--lw-primary-ink);
+  cursor: pointer;
+}
+
+.lw-info__body .gref summary:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+  border-radius: var(--lw-r-inner);
+}
+
+/* --- обсуждение и парная работа ------------------------------------- */
+
+.lw-info__body .bubble {
+  padding: 14px 16px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-tint-1);
+}
+
+.lw-info__body .blab {
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lw-primary-ink);
+}
+
+.lw-info__body .bubble ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.lw-info__body .bubble li + li {
+  margin-top: 6px;
+}
+
+.lw-info__body .grid2 {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.lw-info__body .role {
+  padding: 12px 14px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body .role .tag {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 4px 10px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--lw-primary-ink);
+}
+
+.lw-info__body .role p {
+  margin: 0;
+}
+
+/* --- разметка, которая осталась от рантайма курса -------------------- */
+
+/* Слайдер, дорожка сегментов и панель результата наполняются скриптом курса,
+   а он в пакет не попадает — до сюда доезжают пустые контейнеры. Правило §0.6
+   спеки: элемента, который выглядит рабочим и не работает, на экране нет.
+   Прячем только пустые: тот же класс с контентом — это уже контент. */
+.lw-info__body .slide:empty,
+.lw-info__body .dots:empty,
+.lw-info__body .snav:empty,
+.lw-info__body .seglist:empty,
+.lw-info__body .wave:empty,
+.lw-info__body .res:empty {
+  display: none;
+}
+
+/* Слова для сборки предложения и варианты выбора приезжают из файла тегом
+   <button>, но обработчиков за ними нет — их вырезает конвертация. Показываем
+   их тем, чем они и остались: неинтерактивными плашками со словами, без вида
+   кнопки и без фокуса по табу (по тому же §0.6). Настоящие задания шага
+   рендерит PracticeBlock — вот там всё нажимается. */
+.lw-info__body .ochip,
+.lw-info__body .opt {
+  display: inline-block;
+  margin: 0 6px 6px 0;
+  padding: 7px 13px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-3);
+  font: inherit;
+  font-size: 14px;
+  color: var(--lw-ink-2);
+  cursor: default;
+  pointer-events: none;
+}
+
+.lw-info__body .ochip .pin {
+  display: none;
+}
+
+.lw-info__body .mcq .q {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  border-radius: 6px;
+  background: var(--lw-tint-3);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lw-muted);
+}
+
 /* Формула — ряд токенов со знаком «+» между ними. */
 .lw-forms {
   display: flex;
@@ -1317,9 +1664,9 @@
 }
 
 .lw-live-route {
-  position: sticky;
-  top: 16px;
   min-width: 0;
+  /* Скроллбар маршрута не должен обрезать скругление карточки. */
+  padding-right: 2px;
 }
 
 .lw-live-main {
@@ -1334,8 +1681,133 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+/* Боковые колонки закреплены: прокручивается только та колонка, в которую
+   смотришь. Раньше здесь стоял `position: sticky` — и он не работал ни дня:
+   sticky опирается на ближайшего прокручиваемого предка, а над этим экраном
+   их два, и оба его глушат. У `.learn__main` стоит `overflow: auto`, из-за
+   чего она и становится точкой опоры, но высоты у неё нет — растёт по
+   контенту и не прокручивается, прокручивается страница. А обёртка смены
+   экранов `.scr-in` анимирует transform с `fill-mode: both`, и удержанный
+   transform лишает sticky вьюпорта как системы отсчёта. Итог: колонки ехали
+   вместе со страницей, и на длинном шаге уезжали на экран вверх.
+
+   Поэтому опора здесь не sticky, а высота: экран урока занимает окно целиком,
+   сетка забирает остаток под шапкой урока, а прокрутка уезжает внутрь колонок.
+
+   Только там, где колонки действительно три. Ниже 1420px правая колонка уходит
+   под центр второй строкой той же сетки (см. адаптив), и фиксированная высота
+   делится между двумя строками — центр сжимается до полосы в пару абзацев.
+   Ниже 1000px колонка и вовсе одна. В обоих случаях правильная прокрутка —
+   страничная, и закреплять нечего. */
+@media (min-width: 1421px) {
+  .live--wide {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  /* Кнопка «Назад» во флекс-колонке растянулась бы во всю ширину. */
+  .live--wide > .live__back {
+    align-self: flex-start;
+  }
+
+  /* Сетка забирает остаток высоты; min-height:0 обязателен — без него
+     флекс-элемент не даёт своим детям стать меньше контента, и прокрутка
+     внутри колонок не включается. */
+  .live--wide .lw-live-body,
+  .live--wide .board {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .lw-live-body {
+    align-items: stretch;
+  }
+
+  .lw-live-route,
+  .lw-live-main,
+  .lw-live-aside {
+    min-height: 0;
+    overflow-y: auto;
+    /* Докрутив колонку до конца, не утягиваем за собой страницу. */
+    overscroll-behavior: contain;
+  }
+}
+
+/* --- переходы между шагами ------------------------------------------ */
+
+/* Пара кнопок под заданием — основной способ пройти урок; маршрут слева
+   показывает, где ты, но вести по уроку не должен (см. StepNav.jsx). */
+.lw-stepnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px;
+  border-radius: var(--lw-r-step);
+  background: var(--lw-surface);
+  /* Шаг бывает длиной в несколько экранов (у «Practice» — 21 карточка), и
+     кнопка в самом низу означала бы прокрутку до конца, чтобы просто перейти
+     дальше. Прилипает к низу своей колонки — она же и есть тот, кто
+     прокручивается, поэтому здесь sticky работает (в отличие от колонок,
+     см. комментарий у .live--wide). */
   position: sticky;
-  top: 16px;
+  bottom: 0;
+  z-index: 1;
+  /* Флекс-колонка ужала бы её по остатку места. */
+  flex: none;
+}
+
+.lw-stepnav__pos {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lw-muted);
+}
+
+.lw-stepnav__btn {
+  flex: none;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lw-stepnav__btn--ghost {
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+}
+
+.lw-stepnav__btn--primary {
+  background: var(--lw-primary);
+  color: #ffffff;
+}
+
+/* Край урока: кнопка остаётся на месте, чтобы вторая не прыгала, но видно,
+   что вести дальше некуда. */
+.lw-stepnav__btn:disabled {
+  background: var(--lw-track);
+  color: var(--lw-muted);
+  cursor: default;
+}
+
+.lw-stepnav__btn:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .lw-stepnav {
+    padding: 10px 14px;
+  }
+
+  .lw-stepnav__btn {
+    padding: 10px 16px;
+  }
 }
 
 /* --- материал урока ------------------------------------------------ */
