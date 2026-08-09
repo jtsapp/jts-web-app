@@ -42,6 +42,9 @@
   --lw-ok: #1acf1a;
   --lw-ok-bg: #e3ffeb;
   --lw-error: #ff474a;
+  /* Фон системного баннера «не получилось» — токен состояний §2 спеки.
+     Отдельный от --lw-error: тот красит метку ответа, этот — полосу. */
+  --lw-error-bg: #ffe9e9;
   --lw-online: #00ea00;
   --lw-own: #ff7300;     /* своё сообщение в чате */
   --lw-mistake-bg: #fff1e6;
@@ -944,6 +947,60 @@
 .lw-banner__mascot {
   flex: none;
   max-height: 176px;
+}
+
+/* Системный баннер — единая форма сообщений уровня экрана (спека §2, токены
+   состояний). Полоса во всю ширину контентной области; тон меняет только
+   заливку, форма одна на все состояния. */
+.lw-sysbanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-tint-3);
+}
+
+.lw-sysbanner--attention {
+  background: var(--lw-mistake-bg);
+}
+
+.lw-sysbanner--error {
+  background: var(--lw-error-bg);
+}
+
+.lw-sysbanner__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.lw-sysbanner__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--lw-ink);
+}
+
+.lw-sysbanner__action {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lw-primary-ink);
+  cursor: pointer;
+}
+
+.lw-sysbanner__action:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+  border-radius: var(--lw-r-inner);
 }
 
 /* ========================= ПРАКТИКА ============================== */

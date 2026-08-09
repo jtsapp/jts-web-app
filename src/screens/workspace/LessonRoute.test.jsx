@@ -36,6 +36,21 @@ describe('LessonRoute — бегунки на треке', () => {
     )
   })
 
+  // На экране преподавателя позиция ученика приходит трансляцией. Пока её нет,
+  // бегунка «У» быть не должно: иначе преподаватель видит под меткой ученика
+  // самого себя и думает, что тот идёт с ним нога в ногу.
+  it('позиция ученика неизвестна — бегунка «У» нет', () => {
+    const { container } = renderRoute({ studentStepId: null, teacherStepId: 15 })
+    expect(container.querySelectorAll('.lw-route__rider--student')).toHaveLength(0)
+    expect(container.querySelectorAll('.lw-route__rider--teacher')).toHaveLength(1)
+  })
+
+  it('позиция ученика пришла — бегунок встаёт на его шаг, не на свой', () => {
+    const { container } = renderRoute({ studentStepId: 16, teacherStepId: 15 })
+    const student = container.querySelector('.lw-route__rider--student')
+    expect(student.closest('.lw-route__item')).toBe(container.querySelectorAll('.lw-route__item')[1])
+  })
+
   it('на одном шаге умещаются оба', () => {
     const { container } = renderRoute({ teacherStepId: 15 })
     const first = container.querySelectorAll('.lw-route__item')[0]

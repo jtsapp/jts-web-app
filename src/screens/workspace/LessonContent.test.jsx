@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest'
-import { render } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import LessonContent, { groupBlocks } from './LessonContent.jsx'
 
@@ -19,10 +19,17 @@ const PRACTICE = {
   questions: [{ id: 'q1', type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' }],
 }
 
-function renderContent(blocks) {
+function renderContent(blocks, props = {}) {
   return render(
     <I18nProvider>
-      <LessonContent step={{ blocks }} answers={{}} checked={false} onAnswer={() => {}} onCheck={() => {}} />
+      <LessonContent
+        step={{ blocks }}
+        answers={{}}
+        checked={false}
+        onAnswer={() => {}}
+        onCheck={() => {}}
+        {...props}
+      />
     </I18nProvider>
   )
 }
@@ -77,6 +84,38 @@ describe('LessonContent — карточки шага', () => {
     const { container } = renderContent([INFO('<p>инструкция</p>'), PRACTICE])
     expect(container.querySelectorAll('.lw-practice')).toHaveLength(1)
     expect(container.querySelectorAll('.lw-info')).toHaveLength(1)
+  })
+
+  // Преподаватель смотрит работу ученика в том же компоненте: ответы приезжают
+  // трансляцией, а трогать их он не должен — его клик ушёл бы в его же
+  // состояние и разъехался с тем, что видит ученик.
+  it('в режиме просмотра видны ответы ученика', () => {
+    const { container } = renderContent([PRACTICE], {
+      answers: { q1: 'a' },
+      readOnly: true,
+    })
+    const chosen = [...container.querySelectorAll('.lw-opt')].find((b) => b.textContent.includes('a'))
+    expect(chosen.getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('в режиме просмотра отвечать нельзя и «Проверить» нет', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderContent([PRACTICE], { readOnly: true, onAnswer })
+
+    expect(container.querySelector('.lw-practice__check')).toBeNull()
+    const opt = container.querySelector('.lw-opt')
+    expect(opt.disabled).toBe(true)
+    fireEvent.click(opt)
+    expect(onAnswer).not.toHaveBeenCalled()
+  })
+
+  it('своя работа остаётся доступной', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderContent([PRACTICE], { onAnswer })
+
+    expect(container.querySelector('.lw-practice__check')).not.toBeNull()
+    fireEvent.click(container.querySelector('.lw-opt'))
+    expect(onAnswer).toHaveBeenCalledWith('q1', 'a')
   })
 
   it('theory и banner не сливаются с info', () => {
