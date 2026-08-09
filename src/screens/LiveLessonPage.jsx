@@ -18,6 +18,7 @@ import LessonRoute from './workspace/LessonRoute.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
 import TopicsList from './workspace/TopicsList.jsx'
 import StepNav from './workspace/StepNav.jsx'
+import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
@@ -26,6 +27,23 @@ import { knowsFocusTarget } from './live/followFocus.js'
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
+
+/**
+ * Ответ приходит строкой: у выбора и пропуска это сам ответ, у сопоставления —
+ * JSON-карта {слово: пара}. Разбираем только объекты: строка `"commutes"` —
+ * валидный JSON, и слепой JSON.parse превратил бы её ответ в мусор на первом
+ * же слове, которое парсер прочтёт числом или ключевым словом («null», «7»).
+ */
+function parseAnswer(value) {
+  if (typeof value !== 'string') return value ?? null
+  if (!value.startsWith('{')) return value
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' ? parsed : value
+  } catch {
+    return value
+  }
+}
 
 export default function LiveLessonPage({ lessonId, userName, userLevel, token, onNav, onProfile, onBack }) {
   const { t } = useI18n()
@@ -56,6 +74,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
   // выдумывать ему позицию значило бы показывать ученику неправду.
   const [teacherStepId, setTeacherStepId] = useState(null)
+  // Живая трансляция урока, открытого шагами. Здесь лежит то, что делает
+  // собеседник: его шаг и — если это ученик — его ответы. Своё состояние
+  // (activeStepId/answers) сюда не смешивается: преподаватель волен смотреть
+  // другой шаг, и подменять ему экран без спроса нельзя.
+  const [peerStepId, setPeerStepId] = useState(null)
+  const [peerName, setPeerName] = useState(null)
+  const [studentAnswers, setStudentAnswers] = useState({})
+  const [studentCheckedSteps, setStudentCheckedSteps] = useState(() => new Set())
   const [reloadToken, setReloadToken] = useState(0)
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
@@ -153,8 +179,22 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const routeActiveId = onLessonSteps ? activeStepId : activeSectionId
   const selectRouteStep = onLessonSteps ? setActiveStepId : selectSection
 
+  // Ученик и преподаватель на треке. Смотрю на свой шаг всегда; собеседник —
+  // там, куда его поставила трансляция, и пока он ничего не прислал, бегунка
+  // нет: выдумывать ему позицию значило бы показывать неправду.
+  const studentStepId = isStaff ? peerStepId : activeStepId
+  const lessonTeacherStepId = isStaff ? activeStepId : peerStepId
+
   function handleAnswer(questionId, value) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
+    // Ответ уходит собеседнику сразу, а не по «Проверить»: преподаватель должен
+    // видеть, что ученик печатает и выбирает, пока тот это делает — иначе помощь
+    // приходит уже к готовому ответу. Значение сериализуем: у match это карта.
+    sendStepProgress({
+      stepId: activeStepId,
+      questionId,
+      value: typeof value === 'string' ? value : JSON.stringify(value),
+    })
   }
 
   function handleCheckStep() {
@@ -164,6 +204,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       next.add(activeStepId)
       return next
     })
+    sendStepProgress({ stepId: activeStepId, checked: true })
   }
 
   // --- Ссылка на видеозвонок (учитель может вписать/поменять) -------------
@@ -206,7 +247,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
-  const { sendFocus, sendMirror, sendPresent } = useLessonLiveSocket(lessonId, token, selfUserId, {
+  const { sendFocus, sendMirror, sendPresent, sendStepProgress } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onFocus: (evt) => {
       if (evt.sectionId == null) return
       // Где стоит преподаватель — знает только это событие, и знать это стоит
@@ -229,7 +270,44 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       materialFrameRef.current?.replay(evt.events)
     },
     onSectionsChanged: loadSections,
+    // Урок, открытый шагами: что делает собеседник прямо сейчас.
+    //
+    // Событие описывает ровно одно действие, поэтому каждое поле проверяем
+    // отдельно: переход по шагу приходит без ответа, ответ — без «Проверить».
+    // Записывать их скопом значило бы стирать ответ при каждом переходе.
+    onStepProgress: (evt) => {
+      if (evt.senderName) setPeerName(evt.senderName)
+      if (evt.stepId != null) setPeerStepId(evt.stepId)
+      // Ответы бывают только ученические: преподаватель за ученика не отвечает
+      // (см. readOnly в ChoiceQuestion), и «ответ преподавателя» означал бы,
+      // что где-то разъехались роли.
+      if (evt.senderRole !== 'STUDENT') return
+      if (evt.questionId != null) {
+        setStudentAnswers((prev) => ({ ...prev, [evt.questionId]: parseAnswer(evt.value) }))
+      }
+      if (evt.checked && evt.stepId != null) {
+        setStudentCheckedSteps((prev) => {
+          if (prev.has(evt.stepId)) return prev
+          const next = new Set(prev)
+          next.add(evt.stepId)
+          return next
+        })
+      }
+    },
   })
+
+  // Свой шаг уходит собеседнику при каждом переходе — так на треке появляются
+  // оба бегунка. Раньше позиция преподавателя приходила только событием focus,
+  // а оно несёт id раздела занятия: на маршруте из шагов урока ему не с чем
+  // совпасть, и «Т» там не появлялся никогда.
+  //
+  // Эффект стоит именно здесь, ниже useLessonLiveSocket: sendStepProgress —
+  // const из его результата, и упоминание в списке зависимостей выше по файлу
+  // читается на рендере, до инициализации (уже ловили ReferenceError).
+  useEffect(() => {
+    if (!onLessonSteps || !activeStepId) return
+    sendStepProgress({ stepId: activeStepId })
+  }, [onLessonSteps, activeStepId, sendStepProgress])
 
   function handleBridgeMirror(event) {
     if (!activeMaterial) return
@@ -351,11 +429,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           statusById={onLessonSteps ? stepStatusById : sectionStatusById}
                           onSelect={selectRouteStep}
                           {...(onLessonSteps
-                            // Бегунок «Т» приходит событием focus и несёт id раздела
-                            // занятия — на маршруте из шагов урока ему не с чем
-                            // совпасть, и рисовать его там значило бы выдумывать
-                            // преподавателю позицию.
-                            ? {}
+                            // На шагах урока позиции обоих приходят трансляцией
+                            // step-progress; на разделах занятия — событием focus,
+                            // и там известен только преподаватель.
+                            ? { studentStepId, teacherStepId: lessonTeacherStepId }
                             : { teacherStepId })}
                         />
                       )}
@@ -368,13 +445,30 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         </button>
                       )}
                       {activeStep ? (
-                        <LessonContent
-                          step={activeStep}
-                          answers={answers}
-                          checked={checkedSteps.has(activeStepId)}
-                          onAnswer={handleAnswer}
-                          onCheck={handleCheckStep}
-                        />
+                        <>
+                          {/* Ученик ушёл на другой шаг — преподаватель об этом
+                              узнаёт, а не догадывается по бегунку на треке. */}
+                          {isStaff && peerStepId && peerStepId !== activeStepId && (
+                            <SystemBanner
+                              tone="attention"
+                              text={t('live.peerOnStep', {
+                                name: peerName || t('live.roster.student'),
+                                title: lessonSteps.find((s) => s.id === peerStepId)?.title || '',
+                              })}
+                              actionLabel={t('live.peerGo')}
+                              onAction={() => setActiveStepId(peerStepId)}
+                            />
+                          )}
+                          <LessonContent
+                            step={activeStep}
+                            // Преподаватель смотрит работу ученика, ученик — свою.
+                            answers={isStaff ? studentAnswers : answers}
+                            checked={isStaff ? studentCheckedSteps.has(activeStepId) : checkedSteps.has(activeStepId)}
+                            onAnswer={handleAnswer}
+                            onCheck={handleCheckStep}
+                            readOnly={isStaff}
+                          />
+                        </>
                       ) : (
                         <SectionMaterialFrame
                           ref={materialFrameRef}

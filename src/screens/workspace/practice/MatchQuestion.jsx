@@ -19,7 +19,7 @@ function shuffled(arr) {
 // левому слову снимает выделение. `answer` — карта {left: chosenRight},
 // репортится наверх через onAnswer(question.id, map) — грейдинг только через
 // gradeQuestion (practiceGrading.js), здесь не дублируется.
-export default function MatchQuestion({ question, answer, checked, onAnswer }) {
+export default function MatchQuestion({ question, answer, checked, onAnswer, readOnly }) {
   const { t } = useI18n()
   const [activeLeft, setActiveLeft] = useState(null)
   const pairs = question?.pairs || []
@@ -30,12 +30,12 @@ export default function MatchQuestion({ question, answer, checked, onAnswer }) {
   const rightOptions = useMemo(() => shuffled(pairs.map((p) => p.right)), [question?.id])
 
   function pickLeft(left) {
-    if (checked) return
+    if (checked || readOnly) return
     setActiveLeft((prev) => (prev === left ? null : left))
   }
 
   function pickRight(right) {
-    if (checked) return
+    if (checked || readOnly) return
     const left = activeLeft ?? pairs.find((p) => map[p.left] == null)?.left
     if (!left) return
     onAnswer(question.id, { ...map, [left]: right })
@@ -64,7 +64,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer }) {
                 className={cls}
                 aria-pressed={activeLeft === pair.left}
                 aria-label={chosen != null ? `${pair.left}: ${chosen}` : pair.left}
-                disabled={checked}
+                disabled={checked || readOnly}
                 onClick={() => pickLeft(pair.left)}
               >
                 <span className="lw-match__left-label">{pair.left}</span>
@@ -88,7 +88,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer }) {
                 type="button"
                 className={`lw-match__right${used ? ' is-used' : ''}`}
                 aria-label={right}
-                disabled={checked}
+                disabled={checked || readOnly}
                 onClick={() => pickRight(right)}
               >
                 {right}

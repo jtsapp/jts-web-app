@@ -28,7 +28,44 @@ describe('useLessonLiveSocket', () => {
       '/topic/lesson/7/material-mirror',
       '/topic/lesson/7/present',
       '/topic/lesson/7/sections-changed',
+      '/topic/lesson/7/step-progress',
     ]))
+  })
+
+  // Трансляция урока, открытого шагами: собеседник виден, своё эхо — нет.
+  // Вернувшийся к себе же ответ перетёр бы то, что ученик печатает сейчас.
+  it('доставляет шаги и ответы собеседника, но глушит собственное эхо', () => {
+    const onStepProgress = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onStepProgress }))
+
+    act(() => {
+      lastClient.subs['/topic/lesson/7/step-progress']({
+        body: JSON.stringify({ senderUserId: 1, stepId: 's2' }),
+      })
+    })
+    expect(onStepProgress).not.toHaveBeenCalled()
+
+    const fromStudent = { senderUserId: 9, senderRole: 'STUDENT', senderName: 'Ученик', stepId: 's2', questionId: 's2-c0', value: 'busy' }
+    act(() => {
+      lastClient.subs['/topic/lesson/7/step-progress']({ body: JSON.stringify(fromStudent) })
+    })
+    expect(onStepProgress).toHaveBeenCalledWith(fromStudent)
+  })
+
+  it('sendStepProgress шлёт только те поля, что описывают событие', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, {}))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    act(() => { result.current.sendStepProgress({ stepId: 's3' }) })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/step-progress', body: JSON.stringify({ stepId: 's3' }),
+    })
+
+    act(() => { result.current.sendStepProgress({ stepId: 's3', questionId: 's3-c0', value: 'commutes' }) })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/step-progress',
+      body: JSON.stringify({ stepId: 's3', questionId: 's3-c0', value: 'commutes' }),
+    })
   })
 
   it('drops focus/present echoes from itself but delivers events from others', () => {

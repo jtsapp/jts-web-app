@@ -3,7 +3,7 @@ import { CheckIcon } from '../../../components/icons.jsx'
 
 // Контролируемый вопрос-пропуск, заполняемый чипом из банка. `answer` —
 // выбранное слово (или null); выбранный чип подставляется в предложение.
-export default function ChipsQuestion({ question, answer, checked, onAnswer }) {
+export default function ChipsQuestion({ question, answer, checked, onAnswer, readOnly }) {
   const userCorrect = checked && gradeQuestion(question, answer).correct
 
   let gapCls = 'lw-gap'
@@ -35,7 +35,7 @@ export default function ChipsQuestion({ question, answer, checked, onAnswer }) {
               type="button"
               className={cls}
               aria-pressed={selected}
-              disabled={checked}
+              disabled={checked || readOnly}
               onClick={() => onAnswer(question.id, selected ? null : word)}
             >
               {word}
