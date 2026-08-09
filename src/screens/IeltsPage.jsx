@@ -1,4 +1,7 @@
 import LearningLayout from '../components/LearningLayout.jsx'
+import { useI18n } from '../i18n.jsx'
+import { useIeltsEntitlement } from '../practice/usePracticeEntitlement.js'
+import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import {
   HeadphonesIcon,
   BookOpenIcon,
@@ -65,7 +68,14 @@ const BANDS = [
   { band: '8.0+', cefr: 'C2' },
 ]
 
-export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo }) {
+export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onGo, isDemoAccount }) {
+  // Месячный лимит попыток спрашиваем ЗАРАНЕЕ: раньше студент проходил секцию
+  // целиком и упирался в отказ только на сдаче (а Reading/Listening вообще
+  // молча не сохраняли результат).
+  const { t } = useI18n()
+  const { allowed, limit, used, loading } = useIeltsEntitlement(token)
+  const outOfAttempts = !loading && !allowed
+
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="ie">
@@ -78,6 +88,22 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
           </div>
           <span className="ie-badge ie-badge--wip">В разработке</span>
         </header>
+
+        {outOfAttempts && (
+          <div className="ie-limit" role="status">
+            🔒{' '}
+            {isDemoAccount ? (
+              <>
+                {t('ielts.limitReachedDemo', { used: String(used), limit: String(limit ?? 0) })}{' '}
+                <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                  {t('demo.cta')}
+                </a>
+              </>
+            ) : (
+              t('ielts.limitReached', { used: String(used), limit: String(limit ?? 0) })
+            )}
+          </div>
+        )}
 
         <div className="ie-scale">
           <span className="ie-scale__label">Шкала band 0–9</span>
@@ -115,7 +141,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
               </>
             )
 
-            return live ? (
+            return live && !outOfAttempts ? (
               <button
                 key={key}
                 type="button"
@@ -134,7 +160,12 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
         </div>
 
         <div className="ie-cta">
-          <button type="button" className="ie-btn" onClick={() => onGo?.('ielts-writing')}>
+          <button
+            type="button"
+            className="ie-btn"
+            disabled={outOfAttempts}
+            onClick={() => !outOfAttempts && onGo?.('ielts-writing')}
+          >
             Начать Writing
           </button>
           <button

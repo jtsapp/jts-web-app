@@ -14,7 +14,7 @@
 // берёт версию main вместе с true, и develop превращается в тьютор-онли без
 // единого маркера конфликта. После каждого мержа main → develop проверяй эту
 // строку глазами, на автомерж не надейся.
-export const TUTOR_ONLY = true
+export const TUTOR_ONLY = false
 
 // Разделы, открытые в тьютор-онли режиме: сайдбар (Sidebar.jsx) показывает
 // только их, навигация (App.jsx handleNav/handleTutorNav) пропускает только их.

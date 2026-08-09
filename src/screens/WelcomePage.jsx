@@ -3,6 +3,7 @@ import LangSelector from '../components/LangSelector.jsx'
 import Footer from '../components/Footer.jsx'
 import { InstagramIcon, TelegramIcon, WhatsAppIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
+import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 
 export default function WelcomePage({ onRegister, onLogin }) {
   const { t } = useI18n()
@@ -22,7 +23,13 @@ export default function WelcomePage({ onRegister, onLogin }) {
               <a className="social-round" href="#" aria-label="Telegram">
                 <TelegramIcon size={16} />
               </a>
-              <a className="social-round social-round--wa" href="#" aria-label="WhatsApp">
+              <a
+                className="social-round social-round--wa"
+                href={SUPPORT_WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="WhatsApp"
+              >
                 <WhatsAppIcon size={16} />
               </a>
             </div>

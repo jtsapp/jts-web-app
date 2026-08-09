@@ -86,9 +86,12 @@ export function bandColor(band) {
 }
 
 /**
- * @param {{ result: object, saved: boolean|null, questionLabel: (id:string)=>string,
+ * @param {{ result: object, saved: boolean|'limit'|null, questionLabel: (id:string)=>string,
  *           onRetry: () => void, onGo: (screen: string) => void }} props
- *   `saved` is null while the persist POST is in flight, then true/false.
+ *   `saved` is null while the persist POST is in flight, then true/false, or
+ *   `'limit'` when the backend refused the attempt (429 — месячный лимит).
+ *   Лимит отделён от обычной неудачи специально: раньше он попадал в ветку
+ *   `false` и студент читал «офлайн-режим», хотя причина была совсем другая.
  */
 export function SectionResults({ result, saved, questionLabel, onRetry, onGo }) {
   return (
@@ -124,13 +127,20 @@ export function SectionResults({ result, saved, questionLabel, onRetry, onGo }) 
         ))}
       </div>
 
-      <div className="ie-res__saved">
-        {saved === null
-          ? 'Сохраняю результат…'
-          : saved
-            ? 'Результат сохранён в твой прогресс.'
-            : 'Результат не сохранён (офлайн-режим) — он останется на этом экране.'}
-      </div>
+      {saved === 'limit' ? (
+        <div className="ie-res__saved ie-res__saved--limit" role="status">
+          🔒 Попытка не засчитана: месячный лимит IELTS исчерпан. Результат виден
+          только на этом экране и в прогресс не попадёт. Обратитесь к преподавателю.
+        </div>
+      ) : (
+        <div className="ie-res__saved">
+          {saved === null
+            ? 'Сохраняю результат…'
+            : saved
+              ? 'Результат сохранён в твой прогресс.'
+              : 'Результат не сохранён (офлайн-режим) — он останется на этом экране.'}
+        </div>
+      )}
 
       <div className="ie-cta">
         <button type="button" className="ie-btn" onClick={() => onGo?.('ielts-progress')}>

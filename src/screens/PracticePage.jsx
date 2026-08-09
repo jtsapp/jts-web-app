@@ -20,14 +20,18 @@ import {
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
+import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
 import { lessonMastery } from '../practice/shadowing/mastery.js'
+import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
 import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/grammar/grammarData.js'
+import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
+import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -199,15 +203,53 @@ async function enrichCovers(list) {
   )
 }
 
-export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
+export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
   const [clips, setClips] = useState([])
   const [situations, setSituations] = useState([])
+  // Все ситуативки (без фильтра по уровню студента) — только чтобы понять,
+  // заблокирован ли админом статический уровень «Speaking A1–C1» целиком
+  // (см. levelLocked ниже). Отдельно от `situations`, который остаётся
+  // ограничен уровнем студента для инлайн-сетки бэкенд-карточек.
+  const [situativkiAll, setSituativkiAll] = useState([])
+  // Открытая ситуативка — смотрим внутри приложения, чтобы было где отметить
+  // прохождение (внешняя вкладка такого события не давала, см. SituativkaOverlay).
+  const [openSituation, setOpenSituation] = useState(null)
+  // Студент упёрся в квоту статических уровней — показываем экран лимита.
+  const [situationsBlocked, setSituationsBlocked] = useState(false)
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
   const [apiToken, setApiToken] = useState(token || '')
+  // Открытие конкретного урока грамматики гейтится квотой (см. openUnit ниже) —
+  // сам каталог/список юнитов остаётся доступным для просмотра.
+  const grammarEntitlement = usePracticeEntitlement('grammar', token)
+  // Квота на статические уровни «Speaking A1–C1» (см. ContentType.PRACTICE_SITUATIONS).
+  // Ситуативки из бэкенда ограничиваются отдельно, флагом locked на карточке —
+  // в этой же секции лежат оба источника, внешне неразличимые.
+  const situationsEntitlement = usePracticeEntitlement('situations', token)
+
+  // Нативный оверлей «Speaking A1–C1» — статический бандл (iframe на HTML-
+  // страницу), внутри него точечных locked-флагов нет: показываем/прячем
+  // только карточку уровня целиком. Уровень считаем заблокированным, если
+  // админ закрыл в нём ВСЕ ситуативки (см. Ситуативки → admin-restrictions) —
+  // частичная блокировка внутри уровня статикой не поддерживается.
+  const levelLocked = useMemo(() => {
+    const byLevel = {}
+    for (const s of situativkiAll) {
+      const code = (s.level || '').toLowerCase()
+      if (!code) continue
+      const bucket = byLevel[code] || (byLevel[code] = { total: 0, locked: 0 })
+      bucket.total++
+      if (s.locked) bucket.locked++
+    }
+    const out = new Set()
+    for (const code in byLevel) {
+      if (byLevel[code].total > 0 && byLevel[code].locked === byLevel[code].total) out.add(code)
+    }
+    return out
+  }, [situativkiAll])
 
   useEffect(() => {
     let alive = true
@@ -230,6 +272,10 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
         return Promise.all([
           pull((onFresh) => getMediaClips(tok, onFresh), setClips),
           pull((onFresh) => getSituativki(tok, userLevel, onFresh), setSituations),
+          // Без фильтра по уровню: нужны locked-флаги по ВСЕМ уровням сразу,
+          // чтобы погасить карточки «Speaking A1–C1» ниже (levelLocked), а не
+          // только карточки уровня студента (для этого хватило бы `situations`).
+          pull((onFresh) => getSituativki(tok, null, onFresh), setSituativkiAll),
           pull((onFresh) => getAudiobooks(tok, onFresh), setBooks, enrichCovers),
           pull((onFresh) => getSavedWords(tok, onFresh), setWords),
         ])
@@ -365,17 +411,45 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // (src/practice/situations/), открывается на выбранном уровне.
   const openSituationsLevel = async (level) => {
     if (taleLoadingRef.current) return
+    // Карточка заблокированного уровня скрыта (см. рендер ниже) — это доп.
+    // защита на случай прямого вызова (deep link и т.п.).
+    if (levelLocked.has(level)) return
+    // Уровень, уже открывавшийся раньше, не упирается в лимит: квота считает
+    // РАЗНЫЕ уровни, а не повторные заходы (иначе студент терял бы доступ к
+    // тому, что ему уже разрешили).
+    const seen = readSituationsDone()
+    if (!seen.includes(level) && !situationsEntitlement.allowed) {
+      setSituationsBlocked(true)
+      return
+    }
     taleLoadingRef.current = true
     try {
       const mod = await import('../practice/situations/situationsOverlay.js')
       mod.openSituations(level)
+      if (!seen.includes(level)) markSituationLevelDone(level)
     } finally {
       taleLoadingRef.current = false
     }
   }
 
+  // Лимит на разговорную практику — тот же takeover, что у грамматики.
+  if (situationsBlocked) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} />
+      </LearningLayout>
+    )
+  }
+
   // Урок грамматики — полноэкранный takeover (как открытая книга/рилс).
   if (openUnit) {
+    if (!grammarEntitlement.loading && !grammarEntitlement.allowed) {
+      return (
+        <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+          <PracticeLimitScreen limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} isDemoAccount={isDemoAccount} />
+        </LearningLayout>
+      )
+    }
     const lvl = grammarIndex && grammarIndex[openUnit.level]
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
@@ -614,7 +688,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           <section id="sec-situations" className="pp-sec">
             <SectionHead title={t('practice.chip.situations')} onAll={() => setFilter('situations')} />
             <Rail grid={grid}>
-              {SITUATION_LEVELS.map((l) => (
+              {/* Заблокированные сценарии не показываем вовсе (раньше висели
+                  замком): преподаватель закрывает контент, а не дразнит им. */}
+              {SITUATION_LEVELS.filter((l) => !levelLocked.has(l.code)).map((l) => (
                 <button
                   key={l.code}
                   type="button"
@@ -629,18 +705,21 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   </div>
                 </button>
               ))}
-              {situations.map((s) => (
-                <a
-                  key={s.id}
-                  className="pp-scard"
-                  href={s.videoUrl || '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation" />
-                  <div className="pp-scard__title">{s.title}</div>
-                </a>
-              ))}
+              {situations
+                .filter((s) => !s.locked && (s.level || '').toUpperCase() === (userLevel || '').toUpperCase())
+                .map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`pp-scard${s.completed ? ' pp-scard--done' : ''}`}
+                    onClick={() => setOpenSituation(s)}
+                  >
+                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
+                      {s.completed && <span className="pp-scard__check">✓</span>}
+                    </Thumb>
+                    <div className="pp-scard__title">{s.title}</div>
+                  </button>
+                ))}
             </Rail>
           </section>
           )}
@@ -692,6 +771,18 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </div>
         </aside>
       </div>
+
+      {openSituation && (
+        <SituativkaOverlay
+          situativka={openSituation}
+          token={apiToken}
+          onClose={() => setOpenSituation(null)}
+          onCompleted={(id) =>
+            setSituations((list) => list.map((x) => (x.id === id ? { ...x, completed: true } : x)))
+          }
+          isDemoAccount={isDemoAccount}
+        />
+      )}
     </LearningLayout>
   )
 }

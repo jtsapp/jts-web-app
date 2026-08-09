@@ -75,7 +75,11 @@ export default function IeltsListeningPage({ userLevel = 'A1', userName, token, 
         deviceId: getDeviceId(),
       }),
     })
-      .then(async (res) => setSaved(res.ok ? (await res.json()).saved : false))
+      // 429 — исчерпан месячный лимит, см. комментарий в IeltsReadingPage.
+      .then(async (res) => {
+        if (res.status === 429) return setSaved('limit')
+        setSaved(res.ok ? (await res.json()).saved : false)
+      })
       .catch(() => setSaved(false))
   }
 

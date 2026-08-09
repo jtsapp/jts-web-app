@@ -9,7 +9,7 @@
 import { ieltsTaskById } from '@/data/ielts-tasks.js'
 import { gradeSection } from '@/lib/ielts/key-grading.js'
 import { recordIeltsSection } from '@/lib/db/ielts.js'
-import { resolveProfileId } from '@/lib/auth-server.js'
+import { checkIeltsQuota } from '@/lib/ielts/quota.js'
 
 export const runtime = 'nodejs'
 
@@ -28,6 +28,17 @@ export async function POST(request) {
     return Response.json({ error: 'Unknown section/taskId.' }, { status: 400 })
   }
 
+  // Demo accounts get a monthly cap across all three IELTS submit routes.
+  // Anonymous/invalid identity isn't gated (matches this route's existing
+  // tolerance below) - only a resolved learner can have a quota.
+  const quota = await checkIeltsQuota(request, body.deviceId)
+  if (quota.blocked) {
+    return Response.json(
+      { error: 'Monthly IELTS submission limit reached for this account.' },
+      { status: 429 },
+    )
+  }
+
   const answers = {}
   if (body.answers && typeof body.answers === 'object') {
     for (const [k, v] of Object.entries(body.answers)) {
@@ -39,7 +50,7 @@ export async function POST(request) {
 
   let saved = false
   try {
-    const resolved = await resolveProfileId(request, body.deviceId)
+    const resolved = quota.resolved
     if (!('error' in resolved)) {
       const written = await recordIeltsSection({
         profileId: resolved.id,

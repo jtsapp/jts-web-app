@@ -61,9 +61,11 @@ lint` + ручной прогон затронутого экрана (`npm run 
   caching (три cache-breakpoint'а — не ломай их, иначе стоимость ×2.5),
   IELTS-грейдинг на Sonnet.
 - LiveKit Cloud (голос) + Azure Speech (TTS). Ключи только серверные,
-  в браузер не уходят. Схема деплоя — DEPLOY.md (Vercel + LiveKit + Neon).
+  в браузер не уходят. Схема деплоя — self-host VPS + GitLab CI
+  (`compose.yaml`+`compose-app.yaml`); DEPLOY.md описывает старую схему
+  (Vercel + LiveKit + Neon) и помечен как устаревший.
 - `src/app/api/hl/[...path]/route.js` — прокси Speakout-курса с
-  files-api.iqra.space; ограничен `ALLOWED_PREFIX` и .html (SSRF-защита) —
+  files-dev.justtostudy.kz; ограничен `ALLOWED_PREFIX` и .html (SSRF-защита) —
   не расширять без причины.
 
 ## Конвенции

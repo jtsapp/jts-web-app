@@ -17,6 +17,24 @@ export function normalizePhone(input) {
   return d
 }
 
+// Различает почту и телефон во входной строке идентификатора. ВАЖНО: не
+// пытаться отличить их через normalizePhone (пустой/не-цифровой результат) —
+// email, в котором случайно есть цифры (user2024@mail.com), после зачистки
+// нецифровых символов превратился бы в "2024", а не остался бы пустым.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export function isEmailIdentifier(input) {
+  return EMAIL_RE.test(String(input).trim())
+}
+
+// Приводит идентификатор (телефон или email, с логина/регистрации) к телу
+// запроса { phone } или { email } — бэкенд принимает ровно один из двух.
+function identifierBody(identifier) {
+  return isEmailIdentifier(identifier)
+    ? { email: String(identifier).trim() }
+    : { phone: normalizePhone(identifier) }
+}
+
 async function get(path) {
   let res
   try {
@@ -50,6 +68,42 @@ async function authGet(path, token) {
   }
   if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`)
   return res.json()
+}
+
+async function authPut(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
+async function authPost(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
 }
 
 // ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
@@ -122,6 +176,158 @@ export function getLessonModules(token) {
   return authGet('/mobile/lesson-modules', token)
 }
 
+// Эффективный лимит "N из M" для области/элемента (см. ContentQuotaService.
+// getEffectiveLimit на бэкенде: точечная квота студента → тариф → демо-дефолт
+// → без лимита). contentId=0 — для областей без адресных элементов (IELTS,
+// Практика); для LESSON_MODULE передаём реальный id модуля. null = лимита нет.
+// Используется, чтобы жёстко скрыть/заблокировать контент СВЕРХ лимита ДО
+// попытки его открыть, а не только отказывать при завершении.
+export async function getContentQuota(token, contentType, contentId = 0) {
+  if (!token) return null
+  try {
+    const res = await authGet(`/mobile/content-quota?contentType=${encodeURIComponent(contentType)}&contentId=${contentId}`, token)
+    return res?.limit ?? null
+  } catch {
+    return null
+  }
+}
+
+// Живой урок (новый admin-пайплайн «live lessons»): метаданные урока,
+// включая jsonUrl — публичную files-api ссылку на расширенный JSON
+// (steps/blocks/questions + info/match/gap.open), который сам контент
+// грузит отдельным fetch без авторизации (см. loadLiveLesson).
+export function getLiveLesson(id, token) {
+  return authGet(`/mobile/live-lessons/${id}`, token)
+}
+
+// Каталог живых уроков (уровень → юнит → урок), опубликованное дерево для пикера
+// учителя. SWR-кэш: структура меняется редко (админ регистрирует уровень), так
+// что отдаём мгновенно из кэша и обновляем в фоне через onFresh.
+export function getCourseCatalog(token, onFresh) {
+  return cachedAuthGet('/mobile/course-catalog', token, onFresh)
+}
+
+// Один урок каталога: fileUrl (сырой L*.html) + type/title.
+export function getCourseCatalogLesson(id, token) {
+  return authGet(`/mobile/course-catalog/lessons/${id}`, token)
+}
+
+// Структура урока, разобранная один раз при регистрации уровня и сохранённая на
+// бэкенде. content === null — структуры нет, урок открывается как файл (fileUrl).
+export function getCourseCatalogLessonContent(id, token) {
+  return authGet(`/mobile/course-catalog/lessons/${id}/content`, token)
+}
+
+// Расписание вошедшего пользователя. Бэкенд скоупит /admin/lessons* под личность
+// токена: ученик/учитель получают только СВОИ занятия (чужие → 400).
+export function getMyLessonOccurrences(token) {
+  return authGet('/admin/lessons/occurrences', token)
+}
+
+export function getLessonsSummary(token) {
+  return authGet('/admin/lessons/summary', token)
+}
+
+// Живой урок: загрузка одного урока и управление жизненным циклом (учитель/админ).
+// Бэкенд скоупит /admin/lessons/{id} под личность токена.
+export function getLessonById(token, id) {
+  return authGet(`/admin/lessons/${id}`, token)
+}
+
+export function startLiveLesson(token, id) {
+  return authPut(`/admin/lessons/${id}/start`, token)
+}
+
+// Учитель/админ вписывает или меняет ссылку на видеозвонок (Google Meet или
+// любую другую) для этого занятия. wholeSeries=true проставляет её сразу на
+// все будущие занятия той же еженедельной серии.
+export function setLessonMeetingUrl(token, id, meetingUrl, wholeSeries = false) {
+  return authPut(`/admin/lessons/${id}/meeting-url`, token, { meetingUrl, wholeSeries })
+}
+
+export function pauseLiveLesson(token, id, minutes) {
+  return authPut(`/admin/lessons/${id}/pause?minutes=${encodeURIComponent(minutes)}`, token)
+}
+
+export function resumeLiveLesson(token, id) {
+  return authPut(`/admin/lessons/${id}/resume`, token)
+}
+
+export function completeLiveLesson(token, id) {
+  return authPut(`/admin/lessons/${id}/complete`, token)
+}
+
+// Живой урок — доска (Fabric). REST только для начальной гидрации; дальнейшие
+// изменения летят по STOMP (см. useLessonBoard). Возвращает список объектов
+// { id, objectId, type, json }, где json — непрозрачная сериализация Fabric-объекта.
+export function getBoardObjects(token, id) {
+  return authGet(`/admin/lessons/${id}/board/objects`, token)
+}
+
+// Живой урок — разделы (Разделы/«Маршрут урока») с прикреплёнными материалами.
+// Путь начинается с /admin/, но это общий эндпоинт воркспейса — доступен и
+// ученику (LESSON_JOIN), и учителю (LESSON_CONDUCT); скрытые от ученика
+// материалы и служебный раздел «Дополнительно» бэкенд уже фильтрует сам.
+export function getLessonSections(token, lessonId) {
+  return authGet(`/admin/lessons/${lessonId}/sections`, token)
+}
+
+export function getLessonMessages(token, lessonId) {
+  return authGet(`/admin/lessons/${lessonId}/messages`, token)
+}
+
+export function sendLessonMessage(token, lessonId, body) {
+  return authPost(`/admin/lessons/${lessonId}/messages`, token, { body })
+}
+
+// URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление
+// ответов + живой follow-me), см. LessonMaterialProgressController на бэкенде.
+// GET идёт по iframe-навигации (не fetch), поэтому токен передаётся в query,
+// а не в заголовке — тот же приём, что и в web-admin (buildProgressRenderUrl).
+// forceReload добавляет nonce, чтобы iframe гарантированно перезагрузился
+// (нужно студенту, догоняющему учителя через follow=1). Nonce обязан быть
+// ДЕТЕРМИНИРОВАННЫМ от значения forceReload (а не Date.now()) - иначе src
+// меняется на каждый ре-рендер SectionMaterialFrame (например от полинга
+// "учитель начал урок" раз в 5с), и браузер молча перезагружает iframe весь
+// остаток урока, обнуляя непереживший дебаунс прогресс студента.
+export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', follow = false, forceReload, studentId } = {}) {
+  const params = new URLSearchParams({ mode, access_token: token || '' })
+  if (follow) params.set('follow', '1')
+  if (studentId != null) params.set('studentId', String(studentId))
+  if (forceReload) params.set('_r', String(forceReload))
+  return `${BASE}/student/lessons/${lessonId}/materials/${materialId}/render?${params.toString()}`
+}
+
+// Прогресс по материалу урока. Тот же эндпоинт, что дёргает бридж внутри
+// отрендеренного iframe, — он не привязан к типу материала и хранит
+// произвольную строку eventsJson по ключу (урок, материал, ученик). Уроку,
+// открытому шагами, этого достаточно: свой материал у него есть, а заводить
+// вторую таблицу под то же самое значило бы держать два места для одного
+// ответа.
+//
+// studentId читает преподаватель, чтобы увидеть работу участника; ученику
+// сервер и так отдаёт только его собственную (assertAccess).
+export function getLessonMaterialProgress(token, lessonId, materialId, studentId) {
+  const q = studentId != null ? `?studentId=${encodeURIComponent(studentId)}` : ''
+  return authGet(`/student/lessons/${lessonId}/materials/${materialId}/progress${q}`, token)
+}
+
+export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson) {
+  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson })
+}
+
+// «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
+// STOMP-топику board-settings (см. useLessonBoard).
+export function getBoardSettings(token, id) {
+  return authGet(`/admin/lessons/${id}/board/settings`, token)
+}
+
+// Учитель меняет ограничения доски (частичный патч, напр. { drawingDisabled: true });
+// сервер сохраняет и ретранслирует настройки всем участникам по STOMP.
+export function updateBoardSettings(token, id, patch) {
+  return authPut(`/admin/lessons/${id}/board/settings`, token, patch)
+}
+
 // Начисляет награду за завершённый урок практики: xp → монеты/XP + стрик на
 // бэкенде (тот же эндпоинт, что мобилка зовёт на завершении урока). Возвращает
 // свежий баланс. Best-effort — осечка не должна ломать финальный экран урока.
@@ -151,7 +357,14 @@ export async function completeLesson(token, moduleId, code, xp = 0) {
     `${BASE}/mobile/lesson-modules/${encodeURIComponent(moduleId)}/lessons/${encodeURIComponent(code)}/complete?xp=${encodeURIComponent(xp)}`,
     { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
   )
-  if (!res.ok) throw new Error(`lesson complete failed: ${res.status}`)
+  if (!res.ok) {
+    // Статус кладём на саму ошибку: 403 здесь — не сбой сети, а осознанный
+    // отказ бэкенда (админ закрыл модуль или исчерпана квота «N из M»), и
+    // вызывающий код обязан отличать его от офлайна — см. markDone.
+    const err = new Error(`lesson complete failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null) // { done: [<code>], total, balance? }
 }
 
@@ -214,13 +427,15 @@ async function post(path, body) {
   return data
 }
 
-// Шаг 1 (регистрация): отправка кода. Возвращает режим 'register'. Если номер
-// уже занят — НЕ уводим молча в вход, а помечаем ошибку кодом USER_EXISTS, и UI
-// просит пользователя войти или взять другой номер (см. handlePhoneSubmit).
-export async function sendOtp(phone, name) {
-  const p = normalizePhone(phone)
+// Шаг 3 регистрации (после того как собрали номер и почту — см.
+// RegisterPhonePage/RegisterEmailPage): отправляет оба идентификатора сразу.
+// Бэкенд шлёт код на почту, когда она есть (RegistrationService: email
+// предпочтительнее телефона как канал OTP при обоих полях) — таков порядок
+// веб-формы: номер → почта → код на почту → пароль. Если телефон или почта
+// уже заняты — не уводим молча в вход, а помечаем ошибку кодом USER_EXISTS.
+export async function sendRegistrationOtp(name, phone, email) {
   try {
-    await post('/registration/initiate', { name: name || 'Гость', phone: p })
+    await post('/registration/initiate', { name: name || 'Гость', phone: normalizePhone(phone), email })
     return 'register'
   } catch (e) {
     if ((e.message || '').toLowerCase().includes('exist')) {
@@ -230,13 +445,21 @@ export async function sendOtp(phone, name) {
   }
 }
 
+// Шаг 4: проверка кода, присланного на почту. Создаёт пользователя сразу с
+// обоими идентификаторами и возвращает accessToken/refreshToken (см.
+// RegistrationVerifyResponse на бэкенде) — отдельного входа после регистрации
+// больше не требуется.
+export async function verifyRegistrationOtp(name, phone, email, code) {
+  return post('/registration/verify', { name: name || 'Гость', phone: normalizePhone(phone), email, otp: code })
+}
+
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
-// номер молча зарегистрировался бы «Гостем». Незарегистрированный номер здесь
-// даёт 400 «User with this phone not found» — помечаем кодом USER_NOT_FOUND,
-// чтобы UI показал «Пользователь не существует» вместо сырого текста бэкенда.
-export async function requestLoginOtp(phone) {
+// телефон/email молча зарегистрировался бы «Гостем». Незарегистрированный
+// идентификатор здесь даёт 400 — помечаем кодом USER_NOT_FOUND, чтобы UI
+// показал «Пользователь не существует» вместо сырого текста бэкенда.
+export async function requestLoginOtp(identifier) {
   try {
-    await post('/auth/otp/request', { phone: normalizePhone(phone) })
+    await post('/auth/otp/request', identifierBody(identifier))
     return 'login'
   } catch (e) {
     const msg = (e.message || '').toLowerCase()
@@ -247,14 +470,9 @@ export async function requestLoginOtp(phone) {
   }
 }
 
-// Шаг 2: проверка кода. В режиме register создаёт пользователя (без токена),
-// в режиме login — возвращает LoginResponse с accessToken.
-export async function verifyOtp(phone, code, name, mode) {
-  const p = normalizePhone(phone)
-  if (mode === 'login') {
-    return post('/auth/otp/verify', { phone: p, otp: code })
-  }
-  return post('/registration/verify', { name: name || 'Гость', phone: p, otp: code })
+// Шаг 2 входа по коду: проверка кода → LoginResponse с accessToken.
+export async function verifyLoginOtp(identifier, code) {
+  return post('/auth/otp/verify', { ...identifierBody(identifier), otp: code })
 }
 
 // Вход через Google: id_token из Google Identity Services → LoginResponse
@@ -263,26 +481,37 @@ export function loginWithGoogle(idToken) {
   return post('/auth/google', { idToken })
 }
 
-// Вход по OTP → accessToken. Используется после регистрации, чтобы получить JWT.
-// В dev-окружении код всегда '0000' (запрос генерирует свежий код).
-export async function loginWithOtp(phone, otp = '0000') {
-  const p = normalizePhone(phone)
-  await post('/auth/otp/request', { phone: p })
-  const res = await post('/auth/otp/verify', { phone: p, otp })
-  return res?.accessToken || null
-}
-
 // ─────────────────────────────────────────────────────────────────────────
 // Практика: контент из dev-admin (mobile-эндпоинты бэкенда, требуют Bearer).
 // dev-admin.justtostudy.kz читает из того же dev-server, поэтому всё, что
 // заведено в админке, приходит сюда.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Вход по телефону + паролю (тот же логин, что у dev-админки) → accessToken.
-export async function loginWithPassword(phone, password) {
-  const p = normalizePhone(phone)
-  const res = await post('/auth/login', { phone: p, password })
+// Вход по паролю. Идентификатор — телефон ИЛИ email: бэкенд принимает оба
+// (AuthService сам решает, по какому полю искать), поэтому здесь тот же
+// identifierBody, что у OTP-флоу — раньше уходил только phone, и войти по
+// почте было нельзя, хотя аккаунт с ней заводился.
+export async function loginWithPassword(identifier, password) {
+  const res = await post('/auth/login', { ...identifierBody(identifier), password })
   return res?.accessToken || null
+}
+
+// Первый пароль для аккаунта, заведённого саморегистрацией по OTP (у него
+// пароля нет вовсе). Требует уже полученный после подтверждения кода токен.
+// Отдельный эндпоинт, а не смена пароля: текущего пароля тут не существует.
+export async function setPassword(token, password) {
+  const res = await fetch(`${BASE}/user/set-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ password }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    const err = new Error(body?.messages?.[0] || body?.message || 'Не удалось сохранить пароль')
+    err.status = res.status
+    throw err
+  }
+  return true
 }
 
 // Демо-доступ для витрины «Практика», когда пользователь ещё не залогинен
@@ -346,6 +575,24 @@ export function getSituativki(token, level, onFresh) {
   return cachedAuthGet('/mobile/situativki' + q, token, onFresh)
 }
 
+// Отметить ситуативку пройденной (POST /mobile/situativki/{id}/complete,
+// идемпотентно). Именно здесь на бэкенде живёт проверка общей квоты ситуативок
+// — пока веб не звал этот эндпоинт, лимит из админки не срабатывал никогда.
+// 403 = квота исчерпана либо сценарий закрыт админом; статус кладём на ошибку,
+// чтобы вызывающий отличил отказ от сетевой осечки.
+export async function completeSituativka(token, id) {
+  const res = await fetch(`${BASE}/mobile/situativki/${encodeURIComponent(id)}/complete`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const err = new Error(`situativka complete failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
+  return res.json().catch(() => null)
+}
+
 // Словарь пользователя (GET /mobile/saved-words) → [{word,translation,learned,correctCount,language}]
 // SWR-кэш: слова добавляются из читалки — свежий список приходит через onFresh.
 export function getSavedWords(token, onFresh) {
@@ -393,15 +640,31 @@ export async function getLanguageLevel(token) {
   return data?.languageLevel || data?.level || data?.value || null
 }
 
+// Демо-статус аккаунта (GET /user/me, Bearer) — решает, показывать ли на
+// экранах «лимит исчерпан» демо-CTA со ссылкой на WhatsApp или обычный текст:
+// лимит может быть и не демо-природы (персональный override от менеджера).
+// При сетевой осечке считаем аккаунт не демо — это не критично (просто не
+// покажем CTA), а не наоборот.
+export async function getIsDemoAccount(token) {
+  if (!token) return false
+  try {
+    const data = await authGet('/user/me', token)
+    return !!data?.isDemoAccount
+  } catch {
+    return false
+  }
+}
+
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest
 // мобилки: name обязателен, остальные поля шлём только если заданы, чтобы не
 // затирать то, что уже хранит бэкенд. Возвращает обновлённый UserInfo.
-export async function updateUser(token, { name, email, city, gender, birthDate }) {
+export async function updateUser(token, { name, email, city, gender, birthDate, phone }) {
   const payload = { name }
   if (email) payload.email = email
   if (city) payload.city = city
   if (gender) payload.gender = gender
   if (birthDate) payload.birthDate = birthDate
+  if (phone) payload.phone = normalizePhone(phone)
   let res
   try {
     res = await fetch(`${BASE}/user/update`, {

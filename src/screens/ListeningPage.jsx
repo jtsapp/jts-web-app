@@ -14,6 +14,8 @@ import {
 } from '../practice/listening/engine.js'
 import { markTaskDone, getListeningDone, LISTENING_PROGRESS_EVENT } from '../practice/listening/listeningProgress.js'
 import { recordSkill } from '../practice/skillStats.js'
+import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
+import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
 const LEVELS = ['a1', 'a2', 'b1', 'b2', 'c1']
 const normLevel = (lvl) => {
@@ -250,7 +252,7 @@ function ExitModal({ onStay, onLeave }) {
 }
 
 // ───────────────────────── Screen ─────────────────────────
-export default function ListeningPage({ userLevel, userName, token, onNav, onProfile }) {
+export default function ListeningPage({ userLevel, userName, token, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
   const level = normLevel(userLevel)
   const [phase, setPhase] = useState('intro') // 'intro' | 'task' | 'result'
@@ -358,6 +360,15 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   const back = () => onNav?.('practice')
   // выход из НЕзавершённой тренировки требует подтверждения
   const requestBack = () => (phase === 'task' ? setExitOpen(true) : back())
+
+  const entitlement = usePracticeEntitlement('listening', token)
+  if (!entitlement.loading && !entitlement.allowed) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} />
+      </LearningLayout>
+    )
+  }
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>

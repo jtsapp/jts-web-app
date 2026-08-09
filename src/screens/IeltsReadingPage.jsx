@@ -40,7 +40,13 @@ export default function IeltsReadingPage({ userLevel = 'A1', userName, token, on
         deviceId: getDeviceId(),
       }),
     })
-      .then(async (res) => setSaved(res.ok ? (await res.json()).saved : false))
+      // 429 — исчерпан месячный лимит. Отличаем от обычной неудачи: раньше
+      // и то и другое давало saved=false и подпись «офлайн-режим», из-за чего
+      // отказ по лимиту выглядел как сетевая осечка.
+      .then(async (res) => {
+        if (res.status === 429) return setSaved('limit')
+        setSaved(res.ok ? (await res.json()).saved : false)
+      })
       .catch(() => setSaved(false))
   }
 

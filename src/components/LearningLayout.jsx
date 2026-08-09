@@ -17,9 +17,10 @@ export default function LearningLayout({
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
+  const rail = active === 'lessons'
 
   return (
-    <div className="learn">
+    <div className={`learn ${rail ? 'learn--rail' : ''}`}>
       <MobileTopBar
         userName={userName}
         profileLabel={t('kingdom.profile')}
@@ -32,6 +33,7 @@ export default function LearningLayout({
           userName={userName}
           userLevel={userLevel}
           active={active}
+          rail={rail}
           token={token}
           onNav={onNav}
           onProfile={onProfile}

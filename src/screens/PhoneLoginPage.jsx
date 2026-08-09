@@ -5,11 +5,21 @@ import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
 import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
+import { isEmailIdentifier } from '../api.js'
 
 export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loading, error }) {
   const { t, lang } = useI18n()
+  // 'phone' — прежняя форма со страной/маской; 'email' — простое поле почты.
+  // Одна и та же onSubmit(identifier) обслуживает оба режима — App.jsx/api.js
+  // сами определяют, что пришло, и шлют { phone } или { email } на бэкенд.
+  // Телефон по умолчанию и при входе, и при регистрации; почта — через
+  // переключатель. Если ввели почту при регистрации, недостающий телефон
+  // App.jsx попросит отдельным шагом после кода (см. RegisterPhonePage) —
+  // и наоборот для почты (RegisterEmailPage), см. needsPhoneStep/needsEmailStep.
+  const [mode, setMode] = useState('phone')
   const [country, setCountry] = useState(DEFAULT_COUNTRY)
   const [digits, setDigits] = useState('') // только цифры нац. номера, без кода страны
+  const [email, setEmail] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [googleReady, setGoogleReady] = useState(false)
   const googleRef = useRef(null)
@@ -62,11 +72,16 @@ export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loadin
     requestAnimationFrame(() => inputRef.current?.focus())
   }
 
-  const valid = isNationalComplete(country, digits)
+  const valid = mode === 'phone' ? isNationalComplete(country, digits) : isEmailIdentifier(email)
 
   function submit(e) {
     e.preventDefault()
-    if (valid && !loading) onSubmit('+' + country.dial + digits)
+    if (!valid || loading) return
+    onSubmit(mode === 'phone' ? '+' + country.dial + digits : email.trim())
+  }
+
+  function toggleMode() {
+    setMode((m) => (m === 'phone' ? 'email' : 'phone'))
   }
 
   return (
@@ -74,64 +89,81 @@ export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loadin
       <div className="form-inner">
         <form className="form-card" onSubmit={submit}>
           <h2 className="form-title">
-            <Multiline text={t('phone.title')} />
+            <Multiline text={t(mode === 'phone' ? 'phone.title' : 'email.title')} />
           </h2>
-          <p className="form-sub">{t('phone.subtitle')}</p>
+          <p className="form-sub">{t(mode === 'phone' ? 'phone.subtitle' : 'email.subtitle')}</p>
 
-          <div className="phone-field">
-            <div className="phone-country" ref={pickerRef}>
-              <button
-                type="button"
-                className="phone-country__btn"
-                onClick={() => setPickerOpen((o) => !o)}
-                aria-haspopup="listbox"
-                aria-expanded={pickerOpen}
-                aria-label={t('phone.country')}
-              >
-                <span className="phone-country__flag">{country.flag}</span>
-                <span className="phone-country__dial">+{country.dial}</span>
-                <span className={`phone-country__chev ${pickerOpen ? 'is-open' : ''}`}>
-                  <ChevronRightIcon size={14} />
-                </span>
-              </button>
+          {mode === 'phone' ? (
+            <div className="phone-field">
+              <div className="phone-country" ref={pickerRef}>
+                <button
+                  type="button"
+                  className="phone-country__btn"
+                  onClick={() => setPickerOpen((o) => !o)}
+                  aria-haspopup="listbox"
+                  aria-expanded={pickerOpen}
+                  aria-label={t('phone.country')}
+                >
+                  <span className="phone-country__flag">{country.flag}</span>
+                  <span className="phone-country__dial">+{country.dial}</span>
+                  <span className={`phone-country__chev ${pickerOpen ? 'is-open' : ''}`}>
+                    <ChevronRightIcon size={14} />
+                  </span>
+                </button>
 
-              {pickerOpen && (
-                <ul className="phone-country__menu" role="listbox">
-                  {COUNTRIES.map((c) => (
-                    <li key={c.iso}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={c.iso === country.iso}
-                        className={`phone-country__item ${c.iso === country.iso ? 'is-active' : ''}`}
-                        onClick={() => pickCountry(c)}
-                      >
-                        <span className="phone-country__flag">{c.flag}</span>
-                        <span className="phone-country__name">{c.name}</span>
-                        <span className="phone-country__code">+{c.dial}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                {pickerOpen && (
+                  <ul className="phone-country__menu" role="listbox">
+                    {COUNTRIES.map((c) => (
+                      <li key={c.iso}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={c.iso === country.iso}
+                          className={`phone-country__item ${c.iso === country.iso ? 'is-active' : ''}`}
+                          onClick={() => pickCountry(c)}
+                        >
+                          <span className="phone-country__flag">{c.flag}</span>
+                          <span className="phone-country__name">{c.name}</span>
+                          <span className="phone-country__code">+{c.dial}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <input
+                ref={inputRef}
+                type="tel"
+                inputMode="numeric"
+                autoFocus
+                placeholder={t('phone.placeholder')}
+                value={formatNational(country, digits)}
+                onChange={onChange}
+              />
             </div>
-
+          ) : (
             <input
-              ref={inputRef}
-              type="tel"
-              inputMode="numeric"
+              type="email"
               autoFocus
-              placeholder={t('phone.placeholder')}
-              value={formatNational(country, digits)}
-              onChange={onChange}
+              placeholder={t('email.placeholder')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="email-field"
             />
-          </div>
+          )}
 
           {error && <div className="form-error">{error}</div>}
 
           <button className="form-primary" type="submit" disabled={!valid || loading}>
             {loading ? t('phone.sending') : t('phone.submit')}
           </button>
+
+          <p className="form-note form-note--center">
+            <a href="#" onClick={(e) => { e.preventDefault(); toggleMode() }}>
+              {t(mode === 'phone' ? 'phone.switchToEmail' : 'email.switchToPhone')}
+            </a>
+          </p>
 
           <p className="form-note">
             {t('phone.note')}

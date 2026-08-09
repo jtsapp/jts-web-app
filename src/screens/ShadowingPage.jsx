@@ -27,6 +27,8 @@ import { saveTake, getTakeBlob, getLessonScores } from '../practice/shadowing/re
 import { lessonMastery, isPhraseMastered, MASTERY_THRESHOLD } from '../practice/shadowing/mastery.js'
 import { recordSkill } from '../practice/skillStats.js'
 import PhraseScore from '../components/shadowing/PhraseScore.jsx'
+import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
+import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
 // Загрузка YouTube IFrame API — один раз на модуль (как _coversIndexPromise в
 // PracticePage). SSR-гард: на сервере window нет, отдаём null и грузим плеер уже
@@ -62,7 +64,7 @@ function pickMime() {
 
 const SPEEDS = [0.5, 0.75, 1]
 
-export default function ShadowingPage({ userLevel, userName, token, onNav, onProfile, lessonId }) {
+export default function ShadowingPage({ userLevel, userName, token, onNav, onProfile, lessonId, isDemoAccount }) {
   const { t, lang } = useI18n()
 
   // Текущий урок: стартовый id из пропса (диплинк-выбор карточки), дальше —
@@ -580,6 +582,15 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
 
   const progressPct = total ? Math.round((doneCount / total) * 100) : 0
   const mastery = lessonMastery(scores, total) // { mastered, pct } — локально
+
+  const entitlement = usePracticeEntitlement('shadowing', token)
+  if (!entitlement.loading && !entitlement.allowed) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} />
+      </LearningLayout>
+    )
+  }
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>

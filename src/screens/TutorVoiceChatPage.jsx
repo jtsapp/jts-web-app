@@ -344,17 +344,6 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
     }
   })
 
-  // Эмоция тьютора. Тег приходит в начале реплики и сразу идёт на лицо — с ним
-  // же тьютор её и произносит.
-  const [reaction, setReaction] = useState(null)
-  const reactionTimer = useRef(null)
-  const stopReactionTimer = () => {
-    if (reactionTimer.current) {
-      clearTimeout(reactionTimer.current)
-      reactionTimer.current = null
-    }
-  }
-
   // Обрыв на исходе бюджета сцены. По картинке авторитетен клиент: агент в этот
   // же момент шлёт вердикт и удаляет комнату, но экран результата не должен
   // зависеть от того, успел ли он.
@@ -384,6 +373,17 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
     }, 3000)
     return () => clearTimeout(id)
   }, [lineDead, verdict, t])
+
+  // Эмоция тьютора. Тег приходит в начале реплики и сразу идёт на лицо — с ним
+  // же тьютор её и произносит.
+  const [reaction, setReaction] = useState(null)
+  const reactionTimer = useRef(null)
+  const stopReactionTimer = () => {
+    if (reactionTimer.current) {
+      clearTimeout(reactionTimer.current)
+      reactionTimer.current = null
+    }
+  }
 
   useDataChannel('mood', (msg) => {
     try {

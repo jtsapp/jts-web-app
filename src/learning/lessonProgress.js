@@ -42,18 +42,34 @@ export async function loadDone(level, token, moduleId) {
   return local
 }
 
-// Отметить урок пройденным: локально сразу (мгновенный UI), на бэкенд —
-// best-effort (осечка не ломает поток; долетит при следующем complete/загрузке).
+/** Бэкенд отказал по ограничению админки (блокировка модуля или исчерпанная
+ *  квота «N из M»), а не из-за сети. Отдельный тип, потому что реакция
+ *  противоположная: сетевую осечку мы проглатываем и синхронизируемся позже,
+ *  а отказ обязаны показать студенту и НЕ засчитывать урок. */
+export class ContentRestrictedError extends Error {
+  constructor() {
+    super('content restricted')
+    this.name = 'ContentRestrictedError'
+  }
+}
+
+// Отметить урок пройденным: на бэкенд — источник истины, локально — зеркало.
+// Сетевая осечка не ломает поток (пишем локально, долетит при следующем
+// complete/загрузке), а вот 403 засчитывать нельзя: раньше локальная запись
+// шла ПЕРВОЙ и безусловно, поэтому заблокированный админом модуль всё равно
+// «проходился» — тропа шла дальше по localStorage и больше не переспрашивала
+// бэкенд. Теперь при отказе локальное зеркало остаётся нетронутым.
 export async function markDone(level, token, moduleId, code, xp = 0) {
   const codes = new Set(readLocal(level))
-  codes.add(code)
-  writeLocal(level, [...codes])
   if (token && moduleId != null) {
     try {
       await completeLesson(token, moduleId, code, xp)
-    } catch {
-      /* синхронизируется позже */
+    } catch (e) {
+      if (e?.status === 403) throw new ContentRestrictedError()
+      /* офлайн/5xx — синхронизируется позже */
     }
   }
+  codes.add(code)
+  writeLocal(level, [...codes])
   return codes
 }

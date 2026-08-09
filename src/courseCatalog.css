@@ -1,0 +1,213 @@
+/* Course-catalog picker (teacher): level → unit → lesson. Light theme, matches
+   the learning-zone brand (#874BF8 / #0AAFFF). */
+
+.cc {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 8px 4px 48px;
+}
+
+/* Entry button on the Lessons page */
+.cc-entry {
+  border: 1.5px solid #874bf8;
+  color: #874bf8;
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cc-entry:hover,
+.cc-entry:focus-visible {
+  background: #f3f0fd;
+}
+
+.cc-entry:focus-visible {
+  outline: 2px solid #874bf8;
+  outline-offset: 2px;
+}
+
+/* Выход из каталога. Иконка — общий ChevronRightIcon, развёрнутый на 180°:
+   отдельной «стрелки влево» в наборе нет, а заводить её ради одной кнопки
+   значило бы держать две иконки на одну форму. */
+.cc__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 7px 14px 7px 8px;
+  border: none;
+  border-radius: 999px;
+  background: #f3f0fd;
+  color: #874bf8;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cc__back svg {
+  transform: rotate(180deg);
+}
+
+.cc__back:hover {
+  background: #eae2fb;
+}
+
+.cc__back:focus-visible {
+  outline: 2px solid #874bf8;
+  outline-offset: 2px;
+}
+
+.cc__head {
+  margin-bottom: 20px;
+}
+
+.cc__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #1f2430;
+}
+
+.cc__subtitle {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.cc__state {
+  padding: 32px 0;
+  text-align: center;
+  color: #6b7280;
+}
+
+.cc__state--error {
+  color: #b3261e;
+}
+
+.cc-level {
+  margin-bottom: 28px;
+}
+
+.cc-level__title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #874bf8;
+}
+
+.cc-unit {
+  border: 1px solid #ece9f7;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.cc-unit__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #faf9ff, #f3f0fd);
+  border-bottom: 1px solid #ece9f7;
+}
+
+.cc-unit__emoji {
+  font-size: 18px;
+}
+
+.cc-unit__name {
+  font-weight: 700;
+  color: #2b3648;
+  flex: 1;
+}
+
+.cc-unit__count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #874bf8;
+  background: #efeafe;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.cc-lessons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cc-lesson {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-top: 1px solid #f3f1fb;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background 0.15s;
+}
+
+.cc-lessons li:first-child .cc-lesson {
+  border-top: none;
+}
+
+.cc-lesson:hover,
+.cc-lesson:focus-visible {
+  background: #f7f5ff;
+}
+
+.cc-lesson:focus-visible {
+  outline: 2px solid #874bf8;
+  outline-offset: -2px;
+}
+
+.cc-lesson__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  min-width: 96px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.cc-lesson__type--video { color: #0aaFFF; }
+.cc-lesson__type--review { color: #d98a00; }
+.cc-lesson__type--test { color: #b3261e; }
+.cc-lesson__type--leadin { color: #874bf8; }
+
+.cc-lesson__title {
+  flex: 1;
+  color: #1f2430;
+  font-weight: 500;
+}
+
+.cc-lesson__open {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: #874bf8;
+}
+
+@media (max-width: 560px) {
+  .cc-lesson {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .cc-lesson__title {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

@@ -98,6 +98,18 @@ export function recordIeltsSpeaking({ profileId, taskId, answers, assessment, pr
   })
 }
 
+/** How many IELTS submissions (any section) this learner has made since a given
+ *  date - for the monthly demo-quota check (see api/ielts/* routes). */
+export async function countIeltsAttemptsSince(profileId, sinceDate) {
+  const sql = getSql()
+  if (!sql) return 0
+  const rows = await sql`
+    select count(*)::int as count from ielts_score
+    where device_id = ${profileId} and created_at >= ${sinceDate}
+  `
+  return rows[0]?.count ?? 0
+}
+
 /** A learner's IELTS score history, most recent first. For the progress screen. */
 export async function listIeltsScores(profileId, limit = 50) {
   const sql = getSql()

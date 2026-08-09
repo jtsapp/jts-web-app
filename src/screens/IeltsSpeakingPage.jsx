@@ -189,6 +189,13 @@ export default function IeltsSpeakingPage({ userLevel = 'A1', userName, token, o
           headers: authHeaders(token),
           body: form,
         })
+        // 429 — месячный лимит IELTS. Раньше попадал в общий catch и выглядел
+        // как сбой оценки, хотя ответ сервера был осознанным отказом.
+        if (res.status === 429) {
+          setError('Месячный лимит IELTS исчерпан — ответ не будет оценён и сохранён. Обратитесь к преподавателю.')
+          setPhase('result')
+          return
+        }
         if (!res.ok) throw new Error(String(res.status))
         const data = await res.json()
         setResult(data.assessment)

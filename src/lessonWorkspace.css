@@ -1,0 +1,2241 @@
+/* ================================================================== */
+/* ==============  КЛАССРУМ — ДОСКА УРОКА (студент)  ================ */
+/* ================================================================== */
+
+/* Собрано по спеке «JTS Классрум — доска урока» (Figma, десктоп 1440×900,
+   единая светлая тема). Значения взяты из спеки буквально — цвета, радиусы,
+   ширины колонок и паддинги, — а не подобраны на глаз.
+
+   Железные правила спеки, которые легко нарушить при доработках:
+     1. Одна тема — светлая. Дарк-мода и переключателя нет.
+     2. Никаких градиентов: все заливки плоские, одним цветом. Баннер и
+        плитка «видео» — тоже плоские (#9047ff / #7a2fe6).
+     3. Никаких обводок и рамок. Блоки разделяются фоном и отступами.
+     4. Скругления строго по шкале ниже.
+
+   Гарнитура. Спека просит PT Root UI как основной и Manrope как акцентный.
+   В приложении один общий Manrope, и раздел «Тьютор» уже прошёл через тот же
+   конфликт: его макет тоже требовал PT Root UI, но раздел привели к общему
+   шрифту, чтобы приложение не перерисовывалось при переходах (см. tutor.css).
+   Здесь то же решение: гарнитура общая, а размеры и веса — из спеки, включая
+   Bold там, где спека ставит акцентный Manrope Bold. */
+
+/* Токены классрума. Живой урок (.live) — та же поверхность, но своя обёртка,
+   поэтому переменные объявляются на обоих корнях: одно место значений, без
+   дубля. Размеры/фон остаются только на .lw — .live лежит внутри LearningLayout
+   и свой фон уже имеет. */
+.lw,
+.live {
+  /* --- цвет ---------------------------------------------------- */
+  --lw-bg: #f8f8f8;
+  --lw-surface: #ffffff;
+
+  --lw-primary: #9047ff;
+  /* Текст-акцент на светлом: контраст 5.6:1 на белом, чего #9047ff не даёт. */
+  --lw-primary-ink: #7a2fe6;
+  --lw-tint-1: #f5eeff; /* пилюли, активный топик, «Выйти из урока» */
+  --lw-tint-2: #eadcff; /* бейдж уровня, тип-бейдж шага */
+  --lw-tint-3: #f4f1fb; /* поля ввода, инпут чата, нейтральный пропуск */
+  --lw-track: #e8e3f3;  /* неактивный трек и шаг прогресса */
+
+  --lw-student: #00cbff; /* метка ученика */
+  --lw-ok: #1acf1a;
+  --lw-ok-bg: #e3ffeb;
+  --lw-error: #ff474a;
+  /* Фон системного баннера «не получилось» — токен состояний §2 спеки.
+     Отдельный от --lw-error: тот красит метку ответа, этот — полосу. */
+  --lw-error-bg: #ffe9e9;
+  --lw-online: #00ea00;
+  --lw-own: #ff7300;     /* своё сообщение в чате */
+  --lw-mistake-bg: #fff1e6;
+  --lw-answer-bg: #fafafa;
+
+  --lw-ink: #181818;
+  --lw-ink-2: #504b4b;
+  --lw-muted: #898787;
+  --lw-dot: #c4c3c3;
+
+  /* --- радиусы -------------------------------------------------- */
+  --lw-r-pill: 999px;
+  --lw-r-card: 24px;
+  --lw-r-step: 32px;
+  --lw-r-block: 16px;
+  --lw-r-banner: 20px;
+  --lw-r-inner: 10px;
+
+  /* --- сетка ---------------------------------------------------- */
+  --lw-header-h: 64px;
+  --lw-page-x: 32px;
+  --lw-col-left: 329px;
+  --lw-col-center: 678px;
+  --lw-col-right: 328px;
+  --lw-gutter: 20px;
+  /* Маршрут в живом уроке (.lw-live-body) уже, чем в статичном классруме —
+     там ему нужно место под материал, а сама карточка маршрута показывает
+     только короткие названия разделов, не таблицы/формулы. Отдельный токен,
+     а не --lw-col-left: дизайн-тест держит его в 329px для .lw. */
+  --lw-live-col-left: 232px;
+
+  /* Центр точки шага от верха строки: паддинг кнопки 6 + отступ точки 7 +
+     половина её высоты 4. Держим одним токеном — от него зависят и концы
+     линии трека, и позиция бегунков. */
+  --lw-marker-center: 17px;
+
+}
+
+/* Размеры и фон — только у страницы классрума; .live лежит внутри LearningLayout
+   и свой фон уже получил. */
+.lw {
+  min-height: 100vh;
+  background: var(--lw-bg);
+  color: var(--lw-ink);
+}
+
+/* ============================ ХЕДЕР ============================== */
+
+.lw-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: var(--lw-header-h);
+  padding: 0 var(--lw-page-x);
+  background: var(--lw-surface);
+}
+
+.lw-header__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lw-header__badge {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-2);
+  color: var(--lw-primary-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lw-header__unit {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lw-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Шкала прогресса: сегменты 30×5, зазор 3. Спека рисует девять — столько же,
+   сколько шагов; список растягивается, а не переносится. */
+.lw-header__progress {
+  display: flex;
+  gap: 3px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.lw-header__dot {
+  width: 30px;
+  height: 5px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-track);
+}
+
+.lw-header__dot.is-done,
+.lw-header__dot.is-current {
+  background: var(--lw-primary);
+}
+
+.lw-header__right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: none;
+}
+
+.lw-header__timer {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lw-ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lw-header__timer-sep {
+  color: var(--lw-muted);
+}
+
+.lw-header__exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lw-header__exit:hover {
+  background: var(--lw-tint-2);
+}
+
+.lw-header__exit:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+/* ============================ СЕТКА ============================== */
+
+/* Контент начинается на y = 88: хедер 64 + зазор 24. */
+.lw__body {
+  display: grid;
+  grid-template-columns: var(--lw-col-left) var(--lw-col-center) var(--lw-col-right);
+  justify-content: center;
+  gap: var(--lw-gutter);
+  align-items: start;
+  padding: 24px var(--lw-page-x) 40px;
+}
+
+/* Центр и правая колонка лежат в общей обёртке разметки, но в сетке должны
+   быть равноправными колонками — contents убирает лишний уровень, не трогая
+   JSX. */
+.lw__main {
+  display: contents;
+}
+
+/* ==================== ЛЕВАЯ КОЛОНКА — МАРШРУТ ===================== */
+
+.lw-route {
+  position: sticky;
+  top: calc(var(--lw-header-h) + 24px);
+  padding: 24px 20px;
+  border-radius: var(--lw-r-card);
+  background: var(--lw-surface);
+}
+
+.lw-route__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.lw-route__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-route__count {
+  font-size: 13px;
+  color: var(--lw-muted);
+}
+
+/* Трек — вертикальная линия 2px под точками. Рисуется фоном списка, чтобы
+   не заводить лишний элемент: линия идёт от центра первой точки до центра
+   последней, поэтому отступы сверху и снизу равны половине высоты строки. */
+.lw-route__list {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Линия рисуется посегментно — по отрезку на шаг, — а не одной полосой с
+   вычисленной высотой заливки: названия шагов переносятся на две строки, и
+   любая фиксированная высота строки врала бы. Отрезок пройденного шага
+   красится в акцент, остальные остаются серыми. */
+.lw-route__item {
+  position: relative;
+}
+
+.lw-route__item::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--lw-track);
+}
+
+/* Линия начинается и заканчивается в центре крайних точек, а не в пустоте. */
+.lw-route__item:first-child::before {
+  top: var(--lw-marker-center);
+}
+
+.lw-route__item:last-child::before {
+  bottom: calc(100% - var(--lw-marker-center));
+}
+
+.lw-route__item.is-done::before,
+.lw-route__item.is-current::before {
+  background: var(--lw-primary);
+}
+
+.lw-route__step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  /* Левый отступ держит жёлоб под точку и под двух бегунков разом — иначе
+     пара «У + Т» на одном шаге наезжает на название. */
+  padding: 6px 8px 6px 46px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--lw-r-inner);
+}
+
+.lw-route__step:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+/* Точка шага 8×8, выровнена по центру линии (left 3px + 1px = центр 4px). */
+.lw-route__marker {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-dot);
+  /* Точка перекрывает линию, поэтому обводка фоном карточки, а не бордером. */
+  box-shadow: 0 0 0 4px var(--lw-surface);
+}
+
+.lw-route__step.is-done .lw-route__marker,
+.lw-route__step.is-current .lw-route__marker,
+.lw-route__step.is-active .lw-route__marker {
+  background: var(--lw-primary);
+}
+
+.lw-route__marker svg {
+  display: none; /* точка в спеке — просто кружок, без галочки */
+}
+
+.lw-route__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.lw-route__num {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lw-muted);
+}
+
+.lw-route__title-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lw-ink-2);
+}
+
+.lw-route__step.is-active .lw-route__num {
+  color: var(--lw-primary-ink);
+}
+
+.lw-route__step.is-active .lw-route__title-text {
+  color: var(--lw-primary);
+  font-weight: 700;
+}
+
+.lw-route__step.is-locked .lw-route__title-text {
+  color: var(--lw-muted);
+}
+
+/* Бегунки «У» и «Т» — где сейчас ученик и где тьютор. Живут внутри своей
+   строки, а не позиционируются от верха списка: строки разной высоты, и
+   считать смещение пришлось бы измерением. Позиции расходятся — спека прямо
+   оговаривает, что ученик и тьютор не синхронны. */
+.lw-route__riders {
+  position: absolute;
+  left: 4px;
+  top: var(--lw-marker-center);
+  z-index: 2;
+  display: flex;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Пара «У + Т» на одном шаге перекрывается, чтобы уместиться в жёлоб. */
+.lw-route__rider + .lw-route__rider {
+  margin-left: -6px;
+}
+
+.lw-route__rider {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--lw-r-pill);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  /* Кружок перекрывает линию трека — обводим фоном карточки, не бордером. */
+  box-shadow: 0 0 0 3px var(--lw-surface);
+}
+
+.lw-route__rider--student {
+  background: var(--lw-student);
+}
+
+.lw-route__rider--teacher {
+  background: var(--lw-primary);
+}
+
+/* Точка шага прячется под бегунком — иначе они наезжают друг на друга. */
+.lw-route__item.has-rider .lw-route__marker {
+  visibility: hidden;
+}
+
+/* ==================== ЦЕНТР — ЛЕНТА ШАГОВ ======================== */
+
+.lw-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lw-card,
+.lw-theory,
+.lw-info,
+.lw-practice {
+  background: var(--lw-surface);
+  border-radius: var(--lw-r-step);
+  padding: 16px 22px;
+}
+
+/* Шапка шага: тип-бейдж + мета. */
+.lw-theory__head,
+.lw-practice__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.lw-theory__kicker {
+  flex: none;
+}
+
+.lw-theory__kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-2);
+  color: var(--lw-primary-ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.lw-practice__title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-theory__minutes,
+.lw-practice__hint {
+  font-size: 13px;
+  color: var(--lw-muted);
+  text-align: right;
+}
+
+.lw-theory__title,
+.lw-info__title {
+  margin: 0 0 6px;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-theory__text,
+.lw-info__body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--lw-ink-2);
+}
+
+.lw-info__body > * + * {
+  margin-top: 10px;
+}
+
+/* Блоки внутри одной info-карточки разделяются отступом, а не рамкой: у
+   преподавателя это `.ex-body > * + *` того же файла урока. */
+.lw-info__item + .lw-info__item {
+  margin-top: 14px;
+}
+
+/* ================================================================== */
+/* ==========  РАЗМЕТКА УРОКА КАТАЛОГА ВНУТРИ INFO-БЛОКА  =========== */
+/* ================================================================== */
+
+/* Экстрактор снимает с файла урока не текст, а куски его разметки: словарные
+   карточки, инструкции, таблицы форм, тексты для чтения, реплики для обсуждения.
+   Классы у них свои — те, что расставляет конвертация в web-admin
+   (convert-course.ts), — и в приложении на них не было ни одного правила.
+   Ученик получал `<ul class="vlist">` маркированным списком с картинками
+   480×480 в колонке 678, а инструкция, подсказка и текст читались одинаковым
+   серым 15px. У преподавателя тот же урок открывается файлом, где эти классы
+   оформлены, — отсюда «учитель и ученик видят разные картинки».
+
+   Здесь та же разметка переведена на токены классрума: плоские заливки, без
+   рамок, скругления по шкале (правила §0 спеки). Всё заскоплено в
+   `.lw-info__body`, чтобы классы урока не протекали в остальной интерфейс. */
+
+.lw-info__body {
+  /* Курс подставляет свои переменные инлайном (`style="color:var(--grey)"`).
+     Без объявления они пустые, и текст уезжает в чёрный, а плашки — в прозрачные. */
+  --grey: var(--lw-muted);
+  --violet-lt: var(--lw-tint-2);
+  --cyan-lt: var(--lw-track);
+}
+
+/* --- заголовки упражнений внутри шага ------------------------------ */
+
+/* Нумерованная инструкция («1 · Match each word to its meaning.») — заголовок
+   упражнения, а не абзац: в шаге их до семи, и без веса шаг читается сплошняком. */
+.lw-info__body .instruction {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .subline,
+.lw-info__body .ohint {
+  font-size: 14px;
+  color: var(--lw-muted);
+}
+
+/* Подсказка идёт сразу под своей инструкцией — прижимаем к ней. */
+.lw-info__body .instruction + .subline,
+.lw-info__body .instruction + .ohint {
+  margin-top: 4px;
+}
+
+/* --- словарь ------------------------------------------------------- */
+
+.lw-info__body .vocab .vhead h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .vlist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lw-info__body .vlist li {
+  padding: 12px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+  font-size: 14px;
+}
+
+/* Карточки приходят 480×480: без явной высоты каждая занимала бы экран. */
+.lw-info__body .vimg {
+  display: block;
+  width: 100%;
+  height: 116px;
+  margin-bottom: 8px;
+  border-radius: var(--lw-r-inner);
+  object-fit: cover;
+}
+
+.lw-info__body .vlist b {
+  color: var(--lw-ink);
+}
+
+.lw-info__body .tr {
+  display: block;
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--lw-muted);
+}
+
+/* --- текст, таблицы, медиа ------------------------------------------ */
+
+.lw-info__body img,
+.lw-info__body video {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--lw-r-inner);
+}
+
+.lw-info__body audio {
+  width: 100%;
+}
+
+.lw-info__body .track b {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lw-muted);
+}
+
+/* Таблица форм. Рамок нет (правило §0.3) — строки разделяет чередование фона. */
+.lw-info__body table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.lw-info__body th,
+.lw-info__body td {
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.lw-info__body th {
+  background: var(--lw-tint-3);
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body tbody tr:nth-child(even) td {
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body td.k {
+  font-weight: 600;
+  color: var(--lw-ink);
+}
+
+/* Подсветка вспомогательного глагола — то, на что показывает легенда под
+   таблицей; без неё легенда объясняет отсутствующий цвет. */
+.lw-info__body table b {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--violet-lt);
+  color: var(--lw-primary-ink);
+}
+
+.lw-info__body .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--lw-muted);
+}
+
+.lw-info__body .legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 4px;
+  vertical-align: -1px;
+}
+
+/* Текст для чтения — отдельная поверхность внутри карточки, читается абзацами. */
+.lw-info__body .reading {
+  display: block;
+  padding: 16px 18px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body .reading h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .reading p + p {
+  margin-top: 10px;
+}
+
+/* Разбор правила. */
+.lw-info__body .card {
+  padding: 14px 16px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body .card p + p {
+  margin-top: 8px;
+}
+
+.lw-info__body .egs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.lw-info__body .egs li {
+  padding: 8px 12px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-answer-bg);
+}
+
+/* Полный грамматический справочник — свёрнут по умолчанию, разворачивается
+   нативным <details>; работает без скриптов, поэтому оставлен как есть. */
+.lw-info__body .gref summary {
+  padding: 8px 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--lw-primary-ink);
+  cursor: pointer;
+}
+
+.lw-info__body .gref summary:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+  border-radius: var(--lw-r-inner);
+}
+
+/* --- обсуждение и парная работа ------------------------------------- */
+
+.lw-info__body .bubble {
+  padding: 14px 16px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-tint-1);
+}
+
+.lw-info__body .blab {
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lw-primary-ink);
+}
+
+.lw-info__body .bubble ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.lw-info__body .bubble li + li {
+  margin-top: 6px;
+}
+
+.lw-info__body .grid2 {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.lw-info__body .role {
+  padding: 12px 14px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-answer-bg);
+}
+
+.lw-info__body .role .tag {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 4px 10px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--lw-primary-ink);
+}
+
+.lw-info__body .role p {
+  margin: 0;
+}
+
+/* --- разметка, которая осталась от рантайма курса -------------------- */
+
+/* Слайдер, дорожка сегментов и панель результата наполняются скриптом курса,
+   а он в пакет не попадает — до сюда доезжают пустые контейнеры. Правило §0.6
+   спеки: элемента, который выглядит рабочим и не работает, на экране нет.
+   Прячем только пустые: тот же класс с контентом — это уже контент. */
+.lw-info__body .slide:empty,
+.lw-info__body .dots:empty,
+.lw-info__body .snav:empty,
+.lw-info__body .seglist:empty,
+.lw-info__body .wave:empty,
+.lw-info__body .res:empty {
+  display: none;
+}
+
+/* Слова для сборки предложения и варианты выбора приезжают из файла тегом
+   <button>, но обработчиков за ними нет — их вырезает конвертация. Показываем
+   их тем, чем они и остались: неинтерактивными плашками со словами, без вида
+   кнопки и без фокуса по табу (по тому же §0.6). Настоящие задания шага
+   рендерит PracticeBlock — вот там всё нажимается. */
+.lw-info__body .ochip,
+.lw-info__body .opt {
+  display: inline-block;
+  margin: 0 6px 6px 0;
+  padding: 7px 13px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-3);
+  font: inherit;
+  font-size: 14px;
+  color: var(--lw-ink-2);
+  cursor: default;
+  pointer-events: none;
+}
+
+.lw-info__body .ochip .pin {
+  display: none;
+}
+
+.lw-info__body .mcq .q {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--lw-ink);
+}
+
+.lw-info__body .num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  border-radius: 6px;
+  background: var(--lw-tint-3);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lw-muted);
+}
+
+/* Формула — ряд токенов со знаком «+» между ними. */
+.lw-forms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.lw-form-chip {
+  padding: 6px 12px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-3);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+/* Таблица форм: заголовок-строка приглушённый, левый столбец — тоже. */
+.lw-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 14px 0;
+}
+
+.lw-table__row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: var(--lw-r-inner);
+}
+
+.lw-table__row {
+  background: var(--lw-tint-3);
+}
+
+.lw-table__kind {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--lw-muted);
+}
+
+.lw-table__example {
+  font-size: 15px;
+  color: var(--lw-ink);
+}
+
+.lw-table__accent {
+  color: var(--lw-primary-ink);
+  font-weight: 700;
+}
+
+/* «Частая ошибка» — вынос на персиковом фоне. */
+.lw-mistake {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-mistake-bg);
+}
+
+.lw-mistake__icon {
+  flex: none;
+  color: var(--lw-own);
+}
+
+.lw-mistake__body {
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--lw-ink-2);
+}
+
+/* Подпись «Частая ошибка» идёт отдельной строкой: в разметке она лежит
+   вплотную к тексту, и без этого читается как одно слово. */
+.lw-mistake__body b {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--lw-ink);
+}
+
+/* Баннеры — плоская заливка, без градиента (правило №2 спеки). */
+.lw-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 232px;
+  padding: 28px 32px;
+  border-radius: var(--lw-r-banner);
+  background: var(--lw-primary);
+}
+
+.lw-banner__text {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.lw-banner__mascot {
+  flex: none;
+  max-height: 176px;
+}
+
+/* Системный баннер — единая форма сообщений уровня экрана (спека §2, токены
+   состояний). Полоса во всю ширину контентной области; тон меняет только
+   заливку, форма одна на все состояния. */
+.lw-sysbanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-tint-3);
+}
+
+.lw-sysbanner--attention {
+  background: var(--lw-mistake-bg);
+}
+
+.lw-sysbanner--error {
+  background: var(--lw-error-bg);
+}
+
+.lw-sysbanner__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.lw-sysbanner__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--lw-ink);
+}
+
+.lw-sysbanner__action {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--lw-primary-ink);
+  cursor: pointer;
+}
+
+.lw-sysbanner__action:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+  border-radius: var(--lw-r-inner);
+}
+
+/* Итог урока — на месте карточки звонка после завершения (спека §3.4). */
+.lw-summary__title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-summary__value {
+  margin: 0;
+  font-size: 15px;
+  color: var(--lw-ink-2);
+}
+
+/* Вкладки материалов раздела — та же лента, что у «Урок · Доска», но внутри
+   центральной колонки. */
+.lw-material-tabs {
+  flex: none;
+  margin: 0;
+}
+
+/* ========================= ПРАКТИКА ============================== */
+
+.lw-practice__list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lw-q__prompt,
+.lw-q__sentence {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--lw-ink);
+}
+
+.lw-q__sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Варианты ответа — пилюли с тремя состояниями. Клик красит сразу, без
+   отдельной кнопки проверки (спека §4.3). */
+.lw-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.lw-opt {
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-answer-bg);
+  color: var(--lw-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lw-opt:hover {
+  background: var(--lw-tint-3);
+}
+
+.lw-opt:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-opt.is-ok,
+.lw-opt.is-correct {
+  background: var(--lw-ok);
+  color: #ffffff;
+}
+
+.lw-opt.is-no,
+.lw-opt.is-wrong {
+  background: var(--lw-error);
+  color: #ffffff;
+}
+
+.lw-opt.is-ok:hover,
+.lw-opt.is-correct:hover {
+  background: var(--lw-ok);
+}
+
+.lw-opt.is-no:hover,
+.lw-opt.is-wrong:hover {
+  background: var(--lw-error);
+}
+
+/* Метка внутри пилюли (галочка/крестик) — цвет наследуется от состояния. */
+.lw-opt__mark {
+  margin-left: 6px;
+}
+
+/* Поля-пропуски. */
+/* Во флексе предложения обёртка иначе растягивается на весь остаток строки —
+   поле-пропуск должно быть шириной со слово, а не с абзац. */
+.lw-gap-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+.lw-gap-input,
+.lw-gap {
+  width: 148px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-3);
+  color: var(--lw-ink);
+  font: inherit;
+  font-size: 15px;
+}
+
+.lw-gap-input:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 1px;
+}
+
+.lw-gap-input.is-ok,
+.lw-gap-input.is-correct {
+  background: var(--lw-ok-bg);
+  color: var(--lw-ok);
+  font-weight: 700;
+}
+
+.lw-gap-input.is-no,
+.lw-gap-input.is-wrong {
+  background: #ffecec;
+  color: var(--lw-error);
+  font-weight: 700;
+}
+
+.lw-gap-input__check {
+  margin-left: 6px;
+}
+
+/* Кнопка «Проверить» — здесь проверка по кнопке (спека §4.4). */
+.lw-practice__check {
+  align-self: flex-start;
+  margin-top: 16px;
+  padding: 11px 22px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #ffffff;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lw-practice__check:hover {
+  background: var(--lw-primary-ink);
+}
+
+.lw-practice__check:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-practice__check:disabled {
+  background: var(--lw-track);
+  color: var(--lw-muted);
+  cursor: default;
+}
+
+/* Сопоставление и банк слов. */
+.lw-match {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lw-match__col {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Левая половина пары — кнопка: без сброса рамки браузер рисует свою, и ряд
+   разъезжается прямоугольниками поверх скруглений. */
+.lw-match__left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-3);
+  color: var(--lw-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lw-match__left:hover:not(:disabled) {
+  background: var(--lw-tint-1);
+}
+
+.lw-match__left:focus-visible,
+.lw-match__right:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-match__left.is-selected {
+  background: var(--lw-tint-2);
+  color: var(--lw-primary-ink);
+  font-weight: 700;
+}
+
+.lw-match__left.is-correct {
+  background: var(--lw-ok);
+  color: #ffffff;
+}
+
+.lw-match__left.is-wrong {
+  background: var(--lw-error);
+  color: #ffffff;
+}
+
+.lw-match__left-label {
+  font-size: 15px;
+}
+
+/* Слот выбранного перевода внутри пары — «вдавленная» пилюля на её фоне. */
+.lw-match__chosen {
+  padding: 4px 12px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-surface);
+  color: var(--lw-ink-2);
+  font-size: 14px;
+}
+
+.lw-match__left.is-correct .lw-match__chosen,
+.lw-match__left.is-wrong .lw-match__chosen {
+  background: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+}
+
+.lw-match__mark {
+  margin-left: 2px;
+}
+
+/* Правая колонка — банк переводов. */
+.lw-match__right {
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-answer-bg);
+  color: var(--lw-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lw-match__right:hover:not(:disabled) {
+  background: var(--lw-tint-3);
+}
+
+.lw-match__right.is-used {
+  background: var(--lw-tint-3);
+  color: var(--lw-muted);
+}
+
+.lw-chip {
+  padding: 8px 14px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-answer-bg);
+  color: var(--lw-ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.lw-chip:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-chip.is-used,
+.lw-chip:disabled {
+  background: var(--lw-tint-3);
+  color: var(--lw-muted);
+}
+
+.lw-chip.is-selected {
+  background: var(--lw-tint-2);
+  color: var(--lw-primary-ink);
+  font-weight: 700;
+}
+
+.lw-chip.is-correct {
+  background: var(--lw-ok);
+  color: #ffffff;
+}
+
+.lw-chip.is-wrong {
+  background: var(--lw-error);
+  color: #ffffff;
+}
+
+.lw-match__hint,
+.lw-practice__hint {
+  font-size: 13px;
+  color: var(--lw-muted);
+}
+
+.lw-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* =================== ПРАВАЯ КОЛОНКА — ЗВОНОК ===================== */
+
+.lw-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  position: sticky;
+  top: calc(var(--lw-header-h) + 24px);
+}
+
+.lw-aside .lw-card {
+  border-radius: var(--lw-r-card);
+  padding: 12px;
+}
+
+/* A. Активный звонок: превью 304×237 плоским #7a2fe6 — заглушка под поток. */
+.lw-call {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lw-call__preview {
+  position: relative;
+  height: 237px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-primary-ink);
+  overflow: hidden;
+}
+
+.lw-call__name {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-surface);
+  color: var(--lw-primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Онлайн-точка 6×6 перед именем. */
+.lw-call__name::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-online);
+}
+
+.lw-call__student-pip {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 71px;
+  height: 62px;
+  border-radius: 12px;
+  background: var(--lw-primary);
+}
+
+.lw-call__controls {
+  display: flex;
+  gap: 6px;
+}
+
+.lw-call__btn {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border: none;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-tint-3);
+  color: var(--lw-primary-ink);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lw-call__btn:hover:not(:disabled) {
+  background: var(--lw-tint-1);
+}
+
+.lw-call__btn:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-call__btn:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.lw-call__btn--leave {
+  background: var(--lw-primary);
+  color: #ffffff;
+}
+
+.lw-call__btn--leave:hover:not(:disabled) {
+  background: var(--lw-primary-ink);
+}
+
+/* B. Свёрнутый звонок — одна CTA «Позвонить учителю». */
+.lw-call--collapsed .lw-call__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 64px;
+  border: none;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-primary);
+  color: #ffffff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lw-call--collapsed .lw-call__cta:hover {
+  background: var(--lw-primary-ink);
+}
+
+.lw-call--collapsed .lw-call__cta:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+/* ======================= ТОПИКИ УРОКА ============================ */
+
+.lw-topics {
+  padding: 14px 12px;
+}
+
+.lw-topics__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.lw-topics__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-topics__count {
+  font-size: 13px;
+  color: var(--lw-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lw-topics__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lw-topics__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 9px 10px;
+  border-radius: var(--lw-r-block);
+  font-size: 13.5px;
+  color: var(--lw-ink-2);
+}
+
+.lw-topics__num {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--lw-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lw-topics__item.is-active {
+  background: var(--lw-tint-1);
+  color: var(--lw-primary);
+  font-weight: 700;
+}
+
+.lw-topics__item.is-active .lw-topics__num {
+  color: var(--lw-primary-ink);
+}
+
+/* ====================== ЧАТ С УЧИТЕЛЕМ =========================== */
+
+.lw-chat {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  min-height: 0;
+}
+
+.lw-chat__head {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lw-chat__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-chat__hint {
+  font-size: 12px;
+  color: var(--lw-muted);
+  font-weight: 500;
+}
+
+.lw-chat__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 4px 2px 4px 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* В живом уроке чат забирает оставшуюся высоту правой колонки — так им реально
+   удобно пользоваться, а не скроллить крошечную ленту на 190px. */
+.lw-live-aside .lw-chat {
+  flex: 1 1 auto;
+  min-height: 260px;
+}
+
+.lw-live-aside .lw-chat__list {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 140px;
+}
+
+/* Пузырь со «срезанным» углом со стороны хвоста. */
+.lw-chat__msg {
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: var(--lw-r-block);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #ffffff;
+  background: var(--lw-primary);
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+  word-break: break-word;
+}
+
+.lw-chat__msg.is-student {
+  align-self: flex-end;
+  background: var(--lw-own);
+  border-bottom-left-radius: var(--lw-r-block);
+  border-bottom-right-radius: 6px;
+}
+
+/* Подпись отправителя — цвет/сторона пузыря спекой не читаются однозначно
+   без контекста (см. дизайн-тест выше), имя снимает эту неоднозначность. */
+.lw-chat__sender {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.lw-chat__text {
+  display: block;
+}
+
+.lw-chat__empty {
+  margin: 0;
+  padding: 18px 8px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--lw-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.lw-chat__empty p {
+  margin: 0;
+  max-width: 16em;
+  line-height: 1.35;
+}
+
+.lw-chat__empty-icon {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.lw-chat__composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.lw-chat__input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1.5px solid transparent;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-3);
+  color: var(--lw-ink);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.lw-chat__input::placeholder {
+  color: var(--lw-muted);
+}
+
+.lw-chat__input:focus-visible {
+  outline: none;
+  border-color: var(--lw-primary);
+  background: #fff;
+}
+
+.lw-chat__input:disabled {
+  opacity: 0.7;
+}
+
+.lw-chat__send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s;
+}
+
+.lw-chat__send:hover:not(:disabled) {
+  background: var(--lw-primary-ink);
+}
+
+.lw-chat__send:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.lw-chat__send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.lw-chat__send:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+/* ========================= АДАПТИВ =============================== */
+
+/* Спека описывает один десктопный размер 1440. Ниже него колонки схлопываются
+   по одной, чтобы страница не уезжала горизонтально — правая уходит первой,
+   она вспомогательная. */
+@media (max-width: 1420px) {
+  .lw__body {
+    grid-template-columns: var(--lw-col-left) minmax(0, 1fr);
+  }
+
+  .lw-aside {
+    grid-column: 2;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .lw-aside > * {
+    flex: 1 1 320px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .lw__body {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .lw-route {
+    position: static;
+  }
+
+  .lw-aside {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-route__rider,
+  .lw-opt,
+  .lw-header__exit,
+  .lw-practice__check,
+  .lw-chat__send,
+  .lw-call__btn {
+    transition: none;
+  }
+}
+
+/* ================================================================== */
+/* ==============  ЖИВОЙ УРОК — СТОРОНА УЧЕНИКА  ==================== */
+/* ================================================================== */
+
+/* Экран собирался из новых имён классов, а стилей к ним не написали: браузер
+   укладывал маршрут, материал, звонок и чат стопкой по левому краю, а сам
+   материал рисовался дефолтным размером iframe — 300×150 с системной рамкой.
+   Отсюда «зажатая коробка с обводкой» и обрезанное задание.
+
+   Раскладка повторяет сетку классрума (.lw__body) теми же токенами и теми же
+   двумя точками перелома, чтобы урок у ученика и доска выглядели одним
+   продуктом. Правила спеки соблюдаются: плоские заливки, скругления по шкале,
+   разделение фоном и отступами вместо рамок. */
+
+/* Фон классрума (§1.1): страница #f8f8f8, карточки #ffffff. Без него белые
+   карточки лежат на белом, и экран читается как сплошное полотно — разделение
+   в спеке держится на фоне и отступах, а не на рамках, которых там нет.
+   Заливка растянута на всю ширину контента и уходит под футер, чтобы полоса
+   не обрывалась там, где заканчивается сетка. */
+.live--wide {
+  background: var(--lw-bg);
+  border-radius: var(--lw-r-card);
+  padding: 16px;
+}
+
+.lw-live-body {
+  display: grid;
+  grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr) var(--lw-col-right);
+  gap: var(--lw-gutter);
+  align-items: start;
+  /* Раньше сетка была жёстко зажата в max-width 1600 без центрирования —
+     на широком экране это оставляло пустую полосу справа, а не растягивало
+     колонки. Сетка теперь занимает всю доступную ширину; предел строки
+     самого материала держит .lw-material-frame ниже (там же и центр). */
+  width: 100%;
+  margin-top: 16px;
+}
+
+.lw-live-route {
+  min-width: 0;
+  /* Скроллбар маршрута не должен обрезать скругление карточки. */
+  padding-right: 2px;
+}
+
+.lw-live-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lw-live-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Боковые колонки закреплены: прокручивается только та колонка, в которую
+   смотришь. Раньше здесь стоял `position: sticky` — и он не работал ни дня:
+   sticky опирается на ближайшего прокручиваемого предка, а над этим экраном
+   их два, и оба его глушат. У `.learn__main` стоит `overflow: auto`, из-за
+   чего она и становится точкой опоры, но высоты у неё нет — растёт по
+   контенту и не прокручивается, прокручивается страница. А обёртка смены
+   экранов `.scr-in` анимирует transform с `fill-mode: both`, и удержанный
+   transform лишает sticky вьюпорта как системы отсчёта. Итог: колонки ехали
+   вместе со страницей, и на длинном шаге уезжали на экран вверх.
+
+   Поэтому опора здесь не sticky, а высота: экран урока занимает окно целиком,
+   сетка забирает остаток под шапкой урока, а прокрутка уезжает внутрь колонок.
+
+   Только там, где колонки действительно три. Ниже 1420px правая колонка уходит
+   под центр второй строкой той же сетки (см. адаптив), и фиксированная высота
+   делится между двумя строками — центр сжимается до полосы в пару абзацев.
+   Ниже 1000px колонка и вовсе одна. В обоих случаях правильная прокрутка —
+   страничная, и закреплять нечего. */
+@media (min-width: 1421px) {
+  .live--wide {
+    display: flex;
+    flex-direction: column;
+    /* Явный dvh, не height:100%: .learn__main — overflow:auto без явной
+       height в каскаде, и процентная высота у .live--wide часто схлопывалась
+       в auto → колонка росла по контенту, топики съедали экран, чат
+       обрезался нижним краем окна. */
+    height: calc(100dvh - 132px);
+    max-height: calc(100dvh - 132px);
+    min-height: 0;
+    box-sizing: border-box;
+  }
+
+  /* Кнопка «Назад» во флекс-колонке растянулась бы во всю ширину. */
+  .live--wide > .live__back {
+    align-self: flex-start;
+    flex: none;
+  }
+
+  .live--wide > .live__head,
+  .live--wide > .ls__tabs,
+  .live--wide > .live__status-msg,
+  .live--wide > .live-controls,
+  .live--wide > .lw-sysbanner {
+    flex: none;
+  }
+
+  /* Сетка забирает остаток высоты; min-height:0 обязателен — без него
+     флекс-элемент не даёт своим детям стать меньше контента, и прокрутка
+     внутри колонок не включается. */
+  .live--wide .lw-live-body,
+  .live--wide .board {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  .lw-live-body {
+    align-items: stretch;
+  }
+
+  .lw-live-route,
+  .lw-live-main,
+  .lw-live-aside {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Правая колонка: звонок + компактные топики, чат — основной блок снизу.
+     Список топиков на 10+ шагах раньше раздувался и при overflow:hidden
+     срезал чат до заголовка + полоски инпута. */
+  .lw-live-aside {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lw-live-aside > .lw-meet,
+  .lw-live-aside > .lw-summary {
+    flex: none;
+  }
+
+  .lw-live-aside > .lw-topics {
+    flex: 0 1 auto;
+    min-height: 0;
+    /* px/vh, не %: % от auto-высоты родителя игнорируется браузером. */
+    max-height: min(220px, 28vh);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lw-live-aside .lw-topics__head {
+    flex: none;
+  }
+
+  .lw-live-aside .lw-topics__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lw-live-aside .lw-chat {
+    flex: 1 1 0;
+    min-height: 280px;
+    max-height: none;
+    overflow: hidden;
+  }
+
+  .lw-live-aside .lw-chat__head,
+  .lw-live-aside .lw-chat__composer {
+    flex: none;
+  }
+
+  .lw-live-aside .lw-chat__list {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 120px;
+    overflow-y: auto;
+  }
+}
+
+/* --- переходы между шагами ------------------------------------------ */
+
+/* Пара кнопок под заданием — основной способ пройти урок; маршрут слева
+   показывает, где ты, но вести по уроку не должен (см. StepNav.jsx). */
+.lw-stepnav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 22px;
+  border-radius: var(--lw-r-step);
+  background: var(--lw-surface);
+  /* Шаг бывает длиной в несколько экранов (у «Practice» — 21 карточка), и
+     кнопка в самом низу означала бы прокрутку до конца, чтобы просто перейти
+     дальше. Прилипает к низу своей колонки — она же и есть тот, кто
+     прокручивается, поэтому здесь sticky работает (в отличие от колонок,
+     см. комментарий у .live--wide). */
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  /* Флекс-колонка ужала бы её по остатку места. */
+  flex: none;
+}
+
+.lw-stepnav__pos {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lw-muted);
+}
+
+.lw-stepnav__btn {
+  flex: none;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lw-stepnav__btn--ghost {
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+}
+
+.lw-stepnav__btn--primary {
+  background: var(--lw-primary);
+  color: #ffffff;
+}
+
+/* Край урока: кнопка остаётся на месте, чтобы вторая не прыгала, но видно,
+   что вести дальше некуда. */
+.lw-stepnav__btn:disabled {
+  background: var(--lw-track);
+  color: var(--lw-muted);
+  cursor: default;
+}
+
+.lw-stepnav__btn:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .lw-stepnav {
+    padding: 10px 14px;
+  }
+
+  .lw-stepnav__btn {
+    padding: 10px 16px;
+  }
+}
+
+/* --- материал урока ------------------------------------------------ */
+
+/* Высота считается от окна: задание должно быть читаемым без прокрутки всей
+   страницы, но не растягиваться на трёхметровом мониторе. */
+.lw-material-frame {
+  background: var(--lw-surface);
+  border-radius: var(--lw-r-step);
+  padding: 8px;
+  height: clamp(420px, calc(100vh - 300px), 860px);
+  overflow: hidden;
+  /* Центральная колонка тянется на всю ширину экрана (см. .lw-live-body) —
+     max-width здесь не даёт материалу раздуться до нечитаемой ширины на
+     широком мониторе, margin:auto центрирует карточку вместо пустой полосы
+     у края. width:100% обязателен вместе с margin:auto — это флекс-элемент
+     .lw-live-main (column), а авто-отступы по кросс-оси отключают его
+     обычное растягивание (align-items:stretch), и без явной ширины карточка
+     схлопывается к внутреннему контенту (iframe без width — это его дефолтные
+     300×150, ровно та поломка, что уже однажды была здесь, см. шапку файла). */
+  width: 100%;
+  max-width: 1160px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lw-material-iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-surface);
+}
+
+.lw-material-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  padding: 24px;
+  background: var(--lw-surface);
+  border-radius: var(--lw-r-step);
+  color: var(--lw-muted);
+  text-align: center;
+}
+
+/* --- «Внимание на упражнение» (только преподаватель) ---------------- */
+
+.lw-focus-btn {
+  align-self: flex-start;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.lw-focus-btn:hover:not(:disabled) {
+  background: var(--lw-primary-ink);
+}
+
+.lw-focus-btn:disabled {
+  background: var(--lw-track);
+  color: var(--lw-muted);
+  cursor: default;
+}
+
+/* --- звонок --------------------------------------------------------- */
+
+/* Карточка звонка живёт по своим меркам спеки (§1.4): скругление карточки 24
+   и паддинг 12, а не паддинг шага 16/22 — иначе CTA внутри теряет 20px ширины
+   и перестаёт совпадать с макетом. */
+.lw-meet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: var(--lw-r-card);
+  padding: 12px;
+}
+
+/* Свёрнутый звонок — состояние B спеки (§5.1): карточка-CTA высотой 64,
+   плоская заливка primary, скругление по шкале блоков (16, не пилюля).
+   Для ученика это главное действие правой колонки, поэтому блок, а не
+   строка-ссылка. */
+.lw-meet__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 12px 18px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.lw-meet__icon {
+  flex: none;
+}
+
+.lw-meet__link:hover {
+  background: var(--lw-primary-ink);
+}
+
+.lw-meet__empty {
+  color: var(--lw-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.lw-meet__edit-btn,
+.lw-meet__save,
+.lw-meet__cancel {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lw-meet__save {
+  background: var(--lw-primary);
+  color: #fff;
+}
+
+.lw-meet__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lw-meet__form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lw-meet__form-actions > * {
+  flex: 1;
+}
+
+.lw-meet__input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-3);
+  color: var(--lw-ink);
+  font: inherit;
+}
+
+.lw-meet__input::placeholder {
+  color: var(--lw-muted);
+}
+
+/* --- адаптив: те же точки перелома, что у доски --------------------- */
+
+@media (max-width: 1420px) {
+  .lw-live-body {
+    grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr);
+  }
+
+  /* Правая колонка вспомогательная — уходит вниз первой и раскладывается в ряд. */
+  .lw-live-aside {
+    grid-column: 2;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .lw-live-aside > * {
+    flex: 1 1 320px;
+  }
+
+  .lw-live-aside .lw-chat {
+    min-height: 300px;
+  }
+
+  .lw-live-aside > .lw-topics {
+    max-height: 240px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lw-live-aside .lw-topics__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1000px) {
+  .lw-live-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lw-live-route,
+  .lw-live-aside {
+    position: static;
+    grid-column: 1;
+  }
+
+  .lw-material-frame {
+    height: clamp(360px, calc(100vh - 240px), 640px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-focus-btn {
+    transition: none;
+  }
+}

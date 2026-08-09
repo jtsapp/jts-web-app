@@ -575,6 +575,22 @@ textarea {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+/* Тот же ряд на экране входа: там форма уже, поэтому на узких экранах
+   кнопки становятся в столбик, а не сжимаются до нечитаемых. */
+.auth-row--center {
+  margin-top: 12px;
+}
+@media (max-width: 420px) {
+  .auth-row--center {
+    grid-template-columns: 1fr;
+  }
+}
+/* Неподключённый провайдер (сейчас Apple ID) — кнопка видна, но явно не
+   активна, чтобы не выглядела рабочей. */
+.auth-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .auth-btn {
   display: flex;
@@ -716,6 +732,60 @@ textarea {
 .phone-field input::placeholder {
   color: #b7b6c1;
   font-weight: 500;
+}
+
+/* Поле email — тот же вид, что у .phone-field, но без контейнера для кода страны */
+.email-field {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: #f6f6f8;
+  border: 1.5px solid #ececf1;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.email-field:focus {
+  border-color: #b79cf5;
+}
+.email-field::placeholder {
+  color: #b7b6c1;
+  font-weight: 500;
+}
+/* Формы пароля (вход и «придумайте пароль») — два поля подряд и чекбокс
+   «показать»; у .email-field своих отступов нет, задаём их здесь. */
+.email-field + .email-field {
+  margin-top: 10px;
+}
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+.form-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--purple);
+  cursor: pointer;
+}
+/* Подсказка о том, что не так с вводом (короткий пароль, несовпадение) —
+   мягче, чем .form-error: это ещё не отказ сервера. */
+.form-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a5a12;
 }
 
 /* Селектор кода страны внутри телефонного поля */
@@ -1748,6 +1818,9 @@ textarea {
   min-width: 0;
   background: #ffffff;
   overflow: auto;
+  /* Контейнер для оверлеев урока (.le-over / .lx-over): итог и подтверждение
+     выхода кроют область контента, а не весь вьюпорт — сайдбар остаётся. */
+  position: relative;
 }
 
 /* Словарь: прототип занимает всю зону контента */
@@ -2812,6 +2885,41 @@ textarea {
   width: 42%;
   height: 42%;
 }
+
+/* Мобильная карта «Обучения» — остров во весь экран (не оставляем пустоту снизу).
+   Высоту гоним по вьюпорту, а соотношение 1600/2111 сохраняем: ноды привязаны к
+   боксу канваса и в cqw, поэтому менять aspect нельзя — они разъедутся. Из-за
+   этого канвас становится шире экрана; лишние бока океана обрезаем по центру
+   (ноды по x 39–63% остаются в кадре). Заодно вырастают и значки (cqw от большей
+   ширины). Верхняя панель приложения (.mtop) — 63px. */
+@media (max-width: 760px) {
+  .lp--map .lp__center {
+    position: relative;
+  }
+  /* Шапка «Обучение» — оверлеем поверх верха карты (не занимает поток), чтобы
+     остров начинался сразу под верхней панелью и заполнял экран. Скрим уже
+     тёмный, заголовок читается поверх океана. */
+  .lp--map .lp__head {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+  .lp--map .lp-map {
+    margin-top: 0;
+    overflow-x: clip; /* прячем выступающие бока острова */
+  }
+  .lp--map .lp-map__canvas {
+    max-width: none;
+    width: auto; /* ширина = height × (1600/2111) */
+    height: calc(100dvh - 63px); /* заполнить экран под верхней панелью (.mtop 63px) */
+    margin: 0;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%); /* центрируем широкий канвас; бока за экраном → clip */
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lp-node.is-current .lp-node__ring {
     animation: none;
@@ -3161,6 +3269,25 @@ textarea {
   text-decoration: none;
   color: inherit;
   display: block;
+}
+/* Пройденная ситуативка — галочка поверх обложки. */
+.pp-scard__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #29b96b;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp-scard--done .pp-thumb--situation {
+  position: relative;
 }
 .pp-scard__title {
   font-size: 13px;
@@ -3745,6 +3872,19 @@ textarea {
 }
 .le-btn:hover {
   filter: brightness(1.06);
+}
+/* Урок решён верно, но не засчитан — исчерпана квота из админки. */
+.le-restricted {
+  margin: 4px 0 10px;
+  padding: 10px 14px;
+  border: 1px solid #f0c98a;
+  border-radius: 12px;
+  background: #fff6e8;
+  color: #8a5a12;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
 }
 .le-again {
   background: none;
@@ -5765,11 +5905,479 @@ textarea {
 .kl-btn:hover:not(:disabled) { filter: brightness(1.06); }
 .kl-btn:disabled { background: #ebe7fb; color: #b7b1d6; cursor: default; }
 
-/* Экраны итога — takeover на весь вьюпорт (были внутри km-scroll). */
-.le-over, .lx-over { position: fixed; }
+/* Экраны итога и подтверждение выхода кроют область контента (.learn__main —
+   position: relative), а не весь вьюпорт: сайдбар/навигация остаются на месте.
+   .le-over/.lx-over уже absolute inset:0 по своим правилам выше. */
 
 @media (max-width: 760px) {
   .km-lesson { height: calc(100dvh - 64px); }
   .kl-task__title { font-size: 20px; }
   .kl-sentence { font-size: 18px; line-height: 1.9; }
+}
+
+/* --- Lesson schedule (Уроки → Онлайн) --- */
+.sch { margin: 0 0 20px; }
+.sch__title { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
+.sch__status { color: #6b7280; font-size: 14px; padding: 8px 0; }
+.sch__status--error { color: #c0392b; }
+.sch__summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.sch-tile { background: #f4f5f7; border-radius: 12px; padding: 10px; text-align: center; }
+.sch-tile__num { font-size: 20px; font-weight: 700; }
+.sch-tile__label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.sch__day { margin-bottom: 14px; }
+.sch__day-h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 8px; text-transform: capitalize; }
+.sch-row { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+.sch-row__time { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 48px; }
+.sch-row__main { flex: 1; min-width: 0; }
+.sch-row__teacher { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sch-row__meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.sch-badge { font-size: 11px; border-radius: 999px; padding: 2px 8px; background: #e6ecff; color: #2b57d6; }
+.sch-badge--inProgress, .sch-badge--paused { background: #d3ecff; color: #0b74c4; }
+.sch-badge--completed { background: #dcf3e2; color: #2c8a45; }
+.sch-badge--overdue { background: #fdecd2; color: #b26a12; }
+.sch-badge--cancelled { background: #eceef1; color: #6b7280; }
+.sch-row__format { font-size: 11px; color: #6b7280; }
+.sch-row__join { background: #7a4dff; color: #fff; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.sch-row__hint { font-size: 11px; color: #9aa0a6; max-width: 120px; text-align: right; }
+
+/* Полоса «урок идёт»: вход в класс — самое срочное действие на экране, и оно
+   не должно зависеть от того, какой день открыт в календаре. */
+.sch-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eef0ff;
+  border: 1px solid #d9dcff;
+}
+.sch-live__pulse {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #34c759;
+  box-shadow: 0 0 0 0 rgba(52, 199, 89, .6);
+  animation: sch-live-pulse 2s infinite;
+}
+.sch-live__text { flex: 1; min-width: 0; }
+.sch-live__title { font-weight: 700; font-size: 15px; color: #1c1c1e; }
+.sch-live__sub { font-size: 13px; color: #5b6478; margin-top: 2px; }
+.sch-live__join {
+  flex: none;
+  background: #7a4dff;
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sch-live__join:hover { background: #6a3ded; }
+.sch-live__join:focus-visible { outline: 2px solid #1c1c1e; outline-offset: 2px; }
+
+@keyframes sch-live-pulse {
+  70% { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+}
+
+/* Точка не мигает у тех, кто просил уменьшить движение. */
+@media (prefers-reduced-motion: reduce) {
+  .sch-live__pulse { animation: none; }
+}
+
+@media (max-width: 480px) {
+  .sch-live { flex-wrap: wrap; }
+  .sch-live__join { width: 100%; }
+}
+@media (max-width: 480px) { .sch__summary { grid-template-columns: repeat(2, 1fr); } }
+
+/* Lessons calendar */
+.cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 16px; align-items: start; }
+.cal { background: #fff; border: 1px solid #eceef1; border-radius: 16px; padding: 12px 12px 8px; }
+.cal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.cal__title { font-weight: 700; text-transform: capitalize; }
+.cal__nav { width: 32px; height: 32px; border: 0; background: #f4f5f7; border-radius: 8px; font-size: 18px; line-height: 1; cursor: pointer; color: var(--ink); }
+.cal__nav:hover { background: #e9eaf0; }
+.cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal__grid--head { margin-bottom: 4px; }
+.cal__wd { text-align: center; font-size: 11px; color: #8b8a97; text-transform: capitalize; padding: 2px 0; }
+.cal__day { position: relative; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 6px 2px; border: 1px solid transparent; border-radius: 10px; background: #fafafc; cursor: pointer; color: var(--ink); transition: background .15s ease, border-color .15s ease; }
+.cal__day:hover { background: #f1f0f7; }
+.cal__day--out { color: #c3c2cc; background: transparent; }
+.cal__day--today .cal__num { color: var(--purple); font-weight: 700; }
+.cal__day--sel { border-color: var(--purple); background: #f3eefe; }
+.cal__num { font-size: 13px; font-variant-numeric: tabular-nums; }
+.cal__dots { display: flex; align-items: center; gap: 3px; }
+.cal__dot { width: 6px; height: 6px; border-radius: 999px; background: #2b57d6; }
+.cal__dot--inProgress, .cal__dot--paused { background: #0b74c4; }
+.cal__dot--completed { background: #2c8a45; }
+.cal__dot--overdue { background: #b26a12; }
+.cal__dot--cancelled { background: #6b7280; }
+.cal__more { font-size: 9px; color: #8b8a97; }
+.cal-day { background: #fff; border: 1px solid #eceef1; border-radius: 16px; padding: 12px; }
+.cal-day__h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 8px; text-transform: capitalize; }
+@media (max-width: 720px) { .cal-layout { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .cal__day { transition: none; } }
+
+/* Sidebar icon rail — только десктоп, экраны раздела «Уроки». Сайдбар вынут из
+   потока (absolute), а .learn__body резервирует его свёрнутую ширину через
+   padding-left — поэтому раскрытие по наведению кроет контент и НИКОГДА не
+   перекладывает <main> и календарь. Якорь — .learn__body (position: relative);
+   .learn__main скроллится внутри себя, так что абсолютный рейл во всю высоту
+   виден без sticky.
+
+   Свёрнутое состояние — самостоятельная компактная раскладка, а не обрезанный
+   полноразмерный сайдбар. Раньше подписи гасились через opacity: 0 и продолжали
+   занимать место: flex считал ширину по ним и выдавливал иконки за левый край
+   (первая иконка оказывалась на x = -21px при рейле 72px), аватар 48px не влезал
+   в 39px контента, а монета баланса улетала на x = 102 — целиком за пределы
+   рейла. Поэтому здесь подписи убираются ИЗ ПОТОКА (display: none), а каждому
+   блоку задана своя форма под колонку 48px. */
+@media (min-width: 761px) {
+  .learn--rail .learn__body { position: relative; padding-left: 72px; }
+  .learn--rail .sb--rail {
+    position: absolute; top: 0; left: 0;
+    width: 72px; height: 100%;
+    z-index: 40; overflow: hidden;
+    padding: 24px 12px;
+    gap: 14px;
+    align-items: center;
+    transition: width .18s ease;
+  }
+
+  /* Подписи: из потока, иначе они резервируют ширину и ломают раскладку. */
+  .learn--rail .sb--rail .sb__logo,
+  .learn--rail .sb--rail .sb__item span,
+  .learn--rail .sb--rail .sb__profile-text,
+  .learn--rail .sb--rail .sb__profile-chev,
+  .learn--rail .sb--rail .sb__role-text,
+  .learn--rail .sb--rail .sb__role-lvl,
+  .learn--rail .sb--rail .sb__stat-num { display: none; }
+
+  /* Компактная форма каждого блока под 48px колонку. */
+  .learn--rail .sb--rail .sb__profile { padding: 0; background: none; justify-content: center; }
+  .learn--rail .sb--rail .sb__avatar { width: 44px; height: 44px; font-size: 16px; }
+  .learn--rail .sb--rail .sb__nav { width: 100%; align-items: center; }
+  .learn--rail .sb--rail .sb__item {
+    width: 48px; height: 48px;
+    padding: 0; gap: 0;
+    justify-content: center;
+    border-radius: 16px;
+  }
+  .learn--rail .sb--rail .sb__item svg { flex: none; }
+  .learn--rail .sb--rail .sb__role { padding: 0; background: none; justify-content: center; }
+  .learn--rail .sb--rail .sb__role-ic { width: 34px; height: 34px; }
+  .learn--rail .sb--rail .sb__balance {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+  }
+  .learn--rail .sb--rail .sb__stat { gap: 0; }
+
+  /* Раскрытие по наведению и с клавиатуры — возврат к обычной раскладке. */
+  .learn--rail .sb--rail:hover,
+  .learn--rail .sb--rail:focus-within {
+    width: 272px; overflow: visible;
+    padding: 30px 17px 30px 15px;
+    gap: 20px;
+    align-items: stretch;
+    box-shadow: 8px 0 24px rgba(20, 16, 31, 0.12);
+  }
+  .learn--rail .sb--rail:hover .sb__logo,
+  .learn--rail .sb--rail:focus-within .sb__logo { display: block; }
+  .learn--rail .sb--rail:hover .sb__item span,
+  .learn--rail .sb--rail:focus-within .sb__item span,
+  .learn--rail .sb--rail:hover .sb__role-text,
+  .learn--rail .sb--rail:focus-within .sb__role-text,
+  .learn--rail .sb--rail:hover .sb__stat-num,
+  .learn--rail .sb--rail:focus-within .sb__stat-num { display: block; }
+  .learn--rail .sb--rail:hover .sb__profile-text,
+  .learn--rail .sb--rail:focus-within .sb__profile-text { display: flex; }
+  .learn--rail .sb--rail:hover .sb__profile-chev,
+  .learn--rail .sb--rail:focus-within .sb__profile-chev,
+  .learn--rail .sb--rail:hover .sb__role-lvl,
+  .learn--rail .sb--rail:focus-within .sb__role-lvl { display: inline-flex; }
+  .learn--rail .sb--rail:hover .sb__profile,
+  .learn--rail .sb--rail:focus-within .sb__profile { padding: 10px; background: #f8f8f8; justify-content: flex-start; }
+  .learn--rail .sb--rail:hover .sb__avatar,
+  .learn--rail .sb--rail:focus-within .sb__avatar { width: 48px; height: 48px; font-size: 18px; }
+  .learn--rail .sb--rail:hover .sb__nav,
+  .learn--rail .sb--rail:focus-within .sb__nav { align-items: stretch; }
+  .learn--rail .sb--rail:hover .sb__item,
+  .learn--rail .sb--rail:focus-within .sb__item {
+    width: auto; height: auto;
+    padding: 16px 20px; gap: 10px;
+    justify-content: flex-start;
+    border-radius: 20px;
+  }
+  .learn--rail .sb--rail:hover .sb__role,
+  .learn--rail .sb--rail:focus-within .sb__role { padding: 11px 12px; background: #f8f8f8; justify-content: flex-start; }
+  .learn--rail .sb--rail:hover .sb__role-ic,
+  .learn--rail .sb--rail:focus-within .sb__role-ic { width: 38px; height: 38px; }
+  .learn--rail .sb--rail:hover .sb__balance,
+  .learn--rail .sb--rail:focus-within .sb__balance {
+    flex-direction: row; align-items: center; gap: 26px; padding: 10px 14px 2px;
+  }
+  .learn--rail .sb--rail:hover .sb__stat,
+  .learn--rail .sb--rail:focus-within .sb__stat { gap: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb--rail { transition: none; }
+}
+
+/* --- Live lesson shell --- */
+.live { padding: 16px; max-width: 900px; }
+/* Вкладка "Урок" (.live--wide) снимает лимит базового .live (900px — тесно
+   для сетки .lw-live-body из lessonWorkspace.css, которая сама ограничивает
+   читаемую ширину материала через .lw-material-frame). Раньше здесь стоял
+   max-width:1360px — уже свободнее, чем 900, но всё равно резал сетку туже,
+   чем предполагала сама сетка; убирать лимит совсем без замены оказалось
+   ошибкой — .live своим max-width:900px тогда остаётся единственным словом. */
+.live--wide { max-width: none; }
+.live__back { background: none; border: 0; color: #7a4dff; font-weight: 600; cursor: pointer; padding: 8px 0; }
+.live__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
+.live__title { font-size: 20px; font-weight: 700; margin: 0; }
+.live__teacher { color: #6b7280; }
+.live-badge { font-size: 12px; border-radius: 999px; padding: 3px 10px; background: #e6ecff; color: #2b57d6; }
+.live-badge--inProgress, .live-badge--paused { background: #d3ecff; color: #0b74c4; }
+.live-badge--completed { background: #dcf3e2; color: #2c8a45; }
+.live-badge--cancelled { background: #eceef1; color: #6b7280; }
+.live__status-msg { color: #6b7280; margin: 8px 0; }
+/* Сбой загрузки разделов читается иначе, чем «преподаватель ещё ничего не
+   открыл»: ждать во втором случае бессмысленно. */
+.live__status-msg--error { color: #c0392b; }
+.live__section { background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.live__section-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 10px; }
+.live-roster { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.live-roster__item { display: flex; align-items: center; gap: 6px; }
+.live-roster__avatar { width: 34px; height: 34px; border-radius: 50%; background: #7a4dff; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; position: relative; }
+.live-roster__dot { width: 9px; height: 9px; border-radius: 50%; background: #2c8a45; position: absolute; right: -1px; bottom: -1px; border: 2px solid #fff; }
+
+/* Присутствие в шапке урока. Было карточкой во всю ширину — заголовок,
+   аватары 34px, отступы, — и она занимала верх экрана ради строки текста.
+   Материал урока из-за неё начинался ниже первого экрана. */
+.live-presence {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  min-width: 0;
+}
+.live-presence__people { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.live-presence__item { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.live-presence__avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 999px;
+  background: #7a4dff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.live-presence__name {
+  font-size: 13px;
+  color: #5b6478;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live-presence__empty { font-size: 13px; color: #9aa0a6; }
+
+/* На узком экране имена прячем — остаются аватары и состояние связи. */
+@media (max-width: 700px) {
+  .live-presence { width: 100%; margin-left: 0; }
+  .live-presence__name { display: none; }
+}
+.live-roster__name { font-size: 13px; }
+.live-conn { font-size: 12px; margin-left: auto; }
+.live-conn--on { color: #2c8a45; }
+.live-conn--off { color: #9aa0a6; }
+.live-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.live-controls button { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
+.live-controls .btn-start, .live-controls .btn-resume { background: #7a4dff; color: #fff; }
+.live-controls .btn-pause { background: #f0e9ff; color: #5b34d6; }
+.live-controls .btn-complete { background: #eceef1; color: #333; }
+
+/* Live whiteboard (sub-project #3) */
+/* Тот же формат колонки, что у .lw-material-frame (материал урока) - иначе
+   доска на вкладке "Board" остаётся мелкой в углу, пока "Lesson" занимает
+   всю широкую колонку .live--wide. */
+.board { margin-top: 16px; width: 100%; max-width: 1160px; margin-left: auto; margin-right: auto; }
+.board__toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px; background: #fff; border: 1px solid #eceef1; border-radius: 12px 12px 0 0; }
+.board__tool { border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; }
+.board__tool:hover:not(:disabled) { border-color: #c7b8ff; }
+.board__tool.is-active { background: #7a4dff; border-color: #7a4dff; color: #fff; }
+.board__tool:disabled { opacity: .45; cursor: not-allowed; }
+.board__tool--danger { color: #b42318; border-color: #f3c9c4; }
+.board__sep { width: 1px; align-self: stretch; background: #eceef1; margin: 2px 4px; }
+.board__spacer { flex: 1; }
+.board__toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
+.board__conn { font-size: 12px; color: #9aa0a6; padding: 0 4px; }
+.board__conn.is-on { color: #2c8a45; }
+.board__notice { margin: 0; padding: 8px 12px; background: #fff7ed; color: #9a3412; font-size: 13px; border: 1px solid #eceef1; border-top: 0; }
+/* Высота - тот же clamp, что у .lw-material-frame (материал урока), чтобы
+   доска реально выглядела «как сам урок по размеру», а не мельче него. */
+.board__stage { position: relative; overflow: auto; border: 1px solid #eceef1; border-top: 0; border-radius: 0 0 12px 12px; background: #f3f4f6; width: 100%; height: clamp(420px, calc(100vh - 300px), 860px); }
+.board__canvas { display: block; }
+.board__cursor { position: absolute; transform: translate(-2px, -2px); pointer-events: none; z-index: 5; }
+.board__cursor-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: #7a4dff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+.board__cursor-name { position: absolute; left: 12px; top: -2px; white-space: nowrap; font-size: 11px; font-weight: 600; color: #fff; background: #7a4dff; border-radius: 6px; padding: 1px 6px; }
+@media (prefers-reduced-motion: reduce) { .board__cursor { transition: none; } }
+
+/* ==========================================================================
+   Оверлей ситуативки — просмотр внутри приложения. Раньше карточка вела на
+   внешнюю вкладку, из-за чего у прохождения не было события и общая квота
+   ситуативок из админки никогда не проверялась (см. SituativkaOverlay.jsx).
+   ========================================================================== */
+.sv-over {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(20, 18, 34, 0.62);
+}
+.sv-card {
+  width: min(760px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sv-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sv-card__title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.sv-card__close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f2f0f8;
+  color: #6c6b78;
+  font-size: 15px;
+  cursor: pointer;
+}
+.sv-card__close:hover {
+  background: #e8e5f3;
+}
+.sv-card__video {
+  width: 100%;
+  max-height: 60vh;
+  border-radius: 12px;
+  background: #000;
+}
+.sv-card__novideo {
+  padding: 32px;
+  border-radius: 12px;
+  background: #f7f5ff;
+  color: var(--muted);
+  text-align: center;
+}
+.sv-card__note {
+  padding: 10px 14px;
+  border: 1px solid #f0c98a;
+  border-radius: 12px;
+  background: #fff6e8;
+  color: #8a5a12;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.sv-card__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.sv-card__btn {
+  padding: 12px 22px;
+  border: none;
+  border-radius: 12px;
+  background: var(--purple);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sv-card__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Видео досмотрено — подсказываем, что пора отметить. */
+.sv-card__btn--ready {
+  box-shadow: 0 0 0 4px rgba(135, 75, 248, 0.18);
+}
+.sv-card__done {
+  color: #29b96b;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Экран «лимит исчерпан» (PracticeLimitScreen) — полноэкранная заглушка
+   вместо раздела практики. Раньше переиспользовал .soon («Скоро» у Клубов),
+   из-за чего наследовал width:276px и align-self:flex-start и висел в верхнем
+   углу. Здесь — центр по обеим осям.
+   ========================================================================== */
+.pl-limit {
+  /* Родитель (.learn__main) — flex-ЭЛЕМЕНТ, а не контейнер, поэтому flex:1 тут
+     бесполезен, а min-height в процентах не от чего считать. Опираемся на
+     вьюпорт: зона контента — это ~вся высота минус шапка. */
+  min-height: 78vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.pl-limit__card {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.pl-limit__title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #9047ff;
+}
+.pl-limit__body {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.pl-limit__back {
+  margin-top: 4px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #f2f0f8;
+  color: #6a35e0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pl-limit__back:hover {
+  background: #e8e5f3;
 }

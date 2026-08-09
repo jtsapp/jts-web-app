@@ -5,6 +5,10 @@ import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
 import OtpPage from './screens/OtpPage.jsx'
+import RegisterPhonePage from './screens/RegisterPhonePage.jsx'
+import RegisterEmailPage from './screens/RegisterEmailPage.jsx'
+import SetPasswordPage from './screens/SetPasswordPage.jsx'
+import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import LevelTestPage from './screens/LevelTestPage.jsx'
@@ -13,6 +17,7 @@ import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
+import LiveLessonPage from './screens/LiveLessonPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
 import IeltsListeningPage from './screens/IeltsListeningPage.jsx'
@@ -41,12 +46,16 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
+import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
+import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
+import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
 import { speakTutorVoice } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
-import { sendOtp, requestLoginOtp, verifyOtp, loginWithOtp, loginWithGoogle, saveLanguageLevel, getLanguageLevel } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
+import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
@@ -80,7 +89,23 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false
-    const deepLink = new URLSearchParams(window.location.search).get('screen')
+    const searchParams = new URLSearchParams(window.location.search)
+    const deepLink = searchParams.get('screen')
+    // ?lesson=<id> — id живого урока для lesson-workspace (диплинк
+    // ?screen=lesson-workspace&lesson=<id>). Не завязано на deepLink, чтобы
+    // работать и когда screen меняется навигацией уже после первого рендера.
+    const lessonParam = searchParams.get('lesson')
+    if (lessonParam) {
+      setLiveWorkspaceId(lessonParam)
+      setWorkspaceSource('live')
+    }
+    // ?catalog=<id> — id урока каталога для lesson-workspace (диплинк
+    // ?screen=lesson-workspace&catalog=<id>): грузим через loadCatalogLesson.
+    const catalogParam = searchParams.get('catalog')
+    if (catalogParam) {
+      setLiveWorkspaceId(catalogParam)
+      setWorkspaceSource('catalog')
+    }
 
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
@@ -93,6 +118,7 @@ export default function App() {
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
           if (session.languageLevel) setUserLevel(session.languageLevel)
+          getIsDemoAccount(session.token).then((v) => { if (!cancelled) setIsDemoAccount(v) })
         }
         // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
         // device-id) — восстанавливаем, чтобы перезагрузка не гоняла онбординг
@@ -122,10 +148,11 @@ export default function App() {
   }, [])
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  // Почта студента при регистрации: номер → почта → код (на почту) → пароль,
+  // оба идентификатора собираются ДО запроса кода (см. handleRegEmailSubmit).
+  // Для входа не используется — там всё ещё один идентификатор в `phone`.
+  const [email, setEmail] = useState('')
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
-  // Что пользователь нажал на welcome. Вход бьёт в /auth/otp/request напрямую,
-  // регистрация — в /registration/initiate. Определяет и «назад» с экрана телефона.
-  const [authIntent, setAuthIntent] = useState('register')
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
   // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
@@ -136,6 +163,11 @@ export default function App() {
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
   const [userLevel, setUserLevel] = useState('A1')
+  // Демо-статус текущего аккаунта — решает, показывать ли на экранах «лимит
+  // исчерпан» демо-CTA со ссылкой на WhatsApp поддержки (см. src/lib/support.js)
+  // или обычный текст. Саморегистрация всегда демо (см. RegistrationService на
+  // бэкенде); менеджер снимает флаг вручную.
+  const [isDemoAccount, setIsDemoAccount] = useState(false)
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
@@ -167,25 +199,57 @@ export default function App() {
     }
   }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
+  const [liveLessonId, setLiveLessonId] = useState(null)
+  // id живого урока для workspace-экрана (диплинк ?screen=lesson-workspace&lesson=<id>,
+  // см. эффект восстановления сессии ниже). Без диплинка остаётся null —
+  // LessonWorkspacePage тогда показывает SAMPLE_LESSON.
+  const [liveWorkspaceId, setLiveWorkspaceId] = useState(null)
+  // 'live' — id из LiveLesson (jsonUrl), 'catalog' — id урока каталога (сырой
+  // L*.html + клиентское извлечение). Определяет, чем workspace грузит контент.
+  const [workspaceSource, setWorkspaceSource] = useState('live')
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
 
-  // Запрос кода: вход — строго /auth/otp/request, регистрация — с фолбэком
-  // на вход, если номер уже занят. Бэкенд решает итоговый режим.
-  function requestCode(fullPhone) {
-    return authIntent === 'login' ? requestLoginOtp(fullPhone) : sendOtp(fullPhone, name)
-  }
-
+  // Экран 'phone' — только вход по коду (фолбэк для аккаунтов без пароля,
+  // см. onOtpLogin в PasswordLoginPage). Регистрация через него больше не
+  // идёт — там свой путь: 'reg-phone' → 'reg-email' → 'otp', см. ниже.
   async function handlePhoneSubmit(fullPhone) {
     setError('')
     setLoading(true)
     try {
-      const m = await requestCode(fullPhone)
+      const m = await requestLoginOtp(fullPhone)
       setMode(m)
       setPhone(fullPhone)
+      setScreen('otp')
+    } catch (e) {
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || t('err.send'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Шаг 1 регистрации: только номер — код ещё не запрашиваем, сперва нужна
+  // почта (см. handleRegEmailSubmit), она и есть канал OTP.
+  function handleRegPhoneSubmit(fullPhone) {
+    setError('')
+    setPhone(fullPhone)
+    setScreen('reg-email')
+  }
+
+  // Шаг 2 регистрации: почта собрана — оба идентификатора известны, теперь
+  // запрашиваем код. Бэкенд шлёт его на почту (RegistrationService
+  // предпочитает email каналом OTP, когда есть оба поля).
+  async function handleRegEmailSubmit(emailValue) {
+    setError('')
+    setLoading(true)
+    try {
+      const m = await sendRegistrationOtp(name, phone, emailValue)
+      setEmail(emailValue)
+      setMode(m)
       setScreen('otp')
     } catch (e) {
       const key = phoneErrorKey(e)
@@ -199,16 +263,17 @@ export default function App() {
     setError('')
     setLoading(true)
     try {
-      const data = await verifyOtp(phone, code, name, mode)
-      // токен: в login-режиме приходит сразу; после регистрации — отдельным входом
-      let tok = mode === 'login' ? data?.accessToken : null
-      if (!tok) {
-        try {
-          tok = await loginWithOtp(phone)
-        } catch (e) {
-          console.warn('Не удалось получить токен:', e)
-        }
-      }
+      // Регистрация шлёт номер и почту вместе (оба уже собраны на предыдущих
+      // шагах) и создаёт аккаунт сразу с обоими; вход проверяет код по тому
+      // единственному идентификатору, с которого начали. Оба пути отдают
+      // токен прямо в ответе — код теперь настоящий случайный (см. бэкенд,
+      // RandomOtpGeneratorService), получить токен повторным запросом OTP и
+      // угадыванием кода, как раньше, больше нельзя.
+      const data =
+        mode === 'register'
+          ? await verifyRegistrationOtp(name, phone, email, code)
+          : await verifyLoginOtp(phone, code)
+      const tok = data?.accessToken || null
       setToken(tok || null)
       saveToken(tok || null) // без этого сессия умрёт на первой перезагрузке
       // Уровень берём из профиля на backend. Если его там нет — аккаунт новый
@@ -224,6 +289,7 @@ export default function App() {
         }
       }
       if (lvl) setUserLevel(lvl)
+      if (tok) getIsDemoAccount(tok).then(setIsDemoAccount)
       // При сетевой осечке уровень неизвестен — тестом не пристаём, кроме
       // свежей регистрации: у неё уровня заведомо ещё нет.
       setNeedsLevelTest(lvlKnown ? !lvl : mode !== 'login')
@@ -256,9 +322,71 @@ export default function App() {
         clearLocalPractice()
         hydratePractice(tok)
       }
-      setScreen('success')
+      // Оба идентификатора уже собраны и отправлены на верификацию выше —
+      // после кода сразу «задать пароль». Свежий аккаунт заводится без
+      // пароля (RegistrationService пишет null) — просим задать его, иначе
+      // войти потом можно будет только новым OTP-кодом. Без токена шаг
+      // пропускаем: ставить пароль нечем.
+      setScreen(mode === 'register' && tok ? 'set-password' : 'success')
     } catch (e) {
       setError(e.message || t('err.otp'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Постоянный пароль сразу после регистрации. Токен уже есть (получен по OTP
+  // строчкой выше), поэтому эндпоинт авторизованный и текущий пароль не нужен.
+  async function handleSetPassword(password) {
+    setError('')
+    setLoading(true)
+    try {
+      await setPassword(token, password)
+      setScreen('success')
+    } catch (e) {
+      setError(e.message || t('setpass.error'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Вход по паролю (телефон или почта). Пост-логин — тот же, что у Google и
+  // OTP: уровень из профиля, перенос анонимного прогресса, тьютор-профиль.
+  async function handlePasswordLogin(identifier, password) {
+    setError('')
+    setLoading(true)
+    try {
+      const tok = await loginWithPassword(identifier, password)
+      if (!tok) throw new Error(t('login.failed'))
+      setPhone(identifier)
+      setToken(tok)
+      saveToken(tok)
+      try {
+        const lvl = await getLanguageLevel(tok)
+        if (lvl) setUserLevel(lvl)
+        setNeedsLevelTest(!lvl)
+      } catch (e) {
+        console.warn('Не удалось получить уровень из профиля:', e)
+      }
+      getIsDemoAccount(tok).then(setIsDemoAccount)
+      mergeAnonymousProgress(tok)
+        .then(() => loadTutorProfile(tok))
+        .then((profile) => {
+          if (!profile) return
+          if (profile.tutor) {
+            setTutorKey(profile.tutor)
+            setTutorOnboarded(true)
+          }
+          setInterestIds(enToInterestIds(profile.interests))
+          if (profile.profession) setProfession(profile.profession)
+        })
+      clearLocalPractice()
+      hydratePractice(tok)
+      setScreen('success')
+    } catch (e) {
+      // Бэкенд на неверную пару отдаёт 401 с техническим текстом — показываем
+      // человеческую формулировку.
+      setError(e?.status === 401 ? t('login.failed') : e.message || t('login.failed'))
     } finally {
       setLoading(false)
     }
@@ -287,6 +415,7 @@ export default function App() {
       } catch (e) {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
+      getIsDemoAccount(tok).then(setIsDemoAccount)
       // Как и после OTP: перенос анонимного прогресса, затем тьютор-профиль
       // аккаунта (тьютор/интересы/профессия с прошлых сессий).
       mergeAnonymousProgress(tok)
@@ -353,6 +482,8 @@ export default function App() {
     setToken(null)
     setName('')
     setPhone('')
+    setEmail('')
+    setIsDemoAccount(false)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -366,11 +497,19 @@ export default function App() {
   // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
   const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
 
+  // Fullscreen belongs to the Lessons screen only — exit it on any other screen,
+  // including paths that bypass the nav handlers (profile button, opening a lesson).
+  // The *request* stays in the click handlers because it needs a user gesture.
+  useEffect(() => {
+    if (screen !== 'lessons') exitAppFullscreen()
+  }, [screen])
+
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
   function handleNav(key, payload) {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    if (key === 'lessons') requestAppFullscreen()
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -386,6 +525,7 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
+    if (key === 'lessons') requestAppFullscreen()
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -404,13 +544,18 @@ export default function App() {
     onNav: handleNav,
     onGo: setScreen,
     onProfile: () => setScreen('profile'),
+    isDemoAccount,
   }
 
   async function handleResend() {
     setError('')
     try {
-      const m = await requestCode(phone)
-      setMode(m)
+      if (mode === 'register') {
+        await sendRegistrationOtp(name, phone, email)
+      } else {
+        const m = await requestLoginOtp(phone)
+        setMode(m)
+      }
     } catch (e) {
       setError(e.message || 'Не удалось отправить код повторно.')
     }
@@ -441,15 +586,15 @@ export default function App() {
         <WelcomePage
           onRegister={() => {
             setError('')
-            setAuthIntent('register')
             setScreen('chat')
           }}
-          // Вход не требует знакомства — сразу телефон + OTP.
+          // Вход — телефон/почта + пароль. Вход по коду остался запасным
+          // путём (ссылка на самом экране): у аккаунтов, заведённых до
+          // появления шага «задай пароль», пароля нет вовсе.
           onLogin={() => {
             setError('')
             setName('')
-            setAuthIntent('login')
-            setScreen('phone')
+            setScreen('login-password')
           }}
         />
       )
@@ -460,18 +605,36 @@ export default function App() {
           onPhoneLogin={(userName) => {
             setName(userName || '')
             setError('')
-            setScreen('phone')
+            setScreen('reg-phone')
           }}
           onGoogleToken={handleGoogleCredential}
           error={error}
         />
       )
+    // Только вход по коду (фолбэк для аккаунтов без пароля) — регистрация
+    // сюда больше не заходит, у неё свой путь: reg-phone → reg-email → otp.
     case 'phone':
       return (
         <PhoneLoginPage
-          onBack={() => { setError(''); setScreen(authIntent === 'login' ? 'welcome' : 'chat') }}
+          onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePhoneSubmit}
           onGoogleToken={handleGoogleCredential}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'reg-phone':
+      return (
+        <RegisterPhonePage
+          onSubmit={handleRegPhoneSubmit}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'reg-email':
+      return (
+        <RegisterEmailPage
+          onSubmit={handleRegEmailSubmit}
           loading={loading}
           error={error}
         />
@@ -479,10 +642,29 @@ export default function App() {
     case 'otp':
       return (
         <OtpPage
-          phone={phone}
-          onBack={() => { setError(''); setScreen('phone') }}
+          phone={mode === 'register' ? email : phone}
+          onBack={() => { setError(''); setScreen(mode === 'register' ? 'reg-email' : 'phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'login-password':
+      return (
+        <PasswordLoginPage
+          onBack={() => { setError(''); setScreen('welcome') }}
+          onSubmit={handlePasswordLogin}
+          onOtpLogin={() => { setError(''); setScreen('phone') }}
+          onGoogleToken={handleGoogleCredential}
+          loading={loading}
+          error={error}
+        />
+      )
+    case 'set-password':
+      return (
+        <SetPasswordPage
+          onSubmit={handleSetPassword}
           loading={loading}
           error={error}
         />
@@ -550,6 +732,7 @@ export default function App() {
           token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'listening':
@@ -560,6 +743,7 @@ export default function App() {
           token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'shadowing':
@@ -571,10 +755,15 @@ export default function App() {
           lessonId={shadowingLesson}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+    case 'course-catalog':
+      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
+    case 'live-lesson':
+      return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
@@ -609,6 +798,7 @@ export default function App() {
           token={token}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'kingdom-interior':
@@ -621,6 +811,7 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('kingdom')}
+          isDemoAccount={isDemoAccount}
         />
       )
     case 'tutor-welcome':
@@ -888,6 +1079,8 @@ export default function App() {
           onRetry={() => setScreen('tutor-voice-chat')}
         />
       )
+    case 'lesson-workspace':
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} loadLesson={workspaceSource === 'catalog' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     default:
       return null
   }
