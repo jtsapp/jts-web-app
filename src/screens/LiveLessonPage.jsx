@@ -61,6 +61,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
   const [presenting, setPresenting] = useState(false)
   const materialFrameRef = useRef(null)
+  // Present events that arrived before the follow iframe mounted / finished
+  // loading (same race web-admin solves with pendingPresent).
+  const pendingPresentRef = useRef([])
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
   const activeMaterial = activeSection?.materials?.[0] || null
@@ -225,8 +228,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       setReloadToken((n) => n + 1)
     },
     onPresent: (evt) => {
-      if (isStaff || evt.materialId !== activeMaterial?.materialId) return
-      materialFrameRef.current?.replay(evt.events)
+      if (isStaff) return
+      const events = evt.events || []
+      if (!events.length) return
+      // Material may still be switching after focus — buffer until iframe can replay.
+      if (evt.materialId !== activeMaterial?.materialId || !materialFrameRef.current) {
+        pendingPresentRef.current.push(...events)
+        return
+      }
+      materialFrameRef.current.replay(events)
     },
     onSectionsChanged: loadSections,
   })
@@ -248,7 +258,32 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // бегунок «Т» ставим сразу, иначе преподаватель не увидит себя на треке.
     setTeacherStepId(activeSectionId)
     setPresenting(true)
+    // Switch to the bridged iframe (catalog React steps have no DOM for the
+    // mirror) and ask it for the stream that reached the teacher's stage —
+    // same catch-up path as web-admin's focusOnExercise().
+    setReloadToken((n) => n + 1)
   }
+
+  // After «Внимание» remounts the iframe, pull a snapshot once it can answer.
+  useEffect(() => {
+    if (!presenting || !isStaff) return undefined
+    const handle = setTimeout(() => {
+      materialFrameRef.current?.requestSnapshot?.()
+    }, 500)
+    return () => clearTimeout(handle)
+  }, [presenting, reloadToken, isStaff])
+
+  // Flush present events buffered while the follow iframe was mounting.
+  useEffect(() => {
+    if (isStaff || !followMode || !activeMaterial) return undefined
+    const handle = setTimeout(() => {
+      if (!pendingPresentRef.current.length) return
+      const batch = pendingPresentRef.current
+      pendingPresentRef.current = []
+      materialFrameRef.current?.replay(batch)
+    }, 600)
+    return () => clearTimeout(handle)
+  }, [isStaff, followMode, activeMaterial?.materialId, reloadToken])
 
   function nameFor(userId) {
     if (userId === selfUserId) return t('live.roster.you')
@@ -367,7 +402,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           {t('lesson.ws.focus')}
                         </button>
                       )}
-                      {activeStep ? (
+                      {activeStep && !followMode && !presenting ? (
                         <LessonContent
                           step={activeStep}
                           answers={answers}

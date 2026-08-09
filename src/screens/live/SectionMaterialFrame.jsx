@@ -13,11 +13,9 @@ const BRIDGE_HOST = 'jts-bridge-host'
 //
 // Бридж общается через window.postMessage: студент постит наверх 'mirror' на
 // каждый свой клик/ввод (проксируем наружу через onMirror → STOMP), учитель —
-// 'present-event' пока идёт «Внимание на упражнение» (проксируем через
-// onPresentEvent). Обратно в iframe шлём { source: 'jts-bridge-host', type:
-// 'present', events } — реплей потока учителя у догоняющего студента.
-// replay() экспортируется через ref, чтобы родитель мог применить события,
-// пришедшие по STOMP, к уже открытому материалу.
+// 'present-event' / 'snapshot' пока идёт «Внимание на упражнение» (проксируем
+// через onPresentEvent). Обратно в iframe шлём { source: 'jts-bridge-host',
+// type: 'present', events } — реплей потока учителя у догоняющего студента.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent },
   ref
@@ -40,6 +38,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       } else {
         pendingRef.current.push(...events)
       }
+    },
+    requestSnapshot() {
+      post({ type: 'request-snapshot' })
     },
   }), [])
 
@@ -69,7 +70,13 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         }
         return
       }
-      if (presenting && data.type === 'present-event') {
+      if (!presenting) return
+      // Catch-up batch after «Внимание на упражнение» (reply to request-snapshot).
+      if (data.type === 'snapshot' && Array.isArray(data.events)) {
+        onPresentEvent?.(data.events)
+        return
+      }
+      if (data.type === 'present-event') {
         onPresentEvent?.([{ selector: data.selector, eventType: data.eventType, value: data.value ?? null }])
       }
     }
