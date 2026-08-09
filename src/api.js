@@ -285,12 +285,16 @@ export function sendLessonMessage(token, lessonId, body) {
 // GET идёт по iframe-навигации (не fetch), поэтому токен передаётся в query,
 // а не в заголовке — тот же приём, что и в web-admin (buildProgressRenderUrl).
 // forceReload добавляет nonce, чтобы iframe гарантированно перезагрузился
-// (нужно студенту, догоняющему учителя через follow=1).
-export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', follow = false, forceReload = false, studentId } = {}) {
+// (нужно студенту, догоняющему учителя через follow=1). Nonce обязан быть
+// ДЕТЕРМИНИРОВАННЫМ от значения forceReload (а не Date.now()) - иначе src
+// меняется на каждый ре-рендер SectionMaterialFrame (например от полинга
+// "учитель начал урок" раз в 5с), и браузер молча перезагружает iframe весь
+// остаток урока, обнуляя непереживший дебаунс прогресс студента.
+export function lessonMaterialRenderUrl(lessonId, materialId, token, { mode = 'live', follow = false, forceReload, studentId } = {}) {
   const params = new URLSearchParams({ mode, access_token: token || '' })
   if (follow) params.set('follow', '1')
   if (studentId != null) params.set('studentId', String(studentId))
-  if (forceReload) params.set('_r', String(Date.now()))
+  if (forceReload) params.set('_r', String(forceReload))
   return `${BASE}/student/lessons/${lessonId}/materials/${materialId}/render?${params.toString()}`
 }
 

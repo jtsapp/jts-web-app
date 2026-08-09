@@ -105,7 +105,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   const src = lessonMaterialRenderUrl(lessonId, material.materialId, token, {
     mode: isStaff ? 'review' : 'live',
     follow: !isStaff && follow,
-    forceReload: !!reloadToken,
+    forceReload: reloadToken || undefined,
     studentId: isStaff ? reviewStudentId : undefined,
   })
 
