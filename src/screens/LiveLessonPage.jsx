@@ -4,7 +4,9 @@ import { useI18n } from '../i18n.jsx'
 import {
   getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson,
   getLessonSections, getLessonMessages, sendLessonMessage, setLessonMeetingUrl,
+  getLessonMaterialProgress, saveLessonMaterialProgress,
 } from '../api.js'
+import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
@@ -23,6 +25,7 @@ import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
+import { materialView } from './workspace/materialView.js'
 import { knowsFocusTarget } from './live/followFocus.js'
 
 const PAUSE_MINUTES = 5
@@ -89,7 +92,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const materialFrameRef = useRef(null)
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
-  const activeMaterial = activeSection?.materials?.[0] || null
+  // К разделу можно прикрепить несколько материалов, и до сих пор ученик видел
+  // только первый: остальные существовали в базе и не открывались ничем. В
+  // web-admin для этого есть вкладки, здесь их не было.
+  const sectionMaterials = activeSection?.materials || []
+  const [activeMaterialId, setActiveMaterialId] = useState(null)
+  const activeMaterial = sectionMaterials.find((m) => m.materialId === activeMaterialId) || sectionMaterials[0] || null
   // Без пикера студента на этот заход: учитель просматривает первого
   // участника занятия (как loadLesson()/selectStudent() по умолчанию в web-admin).
   const reviewStudentId = lesson?.participants?.[0]?.studentId ?? null
@@ -115,6 +123,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   function selectSection(sectionId) {
     setActiveSectionId(sectionId)
+    // Материал выбирается заново: id из прошлого раздела в новом не найдётся,
+    // и без сброса первый рендер сваливался бы на «первый по списку» молча.
+    setActiveMaterialId(null)
     setFollowMode(false)
     if (isStaff) setPresenting(false)
   }
@@ -128,9 +139,21 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   //
   // Материал, загруженный преподавателем самим, в каталоге не найдётся — он и
   // дальше открывается файлом, и это правильно: разбирать чужой PDF не во что.
+  // Пока не ответили, урок это или файл, не открываем ни того, ни другого.
+  //
+  // Раньше на это время рендерился iframe — и он не просто мигал: бэкенд вшивает
+  // в отрендеренный материал бридж, а тот сохраняет свой поток событий по ключу
+  // (урок, материал, ученик). Тому же ключу принадлежат ответы урока из шагов,
+  // так что мелькнувший iframe успевал записать поверх них пустой список.
+  // Держим url, а не флаг: сброс флага — setState в теле эффекта, то есть каскад
+  // рендеров, на который ругается линтер.
+  const [catalogResolvedFor, setCatalogResolvedFor] = useState(null)
+  const materialFileUrl = activeMaterial?.fileUrl || null
+  const catalogResolved = materialFileUrl != null && catalogResolvedFor === materialFileUrl
+
   useEffect(() => {
     let cancelled = false
-    const url = activeMaterial?.fileUrl
+    const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
     Promise.resolve(url ? catalogLessonIdFor(url, token) : null)
@@ -139,10 +162,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         if (cancelled) return
         setCatalogLesson(loaded || null)
         setActiveStepId(loaded?.steps?.[0]?.id ?? null)
+        setCatalogResolvedFor(url)
       })
-      .catch(() => { if (!cancelled) setCatalogLesson(null) })
+      .catch(() => {
+        if (cancelled) return
+        setCatalogLesson(null)
+        setCatalogResolvedFor(url)
+      })
     return () => { cancelled = true }
-  }, [activeMaterial?.fileUrl, token])
+  }, [materialFileUrl, token])
 
   // Через useMemo, а не выражением: пустой массив создавался бы заново на каждый
   // рендер и обнулял мемоизацию статусов ниже.
@@ -177,7 +205,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     [onLessonSteps, lessonSteps, sections]
   )
   const routeActiveId = onLessonSteps ? activeStepId : activeSectionId
-  const selectRouteStep = onLessonSteps ? setActiveStepId : selectSection
+  const selectRouteStep = onLessonSteps ? selectLessonStep : selectSection
+
+  // Позиция сохраняется вместе с ответами: вернувшись, ученик продолжает там,
+  // где остановился, а не с первого шага.
+  function selectLessonStep(stepId) {
+    setActiveStepId(stepId)
+    persistProgress({ answers, checkedSteps, stepId })
+  }
 
   // Ученик и преподаватель на треке. Смотрю на свой шаг всегда; собеседник —
   // там, куда его поставила трансляция, и пока он ничего не прислал, бегунка
@@ -186,7 +221,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const lessonTeacherStepId = isStaff ? activeStepId : peerStepId
 
   function handleAnswer(questionId, value) {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }))
+    const next = { ...answers, [questionId]: value }
+    setAnswers(next)
+    persistProgress({ answers: next, checkedSteps, stepId: activeStepId })
     // Ответ уходит собеседнику сразу, а не по «Проверить»: преподаватель должен
     // видеть, что ученик печатает и выбирает, пока тот это делает — иначе помощь
     // приходит уже к готовому ответу. Значение сериализуем: у match это карта.
@@ -198,12 +235,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   function handleCheckStep() {
-    setCheckedSteps((prev) => {
-      if (prev.has(activeStepId)) return prev
-      const next = new Set(prev)
-      next.add(activeStepId)
-      return next
-    })
+    const next = new Set(checkedSteps)
+    next.add(activeStepId)
+    setCheckedSteps(next)
+    persistProgress({ answers, checkedSteps: next, stepId: activeStepId })
     sendStepProgress({ stepId: activeStepId, checked: true })
   }
 
@@ -296,6 +331,71 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     },
   })
 
+  // --- сохранение работы ученика ------------------------------------------
+  //
+  // Живая трансляция несёт только дельту, и этого мало в двух местах: ученик
+  // после F5 терял всё, а преподаватель, открывший урок позже, видел лишь то,
+  // что ученик ответил при нём. Долговечная копия лежит в material_progress —
+  // том же, куда пишет бридж iframe'а (см. stepProgress.js).
+  const stepMaterialId = onLessonSteps ? activeMaterial?.materialId : null
+
+  // Пока не прочитали сохранённое — не пишем: пустое состояние на старте
+  // затёрло бы работу прошлой сессии. Храним id материала, а не флаг: сброс
+  // флага пришлось бы делать setState прямо в теле эффекта, а это каскад
+  // рендеров (на него же ругается линтер).
+  const [progressLoadedFor, setProgressLoadedFor] = useState(null)
+  const progressLoaded = stepMaterialId != null && progressLoadedFor === stepMaterialId
+
+  useEffect(() => {
+    if (!stepMaterialId) return undefined
+    let cancelled = false
+    // Преподаватель читает работу участника, ученик — свою (сервер и так не
+    // отдаст чужую, см. assertAccess).
+    getLessonMaterialProgress(token, lessonId, stepMaterialId, isStaff ? reviewStudentId : undefined)
+      .then((saved) => {
+        if (cancelled) return
+        const restored = parseStepProgress(saved?.eventsJson)
+        if (restored) {
+          if (isStaff) {
+            setStudentAnswers(restored.answers)
+            setStudentCheckedSteps(restored.checkedSteps)
+            if (restored.stepId) setPeerStepId(restored.stepId)
+          } else {
+            setAnswers(restored.answers)
+            setCheckedSteps(restored.checkedSteps)
+            // Возвращаем на тот шаг, где остановились: иначе урок каждый раз
+            // начинается сначала, а ответы «где-то дальше по ленте».
+            if (restored.stepId) setActiveStepId(restored.stepId)
+          }
+        }
+        setProgressLoadedFor(stepMaterialId)
+      })
+      .catch(() => { if (!cancelled) setProgressLoadedFor(stepMaterialId) })
+    return () => { cancelled = true }
+  }, [stepMaterialId, lessonId, token, isStaff, reviewStudentId])
+
+  // Пишет только ученик и только свою работу: у преподавателя в answers лежит
+  // зеркало чужих ответов, и сохранять его значило бы писать чужое в свою
+  // строку прогресса.
+  //
+  // Запись висит на действии, а не на эффекте по состоянию. Эффект срабатывал
+  // бы и сразу после загрузки — а если восстанавливать было нечего (урок открыт
+  // второй вкладкой, ответ пришёл не сюда, запрос не удался), он тут же записал
+  // бы поверх сохранённого пустоту. Ответ теряется тем вернее, чем позже его
+  // открыли.
+  const saveTimerRef = useRef(null)
+  useEffect(() => () => clearTimeout(saveTimerRef.current), [])
+
+  function persistProgress(next) {
+    if (isStaff || !stepMaterialId || !progressLoaded) return
+    // Дебаунс: ответ в поле ввода меняется на каждую букву.
+    clearTimeout(saveTimerRef.current)
+    const materialId = stepMaterialId
+    saveTimerRef.current = setTimeout(() => {
+      saveLessonMaterialProgress(token, lessonId, materialId, serializeStepProgress(next)).catch(() => {})
+    }, 800)
+  }
+
   // Свой шаг уходит собеседнику при каждом переходе — так на треке появляются
   // оба бегунка. Раньше позиция преподавателя приходила только событием focus,
   // а оно несёт id раздела занятия: на маршруте из шагов урока ему не с чем
@@ -372,6 +472,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   const status = lesson?.status
+  // Урок идёт, стоит на паузе или уже закончился — экран собран одинаково,
+  // разница в том, можно ли отвечать. Раньше ветка была только под «идёт» и
+  // «пауза», и после «Завершить» ученик оставался с пустым экраном: ни ленты,
+  // ни ответов, ни итога (спека §3.4 описывает совсем другое).
+  const lessonOpen = status === 'IN_PROGRESS' || status === 'PAUSED' || status === 'COMPLETED'
+  // Смотрящий не отвечает; на паузе и после урока — тоже, чтобы работа не
+  // терялась и не дописывалась задним числом (спека §3.3, §3.4).
+  const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
+  const ownProgress = stepProgress(lessonSteps, isStaff ? studentAnswers : answers)
+  const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
+
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="live live--wide">
@@ -404,7 +515,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               />
             )}
 
-            {(status === 'IN_PROGRESS' || status === 'PAUSED') && (
+            {status === 'PAUSED' && (
+              <SystemBanner tone="attention" text={t('live.paused')} />
+            )}
+
+            {status === 'COMPLETED' && (
+              <SystemBanner
+                text={`${t('live.finished')}${lesson.durationMinutes ? ` · ${t('live.finishedDuration', { minutes: lesson.durationMinutes })}` : ''}`}
+              />
+            )}
+
+            {lessonOpen && (
               <>
                 <div className="ls__tabs">
                   <button className={`ls-tab ${tab === 'lesson' ? 'ls-tab--active' : ''}`} onClick={() => setTab('lesson')}>
@@ -444,7 +565,45 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           {t('lesson.ws.focus')}
                         </button>
                       )}
-                      {activeStep ? (
+
+                      {/* Разделы занятия, когда маршрут слева занят шагами урока.
+                          Без этого они недостижимы вовсе: маршрут показывает либо
+                          шаги, либо разделы, и стоит первому разделу оказаться
+                          уроком каталога — остальные пропадают с экрана вместе с
+                          прикреплёнными к ним материалами. */}
+                      {onLessonSteps && sections.length > 1 && (
+                        <div className="ls__tabs lw-material-tabs">
+                          {sections.map((s, i) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              className={`ls-tab ${s.id === activeSectionId ? 'ls-tab--active' : ''}`}
+                              onClick={() => selectSection(s.id)}
+                            >
+                              {s.title || t('live.materialTab', { n: i + 1 })}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Материалы внутри раздела. Вкладки нужны только там, где
+                          выбирать есть из чего: у раздела с одним материалом это
+                          была бы кнопка, которая ничего не переключает. */}
+                      {sectionMaterials.length > 1 && (
+                        <div className="ls__tabs lw-material-tabs">
+                          {sectionMaterials.map((m, i) => (
+                            <button
+                              key={m.materialId}
+                              type="button"
+                              className={`ls-tab ${m.materialId === activeMaterial?.materialId ? 'ls-tab--active' : ''}`}
+                              onClick={() => setActiveMaterialId(m.materialId)}
+                            >
+                              {m.title || t('live.materialTab', { n: i + 1 })}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {view === 'steps' ? (
                         <>
                           {/* Ученик ушёл на другой шаг — преподаватель об этом
                               узнаёт, а не догадывается по бегунку на треке. */}
@@ -466,9 +625,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                             checked={isStaff ? studentCheckedSteps.has(activeStepId) : checkedSteps.has(activeStepId)}
                             onAnswer={handleAnswer}
                             onCheck={handleCheckStep}
-                            readOnly={isStaff}
+                            readOnly={contentReadOnly}
                           />
                         </>
+                      ) : view === 'loading' ? (
+                        <p className="live__status-msg">{t('schedule.loading')}</p>
                       ) : (
                         <SectionMaterialFrame
                           ref={materialFrameRef}
@@ -491,6 +652,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     </div>
 
                     <div className="lw-live-aside">
+                      {/* Урок кончился — звонка на его месте быть не должно:
+                          звонить уже некуда. Вместо него итог (спека §3.4). */}
+                      {status === 'COMPLETED' ? (
+                        <div className="lw-card lw-summary">
+                          <h3 className="lw-summary__title">{t('live.summaryTitle')}</h3>
+                          <p className="lw-summary__value">
+                            {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
+                          </p>
+                        </div>
+                      ) : (
                       <div className="lw-card lw-meet">
                         {editingMeetingUrl ? (
                           <div className="lw-meet__form">
@@ -532,6 +703,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
                         )}
                       </div>
+                      )}
                       {catalogLesson?.topics?.length > 0 && (
                         <TopicsList topics={catalogLesson.topics} activeTopicId={activeStep?.topicId} />
                       )}

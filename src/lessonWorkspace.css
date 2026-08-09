@@ -1003,6 +1003,27 @@
   border-radius: var(--lw-r-inner);
 }
 
+/* Итог урока — на месте карточки звонка после завершения (спека §3.4). */
+.lw-summary__title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-summary__value {
+  margin: 0;
+  font-size: 15px;
+  color: var(--lw-ink-2);
+}
+
+/* Вкладки материалов раздела — та же лента, что у «Урок · Доска», но внутри
+   центральной колонки. */
+.lw-material-tabs {
+  flex: none;
+  margin: 0;
+}
+
 /* ========================= ПРАКТИКА ============================== */
 
 .lw-practice__list {
