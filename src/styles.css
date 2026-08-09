@@ -6155,6 +6155,46 @@ textarea {
 .live-roster__item { display: flex; align-items: center; gap: 6px; }
 .live-roster__avatar { width: 34px; height: 34px; border-radius: 50%; background: #7a4dff; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; position: relative; }
 .live-roster__dot { width: 9px; height: 9px; border-radius: 50%; background: #2c8a45; position: absolute; right: -1px; bottom: -1px; border: 2px solid #fff; }
+
+/* Присутствие в шапке урока. Было карточкой во всю ширину — заголовок,
+   аватары 34px, отступы, — и она занимала верх экрана ради строки текста.
+   Материал урока из-за неё начинался ниже первого экрана. */
+.live-presence {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  min-width: 0;
+}
+.live-presence__people { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.live-presence__item { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.live-presence__avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 999px;
+  background: #7a4dff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.live-presence__name {
+  font-size: 13px;
+  color: #5b6478;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.live-presence__empty { font-size: 13px; color: #9aa0a6; }
+
+/* На узком экране имена прячем — остаются аватары и состояние связи. */
+@media (max-width: 700px) {
+  .live-presence { width: 100%; margin-left: 0; }
+  .live-presence__name { display: none; }
+}
 .live-roster__name { font-size: 13px; }
 .live-conn { font-size: 12px; margin-left: auto; }
 .live-conn--on { color: #2c8a45; }
