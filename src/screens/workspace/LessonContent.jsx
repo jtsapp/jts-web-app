@@ -42,7 +42,7 @@ export function groupBlocks(blocks) {
 // Центр workspace: рендерит блоки активного шага диспетчером по `block.type`.
 // `answers`/`checked`/`onAnswer`/`onCheck` прокидываются в practice-блоки как
 // есть — сам компонент состояния не хранит.
-export default function LessonContent({ step, answers, checked, onAnswer, onCheck }) {
+export default function LessonContent({ step, answers, checked, onAnswer, onCheck, readOnly }) {
   const groups = groupBlocks(step?.blocks)
 
   return (
@@ -68,6 +68,7 @@ export default function LessonContent({ step, answers, checked, onAnswer, onChec
               checked={checked}
               onAnswer={onAnswer}
               onCheck={onCheck}
+              readOnly={readOnly}
             />
           )
         }

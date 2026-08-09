@@ -10,7 +10,11 @@ import { CheckIcon } from '../../../components/icons.jsx'
 // Кнопкой проверяются пропуски, у них ответ печатают, а не выбирают. Выбор
 // остаётся доступным после клика: спека не запрещает переспросить себя, а
 // заблокированный ряд читался бы как «шаг закрыт».
-export default function ChoiceQuestion({ question, answer, checked, onAnswer }) {
+//
+// `readOnly` — единственное, что закрывает выбор: так преподаватель смотрит
+// работу ученика. Отвечать за него он не должен, и дело не в дисциплине — его
+// клик ушёл бы в его же состояние, разъехавшись с тем, что видит ученик.
+export default function ChoiceQuestion({ question, answer, checked, onAnswer, readOnly }) {
   const chosen = answer != null
   const correct = chosen && gradeQuestion(question, answer).correct
 
@@ -36,6 +40,7 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer }) 
               type="button"
               className={cls}
               aria-pressed={selected}
+              disabled={readOnly}
               onClick={() => onAnswer(question.id, opt)}
             >
               <span>{opt}</span>

@@ -23,7 +23,13 @@ export default function LessonRoute({
   const list = steps || []
 
   // Ученик стоит там, где он сейчас смотрит, пока явно не сказано иное.
-  const studentAt = studentStepId ?? activeStepId
+  //
+  // Различаем «не сказано» и «сказано, что неизвестно»: на экране ученика проп
+  // не передают вовсе (undefined) — он и есть тот ученик, бегунок стоит на его
+  // шаге. На экране преподавателя позиция ученика приходит трансляцией, и пока
+  // её нет — это явный null: подставить туда свой шаг значило бы показать
+  // преподавателю его самого под меткой «У».
+  const studentAt = studentStepId === undefined ? activeStepId : studentStepId
   const teacherAt = teacherStepId ?? null
 
   return (

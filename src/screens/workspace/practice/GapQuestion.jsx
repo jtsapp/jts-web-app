@@ -5,7 +5,7 @@ import { CheckIcon } from '../../../components/icons.jsx'
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
 // через `gradeQuestion` (не дублируем `norm` здесь).
-export default function GapQuestion({ question, answer, checked, onAnswer }) {
+export default function GapQuestion({ question, answer, checked, onAnswer, readOnly }) {
   const { t } = useI18n()
   const value = answer || ''
   const userCorrect = checked && gradeQuestion(question, value).correct
@@ -23,7 +23,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer }) {
             className={cls}
             value={value}
             onChange={(e) => onAnswer(question.id, e.target.value)}
-            disabled={checked}
+            disabled={checked || readOnly}
             autoComplete="off"
             spellCheck="false"
             aria-label={t('lesson.yourAnswer')}

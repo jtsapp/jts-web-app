@@ -15,7 +15,7 @@ const QUESTION_BY_TYPE = {
 // «Проверить» внизу. `checked` — уже вычисленный родителем флаг (весь шаг
 // проверен хотя бы раз) — прокидывается в вопросы как есть. Повторное
 // нажатие «Проверить» разрешено (просто снова вызывает `onCheck(block)`).
-export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck }) {
+export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly }) {
   const { t } = useI18n()
 
   return (
@@ -36,14 +36,19 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
               answer={answers?.[question.id] ?? null}
               checked={checked}
               onAnswer={onAnswer}
+              readOnly={readOnly}
             />
           )
         })}
       </div>
 
-      <button type="button" className="lw-practice__check" onClick={() => onCheck(block)}>
-        {t('lesson.ws.check')}
-      </button>
+      {/* Смотрящему кнопка не нужна: проверяет свою работу тот, кто её делает,
+          а чужую «Проверить» нажимать нечем — ответы приходят зеркалом. */}
+      {!readOnly && (
+        <button type="button" className="lw-practice__check" onClick={() => onCheck(block)}>
+          {t('lesson.ws.check')}
+        </button>
+      )}
     </div>
   )
 }
