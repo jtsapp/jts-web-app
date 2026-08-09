@@ -12,7 +12,11 @@ import { wsBase } from '../../lib/wsUrl.js'
 // Брокер рассылает публикацию всем подписчикам топика, включая самого
 // отправителя — focus/present сравнивают senderUserId с selfUserId и глушат
 // собственное эхо (тот же приём, что и в useLessonBoard).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress } = {}) {
+// `isStaff` — подписываться ли на учительский канал шагов. Работа ученика идёт
+// не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
+// занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
+// он их не станет, но данные были бы уже на устройстве).
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
@@ -46,17 +50,21 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
         // Урок каталога, открытый шагами: где стоит собеседник и что он ответил.
         // Своё эхо глушим здесь же — иначе ответ ученика вернулся бы ему извне и
         // перетёр то, что он печатает прямо сейчас.
-        client.subscribe(`/topic/lesson/${lessonId}/step-progress`, (m) => {
+        const onStep = (m) => {
           const evt = parse(m.body)
           if (!evt || evt.senderUserId === selfUserId) return
           handlersRef.current.onStepProgress?.(evt)
-        })
+        }
+        // Общий топик несёт позицию преподавателя — она нужна всему классу.
+        client.subscribe(`/topic/lesson/${lessonId}/step-progress`, onStep)
+        // Работа учеников адресована преподавателю, и подписан на неё только он.
+        if (isStaff) client.subscribe(`/topic/lesson/${lessonId}/step-progress/staff`, onStep)
       },
     })
     client.activate()
     clientRef.current = client
     return () => { client.deactivate(); clientRef.current = null }
-  }, [lessonId, token, selfUserId])
+  }, [lessonId, token, selfUserId, isStaff])
 
   const publish = useCallback((action, body) => {
     const client = clientRef.current

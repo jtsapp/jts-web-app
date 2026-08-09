@@ -32,9 +32,33 @@ describe('useLessonLiveSocket', () => {
     ]))
   })
 
+  // Работа ученика идёт не в общий топик урока: иначе в групповом занятии
+  // браузер каждого ученика получал бы ответы всех остальных.
+  it('на учительский канал шагов подписан только преподаватель', () => {
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, {}))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/step-progress/staff')
+
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    expect(Object.keys(lastClient.subs)).toEqual(expect.arrayContaining([
+      '/topic/lesson/7/step-progress',
+      '/topic/lesson/7/step-progress/staff',
+    ]))
+  })
+
+  it('ответы ученика доходят до преподавателя учительским каналом', () => {
+    const onStepProgress = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onStepProgress, isStaff: true }))
+
+    const evt = { senderUserId: 9, senderRole: 'STUDENT', questionId: 's2-c0', value: 'busy' }
+    act(() => {
+      lastClient.subs['/topic/lesson/7/step-progress/staff']({ body: JSON.stringify(evt) })
+    })
+    expect(onStepProgress).toHaveBeenCalledWith(evt)
+  })
+
   // Трансляция урока, открытого шагами: собеседник виден, своё эхо — нет.
   // Вернувшийся к себе же ответ перетёр бы то, что ученик печатает сейчас.
-  it('доставляет шаги и ответы собеседника, но глушит собственное эхо', () => {
+  it('доставляет шаги собеседника, но глушит собственное эхо', () => {
     const onStepProgress = vi.fn()
     renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onStepProgress }))
 
