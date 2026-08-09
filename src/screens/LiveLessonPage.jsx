@@ -93,6 +93,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Present events that arrived before the follow iframe mounted / finished
   // loading (same race web-admin solves with pendingPresent).
   const pendingPresentRef = useRef([])
+  // Focus can name a catalog step before that lesson's JSON has loaded; catalog
+  // resolve used to always reset to steps[0] and wipe the teacher's target.
+  const pendingFocusStepRef = useRef(null)
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
   // К разделу можно прикрепить несколько материалов, и до сих пор ученик видел
@@ -117,11 +120,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [sectionsFailed, setSectionsFailed] = useState(false)
 
   function loadSections() {
-    getLessonSections(token, lessonId).then((list) => {
+    return getLessonSections(token, lessonId).then((list) => {
       setSections(list)
       setSectionsFailed(false)
       setActiveSectionId((prev) => (prev != null && list.some((s) => s.id === prev)) ? prev : (list[0]?.id ?? null))
-    }).catch(() => setSectionsFailed(true))
+      return list
+    }).catch(() => {
+      setSectionsFailed(true)
+      return null
+    })
   }
 
   function selectSection(sectionId) {
@@ -164,7 +171,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       .then((loaded) => {
         if (cancelled) return
         setCatalogLesson(loaded || null)
-        setActiveStepId(loaded?.steps?.[0]?.id ?? null)
+        const forced = pendingFocusStepRef.current
+        pendingFocusStepRef.current = null
+        if (forced != null && (loaded?.steps || []).some((s) => String(s.id) === String(forced))) {
+          setActiveStepId(forced)
+        } else {
+          setActiveStepId(loaded?.steps?.[0]?.id ?? null)
+        }
         setCatalogResolvedFor(url)
       })
       .catch(() => {
@@ -271,15 +284,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // --- Чат с учителем (поллинг, как в web-admin) --------------------------
   const [messages, setMessages] = useState([])
+  const [chatSending, setChatSending] = useState(false)
   const chatMessages = messages.map((m) => {
-    const isTeacher = m.senderUserId === lesson?.teacherId
+    const mine = m.senderUserId === selfUserId
+    const isTeacherMsg = m.senderUserId === lesson?.teacherId
     return {
       id: m.id,
-      from: isTeacher ? 'teacher' : 'student',
+      // `student` = свой пузырь справа (имя класса из дизайн-спеки)
+      from: mine ? 'student' : 'teacher',
       text: m.body,
-      // Своё сообщение подписываем как «Вы» (см. TeacherChat) — реальное имя
-      // нужно только для входящих, иначе легко перепутать, кто пишет.
-      senderName: isTeacher ? m.senderName : undefined,
+      senderName: mine
+        ? undefined
+        : (m.senderName || (isTeacherMsg ? undefined : m.senderName)),
     }
   })
 
@@ -288,29 +304,47 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   function handleSendMessage(text) {
-    sendLessonMessage(token, lessonId, text).then(setMessages).catch(() => {})
+    const trimmed = String(text || '').trim()
+    if (!trimmed || chatSending) return
+    // Оптимистично — чат не должен ждать раунд-трип, чтобы казаться «живым».
+    const tempId = `local-${Date.now()}`
+    setMessages((prev) => [
+      ...prev,
+      { id: tempId, body: trimmed, senderUserId: selfUserId, senderName: null },
+    ])
+    setChatSending(true)
+    sendLessonMessage(token, lessonId, trimmed)
+      .then((list) => setMessages(list))
+      .catch(() => refreshMessages())
+      .finally(() => setChatSending(false))
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
   const { sendFocus, sendMirror, sendPresent, sendStepProgress } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onFocus: (evt) => {
       if (evt.sectionId == null) return
-      // Где стоит преподаватель — знает только это событие, и знать это стоит
-      // обоим: по спеке классрума на треке два бегунка, и они расходятся, когда
-      // преподаватель уходит на шаг вперёд или назад. Пишем до проверки роли —
-      // иначе у него самого бегунок «Т» стоял бы на первом шаге вечно.
-      setTeacherStepId(evt.sectionId)
+      // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
+      setTeacherStepId(evt.stepId ?? evt.sectionId)
       if (isStaff) return
       // Учитель мог прикрепить урок из каталога уже после того, как ученик
       // открыл занятие: раздел и материал из события тогда ученику незнакомы,
       // и переключаться было бы не на что. Перечитываем разделы — иначе он
       // молча остаётся на прежнем уроке.
-      if (!knowsFocusTarget(sections, evt)) loadSections()
-      setActiveSectionId(evt.sectionId)
-      // Без materialId ученик оставался на старом материале прошлого раздела.
-      setActiveMaterialId(evt.materialId ?? null)
-      setFollowMode(true)
-      setReloadToken((n) => n + 1)
+      const apply = () => {
+        setActiveSectionId(evt.sectionId)
+        setActiveMaterialId(evt.materialId ?? null)
+        if (evt.stepId != null) {
+          pendingFocusStepRef.current = evt.stepId
+          setActiveStepId(evt.stepId)
+        }
+        setFollowMode(true)
+        setReloadToken((n) => n + 1)
+      }
+      if (!knowsFocusTarget(sections, evt)) {
+        loadSections().then(apply)
+        return
+      }
+      apply()
     },
     onPresent: (evt) => {
       if (isStaff) return
@@ -459,12 +493,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   function handleFocusClick() {
     if (!activeSectionId) return
-    sendFocus(activeSectionId, activeMaterial?.materialId ?? null)
+    const stepId = onLessonSteps && activeStepId ? activeStepId : null
+    sendFocus(activeSectionId, activeMaterial?.materialId ?? null, stepId)
     // Своё эхо брокера сокет глушит, поэтому onFocus здесь не сработает —
     // бегунок «Т» ставим сразу, иначе преподаватель не увидит себя на треке.
     setTeacherStepId(onLessonSteps ? activeStepId : activeSectionId)
     setPresenting(true)
-    // На шагах каталога iframe нет — достаточно focus + позиция шага.
+    // На шагах каталога iframe нет — достаточно focus (+ stepId внутри него).
     if (onLessonSteps && activeStepId) {
       sendStepProgress({
         stepId: activeStepId,
@@ -778,7 +813,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       {catalogLesson?.topics?.length > 0 && (
                         <TopicsList topics={catalogLesson.topics} activeTopicId={activeStep?.topicId} />
                       )}
-                      <TeacherChat messages={chatMessages} onSend={handleSendMessage} />
+                      <TeacherChat
+                        messages={chatMessages}
+                        onSend={handleSendMessage}
+                        sending={chatSending}
+                        title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
+                      />
                     </div>
                   </div>
                 )}

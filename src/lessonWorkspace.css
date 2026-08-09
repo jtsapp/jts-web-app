@@ -1545,7 +1545,10 @@
 }
 
 .lw-chat__head {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .lw-chat__title {
@@ -1555,20 +1558,40 @@
   color: var(--lw-ink);
 }
 
+.lw-chat__hint {
+  font-size: 12px;
+  color: var(--lw-muted);
+  font-weight: 500;
+}
+
 .lw-chat__list {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin: 0 0 12px;
-  padding: 0;
+  padding: 4px 2px 4px 0;
   list-style: none;
-  max-height: 190px;
+  max-height: 220px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* В живом уроке чат забирает оставшуюся высоту правой колонки — так им реально
+   удобно пользоваться, а не скроллить крошечную ленту на 190px. */
+.lw-live-aside .lw-chat {
+  flex: 1 1 auto;
+  min-height: 260px;
+}
+
+.lw-live-aside .lw-chat__list {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 140px;
 }
 
 /* Пузырь со «срезанным» углом со стороны хвоста. */
 .lw-chat__msg {
-  max-width: 84%;
+  max-width: 88%;
   padding: 8px 12px;
   border-radius: var(--lw-r-block);
   font-size: 13.5px;
@@ -1578,6 +1601,7 @@
   background: var(--lw-primary);
   align-self: flex-start;
   border-bottom-left-radius: 6px;
+  word-break: break-word;
 }
 
 .lw-chat__msg.is-student {
@@ -1594,13 +1618,35 @@
   margin-bottom: 2px;
   font-size: 11px;
   font-weight: 700;
-  opacity: 0.75;
+  opacity: 0.8;
+}
+
+.lw-chat__text {
+  display: block;
 }
 
 .lw-chat__empty {
-  margin: 0 0 12px;
+  margin: 0;
+  padding: 18px 8px;
+  text-align: center;
   font-size: 13.5px;
   color: var(--lw-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.lw-chat__empty p {
+  margin: 0;
+  max-width: 16em;
+  line-height: 1.35;
+}
+
+.lw-chat__empty-icon {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.85;
 }
 
 .lw-chat__composer {
@@ -1613,8 +1659,8 @@
 .lw-chat__input {
   flex: 1;
   min-width: 0;
-  padding: 14px 16px;
-  border: none;
+  padding: 12px 16px;
+  border: 1.5px solid transparent;
   border-radius: var(--lw-r-pill);
   background: var(--lw-tint-3);
   color: var(--lw-ink);
@@ -1627,26 +1673,40 @@
 }
 
 .lw-chat__input:focus-visible {
-  outline: 2px solid var(--lw-primary);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--lw-primary);
+  background: #fff;
+}
+
+.lw-chat__input:disabled {
+  opacity: 0.7;
 }
 
 .lw-chat__send {
   flex: none;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: var(--lw-r-pill);
   background: var(--lw-primary);
   color: #ffffff;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.12s;
 }
 
-.lw-chat__send:hover {
+.lw-chat__send:hover:not(:disabled) {
   background: var(--lw-primary-ink);
+}
+
+.lw-chat__send:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.lw-chat__send:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .lw-chat__send:focus-visible {

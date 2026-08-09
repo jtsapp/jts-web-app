@@ -72,8 +72,10 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
     client.publish({ destination: `/app/lesson/${lessonId}/${action}`, body: JSON.stringify(body) })
   }, [lessonId])
 
-  // Учитель: указать всем, на какой раздел/материал смотреть.
-  const sendFocus = useCallback((sectionId, materialId) => publish('focus', { sectionId, materialId }), [publish])
+  // Учитель: указать всем, на какой раздел/материал/шаг смотреть.
+  const sendFocus = useCallback((sectionId, materialId, stepId = null) => {
+    publish('focus', { sectionId, materialId, stepId })
+  }, [publish])
   // Студент: передать одно захваченное действие внутри материала.
   const sendMirror = useCallback((materialId, event) => publish('material-mirror', { materialId, ...event }), [publish])
   // Учитель: передать пачку своих действий, чтобы студенты повторили их у себя.

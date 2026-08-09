@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { SendIcon } from '../../components/icons.jsx'
 
-// Чат с учителем: локальный стейт поля ввода (значение сообщений — у
-// родителя, `messages`/`onSend`). Пустой ввод игнорируется — и по Enter, и по
-// клику. Список автоскроллится вниз при добавлении сообщения (см. брифом
-// «по желанию, но желательно»).
-export default function TeacherChat({ messages, onSend }) {
+/**
+ * Lesson chat (student ↔ teacher).
+ *
+ * `messages[].from`:
+ *  - `student` — own bubble (right, orange) — class name kept for design-spec tests
+ *  - anything else — peer bubble (left, purple)
+ */
+export default function TeacherChat({ messages, onSend, title, sending = false }) {
   const { t } = useI18n()
   const [draft, setDraft] = useState('')
   const listRef = useRef(null)
@@ -19,13 +22,13 @@ export default function TeacherChat({ messages, onSend }) {
 
   function send() {
     const text = draft.trim()
-    if (!text) return
+    if (!text || sending) return
     onSend?.(text)
     setDraft('')
   }
 
   function handleKeyDown(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       send()
     }
@@ -34,25 +37,32 @@ export default function TeacherChat({ messages, onSend }) {
   return (
     <div className="lw-card lw-chat">
       <div className="lw-chat__head">
-        <h2 className="lw-chat__title">{t('lesson.ws.chat')}</h2>
+        <h2 className="lw-chat__title">{title || t('lesson.ws.chat')}</h2>
+        <span className="lw-chat__hint">{t('lesson.ws.chatHint')}</span>
       </div>
 
-      <div className="lw-chat__list" ref={listRef}>
+      <div className="lw-chat__list" ref={listRef} role="log" aria-live="polite">
         {list.length === 0 ? (
-          <p className="lw-chat__empty">{t('lesson.ws.chatEmpty')}</p>
+          <div className="lw-chat__empty">
+            <span className="lw-chat__empty-icon" aria-hidden="true">💬</span>
+            <p>{t('lesson.ws.chatEmpty')}</p>
+          </div>
         ) : (
-          list.map((message) => (
-            <div key={message.id} className={`lw-chat__msg is-${message.from}`}>
-              {/* Цвет и сторона пузыря кодируют отправителя по спеке, но
-                  без подписи это неотличимо на скриншоте/для нового
-                  собеседника — особенно когда несколько сообщений подряд
-                  от одного. Показываем имя явным текстом. */}
-              <span className="lw-chat__sender">
-                {message.senderName || (message.from === 'student' ? t('lesson.ws.you') : t('lesson.ws.teacher'))}
-              </span>
-              {message.text}
-            </div>
-          ))
+          list.map((message) => {
+            const own = message.from === 'student'
+            return (
+              <div
+                key={message.id}
+                className={`lw-chat__msg ${own ? 'is-student' : ''}`}
+              >
+                <span className="lw-chat__sender">
+                  {message.senderName
+                    || (own ? t('lesson.ws.you') : t('lesson.ws.teacher'))}
+                </span>
+                <span className="lw-chat__text">{message.text}</span>
+              </div>
+            )
+          })
         )}
       </div>
 
@@ -64,12 +74,14 @@ export default function TeacherChat({ messages, onSend }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={sending}
+          autoComplete="off"
         />
         <button
           type="button"
           className="lw-chat__send"
           onClick={send}
-          disabled={!draft.trim()}
+          disabled={sending || !draft.trim()}
           title={t('lesson.ws.send')}
           aria-label={t('lesson.ws.send')}
         >
