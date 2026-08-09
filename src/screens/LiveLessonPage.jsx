@@ -290,6 +290,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               <h1 className="live__title">{t('live.title')}</h1>
               <span className="live__teacher">{lesson.teacherName || ''}</span>
               <LiveStatusBadge status={status} />
+              {/* Кто в классе — здесь же, строкой. Отдельной карточкой во всю
+                  ширину это отодвигало материал урока ниже первого экрана. */}
+              <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
             </div>
 
             {!isStaff && status === 'SCHEDULED' && <p className="live__status-msg">{t('live.waiting')}</p>}
@@ -304,8 +307,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 onComplete={() => act(completeLiveLesson)}
               />
             )}
-
-            <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
 
             {(status === 'IN_PROGRESS' || status === 'PAUSED') && (
               <>
