@@ -52,4 +52,31 @@ describe('LessonSchedule container', () => {
     const { container } = renderSchedule()
     await waitFor(() => expect(container.querySelector('.sch__status--error')).not.toBeNull())
   })
+
+  it('нет идущего урока — нет и полосы', async () => {
+    const { container } = renderSchedule()
+    await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
+    expect(container.querySelector('.sch-live')).toBeNull()
+  })
+
+  // Тот самый случай: урок начали 8-го и не закрыли, календарь открыт на 10-м.
+  // Без полосы ученику не попасть в класс — на своей клетке он видит только
+  // «преподаватель ещё не начал урок» про другое занятие.
+  it('идущий урок с другого дня всё равно даёт вход в класс', async () => {
+    const api = await import('../../api.js')
+    api.getMyLessonOccurrences.mockResolvedValueOnce([
+      { lessonId: 49, participantId: 49, scheduledAt: '2026-08-08T23:59:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'IN_PROGRESS', format: 'ONLINE' },
+    ])
+    const opened = []
+    render(
+      <I18nProvider>
+        <LessonSchedule token="TOK" onOpenLesson={(id) => opened.push(id)} />
+      </I18nProvider>
+    )
+
+    const join = await screen.findByRole('button', { name: /войти в класс/i })
+    fireEvent.click(join)
+
+    expect(opened).toEqual([49])
+  })
 })

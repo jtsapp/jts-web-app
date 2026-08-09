@@ -5939,6 +5939,58 @@ textarea {
 .sch-row__format { font-size: 11px; color: #6b7280; }
 .sch-row__join { background: #7a4dff; color: #fff; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
 .sch-row__hint { font-size: 11px; color: #9aa0a6; max-width: 120px; text-align: right; }
+
+/* Полоса «урок идёт»: вход в класс — самое срочное действие на экране, и оно
+   не должно зависеть от того, какой день открыт в календаре. */
+.sch-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eef0ff;
+  border: 1px solid #d9dcff;
+}
+.sch-live__pulse {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #34c759;
+  box-shadow: 0 0 0 0 rgba(52, 199, 89, .6);
+  animation: sch-live-pulse 2s infinite;
+}
+.sch-live__text { flex: 1; min-width: 0; }
+.sch-live__title { font-weight: 700; font-size: 15px; color: #1c1c1e; }
+.sch-live__sub { font-size: 13px; color: #5b6478; margin-top: 2px; }
+.sch-live__join {
+  flex: none;
+  background: #7a4dff;
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sch-live__join:hover { background: #6a3ded; }
+.sch-live__join:focus-visible { outline: 2px solid #1c1c1e; outline-offset: 2px; }
+
+@keyframes sch-live-pulse {
+  70% { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+}
+
+/* Точка не мигает у тех, кто просил уменьшить движение. */
+@media (prefers-reduced-motion: reduce) {
+  .sch-live__pulse { animation: none; }
+}
+
+@media (max-width: 480px) {
+  .sch-live { flex-wrap: wrap; }
+  .sch-live__join { width: 100%; }
+}
 @media (max-width: 480px) { .sch__summary { grid-template-columns: repeat(2, 1fr); } }
 
 /* Lessons calendar */
@@ -6090,6 +6142,9 @@ textarea {
 .live-badge--completed { background: #dcf3e2; color: #2c8a45; }
 .live-badge--cancelled { background: #eceef1; color: #6b7280; }
 .live__status-msg { color: #6b7280; margin: 8px 0; }
+/* Сбой загрузки разделов читается иначе, чем «преподаватель ещё ничего не
+   открыл»: ждать во втором случае бессмысленно. */
+.live__status-msg--error { color: #c0392b; }
 .live__section { background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 .live__section-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 10px; }
 .live-roster { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }

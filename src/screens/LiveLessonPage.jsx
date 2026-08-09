@@ -39,6 +39,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // true пока открытый материал — «догоняющая» копия для follow-me: не
   // восстанавливает свой прогресс и не сохраняет его (см. SectionMaterialFrame).
   const [followMode, setFollowMode] = useState(false)
+  // Шаг, на котором стоит преподаватель. Приходит только событием focus, поэтому
+  // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
+  // выдумывать ему позицию значило бы показывать ученику неправду.
+  const [teacherStepId, setTeacherStepId] = useState(null)
   const [reloadToken, setReloadToken] = useState(0)
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
@@ -57,11 +61,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return map
   }, [sections, activeSectionId])
 
+  // Ошибку загрузки разделов раньше глотали молча, и любой сбой выглядел как
+  // «преподаватель ещё ничего не открыл» — ученик ждал материал, которого не
+  // будет. Теперь пустой урок и неудачный запрос — это разные сообщения.
+  const [sectionsFailed, setSectionsFailed] = useState(false)
+
   function loadSections() {
     getLessonSections(token, lessonId).then((list) => {
       setSections(list)
+      setSectionsFailed(false)
       setActiveSectionId((prev) => (prev != null && list.some((s) => s.id === prev)) ? prev : (list[0]?.id ?? null))
-    }).catch(() => {})
+    }).catch(() => setSectionsFailed(true))
   }
 
   function selectSection(sectionId) {
@@ -106,7 +116,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
   const { sendFocus, sendMirror, sendPresent } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onFocus: (evt) => {
-      if (isStaff || evt.sectionId == null) return
+      if (evt.sectionId == null) return
+      // Где стоит преподаватель — знает только это событие, и знать это стоит
+      // обоим: по спеке классрума на треке два бегунка, и они расходятся, когда
+      // преподаватель уходит на шаг вперёд или назад. Пишем до проверки роли —
+      // иначе у него самого бегунок «Т» стоял бы на первом шаге вечно.
+      setTeacherStepId(evt.sectionId)
+      if (isStaff) return
       // Учитель мог прикрепить урок из каталога уже после того, как ученик
       // открыл занятие: раздел и материал из события тогда ученику незнакомы,
       // и переключаться было бы не на что. Перечитываем разделы — иначе он
@@ -136,6 +152,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   function handleFocusClick() {
     if (!activeSectionId) return
     sendFocus(activeSectionId, activeMaterial?.materialId ?? null)
+    // Своё эхо брокера сокет глушит, поэтому onFocus здесь не сработает —
+    // бегунок «Т» ставим сразу, иначе преподаватель не увидит себя на треке.
+    setTeacherStepId(activeSectionId)
     setPresenting(true)
   }
 
@@ -229,13 +248,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   <div className="lw-live-body">
                     <div className="lw-live-route">
                       {sections.length === 0 ? (
-                        <p className="live__status-msg">{t('lesson.ws.noSections')}</p>
+                        <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
+                          {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
+                        </p>
                       ) : (
                         <LessonRoute
-                          steps={sections.map((s) => ({ id: s.id, order: s.position, title: s.title }))}
+                          // Нумеруем по месту в списке, а не по position из базы:
+                          // тот считается с нуля, и первый шаг подписывался «ШАГ 00».
+                          steps={sections.map((s, i) => ({ id: s.id, order: i + 1, title: s.title }))}
                           activeStepId={activeSectionId}
                           statusById={sectionStatusById}
                           onSelect={selectSection}
+                          teacherStepId={teacherStepId}
                         />
                       )}
                     </div>
@@ -279,7 +303,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           </div>
                         ) : lesson.meetingUrl ? (
                           <>
+                            {/* Свёрнутый звонок по спеке §5.1(B): плоская
+                                карточка-CTA, а не строка-ссылка — для ученика
+                                это главное действие в правой колонке. */}
                             <a className="lw-meet__link" href={lesson.meetingUrl} target="_blank" rel="noreferrer">
+                              <svg className="lw-meet__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                                <path
+                                  fill="currentColor"
+                                  d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2Z"
+                                />
+                              </svg>
                               {t('lesson.ws.call')}
                             </a>
                             {isStaff && (
