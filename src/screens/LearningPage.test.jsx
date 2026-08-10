@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent, within } from '@testing-library/react'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { I18nProvider } from '../i18n.jsx'
+import { KINGDOMS } from '../kingdoms.js'
 import LearningPage from './LearningPage.jsx'
 
 // jsdom не грузит картинки по-настоящему (сеть отключена), поэтому проверить
@@ -45,5 +49,44 @@ describe('LearningPage — узел карты без картинки маск�
     const { map } = renderMap()
     expect(map.getByAltText('Redtown')).toBeTruthy()
     expect(map.queryByText('A0')).toBeNull()
+  })
+})
+
+// Находка ревью: белый код уровня лежал прямо на цвете кольца — 3.1:1 на
+// оранжевом Redtown и 2.2:1 на жёлтом Cocalastic Town при кегле ~13px, ниже
+// требуемых WCAG 2.1 AA 4.5:1. Доступность в проекте — часть определения
+// готовности, поэтому контраст проверяется числом, а не на глаз.
+describe('LearningPage — контраст текстового фолбэка на узле карты', () => {
+  const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'styles.css'), 'utf8')
+  const rule = /\.lp-node__fallback\s*\{([^}]*)\}/.exec(css)[1]
+  const prop = (name) => new RegExp(`(?:^|;)\\s*${name}:\\s*([^;]+)`, 'm').exec(rule)?.[1].trim()
+
+  const parseColor = (value) => {
+    const rgba = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\s*\)/.exec(value)
+    if (rgba) return { rgb: [+rgba[1], +rgba[2], +rgba[3]], alpha: rgba[4] === undefined ? 1 : +rgba[4] }
+    const hex = /#([0-9a-f]{6}|[0-9a-f]{3})/i.exec(value)[1]
+    const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex
+    return { rgb: full.match(/../g).map((h) => parseInt(h, 16)), alpha: 1 }
+  }
+  const over = (fg, bg) => fg.rgb.map((c, i) => fg.alpha * c + (1 - fg.alpha) * bg[i])
+  const luminance = (rgb) =>
+    rgb
+      .map((c) => c / 255)
+      .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+      .reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0)
+  const contrast = (a, b) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+    return (hi + 0.05) / (lo + 0.05)
+  }
+
+  it('код уровня читается на кольце любого города — не ниже AA 4.5:1', () => {
+    const text = parseColor(prop('color'))
+    const scrim = parseColor(prop('background'))
+    for (const kingdom of KINGDOMS) {
+      const ring = parseColor(kingdom.ring).rgb
+      const behind = over(scrim, ring)
+      const ratio = contrast(over(text, behind), behind)
+      expect(ratio, `${kingdom.level} (кольцо ${kingdom.ring})`).toBeGreaterThanOrEqual(4.5)
+    }
   })
 })
