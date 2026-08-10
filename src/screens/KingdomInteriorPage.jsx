@@ -7,6 +7,9 @@ import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { kingdomAvatar } from '../kingdoms.js'
+import { getCourseIndex, courseTrail } from '../learning/courseData.js'
+import CourseLesson from '../learning/CourseLesson.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
@@ -42,7 +45,7 @@ const COOKIE = {
 // (LessonPlayer). Раньше здесь был iframe hosted-Speakout — теперь весь урок
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onProfile, onBack, isDemoAccount }) {
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, isDemoAccount }) {
   const { t } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
@@ -50,6 +53,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const [state, setState] = useState({ loading: true, error: null })
   const [moduleId, setModuleId] = useState(null)
   const [lessons, setLessons] = useState([]) // [{code,order,title,taskCount}]
+  // Уровень переведён на перенесённый курс (public/course/<level>/): тропа и
+  // сам урок берутся оттуда, а не из public/learning/<level>.json. Уровни без
+  // такого каталога продолжают работать по-старому.
+  const [course, setCourse] = useState(null)
   const [done, setDone] = useState(new Set()) // пройденные коды
   // Модуль закрыт админом для ЭТОГО студента (флаг locked из
   // GET /mobile/lesson-modules) — тропа целиком недоступна.
@@ -80,11 +87,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         } catch {
           /* без practice-токена читаем прогресс под обычным token */
         }
-        const [mods, trail] = await Promise.all([
+        const [mods, oldTrail, courseIndex] = await Promise.all([
           getLessonModules(authToken).catch(() => []),
-          getLevelLessons(level),
+          getLevelLessons(level).catch(() => []),
+          getCourseIndex(level),
         ])
         if (!alive) return
+        const trail = courseIndex ? courseTrail(courseIndex) : oldTrail
+        setCourse(courseIndex)
         const want = String(level).toUpperCase()
         const mod = (Array.isArray(mods) ? mods : [])
           .filter((m) => String(m.level || '').toUpperCase() === want)
@@ -133,12 +143,16 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // при этом всё равно рисовала следующие уроки открытыми для клика, и студент
   // мог их пройти вплоть до конца, просто без начисления награды. Теперь узлы
   // сверх квоты не открываются вовсе, как и просил менеджер.
+  //
+  // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ
+  // ограничения админа: блокировку модуля и квоту не обходит даже просмотр
+  // контента.
   const isUnlocked = useCallback(
     (i) =>
       !moduleLocked &&
       (moduleQuota == null || i < moduleQuota) &&
-      (i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
-    [lessons, done, moduleLocked, moduleQuota],
+      (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
 
   const openLesson = useCallback(
@@ -155,13 +169,20 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       setEnd(null)
       setRestricted(false)
       try {
+        // Урок курса грузит себя сам (разметка + движок уровня), здесь нужен
+        // только его номер: L<n> — урок, T<u> — тест юнита.
+        if (course) {
+          const m = /^([LT])(\d+)$/.exec(code)
+          if (m) setOpen({ code, attempt: 0, lessonNo: m[1] === 'L' ? +m[2] : null, testUnit: m[1] === 'T' ? +m[2] : null })
+          return
+        }
         const data = await loadLesson(level, code)
         if (data) setOpen({ code, data, attempt: 0 })
       } finally {
         setBusy(false)
       }
     },
-    [level, moduleLocked, lessons, isUnlocked],
+    [level, moduleLocked, lessons, isUnlocked, course],
   )
 
   const retry = () => {
@@ -310,7 +331,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               </div>
               <img
                 className="kh-hero__mascot"
-                src={`/assets/world/levels/${String(level).toLowerCase()}.webp`}
+                src={`/assets/world/levels/${kingdomAvatar(k)}.webp`}
                 alt=""
                 onError={(e) => (e.currentTarget.style.display = 'none')}
               />
@@ -389,17 +410,29 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Открытый урок — нативный плеер (замена iframe). */}
+      {/* Открытый урок: перенесённый курс рисует себя сам, остальные уровни —
+          нативным плеером (замена iframe). */}
       {!loading && open && (
         <div className="km-lesson">
-          <LessonPlayer
-            key={`${open.code}-${open.attempt}`}
-            lesson={open.data}
-            level={level}
-            token={token}
-            onExit={handleBack}
-            onDone={onDone}
-          />
+          {course ? (
+            <CourseLesson
+              key={`${open.code}-${open.attempt}`}
+              level={level}
+              lessonNo={open.lessonNo}
+              testUnit={open.testUnit}
+              onExit={handleBack}
+              onDone={onDone}
+            />
+          ) : (
+            <LessonPlayer
+              key={`${open.code}-${open.attempt}`}
+              lesson={open.data}
+              level={level}
+              token={token}
+              onExit={handleBack}
+              onDone={onDone}
+            />
+          )}
         </div>
       )}
 
