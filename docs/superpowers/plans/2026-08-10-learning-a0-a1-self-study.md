@@ -1982,32 +1982,39 @@ git commit -m "feat(lesson-modules): уровень A0 в списке моду�
 - Consumes: всё предыдущее.
 - Produces: зелёные `npm test`, `npm run lint`, `npm run build` и живой прогон тропы A0.
 
-- [ ] **Step 1: Прогнать юнит-тесты**
+- [x] **Step 1: Прогнать юнит-тесты**
 
 Run: `cd /Users/mirasnurlanov/jts-workspace-3/jts-web-app && npm test`
 Expected: PASS, включая новые файлы `scripts/jts-self/*.test.js`, `scripts/extract-jts-self-lessons.test.js`, `src/learning/LessonPlayer.test.jsx`, `src/kingdoms.test.js`.
+Готово: 43 файла / 290 тестов — все зелёные. Подробности — `.superpowers/sdd/task-12-report.md`.
 
-- [ ] **Step 2: Прогнать линтер**
+- [x] **Step 2: Прогнать линтер**
 
 Run: `npm run lint`
 Expected: без ошибок. `eval` в `scripts/jts-self/read-course.js` уже закрыт построчным `eslint-disable-next-line no-eval`.
+Готово, с уточнением: `no-eval` в конфиге проекта вообще не включён (eslint-config-next core-web-vitals его не задаёт), поэтому построчный disable оказался «unused eslint-disable directive» — сам был лишним lint-warning'ом. Комментарий заменён на пояснение без директивы. Итог: 153 проблемы (7 ошибок, 146 предупреждений), все — на develop, ни одна не в файлах этой ветки (сверено построчно через `git worktree`).
 
-- [ ] **Step 3: Прогнать сборку**
+- [x] **Step 3: Прогнать сборку**
 
 Run: `npm run build`
 Expected: `Compiled successfully`.
+Готово: `Compiled successfully in 11.0s`.
 
-- [ ] **Step 4: Прогнать e2e раздела**
+- [x] **Step 4: Прогнать e2e раздела**
 
 Run: `npm run test:e2e -- tests/learning-lesson.spec.js`
 Expected: PASS. Тест открывает первый доступный узел карты — теперь это A0; данные для него есть, потому что `a0.json` сгенерирован в Task 5.
+Готово, с починкой теста: тест ожидал секцию `kt-exam` (курсовой финальный экзамен с unit:0) — это свойство СТАРЫХ данных A1 (Speakout, `FINAL_TEST`); новые self-study-курсы юнит-тест кладут обычным узлом своего юнита, отдельного unit:0 там нет ни у A0, ни у A1. Правка теста, не кода — экстрактор корректно переносит структуру исходного курса, придумывать несуществующий отдельный «экзамен» не за что. Заодно обнаружился и починен неродственный, но реально сломанный этой веткой тест `tests/learning-extractor.spec.js` (проверял `a1.json`, а тот теперь пишется другим экстрактором без видео — переключён на `a2.json`, где `extract-kingdom-lessons.js` всё ещё источник).
 
-- [ ] **Step 5: Посмотреть тропу вживую**
+- [x] **Step 5: Посмотреть тропу вживую**
 
-Run: `npm run dev`, открыть `http://localhost:3000/?screen=kingdom`
+Run: `npm run dev`, открыть `?screen=kingdom`
 Проверить глазами: на карте шесть городов, первый — Redtown с ярлыком A0 и он открыт; внутри — тропа с узлами вида «Coffee — yes. Mondays — no. · Vocabulary»; узел юнит-теста отрисован «печенькой» final; в уроке работают задания `order`, `multi`, аудио играет, после проверки видно «Почему».
+Готово — прогнано через Playwright (мок auth/me + lesson-modules, как в e2e), скриншоты в `.superpowers/sdd/screenshots/`. Всё подтвердилось глазами: 6 городов, A0 первый и открыт, C2 нет; тропа — «название · стадия»; order/multi/gap/choice/listen работают, «Почему» показывается, аудио-ссылка отвечает (200), карточки словаря без картинок не выглядят сломанными (`onerror` тихо убирает `<img>`).
 
 - [ ] **Step 6: Коммит и пуш**
+
+Не выполнялось по решению владельца проекта для этого прогона: ветка остаётся локальной, пуш и PR — отдельное решение владельца. См. `.superpowers/sdd/task-12-report.md`.
 
 ```bash
 git add docs/superpowers/plans/2026-08-10-learning-a0-a1-self-study.md

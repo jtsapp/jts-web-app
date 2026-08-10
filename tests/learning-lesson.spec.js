@@ -17,8 +17,9 @@ async function bootLearning(page) {
   await page.goto('/?screen=kingdom')
 }
 
-// LearningPage — остров-карта: открываем первый доступный узел
-// (A1 — всегда разблокирован).
+// LearningPage — остров-карта: открываем первый доступный узел.
+// Первый город на карте — A0 (KINGDOMS[0] в src/kingdoms.js), он открыт
+// всегда, независимо от уровня студента.
 async function openFirstKingdom(page) {
   const kingdom = page.locator('.lp-node:not([disabled])').first()
   await expect(kingdom).toBeVisible({ timeout: 15000 })
@@ -66,7 +67,7 @@ test.describe('нативный урок «Обучения»', () => {
     const first = page.locator('.lp-node:not([disabled])').first()
     await expect(first).toBeVisible({ timeout: 15000 })
     await first.click()
-    // Первый узел A1 (L00) начинается с задания-choice → зелёная печенька-лист.
+    // Первый узел A0 (L01-1) начинается с задания-choice → зелёная печенька-лист.
     const cookie = page.locator('.kt-trail .kt-node__cookie').first()
     await expect(cookie).toBeVisible({ timeout: 15000 })
     await expect(cookie).toHaveClass(/is-choice/)
@@ -78,12 +79,17 @@ test.describe('нативный урок «Обучения»', () => {
     await expect(first).toBeVisible({ timeout: 15000 })
     await first.click()
     await expect(page.locator('.kt-unit').first()).toBeVisible({ timeout: 15000 })
-    // A1: 8 юнитов + отдельная секция финального экзамена (kt-exam).
+    // A0: 8 юнитов. В self-study-курсах юнит-тест (REVIEWS) — обычный узел
+    // тропы своего юнита (unit = номер юнита), не отдельный курсовой экзамен:
+    // в старых данных A1 был выделенный узел FINAL_TEST с unit:0, из-за
+    // которого KingdomInteriorPage рисовал отдельную секцию kt-exam — у
+    // self-study-контента такого отдельного узла нет, kt-exam не появляется.
     await expect(page.locator('.kt-unit')).toHaveCount(8)
-    await expect(page.locator('.kt-exam')).toHaveCount(1)
+    await expect(page.locator('.kt-exam')).toHaveCount(0)
     await expect(page.locator('.kt-unit__head').first()).toContainText('Юнит 1')
-    // Печенька экзамена — красная (final) даже закрытой.
-    await expect(page.locator('.kt-exam .kt-node__cookie.is-final')).toHaveCount(1)
+    // Печенька юнит-теста всё равно красная (final) — просто внутри своего юнита.
+    const finalCookies = await page.locator('.kt-node__cookie.is-final').count()
+    expect(finalCookies).toBeGreaterThan(0)
   })
 
   test('выход из незаконченного урока спрашивает подтверждение', async ({ page }) => {

@@ -63,21 +63,28 @@ test('prefixClasses изолирует все классы', () => {
 })
 
 // ——— Интеграция: реальный вывод экстрактора (public/learning) ———
-test.describe('вывод экстрактора a1 корректен', () => {
-  const a1Path = path.join(ROOT, 'public/learning/a1.json')
+// Раньше здесь проверялся a1.json, но с ветки learning-a0-a1-self-study A1
+// переехал на другой конвейер (scripts/extract-jts-self-lessons.js, см.
+// scripts/extract-jts-self-lessons.test.js) — у self-study-курса вообще нет
+// видео (только choice/audio/info/final), поэтому инвариант «есть watch с
+// абсолютным media URL» для a1.json больше не имеет смысла в принципе, а не
+// просто устарел числом. Проверяем тот же инвариант там, где extract-kingdom-lessons.js
+// всё ещё реальный источник данных, — на a2 (уровни a2/b1/b2/c1 не мигрированы).
+test.describe('вывод экстрактора a2 корректен', () => {
+  const a2Path = path.join(ROOT, 'public/learning/a2.json')
   const idxPath = path.join(ROOT, 'public/learning/index.json')
 
-  test.skip(() => !fs.existsSync(a1Path), 'сначала: node scripts/extract-kingdom-lessons.js')
+  test.skip(() => !fs.existsSync(a2Path), 'сначала: node scripts/extract-kingdom-lessons.js')
 
   test('каталог и данные согласованы, speak отсутствует, media — абсолютные URL', () => {
     const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'))
-    const a1 = JSON.parse(fs.readFileSync(a1Path, 'utf8'))
-    expect(idx.a1.lessons.length).toBe(Object.keys(a1.lessons).length)
+    const a2 = JSON.parse(fs.readFileSync(a2Path, 'utf8'))
+    expect(idx.a2.lessons.length).toBe(Object.keys(a2.lessons).length)
 
     let speak = 0
     let mediaUrls = 0
-    for (const code of Object.keys(a1.lessons)) {
-      const les = a1.lessons[code]
+    for (const code of Object.keys(a2.lessons)) {
+      const les = a2.lessons[code]
       expect(les.tasks.length).toBeGreaterThan(0)
       for (const t of les.tasks) {
         if (t.type === 'speak') speak++

@@ -43,7 +43,9 @@ function evalDecl(src, name, filePath) {
   const literal = readDecl(src, name)
   if (!literal) return null
   try {
-    // eslint-disable-next-line no-eval
+    // no-eval в конфиге проекта не включён (eslint-config-next его не задаёт),
+    // поэтому построчный disable тут был бы «unused eslint-disable directive» —
+    // не подавляем то, чего нет.
     return eval('(' + literal + ')')
   } catch (err) {
     // Голый SyntaxError не говорит, какое объявление и в каком файле
