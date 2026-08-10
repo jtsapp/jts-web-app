@@ -324,23 +324,34 @@ function Gap({ task, answered, finish, setCanCheck, bind, t }) {
 // ——— order (собрать предложение из слов) ———
 function Order({ task, answered, finish, setCanCheck, bind, t }) {
   const words = task.words || []
+  const expected = task.answer || []
   const [picked, setPicked] = useState([]) // индексы слов в порядке нажатия
-  useEffect(() => setCanCheck(picked.length === words.length && !answered), [picked, words.length, answered, setCanCheck])
+  // words.length > 0: при пустом банке слов длины (0 === 0) совпадают сразу же,
+  // без единого клика — без этого условия задание засчиталось бы бесплатно.
+  useEffect(
+    () => setCanCheck(words.length > 0 && picked.length === words.length && !answered),
+    [picked, words.length, answered, setCanCheck],
+  )
 
   const line = picked.map((i) => words[i])
+  // Та же защита от пустого банка — и в обработчике клика, если он всё же
+  // будет вызван программно в обход отключённой кнопки.
   bind(() => {
-    if (answered || picked.length !== words.length) return
-    const expected = task.answer || []
+    if (answered || words.length === 0 || picked.length !== words.length) return
     finish(line.every((w, i) => w === expected[i]), expected.join(' '))
   })
+
+  // Верно/неверно считаем и для рамки-подсказки той же формулой, что и в bind() —
+  // picked после ответа больше не меняется, поэтому пересчёт на рендере безопасен.
+  const isCorrect = line.length === expected.length && line.every((w, i) => w === expected[i])
 
   return (
     <>
       {task.word && <div className="kl-word">{task.word}</div>}
-      <div className={`kl-order__line ${answered ? 'done' : ''}`}>
+      <div className={`kl-order__line ${answered ? `done ${isCorrect ? 'ok' : 'no'}` : ''}`}>
         {line.length ? line.join(' ') : <span className="kl-order__ph">{t('lesson.order.hint')}</span>}
       </div>
-      <div className="kl-bank kl-order">
+      <div className="kl-bank">
         {words.map((w, i) => (
           <button
             key={i}

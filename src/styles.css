@@ -5818,6 +5818,10 @@ textarea {
   font-size: 20px; font-weight: 700; color: var(--ink); text-align: center;
 }
 .kl-order__line.done { border-style: solid; }
+/* Те же цвета и манера, что у .kl-gap.ok/.no (chips) и .kl-opt.correct/.wrong (choice) —
+   собранная строка должна сигналить верно/неверно так же, как соседние типы заданий. */
+.kl-order__line.ok { color: #1c7c3f; border-color: #2fbf5a; }
+.kl-order__line.no { color: #c02a2f; border-color: #e5484d; }
 .kl-order__ph { font-size: 15px; font-weight: 600; color: var(--muted); }
 
 .kl-check { display: flex; flex-direction: column; gap: 10px; }
