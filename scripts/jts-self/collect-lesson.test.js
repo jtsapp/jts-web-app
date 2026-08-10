@@ -17,6 +17,30 @@ describe('collectLesson', () => {
     expect(s.blocks[0].html).not.toContain('для группы')
   })
 
+  it('пустой или состоящий из пробелов data-only не режется — узел общий для всех режимов', () => {
+    const html = stage('Warm-up', `
+      <div data-only=""><p>общий блок 1</p></div>
+      <div data-only="   "><p>общий блок 2</p></div>
+      <div data-only="group"><p>только для группы</p></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks).toHaveLength(2)
+    expect(s.blocks[0].html).toContain('общий блок 1')
+    expect(s.blocks[1].html).toContain('общий блок 2')
+    expect(s.blocks.some((b) => b.html.includes('только для группы'))).toBe(false)
+  })
+
+  it('кнопка .btn-audio с нераспознанным onclick не пропадает бесследно, а остаётся видимым info-контентом', () => {
+    // onclick другой функции (не playTrack/playRange) — trackIdOf не разберёт
+    // id, блока audio не будет; но кнопка была единственным содержимым узла,
+    // поэтому безусловное удаление стёрло бы узел целиком.
+    const html = stage('Wrap', `<button class="btn btn-audio" onclick="stopAudio(this)">⏹ Стоп</button>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks).toHaveLength(1)
+    expect(s.blocks[0]).toMatchObject({ kind: 'info' })
+    expect(s.blocks[0].html).toContain('btn-audio')
+    expect(s.blocks[0].html).toContain('Стоп')
+  })
+
   it('строка с .opts[data-correct] → choice с индексом верного', () => {
     const html = stage('Grammar', `<div class="task" data-task data-tid="pr-quiz">
       <div class="row"><span class="num">1</span><span class="body">☕ coffee → ___ coffee.

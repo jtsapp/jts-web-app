@@ -11,7 +11,11 @@ const MODE = 'self'
 function pruneToMode(root) {
   for (const el of [...root.querySelectorAll('[data-only]')]) {
     const modes = (el.getAttribute('data-only') || '').split(/\s+/).filter(Boolean)
-    if (!modes.includes(MODE)) el.remove()
+    // Пустой (или состоящий из пробелов) data-only — не «ничей», а «общий для
+    // всех режимов»: разметка помечает так узлы, которые не относятся к
+    // конкретному режиму отдельно. Резать их нельзя, иначе тихо теряем общий
+    // контент. Семантика зеркалит web-admin/.../extract/prune-by-mode.ts.
+    if (modes.length && !modes.includes(MODE)) el.remove()
   }
 }
 
@@ -116,22 +120,45 @@ function splitAround(row) {
 const audioButtonsOf = (node) =>
   node.matches('button.btn-audio') ? [node] : [...node.querySelectorAll('button.btn-audio')]
 
-function pushAudio(node, blocks) {
+/**
+ * Извлекает блоки audio и убирает из html ровно те кнопки, для которых блок
+ * реально создан. Кнопку с onclick, не подходящим под шаблон (другая функция,
+ * отсутствующий onclick, «стоп» с тем же классом btn-audio), трогать нельзя:
+ * блок для неё не создан, а безусловное удаление стёрло бы кнопку бесследно —
+ * вместе с ней исчез бы и весь узел, если она была его единственным
+ * содержимым.
+ */
+function extractAudio(node, blocks) {
   for (const button of audioButtonsOf(node)) {
     const trackId = trackIdOf(button)
-    if (trackId) blocks.push({ kind: 'audio', trackId, label: clean(button.textContent) })
+    if (trackId) {
+      blocks.push({ kind: 'audio', trackId, label: clean(button.textContent) })
+      button.remove()
+    }
   }
 }
 
 /**
  * Объяснения, карточки слов, грамматическая справка. Они нужны целиком: без
- * них урок превращается в голый тест. Отдельно стоящую кнопку аудио дублировать
- * блоком info незачем — она уже стала блоком audio.
+ * них урок превращается в голый тест. Отдельно стоящую кнопку аудио
+ * дублировать блоком info незачем, но только если она успешно стала блоком
+ * audio (extractAudio уже вынул её из дерева); если onclick не разобрался,
+ * кнопка осталась на месте и должна попасть в info как обычный контент.
  */
 function pushInfo(node, blocks) {
-  if (node.matches('button.btn-audio')) return
+  if (node.matches('button.btn-audio') && trackIdOf(node)) return
   const html = node.outerHTML.trim()
   if (clean(node.textContent) || /<(img|audio|video|table)/i.test(html)) blocks.push({ kind: 'info', html })
+}
+
+/**
+ * Тройка «вынуть audio → пушнуть info», повторяющаяся для узла без задач и
+ * для интро-контейнера рядом с задачей. Порядок обязателен: audio должен
+ * появиться в блоках раньше info, который идёт следом в разметке.
+ */
+function pushAudioThenInfo(node, blocks) {
+  extractAudio(node, blocks)
+  pushInfo(node, blocks)
 }
 
 /**
@@ -154,9 +181,7 @@ function collectStage(section) {
       // плеера из поддерева до pushInfo, она останется в info-html мёртвым
       // onclick. Сам child, когда это просто кнопка, из своего дерева не
       // удаляется — pushInfo распознаёт этот случай отдельной проверкой.
-      pushAudio(child, blocks)
-      for (const button of [...child.querySelectorAll('button.btn-audio')]) button.remove()
-      pushInfo(child, blocks)
+      pushAudioThenInfo(child, blocks)
       continue
     }
 
@@ -169,13 +194,11 @@ function collectStage(section) {
       // audio, потом убираем сами кнопки из html, чтобы не дублировать.
       const intro = child.cloneNode(true)
       for (const task of [...intro.querySelectorAll('.task, [data-task]')]) task.remove()
-      pushAudio(intro, blocks)
-      for (const button of [...intro.querySelectorAll('button.btn-audio')]) button.remove()
-      pushInfo(intro, blocks)
+      pushAudioThenInfo(intro, blocks)
     }
 
     for (const task of tasks) {
-      pushAudio(task, blocks)
+      extractAudio(task, blocks)
       const rows = [...task.querySelectorAll('.row')]
       for (const row of rows.length ? rows : [task]) {
         const block = blockFromRow(row)
