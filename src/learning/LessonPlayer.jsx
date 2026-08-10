@@ -14,7 +14,7 @@ import { recordSkill } from '../practice/skillStats.js'
 
 const REWARD = 10 // монет за верный ответ (как в /api/hl мосте)
 const START_HEARTS = 3
-const GRADED = new Set(['choice', 'gap', 'chips'])
+const GRADED = new Set(['choice', 'gap', 'chips', 'order'])
 
 // Нормализация текстового ответа (как norm() в ActivityPlayer/движке).
 function norm(s) {
@@ -205,6 +205,8 @@ function TaskBody({ task, answered, finish, setCanCheck, bind, t }) {
       return <Chips task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
     case 'gap':
       return <Gap task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
+    case 'order':
+      return <Order task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
     case 'check':
       return <Check task={task} />
     case 'listen':
@@ -316,6 +318,41 @@ function Gap({ task, answered, finish, setCanCheck, bind, t }) {
       />
       {task.gapAfter}
     </div>
+  )
+}
+
+// ——— order (собрать предложение из слов) ———
+function Order({ task, answered, finish, setCanCheck, bind, t }) {
+  const words = task.words || []
+  const [picked, setPicked] = useState([]) // индексы слов в порядке нажатия
+  useEffect(() => setCanCheck(picked.length === words.length && !answered), [picked, words.length, answered, setCanCheck])
+
+  const line = picked.map((i) => words[i])
+  bind(() => {
+    if (answered || picked.length !== words.length) return
+    const expected = task.answer || []
+    finish(line.every((w, i) => w === expected[i]), expected.join(' '))
+  })
+
+  return (
+    <>
+      {task.word && <div className="kl-word">{task.word}</div>}
+      <div className={`kl-order__line ${answered ? 'done' : ''}`}>
+        {line.length ? line.join(' ') : <span className="kl-order__ph">{t('lesson.order.hint')}</span>}
+      </div>
+      <div className="kl-bank kl-order">
+        {words.map((w, i) => (
+          <button
+            key={i}
+            className={`kl-chip ${picked.includes(i) ? 'sel' : ''}`}
+            disabled={answered}
+            onClick={() => !answered && setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : [...p, i]))}
+          >
+            {w}
+          </button>
+        ))}
+      </div>
+    </>
   )
 }
 

@@ -5812,6 +5812,14 @@ textarea {
 .kl-chip.sel { border-color: var(--purple); background: var(--purple); color: #fff; }
 .kl-chip:disabled { cursor: default; opacity: 0.7; }
 
+.kl-order__line {
+  min-height: 56px; display: flex; align-items: center; justify-content: center;
+  padding: 12px 16px; border: 2px dashed #ded8f5; border-radius: 14px;
+  font-size: 20px; font-weight: 700; color: var(--ink); text-align: center;
+}
+.kl-order__line.done { border-style: solid; }
+.kl-order__ph { font-size: 15px; font-weight: 600; color: var(--muted); }
+
 .kl-check { display: flex; flex-direction: column; gap: 10px; }
 .kl-check__item {
   display: flex;
