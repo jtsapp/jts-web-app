@@ -50,6 +50,21 @@ lint` + ручной прогон затронутого экрана (`npm run 
 - `agent/` — отдельный Python-воркер LiveKit (Gemini Live), деплоится отдельно
 - `scripts/` — генераторы данных (extract-fairytale.js, extract-situations.js)
 
+**Уроки «Обучения» — два разных источника.** A1/B2/C1 идут по старой схеме:
+`scripts/extract-kingdom-lessons.js` раскладывает hosted-Speakout в
+`public/learning/<level>.json`, экран рисует их нативным `LessonPlayer`
+(7 типов заданий). A2/B1 переведены на собственный курс: у него втрое больше
+типов заданий (сортировка по колонкам, слоты, порядок слов, поиск ошибки,
+диалоги, юнит-тесты), поэтому урок перенесён целиком —
+`scripts/extract-course-lessons.js` режет курс-файл уровня на
+`public/course/<level>/` (разметка урока, движок курса, его CSS со всеми
+селекторами под `.jc`, картинки и аудио), а `src/learning/CourseLesson.jsx`
+монтирует это внутри сайта. Режим self зафиксирован через `data-mode` на
+контейнере; блоки 1-to-1 и Group остаются в разметке скрытыми — их не режем.
+`KingdomInteriorPage` сам выбирает источник: есть `public/course/<level>/` —
+берёт его, нет — старый. Не возвращай A2/B1 в LEVELS старого экстрактора: его
+прогон чистит весь `public/learning`.
+
 **Внешние сервисы:**
 - JTS-бэкенд: `NEXT_PUBLIC_API_URL` / `BACKEND_URL`, дефолт
   `https://dev-server.justtostudy.kz`. Верификация токена делегируется бэкенду

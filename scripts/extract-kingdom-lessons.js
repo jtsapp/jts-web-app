@@ -32,10 +32,12 @@ const MEDIA_DIR = path.join(OUT, 'media')
 // Залив: mc mirror public/learning/media jts/development/learning-media
 const MEDIA_URL_BASE = 'https://files-api.iqra.space/development/learning-media'
 
+// A2 и B1 сюда больше не входят: эти уровни переведены на собственный курс
+// (public/course/<level>/, генератор scripts/extract-course-lessons.js), а
+// прогон этого экстрактора чистит весь public/learning — без фильтра он тихо
+// вернул бы админский Speakout поверх курса.
 const LEVELS = [
   { code: 'a1', label: 'A1' },
-  { code: 'a2', label: 'A2' },
-  { code: 'b1', label: 'B1' },
   { code: 'b2', label: 'B2' },
   { code: 'c1', label: 'C1' },
 ]

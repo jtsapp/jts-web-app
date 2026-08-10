@@ -17,10 +17,11 @@ async function bootLearning(page) {
   await page.goto('/?screen=kingdom')
 }
 
-// LearningPage — остров-карта: открываем первый доступный узел
-// (A1 — всегда разблокирован).
-async function openFirstKingdom(page) {
-  const kingdom = page.locator('.lp-node:not([disabled])').first()
+// LearningPage — остров-карта: открываем королевство A1 по подписи узла.
+// Раньше брали «первый доступный», но после сдвига уровней на карте первым
+// идёт A0, а контента у него нет — тесты про уроки A1 уходили в пустую тропу.
+async function openKingdomA1(page) {
+  const kingdom = page.locator('.lp-node', { hasText: 'Уровень A1' }).first()
   await expect(kingdom).toBeVisible({ timeout: 15000 })
   await kingdom.click()
 }
@@ -28,7 +29,7 @@ async function openFirstKingdom(page) {
 test.describe('нативный урок «Обучения»', () => {
   test('тропа → плеер → задание → продолжить', async ({ page }) => {
     await bootLearning(page)
-    await openFirstKingdom(page)
+    await openKingdomA1(page)
 
     // Нативная тропа (не iframe): первый доступный урок.
     const node = page.locator('.kt-node__btn:not([disabled])').first()
@@ -63,9 +64,7 @@ test.describe('нативный урок «Обучения»', () => {
 
   test('узел тропы — печенька по типу урока', async ({ page }) => {
     await bootLearning(page)
-    const first = page.locator('.lp-node:not([disabled])').first()
-    await expect(first).toBeVisible({ timeout: 15000 })
-    await first.click()
+    await openKingdomA1(page)
     // Первый узел A1 (L00) начинается с задания-choice → зелёная печенька-лист.
     const cookie = page.locator('.kt-trail .kt-node__cookie').first()
     await expect(cookie).toBeVisible({ timeout: 15000 })
@@ -74,9 +73,7 @@ test.describe('нативный урок «Обучения»', () => {
 
   test('тропа разбита на юниты', async ({ page }) => {
     await bootLearning(page)
-    const first = page.locator('.lp-node:not([disabled])').first()
-    await expect(first).toBeVisible({ timeout: 15000 })
-    await first.click()
+    await openKingdomA1(page)
     await expect(page.locator('.kt-unit').first()).toBeVisible({ timeout: 15000 })
     // A1: 8 юнитов + отдельная секция финального экзамена (kt-exam).
     await expect(page.locator('.kt-unit')).toHaveCount(8)
@@ -88,7 +85,7 @@ test.describe('нативный урок «Обучения»', () => {
 
   test('выход из незаконченного урока спрашивает подтверждение', async ({ page }) => {
     await bootLearning(page)
-    await openFirstKingdom(page)
+    await openKingdomA1(page)
     const node = page.locator('.kt-node__btn:not([disabled])').first()
     await expect(node).toBeVisible({ timeout: 15000 })
     await node.click()
