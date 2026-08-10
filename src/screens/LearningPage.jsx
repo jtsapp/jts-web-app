@@ -1,6 +1,26 @@
+import { useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { computeKingdoms } from '../kingdoms.js'
+
+// Картинка маскота лежит в public/assets/world/levels/<уровень>.webp — она
+// есть не для всех уровней (после сдвига карты, например, нет a0.webp).
+// KingdomInteriorPage в этой ситуации просто прячет img через onError, но там
+// вокруг остаётся достаточно контекста (шапка города, прогресс). Узел карты —
+// это кольцо-аватар и больше ничего внутри, поэтому спрятать картинку значит
+// оставить пустой цветной кружок без опознавательных знаков. Вместо этого при
+// ошибке загрузки показываем код уровня — узел остаётся понятным и кликабельным.
+function LevelMascot({ src, alt, level }) {
+  const [broken, setBroken] = useState(false)
+  if (broken) {
+    return (
+      <span className="lp-node__fallback" aria-hidden="true">
+        {level}
+      </span>
+    )
+  }
+  return <img className="lp-node__av" src={src} alt={alt} loading="lazy" onError={() => setBroken(true)} />
+}
 
 export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom, onNav, onProfile }) {
   const { t } = useI18n()
@@ -33,7 +53,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
                     onClick={() => !locked && onOpenKingdom?.(k)}
                   >
                     <span className="lp-node__ring">
-                      <img className="lp-node__av" src={`/assets/world/levels/${k.level.toLowerCase()}.webp`} alt={k.name} loading="lazy" />
+                      <LevelMascot src={`/assets/world/levels/${k.level.toLowerCase()}.webp`} alt={k.name} level={k.level} />
                       {locked && (
                         <span className="lp-node__lock" aria-hidden="true">
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">

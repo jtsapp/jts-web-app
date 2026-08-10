@@ -2827,6 +2827,21 @@ textarea {
   object-fit: cover;
   display: block;
 }
+/* Фолбэк, если .webp маскота нет (public/assets/world/levels/<уровень>.webp
+   существует не для всех уровней) — код уровня поверх цвета кольца, чтобы узел
+   остался опознаваемым, а не превратился в пустой цветной кружок. */
+.lp-node__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 3.4cqw;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0.2cqw 0.6cqw rgba(20, 16, 40, 0.35);
+}
 .lp-node__label {
   margin-top: 0;
   background: #fff;
