@@ -4,7 +4,6 @@ import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
 import { AppleIcon, GoogleIcon } from '../components/icons.jsx'
 import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
-import { isEmailIdentifier } from '../api.js'
 
 /**
  * Основной вход: телефон ИЛИ почта + пароль. Бэкенд принимает оба поля
@@ -61,7 +60,13 @@ export default function PasswordLoginPage({ onBack, onSubmit, onOtpLogin, onGoog
             type="text"
             autoFocus
             autoComplete="username"
-            inputMode={isEmailIdentifier(identifier) ? 'email' : 'tel'}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            /* Не tel: пока в поле нет «@», isEmailIdentifier=false и на
+               мобильной клавиатуре остаются только цифры — почту ввести нельзя.
+               text подходит и для номера, и для email. */
+            inputMode="text"
             placeholder={t('login.identifierPlaceholder')}
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
