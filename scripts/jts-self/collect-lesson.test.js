@@ -83,7 +83,10 @@ describe('collectLesson', () => {
     expect(s.blocks[0]).toEqual({ kind: 'gap', before: 'I', after: 'coffee.', answer: 'like|love', why: 'I like + вещь' })
   })
 
-  it('.order → слова в показанном порядке и эталонная перестановка', () => {
+  it('.order (A0, числовой data-val) → ранг чипа — позиция его value в data-order, а не само value', () => {
+    // data-order="1,2,3" здесь совпадает по написанию с data-val, но семантика —
+    // индекс в списке (0,1,2), а не число из data-val (1,2,3): это разные вещи,
+    // которые на A0 просто визуально похожи, потому что value начинаются с 1.
     const html = stage('Practice', `<div class="task" data-task>
       <div class="row"><span class="body"><div class="order" data-order="1,2,3">
         <button class="ochip" data-val="3"><span class="pin"></span><span class="txt">coffee</span></button>
@@ -91,7 +94,51 @@ describe('collectLesson', () => {
         <button class="ochip" data-val="2"><span class="pin"></span><span class="txt">like</span></button>
       </div></span></div></div>`)
     const [s] = collectLesson(html)
-    expect(s.blocks[0]).toMatchObject({ kind: 'order', words: ['coffee', 'I', 'like'], order: [3, 1, 2] })
+    expect(s.blocks[0]).toMatchObject({ kind: 'order', words: ['coffee', 'I', 'like'], order: [2, 0, 1] })
+  })
+
+  it('.order (A1, строковый data-val) → ранги по позиции в data-order, без приведения value к числу', () => {
+    // Раньше data-val приводился к Number(...) — на строковых value ("w0","w1",…)
+    // это давало NaN, и normalize-task тихо сортировал мусор. Value сравниваются
+    // как строки, поэтому "w0" не должен случайно совпасть с числовым 0.
+    const html = stage('Practice', `<div class="task" data-task>
+      <div class="row"><span class="body"><div class="order" data-order="w0,w1,w2,w3,w4">
+        <button class="ochip" data-val="w4"><span class="txt">early</span></button>
+        <button class="ochip" data-val="w3"><span class="txt">up</span></button>
+        <button class="ochip" data-val="w2"><span class="txt">get</span></button>
+        <button class="ochip" data-val="w1"><span class="txt">always</span></button>
+        <button class="ochip" data-val="w0"><span class="txt">I</span></button>
+      </div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({
+      kind: 'order',
+      words: ['early', 'up', 'get', 'always', 'I'],
+      order: [4, 3, 2, 1, 0],
+    })
+  })
+
+  it('.order с data-val, которого нет в data-order, → ранг -1 (невалидную перестановку отбраковывает normalize-task)', () => {
+    // collectLesson не валидирует данные — это ответственность normalize-task
+    // (см. normalize-task.test.js). Здесь проверяем только сырое извлечение.
+    const html = stage('Practice', `<div class="task" data-task>
+      <div class="row"><span class="body"><div class="order" data-order="w0,w1,w2">
+        <button class="ochip" data-val="w0"><span class="txt">I</span></button>
+        <button class="ochip" data-val="w9"><span class="txt">like</span></button>
+        <button class="ochip" data-val="w2"><span class="txt">coffee</span></button>
+      </div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ order: [0, -1, 2] })
+  })
+
+  it('.order с повторяющимися data-val у разных чипов → повторяющийся ранг в сырых данных', () => {
+    const html = stage('Practice', `<div class="task" data-task>
+      <div class="row"><span class="body"><div class="order" data-order="w0,w1,w2">
+        <button class="ochip" data-val="w0"><span class="txt">I</span></button>
+        <button class="ochip" data-val="w0"><span class="txt">like</span></button>
+        <button class="ochip" data-val="w2"><span class="txt">coffee</span></button>
+      </div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ order: [0, 0, 2] })
   })
 
   it('кнопка аудио → блок audio с id трека (оба синтаксиса вызова)', () => {

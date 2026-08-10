@@ -88,11 +88,19 @@ function blockFromRow(row) {
   const order = row.querySelector('.order[data-order]')
   if (order) {
     const chips = [...order.querySelectorAll('.ochip')]
+    // data-order — список value в ПРАВИЛЬНОМ порядке, а не готовые ранги: на
+    // A0 value числовые ("1","2",…), на A1 — строковые ("w0","w1",…), и
+    // приводить data-val к числу нельзя — на A1 это давало NaN и молча ломало
+    // порядок. Ранг чипа — позиция его value в этом списке; сравниваем как
+    // строки с обрезкой пробелов, чтобы не зависеть от формата value.
+    // Значение, которого в списке нет, даёт -1 — это сырые данные без
+    // валидации, невалидную перестановку отбраковывает normalize-task.
+    const orderValues = (order.getAttribute('data-order') || '').split(',').map((v) => clean(v))
     return {
       kind: 'order',
       prompt: promptOf(row),
       words: chips.map((c) => clean((c.querySelector('.txt') || c).textContent)),
-      order: chips.map((c) => Number(c.getAttribute('data-val'))),
+      order: chips.map((c) => orderValues.indexOf(clean(c.getAttribute('data-val')))),
       why: whyOf(order),
     }
   }

@@ -41,8 +41,17 @@ function normalizeBlock(block, ctx) {
 
     case 'order': {
       if (block.words.length < 2 || block.words.length !== block.order.length) return null
-      // data-order — позиция каждого чипа в верном предложении: чип с data-val
-      // «3» стоит в ответе третьим.
+      // block.order — позиция каждого чипа в списке data-order (её вычислил
+      // collectLesson). Корректный ответ существует только если эти позиции
+      // образуют полную перестановку 0..n-1 без пропусков и повторов; иначе
+      // где-то есть чип со значением, отсутствующим в data-order, или два
+      // чипа с одинаковым значением — досортировать такой набор нельзя, и
+      // тихая сортировка мусора выдала бы правдоподобное, но неверное
+      // предложение как «правильный ответ».
+      const ranks = [...block.order].sort((a, b) => a - b)
+      const isPermutation = ranks.every((rank, i) => rank === i)
+      if (!isPermutation) return null
+
       const answer = block.words.map((w, i) => [block.order[i], w]).sort((a, b) => a[0] - b[0]).map(([, w]) => w)
       return { ...base, type: 'order', word: block.prompt, words: block.words, answer, why: block.why || '' }
     }

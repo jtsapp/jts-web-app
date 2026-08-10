@@ -32,9 +32,48 @@ describe('normalizeBlock', () => {
     expect(t).toMatchObject({ type: 'multi', options: ['a', 'b', 'c'], answer: [0, 2] })
   })
 
-  it('order → слова и эталонный порядок', () => {
-    const t = normalizeBlock({ kind: 'order', prompt: '', words: ['coffee', 'I', 'like'], order: [3, 1, 2], why: '' }, ctx)
+  it('order → слова и эталонный порядок (ранги 0..n-1 — позиции в data-order, как их отдаёт collectLesson)', () => {
+    const t = normalizeBlock({ kind: 'order', prompt: '', words: ['coffee', 'I', 'like'], order: [2, 0, 1], why: '' }, ctx)
     expect(t).toMatchObject({ type: 'order', words: ['coffee', 'I', 'like'], answer: ['I', 'like', 'coffee'] })
+  })
+
+  it('order (A0, числовой формат) → перестановка валидна, ответ собирается верно', () => {
+    const t = normalizeBlock(
+      { kind: 'order', prompt: '', words: ['coffee', 'always', 'I', 'drink'], order: [3, 1, 0, 2], why: '' },
+      ctx,
+    )
+    expect(t).toMatchObject({ answer: ['I', 'always', 'drink', 'coffee'] })
+  })
+
+  it('order (A1, строковый формат data-val — ранги уже пересчитаны collectLesson) → ответ собирается верно', () => {
+    // На нормализацию строковый исходный data-val не попадает: collectLesson уже
+    // превратил его в позицию 0..n-1. Здесь фиксируем, что эти позиции
+    // обрабатываются как обычная числовая перестановка.
+    const t = normalizeBlock(
+      { kind: 'order', prompt: '', words: ['early', 'up', 'get', 'always', 'I'], order: [4, 3, 2, 1, 0], why: '' },
+      ctx,
+    )
+    expect(t).toMatchObject({ answer: ['I', 'always', 'get', 'up', 'early'] })
+  })
+
+  it('order с чипом, чьё значение отсутствует в data-order (ранг -1), отбрасывается — не выдаём правдоподобный, но неверный порядок', () => {
+    expect(
+      normalizeBlock({ kind: 'order', prompt: '', words: ['I', 'like', 'coffee'], order: [0, -1, 2], why: '' }, ctx),
+    ).toBeNull()
+  })
+
+  it('order с повторяющимися рангами (два чипа с одинаковым data-val) отбрасывается', () => {
+    expect(
+      normalizeBlock({ kind: 'order', prompt: '', words: ['I', 'like', 'coffee'], order: [0, 0, 2], why: '' }, ctx),
+    ).toBeNull()
+  })
+
+  it('order с рангами, не покрывающими весь диапазон 0..n-1 (несовпадение длин списков), отбрасывается', () => {
+    // Например data-order длиннее списка чипов: реальных рангов меньше n, и
+    // получившийся набор индексов не образует полную перестановку 0..n-1.
+    expect(
+      normalizeBlock({ kind: 'order', prompt: '', words: ['I', 'like', 'coffee'], order: [0, 1, 3], why: '' }, ctx),
+    ).toBeNull()
   })
 
   it('audio → listen с абсолютным URL файл-сервера', () => {
