@@ -166,17 +166,82 @@ function extractAudio(node, blocks) {
   }
 }
 
+// Разметка курса рассчитана на его собственные скрипты: sayWord озвучивает
+// слово, cardAdd кладёт его в словарь курса, slide листает слайдер, sayText
+// читает абзац синтезатором. В приложении этих функций нет и не будет, а плеер
+// печатает info через dangerouslySetInnerHTML — то есть переносит контрол как
+// есть. Такая кнопка жмётся и не делает ничего: мёртвый контрол в уроке хуже,
+// чем его отсутствие, поэтому из info-разметки они уходят.
+const HANDLER_ATTR = /^on[a-z]+$/i
+
+// Контролы без inline-обработчика курс подключал по id из скрипта
+// (переключатель перевода input#trToggle). В приложении они так же мертвы, а
+// <label> без своего контрола — подпись к тому, чего нет: убираем вместе.
+const DEAD_CONTROLS = 'input, select, textarea'
+
+// Тэги, для которых пустота — норма: они несут смысл сами (картинка, аудио,
+// разделитель) или держат каркас таблицы. Их не удаляем, и наличие такого
+// потомка делает контейнер непустым.
+const KEEPS_MEANING = 'img, audio, video, source, iframe, svg, br, hr, table, thead, tbody, tfoot, tr, td, th, col, colgroup'
+
+const MEDIA = 'img, audio, video, table'
+const hasContent = (el) => Boolean(clean(el.textContent) || el.matches(MEDIA) || el.querySelector(MEDIA))
+const isDeadControl = (el) =>
+  [...el.attributes].some((a) => HANDLER_ATTR.test(a.name)) || el.matches(DEAD_CONTROLS)
+
+/** Мёртвые контролы курса — вместе с подписью-<label>, если она была. */
+function stripDeadControls(root) {
+  for (const el of [...root.querySelectorAll('*')]) {
+    if (!isDeadControl(el)) continue
+    const label = el.closest('label')
+    ;(label && label !== root ? label : el).remove()
+  }
+}
+
+/**
+ * Пустые контейнеры, которые в курсе наполнял скрипт: карточки слов
+ * (div.words#words), слайды грамматики (div.slide#slide, div.dots#dots) и
+ * обёртки вокруг них. Без скрипта они остаются пустыми коробками, а их
+ * дублирующиеся id (words, slide, dots) ещё и размножаются в DOM приложения,
+ * когда узел собран из нескольких стадий. Обходим в обратном порядке
+ * документа, поэтому потомки исчезают раньше предков: пустой .slider уходит
+ * следом за опустевшими .slide, .snav и .dots.
+ */
+function stripEmptyContainers(root) {
+  for (const el of [...root.querySelectorAll('*')].reverse()) {
+    if (el.matches(KEEPS_MEANING) || el.closest('svg') || el.querySelector(KEEPS_MEANING)) continue
+    if (clean(el.textContent)) continue
+    el.remove()
+  }
+}
+
 /**
  * Объяснения, карточки слов, грамматическая справка. Они нужны целиком: без
- * них урок превращается в голый тест. Отдельно стоящую кнопку аудио
- * дублировать блоком info незачем, но только если она успешно стала блоком
- * audio (extractAudio уже вынул её из дерева); если onclick не разобрался,
- * кнопка осталась на месте и должна попасть в info как обычный контент.
+ * них урок превращается в голый тест — поэтому чистка снимает только контролы
+ * и опустевшие обёртки, а текст, таблицы, списки и картинки остаются.
+ *
+ * Отдельно стоящую кнопку аудио дублировать блоком info незачем, но только
+ * если она успешно стала блоком audio (extractAudio уже вынул её из дерева).
+ * Кнопка с неразобранным onclick — тот же мёртвый контрол курса, что и
+ * остальные, и уходит по общему правилу.
  */
 function pushInfo(node, blocks) {
   if (node.matches('button.btn-audio') && trackIdOf(node)) return
-  const html = node.outerHTML.trim()
-  if (clean(node.textContent) || /<(img|audio|video|table)/i.test(html)) blocks.push({ kind: 'info', html })
+
+  const hadContent = hasContent(node)
+  const copy = node.cloneNode(true)
+  if (!isDeadControl(copy)) {
+    stripDeadControls(copy)
+    stripEmptyContainers(copy)
+    if (hasContent(copy)) {
+      blocks.push({ kind: 'info', html: copy.outerHTML.trim() })
+      return
+    }
+  }
+  // Содержимое было, но целиком состояло из мёртвых контролов курса. Пустой
+  // блок доходит до normalize-task и попадает в сводку потерь (info-empty) —
+  // молча исчезать контент урока больше не должен.
+  if (hadContent) blocks.push({ kind: 'info', html: '' })
 }
 
 /**

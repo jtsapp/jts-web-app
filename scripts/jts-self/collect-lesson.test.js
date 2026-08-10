@@ -29,16 +29,15 @@ describe('collectLesson', () => {
     expect(s.blocks.some((b) => b.html.includes('только для группы'))).toBe(false)
   })
 
-  it('кнопка .btn-audio с нераспознанным onclick не пропадает бесследно, а остаётся видимым info-контентом', () => {
-    // onclick другой функции (не playTrack/playRange) — trackIdOf не разберёт
-    // id, блока audio не будет; но кнопка была единственным содержимым узла,
-    // поэтому безусловное удаление стёрло бы узел целиком.
+  it('кнопка .btn-audio с нераспознанным onclick не остаётся мёртвым контролом, но и не исчезает бесследно', () => {
+    // onclick другой функции курса (не playTrack/playRange) — trackIdOf не
+    // разберёт id, блока audio не будет. Раньше такая кнопка переносилась в
+    // info как есть: в приложении скриптов курса нет, и она жалась впустую.
+    // Теперь она уходит по общему правилу чистки, а блок остаётся пустым —
+    // его посчитает сводка потерь экстрактора (normalize-task → info-empty).
     const html = stage('Wrap', `<button class="btn btn-audio" onclick="stopAudio(this)">⏹ Стоп</button>`)
     const [s] = collectLesson(html)
-    expect(s.blocks).toHaveLength(1)
-    expect(s.blocks[0]).toMatchObject({ kind: 'info' })
-    expect(s.blocks[0].html).toContain('btn-audio')
-    expect(s.blocks[0].html).toContain('Стоп')
+    expect(s.blocks).toEqual([{ kind: 'info', html: '' }])
   })
 
   it('строка с .opts[data-correct] → choice с индексом верного', () => {
@@ -234,6 +233,124 @@ describe('collectLesson', () => {
   })
 
   it('несколько стадий сохраняют порядок', () => {
+    const html = stage('Warm-up', '<div data-only="self">a</div>') + stage('Wrap', '<div data-only="self">b</div>')
+    expect(collectLesson(html).map((s) => s.name)).toEqual(['Warm-up', 'Wrap'])
+  })
+})
+
+// Находка ревью: разметка курса тащила в info контролы, которые работали
+// только вместе со скриптами курса. В приложении этих скриптов нет, плеер
+// печатает info через dangerouslySetInnerHTML — и в уроках оказались пустые
+// слайдеры, пустые .words, кнопки sayWord/cardAdd/sayText, переключатели
+// перевода и дублирующиеся id (slide, words, trToggle).
+describe('collectLesson — чистка мёртвых контролов курса из info', () => {
+  it('слайдер грамматики уходит целиком: стрелки со slide() и пустые контейнеры со своими id', () => {
+    const html = stage('Grammar', `<div data-only="self">
+      <p>I like coffee.</p>
+      <div class="slider"><div class="slide" id="slide"></div>
+        <div class="snav">
+          <button class="btn btn-ghost btn-round" onclick="slide(-1)" aria-label="Previous">&lsaquo;</button>
+          <button class="btn btn-ghost btn-round" onclick="slide(1)" aria-label="Next">&rsaquo;</button>
+        </div>
+        <div class="dots" id="dots"></div></div>
+    </div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).toContain('I like coffee.')
+    expect(s.blocks[0].html).not.toContain('slide(')
+    expect(s.blocks[0].html).not.toContain('id="slide"')
+    expect(s.blocks[0].html).not.toContain('id="dots"')
+    expect(s.blocks[0].html).not.toContain('slider')
+  })
+
+  it('пустой контейнер карточек .words#words уходит, инструкция рядом остаётся', () => {
+    const html = stage('Vocabulary', `<div data-only="self">
+      <p class="subline">These are your words for this lesson.</p>
+      <div class="words" id="words"></div>
+    </div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).toContain('These are your words')
+    expect(s.blocks[0].html).not.toContain('id="words"')
+  })
+
+  it('переключатель перевода уходит вместе со своей подписью, инструкция в том же блоке остаётся', () => {
+    // input#trToggle курс подключал скриптом по id — inline-обработчика у него
+    // нет, а <label> без своего контрола остался бы подписью к пустому месту.
+    const html = stage('Vocabulary', `<div data-only="self">
+      <div class="vbar"><div class="instruction">Look and listen.</div>
+        <label class="switch"><input type="checkbox" id="trToggle"><span class="track"></span><span>Show translation</span></label>
+      </div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).toContain('Look and listen.')
+    expect(s.blocks[0].html).not.toContain('trToggle')
+    expect(s.blocks[0].html).not.toContain('Show translation')
+  })
+
+  it('кнопки sayWord и cardAdd уходят, а слово и перевод рядом с ними остаются', () => {
+    const html = stage('Vocabulary', `<div data-only="self"><ul class="mini"><li>
+      <span class="w">like <span class="wspk" role="button" tabindex="0" onclick="sayWord('like')">&#128266;</span></span>
+      <span class="t">нравится · ұнайды</span>
+      <button class="fc-add" data-w="like" onclick="cardAdd('like',this)">+ Add to My Dictionary</button>
+    </li></ul></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).toContain('like')
+    expect(s.blocks[0].html).toContain('нравится')
+    expect(s.blocks[0].html).not.toContain('sayWord')
+    expect(s.blocks[0].html).not.toContain('cardAdd')
+    expect(s.blocks[0].html).not.toContain('Add to My Dictionary')
+  })
+
+  it('кнопка sayText уходит: озвучка абзаца — тоже функция исходного курса', () => {
+    const html = stage('Listen', `<div data-only="self">
+      <div class="player">
+        <button class="btn btn-audio segbtn" onclick="sayText(this)" data-say="I was born in Almaty.">Play</button>
+        <div class="meta"><b>Listening</b> — послушай и ответь</div>
+      </div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).not.toContain('sayText')
+    expect(s.blocks[0].html).toContain('послушай и ответь')
+  })
+
+  it('настоящий контент не трогаем: объяснения, таблицы, списки и картинки остаются', () => {
+    const html = stage('Grammar', `<div data-only="self">
+      <h4>Form</h4>
+      <table class="gform"><tr><td>I</td><td>I like coffee.</td></tr></table>
+      <ul class="egs"><li>Build it: like → I like coffee.</li></ul>
+      <img src="/x.png" alt="схема">
+      <details class="gref"><summary>Full grammar reference</summary><div class="gref-body">Правило целиком</div></details>
+    </div>`)
+    const [s] = collectLesson(html)
+    const { html: out } = s.blocks[0]
+    expect(out).toContain('<table')
+    expect(out).toContain('I like coffee.')
+    expect(out).toContain('<img')
+    expect(out).toContain('Full grammar reference')
+    expect(out).toContain('Правило целиком')
+  })
+
+  it('пустая ячейка таблицы остаётся — каркас таблицы не «пустой контейнер»', () => {
+    const html = stage('Grammar', `<div data-only="self">
+      <table class="gform"><tr><td>I</td><td></td></tr></table></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html.match(/<td/g)).toHaveLength(2)
+  })
+
+  it('svg-иконка внутри сохранённого контента не разбирается на части', () => {
+    const html = stage('Wrap', `<div data-only="self"><b>Итог</b>
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).toContain('<path')
+  })
+
+  it('несколько стадий с чисткой не оставляют дублирующихся id в разметке уроков', () => {
+    const words = `<div data-only="self"><p>Words</p><div class="words" id="words"></div></div>`
+    const html = stage('Vocabulary', words) + stage('Words', words)
+    const blocks = collectLesson(html).flatMap((s) => s.blocks)
+    expect(blocks.filter((b) => b.html.includes('id="words"'))).toHaveLength(0)
+  })
+})
+
+describe('collectLesson — порядок стадий', () => {
+  it('несколько стадий сохраняют порядок (после чистки тоже)', () => {
     const html = stage('Warm-up', '<div data-only="self">a</div>') + stage('Wrap', '<div data-only="self">b</div>')
     expect(collectLesson(html).map((s) => s.name)).toEqual(['Warm-up', 'Wrap'])
   })
