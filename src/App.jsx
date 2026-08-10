@@ -49,8 +49,8 @@ import ProfilePage from './screens/ProfilePage.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
-import { getTutor, TUTOR_GREETING } from './tutor/tutors.js'
-import { speakTutorVoice } from './lib/ielts-audio.js'
+import { getTutor } from './tutor/tutors.js'
+import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
@@ -846,8 +846,9 @@ export default function App() {
             saveTutorPrefs(token, { tutor: key })
             setScreen('tutor-loading')
           }}
-          // Образец голоса: тьютор здоровается своим голосом (Gemini/Soniox).
-          onListen={(key) => speakTutorVoice(key, TUTOR_GREETING[key] || '')}
+          // Образец голоса — готовый файл, а не живой синтез: фраза одна и та
+          // же у всех, платить за неё провайдеру на каждое нажатие незачем.
+          onListen={(key) => playTutorSample(key)}
         />
       )
     case 'tutor-loading':
