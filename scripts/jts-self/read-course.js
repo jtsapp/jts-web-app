@@ -86,7 +86,17 @@ function readCourse(filePath) {
     .sort((a, b) => a - b)
     .map((no) => {
       const l = rawLessons[no]
-      return { no, unit: l.unit, title: l.title || '', blurb: l.blurb || '', tracks: l.tracks || {}, html: l.html || '' }
+      return {
+        no,
+        unit: l.unit,
+        title: l.title || '',
+        blurb: l.blurb || '',
+        tracks: l.tracks || {},
+        // VOCAB у A0 разложен по режимам, у A1 — плоским списком.
+        vocab: Array.isArray(l.VOCAB) ? l.VOCAB : (l.VOCAB && l.VOCAB.self) || [],
+        images: l.IMG || {},
+        html: l.html || '',
+      }
     })
 
   const rawReviews = evalDecl(src, 'REVIEWS', filePath) ?? {}

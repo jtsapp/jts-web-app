@@ -5856,6 +5856,16 @@ textarea {
 .kl-info :where(th) { background: #f7f4ff; }
 .kl-info :where(b) { color: var(--purple); }
 
+.kl-vocab { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.kl-vocab__card {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px;
+  border: 1.5px solid #ece8fb; border-radius: 14px; background: #fff; text-align: center;
+}
+.kl-vocab__img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; }
+.kl-vocab__word { font-size: 15px; color: var(--ink); }
+.kl-vocab__tr { font-size: 13px; color: var(--muted); }
+.kl-vocab__def { font-size: 12px; color: var(--muted); }
+
 /* Фидбэк + футер */
 .kl-fb {
   display: flex;

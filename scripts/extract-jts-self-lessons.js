@@ -18,8 +18,28 @@ const path = require('node:path')
 const { readCourse } = require('./jts-self/read-course')
 const { collectLesson } = require('./jts-self/collect-lesson')
 const { buildLessonNodes, buildReviewNode, lessonType } = require('./jts-self/build-nodes')
+const { vocabCardsTask, imageSlug } = require('./jts-self/vocab-cards')
 
 const OUT = path.join(__dirname, '..', 'public/learning')
+
+// Локальный staging медиа — в .gitignore; в git уходит только лёгкий JSON.
+const MEDIA_DIR = path.join(OUT, 'media')
+const MEDIA_URL_BASE = 'https://files-api.iqra.space/development/learning-media'
+
+/** Пишет картинки слов урока и возвращает слово → публичная ссылка. */
+function writeImages(lesson, level) {
+  const dir = path.join(MEDIA_DIR, level)
+  const urls = {}
+  for (const [word, uri] of Object.entries(lesson.images || {})) {
+    const m = /^data:image\/([a-z]+);base64,(.+)$/s.exec(String(uri))
+    if (!m) continue
+    const file = `${imageSlug(word)}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(path.join(dir, file), Buffer.from(m[2], 'base64'))
+    urls[word] = `${MEDIA_URL_BASE}/${level}/${file}`
+  }
+  return urls
+}
 
 function extractCourse(filePath) {
   const course = readCourse(filePath)
@@ -41,7 +61,14 @@ function extractCourse(filePath) {
       }
       seenUnits.add(lesson.unit)
     }
-    nodes.push(...buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html) }))
+    const imageUrls = writeImages(lesson, course.level)
+    const cards = vocabCardsTask(lesson, (word) => imageUrls[word] || null)
+    const lessonNodes = buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html) })
+    if (cards) {
+      const vocabNode = lessonNodes.find((n) => /vocab|words/i.test(n.title))
+      if (vocabNode) vocabNode.tasks.unshift(cards)
+    }
+    nodes.push(...lessonNodes)
   }
   for (const review of course.reviews) {
     if (!review.__done) nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html) }))

@@ -99,4 +99,19 @@ describe('readCourse', () => {
     expect(course.lessons[0]).toMatchObject({ no: 1, unit: 1, title: 'One', tracks: { t1: 'a0_1.mp3' } })
     expect(course.reviews).toEqual([{ no: 1, unit: 1, title: 'Unit Test · Unit 1', html: '<i>t</i>' }])
   })
+
+  it('берёт словарь режима self и карту картинок', () => {
+    const file = tmpCourse(`
+      <title>just to study — A0 · Course</title>
+      <script>
+      const UNITS=[["U",["One"]]];
+      const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},
+        "VOCAB":{"self":[["like","","нравится","ұнайды","def"]],"group":[]},
+        "IMG":{"like":"data:image/jpeg;base64,AAA"},"html":""}};
+      const REVIEWS={};
+      </script>`)
+    const [lesson] = readCourse(file).lessons
+    expect(lesson.vocab).toEqual([['like', '', 'нравится', 'ұнайды', 'def']])
+    expect(lesson.images).toEqual({ like: 'data:image/jpeg;base64,AAA' })
+  })
 })
