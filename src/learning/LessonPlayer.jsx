@@ -173,6 +173,7 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
             {!feedback.ok && feedback.answer && (
               <span className="kl-fb__ans">{t('lesson.answerWas')}: {feedback.answer}</span>
             )}
+            {task.why && <span className="kl-fb__why"><b>{t('lesson.why')}:</b> {task.why}</span>}
           </div>
           {feedback.ok && (
             <span className="kl-reward">

@@ -191,3 +191,26 @@ describe('LessonPlayer — задание multi', () => {
     expect(opts.classList.contains('kl-multi')).toBe(false)
   })
 })
+
+describe('LessonPlayer — пояснение why', () => {
+  it('показывает пояснение после неверного ответа', () => {
+    renderLesson([orderTask])
+    for (const word of ['coffee', 'I', 'like']) fireEvent.click(screen.getByRole('button', { name: word }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(screen.getByText(/подлежащее, глагол, дополнение/)).toBeTruthy()
+  })
+
+  it('показывает пояснение и после верного ответа', () => {
+    renderLesson([orderTask])
+    for (const word of ['I', 'like', 'coffee']) fireEvent.click(screen.getByRole('button', { name: word }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(screen.getByText(/подлежащее, глагол, дополнение/)).toBeTruthy()
+  })
+
+  it('без why лишней строки нет', () => {
+    renderLesson([{ ...orderTask, why: '' }])
+    for (const word of ['I', 'like', 'coffee']) fireEvent.click(screen.getByRole('button', { name: word }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(document.querySelector('.kl-fb__why')).toBeNull()
+  })
+})

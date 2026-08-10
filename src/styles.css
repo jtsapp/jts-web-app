@@ -5906,6 +5906,8 @@ textarea {
 .kl-fb__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .kl-fb__text b { font-size: 15px; color: var(--ink); }
 .kl-fb__ans { font-size: 13px; color: var(--muted); }
+.kl-fb__why { font-size: 13px; line-height: 1.45; color: var(--muted); }
+.kl-fb__why b { color: var(--ink); }
 .kl-reward { margin-left: auto; display: flex; align-items: center; gap: 4px; font-weight: 800; color: #b8860b; }
 .kl-reward__coin { width: 22px; height: 22px; }
 
