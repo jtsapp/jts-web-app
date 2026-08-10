@@ -86,6 +86,8 @@ export async function blobToWav16kMono(blob) {
 
 let currentAudio = null
 let currentObjectUrl = null
+// Поколение нажатия на «послушать» — см. playTutorSample.
+let sampleSeq = 0
 
 function stopServerAudio() {
   if (currentAudio) {
@@ -170,9 +172,70 @@ export async function speakListeningAudio(text, opts = {}) {
 }
 
 /**
+ * Play the tutor's pre-recorded voice card from public/tutor/voice/<key>.mp3.
+ *
+ * Экран выбора тьютора крутит одну и ту же фразу всем и помногу раз, поэтому
+ * она лежит файлом, а не синтезируется на каждое нажатие: не платим провайдеру
+ * за один и тот же звук, не ждём сеть и не зависим от квоты в момент, когда
+ * ученик только знакомится с приложением. Файлы озвучены голосами тех же
+ * провайдеров (см. scripts/make-tutor-voice-samples.js), так что тембр совпадает
+ * с тем, каким тьютор заговорит вживую.
+ *
+ * Браузерного фолбэка тут нет намеренно: файл либо есть в сборке, либо его
+ * отсутствие — это баг деплоя, который надо чинить, а не маскировать
+ * роботизированным голосом поверх тщательно подобранного тембра.
+ *
+ * Звучит всегда ровно одна визитка: новое нажатие останавливает предыдущую,
+ * а серия нажатий подряд оставляет играть только последнее. "superseded" —
+ * это нормальный исход для нажатия, которое успели сменить, а не ошибка.
+ *
+ * @param {'luna'|'dexter'|'spark'} tutor
+ * @param {{ volume?: number, onEnd?: () => void }} [opts]
+ * @returns {Promise<"sample" | "superseded" | "none">}
+ */
+export async function playTutorSample(tutor, opts = {}) {
+  if (!tutor) return 'none'
+  // Номер нажатия. Звучит всегда ровно одна визитка — последняя нажатая, —
+  // а без этого счётчика получается гонка: play() асинхронный, и когда второе
+  // нажатие ставит паузу первому, тот отвечает AbortError («play() request was
+  // interrupted by a call to pause()»). Его catch и onerror сработали бы уже
+  // ПОСЛЕ старта второго звука и заглушили бы именно его — то есть быстрый
+  // двойной клик давал тишину. Поэтому обработчики старого нажатия молчат,
+  // если поколение сменилось.
+  const seq = ++sampleSeq
+  const stale = () => seq !== sampleSeq
+  try {
+    stopServerAudio()
+    const audio = new Audio(`/tutor/voice/${tutor}.mp3`)
+    if (opts.volume != null) audio.volume = Math.max(0, Math.min(1, opts.volume))
+    currentAudio = audio
+    audio.onended = () => {
+      if (stale()) return
+      stopServerAudio()
+      opts.onEnd?.()
+    }
+    audio.onerror = () => {
+      if (!stale()) stopServerAudio()
+    }
+    await audio.play()
+    return stale() ? 'superseded' : 'sample'
+  } catch (e) {
+    // Нас прервало следующее нажатие — это норма, а не сбой.
+    if (stale()) return 'superseded'
+    console.warn('[tutor-sample] playback failed:', e)
+    stopServerAudio()
+    return 'none'
+  }
+}
+
+/**
  * Speak `text` in a specific tutor's voice via /api/tutor-tts (Gemini for
  * Luna/Dexter, Soniox for Spark). Falls back to browser speech if the server
  * TTS is unconfigured or fails, so a "listen" button always does something.
+ *
+ * Для готовых реплик (визитка на экране выбора) есть playTutorSample выше —
+ * этот путь остаётся для ДИНАМИЧЕСКОГО текста, который заранее не озвучить:
+ * задание placement-теста в SpeakingTestPage.
  *
  * @param {'luna'|'dexter'|'spark'} tutor
  * @param {string} text
