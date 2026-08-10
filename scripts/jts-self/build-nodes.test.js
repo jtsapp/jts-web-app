@@ -31,6 +31,25 @@ describe('buildLessonNodes', () => {
     expect(nodes[0].tasks).toHaveLength(5)
   })
 
+  it('заголовок узла после склейки ведущей короткой стадии называет содержательную стадию, а не приклеенный огрызок', () => {
+    const nodes = buildLessonNodes({ lesson, level: 'a0', stages: [stage('Intro', 1), stage('Grammar', 5)] })
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0].title).toBe('Coffee — yes. · Grammar')
+    expect(nodes[0].tasks).toHaveLength(6)
+  })
+
+  it('урок из одной короткой стадии всё равно даёт один узел короче порога, а не пропадает с тропы', () => {
+    const nodes = buildLessonNodes({ lesson, level: 'a0', stages: [stage('Riddles', 2)] })
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0].tasks).toHaveLength(2)
+  })
+
+  it('несколько коротких стадий, суммарно не дотягивающих до порога, дают один короткий узел, а не пропадают', () => {
+    const nodes = buildLessonNodes({ lesson, level: 'a0', stages: [stage('Intro', 1), stage('Riddles', 1)] })
+    expect(nodes).toHaveLength(1)
+    expect(nodes[0].tasks).toHaveLength(2)
+  })
+
   it('стадия ровно из MIN_NODE_TASKS остаётся своим узлом', () => {
     const nodes = buildLessonNodes({ lesson, level: 'a0', stages: [stage('A', 4), stage('B', MIN_NODE_TASKS)] })
     expect(nodes).toHaveLength(2)
@@ -68,5 +87,21 @@ describe('lessonType', () => {
     expect(lessonType('L01-1', [{ type: 'info' }])).toBe('info')
     expect(lessonType('L01-2', [{ type: 'gap' }])).toBe('choice')
     expect(lessonType('L01-3', [])).toBe('choice')
+  })
+
+  it('watch и video группируются как video', () => {
+    expect(lessonType('L01-6', [{ type: 'watch' }])).toBe('video')
+    expect(lessonType('L01-7', [{ type: 'video' }])).toBe('video')
+  })
+
+  it('ведущий info не определяет тип, если дальше есть содержательное задание — тропа не должна быть одноцветной', () => {
+    // Методически каждая стадия открывается инструкцией: info в начале —
+    // это норма, а не признак того, что узел «инфо-узел».
+    expect(lessonType('L01-1', [{ type: 'info' }, { type: 'choice' }])).toBe('choice')
+    expect(lessonType('L01-2', [{ type: 'info' }, { type: 'info' }, { type: 'listen' }])).toBe('audio')
+  })
+
+  it('узел целиком из info-заданий остаётся честным info', () => {
+    expect(lessonType('L01-3', [{ type: 'info' }, { type: 'info' }])).toBe('info')
   })
 })
