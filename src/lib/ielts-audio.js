@@ -170,9 +170,52 @@ export async function speakListeningAudio(text, opts = {}) {
 }
 
 /**
+ * Play the tutor's pre-recorded voice card from public/tutor/voice/<key>.mp3.
+ *
+ * Экран выбора тьютора крутит одну и ту же фразу всем и помногу раз, поэтому
+ * она лежит файлом, а не синтезируется на каждое нажатие: не платим провайдеру
+ * за один и тот же звук, не ждём сеть и не зависим от квоты в момент, когда
+ * ученик только знакомится с приложением. Файлы озвучены голосами тех же
+ * провайдеров (см. scripts/make-tutor-voice-samples.js), так что тембр совпадает
+ * с тем, каким тьютор заговорит вживую.
+ *
+ * Браузерного фолбэка тут нет намеренно: файл либо есть в сборке, либо его
+ * отсутствие — это баг деплоя, который надо чинить, а не маскировать
+ * роботизированным голосом поверх тщательно подобранного тембра.
+ *
+ * @param {'luna'|'dexter'|'spark'} tutor
+ * @param {{ volume?: number, onEnd?: () => void }} [opts]
+ * @returns {Promise<"sample" | "none">}
+ */
+export async function playTutorSample(tutor, opts = {}) {
+  if (!tutor) return 'none'
+  try {
+    stopServerAudio()
+    const audio = new Audio(`/tutor/voice/${tutor}.mp3`)
+    if (opts.volume != null) audio.volume = Math.max(0, Math.min(1, opts.volume))
+    currentAudio = audio
+    audio.onended = () => {
+      stopServerAudio()
+      opts.onEnd?.()
+    }
+    audio.onerror = () => stopServerAudio()
+    await audio.play()
+    return 'sample'
+  } catch (e) {
+    console.warn('[tutor-sample] playback failed:', e)
+    stopServerAudio()
+    return 'none'
+  }
+}
+
+/**
  * Speak `text` in a specific tutor's voice via /api/tutor-tts (Gemini for
  * Luna/Dexter, Soniox for Spark). Falls back to browser speech if the server
  * TTS is unconfigured or fails, so a "listen" button always does something.
+ *
+ * Для готовых реплик (визитка на экране выбора) есть playTutorSample выше —
+ * этот путь остаётся для ДИНАМИЧЕСКОГО текста, который заранее не озвучить:
+ * задание placement-теста в SpeakingTestPage.
  *
  * @param {'luna'|'dexter'|'spark'} tutor
  * @param {string} text

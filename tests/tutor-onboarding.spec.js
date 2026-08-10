@@ -151,3 +151,34 @@ test.describe('онбординг-тур по дашборду', () => {
     expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('')
   })
 })
+
+// Визитка тьютора («Послушать голос X») — одна и та же фраза у всех и на много
+// нажатий, поэтому она лежит готовым файлом в public/tutor/voice, а не
+// синтезируется каждый раз. Вьюпорт тут ни при чём, поэтому свой describe без
+// мобильного skip.
+test.describe('выбор тьютора — образец голоса', () => {
+  test('играет готовый файл, а не живой синтез', async ({ page }) => {
+    await page.goto('/?screen=tutor-choose')
+    // Два макета: на мобиле карусель (.t-car__listen), на десктопе грид
+    // карточек (.t-tcard__listen). Второй скрыт под 760px, первый — над.
+    const listen = page.locator('.t-car__listen:visible, .t-tcard__listen:visible').first()
+    await expect(listen).toBeVisible()
+
+    const requests = []
+    page.on('request', (r) => {
+      const u = r.url()
+      if (u.includes('/api/tutor-tts') || u.includes('/tutor/voice/')) requests.push(u)
+    })
+
+    // play() в headless может отклониться политикой автоплея — нам важен сам
+    // факт похода за файлом, а не то, доиграл ли он до конца.
+    await listen.click()
+    await page.waitForTimeout(1200)
+
+    // Как только кнопка снова начнёт дёргать /api/tutor-tts, за каждое нажатие
+    // опять пойдут деньги провайдеру и сетевая задержка на первом же экране
+    // знакомства — тест сторожит именно это.
+    expect(requests.some((u) => u.includes('/tutor/voice/'))).toBe(true)
+    expect(requests.some((u) => u.includes('/api/tutor-tts'))).toBe(false)
+  })
+})
