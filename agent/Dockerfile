@@ -26,4 +26,10 @@ COPY agent.py .
 # fast instead of stalling on a model download.
 RUN python -c "from livekit.plugins import silero; silero.VAD.load()"
 
+# Локальная модель конца хода (TURN_DETECTOR=v1-mini, и она же — залипающий
+# фолбэк облачной v1) едет внутри livekit-local-inference, отдельно её качать
+# не нужно. Но импорт проверяем прямо на сборке: сломанное нативное колесо
+# должно уронить билд, а не всплыть посреди звонка, когда облако отвалилось.
+RUN python -c "from livekit.local_inference import EOT"
+
 CMD ["python", "agent.py", "start"]
