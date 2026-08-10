@@ -156,8 +156,16 @@ function collectStage(section) {
     }
 
     if (!isTask) {
+      // Инструкция и кнопка плеера в реальной разметке иногда лежат в одном
+      // контейнере с заданием, без обёртки .task над кнопкой (стадия
+      // Listening в A0). Если не вынуть аудио здесь, оно останется внутри
+      // info-блока сырым onclick="playRange(...)" — в новом приложении такой
+      // функции нет, кнопка будет мёртвой. Поэтому сначала извлекаем блоки
+      // audio, потом убираем сами кнопки из html, чтобы не дублировать.
       const intro = child.cloneNode(true)
       for (const task of [...intro.querySelectorAll('.task, [data-task]')]) task.remove()
+      pushAudio(intro, blocks)
+      for (const button of [...intro.querySelectorAll('button.btn-audio')]) button.remove()
       pushInfo(intro, blocks)
     }
 
