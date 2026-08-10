@@ -54,6 +54,33 @@ describe('collectLesson', () => {
     ])
   })
 
+  it('choice (A1, буквенный data-correct) → индекс кнопки с таким data-val, а не NaN', () => {
+    // Формат ключа ответа у уровней разный: A0 пишет индекс ("1"), A1 — букву
+    // ("c"), совпадающую с data-val нужной кнопки. Приведение к числу давало на
+    // A1 NaN, normalize-task выбрасывал задание, и уровень остался без единого
+    // choice — 1222 задания молча пропали.
+    const html = stage('Recall', `<div class="task" data-task>
+      <div class="row"><span class="num">1</span><span class="body">___ night I was at home.
+        <div class="opts" data-correct="c">
+          <button class="opt" data-val="a">Ago</button>
+          <button class="opt" data-val="b">ago</button>
+          <button class="opt" data-val="c">Last</button>
+        </div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ kind: 'choice', options: ['Ago', 'ago', 'Last'], correct: 2 })
+  })
+
+  it('choice с data-correct, которого нет ни у одной кнопки, → -1 (задание отбракует normalize-task)', () => {
+    const html = stage('Recall', `<div class="task" data-task>
+      <div class="row"><span class="body">q
+        <div class="opts" data-correct="z">
+          <button class="opt" data-val="a">one</button>
+          <button class="opt" data-val="b">two</button>
+        </div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ kind: 'choice', correct: -1 })
+  })
+
   it('строка с .opts[data-multi] → multi со списком верных', () => {
     const html = stage('Listening', `<div class="task" data-task>
       <div class="row"><span class="body">Отметь всё, что услышал
@@ -64,6 +91,31 @@ describe('collectLesson', () => {
         </div></span></div></div>`)
     const [s] = collectLesson(html)
     expect(s.blocks[0]).toMatchObject({ kind: 'multi', correct: [0, 2], options: ['read', 'cook', 'travel'] })
+  })
+
+  it('multi с буквенными значениями в data-multi → индексы кнопок с такими data-val', () => {
+    // data-multi — тот же формат, что data-correct: список значений кнопок, а
+    // не индексов. На числовых значениях A0 совпадает с индексами случайно.
+    const html = stage('Listening', `<div class="task" data-task>
+      <div class="row"><span class="body">Отметь всё верное
+        <div class="opts" data-multi="a,c">
+          <button class="opt" data-val="a">read</button>
+          <button class="opt" data-val="b">cook</button>
+          <button class="opt" data-val="c">travel</button>
+        </div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ kind: 'multi', correct: [0, 2] })
+  })
+
+  it('multi со значением, которого нет ни у одной кнопки, → -1 в наборе (задание отбракует normalize-task)', () => {
+    const html = stage('Listening', `<div class="task" data-task>
+      <div class="row"><span class="body">Отметь всё верное
+        <div class="opts" data-multi="a,z">
+          <button class="opt" data-val="a">read</button>
+          <button class="opt" data-val="b">cook</button>
+        </div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ kind: 'multi', correct: [0, -1] })
   })
 
   it('select → варианты из option, ответ из data-answer, пустой option отброшен', () => {

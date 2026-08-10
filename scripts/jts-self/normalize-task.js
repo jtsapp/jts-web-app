@@ -15,9 +15,11 @@ function normalizeBlock(block, ctx) {
 
   switch (block.kind) {
     case 'choice': {
-      const answer = block.options[block.correct]
-      if (!answer) return null
-      return { ...base, type: 'choice', visual: null, word: block.prompt, options: block.options, answer, two: block.options.length === 2, why: block.why || '' }
+      // Проверяем именно границы массива, а не истинность значения: вариант с
+      // пустым текстом — валидный вариант курса, а не отсутствие ответа.
+      const i = block.correct
+      if (!Number.isInteger(i) || i < 0 || i >= block.options.length) return null
+      return { ...base, type: 'choice', visual: null, word: block.prompt, options: block.options, answer: block.options[i], two: block.options.length === 2, why: block.why || '' }
     }
 
     case 'select': {
@@ -34,8 +36,13 @@ function normalizeBlock(block, ctx) {
     }
 
     case 'multi': {
-      const answer = [...new Set(block.correct)].filter((i) => i >= 0 && i < block.options.length).sort((a, b) => a - b)
-      if (!answer.length) return null
+      // Хотя бы одно значение data-multi, не найденное среди кнопок, делает
+      // эталонный набор неполным — и студент, отметивший всё верно, получил бы
+      // «неверно». Такой блок отбрасываем целиком, а не чиним частично.
+      const indexes = block.correct || []
+      const valid = indexes.every((i) => Number.isInteger(i) && i >= 0 && i < block.options.length)
+      const answer = [...new Set(indexes)].sort((a, b) => a - b)
+      if (!valid || !answer.length) return null
       return { ...base, type: 'multi', word: block.prompt, options: block.options, answer, why: block.why || '' }
     }
 

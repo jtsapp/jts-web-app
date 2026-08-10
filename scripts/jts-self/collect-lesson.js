@@ -33,6 +33,23 @@ function promptOf(row, ...drop) {
 const optionsOf = (opts) => [...opts.querySelectorAll('.opt')].map((b) => clean(b.textContent))
 const whyOf = (el) => clean(el.getAttribute('data-why'))
 
+/**
+ * Индекс верного варианта в списке кнопок .opt.
+ *
+ * Формат ключа ответа у уровней разный: A0 пишет data-correct="0" (и его
+ * кнопки размечены data-val="0","1",…), A1 — data-correct="c" при
+ * data-val="a","b","c". Приведение к числу давало на A1 NaN, и весь уровень
+ * оставался без единого задания choice. Поэтому ключ ответа не «индекс» и не
+ * «буква», а ЗНАЧЕНИЕ кнопки: ищем позицию кнопки, чей data-val совпал.
+ * Числовой формат A0 при этом работает сам собой — там значения и есть
+ * индексы. Та же модель, что у .order (ранг чипа — позиция его data-val в
+ * data-order), и по той же причине: спецкейсов по уровню быть не должно.
+ * Значение, которого нет ни у одной кнопки, даёт -1 — сырые данные без
+ * валидации, непроверяемое задание отбраковывает normalize-task.
+ */
+const optionIndexOf = (opts, value) =>
+  [...opts.querySelectorAll('.opt')].findIndex((b) => clean(b.getAttribute('data-val')) === clean(value))
+
 /** id трека из инлайнового вызова: playRange(A('x'),…) в A0, playTrack('x',…) в A1. */
 function trackIdOf(button) {
   const on = button.getAttribute('onclick') || ''
@@ -44,10 +61,13 @@ function trackIdOf(button) {
 function blockFromRow(row) {
   const multi = row.querySelector('.opts[data-multi]')
   if (multi) {
+    // data-multi — список тех же значений data-val через запятую (в A0 это
+    // "0,1,2,…", потому что там значения числовые). Разбираем его так же, как
+    // одиночный data-correct: позиция кнопки с таким значением.
     const correct = (multi.getAttribute('data-multi') || '')
       .split(',')
-      .map((n) => Number(n.trim()))
-      .filter((n) => Number.isInteger(n))
+      .filter((v) => clean(v))
+      .map((v) => optionIndexOf(multi, v))
     return { kind: 'multi', prompt: promptOf(row), options: optionsOf(multi), correct, why: whyOf(multi) }
   }
 
@@ -57,7 +77,7 @@ function blockFromRow(row) {
       kind: 'choice',
       prompt: promptOf(row),
       options: optionsOf(opts),
-      correct: Number(opts.getAttribute('data-correct')),
+      correct: optionIndexOf(opts, opts.getAttribute('data-correct')),
       why: whyOf(opts),
     }
   }

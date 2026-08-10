@@ -13,6 +13,18 @@ describe('normalizeBlock', () => {
     expect(normalizeBlock({ kind: 'choice', prompt: 'x', options: ['a', 'b'], correct: 5, why: '' }, ctx)).toBeNull()
   })
 
+  it('choice с индексом -1 (data-correct не совпал ни с одним data-val) отбрасывается', () => {
+    expect(normalizeBlock({ kind: 'choice', prompt: 'x', options: ['a', 'b'], correct: -1, why: '' }, ctx)).toBeNull()
+  })
+
+  // Находка ревью: проверка шла по истинности значения (`if (!answer)`), и
+  // вариант с пустым текстом выглядел как отсутствие ответа. Границы массива —
+  // единственный честный критерий: пустой вариант в курсе встречается.
+  it('choice с верным вариантом из пустой строки не отбрасывается — индекс в границах', () => {
+    const t = normalizeBlock({ kind: 'choice', prompt: 'x', options: ['', 'b'], correct: 0, why: '' }, ctx)
+    expect(t).toMatchObject({ type: 'choice', options: ['', 'b'], answer: '' })
+  })
+
   it('select → choice, ответ строкой', () => {
     const t = normalizeBlock({ kind: 'select', prompt: 'listen', options: ['слушать', 'спрашивать'], answer: 'слушать', why: '' }, ctx)
     expect(t).toMatchObject({ type: 'choice', word: 'listen', answer: 'слушать' })
@@ -30,6 +42,17 @@ describe('normalizeBlock', () => {
   it('multi → answer как отсортированный набор индексов', () => {
     const t = normalizeBlock({ kind: 'multi', prompt: 'p', options: ['a', 'b', 'c'], correct: [2, 0], why: '' }, ctx)
     expect(t).toMatchObject({ type: 'multi', options: ['a', 'b', 'c'], answer: [0, 2] })
+  })
+
+  // Находка ревью: неразобранное значение (-1) молча отфильтровывалось, и
+  // задание уходило на тропу с неполным эталоном — студент, отметивший всё
+  // верно, получал «неверно». Такой блок непроверяем целиком.
+  it('multi с неразобранным значением (-1) отбрасывается, а не чинится частично', () => {
+    expect(normalizeBlock({ kind: 'multi', prompt: 'p', options: ['a', 'b'], correct: [0, -1], why: '' }, ctx)).toBeNull()
+  })
+
+  it('multi со значением за границами списка вариантов отбрасывается', () => {
+    expect(normalizeBlock({ kind: 'multi', prompt: 'p', options: ['a', 'b'], correct: [0, 7], why: '' }, ctx)).toBeNull()
   })
 
   it('order → слова и эталонный порядок (ранги 0..n-1 — позиции в data-order, как их отдаёт collectLesson)', () => {
