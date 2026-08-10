@@ -36,7 +36,6 @@ function buildLessonNodes({ lesson, level, stages, onDrop }) {
     }))
     .filter((s) => s.tasks.length > 0)
 
-
   const nodes = []
   for (const stage of built) {
     const previous = nodes[nodes.length - 1]
