@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -24,6 +24,23 @@ function tmpCourse() {
   return file
 }
 
+// Урок со словарём (VOCAB), но без стадии, чью title можно узнать по
+// /vocab|words/i — имитирует переименование стадии словаря в будущем курсе.
+function tmpCourseVocabWithoutStage() {
+  const lessonHtml = stageOf('Warm-up', 4) + stageOf('Grammar', 4)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Lessons 1–3",["One"]]];
+    const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},
+      "VOCAB":[["like","","нравится","ұнайды","to feel that something is good"]],
+      "html":${JSON.stringify(lessonHtml)}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
 describe('extractCourse', () => {
   it('даёт узлы уроков, затем узел юнит-теста, и согласованный каталог', () => {
     const out = extractCourse(tmpCourse())
@@ -41,5 +58,20 @@ describe('extractCourse', () => {
     for (const entry of out.catalog) {
       expect(entry.taskCount).toBe(out.lessons[entry.code].tasks.length)
     }
+  })
+
+  // Находка ревью: раньше при отсутствии узла с "vocab"/"words" в заголовке
+  // карточки словаря молча терялись — ни ошибки, ни строчки в логе. Если
+  // стадию словаря переименуют в будущем курсе, это должно быть видно в CLI.
+  it('предупреждает в CLI, если для карточек словаря не нашлось узла', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    extractCourse(tmpCourseVocabWithoutStage())
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('карточки словаря')
+    expect(warn.mock.calls[0][0]).toContain('урока 1')
+
+    warn.mockRestore()
   })
 })

@@ -67,6 +67,17 @@ function extractCourse(filePath) {
     if (cards) {
       const vocabNode = lessonNodes.find((n) => /vocab|words/i.test(n.title))
       if (vocabNode) vocabNode.tasks.unshift(cards)
+      // Без узла со словом "vocab"/"words" в заголовке карточки словаря
+      // некуда врезать — раньше это молча проглатывалось. Если стадию
+      // словаря в источнике переименуют, карточки тихо пропадут с тропы;
+      // предупреждение в CLI делает такую потерю заметной сразу при генерации.
+      else {
+        console.warn(
+          `предупреждение: карточки словаря урока ${lesson.no} (${lesson.title || 'без названия'}) ` +
+            `не вставлены — среди стадий нет узла с "vocab"/"words" в заголовке: ` +
+            `[${lessonNodes.map((n) => n.title).join(', ')}]`
+        )
+      }
     }
     nodes.push(...lessonNodes)
   }

@@ -23,7 +23,16 @@ function vocabCardsTask(lesson, imageUrl) {
   const cards = words
     .map(([word, , ru, kk, definition]) => {
       const src = imageUrl(word)
-      const image = src ? `<img class="kl-vocab__img" src="${escapeHtml(src)}" alt="">` : ''
+      // Заливка картинок в бакет — отдельный ручной шаг, до него ссылка
+      // 404-ится. Без onerror браузер держит место под img (aspect-ratio в
+      // styles.css) и рисует иконку "битого" изображения — так почти все
+      // карточки A0 выглядели бы сломанными вместо честного текстового вида.
+      // onerror убирает <img> из DOM, и карточка остаётся текстовой, как и
+      // заявлено. alt — не пустой: картинка иллюстрирует значение слова, а
+      // не украшает страницу, значит нужна вменяемая замена для скринридера.
+      const image = src
+        ? `<img class="kl-vocab__img" src="${escapeHtml(src)}" alt="${escapeHtml(word)}" onerror="this.remove()">`
+        : ''
       return (
         `<div class="kl-vocab__card">${image}` +
         `<b class="kl-vocab__word">${escapeHtml(word)}</b>` +
