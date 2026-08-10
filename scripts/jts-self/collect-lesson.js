@@ -150,7 +150,12 @@ function collectStage(section) {
     const tasks = isTask ? [child] : [...child.querySelectorAll('.task, [data-task]')]
 
     if (!tasks.length) {
+      // Та же история, что и в интро-ветке ниже: если не вынуть кнопку
+      // плеера из поддерева до pushInfo, она останется в info-html мёртвым
+      // onclick. Сам child, когда это просто кнопка, из своего дерева не
+      // удаляется — pushInfo распознаёт этот случай отдельной проверкой.
       pushAudio(child, blocks)
+      for (const button of [...child.querySelectorAll('button.btn-audio')]) button.remove()
       pushInfo(child, blocks)
       continue
     }

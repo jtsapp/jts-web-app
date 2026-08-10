@@ -99,6 +99,17 @@ describe('collectLesson', () => {
     expect(s.blocks[2]).toMatchObject({ kind: 'multi' })
   })
 
+  it('аудио-кнопка внутри инфо-блока без задачи тоже извлекается, без дублирования в html', () => {
+    const html = stage('Wrap', `<div data-only="self">
+      <p>Great job today!</p>
+      <button class="btn btn-audio" onclick="playTrack('6_1',this)">🔊 Recap</button>
+    </div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ kind: 'audio', trackId: '6_1', label: '🔊 Recap' })
+    expect(s.blocks[1]).toMatchObject({ kind: 'info' })
+    expect(s.blocks[1].html).not.toContain('btn-audio')
+  })
+
   it('несколько стадий сохраняют порядок', () => {
     const html = stage('Warm-up', '<div data-only="self">a</div>') + stage('Wrap', '<div data-only="self">b</div>')
     expect(collectLesson(html).map((s) => s.name)).toEqual(['Warm-up', 'Wrap'])
