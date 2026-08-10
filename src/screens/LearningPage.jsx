@@ -1,10 +1,12 @@
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
-import { computeKingdoms } from '../kingdoms.js'
+import { computeKingdoms, kingdomAvatar } from '../kingdoms.js'
 
-export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom, onNav, onProfile }) {
+export default function LearningPage({ userLevel = 'A1', userName, token, unlockAll = false, onOpenKingdom, onNav, onProfile }) {
   const { t } = useI18n()
-  const kingdoms = computeKingdoms(userLevel)
+  // unlockAll — режим просмотра контента (?unlock=1, только dev): замки на
+  // карте сняты, гейтинг по уровню не применяется.
+  const kingdoms = computeKingdoms(userLevel).map((k) => (unlockAll ? { ...k, unlocked: true } : k))
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
@@ -33,7 +35,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, onOpen
                     onClick={() => !locked && onOpenKingdom?.(k)}
                   >
                     <span className="lp-node__ring">
-                      <img className="lp-node__av" src={`/assets/world/levels/${k.level.toLowerCase()}.webp`} alt={k.name} loading="lazy" />
+                      <img className="lp-node__av" src={`/assets/world/levels/${kingdomAvatar(k)}.webp`} alt={k.name} loading="lazy" />
                       {locked && (
                         <span className="lp-node__lock" aria-hidden="true">
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
