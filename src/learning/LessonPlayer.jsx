@@ -14,7 +14,7 @@ import { recordSkill } from '../practice/skillStats.js'
 
 const REWARD = 10 // монет за верный ответ (как в /api/hl мосте)
 const START_HEARTS = 3
-const GRADED = new Set(['choice', 'gap', 'chips', 'order'])
+const GRADED = new Set(['choice', 'gap', 'chips', 'order', 'multi'])
 
 // Нормализация текстового ответа (как norm() в ActivityPlayer/движке).
 function norm(s) {
@@ -207,6 +207,8 @@ function TaskBody({ task, answered, finish, setCanCheck, bind, t }) {
       return <Gap task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
     case 'order':
       return <Order task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
+    case 'multi':
+      return <Multi task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
     case 'check':
       return <Check task={task} />
     case 'listen':
@@ -362,6 +364,52 @@ function Order({ task, answered, finish, setCanCheck, bind, t }) {
             {w}
           </button>
         ))}
+      </div>
+    </>
+  )
+}
+
+// ——— multi (отметить несколько верных) ———
+function Multi({ task, answered, finish, setCanCheck, bind, t }) {
+  const options = task.options || []
+  const [picked, setPicked] = useState([])
+  useEffect(() => setCanCheck(picked.length > 0 && !answered), [picked, answered, setCanCheck])
+
+  const expected = task.answer || []
+  bind(() => {
+    if (answered || !picked.length) return
+    const mine = [...picked].sort((a, b) => a - b)
+    const ok = mine.length === expected.length && mine.every((v, i) => v === expected[i])
+    finish(ok, expected.map((i) => options[i]).join(', '))
+  })
+
+  return (
+    <>
+      {task.word && <div className="kl-word">{task.word}</div>}
+      <div className="kl-multi__hint">{t('lesson.multi.hint')}</div>
+      <div className="kl-opts kl-multi">
+        {options.map((o, i) => {
+          let cls = 'kl-opt'
+          if (picked.includes(i) && !answered) cls += ' sel'
+          if (answered) {
+            if (expected.includes(i)) cls += ' correct'
+            else if (picked.includes(i)) cls += ' wrong'
+          }
+          return (
+            <button
+              key={i}
+              className={cls}
+              disabled={answered}
+              // aria-pressed — состояние отметки для скринридера: в отличие от choice
+              // (один вариант, взаимоисключающий выбор), здесь несколько кнопок могут
+              // быть отмечены одновременно, и это нельзя передать только цветом/фоном.
+              aria-pressed={picked.includes(i)}
+              onClick={() => !answered && setPicked((p) => (p.includes(i) ? p.filter((x) => x !== i) : [...p, i]))}
+            >
+              {o}
+            </button>
+          )
+        })}
       </div>
     </>
   )

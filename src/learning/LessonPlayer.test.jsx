@@ -119,3 +119,38 @@ describe('LessonPlayer — задание order', () => {
     expect(bank.classList.contains('kl-order')).toBe(false)
   })
 })
+
+const multiTask = {
+  type: 'multi',
+  sec: '5. Listening',
+  word: 'Отметь всё, что услышал',
+  options: ['read', 'cook', 'travel'],
+  answer: [0, 2],
+  why: '',
+}
+
+describe('LessonPlayer — задание multi', () => {
+  it('проверка недоступна, пока ничего не отмечено', () => {
+    renderLesson([multiTask])
+    expect(screen.getByRole('button', { name: /проверить/i }).disabled).toBe(true)
+  })
+
+  it('точное совпадение набора — верно', () => {
+    const onDone = vi.fn()
+    renderLesson([multiTask], { onDone })
+    fireEvent.click(screen.getByRole('button', { name: 'read' }))
+    fireEvent.click(screen.getByRole('button', { name: 'travel' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(screen.getByText(/верно/i)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /продолжить/i }))
+    expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ correct: 1, wrong: 0 }))
+  })
+
+  it('лишний отмеченный вариант — неверно, показан эталон', () => {
+    renderLesson([multiTask])
+    for (const option of ['read', 'cook', 'travel']) fireEvent.click(screen.getByRole('button', { name: option }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(screen.getByText(/неверно/i)).toBeTruthy()
+    expect(screen.getByText(/read, travel/)).toBeTruthy()
+  })
+})
