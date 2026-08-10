@@ -86,6 +86,8 @@ export async function blobToWav16kMono(blob) {
 
 let currentAudio = null
 let currentObjectUrl = null
+// Поколение нажатия на «послушать» — см. playTutorSample.
+let sampleSeq = 0
 
 function stopServerAudio() {
   if (currentAudio) {
@@ -183,25 +185,43 @@ export async function speakListeningAudio(text, opts = {}) {
  * отсутствие — это баг деплоя, который надо чинить, а не маскировать
  * роботизированным голосом поверх тщательно подобранного тембра.
  *
+ * Звучит всегда ровно одна визитка: новое нажатие останавливает предыдущую,
+ * а серия нажатий подряд оставляет играть только последнее. "superseded" —
+ * это нормальный исход для нажатия, которое успели сменить, а не ошибка.
+ *
  * @param {'luna'|'dexter'|'spark'} tutor
  * @param {{ volume?: number, onEnd?: () => void }} [opts]
- * @returns {Promise<"sample" | "none">}
+ * @returns {Promise<"sample" | "superseded" | "none">}
  */
 export async function playTutorSample(tutor, opts = {}) {
   if (!tutor) return 'none'
+  // Номер нажатия. Звучит всегда ровно одна визитка — последняя нажатая, —
+  // а без этого счётчика получается гонка: play() асинхронный, и когда второе
+  // нажатие ставит паузу первому, тот отвечает AbortError («play() request was
+  // interrupted by a call to pause()»). Его catch и onerror сработали бы уже
+  // ПОСЛЕ старта второго звука и заглушили бы именно его — то есть быстрый
+  // двойной клик давал тишину. Поэтому обработчики старого нажатия молчат,
+  // если поколение сменилось.
+  const seq = ++sampleSeq
+  const stale = () => seq !== sampleSeq
   try {
     stopServerAudio()
     const audio = new Audio(`/tutor/voice/${tutor}.mp3`)
     if (opts.volume != null) audio.volume = Math.max(0, Math.min(1, opts.volume))
     currentAudio = audio
     audio.onended = () => {
+      if (stale()) return
       stopServerAudio()
       opts.onEnd?.()
     }
-    audio.onerror = () => stopServerAudio()
+    audio.onerror = () => {
+      if (!stale()) stopServerAudio()
+    }
     await audio.play()
-    return 'sample'
+    return stale() ? 'superseded' : 'sample'
   } catch (e) {
+    // Нас прервало следующее нажатие — это норма, а не сбой.
+    if (stale()) return 'superseded'
     console.warn('[tutor-sample] playback failed:', e)
     stopServerAudio()
     return 'none'
