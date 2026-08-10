@@ -8,8 +8,9 @@ import {
   useTranscriptions,
   useDataChannel,
   useRoomContext,
+  useTrackVolume,
 } from '@livekit/components-react'
-import { ConnectionState } from 'livekit-client'
+import { ConnectionState, Track } from 'livekit-client'
 import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
@@ -17,6 +18,7 @@ import { moodToEmotion } from '../tutor/avatarEmotions.js'
 import { cutAtSec } from '../tutor/scenarioClock.js'
 import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
 import { hasBrief } from '../tutor/scenarioBrief.js'
+import { micLevel } from '../tutor/micLevel.js'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -315,6 +317,26 @@ function fmtClock(sec) {
 // окно короче ~3с читалось бы как вспышка.
 const REACTION_MS = 4500
 
+// Кнопка микрофона вынесена в отдельный компонент НЕ ради красоты: useTrackVolume
+// обновляет стейт по несколько раз в секунду, и внутри CallStage это
+// перерисовывало бы заодно лицо тьютора с липсинком. Здесь ререндер заперт в
+// одной кнопке. Пороги и шкала — в micLevel(), там же объяснено зачем.
+function MicButton({ track, listening, micOn, onClick, label }) {
+  const volume = useTrackVolume(micOn && listening ? track : undefined)
+  const level = micLevel(volume, { micOn, listening })
+  return (
+    <button
+      className={'t-voice__mic' + (level > 0 ? ' is-hearing' : '')}
+      style={level > 0 ? { '--mic-level': level.toFixed(2) } : undefined}
+      type="button"
+      onClick={onClick}
+    >
+      <MicIcon size={28} />
+      {label}
+    </button>
+  )
+}
+
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
 function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
   const state = useConnectionState()
@@ -423,6 +445,9 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
   // пересоздаётся на каждый ререндер, а трек внутри тот же — иначе эффект с
   // AudioContext пересобирался бы вхолостую по десятку раз за реплику.
   const agentTrack = va.audioTrack?.publication?.track?.mediaStreamTrack || null
+
+  // Микрофон ученика — для индикации «слышу тебя» на кнопке (см. MicButton).
+  const micTrack = localParticipant?.getTrackPublication(Track.Source.Microphone)?.track || undefined
 
   // Речи в этой лесенке нет: она не эмоция, а отдельный флаг ниже. Во время
   // реплики на лице то, чем её пометил агент, — а без тега просто нейтраль,
@@ -578,10 +603,13 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
       <div className="t-voice__text">
         <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>
       </div>
-      <button className="t-voice__mic" type="button" onClick={toggleMic}>
-        <MicIcon size={28} />
-        {micOn ? t('voice.micOn') : t('voice.micOff')}
-      </button>
+      <MicButton
+        track={micTrack}
+        listening={va.state === 'listening'}
+        micOn={micOn}
+        onClick={toggleMic}
+        label={micOn ? t('voice.micOn') : t('voice.micOff')}
+      />
       <button className="t-voice__end" type="button" onClick={endCall}>
         {t('voice.end')}
       </button>
