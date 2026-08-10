@@ -387,7 +387,10 @@ function Multi({ task, answered, finish, setCanCheck, bind, t }) {
     <>
       {task.word && <div className="kl-word">{task.word}</div>}
       <div className="kl-multi__hint">{t('lesson.multi.hint')}</div>
-      <div className="kl-opts kl-multi">
+      {/* kl-multi (модификатор для kl-opts) убран — не нёс правил в styles.css,
+          как и kl-order на банке слов в прошлой находке; вся раскладка уже
+          даёт kl-opts, множественность отметки — aria-pressed на кнопках. */}
+      <div className="kl-opts">
         {options.map((o, i) => {
           let cls = 'kl-opt'
           if (picked.includes(i) && !answered) cls += ' sel'

@@ -153,4 +153,41 @@ describe('LessonPlayer — задание multi', () => {
     expect(screen.getByText(/неверно/i)).toBeTruthy()
     expect(screen.getByText(/read, travel/)).toBeTruthy()
   })
+
+  // Находка (Important, Task 8): этот случай раньше проверялся только временным
+  // тестом, который удалили — повторный клик должен снимать отметку (a не
+  // только добавлять её), иначе с одним отмеченным вариантом кнопка проверки
+  // навсегда остаётся доступной даже после его отмены.
+  it('повторный клик по отмеченному варианту снимает отметку и блокирует проверку', () => {
+    renderLesson([multiTask])
+    const readBtn = screen.getByRole('button', { name: 'read' })
+    fireEvent.click(readBtn)
+    expect(readBtn.getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: /проверить/i }).disabled).toBe(false)
+
+    fireEvent.click(readBtn)
+    expect(readBtn.getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: /проверить/i }).disabled).toBe(true)
+  })
+
+  // Находка (Important, Task 8): второй удалённый временный случай — неполный
+  // набор. Отмечена только часть верных вариантов ('read' из ['read', 'travel']),
+  // сравнение длин в bind() должно засчитать это как неверный ответ и показать
+  // полный эталон, а не засчитать частичное совпадение.
+  it('отмечена только часть верных вариантов — неверно, показан полный эталон', () => {
+    renderLesson([multiTask])
+    fireEvent.click(screen.getByRole('button', { name: 'read' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(screen.getByText(/неверно/i)).toBeTruthy()
+    expect(screen.getByText(/read, travel/)).toBeTruthy()
+  })
+
+  // Находка (Minor, Task 8): kl-multi на контейнере вариантов — мёртвый класс,
+  // без единого правила в styles.css (та же находка, что раньше закрывалась
+  // для kl-order на банке слов — тем же способом, удалением).
+  it('контейнер вариантов не несёт мёртвый класс kl-multi', () => {
+    const { container } = renderLesson([multiTask])
+    const opts = container.querySelector('.kl-opts')
+    expect(opts.classList.contains('kl-multi')).toBe(false)
+  })
 })
