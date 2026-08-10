@@ -10,9 +10,27 @@ const lesson = {
 }
 
 describe('imageSlug', () => {
-  it('приводит слово к безопасному имени файла', () => {
-    expect(imageSlug('don’t like')).toBe('don-t-like')
-    expect(imageSlug('Look at')).toBe('look-at')
+  it('приводит слово к безопасному читаемому имени файла', () => {
+    expect(imageSlug('don’t like')).toMatch(/^don-t-like-[0-9a-f]{6}$/)
+    expect(imageSlug('Look at')).toMatch(/^look-at-[0-9a-f]{6}$/)
+  })
+
+  // Находка ревью: в словаре A0 три пары слов, различающихся только тем, что
+  // дефисная запись отбрасывает («Why?» и «Why…?», «Who?» и «Who…?»,
+  // «How often?» и «How often…?»). Второе слово пары получало картинку первого.
+  it('слова, различающиеся только знаками препинания, дают разные имена файлов', () => {
+    for (const [a, b] of [['Why?', 'Why…?'], ['Who?', 'Who…?'], ['How often?', 'How often…?']]) {
+      expect(imageSlug(a)).not.toBe(imageSlug(b))
+    }
+  })
+
+  it('слово без латинских букв даёт непустое имя', () => {
+    expect(imageSlug('спасибо')).not.toBe('')
+    expect(imageSlug('спасибо')).not.toBe(imageSlug('привет'))
+  })
+
+  it('имя детерминировано — перегенерация не переименовывает картинки', () => {
+    expect(imageSlug('Look at')).toBe(imageSlug('Look at'))
   })
 })
 

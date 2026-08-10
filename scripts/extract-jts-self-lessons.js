@@ -47,6 +47,9 @@ function extractCourse(filePath) {
 
   const nodes = []
   const seenUnits = new Set()
+  // Выложенные юнит-тесты держим своим множеством, а не пометкой на объекте
+  // из read-course: чужой объект — не место для состояния этого прохода.
+  const doneReviews = new Set()
 
   // Блок, не ставший заданием, — это потерянный кусок урока. Считаем такие по
   // причинам: без сводки в CLI формат data-correct у A1 (буквы вместо
@@ -60,8 +63,8 @@ function extractCourse(filePath) {
     if (!seenUnits.has(lesson.unit)) {
       for (const unit of seenUnits) {
         const review = reviewsByUnit.get(unit)
-        if (review && !review.__done) {
-          review.__done = true
+        if (review && !doneReviews.has(review)) {
+          doneReviews.add(review)
           nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html), onDrop }))
         }
       }
@@ -77,7 +80,6 @@ function extractCourse(filePath) {
         // экран узла выглядит иначе, чем все следующие.
         vocabNode.tasks.unshift(vocabNode.sec ? { ...cards, sec: vocabNode.sec } : cards)
       }
-
       // Без узла со словом "vocab"/"words" в заголовке карточки словаря
       // некуда врезать — раньше это молча проглатывалось. Если стадию
       // словаря в источнике переименуют, карточки тихо пропадут с тропы;
@@ -93,7 +95,9 @@ function extractCourse(filePath) {
     nodes.push(...lessonNodes)
   }
   for (const review of course.reviews) {
-    if (!review.__done) nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html), onDrop }))
+    if (!doneReviews.has(review)) {
+      nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html), onDrop }))
+    }
   }
 
   const lessons = {}
@@ -142,7 +146,6 @@ function warnDropped(level, dropped, lessons) {
     console.warn(`  ${count} × ${DROP_LABELS[reason] || reason}`)
   }
 }
-
 
 function parseSources() {
   const out = []

@@ -62,16 +62,18 @@ function evalDecl(src, name, filePath) {
  * Полный декодер сущностей тут не нужен: код уровня ищем после любого
  * из двух вариантов разделителя, не раскодируя остальной текст.
  */
-function readLevel(src) {
+function readLevel(src, filePath) {
   const m = /<title>[^<]*?(?:—|&mdash;)\s*([A-C][0-2])\b/i.exec(src)
   const label = m ? m[1].toUpperCase() : ''
-  if (!label) throw new Error('в файле курса не найден уровень в <title>')
+  // Путь к файлу — как в соседних ошибках модуля: запускают экстрактор сразу
+  // по нескольким --src, и без имени файла непонятно, какой курс не читается.
+  if (!label) throw new Error(`в файле курса не найден уровень в <title>: ${filePath}`)
   return { level: label.toLowerCase(), label }
 }
 
 function readCourse(filePath) {
   const src = fs.readFileSync(filePath, 'utf8')
-  const { level, label } = readLevel(src)
+  const { level, label } = readLevel(src, filePath)
 
   // UNITS и REVIEWS могут законно отсутствовать (курс без юнит-тестов) —
   // фиксируем это явным `?? []` / `?? {}`, а не полагаемся на побочный
@@ -83,12 +85,16 @@ function readCourse(filePath) {
   // экстрактор не должен молча опубликовать пустой курс.
   const rawLessons = evalDecl(src, 'LESSONS', filePath)
   if (!rawLessons) throw new Error(`в файле курса не найдено объявление LESSONS: ${filePath}`)
+  // Прочитанный курс — данные только для чтения: конвейер несколько раз
+  // проходит по одним и тем же урокам и юнит-тестам, и пометки на этих
+  // объектах были бы состоянием прохода, живущим в чужом модуле. Заморозка
+  // делает такую попытку заметной, а не молча работающей.
   const lessons = Object.keys(rawLessons)
     .map(Number)
     .sort((a, b) => a - b)
     .map((no) => {
       const l = rawLessons[no]
-      return {
+      return Object.freeze({
         no,
         unit: l.unit,
         title: l.title || '',
@@ -98,7 +104,7 @@ function readCourse(filePath) {
         vocab: Array.isArray(l.VOCAB) ? l.VOCAB : (l.VOCAB && l.VOCAB.self) || [],
         images: l.IMG || {},
         html: l.html || '',
-      }
+      })
     })
 
   const rawReviews = evalDecl(src, 'REVIEWS', filePath) ?? {}
@@ -107,7 +113,7 @@ function readCourse(filePath) {
     .sort((a, b) => a - b)
     .map((no) => {
       const r = rawReviews[no]
-      return { no, unit: r.unit, title: r.title || '', html: r.html || '' }
+      return Object.freeze({ no, unit: r.unit, title: r.title || '', html: r.html || '' })
     })
 
   return { level, label, units, lessons, reviews }

@@ -47,6 +47,33 @@ describe('readLevel через readCourse', () => {
 })
 
 describe('readCourse', () => {
+  // Находка ревью: ошибка про уровень была единственной в модуле без пути к
+  // файлу, а экстрактор запускают сразу по нескольким --src.
+  it('бросает ошибку с именем файла, если уровень в <title> не найден', () => {
+    const file = tmpCourse(`
+      <title>just to study course</title>
+      <script>
+      const LESSONS={1:{unit:1,no:1,title:"One",blurb:"",tracks:{},html:"<b>x</b>"}};
+      </script>`)
+    expect(() => readCourse(file)).toThrow(/уровень/)
+    expect(() => readCourse(file)).toThrow(file)
+  })
+
+  // Находка ревью: экстрактор помечал юнит-тест как выложенный прямо на
+  // объекте из read-course. Курс отдаётся только для чтения — пометки прохода
+  // живут в вызывающем модуле.
+  it('отдаёт уроки и юнит-тесты только для чтения', () => {
+    const file = tmpCourse(`
+      <title>just to study — A0 · Course</title>
+      <script>
+      const LESSONS={1:{unit:1,no:1,title:"One",blurb:"",tracks:{},html:"<b>x</b>"}};
+      const REVIEWS={1:{unit:1,title:"Unit Test",html:"<b>t</b>"}};
+      </script>`)
+    const course = readCourse(file)
+    expect(Object.isFrozen(course.lessons[0])).toBe(true)
+    expect(Object.isFrozen(course.reviews[0])).toBe(true)
+  })
+
   it('бросает явную ошибку с именем файла, если в курсе нет объявления LESSONS', () => {
     const file = tmpCourse(`
       <title>just to study — A0 · Course</title>

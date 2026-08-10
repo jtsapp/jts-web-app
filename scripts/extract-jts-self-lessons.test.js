@@ -41,6 +41,26 @@ function tmpCourseVocabWithoutStage() {
   return file
 }
 
+// Курс из двух юнитов с юнит-тестом на каждый: тест первого юнита выкладывается
+// в момент, когда начинается второй, тест второго — в хвосте прохода.
+function tmpCourseTwoUnits() {
+  const lessonHtml = stageOf('Warm-up', 4)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Unit 1",["One"]],["Unit 2",["Two"]]];
+    const LESSONS={
+      1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},"html":${JSON.stringify(lessonHtml)}},
+      2:{"unit":2,"no":2,"title":"Two","blurb":"","tracks":{},"html":${JSON.stringify(lessonHtml)}}};
+    const REVIEWS={
+      1:{unit:1,title:"Unit Test · Unit 1",html:${JSON.stringify(stageOf('Unit Test', 3))}},
+      2:{unit:2,title:"Unit Test · Unit 2",html:${JSON.stringify(stageOf('Unit Test', 3))}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
 // Курс, в котором часть блоков непроверяема: choice с data-correct, которого
 // нет ни у одной кнопки (буквенный формат A1 без совпадения), и аудио без
 // файла в tracks.
@@ -107,6 +127,17 @@ describe('extractCourse', () => {
 
   it('курс без потерь не выдумывает их', () => {
     expect(extractCourse(tmpCourse()).dropped).toEqual({})
+  })
+
+  // Находка ревью: пометка о выложенном юнит-тесте жила прямо на объекте из
+  // read-course. Курс отдаётся только для чтения (Object.freeze), поэтому
+  // такая пометка молча не срабатывала бы, и тест юнита попал бы на тропу
+  // дважды.
+  it('каждый юнит-тест попадает на тропу ровно один раз', () => {
+    const codes = extractCourse(tmpCourseTwoUnits()).catalog.map((n) => n.code)
+    expect(codes.filter((c) => c === 'R01')).toHaveLength(1)
+    expect(codes.filter((c) => c === 'R02')).toHaveLength(1)
+    expect(new Set(codes).size).toBe(codes.length)
   })
 
   // Находка ревью: у выпущенных уровней sec — «2. Vocabulary · …», и плеер
