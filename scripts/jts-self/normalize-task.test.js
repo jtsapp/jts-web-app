@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { normalizeBlock, trackUrl } from './normalize-task.js'
+import { describe, it, expect, vi } from 'vitest'
+import { normalizeBlock, trackUrl, DROP } from './normalize-task.js'
 
 const ctx = { sec: '2. Vocabulary', trackFile: (id) => (id === 't1' ? 'a0_1.mp3' : null), level: 'a0' }
 
@@ -116,6 +116,46 @@ describe('normalizeBlock', () => {
 
   it('пустой info отбрасывается', () => {
     expect(normalizeBlock({ kind: 'info', html: '   ' }, ctx)).toBeNull()
+  })
+})
+
+// Находка ревью: normalizeBlock молча возвращал null, и потерянный контент
+// нигде не всплывал — именно поэтому буквенный data-correct у A1 (1222
+// выброшенных задания) дожил до финального ревью. У каждого отказа теперь есть
+// причина, и её получает вызывающий.
+describe('normalizeBlock — причина отбраковки', () => {
+  const withDrop = () => {
+    const onDrop = vi.fn()
+    return { onDrop, ctx: { ...ctx, onDrop } }
+  }
+
+  it('сообщает причину для каждого вида непроверяемого блока', () => {
+    const cases = [
+      [{ kind: 'choice', prompt: 'x', options: ['a'], correct: -1 }, DROP.choiceNoAnswer],
+      [{ kind: 'select', prompt: 'x', options: ['a'], answer: 'b' }, DROP.selectAnswerOutside],
+      [{ kind: 'gap', before: 'I', after: '', answer: '' }, DROP.gapNoAnswer],
+      [{ kind: 'multi', prompt: 'x', options: ['a'], correct: [] }, DROP.multiNoAnswer],
+      [{ kind: 'order', prompt: '', words: ['I'], order: [0] }, DROP.orderTooShort],
+      [{ kind: 'order', prompt: '', words: ['I', 'like'], order: [0, 0] }, DROP.orderNotPermutation],
+      [{ kind: 'audio', trackId: 'нет', label: 'x' }, DROP.audioNoTrack],
+      [{ kind: 'info', html: '  ' }, DROP.infoEmpty],
+      [{ kind: 'что-то новое' }, DROP.unknownKind],
+    ]
+    for (const [block, reason] of cases) {
+      const { onDrop, ctx: withOnDrop } = withDrop()
+      expect(normalizeBlock(block, withOnDrop)).toBeNull()
+      expect(onDrop).toHaveBeenCalledWith(reason, block)
+    }
+  })
+
+  it('на успешной нормализации причину не сообщает', () => {
+    const { onDrop, ctx: withOnDrop } = withDrop()
+    expect(normalizeBlock({ kind: 'choice', prompt: 'x', options: ['a', 'b'], correct: 1 }, withOnDrop)).not.toBeNull()
+    expect(onDrop).not.toHaveBeenCalled()
+  })
+
+  it('без onDrop в контексте работает по-прежнему', () => {
+    expect(normalizeBlock({ kind: 'info', html: '' }, ctx)).toBeNull()
   })
 })
 

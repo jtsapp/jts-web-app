@@ -14,12 +14,12 @@ function tasksOfStage(stage, ctx) {
   return stage.blocks.map((b) => normalizeBlock(b, ctx)).filter(Boolean)
 }
 
-function buildLessonNodes({ lesson, level, stages }) {
+function buildLessonNodes({ lesson, level, stages, onDrop }) {
   const trackFile = (id) => lesson.tracks[id] || null
   const code = `L${pad2(lesson.no)}`
 
   const built = stages
-    .map((stage) => ({ name: stage.name, tasks: tasksOfStage(stage, { sec: stage.name, level, trackFile }) }))
+    .map((stage) => ({ name: stage.name, tasks: tasksOfStage(stage, { sec: stage.name, level, trackFile, onDrop }) }))
     .filter((s) => s.tasks.length > 0)
 
   const nodes = []
@@ -59,9 +59,9 @@ function buildLessonNodes({ lesson, level, stages }) {
   }))
 }
 
-function buildReviewNode({ review, level, stages }) {
+function buildReviewNode({ review, level, stages, onDrop }) {
   const trackFile = () => null
-  const tasks = stages.flatMap((stage) => tasksOfStage(stage, { sec: stage.name, level, trackFile }))
+  const tasks = stages.flatMap((stage) => tasksOfStage(stage, { sec: stage.name, level, trackFile, onDrop }))
   return { code: `R${pad2(review.no)}`, title: review.title, unit: review.unit, tasks }
 }
 

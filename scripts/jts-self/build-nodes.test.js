@@ -55,6 +55,17 @@ describe('buildLessonNodes', () => {
     expect(nodes).toHaveLength(2)
   })
 
+  it('причина отбраковки блока доходит до вызывающего', () => {
+    const dropped = []
+    buildLessonNodes({
+      lesson,
+      level: 'a0',
+      stages: [{ name: 'Warm-up', blocks: [choice(1), { kind: 'info', html: '' }] }],
+      onDrop: (reason) => dropped.push(reason),
+    })
+    expect(dropped).toEqual(['info-empty'])
+  })
+
   it('урок без единого задания не даёт узлов', () => {
     expect(buildLessonNodes({ lesson, level: 'a0', stages: [{ name: 'Wrap', blocks: [] }] })).toEqual([])
   })

@@ -48,6 +48,12 @@ function extractCourse(filePath) {
   const nodes = []
   const seenUnits = new Set()
 
+  // Блок, не ставший заданием, — это потерянный кусок урока. Считаем такие по
+  // причинам: без сводки в CLI формат data-correct у A1 (буквы вместо
+  // индексов) молча выбросил 1222 задания и дожил до финального ревью.
+  const dropped = new Map()
+  const onDrop = (reason) => dropped.set(reason, (dropped.get(reason) || 0) + 1)
+
   for (const lesson of course.lessons) {
     // Юнит закрывается своим тестом: как только начался следующий юнит,
     // выкладываем тест предыдущего.
@@ -56,14 +62,14 @@ function extractCourse(filePath) {
         const review = reviewsByUnit.get(unit)
         if (review && !review.__done) {
           review.__done = true
-          nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html) }))
+          nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html), onDrop }))
         }
       }
       seenUnits.add(lesson.unit)
     }
     const imageUrls = writeImages(lesson, course.level)
     const cards = vocabCardsTask(lesson, (word) => imageUrls[word] || null)
-    const lessonNodes = buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html) })
+    const lessonNodes = buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html), onDrop })
     if (cards) {
       const vocabNode = lessonNodes.find((n) => /vocab|words/i.test(n.title))
       if (vocabNode) vocabNode.tasks.unshift(cards)
@@ -82,7 +88,7 @@ function extractCourse(filePath) {
     nodes.push(...lessonNodes)
   }
   for (const review of course.reviews) {
-    if (!review.__done) nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html) }))
+    if (!review.__done) nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html), onDrop }))
   }
 
   const lessons = {}
@@ -94,8 +100,44 @@ function extractCourse(filePath) {
     catalog.push({ code: node.code, order, title: node.title, taskCount: node.tasks.length, type: lessonType(node.code, node.tasks), unit: node.unit })
   }
 
-  return { level: course.level, label: course.label, lessons, catalog }
+  return { level: course.level, label: course.label, lessons, catalog, dropped: Object.fromEntries(dropped) }
 }
+
+// Причины отбраковки блоков — человеческим языком для сводки в CLI.
+const DROP_LABELS = {
+  'choice-no-answer': 'choice без верного варианта (data-correct не совпал ни с одним data-val)',
+  'select-answer-outside-options': 'select, ответ которого отсутствует среди вариантов',
+  'gap-no-answer': 'пропуск без ответа в data-answer',
+  'multi-no-answer': 'multi без разобранного набора верных вариантов',
+  'order-too-short': 'order короче двух слов или с несовпадающими длинами списков',
+  'order-not-permutation': 'order с рангами, не образующими перестановку (чужой или дублирующийся data-val)',
+  'audio-no-track': 'аудио без файла в tracks урока',
+  'info-empty': 'info без содержимого (в том числе опустевший после чистки мёртвых контролов курса)',
+  'unknown-kind': 'блок неизвестного вида',
+}
+
+/**
+ * Сводка потерь по итогам уровня. Печатается через console.warn, как и
+ * предупреждение о карточках словаря: молчаливая потеря контента — тот самый
+ * дефект, из-за которого A1 уехал в ревью без единого задания choice.
+ */
+function warnDropped(level, dropped, lessons) {
+  const total = Object.values(dropped).reduce((a, b) => a + b, 0)
+  const nodes = Object.values(lessons)
+  const graded = new Set(['choice', 'gap', 'chips', 'order', 'multi'])
+  const silent = nodes.filter((n) => !n.tasks.some((t) => graded.has(t.type))).length
+
+  console.log(`${level}: узлов без единого проверяемого задания — ${silent} из ${nodes.length}`)
+  if (!total) {
+    console.log(`${level}: блоков потеряно 0`)
+    return
+  }
+  console.warn(`${level}: блоков не стало заданиями — ${total}:`)
+  for (const [reason, count] of Object.entries(dropped).sort((a, b) => b[1] - a[1])) {
+    console.warn(`  ${count} × ${DROP_LABELS[reason] || reason}`)
+  }
+}
+
 
 function parseSources() {
   const out = []
@@ -116,7 +158,7 @@ function run() {
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'))
 
   for (const src of sources) {
-    const { level, label, lessons, catalog } = extractCourse(src)
+    const { level, label, lessons, catalog, dropped } = extractCourse(src)
     fs.writeFileSync(path.join(OUT, `${level}.json`), JSON.stringify({ lessons }))
 
     index[level] = { lessons: catalog }
@@ -127,6 +169,7 @@ function run() {
 
     const kb = (fs.statSync(path.join(OUT, `${level}.json`)).size / 1024) | 0
     console.log(`${level}: ${catalog.length} узлов → ${level}.json (${kb} KB)`)
+    warnDropped(level, dropped, lessons)
   }
 
   index.levels.sort((a, b) => a.code.localeCompare(b.code))

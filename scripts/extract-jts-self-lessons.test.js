@@ -41,6 +41,43 @@ function tmpCourseVocabWithoutStage() {
   return file
 }
 
+// Курс, в котором часть блоков непроверяема: choice с data-correct, которого
+// нет ни у одной кнопки (буквенный формат A1 без совпадения), и аудио без
+// файла в tracks.
+function tmpCourseWithLosses() {
+  const brokenChoice = `<div class="task" data-task><div class="row"><span class="body">q
+    <div class="opts" data-correct="z"><button class="opt" data-val="a">yes</button><button class="opt" data-val="b">no</button></div>
+  </span></div></div>`
+  const lessonHtml = stageOf('Warm-up', 4) + stage('Grammar', brokenChoice + brokenChoice)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Unit 1",["One"]]];
+    const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},"html":${JSON.stringify(lessonHtml)}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
+// Урок со словарём и стадией Vocabulary — карточки словаря врезаются в её узел.
+// Первая стадия короткая: своего узла она не даёт и доклеивается в начало узла
+// словаря, поэтому «кикер первой задачи» и «кикер стадии узла» тут расходятся.
+function tmpCourseWithVocabStage() {
+  const lessonHtml = stageOf('Warm-up', 1) + stageOf('Vocabulary', 4)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Unit 1",["One"]]];
+    const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},
+      "VOCAB":[["like","","нравится","ұнайды","to feel that something is good"]],
+      "html":${JSON.stringify(lessonHtml)}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
 describe('extractCourse', () => {
   it('даёт узлы уроков, затем узел юнит-теста, и согласованный каталог', () => {
     const out = extractCourse(tmpCourse())
@@ -58,6 +95,18 @@ describe('extractCourse', () => {
     for (const entry of out.catalog) {
       expect(entry.taskCount).toBe(out.lessons[entry.code].tasks.length)
     }
+  })
+
+  // Находка ревью: экстрактор отбрасывал всё, что normalize-task вернул как
+  // null, без единого следа — так уровень A1 доехал до ревью без единого
+  // задания choice. Потери считаются по причинам и возвращаются наружу.
+  it('считает отброшенные блоки по причинам', () => {
+    const out = extractCourse(tmpCourseWithLosses())
+    expect(out.dropped['choice-no-answer']).toBe(2)
+  })
+
+  it('курс без потерь не выдумывает их', () => {
+    expect(extractCourse(tmpCourse()).dropped).toEqual({})
   })
 
   // Находка ревью: раньше при отсутствии узла с "vocab"/"words" в заголовке
