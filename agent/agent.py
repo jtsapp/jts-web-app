@@ -40,6 +40,7 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     function_tool,
+    inference,
 )
 from livekit.plugins import google
 from google.genai import types as genai_types
@@ -2478,7 +2479,12 @@ def build_instructions(p: LearnerProfile) -> str:
         "tick a list; conversational flow beats coverage.\n"
         "\n==== TWO-TIER CORRECTION (fluency-first) ====\n"
         "Never interrupt — let them finish their whole turn first (don't cut on short "
-        "mid-sentence pauses). Then, OUT LOUD, correct ONLY: (a) errors that genuinely "
+        "mid-sentence pauses). STUCK, NOT DONE: if their turn reaches you cut off "
+        "mid-word or trailing into a filler ('I need to... emmm', 'how do you say'), "
+        "they are searching for a word, not handing you the floor. Offer ONE word or a "
+        "short phrase to unblock them, then STOP and let them finish their own sentence "
+        "— do not answer the unfinished thought, do not correct it, do not start a new "
+        "topic. Then, OUT LOUD, correct ONLY: (a) errors that genuinely "
         "block understanding, or (b) errors that match a recurring target in SESSION "
         "MEMORY. Every OTHER new or minor slip: do NOT correct it aloud (protect "
         "fluency) — capture it SILENTLY with log_mistake instead. GRADUATION: if the "
@@ -3200,6 +3206,69 @@ def _stt_provider_for(profile: LearnerProfile) -> str:
     return (os.getenv("CASCADE_STT") or DEFAULT_STT_PROVIDER).strip().lower()
 
 
+# ---- Турн-детекция ---------------------------------------------------------
+# Кто решает, что ученик договорил. Исторически — Silero VAD с окном тишины
+# 0.3с, и это ломало ровно то, ради чего тьютор нужен: любая пауза «на
+# подумать» закрывала ход, длинный ответ разваливался на два-три куска, тьютор
+# отвечал в середину недосказанной мысли. Промпт просит обратного («Never
+# interrupt», см. блок TWO-TIER CORRECTION), но VAD срабатывает раньше, чем
+# модель успевает что-либо решить — промптом это не чинится.
+#
+# inference.TurnDetector слушает аудио и держит ход, пока фраза не закончена
+# по смыслу. Плагин livekit-plugins-turn-detector для этого НЕ берём: в 1.6.7
+# он объявлен устаревшим в пользу этого детектора.
+#
+# Выключен по умолчанию, и это намеренно: агент катится вручную, отдельно от
+# приложения, поэтому выкатка образа не должна менять поведение ни одного
+# звонка, пока секрет воркера не переключён. Откат — тем же секретом, без
+# пересборки.
+#
+#   auto    — версия резолвится сама: на LiveKit Cloud облачная v1, иначе
+#             локальная v1-mini. Фолбэк cloud→local односторонний и залипает
+#             до конца сессии, поэтому активную модель пишем в лог.
+#   v1      — только облачная (даёт backchannel-вероятность, платная).
+#   v1-mini — только локальная (без ru в списке откалиброванных языков).
+TURN_DETECTOR_MODES = ("off", "auto", "v1", "v1-mini")
+DEFAULT_TURN_DETECTOR = "off"
+
+
+def _turn_detector_mode_for(profile: LearnerProfile) -> str:
+    """Режим турн-детекции этой сессии: глобальный флаг, суженный до персон."""
+    mode = (os.getenv("TURN_DETECTOR") or DEFAULT_TURN_DETECTOR).strip().lower()
+    if mode not in TURN_DETECTOR_MODES:
+        logger.warning(
+            "TURN_DETECTOR=%r not recognised (expected one of %s) — staying on VAD",
+            mode, ", ".join(TURN_DETECTOR_MODES),
+        )
+        return "off"
+    if mode == "off":
+        return "off"
+    # Канарейка: TURN_DETECTOR_TUTORS=bro включает детектор одному Декстеру.
+    # Посмотреть на живых звонках, потом снять ограничение.
+    only = [
+        x.strip().lower()
+        for x in (os.getenv("TURN_DETECTOR_TUTORS") or "").split(",")
+        if x.strip()
+    ]
+    if only and (profile.tutor or "").strip().lower() not in only:
+        return "off"
+    return mode
+
+
+def _build_turn_detector(mode: str):
+    """Детектор или None. Любая ошибка конструктора — не повод ронять звонок:
+    сессия молча откатывается на старое VAD-эндпойнтинг."""
+    if mode == "off":
+        return None
+    try:
+        return inference.TurnDetector() if mode == "auto" else inference.TurnDetector(version=mode)
+    except Exception as e:  # pragma: no cover - зависит от окружения воркера
+        logger.warning(
+            "TurnDetector(%s) failed (%s) — falling back to VAD endpointing", mode, e
+        )
+        return None
+
+
 def _cascade_stt_soniox(profile: LearnerProfile):
     """Soniox распознаёт en/ru/kk с переключением языка внутри фразы — ради этого
     он и выбран. Набор языков ограничен списком (см. SONIOX_STT_LANGUAGES), иначе
@@ -3311,8 +3380,12 @@ def build_cascade_session(
             f"VOICE_STACK=cascade missing plugins: {', '.join(missing)} "
             "(pip install -r requirements.txt)"
         )
-    logger.info("Session stack: CASCADE (%s STT / bundled Silero VAD / lib/llm brain / %s TTS)",
-                _stt_provider_for(profile), _tts_provider_for(profile))
+    logger.info(
+        "Session stack: CASCADE (%s STT / %s endpointing / lib/llm brain / %s TTS)",
+        _stt_provider_for(profile),
+        _turn_detector_mode_for(profile).replace("off", "Silero VAD"),
+        _tts_provider_for(profile),
+    )
 
     stt = _cascade_stt(profile)
     # Brain: OpenAI-compat shim over lib/llm. The plugin appends /chat/completions
@@ -3336,26 +3409,47 @@ def build_cascade_session(
         temperature=persona_temperature,
     )
     tts = _cascade_tts(profile)
-    # Turn endpointing (Soniox emits no END_OF_SPEECH, #4034 → VAD closes the
-    # turn). Shorter silence window = less dead air after the learner stops.
-    # 0.3s is snappy; raise toward 0.5 if it starts cutting people off
-    # mid-thought. Override via env for quick tuning without a code change.
+    # Silero остаётся источником речевой активности в обоих режимах. Детектору
+    # он тоже нужен: инференс запрашивается не раньше, чем накопится 200мс
+    # тишины (MIN_SILENCE_DURATION_MS), так что окно ниже этого опускать нельзя.
     silence = float(os.getenv("VAD_SILENCE_SEC", "0.3"))
     vad = (
         silero.VAD.load(min_silence_duration=silence)
         if silero is not None
         else None
     )
+    detector = _build_turn_detector(_turn_detector_mode_for(profile))
+    if detector is not None:
+        turn_handling: dict[str, Any] = {
+            "turn_detection": detector,
+            "endpointing": {
+                # Законченная фраза: пол задержки, короткое «yes» отвечается быстро.
+                "min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.35")),
+                # Незаконченная: сколько ученику дают молча подумать, не теряя ход.
+                # Ради этого потолка всё и затевалось — на VAD его не существует.
+                "max_delay": float(os.getenv("MAX_ENDPOINTING_SEC", "4.0")),
+            },
+            # Отличает поддакивание ученика от настоящего перебивания. Если
+            # начнёт глотать настоящие — вернуть {"mode": "vad"}.
+            "interruption": {"mode": "adaptive"},
+            "preemptive_generation": {"enabled": True},
+        }
+    else:
+        # Старый путь ровно как был: Soniox не шлёт END_OF_SPEECH (#4034),
+        # поэтому ход закрывает VAD, а 0.3с — компромисс между «рвёт на паузе»
+        # и «мёртвый воздух после ответа».
+        turn_handling = {
+            "turn_detection": "vad",
+            "endpointing": {"min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.3"))},
+            "preemptive_generation": {"enabled": True},
+        }
     kwargs: dict[str, Any] = {
         "stt": stt,
         "llm": llm,
         "tts": tts,
-        "turn_detection": "vad",
-        # Floor on how soon a committed turn fires the LLM. Low → snappier.
-        "min_endpointing_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.3")),
-        # Start generating the reply on the preliminary transcript, overlapping
-        # endpointing with the brain call — cuts perceived latency.
-        "preemptive_generation": True,
+        # Ответ начинает генерироваться на предварительном транскрипте, пока
+        # идёт эндпойнтинг — срезает воспринимаемую задержку.
+        "turn_handling": turn_handling,
     }
     if vad is not None:
         kwargs["vad"] = vad

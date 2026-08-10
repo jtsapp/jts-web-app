@@ -1066,6 +1066,18 @@
 .t-voice__mic:hover {
   filter: brightness(0.98);
 }
+/* Ученик говорит — кнопка дышит в такт голосу. Тьютор в это время молчит
+   намеренно (ждёт конца мысли), и без этого кольца длинная пауза читается как
+   оборванная связь. Кольцо снаружи, размер кнопки не меняется: прыгающая
+   кнопка под курсором — это промах по мьюту в середине ответа. */
+.t-voice__mic.is-hearing {
+  box-shadow: 0 0 0 calc(4px + 8px * var(--mic-level, 0)) rgba(183, 240, 255, 0.45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-voice__mic.is-hearing {
+    box-shadow: 0 0 0 6px rgba(183, 240, 255, 0.45);
+  }
+}
 .t-voice__mic:disabled {
   opacity: 0.45;
   cursor: not-allowed;
