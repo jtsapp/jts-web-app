@@ -1,6 +1,11 @@
-livekit-agents[google]>=1.2.0
-livekit-plugins-noise-cancellation>=0.2.0
-livekit-plugins-silero>=1.2.0
+# Версии закреплены точно, и это не педантизм. Раньше здесь стояли нижние
+# границы (>=1.2.0), а образ собирается вручную и редко — значит любая
+# пересборка молча перепрыгивала на свежий livekit-agents с ДРУГИМИ дефолтами
+# эндпойнтинга и перебивания. Поведение тьютора менялось от даты сборки, а не
+# от коммита. Обновлять — отдельным коммитом, с прогоном звонка.
+livekit-agents[google]==1.6.7
+livekit-plugins-noise-cancellation==0.3.0
+livekit-plugins-silero==1.6.7
 python-dotenv>=1.0.0
 httpx>=0.27.0
 
@@ -8,17 +13,21 @@ httpx>=0.27.0
 # STT = Soniox (all 3 langs, code-switching), TTS = Azure Neural (en/ru + kk-KZ,
 # one voice per session, $15/1M chars — replaced ElevenLabs for cost), Brain =
 # OpenAI-compatible shim over the Vercel /api/voice/brain route (→ Anthropic
-# Haiku 4.5 with prompt caching). Turn endpointing uses Silero VAD
-# (livekit-plugins-silero above) with a tuned silence window (Soniox does not
-# emit END_OF_SPEECH, GH livekit/agents#4034, so VAD closes the turn).
-livekit-plugins-openai>=1.2.0
-livekit-plugins-soniox>=1.2.0
-livekit-plugins-azure>=1.2.0
+# Haiku 4.5 with prompt caching).
+#
+# Turn endpointing: Silero VAD by default (Soniox does not emit END_OF_SPEECH,
+# GH livekit/agents#4034, so VAD closes the turn), or the semantic detector
+# when TURN_DETECTOR is set. That detector is livekit.agents.inference.
+# TurnDetector — part of livekit-agents itself, with the local model coming
+# from livekit-local-inference as a transitive dep. Do NOT add
+# livekit-plugins-turn-detector: 1.6.7 deprecates it in favour of the above.
+livekit-plugins-openai==1.6.7
+livekit-plugins-soniox==1.6.7
+livekit-plugins-azure==1.6.7
 # Gemini-TTS via Cloud Text-to-Speech (CASCADE_TTS=gemini). google.TTS only
-# accepts model_name/prompt from 1.3.7 (livekit/agents#4189); the version the
-# livekit-agents[google] extra resolves to is not pinned, so pin it here.
-livekit-plugins-google>=1.3.7
+# accepts model_name/prompt from 1.3.7 (livekit/agents#4189).
+livekit-plugins-google==1.6.7
 # ElevenLabs (CASCADE_TTS=eleven). Dearest per character of the three, but the
 # only one where concurrency is a plan you can buy today rather than a support
 # request: Pro = 20 parallel on Flash/Turbo, 10 on multilingual_v2.
-livekit-plugins-elevenlabs>=1.2.0
+livekit-plugins-elevenlabs==1.6.7
