@@ -162,7 +162,9 @@ export default function App() {
   const [showTutorTour, setShowTutorTour] = useState(false)
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
-  const [userLevel, setUserLevel] = useState('A1')
+  // До ответа /auth/me уровень неизвестен — стартуем с первого уровня карты
+  // (A0), иначе на секунду подсвечивается и открывается чужой город A1.
+  const [userLevel, setUserLevel] = useState('A0')
   // Демо-статус текущего аккаунта — решает, показывать ли на экранах «лимит
   // исчерпан» демо-CTA со ссылкой на WhatsApp поддержки (см. src/lib/support.js)
   // или обычный текст. Саморегистрация всегда демо (см. RegistrationService на

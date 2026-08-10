@@ -3,6 +3,11 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import LessonPlayer from './LessonPlayer.jsx'
+import { recordSkill } from '../practice/skillStats.js'
+
+// Рейтинг навыков пишется в localStorage и на бэкенд — в тестах плеера нас
+// интересует только, какой навык плеер засчитал за ответ.
+vi.mock('../practice/skillStats.js', () => ({ recordSkill: vi.fn() }))
 
 function renderLesson(tasks, props = {}) {
   const lesson = { code: 'L01-1', title: 'Тест', tasks }
@@ -212,5 +217,43 @@ describe('LessonPlayer — пояснение why', () => {
     for (const word of ['I', 'like', 'coffee']) fireEvent.click(screen.getByRole('button', { name: word }))
     fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
     expect(document.querySelector('.kl-fb__why')).toBeNull()
+  })
+})
+
+// Находка ревью: новые типы order и multi не засчитывались ни в один навык —
+// у gap есть writing, у listen listening, а эти два опирались только на имя
+// стадии, и при нейтральном названии («Practice», «Recall») ответ студента
+// не попадал в рейтинг вообще.
+describe('LessonPlayer — навыки за новые типы заданий', () => {
+  const answerOrder = () => {
+    for (const word of ['I', 'like', 'coffee']) fireEvent.click(screen.getByRole('button', { name: word }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+  }
+
+  it('order на нейтральной стадии засчитывается в грамматику', () => {
+    recordSkill.mockClear()
+    renderLesson([{ ...orderTask, sec: '4. Practice' }])
+    answerOrder()
+    expect(recordSkill).toHaveBeenCalledWith('grammar', true)
+  })
+
+  it('multi на нейтральной стадии засчитывается в лексику', () => {
+    recordSkill.mockClear()
+    renderLesson([{ ...multiTask, sec: '4. Recall' }])
+    fireEvent.click(screen.getByRole('button', { name: 'read' }))
+    fireEvent.click(screen.getByRole('button', { name: 'travel' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(recordSkill).toHaveBeenCalledWith('vocab', true)
+  })
+
+  it('навык стадии сохраняется рядом с навыком типа', () => {
+    recordSkill.mockClear()
+    renderLesson([multiTask]) // sec = «5. Listening»
+    fireEvent.click(screen.getByRole('button', { name: 'read' }))
+    fireEvent.click(screen.getByRole('button', { name: 'travel' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    const skills = recordSkill.mock.calls.map(([skill]) => skill)
+    expect(skills).toContain('listening')
+    expect(skills).toContain('vocab')
   })
 })

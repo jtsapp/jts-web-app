@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { KINGDOMS, computeKingdoms, roleForLevel } from './kingdoms.js'
+import { KINGDOMS, ROLE_BY_LEVEL, computeKingdoms, roleForLevel } from './kingdoms.js'
 
 describe('раскладка королевств', () => {
   it('шесть городов, уровни от A0 до C1, C2 нет', () => {
@@ -38,5 +38,15 @@ describe('computeKingdoms', () => {
 
   it('звание A0 сохранено', () => {
     expect(roleForLevel('A0')).toMatchObject({ key: 'merchant' })
+  })
+})
+
+// Находка ревью: фолбэк указывал на A1, хотя первым уровнем карты стал A0.
+// Звания A0 и A1 совпадают по значению, поэтому сравниваем по ссылке — иначе
+// подмена уровня в фолбэке осталась бы незаметной.
+describe('roleForLevel', () => {
+  it('неизвестный уровень получает звание первого уровня карты (A0)', () => {
+    expect(roleForLevel('Z9')).toBe(ROLE_BY_LEVEL.A0)
+    expect(roleForLevel(null)).toBe(ROLE_BY_LEVEL.A0)
   })
 })

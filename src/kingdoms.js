@@ -43,5 +43,6 @@ export function computeKingdoms(userLevel) {
 }
 
 export function roleForLevel(level) {
-  return ROLE_BY_LEVEL[(level || 'A0').toUpperCase()] || ROLE_BY_LEVEL.A1
+  // Фолбэк — звание первого уровня карты: после сдвига первым стал A0.
+  return ROLE_BY_LEVEL[(level || 'A0').toUpperCase()] || ROLE_BY_LEVEL.A0
 }

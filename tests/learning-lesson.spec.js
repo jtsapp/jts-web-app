@@ -107,4 +107,22 @@ test.describe('нативный урок «Обучения»', () => {
     await expect(page.locator('.lx-over')).toHaveCount(0)
     await expect(page.locator('.kl-task')).toBeVisible()
   })
+
+  // Находка ревью: стартовое значение уровня до ответа профиля было A1, и у
+  // студента без уровня в профиле карта подсвечивала A1 — второй город, — хотя
+  // первым уровнем стал A0. Профиль без languageLevel оставляет стартовое
+  // значение как есть, поэтому проверяем именно на нём.
+  test('без уровня в профиле текущим на карте остаётся A0', async ({ page }) => {
+    await page.route('**/api/auth/me', (r) =>
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ user: { userId: 1, name: 'Test', phone: '77010001122', role: 'USER' } }) }),
+    )
+    await page.route('**/mobile/lesson-modules', (r) => r.fulfill({ contentType: 'application/json', body: '[]' }))
+    await page.goto('/')
+    await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
+    await page.goto('/?screen=kingdom')
+
+    const current = page.locator('.lp-node.is-current')
+    await expect(current).toBeVisible({ timeout: 15000 })
+    await expect(current).toHaveAttribute('title', 'Redtown') // город уровня A0
+  })
 })

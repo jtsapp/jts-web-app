@@ -5,8 +5,9 @@ import { recordSkill } from '../practice/skillStats.js'
 
 // Нативный плеер урока «Обучения» (Kingdom lessons) — порт hosted-Speakout-урока
 // (window.TASKS + движок show/render/grade) на React. Заменяет iframe в
-// KingdomInteriorPage. Данные — из public/learning/<level>.json (экстрактор
-// scripts/extract-kingdom-lessons.js).
+// KingdomInteriorPage. Данные — из public/learning/<level>.json; их готовят два
+// экстрактора: scripts/extract-kingdom-lessons.js (уровни A2–C1, hosted-курс)
+// и scripts/extract-jts-self-lessons.js (A0/A1, ветка Self-Study).
 //
 // Оцениваются choice/gap/chips (верно → монеты, неверно → минус сердце);
 // check/listen/info/watch — информационные (кнопка «Продолжить»). Сердца
@@ -42,12 +43,17 @@ function splitSec(sec) {
 
 // Навыки, засчитываемые за одно graded-задание урока. type=gap (ввод) считаем и
 // за предметный навык по sec, и за Writing. type=listen — Listening.
+// order и multi — типы self-курсов A0/A1: order это сборка предложения из
+// слов, то есть порядок слов, то есть Grammar; multi — «отметь все подходящие
+// слова», то есть узнавание лексики. Без этих двух строк ответ на таких
+// заданиях не попадал ни в один навык, если стадия называлась нейтрально
+// («Practice», «Recall»).
 function skillsForTask(task) {
   const label = splitSec(task?.sec).label.toLowerCase()
   const out = new Set()
   if (task?.type === 'listen' || /listen|numbers/.test(label)) out.add('listening')
-  if (/grammar/.test(label)) out.add('grammar')
-  if (/vocab/.test(label)) out.add('vocab')
+  if (task?.type === 'order' || /grammar/.test(label)) out.add('grammar')
+  if (task?.type === 'multi' || /vocab/.test(label)) out.add('vocab')
   if (task?.type === 'gap') out.add('writing')
   return [...out]
 }

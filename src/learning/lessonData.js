@@ -2,7 +2,9 @@
 // Лёгкий каталог index.json и тяжёлые <level>.json грузятся по требованию и
 // кэшируются в модуле — экраны обращаются через getLessonCatalog / loadLevel.
 //
-// Данные генерирует scripts/extract-kingdom-lessons.js → public/learning/.
+// Данные в public/learning/ генерируют два экстрактора с одним контрактом:
+// scripts/extract-kingdom-lessons.js (A2–C1) и
+// scripts/extract-jts-self-lessons.js (A0/A1, ветка Self-Study курсов JTS).
 
 const CATALOG_URL = '/learning/index.json'
 const LEVEL_URL = (code) => `/learning/${code}.json`

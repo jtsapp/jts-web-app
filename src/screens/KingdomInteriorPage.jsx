@@ -40,8 +40,9 @@ const COOKIE = {
 
 // Интерьер королевства: нативная тропа уроков уровня + нативный плеер урока
 // (LessonPlayer). Раньше здесь был iframe hosted-Speakout — теперь весь урок
-// рендерится React-компонентами из public/learning/<level>.json (экстрактор
-// scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
+// рендерится React-компонентами из public/learning/<level>.json (данные готовят
+// scripts/extract-kingdom-lessons.js для A2–C1 и scripts/extract-jts-self-lessons.js
+// для A0/A1). Прогресс — на бэкенде (lessonProgress).
 export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onProfile, onBack, isDemoAccount }) {
   const { t } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
