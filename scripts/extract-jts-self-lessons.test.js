@@ -109,6 +109,24 @@ describe('extractCourse', () => {
     expect(extractCourse(tmpCourse()).dropped).toEqual({})
   })
 
+  // Находка ревью: у выпущенных уровней sec — «2. Vocabulary · …», и плеер
+  // рисует номер отдельным чипом. У новых данных номера не было вовсе.
+  it('кикер заданий нумерован — как на выпущенных уровнях A2–C1', () => {
+    const out = extractCourse(tmpCourse())
+    expect(out.lessons['L01-1'].tasks[0].sec).toBe('1. Warm-up')
+    expect(out.lessons['L01-2'].tasks[0].sec).toBe('2. Grammar')
+  })
+
+  it('карточки словаря получают кикер своей стадии, а не доклеенной перед ней', () => {
+    const out = extractCourse(tmpCourseWithVocabStage())
+    const vocabNode = out.lessons['L01-1']
+    expect(vocabNode.title).toContain('Vocabulary')
+    expect(vocabNode.tasks[0].html).toContain('kl-vocab')
+    expect(vocabNode.tasks[0].sec).toBe('2. Vocabulary')
+    // Доклеенная короткая стадия сохраняет свой номер — кикер по стадии задачи.
+    expect(vocabNode.tasks[1].sec).toBe('1. Warm-up')
+  })
+
   // Находка ревью: раньше при отсутствии узла с "vocab"/"words" в заголовке
   // карточки словаря молча терялись — ни ошибки, ни строчки в логе. Если
   // стадию словаря переименуют в будущем курсе, это должно быть видно в CLI.

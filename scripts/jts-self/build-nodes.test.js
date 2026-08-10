@@ -55,6 +55,28 @@ describe('buildLessonNodes', () => {
     expect(nodes).toHaveLength(2)
   })
 
+  // Находка ревью: на выпущенных уровнях A2–C1 sec выглядит как
+  // «2. Vocabulary · …», и плеер рисует из номера отдельный чип (splitSec).
+  // Без номера чип не рендерился никогда, и верх карточки урока у A0/A1
+  // отличался от остальных уровней.
+  it('кикер задания нумерован по месту стадии в уроке, как на выпущенных уровнях', () => {
+    const nodes = buildLessonNodes({ lesson, level: 'a0', stages: [stage('Warm-up', 3), stage('Vocabulary', 3)] })
+    expect(nodes[0].tasks[0].sec).toBe('1. Warm-up')
+    expect(nodes[1].tasks[0].sec).toBe('2. Vocabulary')
+  })
+
+  it('номер стадии считается по исходному уроку, а не по узлам тропы', () => {
+    // Первая стадия короткая — своего узла не даёт, но нумерация стадий от
+    // этого не съезжает: студент видит номер стадии урока.
+    const nodes = buildLessonNodes({ lesson, level: 'a0', stages: [stage('Intro', 1), stage('Grammar', 4)] })
+    expect(nodes[0].tasks.map((t) => t.sec)).toEqual(['1. Intro', '2. Grammar', '2. Grammar', '2. Grammar', '2. Grammar'])
+  })
+
+  it('стадия без названия не даёт кикера с голым номером', () => {
+    const [node] = buildLessonNodes({ lesson, level: 'a0', stages: [stage('', 3)] })
+    expect(node.tasks[0].sec).toBe('')
+  })
+
   it('причина отбраковки блока доходит до вызывающего', () => {
     const dropped = []
     buildLessonNodes({
@@ -85,6 +107,15 @@ describe('buildReviewNode', () => {
     })
     expect(node).toMatchObject({ code: 'R01', title: 'Unit Test · Unit 1', unit: 1 })
     expect(node.tasks).toHaveLength(8)
+  })
+
+  it('кикер заданий юнит-теста нумерован так же, как в уроке', () => {
+    const node = buildReviewNode({
+      review: { no: 1, unit: 1, title: 'Unit Test · Unit 1', html: '' },
+      level: 'a0',
+      stages: [stage('Unit Test', 2), stage('Speaking', 1)],
+    })
+    expect(node.tasks.map((t) => t.sec)).toEqual(['1. Unit Test', '1. Unit Test', '2. Speaking'])
   })
 })
 

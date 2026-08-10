@@ -72,7 +72,12 @@ function extractCourse(filePath) {
     const lessonNodes = buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html), onDrop })
     if (cards) {
       const vocabNode = lessonNodes.find((n) => /vocab|words/i.test(n.title))
-      if (vocabNode) vocabNode.tasks.unshift(cards)
+      if (vocabNode) {
+        // Кикер карточек — кикер стадии словаря (с её номером): иначе первый
+        // экран узла выглядит иначе, чем все следующие.
+        vocabNode.tasks.unshift(vocabNode.sec ? { ...cards, sec: vocabNode.sec } : cards)
+      }
+
       // Без узла со словом "vocab"/"words" в заголовке карточки словаря
       // некуда врезать — раньше это молча проглатывалось. Если стадию
       // словаря в источнике переименуют, карточки тихо пропадут с тропы;

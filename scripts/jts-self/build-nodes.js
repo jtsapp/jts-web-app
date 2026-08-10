@@ -14,13 +14,28 @@ function tasksOfStage(stage, ctx) {
   return stage.blocks.map((b) => normalizeBlock(b, ctx)).filter(Boolean)
 }
 
+/**
+ * Кикер задания. На выпущенных уровнях A2–C1 sec выглядит как «2. Vocabulary ·
+ * international words», и плеер рисует из номера отдельный жирный чип
+ * (splitSec в LessonPlayer.jsx). Без номера чипа не бывает, и верх карточки
+ * урока у новых уровней отличался бы от старых. Нумеруем стадии в пределах
+ * урока — по их месту в исходном html, а не среди попавших на тропу: студент
+ * видит порядок стадий урока, а не порядок узлов.
+ */
+const secOf = (stage, i) => (stage.name ? `${i + 1}. ${stage.name}` : '')
+
 function buildLessonNodes({ lesson, level, stages, onDrop }) {
   const trackFile = (id) => lesson.tracks[id] || null
   const code = `L${pad2(lesson.no)}`
 
   const built = stages
-    .map((stage) => ({ name: stage.name, tasks: tasksOfStage(stage, { sec: stage.name, level, trackFile, onDrop }) }))
+    .map((stage, i) => ({
+      name: stage.name,
+      sec: secOf(stage, i),
+      tasks: tasksOfStage(stage, { sec: secOf(stage, i), level, trackFile, onDrop }),
+    }))
     .filter((s) => s.tasks.length > 0)
+
 
   const nodes = []
   for (const stage of built) {
@@ -29,7 +44,7 @@ function buildLessonNodes({ lesson, level, stages, onDrop }) {
       previous.tasks.push(...stage.tasks)
       continue
     }
-    nodes.push({ name: stage.name, tasks: [...stage.tasks], unit: lesson.unit })
+    nodes.push({ name: stage.name, sec: stage.sec, tasks: [...stage.tasks], unit: lesson.unit })
   }
 
   // Короткая стадия в начале урока «предыдущего» не имела — доклеиваем её к
@@ -51,9 +66,14 @@ function buildLessonNodes({ lesson, level, stages, onDrop }) {
   // тропы целиком (MIN_NODE_TASKS защищает от «печенек» на стыке стадий,
   // а не даёт права терять контент урока).
 
+  // sec узла — кикер его собственной стадии. Он нужен снаружи (карточки
+  // словаря врезаются в узел уже готовым заданием), а брать его из первой
+  // задачи нельзя: в начале узла может лежать доклеенная короткая стадия с
+  // чужим номером.
   return nodes.map((node, i) => ({
     code: `${code}-${i + 1}`,
     title: `${lesson.title} · ${node.name}`,
+    sec: node.sec,
     unit: node.unit,
     tasks: node.tasks,
   }))
@@ -61,7 +81,7 @@ function buildLessonNodes({ lesson, level, stages, onDrop }) {
 
 function buildReviewNode({ review, level, stages, onDrop }) {
   const trackFile = () => null
-  const tasks = stages.flatMap((stage) => tasksOfStage(stage, { sec: stage.name, level, trackFile, onDrop }))
+  const tasks = stages.flatMap((stage, i) => tasksOfStage(stage, { sec: secOf(stage, i), level, trackFile, onDrop }))
   return { code: `R${pad2(review.no)}`, title: review.title, unit: review.unit, tasks }
 }
 
