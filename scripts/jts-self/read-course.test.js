@@ -26,7 +26,59 @@ describe('readDecl', () => {
   })
 })
 
+describe('readLevel через readCourse', () => {
+  it('достаёт уровень из <title>, закодированного HTML-сущностями (как в скачанном файле курса)', () => {
+    const file = tmpCourse(`
+      <title>just to study &mdash; A0 &middot; Course</title>
+      <script>
+      const LESSONS={1:{unit:1,no:1,title:"One",blurb:"",tracks:{},html:"<b>x</b>"}};
+      </script>`)
+    expect(readCourse(file).label).toBe('A0')
+  })
+
+  it('достаёт уровень из <title>, уже раскодированного юникодным тире (как в опубликованном бандле)', () => {
+    const file = tmpCourse(`
+      <title>just to study — A1 · Course</title>
+      <script>
+      const LESSONS={1:{unit:1,no:1,title:"One",blurb:"",tracks:{},html:"<b>x</b>"}};
+      </script>`)
+    expect(readCourse(file).label).toBe('A1')
+  })
+})
+
 describe('readCourse', () => {
+  it('бросает явную ошибку с именем файла, если в курсе нет объявления LESSONS', () => {
+    const file = tmpCourse(`
+      <title>just to study — A0 · Course</title>
+      <script>
+      const UNITS=[];
+      </script>`)
+    expect(() => readCourse(file)).toThrow(/LESSONS/)
+    expect(() => readCourse(file)).toThrow(file)
+  })
+
+  it('не падает, если UNITS и REVIEWS отсутствуют — это законный курс без юнит-тестов', () => {
+    const file = tmpCourse(`
+      <title>just to study — A0 · Course</title>
+      <script>
+      const LESSONS={1:{unit:1,no:1,title:"One",blurb:"",tracks:{},html:"<b>x</b>"}};
+      </script>`)
+    const course = readCourse(file)
+    expect(course.units).toEqual([])
+    expect(course.reviews).toEqual([])
+    expect(course.lessons).toHaveLength(1)
+  })
+
+  it('оборачивает ошибку eval битого литерала — в сообщении есть имя объявления и путь файла', () => {
+    const file = tmpCourse(`
+      <title>just to study — A0 · Course</title>
+      <script>
+      const LESSONS={1:{unit:1,title:"One" blurb:"сломано, нет запятой"}};
+      </script>`)
+    expect(() => readCourse(file)).toThrow(/LESSONS/)
+    expect(() => readCourse(file)).toThrow(file)
+  })
+
   it('собирает уровень, юниты, уроки и юнит-тесты', () => {
     const file = tmpCourse(`
       <title>just to study — A0 · Course</title>

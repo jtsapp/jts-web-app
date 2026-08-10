@@ -39,15 +39,29 @@ function readDecl(src, name) {
   return null
 }
 
-function evalDecl(src, name) {
+function evalDecl(src, name, filePath) {
   const literal = readDecl(src, name)
-  // eslint-disable-next-line no-eval
-  return literal ? eval('(' + literal + ')') : null
+  if (!literal) return null
+  try {
+    // eslint-disable-next-line no-eval
+    return eval('(' + literal + ')')
+  } catch (err) {
+    // Голый SyntaxError не говорит, какое объявление и в каком файле
+    // сломалось — а вырезанный литерал может быть мегабайтным, руками
+    // не найдёшь. Оборачиваем, исходную ошибку сохраняем в cause.
+    throw new Error(`не удалось вычислить объявление ${name} в файле ${filePath}: ${err.message}`, { cause: err })
+  }
 }
 
-/** Код уровня из <title>: «just to study — A0 · Course» → a0/A0. */
+/**
+ * Код уровня из <title>. Источники расходятся в кодировке разделителя:
+ * скачанный вручную файл хранит его как HTML-сущность (&mdash;), а
+ * опубликованный бандл — уже раскодированным юникодным тире (—).
+ * Полный декодер сущностей тут не нужен: код уровня ищем после любого
+ * из двух вариантов разделителя, не раскодируя остальной текст.
+ */
 function readLevel(src) {
-  const m = /<title>[^<]*?—\s*([A-C][0-2])\b/i.exec(src)
+  const m = /<title>[^<]*?(?:—|&mdash;)\s*([A-C][0-2])\b/i.exec(src)
   const label = m ? m[1].toUpperCase() : ''
   if (!label) throw new Error('в файле курса не найден уровень в <title>')
   return { level: label.toLowerCase(), label }
@@ -57,10 +71,16 @@ function readCourse(filePath) {
   const src = fs.readFileSync(filePath, 'utf8')
   const { level, label } = readLevel(src)
 
-  const rawUnits = evalDecl(src, 'UNITS') || []
+  // UNITS и REVIEWS могут законно отсутствовать (курс без юнит-тестов) —
+  // фиксируем это явным `?? []` / `?? {}`, а не полагаемся на побочный
+  // эффект `|| []` внутри evalDecl.
+  const rawUnits = evalDecl(src, 'UNITS', filePath) ?? []
   const units = rawUnits.map((u, i) => ({ no: i + 1, name: Array.isArray(u) ? u[0] : String(u) }))
 
-  const rawLessons = evalDecl(src, 'LESSONS') || {}
+  // LESSONS — обязательное объявление: без уроков курс читать бессмысленно,
+  // экстрактор не должен молча опубликовать пустой курс.
+  const rawLessons = evalDecl(src, 'LESSONS', filePath)
+  if (!rawLessons) throw new Error(`в файле курса не найдено объявление LESSONS: ${filePath}`)
   const lessons = Object.keys(rawLessons)
     .map(Number)
     .sort((a, b) => a - b)
@@ -69,7 +89,7 @@ function readCourse(filePath) {
       return { no, unit: l.unit, title: l.title || '', blurb: l.blurb || '', tracks: l.tracks || {}, html: l.html || '' }
     })
 
-  const rawReviews = evalDecl(src, 'REVIEWS') || {}
+  const rawReviews = evalDecl(src, 'REVIEWS', filePath) ?? {}
   const reviews = Object.keys(rawReviews)
     .map(Number)
     .sort((a, b) => a - b)
