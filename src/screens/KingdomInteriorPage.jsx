@@ -243,11 +243,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     [open, level, token, moduleId],
   )
 
-  // «Назад»: из незаконченного урока — подтверждение; с экрана итогов/тропы —
-  // сразу (на тропу либо из королевства).
+  // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
+  // целиком (и урок, и итоги), с тропы — из королевства.
   const handleBack = () => {
     if (open && !end) setConfirmExit(true)
-    else if (open) setOpen(null)
+    else if (open) exitLesson()
     else onBack()
   }
   const exitLesson = () => {
@@ -392,8 +392,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       )}
 
       {/* Открытый урок: перенесённый курс рисует себя сам, остальные уровни —
-          нативным плеером (замена iframe). */}
-      {!loading && open && (
+          нативным плеером (замена iframe).
+
+          С экрана итогов плеер снимаем совсем. Раньше он оставался под
+          итогами: страница прокручивалась к «пройденному» уроку с живыми
+          кнопками, а его «Выйти» уводил в пустой экран — итоги оставались
+          показанными поверх уже закрытого урока. */}
+      {!loading && open && !end && (
         <div className="km-lesson">
           {open.steps ? (
             <CourseStepPlayer

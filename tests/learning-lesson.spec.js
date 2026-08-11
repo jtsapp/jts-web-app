@@ -98,4 +98,28 @@ test.describe('нативный урок «Обучения»', () => {
     await expect(page.locator('.lx-over')).toHaveCount(0)
     await expect(page.locator('.cp-step')).toBeVisible()
   })
+
+  test('на экране итогов урока под ними нет — и выходить из него нечем', async ({ page }) => {
+    await bootLearning(page)
+    await openKingdomA1(page)
+    const node = page.locator('.kt-step:not([disabled])').first()
+    await expect(node).toBeVisible({ timeout: 15000 })
+    await node.click()
+    await expect(page.locator('.cp-step')).toBeVisible({ timeout: 15000 })
+
+    // Прощёлкиваем урок до итогов.
+    for (let i = 0; i < 40; i++) {
+      if (await page.locator('.le-over').isVisible().catch(() => false)) break
+      const cta = page.locator('.cp-cta, button', { hasText: /Продолжить|Завершить урок|Проверить/ }).first()
+      if (!(await cta.isVisible().catch(() => false))) break
+      await cta.click()
+      await page.waitForTimeout(150)
+    }
+
+    // Раньше плеер оставался под итогами: страница прокручивалась к живому
+    // уроку, а его «Выйти» уводил в пустой экран.
+    await expect(page.locator('.le-over')).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('.cp-bar')).toHaveCount(0)
+    await expect(page.locator('.cp-step')).toHaveCount(0)
+  })
 })
