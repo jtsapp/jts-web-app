@@ -106,6 +106,65 @@ function checkItemsOf(el) {
   return items.filter(Boolean)
 }
 
+/**
+ * Текст, который курс произносил синтезом по кнопке:
+ * `<button class="btn-audio" onclick="sayText(this)" data-say="Phone battery
+ * dying? First, open Settings…">`. В уроках 16 и 25 уровня A1 этот атрибут —
+ * ЕДИНСТВЕННЫЙ носитель текста для чтения: на экране его нет ни в каком другом
+ * виде. Кнопка уходит как мёртвый контрол курса, и вместе с ней уходил текст —
+ * а следом за ним оставались восемь оценочных вопросов про то, чего студент
+ * нигде не видит. При трёх сердцах такой узел заваливается почти гарантированно.
+ */
+const spokenTextOf = (el) => clean(el.getAttribute('data-say'))
+
+/**
+ * Возвращает текст озвучки на экран и оставляет для плеера метку `data-say`.
+ *
+ * Кнопку курса заменяем абзацем на её месте: текст встаёт туда, где студент
+ * ждал плеер, и попадает в тот же info-блок, что и подпись рядом («Video 1 —
+ * the battery»). Если тот же текст в стадии уже напечатан (урок 1 — транскрипт
+ * в `<details>` рядом с плеером), второй копии не добавляем: дублировать
+ * материал на экране незачем — но метка остаётся, и озвучка работает.
+ */
+function restoreSpokenText(container) {
+  const shown = clean(container.textContent)
+  for (const el of [...container.querySelectorAll('[data-say]')]) {
+    const text = spokenTextOf(el)
+    if (!text) continue
+    const passage = container.ownerDocument.createElement('p')
+    passage.setAttribute('data-say', text)
+    if (!shown.includes(text)) passage.textContent = text
+    el.replaceWith(passage)
+  }
+}
+
+/** Текст озвучки блока — для поля say задания (сам абзац уже на экране). */
+function sayTextOf(node) {
+  const el = node.matches('[data-say]') ? node : node.querySelector('[data-say]')
+  return el ? spokenTextOf(el) : ''
+}
+
+// Разминка курса — шкала 👍/👎 из кнопок `.opt` без ключа ответа. В плеере она
+// становится неоценочным чек-листом с галочками (type check), а кнопки шкалы
+// уходят вместе с остальными контролами курса. Инструкция «Tap 👍 or 👎 for each
+// one.» после этого описывает контрол, которого на экране нет. Заменяем ровно
+// эту фразу и только её: остальные 👍/👎 курса — содержание, а не подпись к
+// кнопкам («👍 = I like. 👎 = I don't like.», «👍 coffee → ___ coffee.»), и
+// трогать их нельзя.
+const THUMBS_TAP = /tap\s*👍\s*or\s*👎\s*for each one\.?/gi
+const THUMBS_TAP_INSTEAD = 'Tick the ones you like.'
+
+function retargetThumbsInstruction(node) {
+  for (const child of [...node.childNodes]) {
+    if (child.nodeType === node.TEXT_NODE) {
+      const next = child.nodeValue.replace(THUMBS_TAP, THUMBS_TAP_INSTEAD)
+      if (next !== child.nodeValue) child.nodeValue = next
+      continue
+    }
+    if (child.nodeType === node.ELEMENT_NODE) retargetThumbsInstruction(child)
+  }
+}
+
 /** Строка задания → сырой блок или null, если интерактива в ней нет. */
 function blockFromRow(row) {
   const block = rowBlock(row)
@@ -299,12 +358,19 @@ function pushInfo(node, blocks) {
   if (node.matches('button.btn-audio') && trackIdOf(node)) return
 
   const hadContent = hasContent(node)
+  // Метку озвучки читаем с исходного узла: в копии абзац-носитель может не
+  // дожить до конца чистки (когда тот же текст уже напечатан рядом, абзац
+  // пустой и уходит как пустой контейнер), а озвучивать всё равно есть что.
+  const say = sayTextOf(node)
   const copy = node.cloneNode(true)
   if (!isDeadControl(copy)) {
     stripDeadControls(copy)
+    // Сам текст в html уже есть, дубль в атрибуте только раздувал бы json.
+    for (const el of [...copy.querySelectorAll('[data-say]')]) el.removeAttribute('data-say')
     stripEmptyContainers(copy)
     if (hasContent(copy)) {
-      blocks.push({ kind: 'info', html: copy.outerHTML.trim() })
+      const html = copy.outerHTML.trim()
+      blocks.push(say ? { kind: 'info', html, say } : { kind: 'info', html })
       return
     }
   }
@@ -369,6 +435,51 @@ function pushInfoWithSelfCheck(node, blocks) {
 }
 
 /**
+ * Содержимое задания в порядке документа.
+ *
+ * Обходить только строки `.row` нельзя: подписи частей юнит-теста («Part 1 ·
+ * Grammar and vocabulary», «questions 1–12», «Choose the correct answer»,
+ * «Part 2 · Write the answer») лежат в том же `.task` рядом со строками, а не
+ * снаружи него. Без них студент открывает узел R01 и видит 17 вопросов подряд
+ * без единого пояснения, что это тест и что вторая часть — на ввод.
+ */
+function collectTaskBody(node, blocks, onDrop) {
+  const rows = [...node.querySelectorAll('.row')]
+  if (!rows.length) {
+    pushRow(node, blocks, onDrop)
+    return
+  }
+
+  for (const child of [...node.children]) {
+    if (child.matches('.row')) {
+      pushRow(child, blocks, onDrop)
+      continue
+    }
+    // Обёртка вокруг строк (в источнике встречается на многовопросных частях):
+    // спускаемся внутрь, чтобы не потерять ни строки, ни подписи между ними.
+    if (child.querySelector('.row')) {
+      collectTaskBody(child, blocks, onDrop)
+      continue
+    }
+    // Кнопка «Check answers» и пустой `.res` — контролы проверки самого курса:
+    // в плеере их роль играет собственная кнопка проверки. Это не потерянный
+    // контент, поэтому в сводку потерь такой ребёнок не идёт.
+    if (isDeadControl(child)) continue
+    pushInfoWithSelfCheck(child, blocks)
+  }
+}
+
+/** Строка задания → блок; строка без интерактива — в сводку потерь. */
+function pushRow(row, blocks, onDrop) {
+  const block = blockFromRow(row)
+  if (block) blocks.push(block)
+  // Строка задания, из которой не вышло ни одного блока, — это потерянный
+  // экран урока. Молча исчезать он не должен: как и отбракованные блоки,
+  // попадает в сводку потерь экстрактора.
+  else if (typeof onDrop === 'function') onDrop(DROP.rowNoBlock, { kind: 'row', html: row.outerHTML })
+}
+
+/**
  * Блоки одной стадии в порядке документа. Порядок здесь — часть методики:
  * инструкция и объяснение стоят перед вопросами, к которым относятся, поэтому
  * обходим детей стадии подряд, а не собираем сперва все задания.
@@ -376,6 +487,10 @@ function pushInfoWithSelfCheck(node, blocks) {
 function collectStage(section, onDrop) {
   const blocks = []
   const container = section.querySelector('.stage-body') || section
+  // Две правки разметки под плеер — до разбора на блоки, чтобы дальше все ветки
+  // видели уже приведённый к экрану урок, а не каждая чинила его по-своему.
+  restoreSpokenText(container)
+  retargetThumbsInstruction(container)
 
   for (const child of [...container.children]) {
     if (child.classList.contains('stage-head')) continue
@@ -406,15 +521,7 @@ function collectStage(section, onDrop) {
 
     for (const task of tasks) {
       extractAudio(task, blocks)
-      const rows = [...task.querySelectorAll('.row')]
-      for (const row of rows.length ? rows : [task]) {
-        const block = blockFromRow(row)
-        if (block) blocks.push(block)
-        // Строка задания, из которой не вышло ни одного блока, — это
-        // потерянный экран урока. Молча исчезать он не должен: как и
-        // отбракованные блоки, попадает в сводку потерь экстрактора.
-        else if (typeof onDrop === 'function') onDrop(DROP.rowNoBlock, { kind: 'row', html: row.outerHTML })
-      }
+      collectTaskBody(task, blocks, onDrop)
     }
   }
   return blocks

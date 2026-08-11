@@ -519,3 +519,129 @@ describe('collectLesson — потерянные строки задания', (
     expect(() => collectLesson(html)).not.toThrow()
   })
 })
+
+// Находка ревью (Important): в A1 уроках 16 и 25 текст для чтения хранится
+// только в атрибуте кнопки — <button onclick="sayText(this)" data-say="Phone
+// battery dying? …">. На экране его нет ни в каком другом виде, чистка убирала
+// кнопку как мёртвый контрол, и студент получал узел с восемью оценочными
+// вопросами про текст, которого нигде нет.
+describe('collectLesson — текст для чтения из data-say', () => {
+  const player = (say, meta) => `<div class="player">
+    <button class="btn btn-audio segbtn" onclick="sayText(this)" data-say="${say}">Play</button>
+    <div class="wave"></div>
+    <div class="meta"><b>${meta}</b>Read aloud by your device</div>
+  </div>`
+
+  const PASSAGE = 'Phone battery dying? First, open Settings. Then turn on dark mode.'
+
+  it('абзац возвращается на экран текстом, а не исчезает вместе с кнопкой', () => {
+    const [s] = collectLesson(stage('Read', player(PASSAGE, 'Video 1 — the battery')))
+    expect(s.blocks[0].kind).toBe('info')
+    expect(s.blocks[0].html).toContain('Phone battery dying?')
+    expect(s.blocks[0].html).toContain('turn on dark mode')
+  })
+
+  it('подпись плеера рядом с текстом остаётся — она называет, что читаем', () => {
+    const [s] = collectLesson(stage('Read', player(PASSAGE, 'Video 1 — the battery')))
+    expect(s.blocks[0].html).toContain('Video 1 — the battery')
+  })
+
+  it('текст едет полем say — плеер озвучит его тем же синтезом, что и слова', () => {
+    const [s] = collectLesson(stage('Read', player(PASSAGE, 'Video 1')))
+    expect(s.blocks[0].say).toBe(PASSAGE)
+  })
+
+  it('мёртвый контрол курса в разметку не попадает, дубля текста в атрибуте нет', () => {
+    const [s] = collectLesson(stage('Read', player(PASSAGE, 'Video 1')))
+    expect(s.blocks[0].html).not.toContain('sayText')
+    expect(s.blocks[0].html).not.toContain('data-say')
+  })
+
+  it('тот же текст, уже напечатанный рядом, не дублируется — но озвучка остаётся', () => {
+    // Урок 1 A1: под плеером стоит <details> с транскриптом. Второй копии
+    // текста на экране быть не должно, а озвучивать по-прежнему есть что.
+    const html = stage('Listen', `${player(PASSAGE, "Amina's story")}
+      <details class="gref"><summary>Show transcript</summary><div class="gref-body">${PASSAGE}</div></details>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].say).toBe(PASSAGE)
+    const shown = s.blocks.map((b) => b.html || '').join('\n')
+    expect(shown.split('Phone battery dying?')).toHaveLength(2)
+  })
+
+  it('текст без вопросов рядом всё равно доезжает: узел не должен молча пустеть', () => {
+    const [s] = collectLesson(stage('Read', `<div data-only="self">${player(PASSAGE, 'Video 1')}</div>`))
+    expect(s.blocks.some((b) => (b.html || '').includes('Phone battery dying?'))).toBe(true)
+  })
+})
+
+// Находка ревью (Minor): внутри задания обходились только строки вопросов,
+// поэтому подписи частей юнит-теста («Part 1 · Grammar and vocabulary»,
+// «questions 1–12», «Choose the correct answer») исчезали беззвучно — студент
+// открывал узел R01 и видел 17 вопросов подряд без единого пояснения.
+describe('collectLesson — подписи внутри задания', () => {
+  const review = `<div class="task" data-task data-tid="review-u1">
+    <div class="instruction">Part 1 · Grammar and vocabulary <span class="qcount">questions 1–12</span></div>
+    <p class="subline">Choose the correct answer.</p>
+    <div class="row"><span class="num">1</span><span class="body">I ___ coffee.
+      <div class="opts" data-correct="c"><button class="opt" data-val="a">liking</button><button class="opt" data-val="c">like</button></div></span></div>
+    <div class="instruction">Part 2 · Write the answer</div>
+    <div class="row"><span class="num">2</span><span class="body">I ___ like Mondays.
+      <input data-answer="don't"></span></div>
+    <button class="btn btn-primary" onclick="check(this)">Check answers</button>
+    <div class="res"></div>
+  </div>`
+
+  it('подписи частей доезжают до узла', () => {
+    const [s] = collectLesson(stage('Unit Test', review))
+    const text = s.blocks.map((b) => b.html || '').join('\n')
+    expect(text).toContain('Part 1 · Grammar and vocabulary')
+    expect(text).toContain('questions 1–12')
+    expect(text).toContain('Choose the correct answer')
+    expect(text).toContain('Part 2 · Write the answer')
+  })
+
+  it('подпись стоит перед своими вопросами — порядок часть методики', () => {
+    const [s] = collectLesson(stage('Unit Test', review))
+    expect(s.blocks.map((b) => b.kind)).toEqual(['info', 'info', 'choice', 'info', 'gap'])
+  })
+
+  it('кнопка проверки самого курса потерянным контентом не считается', () => {
+    // В плеере её роль играет собственная кнопка проверки: пустого info-блока
+    // (а значит и записи в сводке потерь) она давать не должна.
+    const [s] = collectLesson(stage('Unit Test', review))
+    expect(s.blocks.some((b) => b.kind === 'info' && !b.html)).toBe(false)
+    const drops = []
+    collectLesson(stage('Unit Test', review), (reason) => drops.push(reason))
+    expect(drops).toEqual([])
+  })
+})
+
+// Находка ревью (Minor): разминка A0 в плеере стала чек-листом с галочками —
+// кнопок 👍/👎 на экране больше нет, а инструкция про них осталась.
+describe('collectLesson — инструкция разминки под чек-лист', () => {
+  const warmUp = (instruction) => stage('Warm-up', `<div data-only="self">
+    <div class="instruction">${instruction}</div>
+    <p class="subline">No right or wrong — just you.</p>
+    <div class="grid3"><div class="card"><span class="body"><b>☕</b> coffee</span>
+      <div class="opts"><button class="opt" data-val="y">👍</button><button class="opt" data-val="n">👎</button></div></div></div>
+  </div>`)
+
+  it('инструкция описывает галочки, а не снятые кнопки шкалы', () => {
+    const [s] = collectLesson(warmUp('Tap 👍 or 👎 for each one.'))
+    const info = s.blocks.find((b) => b.kind === 'info')
+    expect(info.html).not.toContain('Tap 👍 or 👎')
+    expect(info.html).toContain('Tick the ones you like.')
+  })
+
+  it('чек-лист при этом собирается по-прежнему из подписей карточек', () => {
+    const [s] = collectLesson(warmUp('Tap 👍 or 👎 for each one.'))
+    expect(s.blocks.find((b) => b.kind === 'check')).toMatchObject({ items: ['☕ coffee'] })
+  })
+
+  it('остальные 👍/👎 курса — содержание, а не подпись к кнопкам: их не трогаем', () => {
+    const html = stage('Grammar', `<div data-only="self">
+      <div class="bubble"><p>👍 = I like. 👎 = I don’t like.</p></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).toContain('👍 = I like. 👎 = I don’t like.')
+  })
+})
