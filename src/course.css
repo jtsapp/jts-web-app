@@ -237,7 +237,13 @@
 .cp-pick__label::first-letter {
   text-transform: uppercase;
 }
-.cp-pick.is-on {
+/* Три состояния карточки из макета: обычная — без рамки, под курсором — светлая
+   сиреневая, выбранная — насыщенная и с фиолетовой подписью. */
+.cp-pick:hover {
+  border-color: #c9a4ff;
+}
+.cp-pick.is-on,
+.cp-pick.is-on:hover {
   border-color: #9047ff;
 }
 .cp-pick.is-on .cp-pick__label {
