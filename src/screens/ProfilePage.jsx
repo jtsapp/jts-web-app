@@ -63,7 +63,9 @@ function nextRoleFor(level) {
 
 export default function ProfilePage({
   userName,
-  userLevel = 'A1',
+  // Фолбэк — первый уровень карты (после сдвига A0), как в roleForLevel: с
+  // фолбэком A1 бейдж уровня показывал не тот код, что общая функция звания.
+  userLevel = 'A0',
   userPhone,
   token,
   onNav,
@@ -134,7 +136,7 @@ export default function ProfilePage({
           .then((p) => {
             const c = countProgress(p)
             sumDone += c.done
-            if (k.level.toUpperCase() === (userLevel || 'A1').toUpperCase() && alive) setLevelProg(c)
+            if (k.level.toUpperCase() === (userLevel || 'A0').toUpperCase() && alive) setLevelProg(c)
           })
           .catch(() => {}),
       ),
@@ -311,7 +313,7 @@ export default function ProfilePage({
                 <span>{t('profile.rankPrefix')}</span>
                 <b>{t('role.' + role.key)}</b>
               </div>
-              <span className="pf-rank__cefr">{(userLevel || 'A1').toUpperCase()}</span>
+              <span className="pf-rank__cefr">{(userLevel || 'A0').toUpperCase()}</span>
             </div>
 
             <div className="pf-progress">

@@ -41,3 +41,25 @@ describe('ProfilePage — следующее звание', () => {
     expect(next.className).toContain('pf-progress__coin--dim')
   })
 })
+
+// Находка ревью: бейдж уровня падал на A1, тогда как общая функция звания
+// (roleForLevel) — на A0. На пустом уровне студент видел звание Купца рядом с
+// кодом уровня A1, которого у него нет.
+describe('ProfilePage — бейдж уровня', () => {
+  const renderProfile = (props) =>
+    render(
+      <I18nProvider>
+        <ProfilePage userName="Демо" onNav={() => {}} onLogout={() => {}} {...props} />
+      </I18nProvider>,
+    )
+
+  it('без уровня в профиле показывает A0 — первый уровень карты', () => {
+    const { container } = renderProfile({ userLevel: '' })
+    expect(container.querySelector('.pf-rank__cefr').textContent).toBe('A0')
+  })
+
+  it('уровень вообще не передан — тот же A0, а не A1', () => {
+    const { container } = renderProfile({})
+    expect(container.querySelector('.pf-rank__cefr').textContent).toBe('A0')
+  })
+})

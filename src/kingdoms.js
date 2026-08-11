@@ -11,7 +11,11 @@ export const KINGDOMS = [
   { id: 'goldcrown', name: 'Rosewind Town', king: 'Атлас Дон', level: 'C1', map: { x: 58, y: 15 }, ring: '#C43C93' },
 ]
 
-export const LEVEL_ORDER = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+// Шкала уровней раздела. C2 закончился вместе с городом: контента за ним нет
+// ни на карте, ни в public/learning — значит, и звания за него быть не должно,
+// иначе студенту с C1 «следующим» светится звание за уровень, которого в
+// разделе нет.
+export const LEVEL_ORDER = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1']
 
 // Роль (звание) по уровню. Аватарки статусов — из загрузок.
 export const ROLE_BY_LEVEL = {
@@ -21,17 +25,24 @@ export const ROLE_BY_LEVEL = {
   B1: { key: 'baron', title: 'Барон' },
   B2: { key: 'viscount', title: 'Виконт' },
   C1: { key: 'king', title: 'Король' },
-  C2: { key: 'lord', title: 'Лорд' },
 }
 
+// Уровень выше шкалы раздела — не «неизвестный»: в анкете бэкенда C2 остался, и
+// сажать такого студента на A0 (что делает фолбэк для мусорного кода) нельзя.
+// Он приравнивается к последнему уровню шкалы — ровно то, что раньше делал
+// clamp внутри computeKingdoms.
+const ABOVE_SCALE = new Set(['C2'])
+
 export function levelIndex(level) {
-  const i = LEVEL_ORDER.indexOf((level || 'A0').toUpperCase())
+  const code = (level || 'A0').toUpperCase()
+  if (ABOVE_SCALE.has(code)) return LEVEL_ORDER.length - 1
+  const i = LEVEL_ORDER.indexOf(code)
   return i < 0 ? 0 : i
 }
 
 // Гейтинг доступа (world_cubit): A0 открыт всегда, дальше — всё до уровня
-// студента включительно. Уровень выше последнего города (C2) не оставляет
-// карту без «текущего» — им становится последний.
+// студента включительно. Уровень выше последнего города не оставляет карту без
+// «текущего» — им становится последний.
 export function computeKingdoms(userLevel) {
   const last = levelIndex(KINGDOMS[KINGDOMS.length - 1].level)
   const effIdx = Math.min(last, Math.max(levelIndex(userLevel), levelIndex('A0')))
@@ -43,6 +54,8 @@ export function computeKingdoms(userLevel) {
 }
 
 export function roleForLevel(level) {
-  // Фолбэк — звание первого уровня карты: после сдвига первым стал A0.
-  return ROLE_BY_LEVEL[(level || 'A0').toUpperCase()] || ROLE_BY_LEVEL.A0
+  // Через levelIndex, а не прямым чтением таблицы: у него уже есть и фолбэк на
+  // первый уровень карты (после сдвига это A0), и приравнивание уровня выше
+  // шкалы к последнему — иначе студент с C2 получал бы звание новичка.
+  return ROLE_BY_LEVEL[LEVEL_ORDER[levelIndex(level)]]
 }

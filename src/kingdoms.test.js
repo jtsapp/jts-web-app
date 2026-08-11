@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { KINGDOMS, ROLE_BY_LEVEL, computeKingdoms, roleForLevel } from './kingdoms.js'
+import { KINGDOMS, LEVEL_ORDER, ROLE_BY_LEVEL, computeKingdoms, roleForLevel } from './kingdoms.js'
 
 describe('раскладка королевств', () => {
   it('шесть городов, уровни от A0 до C1, C2 нет', () => {
@@ -48,5 +48,25 @@ describe('roleForLevel', () => {
   it('неизвестный уровень получает звание первого уровня карты (A0)', () => {
     expect(roleForLevel('Z9')).toBe(ROLE_BY_LEVEL.A0)
     expect(roleForLevel(null)).toBe(ROLE_BY_LEVEL.A0)
+  })
+})
+
+// Находка ревью: списки уровней и званий содержали C2, убранный с карты вместе
+// с шестым городом. Из-за этого студенту с C1 «следующим» званием подсвечивался
+// Лорд — звание за уровень, которого в разделе нет.
+describe('шкала уровней раздела', () => {
+  it('заканчивается на C1 — так же, как карта', () => {
+    expect(LEVEL_ORDER).toEqual(['A0', 'A1', 'A2', 'B1', 'B2', 'C1'])
+    expect(LEVEL_ORDER[LEVEL_ORDER.length - 1]).toBe(KINGDOMS[KINGDOMS.length - 1].level)
+  })
+
+  it('звания за пределами карты нет', () => {
+    expect(Object.keys(ROLE_BY_LEVEL)).toEqual(LEVEL_ORDER)
+  })
+
+  it('уровень выше шкалы приравнивается к последнему, а не к новичку', () => {
+    // В анкете бэкенда C2 остался; сажать такого студента на звание Купца
+    // (фолбэк для мусорного кода уровня) нельзя.
+    expect(roleForLevel('C2')).toBe(ROLE_BY_LEVEL.C1)
   })
 })
