@@ -19,13 +19,20 @@ IELTS-модулем и голосовым AI-тьютором. Это тот с
 ## Команды
 
 ```bash
-npm run dev     # локальная разработка (next dev)
-npm run build   # прод-сборка — гоняй перед PR, ловит ошибки импортов/SSR
-npm run lint    # eslint 9 + eslint-config-next
+npm run dev      # локальная разработка (next dev)
+npm run build    # прод-сборка — гоняй перед PR, ловит ошибки импортов/SSR
+npm run lint     # eslint 9 + eslint-config-next
+npm test         # vitest run — юнит-тесты рядом с кодом (*.test.js/.test.jsx)
+npm run test:e2e # playwright — tests/*.spec.js, поднимает свой next dev
 ```
 
-Тест-раннера в проекте нет. Проверка изменений = `npm run build` + `npm run
-lint` + ручной прогон затронутого экрана (`npm run dev`, диплинк `?screen=…`).
+Тест-раннер в проекте есть: **vitest** (44 файла тестов) — юнит-тесты лежат
+рядом с кодом (`src/**/*.test.js{,x}`, `scripts/**/*.test.js`), окружение jsdom
+включается построчной директивой `// @vitest-environment jsdom`. E2E — отдельно
+на playwright в `tests/*.spec.js`; в прогон vitest они не входят (`exclude` в
+`vitest.config.js`). Проверка изменений = `npm test` + `npm run lint` + `npm run
+build`, а для экранов ещё и прогон затронутого флоу (`npm run test:e2e` или
+вручную `npm run dev` с диплинком `?screen=…`).
 
 ## Архитектура
 
@@ -109,6 +116,6 @@ Windows-пайпа — серверный код уже вырезает его;
   frontend-design (визуальный дизайн UI)
 - **Мета**: skill-creator (создание новых скиллов)
 
-Для этого репозитория в первую очередь: **webapp-testing** — тест-раннера тут
-нет, поэтому изменения экранов проверяй прогоном через Playwright (диплинк
-`?screen=…`); **frontend-design** — при работе над UI.
+Для этого репозитория в первую очередь: **webapp-testing** — для ручного
+прогона экрана в браузере поверх `npm test` (диплинк `?screen=…`);
+**frontend-design** — при работе над UI.
