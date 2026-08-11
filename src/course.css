@@ -1,86 +1,638 @@
-/* Оболочка сайта вокруг перенесённого курса (src/learning/CourseLesson.jsx).
-   Сами стили курса лежат в public/course/<level>/course.css — там каждый
-   селектор уже ограничен контейнером .jc. Здесь только то, что относится к
-   стыку: панель приложения сверху и лишние органы управления курса, которым
-   внутри сайта делать нечего. */
+/* Пошаговый плеер урока (src/learning/CourseStepPlayer.jsx).
+   Значения — из макета Figma «Обучение»: цвета, радиусы и размеры сняты с
+   экранов стадий, поэтому здесь почти нет «круглых» чисел от себя. */
 
-.jc-wrap {
+.cp {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f6f5fa;
+  background: #f8f8f8;
 }
 
-.jc-bar {
+/* ——— Верхняя полоса ——— */
+.cp-bar {
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 20;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
+  gap: 16px;
+  height: 61px;
+  padding: 12px 32px;
   background: #fff;
-  border-bottom: 1px solid #e8e7ec;
 }
-.jc-bar__back,
-.jc-bar__done {
+.cp-bar__exit,
+.cp-bar__dict {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  height: 36px;
   border: none;
-  border-radius: 999px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  padding: 9px 18px;
 }
-.jc-bar__back {
-  background: #f2f1f6;
-  color: #4e4b4b;
-}
-.jc-bar__done {
-  margin-left: auto;
-  background: #874bf8;
+.cp-bar__exit {
+  padding: 8px 8px 8px 16px;
+  border-radius: 16px;
+  background: #9047ff;
   color: #fff;
 }
-.jc-bar__done:disabled {
-  opacity: 0.5;
+.cp-bar__dict {
+  margin-left: auto;
+  padding: 8px 16px;
+  border-radius: 80px;
+  background: #ebdeff;
+  color: #9047ff;
+}
+.cp-bar__dict:disabled {
+  opacity: 0.55;
   cursor: default;
 }
-.jc-bar__title {
+.cp-bar__place {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cp-bar__place b {
+  font-size: 16px;
   font-weight: 700;
-  color: #000;
+  line-height: 1.375;
+  color: #9047ff;
+}
+.cp-bar__place span {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.07;
+  color: #9d9d9d;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Контейнер курса: он рассчитан на целую страницу, поэтому внутри сайта ему
-   отдаётся вся оставшаяся высота. */
-.jc {
+/* ——— Прогресс и сердца ——— */
+.cp-scroll {
   flex: 1;
-  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px 24px 40px;
+}
+.cp-hud {
+  display: flex;
+  align-items: center;
+  gap: 21px;
+  width: 542px;
+  max-width: 100%;
+  height: 40px;
+  padding: 5px 12px;
+  border-radius: 50px;
+  background: #fff;
+}
+.cp-hud__track {
+  flex: 1;
+  height: 14px;
+  border-radius: 30px;
+  background: #ebdeff;
+  overflow: hidden;
+}
+.cp-hud__fill {
+  height: 100%;
+  border-radius: 30px;
+  background: #9047ff;
+  transition: width 0.25s ease;
+}
+.cp-hud__hearts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 30px;
+  background: #fafafa;
+}
+.cp-hud__heart {
+  font-size: 14px;
+  color: #ff4646;
+}
+.cp-hud__hearts b {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #9047ff;
 }
 
-/* Содержание курса и переключатель режимов дублируют навигацию сайта: тропа
-   уровня и выбор урока живут в королевстве, а режим здесь всегда
-   самостоятельный. Разметку не режем — прячем, чтобы движок продолжал
-   находить свои узлы. */
-.jc .sidebar,
-.jc #menuBtn,
-.jc #menuScrim,
-.jc .modes,
-.jc .lesson-nav {
-  display: none !important;
+/* ——— Тело задания ——— */
+.cp-step {
+  width: 100%;
+  max-width: 620px;
+  margin-top: 47px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.cp-step__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #17171c;
+  text-align: center;
+}
+.cp-step__prompt {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #9047ff;
+  text-align: center;
+}
+.cp-step__sub {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #6b6b76;
+  text-align: center;
 }
 
-/* Узкий экран: курс схлопывает свою сетку в одну колонку и переносит туда
-   рабочую область. У нас колонка содержания всегда нулевая (её роль играет
-   тропа королевства), поэтому «одна колонка» оказывается нулевой и урок
-   сжимается в ноль. Держим рабочую область во второй колонке на всех
-   ширинах — селектор той же природы, что у курса, поэтому побеждает
-   специфичностью, а не !important. */
-.jc[data-mode='self'] .main {
-  grid-column: 2 / 3;
+/* Варианты ответа */
+.cp-choices {
+  width: 372px;
+  max-width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cp-choice {
+  min-height: 59px;
+  padding: 20px 24px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #17171c;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.cp-choice:disabled {
+  cursor: default;
+}
+.cp-choice.is-sel {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-choice.is-right {
+  background: #31b423;
+  color: #fff;
+}
+.cp-choice.is-wrong {
+  background: #ff4646;
+  color: #fff;
+}
+
+/* Карточки «выбери что ближе» */
+/* Ширину гридам задаём явно: .cp-step центрирует детей по поперечной оси, и
+   без неё auto-fill считает колонки по содержимому — карточки выстраивались
+   в одну колонку. */
+.cp-picks {
+  width: 100%;
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 173px);
+  gap: 12px;
+  justify-content: center;
+}
+.cp-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 96px;
+  padding: 16px 12px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  cursor: pointer;
+}
+.cp-pick__emoji {
+  font-size: 32px;
+  line-height: 1.2;
+}
+.cp-pick__label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #17171c;
+  text-align: center;
+}
+.cp-pick.is-on {
+  border-color: #9047ff;
+}
+.cp-pick.is-on .cp-pick__label {
+  color: #9047ff;
+}
+
+/* Слова урока: картинка, по клику — перевод */
+.cp-words {
+  width: 100%;
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 162px);
+  gap: 16px;
+  justify-content: center;
+}
+.cp-word {
+  position: relative;
+  display: block;
+  width: 162px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.cp-word__face,
+.cp-word__back {
+  display: block;
+  width: 162px;
+  height: 210px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #efeaf7;
+}
+.cp-word__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cp-word__noimg {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #9047ff;
+}
+.cp-word__back {
+  display: none;
+  padding: 18px 14px;
+  background: #fff;
+  border: 2px solid #9047ff;
+}
+.cp-word__back b {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #17171c;
+}
+.cp-word__back span {
+  display: block;
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6b6b76;
+}
+.cp-word.is-open .cp-word__face {
+  display: none;
+}
+.cp-word.is-open .cp-word__back {
+  display: block;
+}
+.cp-word__label {
+  display: block;
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #17171c;
+}
+
+/* Слайд правила */
+.cp-note {
+  margin-top: 18px;
+  max-width: 560px;
+  padding: 24px 28px;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #17171c;
+  text-align: center;
+}
+.cp-note .hl {
+  color: #9047ff;
+  font-weight: 700;
+}
+
+/* Аудио */
+.cp-audio {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.cp-audio__play {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: none;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  cursor: pointer;
+}
+.cp-audio__slow {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 80px;
+  background: #ebdeff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+  cursor: pointer;
+}
+
+/* Свободный ответ */
+.cp-write {
+  width: 480px;
+  max-width: 100%;
+  margin-top: 18px;
+  padding: 16px 20px;
+  border: 2px solid #e8e7ec;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  color: #17171c;
+  resize: vertical;
+}
+.cp-write:focus {
+  outline: none;
+  border-color: #9047ff;
+}
+.cp-model {
+  width: 480px;
+  max-width: 100%;
+  margin-top: 14px;
+  padding: 16px 20px;
+  border-radius: 20px;
+  background: #ebdeff;
+  font-size: 16px;
+  color: #17171c;
+}
+.cp-model b {
+  display: block;
+  margin-bottom: 4px;
+  color: #9047ff;
+}
+
+/* Чек-лист «я могу» */
+.cp-check {
+  width: 480px;
+  max-width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cp-check__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: #17171c;
+  text-align: left;
+  cursor: pointer;
+}
+.cp-check__row.is-on {
+  border-color: #9047ff;
+}
+.cp-check__box {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 8px;
+  background: #ebdeff;
+  color: #9047ff;
+  font-weight: 700;
+}
+
+/* ——— Плашка результата и кнопка ——— */
+.cp-fb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 402px;
+  max-width: 100%;
+  margin: 24px auto 0;
+  padding: 16px 22px;
+  border-radius: 90px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.cp-fb.is-ok {
+  background: #aeffc7;
+  color: #14804a;
+}
+.cp-fb.is-no {
+  background: #fff0e8;
+  color: #c2410c;
+}
+.cp-fb__ic {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+}
+.cp-fb__coin {
+  margin-left: auto;
+  padding: 8px 18px;
+  border-radius: 30px;
+  background: #fff;
+  color: #17171c;
+}
+
+.cp-foot {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0 8px;
+}
+.cp-cta {
+  width: 370px;
+  max-width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 80px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cp-cta.is-check {
+  background: #b7f0ff;
+  color: #9047ff;
+}
+.cp-cta.is-check:disabled {
+  color: #cfafff;
+  cursor: default;
+}
+.cp-cta.is-go {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-cta.is-go:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  .cp-bar {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .cp-scroll {
+    padding: 16px 16px 32px;
+  }
+  .cp-step {
+    margin-top: 28px;
+  }
+  .cp-step__title {
+    font-size: 20px;
+  }
+  .cp-step__prompt {
+    font-size: 26px;
+  }
+  .cp-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cp-words {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .cp-foot {
+    padding: 24px 0 8px;
+  }
+}
+
+/* Впиши пропущенное */
+.cp-gap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #17171c;
+}
+.cp-gap__in {
+  width: 220px;
+  padding: 12px 18px;
+  border: 2px solid #e8e7ec;
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: #17171c;
+  text-align: center;
+}
+.cp-gap__in:focus {
+  outline: none;
+  border-color: #9047ff;
+}
+.cp-gap__in.is-right {
+  border-color: #31b423;
+  color: #31b423;
+}
+.cp-gap__in.is-wrong {
+  border-color: #ff4646;
+  color: #ff4646;
+}
+
+/* Порядок слов */
+.cp-order {
+  width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.cp-order__line {
+  min-height: 59px;
+  width: 100%;
+  max-width: 520px;
+  display: grid;
+  place-items: center;
+  padding: 16px 24px;
+  border: 2px dashed #d8d3e4;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  color: #17171c;
+  text-align: center;
+}
+.cp-order__line.is-right {
+  border-style: solid;
+  border-color: #31b423;
+}
+.cp-order__line.is-wrong {
+  border-style: solid;
+  border-color: #ff4646;
+}
+.cp-order__bank {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 560px;
+}
+.cp-chip {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #17171c;
+  cursor: pointer;
+}
+.cp-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cp-order__undo {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9d9d9d;
+  cursor: pointer;
 }

@@ -39,6 +39,14 @@ export function loadCourseLesson(level, n) {
   return lessonCache.get(key)
 }
 
+// Шаги урока для пошагового плеера (генератор — scripts/build-course-steps.js).
+const stepsCache = new Map()
+export function loadCourseSteps(level, n) {
+  const key = `${level}:${n}`
+  if (!stepsCache.has(key)) stepsCache.set(key, getJson(`${base(level)}/steps-${n}.json`))
+  return stepsCache.get(key)
+}
+
 export function loadCourseTest(level, unit) {
   const key = `${level}:${unit}`
   if (!testCache.has(key)) testCache.set(key, getJson(`${base(level)}/test-${unit}.json`))
