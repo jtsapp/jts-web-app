@@ -333,6 +333,175 @@
   font-weight: 700;
 }
 
+/* Разметка урока A0/A1 внутри заметки.
+   Уроки этих уровней приходят готовыми кусками HTML (public/learning/<level>.json),
+   со своими классами из исходного курса: таблицы правил, карточки слов,
+   раскрывашка «Full grammar reference», диалоги. Без этих правил браузер рисует
+   их голым потоком — а `.bubble` вообще подхватывал стиль пузыря чата тьютора
+   из styles.css. Текст тут левый: правило и словарь читают, а не смотрят. */
+.cp-note :where(p, ul, ol, table, .bubble, .explain, .kl-vocab, .chat, details) {
+  text-align: left;
+}
+.cp-note :where(h3, h4) {
+  margin: 14px 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+}
+.cp-note .instruction {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 6px 0;
+}
+.cp-note :where(.subline, .byline) {
+  font-size: 15px;
+  font-weight: 500;
+  color: #6f6f7a;
+  margin: 4px 0 10px;
+}
+.cp-note :where(p, ul, ol) {
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 8px 0;
+}
+.cp-note :where(ul, ol) {
+  padding-left: 20px;
+}
+.cp-note li {
+  margin: 4px 0;
+}
+.cp-note table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 15px;
+}
+.cp-note :where(th, td) {
+  border: 1px solid #ececf3;
+  padding: 8px 10px;
+}
+.cp-note th {
+  background: #f6f2ff;
+  font-weight: 800;
+}
+/* Пузырь-подсказка урока: свой стиль, а не чат тьютора. */
+.cp-note .bubble {
+  display: block;
+  max-width: none;
+  margin: 12px 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f6f2ff;
+  color: inherit;
+  font-size: 16px;
+}
+.cp-note .blab {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9047ff;
+  margin-bottom: 6px;
+}
+.cp-note .explain {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-left: 3px solid #d9c8ff;
+  background: #fbf9ff;
+  border-radius: 0 12px 12px 0;
+}
+.cp-note .fwd {
+  margin: 0;
+  color: #6f6f7a;
+  font-size: 15px;
+}
+/* Карточки слов: сетка, а не колонка из картинок во всю ширину. */
+.cp-note .kl-vocab {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+.cp-note .kl-vocab__card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid #ececf3;
+  border-radius: 16px;
+  background: #fbfbfd;
+  text-align: center;
+}
+.cp-note .kl-vocab__img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 6px;
+}
+.cp-note .kl-vocab__word {
+  font-size: 17px;
+  font-weight: 800;
+}
+.cp-note .kl-vocab__tr {
+  font-size: 14px;
+  color: #9047ff;
+  font-weight: 700;
+}
+.cp-note .kl-vocab__def {
+  font-size: 13px;
+  color: #6f6f7a;
+  line-height: 1.4;
+}
+/* «Full grammar reference» — раскрывашка, свёрнутая по умолчанию. */
+.cp-note details {
+  margin: 12px 0;
+  border: 1px solid #ececf3;
+  border-radius: 16px;
+  background: #fbfbfd;
+  overflow: hidden;
+}
+.cp-note summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #9047ff;
+}
+.cp-note .gref-body {
+  padding: 0 16px 12px;
+}
+/* Диалог: реплики собеседника карточками. */
+.cp-note .chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.cp-note .msg {
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: #f4f4f7;
+  font-size: 16px;
+}
+.cp-note .msg b {
+  display: block;
+  font-size: 13px;
+  color: #6f6f7a;
+  margin-bottom: 2px;
+}
+.cp-note .msg p {
+  margin: 0;
+}
+.cp-note .tick {
+  color: #3aa35a;
+  font-weight: 800;
+  margin-right: 6px;
+}
+.cp-note img {
+  max-width: 100%;
+}
+
 /* Аудио */
 .cp-audio {
   margin-top: 18px;
