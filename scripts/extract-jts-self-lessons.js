@@ -65,14 +65,14 @@ function extractCourse(filePath) {
         const review = reviewsByUnit.get(unit)
         if (review && !doneReviews.has(review)) {
           doneReviews.add(review)
-          nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html), onDrop }))
+          nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html, onDrop), onDrop }))
         }
       }
       seenUnits.add(lesson.unit)
     }
     const imageUrls = writeImages(lesson, course.level)
     const cards = vocabCardsTask(lesson, (word) => imageUrls[word] || null)
-    const lessonNodes = buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html), onDrop })
+    const lessonNodes = buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html, onDrop), onDrop })
     if (cards) {
       const vocabNode = lessonNodes.find((n) => /vocab|words/i.test(n.title))
       if (vocabNode) {
@@ -96,7 +96,7 @@ function extractCourse(filePath) {
   }
   for (const review of course.reviews) {
     if (!doneReviews.has(review)) {
-      nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html), onDrop }))
+      nodes.push(buildReviewNode({ review, level: course.level, stages: collectLesson(review.html, onDrop), onDrop }))
     }
   }
 
@@ -122,6 +122,8 @@ const DROP_LABELS = {
   'order-not-permutation': 'order с рангами, не образующими перестановку (чужой или дублирующийся data-val)',
   'audio-no-track': 'аудио без файла в tracks урока',
   'info-empty': 'info без содержимого (в том числе опустевший после чистки мёртвых контролов курса)',
+  'check-empty': 'чек-лист самооценки без единого пункта',
+  'row-no-block': 'строка задания, в которой не нашлось ни одного интерактива',
   'unknown-kind': 'блок неизвестного вида',
 }
 

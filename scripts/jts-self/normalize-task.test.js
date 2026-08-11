@@ -168,6 +168,49 @@ describe('normalizeBlock — причина отбраковки', () => {
   })
 })
 
+// Находка ревью: задания «Listen. Choose the word you hear.» приходили в плеер
+// без слова, которое надо услышать, — отвечать на них было нечем.
+describe('normalizeBlock — слово для синтеза речи', () => {
+  it('say переносится в задание как есть', () => {
+    const t = normalizeBlock({ kind: 'choice', prompt: '', options: ['repeat', 'listen'], correct: 0, say: 'repeat' }, ctx)
+    expect(t).toMatchObject({ type: 'choice', say: 'repeat' })
+  })
+
+  it('без say поля в задании нет', () => {
+    const t = normalizeBlock({ kind: 'choice', prompt: 'x', options: ['a', 'b'], correct: 0 }, ctx)
+    expect(t).not.toHaveProperty('say')
+  })
+
+  it('say работает и на multi, и на gap — механика привязана к строке, а не к типу', () => {
+    const multi = normalizeBlock({ kind: 'multi', prompt: '', options: ['a', 'b'], correct: [0], say: 'coffee' }, ctx)
+    const gap = normalizeBlock({ kind: 'gap', before: 'I', after: '', answer: 'like', say: 'like' }, ctx)
+    expect(multi.say).toBe('coffee')
+    expect(gap.say).toBe('like')
+  })
+})
+
+// Находка ревью: самооценка курса (👍/👎, выбор реплики) не имела ключа ответа
+// и уезжала в info мёртвыми кнопками. Её место — неоценочный тип check,
+// который уже есть у выпущенных уровней A2–C1.
+describe('normalizeBlock — самооценка check', () => {
+  it('check → задание с пунктами и кикером стадии', () => {
+    const t = normalizeBlock({ kind: 'check', items: ['☕ coffee', '📅 Mondays'] }, ctx)
+    expect(t).toEqual({ sec: '2. Vocabulary', title: '', sub: '', type: 'check', items: ['☕ coffee', '📅 Mondays'] })
+  })
+
+  it('пустые пункты отбрасываются, а чек-лист без единого пункта — целиком', () => {
+    expect(normalizeBlock({ kind: 'check', items: ['a', '  ', ''] }, ctx).items).toEqual(['a'])
+    expect(normalizeBlock({ kind: 'check', items: [' ', ''] }, ctx)).toBeNull()
+    expect(normalizeBlock({ kind: 'check', items: [] }, ctx)).toBeNull()
+  })
+
+  it('пустой чек-лист сообщает причину отбраковки', () => {
+    const onDrop = vi.fn()
+    normalizeBlock({ kind: 'check', items: [] }, { ...ctx, onDrop })
+    expect(onDrop).toHaveBeenCalledWith(DROP.checkEmpty, expect.anything())
+  })
+})
+
 describe('trackUrl', () => {
   it('строит ссылку на бандл уровня в админке', () => {
     expect(trackUrl('a1', 'A1_L1_6_1.mp3')).toBe('https://files-dev.justtostudy.kz/development/course-catalog/a1/audio/A1_L1_6_1.mp3')

@@ -80,6 +80,21 @@ describe('collectLesson', () => {
     expect(s.blocks[0]).toMatchObject({ kind: 'choice', correct: -1 })
   })
 
+  it('пустая группа вариантов → choice без вариантов (в исходнике A0 такие есть, задание отбракует normalize-task)', () => {
+    // Реальная разметка A0, стадия Practice, задача «Listen. 13 or 30?»: у
+    // группы есть ключ ответа, но ни одной кнопки .opt — и до отсечения чужих
+    // режимов тоже. Скрипты курса `.opts` только читают, заполнить её было
+    // нечем: задача не работала и в самом курсе. Придумывать варианты за
+    // автора мы не будем, но и молча терять строку нельзя — она уходит в
+    // сводку потерь как choice-no-answer.
+    const html = stage('Practice', `<div class="task" data-task data-tid="voc-listen">
+      <div class="row"><span class="num">1</span><span class="body">
+        <button class="segbtn" onclick="sayWord('thirteen')">🔊 Number 1</button>
+        <div class="opts" data-correct="0"></div></span></div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ kind: 'choice', options: [], correct: -1, say: 'thirteen' })
+  })
+
   it('строка с .opts[data-multi] → multi со списком верных', () => {
     const html = stage('Listening', `<div class="task" data-task>
       <div class="row"><span class="body">Отметь всё, что услышал
@@ -341,6 +356,23 @@ describe('collectLesson — чистка мёртвых контролов ку�
     expect(s.blocks[0].html).toContain('<path')
   })
 
+  it('в info не остаётся ни одной кнопки: .say в A1 не работала даже в исходнике', () => {
+    // Кнопки <button class="say">🔊</button> курс подключал по классу — и не
+    // подключил: обработчика на .say в a1.html нет вовсе. В приложении они тем
+    // более мертвы, а классы .say в styles.css нет, поэтому рендерились
+    // дефолтной кнопкой браузера внутри карточки урока. Текст рядом с ними —
+    // не ответ, он остаётся на месте.
+    const html = stage('Speaking', `<div data-only="self"><div class="bubble">
+      <div class="blab">In other words</div>
+      <div>• What time do you get up on weekdays?<button class="say" aria-label="listen">🔊</button></div>
+      <div>• What do you do first in the morning?<button class="say" aria-label="listen">🔊</button></div>
+    </div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0].html).not.toContain('<button')
+    expect(s.blocks[0].html).toContain('What time do you get up on weekdays?')
+    expect(s.blocks[0].html).toContain('What do you do first in the morning?')
+  })
+
   it('несколько стадий с чисткой не оставляют дублирующихся id в разметке уроков', () => {
     const words = `<div data-only="self"><p>Words</p><div class="words" id="words"></div></div>`
     const html = stage('Vocabulary', words) + stage('Words', words)
@@ -349,9 +381,141 @@ describe('collectLesson — чистка мёртвых контролов ку�
   })
 })
 
-describe('collectLesson — порядок стадий', () => {
-  it('несколько стадий сохраняют порядок (после чистки тоже)', () => {
-    const html = stage('Warm-up', '<div data-only="self">a</div>') + stage('Wrap', '<div data-only="self">b</div>')
-    expect(collectLesson(html).map((s) => s.name)).toEqual(['Warm-up', 'Wrap'])
+// Находка ревью: 274 задания A0 «Listen. Choose the word you hear.» отвечать
+// было нечем. Слово озвучивал синтезатор речи по кнопке sayWord('repeat'), а
+// чистка мёртвых контролов убирала кнопку — на экране оставались только
+// варианты, и задание превращалось в угадайку с ценой в сердце.
+describe('collectLesson — слово для синтеза речи', () => {
+  const listenRow = (word, correct) => stage('Vocabulary', `<div class="task" data-task data-tid="voc-listen">
+    <div class="row"><span class="num">1</span><span class="body">
+      <button class="segbtn" type="button" onclick="sayWord('${word}')"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> 🔊 Word 1</button>
+      <div class="opts" data-correct="${correct}">
+        <button class="opt" data-val="0">repeat</button>
+        <button class="opt" data-val="1">listen</button>
+      </div></span></div></div>`)
+
+  it('слово из sayWord доезжает до блока choice отдельным полем', () => {
+    const [s] = collectLesson(listenRow('repeat', 0))
+    expect(s.blocks[0]).toMatchObject({ kind: 'choice', options: ['repeat', 'listen'], correct: 0, say: 'repeat' })
+  })
+
+  it('слово не подмешивается в текст задания — оно и есть ответ', () => {
+    const [s] = collectLesson(listenRow('repeat', 0))
+    expect(s.blocks[0].prompt).toBe('')
+  })
+
+  it('строка из двух слов («how often») переносится целиком', () => {
+    const [s] = collectLesson(listenRow('how often', 1))
+    expect(s.blocks[0].say).toBe('how often')
+  })
+
+  it('«13 or 30?» — тот же механизм на двух вариантах', () => {
+    const html = stage('Numbers', `<div class="task" data-task>
+      <div class="row"><span class="body">
+        <button class="segbtn" onclick="sayWord('thirty')">🔊 Number</button>
+        <div class="opts" data-correct="1"><button class="opt" data-val="0">13</button><button class="opt" data-val="1">30</button></div>
+      </span></div></div>`)
+    expect(collectLesson(html)[0].blocks[0]).toMatchObject({ kind: 'choice', say: 'thirty' })
+  })
+
+  it('у строки без sayWord поля say нет — пустое поле в каждом задании только раздувает json', () => {
+    const html = stage('Grammar', `<div class="task" data-task>
+      <div class="row"><span class="body">I ___ coffee.
+        <div class="opts" data-correct="0"><button class="opt" data-val="0">like</button><button class="opt" data-val="1">likes</button></div>
+      </span></div></div>`)
+    expect(collectLesson(html)[0].blocks[0]).not.toHaveProperty('say')
+  })
+
+  it('сама кнопка синтезатора в разметку задания не попадает', () => {
+    const [s] = collectLesson(listenRow('repeat', 0))
+    expect(JSON.stringify(s.blocks)).not.toContain('sayWord')
+  })
+})
+
+// Находка ревью: 122 мёртвые кнопки доезжали до info-разметки. Правило чистки
+// ловило только inline-обработчики и поля формы, а кнопки .opt курс подключал
+// делегированием по классу. В плеере они не делали ничего, а классов .opt/.opts
+// в styles.css нет — внутри карточки урока рисовались дефолтные кнопки браузера.
+describe('collectLesson — самооценка без правильного ответа → check', () => {
+  it('разминка 👍/👎 становится чек-листом с подписями карточек, а не «👍»', () => {
+    // Кнопки здесь — шкала оценки, смысл несёт подпись карточки: пункт
+    // чек-листа это «☕ coffee», отметка = «👍».
+    const html = stage('Warm-up', `<div data-only="self">
+      <div class="instruction">Tap 👍 or 👎 for each one.</div>
+      <p class="subline">No right or wrong — just you.</p>
+      <div class="grid3">
+        <div class="card"><span class="body"><b>☕</b> &nbsp;coffee</span><div class="opts"><button class="opt" data-val="y">👍</button><button class="opt" data-val="n">👎</button></div></div>
+        <div class="card"><span class="body"><b>📅</b> &nbsp;Mondays</span><div class="opts"><button class="opt" data-val="y">👍</button><button class="opt" data-val="n">👎</button></div></div>
+      </div></div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({ kind: 'info' })
+    expect(s.blocks[0].html).toContain('No right or wrong')
+    expect(s.blocks[1]).toEqual({ kind: 'check', items: ['☕ coffee', '📅 Mondays'] })
+  })
+
+  it('реплики диалога без подписи становятся пунктами сами и стоят между кусками разговора', () => {
+    // Порядок — часть методики: реплика отвечает на предыдущее сообщение, а не
+    // на весь разговор целиком, поэтому контейнер режется по группам.
+    const html = stage('Speaking', `<div data-only="self">
+      <div class="instruction">Talk to Sam.</div>
+      <div class="chat"><div class="msg"><p>Do you like coffee?</p></div></div>
+      <div class="row"><span class="body"><div class="opts">
+        <button class="opt" data-val="0">Yes, I like coffee.</button>
+        <button class="opt" data-val="1">No, I don’t like coffee.</button>
+      </div></span></div>
+      <div class="chat"><div class="msg"><p>Me too!</p></div></div>
+    </div>`)
+    const [s] = collectLesson(html)
+    expect(s.blocks.map((b) => b.kind)).toEqual(['info', 'check', 'info'])
+    expect(s.blocks[0].html).toContain('Do you like coffee?')
+    expect(s.blocks[1].items).toEqual(['Yes, I like coffee.', 'No, I don’t like coffee.'])
+    expect(s.blocks[2].html).toContain('Me too!')
+  })
+
+  it('после разбора самооценки в info не остаётся ни одной кнопки', () => {
+    const html = stage('Speaking', `<div data-only="self">
+      <div class="row"><span class="body"><div class="opts">
+        <button class="opt" data-val="0">Hello, I'm Anna.</button>
+      </div></span></div></div>`)
+    const blocks = collectLesson(html)[0].blocks
+    expect(blocks.every((b) => b.kind !== 'info' || !b.html.includes('<button'))).toBe(true)
+  })
+
+  it('группа с ключом ответа в ту же ветку не уходит — это по-прежнему choice', () => {
+    const html = stage('Grammar', `<div data-only="self"><div class="row"><span class="body">I ___ coffee.
+      <div class="opts" data-correct="0"><button class="opt" data-val="0">like</button><button class="opt" data-val="1">likes</button></div>
+    </span></div></div>`)
+    // Строка вне .task в info-ветке: с ключом ответа она остаётся оценочной и
+    // до чек-листа не доходит — иначе весь choice уровня стал бы самооценкой.
+    const [s] = collectLesson(html)
+    expect(s.blocks.some((b) => b.kind === 'check')).toBe(false)
+  })
+
+  it('строка внутри .task без ключа ответа тоже становится чек-листом, а не пропадает', () => {
+    const html = stage('Speaking', `<div class="task" data-task>
+      <div class="row"><span class="body"><div class="opts">
+        <button class="opt" data-val="0">Yes, I do.</button>
+        <button class="opt" data-val="1">No, I don’t.</button>
+      </div></span></div></div>`)
+    expect(collectLesson(html)[0].blocks[0]).toEqual({ kind: 'check', items: ['Yes, I do.', 'No, I don’t.'] })
+  })
+})
+
+// Находка ревью: строка задания, из которой не вышло ни одного блока, исчезала
+// молча — мимо сводки потерь, ради которой её и заводили.
+describe('collectLesson — потерянные строки задания', () => {
+  it('строка без интерактива уходит в сводку потерь с причиной row-no-block', () => {
+    const html = stage('Practice', `<div class="task" data-task>
+      <div class="row"><span class="num">1</span><span class="body">Say it out loud with your partner.</span></div></div>`)
+    const dropped = []
+    const [s] = collectLesson(html, (reason) => dropped.push(reason))
+    expect(s.blocks).toHaveLength(0)
+    expect(dropped).toEqual(['row-no-block'])
+  })
+
+  it('без обработчика потерь разбор не падает — модуль вызывается и из тестов', () => {
+    const html = stage('Practice', `<div class="task" data-task>
+      <div class="row"><span class="body">Say it out loud.</span></div></div>`)
+    expect(() => collectLesson(html)).not.toThrow()
   })
 })

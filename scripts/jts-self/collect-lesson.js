@@ -5,6 +5,7 @@
 // тропу вперемешку с self — в источнике они стоят рядом, а не в разных ветках
 // дерева.
 const { JSDOM } = require('jsdom')
+const { DROP } = require('./normalize-task')
 
 const MODE = 'self'
 
@@ -57,8 +58,67 @@ function trackIdOf(button) {
   return m ? m[1] : null
 }
 
+/**
+ * Слово, которое курс произносил синтезатором речи браузера:
+ * `<button class="segbtn" onclick="sayWord('repeat')">🔊 Word 1</button>`
+ * рядом с вариантами ответа (sayWord в a0.html — SpeechSynthesisUtterance).
+ *
+ * Без него задание «Listen. Choose the word you hear.» неразрешимо: сама кнопка
+ * — мёртвый контрол курса и из разметки уходит, на экране остаются только
+ * варианты, и студент угадывает один к четырём, теряя сердце за промах.
+ * Поэтому слово едет в задание отдельным полем, а озвучивает его плеер.
+ */
+function sayWordOf(row) {
+  for (const el of [...row.querySelectorAll('[onclick]')]) {
+    const m = /sayWord\(\s*['"]([^'"]+)['"]/.exec(el.getAttribute('onclick') || '')
+    if (m) return m[1]
+  }
+  return ''
+}
+
+/**
+ * Группа вариантов без ключа ответа. Курс её не проверял: check() в исходнике
+ * считает только `.opts[data-correct]` и `.opts[data-multi]`, а делегированный
+ * обработчик bindAll лишь подсвечивал выбранное. Это самооценка («Tap 👍 or 👎
+ * for each one. No right or wrong — just you.») и выбор своей реплики в диалоге
+ * с Сэмом — в плеере им соответствует неоценочный тип check.
+ */
+const UNGRADED_OPTS = '.opts:not([data-correct]):not([data-multi])'
+
+const ungradedGroupsOf = (el) =>
+  el.matches(UNGRADED_OPTS) ? [el] : [...el.querySelectorAll(UNGRADED_OPTS)]
+
+/** Пункты чек-листа для контейнера с неоценочными группами вариантов. */
+function checkItemsOf(el) {
+  const items = []
+  for (const group of ungradedGroupsOf(el)) {
+    // У разминки кнопки — шкала (👍/👎), а смысл пункта несёт подпись карточки
+    // рядом: пунктом становится подпись, отметка = «👍». Если подписи нет
+    // (реплики в диалоге), пункты — сами варианты: тап по своей реплике и есть
+    // ответ. Различает эти два случая наличие текста вокруг группы.
+    // Когда сама группа и есть переданный узел, контекста вокруг неё нет —
+    // подниматься к её родителю нельзя, оттуда прилетел бы текст всей стадии.
+    const host = group === el ? group : group.parentElement || group
+    const label = promptOf(host)
+    if (label) items.push(label)
+    else items.push(...optionsOf(group))
+  }
+  return items.filter(Boolean)
+}
+
 /** Строка задания → сырой блок или null, если интерактива в ней нет. */
 function blockFromRow(row) {
+  const block = rowBlock(row)
+  if (!block) return null
+  // Слово для синтеза принадлежит строке, а не конкретному типу задания: у A0
+  // на слух идут и choice («какое слово ты слышишь»), и «13 or 30?» с двумя
+  // вариантами. Поэтому добавляем его одинаково поверх любого разобранного
+  // блока, а не дублируем разбор в каждой ветке.
+  const say = sayWordOf(row)
+  return say ? { ...block, say } : block
+}
+
+function rowBlock(row) {
   const multi = row.querySelector('.opts[data-multi]')
   if (multi) {
     // data-multi — список тех же значений data-val через запятую (в A0 это
@@ -125,6 +185,12 @@ function blockFromRow(row) {
     }
   }
 
+  // Последней — самооценка: у неё нет ключа ответа, поэтому проверять её надо
+  // после всех оценочных вариантов, иначе `.opts[data-correct]` в той же
+  // строке ушёл бы в чек-лист вместо choice.
+  const items = row.querySelector(UNGRADED_OPTS) ? checkItemsOf(row) : []
+  if (items.length) return { kind: 'check', items }
+
   return null
 }
 
@@ -174,10 +240,14 @@ function extractAudio(node, blocks) {
 // чем его отсутствие, поэтому из info-разметки они уходят.
 const HANDLER_ATTR = /^on[a-z]+$/i
 
-// Контролы без inline-обработчика курс подключал по id из скрипта
-// (переключатель перевода input#trToggle). В приложении они так же мертвы, а
+// Контролы без inline-обработчика курс подключал по id или по классу из
+// скрипта: переключатель перевода input#trToggle, кнопки `.opt` (делегированный
+// клик в bindAll), кнопки `.say` в A1 — у последних обработчика нет даже в
+// исходнике. В приложении скриптов курса нет вообще, поэтому в info не
+// остаётся ни одной кнопки: та, что несла смысл, уже стала блоком (audio,
+// check или задание), а всё, что дожило сюда, при нажатии не делает ничего.
 // <label> без своего контрола — подпись к тому, чего нет: убираем вместе.
-const DEAD_CONTROLS = 'input, select, textarea'
+const DEAD_CONTROLS = 'input, select, textarea, button'
 
 // Тэги, для которых пустота — норма: они несут смысл сами (картинка, аудио,
 // разделитель) или держат каркас таблицы. Их не удаляем, и наличие такого
@@ -255,11 +325,55 @@ function pushAudioThenInfo(node, blocks) {
 }
 
 /**
+ * То же, но с разрезанием по неоценочным группам вариантов.
+ *
+ * Порядок экранов — часть методики: реплики в диалоге с Сэмом стоят между
+ * кусками разговора, а не после него. Поэтому контейнер режется по тем прямым
+ * детям, внутри которых лежит `.opts` без ключа ответа: текст до них — info,
+ * сами они — check, текст после — снова info. Без этого кнопки самооценки
+ * уезжали в info-html и рендерились дефолтными кнопками браузера внутри
+ * карточки урока, ничего не делая при нажатии.
+ */
+function pushInfoWithSelfCheck(node, blocks) {
+  if (node.matches(UNGRADED_OPTS)) {
+    const items = checkItemsOf(node)
+    if (items.length) blocks.push({ kind: 'check', items })
+    return
+  }
+  if (!node.querySelector(UNGRADED_OPTS)) {
+    pushAudioThenInfo(node, blocks)
+    return
+  }
+
+  let chunk = []
+  const flush = () => {
+    if (!chunk.length) return
+    // Клонируем сам контейнер без детей и складываем в него накопленное:
+    // класс и data-only обёртки — часть верстки блока, терять их нельзя.
+    const part = node.cloneNode(false)
+    for (const child of chunk) part.appendChild(child.cloneNode(true))
+    chunk = []
+    pushAudioThenInfo(part, blocks)
+  }
+
+  for (const child of [...node.children]) {
+    if (!child.matches(UNGRADED_OPTS) && !child.querySelector(UNGRADED_OPTS)) {
+      chunk.push(child)
+      continue
+    }
+    flush()
+    const items = checkItemsOf(child)
+    if (items.length) blocks.push({ kind: 'check', items })
+  }
+  flush()
+}
+
+/**
  * Блоки одной стадии в порядке документа. Порядок здесь — часть методики:
  * инструкция и объяснение стоят перед вопросами, к которым относятся, поэтому
  * обходим детей стадии подряд, а не собираем сперва все задания.
  */
-function collectStage(section) {
+function collectStage(section, onDrop) {
   const blocks = []
   const container = section.querySelector('.stage-body') || section
 
@@ -274,7 +388,7 @@ function collectStage(section) {
       // плеера из поддерева до pushInfo, она останется в info-html мёртвым
       // onclick. Сам child, когда это просто кнопка, из своего дерева не
       // удаляется — pushInfo распознаёт этот случай отдельной проверкой.
-      pushAudioThenInfo(child, blocks)
+      pushInfoWithSelfCheck(child, blocks)
       continue
     }
 
@@ -287,7 +401,7 @@ function collectStage(section) {
       // audio, потом убираем сами кнопки из html, чтобы не дублировать.
       const intro = child.cloneNode(true)
       for (const task of [...intro.querySelectorAll('.task, [data-task]')]) task.remove()
-      pushAudioThenInfo(intro, blocks)
+      pushInfoWithSelfCheck(intro, blocks)
     }
 
     for (const task of tasks) {
@@ -296,19 +410,23 @@ function collectStage(section) {
       for (const row of rows.length ? rows : [task]) {
         const block = blockFromRow(row)
         if (block) blocks.push(block)
+        // Строка задания, из которой не вышло ни одного блока, — это
+        // потерянный экран урока. Молча исчезать он не должен: как и
+        // отбракованные блоки, попадает в сводку потерь экстрактора.
+        else if (typeof onDrop === 'function') onDrop(DROP.rowNoBlock, { kind: 'row', html: row.outerHTML })
       }
     }
   }
   return blocks
 }
 
-function collectLesson(html) {
+function collectLesson(html, onDrop) {
   const { window } = new JSDOM(`<body>${html}</body>`)
   pruneToMode(window.document.body)
 
   return [...window.document.body.querySelectorAll('section.stage')].map((section) => ({
     name: section.getAttribute('data-stage') || '',
-    blocks: collectStage(section),
+    blocks: collectStage(section, onDrop),
   }))
 }
 

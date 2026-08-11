@@ -22,8 +22,14 @@ const DROP = {
   orderNotPermutation: 'order-not-permutation',
   audioNoTrack: 'audio-no-track',
   infoEmpty: 'info-empty',
+  checkEmpty: 'check-empty',
+  rowNoBlock: 'row-no-block',
   unknownKind: 'unknown-kind',
 }
+
+// Слово для озвучки кладём в задание, только когда оно есть: пустое поле у
+// каждого из тысяч заданий уровня раздуло бы json без всякой пользы.
+const withSay = (task, block) => (block.say ? { ...task, say: block.say } : task)
 
 // Поля title и sub у заданий self-курсов намеренно пустые: инструкции урока
 // («Listen. Choose the word you hear.») переносятся отдельными info-блоками
@@ -47,12 +53,12 @@ function normalizeBlock(block, ctx) {
       // пустым текстом — валидный вариант курса, а не отсутствие ответа.
       const i = block.correct
       if (!Number.isInteger(i) || i < 0 || i >= block.options.length) return drop(DROP.choiceNoAnswer)
-      return { ...base, type: 'choice', visual: null, word: block.prompt, options: block.options, answer: block.options[i], two: block.options.length === 2, why: block.why || '' }
+      return withSay({ ...base, type: 'choice', visual: null, word: block.prompt, options: block.options, answer: block.options[i], two: block.options.length === 2, why: block.why || '' }, block)
     }
 
     case 'select': {
       if (!block.options.includes(block.answer)) return drop(DROP.selectAnswerOutside)
-      return { ...base, type: 'choice', visual: null, word: block.prompt, options: block.options, answer: block.answer, two: block.options.length === 2, why: block.why || '' }
+      return withSay({ ...base, type: 'choice', visual: null, word: block.prompt, options: block.options, answer: block.answer, two: block.options.length === 2, why: block.why || '' }, block)
     }
 
     case 'gap': {
@@ -60,7 +66,7 @@ function normalizeBlock(block, ctx) {
       if (!answers.length) return drop(DROP.gapNoAnswer)
       // Пробелы вокруг пропуска рисует не CSS, а сама строка: плеер печатает
       // gapBefore, поле и gapAfter подряд.
-      return { ...base, type: 'gap', gapBefore: block.before ? block.before + ' ' : '', gapAfter: block.after ? ' ' + block.after : '', answers, why: block.why || '' }
+      return withSay({ ...base, type: 'gap', gapBefore: block.before ? block.before + ' ' : '', gapAfter: block.after ? ' ' + block.after : '', answers, why: block.why || '' }, block)
     }
 
     case 'multi': {
@@ -71,7 +77,7 @@ function normalizeBlock(block, ctx) {
       const valid = indexes.every((i) => Number.isInteger(i) && i >= 0 && i < block.options.length)
       const answer = [...new Set(indexes)].sort((a, b) => a - b)
       if (!valid || !answer.length) return drop(DROP.multiNoAnswer)
-      return { ...base, type: 'multi', word: block.prompt, options: block.options, answer, why: block.why || '' }
+      return withSay({ ...base, type: 'multi', word: block.prompt, options: block.options, answer, why: block.why || '' }, block)
     }
 
     case 'order': {
@@ -101,6 +107,14 @@ function normalizeBlock(block, ctx) {
       const html = String(block.html || '').trim()
       if (!html) return drop(DROP.infoEmpty)
       return { ...base, type: 'info', html }
+    }
+
+    case 'check': {
+      // Самооценка курса («Tap 👍 or 👎 for each one») — тот же неоценочный
+      // чек-лист, что у выпущенных уровней A2–C1 (type check в a2.json).
+      const items = (block.items || []).map((s) => String(s || '').trim()).filter(Boolean)
+      if (!items.length) return drop(DROP.checkEmpty)
+      return { ...base, type: 'check', items }
     }
 
     default:
