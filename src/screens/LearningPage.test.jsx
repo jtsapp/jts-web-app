@@ -52,6 +52,26 @@ describe('LearningPage — узел карты без картинки маск�
   })
 })
 
+// Находка ревью: дефолт пропса остался от прежней карты ('A1'), где первым
+// городом был A1. После сдвига городов студент без уровня в профиле открывал
+// карту на втором городе, а первый — курс A0, с которого его и надо начинать —
+// выглядел уже пройденным.
+describe('LearningPage — уровень по умолчанию', () => {
+  const nodeOf = (map, name) => map.getByAltText(name).closest('.lp-node')
+
+  it('без уровня в пропсах текущий город — первый на карте, Redtown (A0)', () => {
+    const { map } = renderMap({ userLevel: undefined })
+    expect(nodeOf(map, 'Redtown').className).toContain('is-current')
+  })
+
+  it('без уровня в пропсах второй город закрыт, а не пройден', () => {
+    const { map } = renderMap({ userLevel: undefined })
+    const next = nodeOf(map, 'Bluewave Town')
+    expect(next.className).toContain('is-locked')
+    expect(next.disabled).toBe(true)
+  })
+})
+
 // Находка ревью: белый код уровня лежал прямо на цвете кольца — 3.1:1 на
 // оранжевом Redtown и 2.2:1 на жёлтом Cocalastic Town при кегле ~13px, ниже
 // требуемых WCAG 2.1 AA 4.5:1. Доступность в проекте — часть определения

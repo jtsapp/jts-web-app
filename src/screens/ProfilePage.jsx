@@ -52,7 +52,11 @@ function heroGradientFor(level) {
 function nextRoleFor(level) {
   const idx = levelIndex(level)
   const next = LEVEL_ORDER[Math.min(idx + 1, LEVEL_ORDER.length - 1)]
-  const cur = ROLE_BY_LEVEL[(level || 'A1').toUpperCase()]
+  // Текущее звание — через roleForLevel: у неё свой фолбэк (первый уровень
+  // карты) и защита от неизвестного кода уровня. Чтение таблицы напрямую
+  // разъезжалось с ней фолбэком A1 и на пустом уровне показывало «следующим»
+  // звание, равное текущему.
+  const cur = roleForLevel(level)
   const nxt = ROLE_BY_LEVEL[next]
   return nxt && nxt.key !== cur?.key ? nxt : null
 }

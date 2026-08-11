@@ -22,7 +22,9 @@ function LevelMascot({ src, alt, level }) {
   return <img className="lp-node__av" src={src} alt={alt} loading="lazy" onError={() => setBroken(true)} />
 }
 
-export default function LearningPage({ userLevel = 'A1', userName, token, onOpenKingdom, onNav, onProfile }) {
+// Дефолт уровня — первый уровень карты. После сдвига городов первым стал A0:
+// с прежним 'A1' студент без уровня в профиле открывал карту на втором городе.
+export default function LearningPage({ userLevel = 'A0', userName, token, onOpenKingdom, onNav, onProfile }) {
   const { t } = useI18n()
   const kingdoms = computeKingdoms(userLevel)
 
