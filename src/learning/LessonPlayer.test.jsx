@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import LessonPlayer from './LessonPlayer.jsx'
 import { recordSkill } from '../practice/skillStats.js'
@@ -236,18 +236,36 @@ describe('LessonPlayer — озвучка слова (task.say)', () => {
 
   // jsdom синтеза речи не реализует, поэтому «поддерживаемый» случай собираем
   // вручную — заодно это ровно тот контракт Web Speech API, на который
-  // рассчитывает плеер.
-  function stubSpeech() {
+  // рассчитывает плеер: объекты, список голосов и событие voiceschanged.
+  function stubSpeech({ voices = [{ lang: 'en-GB', name: 'Daniel' }] } = {}) {
     const spoken = []
     const cancel = vi.fn()
+    const listeners = {}
+    let voiceList = voices
     class Utterance {
       constructor(text) {
         this.text = text
       }
     }
     window.SpeechSynthesisUtterance = Utterance
-    window.speechSynthesis = { cancel, speak: (u) => spoken.push(u) }
-    return { spoken, cancel }
+    window.speechSynthesis = {
+      cancel,
+      speak: (u) => spoken.push(u),
+      getVoices: () => voiceList,
+      addEventListener: (type, fn) => {
+        listeners[type] = fn
+      },
+      removeEventListener: (type) => {
+        delete listeners[type]
+      },
+    }
+    // Голоса появляются позже — так это и происходит в Chrome: первый
+    // getVoices() пуст, список приезжает событием.
+    const arriveVoices = (list) => {
+      voiceList = list
+      act(() => listeners.voiceschanged && listeners.voiceschanged())
+    }
+    return { spoken, cancel, arriveVoices }
   }
 
   afterEach(() => {
@@ -298,13 +316,35 @@ describe('LessonPlayer — озвучка слова (task.say)', () => {
     expect(screen.getByText('repeat', { selector: '.kl-word' })).toBeTruthy()
   })
 
-  it('без синтеза задание не оценивается: сразу «Продолжить», сердца целы', () => {
+  // Находка (Minor): раньше без синтеза варианты оставались кликабельными, а
+  // клик не делал ничего — ни проверки, ни фидбэка. Упражнение с подсказанным
+  // ответом остаётся упражнением, поэтому проверка и фидбэк сохраняются, а
+  // снимаются только монеты и сердца.
+  it('без синтеза проверка и фидбэк остаются, но монет и сердец нет', () => {
     const onDone = vi.fn()
     const { container } = renderLesson([sayTask], { onDone })
-    expect(screen.queryByRole('button', { name: /проверить/i })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /продолжить/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'listen' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(screen.getByText(/неверно/i)).toBeTruthy()
     expect(container.querySelector('.kl__hearts b').textContent).toBe('3')
+    fireEvent.click(screen.getByRole('button', { name: /продолжить/i }))
     expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'success', correct: 0, wrong: 0, points: 0 }))
+  })
+
+  it('без синтеза верный ответ не приносит монет — ответ был подсказан на экране', () => {
+    const { container } = renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: 'repeat' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(screen.getByText(/верно/i)).toBeTruthy()
+    expect(container.querySelector('.kl-reward')).toBeNull()
+  })
+
+  it('без синтеза ответ не идёт в рейтинг навыков', () => {
+    recordSkill.mockClear()
+    renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: 'repeat' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(recordSkill).not.toHaveBeenCalled()
   })
 
   it('ответ на задание со слова засчитывается в listening, даже если стадия называется иначе', () => {
@@ -352,5 +392,197 @@ describe('LessonPlayer — навыки за новые типы заданий'
     const skills = recordSkill.mock.calls.map(([skill]) => skill)
     expect(skills).toContain('listening')
     expect(skills).toContain('vocab')
+  })
+})
+
+// Находка ревью (Important): проверка доступности синтеза ловила только наличие
+// объектов API. В Android WebView без голосовых данных, в части сборок Linux и
+// при отключённом голосовом движке объекты есть, getVoices() пуст, а speak()
+// молчит — кнопка рисовалась, звука не было, задание оставалось оцениваемым, и
+// студент терял сердце на угадайке один к четырём. Плюс у реплики не было
+// обработчика ошибки: тихий отказ движка ничем не ловился.
+describe('LessonPlayer — доступность синтеза речи', () => {
+  const sayTask = {
+    type: 'choice',
+    sec: '2. Vocabulary',
+    word: '',
+    say: 'repeat',
+    options: ['repeat', 'listen', 'match', 'answer'],
+    answer: 'repeat',
+    why: '',
+  }
+
+  function stubSpeech({ voices = [{ lang: 'en-GB', name: 'Daniel' }] } = {}) {
+    const spoken = []
+    const cancel = vi.fn()
+    const listeners = {}
+    let voiceList = voices
+    class Utterance {
+      constructor(text) {
+        this.text = text
+      }
+    }
+    window.SpeechSynthesisUtterance = Utterance
+    window.speechSynthesis = {
+      cancel,
+      speak: (u) => spoken.push(u),
+      getVoices: () => voiceList,
+      addEventListener: (type, fn) => {
+        listeners[type] = fn
+      },
+      removeEventListener: (type) => {
+        delete listeners[type]
+      },
+    }
+    const arriveVoices = (list) => {
+      voiceList = list
+      act(() => listeners.voiceschanged && listeners.voiceschanged())
+    }
+    return { spoken, cancel, arriveVoices }
+  }
+
+  afterEach(() => {
+    delete window.SpeechSynthesisUtterance
+    delete window.speechSynthesis
+  })
+
+  it('объекты API есть, а голосов нет — кнопки озвучки нет, слово показано текстом', () => {
+    stubSpeech({ voices: [] })
+    renderLesson([sayTask])
+    expect(screen.queryByRole('button', { name: /прослушать слово/i })).toBeNull()
+    expect(screen.getByText('repeat', { selector: '.kl-word' })).toBeTruthy()
+  })
+
+  it('голосов нет — верный ответ не приносит монет и сердце за промах цело', () => {
+    stubSpeech({ voices: [] })
+    const { container } = renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: 'listen' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(container.querySelector('.kl__hearts b').textContent).toBe('3')
+  })
+
+  it('голоса приезжают событием voiceschanged — кнопка появляется, задание снова оценивается', () => {
+    const { arriveVoices } = stubSpeech({ voices: [] })
+    const { container } = renderLesson([sayTask])
+    expect(screen.queryByRole('button', { name: /прослушать слово/i })).toBeNull()
+
+    arriveVoices([{ lang: 'en-GB', name: 'Daniel' }])
+    expect(screen.getByRole('button', { name: /прослушать слово/i })).toBeTruthy()
+    expect(container.querySelector('.kl-word')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'listen' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(container.querySelector('.kl__hearts b').textContent).toBe('2')
+  })
+
+  it('ошибка произнесения переключает урок в текстовый режим', () => {
+    const { spoken } = stubSpeech()
+    const { container } = renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: /прослушать слово/i }))
+    act(() => spoken[0].onerror({ error: 'synthesis-failed' }))
+
+    expect(screen.queryByRole('button', { name: /прослушать слово/i })).toBeNull()
+    expect(screen.getByText('repeat', { selector: '.kl-word' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'listen' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(container.querySelector('.kl__hearts b').textContent).toBe('3')
+  })
+
+  it('отмена предыдущей реплики отказом синтеза не считается', () => {
+    const { spoken } = stubSpeech()
+    renderLesson([sayTask])
+    const play = screen.getByRole('button', { name: /прослушать слово/i })
+    fireEvent.click(play)
+    fireEvent.click(play)
+    // Второе нажатие снимает первую реплику, и та сообщает об этом через error.
+    act(() => spoken[0].onerror({ error: 'interrupted' }))
+    expect(screen.getByRole('button', { name: /прослушать слово/i })).toBeTruthy()
+  })
+
+  it('уход с урока останавливает речь — иначе голос говорит поверх карты', () => {
+    const { cancel } = stubSpeech()
+    const { unmount } = renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: /прослушать слово/i }))
+    cancel.mockClear()
+    unmount()
+    expect(cancel).toHaveBeenCalled()
+  })
+})
+
+// Находка ревью (Important): в A1 уроках 16 и 25 текст для чтения жил только в
+// атрибуте data-say кнопки курса. Теперь он доезжает до узла info-блоком, а
+// поле say даёт ему ту же озвучку, что и словам заданий на слух.
+describe('LessonPlayer — озвучка текста для чтения', () => {
+  const passageTask = {
+    type: 'info',
+    sec: '7. Read',
+    html: '<p>Phone battery dying? First, open Settings.</p>',
+    say: 'Phone battery dying? First, open Settings.',
+  }
+
+  function stubSpeech() {
+    const spoken = []
+    window.SpeechSynthesisUtterance = class {
+      constructor(text) {
+        this.text = text
+      }
+    }
+    window.speechSynthesis = {
+      cancel: vi.fn(),
+      speak: (u) => spoken.push(u),
+      getVoices: () => [{ lang: 'en-GB' }],
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }
+    return spoken
+  }
+
+  afterEach(() => {
+    delete window.SpeechSynthesisUtterance
+    delete window.speechSynthesis
+  })
+
+  it('кнопка озвучивает весь абзац и называется «прослушать текст», а не «слово»', () => {
+    const spoken = stubSpeech()
+    renderLesson([passageTask])
+    fireEvent.click(screen.getByRole('button', { name: /прослушать текст/i }))
+    expect(spoken).toHaveLength(1)
+    expect(spoken[0]).toMatchObject({ text: passageTask.say, lang: 'en-GB' })
+  })
+
+  it('без синтеза текст не дублируется подсказкой — он и так напечатан на экране', () => {
+    const { container } = renderLesson([passageTask])
+    expect(container.querySelector('.kl-word')).toBeNull()
+    expect(container.querySelector('.kl-note')).toBeNull()
+    expect(screen.getByText(/Phone battery dying/)).toBeTruthy()
+  })
+
+  it('info с озвучкой остаётся информационным: сразу «Продолжить», без проверки', () => {
+    stubSpeech()
+    renderLesson([passageTask])
+    expect(screen.queryByRole('button', { name: /^проверить$/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /продолжить/i })).toBeTruthy()
+  })
+})
+
+// Находка ревью (Minor): чек-лист сообщал отметку только классом и символом ✓ —
+// вспомогательным технологиям состояние не доезжало, а волна заводит в этот
+// компонент 47 новых заданий.
+describe('LessonPlayer — доступность чек-листа', () => {
+  const checkTask = { type: 'check', sec: '1. Warm-up', items: ['☕ coffee', '🎵 music'] }
+
+  it('пункт сообщает состояние отметки через aria-pressed', () => {
+    renderLesson([checkTask])
+    const item = screen.getByRole('button', { name: /coffee/ })
+    expect(item.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(item)
+    expect(item.getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(item)
+    expect(item.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('декоративная галочка не читается как часть подписи пункта', () => {
+    const { container } = renderLesson([checkTask])
+    expect(container.querySelector('.kl-check__box').getAttribute('aria-hidden')).toBe('true')
   })
 })

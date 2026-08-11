@@ -27,28 +27,91 @@ function norm(s) {
 }
 
 // Синтез речи браузера (Web Speech API) — им озвучиваются задания на слух
-// self-курсов A0/A1: в исходном курсе их читала функция sayWord, аудиофайла у
-// таких заданий нет. Проверяем и объект, и конструктор реплики: в части сборок
-// (WebView, jsdom, браузеры с отключённым TTS) есть не всё сразу.
-function canSpeak() {
-  return (
-    typeof window !== 'undefined' &&
-    'speechSynthesis' in window &&
-    typeof window.SpeechSynthesisUtterance === 'function'
-  )
+// self-курсов A0/A1 и абзацы для чтения: в исходном курсе их читали функции
+// sayWord и sayText, аудиофайла у таких заданий нет. Проверяем и объект, и
+// конструктор реплики: в части сборок (WebView, jsdom, браузеры с отключённым
+// TTS) есть не всё сразу.
+function speechApi() {
+  if (typeof window === 'undefined') return null
+  const synth = window.speechSynthesis
+  if (!synth || typeof window.SpeechSynthesisUtterance !== 'function') return null
+  return typeof synth.getVoices === 'function' ? synth : null
 }
 
-// Смысл перенесён из sayWord() исходного курса: перед каждой репликой отменяем
-// предыдущую (иначе повторное нажатие встаёт в очередь и слово повторяется
-// дважды), голос британский, темп замедлен — слово должно быть разборчивым для
-// начинающего.
-function speakWord(word) {
-  const synth = window.speechSynthesis
-  synth.cancel()
-  const utterance = new window.SpeechSynthesisUtterance(word)
-  utterance.lang = 'en-GB'
-  utterance.rate = 0.85
-  synth.speak(utterance)
+// Наличия объектов API мало. В Android WebView без установленных голосовых
+// данных, в части сборок Linux и при отключённом голосовом движке
+// speechSynthesis есть, getVoices() пуст, а speak() молчит: кнопка озвучки
+// рисуется, звука нет, задание остаётся оцениваемым — и студент получает ровно
+// ту угадайку один к четырём ценой сердца, ради устранения которой всё
+// делалось, на всех 250 заданиях A0 подряд. Поэтому доступным синтез считается
+// только когда есть хотя бы один голос.
+function hasVoices() {
+  const synth = speechApi()
+  if (!synth) return false
+  try {
+    return synth.getVoices().length > 0
+  } catch {
+    // Часть WebView бросает из getVoices() вместо пустого списка — для нас это
+    // тот же «голосов нет».
+    return false
+  }
+}
+
+// Ошибки отмены — наши собственные: speak() снимает предыдущую реплику, и та
+// сообщает об этом через onerror. Считать их отказом синтеза нельзя, иначе
+// второе нажатие кнопки выключало бы озвучку до конца урока.
+const CANCEL_ERRORS = new Set(['canceled', 'cancelled', 'interrupted'])
+
+/**
+ * Доступность синтеза и сама озвучка.
+ *
+ * Параметры реплики перенесены из sayWord() исходного курса: перед каждой
+ * отменяем предыдущую (иначе повторное нажатие встаёт в очередь и слово
+ * повторяется дважды), голос британский, темп замедлен — слово должно быть
+ * разборчивым для начинающего.
+ */
+function useSpeech() {
+  const [voiced, setVoiced] = useState(hasVoices)
+  const [failed, setFailed] = useState(false)
+
+  // Список голосов асинхронный: в Chrome первый getVoices() почти всегда пуст,
+  // а голоса приезжают событием voiceschanged. Без подписки кнопка озвучки не
+  // появилась бы даже там, где синтез есть.
+  useEffect(() => {
+    const synth = speechApi()
+    if (!synth || typeof synth.addEventListener !== 'function') return undefined
+    const sync = () => setVoiced(hasVoices())
+    synth.addEventListener('voiceschanged', sync)
+    sync()
+    return () => synth.removeEventListener('voiceschanged', sync)
+  }, [])
+
+  // Речь не должна продолжаться поверх карты: студент жмёт озвучку и сразу
+  // выходит по стрелке — без отмены реплика переживает уход с урока.
+  useEffect(() => {
+    return () => {
+      const synth = speechApi()
+      if (synth) synth.cancel()
+    }
+  }, [])
+
+  const speak = (text) => {
+    const synth = speechApi()
+    if (!synth) return
+    synth.cancel()
+    const utterance = new window.SpeechSynthesisUtterance(text)
+    utterance.lang = 'en-GB'
+    utterance.rate = 0.85
+    // Тихий отказ иначе ничем не ловится: движок принимает реплику и не
+    // произносит ни звука, сообщая об этом только событием error. Тогда
+    // переходим в текстовый режим — как если бы голосов не было изначально.
+    utterance.onerror = (e) => {
+      if (!CANCEL_ERRORS.has(e && e.error)) setFailed(true)
+    }
+    synth.speak(utterance)
+  }
+
+  return { ready: voiced && !failed, speak }
 }
 
 function shuffle(arr) {
@@ -94,6 +157,7 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
   const [points, setPoints] = useState(0)
   const [hearts, setHearts] = useState(START_HEARTS)
   const endedRef = useRef(false)
+  const speech = useSpeech()
 
   const tasks = lesson.tasks || []
   const total = tasks.length
@@ -136,13 +200,15 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
 
   const pct = Math.round((idx / Math.max(1, total)) * 100)
 
-  // Задание на слух без синтеза речи ответить нечем: слово показывать текстом
-  // приходится (см. SayWord), а значит проверять уже нечего. Снимаем такое
-  // задание с оценки целиком — иначе студент либо получал бы монеты за
-  // подсказанный ответ, либо (если ответ не показывать) угадывал один к
-  // четырём и терял сердце. Плеер вычисляет это при рендере, а не эффектом:
-  // урок открывается только после загрузки json, то есть уже в браузере.
-  const graded = GRADED.has(task.type) && !(task.say && !canSpeak())
+  // Задание на слух без синтеза речи ответить нечем: слово приходится показать
+  // текстом (см. SayWord). Снимаем такое задание с НАЧИСЛЕНИЯ — иначе студент
+  // получал бы монеты за подсказанный ответ или терял сердце на угадайке. Но
+  // проверка и фидбэк остаются (checkable): упражнение с подсказанным ответом
+  // всё ещё упражнение, а экран, где варианты кликаются и не делают ничего,
+  // теряет смысл целиком. Плеер вычисляет это при рендере, а не эффектом: урок
+  // открывается только после загрузки json, то есть уже в браузере.
+  const checkable = GRADED.has(task.type)
+  const scored = checkable && !(task.say && !speech.ready)
 
   return (
     <div className="kl">
@@ -162,7 +228,9 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
       <LessonTask
         key={idx}
         task={task}
-        graded={graded}
+        checkable={checkable}
+        scored={scored}
+        speech={speech}
         onGraded={onGraded}
         onContinue={failPending ? () => reportDone('fail') : advance}
         t={t}
@@ -172,10 +240,10 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
 }
 
 // Оболочка задания: кикер, заголовок, тело по типу, фидбэк, футер.
-function LessonTask({ task, graded, onGraded, onContinue, t }) {
+function LessonTask({ task, checkable, scored, speech, onGraded, onContinue, t }) {
   const [answered, setAnswered] = useState(false)
   const [feedback, setFeedback] = useState(null) // {ok, answer?}
-  const [canCheck, setCanCheck] = useState(!graded) // инфо-типы сразу активны
+  const [canCheck, setCanCheck] = useState(!checkable) // инфо-типы сразу активны
   const checkRef = useRef(null)
   const firedRef = useRef(false)
   const sec = splitSec(task.sec)
@@ -185,7 +253,10 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
     firedRef.current = true
     setAnswered(true)
     setFeedback({ ok, answer: shownAnswer || '' })
-    if (graded) for (const s of skillsForTask(task)) recordSkill(s, ok)
+    // Ответ на непроверяемое начисление (задание на слух без синтеза) в рейтинг
+    // навыков и в счёт монет/сердец не идёт: ответ был подсказан на экране.
+    if (!scored) return
+    for (const s of skillsForTask(task)) recordSkill(s, ok)
     onGraded(ok)
   }
   const bind = (fn) => (checkRef.current = fn)
@@ -203,11 +274,11 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
         {task.sub && <p className="kl-task__sub">{task.sub}</p>}
 
         <div className="kl-task__body">
-          <TaskBody task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
+          <TaskBody task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} speech={speech} t={t} />
         </div>
       </div>
 
-      {feedback && graded && (
+      {feedback && checkable && (
         <div className={`kl-fb ${feedback.ok ? 'ok' : 'no'}`}>
           <span className="kl-fb__ic">{feedback.ok ? '✓' : '✕'}</span>
           <div className="kl-fb__text">
@@ -217,7 +288,7 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
             )}
             {task.why && <span className="kl-fb__why"><b>{t('lesson.why')}:</b> {task.why}</span>}
           </div>
-          {feedback.ok && (
+          {feedback.ok && scored && (
             <span className="kl-reward">
               <img className="kl-reward__coin" src="/assets/lesson/coin.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />+{REWARD}
             </span>
@@ -226,7 +297,7 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
       )}
 
       <div className="kl-task__foot">
-        {!graded || answered ? (
+        {!checkable || answered ? (
           <button className="kl-btn" onClick={onContinue} autoFocus>
             {t('lesson.continue')}
           </button>
@@ -240,37 +311,42 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
   )
 }
 
-// ——— озвучка слова (задания на слух self-курсов) ———
+// ——— озвучка (задания на слух и абзацы для чтения self-курсов) ———
 //
-// Слово намеренно не выводится текстом: оно и есть ответ. Кнопка живёт на
-// общих токенах урока (см. .kl-say в styles.css), повторное нажатие
-// переозвучивает — в этом весь смысл задания «послушай ещё раз».
-function SayWord({ word, t }) {
-  if (!canSpeak()) {
-    // Синтеза нет — произнести слово нечем. Показываем его текстом: задание
-    // уже снято с оценки в LessonPlayer, поэтому подсказка ничего не даёт
-    // даром, зато экран остаётся осмысленным, а не выбором наугад из четырёх.
+// В задании на слух слово намеренно не выводится текстом: оно и есть ответ.
+// В абзаце для чтения (info) текст уже напечатан рядом — озвучка там вторая
+// подача того же материала, как и в исходном курсе. Кнопка живёт на общих
+// токенах урока (см. .kl-say в styles.css), повторное нажатие переозвучивает —
+// в этом весь смысл «послушай ещё раз».
+function SayWord({ text, passage, speech, t }) {
+  if (!speech.ready) {
+    // Абзац для чтения и без синтеза остаётся на экране целиком — показывать
+    // нечего и пояснять нечего.
+    if (passage) return null
+    // Слово произнести нечем. Показываем его текстом: начисление уже снято в
+    // LessonPlayer, поэтому подсказка ничего не даёт даром, зато экран остаётся
+    // упражнением, а не выбором наугад из четырёх.
     return (
       <>
-        <div className="kl-word">{word}</div>
+        <div className="kl-word">{text}</div>
         <div className="kl-note">{t('lesson.say.unavailable')}</div>
       </>
     )
   }
   return (
-    <button type="button" className="kl-say" onClick={() => speakWord(word)}>
+    <button type="button" className="kl-say" onClick={() => speech.speak(text)}>
       <span className="kl-say__ic" aria-hidden="true">🔊</span>
-      {t('lesson.say.play')}
+      {t(passage ? 'lesson.say.playText' : 'lesson.say.play')}
     </button>
   )
 }
 
-function TaskBody({ task, answered, finish, setCanCheck, bind, t }) {
+function TaskBody({ task, answered, finish, setCanCheck, bind, speech, t }) {
   const body = taskBody({ task, answered, finish, setCanCheck, bind, t })
   if (!task.say) return body
   return (
     <>
-      <SayWord word={task.say} t={t} />
+      <SayWord text={task.say} passage={task.type === 'info'} speech={speech} t={t} />
       {body}
     </>
   )
@@ -503,8 +579,17 @@ function Check({ task }) {
   return (
     <div className="kl-check">
       {(task.items || []).map((it, i) => (
-        <button key={i} className={`kl-check__item ${ticked[i] ? 'on' : ''}`} onClick={() => setTicked((s) => ({ ...s, [i]: !s[i] }))}>
-          <span className="kl-check__box">{ticked[i] ? '✓' : ''}</span>
+        <button
+          key={i}
+          type="button"
+          className={`kl-check__item ${ticked[i] ? 'on' : ''}`}
+          // Отметка передаётся скринридеру состоянием, а не только зелёной
+          // рамкой и символом ✓ внутри: галочку в декоративном квадрате
+          // вспомогательные технологии прочитали бы как часть подписи пункта.
+          aria-pressed={Boolean(ticked[i])}
+          onClick={() => setTicked((s) => ({ ...s, [i]: !s[i] }))}
+        >
+          <span className="kl-check__box" aria-hidden="true">{ticked[i] ? '✓' : ''}</span>
           <span>{it}</span>
         </button>
       ))}
