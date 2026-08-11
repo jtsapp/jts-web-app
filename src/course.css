@@ -231,8 +231,17 @@
   color: #17171c;
   text-align: center;
 }
+/* Подпись карточки в макете начинается с большой буквы («Coffee»), а в уроке
+   слово лежит строчным — правим первой буквой, а не capitalize: у курса в
+   подписи бывает целая фраза, и там caps на каждом слове читались бы как ошибка. */
+.cp-pick__label::first-letter {
+  text-transform: uppercase;
+}
 .cp-pick.is-on {
   border-color: #9047ff;
+}
+.cp-pick.is-on .cp-pick__label {
+  color: #9047ff;
 }
 .cp-pick.is-on .cp-pick__label {
   color: #9047ff;
