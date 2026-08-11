@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
-import { ChevronLeftIcon, CastleIcon, LeafIcon, WaveIcon, CrescentIcon, StarIcon, BurstIcon } from '../components/icons.jsx'
+import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
 import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
@@ -8,8 +8,9 @@ import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonPr
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { kingdomAvatar } from '../kingdoms.js'
-import { getCourseIndex, courseTrail } from '../learning/courseData.js'
-import CourseLesson from '../learning/CourseLesson.jsx'
+import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
+import { isStepLevel, tasksToSteps } from '../learning/nativeSteps.js'
+import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
@@ -31,15 +32,10 @@ function ProgressRing({ done = 0, total = 0, size = 54, showLabel = true }) {
   )
 }
 
-// Тип урока (l.type из index.json, считается экстрактором по первому заданию) →
-// «печенька» узла тропы: иконка + цветовой класс. Закрытые узлы серые (CSS).
-const COOKIE = {
-  choice: { Icon: LeafIcon, cls: 'is-choice' },
-  audio: { Icon: WaveIcon, cls: 'is-audio' },
-  video: { Icon: CrescentIcon, cls: 'is-video' },
-  info: { Icon: StarIcon, cls: 'is-info' },
-  final: { Icon: BurstIcon, cls: 'is-final' },
-}
+// Горизонтальное смещение узла в «лесенке» юнита. В макете колонка узлов
+// шириной 200 при узле 100, а сами узлы идут центр → влево → вправо → центр
+// (Figma «Обучение», Screen 4005:30480, кадр List).
+const KT_OFFSET = [50, 0, 100, 50]
 
 // Интерьер королевства: нативная тропа уроков уровня + нативный плеер урока
 // (LessonPlayer). Раньше здесь был iframe hosted-Speakout — теперь весь урок
@@ -169,15 +165,26 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       setEnd(null)
       setRestricted(false)
       try {
-        // Урок курса грузит себя сам (разметка + движок уровня), здесь нужен
-        // только его номер: L<n> — урок, T<u> — тест юнита.
+        // Урок курса — очередь шагов, собранная из его же контента
+        // (scripts/build-course-steps.js). L<n> — урок, T<u> — тест юнита.
         if (course) {
           const m = /^([LT])(\d+)$/.exec(code)
-          if (m) setOpen({ code, attempt: 0, lessonNo: m[1] === 'L' ? +m[2] : null, testUnit: m[1] === 'T' ? +m[2] : null })
+          if (!m) return
+          // L<n> — урок, T<u> — юнит-тест: файлы шагов лежат рядом.
+          const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : 'T' + m[2])
+          if (data) setOpen({ code, attempt: 0, steps: data })
           return
         }
         const data = await loadLesson(level, code)
-        if (data) setOpen({ code, data, attempt: 0 })
+        if (!data) return
+        // A0/A1 хранят урок уже по одному заданию на экран — отдаём их новому
+        // плееру; B2/C1 остаются на старом (у них свои типы chips/watch).
+        if (isStepLevel(level)) {
+          const steps = tasksToSteps(data)
+          setOpen({ code, attempt: 0, steps: { title: data.title, blurb: '', steps } })
+          return
+        }
+        setOpen({ code, data, attempt: 0 })
       } finally {
         setBusy(false)
       }
@@ -305,104 +312,78 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
       {!loading && !error && !open && !moduleLocked && (
         <div className="km-scroll">
-          <div
-            className="kh-hero"
-            style={{ background: `linear-gradient(180deg, rgba(255,255,255,0.14), rgba(0,0,0,0.10)), ${k.ring}` }}
-          >
-            <div className="kh-hero__nav">
-              <button className="kh-hero__back" onClick={handleBack} aria-label={t('common.back')}>
-                <ChevronLeftIcon size={18} />
-              </button>
-              <span className="kh-hero__castle" style={{ color: k.ring }} aria-hidden="true">
-                <CastleIcon size={18} />
-              </span>
-              <div className="kh-hero__place">
-                <b>{k.name}</b>
-                <span>{t('kingdom.levelBadge', { label: level })}</span>
-              </div>
+          {/* Верхняя полоса: «Назад» и хлебные крошки королевства (макет Figma
+              «Обучение», Screen 4005:30480). Раньше и то и другое жило внутри
+              цветной шапки-баннера — теперь шапка стала карточкой уровня. */}
+          <div className="kt-bar">
+            <button className="kt-bar__back" onClick={handleBack}>
+              <ChevronLeftIcon size={18} />
+              {t('common.back')}
+            </button>
+            <span className="kt-bar__castle" aria-hidden="true">
+              <CastleIcon size={18} />
+            </span>
+            <div className="kt-bar__place">
+              <b>{k.name}</b>
+              <span>{t('kingdom.levelBadge', { label: level })}</span>
             </div>
-            <div className="kh-hero__main">
-              <div className="kh-hero__text">
-                <div className="kh-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
-                <div className="kh-hero__prog">
-                  <ProgressRing done={doneCount} total={total} size={22} showLabel={false} />
+          </div>
+
+          <div className="kt-body">
+            <div className="kt-hero" style={{ background: k.ring }}>
+              <div className="kt-hero__text">
+                <div className="kt-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
+                <div className="kt-hero__prog">
+                  <ProgressRing done={doneCount} total={total} size={24} showLabel={false} />
                   <span>{t('learn.done')} {doneCount}/{total}</span>
                 </div>
               </div>
               <img
-                className="kh-hero__mascot"
+                className="kt-hero__mascot"
                 src={`/assets/world/levels/${kingdomAvatar(k)}.webp`}
                 alt=""
                 onError={(e) => (e.currentTarget.style.display = 'none')}
               />
             </div>
-          </div>
 
-          {/* Нативная тропа: узлы сгруппированы по юнитам (l.unit из index.json),
-              внутри юнита — «лесенка»-серпантин. */}
-          <div className="kt-units">
+            {/* Тропа: узлы сгруппированы по юнитам (l.unit), внутри юнита —
+                «лесенка» из 3D-печенек. Смещение по горизонтали задано макетом
+                и повторяется с периодом 4: центр, влево, вправо, центр. */}
             {units.map((g) => {
-              const isExam = g.unit === 0
               const doneN = g.items.filter(({ l }) => done.has(l.code)).length
-              const node = ({ l, gi }, j) => {
-                const isDone = done.has(l.code)
-                const unlocked = isUnlocked(gi)
-                const current = !isDone && unlocked
-                const cls =
-                  'kt-node' + (isDone ? ' is-done' : '') + (current ? ' is-current' : '') + (!unlocked ? ' is-locked' : '')
-                const cookie = COOKIE[l.type] || COOKIE.choice
-                const CookieIcon = cookie.Icon
-                // «Лесенка»: узлы серпантином влево-вправо (период 6); экзамен — по центру.
-                const dx = isExam ? 0 : Math.round(Math.sin((j / 3) * Math.PI) * 82)
-                return (
-                  <li key={l.code} className={cls} style={{ '--dx': `${dx}px` }}>
-                    <button
-                      className="kt-node__btn"
-                      disabled={!unlocked || busy}
-                      onClick={() => openLesson(l.code)}
-                      title={!unlocked ? t('lesson.locked') : l.title || l.code}
-                    >
-                      <span className={`kt-node__cookie ${cookie.cls}`} aria-hidden="true">
-                        <CookieIcon size={22} />
-                        {isDone && (
-                          <span className="kt-node__done">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                              <path d="m5 12.5 4 4L19 7" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </span>
-                        )}
-                      </span>
-                      <span className="kt-node__label">{isExam ? t('lesson.examUnit') : l.title || l.code}</span>
-                    </button>
-                  </li>
-                )
-              }
-
-              // Финальный экзамен — особый узел: печенька на белой карточке над
-              // красными «горами»-вершиной (как в дизайне).
-              if (isExam) {
-                return (
-                  <section key="exam" className="kt-exam">
-                    <svg className="kt-exam__peaks" viewBox="0 0 1200 210" preserveAspectRatio="none" aria-hidden="true">
-                      <path
-                        d="M0 210V150L70 60 140 150 210 30 300 150 370 95 450 150 540 20 630 150 700 85 780 150 870 45 960 150 1040 100 1120 150 1200 55V210Z"
-                        fill="#c9463f"
-                      />
-                    </svg>
-                    <ol className="kt-trail kt-trail--exam">{g.items.map(node)}</ol>
-                  </section>
-                )
-              }
-
               return (
                 <section key={g.unit} className="kt-unit">
                   <div className="kt-unit__head">
-                    <span className="kt-unit__title">{t('lesson.unit', { n: g.unit })}</span>
+                    <span className="kt-unit__title">
+                      {g.unit === 0 ? t('lesson.examUnit') : t('lesson.unit', { n: g.unit })}
+                    </span>
                     <span className="kt-unit__count">
                       {doneN}/{g.items.length}
                     </span>
                   </div>
-                  <ol className="kt-trail">{g.items.map(node)}</ol>
+
+                  <ol className="kt-list" style={{ height: `${g.items.length * 100}px` }}>
+                    {g.items.map(({ l, gi }, j) => {
+                      const isDone = done.has(l.code)
+                      const unlocked = isUnlocked(gi)
+                      // «Кубок» — последний узел юнита (у курса это юнит-тест),
+                      // у него в макете своя, золотая печенька.
+                      const isLast = j === g.items.length - 1
+                      const state = isDone ? 'complete' : unlocked ? 'active' : 'inactive'
+                      const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
+                      return (
+                        <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>
+                          <button
+                            className={cls}
+                            disabled={!unlocked || busy}
+                            onClick={() => openLesson(l.code)}
+                            title={!unlocked ? t('lesson.locked') : l.title || l.code}
+                            aria-label={l.title || l.code}
+                          />
+                        </li>
+                      )
+                    })}
+                  </ol>
                 </section>
               )
             })}
@@ -414,12 +395,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           нативным плеером (замена iframe). */}
       {!loading && open && (
         <div className="km-lesson">
-          {course ? (
-            <CourseLesson
+          {open.steps ? (
+            <CourseStepPlayer
               key={`${open.code}-${open.attempt}`}
               level={level}
-              lessonNo={open.lessonNo}
-              testUnit={open.testUnit}
+              steps={open.steps.steps}
+              title={open.steps.title}
+              subtitle={open.steps.blurb}
+              passRatio={open.steps.passRatio ?? null}
               onExit={handleBack}
               onDone={onDone}
             />
@@ -436,17 +419,20 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Экран завершения урока (успех) */}
+      {/* Итоги урока (макет Figma «Обучение», секция Wrap): слева маскот на
+          цветной карточке, справа — результат и кнопки. */}
       {end && end.outcome === 'success' && (
         <div className="le-over le-over--ok">
           <div className="le-card">
-            <img className="le-art" src="/assets/lesson/success.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <div className="le-art le-art--win">
+              <img src="/assets/learning/result-win.webp" alt="" />
+            </div>
             <div className="le-info">
               <div className="le-pct">{end.accuracy ?? 100}%</div>
               <h2 className="le-title">
                 {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
               </h2>
-              <div className="le-sub">Урок пройден</div>
+              <div className="le-sub">{open?.steps?.title || t('learn.done')} — пройден</div>
               <div className="le-stats">
                 <div className="le-stat le-stat--wrong">
                   <b>{end.wrong ?? 0}</b>
@@ -493,14 +479,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Экран завершения урока (провал — сердца кончились) */}
+      {/* Итоги урока (провал — сердца кончились) */}
       {end && end.outcome === 'fail' && (
         <div className="le-over le-over--fail">
           <div className="le-card">
-            <img className="le-art" src="/assets/lesson/fail.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <div className="le-art le-art--lose">
+              <img src="/assets/learning/result-lose.webp" alt="" />
+            </div>
             <div className="le-info">
               <div className="le-heart">
-                💔<span>Жизней больше нет</span>
+                <b>💔</b>
+                <span>Жизней больше нет</span>
               </div>
               <h2 className="le-title">Ой-ой</h2>
               <div className="le-sub">Видимо, нужно попробовать ещё раз</div>

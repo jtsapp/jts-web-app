@@ -1,5 +1,10 @@
 // Модель королевств (по мобильному приложению, kKingdoms).
-// map: позиция ноды на острове-карте в процентах (x,y), ring — цвет кольца ноды.
+//
+// map — центр узла в процентах от КАРТИНКИ острова (public/assets/learning/
+// island.webp), а не от вьюпорта: остров крупнее экрана и прокручивается, так
+// что привязка к нему — единственная, при которой узел не съезжает с города.
+// Значения сняты с макета (Figma «Обучение», Screen 2062:2883).
+// ring — цвет обводки узла, тоже из макета: он повторяет цвет зоны острова.
 // Уровни на карте сдвинуты на ступень вниз: точки острова остались на местах,
 // но каждой досталось на уровень меньше (A1→A0, A2→A1, B1→A2, B2→B1, C1→B2,
 // C2→C1). Уровня C2 у курса нет вовсе, поэтому верхняя точка — это C1.
@@ -10,12 +15,12 @@
 // королевству, а не ступени, и при сдвиге уровней короли иначе переехали бы
 // по чужим городам (Redtown получил бы короля Bluewave и так далее).
 export const KINGDOMS = [
-  { id: 'sunhaven', name: 'Redtown', king: 'Майкл Флот', level: 'A0', avatar: 'a1', map: { x: 45, y: 85 }, ring: '#EF6C2E' },
-  { id: 'greendale', name: 'Bluewave Town', king: 'Барни', level: 'A1', avatar: 'a2', map: { x: 63, y: 71 }, ring: '#2E86D6' },
-  { id: 'bridgeport', name: 'Green Peace Town', king: 'Ди Флотио', level: 'A2', avatar: 'b1', map: { x: 39, y: 57 }, ring: '#3AA35A' },
-  { id: 'highspire', name: 'Music Town', king: 'Эван Доу', level: 'B1', avatar: 'b2', map: { x: 57, y: 43 }, ring: '#7C43B4' },
-  { id: 'frostcrystal', name: 'Cocalastic Town', king: 'Шелли Бумер', level: 'B2', avatar: 'c1', map: { x: 40, y: 28 }, ring: '#E0A21F' },
-  { id: 'goldcrown', name: 'Rosewind Town', king: 'Атлас Дон', level: 'C1', avatar: 'c2', map: { x: 58, y: 15 }, ring: '#C43C93' },
+  { id: 'sunhaven', name: 'Redtown', king: 'Майкл Флот', level: 'A0', avatar: 'a1', map: { x: 47.41, y: 70.16 }, ring: '#df6043' },
+  { id: 'greendale', name: 'Bluewave Town', king: 'Барни', level: 'A1', avatar: 'a2', map: { x: 58.11, y: 59.53 }, ring: '#3b8dc3' },
+  { id: 'bridgeport', name: 'Green Peace Town', king: 'Ди Флотио', level: 'A2', avatar: 'b1', map: { x: 45.32, y: 51.82 }, ring: '#39aa55' },
+  { id: 'highspire', name: 'Music Town', king: 'Эван Доу', level: 'B1', avatar: 'b2', map: { x: 51.18, y: 40.99 }, ring: '#8e46cf' },
+  { id: 'frostcrystal', name: 'Cocalastic Town', king: 'Шелли Бумер', level: 'B2', avatar: 'c1', map: { x: 53.4, y: 30.61 }, ring: '#cf9a21' },
+  { id: 'goldcrown', name: 'Rosewind Town', king: 'Атлас Дон', level: 'C1', avatar: 'c2', map: { x: 49.09, y: 21.37 }, ring: '#941c5e' },
 ]
 
 // Арт короля по королевству; на случай зова с одним уровнем (экраны, которые
