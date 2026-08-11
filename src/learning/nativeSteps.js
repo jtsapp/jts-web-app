@@ -24,6 +24,15 @@ function stageOf(task) {
   return sec.replace(/^\d+\.\s*/, '') || 'Урок'
 }
 
+// «☕ coffee» → { emoji: '☕', label: 'coffee' }. Эмодзи в макете живёт отдельной
+// строкой над подписью, поэтому его надо отделить, а не печатать в тексте.
+const EMOJI = /^(\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*)\s*(.*)$/u
+
+function splitEmoji(item) {
+  const m = EMOJI.exec(String(item || '').trim())
+  return m ? { emoji: m[1], label: m[2] } : { label: String(item || '') }
+}
+
 const textOf = (html) =>
   String(html || '')
     .replace(/<[^>]+>/g, ' ')
@@ -98,9 +107,18 @@ export function tasksToSteps(lesson) {
         push({ stage, type: 'pick', title: title || 'Отметь, что тебе подходит', sub: t.sub || '', options: (t.options || []).map((label) => ({ label })) }, !!title)
         break
 
-      case 'check':
+      case 'check': {
+        // Пункты с эмодзи — это разминка «отметь, что тебе нравится»: в макете
+        // она нарисована карточками с картинкой сверху, а не строчками с
+        // галочкой. Строчки остаются у списков без эмодзи («Я могу…»).
+        const cards = (t.items || []).map(splitEmoji)
+        if (cards.length && cards.every((c) => c.emoji)) {
+          push({ stage, type: 'pick', title: title || 'Отметь, что тебе подходит', sub: t.sub || '', options: cards }, !!title)
+          break
+        }
         push({ stage, type: 'checklist', title: title || 'Отметь, чему научился', sub: t.sub || '', items: t.items || [] }, !!title, 'Я могу…')
         break
+      }
 
       case 'info':
       default: {
