@@ -19,7 +19,7 @@ describe('nativeSteps — уроки A0/A1 в шаги', () => {
 
     expect(steps).toHaveLength(1)
     expect(steps[0]).toMatchObject({
-      type: 'checklist',
+      type: 'pick',
       stage: 'Warm-up',
       title: 'Tick the ones you like.',
       sub: 'No right or wrong — just you.',
@@ -57,6 +57,20 @@ describe('nativeSteps — уроки A0/A1 в шаги', () => {
 
     expect(steps).toHaveLength(1)
     expect(steps[0].type).toBe('choice')
+  })
+
+  it('разминка с эмодзи идёт карточками, список «Я могу…» — строчками', () => {
+    const warm = tasksToSteps({ tasks: [{ type: 'check', items: ['☕ coffee', '📅 Mondays'] }] })
+    expect(warm[0]).toMatchObject({
+      type: 'pick',
+      options: [
+        { emoji: '☕', label: 'coffee' },
+        { emoji: '📅', label: 'Mondays' },
+      ],
+    })
+
+    const canDo = tasksToSteps({ tasks: [{ type: 'check', items: ['say what I like', 'ask to repeat'] }] })
+    expect(canDo[0].type).toBe('checklist')
   })
 
   it('у шага слушания остаётся абсолютный адрес дорожки — по нему играет плеер', () => {
