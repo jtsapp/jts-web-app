@@ -298,7 +298,9 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
     case 'listen':
       return (
         <>
-          <AudioButton src={`/course/${String(level).toLowerCase()}/audio/${step.track}`} t={t} />
+          {/* У курса (A2/B1) дорожка лежит рядом с уроком и известна по имени,
+              у A0/A1 в задании сразу абсолютный URL на files-dev. */}
+          <AudioButton src={step.src || `/course/${String(level).toLowerCase()}/audio/${step.track}`} t={t} />
           <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} />
         </>
       )
