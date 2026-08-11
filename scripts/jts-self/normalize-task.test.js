@@ -187,6 +187,27 @@ describe('normalizeBlock — слово для синтеза речи', () => {
     expect(multi.say).toBe('coffee')
     expect(gap.say).toBe('like')
   })
+
+  // Находка ревью (Minor): поле навешивалось внутри веток switch, и типы order
+  // и check теряли его молча — блок становился заданием, поэтому в сводку
+  // потерь такая потеря не попадала вообще. Спека при этом говорит, что
+  // механика привязана к строке задания, а не к типу.
+  it('say доезжает и до order — тип на привязку не влияет', () => {
+    const order = normalizeBlock({ kind: 'order', prompt: '', words: ['like', 'I'], order: [1, 0], say: 'I like' }, ctx)
+    expect(order).toMatchObject({ type: 'order', say: 'I like' })
+  })
+
+  it('say доезжает и до check', () => {
+    const check = normalizeBlock({ kind: 'check', items: ['☕ coffee'], say: 'coffee' }, ctx)
+    expect(check).toMatchObject({ type: 'check', say: 'coffee' })
+  })
+
+  // Находка ревью (Important): текст для чтения из data-say приезжает info-блоком —
+  // и озвучивается тем же синтезом, что и слова заданий на слух.
+  it('say доезжает и до info — озвучка абзаца для чтения', () => {
+    const info = normalizeBlock({ kind: 'info', html: '<p>Phone battery dying?</p>', say: 'Phone battery dying?' }, ctx)
+    expect(info).toMatchObject({ type: 'info', say: 'Phone battery dying?' })
+  })
 })
 
 // Находка ревью: самооценка курса (👍/👎, выбор реплики) не имела ключа ответа
