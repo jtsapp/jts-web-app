@@ -2739,131 +2739,133 @@ textarea {
 }
 
 /* Остров-карта с нодами уровней */
-/* ═══════════════ Карта уровней (макет Figma «Обучение») ═══════════════ */
-/* Остров здесь — сама страница, а не картинка внутри панели: он шире колонки
-   контента (1485 против 1168 в макете) и вдвое выше экрана, поэтому
-   прокручивается целиком, а заголовок с затемнением липнет сверху.
-   Всё, что лежит на острове, размечено в cqw от его ширины: узлы привязаны к
-   городам процентами (kingdoms.js), и при любой ширине экрана масштабируются
-   вместе с картинкой — иначе кольца сползают с городов. */
+.lp-map {
+  max-width: 460px;
+  margin: 24px auto 0;
+}
+.lp-map__canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1600 / 2111;
+  background: url('/assets/world/island_map.webp') center top / cover no-repeat #37b6ef;
+  border-radius: 24px;
+  box-shadow: 0 18px 44px rgba(23, 19, 38, 0.22);
+  container-type: inline-size;
+}
+
+/* Режим «Карта» (как в дизайне): океан-панель во всю ширину контента, а сам
+   остров — центрированной колонкой умеренного масштаба, чтобы за экран влезало
+   больше уровней, а узлы читались как аккуратные акценты. Заголовок липнет
+   сверху при прокрутке. Правой панели статуса нет — роль/монеты/стрик берутся
+   из сайдбара. Фон панели = базовый цвет океана картинки, поэтому стыка с
+   краем канваса не видно. */
 .lp.lp--map {
   display: block;
   padding: 0;
-  background: #f8f8f8;
 }
 .lp--map .lp__center {
   max-width: none;
 }
-
-.lp-isle {
-  position: relative;
-  overflow: clip; /* бока острова выходят за колонку контента */
-}
-
-/* Затемнение над верхом острова: в макете это слой 1168×357 с градиентом
-   #020202 60% → 0 при непрозрачности слоя 77% и размытием фона 4px. Маска
-   гасит и размытие тоже — иначе на границе слоя видна резкая кромка.
-   pointer-events: none, чтобы узлы под шапкой оставались кликабельными. */
-.lp-isle__head {
+/* Шапка «Обучение» — не белая полоса, а тёмный scrim-градиент поверх верха
+   карты (заголовок белым, как в дизайне). Карта поднята под шапку, поэтому
+   океан уходит под затемнение. */
+.lp--map .lp__head {
   position: sticky;
   top: 0;
-  z-index: 5;
-  height: 357px;
-  padding: 32px;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(2, 2, 2, 0.462) 0%, rgba(2, 2, 2, 0) 100%);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  mask-image: linear-gradient(180deg, #000 0%, #000 22%, transparent 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 22%, transparent 100%);
-}
-.lp-isle__title {
+  z-index: 6;
   margin: 0;
-  font-size: 42px;
-  line-height: 1.4;
-  font-weight: 800;
+  padding: 22px 34px 26px;
+  background: linear-gradient(180deg, rgba(3, 22, 38, 0.72) 0%, rgba(3, 22, 38, 0.34) 58%, rgba(3, 22, 38, 0) 100%);
+  border-bottom: none;
+}
+.lp--map .lp__title {
   color: #fff;
 }
-.lp-isle__sub {
-  margin: 0;
-  max-width: 200px;
-  font-size: 20px;
-  line-height: 1.4;
-  font-weight: 400;
-  color: #fff;
+.lp--map .lp__sub {
+  color: rgba(255, 255, 255, 0.85);
 }
-
-.lp-isle__map {
+.lp--map .lp-map {
+  max-width: none;
+  margin: -102px 0 0;
   position: relative;
-  margin-top: -357px; /* остров уходит под липкую шапку */
-  width: 127.14%; /* 1485 / 1168 — пропорция макета */
-  margin-left: -16.01%; /* (85 − 272) / 1168 — тот же вылет влево */
-  container-type: inline-size;
+  z-index: 1;
+  background: #069ade;
 }
-.lp-isle__art {
-  display: block;
-  width: 100%;
-  height: auto;
+.lp--map .lp-map__canvas {
+  max-width: 820px;
+  margin: 0 auto;
+  border-radius: 0;
+  box-shadow: none;
 }
-
-/* Узел уровня: белый круг 140 с 3-пиксельной обводкой цвета зоны острова и
-   подписью-пилюлей, наезжающей на нижний край круга (в макете её верх на 117
-   от верха круга). Размеры в cqw от ширины острова. */
 .lp-node {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 9.428cqw; /* 140 / 1485 */
-  height: 9.428cqw;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9cqw;
   border: none;
   background: none;
+  padding: 0;
   cursor: pointer;
 }
 .lp-node__ring {
   position: relative;
   display: block;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
+  width: 11cqw;
+  aspect-ratio: 1;
   border-radius: 50%;
-  background: #fff;
-  border: 0.202cqw solid var(--ring); /* 3 / 1485 */
-  padding: 0.741cqw; /* до аватарки 112 */
+  background: var(--ring);
+  border: 0.65cqw solid #fff;
+  box-shadow: 0 0.6cqw 1.4cqw rgba(20, 16, 40, 0.35);
   overflow: hidden;
   transition: transform 0.15s ease;
 }
 .lp-node__av {
-  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 50%;
+  display: block;
 }
 .lp-node__label {
-  position: absolute;
-  left: 50%;
-  top: 7.879cqw; /* 117 / 1485 */
-  transform: translateX(-50%);
+  margin-top: 0;
   background: #fff;
-  color: #9047ff;
-  font-weight: 700;
-  font-size: 1.212cqw; /* 18 / 1485 */
-  line-height: 1.22;
-  padding: 0.606cqw 0.875cqw 0.673cqw 0.943cqw;
+  color: var(--purple);
+  font-weight: 800;
+  font-size: 2.3cqw;
+  line-height: 1;
+  padding: 0.8cqw 2.1cqw;
   border-radius: 999px;
   white-space: nowrap;
+  box-shadow: 0 0.3cqw 0.9cqw rgba(20, 16, 40, 0.2);
 }
 .lp-node:not(.is-locked):hover .lp-node__ring {
   transform: scale(1.06);
 }
-
-/* Закрытый уровень: в макете таких узлов нет, но без них карта врёт про
-   доступность — гасим аватарку и вешаем замок в фирменном круге. */
+/* Текущий уровень — светящееся кольцо */
+.lp-node.is-current .lp-node__ring {
+  box-shadow: 0 0 0 0.7cqw color-mix(in srgb, var(--ring) 45%, transparent),
+    0 0.8cqw 1.8cqw rgba(20, 16, 40, 0.4);
+  animation: lp-node-pulse 2s ease-in-out infinite;
+}
+@keyframes lp-node-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0.4cqw color-mix(in srgb, var(--ring) 45%, transparent),
+      0 0.8cqw 1.8cqw rgba(20, 16, 40, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 1.3cqw color-mix(in srgb, var(--ring) 22%, transparent),
+      0 0.8cqw 1.8cqw rgba(20, 16, 40, 0.4);
+  }
+}
+/* Закрытые уровни */
 .lp-node.is-locked {
   cursor: default;
 }
 .lp-node.is-locked .lp-node__ring {
-  border-color: #c9c9c9;
+  background: #98a0b3;
+  border-color: rgba(255, 255, 255, 0.85);
 }
 .lp-node.is-locked .lp-node__av {
   filter: grayscale(1) brightness(0.72);
@@ -2873,11 +2875,10 @@ textarea {
 }
 .lp-node__lock {
   position: absolute;
-  inset: 0.741cqw;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
   background: rgba(20, 16, 40, 0.4);
 }
 .lp-node__lock svg {
@@ -2885,30 +2886,44 @@ textarea {
   height: 42%;
 }
 
-/* Мобильная карта: макета под неё нет, поэтому держим те же пропорции, но
-   растягиваем остров сильнее — при ширине колонки 390 узел в 9.4% был бы
-   размером с ноготь, а подпись нечитаемой. Ширина подобрана так, чтобы узел
-   остался примерно 96px, и карта центрируется по колонке городов. */
+/* Мобильная карта «Обучения» — остров во весь экран (не оставляем пустоту снизу).
+   Высоту гоним по вьюпорту, а соотношение 1600/2111 сохраняем: ноды привязаны к
+   боксу канваса и в cqw, поэтому менять aspect нельзя — они разъедутся. Из-за
+   этого канвас становится шире экрана; лишние бока океана обрезаем по центру
+   (ноды по x 39–63% остаются в кадре). Заодно вырастают и значки (cqw от большей
+   ширины). Верхняя панель приложения (.mtop) — 63px. */
 @media (max-width: 760px) {
-  .lp-isle__head {
-    height: 220px;
-    padding: 18px 20px;
+  .lp--map .lp__center {
+    position: relative;
   }
-  .lp-isle__title {
-    font-size: 30px;
+  /* Шапка «Обучение» — оверлеем поверх верха карты (не занимает поток), чтобы
+     остров начинался сразу под верхней панелью и заполнял экран. Скрим уже
+     тёмный, заголовок читается поверх океана. */
+  .lp--map .lp__head {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
   }
-  .lp-isle__sub {
-    font-size: 16px;
-    max-width: 170px;
+  .lp--map .lp-map {
+    margin-top: 0;
+    overflow-x: clip; /* прячем выступающие бока острова */
   }
-  .lp-isle__map {
-    margin-top: -220px;
-    width: 261%;
-    margin-left: -80.5%;
+  .lp--map .lp-map__canvas {
+    max-width: none;
+    width: auto; /* ширина = height × (1600/2111) */
+    height: calc(100dvh - 63px); /* заполнить экран под верхней панелью (.mtop 63px) */
+    margin: 0;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%); /* центрируем широкий канвас; бока за экраном → clip */
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .lp-node.is-current .lp-node__ring {
+    animation: none;
+  }
   .lp-node__ring {
     transition: none;
   }
