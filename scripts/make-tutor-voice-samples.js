@@ -23,15 +23,69 @@ import { fileURLToPath } from 'node:url'
 import { TUTOR_GREETING, TUTOR_GREETING_LANG } from '../src/tutor/tutors.js'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const OUT_DIR = path.join(ROOT, 'public', 'tutor', 'voice')
+// SAMPLE_OUT_DIR — чтобы подбирать интонацию, не перезаписывая то, что уже
+// лежит в репозитории: генеришь варианты во временную папку, слушаешь, и
+// только победитель едет в public.
+const OUT_DIR = process.env.SAMPLE_OUT_DIR || path.join(ROOT, 'public', 'tutor', 'voice')
+
+// Настройки «живости». Держим в одном месте: подбираются они на слух, и
+// искать их потом по трём разным функциям — гарантированный способ получить
+// три разных темпа речи.
+//
+// Общая проблема первой версии: все трое тараторили. Диктор, который спешит,
+// звучит как автоответчик, а не как собеседник, — а это первое, что слышит
+// человек о своём будущем тьюторе.
+const TUNING = {
+  // Луна (Cloud TTS). Темпом здесь не порулить ручкой: у gemini-tts моделей
+  // audioConfig.speakingRate не действует, стиль и скорость задаются СЛОВАМИ
+  // в input.prompt.
+  //
+  // Промпт написан от противного, и это не случайность. Попытка попросить
+  // «тепло, мягко, неспешно, с паузами» дала заторможенную речь с придыханием
+  // и тянущимися гласными — тестер описал её как «будто она под кайфом».
+  // Виноваты оказались не темп, а именно придыхание и распевность, поэтому
+  // теперь мы их прямо запрещаем, а взамен просим обычную бытовую речь.
+  // Просьба «живее и выразительнее» тоже мимо: модель читает это как
+  // театральность и растягивает фразу в полтора раза.
+  luna: {
+    prompt:
+      'Speak Russian plainly and naturally, the way a friendly person introduces ' +
+      'herself in everyday conversation. Ordinary speaking pace, ordinary energy, ' +
+      'crisp articulation. No dramatic pauses, no theatrical or sing-song ' +
+      'intonation, no breathiness, no drawn-out vowels. ' +
+      '"Луна" is stressed on the SECOND syllable — lu-NA, exactly like the ' +
+      'Russian word for the moon. Never say LU-na.',
+  },
+  // Декстер (ElevenLabs). speed 1.04 звучал как скороговорка; 0.9 — нижняя
+  // треть допустимого [0.8–1.2], разболтанный тон персонажа от этого только
+  // выигрывает. stability пониже, style повыше — больше интонационной игры.
+  dexter: { speed: 0.9, stability: 0.28, style: 0.7 },
+  // Спарк (Soniox). Кроме темпа крутить нечего — эмоций провайдер не умеет.
+  // Диапазон [0.7–1.3], берём заметно медленнее середины.
+  spark: { speed: 0.85 },
+}
 
 // Тексты живут в src/tutor/tutors.js и берутся оттуда, а не дублируются здесь:
 // два списка одних и тех же реплик неизбежно разъезжаются, и тогда в репозитории
 // лежит файл, озвучивающий не то, что написано в коде.
+// Как произносить то, что написано. Синтез читает «Луна» как нарицательное —
+// «лунá», спутник Земли, — но это ИМЯ, и звучать оно должно «Лу́на», с ударением
+// на первый слог. Знак ударения U+0301 после нужной гласной ставит его на место.
+// Правка живёт здесь, а не в TUTOR_GREETING: там текст должен оставаться чистым,
+// иначе подпись на экране обзаведётся невидимыми символами, которые потом ловить
+// поиском по коду.
+// SAMPLE_NO_STRESS=1 отключает — им сравнивают варианты при подборе интонации.
+const PRONUNCIATION = {
+  luna: (t) => t.replace(/Луна/g, 'Луна́'),
+}
+
 const SAMPLES = Object.fromEntries(
   Object.entries(TUTOR_GREETING).map(([key, text]) => [
     key,
-    { text, lang: TUTOR_GREETING_LANG[key] || 'ru' },
+    {
+      text: process.env.SAMPLE_NO_STRESS ? text : (PRONUNCIATION[key]?.(text) ?? text),
+      lang: TUTOR_GREETING_LANG[key] || 'ru',
+    },
   ]),
 )
 
@@ -77,7 +131,9 @@ async function ttsGemini(text) {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      input: { text },
+      // prompt — единственный рычаг стиля и темпа у gemini-tts: он идёт
+      // рядом с text внутри input, а не в audioConfig (см. TUNING).
+      input: { text, prompt: TUNING.luna.prompt },
       voice: { languageCode: 'ru-RU', name: 'Aoede', modelName: model },
       audioConfig: { audioEncoding: 'MP3' },
     }),
@@ -133,11 +189,11 @@ async function ttsEleven(text) {
         text,
         model_id: process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5',
         voice_settings: {
-          stability: 0.32,
+          stability: TUNING.dexter.stability,
           similarity_boost: 0.75,
-          style: 0.6,
+          style: TUNING.dexter.style,
           use_speaker_boost: true,
-          speed: 1.04,
+          speed: TUNING.dexter.speed,
         },
       }),
     },
@@ -159,6 +215,7 @@ async function ttsSoniox(text, lang) {
       voice: 'Owen',
       language: lang,
       text,
+      speed: TUNING.spark.speed,
       audio_format: 'mp3',
     }),
   })
@@ -182,7 +239,7 @@ async function main() {
       const audio = await PROVIDER[key](text, lang)
       const out = path.join(OUT_DIR, `${key}.mp3`)
       fs.writeFileSync(out, audio)
-      console.log(`✓ ${key}: ${(audio.length / 1024).toFixed(1)} КБ → public/tutor/voice/${key}.mp3`)
+      console.log(`✓ ${key}: ${(audio.length / 1024).toFixed(1)} КБ → ${path.relative(ROOT, out) || out}`)
     } catch (e) {
       failed++
       console.error(`✗ ${key}: ${e.message}`)
