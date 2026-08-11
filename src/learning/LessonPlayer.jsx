@@ -26,6 +26,31 @@ function norm(s) {
     .trim()
 }
 
+// Синтез речи браузера (Web Speech API) — им озвучиваются задания на слух
+// self-курсов A0/A1: в исходном курсе их читала функция sayWord, аудиофайла у
+// таких заданий нет. Проверяем и объект, и конструктор реплики: в части сборок
+// (WebView, jsdom, браузеры с отключённым TTS) есть не всё сразу.
+function canSpeak() {
+  return (
+    typeof window !== 'undefined' &&
+    'speechSynthesis' in window &&
+    typeof window.SpeechSynthesisUtterance === 'function'
+  )
+}
+
+// Смысл перенесён из sayWord() исходного курса: перед каждой репликой отменяем
+// предыдущую (иначе повторное нажатие встаёт в очередь и слово повторяется
+// дважды), голос британский, темп замедлен — слово должно быть разборчивым для
+// начинающего.
+function speakWord(word) {
+  const synth = window.speechSynthesis
+  synth.cancel()
+  const utterance = new window.SpeechSynthesisUtterance(word)
+  utterance.lang = 'en-GB'
+  utterance.rate = 0.85
+  synth.speak(utterance)
+}
+
 function shuffle(arr) {
   const a = arr.slice()
   for (let i = a.length - 1; i > 0; i--) {
@@ -51,7 +76,10 @@ function splitSec(sec) {
 function skillsForTask(task) {
   const label = splitSec(task?.sec).label.toLowerCase()
   const out = new Set()
-  if (task?.type === 'listen' || /listen|numbers/.test(label)) out.add('listening')
+  // task.say — задание на слух без аудиофайла (слово читает синтез речи). Оно
+  // приходит типом choice/multi на стадии со своим названием («Vocabulary»,
+  // «Speaking»), поэтому по типу и стадии в listening не попадало бы вовсе.
+  if (task?.type === 'listen' || task?.say || /listen|numbers/.test(label)) out.add('listening')
   if (task?.type === 'order' || /grammar/.test(label)) out.add('grammar')
   if (task?.type === 'multi' || /vocab/.test(label)) out.add('vocab')
   if (task?.type === 'gap') out.add('writing')
@@ -108,6 +136,14 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
 
   const pct = Math.round((idx / Math.max(1, total)) * 100)
 
+  // Задание на слух без синтеза речи ответить нечем: слово показывать текстом
+  // приходится (см. SayWord), а значит проверять уже нечего. Снимаем такое
+  // задание с оценки целиком — иначе студент либо получал бы монеты за
+  // подсказанный ответ, либо (если ответ не показывать) угадывал один к
+  // четырём и терял сердце. Плеер вычисляет это при рендере, а не эффектом:
+  // урок открывается только после загрузки json, то есть уже в браузере.
+  const graded = GRADED.has(task.type) && !(task.say && !canSpeak())
+
   return (
     <div className="kl">
       <div className="kl__hud">
@@ -126,7 +162,7 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
       <LessonTask
         key={idx}
         task={task}
-        graded={GRADED.has(task.type)}
+        graded={graded}
         onGraded={onGraded}
         onContinue={failPending ? () => reportDone('fail') : advance}
         t={t}
@@ -204,7 +240,43 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
   )
 }
 
+// ——— озвучка слова (задания на слух self-курсов) ———
+//
+// Слово намеренно не выводится текстом: оно и есть ответ. Кнопка живёт на
+// общих токенах урока (см. .kl-say в styles.css), повторное нажатие
+// переозвучивает — в этом весь смысл задания «послушай ещё раз».
+function SayWord({ word, t }) {
+  if (!canSpeak()) {
+    // Синтеза нет — произнести слово нечем. Показываем его текстом: задание
+    // уже снято с оценки в LessonPlayer, поэтому подсказка ничего не даёт
+    // даром, зато экран остаётся осмысленным, а не выбором наугад из четырёх.
+    return (
+      <>
+        <div className="kl-word">{word}</div>
+        <div className="kl-note">{t('lesson.say.unavailable')}</div>
+      </>
+    )
+  }
+  return (
+    <button type="button" className="kl-say" onClick={() => speakWord(word)}>
+      <span className="kl-say__ic" aria-hidden="true">🔊</span>
+      {t('lesson.say.play')}
+    </button>
+  )
+}
+
 function TaskBody({ task, answered, finish, setCanCheck, bind, t }) {
+  const body = taskBody({ task, answered, finish, setCanCheck, bind, t })
+  if (!task.say) return body
+  return (
+    <>
+      <SayWord word={task.say} t={t} />
+      {body}
+    </>
+  )
+}
+
+function taskBody({ task, answered, finish, setCanCheck, bind, t }) {
   switch (task.type) {
     case 'choice':
       return <Choice task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} />

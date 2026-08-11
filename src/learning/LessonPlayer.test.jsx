@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import LessonPlayer from './LessonPlayer.jsx'
@@ -217,6 +217,103 @@ describe('LessonPlayer — пояснение why', () => {
     for (const word of ['I', 'like', 'coffee']) fireEvent.click(screen.getByRole('button', { name: word }))
     fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
     expect(document.querySelector('.kl-fb__why')).toBeNull()
+  })
+})
+
+// Находка ревью: 274 задания A0 «Listen. Choose the word you hear.» отвечать
+// было нечем — слово озвучивал синтезатор речи исходного курса, а до плеера
+// оно не доезжало. Теперь слово приходит в task.say и читается по кнопке.
+describe('LessonPlayer — озвучка слова (task.say)', () => {
+  const sayTask = {
+    type: 'choice',
+    sec: '2. Vocabulary',
+    word: '',
+    say: 'repeat',
+    options: ['repeat', 'listen', 'match', 'answer'],
+    answer: 'repeat',
+    why: '',
+  }
+
+  // jsdom синтеза речи не реализует, поэтому «поддерживаемый» случай собираем
+  // вручную — заодно это ровно тот контракт Web Speech API, на который
+  // рассчитывает плеер.
+  function stubSpeech() {
+    const spoken = []
+    const cancel = vi.fn()
+    class Utterance {
+      constructor(text) {
+        this.text = text
+      }
+    }
+    window.SpeechSynthesisUtterance = Utterance
+    window.speechSynthesis = { cancel, speak: (u) => spoken.push(u) }
+    return { spoken, cancel }
+  }
+
+  afterEach(() => {
+    delete window.SpeechSynthesisUtterance
+    delete window.speechSynthesis
+  })
+
+  it('нажатие на кнопку озвучивает слово британским голосом в замедленном темпе', () => {
+    const { spoken } = stubSpeech()
+    renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: /прослушать слово/i }))
+    expect(spoken).toHaveLength(1)
+    expect(spoken[0]).toMatchObject({ text: 'repeat', lang: 'en-GB', rate: 0.85 })
+  })
+
+  it('повторное нажатие переозвучивает, отменив предыдущую реплику', () => {
+    const { spoken, cancel } = stubSpeech()
+    renderLesson([sayTask])
+    const play = screen.getByRole('button', { name: /прослушать слово/i })
+    fireEvent.click(play)
+    fireEvent.click(play)
+    expect(spoken).toHaveLength(2)
+    expect(cancel).toHaveBeenCalledTimes(2)
+  })
+
+  it('слово не показывается текстом — оно и есть ответ', () => {
+    stubSpeech()
+    const { container } = renderLesson([sayTask])
+    expect(container.querySelector('.kl-word')).toBeNull()
+    // Единственный «repeat» на экране — вариант ответа, а не подсказка.
+    expect(screen.getAllByText('repeat')).toHaveLength(1)
+  })
+
+  it('с синтезом задание остаётся оценочным: неверный ответ снимает сердце', () => {
+    stubSpeech()
+    const { container } = renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: 'listen' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(container.querySelector('.kl__hearts b').textContent).toBe('2')
+  })
+
+  // Синтеза может не быть (WebView без голосов, отключённый TTS). Без него
+  // задание нельзя оставлять оценочным: студент угадывал бы один к четырём и
+  // терял сердце за промах.
+  it('без синтеза слово показывается текстом и кнопки озвучки нет', () => {
+    renderLesson([sayTask])
+    expect(screen.queryByRole('button', { name: /прослушать слово/i })).toBeNull()
+    expect(screen.getByText('repeat', { selector: '.kl-word' })).toBeTruthy()
+  })
+
+  it('без синтеза задание не оценивается: сразу «Продолжить», сердца целы', () => {
+    const onDone = vi.fn()
+    const { container } = renderLesson([sayTask], { onDone })
+    expect(screen.queryByRole('button', { name: /проверить/i })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /продолжить/i }))
+    expect(container.querySelector('.kl__hearts b').textContent).toBe('3')
+    expect(onDone).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'success', correct: 0, wrong: 0, points: 0 }))
+  })
+
+  it('ответ на задание со слова засчитывается в listening, даже если стадия называется иначе', () => {
+    stubSpeech()
+    recordSkill.mockClear()
+    renderLesson([sayTask])
+    fireEvent.click(screen.getByRole('button', { name: 'repeat' }))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    expect(recordSkill).toHaveBeenCalledWith('listening', true)
   })
 })
 

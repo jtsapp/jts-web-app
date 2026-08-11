@@ -5848,6 +5848,31 @@ textarea {
 
 .kl-multi__hint { margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--muted); text-align: center; }
 
+/* Кнопка озвучки задания на слух: слово произносит синтез речи браузера, а
+   текстом его показывать нельзя — оно и есть ответ. Токены те же, что у
+   .kl-opt/.kl-chip (рамка, радиус, фиолетовый акцент), чтобы кнопка читалась
+   как часть урока, а не как чужой контрол. */
+.kl-say {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 13px 22px;
+  border-radius: 999px;
+  border: 2px solid #eceaf5;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--purple);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, transform 0.05s;
+}
+.kl-say:hover { border-color: var(--purple); background: #f7f4ff; }
+.kl-say:active { transform: scale(0.98); }
+.kl-say:focus-visible { outline: 2px solid #b79cf5; outline-offset: 2px; }
+.kl-say__ic { font-size: 20px; line-height: 1; }
+
 .kl-check { display: flex; flex-direction: column; gap: 10px; }
 .kl-check__item {
   display: flex;
