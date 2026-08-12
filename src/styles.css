@@ -2827,38 +2827,38 @@ textarea {
 }
 .lp-node__ring {
   position: relative;
-  width: 9.43cqw;
-  height: 9.43cqw;
+  /* Размер узла как на проде (11% ширины острова) — на нашем кадре карты
+     фигмовские 9.43% читались мелко. */
+  width: 11cqw;
+  height: 11cqw;
   border-radius: 50%;
-  border: max(2px, 0.202cqw) solid var(--ring);
+  border: max(2px, 0.24cqw) solid var(--ring);
   background: #fff;
   flex: none;
 }
 .lp-node__av {
   position: absolute;
-  left: 0.74cqw;
-  top: 0.74cqw;
+  left: 1.1cqw;
+  top: 1.1cqw;
   /* Явные размеры, а не inset: у картинки auto-размер берётся из её собственных
      пикселей, по вставкам она не растягивается. */
-  width: 7.54cqw;
-  height: 7.54cqw;
+  width: 8.8cqw;
+  height: 8.8cqw;
   border-radius: 50%;
   object-fit: cover;
 }
 .lp-node__label {
   position: relative;
-  margin-top: -1.55cqw;
-  min-width: 8.01cqw;
-  height: 2.76cqw;
-  padding: 0 0.94cqw;
-  border-radius: 2.02cqw;
+  margin-top: -1.8cqw;
+  padding: 0.8cqw 2.1cqw;
+  border-radius: 999px;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   /* В макете 18px на острове 1485 — на нашем кадре доля даёт мелко, поэтому
      нижняя граница 12px: подпись должна читаться. */
-  font-size: max(12px, 1.21cqw);
+  font-size: max(12px, 2.3cqw);
   font-weight: 700;
   line-height: 1.2;
   color: #9047ff;
@@ -2886,14 +2886,14 @@ textarea {
 }
 .lp-node__lock {
   position: absolute;
-  inset: 0.74cqw;
+  inset: 1.1cqw;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .lp-node__lock svg {
-  width: 2.8cqw;
-  height: 2.8cqw;
+  width: 3.4cqw;
+  height: 3.4cqw;
 }
 
 @media (max-width: 760px) {
