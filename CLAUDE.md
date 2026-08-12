@@ -55,10 +55,14 @@ lint` + ручной прогон затронутого экрана (`npm run 
 рисует его `src/learning/CourseStepPlayer.jsx`, а источники только готовят ему
 шаги:
 
-- A0/A1 — старый экстрактор `scripts/extract-kingdom-lessons.js` раскладывает
-  hosted-Speakout в `public/learning/<level>.json`; эти уроки и так хранят по
-  одному заданию на экран, поэтому `src/learning/nativeSteps.js` переводит их в
-  шаги прямо в браузере (типов там семь, включая gap-fill и порядок слов).
+- A0/A1 — ветка Self-Study собственного курса: единый HTML-файл уровня
+  (`a0.html` / `a1.html`, второй на 257 МБ) режет
+  `scripts/extract-jts-self-lessons.js` в `public/learning/<level>.json`.
+  Берётся именно исходный файл курса, а не опубликованные админкой уроки: в
+  них вырезаны ключи ответов, и проверять в плеере было бы нечего. Данные там
+  уже по одному заданию на экран, поэтому `src/learning/nativeSteps.js`
+  переводит их в шаги прямо в браузере (типов семь, включая gap-fill и порядок
+  слов).
 - A2/B1 — перенесённый курс в `public/course/<level>/` (разметка урока,
   картинки, аудио). Разметку не рендерим: `scripts/build-course-steps.js`
   режет её офлайн в `steps-<n>.json` (и `steps-T<u>.json` для юнит-тестов),
@@ -68,8 +72,11 @@ lint` + ручной прогон затронутого экрана (`npm run 
   под шаги их пока не переводили).
 
 `KingdomInteriorPage` сам выбирает источник: есть `public/course/<level>/` —
-берёт его, иначе `public/learning/<level>.json`. Не возвращай A2/B1 в LEVELS
-старого экстрактора: его прогон чистит весь `public/learning`.
+берёт его, иначе `public/learning/<level>.json`. Старый экстрактор
+`scripts/extract-kingdom-lessons.js` (hosted-Speakout с админки) остался
+только под B2/C1 — его прогон чистит весь `public/learning`, поэтому не
+возвращай в его LEVELS ни A0/A1 (у них свой источник), ни A2/B1 (они в
+`public/course/`): он тихо положит Speakout поверх нового курса.
 
 **Внешние сервисы:**
 - JTS-бэкенд: `NEXT_PUBLIC_API_URL` / `BACKEND_URL`, дефолт
