@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import AssetImage from '../components/AssetImage.jsx'
 import { useI18n } from '../i18n.jsx'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
@@ -407,7 +408,7 @@ function WordCards({ words }) {
       {(words || []).map((w, i) => (
         <button key={i} className={`cp-word ${open[i] ? 'is-open' : ''}`} onClick={() => setOpen((s) => ({ ...s, [i]: !s[i] }))}>
           <span className="cp-word__face">
-            {w.img ? <img src={w.img} alt="" loading="lazy" /> : <span className="cp-word__noimg">{w.en}</span>}
+            {w.img ? <AssetImage src={w.img} alt="" loading="lazy" /> : <span className="cp-word__noimg">{w.en}</span>}
           </span>
           {/* Оборот карточки в макете — не одна строка перевода: сверху слово с
               определением, под ним переводы отдельными плашками. */}

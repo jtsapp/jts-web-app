@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import AssetImage from '../components/AssetImage.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -351,7 +352,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
       {!loading && error === 'empty' && (
         <div className="li-empty">
-          <img className="li-empty__art" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} />
+          <AssetImage className="li-empty__art" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} />
           <div className="li-empty__title">{t('kingdom.empty')}</div>
         </div>
       )}
@@ -399,6 +400,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                   <span>{t('learn.done')} {doneCount}/{total}</span>
                 </div>
               </div>
+              {/* Здесь намеренно без скелетона: маскот — вырезанная фигура,
+                  вписанная по object-fit: contain в коробку 224×336 поверх
+                  цветной карточки уровня. Заливка шиммера легла бы на всю
+                  коробку и закрыла бы цвет карточки плашкой — заметнее, чем
+                  просто дождаться картинку. */}
               <img
                 className="kt-hero__mascot"
                 src={`/assets/world/levels/${kingdomAvatar(k)}.webp`}
@@ -492,7 +498,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {end && end.outcome === 'success' && (
         <div className="le-over le-over--ok">
           <div className="le-card">
-            <img className="le-art le-art--win" src="/assets/learning/result-win.webp" alt="" />
+            <AssetImage className="le-art le-art--win" src="/assets/learning/result-win.webp" alt="" />
             <div className="le-info">
               <div className="le-pct">{end.accuracy ?? 100}%</div>
               <div className="le-head">
@@ -563,7 +569,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {end && end.outcome === 'fail' && (
         <div className="le-over le-over--fail">
           <div className="le-card le-card--fail">
-            <img className="le-art le-art--lose" src="/assets/learning/result-lose.webp" alt="" />
+            <AssetImage className="le-art le-art--lose" src="/assets/learning/result-lose.webp" alt="" />
             <div className="le-info le-info--fail">
               <div className="le-fail">
                 <div className="le-heart">
@@ -590,7 +596,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
             <button className="lx-close" aria-label={t('common.close')} onClick={() => setConfirmExit(false)}>
               ×
             </button>
-            <img className="lx-art" src="/assets/lesson/exit.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            {/* Арт рисуется в круг 112px, а исходный PNG был 1664px и 2.6 МБ —
+                на 4G он не успевал приехать, и вместо портрета висел серый
+                кружок. Тот же кадр, пережатый под показ, весит 42 КБ. */}
+            <AssetImage className="lx-art" src="/assets/lesson/exit.webp" alt="" hideOnError />
             <h2 className="lx-title">{t('lesson.exitAsk')}</h2>
             <div className="lx-sub">{t('lesson.exitAskSub')}</div>
             <div className="lx-acts">

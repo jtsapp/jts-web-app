@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import AssetImage from '../components/AssetImage.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { computeKingdoms } from '../kingdoms.js'
@@ -60,7 +61,10 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
                 <span className="lp-node__ring">
                   {/* Арт короля — круглый кроп из макета: он принадлежит городу,
                       а не ступени, поэтому файл назван по королевству. */}
-                  <img className="lp-node__av" src={`/assets/learning/king-${k.id}.webp`} alt={k.name} loading="lazy" />
+                  {/* Без loading="lazy": узлов всего шесть, карта сама
+                      прокручивается к текущему уровню, и отложенная загрузка
+                      только оставляла бы соседние кружки пустыми. */}
+                  <AssetImage className="lp-node__av" src={`/assets/learning/king-${k.id}.webp`} alt={k.name} />
                   {locked && (
                     <span className="lp-node__lock" aria-hidden="true">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
