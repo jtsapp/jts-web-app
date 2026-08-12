@@ -75,7 +75,16 @@ function extractBlocks(html, cls) {
 // Он писался, пока курс собирали с методологами, и студенту не нужен: сам
 // плеер дорожки приезжает отдельным заданием listen, а на экране от этого
 // блока остаётся только имя чужого учебника. 24 таких блока в A0, 122 в A1.
-const stripSourceCredit = (html) => extractBlocks(html, 'player').rest
+function stripSourceCredit(html) {
+  const withoutMeta = extractBlocks(html, 'meta').rest
+  // От блока плеера могла остаться пустая коробка — тогда убираем и её. Но у
+  // части уроков A1 внутри .player лежит САМ текст для чтения вслух («Phone
+  // battery dying? First, open Settings…»), и вырезать блок целиком значит
+  // выбросить материал задания.
+  const { rest, blocks } = extractBlocks(withoutMeta, 'player')
+  const empty = blocks.every((b) => !textOf(b) && !/<(img|audio)\b/i.test(b))
+  return empty ? rest : withoutMeta
+}
 
 // Открытое задание на письмо: <div class="opentask">, внутри — инструкция и
 // образец ответа в .bubble.am («Model answer … Check yourself»). Курс держал
@@ -369,6 +378,15 @@ export function tasksToSteps(lesson) {
         const wrapped = extractBlocks(opened.rest, 'done-card').rest
         const can = canItemsOf(wrapped)
         const rest = can ? can.rest : wrapped
+
+        // Текст, которому сгенерировали запись (scripts/make-lesson-audio.js),
+        // становится экраном слушания: плеер сверху, материал под ним. Без
+        // записи он остаётся немой заметкой — ровно как было в курсе, где
+        // читать его должен был браузерный синтез.
+        if (t.track) {
+          push({ stage, type: 'listen', title, src: t.track, options: [], html: textOf(rest) ? rest : '' }, !!title)
+          break
+        }
 
         // Подпись к следующему заданию — не отдельный экран.
         const l = leadOf(rest)

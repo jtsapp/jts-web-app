@@ -21,6 +21,7 @@ const { readCourse } = require('./jts-self/read-course')
 const { collectLesson } = require('./jts-self/collect-lesson')
 const { buildLessonNodes, buildReviewNode, lessonType } = require('./jts-self/build-nodes')
 const { vocabCardsTask, imageSlug } = require('./jts-self/vocab-cards')
+const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
 const OUT = path.join(__dirname, '..', 'public/learning')
 
@@ -32,6 +33,7 @@ const OUT = path.join(__dirname, '..', 'public/learning')
 // серверах, и словарь весь этот срок был текстовым. Ссылка на чужой хост
 // ничего не давала и по весу: свои файлы раздаются с кэш-заголовками сайта.
 const IMG_DIR = path.join(OUT, 'img')
+const AUDIO_DIR = path.join(OUT, 'audio')
 const IMG_URL_BASE = '/learning/img'
 
 // Карточка словаря — 160×215 CSS-пикселей (.cp-word в course.css), то есть
@@ -59,6 +61,19 @@ async function writeImages(lesson, level) {
     urls[word] = `${IMG_URL_BASE}/${level}/${file}`
   }
   return urls
+}
+
+// Записи, сгенерированные scripts/make-lesson-audio.js для текстов, которые
+// исходный курс читал браузерным синтезом. Привязка по хэшу самого текста:
+// экстрактор гоняют заново после каждой правки курса, и любая привязка по
+// номеру урока разъехалась бы на первой вставке нового задания. Записи нет —
+// задание просто остаётся текстовым, как и было.
+function attachNarration(tasks, level) {
+  for (const task of tasks) {
+    if (task.type !== 'info' || !task.say) continue
+    if (!fs.existsSync(path.join(AUDIO_DIR, level, sayAudioFile(task.say)))) continue
+    task.track = sayAudioUrl(level, task.say)
+  }
 }
 
 async function extractCourse(filePath) {
@@ -141,6 +156,7 @@ async function extractCourse(filePath) {
   const catalog = []
   for (const node of nodes) {
     if (!node.tasks.length) continue
+    attachNarration(node.tasks, course.level)
     const order = catalog.length
     lessons[node.code] = { code: node.code, title: node.title, tasks: node.tasks }
     catalog.push({ code: node.code, order, title: node.title, taskCount: node.tasks.length, type: lessonType(node.code, node.tasks), unit: node.unit })
