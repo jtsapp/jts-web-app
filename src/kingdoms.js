@@ -33,6 +33,14 @@ export function kingdomAvatar(kingdomOrLevel) {
 
 export const LEVEL_ORDER = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
+// Уровни, у которых есть арт шапки Профиля (/assets/world/hero/<level>.webp).
+// Все, кроме A0: файла под него никогда не было, а экран его всё равно просил —
+// и каждый заход в Профиль на первом уровне давал неуспешный запрос. Список
+// считается из LEVEL_ORDER, чтобы новый уровень курса не остался без шапки
+// молча. Живёт здесь, рядом с kingdomAvatar: это такое же соответствие
+// «уровень → файл арта», и отсюда его берёт тест, не поднимая целый экран.
+export const HERO_LEVELS = new Set(LEVEL_ORDER.filter((l) => l !== 'A0').map((l) => l.toLowerCase()))
+
 // Роль (звание) по уровню. Аватарки статусов — из загрузок.
 export const ROLE_BY_LEVEL = {
   A0: { key: 'merchant', title: 'Купец' },

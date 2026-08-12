@@ -7,6 +7,7 @@ import {
   computeKingdoms,
   roleForLevel,
   LEVEL_ORDER,
+  HERO_LEVELS,
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
@@ -48,18 +49,16 @@ function heroGradientFor(level) {
   return HERO_GRADIENT[roleForLevel(level).key] || HERO_GRADIENT.merchant
 }
 
-// Уровни, у которых арт шапки вообще есть. A0 в этот список не входит: файла
-// под него никогда не было, и каждый заход в Профиль на первом уровне давал
-// неуспешный запрос — на 4G это лишняя задержка на ровном месте. Экран
-// самодостаточен и без арта, поэтому просто не просим то, чего нет.
-const HERO_LEVELS = new Set(['a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
-
 // Фон шапки: арт (если он есть для уровня) поверх градиента роли. Арт лежит в
 // WebP — те же кадры в PNG весили по 1.7–2.3 МБ на полосу высотой 190px, и на
 // 4G шапка приезжала последней.
+//
+// Пустой уровень трактуем как A0 — ровно так же, как roleForLevel под
+// градиентом. Раньше здесь стоял свой дефолт 'a1', и у пользователя без уровня
+// арт A1 накладывался на градиент A0.
 function heroBackgroundFor(level) {
   const gradient = heroGradientFor(level)
-  const key = (level || 'a1').toLowerCase()
+  const key = (level || 'A0').toLowerCase()
   return HERO_LEVELS.has(key) ? `url(/assets/world/hero/${key}.webp), ${gradient}` : gradient
 }
 

@@ -400,7 +400,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                   <span>{t('learn.done')} {doneCount}/{total}</span>
                 </div>
               </div>
-              <AssetImage
+              {/* Здесь намеренно без скелетона: маскот — вырезанная фигура,
+                  вписанная по object-fit: contain в коробку 224×336 поверх
+                  цветной карточки уровня. Заливка шиммера легла бы на всю
+                  коробку и закрыла бы цвет карточки плашкой — заметнее, чем
+                  просто дождаться картинку. */}
+              <img
                 className="kt-hero__mascot"
                 src={`/assets/world/levels/${kingdomAvatar(k)}.webp`}
                 alt=""
@@ -594,7 +599,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
             {/* Арт рисуется в круг 112px, а исходный PNG был 1664px и 2.6 МБ —
                 на 4G он не успевал приехать, и вместо портрета висел серый
                 кружок. Тот же кадр, пережатый под показ, весит 42 КБ. */}
-            <AssetImage className="lx-art" src="/assets/lesson/exit.webp" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <AssetImage className="lx-art" src="/assets/lesson/exit.webp" alt="" hideOnError />
             <h2 className="lx-title">{t('lesson.exitAsk')}</h2>
             <div className="lx-sub">{t('lesson.exitAskSub')}</div>
             <div className="lx-acts">
