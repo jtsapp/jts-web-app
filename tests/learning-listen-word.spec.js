@@ -53,12 +53,7 @@ test.describe('A0: слово на слух', () => {
 
     // Доходим до нужного экрана, отвечая верно.
     for (let i = 0; i < target; i++) {
-      const step = steps[i]
-      if (step.answer) {
-        await page.locator('.cp-choice', { hasText: new RegExp(`^\\s*${escapeRe(step.answer)}\\s*$`) }).first().click()
-        await page.locator('.cp-cta:not([disabled])').click() // «Проверить»
-        await expect(page.locator('.cp-fb.is-ok')).toBeVisible()
-      }
+      await answerStep(page, steps[i])
       await page.locator('.cp-cta:not([disabled])').click() // «Продолжить»
     }
 
@@ -114,3 +109,25 @@ test.describe('A0: слово на слух', () => {
 })
 
 const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const exactly = (s) => new RegExp(`^\\s*${escapeRe(s)}\\s*$`)
+
+/** Отвечает на экран верно и жмёт «Проверить». Неоценочные шаги пропускает. */
+export async function answerStep(page, step) {
+  if (step.type === 'match') {
+    // Соединение: тап по пункту слева, затем по его варианту в банке.
+    for (const [i, pair] of step.pairs.entries()) {
+      await page.locator('.cp-match__item').nth(i).click()
+      await page.locator('.cp-match__bank .cp-chip', { hasText: exactly(pair.right) }).first().click()
+    }
+  } else if (step.type === 'group') {
+    for (const [i, item] of step.items.entries()) {
+      await page.locator('.cp-group__in').nth(i).fill(item.answers[0])
+    }
+  } else if (step.answer) {
+    await page.locator('.cp-choice', { hasText: exactly(step.answer) }).first().click()
+  } else {
+    return
+  }
+  await page.locator('.cp-cta:not([disabled])').click() // «Проверить»
+  await expect(page.locator('.cp-fb.is-ok')).toBeVisible()
+}
