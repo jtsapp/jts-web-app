@@ -32,6 +32,67 @@ function ProgressRing({ done = 0, total = 0, size = 54, showLabel = true }) {
   )
 }
 
+// Иконки экрана итогов — выгружены из макета (Figma «Обучение» → Wrap):
+// Streamline Ultimate «Smiley-Wrong», Streamline Plump «Check-Thick» и группа
+// разбитого сердца. Рисуем их разметкой, а не картинками: они однотонные и
+// должны попадать в цвет карточки.
+function WrongIcon() {
+  return (
+    <svg width="21" height="21" viewBox="0 0 21 21" fill="none" aria-hidden="true">
+      <g stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M0.65625 10.5C0.65625 13.1107 1.69335 15.6145 3.53942 17.4606C5.38548 19.3066 7.88927 20.3438 10.5 20.3438C13.1107 20.3438 15.6145 19.3066 17.4606 17.4606C19.3066 15.6145 20.3438 13.1107 20.3438 10.5C20.3438 7.88927 19.3066 5.38548 17.4606 3.53942C15.6145 1.69335 13.1107 0.65625 10.5 0.65625C7.88927 0.65625 5.38548 1.69335 3.53942 3.53942C1.69335 5.38548 0.65625 7.88927 0.65625 10.5Z" />
+        <path d="M5.90625 7.21875H8.53125" />
+        <path d="M7.21875 8.53125V5.90625" />
+        <path d="M12.4688 7.21875H15.0938" />
+        <path d="M13.7812 8.53125V5.90625" />
+        <path d="M5.90625 15.0941C5.90625 12.8506 6.94925 11.9922 8.41225 11.9922C10.9498 11.9922 10.0494 15.0941 12.5877 15.0941C14.0525 15.0941 15.0938 14.2348 15.0938 11.9922" />
+      </g>
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M18.2067 3.80546C18.615 4.36213 18.5242 5.11171 18.1442 5.68796C14.5879 11.0755 12.0267 14.3484 10.6096 16.0421C9.90667 16.8817 8.68583 16.9434 7.89083 16.1896C5.8202 14.2207 3.87435 12.1245 2.06458 9.91338C1.56042 9.29546 1.45625 8.42338 1.94708 7.79463C2.37375 7.24796 2.86083 6.7788 3.30125 6.40713C4.03167 5.79046 5.08625 5.93046 5.74292 6.62546C7.76917 8.77213 8.99042 10.2713 8.99042 10.2713C8.99042 10.2713 10.9979 7.33796 14.2188 2.82546C14.7175 2.12671 15.6063 1.8013 16.3571 2.21755C16.96 2.55213 17.6608 3.0613 18.2067 3.80505V3.80546Z"
+        fill="#fff"
+      />
+    </svg>
+  )
+}
+
+function BrokenHeartIcon() {
+  return (
+    <svg width="64" height="55" viewBox="0 0 64 55" fill="none" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M62.1798 19.8545C61.4733 29.7333 54.9723 38.0652 48.3111 43.7629C44.9483 46.6388 41.4525 48.9255 38.4345 50.4808C36.9264 51.2577 35.5075 51.8679 34.26 52.2757C33.0681 52.6655 31.8341 52.9383 30.7732 52.8625C30.3745 52.8339 29.9586 52.7532 29.535 52.634L34.26 39.1903L33.2805 31.9679L37.325 25.9011L35.3028 18.6787L38.4345 15.212L35.3028 11.1675L39.9843 8.56741L39.9843 2.8578C41.1453 2.29946 42.3011 1.88582 43.4463 1.61045C47.1547 0.718738 50.607 1.31538 53.5052 2.92696C59.2086 6.09808 62.5663 13.0425 62.1816 19.8228L62.1798 19.8545Z"
+        fill="url(#le-heart-a)"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M29.9859 52.5958C29.2644 52.4799 28.5098 52.2611 27.7729 51.9972C26.5371 51.5549 25.1358 50.9054 23.6499 50.087C20.6763 48.4484 17.2453 46.0654 13.964 43.0972C7.46355 37.2165 1.19664 28.7072 0.764991 18.8125L0.763845 18.7808C0.568176 11.9925 4.11738 5.14404 9.9064 2.13267C12.8485 0.60225 16.316 0.101786 19.9982 1.09622C23.0652 1.92448 26.1808 3.76032 29.2373 6.72707C30.9907 4.6999 24.4408 12.4909 26.2894 11.3235L29.2373 14.5014L23.6499 16.2347L27.7729 18.8125L22.8227 25.4794L27.7729 30.3906L24.2671 36.4574L27.7729 40.213L29.9859 52.5958Z"
+        fill="url(#le-heart-b)"
+      />
+      <defs>
+        <linearGradient id="le-heart-a" x1="34.5343" y1="0.278752" x2="30.7738" y2="52.8625" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F83C3C" />
+          <stop offset="1" stopColor="#FF5C5C" />
+        </linearGradient>
+        <linearGradient id="le-heart-b" x1="28.9447" y1="0.0126847" x2="31.2423" y2="52.6806" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F83C3C" />
+          <stop offset="1" stopColor="#FF5C5C" />
+        </linearGradient>
+      </defs>
+    </svg>
+  )
+}
+
 // Горизонтальное смещение узла в «лесенке» юнита. В макете колонка узлов
 // шириной 200 при узле 100, а сами узлы идут центр → влево → вправо → центр
 // (Figma «Обучение», Screen 4005:30480, кадр List).
@@ -424,61 +485,75 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Итоги урока (макет Figma «Обучение», секция Wrap): слева маскот на
-          цветной карточке, справа — результат и кнопки. */}
+      {/* Итоги урока — по макету Figma «Обучение» → секция Wrap. Маскот слева
+          цельной картинкой: в макете персонаж выходит за скруглённый фон, и
+          собирать это из CSS-фона плюс вырезанного персонажа значит терять
+          напуски и кадрирование. */}
       {end && end.outcome === 'success' && (
         <div className="le-over le-over--ok">
           <div className="le-card">
-            <div className="le-art le-art--win">
-              <img src="/assets/learning/result-win.webp" alt="" />
-            </div>
+            <img className="le-art le-art--win" src="/assets/learning/result-win.webp" alt="" />
             <div className="le-info">
               <div className="le-pct">{end.accuracy ?? 100}%</div>
-              <h2 className="le-title">
-                {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
-              </h2>
-              <div className="le-sub">{open?.steps?.title || t('learn.done')} — пройден</div>
-              <div className="le-stats">
-                <div className="le-stat le-stat--wrong">
-                  <b>{end.wrong ?? 0}</b>
-                  <span>Неверных ответов</span>
-                </div>
-                <div className="le-stat le-stat--right">
-                  <b>{end.correct ?? 0}</b>
-                  <span>Верных ответов</span>
-                </div>
+              <div className="le-head">
+                <h2 className="le-title">
+                  {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
+                </h2>
+                <p className="le-sub">{open?.steps?.title || t('learn.done')} — пройден</p>
               </div>
-              {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
-                  «следующий урок» — он всё равно упрётся в тот же отказ. */}
-              {restricted ? (
-                <>
-                  <div className="le-restricted" role="status">
-                    🔒{' '}
-                    {isDemoAccount ? (
-                      <>
-                        {t('learn.quotaReachedDemo')}{' '}
-                        <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                          {t('demo.cta')}
-                        </a>
-                      </>
-                    ) : (
-                      t('learn.quotaReached')
-                    )}
+              <div className="le-bottom">
+                <div className="le-stats">
+                  <div className="le-stat le-stat--wrong">
+                    <div className="le-stat__row">
+                      <span className="le-stat__ic" aria-hidden="true">
+                        <WrongIcon />
+                      </span>
+                      <b>{end.wrong ?? 0}</b>
+                    </div>
+                    <span>Неверных ответов</span>
                   </div>
-                  <button className="le-btn" onClick={exitLesson}>
-                    {t('common.back')}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="le-btn" onClick={goNext}>
-                    Перейти на следующий урок
-                  </button>
-                  <button className="le-again" onClick={retry}>
-                    Пройти снова
-                  </button>
-                </>
-              )}
+                  <div className="le-stat le-stat--right">
+                    <div className="le-stat__row">
+                      <span className="le-stat__ic" aria-hidden="true">
+                        <CheckIcon />
+                      </span>
+                      <b>{end.correct ?? 0}</b>
+                    </div>
+                    <span>Верных ответов</span>
+                  </div>
+                </div>
+                {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
+                    «следующий урок» — он всё равно упрётся в тот же отказ. */}
+                {restricted ? (
+                  <div className="le-acts">
+                    <div className="le-restricted" role="status">
+                      🔒{' '}
+                      {isDemoAccount ? (
+                        <>
+                          {t('learn.quotaReachedDemo')}{' '}
+                          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                            {t('demo.cta')}
+                          </a>
+                        </>
+                      ) : (
+                        t('learn.quotaReached')
+                      )}
+                    </div>
+                    <button className="le-btn" onClick={exitLesson}>
+                      {t('common.back')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="le-acts">
+                    <button className="le-btn" onClick={goNext}>
+                      Перейти на следующий урок
+                    </button>
+                    <button className="le-again" onClick={retry}>
+                      Пройти снова
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -487,19 +562,21 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {/* Итоги урока (провал — сердца кончились) */}
       {end && end.outcome === 'fail' && (
         <div className="le-over le-over--fail">
-          <div className="le-card">
-            <div className="le-art le-art--lose">
-              <img src="/assets/learning/result-lose.webp" alt="" />
-            </div>
-            <div className="le-info">
-              <div className="le-heart">
-                <b>💔</b>
-                <span>Жизней больше нет</span>
+          <div className="le-card le-card--fail">
+            <img className="le-art le-art--lose" src="/assets/learning/result-lose.webp" alt="" />
+            <div className="le-info le-info--fail">
+              <div className="le-fail">
+                <div className="le-heart">
+                  <BrokenHeartIcon />
+                  <span>Жизней больше нет</span>
+                </div>
+                <div className="le-head">
+                  <h2 className="le-title">Ой-ой</h2>
+                  <p className="le-sub le-sub--bold">Видимо, нужно попробовать еще раз</p>
+                </div>
               </div>
-              <h2 className="le-title">Ой-ой</h2>
-              <div className="le-sub">Видимо, нужно попробовать ещё раз</div>
               <button className="le-btn" onClick={retry}>
-                Попробовать ещё раз
+                Попробовать еще раз
               </button>
             </div>
           </div>
