@@ -77,7 +77,20 @@ export function tasksToSteps(lesson) {
     switch (t.type) {
       case 'choice':
         if (!Array.isArray(t.options) || !t.answer) break
-        push({ stage, type: 'choice', title: title || t.sub || 'Выбери верный вариант', prompt: t.word || '', options: t.options, answer: t.answer }, !!title)
+        push(
+          {
+            stage,
+            type: 'choice',
+            title: title || t.sub || 'Выбери верный вариант',
+            prompt: t.word || '',
+            options: t.options,
+            answer: t.answer,
+            // Слово на слух: в задании его нет нигде, кроме say, — плеер
+            // озвучивает его синтезом вместо кнопки исходного курса.
+            say: t.say || '',
+          },
+          !!title,
+        )
         break
 
       case 'gap':

@@ -80,4 +80,21 @@ describe('nativeSteps — уроки A0/A1 в шаги', () => {
 
     expect(steps[0]).toMatchObject({ type: 'listen', src: 'https://files-dev.justtostudy.kz/a1/audio/A1_L1.mp3' })
   })
+
+  it('слово на слух доезжает до шага полем say — без него задание неразрешимо', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'choice',
+          sec: '2. Vocabulary',
+          title: 'Listen. Choose the word you hear.',
+          options: ['repeat', 'listen', 'match', 'answer'],
+          answer: 'repeat',
+          say: 'repeat',
+        },
+      ],
+    })
+
+    expect(steps[0]).toMatchObject({ type: 'choice', say: 'repeat' })
+  })
 })

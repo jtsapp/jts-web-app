@@ -15,6 +15,17 @@ import { useI18n } from '../i18n.jsx'
 const REWARD = 10
 const START_HEARTS = 3
 const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
+
+// Проверяется шаг или нет. У listen ответ есть не всегда: экстрактор вынимает
+// кнопку плеера из строки урока ОТДЕЛЬНЫМ блоком, поэтому часть таких шагов —
+// это «послушай и иди дальше», без единого варианта. Пока listen считался
+// проверяемым безусловно, «Проверить» на таком экране не включалась никогда
+// (picked навсегда null) и урок вставал намертво — тот самый фидбек «не смог
+// продолжить, не понятно, что надо проверить».
+export function isGraded(step) {
+  if (step.type === 'listen') return !!step.answer && (step.options || []).length > 0
+  return GRADED.has(step.type)
+}
 // В макете крупная фиолетовая строка — всегда сам вопрос, а тёмная поменьше —
 // инструкция к нему. У заданий без правильного ответа вопрос стоит первым
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
@@ -153,7 +164,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
 // Один экран задания: тело по типу шага, снизу кнопка «Проверить»/«Продолжить»
 // и, после проверки, плашка результата.
 function Step({ step, seed, level, onAdvance, onGraded, t }) {
-  const graded = GRADED.has(step.type)
+  const graded = isGraded(step)
   const [picked, setPicked] = useState(null)
   const [checked, setChecked] = useState(false)
   const [text, setText] = useState('')
@@ -339,7 +350,22 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
       )
 
     case 'choice':
-      return <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} />
+      return (
+        <>
+          {/* Задание «Listen. Choose the word you hear.»: слова нет ни в
+              вопросе, ни в вариантах — оно живёт только в поле say, и без
+              озвучки экран неразрешим (см. SayButton). */}
+          {step.say && <SayButton text={step.say} t={t} />}
+          <Choices
+            options={options}
+            picked={picked}
+            setPicked={setPicked}
+            checked={checked}
+            answer={step.answer}
+            grid={!!step.say}
+          />
+        </>
+      )
 
     case 'write':
       return (
@@ -441,6 +467,49 @@ function Checklist({ items }) {
           </span>
         </button>
       ))}
+    </div>
+  )
+}
+
+// Слово, которое исходный курс произносил синтезом речи браузера
+// (`onclick="sayWord('repeat')"` в a0.html). Кнопка курса — мёртвый контрол и
+// из разметки уходит, поэтому экстрактор кладёт само слово в поле say, а
+// озвучивает его плеер. Без этого на экране остаются одни варианты ответа:
+// студент угадывает один к четырём и теряет сердце за промах — 250 таких
+// заданий в A0.
+//
+// Разметка та же (.cp-audio), чтобы кнопка выглядела ровно как плеер дорожки:
+// для студента это одно и то же действие «послушать».
+function SayButton({ text, t }) {
+  const synth = () => (typeof window === 'undefined' ? null : window.speechSynthesis || null)
+  // Уходя с шага, обрываем речь: иначе слово догоняет студента уже на
+  // следующем экране.
+  useEffect(() => () => synth()?.cancel(), [])
+  const say = (rate) => {
+    const s = synth()
+    if (!s) return
+    s.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = 'en-US'
+    u.rate = rate
+    s.speak(u)
+  }
+  return (
+    <div className="cp-audio">
+      <button className="cp-audio__play" onClick={() => say(1)} aria-label={t('lesson.play')}>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+          <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+      <button className="cp-audio__slow" onClick={() => say(0.6)}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 17h5a5 5 0 0 1 5-5 5 5 0 0 1 5 5h3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="9" cy="15" r="4" stroke="currentColor" strokeWidth="2" />
+          <path d="M16 12V8m3 4V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        {t('lesson.playSlow')}
+      </button>
     </div>
   )
 }
