@@ -2960,6 +2960,62 @@ textarea {
     top: 64px;
     font-size: 15px;
   }
+
+  /* Карта на телефоне — экран без прокрутки.
+     Остров держит соотношение 1600/2111, и на узкой ширине он выходил всего
+     495px при 687px области: снизу оставалась белая плита, а страница ездила на
+     высоту адресной строки (min-height: 100vh — это ВЫСОКИЙ вьюпорт, больше
+     видимой области, когда строка показана). Клиент это и назвал «из-за скрола».
+     Поэтому высоту задаём от видимой области (dvh), а остров тянем по высоте:
+     ширину ему считает aspect-ratio, лишнее по бокам срезается.
+
+     Кроп именно по бокам, а не подгонка соотношения: координаты узлов заданы в
+     процентах от канваса, и стоит канвасу разойтись с картинкой в пропорциях,
+     как короли уедут со своих городов. Все шесть сидят в пределах 39–63% ширины,
+     так что срезанные края узлов не задевают. */
+  .learn:has(.lp--map) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* Высоту раздаём флексом, а не процентами: .learn__main растянут
+     align-items: stretch, и процентная высота у его детей разрешается в ноль. */
+  .learn__main:has(.lp--map) {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .lp.lp--map {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    /* .lp — грид с gap: 30px и align-items: start; переключая его во флекс, оба
+       надо перебить: gap стал бы полосой между нулевой шапкой и картой, а start
+       по поперечной оси не растягивает — и .lp-map схлопывался в нулевую
+       ширину, унося центрирование канваса. */
+    gap: 0;
+    align-items: stretch;
+  }
+  .lp-map {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  /* Канвас — абсолютом от верха до низа: только так aspect-ratio считает ширину
+     от высоты. Растянутая флексом высота (align-self: stretch) для этого не
+     годится — из неё главный размер не выводится, и канвас схлопывался в ноль. */
+  .lp-map__canvas {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: auto;
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
 }
 
 /* ═══════════════ Практика ═══════════════ */
@@ -4096,6 +4152,95 @@ textarea {
   }
   .le-fail {
     gap: 20px;
+  }
+}
+
+/* Низкие телефоны: экран итогов не должен прокручиваться вообще.
+   На 360×640 под итог остаётся 515px, а карточка набирала 643 — приходилось
+   скроллить 160px, и кнопки «Перейти на следующий урок» / «Пройти снова»
+   оказывались за нижним краем. Ужимаем по высоте ступенями, чтобы итог всегда
+   читался целиком: прокрутке тогда просто нечего делать. */
+@media (max-width: 760px) and (max-height: 720px) {
+  .le-card,
+  .le-card--fail {
+    gap: 10px;
+  }
+  .le-art {
+    width: 150px;
+  }
+  .le-art--win {
+    height: 190px;
+  }
+  .le-art--lose {
+    height: 175px;
+  }
+  .le-info {
+    gap: 12px;
+  }
+  .le-info--fail {
+    gap: 20px;
+  }
+  .le-pct {
+    padding: 8px 22px;
+    font-size: 22px;
+  }
+  .le-head {
+    gap: 5px;
+  }
+  .le-title {
+    font-size: 20px;
+  }
+  .le-sub {
+    font-size: 14px;
+  }
+  .le-bottom {
+    gap: 12px;
+  }
+  .le-acts {
+    gap: 10px;
+  }
+  .le-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+  .le-stat {
+    padding: 10px 8px;
+  }
+  .le-stat__ic {
+    width: 26px;
+    height: 26px;
+  }
+  .le-stat b {
+    font-size: 20px;
+  }
+  .le-stat span {
+    font-size: 13px;
+  }
+  .le-heart {
+    width: 132px;
+    height: 126px;
+    padding: 18px;
+  }
+}
+
+@media (max-width: 760px) and (max-height: 600px) {
+  .le-over {
+    padding: 8px;
+  }
+  .le-art {
+    width: 110px;
+  }
+  .le-art--win {
+    height: 139px;
+  }
+  .le-art--lose {
+    height: 128px;
+  }
+  .le-info {
+    gap: 9px;
+  }
+  .le-bottom {
+    gap: 9px;
   }
 }
 
