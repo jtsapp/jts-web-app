@@ -3768,10 +3768,15 @@ textarea {
   position: relative;
 }
 
-/* Экран завершения урока (успех / «жизней больше нет») поверх области урока */
-/* Итоги урока (макет Figma «Обучение», секция Wrap): маскот на цветной
-   карточке слева, результат и кнопки справа. Экран общий для пошагового
-   плеера курса и старого плеера заданий A1/B2/C1. */
+/* Итоги урока — строго по макету Figma «Обучение» → секция Wrap
+   (Screen 4024:46748 успех, 4024:46893 провал). Числа сняты с макета, не на
+   глаз: раскладка 402 + 32 + 370, карточки статов 182×120 и так далее.
+   Шрифт в макете PT Root UI, в проекте Manrope — это единственное осознанное
+   расхождение, кегли и начертания те же.
+
+   Маскот — цельный экспорт группы из макета: персонаж там выходит за
+   скруглённый фон сверху и снизу, поэтому фон нельзя рисовать на CSS, а
+   персонажа накладывать сверху — напуски и подрезка кадра потеряются. */
 .le-over {
   position: absolute;
   inset: 0;
@@ -3788,46 +3793,33 @@ textarea {
   align-items: center;
   gap: 32px;
 }
-/* Карточка маскота: цвет по исходу, мягкое свечение по центру, персонаж
-   прижат к низу и подрезается скруглением (в макете он выше карточки). */
-.le-art {
-  position: relative;
-  width: 402px;
-  height: 407px;
-  flex: none;
-  border-radius: 80px;
-  overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+/* Провал: колонки выровнены по верху, зазор 23 (в макете так). */
+.le-card--fail {
+  align-items: flex-start;
+  gap: 23px;
 }
-/* Маскот виден целиком. Раньше картинка была на 10% выше карточки и прижата к
-   низу — у героя срезало макушку. */
-.le-art img {
-  position: relative;
-  z-index: 1;
+.le-art {
   display: block;
-  width: 100%;
-  height: 100%;
-  padding: 18px;
-  object-fit: contain;
+  flex: none;
+  width: 402px;
 }
 .le-art--win {
-  background: radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 62%), #7f42ee;
+  height: 508.24px;
 }
 .le-art--lose {
-  background: radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 62%), #f23a37;
+  height: 468px;
 }
 .le-info {
   width: 370px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 9px;
+  align-items: center;
+  gap: 31px;
 }
-/* Процент правильных — зелёная пилюля над заголовком */
+.le-info--fail {
+  gap: 56px;
+}
 .le-pct {
-  margin-bottom: 22px;
   padding: 20px 40px;
   border-radius: 50px;
   background: #19c119;
@@ -3836,8 +3828,17 @@ textarea {
   line-height: 1;
   color: #fff;
 }
+/* В макете блок 299px — там заголовок в PT Root UI влезает в строку. Manrope
+   шире, поэтому берём всю ширину колонки: строка остаётся одной, как в макете. */
+.le-head {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  text-align: center;
+}
 .le-title {
-  margin: 0;
   font-size: 32px;
   font-weight: 700;
   line-height: 1;
@@ -3845,121 +3846,170 @@ textarea {
 }
 .le-sub {
   font-size: 16px;
-  font-weight: 400;
+  line-height: 1.4;
   color: #181818;
+}
+.le-sub--bold {
+  font-weight: 700;
+}
+.le-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 .le-stats {
   display: flex;
   gap: 6px;
-  width: 100%;
-  margin-top: 23px;
 }
 .le-stat {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px;
-  border-radius: 24px;
+  align-items: center;
+  gap: 8px;
+  padding: 23px 22px 17px 23px;
+  border-radius: 20px;
   background: #fff;
+  text-align: center;
+}
+.le-stat__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.le-stat__ic {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .le-stat b {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.1;
 }
 .le-stat span {
-  font-size: 14px;
-  font-weight: 500;
-  color: #9d9d9d;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
 }
-.le-stat--wrong b {
+.le-stat--wrong {
   color: #ff4646;
 }
-.le-stat--right b {
-  color: #19c119;
+.le-stat--wrong .le-stat__ic {
+  background: #ff4646;
+}
+.le-stat--right {
+  color: #1eb04b;
+}
+.le-stat--right .le-stat__ic {
+  background: #1eb04b;
+}
+.le-acts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
 }
 .le-btn {
   width: 100%;
-  margin-top: 28px;
-  height: 56px;
+  /* В макете 16/80, но подпись там уже: Manrope переносит её на две строки.
+     Ширина кнопки фиксирована (370), поэтому боковое поле на вид не влияет. */
+  padding: 16px 24px;
+  white-space: nowrap;
   border: none;
   border-radius: 80px;
   background: #9047ff;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
+  line-height: 1.1;
   color: #fff;
   cursor: pointer;
 }
 .le-btn:hover {
-  filter: brightness(1.06);
-}
-.le-restricted {
-  width: 100%;
-  margin-top: 20px;
-  padding: 14px 18px;
-  border-radius: 20px;
-  background: #fff0e8;
-  font-size: 15px;
-  font-weight: 600;
-  color: #c2410c;
+  background: #7f2fee;
 }
 .le-again {
-  width: 100%;
-  margin-top: 12px;
-  padding: 14px;
   border: none;
-  border-radius: 80px;
-  background: transparent;
+  background: none;
+  padding: 0;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
-  color: #9d9d9d;
+  line-height: 1.1;
+  color: #afafaf;
   cursor: pointer;
 }
 .le-again:hover {
-  color: #17171c;
+  color: #7b7b86;
 }
-/* «Жизней больше нет» — белая карточка над заголовком провала */
-.le-heart {
+/* Лимит от админа: в макете такого состояния нет, поэтому — в стиле подписи. */
+.le-restricted {
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #181818;
+  text-align: center;
+}
+.le-restricted a {
+  color: #9047ff;
+}
+/* Провал: карточка «жизней больше нет» и заголовок под ней. */
+.le-fail {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 22px;
+  align-items: center;
+  gap: 32px;
+}
+.le-heart {
+  width: 167px;
+  height: 160px;
   padding: 30px;
   border-radius: 29px;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   text-align: center;
 }
-.le-heart b {
-  font-size: 44px;
-  line-height: 1;
-}
 .le-heart span {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
-  color: #17171c;
+  line-height: 1.2;
+  color: #181818;
 }
 
+/* Узкие экраны: макета под них нет — складываем в колонку и ужимаем маскота,
+   пропорции сохраняем. */
 @media (max-width: 960px) {
-  .le-card {
+  .le-card,
+  .le-card--fail {
     flex-direction: column;
+    align-items: center;
     gap: 20px;
   }
   .le-art {
     width: 280px;
-    height: 284px;
-    border-radius: 56px;
+  }
+  .le-art--win {
+    height: 354px;
+  }
+  .le-art--lose {
+    height: 326px;
   }
   .le-info {
     width: 100%;
     max-width: 370px;
-    align-items: center;
-    text-align: center;
-  }
-  .le-heart {
-    align-self: center;
   }
 }
 
