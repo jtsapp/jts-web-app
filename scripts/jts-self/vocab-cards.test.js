@@ -35,57 +35,38 @@ describe('imageSlug', () => {
 })
 
 describe('vocabCardsTask', () => {
-  it('собирает info-задание с карточкой на каждое слово', () => {
-    const task = vocabCardsTask(lesson, () => 'https://cdn/img.jpg')
-    expect(task.type).toBe('info')
-    expect(task.html).toContain('like')
-    expect(task.html).toContain('нравится')
-    expect(task.html.match(/kl-vocab__card/g)).toHaveLength(2)
-    expect(task.html).toContain('src="https://cdn/img.jpg"')
+  // Раньше здесь клеился html со своими классами, и плеер печатал его одной
+  // простынёй: перевод виден сразу, слово не перевернуть и не забрать в свой
+  // словарь — вместо презентации слов получался список. Теперь задание несёт
+  // данные, а карточки рисует плеер.
+  it('собирает задание-карточки с полями на каждое слово', () => {
+    const task = vocabCardsTask(lesson, (w) => `https://cdn/${w}.webp`)
+    expect(task.type).toBe('cards')
+    expect(task.words).toHaveLength(2)
+    expect(task.words[0]).toEqual({
+      en: 'like',
+      ru: 'нравится',
+      kk: 'ұнайды',
+      def: 'to feel that something is good',
+      img: 'https://cdn/like.webp',
+    })
   })
 
-  it('без картинки карточка остаётся текстовой', () => {
+  it('без картинки у слова остаётся img: null, а не битая ссылка', () => {
     const task = vocabCardsTask(lesson, () => null)
-    expect(task.html).not.toContain('<img')
-    expect(task.html).toContain('нравится')
+    expect(task.words[0].img).toBeNull()
+    expect(task.words[0].ru).toBe('нравится')
   })
 
   it('урок без словаря не даёт задания', () => {
     expect(vocabCardsTask({ no: 1, vocab: [] }, () => null)).toBeNull()
   })
 
-  // Находка ревью: пока картинки не залиты в бакет, ссылка 404-ится, а img
-  // без обработчика ошибки держит место под себя (aspect-ratio в CSS) и
-  // рисует иконку "битого" изображения — почти все карточки A0 выглядели бы
-  // сломанными. onerror убирает <img> из DOM, карточка остаётся текстовой.
-  it('на битую картинку у img есть обработчик, убирающий её из разметки', () => {
-    const task = vocabCardsTask(lesson, () => 'https://cdn/img.jpg')
-    expect(task.html).toContain('onerror="this.remove()"')
-  })
-
-  // Находка ревью: alt был всегда пустым, хотя картинка иллюстрирует
-  // значение слова, а не украшает страницу — скринридер должен получить имя.
-  it('alt картинки называет слово, а не пустой', () => {
-    const task = vocabCardsTask(lesson, () => 'https://cdn/img.jpg')
-    expect(task.html).toContain('alt="like"')
-    expect(task.html).not.toContain('alt=""')
-  })
-
-  // Пробел, который раньше ни один тест не закрывал: слово/перевод/
-  // определение попадают в HTML-атрибуты и текстовые узлы без экранирования
-  // спецсимволов — проверяем & < > " во всех трёх полях карточки.
-  it('экранирует & < > " в слове, переводе и определении', () => {
-    const dangerous = {
-      no: 1,
-      vocab: [['A & B <x>', '', 'п"р < >', 'kk', 'def & "quoted" <b>']],
-    }
-    const task = vocabCardsTask(dangerous, () => 'https://cdn/a&b.jpg')
-    expect(task.html).not.toContain('<x>')
-    expect(task.html).not.toContain('<b>def')
-    expect(task.html).toContain('A &amp; B &lt;x&gt;')
-    expect(task.html).toContain('п&quot;р &lt; &gt;')
-    expect(task.html).toContain('def &amp; &quot;quoted&quot; &lt;b&gt;')
-    expect(task.html).toContain('alt="A &amp; B &lt;x&gt;"')
-    expect(task.html).toContain('src="https://cdn/a&amp;b.jpg"')
+  // Пустые поля не должны приезжать как undefined: карточка рисует перевод и
+  // определение по наличию строки, а undefined в JSON просто исчезает — поле
+  // потом не отличить от «не было в источнике».
+  it('пустые перевод, казахский и определение становятся пустыми строками', () => {
+    const task = vocabCardsTask({ no: 1, vocab: [['word']] }, () => null)
+    expect(task.words[0]).toEqual({ en: 'word', ru: '', kk: '', def: '', img: null })
   })
 })

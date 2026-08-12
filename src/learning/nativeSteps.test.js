@@ -97,4 +97,28 @@ describe('nativeSteps — уроки A0/A1 в шаги', () => {
 
     expect(steps[0]).toMatchObject({ type: 'choice', say: 'repeat' })
   })
+
+  it('словарь стадии Vocabulary становится карточками, а не заметкой', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'cards',
+          sec: '2. Vocabulary',
+          words: [
+            { en: 'like', ru: 'нравится', kk: 'ұнайды', def: 'to feel good about', img: '/learning/img/a0/like-abc123.webp' },
+            { en: 'again', ru: 'снова', kk: 'қайтадан', def: 'one more time', img: null },
+          ],
+        },
+      ],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({ type: 'cards', stage: 'Vocabulary' })
+    expect(steps[0].words).toHaveLength(2)
+    expect(steps[0].words[0].img).toBe('/learning/img/a0/like-abc123.webp')
+  })
+
+  it('пустой словарь не даёт экрана', () => {
+    expect(tasksToSteps({ tasks: [{ type: 'cards', words: [] }] })).toHaveLength(0)
+  })
 })

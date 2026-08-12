@@ -116,6 +116,14 @@ export function tasksToSteps(lesson) {
         push({ stage, type: 'listen', title: title || 'Послушай и выбери', src: (t.tracks && t.tracks[0] && t.tracks[0].src) || null, options: t.options || [], answer: t.answer }, !!title)
         break
 
+      case 'cards':
+        // Слова стадии Vocabulary: одна карточка на слово, перевод открывается
+        // по клику. Раньше словарь приезжал одной html-простынёй и печатался
+        // заметкой — перевод был виден сразу, и презентация слов не работала.
+        if (!Array.isArray(t.words) || !t.words.length) break
+        push({ stage, type: 'cards', title: title || 'Слова урока', sub: t.sub || '', words: t.words }, !!title)
+        break
+
       case 'multi':
         push({ stage, type: 'pick', title: title || 'Отметь, что тебе подходит', sub: t.sub || '', options: (t.options || []).map((label) => ({ label })) }, !!title)
         break

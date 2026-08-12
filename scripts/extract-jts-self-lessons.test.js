@@ -99,8 +99,8 @@ function tmpCourseWithVocabStage() {
 }
 
 describe('extractCourse', () => {
-  it('даёт узлы уроков, затем узел юнит-теста, и согласованный каталог', () => {
-    const out = extractCourse(tmpCourse())
+  it('даёт узлы уроков, затем узел юнит-теста, и согласованный каталог', async () => {
+    const out = await extractCourse(tmpCourse())
 
     expect(out.level).toBe('a0')
     expect(out.label).toBe('A0')
@@ -110,8 +110,8 @@ describe('extractCourse', () => {
     expect(Object.keys(out.lessons)).toEqual(['L01-1', 'L01-2', 'R01'])
   })
 
-  it('taskCount каталога совпадает с числом заданий узла', () => {
-    const out = extractCourse(tmpCourse())
+  it('taskCount каталога совпадает с числом заданий узла', async () => {
+    const out = await extractCourse(tmpCourse())
     for (const entry of out.catalog) {
       expect(entry.taskCount).toBe(out.lessons[entry.code].tasks.length)
     }
@@ -120,21 +120,21 @@ describe('extractCourse', () => {
   // Находка ревью: экстрактор отбрасывал всё, что normalize-task вернул как
   // null, без единого следа — так уровень A1 доехал до ревью без единого
   // задания choice. Потери считаются по причинам и возвращаются наружу.
-  it('считает отброшенные блоки по причинам', () => {
-    const out = extractCourse(tmpCourseWithLosses())
+  it('считает отброшенные блоки по причинам', async () => {
+    const out = await extractCourse(tmpCourseWithLosses())
     expect(out.dropped['choice-no-answer']).toBe(2)
   })
 
-  it('курс без потерь не выдумывает их', () => {
-    expect(extractCourse(tmpCourse()).dropped).toEqual({})
+  it('курс без потерь не выдумывает их', async () => {
+    expect((await extractCourse(tmpCourse())).dropped).toEqual({})
   })
 
   // Находка ревью: пометка о выложенном юнит-тесте жила прямо на объекте из
   // read-course. Курс отдаётся только для чтения (Object.freeze), поэтому
   // такая пометка молча не срабатывала бы, и тест юнита попал бы на тропу
   // дважды.
-  it('каждый юнит-тест попадает на тропу ровно один раз', () => {
-    const codes = extractCourse(tmpCourseTwoUnits()).catalog.map((n) => n.code)
+  it('каждый юнит-тест попадает на тропу ровно один раз', async () => {
+    const codes = (await extractCourse(tmpCourseTwoUnits())).catalog.map((n) => n.code)
     expect(codes.filter((c) => c === 'R01')).toHaveLength(1)
     expect(codes.filter((c) => c === 'R02')).toHaveLength(1)
     expect(new Set(codes).size).toBe(codes.length)
@@ -142,17 +142,17 @@ describe('extractCourse', () => {
 
   // Находка ревью: у выпущенных уровней sec — «2. Vocabulary · …», и плеер
   // рисует номер отдельным чипом. У новых данных номера не было вовсе.
-  it('кикер заданий нумерован — как на выпущенных уровнях A2–C1', () => {
-    const out = extractCourse(tmpCourse())
+  it('кикер заданий нумерован — как на выпущенных уровнях A2–C1', async () => {
+    const out = await extractCourse(tmpCourse())
     expect(out.lessons['L01-1'].tasks[0].sec).toBe('1. Warm-up')
     expect(out.lessons['L01-2'].tasks[0].sec).toBe('2. Grammar')
   })
 
-  it('карточки словаря получают кикер своей стадии, а не доклеенной перед ней', () => {
-    const out = extractCourse(tmpCourseWithVocabStage())
+  it('карточки словаря получают кикер своей стадии, а не доклеенной перед ней', async () => {
+    const out = await extractCourse(tmpCourseWithVocabStage())
     const vocabNode = out.lessons['L01-1']
     expect(vocabNode.title).toContain('Vocabulary')
-    expect(vocabNode.tasks[0].html).toContain('kl-vocab')
+    expect(vocabNode.tasks[0].type).toBe('cards')
     expect(vocabNode.tasks[0].sec).toBe('2. Vocabulary')
     // Доклеенная короткая стадия сохраняет свой номер — кикер по стадии задачи.
     expect(vocabNode.tasks[1].sec).toBe('1. Warm-up')
@@ -161,10 +161,10 @@ describe('extractCourse', () => {
   // Находка ревью: раньше при отсутствии узла с "vocab"/"words" в заголовке
   // карточки словаря молча терялись — ни ошибки, ни строчки в логе. Если
   // стадию словаря переименуют в будущем курсе, это должно быть видно в CLI.
-  it('предупреждает в CLI, если для карточек словаря не нашлось узла', () => {
+  it('предупреждает в CLI, если для карточек словаря не нашлось узла', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-    extractCourse(tmpCourseVocabWithoutStage())
+    await extractCourse(tmpCourseVocabWithoutStage())
 
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn.mock.calls[0][0]).toContain('карточки словаря')

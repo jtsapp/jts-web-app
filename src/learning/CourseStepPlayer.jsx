@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
+import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
@@ -327,7 +328,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
 
     // Слова урока: карточка переворачивается на перевод по клику.
     case 'cards':
-      return <WordCards words={step.words} />
+      return <WordCards words={step.words} t={t} />
 
     case 'note':
       return (
@@ -427,29 +428,59 @@ function PickCards({ options }) {
   )
 }
 
-function WordCards({ words }) {
+function WordCards({ words, t }) {
   const [open, setOpen] = useState({})
+  // Слова, уже отправленные в личный словарь. Кнопка после этого показывает
+  // галочку и больше не нажимается: повторный тап ничего бы не изменил
+  // (в vocab_bank слово уникально по word_key), а студенту нужен именно
+  // видимый ответ «забрал».
+  const [saved, setSaved] = useState({})
+
+  const add = async (i, w) => {
+    setSaved((s) => ({ ...s, [i]: true }))
+    const ok = await addVocabWords([{ word: w.en, hint: [w.ru, w.kk].filter(Boolean).join(' · ') }])
+    // Не сохранилось — возвращаем кнопку, иначе галочка врёт про слово,
+    // которого в словаре нет.
+    if (!ok) setSaved((s) => ({ ...s, [i]: false }))
+  }
+
   return (
     <div className="cp-words">
       {(words || []).map((w, i) => (
-        <button key={i} className={`cp-word ${open[i] ? 'is-open' : ''}`} onClick={() => setOpen((s) => ({ ...s, [i]: !s[i] }))}>
-          <span className="cp-word__face">
-            {w.img ? <AssetImage src={w.img} alt="" loading="lazy" /> : <span className="cp-word__noimg">{w.en}</span>}
-          </span>
-          {/* Оборот карточки в макете — не одна строка перевода: сверху слово с
-              определением, под ним переводы отдельными плашками. */}
-          <span className="cp-word__back">
-            <span className="cp-word__head">
-              <b>{w.en}</b>
-              {w.def && <i>{w.def}</i>}
+        // Карточка — не кнопка: внутри неё живёт своя кнопка «в словарь», а
+        // кнопку в кнопку вкладывать нельзя. Переворот повесен на внутреннюю.
+        <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''}`}>
+          <button className="cp-word__flip" onClick={() => setOpen((s) => ({ ...s, [i]: !s[i] }))}>
+            <span className="cp-word__face">
+              {/* alt называет слово: картинка иллюстрирует значение, а не
+                  украшает экран. */}
+              {w.img ? <AssetImage src={w.img} alt={w.en} loading="lazy" hideOnError /> : <span className="cp-word__noimg">{w.en}</span>}
             </span>
-            <span className="cp-word__trs">
-              <span className="cp-word__tr">{w.ru}</span>
-              {w.kk && <span className="cp-word__tr">{w.kk}</span>}
+            {/* Оборот карточки в макете — не одна строка перевода: сверху слово с
+                определением, под ним переводы отдельными плашками. */}
+            <span className="cp-word__back">
+              <span className="cp-word__head">
+                <b>{w.en}</b>
+                {w.def && <i>{w.def}</i>}
+              </span>
+              <span className="cp-word__trs">
+                <span className="cp-word__tr">{w.ru}</span>
+                {w.kk && <span className="cp-word__tr">{w.kk}</span>}
+              </span>
             </span>
-          </span>
-          <span className="cp-word__label">{w.en}</span>
-        </button>
+            <span className="cp-word__label">{w.en}</span>
+          </button>
+          <button
+            className={`cp-word__add ${saved[i] ? 'is-saved' : ''}`}
+            type="button"
+            disabled={!!saved[i]}
+            aria-label={saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
+            title={saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
+            onClick={() => add(i, w)}
+          >
+            {saved[i] ? '✓' : '+'}
+          </button>
+        </div>
       ))}
     </div>
   )

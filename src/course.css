@@ -286,14 +286,46 @@
 }
 .cp-word {
   position: relative;
-  display: block;
   width: 160px;
+}
+/* Переворот карточки — на внутренней кнопке: рядом с ней лежит своя кнопка
+   «в словарь», а кнопку в кнопку вкладывать нельзя. */
+.cp-word__flip {
+  display: block;
+  width: 100%;
   padding: 0;
   border: none;
   background: none;
   font-family: inherit;
   cursor: pointer;
   text-align: left;
+}
+/* «+» забирает слово в личный словарь — так и было в исходном курсе: слова с
+   уроков можно продолжить учить в разделе «Словарь». Кнопка лежит поверх
+   картинки, но не перекрывает слово внизу карточки. */
+.cp-word__add {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 2px 8px rgb(24 24 24 / 18%);
+  color: #9047ff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.cp-word__add.is-saved {
+  background: #9047ff;
+  color: #fff;
+  cursor: default;
 }
 .cp-word__face,
 .cp-word__back {
@@ -401,7 +433,7 @@
    раскрывашка «Full grammar reference», диалоги. Без этих правил браузер рисует
    их голым потоком — а `.bubble` вообще подхватывал стиль пузыря чата тьютора
    из styles.css. Текст тут левый: правило и словарь читают, а не смотрят. */
-.cp-note :where(p, ul, ol, table, .bubble, .explain, .kl-vocab, .chat, details) {
+.cp-note :where(p, ul, ol, table, .bubble, .explain, .chat, details) {
   text-align: left;
 }
 .cp-note :where(h3, h4) {
@@ -476,44 +508,6 @@
   margin: 0;
   color: #6f6f7a;
   font-size: 15px;
-}
-/* Карточки слов: сетка, а не колонка из картинок во всю ширину. */
-.cp-note .kl-vocab {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin: 12px 0;
-}
-.cp-note .kl-vocab__card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px;
-  border: 1px solid #ececf3;
-  border-radius: 16px;
-  background: #fbfbfd;
-  text-align: center;
-}
-.cp-note .kl-vocab__img {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 6px;
-}
-.cp-note .kl-vocab__word {
-  font-size: 17px;
-  font-weight: 800;
-}
-.cp-note .kl-vocab__tr {
-  font-size: 14px;
-  color: #9047ff;
-  font-weight: 700;
-}
-.cp-note .kl-vocab__def {
-  font-size: 13px;
-  color: #6f6f7a;
-  line-height: 1.4;
 }
 /* «Full grammar reference» — раскрывашка, свёрнутая по умолчанию. */
 .cp-note details {
