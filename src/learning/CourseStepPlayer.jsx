@@ -14,6 +14,10 @@ import { useI18n } from '../i18n.jsx'
 const REWARD = 10
 const START_HEARTS = 3
 const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
+// В макете крупная фиолетовая строка — всегда сам вопрос, а тёмная поменьше —
+// инструкция к нему. У заданий без правильного ответа вопрос стоит первым
+// («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
+const PROMPT_FIRST = new Set(['pick', 'write', 'checklist'])
 
 // Ответ на впиши-пропуск сверяем без учёта регистра и знаков — как в старом
 // плеере заданий: студент печатает руками, и точка в конце не ошибка.
@@ -23,6 +27,17 @@ function norm(s) {
     .replace(/[.,!?;:"'`]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+// Предложение шага «впиши пропуск» целиком: в макете оно стоит вопросом, а поле
+// ответа — отдельным блоком под ним. Пропуск дорисовываем только если его нет в
+// самих данных — у части уроков он уже стоит внутри половинки.
+function gapSentence(step) {
+  const before = String(step.before || '').trim()
+  const after = String(step.after || '').trim()
+  const joined = `${before} ${after}`.replace(/\s+/g, ' ').trim()
+  if (/_{2,}/.test(joined)) return joined
+  return `${before} ___ ${after}`.replace(/\s+/g, ' ').trim()
 }
 
 function shuffle(arr, seed) {
@@ -181,25 +196,30 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
     onAdvance()
   }
 
+  // Шаг «впиши пропуск» в макете показывает предложение целиком крупной
+  // строкой, а поле ответа стоит отдельным блоком под ним — поэтому склеиваем
+  // половинки в вопрос, а не режем строку полем посередине.
+  const promptFirst = PROMPT_FIRST.has(step.type)
+  const big = step.type === 'gap' ? gapSentence(step) : promptFirst ? step.title : step.prompt || step.sub
+  const small = promptFirst ? step.sub : step.title
+
   return (
     <>
-      {/* У шагов без правильного ответа вопрос сам по себе крупный и
-          фиолетовый, а пояснение под ним — тёмное (в макете «Pick anything you
-          like» / «No right or wrong»); у проверяемых наоборот: сверху
-          инструкция, под ней крупным — сам вопрос. */}
       <div className="cp-step">
-        {step.type === 'pick' ? (
-          <>
-            <div className="cp-step__prompt">{step.title}</div>
-            {step.sub && <h2 className="cp-step__title">{step.sub}</h2>}
-          </>
-        ) : (
-          <>
-            {step.title && <h2 className="cp-step__title">{step.title}</h2>}
-            {step.prompt && <div className="cp-step__prompt">{step.prompt}</div>}
-            {step.sub && !step.prompt && <p className="cp-step__sub">{step.sub}</p>}
-          </>
-        )}
+        {/* Слайд правила несёт заголовок внутри карточки — в макете над ней
+            ничего нет. */}
+        {step.type !== 'note' &&
+          (promptFirst ? (
+            <>
+              {big && <div className="cp-step__prompt">{big}</div>}
+              {small && <h2 className="cp-step__title">{small}</h2>}
+            </>
+          ) : (
+            <>
+              {small && <h2 className="cp-step__title">{small}</h2>}
+              {big && <div className="cp-step__prompt">{big}</div>}
+            </>
+          ))}
 
         <StepBody
           step={step}
@@ -239,30 +259,35 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
 
 function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, isRight, revealed, level, t }) {
   switch (step.type) {
-    // Впиши пропущенное: предложение с полем посередине.
+    // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
       return (
-        <div className="cp-gap">
-          <span>{step.before}</span>
-          <input
-            className={`cp-gap__in ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}
-            value={checked && !isRight ? step.answers[0] : text}
-            onChange={(e) => setText(e.target.value)}
-            disabled={checked}
-            autoComplete="off"
-            spellCheck="false"
-            placeholder="…"
-          />
-          <span>{step.after}</span>
-        </div>
+        <input
+          className={`cp-field cp-gap__in ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}
+          value={checked && !isRight ? step.answers[0] : text}
+          onChange={(e) => setText(e.target.value)}
+          disabled={checked}
+          autoComplete="off"
+          spellCheck="false"
+          placeholder={t('lesson.typeAnswer')}
+        />
       )
 
-    // Порядок слов: банк снизу, собранная фраза сверху.
+    // Порядок слов: банк снизу, собранная фраза сверху — слова остаются
+    // плашками и на строке ответа, как в макете.
     case 'order':
       return (
         <div className="cp-order">
           <div className={`cp-order__line ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}>
-            {seq.length ? seq.map((i) => step.words[i]).join(' ') : '…'}
+            {seq.length ? (
+              seq.map((i) => (
+                <span key={i} className="cp-chip is-set">
+                  {step.words[i]}
+                </span>
+              ))
+            ) : (
+              <span className="cp-order__ph">…</span>
+            )}
           </div>
           <div className="cp-order__bank">
             {(step.words || []).map((w, i) => (
@@ -293,7 +318,12 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
       return <WordCards words={step.words} />
 
     case 'note':
-      return <div className="cp-note" dangerouslySetInnerHTML={{ __html: step.html || '' }} />
+      return (
+        <div className="cp-note">
+          {step.title && <h2 className="cp-note__h">{step.title}</h2>}
+          <div className="cp-note__body" dangerouslySetInnerHTML={{ __html: step.html || '' }} />
+        </div>
+      )
 
     case 'listen':
       return (
@@ -301,7 +331,9 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           {/* У курса (A2/B1) дорожка лежит рядом с уроком и известна по имени,
               у A0/A1 в задании сразу абсолютный URL на files-dev. */}
           <AudioButton src={step.src || `/course/${String(level).toLowerCase()}/audio/${step.track}`} t={t} />
-          <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} />
+          {/* На слух варианты в макете лежат в две колонки: слово короткое,
+              и колонкой во всю высоту экрана оно смотрелось бы пусто. */}
+          <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid />
         </>
       )
 
@@ -312,11 +344,11 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
       return (
         <>
           <textarea
-            className="cp-write"
+            className="cp-field cp-write"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={step.placeholder || '…'}
-            rows={3}
+            placeholder={step.placeholder || t('lesson.typeAnswer')}
+            rows={1}
           />
           {revealed && step.model && (
             <div className="cp-model">
@@ -335,9 +367,9 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
   }
 }
 
-function Choices({ options, picked, setPicked, checked, answer }) {
+function Choices({ options, picked, setPicked, checked, answer, grid = false }) {
   return (
-    <div className="cp-choices">
+    <div className={`cp-choices ${grid ? 'is-grid' : ''}`}>
       {options.map((o, i) => {
         let cls = 'cp-choice'
         if (checked) {
@@ -377,9 +409,17 @@ function WordCards({ words }) {
           <span className="cp-word__face">
             {w.img ? <img src={w.img} alt="" loading="lazy" /> : <span className="cp-word__noimg">{w.en}</span>}
           </span>
+          {/* Оборот карточки в макете — не одна строка перевода: сверху слово с
+              определением, под ним переводы отдельными плашками. */}
           <span className="cp-word__back">
-            <b>{w.ru}</b>
-            {w.kk && <span>{w.kk}</span>}
+            <span className="cp-word__head">
+              <b>{w.en}</b>
+              {w.def && <i>{w.def}</i>}
+            </span>
+            <span className="cp-word__trs">
+              <span className="cp-word__tr">{w.ru}</span>
+              {w.kk && <span className="cp-word__tr">{w.kk}</span>}
+            </span>
           </span>
           <span className="cp-word__label">{w.en}</span>
         </button>
@@ -394,10 +434,10 @@ function Checklist({ items }) {
     <div className="cp-check">
       {(items || []).map((it, i) => (
         <button key={i} className={`cp-check__row ${on[i] ? 'is-on' : ''}`} onClick={() => setOn((s) => ({ ...s, [i]: !s[i] }))}>
+          <span>{it}</span>
           <span className="cp-check__box" aria-hidden="true">
             {on[i] ? '✓' : ''}
           </span>
-          <span>{it}</span>
         </button>
       ))}
     </div>
@@ -420,12 +460,17 @@ function AudioButton({ src, t }) {
     <div className="cp-audio">
       <audio ref={ref} src={src} preload="none" />
       <button className="cp-audio__play" onClick={() => play(1)} aria-label={t('lesson.play')}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
           <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
           <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       </button>
       <button className="cp-audio__slow" onClick={() => play(0.6)}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 17h5a5 5 0 0 1 5-5 5 5 0 0 1 5 5h3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="9" cy="15" r="4" stroke="currentColor" strokeWidth="2" />
+          <path d="M16 12V8m3 4V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
         {t('lesson.playSlow')}
       </button>
     </div>

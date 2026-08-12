@@ -123,14 +123,21 @@
 }
 
 /* ——— Тело задания ——— */
+/* Ширина под самое широкое тело задания (сетка слов — 1020 в макете), а сам
+   вопрос уже: длинную строку в 1020 читать неудобно. */
 .cp-step {
   width: 100%;
-  max-width: 620px;
+  max-width: 1020px;
   margin-top: 47px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+}
+.cp-step__title,
+.cp-step__prompt {
+  width: 100%;
+  max-width: 620px;
 }
 .cp-step__title {
   margin: 0;
@@ -194,6 +201,20 @@
   background: #ff4646;
   color: #fff;
 }
+/* Варианты на слух: две колонки и текст по центру плашки. */
+.cp-choices.is-grid {
+  width: 722px;
+  display: grid;
+  grid-template-columns: repeat(2, 355px);
+  gap: 10px;
+  justify-content: center;
+}
+.cp-choices.is-grid .cp-choice {
+  min-height: 65px;
+  padding: 13px 24px;
+  border-radius: 100px;
+  text-align: center;
+}
 
 /* Карточки «выбери что ближе» */
 /* Ширину гридам задаём явно: .cp-step центрирует детей по поперечной оси, и
@@ -256,29 +277,30 @@
 /* Слова урока: картинка, по клику — перевод */
 .cp-words {
   width: 100%;
+  max-width: 1020px;
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 162px);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, 160px);
+  gap: 12px;
   justify-content: center;
 }
 .cp-word {
   position: relative;
   display: block;
-  width: 162px;
+  width: 160px;
   padding: 0;
   border: none;
   background: none;
   font-family: inherit;
   cursor: pointer;
-  text-align: center;
+  text-align: left;
 }
 .cp-word__face,
 .cp-word__back {
   display: block;
-  width: 162px;
-  height: 210px;
-  border-radius: 16px;
+  width: 160px;
+  height: 215px;
+  border-radius: 12px;
   overflow: hidden;
   background: #efeaf7;
 }
@@ -299,49 +321,74 @@
 }
 .cp-word__back {
   display: none;
-  padding: 18px 14px;
+  padding: 12px;
   background: #fff;
-  border: 2px solid #9047ff;
-}
-.cp-word__back b {
-  display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: #17171c;
-}
-.cp-word__back span {
-  display: block;
-  margin-top: 6px;
-  font-size: 15px;
-  font-weight: 500;
-  color: #6b6b76;
 }
 .cp-word.is-open .cp-word__face {
   display: none;
 }
 .cp-word.is-open .cp-word__back {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cp-word__head b {
   display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+}
+.cp-word__head i {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.2;
+  color: #181818;
+}
+.cp-word__trs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cp-word__tr {
+  display: block;
+  padding: 6px;
+  border-radius: 8px;
+  background: #f8f8f8;
+  font-size: 13px;
+  font-weight: 500;
+  color: #181818;
 }
 .cp-word__label {
   display: block;
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 16px;
   font-weight: 700;
-  color: #17171c;
+  color: #181818;
 }
 
-/* Слайд правила */
+/* Слайд правила — карточка по макету: заголовок внутри, текст слева
+   (правило читают, а не разглядывают). */
 .cp-note {
+  width: 100%;
+  max-width: 726px;
   margin-top: 18px;
-  max-width: 560px;
-  padding: 24px 28px;
+  padding: 32px;
   border-radius: 20px;
   background: #fff;
   font-size: 20px;
   font-weight: 500;
   line-height: 1.5;
   color: #17171c;
-  text-align: center;
+  text-align: left;
+}
+.cp-note__h {
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #181818;
 }
 .cp-note .hl {
   color: #9047ff;
@@ -528,8 +575,8 @@
 .cp-audio__play {
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
+  width: 124px;
+  height: 124px;
   border: none;
   border-radius: 50%;
   background: #9047ff;
@@ -537,72 +584,91 @@
   cursor: pointer;
 }
 .cp-audio__slow {
-  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 12px 36px;
   border: none;
-  border-radius: 80px;
-  background: #ebdeff;
+  border-radius: 30px;
+  background: #b7f0ff;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: #9047ff;
   cursor: pointer;
 }
 
-/* Свободный ответ */
-.cp-write {
-  width: 480px;
+/* Поле ответа — одно на «впиши пропуск» и свободный ответ: в макете это один
+   и тот же белый блок, только вопрос над ним разный. */
+.cp-field {
+  width: 516px;
   max-width: 100%;
+  min-height: 70px;
   margin-top: 18px;
-  padding: 16px 20px;
-  border: 2px solid #e8e7ec;
+  padding: 24px 16px 24px 20px;
+  border: 2px solid transparent;
   border-radius: 20px;
   background: #fff;
   font-family: inherit;
-  font-size: 16px;
-  color: #17171c;
-  resize: vertical;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #9047ff;
 }
-.cp-write:focus {
+.cp-field::placeholder {
+  color: #9c9c9c;
+}
+.cp-field:focus {
   outline: none;
   border-color: #9047ff;
 }
+.cp-write {
+  resize: vertical;
+}
 .cp-model {
-  width: 480px;
+  width: 516px;
   max-width: 100%;
   margin-top: 14px;
-  padding: 16px 20px;
-  border-radius: 20px;
-  background: #ebdeff;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f4ecff;
   font-size: 16px;
+  font-weight: 700;
   color: #17171c;
 }
 .cp-model b {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
   color: #9047ff;
 }
 
-/* Чек-лист «я могу» */
+/* Чек-лист «я могу»: в макете две колонки, галочка справа от пункта */
 .cp-check {
-  width: 480px;
+  width: 744px;
   max-width: 100%;
   margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 370px);
+  gap: 10px;
+  justify-content: center;
 }
 .cp-check__row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
+  min-height: 64px;
+  padding: 20px 16px;
   border: 2px solid transparent;
   border-radius: 20px;
   background: #fff;
   font-family: inherit;
   font-size: 16px;
-  font-weight: 500;
-  color: #17171c;
+  font-weight: 700;
+  color: #181818;
   text-align: left;
   cursor: pointer;
 }
@@ -615,10 +681,14 @@
   width: 24px;
   height: 24px;
   flex: none;
-  border-radius: 8px;
-  background: #ebdeff;
+  border: 1px solid #afafaf;
+  border-radius: 16px;
   color: #9047ff;
   font-weight: 700;
+}
+.cp-check__row.is-on .cp-check__box {
+  border-color: #9047ff;
+  background: #ebdeff;
 }
 
 /* ——— Плашка результата и кнопка ——— */
@@ -639,6 +709,7 @@
   color: #14804a;
 }
 .cp-fb.is-no {
+  border-radius: 100px;
   background: #fff0e8;
   color: #c2410c;
 }
@@ -719,45 +790,18 @@
   }
 }
 
-/* Впиши пропущенное */
-.cp-gap {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 18px;
-  font-size: 22px;
-  font-weight: 700;
-  color: #17171c;
-}
+/* Впиши пропущенное: само поле — общий .cp-field, здесь только цвет проверки */
 .cp-gap__in {
-  width: 220px;
-  padding: 12px 18px;
-  border: 2px solid #e8e7ec;
-  border-radius: 999px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  color: #17171c;
-  text-align: center;
-}
-.cp-gap__in:focus {
-  outline: none;
-  border-color: #9047ff;
+  text-align: left;
 }
 .cp-gap__in.is-right {
-  border-color: #31b423;
-  color: #31b423;
+  color: #19c119;
 }
 .cp-gap__in.is-wrong {
-  border-color: #ff4646;
   color: #ff4646;
 }
 
-/* Порядок слов */
+/* Порядок слов: собранная фраза лежит плашками на линейке, банк — под ней */
 .cp-order {
   width: 100%;
   margin-top: 18px;
@@ -767,49 +811,75 @@
   gap: 16px;
 }
 .cp-order__line {
-  min-height: 59px;
+  min-height: 65px;
   width: 100%;
-  max-width: 520px;
-  display: grid;
-  place-items: center;
-  padding: 16px 24px;
-  border: 2px dashed #d8d3e4;
-  border-radius: 20px;
-  background: #fff;
+  max-width: 536px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #afafaf;
+}
+.cp-order__ph {
   font-size: 20px;
   font-weight: 700;
-  color: #17171c;
-  text-align: center;
+  color: #afafaf;
 }
-.cp-order__line.is-right {
-  border-style: solid;
-  border-color: #31b423;
+.cp-order__line.is-right .cp-chip,
+.cp-order__line.is-wrong .cp-chip {
+  color: #fff;
 }
-.cp-order__line.is-wrong {
-  border-style: solid;
-  border-color: #ff4646;
+.cp-order__line.is-right .cp-chip {
+  background: #31b423;
+}
+.cp-order__line.is-wrong .cp-chip {
+  background: #ea4f4f;
 }
 .cp-order__bank {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
-  max-width: 560px;
+  gap: 8px;
+  max-width: 536px;
 }
 .cp-chip {
-  padding: 12px 20px;
+  min-height: 65px;
+  padding: 13px 24px;
   border: none;
-  border-radius: 999px;
+  border-radius: 100px;
   background: #fff;
   font-family: inherit;
   font-size: 16px;
   font-weight: 700;
-  color: #17171c;
+  color: #181818;
   cursor: pointer;
 }
 .cp-chip:disabled {
   opacity: 0.35;
   cursor: default;
+}
+.cp-chip.is-set {
+  display: inline-grid;
+  place-items: center;
+}
+
+@media (max-width: 760px) {
+  .cp-choices.is-grid {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cp-check {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cp-note {
+    padding: 20px;
+  }
+  .cp-note__h {
+    margin-bottom: 16px;
+    font-size: 22px;
+  }
 }
 .cp-order__undo {
   border: none;
