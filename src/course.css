@@ -286,14 +286,46 @@
 }
 .cp-word {
   position: relative;
-  display: block;
   width: 160px;
+}
+/* Переворот карточки — на внутренней кнопке: рядом с ней лежит своя кнопка
+   «в словарь», а кнопку в кнопку вкладывать нельзя. */
+.cp-word__flip {
+  display: block;
+  width: 100%;
   padding: 0;
   border: none;
   background: none;
   font-family: inherit;
   cursor: pointer;
   text-align: left;
+}
+/* «+» забирает слово в личный словарь — так и было в исходном курсе: слова с
+   уроков можно продолжить учить в разделе «Словарь». Кнопка лежит поверх
+   картинки, но не перекрывает слово внизу карточки. */
+.cp-word__add {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 2px 8px rgb(24 24 24 / 18%);
+  color: #9047ff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.cp-word__add.is-saved {
+  background: #9047ff;
+  color: #fff;
+  cursor: default;
 }
 .cp-word__face,
 .cp-word__back {
@@ -401,7 +433,7 @@
    раскрывашка «Full grammar reference», диалоги. Без этих правил браузер рисует
    их голым потоком — а `.bubble` вообще подхватывал стиль пузыря чата тьютора
    из styles.css. Текст тут левый: правило и словарь читают, а не смотрят. */
-.cp-note :where(p, ul, ol, table, .bubble, .explain, .kl-vocab, .chat, details) {
+.cp-note :where(p, ul, ol, table, .bubble, .explain, .chat, details) {
   text-align: left;
 }
 .cp-note :where(h3, h4) {
@@ -476,44 +508,6 @@
   margin: 0;
   color: #6f6f7a;
   font-size: 15px;
-}
-/* Карточки слов: сетка, а не колонка из картинок во всю ширину. */
-.cp-note .kl-vocab {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
-  margin: 12px 0;
-}
-.cp-note .kl-vocab__card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px;
-  border: 1px solid #ececf3;
-  border-radius: 16px;
-  background: #fbfbfd;
-  text-align: center;
-}
-.cp-note .kl-vocab__img {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 6px;
-}
-.cp-note .kl-vocab__word {
-  font-size: 17px;
-  font-weight: 800;
-}
-.cp-note .kl-vocab__tr {
-  font-size: 14px;
-  color: #9047ff;
-  font-weight: 700;
-}
-.cp-note .kl-vocab__def {
-  font-size: 13px;
-  color: #6f6f7a;
-  line-height: 1.4;
 }
 /* «Full grammar reference» — раскрывашка, свёрнутая по умолчанию. */
 .cp-note details {
@@ -801,6 +795,37 @@
   color: #ff4646;
 }
 
+/* Несколько пропусков на одном экране. Исходный курс держал такие предложения
+   списком, и по одному на экран они превращались в хвост однотипных вопросов;
+   строка тут короткая, поэтому четыре пункта помещаются и на телефоне. */
+.cp-group {
+  width: 100%;
+  max-width: 722px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cp-group__row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cp-group__q {
+  font-size: 17px;
+  font-weight: 700;
+  color: #181818;
+}
+.cp-group__in {
+  text-align: left;
+}
+.cp-group__in.is-right {
+  color: #19c119;
+}
+.cp-group__in.is-wrong {
+  color: #ff4646;
+}
+
 /* Порядок слов: собранная фраза лежит плашками на линейке, банк — под ней */
 .cp-order {
   width: 100%;
@@ -844,6 +869,78 @@
   gap: 8px;
   max-width: 536px;
 }
+/* Соединение пар: слева пункты задания, снизу банк вариантов. Две настоящие
+   колонки со связями рисовать нечем — на 375 px линии между ними не помещаются,
+   поэтому выбранный вариант показывается внутри самого пункта. */
+.cp-match {
+  width: 100%;
+  max-width: 722px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.cp-match__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cp-match__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 65px;
+  padding: 13px 24px;
+  border: 2px solid transparent;
+  border-radius: 100px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+  text-align: left;
+  cursor: pointer;
+}
+.cp-match__item.is-active {
+  border-color: #9047ff;
+}
+.cp-match__pick {
+  padding: 4px 12px;
+  border-radius: 100px;
+  background: #f1e9ff;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+}
+.cp-match__item.is-right {
+  background: #d6f5d6;
+}
+.cp-match__item.is-wrong {
+  background: #ffe0e0;
+}
+/* Верный ответ после проверки — рядом с ошибочным, чтобы было видно, что
+   именно не сошлось. */
+.cp-match__fix {
+  padding: 4px 12px;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a9d2a;
+}
+.cp-match__bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.cp-match__bank .cp-chip {
+  min-height: 48px;
+  padding: 10px 18px;
+  font-size: 15px;
+}
+
 .cp-chip {
   min-height: 65px;
   padding: 13px 24px;

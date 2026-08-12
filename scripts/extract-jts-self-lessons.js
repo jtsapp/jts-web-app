@@ -6,8 +6,9 @@
 // data-why), и проверять в плеере было бы нечего.
 //
 // Пишет:
-//   public/learning/<level>.json — задания узлов тропы
-//   public/learning/index.json   — каталог уровней и тропы
+//   public/learning/<level>.json  — задания узлов тропы
+//   public/learning/index.json    — каталог уровней и тропы
+//   public/learning/img/<level>/  — картинки слов, WebP (в git, раздаёт сайт)
 // Аудио не выгружается: треки уже опубликованы вместе с бандлом уровня.
 //
 // Запуск (a1.html — 257 МБ, потому увеличенная куча):
@@ -15,33 +16,67 @@
 //     --src ~/Downloads/a0.html --src ~/Downloads/a1.html
 const fs = require('node:fs')
 const path = require('node:path')
+const sharp = require('sharp')
 const { readCourse } = require('./jts-self/read-course')
 const { collectLesson } = require('./jts-self/collect-lesson')
 const { buildLessonNodes, buildReviewNode, lessonType } = require('./jts-self/build-nodes')
 const { vocabCardsTask, imageSlug } = require('./jts-self/vocab-cards')
+const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
 const OUT = path.join(__dirname, '..', 'public/learning')
 
-// Локальный staging медиа — в .gitignore; в git уходит только лёгкий JSON.
-const MEDIA_DIR = path.join(OUT, 'media')
-const MEDIA_URL_BASE = 'https://files-api.iqra.space/development/learning-media'
+// Картинки слов лежат в самом репозитории и раздаются сайтом.
+//
+// Раньше они шли отдельным ручным шагом: экстрактор писал JPEG в
+// .gitignore-staging, а заливка в бакет делалась руками через `mc mirror`.
+// Шага никто не сделал — все 195 картинок A0 отдавали 404 на обоих файл-
+// серверах, и словарь весь этот срок был текстовым. Ссылка на чужой хост
+// ничего не давала и по весу: свои файлы раздаются с кэш-заголовками сайта.
+const IMG_DIR = path.join(OUT, 'img')
+const AUDIO_DIR = path.join(OUT, 'audio')
+const IMG_URL_BASE = '/learning/img'
 
-/** Пишет картинки слов урока и возвращает слово → публичная ссылка. */
-function writeImages(lesson, level) {
-  const dir = path.join(MEDIA_DIR, level)
+// Карточка словаря — 160×215 CSS-пикселей (.cp-word в course.css), то есть
+// 320 пикселей ширины хватает и на экран с двойной плотностью. Источник даёт
+// 470–560 px JPEG по ~33 КБ: на слабом канале стадия словаря из 24 слов — это
+// почти мегабайт ради картинок, которые всё равно ужмутся до 160 px. WebP на
+// 320 px даёт те же ~12 КБ, вчетверо меньше.
+const IMG_WIDTH = 320
+const IMG_QUALITY = 72
+
+/** Пишет картинки слов урока и возвращает слово → ссылка на сайте. */
+async function writeImages(lesson, level) {
+  const dir = path.join(IMG_DIR, level)
   const urls = {}
   for (const [word, uri] of Object.entries(lesson.images || {})) {
     const m = /^data:image\/([a-z]+);base64,(.+)$/s.exec(String(uri))
     if (!m) continue
-    const file = `${imageSlug(word)}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`
+    const file = `${imageSlug(word)}.webp`
     fs.mkdirSync(dir, { recursive: true })
-    fs.writeFileSync(path.join(dir, file), Buffer.from(m[2], 'base64'))
-    urls[word] = `${MEDIA_URL_BASE}/${level}/${file}`
+    const webp = await sharp(Buffer.from(m[2], 'base64'))
+      .resize({ width: IMG_WIDTH, withoutEnlargement: true })
+      .webp({ quality: IMG_QUALITY })
+      .toBuffer()
+    fs.writeFileSync(path.join(dir, file), webp)
+    urls[word] = `${IMG_URL_BASE}/${level}/${file}`
   }
   return urls
 }
 
-function extractCourse(filePath) {
+// Записи, сгенерированные scripts/make-lesson-audio.js для текстов, которые
+// исходный курс читал браузерным синтезом. Привязка по хэшу самого текста:
+// экстрактор гоняют заново после каждой правки курса, и любая привязка по
+// номеру урока разъехалась бы на первой вставке нового задания. Записи нет —
+// задание просто остаётся текстовым, как и было.
+function attachNarration(tasks, level) {
+  for (const task of tasks) {
+    if (task.type !== 'info' || !task.say) continue
+    if (!fs.existsSync(path.join(AUDIO_DIR, level, sayAudioFile(task.say)))) continue
+    task.track = sayAudioUrl(level, task.say)
+  }
+}
+
+async function extractCourse(filePath) {
   const course = readCourse(filePath)
   const reviewsByUnit = new Map(course.reviews.map((r) => [r.unit, r]))
 
@@ -70,7 +105,7 @@ function extractCourse(filePath) {
       }
       seenUnits.add(lesson.unit)
     }
-    const imageUrls = writeImages(lesson, course.level)
+    const imageUrls = await writeImages(lesson, course.level)
     const cards = vocabCardsTask(lesson, (word) => imageUrls[word] || null)
     const lessonNodes = buildLessonNodes({ lesson, level: course.level, stages: collectLesson(lesson.html, onDrop), onDrop })
     if (cards) {
@@ -78,13 +113,30 @@ function extractCourse(filePath) {
       if (vocabNode) {
         // Кикер карточек — кикер стадии словаря (с её номером): иначе первый
         // экран узла выглядит иначе, чем все следующие.
-        vocabNode.tasks.unshift(vocabNode.sec ? { ...cards, sec: vocabNode.sec } : cards)
+        const task = vocabNode.sec ? { ...cards, sec: vocabNode.sec } : cards
+        // Ставим карточки ПОСЛЕ первой инструкции стадии, а не в самое начало.
+        // Инструкции в разметке идут отдельными блоками перед своим
+        // упражнением, и плеер подписывает ими следующий экран: стоя первыми,
+        // карточки оставались без подписи, а их инструкция («Look and listen.
+        // Tap a picture to hear the word») уезжала на соседнее упражнение.
+        const at = vocabNode.tasks[0]?.type === 'info' ? 1 : 0
+        vocabNode.tasks.splice(at, 0, task)
       }
+      // Стадия Wrap закрывает урок самооценкой и возвратом слов: студент
+      // отмечает, что теперь умеет, и может забрать слова урока в свой
+      // словарь. Второй половины не было вовсе — слова оставались только на
+      // стадии Vocabulary, в начале урока.
+      const wrapNode = lessonNodes.find((n) => n.tasks.some((x) => /wrap/i.test(x.sec || '')))
+      if (wrapNode) {
+        const sec = wrapNode.tasks.find((x) => /wrap/i.test(x.sec || ''))?.sec
+        wrapNode.tasks.push(sec ? { ...cards, sec } : cards)
+      }
+
       // Без узла со словом "vocab"/"words" в заголовке карточки словаря
       // некуда врезать — раньше это молча проглатывалось. Если стадию
       // словаря в источнике переименуют, карточки тихо пропадут с тропы;
       // предупреждение в CLI делает такую потерю заметной сразу при генерации.
-      else {
+      if (!vocabNode) {
         console.warn(
           `предупреждение: карточки словаря урока ${lesson.no} (${lesson.title || 'без названия'}) ` +
             `не вставлены — среди стадий нет узла с "vocab"/"words" в заголовке: ` +
@@ -104,6 +156,7 @@ function extractCourse(filePath) {
   const catalog = []
   for (const node of nodes) {
     if (!node.tasks.length) continue
+    attachNarration(node.tasks, course.level)
     const order = catalog.length
     lessons[node.code] = { code: node.code, title: node.title, tasks: node.tasks }
     catalog.push({ code: node.code, order, title: node.title, taskCount: node.tasks.length, type: lessonType(node.code, node.tasks), unit: node.unit })
@@ -157,7 +210,7 @@ function parseSources() {
   return out
 }
 
-function run() {
+async function run() {
   const sources = parseSources()
   if (!sources.length) {
     console.error('нужен хотя бы один --src <файл курса>')
@@ -168,7 +221,7 @@ function run() {
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'))
 
   for (const src of sources) {
-    const { level, label, lessons, catalog, dropped } = extractCourse(src)
+    const { level, label, lessons, catalog, dropped } = await extractCourse(src)
     fs.writeFileSync(path.join(OUT, `${level}.json`), JSON.stringify({ lessons }))
 
     index[level] = { lessons: catalog }
