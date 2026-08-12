@@ -2764,27 +2764,43 @@ textarea {
   position: sticky;
   top: 0;
   z-index: 6;
-  padding: 32px 32px 26px;
-  background: linear-gradient(180deg, rgba(2, 2, 2, 0.6) 0%, rgba(2, 2, 2, 0) 100%);
+  /* Высоты в потоке нет: карта начинается от самого верха и уходит под
+     затемнение. Иначе над океаном оставалась серая полоса — затемнение
+     ложилось на фон страницы, а не на карту. */
+  height: 0;
   pointer-events: none;
 }
+.lp-isle__head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 357px;
+  background: linear-gradient(180deg, rgba(2, 2, 2, 0.6) 0%, rgba(2, 2, 2, 0) 100%);
+}
+.lp-isle__title,
+.lp-isle__sub {
+  position: absolute;
+  left: 32px;
+  color: #fff;
+}
 .lp-isle__title {
+  top: 32px;
   font-size: 42px;
   font-weight: 700;
   line-height: 1.4;
-  color: #fff;
 }
 .lp-isle__sub {
+  top: 91px;
   max-width: 233px;
   font-size: 20px;
   font-weight: 400;
   line-height: 1.4;
-  color: #fff;
 }
 .lp-map {
   position: relative;
   z-index: 1;
-  margin-top: -118px;
   background: #069ade;
 }
 .lp-map__canvas {
@@ -2889,9 +2905,6 @@ textarea {
   }
   .lp-isle__sub {
     font-size: 15px;
-  }
-  .lp-map {
-    margin-top: -86px;
   }
 }
 
