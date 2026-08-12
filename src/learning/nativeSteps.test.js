@@ -122,3 +122,203 @@ describe('nativeSteps — уроки A0/A1 в шаги', () => {
     expect(tasksToSteps({ tasks: [{ type: 'cards', words: [] }] })).toHaveLength(0)
   })
 })
+
+// Соединение пар в источнике — одно упражнение, но экстрактор разворачивает его
+// в отдельные choice, и каждый несёт весь набор вариантов. На экране получалось
+// N подряд вопросов «выбери 1 из N» вместо соединения.
+describe('nativeSteps — соединение пар', () => {
+  const pair = (word, answer, sec = '2. Vocabulary') => ({
+    type: 'choice',
+    sec,
+    word,
+    options: ['слушать', 'повторять', 'соединять', 'отвечать'],
+    answer,
+  })
+  // Инструкция — обязательное условие: без неё та же форма встречается у
+  // заданий на классификацию, и собирать из них соединение нельзя.
+  const matchLead = (sec = '2. Vocabulary') => ({
+    type: 'info',
+    sec,
+    html: '<div class="instruction">Match the word to the picture.</div>',
+  })
+
+  it('серия choice с одинаковым набором вариантов складывается в один экран', () => {
+    const steps = tasksToSteps({
+      tasks: [matchLead(), pair('👂 listen', 'слушать'), pair('🔁 repeat', 'повторять'), pair('🔗 match', 'соединять')],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({ type: 'match', stage: 'Vocabulary' })
+    expect(steps[0].pairs).toEqual([
+      { left: '👂 listen', right: 'слушать' },
+      { left: '🔁 repeat', right: 'повторять' },
+      { left: '🔗 match', right: 'соединять' },
+    ])
+    expect(steps[0].options).toHaveLength(4)
+  })
+
+  it('двух пар мало — это честно два отдельных вопроса', () => {
+    const steps = tasksToSteps({ tasks: [matchLead(), pair('👂 listen', 'слушать'), pair('🔁 repeat', 'повторять')] })
+    expect(steps.map((s) => s.type)).toEqual(['choice', 'choice'])
+  })
+
+  // Повтор ответа означает, что это не пары, а несколько вопросов с общим
+  // банком: соединение из них собирать нельзя — вариант в паре одноразовый.
+  it('повторяющийся ответ разрывает серию', () => {
+    const steps = tasksToSteps({
+      tasks: [matchLead(), pair('a', 'слушать'), pair('b', 'слушать'), pair('c', 'повторять'), pair('d', 'соединять')],
+    })
+    expect(steps.map((s) => s.type)).toEqual(['choice', 'choice', 'choice', 'choice'])
+  })
+
+  it('смена стадии разрывает серию', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        matchLead(),
+        pair('a', 'слушать'),
+        pair('b', 'повторять'),
+        matchLead('3. Grammar'),
+        pair('c', 'соединять', '3. Grammar'),
+        pair('d', 'отвечать', '3. Grammar'),
+      ],
+    })
+    expect(steps.every((s) => s.type === 'choice')).toBe(true)
+  })
+
+  it('серия склеенных пропусков идёт одним экраном, но не длиннее четырёх', () => {
+    const gap = (before) => ({ type: 'gap', sec: '4. Practice', gapBefore: before, gapAfter: '.', answer: 'am' })
+    const steps = tasksToSteps({ tasks: [gap('I'), gap('You'), gap('He'), gap('She'), gap('We')] })
+
+    expect(steps.map((s) => s.type)).toEqual(['group', 'gap'])
+    expect(steps[0].items).toHaveLength(4)
+  })
+
+  it('смена стадии разрывает склейку пропусков', () => {
+    const gap = (sec) => ({ type: 'gap', sec, gapBefore: 'I', gapAfter: '.', answer: 'am' })
+    const steps = tasksToSteps({ tasks: [gap('4. Practice'), gap('5. Listening')] })
+    expect(steps.map((s) => s.type)).toEqual(['gap', 'gap'])
+  })
+
+
+  // Находка при переносе правила на A2/B1: у заданий на классификацию («Now or
+  // then?», «Who is each sentence about?») и у пропусков на артикли («Choose a,
+  // the or nothing») ТА ЖЕ форма — общий банк вариантов, а неповторяющиеся
+  // ответы выходят случайно. Собрав из них соединение, мы пообещали бы, что
+  // каждый вариант используется ровно раз, и соврали бы.
+  it('классификация с тем же набором вариантов соединением НЕ становится', () => {
+    const q = (word, answer) => ({ type: 'choice', sec: '4. Practice', word, options: ['present', 'past', 'future'], answer })
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'info', sec: '4. Practice', html: '<div class="instruction">Present or past? Read the sentence and choose the time.</div>' },
+        q('What time do you finish work?', 'present'),
+        q('Where did you meet her?', 'past'),
+        q('What will you do tomorrow?', 'future'),
+      ],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['choice', 'choice', 'choice'])
+  })
+
+  it('инструкция «Match the word…» подписывает собранный экран', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'info', sec: '2. Vocabulary', html: '<div class="instruction">Match the word to the picture.</div><p class="subline">Tap a word, then tap its picture.</p>' },
+        pair('a', 'слушать'),
+        pair('b', 'повторять'),
+        pair('c', 'соединять'),
+      ],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0].title).toBe('Match the word to the picture.')
+    expect(steps[0].sub).toBe('Tap a word, then tap its picture.')
+  })
+})
+
+// Правила исходного курса, которые терялись при раскладке по одному заданию на
+// экран: чужие мета-пометки, скрипт записи и образец ответа не должны
+// показываться раньше времени, а стадия Wrap — дублировать экран итогов.
+describe('nativeSteps — что не должно попадать на экран', () => {
+  it('мета-комментарий с названием учебника-источника вырезан', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '5. Listening',
+          html: '<div class="instruction">Listen. Tick what you hear.</div><div class="player"><div class="meta"><b>🔊 Free time — Oxford Navigate audio</b>listen, then answer</div></div>',
+        },
+        { type: 'choice', sec: '5. Listening', options: ['a', 'b'], answer: 'a' },
+      ],
+    })
+
+    expect(JSON.stringify(steps)).not.toContain('Oxford Navigate')
+    // Без блока источника осталась одна инструкция — она подписывает задание,
+    // а не становится отдельным пустым экраном.
+    expect(steps).toHaveLength(1)
+    expect(steps[0].title).toBe('Listen. Tick what you hear.')
+  })
+
+  it('скрипт записи уезжает за задания своей стадии', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '5. Listening',
+          html: '<div class="instruction">Listen.</div><details class="gref"><summary>What you heard</summary><div class="gref-body"><p>read, watch TV, travel</p></div></details>',
+        },
+        { type: 'choice', sec: '5. Listening', options: ['a', 'b'], answer: 'a' },
+      ],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['choice', 'note'])
+    expect(steps[1].html).toContain('What you heard')
+  })
+
+  it('справочник грамматики остаётся на месте — прячем только скрипт', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'info', sec: '3. Grammar', html: '<details class="gref"><summary>Full grammar reference</summary><div class="gref-body"><p>I am, you are</p></div></details>' },
+        { type: 'choice', sec: '3. Grammar', options: ['a', 'b'], answer: 'a' },
+      ],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['note', 'choice'])
+  })
+
+  it('открытое задание на письмо становится шагом write, образец — за кнопкой', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '6. Speaking',
+          html: '<div class="instruction">Write two sentences.</div><div class="opentask" data-tid="wr-1"><div class="bubble am"><div class="blab">Model answer</div><p><i>I like coffee.</i></p></div></div>',
+        },
+      ],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({ type: 'write', title: 'Write two sentences.' })
+    expect(steps[0].modelHtml).toContain('I like coffee.')
+  })
+
+  it('стадия Wrap: плашка «урок завершён» убрана, список «You can now…» стал чек-листом', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '7. Wrap',
+          html:
+            '<div class="done-card"><h3>🎉 Lesson 1 complete!</h3><p>⭐ 60 points</p></div>' +
+            '<div class="instruction">You can now…</div><p class="subline">Tap each one you can do.</p>' +
+            '<ul class="can"><li><span class="tick">✓</span><span>say what I like</span></li><li><span class="tick">✓</span><span>ask to repeat</span></li></ul>',
+        },
+      ],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({ type: 'checklist', stage: 'Wrap', title: 'You can now…' })
+    // Галочка из разметки в текст пункта не едет: у чек-листа своя отметка.
+    expect(steps[0].items).toEqual(['say what I like', 'ask to repeat'])
+    expect(JSON.stringify(steps)).not.toContain('complete')
+  })
+})

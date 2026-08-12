@@ -98,13 +98,30 @@ async function extractCourse(filePath) {
       if (vocabNode) {
         // Кикер карточек — кикер стадии словаря (с её номером): иначе первый
         // экран узла выглядит иначе, чем все следующие.
-        vocabNode.tasks.unshift(vocabNode.sec ? { ...cards, sec: vocabNode.sec } : cards)
+        const task = vocabNode.sec ? { ...cards, sec: vocabNode.sec } : cards
+        // Ставим карточки ПОСЛЕ первой инструкции стадии, а не в самое начало.
+        // Инструкции в разметке идут отдельными блоками перед своим
+        // упражнением, и плеер подписывает ими следующий экран: стоя первыми,
+        // карточки оставались без подписи, а их инструкция («Look and listen.
+        // Tap a picture to hear the word») уезжала на соседнее упражнение.
+        const at = vocabNode.tasks[0]?.type === 'info' ? 1 : 0
+        vocabNode.tasks.splice(at, 0, task)
       }
+      // Стадия Wrap закрывает урок самооценкой и возвратом слов: студент
+      // отмечает, что теперь умеет, и может забрать слова урока в свой
+      // словарь. Второй половины не было вовсе — слова оставались только на
+      // стадии Vocabulary, в начале урока.
+      const wrapNode = lessonNodes.find((n) => n.tasks.some((x) => /wrap/i.test(x.sec || '')))
+      if (wrapNode) {
+        const sec = wrapNode.tasks.find((x) => /wrap/i.test(x.sec || ''))?.sec
+        wrapNode.tasks.push(sec ? { ...cards, sec } : cards)
+      }
+
       // Без узла со словом "vocab"/"words" в заголовке карточки словаря
       // некуда врезать — раньше это молча проглатывалось. Если стадию
       // словаря в источнике переименуют, карточки тихо пропадут с тропы;
       // предупреждение в CLI делает такую потерю заметной сразу при генерации.
-      else {
+      if (!vocabNode) {
         console.warn(
           `предупреждение: карточки словаря урока ${lesson.no} (${lesson.title || 'без названия'}) ` +
             `не вставлены — среди стадий нет узла с "vocab"/"words" в заголовке: ` +

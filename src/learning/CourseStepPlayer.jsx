@@ -25,8 +25,13 @@ const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
 // продолжить, не понятно, что надо проверить».
 export function isGraded(step) {
   if (step.type === 'listen') return !!step.answer && (step.options || []).length > 0
+  if (step.type === 'match') return (step.pairs || []).length > 0
+  if (step.type === 'group') return (step.items || []).length > 0
   return GRADED.has(step.type)
 }
+
+// Ответ пропуска: сверяем без учёта регистра и знаков (см. norm).
+const gapIsRight = (item, value) => (item.answers || []).some((a) => norm(a) === norm(value))
 // В макете крупная фиолетовая строка — всегда сам вопрос, а тёмная поменьше —
 // инструкция к нему. У заданий без правильного ответа вопрос стоит первым
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
@@ -177,10 +182,20 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   )
   // Собранная фраза шага «порядок слов».
   const [seq, setSeq] = useState([])
+  // Соединение пар: левый пункт → выбранный правый.
+  const [links, setLinks] = useState({})
+  // Экран с несколькими пропусками: ответ на каждый.
+  const [fills, setFills] = useState({})
 
   const verdict = () => {
+    // Экран засчитывается целиком: это одно упражнение из нескольких строк,
+    // и сердце за него снимается один раз, а не за каждый пропуск.
+    if (step.type === 'group') return (step.items || []).every((it, i) => gapIsRight(it, fills[i] || ''))
     if (step.type === 'gap') return (step.answers || []).some((a) => norm(a) === norm(text))
     if (step.type === 'order') return norm(seq.map((i) => step.words[i]).join(' ')) === norm(step.answer)
+    // Соединение засчитывается целиком: это одно упражнение, а не N вопросов,
+    // и сердце за него снимается один раз.
+    if (step.type === 'match') return (step.pairs || []).every((p, i) => links[i] === p.right)
     return picked !== null && options[picked] === step.answer
   }
   const isRight = checked && verdict()
@@ -188,11 +203,15 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   // Кнопка: пока не проверено — «Проверить» (голубая), после и у неоценённых
   // шагов — «Продолжить» (фиолетовая), как в макете.
   const canCheck = graded
-    ? step.type === 'gap'
+    ? step.type === 'group'
+      ? (step.items || []).every((_, i) => (fills[i] || '').trim() !== '')
+      : step.type === 'gap'
       ? text.trim() !== ''
       : step.type === 'order'
         ? seq.length === (step.words || []).length
-        : picked !== null
+        : step.type === 'match'
+          ? Object.keys(links).length === (step.pairs || []).length
+          : picked !== null
     : step.type === 'write'
       ? text.trim() !== ''
       : true
@@ -244,6 +263,10 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
           setText={setText}
           seq={seq}
           setSeq={setSeq}
+          links={links}
+          setLinks={setLinks}
+          fills={fills}
+          setFills={setFills}
           isRight={isRight}
           revealed={revealed}
           level={level}
@@ -270,7 +293,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   )
 }
 
-function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, isRight, revealed, level, t }) {
+function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, isRight, revealed, level, t }) {
   switch (step.type) {
     // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
@@ -321,6 +344,35 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           )}
         </div>
       )
+
+    // Несколько пропусков одним экраном: строка задания + поле под каждую.
+    case 'group':
+      return (
+        <div className="cp-group">
+          {(step.items || []).map((it, i) => {
+            const value = fills[i] || ''
+            const ok = checked && gapIsRight(it, value)
+            return (
+              <div className="cp-group__row" key={i}>
+                <span className="cp-group__q">{gapSentence(it)}</span>
+                <input
+                  className={`cp-field cp-group__in ${checked ? (ok ? 'is-right' : 'is-wrong') : ''}`}
+                  value={checked && !ok ? (it.answers || [''])[0] : value}
+                  onChange={(e) => setFills((s) => ({ ...s, [i]: e.target.value }))}
+                  disabled={checked}
+                  autoComplete="off"
+                  spellCheck="false"
+                  placeholder={t('lesson.typeAnswer')}
+                />
+              </div>
+            )
+          })}
+        </div>
+      )
+
+    // Соединение пар: слева пункты задания, справа банк вариантов.
+    case 'match':
+      return <MatchBoard step={step} options={options} links={links} setLinks={setLinks} checked={checked} t={t} />
 
     // Выбор без правильного ответа: отмечаем сколько угодно карточек.
     case 'pick':
@@ -378,10 +430,16 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
             placeholder={step.placeholder || t('lesson.typeAnswer')}
             rows={1}
           />
-          {revealed && step.model && (
+          {revealed && (step.modelHtml || step.model) && (
             <div className="cp-model">
               <b>{t('lesson.modelAnswer')}</b>
-              <span>{step.model}</span>
+              {/* У A0/A1 образец размеченный: в нём список «Check yourself»,
+                  плоским текстом он склеился бы в одну строку. */}
+              {step.modelHtml ? (
+                <div className="cp-model__body" dangerouslySetInnerHTML={{ __html: step.modelHtml }} />
+              ) : (
+                <span>{step.model}</span>
+              )}
             </div>
           )}
         </>
@@ -410,6 +468,71 @@ function Choices({ options, picked, setPicked, checked, answer, grid = false }) 
           </button>
         )
       })}
+    </div>
+  )
+}
+
+// Соединение пар: тап по пункту слева, затем по варианту справа — как и
+// говорит инструкция исходного курса («Tap a word, then tap its picture»).
+// Занятый вариант из банка уходит: в упражнении на соединение каждый вариант
+// используется один раз, и с каждой парой выбор сужается. Именно этого не было,
+// когда упражнение разворачивалось в отдельные вопросы с полным набором
+// вариантов в каждом.
+function MatchBoard({ step, options, links, setLinks, checked, t }) {
+  const [active, setActive] = useState(null)
+  const used = new Set(Object.values(links))
+  const pairs = step.pairs || []
+
+  const tapLeft = (i) => {
+    if (checked) return
+    // Повторный тап по уже соединённому пункту разрывает пару — иначе
+    // ошибочный выбор нечем исправить, кроме как потерять сердце.
+    if (links[i] !== undefined) {
+      setLinks((s) => {
+        const next = { ...s }
+        delete next[i]
+        return next
+      })
+      setActive(i)
+      return
+    }
+    setActive(active === i ? null : i)
+  }
+
+  const tapRight = (value) => {
+    if (checked || used.has(value)) return
+    const target = active !== null ? active : pairs.findIndex((_, i) => links[i] === undefined)
+    if (target < 0) return
+    setLinks((s) => ({ ...s, [target]: value }))
+    setActive(null)
+  }
+
+  return (
+    <div className="cp-match">
+      <div className="cp-match__col">
+        {pairs.map((p, i) => {
+          let cls = 'cp-match__item'
+          if (active === i) cls += ' is-active'
+          if (links[i] !== undefined) cls += ' is-linked'
+          if (checked) cls += links[i] === p.right ? ' is-right' : ' is-wrong'
+          return (
+            <button key={i} className={cls} disabled={checked} onClick={() => tapLeft(i)}>
+              <span className="cp-match__left">{p.left}</span>
+              {/* Выбранная пара показывается прямо в пункте: тянуть линии между
+                  колонками на узком экране некуда. */}
+              {links[i] !== undefined && <span className="cp-match__pick">{links[i]}</span>}
+              {checked && links[i] !== p.right && <span className="cp-match__fix">{p.right}</span>}
+            </button>
+          )
+        })}
+      </div>
+      <div className="cp-match__bank" aria-label={t('lesson.matchBank')}>
+        {options.map((o, i) => (
+          <button key={i} className="cp-chip" disabled={checked || used.has(o)} onClick={() => tapRight(o)}>
+            {o}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
