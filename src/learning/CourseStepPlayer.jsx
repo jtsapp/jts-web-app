@@ -396,6 +396,14 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           {/* У курса (A2/B1) дорожка лежит рядом с уроком и известна по имени,
               у A0/A1 в задании сразу абсолютный URL на files-dev. */}
           <AudioButton src={step.src || `/course/${String(level).toLowerCase()}/audio/${step.track}`} t={t} />
+          {/* Материал для чтения вслух: у части заданий A1 сам текст и есть
+              задание («Read each script — and play it out loud»), поэтому он
+              стоит под плеером, а не прячется. */}
+          {step.html && (
+            <div className="cp-note">
+              <div className="cp-note__body" dangerouslySetInnerHTML={{ __html: step.html }} />
+            </div>
+          )}
           {/* На слух варианты в макете лежат в две колонки: слово короткое,
               и колонкой во всю высоту экрана оно смотрелось бы пусто. */}
           <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid />
