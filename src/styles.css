@@ -3997,7 +3997,7 @@ textarea {
   position: absolute;
   inset: 0;
   z-index: 7;
-  background: rgba(23, 19, 38, 0.45);
+  background: rgba(0, 0, 0, 0.57);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4006,15 +4006,15 @@ textarea {
 .lx-card {
   position: relative;
   background: #fff;
-  border-radius: 28px;
-  padding: 28px 26px 24px;
-  width: 320px;
+  border-radius: 60px;
+  padding: 43px 70px;
+  width: 405px;
   max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 10px;
+  gap: 14px;
   box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
 }
 .lx-close {
@@ -4031,38 +4031,55 @@ textarea {
   cursor: pointer;
   font-family: inherit;
 }
+/* Арт в макете — круглый портрет, а не картинка во всю карточку. */
 .lx-art {
-  width: 150px;
-  height: 150px;
-  object-fit: contain;
+  width: 112px;
+  height: 112px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #d9d9d9;
 }
 .lx-title {
-  margin: 4px 0 0;
-  font-size: 21px;
-  font-weight: 900;
-  color: var(--ink);
-  line-height: 1.25;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.2;
 }
 .lx-sub {
-  color: var(--muted);
+  color: #181818;
   font-size: 14px;
-  margin-top: -2px;
+  font-weight: 400;
+  margin-top: -8px;
 }
-.lx-continue {
-  width: 100%;
-  margin-top: 12px;
+.lx-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 264px;
+  max-width: 100%;
+  margin-top: 41px; /* с gap карточки — те самые 55 из макета */
 }
+.lx-continue,
 .lx-leave {
   width: 100%;
-  background: #efeaff;
-  color: var(--purple);
+  height: 48px;
+  padding: 0 20px;
   border: none;
-  border-radius: 14px;
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
+  border-radius: 80px;
   font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lx-continue {
+  background: var(--purple);
+  color: #fff;
+}
+.lx-leave {
+  background: #b7f0ff;
+  color: var(--purple);
   transition: filter 0.15s ease;
 }
 .lx-leave:hover {

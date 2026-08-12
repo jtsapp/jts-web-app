@@ -587,18 +587,20 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {confirmExit && (
         <div className="lx-over" onClick={() => setConfirmExit(false)}>
           <div className="lx-card" onClick={(e) => e.stopPropagation()}>
-            <button className="lx-close" aria-label="Закрыть" onClick={() => setConfirmExit(false)}>
+            <button className="lx-close" aria-label={t('common.close')} onClick={() => setConfirmExit(false)}>
               ×
             </button>
             <img className="lx-art" src="/assets/lesson/exit.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
-            <h2 className="lx-title">Вы уверены что хотите выйти?</h2>
-            <div className="lx-sub">Урок не будет пройден</div>
-            <button className="le-btn lx-continue" onClick={() => setConfirmExit(false)}>
-              Продолжить обучение
-            </button>
-            <button className="lx-leave" onClick={exitLesson}>
-              Выйти в меню
-            </button>
+            <h2 className="lx-title">{t('lesson.exitAsk')}</h2>
+            <div className="lx-sub">{t('lesson.exitAskSub')}</div>
+            <div className="lx-acts">
+              <button className="le-btn lx-continue" onClick={() => setConfirmExit(false)}>
+                {t('lesson.exitStay')}
+              </button>
+              <button className="lx-leave" onClick={exitLesson}>
+                {t('lesson.exitLeave')}
+              </button>
+            </div>
           </div>
         </div>
       )}
