@@ -2738,89 +2738,68 @@ textarea {
   margin-bottom: 0;
 }
 
-/* ═══ Карта уровней — по макету Figma «Обучение» (Screen 2062:2883) ═══
-   Числа сняты плагином с макета, не на глаз.
+/* ═══ Карта уровней ═══
+   Картинка острова и её кадр — продовые (решение владельца): панель-океан во
+   всю ширину контента, остров колонкой по центру с соотношением 1600/2111.
+   Всё остальное — из макета Figma «Обучение» (Screen 2062:2883): белый круг с
+   обводкой цвета зоны, круглый арт короля, белая плашка уровня, заходящая на
+   круг, заголовок белым поверх затемнения.
 
-   Остров 1485×1947 лежит НЕ внутри панели, а поверх колонки контента: левым
-   краем уходит под сайдбар, сверху и снизу выходит за экран. Поэтому он не
-   вписывается в колонку, а прокручивается целиком, лишнее по бокам режется —
-   ровно как кадр экрана в макете. Узлы привязаны процентами к картинке
-   (kingdoms.js) и потому не разъезжаются на другой ширине окна. */
+   Размеры узлов заданы в cqw от канваса, потому что в макете узел — это доля
+   ширины острова (140 из 1485 = 9.43%), и на другом кадре он обязан остаться
+   такой же долей, иначе кольца сползают с городов. */
 .lp.lp--map {
-  position: relative;
   display: block;
   padding: 0;
-  background: #f8f8f8;
 }
-.lp-isle-clip {
-  overflow-x: clip;
+.lp--map .lp__center {
+  max-width: none;
 }
-.lp-isle {
-  position: relative;
-  width: 1485px;
-  height: 1947px;
-  /* В макете центр острова на 28.5px левее центра колонки контента. */
-  margin-inline: auto;
-  transform: translateX(-28.5px);
-}
-.lp-isle__art {
-  display: block;
-  width: 1485px;
-  height: 1947px;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-/* Та же беда, что у полосы королевства: у оболочки экранов стоит
-   overflow: auto, sticky привязывался к ней, а прокручивается окно — «прилипать»
-   было не к чему. Снимаем overflow только там, где внутри карта. */
 .learn__main:has(.lp--map) {
   overflow: visible;
 }
-/* Шапка липнет сверху и места в потоке не занимает: остров под ней
-   прокручивается, а клики по узлам не перехватываются. */
+/* Затемнение из макета: градиент от rgba(2,2,2,.6) к прозрачному, заголовок
+   белым поверх карты. Липнет сверху, карта уходит под него. */
 .lp-isle__head {
   position: sticky;
   top: 0;
-  z-index: 2;
-  height: 0;
+  z-index: 6;
+  padding: 32px 32px 26px;
+  background: linear-gradient(180deg, rgba(2, 2, 2, 0.6) 0%, rgba(2, 2, 2, 0) 100%);
   pointer-events: none;
 }
-.lp-isle__head::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 357px;
-  background: linear-gradient(180deg, rgba(2, 2, 2, 0.6) 0%, rgba(2, 2, 2, 0) 100%);
-}
-.lp-isle__title,
-.lp-isle__sub {
-  position: absolute;
-  left: 32px;
-  width: 233px;
-  color: #fff;
-  text-shadow: 0 1px 12px rgba(2, 2, 2, 0.25);
-}
 .lp-isle__title {
-  top: 32px;
   font-size: 42px;
   font-weight: 700;
   line-height: 1.4;
+  color: #fff;
 }
 .lp-isle__sub {
-  top: 91px;
+  max-width: 233px;
   font-size: 20px;
   font-weight: 400;
   line-height: 1.4;
+  color: #fff;
 }
-/* Узел: белый круг 140 с обводкой цвета зоны, под ним — белая плашка уровня,
-   заходящая на круг на 23px. Координата в kingdoms.js — центр КРУГА. */
+.lp-map {
+  position: relative;
+  z-index: 1;
+  margin-top: -118px;
+  background: #069ade;
+}
+.lp-map__canvas {
+  position: relative;
+  max-width: 820px;
+  margin: 0 auto;
+  aspect-ratio: 1600 / 2111;
+  background: url('/assets/world/island_map.webp') center top / cover no-repeat #37b6ef;
+  container-type: inline-size;
+}
+/* Узел: белый круг с обводкой цвета зоны, под ним плашка уровня, заходящая на
+   круг на 23/1485 ширины острова. Координата в kingdoms.js — центр круга. */
 .lp-node {
   position: absolute;
-  z-index: 1;
-  width: 140px;
-  transform: translate(-50%, -70px);
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2832,35 +2811,38 @@ textarea {
 }
 .lp-node__ring {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 9.43cqw;
+  height: 9.43cqw;
   border-radius: 50%;
-  border: 3px solid var(--ring);
+  border: max(2px, 0.202cqw) solid var(--ring);
   background: #fff;
   flex: none;
 }
-/* 14px от внешнего края круга, минус 3px обводки — от внутреннего. */
 .lp-node__av {
   position: absolute;
-  left: 11px;
-  top: 11px;
-  width: 112px;
-  height: 112px;
+  left: 0.74cqw;
+  top: 0.74cqw;
+  /* Явные размеры, а не inset: у картинки auto-размер берётся из её собственных
+     пикселей, по вставкам она не растягивается. */
+  width: 7.54cqw;
+  height: 7.54cqw;
   border-radius: 50%;
   object-fit: cover;
 }
 .lp-node__label {
   position: relative;
-  margin-top: -23px;
-  min-width: 119px;
-  height: 41px;
-  padding: 0 14px;
-  border-radius: 30px;
+  margin-top: -1.55cqw;
+  min-width: 8.01cqw;
+  height: 2.76cqw;
+  padding: 0 0.94cqw;
+  border-radius: 2.02cqw;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  /* В макете 18px на острове 1485 — на нашем кадре доля даёт мелко, поэтому
+     нижняя граница 12px: подпись должна читаться. */
+  font-size: max(12px, 1.21cqw);
   font-weight: 700;
   line-height: 1.2;
   color: #9047ff;
@@ -2871,7 +2853,7 @@ textarea {
   transition: transform 0.15s ease;
 }
 .lp-node.is-current .lp-node__ring {
-  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 0.4cqw rgba(255, 255, 255, 0.45);
 }
 /* Закрытый уровень: макета под него нет — гасим арт и вешаем замок. */
 .lp-node.is-locked {
@@ -2888,58 +2870,28 @@ textarea {
 }
 .lp-node__lock {
   position: absolute;
-  inset: 11px;
+  inset: 0.74cqw;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .lp-node__lock svg {
-  width: 34px;
-  height: 34px;
+  width: 2.8cqw;
+  height: 2.8cqw;
 }
 
-/* Узкие экраны: макета нет, поэтому просто ужимаем остров по ширине окна —
-   узлы и подписи масштабируются вместе с ним. */
-@media (max-width: 1100px) {
-  .lp-isle {
-    width: 100%;
-    max-width: 1485px;
-    height: auto;
-    aspect-ratio: 1485 / 1947;
-    transform: none;
-  }
-  .lp-isle__art {
-    width: 100%;
-    height: 100%;
-  }
-  .lp-node {
-    width: 96px;
-    transform: translate(-50%, -48px);
-  }
-  .lp-node__ring {
-    width: 96px;
-    height: 96px;
-    border-width: 2px;
-  }
-  .lp-node__av {
-    left: 8px;
-    top: 8px;
-    width: 78px;
-    height: 78px;
-  }
-  .lp-node__label {
-    margin-top: -16px;
-    min-width: 84px;
-    height: 30px;
-    padding: 0 10px;
-    font-size: 13px;
+@media (max-width: 760px) {
+  .lp-isle__head {
+    padding: 20px 20px 22px;
   }
   .lp-isle__title {
-    font-size: 30px;
+    font-size: 28px;
   }
   .lp-isle__sub {
-    top: 74px;
-    font-size: 16px;
+    font-size: 15px;
+  }
+  .lp-map {
+    margin-top: -86px;
   }
 }
 

@@ -38,11 +38,10 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
           <p className="lp-isle__sub">{t('learn.subtitle')}</p>
         </div>
 
-        {/* Обрезаем только остров: если повесить обрезку на весь экран, шапка
-            перестаёт липнуть (обрезающий бокс становится её скроллпортом). */}
-        <div className="lp-isle-clip">
-          <div className="lp-isle">
-            <img className="lp-isle__art" src="/assets/learning/island.webp" alt="" />
+        {/* Панель-океан во всю ширину контента, остров — колонкой по центру;
+            картинка и её кадр остались продовыми. */}
+        <div className="lp-map">
+          <div className="lp-map__canvas">
 
           {kingdoms.map((k) => {
             const locked = !k.unlocked

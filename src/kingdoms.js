@@ -14,12 +14,12 @@
 // королевству, а не ступени, и при сдвиге уровней короли иначе переехали бы
 // по чужим городам (Redtown получил бы короля Bluewave и так далее).
 export const KINGDOMS = [
-  { id: 'sunhaven', name: 'Redtown', king: 'Майкл Флот', level: 'A0', avatar: 'a1', map: { x: 47.41, y: 70.16 }, ring: '#df6043' },
-  { id: 'greendale', name: 'Bluewave Town', king: 'Барни', level: 'A1', avatar: 'a2', map: { x: 58.11, y: 59.53 }, ring: '#3b8dc3' },
-  { id: 'bridgeport', name: 'Green Peace Town', king: 'Ди Флотио', level: 'A2', avatar: 'b1', map: { x: 45.32, y: 51.82 }, ring: '#39aa55' },
-  { id: 'highspire', name: 'Music Town', king: 'Эван Доу', level: 'B1', avatar: 'b2', map: { x: 51.18, y: 40.99 }, ring: '#8e46cf' },
-  { id: 'frostcrystal', name: 'Cocalastic Town', king: 'Шелли Бумер', level: 'B2', avatar: 'c1', map: { x: 53.4, y: 30.61 }, ring: '#cf9a21' },
-  { id: 'goldcrown', name: 'Rosewind Town', king: 'Атлас Дон', level: 'C1', avatar: 'c2', map: { x: 49.09, y: 21.37 }, ring: '#941c5e' },
+  { id: 'sunhaven', name: 'Redtown', king: 'Майкл Флот', level: 'A0', avatar: 'a1', map: { x: 45, y: 85 }, ring: '#df6043' },
+  { id: 'greendale', name: 'Bluewave Town', king: 'Барни', level: 'A1', avatar: 'a2', map: { x: 63, y: 71 }, ring: '#3b8dc3' },
+  { id: 'bridgeport', name: 'Green Peace Town', king: 'Ди Флотио', level: 'A2', avatar: 'b1', map: { x: 39, y: 57 }, ring: '#39aa55' },
+  { id: 'highspire', name: 'Music Town', king: 'Эван Доу', level: 'B1', avatar: 'b2', map: { x: 57, y: 43 }, ring: '#8e46cf' },
+  { id: 'frostcrystal', name: 'Cocalastic Town', king: 'Шелли Бумер', level: 'B2', avatar: 'c1', map: { x: 40, y: 28 }, ring: '#cf9a21' },
+  { id: 'goldcrown', name: 'Rosewind Town', king: 'Атлас Дон', level: 'C1', avatar: 'c2', map: { x: 58, y: 15 }, ring: '#941c5e' },
 ]
 
 // Арт короля по королевству; на случай зова с одним уровнем (экраны, которые
