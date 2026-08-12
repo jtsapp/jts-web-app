@@ -134,10 +134,17 @@ describe('nativeSteps — соединение пар', () => {
     options: ['слушать', 'повторять', 'соединять', 'отвечать'],
     answer,
   })
+  // Инструкция — обязательное условие: без неё та же форма встречается у
+  // заданий на классификацию, и собирать из них соединение нельзя.
+  const matchLead = (sec = '2. Vocabulary') => ({
+    type: 'info',
+    sec,
+    html: '<div class="instruction">Match the word to the picture.</div>',
+  })
 
   it('серия choice с одинаковым набором вариантов складывается в один экран', () => {
     const steps = tasksToSteps({
-      tasks: [pair('👂 listen', 'слушать'), pair('🔁 repeat', 'повторять'), pair('🔗 match', 'соединять')],
+      tasks: [matchLead(), pair('👂 listen', 'слушать'), pair('🔁 repeat', 'повторять'), pair('🔗 match', 'соединять')],
     })
 
     expect(steps).toHaveLength(1)
@@ -151,7 +158,7 @@ describe('nativeSteps — соединение пар', () => {
   })
 
   it('двух пар мало — это честно два отдельных вопроса', () => {
-    const steps = tasksToSteps({ tasks: [pair('👂 listen', 'слушать'), pair('🔁 repeat', 'повторять')] })
+    const steps = tasksToSteps({ tasks: [matchLead(), pair('👂 listen', 'слушать'), pair('🔁 repeat', 'повторять')] })
     expect(steps.map((s) => s.type)).toEqual(['choice', 'choice'])
   })
 
@@ -159,7 +166,7 @@ describe('nativeSteps — соединение пар', () => {
   // банком: соединение из них собирать нельзя — вариант в паре одноразовый.
   it('повторяющийся ответ разрывает серию', () => {
     const steps = tasksToSteps({
-      tasks: [pair('a', 'слушать'), pair('b', 'слушать'), pair('c', 'повторять'), pair('d', 'соединять')],
+      tasks: [matchLead(), pair('a', 'слушать'), pair('b', 'слушать'), pair('c', 'повторять'), pair('d', 'соединять')],
     })
     expect(steps.map((s) => s.type)).toEqual(['choice', 'choice', 'choice', 'choice'])
   })
@@ -167,8 +174,10 @@ describe('nativeSteps — соединение пар', () => {
   it('смена стадии разрывает серию', () => {
     const steps = tasksToSteps({
       tasks: [
+        matchLead(),
         pair('a', 'слушать'),
         pair('b', 'повторять'),
+        matchLead('3. Grammar'),
         pair('c', 'соединять', '3. Grammar'),
         pair('d', 'отвечать', '3. Grammar'),
       ],
@@ -188,6 +197,26 @@ describe('nativeSteps — соединение пар', () => {
     const gap = (sec) => ({ type: 'gap', sec, gapBefore: 'I', gapAfter: '.', answer: 'am' })
     const steps = tasksToSteps({ tasks: [gap('4. Practice'), gap('5. Listening')] })
     expect(steps.map((s) => s.type)).toEqual(['gap', 'gap'])
+  })
+
+
+  // Находка при переносе правила на A2/B1: у заданий на классификацию («Now or
+  // then?», «Who is each sentence about?») и у пропусков на артикли («Choose a,
+  // the or nothing») ТА ЖЕ форма — общий банк вариантов, а неповторяющиеся
+  // ответы выходят случайно. Собрав из них соединение, мы пообещали бы, что
+  // каждый вариант используется ровно раз, и соврали бы.
+  it('классификация с тем же набором вариантов соединением НЕ становится', () => {
+    const q = (word, answer) => ({ type: 'choice', sec: '4. Practice', word, options: ['present', 'past', 'future'], answer })
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'info', sec: '4. Practice', html: '<div class="instruction">Present or past? Read the sentence and choose the time.</div>' },
+        q('What time do you finish work?', 'present'),
+        q('Where did you meet her?', 'past'),
+        q('What will you do tomorrow?', 'future'),
+      ],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['choice', 'choice', 'choice'])
   })
 
   it('инструкция «Match the word…» подписывает собранный экран', () => {
