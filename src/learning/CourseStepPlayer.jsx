@@ -32,6 +32,52 @@ export function isGraded(step) {
 
 // Ответ пропуска: сверяем без учёта регистра и знаков (см. norm).
 const gapIsRight = (item, value) => (item.answers || []).some((a) => norm(a) === norm(value))
+
+// Английское слово вслух. Сначала — записанный файл (scripts/make-lesson-audio.js),
+// и только если записи нет — синтез браузера, каким слово произносил исходный
+// курс (sayWord / sayText).
+//
+// Порядок именно такой, потому что браузерный синтез — лотерея: голос и
+// качество зависят от того, что стоит в системе, а на Android для en-US его
+// может не быть вовсе. Слово при этом одно и то же на карточке словаря и в
+// задании на слух через несколько экранов, и звучать оно обязано одинаково —
+// иначе задание проверяет не память, а способность узнать другой голос.
+//
+// Одна функция на весь плеер: две реализации разошлись бы по языку и скорости.
+let liveAudio = null
+
+function speakEnglish(text, { src = null, rate = 1 } = {}) {
+  stopSpeaking()
+  if (src) {
+    liveAudio = new Audio(src)
+    liveAudio.playbackRate = rate
+    // Файл не доехал (сеть, 404) — договариваем синтезом, чтобы экран не
+    // остался немым.
+    liveAudio.play().catch(() => speakSynth(text, rate))
+    return
+  }
+  speakSynth(text, rate)
+}
+
+function speakSynth(text, rate) {
+  const s = typeof window === 'undefined' ? null : window.speechSynthesis
+  if (!s || !text) return
+  const u = new SpeechSynthesisUtterance(String(text))
+  u.lang = 'en-US'
+  u.rate = rate
+  s.speak(u)
+}
+
+// Обрываем предыдущее: студент тапает карточки подряд, и без остановки звук
+// копится — слово звучит через несколько секунд после тапа, уже не своё.
+function stopSpeaking() {
+  if (typeof window === 'undefined') return
+  window.speechSynthesis?.cancel()
+  if (liveAudio) {
+    liveAudio.pause()
+    liveAudio = null
+  }
+}
 // В макете крупная фиолетовая строка — всегда сам вопрос, а тёмная поменьше —
 // инструкция к нему. У заданий без правильного ответа вопрос стоит первым
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
@@ -416,7 +462,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           {/* Задание «Listen. Choose the word you hear.»: слова нет ни в
               вопросе, ни в вариантах — оно живёт только в поле say, и без
               озвучки экран неразрешим (см. SayButton). */}
-          {step.say && <SayButton text={step.say} t={t} />}
+          {step.say && <SayButton text={step.say} src={step.sayTrack || null} t={t} />}
           <Choices
             options={options}
             picked={picked}
@@ -561,6 +607,9 @@ function PickCards({ options }) {
 
 function WordCards({ words, t }) {
   const [open, setOpen] = useState({})
+  // Уходя со стадии словаря, обрываем речь: иначе последнее слово догоняет
+  // студента уже на следующем экране.
+  useEffect(() => stopSpeaking, [])
   // Слова, уже отправленные в личный словарь. Кнопка после этого показывает
   // галочку и больше не нажимается: повторный тап ничего бы не изменил
   // (в vocab_bank слово уникально по word_key), а студенту нужен именно
@@ -581,7 +630,19 @@ function WordCards({ words, t }) {
         // Карточка — не кнопка: внутри неё живёт своя кнопка «в словарь», а
         // кнопку в кнопку вкладывать нельзя. Переворот повесен на внутреннюю.
         <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''}`}>
-          <button className="cp-word__flip" onClick={() => setOpen((s) => ({ ...s, [i]: !s[i] }))}>
+          {/* Тап по карточке произносит слово и переворачивает её — ровно то,
+              что обещает инструкция стадии («Look and listen. Tap a picture to
+              hear the word»). Без озвучки презентация слов была немой: студент
+              видел написание и перевод, но не знал, как это звучит, — а через
+              экран его уже спрашивают то же слово на слух. */}
+          <button
+            className="cp-word__flip"
+            onClick={() => {
+              speakEnglish(w.en, { src: w.audio || null })
+              setOpen((s) => ({ ...s, [i]: !s[i] }))
+            }}
+            aria-label={t('lesson.hearWord', { word: w.en })}
+          >
             <span className="cp-word__face">
               {/* alt называет слово: картинка иллюстрирует значение, а не
                   украшает экран. */}
@@ -642,20 +703,11 @@ function Checklist({ items }) {
 //
 // Разметка та же (.cp-audio), чтобы кнопка выглядела ровно как плеер дорожки:
 // для студента это одно и то же действие «послушать».
-function SayButton({ text, t }) {
-  const synth = () => (typeof window === 'undefined' ? null : window.speechSynthesis || null)
+function SayButton({ text, src, t }) {
   // Уходя с шага, обрываем речь: иначе слово догоняет студента уже на
   // следующем экране.
-  useEffect(() => () => synth()?.cancel(), [])
-  const say = (rate) => {
-    const s = synth()
-    if (!s) return
-    s.cancel()
-    const u = new SpeechSynthesisUtterance(text)
-    u.lang = 'en-US'
-    u.rate = rate
-    s.speak(u)
-  }
+  useEffect(() => stopSpeaking, [])
+  const say = (rate) => speakEnglish(text, { src, rate })
   return (
     <div className="cp-audio">
       <button className="cp-audio__play" onClick={() => say(1)} aria-label={t('lesson.play')}>

@@ -69,10 +69,33 @@ async function writeImages(lesson, level) {
 // номеру урока разъехалась бы на первой вставке нового задания. Записи нет —
 // задание просто остаётся текстовым, как и было.
 function attachNarration(tasks, level) {
+  const audioFor = (text) => {
+    const word = String(text || '').trim()
+    if (!word) return null
+    return fs.existsSync(path.join(AUDIO_DIR, level, sayAudioFile(word))) ? sayAudioUrl(level, word) : null
+  }
+
   for (const task of tasks) {
-    if (task.type !== 'info' || !task.say) continue
-    if (!fs.existsSync(path.join(AUDIO_DIR, level, sayAudioFile(task.say)))) continue
-    task.track = sayAudioUrl(level, task.say)
+    // Связный кусок материала: экран слушания.
+    if (task.type === 'info' && task.say) {
+      const url = audioFor(task.say)
+      if (url) task.track = url
+      continue
+    }
+    // Слово на слух («Listen. Choose the word you hear.») и слова карточек
+    // словаря — один и тот же файл на одно и то же слово. Иначе задание
+    // проверяло бы не память, а способность узнать другой голос.
+    if (task.type === 'choice' && task.say) {
+      const url = audioFor(task.say)
+      if (url) task.sayTrack = url
+      continue
+    }
+    if (task.type === 'cards') {
+      for (const word of task.words || []) {
+        const url = audioFor(word.en)
+        if (url) word.audio = url
+      }
+    }
   }
 }
 
