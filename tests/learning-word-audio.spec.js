@@ -76,6 +76,25 @@ test.describe('A0: слова звучат', () => {
     await expect(card.locator('.cp-word__back')).toBeVisible()
   })
 
+  // Звук привязан к картинке, а не к карточке вообще: на обороте лежит
+  // перевод, слово там уже прочитано глазами, и повтор звука при закрытии
+  // читался как случайное срабатывание.
+  test('тап по обороту карточки закрывает её молча', async ({ page }) => {
+    test.setTimeout(120000)
+    await bootVocab(page)
+
+    const card = page.locator('.cp-word').first()
+    await card.locator('.cp-word__flip').click()
+    await expect(card.locator('.cp-word__back')).toBeVisible()
+    expect(await page.evaluate(() => window.__played)).toHaveLength(1)
+
+    // Второй тап — уже по обороту.
+    await card.locator('.cp-word__flip').click()
+    await expect(card.locator('.cp-word__back')).toBeHidden()
+    expect(await page.evaluate(() => window.__played), 'закрытие карточки не должно звучать').toHaveLength(1)
+    expect(await page.evaluate(() => window.__spoken), 'и синтез тоже не должен').toHaveLength(0)
+  })
+
   test('запись действительно отдаётся, а не 404', async ({ page }) => {
     test.setTimeout(120000)
     await bootVocab(page)
