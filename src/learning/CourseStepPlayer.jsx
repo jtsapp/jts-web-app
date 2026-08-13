@@ -52,8 +52,13 @@ function speakEnglish(text, { src = null, rate = 1 } = {}) {
     liveAudio = new Audio(src)
     liveAudio.playbackRate = rate
     // Файл не доехал (сеть, 404) — договариваем синтезом, чтобы экран не
-    // остался немым.
-    liveAudio.play().catch(() => speakSynth(text, rate))
+    // остался немым. Но громко жалуемся в консоль: молчаливый откат уже стоил
+    // разбирательства «на телефоне голос хороший, на компьютере роботный» —
+    // там браузер держал в кэше старую копию данных, где записи ещё не было.
+    liveAudio.play().catch((e) => {
+      console.warn('[lesson] запись не проиграла, читаю синтезом:', src, e?.name || e)
+      speakSynth(text, rate)
+    })
     return
   }
   speakSynth(text, rate)
@@ -638,10 +643,13 @@ function WordCards({ words, t }) {
           <button
             className="cp-word__flip"
             onClick={() => {
-              speakEnglish(w.en, { src: w.audio || null })
+              // Озвучиваем только тап по картинке. На обороте карточки лежит
+              // перевод — там слово уже прочитано глазами, и повтор звука при
+              // закрытии карточки читался как случайное срабатывание.
+              if (!open[i]) speakEnglish(w.en, { src: w.audio || null })
               setOpen((s) => ({ ...s, [i]: !s[i] }))
             }}
-            aria-label={t('lesson.hearWord', { word: w.en })}
+            aria-label={open[i] ? t('lesson.hideWord', { word: w.en }) : t('lesson.hearWord', { word: w.en })}
           >
             <span className="cp-word__face">
               {/* alt называет слово: картинка иллюстрирует значение, а не
