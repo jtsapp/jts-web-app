@@ -4056,31 +4056,12 @@ textarea {
 .le-restricted a {
   color: #9047ff;
 }
-/* Провал: карточка «жизней больше нет» и заголовок под ней. */
+/* Провал юнит-теста: процент и заголовок под ним. */
 .le-fail {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 32px;
-}
-.le-heart {
-  width: 167px;
-  height: 160px;
-  padding: 30px;
-  border-radius: 29px;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  text-align: center;
-}
-.le-heart span {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: #181818;
 }
 
 /* Узкие экраны: макета под них нет — складываем в колонку и ужимаем маскота,
@@ -4216,11 +4197,6 @@ textarea {
   .le-stat span {
     font-size: 13px;
   }
-  .le-heart {
-    width: 132px;
-    height: 126px;
-    padding: 18px;
-  }
 }
 
 @media (max-width: 760px) and (max-height: 600px) {
@@ -4276,16 +4252,21 @@ textarea {
   gap: 14px;
   box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
 }
+/* По центру над карточкой, как в макете: справа он читался как «закрыть
+   что-то в правом верхнем углу», а не «закрыть эту модалку». */
 .lx-close {
   position: absolute;
-  top: -40px;
-  right: 0;
-  width: 32px;
-  height: 32px;
+  top: -44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: none;
   background: none;
   color: #fff;
-  font-size: 28px;
   line-height: 1;
   cursor: pointer;
   font-family: inherit;
@@ -6039,8 +6020,6 @@ textarea {
 .kl__back:hover { filter: brightness(0.97); }
 .kl__bar { flex: 1; height: 10px; border-radius: 999px; background: #ece8fa; overflow: hidden; }
 .kl__bar-fill { height: 100%; border-radius: 999px; background: var(--purple); transition: width 0.3s ease; }
-.kl__hearts { flex-shrink: 0; display: flex; align-items: center; gap: 4px; font-weight: 800; color: #e5484d; }
-.kl__heart { font-size: 16px; }
 
 .kl-task { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* Контент урока — центрированной колонкой (материалы по центру, а не слева). */

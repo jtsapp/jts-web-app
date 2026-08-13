@@ -1,20 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
 //
-// Урок — очередь экранов: одно задание на экран, сверху прогресс и сердца,
+// Урок — очередь экранов: одно задание на экран, сверху полоса прогресса,
 // снизу одна кнопка. Данные готовит scripts/build-course-steps.js из уроков
 // перенесённого курса, поэтому здесь нет ни его разметки, ни его движка.
 //
 // Оценивается только то, у чего есть правильный ответ (choice/listen): верно —
-// монеты, неверно — минус сердце. Слова, слайды правила, свободный ответ и
-// чек-лист идут без оценки, как и в макете.
+// монеты. Слова, слайды правила, свободный ответ и чек-лист идут без оценки,
+// как и в макете.
+//
+// Сердец в уроке нет: ошибка стоит монет и портит процент в итогах, но не
+// выбрасывает из урока. Раньше три промаха обрывали урок на середине — на
+// стадии из десяти однотипных вопросов это случалось регулярно, и студент
+// терял всё пройденное вместо того, чтобы доучить тему.
 
 const REWARD = 10
-const START_HEARTS = 3
 const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
 
 // Проверяется шаг или нет. У listen ответ есть не всегда: экстрактор вынимает
@@ -26,7 +30,7 @@ const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
 export function isGraded(step) {
   if (step.type === 'listen') return !!step.answer && (step.options || []).length > 0
   if (step.type === 'match') return (step.pairs || []).length > 0
-  if (step.type === 'group') return (step.items || []).length > 0
+  if (step.type === 'group' || step.type === 'rows') return (step.items || []).length > 0
   return GRADED.has(step.type)
 }
 
@@ -122,29 +126,32 @@ function shuffle(arr, seed) {
   return a
 }
 
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, onExit, onDone }) {
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, onExit, onVocab, onDone }) {
   const { t } = useI18n()
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [wrong, setWrong] = useState(0)
   const [points, setPoints] = useState(0)
-  const [hearts, setHearts] = useState(START_HEARTS)
   const endedRef = useRef(false)
+
+  // Дорожка живёт вне экрана задания (см. getStageAudio) — значит, обрывать её
+  // надо на выходе из урока, иначе запись догоняет студента уже на тропе.
+  useEffect(() => stopStageAudio, [])
 
   const total = steps.length
   const step = steps[idx]
 
-  // Юнит-тест сдаётся долей верных ответов (passRatio из данных теста), а не
-  // тремя сердцами: два десятка вопросов подряд без права на три ошибки — это
-  // лотерея, а не проверка. В тесте сердца не тратятся, исход считается в конце.
+  // Провалить можно только юнит-тест, и решает это доля верных ответов
+  // (passRatio из данных теста). Обычный урок всегда доходит до итогов: там
+  // считаются проценты, монеты и число ошибок, но выбросить из урока нечему.
   const exam = passRatio != null
-  const reportDone = (outcome) => {
+  const reportDone = () => {
     if (endedRef.current) return
     endedRef.current = true
     const answered = correct + wrong
     const acc = answered ? Math.round((correct / answered) * 100) : 100
     onDone?.({
-      outcome: exam ? (acc >= passRatio * 100 ? 'success' : 'fail') : outcome,
+      outcome: exam && acc < passRatio * 100 ? 'fail' : 'success',
       correct,
       wrong,
       points,
@@ -153,8 +160,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   }
 
   const advance = () => {
-    if (!exam && hearts <= 0) reportDone('fail')
-    else if (idx + 1 >= total) reportDone('success')
+    if (idx + 1 >= total) reportDone()
     else setIdx((i) => i + 1)
   }
 
@@ -163,23 +169,29 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   return (
     <div className="cp">
       <div className="cp-bar">
+        {/* Значок стоит ПЕРЕД подписью у обеих кнопок полосы — так в макете.
+            Раньше оба висели справа, и «Выйти ✕» читалось как «закрыть эту
+            плашку», а не «выйти из урока». */}
         <button className="cp-bar__exit" onClick={onExit}>
-          {t('lesson.exitLesson')}
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="10" fill="currentColor" />
             <path d="m9 9 6 6m0-6-6 6" stroke="#9047ff" strokeWidth="2" strokeLinecap="round" />
           </svg>
+          {t('lesson.exitLesson')}
         </button>
         <div className="cp-bar__place">
           <b>{step.stage}</b>
           <span>{title}</span>
         </div>
-        <button className="cp-bar__dict" type="button" disabled>
-          {t('nav.vocab')}
+        {/* «Словарь» — живая кнопка: в макете она активна. Уводит в раздел
+            словаря тем же путём, что и пункт сайдбара, который и так открыт
+            рядом; отдельного подтверждения нет ровно по этой причине. */}
+        <button className="cp-bar__dict" type="button" onClick={onVocab} disabled={!onVocab}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v18H6.5A2.5 2.5 0 0 1 4 18.5z" stroke="currentColor" strokeWidth="2" />
             <path d="M8 7h7M8 11h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
+          {t('nav.vocab')}
         </button>
       </div>
 
@@ -187,12 +199,6 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
         <div className="cp-hud">
           <div className="cp-hud__track">
             <div className="cp-hud__fill" style={{ width: `${Math.round((idx / Math.max(1, total)) * 100)}%` }} />
-          </div>
-          <div className="cp-hud__hearts" aria-label={t('lesson.hearts')}>
-            <span className="cp-hud__heart" aria-hidden="true">
-              ❤
-            </span>
-            <b>{hearts}</b>
           </div>
         </div>
 
@@ -208,7 +214,6 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
               setPoints((p) => p + REWARD)
             } else {
               setWrong((w) => w + 1)
-              if (!exam) setHearts((h) => Math.max(0, h - 1))
             }
           }}
           t={t}
@@ -237,11 +242,15 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   const [links, setLinks] = useState({})
   // Экран с несколькими пропусками: ответ на каждый.
   const [fills, setFills] = useState({})
+  // Разминка «отметь, что нравится»: выбор живёт здесь, а не внутри карточек, —
+  // кнопка внизу в макете бледная, пока не отмечено ни одной.
+  const [picks, setPicks] = useState({})
 
   const verdict = () => {
     // Экран засчитывается целиком: это одно упражнение из нескольких строк,
     // и сердце за него снимается один раз, а не за каждый пропуск.
     if (step.type === 'group') return (step.items || []).every((it, i) => gapIsRight(it, fills[i] || ''))
+    if (step.type === 'rows') return (step.items || []).every((it, i) => fills[i] === it.answer)
     if (step.type === 'gap') return (step.answers || []).some((a) => norm(a) === norm(text))
     if (step.type === 'order') return norm(seq.map((i) => step.words[i]).join(' ')) === norm(step.answer)
     // Соединение засчитывается целиком: это одно упражнение, а не N вопросов,
@@ -254,8 +263,8 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   // Кнопка: пока не проверено — «Проверить» (голубая), после и у неоценённых
   // шагов — «Продолжить» (фиолетовая), как в макете.
   const canCheck = graded
-    ? step.type === 'group'
-      ? (step.items || []).every((_, i) => (fills[i] || '').trim() !== '')
+    ? step.type === 'group' || step.type === 'rows'
+      ? (step.items || []).every((_, i) => String(fills[i] || '').trim() !== '')
       : step.type === 'gap'
       ? text.trim() !== ''
       : step.type === 'order'
@@ -265,7 +274,9 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
           : picked !== null
     : step.type === 'write'
       ? text.trim() !== ''
-      : true
+      : step.type === 'pick'
+        ? Object.values(picks).some(Boolean)
+        : true
   const showCheck = graded ? !checked : step.type === 'write' && !revealed && !!step.model
 
   const act = () => {
@@ -283,7 +294,9 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   // строкой, а поле ответа стоит отдельным блоком под ним — поэтому склеиваем
   // половинки в вопрос, а не режем строку полем посередине.
   const promptFirst = PROMPT_FIRST.has(step.type)
-  const big = step.type === 'gap' ? gapSentence(step) : promptFirst ? step.title : step.prompt || step.sub
+  // У списка утверждений сам вопрос стоит в строках, а над ними в макете одна
+  // тёмная строка — инструкция. Крупной фиолетовой на этом экране нет.
+  const big = step.type === 'rows' ? '' : step.type === 'gap' ? gapSentence(step) : promptFirst ? step.title : step.prompt || step.sub
   const small = promptFirst ? step.sub : step.title
 
   return (
@@ -304,6 +317,14 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
             </>
           ))}
 
+        {/* Подпись стадии у списка утверждений: крупной строки тут нет, и без
+            неё подпись некуда деть — она стоит мелкой строкой под инструкцией. */}
+        {step.type === 'rows' && step.sub && <p className="cp-step__sub">{step.sub}</p>}
+
+        {/* Запись стадии стоит над заданием, а не отдельным экраном перед ним
+            (см. spreadAudio): иначе послушать заново на самом задании нечем. */}
+        {step.audio && <AudioButton src={step.audio} t={t} />}
+
         <StepBody
           step={step}
           options={options}
@@ -318,6 +339,8 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
           setLinks={setLinks}
           fills={fills}
           setFills={setFills}
+          picks={picks}
+          setPicks={setPicks}
           isRight={isRight}
           revealed={revealed}
           level={level}
@@ -362,7 +385,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   )
 }
 
-function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, isRight, revealed, level, t }) {
+function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t }) {
   switch (step.type) {
     // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
@@ -384,15 +407,11 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
       return (
         <div className="cp-order">
           <div className={`cp-order__line ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}>
-            {seq.length ? (
-              seq.map((i) => (
-                <span key={i} className="cp-chip is-set">
-                  {step.words[i]}
-                </span>
-              ))
-            ) : (
-              <span className="cp-order__ph">…</span>
-            )}
+            {seq.map((i) => (
+              <span key={i} className="cp-chip is-set">
+                {step.words[i]}
+              </span>
+            ))}
           </div>
           <div className="cp-order__bank">
             {(step.words || []).map((w, i) => (
@@ -439,13 +458,17 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
         </div>
       )
 
+    // Список утверждений с общей парой кнопок: один экран вместо пяти.
+    case 'rows':
+      return <RowsBoard step={step} answers={fills} setAnswers={setFills} checked={checked} />
+
     // Соединение пар: слева пункты задания, справа банк вариантов.
     case 'match':
       return <MatchBoard step={step} options={options} links={links} setLinks={setLinks} checked={checked} t={t} />
 
     // Выбор без правильного ответа: отмечаем сколько угодно карточек.
     case 'pick':
-      return <PickCards options={step.options} />
+      return <PickCards options={step.options} single={step.single} picks={picks} setPicks={setPicks} />
 
     // Слова урока: карточка переворачивается на перевод по клику.
     case 'cards':
@@ -453,10 +476,15 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
 
     case 'note':
       return (
-        <div className="cp-note">
-          {step.title && <h2 className="cp-note__h">{step.title}</h2>}
-          <div className="cp-note__body" dangerouslySetInnerHTML={{ __html: step.html || '' }} />
-        </div>
+        <>
+          <div className="cp-note">
+            {step.title && <h2 className="cp-note__h">{step.title}</h2>}
+            <div className="cp-note__body" dangerouslySetInnerHTML={{ __html: step.html || '' }} />
+          </div>
+          {/* Примеры правила в макете лежат каруселью ПОД карточкой, а не
+              внутри неё: карточка — это правило, а карусель — как оно звучит. */}
+          {(step.examples || []).length > 0 && <ExampleCarousel items={step.examples} />}
+        </>
       )
 
     case 'listen':
@@ -500,10 +528,16 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
     case 'write':
       return (
         <>
+          {/* Поле растёт под ответ само: уголок ресайза в макете не нарисован,
+              а без роста двух предложений в него не видно. */}
           <textarea
             className="cp-field cp-write"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onInput={(e) => {
+              e.target.style.height = 'auto'
+              e.target.style.height = `${e.target.scrollHeight}px`
+            }}
             placeholder={step.placeholder || t('lesson.typeAnswer')}
             rows={1}
           />
@@ -528,6 +562,37 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
     default:
       return null
   }
+}
+
+// Карусель примеров под слайдом правила. Окно на три карточки со стрелками по
+// краям — как в макете; примеров у правила бывает и два, тогда стрелки просто
+// не нажимаются.
+const EGS_WINDOW = 3
+
+function ExampleCarousel({ items }) {
+  const [from, setFrom] = useState(0)
+  const last = Math.max(0, items.length - EGS_WINDOW)
+  return (
+    <div className="cp-egs">
+      <button className="cp-egs__nav" type="button" disabled={from === 0} aria-label="←" onClick={() => setFrom((f) => Math.max(0, f - 1))}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m14 6-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <div className="cp-egs__list">
+        {items.slice(from, from + EGS_WINDOW).map((x, i) => (
+          <span key={from + i} className="cp-egs__card">
+            {x}
+          </span>
+        ))}
+      </div>
+      <button className="cp-egs__nav" type="button" disabled={from >= last} aria-label="→" onClick={() => setFrom((f) => Math.min(last, f + 1))}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m10 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+    </div>
+  )
 }
 
 function Choices({ options, picked, setPicked, checked, answer, grid = false }) {
@@ -615,17 +680,89 @@ function MatchBoard({ step, options, links, setLinks, checked, t }) {
   )
 }
 
-function PickCards({ options }) {
-  const [on, setOn] = useState({})
+// Строка вопроса и кнопки ответа рядом с ней. Два случая: у True/False набор
+// кнопок общий на весь экран (step.options), у вопросов к записи свой на
+// каждую строку (it.options) — «post a ___» и три слова к нему.
+//
+// Ключевое слово в макете выделено фиолетовым — это первое слово утверждения
+// после значка, ради него строка и написана («Listen means “use your ears”»).
+// У вопроса с пропуском выделять нечего: там ключевое слово и есть ответ.
+const ROW_KEYWORD = /^((?:\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*\s+)?)(\S+)([\s\S]*)$/u
+
+function RowsBoard({ step, answers, setAnswers, checked }) {
+  return (
+    <div className="cp-rows">
+      {(step.items || []).map((it, i) => {
+        const gap = /_{2,}|___/.test(String(it.q || ''))
+        const m = gap ? null : ROW_KEYWORD.exec(String(it.q || ''))
+        return (
+          <div className="cp-rows__row" key={i}>
+            <span className="cp-rows__q">
+              {m ? (
+                <>
+                  {m[1]}
+                  <b>{m[2]}</b>
+                  {m[3]}
+                </>
+              ) : (
+                it.q
+              )}
+            </span>
+            <span className="cp-rows__opts">
+              {(it.options || step.options || []).map((o) => {
+                let cls = 'cp-rows__opt'
+                if (answers[i] === o) cls += checked ? (o === it.answer ? ' is-right' : ' is-wrong') : ' is-sel'
+                return (
+                  <button key={o} className={cls} type="button" disabled={checked} onClick={() => setAnswers((s) => ({ ...s, [i]: o }))}>
+                    {o}
+                  </button>
+                )
+              })}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Карточки разминки. У «Tap one» выбор один — прежняя отметка снимается сама,
+// иначе инструкция обещает одно, а экран разрешает другое.
+function PickCards({ options, single, picks: on, setPicks: setOn }) {
   return (
     <div className="cp-picks">
       {(options || []).map((o, i) => (
-        <button key={i} className={`cp-pick ${on[i] ? 'is-on' : ''}`} onClick={() => setOn((s) => ({ ...s, [i]: !s[i] }))}>
+        <button
+          key={i}
+          className={`cp-pick ${on[i] ? 'is-on' : ''}`}
+          onClick={() => setOn((s) => (single ? { [i]: !s[i] } : { ...s, [i]: !s[i] }))}
+        >
           {o.emoji && <span className="cp-pick__emoji">{o.emoji}</span>}
           <span className="cp-pick__label">{o.label}</span>
         </button>
       ))}
     </div>
+  )
+}
+
+// Флаги на плашках перевода рисуем разметкой, а не эмодзи 🇰🇿/🇷🇺: в Windows
+// шрифтов с флагами нет вовсе, и вместо флага на экране остаются буквы «KZ».
+function FlagKZ() {
+  return (
+    <svg className="cp-word__flag" width="18" height="13" viewBox="0 0 18 13" aria-hidden="true">
+      <rect width="18" height="13" rx="2" fill="#00AFCA" />
+      <circle cx="9" cy="6" r="2.6" fill="#FEC50C" />
+    </svg>
+  )
+}
+
+function FlagRU() {
+  return (
+    <svg className="cp-word__flag" width="18" height="13" viewBox="0 0 18 13" aria-hidden="true">
+      <rect width="18" height="13" rx="2" fill="#D52B1E" />
+      <path d="M0 2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2.33H0z" fill="#fff" />
+      <rect y="4.33" width="18" height="4.34" fill="#0039A6" />
+    </svg>
   )
 }
 
@@ -662,43 +799,75 @@ function WordCards({ words, t }) {
           <button
             className="cp-word__flip"
             onClick={() => {
-              // Озвучиваем только тап по картинке. На обороте карточки лежит
-              // перевод — там слово уже прочитано глазами, и повтор звука при
-              // закрытии карточки читался как случайное срабатывание.
-              if (!open[i]) speakEnglish(w.en, { src: w.audio || null })
-              setOpen((s) => ({ ...s, [i]: !s[i] }))
+              speakEnglish(w.en, { src: w.audio || null })
+              setOpen((s) => ({ ...s, [i]: true }))
             }}
-            aria-label={open[i] ? t('lesson.hideWord', { word: w.en }) : t('lesson.hearWord', { word: w.en })}
+            aria-label={t('lesson.hearWord', { word: w.en })}
           >
             <span className="cp-word__face">
               {/* alt называет слово: картинка иллюстрирует значение, а не
                   украшает экран. */}
               {w.img ? <AssetImage src={w.img} alt={w.en} loading="lazy" hideOnError /> : <span className="cp-word__noimg">{w.en}</span>}
             </span>
-            {/* Оборот карточки в макете — не одна строка перевода: сверху слово с
-                определением, под ним переводы отдельными плашками. */}
-            <span className="cp-word__back">
+          </button>
+          {/* Оборот карточки по макету: сверху слово с определением, под ним
+              переводы плашками с флагом, снизу «В словарь» и повтор звука.
+              Раньше «+» висел углом на лицевой стороне, а озвучка была только
+              побочным действием переворота — отдельной кнопки звука не было. */}
+          {open[i] && (
+            <div className="cp-word__back">
+              {/* Закрыть перевод можно тапом по обороту — это кнопка во всю
+                  карточку под содержимым: кнопку в кнопку вкладывать нельзя,
+                  а «В словарь» и звук на обороте свои. */}
+              <button
+                className="cp-word__unflip"
+                type="button"
+                aria-label={t('lesson.hideWord', { word: w.en })}
+                onClick={() => setOpen((s) => ({ ...s, [i]: false }))}
+              />
               <span className="cp-word__head">
                 <b>{w.en}</b>
                 {w.def && <i>{w.def}</i>}
               </span>
               <span className="cp-word__trs">
-                <span className="cp-word__tr">{w.ru}</span>
-                {w.kk && <span className="cp-word__tr">{w.kk}</span>}
+                {w.kk && (
+                  <span className="cp-word__tr">
+                    <FlagKZ />
+                    {w.kk}
+                  </span>
+                )}
+                {w.ru && (
+                  <span className="cp-word__tr">
+                    <FlagRU />
+                    {w.ru}
+                  </span>
+                )}
               </span>
-            </span>
-            <span className="cp-word__label">{w.en}</span>
-          </button>
-          <button
-            className={`cp-word__add ${saved[i] ? 'is-saved' : ''}`}
-            type="button"
-            disabled={!!saved[i]}
-            aria-label={saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
-            title={saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
-            onClick={() => add(i, w)}
-          >
-            {saved[i] ? '✓' : '+'}
-          </button>
+              <span className="cp-word__acts">
+                <button
+                  className={`cp-word__save ${saved[i] ? 'is-saved' : ''}`}
+                  type="button"
+                  disabled={!!saved[i]}
+                  title={saved[i] ? t('lesson.inVocab') : t('lesson.addToVocab')}
+                  onClick={() => add(i, w)}
+                >
+                  {saved[i] ? t('lesson.savedVocab') : t('lesson.toVocab')}
+                </button>
+                <button
+                  className="cp-word__say"
+                  type="button"
+                  aria-label={t('lesson.hearWord', { word: w.en })}
+                  onClick={() => speakEnglish(w.en, { src: w.audio || null })}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                    <path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </span>
+            </div>
+          )}
+          <span className="cp-word__label">{w.en}</span>
         </div>
       ))}
     </div>
@@ -755,28 +924,85 @@ function SayButton({ text, src, t }) {
   )
 }
 
-// Аудио стадии слушания: обычная скорость и замедленная — как в макете.
+// Дорожка стадии живёт ВНЕ экрана задания: элемент один на весь урок и
+// пересоздаётся только при смене записи. Раньше <audio> лежал внутри шага и
+// умирал вместе с ним, а кнопка play каждый раз ставила currentTime = 0 —
+// перейдя к следующему вопросу к той же записи, студент слушал её с начала.
+// При дорожке в 50–90 секунд и шести вопросах это девять минут аудио на одно
+// упражнение.
+let stageAudio = null
+let stageAudioSrc = ''
+
+function getStageAudio(src) {
+  if (stageAudioSrc !== src) {
+    stageAudio?.pause()
+    stageAudio = new Audio(src)
+    stageAudioSrc = src
+  }
+  return stageAudio
+}
+
+export function stopStageAudio() {
+  stageAudio?.pause()
+  stageAudio = null
+  stageAudioSrc = ''
+}
+
+const AUDIO_EVENTS = ['play', 'pause', 'ended', 'timeupdate']
+
+// Дорожка живёт вне React, поэтому кнопка читает её через подписку на элемент,
+// а не хранит своё состояние: экран сменился, а запись та же — и кнопка обязана
+// показать «пауза» у играющей дорожки, а не «play».
+function useStageAudio(src) {
+  const subscribe = useCallback(
+    (onChange) => {
+      const a = getStageAudio(src)
+      for (const e of AUDIO_EVENTS) a.addEventListener(e, onChange)
+      return () => {
+        for (const e of AUDIO_EVENTS) a.removeEventListener(e, onChange)
+      }
+    },
+    [src],
+  )
+  const server = () => false
+  const playing = useSyncExternalStore(subscribe, () => !getStageAudio(src).paused, server)
+  const started = useSyncExternalStore(subscribe, () => getStageAudio(src).currentTime > 0, server)
+  return { playing, started }
+}
+
+// Аудио стадии слушания: пауза/продолжение, замедленно и «сначала».
 function AudioButton({ src, t }) {
-  const ref = useRef(null)
-  useEffect(() => () => ref.current?.pause(), [])
-  const play = (rate) => {
-    const a = ref.current
-    if (!a) return
-    a.pause()
-    a.currentTime = 0
+  const { playing, started } = useStageAudio(src)
+
+  const play = (rate, fromStart) => {
+    const a = getStageAudio(src)
     a.playbackRate = rate
+    // Доиграла до конца — следующий тап начинает заново, иначе кнопка молчала бы.
+    if (fromStart || a.ended) a.currentTime = 0
     a.play().catch(() => {})
   }
+
+  const toggle = () => {
+    const a = getStageAudio(src)
+    if (a.paused) play(1, false)
+    else a.pause()
+  }
+
   return (
     <div className="cp-audio">
-      <audio ref={ref} src={src} preload="none" />
-      <button className="cp-audio__play" onClick={() => play(1)} aria-label={t('lesson.play')}>
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
-          <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
+      <button className="cp-audio__play" onClick={toggle} aria-label={playing ? t('lesson.pause') : t('lesson.play')}>
+        {playing ? (
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M8 5h3v14H8zM13 5h3v14h-3z" fill="currentColor" />
+          </svg>
+        ) : (
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+            <path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8 8 0 0 1 0 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        )}
       </button>
-      <button className="cp-audio__slow" onClick={() => play(0.6)}>
+      <button className="cp-audio__slow" onClick={() => play(0.6, false)}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M3 17h5a5 5 0 0 1 5-5 5 5 0 0 1 5 5h3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           <circle cx="9" cy="15" r="4" stroke="currentColor" strokeWidth="2" />
@@ -784,6 +1010,13 @@ function AudioButton({ src, t }) {
         </svg>
         {t('lesson.playSlow')}
       </button>
+      {/* «Сначала» появляется, только когда есть что перематывать: на нетронутой
+          записи кнопка ничего бы не делала. */}
+      {started && (
+        <button className="cp-audio__restart" onClick={() => play(1, true)}>
+          {t('lesson.playAgain')}
+        </button>
+      )}
     </div>
   )
 }

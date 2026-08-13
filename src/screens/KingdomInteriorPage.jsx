@@ -10,7 +10,7 @@ import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
-import { isStepLevel, tasksToSteps } from '../learning/nativeSteps.js'
+import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -61,35 +61,6 @@ function CheckIcon() {
         d="M18.2067 3.80546C18.615 4.36213 18.5242 5.11171 18.1442 5.68796C14.5879 11.0755 12.0267 14.3484 10.6096 16.0421C9.90667 16.8817 8.68583 16.9434 7.89083 16.1896C5.8202 14.2207 3.87435 12.1245 2.06458 9.91338C1.56042 9.29546 1.45625 8.42338 1.94708 7.79463C2.37375 7.24796 2.86083 6.7788 3.30125 6.40713C4.03167 5.79046 5.08625 5.93046 5.74292 6.62546C7.76917 8.77213 8.99042 10.2713 8.99042 10.2713C8.99042 10.2713 10.9979 7.33796 14.2188 2.82546C14.7175 2.12671 15.6063 1.8013 16.3571 2.21755C16.96 2.55213 17.6608 3.0613 18.2067 3.80505V3.80546Z"
         fill="#fff"
       />
-    </svg>
-  )
-}
-
-function BrokenHeartIcon() {
-  return (
-    <svg width="64" height="55" viewBox="0 0 64 55" fill="none" aria-hidden="true">
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M62.1798 19.8545C61.4733 29.7333 54.9723 38.0652 48.3111 43.7629C44.9483 46.6388 41.4525 48.9255 38.4345 50.4808C36.9264 51.2577 35.5075 51.8679 34.26 52.2757C33.0681 52.6655 31.8341 52.9383 30.7732 52.8625C30.3745 52.8339 29.9586 52.7532 29.535 52.634L34.26 39.1903L33.2805 31.9679L37.325 25.9011L35.3028 18.6787L38.4345 15.212L35.3028 11.1675L39.9843 8.56741L39.9843 2.8578C41.1453 2.29946 42.3011 1.88582 43.4463 1.61045C47.1547 0.718738 50.607 1.31538 53.5052 2.92696C59.2086 6.09808 62.5663 13.0425 62.1816 19.8228L62.1798 19.8545Z"
-        fill="url(#le-heart-a)"
-      />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M29.9859 52.5958C29.2644 52.4799 28.5098 52.2611 27.7729 51.9972C26.5371 51.5549 25.1358 50.9054 23.6499 50.087C20.6763 48.4484 17.2453 46.0654 13.964 43.0972C7.46355 37.2165 1.19664 28.7072 0.764991 18.8125L0.763845 18.7808C0.568176 11.9925 4.11738 5.14404 9.9064 2.13267C12.8485 0.60225 16.316 0.101786 19.9982 1.09622C23.0652 1.92448 26.1808 3.76032 29.2373 6.72707C30.9907 4.6999 24.4408 12.4909 26.2894 11.3235L29.2373 14.5014L23.6499 16.2347L27.7729 18.8125L22.8227 25.4794L27.7729 30.3906L24.2671 36.4574L27.7729 40.213L29.9859 52.5958Z"
-        fill="url(#le-heart-b)"
-      />
-      <defs>
-        <linearGradient id="le-heart-a" x1="34.5343" y1="0.278752" x2="30.7738" y2="52.8625" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F83C3C" />
-          <stop offset="1" stopColor="#FF5C5C" />
-        </linearGradient>
-        <linearGradient id="le-heart-b" x1="28.9447" y1="0.0126847" x2="31.2423" y2="52.6806" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F83C3C" />
-          <stop offset="1" stopColor="#FF5C5C" />
-        </linearGradient>
-      </defs>
     </svg>
   )
 }
@@ -234,7 +205,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           if (!m) return
           // L<n> — урок, T<u> — юнит-тест: файлы шагов лежат рядом.
           const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : 'T' + m[2])
-          if (data) setOpen({ code, attempt: 0, steps: data })
+          if (data) setOpen({ code, attempt: 0, steps: { ...data, title: stripStageTail(data.title, data.steps) } })
           return
         }
         const data = await loadLesson(level, code)
@@ -245,7 +216,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           // Язык нужен конвертеру: перевод в контенте склеен парой «ru · kk»,
           // и сторону выбираем по интерфейсу (см. learning/bilingual.js).
           const steps = tasksToSteps(data, lang)
-          setOpen({ code, attempt: 0, steps: { title: data.title, blurb: '', steps } })
+          setOpen({ code, attempt: 0, steps: { title: stripStageTail(data.title, steps), blurb: '', steps } })
           return
         }
         setOpen({ code, data, attempt: 0 })
@@ -478,6 +449,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               subtitle={open.steps.blurb}
               passRatio={open.steps.passRatio ?? null}
               onExit={handleBack}
+              onVocab={onNav ? () => onNav('vocab') : null}
               onDone={onDone}
             />
           ) : (
@@ -567,20 +539,21 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Итоги урока (провал — сердца кончились) */}
+      {/* Итоги неудачной попытки. Сюда доводит только юнит-тест: он сдаётся
+          долей верных ответов, и не сдать его можно. Обычный урок провалить
+          нечем — сердец в плеере нет, экран всегда приходит успехом. Поэтому
+          здесь больше нет карточки «жизней больше нет»: она объясняла ровно ту
+          механику, которой не стало. */}
       {end && end.outcome === 'fail' && (
         <div className="le-over le-over--fail">
           <div className="le-card le-card--fail">
             <AssetImage className="le-art le-art--lose" src="/assets/learning/result-lose.webp" alt="" />
             <div className="le-info le-info--fail">
               <div className="le-fail">
-                <div className="le-heart">
-                  <BrokenHeartIcon />
-                  <span>Жизней больше нет</span>
-                </div>
+                <div className="le-pct">{end.accuracy ?? 0}%</div>
                 <div className="le-head">
-                  <h2 className="le-title">Ой-ой</h2>
-                  <p className="le-sub le-sub--bold">Видимо, нужно попробовать еще раз</p>
+                  <h2 className="le-title">Тест не сдан</h2>
+                  <p className="le-sub le-sub--bold">Верных ответов пока мало — попробуйте ещё раз</p>
                 </div>
               </div>
               <button className="le-btn" onClick={retry}>
@@ -595,8 +568,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {confirmExit && (
         <div className="lx-over" onClick={() => setConfirmExit(false)}>
           <div className="lx-card" onClick={(e) => e.stopPropagation()}>
+            {/* Крестик в макете стоит по центру НАД карточкой и рисуется
+                толстым штрихом — глиф «×» рядом с ним выглядел засечкой. */}
             <button className="lx-close" aria-label={t('common.close')} onClick={() => setConfirmExit(false)}>
-              ×
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+                <path d="M6 6 24 24M24 6 6 24" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+              </svg>
             </button>
             {/* Арт рисуется в круг 112px, а исходный PNG был 1664px и 2.6 МБ —
                 на 4G он не успевал приехать, и вместо портрета висел серый

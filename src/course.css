@@ -34,7 +34,7 @@
   cursor: pointer;
 }
 .cp-bar__exit {
-  padding: 8px 8px 8px 16px;
+  padding: 8px 16px 8px 8px;
   border-radius: 16px;
   background: #9047ff;
   color: #fff;
@@ -79,10 +79,11 @@
   align-items: center;
   padding: 25px 24px 40px;
 }
+/* Только полоса прогресса: сердец в уроке нет, и справа от полосы больше
+   ничего не стоит. */
 .cp-hud {
   display: flex;
   align-items: center;
-  gap: 21px;
   width: 542px;
   max-width: 100%;
   height: 40px;
@@ -103,25 +104,6 @@
   background: #9047ff;
   transition: width 0.25s ease;
 }
-.cp-hud__hearts {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 30px;
-  background: #fafafa;
-}
-.cp-hud__heart {
-  font-size: 14px;
-  color: #ff4646;
-}
-.cp-hud__hearts b {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #9047ff;
-}
-
 /* ——— Тело задания ——— */
 /* Ширина под самое широкое тело задания (сетка слов — 1020 в макете), а сам
    вопрос уже: длинную строку в 1020 читать неудобно. */
@@ -301,33 +283,6 @@
   cursor: pointer;
   text-align: left;
 }
-/* «+» забирает слово в личный словарь — так и было в исходном курсе: слова с
-   уроков можно продолжить учить в разделе «Словарь». Кнопка лежит поверх
-   картинки, но не перекрывает слово внизу карточки. */
-.cp-word__add {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 92%);
-  box-shadow: 0 2px 8px rgb(24 24 24 / 18%);
-  color: #9047ff;
-  font-family: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-}
-.cp-word__add.is-saved {
-  background: #9047ff;
-  color: #fff;
-  cursor: default;
-}
 .cp-word__face,
 .cp-word__back {
   display: block;
@@ -352,18 +307,32 @@
   font-weight: 700;
   color: #9047ff;
 }
+/* Оборот накрывает лицевую сторону: он живёт отдельным блоком рядом с кнопкой
+   переворота, потому что внутри него свои кнопки — «В словарь» и звук. */
 .cp-word__back {
-  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 12px;
   background: #fff;
 }
-.cp-word.is-open .cp-word__face {
-  display: none;
+/* Кнопка «закрыть перевод» лежит под содержимым во всю карточку: тап по
+   свободному месту оборота возвращает картинку. */
+.cp-word__unflip {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
-.cp-word.is-open .cp-word__back {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.cp-word__back > :not(.cp-word__unflip) {
+  position: relative;
+  z-index: 1;
 }
 .cp-word__head b {
   display: block;
@@ -384,14 +353,60 @@
   flex-direction: column;
   gap: 4px;
 }
+/* Плашка перевода: флаг слева, сам перевод рядом — язык видно, не читая. */
 .cp-word__tr {
-  display: block;
-  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
   border-radius: 8px;
   background: #f8f8f8;
   font-size: 13px;
   font-weight: 500;
   color: #181818;
+}
+.cp-word__flag {
+  flex: none;
+}
+/* Действия оборота прижаты к низу карточки: «В словарь» тянется, кнопка звука
+   остаётся круглой. */
+.cp-word__acts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+.cp-word__save {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 80px;
+  background: #9047ff;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cp-word__save.is-saved {
+  background: #ebdeff;
+  color: #9047ff;
+  cursor: default;
+}
+.cp-word__say {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #ebdeff;
+  color: #9047ff;
+  cursor: pointer;
 }
 .cp-word__label {
   display: block;
@@ -399,6 +414,11 @@
   font-size: 16px;
   font-weight: 700;
   color: #181818;
+}
+/* Перевёрнутая карточка в макете подписана бледным: слово читается на самом
+   обороте, подпись под ней — уже вторая копия. */
+.cp-word.is-open .cp-word__label {
+  color: #9d9d9d;
 }
 
 /* Слайд правила — карточка по макету: заголовок внутри, текст слева
@@ -475,9 +495,49 @@
   border: 1px solid #ececf3;
   padding: 8px 10px;
 }
+/* Шапка таблицы правила в макете — сплошная фиолетовая с белым текстом, а не
+   бледно-сиреневая плашка. Скругление снимаем с самой таблицы: собственных
+   радиусов у ячеек нет, а границы шапки не должны рисоваться поверх заливки. */
+.cp-note table {
+  border-radius: 12px;
+  overflow: hidden;
+}
 .cp-note th {
-  background: #f6f2ff;
-  font-weight: 800;
+  border-color: #9047ff;
+  background: #9047ff;
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Формула правила: части фразы через фиолетовый кружок с плюсом. Маркеры
+   списку не нужны — строка и так читается как формула. */
+.cp-note ul.has-gf {
+  padding-left: 0;
+  list-style: none;
+}
+.cp-note li.gf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #17171c;
+}
+.cp-note .gf__op {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
 }
 /* Пузырь-подсказка урока: свой стиль, а не чат тьютора. */
 .cp-note .bubble {
@@ -559,6 +619,55 @@
   max-width: 100%;
 }
 
+/* Карусель примеров под слайдом правила: стрелки по краям, между ними — окно
+   на три карточки. Ширина та же, что у карточки правила, чтобы ряд стоял с ней
+   по одной оси. */
+.cp-egs {
+  width: 100%;
+  max-width: 726px;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cp-egs__nav {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #9047ff;
+  cursor: pointer;
+}
+.cp-egs__nav:disabled {
+  color: #cfcfd6;
+  cursor: default;
+}
+.cp-egs__list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+}
+.cp-egs__card {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #17171c;
+  text-align: center;
+}
+
 /* Аудио */
 .cp-audio {
   margin-top: 18px;
@@ -593,6 +702,20 @@
   color: #9047ff;
   cursor: pointer;
 }
+/* «Сначала» — второстепенное действие: в макете его нет, и спорить с
+   нарисованными кнопками ему незачем. */
+.cp-audio__restart {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9d9d9d;
+  cursor: pointer;
+}
+.cp-audio__restart:hover {
+  color: #9047ff;
+}
 
 /* Поле ответа — одно на «впиши пропуск» и свободный ответ: в макете это один
    и тот же белый блок, только вопрос над ним разный. */
@@ -619,7 +742,8 @@
   border-color: #9047ff;
 }
 .cp-write {
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
 }
 .cp-model {
   width: 516px;
@@ -844,6 +968,81 @@
   color: #ff4646;
 }
 
+/* Список утверждений «True / False»: одна белая карточка, в каждой строке
+   утверждение и своя пара кнопок, кнопка проверки внизу одна на весь экран. */
+.cp-rows {
+  width: 100%;
+  max-width: 722px;
+  margin-top: 18px;
+  border-radius: 20px;
+  background: #fff;
+  overflow: hidden;
+}
+.cp-rows__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  border-top: 1px solid #f1f1f5;
+}
+.cp-rows__row:first-child {
+  border-top: none;
+}
+.cp-rows__q {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #17171c;
+  text-align: left;
+}
+.cp-rows__q b {
+  font-weight: 700;
+  color: #9047ff;
+}
+.cp-rows__opts {
+  display: flex;
+  flex: none;
+  gap: 10px;
+}
+.cp-rows__opt {
+  min-width: 76px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 80px;
+  background: #f1e9ff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+  cursor: pointer;
+}
+.cp-rows__opt:disabled {
+  cursor: default;
+}
+.cp-rows__opt.is-sel {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-rows__opt.is-right {
+  background: #31b423;
+  color: #fff;
+}
+.cp-rows__opt.is-wrong {
+  background: #ff4646;
+  color: #fff;
+}
+@media (max-width: 560px) {
+  .cp-rows__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+}
+
 /* Порядок слов: собранная фраза лежит плашками на линейке, банк — под ней */
 .cp-order {
   width: 100%;
@@ -853,6 +1052,9 @@
   align-items: center;
   gap: 16px;
 }
+/* Строка сборки в макете — пунктир во всю ширину блока и без «…»: пустая
+   линия и так читается как место для ответа, а многоточие висело на ней как
+   текст. */
 .cp-order__line {
   min-height: 65px;
   width: 100%;
@@ -863,12 +1065,7 @@
   justify-content: center;
   gap: 8px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #afafaf;
-}
-.cp-order__ph {
-  font-size: 20px;
-  font-weight: 700;
-  color: #afafaf;
+  border-bottom: 2px dashed #c6c6cf;
 }
 .cp-order__line.is-right .cp-chip,
 .cp-order__line.is-wrong .cp-chip {
