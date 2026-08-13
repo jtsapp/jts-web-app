@@ -1,24 +1,35 @@
-// Озвучка заданий «Обучения», у которых в исходном курсе записи не было.
+// Озвучка того, для чего в исходном курсе записи не было.
 //
-// Такие задания курс помечал `data-say` и читал браузерным синтезом («Read
-// aloud by your device»), а на экране у нас оставался немой текст. Голос берём
-// тот же, что у Луны в тьюторе — Google Cloud TTS, модель gemini-2.5-flash-tts
-// (зеркало ttsGemini из scripts/make-tutor-voice-samples.js), чтобы звук в
-// уроке и в разговоре с тьютором был из одного семейства.
+// Курс помечал такие места атрибутом `data-say` и читал их браузерным синтезом
+// («Read aloud by your device»), а слова словаря вообще не озвучивал, хотя
+// инструкция стадии обещает: «Look and listen. Tap a picture to hear the
+// word». На экране всё это оставалось немым.
 //
-// Файлы кладутся в public/learning/audio/<level>/ и едут в репозиторий: это
-// семь коротких дорожек на весь курс, а не пользовательский контент, и платить
-// за синтез одного и того же текста на каждое открытие урока незачем. Имя
-// файла — хэш текста (scripts/jts-self/say-audio.js), поэтому прогон
-// экстрактора заново находит уже сгенерированное и не требует перезаписи.
+// Два вида материала — два провайдера:
 //
-// Запуск (ключи из .env.local в корне):
-//   node scripts/make-lesson-audio.js              # все уровни, чего нет
-//   node scripts/make-lesson-audio.js --level a1   # один уровень
-//   node scripts/make-lesson-audio.js --dry        # только показать, что нужно
-//   node scripts/make-lesson-audio.js --force      # перегенерить существующее
+//   words     слова словаря и слова заданий «Listen. Choose the word you hear»
+//             → Soniox (SONIOX_API_KEY, им же говорит Спарк в тьюторе)
+//   narration связные куски материала на 30–50 слов
+//             → Google Cloud TTS, gemini-2.5-flash-tts — голос Луны
 //
-// Нужен доступ к Cloud Text-to-Speech: GOOGLE_CREDENTIALS_JSON (сам JSON) или
+// Разделение вынужденное: в проекте service account'а Cloud TTS выключен, и
+// упереться в это, генерируя словарь, было бы обидно. Провайдер выбирается по
+// виду материала, недоступность одного не мешает другому.
+//
+// Файлы кладутся в public/learning/audio/<level>/ и едут в репозиторий: платить
+// за синтез одного и того же слова на каждое открытие урока незачем. Имя файла
+// — хэш самого текста (scripts/jts-self/say-audio.js), поэтому одно слово
+// звучит одинаково и на карточке словаря, и в задании на слух, а прогон
+// экстрактора заново находит уже сгенерированное.
+//
+// Запуск (ключи из .env.local в корне репозитория; в worktree его надо
+// положить рядом — свой .env.local у каждого дерева):
+//   node scripts/make-lesson-audio.js                        # всё, чего нет
+//   node scripts/make-lesson-audio.js --level a0 --only words
+//   node scripts/make-lesson-audio.js --dry                  # показать план
+//   node scripts/make-lesson-audio.js --force                # перегенерить
+//
+// Для narration нужен GOOGLE_CREDENTIALS_JSON (сам JSON) или
 // GOOGLE_APPLICATION_CREDENTIALS (путь к файлу service account).
 const fs = require('node:fs')
 const path = require('node:path')
@@ -39,6 +50,101 @@ const PROMPT =
   'Calm, even pace — slightly slower than ordinary conversation, but not dragging. ' +
   'Crisp articulation, natural sentence intonation. No theatrical delivery, no ' +
   'sing-song rhythm, no breathiness, no dramatic pauses.'
+
+// Слова словаря озвучивает Soniox, а не Gemini. Причина прозаична: в проекте
+// service account'а Cloud TTS выключен, а ключ Soniox уже лежит в .env.local и
+// им же говорит Спарк в тьюторе. Голос один на все слова (Owen) — это диктор
+// словаря, а не персонаж, и менять его от слова к слову незачем.
+//
+// Темп ниже разговорного: слово в словаре слушают, чтобы повторить, и на A0
+// «обычная» скорость носителя для этого быстра. Диапазон провайдера
+// [0.7–1.3], берём заметно медленнее середины — как у голосовой визитки Спарка.
+const SONIOX_VOICE = process.env.LESSON_TTS_SONIOX_VOICE || 'Owen'
+const SONIOX_SPEED = 0.85
+
+// Словарь — это четыре сотни запросов подряд, и на такой дистанции ломается
+// всё: у Soniox лимит запросов в минуту на организацию (упёрлись на сотом
+// слове), а сеть роняет соединение просто так (`fetch failed` на 139-м).
+// Пауза держит под лимитом, повтор с отступом вытаскивает из обоих случаев.
+// Отдельный обработчик нужен именно для сетевой осечки: она приходит
+// исключением, а не кодом ответа, и раньше убивала весь прогон.
+const SONIOX_GAP_MS = Number(process.env.LESSON_TTS_GAP_MS || 700)
+const SONIOX_RETRIES = 6
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+async function synthesizeSoniox(text, attempt = 0) {
+  const key = process.env.SONIOX_API_KEY
+  if (!key) throw new Error('SONIOX_API_KEY не задан')
+
+  const again = async (why, waitMs) => {
+    if (attempt >= SONIOX_RETRIES) throw new Error(`soniox: ${why} — не отпустило за ${SONIOX_RETRIES} попыток`)
+    console.log(`  ${why} — ждём ${waitMs / 1000} с (попытка ${attempt + 1})`)
+    await sleep(waitMs)
+    return synthesizeSoniox(text, attempt + 1)
+  }
+
+  let res
+  try {
+    // Хост именно tts-rt (realtime), как в app/api/tutor-tts/route.js —
+    // api.soniox.com отдаёт на этот путь 404.
+    res = await fetch('https://tts-rt.soniox.com/tts', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: process.env.SONIOX_TTS_MODEL || 'tts-rt-v1',
+        voice: SONIOX_VOICE,
+        language: 'en',
+        text,
+        speed: SONIOX_SPEED,
+        audio_format: 'mp3',
+      }),
+    })
+  } catch (e) {
+    // Сеть моргнула — ждём немного и пробуем снова.
+    return again(`сеть (${e.message || e})`, 5000)
+  }
+
+  if (res.status === 429) return again('лимит провайдера', 30000)
+  // 5xx у провайдера тоже лечится ожиданием — в отличие от 4xx, где виноват
+  // запрос и повтор ничего не изменит.
+  if (res.status >= 500) return again(`провайдер ${res.status}`, 10000)
+  if (!res.ok) throw new Error(`soniox ${res.status}: ${(await res.text()).slice(0, 300)}`)
+
+  try {
+    return Buffer.from(await res.arrayBuffer())
+  } catch (e) {
+    // Соединение оборвалось на теле ответа — файл был бы битым.
+    return again(`обрыв ответа (${e.message || e})`, 5000)
+  }
+}
+
+/**
+ * Слова уровня, которым нужна запись: слова карточек словаря и слова заданий
+ * «Listen. Choose the word you hear.» (поле say у choice).
+ *
+ * Один файл на слово, ключ — сам текст. Поэтому слово, которое студент слышит
+ * на карточке, и оно же в задании на слух звучат ОДИНАКОВО: иначе задание
+ * проверяло бы не память, а способность узнать другой голос.
+ */
+function wordsOf(level) {
+  const file = path.join(LEARNING, `${level}.json`)
+  if (!fs.existsSync(file)) return []
+  const { lessons } = JSON.parse(fs.readFileSync(file, 'utf8'))
+  const seen = new Map()
+  const add = (text, code, title) => {
+    const word = String(text || '').trim()
+    if (!word) return
+    const key = sayAudioFile(word)
+    if (!seen.has(key)) seen.set(key, { file: key, text: word, code, title, provider: 'soniox' })
+  }
+  for (const [code, lesson] of Object.entries(lessons)) {
+    for (const task of lesson.tasks || []) {
+      if (task.type === 'cards') for (const w of task.words || []) add(w.en, code, lesson.title)
+      if (task.type === 'choice' && task.say) add(task.say, code, lesson.title)
+    }
+  }
+  return [...seen.values()]
+}
 
 // Голоса. Внутри одного урока дикторы чередуются: в L01-7 о себе рассказывают
 // три РАЗНЫХ человека («Amina's story», «Daniyar's story», «Lena's story»), и
@@ -144,8 +250,13 @@ function narrationsOf(level) {
 function parseArgs() {
   const argv = process.argv.slice(2)
   const at = argv.indexOf('--level')
+  const kindAt = argv.indexOf('--only')
   return {
     levels: at >= 0 && argv[at + 1] ? [argv[at + 1]] : LEVELS,
+    // words — слова словаря и слова заданий на слух (Soniox);
+    // narration — связные куски материала (Gemini). Разные провайдеры, и
+    // недоступность одного не должна мешать сгенерировать другое.
+    only: kindAt >= 0 && argv[kindAt + 1] ? argv[kindAt + 1] : 'all',
     dry: argv.includes('--dry'),
     force: argv.includes('--force'),
   }
@@ -153,11 +264,15 @@ function parseArgs() {
 
 async function run() {
   loadEnv()
-  const { levels, dry, force } = parseArgs()
+  const { levels, only, dry, force } = parseArgs()
 
   const plan = []
   for (const level of levels) {
-    for (const item of narrationsOf(level)) {
+    const items = [
+      ...(only === 'narration' ? [] : wordsOf(level)),
+      ...(only === 'words' ? [] : narrationsOf(level)),
+    ]
+    for (const item of items) {
       const out = path.join(AUDIO_DIR, level, item.file)
       if (!force && fs.existsSync(out)) continue
       plan.push({ ...item, level, out })
@@ -168,21 +283,41 @@ async function run() {
     console.log('нечего генерировать: записи всех текстов уже на месте')
     return
   }
-  console.log(`нужно записей: ${plan.length}`)
-  for (const item of plan) {
-    console.log(`  ${item.level}/${item.file}  ${item.voice}  ${item.code} · ${item.title}`)
-    console.log(`    «${item.text.slice(0, 90)}${item.text.length > 90 ? '…' : ''}»`)
+  const words = plan.filter((i) => i.provider === 'soniox').length
+  console.log(`нужно записей: ${plan.length} (слов ${words}, связного материала ${plan.length - words})`)
+  if (dry) {
+    for (const item of plan) {
+      const who = item.provider === 'soniox' ? SONIOX_VOICE : item.voice
+      console.log(`  ${item.level}/${item.file}  ${who}  ${item.code} · ${item.title}`)
+      console.log(`    «${item.text.slice(0, 90)}${item.text.length > 90 ? '…' : ''}»`)
+    }
+    return
   }
-  if (dry) return
 
-  const token = await googleAccessToken(credentials())
+  // Токен Google берём только если он реально нужен: слова идут через Soniox,
+  // и упасть на отсутствующем service account, генерируя словарь, было бы
+  // глупо.
+  let token = null
+  let done = 0
+  let bytes = 0
   for (const item of plan) {
-    const mp3 = await synthesize(token, item.text, item.voice)
+    let mp3
+    if (item.provider === 'soniox') {
+      mp3 = await synthesizeSoniox(item.text)
+      await sleep(SONIOX_GAP_MS)
+    } else {
+      if (!token) token = await googleAccessToken(credentials())
+      mp3 = await synthesize(token, item.text, item.voice)
+    }
     fs.mkdirSync(path.dirname(item.out), { recursive: true })
     fs.writeFileSync(item.out, mp3)
-    console.log(`✓ ${item.level}/${item.file} — ${item.voice}, ${(mp3.length / 1024) | 0} KB`)
+    done++
+    bytes += mp3.length
+    if (done % 25 === 0 || done === plan.length) {
+      console.log(`  ${done}/${plan.length} — ${(bytes / 1048576).toFixed(1)} МБ`)
+    }
   }
-  console.log('готово. Дальше прогоняй экстрактор — он привяжет записи к заданиям.')
+  console.log(`готово: ${done} записей, ${(bytes / 1048576).toFixed(1)} МБ. Дальше прогоняй экстрактор — он привяжет записи к заданиям.`)
 }
 
 if (require.main === module) {

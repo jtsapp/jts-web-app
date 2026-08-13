@@ -322,3 +322,47 @@ describe('nativeSteps — что не должно попадать на экр�
     expect(JSON.stringify(steps)).not.toContain('complete')
   })
 })
+
+// Записанное слово: файл важнее синтеза браузера. Синтез — лотерея (голос
+// зависит от системы, на Android для en-US его может не быть вовсе), а одно и
+// то же слово звучит и на карточке словаря, и в задании на слух через
+// несколько экранов.
+describe('nativeSteps — записанное слово', () => {
+  it('адрес записи доезжает до шага рядом с самим словом', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'choice',
+          sec: '2. Vocabulary',
+          title: 'Listen. Choose the word you hear.',
+          options: ['repeat', 'listen'],
+          answer: 'repeat',
+          say: 'repeat',
+          sayTrack: '/learning/audio/a0/c0ac48aa.mp3',
+        },
+      ],
+    })
+
+    expect(steps[0]).toMatchObject({ say: 'repeat', sayTrack: '/learning/audio/a0/c0ac48aa.mp3' })
+  })
+
+  it('без записи поле пустое — плеер договорит синтезом', () => {
+    const steps = tasksToSteps({
+      tasks: [{ type: 'choice', sec: '2. Vocabulary', options: ['a', 'b'], answer: 'a', say: 'a' }],
+    })
+    expect(steps[0].sayTrack).toBe('')
+  })
+
+  it('запись слова карточки едет вместе со словом', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'cards',
+          sec: '2. Vocabulary',
+          words: [{ en: 'like', ru: 'нравится', img: null, audio: '/learning/audio/a0/c4eb7d7f.mp3' }],
+        },
+      ],
+    })
+    expect(steps[0].words[0].audio).toBe('/learning/audio/a0/c4eb7d7f.mp3')
+  })
+})
