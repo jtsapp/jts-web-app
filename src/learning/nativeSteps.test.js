@@ -154,7 +154,28 @@ describe('nativeSteps — соединение пар', () => {
       { left: '🔁 repeat', right: 'повторять' },
       { left: '🔗 match', right: 'соединять' },
     ])
-    expect(steps[0].options).toHaveLength(4)
+    // Банк — ответы этого экрана, а не весь набор вариантов задания: лишний
+    // «отвечать» ломал бы обещание «каждый вариант используется один раз».
+    expect(steps[0].options).toEqual(['слушать', 'повторять', 'соединять'])
+  })
+
+  // Десять пар одним экраном не помещались даже в 1440, а сердце снималось за
+  // всё упражнение разом — одна ошибка стоила как десять.
+  it('длинное упражнение режется на экраны и остаток делится поровну', () => {
+    const answers = ['слушать', 'повторять', 'соединять', 'отвечать', 'спрашивать', 'понимать', 'закончить', 'работать', 'просить', 'извиняться']
+    const steps = tasksToSteps({
+      tasks: [
+        matchLead(),
+        ...answers.map((a, i) => ({ type: 'choice', sec: '2. Vocabulary', word: `w${i}`, options: answers, answer: a })),
+      ],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['match', 'match', 'match'])
+    expect(steps.map((s) => s.pairs.length)).toEqual([4, 3, 3])
+    // Заголовок из подписи достаётся всей серии, а не только первому экрану.
+    expect(new Set(steps.map((s) => s.title))).toEqual(new Set(['Match the word to the picture.']))
+    // Банк каждого экрана — его собственные ответы.
+    steps.forEach((s) => expect(s.options).toEqual(s.pairs.map((p) => p.right)))
   })
 
   it('двух пар мало — это честно два отдельных вопроса', () => {
@@ -364,5 +385,312 @@ describe('nativeSteps — записанное слово', () => {
       ],
     })
     expect(steps[0].words[0].audio).toBe('/learning/audio/a0/c4eb7d7f.mp3')
+  })
+})
+
+// Слайд правила в макете — карточка с фиолетовой шапкой таблицы, формулами
+// вместо строк «Use X + Y» и каруселью примеров под ней. Плюс исходный курс
+// печатает заголовок блока ещё и первой строкой его же списка.
+describe('nativeSteps — слайд правила', () => {
+  const grammar = (html) => tasksToSteps({ tasks: [{ type: 'info', sec: '3. Grammar', html }] })[0]
+
+  it('строки «Use X + Y» становятся формулой, местоимение отделяется', () => {
+    const s = grammar('<ul class="egs"><li>Use I like + a thing you enjoy.</li></ul>')
+    expect(s.html).toContain('class="gf"')
+    expect(s.html).toContain('<span class="gf__p">I</span>')
+    expect(s.html).toContain('<span class="gf__p">like</span>')
+    expect(s.html).toContain('<span class="gf__p">a thing you enjoy</span>')
+    // Список с формулами теряет маркеры — на это и вешается стиль.
+    expect(s.html).toMatch(/<ul[^>]*class="[^"]*has-gf/)
+  })
+
+  it('строка без плюса остаётся обычным пунктом', () => {
+    const s = grammar('<ul class="egs"><li>It is a fixed phrase — just add the word.</li></ul>')
+    expect(s.html).not.toContain('class="gf"')
+  })
+
+  it('заголовок, продублированный первым пунктом списка, печатается один раз', () => {
+    const s = grammar(
+      '<div class="instruction">I like / I don’t like</div>' +
+        '<table class="gtable"><tbody><tr><th>Person</th><th>+</th></tr><tr><td>I</td><td>I like coffee.</td></tr></tbody></table>' +
+        '<div class="instruction">🔧 Build it yourself</div><ul class="egs"><li>🔧 Build it yourself</li><li>Build it: like → I like coffee.</li></ul>',
+    )
+    // Заголовок остаётся заголовком, но из списка уходит.
+    expect(s.html).toContain('>🔧 Build it yourself</div>')
+    expect(s.html).not.toContain('<li>🔧 Build it yourself</li>')
+  })
+
+  it('примеры для карусели берутся из таблицы правила, без колонки лица', () => {
+    const s = grammar(
+      '<table class="gtable"><tbody><tr><th>Person</th><th>+</th><th>–</th></tr>' +
+        '<tr><td>I</td><td>I like coffee.</td><td>I don’t like Mondays.</td></tr></tbody></table>',
+    )
+    expect(s.examples).toEqual(['I like coffee.', 'I don’t like Mondays.'])
+  })
+})
+
+// Стадия Practice в источнике — десять однотипных вопросов подряд после одной
+// инструкции. По одному на экран это давало хвост одинаковых экранов, а
+// инструкция доставалась только первому.
+describe('nativeSteps — серии заданий и инструкция стадии', () => {
+  const lead = (text, sec = '4. Practice') => ({ type: 'info', sec, html: `<div class="instruction">${text}</div>` })
+
+  it('пять утверждений «True / False» становятся одним экраном', () => {
+    const say = (q, a) => ({ type: 'choice', sec: '4. Practice', word: q, options: ['True', 'False'], answer: a })
+    const steps = tasksToSteps({
+      tasks: [
+        lead('Read. Then choose True or False.'),
+        say('Listen means “use your ears”.', 'True'),
+        say('Repeat means “say it again”.', 'True'),
+        say('Answer means “ask a question”.', 'False'),
+        say('Slowly means “very fast”.', 'False'),
+        say('Look at means “use your eyes”.', 'True'),
+      ],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({ type: 'rows', title: 'Read. Then choose True or False.', options: ['True', 'False'] })
+    expect(steps[0].items).toHaveLength(5)
+    expect(steps[0].items[2]).toEqual({ q: 'Answer means “ask a question”.', answer: 'False' })
+  })
+
+  it('инструкция стадии доезжает до всей серии, а не только до первого задания', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        lead('Put the words in order.'),
+        { type: 'order', sec: '4. Practice', answer: ['I', 'like', 'coffee'] },
+        { type: 'order', sec: '4. Practice', answer: ['I', 'like', 'tea'] },
+        { type: 'order', sec: '4. Practice', answer: ['I', 'like', 'music'] },
+      ],
+    })
+
+    expect(steps.map((s) => s.title)).toEqual(['Put the words in order.', 'Put the words in order.', 'Put the words in order.'])
+  })
+
+  // Разбор ответов до самих ответов — спойлер, и он же мешал блоку стать
+  // подписью: инструкция не доезжала до заданий.
+  it('«Why these answers» уезжает в конец стадии и не съедает инструкцию', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '4. Practice',
+          html: '<div class="instruction">Read. Then choose True or False.</div><details class="gref"><summary>Why these answers</summary><p>Because.</p></details>',
+        },
+        { type: 'choice', sec: '4. Practice', word: 'A means B.', options: ['True', 'False'], answer: 'True' },
+        { type: 'choice', sec: '4. Practice', word: 'C means D.', options: ['True', 'False'], answer: 'False' },
+      ],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['rows', 'note'])
+    expect(steps[0].title).toBe('Read. Then choose True or False.')
+    expect(steps[1].html).toContain('Why these answers')
+  })
+})
+
+// Плеер дорожки приезжает отдельным блоком, а задание к нему — следующим.
+describe('nativeSteps — запись стадии', () => {
+  it('пустой экран плеера исчезает, запись едет вместе с заданиями стадии', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'listen', sec: '5. Listening', tracks: [{ src: 'https://x/a.mp3' }] },
+        { type: 'info', sec: '5. Listening', html: '<div class="instruction">Listen. Tick what you hear.</div>' },
+        { type: 'check', sec: '5. Listening', items: ['📖 read', '📺 watch TV'] },
+      ],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({ type: 'pick', title: 'Listen. Tick what you hear.', audio: 'https://x/a.mp3' })
+  })
+
+  it('запись без заданий остаётся своим экраном', () => {
+    const steps = tasksToSteps({ tasks: [{ type: 'listen', sec: '5. Listening', tracks: [{ src: 'https://x/a.mp3' }] }] })
+    expect(steps.map((s) => s.type)).toEqual(['listen'])
+  })
+})
+
+// Плейсхолдер поля в макете — каркас будущего ответа, а не «Введите ответ».
+describe('nativeSteps — каркас ответа', () => {
+  const write = (model) =>
+    tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '6. Speaking',
+          html: `<div class="opentask"><div class="instruction">Write two sentences.</div><div class="bubble am"><div class="blab">Model answer</div><p><i>${model}</i></p><p><b>Check yourself:</b> spelling counts.</p></div></div>`,
+        },
+      ],
+    })[0]
+
+  it('каркас строится по образцу ответа, связка держится при подлежащем', () => {
+    expect(write('I like coffee and music. I don’t like Mondays.').placeholder).toBe('I like _____. I don’t like _____.')
+  })
+
+  it('вопрос или назывное предложение каркаса не дают — поле остаётся с обычной подсказкой', () => {
+    expect(write('I’m a doctor. What do you do?').placeholder).toBe('')
+    expect(write('My phone is old.').placeholder).toBe('')
+  })
+})
+
+// Подпись к чек-листу «Я могу…» стоит прямо перед списком, а за списком в том
+// же блоке идёт ещё и список ключевых слов.
+describe('nativeSteps — чек-лист Wrap', () => {
+  it('заголовок и подпись берутся из курса, а не подставляются', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '7. Wrap',
+          html:
+            '<div class="done-card"><h3>🎉 Lesson 1 complete!</h3></div>' +
+            '<div class="instruction">You can now…</div><p class="subline">Tap each one you can do.</p>' +
+            '<ul class="can"><li><span class="tick">✓</span><span>say what I like</span></li><li><span>ask to repeat</span></li></ul>' +
+            '<div class="instruction">🔑 KEY WORD LIST</div><div class="card"><ul class="mini"><li>like</li></ul></div>',
+        },
+      ],
+    })
+
+    const check = steps.find((s) => s.type === 'checklist')
+    expect(check).toMatchObject({ title: 'You can now…', sub: 'Tap each one you can do.' })
+    expect(check.items).toEqual(['say what I like', 'ask to repeat'])
+  })
+})
+
+// Строки над словарём: крупной фиолетовой в макете идёт инструкция, мелкой —
+// подпись стадии. У перенесённого курса (A2/B1) роли полей уже такие, у A0/A1
+// инструкция приезжает подписью предыдущего блока — и попадала не в ту строку.
+describe('nativeSteps — заголовки словаря', () => {
+  it('инструкция уходит в крупную строку, подпись словаря — в мелкую', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        {
+          type: 'info',
+          sec: '2. Vocabulary',
+          html: '<div class="instruction">Look and listen. Tap a picture to hear the word.</div><p class="subline">These are your words for this lesson.</p>',
+        },
+        { type: 'cards', sec: '2. Vocabulary', words: [{ en: 'like', ru: 'нравится' }] },
+      ],
+    })
+
+    expect(steps[0]).toMatchObject({
+      type: 'cards',
+      title: 'These are your words for this lesson.',
+      sub: 'Look and listen. Tap a picture to hear the word.',
+    })
+  })
+})
+
+// Часть разминок приезжает не заданием, а вёрсткой: сетка карточек внутри
+// info-блока. Экраном это печаталось серой заметкой, где значок стоял отдельной
+// строкой над подписью и ничего не нажималось.
+describe('nativeSteps — разминка из вёрстки', () => {
+  const grid = (cards) => `<div class="grid3">${cards.map((c) => `<div class="card"><b>${c[0]}</b> &nbsp;${c[1]}</div>`).join('')}</div>`
+
+  it('сетка карточек становится экраном выбора, а не заметкой', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'info', sec: '2. Warm-up', html: '<div class="instruction">Where were you yesterday at 8 p.m.?</div>' },
+        { type: 'info', sec: '2. Warm-up', html: '<p class="subline">Tap one. There is no wrong answer.</p>' },
+        { type: 'info', sec: '2. Warm-up', html: grid([['🏠', 'at home'], ['💼', 'at work'], ['☕', 'in a café']]) },
+      ],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({
+      type: 'pick',
+      title: 'Where were you yesterday at 8 p.m.?',
+      // Вторая строка подписи приезжает отдельным блоком и раньше пропадала.
+      sub: 'Tap one. There is no wrong answer.',
+      // «Tap one» — выбор ровно один.
+      single: true,
+    })
+    expect(steps[0].options).toEqual([
+      { emoji: '🏠', label: 'at home' },
+      { emoji: '💼', label: 'at work' },
+      { emoji: '☕', label: 'in a café' },
+    ])
+  })
+
+  it('«Tap the ones» оставляет выбор множественным', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'info', sec: '2. Warm-up', html: '<div class="instruction">Tap the hellos you say.</div><p class="subline">No right or wrong — just you.</p>' + grid([['👋', 'Hi'], ['🤝', 'Hello']]) },
+      ],
+    })
+
+    expect(steps[0]).toMatchObject({ type: 'pick', title: 'Tap the hellos you say.', sub: 'No right or wrong — just you.' })
+    expect(steps[0].single).toBeUndefined()
+  })
+
+  // Цифры-клавиши и флаги — тоже значки, но \p{Extended_Pictographic} их не
+  // знает: разминки «числа» и «страны» из-за этого шли строчками без картинки.
+  it('цифры-клавиши и флаги отделяются как значки', () => {
+    const steps = tasksToSteps({
+      tasks: [{ type: 'info', sec: '2. Warm-up', html: '<div class="instruction">Tap the numbers.</div>' + grid([['1️⃣', 'one'], ['🇯🇵', 'Japan']]) }],
+    })
+
+    expect(steps[0].options).toEqual([
+      { emoji: '1️⃣', label: 'one' },
+      { emoji: '🇯🇵', label: 'Japan' },
+    ])
+  })
+
+  it('сетка без значков остаётся вёрсткой заметки', () => {
+    const steps = tasksToSteps({
+      tasks: [{ type: 'info', sec: '3. Grammar', html: '<div class="grid3"><div class="card">was</div><div class="card">were</div></div>' }],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['note'])
+  })
+
+  it('значок отделяется и у задания multi', () => {
+    const steps = tasksToSteps({ tasks: [{ type: 'multi', sec: '5. Listening', options: ['📖 read', '📺 watch TV'] }] })
+    expect(steps[0].options).toEqual([
+      { emoji: '📖', label: 'read' },
+      { emoji: '📺', label: 'watch TV' },
+    ])
+  })
+})
+
+// Стадия слушания в курсе — одна страница: плеер сверху, под ним все вопросы к
+// записи. Разложенная по одному вопросу на экран, она заставляла слушать
+// дорожку заново на каждом: записи по 50–90 секунд, вопросов до шестнадцати.
+describe('nativeSteps — вопросы к одной записи', () => {
+  const ask = (q, right, wrong) => ({ type: 'choice', sec: '4. Recall', word: q, options: [wrong, right], answer: right })
+  const track = { type: 'listen', sec: '4. Recall', tracks: [{ src: 'https://x/t.mp3' }] }
+  const lead = { type: 'info', sec: '4. Recall', html: '<div class="instruction">Listen, then complete each phrase.</div>' }
+
+  it('серия вопросов к записи собирается в один экран со своим набором вариантов у каждого', () => {
+    const steps = tasksToSteps({
+      tasks: [track, lead, ask('post a ___', 'letter', 'meal'), ask('move ___', 'house', 'email'), ask('call a ___', 'taxi', 'letter')],
+    })
+
+    expect(steps).toHaveLength(1)
+    expect(steps[0]).toMatchObject({ type: 'rows', title: 'Listen, then complete each phrase.', audio: 'https://x/t.mp3' })
+    expect(steps[0].items).toEqual([
+      { q: 'post a ___', options: ['meal', 'letter'], answer: 'letter' },
+      { q: 'move ___', options: ['email', 'house'], answer: 'house' },
+      { q: 'call a ___', options: ['letter', 'taxi'], answer: 'taxi' },
+    ])
+  })
+
+  it('длинная серия режется по шесть, запись остаётся на каждом экране', () => {
+    const many = Array.from({ length: 16 }, (_, i) => ask(`q${i} ___`, `right${i}`, `wrong${i}`))
+    const steps = tasksToSteps({ tasks: [track, lead, ...many] })
+
+    expect(steps.map((s) => s.type)).toEqual(['rows', 'rows', 'rows'])
+    expect(steps.map((s) => s.items.length)).toEqual([6, 5, 5])
+    steps.forEach((s) => expect(s.audio).toBe('https://x/t.mp3'))
+  })
+
+  // Задания разного рода склеивать нельзя: свободный ответ и выбор из карточек —
+  // это не строки одного упражнения.
+  it('разнородные задания к записи остаются своими экранами, но с плеером', () => {
+    const steps = tasksToSteps({
+      tasks: [track, lead, { type: 'check', sec: '4. Recall', items: ['📖 read', '📺 watch TV'] }],
+    })
+
+    expect(steps.map((s) => s.type)).toEqual(['pick'])
+    expect(steps[0].audio).toBe('https://x/t.mp3')
   })
 })
