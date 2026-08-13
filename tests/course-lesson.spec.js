@@ -123,8 +123,10 @@ for (const level of LEVELS) {
       const hearts = await page.locator('.cp-hud__hearts b').textContent()
       if (cls.includes('is-no')) {
         expect(hearts).toBe('2')
+        // В макете правильный вариант после ошибки не раскрывается: красным
+        // подсвечен только выбранный, остальные кнопки остаются белыми.
         await expect(page.locator('.cp-choice.is-wrong')).toHaveCount(1)
-        await expect(page.locator('.cp-choice.is-right')).toHaveCount(1)
+        await expect(page.locator('.cp-choice.is-right')).toHaveCount(0)
       } else {
         expect(hearts).toBe('3')
         await expect(page.locator('.cp-fb__coin')).toHaveText('+10')

@@ -325,13 +325,31 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
         />
       </div>
 
+      {/* Плашка результата из макета «Обучения» (Figma, Vocabulary → Screen
+          4023:33924): кружок 42 с белым знаком, справа — монета в белой
+          пилюле. Раньше знак был текстовым глифом в белом кружке 28. */}
       {checked && (
         <div className={`cp-fb ${isRight ? 'is-ok' : 'is-no'}`}>
           <span className="cp-fb__ic" aria-hidden="true">
-            {isRight ? '✓' : '✕'}
+            {isRight ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3.5 12.5 9.2 18.2 20.5 5.8" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10.6" stroke="#fff" strokeWidth="1.8" />
+                <path d="M8.6 9.6v.01M15.4 9.6v.01" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+                <path d="M8.7 16.2c.9-1.3 2-1.9 3.3-1.9s2.4.6 3.3 1.9" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            )}
           </span>
           <b>{isRight ? t('lesson.correct') : t('lesson.wrong')}</b>
-          {isRight && <span className="cp-fb__coin">+{REWARD}</span>}
+          {isRight && (
+            <span className="cp-fb__coin">
+              <img src="/assets/lesson/coin.png" alt="" width="24" height="24" />
+              +{REWARD}
+            </span>
+          )}
         </div>
       )}
 
@@ -516,10 +534,11 @@ function Choices({ options, picked, setPicked, checked, answer, grid = false }) 
   return (
     <div className={`cp-choices ${grid ? 'is-grid' : ''}`}>
       {options.map((o, i) => {
+        // Подсвечиваем только выбранный вариант: в макете после неверного
+        // ответа правильный не раскрывается — остальные кнопки остаются белыми.
         let cls = 'cp-choice'
         if (checked) {
-          if (o === answer) cls += ' is-right'
-          else if (i === picked) cls += ' is-wrong'
+          if (i === picked) cls += o === answer ? ' is-right' : ' is-wrong'
         } else if (i === picked) cls += ' is-sel'
         return (
           <button key={i} className={cls} disabled={checked} onClick={() => setPicked(i)}>
