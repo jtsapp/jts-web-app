@@ -182,7 +182,8 @@
   font-weight: 700;
   line-height: 1.2;
   color: #17171c;
-  text-align: left;
+  /* В макете текст варианта стоит по центру пилюли, а не по левому краю. */
+  text-align: center;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
@@ -686,41 +687,58 @@
 }
 
 /* ——— Плашка результата и кнопка ——— */
+/* Размеры и цвета сняты с макета: плашка 402×77, кружок 42 (#1eb04b / #ff4646)
+   с белым знаком, справа монета в белой пилюле 80×45. */
 .cp-fb {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 402px;
   max-width: 100%;
-  margin: 24px auto 0;
-  padding: 16px 22px;
+  min-height: 77px;
+  margin: 20px auto 0;
+  padding: 16px;
   border-radius: 90px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
 }
 .cp-fb.is-ok {
   background: #aeffc7;
-  color: #14804a;
+  color: #067a32;
 }
 .cp-fb.is-no {
   border-radius: 100px;
   background: #fff0e8;
-  color: #c2410c;
+  color: #ff4646;
 }
 .cp-fb__ic {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: #fff;
+}
+.cp-fb.is-ok .cp-fb__ic {
+  background: #1eb04b;
+}
+.cp-fb.is-no .cp-fb__ic {
+  background: #ff4646;
 }
 .cp-fb__coin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
-  padding: 8px 18px;
+  padding: 10px 12px;
   border-radius: 30px;
   background: #fff;
-  color: #17171c;
+  color: #181818;
+  font-weight: 500;
+}
+.cp-fb__coin img {
+  width: 24px;
+  height: 24px;
 }
 
 .cp-foot {

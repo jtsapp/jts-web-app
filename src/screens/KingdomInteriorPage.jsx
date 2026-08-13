@@ -104,7 +104,7 @@ const KT_OFFSET = [50, 0, 100, 50]
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
 export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, isDemoAccount }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
 
@@ -242,7 +242,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         // A0/A1 хранят урок уже по одному заданию на экран — отдаём их новому
         // плееру; B2/C1 остаются на старом (у них свои типы chips/watch).
         if (isStepLevel(level)) {
-          const steps = tasksToSteps(data)
+          // Язык нужен конвертеру: перевод в контенте склеен парой «ru · kk»,
+          // и сторону выбираем по интерфейсу (см. learning/bilingual.js).
+          const steps = tasksToSteps(data, lang)
           setOpen({ code, attempt: 0, steps: { title: data.title, blurb: '', steps } })
           return
         }
@@ -251,7 +253,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setBusy(false)
       }
     },
-    [level, moduleLocked, lessons, isUnlocked, course],
+    [level, moduleLocked, lessons, isUnlocked, course, lang],
   )
 
   const retry = () => {

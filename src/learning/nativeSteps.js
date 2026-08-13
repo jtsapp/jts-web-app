@@ -8,6 +8,11 @@
 // Типы заданий уровня → типы шагов:
 //   choice → choice     gap  → gap      order → order
 //   listen → listen     info → note     check → checklist    multi → pick
+//
+// Здесь же разделяется локализация: перевод в контенте лежит склеенной строкой
+// «слушать · тыңдау», и сторону выбираем по языку интерфейса (см. bilingual.js).
+// Рантайм для этого и удобен — при смене языка урок пересобирается сам.
+import { pickTr, localizeHtml } from './bilingual.js'
 
 // Уровни, чей контент лежит в новом формате и играется пошаговым плеером.
 // B2/C1 остаются на старом плеере: у них другой набор типов (chips, watch).
@@ -243,7 +248,9 @@ function groupSteps(steps) {
   return out
 }
 
-export function tasksToSteps(lesson) {
+export function tasksToSteps(lesson, lang = 'ru') {
+  const tr = (s) => pickTr(s, lang)
+  const trAll = (arr) => (arr || []).map(tr)
   const out = []
   // Подпись из предыдущего info-блока: достаётся первому же шагу, у которого
   // нет своего заголовка (см. leadOf).
@@ -286,8 +293,8 @@ export function tasksToSteps(lesson) {
           stage,
           type: 'match',
           title: title || 'Соедини пары',
-          options: t.options,
-          pairs: tasks.slice(i, i + run).map((x) => ({ left: x.word, right: x.answer })),
+          options: trAll(t.options),
+          pairs: tasks.slice(i, i + run).map((x) => ({ left: x.word, right: tr(x.answer) })),
         },
         !!title,
       )
@@ -304,8 +311,8 @@ export function tasksToSteps(lesson) {
             type: 'choice',
             title: title || t.sub || 'Выбери верный вариант',
             prompt: t.word || '',
-            options: t.options,
-            answer: t.answer,
+            options: trAll(t.options),
+            answer: tr(t.answer),
             // Слово на слух: в задании его нет нигде, кроме say. Если слово
             // записано (scripts/make-lesson-audio.js) — плеер играет файл, тот
             // же самый, что звучит на карточке словаря; записи нет —
@@ -337,7 +344,7 @@ export function tasksToSteps(lesson) {
         break
 
       case 'listen':
-        push({ stage, type: 'listen', title: title || 'Послушай и выбери', src: (t.tracks && t.tracks[0] && t.tracks[0].src) || null, options: t.options || [], answer: t.answer }, !!title)
+        push({ stage, type: 'listen', title: title || 'Послушай и выбери', src: (t.tracks && t.tracks[0] && t.tracks[0].src) || null, options: trAll(t.options), answer: tr(t.answer) }, !!title)
         break
 
       case 'cards':
@@ -349,19 +356,19 @@ export function tasksToSteps(lesson) {
         break
 
       case 'multi':
-        push({ stage, type: 'pick', title: title || 'Отметь, что тебе подходит', sub: t.sub || '', options: (t.options || []).map((label) => ({ label })) }, !!title)
+        push({ stage, type: 'pick', title: title || 'Отметь, что тебе подходит', sub: t.sub || '', options: trAll(t.options).map((label) => ({ label })) }, !!title)
         break
 
       case 'check': {
         // Пункты с эмодзи — это разминка «отметь, что тебе нравится»: в макете
         // она нарисована карточками с картинкой сверху, а не строчками с
         // галочкой. Строчки остаются у списков без эмодзи («Я могу…»).
-        const cards = (t.items || []).map(splitEmoji)
+        const cards = trAll(t.items).map(splitEmoji)
         if (cards.length && cards.every((c) => c.emoji)) {
           push({ stage, type: 'pick', title: title || 'Отметь, что тебе подходит', sub: t.sub || '', options: cards }, !!title)
           break
         }
-        push({ stage, type: 'checklist', title: title || 'Отметь, чему научился', sub: t.sub || '', items: t.items || [] }, !!title, 'Я могу…')
+        push({ stage, type: 'checklist', title: title || 'Отметь, чему научился', sub: t.sub || '', items: trAll(t.items) }, !!title, 'Я могу…')
         break
       }
 
@@ -370,7 +377,7 @@ export function tasksToSteps(lesson) {
         if (!t.html) break
         // Мета-комментарий с названием учебника-источника убираем до всего
         // остального: без него блок часто оказывается просто подписью.
-        const split = splitTranscript(stripSourceCredit(t.html))
+        const split = splitTranscript(stripSourceCredit(localizeHtml(t.html, lang)))
         // Скрипт записи придержим до конца стадии — иначе он стоит перед
         // заданиями, и ответы списываются со спойлера.
         if (split.transcript) held.push({ stage, html: split.transcript })
