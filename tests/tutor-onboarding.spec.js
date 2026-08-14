@@ -149,6 +149,15 @@ test.describe('онбординг-тур по дашборду', () => {
     // Тур закрыт, скролл разлочен.
     await expect(page.locator('.t-tour__pop')).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('')
+
+    // Тур одноразовый. Смена тьютора («Управление тьютором» → «Сменить») гоняет
+    // ту же онбординг-цепочку, на конце которой он включается, — раньше он
+    // выходил заново после каждого выбора, потому что отметку никто не писал.
+    await page.goto('/?screen=tutor-profession')
+    await page.locator('button', { hasText: 'Пропустить' }).first().click()
+    await page.waitForSelector('.t-dash', { timeout: 20000 })
+    await page.waitForTimeout(600)
+    await expect(page.locator('.t-tour__pop')).toHaveCount(0)
   })
 })
 
