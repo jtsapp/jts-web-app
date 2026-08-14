@@ -18,7 +18,10 @@ export default function TutorDashboardPage({
   // Тур по дашборду. Раньше решал браузерный флаг в localStorage — один показ
   // на устройство: новый аккаунт на том же браузере тура не видел. Теперь
   // решает App: тур идёт сразу после онбординг-цепочки, один раз на аккаунт.
+  // Ключ отметки тоже приходит от App — в нём id профиля, поэтому «один раз»
+  // считается на аккаунт, а не на браузер.
   showTour = false,
+  tourStorageKey,
   onTourDone,
   onManage,
   onTalk,
@@ -179,7 +182,9 @@ export default function TutorDashboardPage({
 
       <Footer />
 
-      {showTour && <OnboardingTour steps={tourSteps} onFinish={onTourDone} />}
+      {showTour && (
+        <OnboardingTour steps={tourSteps} storageKey={tourStorageKey} onFinish={onTourDone} />
+      )}
     </div>
   )
 }
