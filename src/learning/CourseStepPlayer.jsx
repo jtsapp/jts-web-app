@@ -113,6 +113,14 @@ function gapSentence(step) {
   return `${before} ___ ${after}`.replace(/\s+/g, ' ').trim()
 }
 
+// Адрес дорожки шага. У A0/A1 в шаге лежит готовый абсолютный URL (поле audio
+// или src), у перенесённого курса — имя файла рядом с уроком.
+function trackSrc(step, level) {
+  if (step.audio) return step.audio
+  if (step.src) return step.src
+  return step.track ? `/course/${String(level).toLowerCase()}/audio/${step.track}` : ''
+}
+
 function shuffle(arr, seed) {
   // Порядок вариантов фиксирован для шага: без seed React перемешивал бы их на
   // каждый ререндер (например, после выбора ответа).
@@ -322,8 +330,9 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
         {step.type === 'rows' && step.sub && <p className="cp-step__sub">{step.sub}</p>}
 
         {/* Запись стадии стоит над заданием, а не отдельным экраном перед ним
-            (см. spreadAudio): иначе послушать заново на самом задании нечем. */}
-        {step.audio && <AudioButton src={step.audio} t={t} />}
+            (см. spreadAudio): иначе послушать заново на самом задании нечем.
+            Шаг listen рисует свой плеер сам, в теле задания (см. StepBody). */}
+        {step.type !== 'listen' && trackSrc(step, level) && <AudioButton src={trackSrc(step, level)} t={t} />}
 
         <StepBody
           step={step}
@@ -689,14 +698,21 @@ function MatchBoard({ step, options, links, setLinks, checked, t }) {
 // У вопроса с пропуском выделять нечего: там ключевое слово и есть ответ.
 const ROW_KEYWORD = /^((?:\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic})*\s+)?)(\S+)([\s\S]*)$/u
 
+// Длинный вариант в строку не встаёт: у B1 варианты бывают целым предложением
+// (медиана 37 символов, максимум 92). Такую строку раскладываем в столбик —
+// вопрос сверху, варианты под ним во всю ширину.
+const ROW_LONG_OPTION = 24
+
 function RowsBoard({ step, answers, setAnswers, checked }) {
   return (
     <div className="cp-rows">
       {(step.items || []).map((it, i) => {
         const gap = /_{2,}|___/.test(String(it.q || ''))
         const m = gap ? null : ROW_KEYWORD.exec(String(it.q || ''))
+        const opts = it.options || step.options || []
+        const stacked = opts.some((o) => String(o).length > ROW_LONG_OPTION)
         return (
-          <div className="cp-rows__row" key={i}>
+          <div className={`cp-rows__row ${stacked ? 'is-stacked' : ''}`} key={i}>
             <span className="cp-rows__q">
               {m ? (
                 <>
@@ -709,7 +725,7 @@ function RowsBoard({ step, answers, setAnswers, checked }) {
               )}
             </span>
             <span className="cp-rows__opts">
-              {(it.options || step.options || []).map((o) => {
+              {opts.map((o) => {
                 let cls = 'cp-rows__opt'
                 if (answers[i] === o) cls += checked ? (o === it.answer ? ' is-right' : ' is-wrong') : ' is-sel'
                 return (

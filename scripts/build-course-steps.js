@@ -13,7 +13,8 @@
 //   cards     { title, sub, words:[{en,ru,kk,def,img}] }      — без оценки
 //   note      { title, html }                                 — без оценки
 //   choice    { title, prompt, options:[…], answer }           — оценивается
-//   listen    { title, src, options:[…], answer }              — оценивается
+//   listen    { title, track, options:[…], answer }             — оценивается
+//   rows      { title, track, items:[{q,options,answer}] }       — оценивается
 //   write     { title, sub, placeholder, model }               — самопроверка
 //   checklist { title, sub, items:[…] }                        — без оценки
 //
@@ -27,20 +28,74 @@ const LEVELS = ['a2', 'b1']
 // --- работа с разметкой урока -------------------------------------------------
 // Разметка курса ровная и предсказуемая, поэтому режем регулярками: DOM в node
 // тянуть ради семи выборок незачем.
+// Сущности раскрываем таблицей, а не цепочкой replace: список рос по одной
+// штуке, и в шагах осталось 248 неразобранных «&ldquo;» — студент читал их
+// прямо в вопросе («&ldquo;We meet up after work&rdquo;»).
+const ENTITIES = {
+  mdash: '—',
+  ndash: '–',
+  hellip: '…',
+  middot: '·',
+  rsquo: '’',
+  lsquo: '‘',
+  ldquo: '“',
+  rdquo: '”',
+  laquo: '«',
+  raquo: '»',
+  rarr: '→',
+  larr: '←',
+  eacute: 'é',
+  nbsp: ' ',
+  amp: '&',
+  quot: '"',
+  apos: "'",
+}
+
 const strip = (s) =>
   String(s || '')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–')
-    .replace(/&hellip;/g, '…')
-    .replace(/&middot;/g, '·')
-    .replace(/&rsquo;/g, '’')
-    .replace(/&lsquo;/g, '‘')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (m, n) => {
+      const code = Number(n)
+      return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : m
+    })
+    .replace(/&([a-z]+);/gi, (m, name) => ENTITIES[name.toLowerCase()] ?? m)
     .replace(/\s+/g, ' ')
     .trim()
+
+// Вопросы к одной записи — на один экран. Дорожка в уроке одна на всю стадию,
+// и по одному вопросу на экран студент слушал её заново на каждом: в B1 это
+// пять экранов подряд на один и тот же трек.
+//
+// Границей служит инструкция: у одной записи бывает несколько разных заданий
+// («Listen once. Who says…», «Listen again. True or false?», «The words they
+// used…»). Склеить их под одним заголовком значило бы соврать про задание,
+// поэтому серия рвётся там, где меняется title.
+const ROWS_PER_SCREEN = 6
+
+function listenScreens(tasks, track) {
+  const out = []
+  for (let i = 0; i < tasks.length; ) {
+    const head = tasks[i]
+    const run = []
+    while (i < tasks.length && tasks[i].title === head.title) run.push(tasks[i++])
+    // Один вопрос — обычный экран слушания: списком его рисовать незачем.
+    if (run.length < 2) {
+      out.push({ ...head, type: 'listen', track })
+      continue
+    }
+    for (let from = 0; from < run.length; from += ROWS_PER_SCREEN) {
+      out.push({
+        stage: head.stage,
+        type: 'rows',
+        title: head.title,
+        sub: head.sub || '',
+        track,
+        items: run.slice(from, from + ROWS_PER_SCREEN).map((t) => ({ q: t.prompt, options: t.options, answer: t.answer })),
+      })
+    }
+  }
+  return out
+}
 
 // Секция стадии из html урока: <section class="stage" data-stage="Vocabulary">…
 function stageHtml(html, name) {
@@ -135,12 +190,15 @@ function buildSteps(lesson) {
       type: 'cards',
       title: 'Слова урока',
       sub: 'Нажми на карточку, чтобы увидеть перевод',
+      // Слова идут через strip, как и всё остальное: без него на карточке
+      // печаталось «don&rsquo;t» и «It&rsquo;s a kind of&hellip;». Картинку при
+      // этом ищем по СЫРОМУ ключу — в lesson.IMG слово лежит как в разметке.
       words: vocab.slice(0, 18).map(([en, pos, ru, kk, def]) => ({
-        en,
+        en: strip(en),
         pos: pos || '',
-        ru: ru || '',
-        kk: kk || '',
-        def: def || '',
+        ru: strip(ru),
+        kk: strip(kk),
+        def: strip(def),
         img: (lesson.IMG && lesson.IMG[en]) || null,
       })),
     })
@@ -175,9 +233,7 @@ function buildSteps(lesson) {
     const chunk = stageHtml(html, listenStage)
     const track = Object.values(lesson.tracks || {})[0] || null
     const tasks = [...optsTasks(chunk, 'Listening', 3), ...selectTasks(chunk, 'Listening', 2)]
-    for (const t of tasks) {
-      steps.push(track ? { ...t, type: 'listen', track } : t)
-    }
+    steps.push(...(track ? listenScreens(tasks, track) : tasks))
   }
 
   // 6. Now you: свободный ответ. Модель — из «полезного языка» стадии.
@@ -259,4 +315,4 @@ function run() {
 
 if (require.main === module) run()
 
-module.exports = { buildSteps, strip, stageHtml }
+module.exports = { buildSteps, strip, stageHtml, listenScreens }
