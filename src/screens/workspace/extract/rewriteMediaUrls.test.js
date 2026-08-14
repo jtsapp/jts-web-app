@@ -43,4 +43,25 @@ describe('rewriteMediaUrls', () => {
     const lesson = { steps: [] }
     expect(rewriteMediaUrls(lesson, '')).toBe(lesson)
   })
+
+  it('rewrites relative pictures on vocab cards', () => {
+    const lesson = {
+      title: 'L',
+      steps: [{
+        id: 's1',
+        blocks: [{
+          type: 'vocab',
+          cards: [
+            { word: 'friend', imageUrl: 'images/friend.webp' },
+            { word: 'busy', imageUrl: 'data:image/png;base64,AAA' },
+          ],
+        }],
+      }],
+    }
+    const out = rewriteMediaUrls(lesson, BASE)
+    expect(out.steps[0].blocks[0].cards[0].imageUrl).toBe(
+      'https://files-dev.justtostudy.kz/development/speakout/a1/lessons/images/friend.webp',
+    )
+    expect(out.steps[0].blocks[0].cards[1].imageUrl).toBe('data:image/png;base64,AAA')
+  })
 })

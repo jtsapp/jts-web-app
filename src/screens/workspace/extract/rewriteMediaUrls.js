@@ -15,10 +15,26 @@ export function rewriteMediaUrls(lesson, baseUrl) {
 }
 
 function rewriteBlock(block, baseUrl) {
+  if (block?.type === 'vocab' && Array.isArray(block.cards)) {
+    return {
+      ...block,
+      cards: block.cards.map((card) => rewriteCardImage(card, baseUrl)),
+    }
+  }
   if (block && typeof block.html === 'string') {
     return { ...block, html: rewriteHtml(block.html, baseUrl) }
   }
   return block
+}
+
+function rewriteCardImage(card, baseUrl) {
+  const imageUrl = card?.imageUrl
+  if (!imageUrl || isAbsolute(imageUrl)) return card
+  try {
+    return { ...card, imageUrl: new URL(imageUrl, baseUrl).href }
+  } catch {
+    return card
+  }
 }
 
 /** Exported for tests: absolutise `src`/`href` in a fragment of HTML. */

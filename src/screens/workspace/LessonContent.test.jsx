@@ -127,4 +127,36 @@ describe('LessonContent — карточки шага', () => {
     expect(container.querySelectorAll('.lw-theory')).toHaveLength(1)
     expect(container.querySelectorAll('.lw-info')).toHaveLength(2)
   })
+
+  it('рисует колоду vocab, а не выкидывает неизвестный тип', () => {
+    const { container } = renderContent([
+      INFO('<p>Read the words. Click a card to see an example.</p>'),
+      {
+        type: 'vocab',
+        title: 'Vocabulary',
+        cards: [
+          { word: 'friendship', pos: 'n', ipa: 'ˈfrendʃɪp', definition: 'the relationship between friends', translationKz: 'достық', translationRu: 'дружба' },
+          { word: 'get on (well with someone)', imageUrl: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' },
+        ],
+      },
+    ])
+    expect(container.querySelectorAll('.lw-vocab')).toHaveLength(1)
+    expect(container.textContent).toContain('friendship')
+    expect(container.textContent).toContain('get on (well with someone)')
+    expect(container.querySelectorAll('.lw-vcard')).toHaveLength(2)
+  })
+
+  it('клик переворачивает карточку и показывает перевод', () => {
+    const { container } = renderContent([
+      {
+        type: 'vocab',
+        cards: [{ word: 'friendship', translationRu: 'дружба', translationKz: 'достық' }],
+      },
+    ])
+    const card = container.querySelector('.lw-vcard')
+    expect(card.classList.contains('is-flipped')).toBe(false)
+    fireEvent.click(card)
+    expect(card.classList.contains('is-flipped')).toBe(true)
+    expect(container.textContent).toContain('дружба')
+  })
 })

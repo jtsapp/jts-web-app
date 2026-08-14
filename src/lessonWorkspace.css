@@ -549,6 +549,156 @@
 
 /* --- словарь ------------------------------------------------------- */
 
+.lw-vocab__title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--lw-ink);
+}
+
+.lw-vocab__hint {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--lw-muted);
+}
+
+.lw-vocab__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.lw-vcard {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  perspective: 1200px;
+}
+
+.lw-vcard__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.3, 0.1, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.lw-vcard.is-flipped .lw-vcard__inner {
+  transform: rotateY(180deg);
+}
+
+.lw-vcard__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.lw-vcard__front {
+  background: #fff;
+}
+
+.lw-vcard__front img {
+  width: 100%;
+  height: 58%;
+  object-fit: cover;
+  flex: none;
+  display: block;
+}
+
+.lw-vcard__word {
+  margin: 10px 10px 0;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.25;
+  color: var(--lw-ink, #0f172a);
+}
+
+.lw-vcard__pos {
+  margin: 2px 10px 10px;
+  color: var(--lw-muted, #64748b);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.lw-vcard__back {
+  transform: rotateY(180deg);
+  background: #fff;
+}
+
+.lw-vcard__bhead {
+  flex: none;
+  background: #7c3aed;
+  color: #fff;
+  padding: 10px 12px;
+}
+
+.lw-vcard__bhead .lw-vcard__word {
+  color: #fff;
+  margin: 0;
+}
+
+.lw-vcard__bhead .lw-vcard__pos {
+  color: rgba(255, 255, 255, 0.82);
+  margin: 1px 0 0;
+}
+
+.lw-vcard__ipa {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11.5px;
+  margin-top: 4px;
+}
+
+.lw-vcard__bbody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lw-vcard__def {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #1e293b;
+}
+
+.lw-vcard__trs {
+  display: flex;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.lw-vcard__tr {
+  flex: 1;
+  min-width: 0;
+}
+
+.lw-vcard__tr b {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #7c3aed;
+}
+
+.lw-vcard__tr span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #1e293b;
+}
+
 .lw-info__body .vocab .vhead h2 {
   margin: 0 0 10px;
   font-size: 17px;
