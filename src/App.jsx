@@ -52,6 +52,7 @@ import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor } from './tutor/tutors.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
+import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
@@ -132,6 +133,7 @@ export default function App() {
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
+          setProfileId(profile.deviceId || null)
           if (profile.profession) setProfession(profile.profession)
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
@@ -159,7 +161,13 @@ export default function App() {
   // ведёт сразу на dashboard, а не на welcome-цепочку.
   const [tutorOnboarded, setTutorOnboarded] = useState(false)
   // Тур по дашборду: включается один раз — сразу после онбординг-цепочки.
+  // «Один раз» держится на отметке в localStorage (tourKeyFor), а не на этом
+  // стейте: стейт умирает на перезагрузке, а смена тьютора гоняет цепочку
+  // заново — раньше из-за этого тур выходил на каждый выбор тьютора.
   const [showTutorTour, setShowTutorTour] = useState(false)
+  // Id профиля из /api/profile (`user-<id>` или device-id анонима) — им
+  // разделяются отметки тура, чтобы «один раз» считалось на аккаунт.
+  const [profileId, setProfileId] = useState(null)
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
   const [userLevel, setUserLevel] = useState('A1')
@@ -317,6 +325,7 @@ export default function App() {
               setTutorOnboarded(true)
             }
             setInterestIds(enToInterestIds(profile.interests))
+            setProfileId(profile.deviceId || null)
             if (profile.profession) setProfession(profile.profession)
           })
         clearLocalPractice()
@@ -378,6 +387,7 @@ export default function App() {
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
+          setProfileId(profile.deviceId || null)
           if (profile.profession) setProfession(profile.profession)
         })
       clearLocalPractice()
@@ -427,6 +437,7 @@ export default function App() {
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
+          setProfileId(profile.deviceId || null)
           if (profile.profession) setProfession(profile.profession)
         })
       clearLocalPractice()
@@ -488,6 +499,7 @@ export default function App() {
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
     setTutorOnboarded(false)
+    setProfileId(null)
     setInterestIds([])
     setProfession('')
     setNeedsLevelTest(false)
@@ -496,6 +508,10 @@ export default function App() {
 
   // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
   const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
+
+  // Отметка «тур дашборда показан» — на профиль. Профиль ещё не подтянулся
+  // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
+  const tutorTourKey = tourKeyFor(profileId || getDeviceId())
 
   // Fullscreen belongs to the Lessons screen only — exit it on any other screen,
   // including paths that bypass the nav handlers (profile button, opening a lesson).
@@ -973,9 +989,11 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-profession')}
           tutor={tutor}
-          // Цепочка завершена — первый dashboard показываем с туром.
+          // Цепочка завершена — первый dashboard показываем с туром. «Первый» тут
+          // буквально: смена тьютора гоняет эту же цепочку, и без отметки тур
+          // выходил снова на каждый выбор.
           onDone={() => {
-            setShowTutorTour(true)
+            setShowTutorTour(!isTourSeen(tutorTourKey))
             setScreen('tutor-dashboard')
           }}
         />
@@ -987,6 +1005,7 @@ export default function App() {
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
           showTour={showTutorTour}
+          tourStorageKey={tutorTourKey}
           onTourDone={() => setShowTutorTour(false)}
           tutor={tutor}
           onManage={() => setScreen('tutor-manage')}
