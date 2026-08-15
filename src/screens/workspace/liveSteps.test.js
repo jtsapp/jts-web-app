@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { liveLessonSteps, topicIdAtStep } from './liveSteps.js'
 
 function lesson(overrides = {}) {
@@ -150,6 +150,19 @@ describe('liveLessonSteps', () => {
     expect(dialog.title).toBe('Real-life example')
     expect(dialog.bubbles).toEqual(["Hi! I'm Sam 👋", 'Do you like coffee? ☕'])
     expect(dialog.options).toEqual(['Yes, I like coffee', "No, I don't like coffee"])
+  })
+
+  // Молчаливая потеря вопроса выглядит как «задание не работает»: на экране
+  // просто нет задания, в консоли пусто, и причину ищут сверкой с макетом.
+  it('громко жалуется в консоль на неподдержанный тип вопроса', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    liveLessonSteps(
+      lesson({ steps: [{ id: 's1', topicId: 't1', blocks: [{ type: 'practice', questions: [{ id: 'q7', type: 'hologram' }] }] }] }),
+    )
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('hologram')
+    expect(warn.mock.calls[0][1]).toMatchObject({ questionId: 'q7' })
+    warn.mockRestore()
   })
 
   it('пропускает вопрос неизвестного типа, а не отдаёт пустой экран', () => {

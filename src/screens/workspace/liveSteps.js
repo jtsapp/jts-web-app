@@ -92,7 +92,15 @@ function questionStep(question, block, stage) {
         options: question.options || [],
       }
 
+    // Тип, которого плеер не знает. Молчать нельзя: вопрос просто исчезнет из
+    // урока, и со стороны это выглядит как «задание не работает» — без ошибки и
+    // без следа. Жалуемся громко, чтобы причина находилась за секунды, а не за
+    // вечер сверки макета с экраном.
     default:
+      console.warn(
+        `[liveSteps] вопрос типа "${question.type}" плеер не поддерживает — он не попадёт в урок`,
+        { questionId: question.id, block: block.title },
+      )
       return null
   }
 }

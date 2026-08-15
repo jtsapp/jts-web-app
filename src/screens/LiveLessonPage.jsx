@@ -749,12 +749,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               onAction={() => setActiveStepId(peerStepId)}
                             />
                           )}
-                          {isStaff ? (
+                          {/* Плеер — только когда конвертеру было из чего собрать
+                              очередь. Шаг урока может не дать ни одного экрана
+                              (одна декоративная плашка, вопросы неизвестного
+                              типа) — тогда плеер отрисовал бы пустоту, и ученик
+                              остался бы без задания. В этом случае показываем
+                              документ, как раньше. */}
+                          {isStaff || playerSteps.length === 0 ? (
                             <LessonContent
                               step={activeStep}
-                              // Преподаватель смотрит работу ученика целиком.
-                              answers={studentAnswers}
-                              checked={studentCheckedSteps.has(activeStepId)}
+                              // Преподаватель смотрит работу ученика, ученик — свою.
+                              answers={isStaff ? studentAnswers : answers}
+                              checked={isStaff ? studentCheckedSteps.has(activeStepId) : checkedSteps.has(activeStepId)}
                               onAnswer={handleAnswer}
                               onCheck={handleCheckStep}
                               readOnly={contentReadOnly}
@@ -787,8 +793,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       )}
 
                       {/* Урок проходится кнопками под заданием, а не только
-                          кликом по маршруту сбоку — см. StepNav. */}
-                      <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
+                          кликом по маршруту сбоку — см. StepNav.
+
+                          У ученика этих кнопок нет: он идёт по очереди экранов,
+                          и её листает «Продолжить» самого плеера. Две навигации
+                          на одном экране противоречили друг другу — «Далее»
+                          перепрыгивала через весь шаг урока, мимо заданий,
+                          которые плеер только собирался показать. */}
+                      {isStaff && (
+                        <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
+                      )}
                     </div>
 
                     <div className="lw-live-aside">
