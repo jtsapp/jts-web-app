@@ -65,8 +65,18 @@ function questionStep(question, block, stage) {
   const base = { stage, title: block.title || '' }
 
   switch (question.type) {
+    // `imageUrl` есть у задания «слово ↔ картинка»: вопрос там спрашивает про
+    // изображение, и без него на экране остаётся «Which word is it?» с четырьмя
+    // словами и без картинки — задание без задания.
     case 'choice':
-      return { ...base, type: 'choice', prompt: question.prompt || '', options: question.options || [], answer: question.answer }
+      return {
+        ...base,
+        type: 'choice',
+        prompt: question.prompt || '',
+        options: question.options || [],
+        answer: question.answer,
+        ...(question.imageUrl ? { imageUrl: question.imageUrl } : {}),
+      }
 
     // `chips` — выбор варианта из банка в пропуск. У плеера отдельного типа под
     // это нет, но это ровно `choice`: варианты те же кнопки, ответ один. Разница

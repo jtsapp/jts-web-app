@@ -560,13 +560,17 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
               вопросе, ни в вариантах — оно живёт только в поле say, и без
               озвучки экран неразрешим (см. SayButton). */}
           {step.say && <SayButton text={step.say} src={step.sayTrack || null} t={t} />}
+          {/* Задание «слово ↔ картинка»: сам вопрос — это изображение, слова под
+              ним. Варианты идут сеткой, как у задания на слух: под картинкой
+              столбец из четырёх пилюль во всю ширину читается хуже. */}
+          {step.imageUrl && <img className="cp-qimg" src={step.imageUrl} alt="" />}
           <Choices
             options={options}
             picked={picked}
             setPicked={setPicked}
             checked={checked}
             answer={step.answer}
-            grid={!!step.say}
+            grid={!!step.say || !!step.imageUrl}
           />
         </>
       )

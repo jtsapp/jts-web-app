@@ -67,6 +67,19 @@ describe('liveLessonSteps', () => {
     expect(steps[0].stage).toBe('Разминка')
   })
 
+  it('переносит картинку вопроса в шаг плеера', () => {
+    const withPic = lesson({
+      steps: [{ id: 's1', topicId: 't1', blocks: [{ type: 'practice', questions: [
+        { id: 'q', type: 'choice', prompt: 'Which word is it?', options: ['busy', 'chat'], answer: 'busy', imageUrl: 'data:image/webp;base64,AAAA' },
+      ] }] }],
+    })
+    expect(liveLessonSteps(withPic)[0].imageUrl).toBe('data:image/webp;base64,AAAA')
+  })
+
+  it('без картинки поле не появляется', () => {
+    expect('imageUrl' in liveLessonSteps(lesson())[0]).toBe(false)
+  })
+
   it('переносит choice как есть', () => {
     const [choice] = liveLessonSteps(lesson())
     expect(choice).toMatchObject({ type: 'choice', prompt: 'She ____ tea.', options: ['drink', 'drinks'], answer: 'drinks' })
