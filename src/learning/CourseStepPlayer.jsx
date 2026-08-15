@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
+import LangSelector from '../components/LangSelector.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
 
@@ -92,6 +93,10 @@ function stopSpeaking() {
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
 const PROMPT_FIRST = new Set(['pick', 'write', 'checklist'])
 
+// Типы, у которых заголовок живёт внутри карточки задания, а не строкой над
+// ней: слайд правила и диалог «Real-life example» (Figma, Speaking → 4065:28707).
+const CARD_TITLE = new Set(['note', 'dialog'])
+
 // Ответ на впиши-пропуск сверяем без учёта регистра и знаков — как в старом
 // плеере заданий: студент печатает руками, и точка в конце не ошибка.
 function norm(s) {
@@ -134,7 +139,17 @@ function shuffle(arr, seed) {
   return a
 }
 
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, onExit, onVocab, onDone }) {
+// `aside` — правая колонка урока (звонок, топики, чат) у онлайн-урока: у урока
+// «Обучения» её нет, поэтому это опциональный узел, а не часть плеера. Полоса
+// сверху при этом остаётся общей на всю ширину — так в макете.
+// `onStep` — сообщает наружу номер открытого экрана: правой колонке нужно
+// подсвечивать текущий топик, а индекс живёт здесь.
+// `withLang` — переключатель языка в шапке. Он есть в макете онлайн-урока и
+// нет в макете «Обучения», поэтому это флаг, а не безусловный элемент.
+// `bare` — только тело урока, без верхней полосы и без растяжки на весь экран.
+// Нужен живому уроку: там своя шапка («Живой урок», вкладки «Урок/Доска»), и
+// вторая полоса с «Выйти» и «Словарём» под ней читалась бы как чужая.
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, onExit, onVocab, onDone, aside = null, onStep, withLang = false, bare = false }) {
   const { t } = useI18n()
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
@@ -145,6 +160,12 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   // Дорожка живёт вне экрана задания (см. getStageAudio) — значит, обрывать её
   // надо на выходе из урока, иначе запись догоняет студента уже на тропе.
   useEffect(() => stopStageAudio, [])
+
+  // Наружу отдаём индекс, а не сам шаг: у правой колонки свой источник данных
+  // урока, ей достаточно позиции, чтобы найти топик (см. topicIdAtStep).
+  useEffect(() => {
+    onStep?.(idx)
+  }, [idx, onStep])
 
   const total = steps.length
   const step = steps[idx]
@@ -174,8 +195,37 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
 
   if (!step) return null
 
+  const body = (
+    <div className="cp-scroll">
+      <div className="cp-hud">
+        <div className="cp-hud__track">
+          <div className="cp-hud__fill" style={{ width: `${Math.round((idx / Math.max(1, total)) * 100)}%` }} />
+        </div>
+      </div>
+
+      <Step
+        key={idx}
+        step={step}
+        seed={idx + 1}
+        level={level}
+        onAdvance={advance}
+        onGraded={(ok) => {
+          if (ok) {
+            setCorrect((c) => c + 1)
+            setPoints((p) => p + REWARD)
+          } else {
+            setWrong((w) => w + 1)
+          }
+        }}
+        t={t}
+      />
+    </div>
+  )
+
+  if (bare) return <div className="cp cp--bare">{body}</div>
+
   return (
-    <div className="cp">
+    <div className={`cp ${aside ? 'cp--aside' : ''}`}>
       <div className="cp-bar">
         {/* Значок стоит ПЕРЕД подписью у обеих кнопок полосы — так в макете.
             Раньше оба висели справа, и «Выйти ✕» читалось как «закрыть эту
@@ -191,6 +241,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           <b>{step.stage}</b>
           <span>{title}</span>
         </div>
+        {withLang && <LangSelector />}
         {/* «Словарь» — живая кнопка: в макете она активна. Уводит в раздел
             словаря тем же путём, что и пункт сайдбара, который и так открыт
             рядом; отдельного подтверждения нет ровно по этой причине. */}
@@ -203,30 +254,16 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
         </button>
       </div>
 
-      <div className="cp-scroll">
-        <div className="cp-hud">
-          <div className="cp-hud__track">
-            <div className="cp-hud__fill" style={{ width: `${Math.round((idx / Math.max(1, total)) * 100)}%` }} />
-          </div>
+      {/* Колонки идут ПОД полосой, а не рядом с ней: в макете шапка урока
+          тянется на всю ширину справа от сайдбара, включая правую колонку. */}
+      {aside ? (
+        <div className="cp-cols">
+          {body}
+          {aside}
         </div>
-
-        <Step
-          key={idx}
-          step={step}
-          seed={idx + 1}
-          level={level}
-          onAdvance={advance}
-          onGraded={(ok) => {
-            if (ok) {
-              setCorrect((c) => c + 1)
-              setPoints((p) => p + REWARD)
-            } else {
-              setWrong((w) => w + 1)
-            }
-          }}
-          t={t}
-        />
-      </div>
+      ) : (
+        body
+      )}
     </div>
   )
 }
@@ -310,9 +347,9 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   return (
     <>
       <div className="cp-step">
-        {/* Слайд правила несёт заголовок внутри карточки — в макете над ней
-            ничего нет. */}
-        {step.type !== 'note' &&
+        {/* Слайд правила и диалог несут заголовок внутри карточки — в макете
+            над ней ничего нет. */}
+        {!CARD_TITLE.has(step.type) &&
           (promptFirst ? (
             <>
               {big && <div className="cp-step__prompt">{big}</div>}
@@ -568,9 +605,51 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
     case 'checklist':
       return <Checklist items={step.items} />
 
+    // Живой пример разговора: реплики собеседника сверху, варианты ответа
+    // снизу. Оценки нет — это образец речи, а не задание с одним верным
+    // ответом, поэтому «Продолжить» активна и до выбора (так в макете).
+    case 'dialog':
+      return <DialogBoard step={step} picked={picked} setPicked={setPicked} />
+
     default:
       return null
   }
+}
+
+// Реплики идут в порядке данных — их нельзя перемешивать (в отличие от
+// вариантов ответа у choice): диалог читается сверху вниз, и «Nice! Me too»
+// перед вопросом, на который это ответ, сломало бы смысл.
+function DialogBoard({ step, picked, setPicked }) {
+  const options = step.options || []
+  return (
+    <>
+      {/* Карточка — сам разговор. Варианты ответа в макете лежат ПОД ней,
+          отдельными кнопками во всю ширину, а не внутри ленты реплик. */}
+      <div className="cp-dialog">
+        {step.title && <h2 className="cp-dialog__h">{step.title}</h2>}
+        <div className="cp-dialog__feed">
+          {(step.bubbles || []).map((line, i) => (
+            <p className="cp-dialog__bubble" key={i}>
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
+      <div className="cp-dialog__opts">
+        {options.map((option, i) => (
+          <button
+            key={i}
+            type="button"
+            className={`cp-dialog__opt ${picked === i ? 'is-picked' : ''}`}
+            aria-pressed={picked === i}
+            onClick={() => setPicked(i)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </>
+  )
 }
 
 // Карусель примеров под слайдом правила. Окно на три карточки со стрелками по
