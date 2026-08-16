@@ -590,10 +590,26 @@ export function tasksToSteps(lesson, lang = 'ru') {
         )
         break
 
-      case 'order':
+      case 'order': {
         // Порядок слов: правильный ответ — сама фраза, банк перемешивает плеер.
-        push({ stage, type: 'order', title: title || 'Собери предложение', answer: t.answer || (t.words || []).join(' '), words: t.words || String(t.answer || '').split(/\s+/) }, !!title)
+        // В данных уровня answer лежит СПИСКОМ слов (["I","like","coffee"]) —
+        // без склейки плеер сравнивал собранную фразу со строкой
+        // «I,like,coffee» и браковал любой ответ: все задания «собери
+        // предложение» в A0/A1 были непроходимыми.
+        const words = t.words && t.words.length ? t.words : []
+        const answer = Array.isArray(t.answer) ? t.answer.join(' ') : String(t.answer || '')
+        push(
+          {
+            stage,
+            type: 'order',
+            title: title || 'Собери предложение',
+            answer: answer || words.join(' '),
+            words: words.length ? words : answer.split(/\s+/).filter(Boolean),
+          },
+          !!title,
+        )
         break
+      }
 
       case 'listen':
         push({ stage, type: 'listen', title: title || 'Послушай и выбери', src: (t.tracks && t.tracks[0] && t.tracks[0].src) || null, options: trAll(t.options), answer: tr(t.answer) }, !!title)

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import AssetImage from '../components/AssetImage.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
+import { answerMatches, normAnswer } from '../lib/answer-match.js'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
 //
@@ -34,8 +35,13 @@ export function isGraded(step) {
   return GRADED.has(step.type)
 }
 
-// Ответ пропуска: сверяем без учёта регистра и знаков (см. norm).
-const gapIsRight = (item, value) => (item.answers || []).some((a) => norm(a) === norm(value))
+// Ответ пропуска: сверяем без учёта регистра, знаков и формы стяжения — «do
+// not» и «don't» здесь один ответ (см. lib/answer-match.js).
+const gapIsRight = (item, value) => answerMatches(value, item.answers, gapCue(item))
+
+// Подсказка для заданий «перепиши предложение»: поле стоит в конце строки, и
+// студент печатает весь остаток, а эталон хранит только его начало.
+const gapCue = (item) => `${item.before || ''} ${item.after || ''}`
 
 // Английское слово вслух. Сначала — записанный файл (scripts/make-lesson-audio.js),
 // и только если записи нет — синтез браузера, каким слово произносил исходный
@@ -92,15 +98,6 @@ function stopSpeaking() {
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
 const PROMPT_FIRST = new Set(['pick', 'write', 'checklist'])
 
-// Ответ на впиши-пропуск сверяем без учёта регистра и знаков — как в старом
-// плеере заданий: студент печатает руками, и точка в конце не ошибка.
-function norm(s) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/[.,!?;:"'`]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 // Предложение шага «впиши пропуск» целиком: в макете оно стоит вопросом, а поле
 // ответа — отдельным блоком под ним. Пропуск дорисовываем только если его нет в
@@ -258,9 +255,9 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
     // Экран засчитывается целиком: это одно упражнение из нескольких строк,
     // и сердце за него снимается один раз, а не за каждый пропуск.
     if (step.type === 'group') return (step.items || []).every((it, i) => gapIsRight(it, fills[i] || ''))
-    if (step.type === 'rows') return (step.items || []).every((it, i) => fills[i] === it.answer)
-    if (step.type === 'gap') return (step.answers || []).some((a) => norm(a) === norm(text))
-    if (step.type === 'order') return norm(seq.map((i) => step.words[i]).join(' ')) === norm(step.answer)
+    if (step.type === 'rows') return (step.items || []).every((it, i) => normAnswer(fills[i]) === normAnswer(it.answer))
+    if (step.type === 'gap') return answerMatches(text, step.answers, gapCue(step))
+    if (step.type === 'order') return normAnswer(seq.map((i) => step.words[i]).join(' ')) === normAnswer(step.answer)
     // Соединение засчитывается целиком: это одно упражнение, а не N вопросов,
     // и сердце за него снимается один раз.
     if (step.type === 'match') return (step.pairs || []).every((p, i) => links[i] === p.right)
@@ -416,10 +413,19 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
       return (
         <div className="cp-order">
           <div className={`cp-order__line ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}>
-            {seq.map((i) => (
-              <span key={i} className="cp-chip is-set">
+            {/* Задание просит «tap a word above to remove it», поэтому слово в
+                собранной фразе — кнопка: убрать лишнее из середины иначе можно
+                было только откатив всю фразу до него. */}
+            {seq.map((i, at) => (
+              <button
+                key={`${i}-${at}`}
+                type="button"
+                className="cp-chip is-set"
+                disabled={checked}
+                onClick={() => setSeq((s) => s.filter((_, j) => j !== at))}
+              >
                 {step.words[i]}
-              </span>
+              </button>
             ))}
           </div>
           <div className="cp-order__bank">
