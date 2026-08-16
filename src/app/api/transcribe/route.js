@@ -6,16 +6,24 @@
 // { text } out. Unconfigured → 503; the Speaking screen still advances with an
 // empty transcript.
 
-import { transcribeWav } from '@/lib/ielts/azure-pronunciation.js'
+import { transcribeWav, transcribeWavFast } from '@/lib/ielts/azure-pronunciation.js'
 import { transcribeWavSoniox, isSonioxConfigured } from '@/lib/soniox-stt.js'
 
 export const runtime = 'nodejs'
-// Soniox async — upload+poll+fetch; даём запас по времени сверх дефолтных 10с.
-export const maxDuration = 30
+// maxDuration тут больше нет: это понятие Vercel, а мы под `next start` в
+// Docker — оно не ограничивало ничего и только вводило в заблуждение (стояло
+// 30, хотя уровневый тест — монолог на 2–5 минут и дольше). Реальные лимиты
+// заданы явно: AbortController в transcribeWavFast и бюджет по длине аудио в
+// transcribeWav / transcribeWavSoniox.
 
-// 16 kHz mono WAV runs ~32 KB/s, so 10 MB covers ~5 min — well beyond the short
-// clips the recorder produces, while still rejecting runaway uploads.
-const MAX_BYTES = 10 * 1024 * 1024
+// 16 кГц mono WAV = ~32 КБ/с, значит 25 МБ ≈ 13 минут речи: ученик может
+// говорить сколько хочет, а мусорная заливка всё ещё отсекается.
+//
+// ВАЖНО: этот лимит должен быть НИЖЕ, чем client_max_body_size у nginx перед
+// приложением. Дефолтный nginx'овый 1 МБ = 32 секунды речи, и ответ длиннее
+// умирал с 413 ещё до Next.js — ровно на это жаловались ученики. На прокси
+// нужно client_max_body_size 32m (и proxy_read_timeout 300s).
+const MAX_BYTES = 25 * 1024 * 1024
 
 // Приоритет — Azure: и тест уровня, и IELTS Speaking английские, а на этом же
 // ключе уже сидит оценка произношения, так что два провайдера на один экран
@@ -72,9 +80,15 @@ export async function POST(request) {
 
   try {
     const buf = Buffer.from(await file.arrayBuffer())
-    const text = isAzureConfigured()
-      ? await transcribeWav(buf)
-      : await transcribeWavSoniox(buf)
+    let text
+    if (isAzureConfigured()) {
+      // Fast Transcription отдаёт длинный ответ целиком за секунды, но живёт
+      // не во всех регионах (centralus — нет, eastus — да). Пробуем её, а на
+      // null уходим в потоковый SDK: он медленнее, зато работает везде.
+      text = (await transcribeWavFast(buf)) ?? (await transcribeWav(buf))
+    } else {
+      text = await transcribeWavSoniox(buf)
+    }
     return Response.json({ text })
   } catch (e) {
     console.error('[transcribe] failed', e)
