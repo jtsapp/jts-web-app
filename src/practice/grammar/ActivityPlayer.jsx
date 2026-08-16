@@ -4,6 +4,7 @@ import { completeLessonModule } from '../../api.js'
 import { markUnitDone } from './grammarProgress.js'
 import { recordSkill } from '../skillStats.js'
 import TrainerResult from '../../components/TrainerResult.jsx'
+import { normAnswer } from '../../lib/answer-match.js'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
@@ -13,14 +14,11 @@ const REWARD = 10
 // 1-в-1: norm() + alts, авто-проверка categorize/matching по заполнении, и т.д.
 // Данные (activities) — ровно то, что отдаёт journeyFor(u) в источнике.
 
-// Нормализация ответа для сравнения (как norm() в источнике).
-function norm(s) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/[.,!?;:"']/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+// Нормализация ответа для сравнения. В источнике norm() резал только
+// ASCII-апостроф, поэтому «don't» с клавиатуры не совпадал с типографским
+// «don’t» из данных, а «do not» не совпадал ни с чем: сверка вынесена в общий
+// модуль (src/lib/answer-match.js), где стяжения и полные формы равны.
+const norm = normAnswer
 
 function shuffle(arr) {
   const a = arr.slice()

@@ -16,7 +16,9 @@ const NUMBER_WORDS = {
 // whitespace, strip surrounding punctuation, currency signs and thousands
 // commas, drop a leading article, map number words to digits.
 export function normalizeAnswer(raw) {
-  let s = raw.toLowerCase().trim().replace(/\s+/g, ' ')
+  // Typographic apostrophes come from the source keys ("children’s"), plain
+  // ones from the keyboard — the difference must never cost a band.
+  let s = raw.toLowerCase().replace(/[‘’ʼ´]/g, "'").trim().replace(/\s+/g, ' ')
   // Currency / punctuation noise: "$800." → "800", "'balcony'," → "balcony".
   s = s.replace(/[$€£]/g, '').replace(/^[\s.,!?;:'"()-]+|[\s.,!?;:'"()-]+$/g, '')
   // "1,000" → "1000" (comma only between digits, keeps "pace, individual" intact).
