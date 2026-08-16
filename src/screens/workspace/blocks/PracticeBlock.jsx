@@ -3,12 +3,16 @@ import ChoiceQuestion from '../practice/ChoiceQuestion.jsx'
 import ChipsQuestion from '../practice/ChipsQuestion.jsx'
 import GapQuestion from '../practice/GapQuestion.jsx'
 import MatchQuestion from '../practice/MatchQuestion.jsx'
+import MultiQuestion from '../practice/MultiQuestion.jsx'
+import OrderQuestion from '../practice/OrderQuestion.jsx'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
   chips: ChipsQuestion,
   gap: GapQuestion,
   match: MatchQuestion,
+  multi: MultiQuestion,
+  order: OrderQuestion,
 }
 
 // Карточка практики: заголовок + подсказка, список вопросов, кнопка
