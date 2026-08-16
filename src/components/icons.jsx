@@ -248,6 +248,22 @@ export function IeltsIcon({ size = 24 }) {
     </svg>
   )
 }
+// Лист с галочкой — проверенная домашняя работа.
+export function HomeworkIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M7 2.5h7.5L20 8v13.5H7a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M14 2.5V8h5.5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="m8.8 14.4 2.2 2.2 4.2-4.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function VocabIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">

@@ -106,6 +106,64 @@ async function authPost(path, token, body) {
   return res.json().catch(() => null)
 }
 
+async function authDelete(path, token) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'DELETE',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
+// ─── Домашняя работа ─────────────────────────────────────────────────────────
+// Файл ученика попадает в задание в два шага, как и у преподавателя в админке:
+// сначала /media/upload кладёт его в хранилище и отдаёт ссылку, потом ссылка
+// прикрепляется к домашней работе. Отдельной «загрузки в ДЗ» на бэкенде нет.
+
+export function getMyHomework(token) {
+  return authGet('/admin/homework/my', token)
+}
+
+export function getHomeworkById(token, id) {
+  return authGet(`/admin/homework/${id}`, token)
+}
+
+// Поле формы называется `material` — так его читает MediaController.
+export async function uploadMedia(token, file) {
+  const form = new FormData()
+  form.append('material', file)
+  let res
+  try {
+    res = await fetch(BASE + '/media/upload', {
+      method: 'POST',
+      // Content-Type для multipart ставит сам браузер — вместе с boundary.
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`Не удалось загрузить файл (${res.status})`)
+  return res.json()
+}
+
+export function attachHomeworkAnswer(token, id, fileName, url) {
+  return authPost(`/admin/homework/${id}/submission-materials`, token, { fileName, url })
+}
+
+export function removeHomeworkAnswer(token, id, materialId) {
+  return authDelete(`/admin/homework/${id}/submission-materials/${materialId}`, token)
+}
+
+export function submitHomework(token, id) {
+  return authPut(`/admin/homework/${id}/submit`, token)
+}
+
 // ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
 // Админ-каталоги меняются редко (только правками в dev-admin), поэтому повторные
 // открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в

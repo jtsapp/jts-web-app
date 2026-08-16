@@ -1,0 +1,55 @@
+// Чистые правила экрана «Домашняя работа». Ни сети, ни React — под юнит-тесты.
+
+// Те же расширения, что принимает бэкенд (HomeworkFileTypes). Дублируются
+// сознательно: проверка на клиенте нужна, чтобы не гонять в хранилище файл,
+// который всё равно будет отклонён при прикреплении.
+export const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf']
+
+export function fileExtension(fileName) {
+  const name = String(fileName || '').split(/[\\/]/).pop().split('?')[0]
+  const dot = name.lastIndexOf('.')
+  if (dot < 0 || dot === name.length - 1) return null
+  return name.slice(dot + 1).toLowerCase()
+}
+
+export function isAllowedFile(fileName) {
+  const ext = fileExtension(fileName)
+  return ext != null && ALLOWED_EXTENSIONS.includes(ext)
+}
+
+// Ключ статуса для подписи и цвета бейджа. Просроченным считаем только то, что
+// ещё не сдано: работа, отправленная на проверку с опозданием, — уже забота
+// преподавателя, и «просрочено» в ней ничего не объясняет.
+export function homeworkStateKey(hw, now = new Date()) {
+  if (!hw) return 'assigned'
+  switch (hw.status) {
+    case 'COMPLETED': return 'completed'
+    case 'SUBMITTED': return 'submitted'
+    case 'NEEDS_REVISION': return 'needsRevision'
+    default:
+      return isOverdue(hw, now) ? 'overdue' : 'assigned'
+  }
+}
+
+export function isOverdue(hw, now = new Date()) {
+  if (!hw?.dueDate || hw.status !== 'ASSIGNED') return false
+  // dueDate — дата без времени: работа просрочена со следующего дня, а не в
+  // полночь того же дня, до конца которого её ещё можно сдать.
+  const [y, m, d] = String(hw.dueDate).split('-').map(Number)
+  return new Date(y, m - 1, d + 1) <= now
+}
+
+/** Пока работу не проверили, ученик добавляет и убирает свои файлы. */
+export function canAttach(hw) {
+  return !!hw && hw.status !== 'COMPLETED'
+}
+
+/** Отправлять на проверку нечего, пока не приложен хотя бы один файл. */
+export function canSubmit(hw) {
+  return canAttach(hw) && hw.status !== 'SUBMITTED' && (hw.submissions?.length ?? 0) > 0
+}
+
+/** Сколько работ ждут ученика — цифра на входе с главной. */
+export function pendingCount(list) {
+  return (list || []).filter((hw) => hw.status === 'ASSIGNED' || hw.status === 'NEEDS_REVISION').length
+}

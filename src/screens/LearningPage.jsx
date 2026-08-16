@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
+import { HomeworkIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { computeKingdoms } from '../kingdoms.js'
+import { getMyHomework } from '../api.js'
+import { pendingCount } from './homework/homeworkFormat.js'
 
 // Карта уровней — по макету Figma «Обучение» (Screen 2062:2883).
 //
@@ -13,7 +16,7 @@ import { computeKingdoms } from '../kingdoms.js'
 //
 // Узлы привязаны процентами к КАРТИНКЕ (kingdoms.js), иначе на другой ширине
 // экрана короли уезжают со своих городов.
-export default function LearningPage({ userLevel = 'A1', userName, token, unlockAll = false, onOpenKingdom, onNav, onProfile }) {
+export default function LearningPage({ userLevel = 'A1', userName, token, unlockAll = false, onOpenKingdom, onOpenHomework, onNav, onProfile }) {
   const { t } = useI18n()
   // unlockAll — режим просмотра контента (?unlock=1, только dev): замки на
   // карте сняты, гейтинг по уровню не применяется.
@@ -28,6 +31,20 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
     if (el) el.scrollIntoView({ block: 'center', behavior: 'instant' })
   }, [])
 
+  // Вход в домашнюю работу прямо с главной: задание живёт вне карты уровней, и
+  // без напоминания здесь ученик узнаёт о нём только от преподавателя. Счётчик
+  // — best-effort: не загрузился, значит показываем просто вход, а не ошибку
+  // поверх карты.
+  const [pending, setPending] = useState(null)
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    getMyHomework(token)
+      .then((list) => { if (!cancelled) setPending(pendingCount(list)) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [token])
+
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="lp lp--map">
@@ -37,6 +54,17 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
         <div className="lp-isle__head">
           <h1 className="lp-isle__title">{t('nav.learning')}</h1>
           <p className="lp-isle__sub">{t('learn.subtitle')}</p>
+          {onOpenHomework && (
+            <button type="button" className="lp-hw" onClick={onOpenHomework}>
+              <HomeworkIcon size={20} />
+              <span className="lp-hw__label">{t('homework.entry')}</span>
+              {pending !== null && (
+                <span className="lp-hw__count">
+                  {pending > 0 ? t('homework.entryPending', { count: pending }) : t('homework.entryDone')}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Панель-океан во всю ширину контента, остров — колонкой по центру;

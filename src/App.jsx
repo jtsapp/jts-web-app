@@ -17,6 +17,7 @@ import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
+import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -552,6 +553,7 @@ export default function App() {
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -567,6 +569,7 @@ export default function App() {
     else if (key === 'shadowing') setScreen('shadowing')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -742,6 +745,7 @@ export default function App() {
           unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          onOpenHomework={() => setScreen('homework')}
           onOpenKingdom={(k) => {
             setKingdom(k)
             setScreen('kingdom-interior')
@@ -796,6 +800,8 @@ export default function App() {
       )
     case 'lessons':
       return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+    case 'homework':
+      return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
       return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
     case 'live-lesson':
