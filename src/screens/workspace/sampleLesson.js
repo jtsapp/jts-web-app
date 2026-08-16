@@ -58,16 +58,33 @@ export const SAMPLE_LESSON = {
     { id: 's4', order: 4, title: 'Выбор формы', topicId: 't3', blocks: [
       { type: 'practice', title: 'Выбери верную форму', questions: [
         { id: 's4q1', type: 'choice', prompt: 'She ____ tea every evening.', options: ['drink', 'drinks'], answer: 'drinks' },
+        // Задание Listening: что именно звучит, знает только модель — без кнопки
+        // озвучки вопрос «\ud83d\udd0a Word 1» неотвечаем в принципе.
+        { id: 's4q2', type: 'choice', prompt: '\ud83d\udd0a Word 1', say: 'repeat',
+          options: ['repeat', 'answer', 'slowly'], answer: 'repeat' },
+        // Несколько верных ответов: засчитывается только полный набор без лишнего.
+        { id: 's4q3', type: 'multi', prompt: 'Listen. Tick everything you hear.',
+          options: ['read', 'cook', 'swim', 'watch TV'], answers: ['read', 'swim'] },
       ] },
     ] },
     { id: 's5', order: 5, title: 'Пропуски', topicId: 't3', blocks: [
       { type: 'practice', title: 'Заполни пропуск', questions: [
         { id: 's5q1', type: 'gap', gapBefore: 'They ', gapAfter: ' (play) football on Fridays.', answers: ['play'] },
+        // Пропуск с несколькими верными вариантами и разбором: `why` показывается
+        // только после ошибки — до неё это была бы подсказка с ответом.
+        { id: 's5q2', type: 'gap', gapBefore: 'I ', gapAfter: ' coffee. (\u2764\ufe0f)', answers: ['like', 'love'],
+          why: 'I like + thing. В отрицании — I don\u2019t like: один don\u2019t, глагол без -s.' },
       ] },
     ] },
     { id: 's6', order: 6, title: 'Порядок слов', topicId: 't4', blocks: [
       { type: 'practice', title: 'Собери вопрос', questions: [
         { id: 's6q1', type: 'chips', gapBefore: '', gapAfter: ' he like coffee?', bank: ['Does', 'Do'], answer: 'Does' },
+        // Порядок слов. Слово «I» намеренно встречается дважды: банк считается
+        // вычитанием по одному вхождению, и на этом примере видно, что выбор
+        // первого «I» не убирает из банка оба.
+        { id: 's6q2', type: 'order', prompt: 'Собери предложение',
+          words: ['like', 'I', 'and', 'tea', 'I', 'coffee'],
+          answer: ['I', 'like', 'coffee', 'and', 'I', 'tea'] },
       ] },
     ] },
     { id: 's7', order: 7, title: 'Чтение', topicId: 't4', blocks: [
