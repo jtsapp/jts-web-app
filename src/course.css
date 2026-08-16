@@ -1198,6 +1198,13 @@
   display: inline-grid;
   place-items: center;
 }
+/* Слово в собранной фразе — тоже кнопка (тап убирает его), но после проверки
+   она блокируется: гасить её как недоступный чип банка нельзя, иначе зелёный
+   или красный ответ выцветает ровно в тот момент, когда его читают. */
+.cp-order__line .cp-chip:disabled {
+  opacity: 1;
+  cursor: default;
+}
 
 @media (max-width: 760px) {
   .cp-choices.is-grid {

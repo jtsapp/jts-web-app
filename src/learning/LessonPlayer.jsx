@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { recordSkill } from '../practice/skillStats.js'
+import { answerMatches, normAnswer } from '../lib/answer-match.js'
 
 // Нативный плеер урока «Обучения» (Kingdom lessons) — порт hosted-Speakout-урока
 // (window.TASKS + движок show/render/grade) на React. Заменяет iframe в
@@ -17,15 +18,6 @@ import { recordSkill } from '../practice/skillStats.js'
 
 const REWARD = 10 // монет за верный ответ (как в /api/hl мосте)
 const GRADED = new Set(['choice', 'gap', 'chips'])
-
-// Нормализация текстового ответа (как norm() в ActivityPlayer/движке).
-function norm(s) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/[.,!?;:"'`]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 function shuffle(arr) {
   const a = arr.slice()
@@ -249,14 +241,14 @@ function Chips({ task, answered, finish, setCanCheck, bind }) {
   useEffect(() => setCanCheck(picked !== null && !answered), [picked, answered, setCanCheck])
   bind(() => {
     if (answered || picked === null) return
-    finish(bank[picked] === task.answer, task.answer)
+    finish(normAnswer(bank[picked]) === normAnswer(task.answer), task.answer)
   })
   const chosen = picked !== null ? bank[picked] : null
   return (
     <>
       <div className="kl-sentence">
         {task.gapBefore}
-        <span className={`kl-gap ${answered ? (chosen === task.answer ? 'ok' : 'no') : chosen ? 'filled' : ''}`}>
+        <span className={`kl-gap ${answered ? (normAnswer(chosen) === normAnswer(task.answer) ? 'ok' : 'no') : chosen ? 'filled' : ''}`}>
           {answered ? task.answer : chosen || '____'}
         </span>
         {task.gapAfter}
@@ -284,8 +276,9 @@ function Gap({ task, answered, finish, setCanCheck, bind, t }) {
   }, [])
   const check = () => {
     if (answered || !value.trim()) return
-    const good = (task.answers || []).map(norm)
-    const ok = good.includes(norm(value))
+    // Текст вокруг пропуска — подсказка для заданий «перепиши предложение»
+    // (поле в конце строки, студент печатает весь остаток).
+    const ok = answerMatches(value, task.answers, `${task.gapBefore || ''} ${task.gapAfter || ''}`)
     if (!ok) setShown(task.answers && task.answers[0])
     finish(ok, task.answers ? task.answers.join(' / ') : '')
   }

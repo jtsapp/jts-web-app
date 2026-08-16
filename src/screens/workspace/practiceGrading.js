@@ -1,12 +1,9 @@
-// Чистая логика практики workspace. Зеркалит грейдинг LessonPlayer (norm()).
+// Чистая логика практики workspace. Зеркалит грейдинг LessonPlayer: сверка
+// текста — общая (src/lib/answer-match.js), чтобы «do not» и «don't» здесь
+// значили то же, что в «Обучении» и в движке курса.
+import { answerMatches, normAnswer } from '../../lib/answer-match.js'
 
-export function norm(s) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/[.,!?;:"'`]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+export const norm = normAnswer
 
 // answer: для choice/chips — выбранная строка; для gap — введённый текст;
 // для match (live-уроки) — карта left→выбранный right.
@@ -17,8 +14,7 @@ export function gradeQuestion(question, answer) {
   if (question.type === 'gap') {
     // open-гэп (live-уроки, свободный ответ без эталонов): принимаем любой непустой ответ.
     if (question.open === true) return { correct: norm(answer) !== '' }
-    const good = (question.answers || []).map(norm)
-    return { correct: norm(answer) !== '' && good.includes(norm(answer)) }
+    return { correct: answerMatches(answer, question.answers) }
   }
   if (question.type === 'match') {
     const pairs = question.pairs || []
