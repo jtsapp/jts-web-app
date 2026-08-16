@@ -6704,13 +6704,3 @@ textarea {
 .pl-limit__back:hover {
   background: #e8e5f3;
 }
-
-/* Онлайн-урок внутри оболочки обучения: подвала у урока нет (плеер занимает
-   всю высоту, и подвал добавлял бы вторую прокрутку под заданием), поэтому
-   экран собирается из .learn__body напрямую — см. LessonWorkspacePage. */
-.learn--lesson {
-  background: #f8f8f8;
-}
-.learn--lesson .learn__main {
-  background: #f8f8f8;
-}

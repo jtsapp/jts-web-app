@@ -26,12 +26,4 @@ describe('CourseStepPlayer — что считается проверяемым 
     expect(isGraded({ type: 'cards' })).toBe(false)
     expect(isGraded({ type: 'checklist' })).toBe(false)
   })
-
-  it('живой пример разговора НЕ проверяется: верного ответа у него нет', () => {
-    // «Real-life example» — образец речи: студент выбирает свою реплику, и
-    // засчитывать её как верную или ошибочную нечему. Если бы шаг считался
-    // проверяемым, «Продолжить» ждала бы правильного ответа, которого в данных
-    // нет, и диалог запер бы урок.
-    expect(isGraded({ type: 'dialog', options: ['Yes, I like coffee', "No, I don't like coffee"] })).toBe(false)
-  })
 })

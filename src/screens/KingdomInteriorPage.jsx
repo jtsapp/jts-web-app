@@ -12,8 +12,6 @@ import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
 import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
-import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
-import LessonResultCard from '../components/LessonResultCard.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
@@ -31,6 +29,38 @@ function ProgressRing({ done = 0, total = 0, size = 54, showLabel = true }) {
           {done}/{total}
         </text>
       )}
+    </svg>
+  )
+}
+
+// Иконки экрана итогов — выгружены из макета (Figma «Обучение» → Wrap):
+// Streamline Ultimate «Smiley-Wrong», Streamline Plump «Check-Thick» и группа
+// разбитого сердца. Рисуем их разметкой, а не картинками: они однотонные и
+// должны попадать в цвет карточки.
+function WrongIcon() {
+  return (
+    <svg width="21" height="21" viewBox="0 0 21 21" fill="none" aria-hidden="true">
+      <g stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M0.65625 10.5C0.65625 13.1107 1.69335 15.6145 3.53942 17.4606C5.38548 19.3066 7.88927 20.3438 10.5 20.3438C13.1107 20.3438 15.6145 19.3066 17.4606 17.4606C19.3066 15.6145 20.3438 13.1107 20.3438 10.5C20.3438 7.88927 19.3066 5.38548 17.4606 3.53942C15.6145 1.69335 13.1107 0.65625 10.5 0.65625C7.88927 0.65625 5.38548 1.69335 3.53942 3.53942C1.69335 5.38548 0.65625 7.88927 0.65625 10.5Z" />
+        <path d="M5.90625 7.21875H8.53125" />
+        <path d="M7.21875 8.53125V5.90625" />
+        <path d="M12.4688 7.21875H15.0938" />
+        <path d="M13.7812 8.53125V5.90625" />
+        <path d="M5.90625 15.0941C5.90625 12.8506 6.94925 11.9922 8.41225 11.9922C10.9498 11.9922 10.0494 15.0941 12.5877 15.0941C14.0525 15.0941 15.0938 14.2348 15.0938 11.9922" />
+      </g>
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M18.2067 3.80546C18.615 4.36213 18.5242 5.11171 18.1442 5.68796C14.5879 11.0755 12.0267 14.3484 10.6096 16.0421C9.90667 16.8817 8.68583 16.9434 7.89083 16.1896C5.8202 14.2207 3.87435 12.1245 2.06458 9.91338C1.56042 9.29546 1.45625 8.42338 1.94708 7.79463C2.37375 7.24796 2.86083 6.7788 3.30125 6.40713C4.03167 5.79046 5.08625 5.93046 5.74292 6.62546C7.76917 8.77213 8.99042 10.2713 8.99042 10.2713C8.99042 10.2713 10.9979 7.33796 14.2188 2.82546C14.7175 2.12671 15.6063 1.8013 16.3571 2.21755C16.96 2.55213 17.6608 3.0613 18.2067 3.80505V3.80546Z"
+        fill="#fff"
+      />
     </svg>
   )
 }
@@ -440,44 +470,73 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           собирать это из CSS-фона плюс вырезанного персонажа значит терять
           напуски и кадрирование. */}
       {end && end.outcome === 'success' && (
-        <LessonResultCard
-          accuracy={end.accuracy ?? 100}
-          correct={end.correct ?? 0}
-          wrong={end.wrong ?? 0}
-          subtitle={`${open?.steps?.title || t('learn.done')} — пройден`}
-        >
-          {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
-              «следующий урок» — он всё равно упрётся в тот же отказ. */}
-          {restricted ? (
-            <>
-              <div className="le-restricted" role="status">
-                🔒{' '}
-                {isDemoAccount ? (
-                  <>
-                    {t('learn.quotaReachedDemo')}{' '}
-                    <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                      {t('demo.cta')}
-                    </a>
-                  </>
+        <div className="le-over le-over--ok">
+          <div className="le-card">
+            <AssetImage className="le-art le-art--win" src="/assets/learning/result-win.webp" alt="" />
+            <div className="le-info">
+              <div className="le-pct">{end.accuracy ?? 100}%</div>
+              <div className="le-head">
+                <h2 className="le-title">
+                  {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
+                </h2>
+                <p className="le-sub">{open?.steps?.title || t('learn.done')} — пройден</p>
+              </div>
+              <div className="le-bottom">
+                <div className="le-stats">
+                  <div className="le-stat le-stat--wrong">
+                    <div className="le-stat__row">
+                      <span className="le-stat__ic" aria-hidden="true">
+                        <WrongIcon />
+                      </span>
+                      <b>{end.wrong ?? 0}</b>
+                    </div>
+                    <span>Неверных ответов</span>
+                  </div>
+                  <div className="le-stat le-stat--right">
+                    <div className="le-stat__row">
+                      <span className="le-stat__ic" aria-hidden="true">
+                        <CheckIcon />
+                      </span>
+                      <b>{end.correct ?? 0}</b>
+                    </div>
+                    <span>Верных ответов</span>
+                  </div>
+                </div>
+                {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
+                    «следующий урок» — он всё равно упрётся в тот же отказ. */}
+                {restricted ? (
+                  <div className="le-acts">
+                    <div className="le-restricted" role="status">
+                      🔒{' '}
+                      {isDemoAccount ? (
+                        <>
+                          {t('learn.quotaReachedDemo')}{' '}
+                          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                            {t('demo.cta')}
+                          </a>
+                        </>
+                      ) : (
+                        t('learn.quotaReached')
+                      )}
+                    </div>
+                    <button className="le-btn" onClick={exitLesson}>
+                      {t('common.back')}
+                    </button>
+                  </div>
                 ) : (
-                  t('learn.quotaReached')
+                  <div className="le-acts">
+                    <button className="le-btn" onClick={goNext}>
+                      Перейти на следующий урок
+                    </button>
+                    <button className="le-again" onClick={retry}>
+                      Пройти снова
+                    </button>
+                  </div>
                 )}
               </div>
-              <button className="le-btn" onClick={exitLesson}>
-                {t('common.back')}
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="le-btn" onClick={goNext}>
-                Перейти на следующий урок
-              </button>
-              <button className="le-again" onClick={retry}>
-                Пройти снова
-              </button>
-            </>
-          )}
-        </LessonResultCard>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Итоги неудачной попытки. Сюда доводит только юнит-тест: он сдаётся
@@ -506,7 +565,33 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       )}
 
       {/* Подтверждение выхода из незаконченного урока */}
-      {confirmExit && <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={exitLesson} />}
+      {confirmExit && (
+        <div className="lx-over" onClick={() => setConfirmExit(false)}>
+          <div className="lx-card" onClick={(e) => e.stopPropagation()}>
+            {/* Крестик в макете стоит по центру НАД карточкой и рисуется
+                толстым штрихом — глиф «×» рядом с ним выглядел засечкой. */}
+            <button className="lx-close" aria-label={t('common.close')} onClick={() => setConfirmExit(false)}>
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+                <path d="M6 6 24 24M24 6 6 24" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+              </svg>
+            </button>
+            {/* Арт рисуется в круг 112px, а исходный PNG был 1664px и 2.6 МБ —
+                на 4G он не успевал приехать, и вместо портрета висел серый
+                кружок. Тот же кадр, пережатый под показ, весит 42 КБ. */}
+            <AssetImage className="lx-art" src="/assets/lesson/exit.webp" alt="" hideOnError />
+            <h2 className="lx-title">{t('lesson.exitAsk')}</h2>
+            <div className="lx-sub">{t('lesson.exitAskSub')}</div>
+            <div className="lx-acts">
+              <button className="le-btn lx-continue" onClick={() => setConfirmExit(false)}>
+                {t('lesson.exitStay')}
+              </button>
+              <button className="lx-leave" onClick={exitLesson}>
+                {t('lesson.exitLeave')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </LearningLayout>
   )
 }
