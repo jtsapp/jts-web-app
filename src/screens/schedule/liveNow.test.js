@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { findLiveOccurrence } from './liveNow.js'
+import { findLiveOccurrence, pickFeaturedOccurrence } from './liveNow.js'
 
-const occ = (lessonId, lessonStatus, scheduledAt) => ({ lessonId, lessonStatus, scheduledAt })
+const occ = (lessonId, lessonStatus, scheduledAt) => ({ lessonId, lessonStatus, scheduledAt, durationMinutes: 60 })
 
 describe('findLiveOccurrence', () => {
   it('находит идущий урок, даже если он не сегодня', () => {
@@ -31,5 +31,40 @@ describe('findLiveOccurrence', () => {
       occ(1, 'IN_PROGRESS', '2026-08-09T09:00:00'),
     ]
     expect(findLiveOccurrence(list)?.lessonId).toBe(1)
+  })
+})
+
+describe('pickFeaturedOccurrence', () => {
+  const now = new Date('2026-08-10T12:00:00')
+
+  it('идущий урок важнее ближайшего запланированного', () => {
+    const list = [
+      occ(1, 'SCHEDULED', '2026-08-10T18:00:00'),
+      occ(49, 'IN_PROGRESS', '2026-08-08T23:59:00'),
+    ]
+    expect(pickFeaturedOccurrence(list, now)?.lessonId).toBe(49)
+  })
+
+  it('без идущего берёт ближайший будущий урок', () => {
+    const list = [
+      occ(3, 'SCHEDULED', '2026-08-12T10:00:00'),
+      occ(2, 'SCHEDULED', '2026-08-10T18:00:00'),
+    ]
+    expect(pickFeaturedOccurrence(list, now)?.lessonId).toBe(2)
+  })
+
+  it('идущий урок засчитывается и сейчас: начался в 11:30, ещё не кончился', () => {
+    const list = [occ(5, 'SCHEDULED', '2026-08-10T11:30:00')]
+    expect(pickFeaturedOccurrence(list, now)?.lessonId).toBe(5)
+  })
+
+  // Просроченный урок предлагать нельзя: время вышло, преподаватель класс так
+  // и не открыл — кнопка «присоединиться» вела бы в никуда.
+  it('просроченные, отменённые и проведённые уроки не показываются', () => {
+    expect(pickFeaturedOccurrence([occ(6, 'SCHEDULED', '2026-08-10T09:00:00')], now)).toBeNull()
+    expect(pickFeaturedOccurrence([occ(7, 'CANCELLED', '2026-08-11T09:00:00')], now)).toBeNull()
+    expect(pickFeaturedOccurrence([occ(8, 'COMPLETED', '2026-08-09T09:00:00')], now)).toBeNull()
+    expect(pickFeaturedOccurrence([], now)).toBeNull()
+    expect(pickFeaturedOccurrence(null, now)).toBeNull()
   })
 })

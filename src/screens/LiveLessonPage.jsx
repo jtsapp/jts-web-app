@@ -590,7 +590,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
       <div className="live live--wide">
         <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
 
