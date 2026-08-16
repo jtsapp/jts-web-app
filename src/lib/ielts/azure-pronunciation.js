@@ -50,6 +50,9 @@ export async function assessPronunciation(wav) {
   const parsed = extractPcm(wav)
   if (!parsed || parsed.pcm.length === 0) return null
 
+  const durationSec = pcmDurationSec(parsed)
+  const budgetMs = recognitionBudgetMs(durationSec)
+
   let sdk
   try {
     sdk = await import('microsoft-cognitiveservices-speech-sdk')
@@ -69,6 +72,7 @@ export async function assessPronunciation(wav) {
     try {
       const speechConfig = sdk.SpeechConfig.fromSubscription(key, region)
       speechConfig.speechRecognitionLanguage = 'en-US'
+      applyNoThrottle(speechConfig)
 
       const format = sdk.AudioStreamFormat.getWaveFormatPCM(parsed.sampleRate, 16, 1)
       const pushStream = sdk.AudioInputStream.createPushStream(format)
@@ -117,7 +121,12 @@ export async function assessPronunciation(wav) {
         texts.push(text)
       }
 
+      // Снимаем клапан на нормальном завершении — иначе таймер живёт до конца
+      // бюджета уже после отданного ответа и врёт в лог.
+      let valve = null
       const finish = () => {
+        if (valve) clearTimeout(valve)
+        valve = null
         try {
           recognizer.close()
         } catch {
@@ -154,16 +163,109 @@ export async function assessPronunciation(wav) {
         },
       )
 
-      // Safety valve: a 2-min clip processes faster than real time, but never
-      // hang the request. Force-finish after 60s of wall clock.
-      setTimeout(() => {
+      // Клапан от зависшего соединения. Раньше тут стояли фиксированные 60 с
+      // «клип идёт быстрее реального времени» — неправда: SDK шлёт аудио в
+      // ×2 к реалтайму, и монолог Part 2 на 2 минуты молча терял хвост вместе
+      // с completeness-оценкой. Бюджет считаем от длины аудио.
+      valve = setTimeout(() => {
+        valve = null
+        console.warn(
+          `[azure-pa] бюджет ${Math.round(budgetMs / 1000)}с исчерпан на ${Math.round(durationSec)}с аудио — оценка может быть неполной`,
+        )
         recognizer.stopContinuousRecognitionAsync(finish, finish)
-      }, 60_000)
+      }, budgetMs)
     } catch (e) {
       console.error('[azure-pa] setup failed', e)
       done(null)
     }
   })
+}
+
+// Сколько ждать потоковое распознавание. НЕ константа: SDK шлёт аудио в сервис
+// со скоростью примерно ×2 от реального времени (после первых 5 с включается
+// троттлинг, см. ServiceRecognizerBase.sendAudio), поэтому ответ на 3 минуты
+// физически не успевает уложиться в фиксированные 60 с — раньше такой ответ
+// молча обрезался, и уровень ставился по половине речи. Считаем бюджет от
+// длины аудио с запасом: замер на 90 с речи — 35 с с выключенным троттлингом.
+export function recognitionBudgetMs(durationSec) {
+  return Math.min(600_000, 45_000 + Math.max(0, durationSec) * 1000)
+}
+
+// Троттлинг отправки отключаем: аудио уже целиком в памяти, пропускная
+// способность канала до Azure на порядок больше, а «реалтайм-темп» тут лишний.
+// 90 с речи: 56 с с троттлингом против 35 с без него (замер).
+const NO_THROTTLE_MS = '3600000'
+
+function applyNoThrottle(speechConfig) {
+  speechConfig.setProperty('SPEECH-TransmitLengthBeforThrottleMs', NO_THROTTLE_MS)
+}
+
+function pcmDurationSec(parsed) {
+  return parsed.pcm.length / 2 / (parsed.sampleRate || 16000)
+}
+
+// Fast Transcription (REST, api-version 2024-11-15): весь файл одним запросом,
+// без потокового темпа — пятиминутный ответ распознаётся за секунды. Доступна
+// не во всех регионах: centralus отвечает 400 «Fast transcription is not
+// supported in this region», eastus — поддерживает. Регион ключа меняется без
+// нашего участия, поэтому не хардкодим, а пробуем и запоминаем ответ, чтобы не
+// платить лишним запросом на каждый ответ ученика.
+let fastUnsupportedFor = null
+
+// Только для тестов: сбросить кеш «регион не умеет fast».
+export function resetFastTranscriptionCache() {
+  fastUnsupportedFor = null
+}
+
+// Возвращает распознанный текст, либо null — «этим путём нельзя, иди в
+// потоковый». Пустая строка означает «сработало, но речи не нашлось».
+export async function transcribeWavFast(wav, { locale = 'en-US', timeoutMs = 120_000 } = {}) {
+  const key = process.env.AZURE_SPEECH_KEY
+  const region = process.env.AZURE_SPEECH_REGION
+  if (!key || !region) return null
+  if (fastUnsupportedFor === region) return null
+
+  const form = new FormData()
+  form.append('audio', new Blob([wav], { type: 'audio/wav' }), 'audio.wav')
+  form.append('definition', JSON.stringify({ locales: [locale] }))
+
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+  try {
+    const res = await fetch(
+      `https://${region}.api.cognitive.microsoft.com/speechtotext/transcriptions:transcribe?api-version=2024-11-15`,
+      {
+        method: 'POST',
+        headers: { 'Ocp-Apim-Subscription-Key': key },
+        body: form,
+        signal: ctrl.signal,
+      },
+    )
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      // 404 — у ресурса нет этого эндпоинта, 400 «not supported in this region»
+      // — регион не тот. И то и другое не лечится повтором: гасим путь до
+      // смены региона (перезапуск процесса при деплое сбросит кеш).
+      if (res.status === 404 || /not supported in this region/i.test(body)) {
+        fastUnsupportedFor = region
+        console.warn(`[azure-stt-fast] недоступна в регионе ${region}, уходим в потоковый путь`)
+      } else {
+        console.error('[azure-stt-fast] HTTP', res.status, body.slice(0, 300))
+      }
+      return null
+    }
+    const data = await res.json()
+    const phrases = Array.isArray(data?.combinedPhrases) ? data.combinedPhrases : []
+    return phrases
+      .map((p) => (p?.text || '').trim())
+      .filter(Boolean)
+      .join(' ')
+  } catch (e) {
+    console.error('[azure-stt-fast] failed', e)
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 // Plain speech-to-text over a short clip (the Speaking Part 1 answers). Azure
@@ -177,6 +279,9 @@ export async function transcribeWav(wav) {
 
   const parsed = extractPcm(wav)
   if (!parsed || parsed.pcm.length === 0) return ''
+
+  const durationSec = pcmDurationSec(parsed)
+  const budgetMs = recognitionBudgetMs(durationSec)
 
   let sdk
   try {
@@ -205,6 +310,7 @@ export async function transcribeWav(wav) {
         ),
       )
       pushStream.close()
+      applyNoThrottle(speechConfig)
       const recognizer = new sdk.SpeechRecognizer(
         speechConfig,
         sdk.AudioConfig.fromStreamInput(pushStream),
@@ -219,7 +325,13 @@ export async function transcribeWav(wav) {
           if (t) texts.push(t)
         }
       }
+      // Клапан снимаем при нормальном завершении: иначе таймер доживал до
+      // конца бюджета уже после отданного ответа, писал в лог ложное
+      // «бюджет исчерпан» и дёргал stop у закрытого распознавателя.
+      let valve = null
       const finish = () => {
+        if (valve) clearTimeout(valve)
+        valve = null
         try {
           recognizer.close()
         } catch {
@@ -241,9 +353,15 @@ export async function transcribeWav(wav) {
           done('')
         },
       )
-      setTimeout(() => {
+      // Клапан от зависшего соединения, а не лимит длины ответа: бюджет
+      // считается от длительности аудио (см. recognitionBudgetMs).
+      valve = setTimeout(() => {
+        valve = null
+        console.warn(
+          `[azure-stt] бюджет ${Math.round(budgetMs / 1000)}с исчерпан на ${Math.round(durationSec)}с аудио — текст может быть неполным`,
+        )
         recognizer.stopContinuousRecognitionAsync(finish, finish)
-      }, 60_000)
+      }, budgetMs)
     } catch (e) {
       console.error('[azure-stt] setup failed', e)
       done('')
@@ -358,7 +476,8 @@ export async function assessAgainstReference(wav, refText) {
       )
 
       // Safety valve: короткая фраза оценивается быстро; не висим дольше 20с.
-      setTimeout(() => done(null), 20_000)
+      // unref, чтобы уже отданный ответ не держал таймер до конца интервала.
+      setTimeout(() => done(null), 20_000).unref?.()
     } catch (e) {
       console.error('[azure-pa-ref] setup failed', e)
       done(null)

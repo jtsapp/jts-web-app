@@ -24,10 +24,20 @@ function joinTokens(tokens) {
   return tokens.join('').replace(/\s+/g, ' ').trim()
 }
 
-export async function transcribeWavSoniox(wav, { lang = 'en', timeoutMs = 25000 } = {}) {
+// Таймаут считаем от длины аудио, а не фиксированные 25 с: сокет отдаёт токены
+// примерно в темпе реального времени, поэтому пятиминутный ответ уровневого
+// теста при константе просто терял хвост (и уровень ставился по обрезку).
+// Явный timeoutMs у вызывающего по-прежнему в приоритете.
+export function sonioxBudgetMs(wav) {
+  const durationSec = Math.max(0, (wav.length - 44) / 2 / 16000)
+  return Math.min(600_000, 30_000 + durationSec * 1000)
+}
+
+export async function transcribeWavSoniox(wav, { lang = 'en', timeoutMs } = {}) {
   const key = process.env.SONIOX_API_KEY
   if (!key) return ''
   if (!wav || wav.length === 0) return ''
+  const budgetMs = timeoutMs ?? sonioxBudgetMs(wav)
   if (typeof WebSocket === 'undefined') {
     console.error('[soniox-stt] global WebSocket unavailable in this runtime')
     return ''
@@ -49,9 +59,9 @@ export async function transcribeWavSoniox(wav, { lang = 'en', timeoutMs = 25000 
       resolve(text)
     }
     const timer = setTimeout(() => {
-      console.error('[soniox-stt] timeout')
+      console.error(`[soniox-stt] timeout ${Math.round(budgetMs / 1000)}с — текст может быть неполным`)
       finish(joinTokens(finalTokens))
-    }, timeoutMs)
+    }, budgetMs)
 
     try {
       ws = new WebSocket(WS_URL)
