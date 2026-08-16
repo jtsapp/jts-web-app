@@ -65,6 +65,8 @@ export const SAMPLE_LESSON = {
         // Несколько верных ответов: засчитывается только полный набор без лишнего.
         { id: 's4q3', type: 'multi', prompt: 'Listen. Tick everything you hear.',
           options: ['read', 'cook', 'swim', 'watch TV'], answers: ['read', 'swim'] },
+        // Опрос про себя: верного ответа нет, после проверки ничего не краснеет.
+        { id: 's4q4', type: 'pick', prompt: '\u2615 coffee', options: ['\ud83d\udc4d', '\ud83d\udc4e'] },
       ] },
     ] },
     { id: 's5', order: 5, title: 'Пропуски', topicId: 't3', blocks: [

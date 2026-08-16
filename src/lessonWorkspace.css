@@ -2518,3 +2518,22 @@
   background: var(--lw-tint-1);
   color: var(--lw-primary-ink);
 }
+
+/* Опрос про себя: верного ответа нет, поэтому после проверки выбор остаётся
+   просто отмеченным — ни зелёного, ни красного. */
+.lw-q--pick .lw-opt.is-selected {
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+}
+
+/* Заголовок блока Speaking приходит как <b>Speaking</b><span>Say it out loud</span>
+   и без этого слипается в «SpeakingSay it out loud». В pre-int в нём лежит
+   настоящее название задания, так что блок нужен читаемым, а не спрятанным. */
+.lw-info .sp-head b {
+  display: block;
+}
+.lw-info .sp-head span {
+  display: block;
+  color: var(--lw-muted);
+  font-size: 13px;
+}

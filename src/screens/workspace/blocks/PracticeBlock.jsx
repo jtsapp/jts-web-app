@@ -5,6 +5,7 @@ import GapQuestion from '../practice/GapQuestion.jsx'
 import MatchQuestion from '../practice/MatchQuestion.jsx'
 import MultiQuestion from '../practice/MultiQuestion.jsx'
 import OrderQuestion from '../practice/OrderQuestion.jsx'
+import PickQuestion from '../practice/PickQuestion.jsx'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -13,6 +14,7 @@ const QUESTION_BY_TYPE = {
   match: MatchQuestion,
   multi: MultiQuestion,
   order: OrderQuestion,
+  pick: PickQuestion,
 }
 
 // Карточка практики: заголовок + подсказка, список вопросов, кнопка

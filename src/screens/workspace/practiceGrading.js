@@ -15,6 +15,11 @@ export function gradeQuestion(question, answer) {
   if (!question || answer == null) return { correct: false }
   if (question.type === 'choice') return { correct: answer === question.answer }
   if (question.type === 'chips') return { correct: answer === question.answer }
+  // Опрос про себя. Верного ответа нет — засчитываем сам факт выбора, иначе шаг
+  // с ним никогда не считался бы пройденным.
+  if (question.type === 'pick') {
+    return { correct: Array.isArray(answer) ? answer.length > 0 : norm(answer) !== '' }
+  }
   if (question.type === 'multi') {
     // Засчитываем только полный набор: отмечено всё верное и ничего лишнего.
     // Частичное совпадение здесь означало бы «отметь наугад побольше».
