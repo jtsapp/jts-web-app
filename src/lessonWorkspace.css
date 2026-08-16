@@ -589,16 +589,17 @@
   transform: rotateY(180deg);
 }
 
+/* Край карточки держит тень, а не рамка: §0.3 разрешает разделять только фоном
+   и отступами. Тень чуть плотнее прежней — она осталась одна за всю границу. */
 .lw-vcard__face {
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12), 0 4px 10px rgba(15, 23, 42, 0.06);
 }
 
 .lw-vcard__front {
@@ -672,11 +673,15 @@
   color: #1e293b;
 }
 
+/* Переводы отделены от определения собственным фоном и отступом, а не линией
+   сверху — то же правило §0.3. */
 .lw-vcard__trs {
   display: flex;
   gap: 10px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--lw-tint-3);
 }
 
 .lw-vcard__tr {
@@ -948,11 +953,34 @@
   display: none;
 }
 
-/* Слова для сборки предложения и варианты выбора приезжают из файла тегом
-   <button>, но обработчиков за ними нет — их вырезает конвертация. Показываем
-   их тем, чем они и остались: неинтерактивными плашками со словами, без вида
-   кнопки и без фокуса по табу (по тому же §0.6). Настоящие задания шага
-   рендерит PracticeBlock — вот там всё нажимается. */
+/* Кнопка озвучки курса: конвертация оставляет от неё пустой `.say[data-say]` —
+   слово живёт в атрибуте, произносит его InfoBlock по клику. Пустоту не трогает
+   правило выше: там перечислены конкретные контейнеры рантайма, а этот маркер
+   пуст по замыслу. */
+.lw-info__body .say[data-say] {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font-size: 13px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.lw-info__body .say[data-say]::before {
+  content: '🔊';
+}
+
+/* Слова для сборки предложения и варианты выбора, оставшиеся в разметке тегом
+   <button> без обработчиков. Собранные задания конвертация теперь забирает себе
+   (их рендерит PracticeBlock, и там всё нажимается); сюда доезжает только то,
+   для чего ответ восстановить не удалось — например строка с задвоенным рангом.
+   Показываем это тем, чем оно и осталось: неинтерактивными плашками со словами,
+   без вида кнопки и без фокуса по табу (§0.6). */
 .lw-info__body .ochip,
 .lw-info__body .opt {
   display: inline-block;
@@ -2388,4 +2416,105 @@
   .lw-focus-btn {
     transition: none;
   }
+}
+
+/* ============================================================================
+   Механики, восстановленные из исходного курса: порядок слов, картинка в
+   вопросе, озвучка и разбор ошибки. Токены — те же, что у остальной практики.
+   ========================================================================= */
+
+/* Кнопка «прослушать». В Listening это единственный носитель смысла вопроса:
+   формулировка там «🔊 Word 1», а само слово приходит отдельным полем. */
+.lw-say {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 8px;
+  padding: 0;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lw-say:hover {
+  background: var(--lw-tint-2);
+}
+
+.lw-say:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-q__img {
+  display: block;
+  max-width: 260px;
+  width: 100%;
+  margin: 10px 0;
+  border-radius: var(--lw-r-md, 16px);
+}
+
+/* --- собери предложение --------------------------------------------------- */
+
+/* Строка, куда складывается предложение. Рамки нет намеренно: во всём экране
+   разделение идёт фоном и отступами (§0.3), и состояние ответа тоже красит фон. */
+.lw-order__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-3);
+}
+
+.lw-order__line.is-correct {
+  background: var(--lw-ok-bg);
+}
+
+.lw-order__line.is-wrong {
+  background: var(--lw-error-bg);
+}
+
+.lw-order__empty {
+  color: var(--lw-muted);
+  font-size: 14px;
+}
+
+/* Слово, уже поставленное в предложение: тот же чип, но «поднятый», чтобы было
+   видно, что он кликабелен и вернётся в банк. */
+.lw-chip--placed {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(24, 20, 40, 0.08);
+}
+
+.lw-q--order .lw-bank {
+  margin-top: 12px;
+}
+
+/* --- разбор ошибки -------------------------------------------------------- */
+
+.lw-q__why {
+  margin: 4px 0 0;
+  color: var(--lw-ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lw-chip--placed {
+    transition: none;
+  }
+}
+
+/* Несколько верных ответов: выбранный, но ещё не проверенный вариант надо
+   отличать от просто нажатого в обычном выборе — там клик сразу и есть ответ. */
+.lw-q--multi .lw-opt.is-selected {
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
 }
