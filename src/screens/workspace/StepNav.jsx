@@ -9,7 +9,7 @@ import { useI18n } from '../../i18n.jsx'
 //
 // Состояния своего не держит: активный шаг и список приходят сверху, наружу
 // уходит только id выбранного — тот же контракт, что у LessonRoute.
-export default function StepNav({ steps, activeStepId, onSelect }) {
+export default function StepNav({ steps, activeStepId, onSelect, onFinish }) {
   const { t } = useI18n()
   const list = steps || []
   const index = list.findIndex((step) => step.id === activeStepId)
@@ -36,13 +36,16 @@ export default function StepNav({ steps, activeStepId, onSelect }) {
         {t('lesson.ws.stepPosition', { current: index + 1, total: list.length })}
       </span>
 
+      {/* На последнем шаге вести дальше некуда, и раньше кнопка просто гасла —
+          урок заканчивался ничем. Теперь она завершает урок и показывает итоги;
+          без обработчика (например, у мок-урока) поведение прежнее. */}
       <button
         type="button"
         className="lw-stepnav__btn lw-stepnav__btn--primary"
-        disabled={!hasNext}
-        onClick={() => onSelect(list[index + 1].id)}
+        disabled={hasNext ? false : !onFinish}
+        onClick={() => (hasNext ? onSelect(list[index + 1].id) : onFinish?.())}
       >
-        {t('lesson.ws.nextStep')}
+        {hasNext ? t('lesson.ws.nextStep') : t('lesson.ws.finish')}
       </button>
     </nav>
   )

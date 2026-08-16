@@ -61,3 +61,19 @@ describe('StepNav — переход по шагам кнопками', () => {
     expect(renderNav({ activeStepId: 'нет-такого' }).container.querySelector('.lw-stepnav')).toBeNull()
   })
 })
+
+describe('StepNav — завершение урока', () => {
+  it('на последнем шаге предлагает завершить, а не гаснет', () => {
+    const onFinish = vi.fn()
+    const { getByRole } = renderNav({ activeStepId: STEPS[STEPS.length - 1].id, onFinish })
+    const btn = getByRole('button', { name: /Завершить/i })
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(btn)
+    expect(onFinish).toHaveBeenCalled()
+  })
+
+  it('без обработчика завершения кнопка на последнем шаге остаётся неактивной', () => {
+    const { getByRole } = renderNav({ activeStepId: STEPS[STEPS.length - 1].id })
+    expect(getByRole('button', { name: /Завершить/i }).disabled).toBe(true)
+  })
+})

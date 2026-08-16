@@ -67,3 +67,26 @@ export function stepProgress(steps, answers = {}) {
   }
   return { done, total }
 }
+
+// Итог урока по ответам: сколько заданий сделано верно и сколько нет.
+//
+// Считаем по вопросам, а не по шагам (stepProgress выше отвечает на другой
+// вопрос — «шаг закрыт целиком или нет»). Неотвеченное не идёт ни в верные, ни
+// в неверные: ученик его не решал, и записывать это в ошибки нечестно —
+// иначе процент падал бы просто от того, что урок длинный.
+export function answerTally(steps, answers = {}) {
+  let correct = 0
+  let wrong = 0
+  for (const step of steps || []) {
+    const qs = (step.blocks || []).filter((b) => b.type === 'practice').flatMap((b) => b.questions || [])
+    for (const q of qs) {
+      if (answers[q.id] == null) continue
+      if (gradeQuestion(q, answers[q.id]).correct) correct++
+      else wrong++
+    }
+  }
+  const answered = correct + wrong
+  // Ни одного ответа — 0%, а не 100%: пустой урок не «пройден отлично».
+  const accuracy = answered === 0 ? 0 : Math.round((correct / answered) * 100)
+  return { correct, wrong, accuracy }
+}

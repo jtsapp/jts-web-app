@@ -20,11 +20,13 @@ import LessonRoute from './workspace/LessonRoute.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
 import TopicsList from './workspace/TopicsList.jsx'
 import StepNav from './workspace/StepNav.jsx'
+import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
+import LessonResultCard from '../components/LessonResultCard.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
-import { stepProgress } from './workspace/practiceGrading.js'
+import { stepProgress, answerTally } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { knowsFocusTarget } from './live/followFocus.js'
 
@@ -72,6 +74,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [catalogLesson, setCatalogLesson] = useState(null)
   const [activeStepId, setActiveStepId] = useState(null)
   const [answers, setAnswers] = useState({})
+  // Выход из живого урока раньше срабатывал мгновенно: ученик терял работу за
+  // занятие одним промахом по «Назад». Спрашиваем — как и урок «Обучения».
+  const [confirmExit, setConfirmExit] = useState(false)
+  // Итоги занятия. Последний шаг раньше заканчивался ничем: кнопка «Далее»
+  // просто гасла, и урок не имел завершения.
+  const [finished, setFinished] = useState(false)
   const [checkedSteps, setCheckedSteps] = useState(() => new Set())
   // Шаг, на котором стоит преподаватель. Приходит только событием focus, поэтому
   // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
@@ -587,12 +595,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // терялась и не дописывалась задним числом (спека §3.3, §3.4).
   const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
   const ownProgress = stepProgress(lessonSteps, isStaff ? studentAnswers : answers)
+  // Считаем один раз: карточка итогов спрашивает три величины сразу.
+  const tally = useMemo(() => answerTally(lessonSteps, answers), [lessonSteps, answers])
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="live live--wide">
-        <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
+        <button
+          className="live__back"
+          onClick={() => (isStaff || Object.keys(answers).length === 0 ? onBack?.() : setConfirmExit(true))}
+        >
+          ← {t('schedule.back')}
+        </button>
 
         {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
         {state === 'error' && <p className="live__status-msg">{t('live.loadError')}</p>}
@@ -754,7 +769,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
                       {/* Урок проходится кнопками под заданием, а не только
                           кликом по маршруту сбоку — см. StepNav. */}
-                      <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
+                      <StepNav
+                        steps={routeSteps}
+                        activeStepId={routeActiveId}
+                        onSelect={selectRouteStep}
+                        onFinish={!isStaff && onLessonSteps ? () => setFinished(true) : undefined}
+                      />
                     </div>
 
                     <div className="lw-live-aside">
@@ -831,6 +851,33 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           </>
         )}
       </div>
+
+      {/* Оверлеи занятия. Оба — только у ученика: преподаватель ведёт урок,
+          работу не теряет и итогов по себе не подводит. */}
+      {confirmExit && (
+        <LessonExitConfirm
+          onStay={() => setConfirmExit(false)}
+          onLeave={() => {
+            setConfirmExit(false)
+            onBack?.()
+          }}
+        />
+      )}
+
+      {finished && (
+        <LessonResultCard
+          accuracy={tally.accuracy}
+          correct={tally.correct}
+          wrong={tally.wrong}
+          subtitle={t('lesson.result.sub')}
+        >
+          {/* Следующего урока тут нет — его назначает преподаватель в
+              расписании, поэтому единственное действие это выход. */}
+          <button className="le-btn" onClick={() => onBack?.()}>
+            {t('lesson.result.close')}
+          </button>
+        </LessonResultCard>
+      )}
     </LearningLayout>
   )
 }
