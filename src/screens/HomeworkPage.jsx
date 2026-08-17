@@ -58,18 +58,29 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
 
   const selected = items.find((hw) => hw.id === selectedId) || null
 
-  const handleUpload = async (file) => {
+  // Файлы грузятся по очереди, а не разом.
+  //
+  // Каждый attach отвечает всей карточкой задания, собранной на момент своего
+  // запроса. При параллельной загрузке ответ более медленного запроса приходил
+  // последним и затирал в списке файл, который успел прикрепиться раньше:
+  // ученик видел одно вложение вместо двух и грузил второй файл заново.
+  const handleUpload = async (files) => {
     if (!selected) return
     setError(null)
-    if (!isAllowedFile(file.name)) {
-      setError(t('homework.badFormat', { name: file.name }))
+
+    const wrongFormat = files.find((file) => !isAllowedFile(file.name))
+    if (wrongFormat) {
+      setError(t('homework.badFormat', { name: wrongFormat.name }))
       return
     }
+
     setBusy(true)
     try {
-      const { url } = await uploadMedia(token, file)
-      if (!url) throw new Error('upload returned no url')
-      replace(await attachHomeworkAnswer(token, selected.id, file.name, url))
+      for (const file of files) {
+        const { url } = await uploadMedia(token, file)
+        if (!url) throw new Error('upload returned no url')
+        replace(await attachHomeworkAnswer(token, selected.id, file.name, url))
+      }
     } catch {
       setError(t('homework.uploadFailed'))
       await refresh(selected.id)

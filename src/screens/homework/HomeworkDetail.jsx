@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import HomeworkFileList from './HomeworkFileList.jsx'
 import { ALLOWED_EXTENSIONS, canAttach, canSubmit, homeworkStateKey } from './homeworkFormat.js'
@@ -20,7 +19,6 @@ function formatDate(value, locale) {
 export default function HomeworkDetail({ hw, busy, error, onUpload, onRemoveFile, onSubmit }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
-  const inputRef = useRef(null)
 
   if (!hw) return <div className="hw-detail hw-detail--empty"><p className="hw__hint">{t('homework.pickOne')}</p></div>
 
@@ -34,7 +32,7 @@ export default function HomeworkDetail({ hw, busy, error, onUpload, onRemoveFile
     // input сохраняет выбор: без сброса повторная загрузка того же файла
     // (после ошибки формата) не вызвала бы change.
     event.target.value = ''
-    files.forEach(onUpload)
+    if (files.length) onUpload(files)
   }
 
   return (
@@ -58,13 +56,12 @@ export default function HomeworkDetail({ hw, busy, error, onUpload, onRemoveFile
         <HomeworkFileList
           files={hw.submissions}
           emptyLabel={t('homework.answerEmpty')}
-          onRemove={attachable ? onRemoveFile : undefined}
+          onRemove={attachable && !busy ? onRemoveFile : undefined}
         />
 
         {attachable && (
           <div className="hw-upload">
             <input
-              ref={inputRef}
               id={`hw-upload-${hw.id}`}
               className="hw-upload__input"
               type="file"

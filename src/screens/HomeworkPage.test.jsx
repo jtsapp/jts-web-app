@@ -40,9 +40,9 @@ function renderPage() {
   )
 }
 
-function pickFile(container, file) {
+function pickFile(container, ...files) {
   const input = container.querySelector('.hw-upload__input')
-  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  Object.defineProperty(input, 'files', { value: files, configurable: true })
   fireEvent.change(input)
 }
 
@@ -83,6 +83,43 @@ describe('HomeworkPage', () => {
     await waitFor(() => expect(container.querySelector('.hw__error')).not.toBeNull())
     expect(api.uploadMedia).not.toHaveBeenCalled()
     expect(container.querySelector('.hw__error').textContent).toMatch(/решение\.docx/)
+  })
+
+  // Два файла разом: параллельные запросы затирали друг друга в списке, и
+  // ученик видел одно вложение вместо двух.
+  it('несколько файлов грузятся по очереди и оба доезжают', async () => {
+    const twoFiles = {
+      ...ASSIGNMENT,
+      submissions: [
+        { id: 9, fileName: 'first.png', url: 'https://files.example/first.png' },
+        { id: 10, fileName: 'second.pdf', url: 'https://files.example/second.pdf' },
+      ],
+    }
+    api.attachHomeworkAnswer
+      .mockResolvedValueOnce({ ...ASSIGNMENT, submissions: [twoFiles.submissions[0]] })
+      .mockResolvedValueOnce(twoFiles)
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelector('.hw-upload__input')).not.toBeNull())
+
+    pickFile(container, file('first.png', 'image/png'), file('second.pdf', 'application/pdf'))
+
+    await waitFor(() => expect(api.attachHomeworkAnswer).toHaveBeenCalledTimes(2))
+    // Порядок вызовов — тот же, что и порядок выбора: загрузка последовательная.
+    expect(api.attachHomeworkAnswer.mock.calls.map((c) => c[2])).toEqual(['first.png', 'second.pdf'])
+    await waitFor(() => expect(screen.getByText('second.pdf')).toBeTruthy())
+    expect(screen.getByText('first.png')).toBeTruthy()
+  })
+
+  it('чужой формат в пачке отменяет всю загрузку до сети', async () => {
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelector('.hw-upload__input')).not.toBeNull())
+
+    pickFile(container, file('ok.png', 'image/png'), file('плохой.docx', 'application/msword'))
+
+    await waitFor(() => expect(container.querySelector('.hw__error')).not.toBeNull())
+    expect(api.uploadMedia).not.toHaveBeenCalled()
+    expect(container.querySelector('.hw__error').textContent).toMatch(/плохой\.docx/)
   })
 
   it('отправляет работу на проверку и показывает новый статус', async () => {

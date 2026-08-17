@@ -57,6 +57,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
+import { isTeacher } from './lib/jwt.js'
 import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
@@ -155,6 +156,10 @@ export default function App() {
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
         if (deepLink) setScreen(deepLink)
+        // Преподаватель приходит сюда работать, а не учиться: карта уровней с
+        // запертыми королевствами — ученический экран, и открывать его первым
+        // ему бессмысленно (сайдбар ему всё остальное и так не показывает).
+        else if (session && isTeacher(session.token)) setScreen('lessons')
         else if (session) setScreen(TUTOR_ONLY ? (profile?.tutor ? 'tutor-dashboard' : 'tutor-welcome') : 'kingdom')
       })
       .finally(() => {
@@ -715,7 +720,13 @@ export default function App() {
       return (
         <SuccessPage
           onDone={() =>
-            setScreen(TUTOR_ONLY ? tutorHome : needsLevelTest ? 'test-intro' : 'kingdom')
+            // Преподавателя ведём в «Уроки»: карта уровней и CEFR-тест — часть
+            // ученического пути, ему они не нужны (см. восстановление сессии).
+            setScreen(
+              isTeacher(token) ? 'lessons'
+                : TUTOR_ONLY ? tutorHome
+                  : needsLevelTest ? 'test-intro' : 'kingdom'
+            )
           }
         />
       )
