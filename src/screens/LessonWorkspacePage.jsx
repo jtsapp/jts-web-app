@@ -10,6 +10,7 @@ import { SAMPLE_LESSON } from './workspace/sampleLesson.js'
 import { loadLiveLesson } from './workspace/liveLessonData.js'
 import { liveLessonSteps, topicIdAtStep } from './workspace/liveSteps.js'
 import LessonAside from './workspace/LessonAside.jsx'
+import LessonContent from './workspace/LessonContent.jsx'
 
 // Экран онлайн-урока (Figma «pitch JTS» → Уроки → Онлайн-уроки).
 //
@@ -59,6 +60,26 @@ export default function LessonWorkspacePage({
 
   const steps = useMemo(() => liveLessonSteps(lesson), [lesson])
 
+  // Шаг урока не всегда сводится к очереди экранов плеера (`vocab`-колода,
+  // вопрос типа order/multi/pick/match — см. комментарий в liveSteps.js): тогда
+  // `steps` пустеет весь, и вместо плеера показываем документ урока целиком —
+  // тот же `LessonContent`, что и в живом уроке, только с собственной вкладочной
+  // навигацией по шагам, а не route-панелью преподавателя.
+  const useDocView = steps.length === 0 && (lesson?.steps?.length ?? 0) > 0
+  const [docStepId, setDocStepId] = useState(null)
+  useEffect(() => {
+    setDocStepId(lesson?.steps?.[0]?.id ?? null)
+  }, [lesson])
+  const docStep = lesson?.steps?.find((s) => s.id === docStepId) || lesson?.steps?.[0] || null
+  const [docAnswers, setDocAnswers] = useState({})
+  const [docChecked, setDocChecked] = useState(() => new Set())
+  const handleDocAnswer = useCallback((questionId, value) => {
+    setDocAnswers((prev) => ({ ...prev, [questionId]: value }))
+  }, [])
+  const handleDocCheck = useCallback((key) => {
+    setDocChecked((prev) => new Set(prev).add(key))
+  }, [])
+
   // Номер открытого экрана приходит из плеера: индекс живёт там, а правой
   // колонке он нужен, чтобы подсветить текущий топик.
   const [stepIndex, setStepIndex] = useState(0)
@@ -101,7 +122,7 @@ export default function LessonWorkspacePage({
     )
   }
 
-  const activeTopicId = topicIdAtStep(lesson, steps, stepIndex)
+  const activeTopicId = useDocView ? (docStep?.topicId ?? null) : topicIdAtStep(lesson, steps, stepIndex)
   const accuracy = end?.accuracy ?? 100
 
   return (
@@ -116,30 +137,61 @@ export default function LessonWorkspacePage({
           onProfile={onProfile}
         />
         <main className="learn__main">
-          <CourseStepPlayer
-            key={attempt}
-            steps={steps}
-            title={lesson.title || lesson.unit || ''}
-            level={lesson.level}
-            onExit={() => setConfirmExit(true)}
-            onVocab={onVocab}
-            withLang
-            onStep={handleStep}
-            onDone={setEnd}
-            aside={
-              <LessonAside
-                lesson={lesson}
-                activeTopicId={activeTopicId}
-                messages={chatMessages}
-                onSend={handleSend}
+          {useDocView ? (
+            // Плеер не осилил урок целиком (vocab-колода или вопрос типа
+            // order/multi/pick/match — см. liveSteps.js): показываем документ
+            // урока, как в живом уроке, со своей вкладочной навигацией по шагам
+            // вместо очереди экранов.
+            <div className="lw-doc">
+              {lesson.steps.length > 1 && (
+                <div className="ls__tabs lw-material-tabs">
+                  {lesson.steps.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`ls-tab ${s.id === docStep?.id ? 'ls-tab--active' : ''}`}
+                      onClick={() => setDocStepId(s.id)}
+                    >
+                      {s.title || s.id}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <LessonContent
+                step={docStep}
+                answers={docAnswers}
+                checkedKeys={docChecked}
+                onAnswer={handleDocAnswer}
+                onCheck={handleDocCheck}
+                readOnly={false}
               />
-            }
-          />
+            </div>
+          ) : (
+            <CourseStepPlayer
+              key={attempt}
+              steps={steps}
+              title={lesson.title || lesson.unit || ''}
+              level={lesson.level}
+              onExit={() => setConfirmExit(true)}
+              onVocab={onVocab}
+              withLang
+              onStep={handleStep}
+              onDone={setEnd}
+              aside={
+                <LessonAside
+                  lesson={lesson}
+                  activeTopicId={activeTopicId}
+                  messages={chatMessages}
+                  onSend={handleSend}
+                />
+              }
+            />
+          )}
 
           {/* Итоги урока (Figma, Wrap → 4065:30498). Действия свои: следующего
               урока у живого занятия нет, его назначает преподаватель в
               расписании — поэтому вместо «на следующий урок» выход в меню. */}
-          {end && (
+          {!useDocView && end && (
             <LessonResultCard
               accuracy={accuracy}
               correct={end.correct ?? 0}

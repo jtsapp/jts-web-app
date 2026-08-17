@@ -35,7 +35,6 @@ function lesson(overrides = {}) {
             title: 'Впиши форму',
             questions: [
               { id: 'q3', type: 'gap', gapBefore: 'Alina ', gapAfter: ' up at 6:30.', answers: ['wakes'] },
-              { id: 'q4', type: 'match', prompt: 'Сопоставь', pairs: [{ left: 'rush', right: 'спешить' }] },
             ],
           },
         ],
@@ -48,8 +47,8 @@ function lesson(overrides = {}) {
 describe('liveLessonSteps', () => {
   it('разворачивает вопросы практики в отдельные экраны', () => {
     const steps = liveLessonSteps(lesson())
-    // 2 вопроса + правило + 2 вопроса; баннер выброшен.
-    expect(steps.map((s) => s.type)).toEqual(['choice', 'choice', 'note', 'gap', 'match'])
+    // 2 вопроса + правило + вопрос; баннер выброшен.
+    expect(steps.map((s) => s.type)).toEqual(['choice', 'choice', 'note', 'gap'])
   })
 
   it('выбрасывает декоративный баннер', () => {
@@ -98,10 +97,40 @@ describe('liveLessonSteps', () => {
     expect(gap).toMatchObject({ type: 'gap', before: 'Alina ', after: ' up at 6:30.', answers: ['wakes'] })
   })
 
-  it('берёт заголовок match из вопроса, а не из блока', () => {
-    const match = liveLessonSteps(lesson())[4]
-    expect(match.title).toBe('Сопоставь')
-    expect(match.pairs).toEqual([{ left: 'rush', right: 'спешить' }])
+  // `MatchBoard` плеера ждёт `step.options`/`step.links` — свою форму данных
+  // из самообучения, а не `{ pairs }`, которую отдаёт экстрактор каталога.
+  // Экран с match доезжал бы половиной интерфейса (банк вариантов взять
+  // неоткуда) — плеер честно сдаётся на всём уроке, LiveLessonPage подставляет
+  // LessonContent, которому все типы по зубам без исключений.
+  it('match в уроке обнуляет всю очередь плеера — резерв на LessonContent', () => {
+    const withMatch = lesson({
+      steps: [
+        {
+          id: 's1',
+          topicId: 't1',
+          blocks: [{
+            type: 'practice',
+            questions: [{ id: 'q', type: 'match', pairs: [{ left: 'rush', right: 'спешить' }] }],
+          }],
+        },
+      ],
+    })
+    expect(liveLessonSteps(withMatch)).toEqual([])
+  })
+
+  // Колода-переворачивашка урока каталога (`block.cards`) — не тот `cards`,
+  // что у плеера самообучения (`step.words`): конвертировать нечем.
+  it('vocab-блок в уроке тоже обнуляет всю очередь плеера', () => {
+    const withVocab = lesson({
+      steps: [
+        {
+          id: 's1',
+          topicId: 't1',
+          blocks: [{ type: 'vocab', title: 'Vocabulary', cards: [{ word: 'friend' }] }],
+        },
+      ],
+    })
+    expect(liveLessonSteps(withVocab)).toEqual([])
   })
 
   it('собирает правило в html карточки', () => {
@@ -278,7 +307,7 @@ describe('liveLessonSteps', () => {
   // слева, ни с трансляцией step-progress учителю.
   it('каждый экран помнит id шага урока, из которого собран', () => {
     const out = liveLessonSteps(lesson())
-    expect(out.map((s) => s.stepId)).toEqual(['s1', 's1', 's2', 's2', 's2'])
+    expect(out.map((s) => s.stepId)).toEqual(['s1', 's1', 's2', 's2'])
   })
 
   it('не падает на пустом уроке', () => {

@@ -74,6 +74,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [catalogLesson, setCatalogLesson] = useState(null)
   const [activeStepId, setActiveStepId] = useState(null)
   const [answers, setAnswers] = useState({})
+  // Несмотря на название — не id шагов, а составные ключи practice-карточек
+  // (`practiceBlockKey` в LessonContent): один шаг урока несёт по несколько
+  // независимых упражнений подряд, и «Проверить» должно снимать блокировку
+  // только с того, где нажали. Имя не переименовано, чтобы не разъезжаться с
+  // полем `checked` в сохранённом прогрессе (stepProgress.js) — формат тот же
+  // массив строк, просто теперь не голые id шагов.
   const [checkedSteps, setCheckedSteps] = useState(() => new Set())
   // Шаг, на котором стоит преподаватель. Приходит только событием focus, поэтому
   // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
@@ -277,14 +283,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     })
   }
 
-  function handleCheckStep() {
+  // `key` — составной ключ конкретной practice-карточки (LessonContent
+  // передаёт его в onCheck), а не id шага: см. комментарий у checkedSteps.
+  function handleCheckStep(key) {
     const next = new Set(checkedSteps)
-    next.add(activeStepId)
+    next.add(key)
     setCheckedSteps(next)
     persistProgress({ answers, checkedSteps: next, stepId: activeStepId })
     sendStepProgress({
       stepId: activeStepId,
       checked: true,
+      checkedKey: key,
       sectionId: activeSectionId,
       materialId: activeMaterial?.materialId ?? null,
     })
@@ -400,11 +409,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       if (evt.questionId != null) {
         setStudentAnswers((prev) => ({ ...prev, [evt.questionId]: parseAnswer(evt.value) }))
       }
-      if (evt.checked && evt.stepId != null) {
+      if (evt.checked && evt.checkedKey != null) {
         setStudentCheckedSteps((prev) => {
-          if (prev.has(evt.stepId)) return prev
+          if (prev.has(evt.checkedKey)) return prev
           const next = new Set(prev)
-          next.add(evt.stepId)
+          next.add(evt.checkedKey)
           return next
         })
       }
@@ -760,7 +769,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               step={activeStep}
                               // Преподаватель смотрит работу ученика, ученик — свою.
                               answers={isStaff ? studentAnswers : answers}
-                              checked={isStaff ? studentCheckedSteps.has(activeStepId) : checkedSteps.has(activeStepId)}
+                              checkedKeys={isStaff ? studentCheckedSteps : checkedSteps}
                               onAnswer={handleAnswer}
                               onCheck={handleCheckStep}
                               readOnly={contentReadOnly}

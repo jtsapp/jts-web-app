@@ -58,11 +58,24 @@ function theoryHtml(block) {
   return parts.join('')
 }
 
+// Типы вопросов, которых у плеера нет вовсе (`order`/`multi`/`pick` — из
+// экстрактора каталога, самообучение их не знает), или форма данных для
+// которых не совпадает с тем, что ждёт компонент плеера. `match` в их числе:
+// `questionStep` отдаёт `{ pairs }`, а `MatchBoard` в CourseStepPlayer читает
+// `step.options`/`step.links` — своя, самостоятельная форма из самообучения.
+// Экран с `type:'match'` доезжал бы наполовину пустым (banком вариантов
+// неоткуда взяться), а не честно проваливался в резерв.
+const UNSUPPORTED_QUESTION_TYPES = new Set(['match', 'order', 'multi', 'pick'])
+
 // Один вопрос практики → один экран плеера. Возвращает null для типов, которых
 // плеер не знает: неизвестный вопрос лучше пропустить, чем показать пустой
 // экран без задания и без кнопки.
 function questionStep(question, block, stage) {
   const base = { stage, title: block.title || '' }
+
+  if (UNSUPPORTED_QUESTION_TYPES.has(question.type)) {
+    return null
+  }
 
   switch (question.type) {
     // `imageUrl` есть у задания «слово ↔ картинка»: вопрос там спрашивает про
@@ -86,9 +99,6 @@ function questionStep(question, block, stage) {
 
     case 'gap':
       return { ...base, type: 'gap', before: question.gapBefore || '', after: question.gapAfter || '', answers: question.answers || [] }
-
-    case 'match':
-      return { ...base, type: 'match', title: question.prompt || block.title || '', pairs: question.pairs || [] }
 
     // Живой пример разговора (Figma, Speaking → 4065:28707). Одна реплика
     // собеседника = один экран: в макете следующий ход диалога нарисован
@@ -122,11 +132,21 @@ function questionStep(question, block, stage) {
  * именно его показывает жирной строкой шапка плеера, а справа тот же список
  * подсвечивает активный пункт в «Топиках урока». Если у шага нет `topicId` или
  * топик не найден — падаем на заголовок самого шага, чтобы шапка не пустовала.
+ *
+ * Урок целиком, а не по шагам: если хоть один блок/вопрос плееру не по зубам
+ * (`vocab`-колода или вопрос из {@link UNSUPPORTED_QUESTION_TYPES}), очередь
+ * пустеет вся — вызывающая сторона (`LiveLessonPage`) при пустой очереди сама
+ * показывает документ (`LessonContent`), который знает все типы без
+ * исключений. Раньше пропавший тип просто выпадал из своего экрана — и
+ * сопоставление доезжало половиной интерфейса (банк вариантов плееру взять
+ * неоткуда), а колода слов не доезжала совсем, без единой ошибки в консоли,
+ * которая объяснила бы почему.
  */
 export function liveLessonSteps(lesson) {
   const topics = lesson?.topics || []
   const titleByTopic = new Map(topics.map((topic) => [topic.id, topic.title]))
   const out = []
+  let unsupported = false
 
   for (const step of lesson?.steps || []) {
     const stage = titleByTopic.get(step.topicId) || step.title || ''
@@ -164,7 +184,13 @@ export function liveLessonSteps(lesson) {
         for (const question of block.questions || []) {
           const made = questionStep(question, block, stage)
           if (made) out.push({ ...made, stepId })
+          else unsupported = true
         }
+      } else if (block.type === 'vocab') {
+        // Колода-переворачивашка: у плеера самообучения свой тип `cards` под
+        // другую форму данных (`step.words`), а не `block.cards` каталога —
+        // конвертировать нечем, и подменять её текстовым списком тоже не дело.
+        unsupported = true
       }
     }
 
@@ -173,7 +199,7 @@ export function liveLessonSteps(lesson) {
     flushInfo()
   }
 
-  return out
+  return unsupported ? [] : out
 }
 
 /**

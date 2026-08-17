@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
-import LessonContent, { groupBlocks } from './LessonContent.jsx'
+import LessonContent, { groupBlocks, practiceBlockKey } from './LessonContent.jsx'
 
 // Регрессия на расхождение экранов ученика и преподавателя.
 //
@@ -25,7 +25,7 @@ function renderContent(blocks, props = {}) {
       <LessonContent
         step={{ blocks }}
         answers={{}}
-        checked={false}
+        checkedKeys={new Set()}
         onAnswer={() => {}}
         onCheck={() => {}}
         {...props}
@@ -118,6 +118,36 @@ describe('LessonContent — карточки шага', () => {
     expect(onAnswer).toHaveBeenCalledWith('q1', 'a')
   })
 
+  // Регрессия: шаг несёт по несколько независимых упражнений подряд (в
+  // реальном уроке — до дюжины пронумерованных заданий на одной «Vocabulary»).
+  // «Проверить» в одной карточке не должно раскрывать ответы и блокировать
+  // ввод в соседних — студент их ещё не решал.
+  it('«Проверить» в одной карточке не трогает соседнюю', () => {
+    const GAP1 = { type: 'practice', title: 'P1', questions: [{ id: 'g1', type: 'gap', gapBefore: 'I like', gapAfter: '.', answers: ['coffee'] }] }
+    const GAP2 = { type: 'practice', title: 'P2', questions: [{ id: 'g2', type: 'gap', gapBefore: 'I see', gapAfter: '.', answers: ['you'] }] }
+
+    const { container } = renderContent([GAP1, GAP2], {
+      checkedKeys: new Set([practiceBlockKey(undefined, 0)]),
+    })
+
+    const inputs = container.querySelectorAll('.lw-gap-input')
+    expect(inputs).toHaveLength(2)
+    expect(inputs[0].disabled).toBe(true)
+    expect(inputs[1].disabled).toBe(false)
+  })
+
+  it('клик «Проверить» шлёт ключ именно этой карточки, а не всего шага', () => {
+    const onCheck = vi.fn()
+    const GAP1 = { type: 'practice', title: 'P1', questions: [{ id: 'g1', type: 'gap', gapBefore: 'I like', gapAfter: '.', answers: ['coffee'] }] }
+    const GAP2 = { type: 'practice', title: 'P2', questions: [{ id: 'g2', type: 'gap', gapBefore: 'I see', gapAfter: '.', answers: ['you'] }] }
+
+    const { container } = renderContent([GAP1, GAP2], { onCheck })
+    const checkButtons = container.querySelectorAll('.lw-practice__check')
+    fireEvent.click(checkButtons[1])
+
+    expect(onCheck).toHaveBeenCalledWith(practiceBlockKey(undefined, 1))
+  })
+
   it('theory и banner не сливаются с info', () => {
     const { container } = renderContent([
       INFO('<p>раз</p>'),
@@ -144,6 +174,14 @@ describe('LessonContent — карточки шага', () => {
     expect(container.textContent).toContain('friendship')
     expect(container.textContent).toContain('get on (well with someone)')
     expect(container.querySelectorAll('.lw-vcard')).toHaveLength(2)
+  })
+
+  it('рисует чек-лист «You can now…», а не выкидывает неизвестный тип', () => {
+    const { container } = renderContent([
+      { type: 'checklist', title: 'You can now…', items: ['talk about your friendships', 'speak for a minute'] },
+    ])
+    expect(container.querySelectorAll('.lw-checklist').length).toBe(1)
+    expect(container.querySelectorAll('.lw-checklist__item').length).toBe(2)
   })
 
   it('клик переворачивает карточку и показывает перевод', () => {
