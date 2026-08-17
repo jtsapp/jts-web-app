@@ -63,7 +63,9 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
         )}
 
         {tab === 'online' && (
-          <div className="ls__body">
+          // Расписание — широкая раскладка: календарь и карточка урока занимают
+          // всю страницу, в отличие от узкой заглушки «клубов» по центру.
+          <div className="ls__body ls__body--wide">
             <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
           </div>
         )}

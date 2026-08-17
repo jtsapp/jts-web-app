@@ -40,7 +40,7 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
   }, [token])
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
       <div className="cc">
         {/* Каталог открывается с экрана «Уроки». Без этой кнопки уйти отсюда можно
             было только через сайдбар, а на узком экране он спрятан в drawer — то

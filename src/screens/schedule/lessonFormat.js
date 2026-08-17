@@ -11,6 +11,36 @@ export function lessonEnd(occ) {
   return new Date(start.getTime() + (occ.durationMinutes || 0) * 60000)
 }
 
+// «18:00 – 19:00». Без durationMinutes конца у урока нет — показываем начало.
+export function lessonTimeRange(occ, locale = 'ru') {
+  const time = (date) => date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+  const start = time(parseLessonDate(occ.scheduledAt))
+  return occ.durationMinutes ? `${start} – ${time(lessonEnd(occ))}` : start
+}
+
+// Тема урока в карточке — название материала, прикреплённого к первому разделу.
+// Своего поля «тема» у урока на бэкенде нет: преподаватель вешает урок каталога
+// материалом в раздел, и его имя — единственное, что описывает занятие словами.
+// Хвост « · 1-на-1» ставит сам бэкенд, чтобы различать три регистрации одного
+// урока в библиотеке (LessonSectionService.createCatalogMaterial); ученику этот
+// служебный суффикс ничего не говорит, поэтому обрезаем.
+const MATERIAL_MODE_SEP = ' · '
+
+export function lessonTopicFromSections(sections) {
+  const ordered = (Array.isArray(sections) ? sections : [])
+    .slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+  for (const section of ordered) {
+    const titled = (section.materials || []).find((m) => m && typeof m.title === 'string' && m.title.trim())
+    if (!titled) continue
+    const title = titled.title.trim()
+    const cut = title.lastIndexOf(MATERIAL_MODE_SEP)
+    return cut > 0 ? title.slice(0, cut).trim() : title
+  }
+  return null
+}
+
 export function canJoin(lessonStatus) {
   return lessonStatus === 'IN_PROGRESS' || lessonStatus === 'PAUSED'
 }
