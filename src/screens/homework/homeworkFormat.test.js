@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   fileExtension, isAllowedFile, homeworkStateKey, isOverdue,
-  canAttach, canSubmit, pendingCount,
+  canAttach, canSubmit, pendingCount, reviewOrder,
 } from './homeworkFormat.js'
 
 const hw = (over = {}) => ({ id: 1, status: 'ASSIGNED', submissions: [], materials: [], ...over })
@@ -60,6 +60,22 @@ describe('что ученику можно делать', () => {
 
   it('повторно отправлять уже отправленное нельзя', () => {
     expect(canSubmit(hw({ status: 'SUBMITTED', submissions: [{ id: 1 }] }))).toBe(false)
+  })
+})
+
+describe('reviewOrder', () => {
+  // Список преподавателя сортируется по тому, чья очередь действовать.
+  it('сданные работы идут раньше заданных, проверенные — последними', () => {
+    const order = ['COMPLETED', 'NEEDS_REVISION', 'ASSIGNED', 'SUBMITTED']
+      .map((status) => ({ status }))
+      .sort((a, b) => reviewOrder(a) - reviewOrder(b))
+      .map((x) => x.status)
+    expect(order).toEqual(['SUBMITTED', 'ASSIGNED', 'NEEDS_REVISION', 'COMPLETED'])
+  })
+
+  it('незнакомый статус не улетает в конец списка', () => {
+    expect(reviewOrder({ status: 'WAT' })).toBe(reviewOrder({ status: 'ASSIGNED' }))
+    expect(reviewOrder(null)).toBe(reviewOrder({ status: 'ASSIGNED' }))
   })
 })
 

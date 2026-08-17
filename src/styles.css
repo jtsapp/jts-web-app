@@ -6900,3 +6900,60 @@ textarea {
   .hw__body { padding: 16px 16px 32px; }
   .hw-detail { padding: 18px; }
 }
+
+/* Проверка домашних работ (вкладка преподавателя в «Уроках») */
+.hw__section-title { font-size: 20px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }
+.hw__done { color: #2c8a45; font-size: 14px; margin-top: 8px; }
+.hw-card__student { font-size: 13px; font-weight: 700; color: var(--purple); }
+.hw-card__files { font-size: 13px; color: var(--muted); }
+
+.hw-grades { display: flex; gap: 8px; margin-bottom: 14px; }
+.hw-grade-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e6e3ef;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.hw-grade-btn:hover { border-color: var(--purple); }
+.hw-grade-btn--on { background: var(--purple); border-color: var(--purple); color: #fff; }
+.hw-grade-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.hw-field { display: block; }
+.hw-field__label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.hw-field__input {
+  width: 100%;
+  border: 1px solid #e6e3ef;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+}
+.hw-field__input:focus-visible { outline: 2px solid var(--purple); outline-offset: 0; border-color: var(--purple); }
+
+.hw-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.hw-actions .hw-submit { margin-top: 0; }
+.hw-btn {
+  border: 1px solid #e6e3ef;
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hw-btn:hover:enabled { background: #f4f1ff; border-color: var(--purple); }
+.hw-btn:disabled { color: #a9a6b6; cursor: default; }
+.hw-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .hw-grade-btn { transition: none; } }

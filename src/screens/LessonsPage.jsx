@@ -2,12 +2,17 @@ import { useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
+import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import { isTeacher } from '../lib/jwt.js'
 
 const TABS = [
   { key: 'clubs', label: 'lessons.tabClubs' },
   { key: 'online', label: 'lessons.tabOnline' },
 ]
+// Проверка домашних работ — вкладка преподавателя: ученик сдаёт работу в своём
+// разделе «Домашняя работа», а принимает её тот, кто ведёт занятия, и логично
+// делать это там же, где он смотрит расписание.
+const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
 
 export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog }) {
   const { t } = useI18n()
@@ -15,6 +20,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
   // поэтому вход в него только по роли.
   const teacher = isTeacher(token)
+  const tabs = teacher ? [...TABS, TEACHER_TAB] : TABS
   const [tab, setTab] = useState('online')
 
   return (
@@ -30,7 +36,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
         </header>
 
         <div className="ls__tabs">
-          {TABS.map(({ key, label }) => (
+          {tabs.map(({ key, label }) => (
             <button
               key={key}
               className={`ls-tab ${tab === key ? 'ls-tab--active' : ''}`}
@@ -59,6 +65,15 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
         {tab === 'online' && (
           <div className="ls__body">
             <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
+          </div>
+        )}
+
+        {tab === 'homework' && teacher && (
+          <div className="ls__body ls__body--wide">
+            <section className="hw">
+              <h2 className="hw__section-title">{t('homework.reviewTitle')}</h2>
+              <TeacherHomeworkBoard token={token} />
+            </section>
           </div>
         )}
       </div>

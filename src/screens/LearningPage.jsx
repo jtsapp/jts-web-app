@@ -5,6 +5,7 @@ import { HomeworkIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { computeKingdoms } from '../kingdoms.js'
 import { getMyHomework } from '../api.js'
+import { isTeacher } from '../lib/jwt.js'
 import { pendingCount } from './homework/homeworkFormat.js'
 
 // Карта уровней — по макету Figma «Обучение» (Screen 2062:2883).
@@ -35,15 +36,19 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
   // без напоминания здесь ученик узнаёт о нём только от преподавателя. Счётчик
   // — best-effort: не загрузился, значит показываем просто вход, а не ошибку
   // поверх карты.
+  // Домашние работы бывают только у ученика: у преподавателя /homework/my пуст
+  // по определению, и вход показывал ему «всё сдано» про работы, которых у него
+  // нет. Свои задания он проверяет во вкладке «Домашние задания» на «Уроках».
+  const student = !isTeacher(token)
   const [pending, setPending] = useState(null)
   useEffect(() => {
-    if (!token) return
+    if (!token || !student) return
     let cancelled = false
     getMyHomework(token)
       .then((list) => { if (!cancelled) setPending(pendingCount(list)) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [token])
+  }, [token, student])
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
@@ -54,7 +59,7 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
         <div className="lp-isle__head">
           <h1 className="lp-isle__title">{t('nav.learning')}</h1>
           <p className="lp-isle__sub">{t('learn.subtitle')}</p>
-          {onOpenHomework && (
+          {onOpenHomework && student && (
             <button type="button" className="lp-hw" onClick={onOpenHomework}>
               <HomeworkIcon size={20} />
               <span className="lp-hw__label">{t('homework.entry')}</span>

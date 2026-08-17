@@ -164,6 +164,24 @@ export function submitHomework(token, id) {
   return authPut(`/admin/homework/${id}/submit`, token)
 }
 
+// Проверка домашних работ преподавателем. Бэкенд сам оставляет в выдаче только
+// его учеников (isVisibleToCurrentUser), поэтому фильтры здесь не нужны.
+export function getHomeworkBoard(token) {
+  return authGet('/admin/homework', token)
+}
+
+export function saveHomeworkFeedback(token, id, comment) {
+  return authPut(`/admin/homework/${id}/feedback`, token, { comment })
+}
+
+export function gradeHomework(token, id, grade, comment) {
+  return authPut(`/admin/homework/${id}/grade`, token, { grade, comment })
+}
+
+export function returnHomeworkForRevision(token, id, comment) {
+  return authPut(`/admin/homework/${id}/return-for-revision`, token, { comment })
+}
+
 // ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
 // Админ-каталоги меняются редко (только правками в dev-admin), поэтому повторные
 // открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в

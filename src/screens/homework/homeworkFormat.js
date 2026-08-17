@@ -53,3 +53,15 @@ export function canSubmit(hw) {
 export function pendingCount(list) {
   return (list || []).filter((hw) => hw.status === 'ASSIGNED' || hw.status === 'NEEDS_REVISION').length
 }
+
+/** Школьная шкала: бэкенд принимает только 1–5 (GradeHomeworkRequest). */
+export const GRADES = [1, 2, 3, 4, 5]
+
+// Порядок в списке преподавателя — по тому, чья очередь действовать: сданные
+// работы ждут его прямо сейчас, отправленные на доработку — ученика, а
+// проверенные не ждут никого. Сортировка по дате смешала бы всё это в кучу.
+const REVIEW_ORDER = { SUBMITTED: 0, ASSIGNED: 1, NEEDS_REVISION: 2, COMPLETED: 3 }
+
+export function reviewOrder(hw) {
+  return REVIEW_ORDER[hw?.status] ?? REVIEW_ORDER.ASSIGNED
+}
