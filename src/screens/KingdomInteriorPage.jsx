@@ -4,13 +4,13 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
-import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
+import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
-import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
+import { isStepLevel, tasksToSteps, stripStageTail, nativeLessonSteps } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -203,6 +203,19 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         if (course) {
           const m = /^([LT])(\d+)$/.exec(code)
           if (!m) return
+          const entry = lessons.find((l) => l.code === code)
+          // A0/A1 ведёт курс (24 и 32 урока с юнит-тестами), а содержимое
+          // берётся из нативных данных: там урок разобран подробнее — True/False
+          // одним экраном, соединение пар, вопросы к записи. Разбор курса из
+          // разметки такие задания терял, поэтому уроки выходили короче.
+          if (m[1] === 'L' && isStepLevel(level) && entry) {
+            const levelData = await loadLevel(level).catch(() => null)
+            const steps = levelData ? nativeLessonSteps(levelData, entry.title, lang) : []
+            if (steps.length) {
+              setOpen({ code, attempt: 0, steps: { title: entry.title, blurb: entry.blurb || '', steps } })
+              return
+            }
+          }
           // L<n> — урок, T<u> — юнит-тест: файлы шагов лежат рядом.
           const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : 'T' + m[2])
           if (data) setOpen({ code, attempt: 0, steps: { ...data, title: stripStageTail(data.title, data.steps) } })
