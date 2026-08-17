@@ -32,10 +32,13 @@ const MEDIA_DIR = path.join(OUT, 'media')
 // Залив: mc mirror public/learning/media jts/development/learning-media
 const MEDIA_URL_BASE = 'https://files-api.iqra.space/development/learning-media'
 
+// Здесь остались только B2 и C1 — уровни, которые всё ещё едут с админского
+// hosted-Speakout. A0/A1 переехали на свою ветку Self-Study
+// (scripts/extract-jts-self-lessons.js), A2/B1 — на перенесённый курс
+// (public/course/, scripts/extract-course-lessons.js). Прогон этого
+// экстрактора чистит весь public/learning, поэтому вернуть их сюда — значит
+// тихо положить Speakout поверх нового контента.
 const LEVELS = [
-  { code: 'a1', label: 'A1' },
-  { code: 'a2', label: 'A2' },
-  { code: 'b1', label: 'B1' },
   { code: 'b2', label: 'B2' },
   { code: 'c1', label: 'C1' },
 ]

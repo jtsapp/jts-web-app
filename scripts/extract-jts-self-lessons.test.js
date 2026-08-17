@@ -1,0 +1,175 @@
+import { describe, it, expect, vi } from 'vitest'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { extractCourse } from './extract-jts-self-lessons.js'
+
+const stage = (name, rows) => `<section class="stage" data-stage="${name}">${rows}</section>`
+const quiz = (n) => `<div class="task" data-task><div class="row"><span class="body">q${n}
+  <div class="opts" data-correct="0"><button class="opt" data-val="0">yes</button><button class="opt" data-val="1">no</button></div>
+</span></div></div>`
+const stageOf = (name, count) => stage(name, Array.from({ length: count }, (_, i) => quiz(i)).join(''))
+
+function tmpCourse() {
+  const lessonHtml = stageOf('Warm-up', 4) + stageOf('Grammar', 4)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Lessons 1–3",["One"]]];
+    const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},"html":${JSON.stringify(lessonHtml)}}};
+    const REVIEWS={1:{unit:1,items:2,pass:1,title:"Unit Test · Unit 1",html:${JSON.stringify(stageOf('Unit Test', 3))}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
+// Урок со словарём (VOCAB), но без стадии, чью title можно узнать по
+// /vocab|words/i — имитирует переименование стадии словаря в будущем курсе.
+function tmpCourseVocabWithoutStage() {
+  const lessonHtml = stageOf('Warm-up', 4) + stageOf('Grammar', 4)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Lessons 1–3",["One"]]];
+    const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},
+      "VOCAB":[["like","","нравится","ұнайды","to feel that something is good"]],
+      "html":${JSON.stringify(lessonHtml)}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
+// Курс из двух юнитов с юнит-тестом на каждый: тест первого юнита выкладывается
+// в момент, когда начинается второй, тест второго — в хвосте прохода.
+function tmpCourseTwoUnits() {
+  const lessonHtml = stageOf('Warm-up', 4)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Unit 1",["One"]],["Unit 2",["Two"]]];
+    const LESSONS={
+      1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},"html":${JSON.stringify(lessonHtml)}},
+      2:{"unit":2,"no":2,"title":"Two","blurb":"","tracks":{},"html":${JSON.stringify(lessonHtml)}}};
+    const REVIEWS={
+      1:{unit:1,title:"Unit Test · Unit 1",html:${JSON.stringify(stageOf('Unit Test', 3))}},
+      2:{unit:2,title:"Unit Test · Unit 2",html:${JSON.stringify(stageOf('Unit Test', 3))}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
+// Курс, в котором часть блоков непроверяема: choice с data-correct, которого
+// нет ни у одной кнопки (буквенный формат A1 без совпадения), и аудио без
+// файла в tracks.
+function tmpCourseWithLosses() {
+  const brokenChoice = `<div class="task" data-task><div class="row"><span class="body">q
+    <div class="opts" data-correct="z"><button class="opt" data-val="a">yes</button><button class="opt" data-val="b">no</button></div>
+  </span></div></div>`
+  const lessonHtml = stageOf('Warm-up', 4) + stage('Grammar', brokenChoice + brokenChoice)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Unit 1",["One"]]];
+    const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},"html":${JSON.stringify(lessonHtml)}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
+// Урок со словарём и стадией Vocabulary — карточки словаря врезаются в её узел.
+// Первая стадия короткая: своего узла она не даёт и доклеивается в начало узла
+// словаря, поэтому «кикер первой задачи» и «кикер стадии узла» тут расходятся.
+function tmpCourseWithVocabStage() {
+  const lessonHtml = stageOf('Warm-up', 1) + stageOf('Vocabulary', 4)
+  const body = `
+    <title>just to study — A0 · Course</title>
+    <script>
+    const UNITS=[["Unit 1",["One"]]];
+    const LESSONS={1:{"unit":1,"no":1,"title":"One","blurb":"","tracks":{},
+      "VOCAB":[["like","","нравится","ұнайды","to feel that something is good"]],
+      "html":${JSON.stringify(lessonHtml)}}};
+    </script>`
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jts-')), 'a0.html')
+  fs.writeFileSync(file, body)
+  return file
+}
+
+describe('extractCourse', () => {
+  it('даёт узлы уроков, затем узел юнит-теста, и согласованный каталог', async () => {
+    const out = await extractCourse(tmpCourse())
+
+    expect(out.level).toBe('a0')
+    expect(out.label).toBe('A0')
+    expect(out.catalog.map((n) => n.code)).toEqual(['L01-1', 'L01-2', 'R01'])
+    expect(out.catalog.map((n) => n.order)).toEqual([0, 1, 2])
+    expect(out.catalog.at(-1).type).toBe('final')
+    expect(Object.keys(out.lessons)).toEqual(['L01-1', 'L01-2', 'R01'])
+  })
+
+  it('taskCount каталога совпадает с числом заданий узла', async () => {
+    const out = await extractCourse(tmpCourse())
+    for (const entry of out.catalog) {
+      expect(entry.taskCount).toBe(out.lessons[entry.code].tasks.length)
+    }
+  })
+
+  // Находка ревью: экстрактор отбрасывал всё, что normalize-task вернул как
+  // null, без единого следа — так уровень A1 доехал до ревью без единого
+  // задания choice. Потери считаются по причинам и возвращаются наружу.
+  it('считает отброшенные блоки по причинам', async () => {
+    const out = await extractCourse(tmpCourseWithLosses())
+    expect(out.dropped['choice-no-answer']).toBe(2)
+  })
+
+  it('курс без потерь не выдумывает их', async () => {
+    expect((await extractCourse(tmpCourse())).dropped).toEqual({})
+  })
+
+  // Находка ревью: пометка о выложенном юнит-тесте жила прямо на объекте из
+  // read-course. Курс отдаётся только для чтения (Object.freeze), поэтому
+  // такая пометка молча не срабатывала бы, и тест юнита попал бы на тропу
+  // дважды.
+  it('каждый юнит-тест попадает на тропу ровно один раз', async () => {
+    const codes = (await extractCourse(tmpCourseTwoUnits())).catalog.map((n) => n.code)
+    expect(codes.filter((c) => c === 'R01')).toHaveLength(1)
+    expect(codes.filter((c) => c === 'R02')).toHaveLength(1)
+    expect(new Set(codes).size).toBe(codes.length)
+  })
+
+  // Находка ревью: у выпущенных уровней sec — «2. Vocabulary · …», и плеер
+  // рисует номер отдельным чипом. У новых данных номера не было вовсе.
+  it('кикер заданий нумерован — как на выпущенных уровнях A2–C1', async () => {
+    const out = await extractCourse(tmpCourse())
+    expect(out.lessons['L01-1'].tasks[0].sec).toBe('1. Warm-up')
+    expect(out.lessons['L01-2'].tasks[0].sec).toBe('2. Grammar')
+  })
+
+  it('карточки словаря получают кикер своей стадии, а не доклеенной перед ней', async () => {
+    const out = await extractCourse(tmpCourseWithVocabStage())
+    const vocabNode = out.lessons['L01-1']
+    expect(vocabNode.title).toContain('Vocabulary')
+    expect(vocabNode.tasks[0].type).toBe('cards')
+    expect(vocabNode.tasks[0].sec).toBe('2. Vocabulary')
+    // Доклеенная короткая стадия сохраняет свой номер — кикер по стадии задачи.
+    expect(vocabNode.tasks[1].sec).toBe('1. Warm-up')
+  })
+
+  // Находка ревью: раньше при отсутствии узла с "vocab"/"words" в заголовке
+  // карточки словаря молча терялись — ни ошибки, ни строчки в логе. Если
+  // стадию словаря переименуют в будущем курсе, это должно быть видно в CLI.
+  it('предупреждает в CLI, если для карточек словаря не нашлось узла', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await extractCourse(tmpCourseVocabWithoutStage())
+
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('карточки словаря')
+    expect(warn.mock.calls[0][0]).toContain('урока 1')
+
+    warn.mockRestore()
+  })
+})

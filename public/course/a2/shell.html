@@ -1,0 +1,123 @@
+<div class="app">
+
+<!-- ==================== SIDEBAR ==================== -->
+<nav class="sidebar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 40 40" aria-label="just to study">
+      <rect width="40" height="40" rx="11" fill="#874BF8"/>
+      <path d="M20 9.5c-5.8 0-10.5 4.3-10.5 9.6 0 3.1 1.6 5.9 4.1 7.6v4.6c0 .6.7 1 1.2.6l4-3.1c.4 0 .8.1 1.2.1 5.8 0 10.5-4.3 10.5-9.8S25.8 9.5 20 9.5z" fill="#fff"/>
+      <circle cx="20" cy="19.1" r="3.6" fill="#874BF8"/>
+    </svg>
+    <div>
+      <div class="wordmark">just <span class="to">to</span> study</div>
+      <div class="tag">Pre-Intermediate &middot; A2 <span style="opacity:.7">&middot; build 21</span></div>
+    </div>
+  </div>
+  <div class="side-scroll">
+    <p class="side-label">Course content</p>
+    <p class="side-note" id="sideNote"></p>
+    <div class="side-tools"><button type="button" id="expandAll" onclick="toggleAllUnits()">Collapse all</button></div>
+    <div id="units"></div>
+  </div>
+</nav>
+
+<header class="topbar">
+  <button id="menuBtn" type="button" onclick="toggleMenu()" aria-label="Course content">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    Course content
+  </button>
+  <div class="ttl">
+    <div class="crumb"><b class="unitname" id="crumbUnit">Unit 1</b> &nbsp;/&nbsp; <span id="crumbLesson">Lesson 1</span> &nbsp;/&nbsp; <span id="crumbMode">Self-Study</span></div>
+    <h1 id="lessonTitle">&nbsp;</h1>
+  </div>
+
+  <div class="modes" role="tablist" aria-label="Learning mode">
+    <button class="mode-btn on" data-mode="self" role="tab" onclick="setMode('self')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 21a9 9 0 1 0-9-9c0 1.5.4 2.9 1 4.2L3 21l4.8-1a9 9 0 0 0 4.2 1z"/></svg>
+      Self-Study
+    </button>
+    <button class="mode-btn" data-mode="solo" role="tab" onclick="setMode('solo')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="8" cy="8" r="3.4"/><circle cx="17" cy="9" r="2.6"/><path d="M2.5 20c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5M16 14.6c2.9 0 5 1.9 5 5"/></svg>
+      1-to-1
+    </button>
+    <button class="mode-btn" data-mode="group" role="tab" onclick="setMode('group')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="7" cy="8" r="2.8"/><circle cx="17" cy="8" r="2.8"/><path d="M2 19c0-2.9 2.2-4.8 5-4.8s5 1.9 5 4.8M12.5 19c0-2.9 2-4.8 4.5-4.8s5 1.9 5 4.8"/></svg>
+      Group
+    </button>
+  </div>
+
+  <div class="lang" role="group" aria-label="Translate instructions">
+    <button class="lang-btn" id="lgKZ" onclick="setLang('kz')" title="Translate instructions and grammar into Kazakh">KZ</button>
+    <button class="lang-btn" id="lgRU" onclick="setLang('ru')" title="Translate instructions and grammar into Russian">RU</button>
+  </div>
+
+  <button class="dict-btn" onclick="openDict()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v18H6.5A2.5 2.5 0 0 1 4 18.5z"/><path d="M8 7h7M8 11h7"/></svg>
+    My Dictionary <span class="dcount" id="dCount">0</span>
+  </button>
+
+</header>
+
+
+<!-- ==================== MAIN ==================== -->
+<main class="main">
+  <div class="rail" id="rail"></div>
+  <div id="workspace"></div>
+
+  <div class="footnav">
+    <div class="navinner" style="max-width:none;padding:0">
+      <button class="btn btn-ghost" id="back" onclick="go(cur-1)">&lsaquo; Back</button>
+      <span class="pos" id="pos"></span>
+      <div class="lesson-nav">
+        <button class="btn btn-ghost" id="prevLesson" onclick="stepLesson(-1)">&lsaquo; Lesson</button>
+        <button class="btn btn-primary" id="next" onclick="go(cur+1)">Next &rsaquo;</button>
+        <button class="btn btn-ghost" id="nextLesson" onclick="stepLesson(1)">Lesson &rsaquo;</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<aside class="aside">
+  <div class="panel">
+    <h5>Learning mode</h5>
+    <div class="mode-note self" data-only="self"><b>Self-Study</b>You work alone. Explanations are fuller, there is extra practice, every wrong answer tells you why, and the last stage shows you which stages still need work.</div>
+    <div class="mode-note solo" data-only="solo"><b>1-to-1</b>Your teacher is your speaking partner. The explanation is lighter because the teacher fills the gaps aloud, and feedback comes after each speaking task.</div>
+    <div class="mode-note group" data-only="group"><b>Group Study</b>Speaking happens in pairs with role cards and a swap. The teacher gives short feedback after each task &mdash; one thing done well, one to try next time.</div>
+  </div>
+
+
+
+
+</aside>
+
+
+</div><!-- /app -->
+
+<!-- ==================== WORD LOOKUP + MY DICTIONARY ==================== -->
+<div id="menuScrim" onclick="closeMenu()"></div>
+<div id="pop" role="dialog" aria-label="Word lookup"></div>
+<div id="scrim" onclick="closeDict()"></div>
+<aside id="drawer" aria-label="My Dictionary">
+  <div class="dhead">
+    <div class="top">
+      <h3 data-t="d01">My Dictionary</h3>
+      <button class="dclose" onclick="closeDict()" aria-label="Close">&times;</button>
+    </div>
+    <div class="dtabs">
+      <button class="dtab on" data-pane="words" onclick="dTab('words')" data-t="d02">Saved words</button>
+      <button class="dtab" data-pane="test" onclick="dTab('test')" data-t="d04">Practice</button>
+    </div>
+  </div>
+  <div class="dbody">
+    <div class="dpane on" id="pane-words">
+      <p class="dcount" id="dSummary"></p>
+      <div id="dList"></div>
+    </div>
+    <div class="dpane" id="pane-test"></div>
+  </div>
+</aside>
+
+
+
+<div class="toast" id="toast"></div>
+<div id="audioHost" hidden></div>

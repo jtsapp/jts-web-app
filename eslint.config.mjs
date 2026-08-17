@@ -9,7 +9,10 @@ const eslintConfig = [
   {
     // agent/ — Python; public/ — крупные single-file HTML-бандлы (до 5.7 МБ);
     // отчёты Playwright линтить незачем. .next/out/build уже игнорит next-конфиг.
-    ignores: ['public/**', 'agent/**', 'playwright-report/**', 'test-results/**'],
+    // .claude/ — рабочие копии проекта в git-worktree (см. .claude/launch.json):
+    // без этого `npm run lint` линтит проект три-четыре раза и выдаёт тысячи
+    // «ошибок» из чужих веток вместо шести своих, то есть гейт перед PR слеп.
+    ignores: ['public/**', 'agent/**', 'playwright-report/**', 'test-results/**', '.claude/**'],
   },
   {
     // Новые правила react-hooks v7 (React-Compiler-готовность) — держим как warn,

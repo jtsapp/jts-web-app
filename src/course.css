@@ -1,0 +1,1432 @@
+/* Пошаговый плеер урока (src/learning/CourseStepPlayer.jsx).
+   Значения — из макета Figma «Обучение»: цвета, радиусы и размеры сняты с
+   экранов стадий, поэтому здесь почти нет «круглых» чисел от себя. */
+
+.cp {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f8f8f8;
+}
+
+/* ——— Верхняя полоса ——— */
+.cp-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 61px;
+  padding: 12px 32px;
+  background: #fff;
+}
+.cp-bar__exit,
+.cp-bar__dict {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cp-bar__exit {
+  padding: 8px 16px 8px 8px;
+  border-radius: 16px;
+  background: #9047ff;
+  color: #fff;
+}
+.cp-bar__dict {
+  margin-left: auto;
+  padding: 8px 16px;
+  border-radius: 80px;
+  background: #ebdeff;
+  color: #9047ff;
+}
+.cp-bar__dict:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.cp-bar__place {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cp-bar__place b {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.375;
+  color: #9047ff;
+}
+.cp-bar__place span {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.07;
+  color: #9d9d9d;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ——— Прогресс и сердца ——— */
+.cp-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px 24px 40px;
+}
+/* Только полоса прогресса: сердец в уроке нет, и справа от полосы больше
+   ничего не стоит. */
+.cp-hud {
+  display: flex;
+  align-items: center;
+  width: 542px;
+  max-width: 100%;
+  height: 40px;
+  padding: 5px 12px;
+  border-radius: 50px;
+  background: #fff;
+}
+.cp-hud__track {
+  flex: 1;
+  height: 14px;
+  border-radius: 30px;
+  background: #ebdeff;
+  overflow: hidden;
+}
+.cp-hud__fill {
+  height: 100%;
+  border-radius: 30px;
+  background: #9047ff;
+  transition: width 0.25s ease;
+}
+/* ——— Тело задания ——— */
+/* Ширина под самое широкое тело задания (сетка слов — 1020 в макете), а сам
+   вопрос уже: длинную строку в 1020 читать неудобно. */
+.cp-step {
+  width: 100%;
+  max-width: 1020px;
+  margin-top: 47px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.cp-step__title,
+.cp-step__prompt {
+  width: 100%;
+  max-width: 620px;
+}
+.cp-step__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #17171c;
+  text-align: center;
+}
+.cp-step__prompt {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #9047ff;
+  text-align: center;
+}
+.cp-step__sub {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #6b6b76;
+  text-align: center;
+}
+
+/* Варианты ответа */
+.cp-choices {
+  width: 372px;
+  max-width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cp-choice {
+  min-height: 59px;
+  padding: 20px 24px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #17171c;
+  /* В макете текст варианта стоит по центру пилюли, а не по левому краю. */
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.cp-choice:disabled {
+  cursor: default;
+}
+.cp-choice.is-sel {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-choice.is-right {
+  background: #31b423;
+  color: #fff;
+}
+.cp-choice.is-wrong {
+  background: #ff4646;
+  color: #fff;
+}
+/* Варианты на слух: две колонки и текст по центру плашки. */
+.cp-choices.is-grid {
+  width: 722px;
+  display: grid;
+  grid-template-columns: repeat(2, 355px);
+  gap: 10px;
+  justify-content: center;
+}
+.cp-choices.is-grid .cp-choice {
+  min-height: 65px;
+  padding: 13px 24px;
+  border-radius: 100px;
+  text-align: center;
+}
+
+/* Карточки «выбери что ближе» */
+/* Ширину гридам задаём явно: .cp-step центрирует детей по поперечной оси, и
+   без неё auto-fill считает колонки по содержимому — карточки выстраивались
+   в одну колонку. */
+.cp-picks {
+  width: 100%;
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 173px);
+  gap: 12px;
+  justify-content: center;
+}
+.cp-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 96px;
+  padding: 16px 12px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  cursor: pointer;
+}
+.cp-pick__emoji {
+  font-size: 32px;
+  line-height: 1.2;
+}
+.cp-pick__label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #17171c;
+  text-align: center;
+}
+/* Подпись карточки в макете начинается с большой буквы («Coffee»), а в уроке
+   слово лежит строчным — правим первой буквой, а не capitalize: у курса в
+   подписи бывает целая фраза, и там caps на каждом слове читались бы как ошибка. */
+.cp-pick__label::first-letter {
+  text-transform: uppercase;
+}
+/* Три состояния карточки из макета: обычная — без рамки, под курсором — светлая
+   сиреневая, выбранная — насыщенная и с фиолетовой подписью. */
+.cp-pick:hover {
+  border-color: #c9a4ff;
+}
+.cp-pick.is-on,
+.cp-pick.is-on:hover {
+  border-color: #9047ff;
+}
+.cp-pick.is-on .cp-pick__label {
+  color: #9047ff;
+}
+.cp-pick.is-on .cp-pick__label {
+  color: #9047ff;
+}
+
+/* Слова урока: картинка, по клику — перевод */
+.cp-words {
+  width: 100%;
+  max-width: 1020px;
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 160px);
+  gap: 12px;
+  justify-content: center;
+}
+.cp-word {
+  position: relative;
+  width: 160px;
+}
+/* Переворот карточки — на внутренней кнопке: рядом с ней лежит своя кнопка
+   «в словарь», а кнопку в кнопку вкладывать нельзя. */
+.cp-word__flip {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.cp-word__face,
+.cp-word__back {
+  display: block;
+  width: 160px;
+  height: 215px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #efeaf7;
+}
+.cp-word__face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Карточка без картинки (у A1 их нет в источнике): слово печатается один раз и
+   крупно, на сиреневой плашке макета — иначе оно дублировалось подписью снизу,
+   а сама плашка читалась как «картинка не загрузилась». */
+.cp-word__noimg {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 16px 12px;
+  background: linear-gradient(160deg, #f3ecff 0%, #e6dbff 100%);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  color: #6f2fd6;
+  hyphens: auto;
+}
+.cp-word.is-noimg .cp-word__label {
+  display: none;
+}
+/* Оборот накрывает лицевую сторону: он живёт отдельным блоком рядом с кнопкой
+   переворота, потому что внутри него свои кнопки — «В словарь» и звук. */
+.cp-word__back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #fff;
+}
+/* Кнопка «закрыть перевод» лежит под содержимым во всю карточку: тап по
+   свободному месту оборота возвращает картинку. */
+.cp-word__unflip {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.cp-word__back > :not(.cp-word__unflip) {
+  position: relative;
+  z-index: 1;
+}
+/* Текст оборота кликов не перехватывает: он лежит поверх кнопки закрытия и
+   занимает почти всю карточку — тап по центру (по переводу) не закрывал её, и
+   карточка выглядела залипшей. Кликабельными остаются только сами кнопки. */
+.cp-word__head,
+.cp-word__trs {
+  pointer-events: none;
+}
+.cp-word__acts {
+  pointer-events: auto;
+}
+.cp-word__head b {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+}
+.cp-word__head i {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.2;
+  color: #181818;
+}
+.cp-word__trs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* Плашка перевода: флаг слева, сам перевод рядом — язык видно, не читая. */
+.cp-word__tr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f8f8f8;
+  font-size: 13px;
+  font-weight: 500;
+  color: #181818;
+}
+.cp-word__flag {
+  flex: none;
+}
+/* Действия оборота прижаты к низу карточки: «В словарь» тянется, кнопка звука
+   остаётся круглой. */
+.cp-word__acts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+.cp-word__save {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 80px;
+  background: #9047ff;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cp-word__save.is-saved {
+  background: #ebdeff;
+  color: #9047ff;
+  cursor: default;
+}
+.cp-word__say {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #ebdeff;
+  color: #9047ff;
+  cursor: pointer;
+}
+.cp-word__label {
+  display: block;
+  margin-top: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+}
+/* Перевёрнутая карточка в макете подписана бледным: слово читается на самом
+   обороте, подпись под ней — уже вторая копия. */
+.cp-word.is-open .cp-word__label {
+  color: #9d9d9d;
+}
+
+/* Слайд правила — карточка по макету: заголовок внутри, текст слева
+   (правило читают, а не разглядывают). */
+.cp-note {
+  width: 100%;
+  max-width: 726px;
+  margin-top: 18px;
+  padding: 32px;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #17171c;
+  text-align: left;
+}
+.cp-note__h {
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #181818;
+}
+.cp-note .hl {
+  color: #9047ff;
+  font-weight: 700;
+}
+
+/* Разметка урока A0/A1 внутри заметки.
+   Уроки этих уровней приходят готовыми кусками HTML (public/learning/<level>.json),
+   со своими классами из исходного курса: таблицы правил, карточки слов,
+   раскрывашка «Full grammar reference», диалоги. Без этих правил браузер рисует
+   их голым потоком — а `.bubble` вообще подхватывал стиль пузыря чата тьютора
+   из styles.css. Текст тут левый: правило и словарь читают, а не смотрят. */
+.cp-note :where(p, ul, ol, table, .bubble, .explain, .chat, details) {
+  text-align: left;
+}
+.cp-note :where(h3, h4) {
+  margin: 14px 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+}
+.cp-note .instruction {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 6px 0;
+}
+.cp-note :where(.subline, .byline) {
+  font-size: 15px;
+  font-weight: 500;
+  color: #6f6f7a;
+  margin: 4px 0 10px;
+}
+.cp-note :where(p, ul, ol) {
+  font-size: 16px;
+  line-height: 1.55;
+  margin: 8px 0;
+}
+.cp-note :where(ul, ol) {
+  padding-left: 20px;
+}
+.cp-note li {
+  margin: 4px 0;
+}
+.cp-note table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 15px;
+}
+.cp-note :where(th, td) {
+  border: 1px solid #ececf3;
+  padding: 8px 10px;
+}
+/* Шапка таблицы правила в макете — сплошная фиолетовая с белым текстом, а не
+   бледно-сиреневая плашка. Скругление снимаем с самой таблицы: собственных
+   радиусов у ячеек нет, а границы шапки не должны рисоваться поверх заливки. */
+.cp-note table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cp-note th {
+  border-color: #9047ff;
+  background: #9047ff;
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Формула правила: части фразы через фиолетовый кружок с плюсом. Маркеры
+   списку не нужны — строка и так читается как формула. */
+.cp-note ul.has-gf {
+  padding-left: 0;
+  list-style: none;
+}
+.cp-note li.gf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #17171c;
+}
+.cp-note .gf__op {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* Пузырь-подсказка урока: свой стиль, а не чат тьютора. */
+.cp-note .bubble {
+  display: block;
+  max-width: none;
+  margin: 12px 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f6f2ff;
+  color: inherit;
+  font-size: 16px;
+}
+.cp-note .blab {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9047ff;
+  margin-bottom: 6px;
+}
+.cp-note .explain {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-left: 3px solid #d9c8ff;
+  background: #fbf9ff;
+  border-radius: 0 12px 12px 0;
+}
+.cp-note .fwd {
+  margin: 0;
+  color: #6f6f7a;
+  font-size: 15px;
+}
+/* «Full grammar reference» — раскрывашка, свёрнутая по умолчанию. */
+.cp-note details {
+  margin: 12px 0;
+  border: 1px solid #ececf3;
+  border-radius: 16px;
+  background: #fbfbfd;
+  overflow: hidden;
+}
+.cp-note summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #9047ff;
+}
+.cp-note .gref-body {
+  padding: 0 16px 12px;
+}
+/* Диалог: реплики собеседника карточками. */
+.cp-note .chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.cp-note .msg {
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: #f4f4f7;
+  font-size: 16px;
+}
+.cp-note .msg b {
+  display: block;
+  font-size: 13px;
+  color: #6f6f7a;
+  margin-bottom: 2px;
+}
+.cp-note .msg p {
+  margin: 0;
+}
+.cp-note .tick {
+  color: #3aa35a;
+  font-weight: 800;
+  margin-right: 6px;
+}
+.cp-note img {
+  max-width: 100%;
+}
+
+/* Карусель примеров под слайдом правила: стрелки по краям, между ними — окно
+   на три карточки. Ширина та же, что у карточки правила, чтобы ряд стоял с ней
+   по одной оси. */
+.cp-egs {
+  width: 100%;
+  max-width: 726px;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cp-egs__nav {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #9047ff;
+  cursor: pointer;
+}
+.cp-egs__nav:disabled {
+  color: #cfcfd6;
+  cursor: default;
+}
+.cp-egs__list {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+}
+.cp-egs__card {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  padding: 16px 12px;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #17171c;
+  text-align: center;
+}
+
+/* Аудио */
+.cp-audio {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.cp-audio__play {
+  display: grid;
+  place-items: center;
+  width: 124px;
+  height: 124px;
+  border: none;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+  cursor: pointer;
+}
+.cp-audio__slow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 12px 36px;
+  border: none;
+  border-radius: 30px;
+  background: #b7f0ff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #9047ff;
+  cursor: pointer;
+}
+/* «Сначала» — второстепенное действие: в макете его нет, и спорить с
+   нарисованными кнопками ему незачем. */
+.cp-audio__restart {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9d9d9d;
+  cursor: pointer;
+}
+.cp-audio__restart:hover {
+  color: #9047ff;
+}
+
+/* Поле ответа — одно на «впиши пропуск» и свободный ответ: в макете это один
+   и тот же белый блок, только вопрос над ним разный. */
+.cp-field {
+  width: 516px;
+  max-width: 100%;
+  min-height: 70px;
+  margin-top: 18px;
+  padding: 24px 16px 24px 20px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #9047ff;
+}
+.cp-field::placeholder {
+  color: #9c9c9c;
+}
+.cp-field:focus {
+  outline: none;
+  border-color: #9047ff;
+}
+.cp-write {
+  resize: none;
+  overflow: hidden;
+}
+.cp-model {
+  width: 516px;
+  max-width: 100%;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f4ecff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #17171c;
+}
+.cp-model b {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9047ff;
+}
+
+/* Чек-лист «я могу»: в макете две колонки, галочка справа от пункта */
+.cp-check {
+  width: 744px;
+  max-width: 100%;
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, 370px);
+  gap: 10px;
+  justify-content: center;
+}
+.cp-check__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 20px 16px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+  text-align: left;
+  cursor: pointer;
+}
+.cp-check__row.is-on {
+  border-color: #9047ff;
+}
+.cp-check__box {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1px solid #afafaf;
+  border-radius: 16px;
+  color: #9047ff;
+  font-weight: 700;
+}
+.cp-check__row.is-on .cp-check__box {
+  border-color: #9047ff;
+  background: #ebdeff;
+}
+
+/* ——— Плашка результата и кнопка ——— */
+/* Размеры и цвета сняты с макета: плашка 402×77, кружок 42 (#1eb04b / #ff4646)
+   с белым знаком, справа монета в белой пилюле 80×45. */
+.cp-fb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 402px;
+  max-width: 100%;
+  min-height: 77px;
+  margin: 20px auto 0;
+  padding: 16px;
+  border-radius: 90px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.cp-fb.is-ok {
+  background: #aeffc7;
+  color: #067a32;
+}
+.cp-fb.is-no {
+  border-radius: 100px;
+  background: #fff0e8;
+  color: #ff4646;
+}
+.cp-fb__ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+.cp-fb.is-ok .cp-fb__ic {
+  background: #1eb04b;
+}
+.cp-fb.is-no .cp-fb__ic {
+  background: #ff4646;
+}
+.cp-fb__coin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 10px 12px;
+  border-radius: 30px;
+  background: #fff;
+  color: #181818;
+  font-weight: 500;
+}
+.cp-fb__coin img {
+  width: 24px;
+  height: 24px;
+}
+
+.cp-foot {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0 8px;
+}
+.cp-cta {
+  width: 370px;
+  max-width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 80px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cp-cta.is-check {
+  background: #b7f0ff;
+  color: #9047ff;
+}
+.cp-cta.is-check:disabled {
+  color: #cfafff;
+  cursor: default;
+}
+.cp-cta.is-go {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-cta.is-go:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  .cp-bar {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .cp-scroll {
+    padding: 16px 16px 32px;
+  }
+  .cp-step {
+    margin-top: 28px;
+  }
+  .cp-step__title {
+    font-size: 20px;
+  }
+  .cp-step__prompt {
+    font-size: 26px;
+  }
+  .cp-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cp-words {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .cp-foot {
+    padding: 24px 0 8px;
+  }
+}
+
+/* Впиши пропущенное: само поле — общий .cp-field, здесь только цвет проверки */
+.cp-gap__in {
+  text-align: left;
+}
+.cp-gap__in.is-right {
+  color: #19c119;
+}
+.cp-gap__in.is-wrong {
+  color: #ff4646;
+}
+
+/* Несколько пропусков на одном экране. Исходный курс держал такие предложения
+   списком, и по одному на экран они превращались в хвост однотипных вопросов;
+   строка тут короткая, поэтому четыре пункта помещаются и на телефоне. */
+.cp-group {
+  width: 100%;
+  max-width: 722px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cp-group__row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cp-group__q {
+  font-size: 17px;
+  font-weight: 700;
+  color: #181818;
+}
+.cp-group__in {
+  text-align: left;
+}
+.cp-group__in.is-right {
+  color: #19c119;
+}
+.cp-group__in.is-wrong {
+  color: #ff4646;
+}
+
+/* Список утверждений «True / False»: одна белая карточка, в каждой строке
+   утверждение и своя пара кнопок, кнопка проверки внизу одна на весь экран. */
+.cp-rows {
+  width: 100%;
+  max-width: 722px;
+  margin-top: 18px;
+  border-radius: 20px;
+  background: #fff;
+  overflow: hidden;
+}
+.cp-rows__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  border-top: 1px solid #f1f1f5;
+}
+.cp-rows__row:first-child {
+  border-top: none;
+}
+.cp-rows__q {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #17171c;
+  text-align: left;
+}
+.cp-rows__q b {
+  font-weight: 700;
+  color: #9047ff;
+}
+.cp-rows__opts {
+  display: flex;
+  flex: none;
+  gap: 10px;
+}
+.cp-rows__opt {
+  min-width: 76px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 80px;
+  background: #f1e9ff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+  cursor: pointer;
+}
+.cp-rows__opt:disabled {
+  cursor: default;
+}
+.cp-rows__opt.is-sel {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-rows__opt.is-right {
+  background: #31b423;
+  color: #fff;
+}
+.cp-rows__opt.is-wrong {
+  background: #ff4646;
+  color: #fff;
+}
+/* Длинные варианты (у B1 это целое предложение) в строку не помещаются:
+   вопрос уходит наверх, варианты встают под ним во всю ширину. */
+.cp-rows__row.is-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px 24px;
+}
+.cp-rows__row.is-stacked .cp-rows__opts {
+  flex-direction: column;
+}
+.cp-rows__row.is-stacked .cp-rows__opt {
+  min-height: 44px;
+  height: auto;
+  padding: 10px 16px;
+  text-align: left;
+  line-height: 1.3;
+}
+
+@media (max-width: 560px) {
+  .cp-rows__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .cp-rows__opts {
+    flex-direction: column;
+  }
+}
+
+/* Порядок слов: собранная фраза лежит плашками на линейке, банк — под ней */
+.cp-order {
+  width: 100%;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+/* Строка сборки в макете — пунктир во всю ширину блока и без «…»: пустая
+   линия и так читается как место для ответа, а многоточие висело на ней как
+   текст. */
+.cp-order__line {
+  min-height: 65px;
+  width: 100%;
+  max-width: 536px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px dashed #c6c6cf;
+}
+.cp-order__line.is-right .cp-chip,
+.cp-order__line.is-wrong .cp-chip {
+  color: #fff;
+}
+.cp-order__line.is-right .cp-chip {
+  background: #31b423;
+}
+.cp-order__line.is-wrong .cp-chip {
+  background: #ea4f4f;
+}
+.cp-order__bank {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 536px;
+}
+/* Соединение пар: слева пункты задания, снизу банк вариантов. Две настоящие
+   колонки со связями рисовать нечем — на 375 px линии между ними не помещаются,
+   поэтому выбранный вариант показывается внутри самого пункта. */
+.cp-match {
+  width: 100%;
+  max-width: 722px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.cp-match__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cp-match__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 65px;
+  padding: 13px 24px;
+  border: 2px solid transparent;
+  border-radius: 100px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+  text-align: left;
+  cursor: pointer;
+}
+.cp-match__item.is-active {
+  border-color: #9047ff;
+}
+.cp-match__pick {
+  padding: 4px 12px;
+  border-radius: 100px;
+  background: #f1e9ff;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+}
+.cp-match__item.is-right {
+  background: #d6f5d6;
+}
+.cp-match__item.is-wrong {
+  background: #ffe0e0;
+}
+/* Верный ответ после проверки — рядом с ошибочным, чтобы было видно, что
+   именно не сошлось. */
+.cp-match__fix {
+  padding: 4px 12px;
+  border-radius: 100px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a9d2a;
+}
+.cp-match__bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.cp-match__bank .cp-chip {
+  min-height: 48px;
+  padding: 10px 18px;
+  font-size: 15px;
+}
+
+.cp-chip {
+  min-height: 65px;
+  padding: 13px 24px;
+  border: none;
+  border-radius: 100px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+  cursor: pointer;
+}
+.cp-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cp-chip.is-set {
+  display: inline-grid;
+  place-items: center;
+}
+/* Слово в собранной фразе — тоже кнопка (тап убирает его), но после проверки
+   она блокируется: гасить её как недоступный чип банка нельзя, иначе зелёный
+   или красный ответ выцветает ровно в тот момент, когда его читают. */
+.cp-order__line .cp-chip:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  .cp-choices.is-grid {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cp-check {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cp-note {
+    padding: 20px;
+  }
+  .cp-note__h {
+    margin-bottom: 16px;
+    font-size: 22px;
+  }
+}
+.cp-order__undo {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9d9d9d;
+  cursor: pointer;
+}
+
+/* ═══════════ Мобильный урок по макету (Figma, «Веб-версия мобилка» →
+   «Обучение», кадры 440×956) ═══════════
+
+   Идёт последним намеренно: перекрывает мобильные правила выше. В макете урок
+   занимает экран целиком — своя полоса сверху (крестик, стадия, словарь),
+   поля 16 и одна кнопка снизу во всю ширину. */
+@media (max-width: 760px) {
+  .cp {
+    min-height: 100dvh;
+  }
+
+  /* Полоса урока: обе кнопки — только значки в круге 36, между ними стадия и
+     название. Подписи прячем, а не удаляем: на десктопе они остаются. */
+  .cp-bar {
+    gap: 8px;
+    height: 69px;
+    padding: 16px;
+  }
+  .cp-bar__exit,
+  .cp-bar__dict {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .cp-bar__exit {
+    border-radius: 50%;
+  }
+  .cp-bar__label {
+    display: none;
+  }
+  .cp-bar__place {
+    flex: 1;
+    min-width: 0;
+  }
+  .cp-bar__place b {
+    font-size: 16px;
+  }
+  .cp-bar__place span {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  /* Тело: поля 16, между полосой прогресса и вопросом — 32 (в макете это
+     отступ авто-лэйаута, у нас — margin самого вопроса). */
+  .cp-scroll {
+    padding: 16px 16px 32px;
+  }
+  .cp-hud {
+    width: 100%;
+    height: 38px;
+    padding: 4px 4px 4px 12px;
+  }
+  .cp-step {
+    margin-top: 32px;
+    gap: 6px;
+  }
+  /* Размеры вопроса в макете те же, что на десктопе (32 фиолетовым и 24
+     тёмным): раньше их резали до 26/20, и экран выглядел бледнее макета. */
+  .cp-step__title {
+    font-size: 24px;
+  }
+  .cp-step__prompt {
+    font-size: 32px;
+  }
+
+  /* Карточки «выбери что ближе»: три в ряд, как в макете (128×96 при 440). */
+  .cp-picks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .cp-pick {
+    min-height: 96px;
+    padding: 16px 12px;
+  }
+  .cp-pick__label {
+    font-size: 16px;
+  }
+
+  /* Слова урока: две колонки во всю ширину, картинка 192×245 из макета —
+     значит пропорция, а не фиксированные пиксели. */
+  .cp-words {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .cp-word {
+    width: auto;
+  }
+  .cp-word__face,
+  .cp-word__back {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 192 / 245;
+  }
+  /* В макете подпись карточки с прописной («Like»), в данных курса слово
+     лежит строчным — как и у карточек «выбери что ближе». */
+  .cp-word__label::first-letter {
+    text-transform: uppercase;
+  }
+
+  /* True/False: в макете это отдельные белые карточки со скруглением 20 и
+     зазором 12, а не одна карточка с разделителями. */
+  .cp-rows {
+    background: none;
+    border-radius: 0;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cp-rows__row {
+    border-top: none;
+    border-radius: 20px;
+    background: #fff;
+    padding: 16px;
+    /* В макете (440) утверждение и пара кнопок стоят в строку — правило выше
+       для узких экранов их складывало. Складываем обратно только там, где
+       строка действительно не помещается (см. блок 400px ниже). */
+    flex-direction: row;
+    align-items: center;
+  }
+  .cp-rows__opts {
+    flex-direction: row;
+  }
+
+  /* Остальные тела заданий на десктопе заданы фиксированной шириной из макета
+     (372, 722, 744…). На телефоне колонка одна и во всю ширину экрана. */
+  .cp-choices,
+  .cp-check,
+  .cp-match,
+  .cp-group,
+  .cp-rows,
+  .cp-order,
+  .cp-write,
+  .cp-model {
+    width: 100%;
+  }
+  .cp-choices.is-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cp-check {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* Кнопка внизу — во всю ширину колонки контента. Растягиваем и подвал: он
+     лежит во флекс-колонке с align-items: center, и сам по себе он шириной с
+     кнопку, а не с экран. */
+  .cp-foot {
+    width: 100%;
+    align-self: stretch;
+    padding: 24px 0 8px;
+  }
+  .cp-cta {
+    width: 100%;
+  }
+  /* Неактивная «Продолжить» в мобильном макете — сиреневая заливка с
+     фиолетовой подписью, а не выцветшая фиолетовая с белой. */
+  .cp-cta.is-go:disabled {
+    opacity: 1;
+    background: #ebdeff;
+    color: #9047ff;
+  }
+}
+
+/* Узкие телефоны (макета под них нет): строка утверждения и две кнопки в ряд
+   уже не помещаются — возвращаем колонку. */
+@media (max-width: 400px) {
+  .cp-rows__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cp-rows__opts {
+    flex-direction: column;
+  }
+}
