@@ -7,7 +7,6 @@ import {
   computeKingdoms,
   roleForLevel,
   LEVEL_ORDER,
-  HERO_LEVELS,
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
@@ -47,19 +46,6 @@ const HERO_GRADIENT = {
 
 function heroGradientFor(level) {
   return HERO_GRADIENT[roleForLevel(level).key] || HERO_GRADIENT.merchant
-}
-
-// Фон шапки: арт (если он есть для уровня) поверх градиента роли. Арт лежит в
-// WebP — те же кадры в PNG весили по 1.7–2.3 МБ на полосу высотой 190px, и на
-// 4G шапка приезжала последней.
-//
-// Пустой уровень трактуем как A0 — ровно так же, как roleForLevel под
-// градиентом. Раньше здесь стоял свой дефолт 'a1', и у пользователя без уровня
-// арт A1 накладывался на градиент A0.
-function heroBackgroundFor(level) {
-  const gradient = heroGradientFor(level)
-  const key = (level || 'A0').toLowerCase()
-  return HERO_LEVELS.has(key) ? `url(/assets/world/hero/${key}.webp), ${gradient}` : gradient
 }
 
 // Роль для следующего по порядку CEFR-уровня (для правой «монеты» прогресса).
@@ -284,7 +270,14 @@ export default function ProfilePage({
       <div className="pf">
         {/* ── Hero ── */}
         <section className="pf-hero">
-          <div className="pf-hero__scene" style={{ backgroundImage: heroBackgroundFor(userLevel) }} />
+          <div
+            className="pf-hero__scene"
+            style={{
+              // PNG-шапка (если есть) ложится поверх градиента; при её отсутствии
+              // виден только градиент — экран самодостаточен.
+              backgroundImage: `url(/assets/world/hero/${(userLevel || 'a1').toLowerCase()}.png), ${heroGradientFor(userLevel)}`,
+            }}
+          />
           <div className="pf-hero__sheet">
             <div className="pf-avatar">
               {avatar ? (
