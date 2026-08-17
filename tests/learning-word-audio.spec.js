@@ -1,14 +1,16 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
-import { tasksToSteps } from '../src/learning/nativeSteps.js'
+import { nativeLessonSteps } from '../src/learning/nativeSteps.js'
 
 const escapeRe = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const exactly = (v) => new RegExp(`^\\s*${escapeRe(v)}\\s*$`)
 
+// Узел тропы — урок целиком: стадии склеены в одну очередь экранов, поэтому и
+// ожидаемые шаги считаем по всему уроку (см. nativeLessonSteps).
 function vocabSteps() {
   const level = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public/learning/a0.json'), 'utf8'))
-  return tasksToSteps(level.lessons['L01-2'])
+  return nativeLessonSteps(level, 'Coffee — yes. Mondays — no.')
 }
 
 // Озвучка слов A0.
@@ -50,10 +52,33 @@ async function bootVocab(page) {
   await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
   await page.goto('/?screen=kingdom&unlock=1')
   await page.locator('.lp-node', { hasText: 'Уровень A0' }).first().click()
-  const vocab = page.locator('.kt-step:not([disabled])').nth(1)
-  await expect(vocab).toBeVisible({ timeout: 15000 })
-  await vocab.click()
+  // Узел тропы — весь урок: стадии склеены в одну очередь, поэтому до карточек
+  // словаря прощёлкиваем разминку.
+  const lesson = page.locator('.kt-step:not([disabled])').first()
+  await expect(lesson).toBeVisible({ timeout: 15000 })
+  await lesson.click()
   await expect(page.locator('.cp-step')).toBeVisible({ timeout: 15000 })
+  for (let i = 0; i < 10 && !(await page.locator('.cp-word').count()); i++) {
+    await unlockStep(page)
+    await page.locator('.cp-cta:not([disabled])').click()
+    await page.waitForTimeout(150)
+  }
+  await expect(page.locator('.cp-word').first()).toBeVisible({ timeout: 15000 })
+}
+
+/** Разблокирует «Проверить/Продолжить» на экране без известного ответа. */
+async function unlockStep(page) {
+  if (!(await page.locator('.cp-cta[disabled]').count())) return
+  const tries = ['.cp-pick', '.cp-check__row', '.cp-choice', '.cp-rows__opt', '.cp-chip', '.cp-match__item']
+  for (const sel of tries) {
+    const el = page.locator(sel).first()
+    if (await el.count()) {
+      await el.click({ timeout: 2000 }).catch(() => {})
+      if (!(await page.locator('.cp-cta[disabled]').count())) return
+    }
+  }
+  const input = page.locator('.cp-gap__in, .cp-write, .cp-group__in').first()
+  if (await input.count()) await input.fill('test').catch(() => {})
 }
 
 test.describe('A0: слова звучат', () => {
@@ -82,14 +107,23 @@ test.describe('A0: слова звучат', () => {
   test('тап по обороту карточки закрывает её молча', async ({ page }) => {
     test.setTimeout(120000)
     await bootVocab(page)
+    // Счётчики обнуляем после прохода разминки: до карточек урок мог сам
+    // проиграть дорожку стадии, и она бы попала в замер.
+    await page.evaluate(() => {
+      window.__played = []
+      window.__spoken = []
+    })
 
     const card = page.locator('.cp-word').first()
     await card.locator('.cp-word__flip').click()
     await expect(card.locator('.cp-word__back')).toBeVisible()
     expect(await page.evaluate(() => window.__played)).toHaveLength(1)
 
-    // Второй тап — уже по обороту.
-    await card.locator('.cp-word__flip').click()
+    // Второй тап — уже по обороту: там своя кнопка на всю карточку
+    // (.cp-word__unflip), она и закрывает перевод.
+    // force: строки перевода лежат поверх кнопки и перехватывают клик в центре
+    // карточки (см. .cp-word__trs) — нам важно само поведение закрытия.
+    await card.locator('.cp-word__unflip').click({ force: true })
     await expect(card.locator('.cp-word__back')).toBeHidden()
     expect(await page.evaluate(() => window.__played), 'закрытие карточки не должно звучать').toHaveLength(1)
     expect(await page.evaluate(() => window.__spoken), 'и синтез тоже не должен').toHaveLength(0)
@@ -139,6 +173,8 @@ test.describe('A0: слова звучат', () => {
       } else if (step.answer) {
         await page.locator('.cp-choice', { hasText: exactly(step.answer) }).first().click()
         await page.locator('.cp-cta:not([disabled])').click()
+      } else {
+        await unlockStep(page)
       }
       await page.locator('.cp-cta:not([disabled])').click()
     }
