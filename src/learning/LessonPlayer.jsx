@@ -9,12 +9,14 @@ import { answerMatches, normAnswer } from '../lib/answer-match.js'
 // KingdomInteriorPage. Данные — из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js).
 //
-// Оцениваются choice/gap/chips (верно → монеты, неверно → минус сердце);
-// check/listen/info/watch — информационные (кнопка «Продолжить»). Сердца
-// локальные для попытки (3 при входе, 0 → провал) — как в исходном уроке.
+// Оцениваются choice/gap/chips (верно → монеты); check/listen/info/watch —
+// информационные (кнопка «Продолжить»).
+//
+// Сердец нет: ошибка стоит монет и процента в итогах, но урок не обрывает.
+// Раньше три промаха выбрасывали студента с середины урока, и всё пройденное
+// до этого приходилось проходить заново.
 
 const REWARD = 10 // монет за верный ответ (как в /api/hl мосте)
-const START_HEARTS = 3
 const GRADED = new Set(['choice', 'gap', 'chips'])
 
 function shuffle(arr) {
@@ -50,13 +52,12 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
   const [correct, setCorrect] = useState(0)
   const [wrong, setWrong] = useState(0)
   const [points, setPoints] = useState(0)
-  const [hearts, setHearts] = useState(START_HEARTS)
   const endedRef = useRef(false)
 
   const tasks = lesson.tasks || []
   const total = tasks.length
 
-  // Завершение (успех/провал) — репортим наверх один раз. Провал: сердца на 0.
+  // Завершение — репортим наверх один раз. Провалить урок нечем: сердец нет.
   const reportDone = (outcome) => {
     if (endedRef.current) return
     endedRef.current = true
@@ -81,13 +82,8 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
       setPoints((p) => p + REWARD)
     } else {
       setWrong((w) => w + 1)
-      setHearts((h) => Math.max(0, h - 1))
     }
   }
-
-  // Провал ловим на переходе сердец к 0 (после фидбэка — плеер даёт увидеть
-  // правильный ответ, затем «Продолжить» уводит на экран провала).
-  const failPending = hearts <= 0
 
   const task = tasks[idx]
   if (!task) return null
@@ -103,10 +99,6 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
         <div className="kl__bar">
           <div className="kl__bar-fill" style={{ width: `${pct}%` }} />
         </div>
-        <div className="kl__hearts" aria-label={t('lesson.hearts')}>
-          <span className="kl__heart">❤</span>
-          <b>{hearts}</b>
-        </div>
       </div>
 
       <LessonTask
@@ -114,7 +106,7 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
         task={task}
         graded={GRADED.has(task.type)}
         onGraded={onGraded}
-        onContinue={failPending ? () => reportDone('fail') : advance}
+        onContinue={advance}
         t={t}
       />
     </div>

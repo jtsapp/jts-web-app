@@ -1,12 +1,17 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import AssetImage from '../components/AssetImage.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
-import { ChevronLeftIcon, CastleIcon, LeafIcon, WaveIcon, CrescentIcon, StarIcon, BurstIcon } from '../components/icons.jsx'
+import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
-import { getLevelLessons, loadLesson } from '../learning/lessonData.js'
+import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { kingdomAvatar } from '../kingdoms.js'
+import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
+import { isStepLevel, tasksToSteps, stripStageTail, nativeLessonSteps } from '../learning/nativeSteps.js'
+import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
@@ -28,28 +33,59 @@ function ProgressRing({ done = 0, total = 0, size = 54, showLabel = true }) {
   )
 }
 
-// Тип урока (l.type из index.json, считается экстрактором по первому заданию) →
-// «печенька» узла тропы: иконка + цветовой класс. Закрытые узлы серые (CSS).
-const COOKIE = {
-  choice: { Icon: LeafIcon, cls: 'is-choice' },
-  audio: { Icon: WaveIcon, cls: 'is-audio' },
-  video: { Icon: CrescentIcon, cls: 'is-video' },
-  info: { Icon: StarIcon, cls: 'is-info' },
-  final: { Icon: BurstIcon, cls: 'is-final' },
+// Иконки экрана итогов — выгружены из макета (Figma «Обучение» → Wrap):
+// Streamline Ultimate «Smiley-Wrong», Streamline Plump «Check-Thick» и группа
+// разбитого сердца. Рисуем их разметкой, а не картинками: они однотонные и
+// должны попадать в цвет карточки.
+function WrongIcon() {
+  return (
+    <svg width="21" height="21" viewBox="0 0 21 21" fill="none" aria-hidden="true">
+      <g stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M0.65625 10.5C0.65625 13.1107 1.69335 15.6145 3.53942 17.4606C5.38548 19.3066 7.88927 20.3438 10.5 20.3438C13.1107 20.3438 15.6145 19.3066 17.4606 17.4606C19.3066 15.6145 20.3438 13.1107 20.3438 10.5C20.3438 7.88927 19.3066 5.38548 17.4606 3.53942C15.6145 1.69335 13.1107 0.65625 10.5 0.65625C7.88927 0.65625 5.38548 1.69335 3.53942 3.53942C1.69335 5.38548 0.65625 7.88927 0.65625 10.5Z" />
+        <path d="M5.90625 7.21875H8.53125" />
+        <path d="M7.21875 8.53125V5.90625" />
+        <path d="M12.4688 7.21875H15.0938" />
+        <path d="M13.7812 8.53125V5.90625" />
+        <path d="M5.90625 15.0941C5.90625 12.8506 6.94925 11.9922 8.41225 11.9922C10.9498 11.9922 10.0494 15.0941 12.5877 15.0941C14.0525 15.0941 15.0938 14.2348 15.0938 11.9922" />
+      </g>
+    </svg>
+  )
 }
+
+function CheckIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M18.2067 3.80546C18.615 4.36213 18.5242 5.11171 18.1442 5.68796C14.5879 11.0755 12.0267 14.3484 10.6096 16.0421C9.90667 16.8817 8.68583 16.9434 7.89083 16.1896C5.8202 14.2207 3.87435 12.1245 2.06458 9.91338C1.56042 9.29546 1.45625 8.42338 1.94708 7.79463C2.37375 7.24796 2.86083 6.7788 3.30125 6.40713C4.03167 5.79046 5.08625 5.93046 5.74292 6.62546C7.76917 8.77213 8.99042 10.2713 8.99042 10.2713C8.99042 10.2713 10.9979 7.33796 14.2188 2.82546C14.7175 2.12671 15.6063 1.8013 16.3571 2.21755C16.96 2.55213 17.6608 3.0613 18.2067 3.80505V3.80546Z"
+        fill="#fff"
+      />
+    </svg>
+  )
+}
+
+// Горизонтальное смещение узла в «лесенке» юнита. В макете колонка узлов
+// шириной 200 при узле 100, а сами узлы идут центр → влево → вправо → центр
+// (Figma «Обучение», Screen 4005:30480, кадр List).
+const KT_OFFSET = [50, 0, 100, 50]
 
 // Интерьер королевства: нативная тропа уроков уровня + нативный плеер урока
 // (LessonPlayer). Раньше здесь был iframe hosted-Speakout — теперь весь урок
 // рендерится React-компонентами из public/learning/<level>.json (экстрактор
 // scripts/extract-kingdom-lessons.js). Прогресс — на бэкенде (lessonProgress).
-export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, onNav, onProfile, onBack, isDemoAccount }) {
-  const { t } = useI18n()
+export default function KingdomInteriorPage({ kingdom, userName, userLevel, token, unlockAll = false, onNav, onProfile, onBack, isDemoAccount }) {
+  const { t, lang } = useI18n()
   const k = kingdom || { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'A1' }
   const level = k.level || userLevel || 'A1'
 
   const [state, setState] = useState({ loading: true, error: null })
   const [moduleId, setModuleId] = useState(null)
   const [lessons, setLessons] = useState([]) // [{code,order,title,taskCount}]
+  // Уровень переведён на перенесённый курс (public/course/<level>/): тропа и
+  // сам урок берутся оттуда, а не из public/learning/<level>.json. Уровни без
+  // такого каталога продолжают работать по-старому.
+  const [course, setCourse] = useState(null)
   const [done, setDone] = useState(new Set()) // пройденные коды
   // Модуль закрыт админом для ЭТОГО студента (флаг locked из
   // GET /mobile/lesson-modules) — тропа целиком недоступна.
@@ -80,11 +116,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         } catch {
           /* без practice-токена читаем прогресс под обычным token */
         }
-        const [mods, trail] = await Promise.all([
+        const [mods, oldTrail, courseIndex] = await Promise.all([
           getLessonModules(authToken).catch(() => []),
-          getLevelLessons(level),
+          getLevelLessons(level).catch(() => []),
+          getCourseIndex(level),
         ])
         if (!alive) return
+        const trail = courseIndex ? courseTrail(courseIndex) : oldTrail
+        setCourse(courseIndex)
         const want = String(level).toUpperCase()
         const mod = (Array.isArray(mods) ? mods : [])
           .filter((m) => String(m.level || '').toUpperCase() === want)
@@ -133,12 +172,16 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // при этом всё равно рисовала следующие уроки открытыми для клика, и студент
   // мог их пройти вплоть до конца, просто без начисления награды. Теперь узлы
   // сверх квоты не открываются вовсе, как и просил менеджер.
+  //
+  // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ
+  // ограничения админа: блокировку модуля и квоту не обходит даже просмотр
+  // контента.
   const isUnlocked = useCallback(
     (i) =>
       !moduleLocked &&
       (moduleQuota == null || i < moduleQuota) &&
-      (i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
-    [lessons, done, moduleLocked, moduleQuota],
+      (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
+    [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
 
   const openLesson = useCallback(
@@ -155,13 +198,46 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       setEnd(null)
       setRestricted(false)
       try {
+        // Урок курса — очередь шагов, собранная из его же контента
+        // (scripts/build-course-steps.js). L<n> — урок, T<u> — тест юнита.
+        if (course) {
+          const m = /^([LT])(\d+)$/.exec(code)
+          if (!m) return
+          const entry = lessons.find((l) => l.code === code)
+          // A0/A1 ведёт курс (24 и 32 урока с юнит-тестами), а содержимое
+          // берётся из нативных данных: там урок разобран подробнее — True/False
+          // одним экраном, соединение пар, вопросы к записи. Разбор курса из
+          // разметки такие задания терял, поэтому уроки выходили короче.
+          if (m[1] === 'L' && isStepLevel(level) && entry) {
+            const levelData = await loadLevel(level).catch(() => null)
+            const steps = levelData ? nativeLessonSteps(levelData, entry.title, lang) : []
+            if (steps.length) {
+              setOpen({ code, attempt: 0, steps: { title: entry.title, blurb: entry.blurb || '', steps } })
+              return
+            }
+          }
+          // L<n> — урок, T<u> — юнит-тест: файлы шагов лежат рядом.
+          const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : 'T' + m[2])
+          if (data) setOpen({ code, attempt: 0, steps: { ...data, title: stripStageTail(data.title, data.steps) } })
+          return
+        }
         const data = await loadLesson(level, code)
-        if (data) setOpen({ code, data, attempt: 0 })
+        if (!data) return
+        // A0/A1 хранят урок уже по одному заданию на экран — отдаём их новому
+        // плееру; B2/C1 остаются на старом (у них свои типы chips/watch).
+        if (isStepLevel(level)) {
+          // Язык нужен конвертеру: перевод в контенте склеен парой «ru · kk»,
+          // и сторону выбираем по интерфейсу (см. learning/bilingual.js).
+          const steps = tasksToSteps(data, lang)
+          setOpen({ code, attempt: 0, steps: { title: stripStageTail(data.title, steps), blurb: '', steps } })
+          return
+        }
+        setOpen({ code, data, attempt: 0 })
       } finally {
         setBusy(false)
       }
     },
-    [level, moduleLocked, lessons, isUnlocked],
+    [level, moduleLocked, lessons, isUnlocked, course, lang],
   )
 
   const retry = () => {
@@ -215,11 +291,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
     [open, level, token, moduleId],
   )
 
-  // «Назад»: из незаконченного урока — подтверждение; с экрана итогов/тропы —
-  // сразу (на тропу либо из королевства).
+  // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
+  // целиком (и урок, и итоги), с тропы — из королевства.
   const handleBack = () => {
     if (open && !end) setConfirmExit(true)
-    else if (open) setOpen(null)
+    else if (open) exitLesson()
     else onBack()
   }
   const exitLesson = () => {
@@ -262,7 +338,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
       {!loading && error === 'empty' && (
         <div className="li-empty">
-          <img className="li-empty__art" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} />
+          <AssetImage className="li-empty__art" src={`/assets/world/kings/${k.id}.webp`} alt={k.name} />
           <div className="li-empty__title">{t('kingdom.empty')}</div>
         </div>
       )}
@@ -284,104 +360,83 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
 
       {!loading && !error && !open && !moduleLocked && (
         <div className="km-scroll">
-          <div
-            className="kh-hero"
-            style={{ background: `linear-gradient(180deg, rgba(255,255,255,0.14), rgba(0,0,0,0.10)), ${k.ring}` }}
-          >
-            <div className="kh-hero__nav">
-              <button className="kh-hero__back" onClick={handleBack} aria-label={t('common.back')}>
-                <ChevronLeftIcon size={18} />
-              </button>
-              <span className="kh-hero__castle" style={{ color: k.ring }} aria-hidden="true">
-                <CastleIcon size={18} />
-              </span>
-              <div className="kh-hero__place">
-                <b>{k.name}</b>
-                <span>{t('kingdom.levelBadge', { label: level })}</span>
-              </div>
+          {/* Верхняя полоса: «Назад» и хлебные крошки королевства (макет Figma
+              «Обучение», Screen 4005:30480). Раньше и то и другое жило внутри
+              цветной шапки-баннера — теперь шапка стала карточкой уровня. */}
+          <div className="kt-bar">
+            <button className="kt-bar__back" onClick={handleBack}>
+              <ChevronLeftIcon size={18} />
+              {t('common.back')}
+            </button>
+            <span className="kt-bar__castle" aria-hidden="true">
+              <CastleIcon size={18} />
+            </span>
+            <div className="kt-bar__place">
+              <b>{k.name}</b>
+              <span>{t('kingdom.levelBadge', { label: level })}</span>
             </div>
-            <div className="kh-hero__main">
-              <div className="kh-hero__text">
-                <div className="kh-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
-                <div className="kh-hero__prog">
-                  <ProgressRing done={doneCount} total={total} size={22} showLabel={false} />
+          </div>
+
+          <div className="kt-body">
+            <div className="kt-hero" style={{ background: k.ring }}>
+              <div className="kt-hero__text">
+                <div className="kt-hero__level">{t('kingdom.levelBadge', { label: level })}</div>
+                <div className="kt-hero__prog">
+                  <ProgressRing done={doneCount} total={total} size={24} showLabel={false} />
                   <span>{t('learn.done')} {doneCount}/{total}</span>
                 </div>
               </div>
+              {/* Здесь намеренно без скелетона: маскот — вырезанная фигура,
+                  вписанная по object-fit: contain в коробку 224×336 поверх
+                  цветной карточки уровня. Заливка шиммера легла бы на всю
+                  коробку и закрыла бы цвет карточки плашкой — заметнее, чем
+                  просто дождаться картинку. */}
               <img
-                className="kh-hero__mascot"
-                src={`/assets/world/levels/${String(level).toLowerCase()}.webp`}
+                className="kt-hero__mascot"
+                src={`/assets/world/levels/${kingdomAvatar(k)}.webp`}
                 alt=""
                 onError={(e) => (e.currentTarget.style.display = 'none')}
               />
             </div>
-          </div>
 
-          {/* Нативная тропа: узлы сгруппированы по юнитам (l.unit из index.json),
-              внутри юнита — «лесенка»-серпантин. */}
-          <div className="kt-units">
+            {/* Тропа: узлы сгруппированы по юнитам (l.unit), внутри юнита —
+                «лесенка» из 3D-печенек. Смещение по горизонтали задано макетом
+                и повторяется с периодом 4: центр, влево, вправо, центр. */}
             {units.map((g) => {
-              const isExam = g.unit === 0
               const doneN = g.items.filter(({ l }) => done.has(l.code)).length
-              const node = ({ l, gi }, j) => {
-                const isDone = done.has(l.code)
-                const unlocked = isUnlocked(gi)
-                const current = !isDone && unlocked
-                const cls =
-                  'kt-node' + (isDone ? ' is-done' : '') + (current ? ' is-current' : '') + (!unlocked ? ' is-locked' : '')
-                const cookie = COOKIE[l.type] || COOKIE.choice
-                const CookieIcon = cookie.Icon
-                // «Лесенка»: узлы серпантином влево-вправо (период 6); экзамен — по центру.
-                const dx = isExam ? 0 : Math.round(Math.sin((j / 3) * Math.PI) * 82)
-                return (
-                  <li key={l.code} className={cls} style={{ '--dx': `${dx}px` }}>
-                    <button
-                      className="kt-node__btn"
-                      disabled={!unlocked || busy}
-                      onClick={() => openLesson(l.code)}
-                      title={!unlocked ? t('lesson.locked') : l.title || l.code}
-                    >
-                      <span className={`kt-node__cookie ${cookie.cls}`} aria-hidden="true">
-                        <CookieIcon size={22} />
-                        {isDone && (
-                          <span className="kt-node__done">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                              <path d="m5 12.5 4 4L19 7" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </span>
-                        )}
-                      </span>
-                      <span className="kt-node__label">{isExam ? t('lesson.examUnit') : l.title || l.code}</span>
-                    </button>
-                  </li>
-                )
-              }
-
-              // Финальный экзамен — особый узел: печенька на белой карточке над
-              // красными «горами»-вершиной (как в дизайне).
-              if (isExam) {
-                return (
-                  <section key="exam" className="kt-exam">
-                    <svg className="kt-exam__peaks" viewBox="0 0 1200 210" preserveAspectRatio="none" aria-hidden="true">
-                      <path
-                        d="M0 210V150L70 60 140 150 210 30 300 150 370 95 450 150 540 20 630 150 700 85 780 150 870 45 960 150 1040 100 1120 150 1200 55V210Z"
-                        fill="#c9463f"
-                      />
-                    </svg>
-                    <ol className="kt-trail kt-trail--exam">{g.items.map(node)}</ol>
-                  </section>
-                )
-              }
-
               return (
                 <section key={g.unit} className="kt-unit">
                   <div className="kt-unit__head">
-                    <span className="kt-unit__title">{t('lesson.unit', { n: g.unit })}</span>
+                    <span className="kt-unit__title">
+                      {g.unit === 0 ? t('lesson.examUnit') : t('lesson.unit', { n: g.unit })}
+                    </span>
                     <span className="kt-unit__count">
                       {doneN}/{g.items.length}
                     </span>
                   </div>
-                  <ol className="kt-trail">{g.items.map(node)}</ol>
+
+                  <ol className="kt-list" style={{ height: `${g.items.length * 100}px` }}>
+                    {g.items.map(({ l, gi }, j) => {
+                      const isDone = done.has(l.code)
+                      const unlocked = isUnlocked(gi)
+                      // «Кубок» — последний узел юнита (у курса это юнит-тест),
+                      // у него в макете своя, золотая печенька.
+                      const isLast = j === g.items.length - 1
+                      const state = isDone ? 'complete' : unlocked ? 'active' : 'inactive'
+                      const cls = `kt-step is-${state}${isLast ? ' is-last' : ''}`
+                      return (
+                        <li key={l.code} className="kt-list__cell" style={{ left: `${KT_OFFSET[j % 4]}px`, top: `${j * 100}px` }}>
+                          <button
+                            className={cls}
+                            disabled={!unlocked || busy}
+                            onClick={() => openLesson(l.code)}
+                            title={!unlocked ? t('lesson.locked') : l.title || l.code}
+                            aria-label={l.title || l.code}
+                          />
+                        </li>
+                      )
+                    })}
+                  </ol>
                 </section>
               )
             })}
@@ -389,90 +444,133 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Открытый урок — нативный плеер (замена iframe). */}
-      {!loading && open && (
+      {/* Открытый урок: перенесённый курс рисует себя сам, остальные уровни —
+          нативным плеером (замена iframe).
+
+          С экрана итогов плеер снимаем совсем. Раньше он оставался под
+          итогами: страница прокручивалась к «пройденному» уроку с живыми
+          кнопками, а его «Выйти» уводил в пустой экран — итоги оставались
+          показанными поверх уже закрытого урока. */}
+      {!loading && open && !end && (
         <div className="km-lesson">
-          <LessonPlayer
-            key={`${open.code}-${open.attempt}`}
-            lesson={open.data}
-            level={level}
-            token={token}
-            onExit={handleBack}
-            onDone={onDone}
-          />
+          {open.steps ? (
+            <CourseStepPlayer
+              key={`${open.code}-${open.attempt}`}
+              level={level}
+              steps={open.steps.steps}
+              title={open.steps.title}
+              subtitle={open.steps.blurb}
+              passRatio={open.steps.passRatio ?? null}
+              onExit={handleBack}
+              onVocab={onNav ? () => onNav('vocab') : null}
+              onDone={onDone}
+            />
+          ) : (
+            <LessonPlayer
+              key={`${open.code}-${open.attempt}`}
+              lesson={open.data}
+              level={level}
+              token={token}
+              onExit={handleBack}
+              onDone={onDone}
+            />
+          )}
         </div>
       )}
 
-      {/* Экран завершения урока (успех) */}
+      {/* Итоги урока — по макету Figma «Обучение» → секция Wrap. Маскот слева
+          цельной картинкой: в макете персонаж выходит за скруглённый фон, и
+          собирать это из CSS-фона плюс вырезанного персонажа значит терять
+          напуски и кадрирование. */}
       {end && end.outcome === 'success' && (
         <div className="le-over le-over--ok">
           <div className="le-card">
-            <img className="le-art" src="/assets/lesson/success.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <AssetImage className="le-art le-art--win" src="/assets/learning/result-win.webp" alt="" />
             <div className="le-info">
               <div className="le-pct">{end.accuracy ?? 100}%</div>
-              <h2 className="le-title">
-                {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
-              </h2>
-              <div className="le-sub">Урок пройден</div>
-              <div className="le-stats">
-                <div className="le-stat le-stat--wrong">
-                  <b>{end.wrong ?? 0}</b>
-                  <span>Неверных ответов</span>
-                </div>
-                <div className="le-stat le-stat--right">
-                  <b>{end.correct ?? 0}</b>
-                  <span>Верных ответов</span>
-                </div>
+              <div className="le-head">
+                <h2 className="le-title">
+                  {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
+                </h2>
+                <p className="le-sub">{open?.steps?.title || t('learn.done')} — пройден</p>
               </div>
-              {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
-                  «следующий урок» — он всё равно упрётся в тот же отказ. */}
-              {restricted ? (
-                <>
-                  <div className="le-restricted" role="status">
-                    🔒{' '}
-                    {isDemoAccount ? (
-                      <>
-                        {t('learn.quotaReachedDemo')}{' '}
-                        <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                          {t('demo.cta')}
-                        </a>
-                      </>
-                    ) : (
-                      t('learn.quotaReached')
-                    )}
+              <div className="le-bottom">
+                <div className="le-stats">
+                  <div className="le-stat le-stat--wrong">
+                    <div className="le-stat__row">
+                      <span className="le-stat__ic" aria-hidden="true">
+                        <WrongIcon />
+                      </span>
+                      <b>{end.wrong ?? 0}</b>
+                    </div>
+                    <span>Неверных ответов</span>
                   </div>
-                  <button className="le-btn" onClick={exitLesson}>
-                    {t('common.back')}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="le-btn" onClick={goNext}>
-                    Перейти на следующий урок
-                  </button>
-                  <button className="le-again" onClick={retry}>
-                    Пройти снова
-                  </button>
-                </>
-              )}
+                  <div className="le-stat le-stat--right">
+                    <div className="le-stat__row">
+                      <span className="le-stat__ic" aria-hidden="true">
+                        <CheckIcon />
+                      </span>
+                      <b>{end.correct ?? 0}</b>
+                    </div>
+                    <span>Верных ответов</span>
+                  </div>
+                </div>
+                {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
+                    «следующий урок» — он всё равно упрётся в тот же отказ. */}
+                {restricted ? (
+                  <div className="le-acts">
+                    <div className="le-restricted" role="status">
+                      🔒{' '}
+                      {isDemoAccount ? (
+                        <>
+                          {t('learn.quotaReachedDemo')}{' '}
+                          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                            {t('demo.cta')}
+                          </a>
+                        </>
+                      ) : (
+                        t('learn.quotaReached')
+                      )}
+                    </div>
+                    <button className="le-btn" onClick={exitLesson}>
+                      {t('common.back')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="le-acts">
+                    <button className="le-btn" onClick={goNext}>
+                      Перейти на следующий урок
+                    </button>
+                    <button className="le-again" onClick={retry}>
+                      Пройти снова
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Экран завершения урока (провал — сердца кончились) */}
+      {/* Итоги неудачной попытки. Сюда доводит только юнит-тест: он сдаётся
+          долей верных ответов, и не сдать его можно. Обычный урок провалить
+          нечем — сердец в плеере нет, экран всегда приходит успехом. Поэтому
+          здесь больше нет карточки «жизней больше нет»: она объясняла ровно ту
+          механику, которой не стало. */}
       {end && end.outcome === 'fail' && (
         <div className="le-over le-over--fail">
-          <div className="le-card">
-            <img className="le-art" src="/assets/lesson/fail.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
-            <div className="le-info">
-              <div className="le-heart">
-                💔<span>Жизней больше нет</span>
+          <div className="le-card le-card--fail">
+            <AssetImage className="le-art le-art--lose" src="/assets/learning/result-lose.webp" alt="" />
+            <div className="le-info le-info--fail">
+              <div className="le-fail">
+                <div className="le-pct">{end.accuracy ?? 0}%</div>
+                <div className="le-head">
+                  <h2 className="le-title">Тест не сдан</h2>
+                  <p className="le-sub le-sub--bold">Верных ответов пока мало — попробуйте ещё раз</p>
+                </div>
               </div>
-              <h2 className="le-title">Ой-ой</h2>
-              <div className="le-sub">Видимо, нужно попробовать ещё раз</div>
               <button className="le-btn" onClick={retry}>
-                Попробовать ещё раз
+                Попробовать еще раз
               </button>
             </div>
           </div>
@@ -483,18 +581,27 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       {confirmExit && (
         <div className="lx-over" onClick={() => setConfirmExit(false)}>
           <div className="lx-card" onClick={(e) => e.stopPropagation()}>
-            <button className="lx-close" aria-label="Закрыть" onClick={() => setConfirmExit(false)}>
-              ×
+            {/* Крестик в макете стоит по центру НАД карточкой и рисуется
+                толстым штрихом — глиф «×» рядом с ним выглядел засечкой. */}
+            <button className="lx-close" aria-label={t('common.close')} onClick={() => setConfirmExit(false)}>
+              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+                <path d="M6 6 24 24M24 6 6 24" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+              </svg>
             </button>
-            <img className="lx-art" src="/assets/lesson/exit.png" alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />
-            <h2 className="lx-title">Вы уверены что хотите выйти?</h2>
-            <div className="lx-sub">Урок не будет пройден</div>
-            <button className="le-btn lx-continue" onClick={() => setConfirmExit(false)}>
-              Продолжить обучение
-            </button>
-            <button className="lx-leave" onClick={exitLesson}>
-              Выйти в меню
-            </button>
+            {/* Арт рисуется в круг 112px, а исходный PNG был 1664px и 2.6 МБ —
+                на 4G он не успевал приехать, и вместо портрета висел серый
+                кружок. Тот же кадр, пережатый под показ, весит 42 КБ. */}
+            <AssetImage className="lx-art" src="/assets/lesson/exit.webp" alt="" hideOnError />
+            <h2 className="lx-title">{t('lesson.exitAsk')}</h2>
+            <div className="lx-sub">{t('lesson.exitAskSub')}</div>
+            <div className="lx-acts">
+              <button className="le-btn lx-continue" onClick={() => setConfirmExit(false)}>
+                {t('lesson.exitStay')}
+              </button>
+              <button className="lx-leave" onClick={exitLesson}>
+                {t('lesson.exitLeave')}
+              </button>
+            </div>
           </div>
         </div>
       )}

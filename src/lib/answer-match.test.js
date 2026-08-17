@@ -1,8 +1,9 @@
-// Регрессия на жалобу из «Обучения»: верные ответы шли в «Неверный ответ».
-// Причина — сверка текста: апостроф вырезался только ASCII, а «do not» и
-// «don't» считались разными ответами.
+// Регрессия на жалобу из урока A0 «Coffee — yes. Mondays — no.»: верные ответы
+// шли в «Неверный ответ». Два источника — сверка текста (стяжения и апострофы)
+// и склейка ответа задания «собери предложение».
 import { describe, it, expect } from 'vitest'
 import { normAnswer, answerMatches } from './answer-match.js'
+import { tasksToSteps } from '../learning/nativeSteps.js'
 
 describe('normAnswer', () => {
   it('снимает регистр, знаки и лишние пробелы', () => {
@@ -40,6 +41,17 @@ describe('answerMatches', () => {
     expect(answerMatches("I don't like Mondays.", ['I don’t like Mondays.'])).toBe(true)
   })
 
+  // Апостроф на телефоне — лишний тап и часто другой символ, поэтому ответ без
+  // него обязан проходить: «I dont like» — то же самое, что «I don’t like».
+  it('апостроф не обязателен', () => {
+    expect(answerMatches('I dont like Mondays.', ['I don’t like Mondays.'])).toBe(true)
+    expect(answerMatches('dont', ["don't"])).toBe(true)
+    expect(answerMatches('I dont like rain', ['I don’t like rain.'])).toBe(true)
+    expect(answerMatches('Im Anna', ["I'm Anna"])).toBe(true)
+    expect(answerMatches('Whats your phone number?', ["What's your phone number?"])).toBe(true)
+    expect(answerMatches('No, Im not.', ["No, I'm not."])).toBe(true)
+  })
+
   it('пустой ответ не засчитывается', () => {
     expect(answerMatches('   ', ['do not'])).toBe(false)
   })
@@ -53,5 +65,19 @@ describe('answerMatches', () => {
     const cue = 'I ___ like Mondays.'
     expect(answerMatches("don't like Mondays", ["don't"], cue)).toBe(true)
     expect(answerMatches("don't like coffee", ["don't"], cue)).toBe(false)
+  })
+})
+
+describe('tasksToSteps — собери предложение', () => {
+  const lesson = {
+    tasks: [{ sec: '4. Practice', type: 'order', words: ['coffee', 'I', 'like'], answer: ['I', 'like', 'coffee'] }],
+  }
+
+  it('склеивает ответ-список в фразу', () => {
+    const [step] = tasksToSteps(lesson, 'ru')
+    expect(step.type).toBe('order')
+    expect(step.answer).toBe('I like coffee')
+    // Как сравнивает плеер: собранная фраза против эталона.
+    expect(normAnswer('I like coffee')).toBe(normAnswer(step.answer))
   })
 })

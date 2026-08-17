@@ -61,6 +61,7 @@ import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
+import { KINGDOMS } from './kingdoms.js'
 
 // Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
 // если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
@@ -106,6 +107,21 @@ export default function App() {
     if (catalogParam) {
       setLiveWorkspaceId(catalogParam)
       setWorkspaceSource('catalog')
+    }
+    // ?level=<A1|A2|…> — королевство для kingdom-interior (диплинк
+    // ?screen=kingdom-interior&level=b1). Через карту туда не попасть, пока
+    // уровень пользователя ниже, а смотреть тропу и урок нужно и до этого.
+    const levelParam = searchParams.get('level')
+    if (levelParam) {
+      const want = levelParam.toUpperCase()
+      const k = KINGDOMS.find((x) => x.level === want)
+      if (k) setKingdom(k)
+    }
+    // ?unlock=1 — открыть все королевства и все уроки тропы для просмотра
+    // контента. Только в дев-сборке: в проде это обошло бы гейтинг по уровню,
+    // поэтому флаг снимается на этапе сборки, а не проверкой в рантайме.
+    if (process.env.NODE_ENV !== 'production' && searchParams.get('unlock') === '1') {
+      setDevUnlock(true)
     }
 
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
@@ -207,6 +223,9 @@ export default function App() {
     }
   }, [screen, token])
   const [kingdom, setKingdom] = useState(null)
+  // Просмотр всего контента без гейтинга (?unlock=1, только dev) — см. эффект
+  // диплинков ниже.
+  const [devUnlock, setDevUnlock] = useState(false)
   const [liveLessonId, setLiveLessonId] = useState(null)
   // id живого урока для workspace-экрана (диплинк ?screen=lesson-workspace&lesson=<id>,
   // см. эффект восстановления сессии ниже). Без диплинка остаётся null —
@@ -720,6 +739,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenKingdom={(k) => {
@@ -824,6 +844,7 @@ export default function App() {
           userName={name}
           userLevel={userLevel}
           token={token}
+          unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('kingdom')}
