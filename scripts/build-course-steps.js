@@ -23,7 +23,33 @@ const fs = require('fs')
 const path = require('path')
 
 const ROOT = path.join(__dirname, '..')
-const LEVELS = ['a2', 'b1']
+const LEVELS = ['a0', 'a1', 'a2', 'b1']
+
+// Один верный и четыре неверных на экране выбора — как в макете «Обучения».
+const MAX_CHOICES = 5
+
+// Слова урока. У A2/B1 VOCAB — плоский массив, у A0/A1 — объект с режимами
+// { self, group, solo }: сайт играет только self (см. режим курса в
+// scripts/extract-course-lessons.js), из него и берём. Без этой развилки у
+// A0/A1 не собиралось ни карточек слов, ни вопросов на перевод.
+function vocabRows(lesson) {
+  const v = lesson.VOCAB
+  const rows = Array.isArray(v) ? v : (v && (v.self || v.group || v.solo)) || []
+  return rows.filter((r) => Array.isArray(r) && r[0])
+}
+
+// Стадии в уроках курса называются по-разному: у A0/A2/B1 это Warm-up /
+// Practice / Listening, у A1 — Intro, Recall, Firsts, Type it, Listen, Done.
+// Без словаря половина стадий A1 не находилась, и урок собирался из огрызков.
+const STAGE_ALIASES = {
+  warm: ['Warm-up', 'Intro'],
+  practice: ['Practice', 'Recall', 'Type it', 'Firsts'],
+  listen: ['Listening', 'Reading', 'Listen'],
+  speak: ['Now you', 'Speaking', 'Write'],
+  wrap: ['Wrap', 'Done'],
+}
+const stageOneOf = (names, key) => STAGE_ALIASES[key].find((n) => names.includes(n)) || null
+const stagesOf = (names, key) => STAGE_ALIASES[key].filter((n) => names.includes(n))
 
 // --- работа с разметкой урока -------------------------------------------------
 // Разметка курса ровная и предсказуемая, поэтому режем регулярками: DOM в node
@@ -107,6 +133,17 @@ function stageNames(html) {
   return [...html.matchAll(/data-stage="([^"]+)"/g)].map((m) => m[1])
 }
 
+// Строка задания бывает пустой: у части упражнений весь вопрос стоит в
+// инструкции стадии, а сама строка держит только варианты. Раньше на её место
+// подставлялось тире, и на экране крупным фиолетовым светилось «—», а вопрос
+// читался мелким серым сверху (99 экранов A2/B1). Пустой вопрос отдаём
+// инструкции: она и есть вопрос, ей и быть крупной строкой.
+function questionOf(prompt, instruction) {
+  const clean = String(prompt || '').trim()
+  const meaningful = /[a-zA-Zа-яА-Я0-9]/.test(clean)
+  return meaningful ? { title: instruction, prompt: clean } : { title: '', prompt: instruction }
+}
+
 // Инструкция, ближайшая сверху к позиции задания, — это его заголовок.
 function nearestInstruction(chunk, index) {
   const before = chunk.slice(0, index)
@@ -131,8 +168,7 @@ function optsTasks(chunk, stage, limit) {
     out.push({
       stage,
       type: 'choice',
-      title: nearestInstruction(chunk, rowStart >= 0 ? rowStart : m.index),
-      prompt: prompt || '—',
+      ...questionOf(prompt, nearestInstruction(chunk, rowStart >= 0 ? rowStart : m.index)),
       options: opts.map((o) => strip(o[2])),
       answer: strip(answer[2]),
     })
@@ -154,10 +190,35 @@ function selectTasks(chunk, stage, limit) {
     const rowEnd = chunk.indexOf('</div>', m.index + m[0].length)
     const row = chunk.slice(rowStart >= 0 ? rowStart : m.index, rowEnd > 0 ? rowEnd : m.index + m[0].length)
     const prompt = strip(row.replace(m[0], ' ____ ').replace(/<span class="num">\d+<\/span>/, ''))
-    out.push({ stage, type: 'choice', title: nearestInstruction(chunk, rowStart >= 0 ? rowStart : m.index), prompt, options, answer })
+    out.push({
+      stage,
+      type: 'choice',
+      ...questionOf(prompt, nearestInstruction(chunk, rowStart >= 0 ? rowStart : m.index)),
+      options,
+      answer,
+    })
     if (out.length >= limit) break
   }
   return out
+}
+
+// Слайд правила приходит двумя видами: у A0/A2/B1 это готовая разметка строкой
+// («<p class="s-en">☕ <b>I like coffee.</b></p>»), а у A1 — пара
+// [эмодзи, предложение]: экстрактор того уровня уложил слайды так.
+// Массив уезжал в шаг как есть и на экране превращался в голую склеенную фразу
+// без разметки — тот самый экран «цель есть, а задания нет» (28 шагов A1).
+function slideHtml(slide) {
+  if (typeof slide === 'string') return slide.trim()
+  if (!Array.isArray(slide)) return ''
+  const parts = slide.map((x) => strip(String(x || ''))).filter(Boolean)
+  if (!parts.length) return ''
+  // Эмодзи в паре стоит первым и отдельным элементом — собираем ту же строку,
+  // что и у остальных уровней, чтобы стиль слайда был один на весь курс.
+  const [first, ...rest] = parts
+  const isEmoji = rest.length > 0 && !/[a-zA-Zа-яА-Я0-9]/.test(first)
+  return isEmoji
+    ? `<p class="s-en">${first} <b>${rest.join(' ')}</b></p>`
+    : `<p class="s-en"><b>${parts.join(' ')}</b></p>`
 }
 
 // --- сборка шагов урока -------------------------------------------------------
@@ -167,7 +228,7 @@ function buildSteps(lesson) {
   const names = stageNames(html)
 
   // 1. Warm-up: выбор «что тебе ближе» — без правильного ответа.
-  const warm = stageHtml(html, 'Warm-up')
+  const warm = stageHtml(html, stageOneOf(names, 'warm') || 'Warm-up')
   if (warm) {
     const opts = [...warm.matchAll(/<button class="opt"[^>]*>([\s\S]*?)<\/button>/g)].map((m) => strip(m[1])).filter(Boolean)
     if (opts.length >= 2) {
@@ -183,7 +244,7 @@ function buildSteps(lesson) {
   }
 
   // 2. Vocabulary: карточки слов урока (перевод по клику) и проверка перевода.
-  const vocab = (lesson.VOCAB || []).filter((v) => Array.isArray(v) && v[0])
+  const vocab = vocabRows(lesson)
   if (vocab.length) {
     steps.push({
       stage: 'Vocabulary',
@@ -202,33 +263,61 @@ function buildSteps(lesson) {
         img: (lesson.IMG && lesson.IMG[en]) || null,
       })),
     })
-    // Перевод: правильный вариант из слова, три отвлекающих — из соседних слов
-    // того же урока (они одной темы, поэтому выбор не тривиальный).
-    const ru = vocab.map((v) => v[2]).filter(Boolean)
-    vocab.slice(0, 6).forEach(([en, , correct], i) => {
+    // Перевод: правильный вариант из слова, четыре отвлекающих — из соседних
+    // слов того же урока (они одной темы, поэтому выбор не тривиальный).
+    // Уже отгаданный перевод в следующих словах отвлекающим не появляется:
+    // в оригинале это одна таблица сопоставления, где занятая пара выбывает.
+    const ru = vocab.map((v) => strip(v[2])).filter(Boolean)
+    const kkOf = new Map(vocab.filter((v) => v[2]).map((v) => [strip(v[2]), strip(v[3] || '')]))
+    const used = new Set()
+    vocab.slice(0, 6).forEach(([en, , rawCorrect], i) => {
+      const correct = strip(rawCorrect)
       if (!correct) return
-      const others = ru.filter((x) => x !== correct)
-      const picks = [correct, others[(i * 3) % others.length], others[(i * 3 + 1) % others.length], others[(i * 3 + 2) % others.length]]
+      const others = ru.filter((x) => x !== correct && !used.has(x))
+      const picks = [correct]
+      for (let k = 0; k < MAX_CHOICES - 1 && others.length; k++) picks.push(others[(i * (MAX_CHOICES - 1) + k) % others.length])
       const options = [...new Set(picks)].filter(Boolean)
       if (options.length < 3) return
-      steps.push({ stage: 'Vocabulary', type: 'choice', title: 'Выбери правильный перевод', prompt: en, options, answer: correct })
+      used.add(correct)
+      // Казахская сторона едет рядом отдельным полем: склеивать «ru · kk» в
+      // одну строку нельзя — при русском интерфейсе это каша (см.
+      // src/learning/bilingual.js), а на этапе сборки языка мы не знаем.
+      const kk = options.map((o) => kkOf.get(o) || '')
+      steps.push({
+        stage: 'Vocabulary',
+        type: 'choice',
+        title: 'Выбери правильный перевод',
+        prompt: strip(en),
+        options,
+        answer: correct,
+        ...(kk.every(Boolean) ? { optionsKk: kk, answerKk: kkOf.get(correct) || '' } : {}),
+      })
     })
   }
 
   // 3. Grammar: слайды правила, затем задания стадии.
   for (const slide of (lesson.SLIDES || []).slice(0, 3)) {
-    steps.push({ stage: 'Grammar', type: 'note', title: 'Как это работает', html: slide })
+    const slideMarkup = slideHtml(slide)
+    // Экран ради двух слов не нужен: «Oh no!», «📗 one book» — это обрывки
+    // реплики из примера, а не правило. Порог 15 знаков: короче реального
+    // предложения на этих уровнях не бывает.
+    if (strip(slideMarkup).length >= 15) {
+      steps.push({ stage: 'Grammar', type: 'note', title: 'Как это работает', html: slideMarkup })
+    }
   }
   const gram = stageHtml(html, 'Grammar')
   if (gram) steps.push(...optsTasks(gram, 'Grammar', 2), ...selectTasks(gram, 'Grammar', 2))
 
-  // 4. Practice: основная масса проверяемых заданий урока.
-  const prac = stageHtml(html, 'Practice')
-  if (prac) steps.push(...selectTasks(prac, 'Practice', 4), ...optsTasks(prac, 'Practice', 4))
+  // 4. Practice: основная масса проверяемых заданий урока. У A1 практика
+  // разнесена по нескольким стадиям (Recall, Firsts, Type it) — берём все.
+  for (const name of stagesOf(names, 'practice')) {
+    const prac = stageHtml(html, name)
+    if (prac) steps.push(...selectTasks(prac, 'Practice', 4), ...optsTasks(prac, 'Practice', 4))
+  }
 
   // 5. Listening / Reading: аудио урока с вопросами стадии. Трек берём первый —
   // в уроке он один на всю стадию, а сегменты движок нарезал для своих кнопок.
-  const listenStage = names.includes('Listening') ? 'Listening' : names.includes('Reading') ? 'Reading' : null
+  const listenStage = stageOneOf(names, 'listen')
   if (listenStage) {
     const chunk = stageHtml(html, listenStage)
     const track = Object.values(lesson.tracks || {})[0] || null
@@ -237,7 +326,7 @@ function buildSteps(lesson) {
   }
 
   // 6. Now you: свободный ответ. Модель — из «полезного языка» стадии.
-  const now = stageHtml(html, 'Now you')
+  const now = stageHtml(html, stageOneOf(names, 'speak') || 'Now you')
   if (now) {
     const idx = now.indexOf('<div class="instruction"')
     const model = [...now.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => strip(m[1])).find(Boolean)
@@ -253,7 +342,7 @@ function buildSteps(lesson) {
   }
 
   // 7. Wrap: чек-лист «что я уже могу».
-  const wrap = stageHtml(html, 'Wrap')
+  const wrap = stageHtml(html, stageOneOf(names, 'wrap') || 'Wrap')
   if (wrap) {
     const items = [...wrap.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => strip(m[1])).filter((t) => t && t.length < 120)
     if (items.length) {
@@ -261,8 +350,24 @@ function buildSteps(lesson) {
     }
   }
 
-  return steps.map(({ _idx, ...s }) => s)
+  return dedupe(steps).map(({ _idx, ...s }) => s)
 }
+
+// Одну и ту же строку урока ловят оба разборщика — и кнопки-варианты, и
+// выпадающий список, — поэтому вопрос приезжал на экран дважды подряд
+// («I get up ___ the morning.» два раза в одном уроке). Совпадение считаем по
+// вопросу и ответу: одинаковый вопрос с РАЗНЫМ ответом — это разные задания.
+function dedupe(steps) {
+  const seen = new Set()
+  return steps.filter((s) => {
+    if (!s.prompt) return true
+    const key = `${s.type}|${normKey(s.prompt)}|${normKey(s.answer)}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+const normKey = (v) => String(v ?? '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 // Юнит-тест: та же разметка курса, но одной секцией и без стадий. Берём из неё
 // все проверяемые задания — вопросы с вариантами и с выпадающим списком.

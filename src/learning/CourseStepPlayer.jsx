@@ -177,12 +177,16 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
         {/* Значок стоит ПЕРЕД подписью у обеих кнопок полосы — так в макете.
             Раньше оба висели справа, и «Выйти ✕» читалось как «закрыть эту
             плашку», а не «выйти из урока». */}
-        <button className="cp-bar__exit" onClick={onExit}>
+        {/* aria-label — потому что на телефоне подпись скрыта стилями и кнопка
+            остаётся одним значком. */}
+        <button className="cp-bar__exit" onClick={onExit} aria-label={t('lesson.exitLesson')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="12" cy="12" r="10" fill="currentColor" />
             <path d="m9 9 6 6m0-6-6 6" stroke="#9047ff" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          {t('lesson.exitLesson')}
+          {/* Подпись в span: на телефоне в макете обе кнопки полосы — только
+              значки в круге, а спрятать голый текстовый узел нечем. */}
+          <span className="cp-bar__label">{t('lesson.exitLesson')}</span>
         </button>
         <div className="cp-bar__place">
           <b>{step.stage}</b>
@@ -191,12 +195,12 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
         {/* «Словарь» — живая кнопка: в макете она активна. Уводит в раздел
             словаря тем же путём, что и пункт сайдбара, который и так открыт
             рядом; отдельного подтверждения нет ровно по этой причине. */}
-        <button className="cp-bar__dict" type="button" onClick={onVocab} disabled={!onVocab}>
+        <button className="cp-bar__dict" type="button" onClick={onVocab} disabled={!onVocab} aria-label={t('nav.vocab')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v18H6.5A2.5 2.5 0 0 1 4 18.5z" stroke="currentColor" strokeWidth="2" />
             <path d="M8 7h7M8 11h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          {t('nav.vocab')}
+          <span className="cp-bar__label">{t('nav.vocab')}</span>
         </button>
       </div>
 
@@ -812,7 +816,11 @@ function WordCards({ words, t }) {
       {(words || []).map((w, i) => (
         // Карточка — не кнопка: внутри неё живёт своя кнопка «в словарь», а
         // кнопку в кнопку вкладывать нельзя. Переворот повесен на внутреннюю.
-        <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''}`}>
+        // is-noimg — у A1 картинок слов в источнике нет вовсе (0 из 452), и
+        // карточка тогда печатала слово ДВАЖДЫ: крупно на пустой плашке и
+        // подписью под ней. Модификатор снимает дубль и делает лицо карточки
+        // типографским.
+        <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''} ${w.img ? '' : 'is-noimg'}`}>
           {/* Тап по карточке произносит слово и переворачивает её — ровно то,
               что обещает инструкция стадии («Look and listen. Tap a picture to
               hear the word»). Без озвучки презентация слов была немой: студент

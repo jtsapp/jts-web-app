@@ -36,10 +36,12 @@ test.describe('нативный урок «Обучения»', () => {
     await expect(node).toBeVisible({ timeout: 15000 })
     await node.click()
 
-    // Пошаговый плеер: шапка со стадией, три сердца, кнопка снизу.
+    // Пошаговый плеер: шапка со стадией, полоса прогресса, кнопка снизу.
+    // Сердец у урока нет с develop: ошибка стоит монет и процента в итогах, но
+    // не выбрасывает из урока (см. комментарий в CourseStepPlayer).
     await expect(page.locator('.cp-step')).toBeVisible({ timeout: 15000 })
     await expect(page.locator('.km-frame')).toHaveCount(0)
-    await expect(page.locator('.cp-hud__hearts b')).toHaveText('3')
+    await expect(page.locator('.cp-hud__track')).toBeVisible()
     await expect(page.locator('.cp-cta')).toBeVisible()
 
     // Первое задание: если это выбор — отвечаем и ждём плашку результата;

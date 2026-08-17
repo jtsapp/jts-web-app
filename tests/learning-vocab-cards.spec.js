@@ -15,11 +15,19 @@ async function bootVocab(page) {
   await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
   await page.goto('/?screen=kingdom&unlock=1')
   await page.locator('.lp-node', { hasText: 'Уровень A0' }).first().click()
-  // Второй узел тропы — Vocabulary, карточки идут его первым экраном.
-  const vocab = page.locator('.kt-step:not([disabled])').nth(1)
-  await expect(vocab).toBeVisible({ timeout: 15000 })
-  await vocab.click()
+  // Узел тропы — урок целиком (стадии склеены в одну очередь экранов), поэтому
+  // до карточек словаря доходим разминкой, а не отдельным узлом стадии.
+  const lesson = page.locator('.kt-step:not([disabled])').first()
+  await expect(lesson).toBeVisible({ timeout: 15000 })
+  await lesson.click()
   await expect(page.locator('.cp-step')).toBeVisible({ timeout: 15000 })
+  for (let i = 0; i < 10 && !(await page.locator('.cp-word').count()); i++) {
+    const cta = page.locator('.cp-cta')
+    if (await cta.isDisabled().catch(() => true)) await page.locator('.cp-choice, .cp-pick').first().click()
+    await cta.click()
+    await page.waitForTimeout(150)
+  }
+  await expect(page.locator('.cp-word').first()).toBeVisible({ timeout: 15000 })
 }
 
 test.describe('A0: карточки словаря', () => {
@@ -52,10 +60,14 @@ test.describe('A0: карточки словаря', () => {
     })
     await bootVocab(page)
 
-    const add = page.locator('.cp-word').first().locator('.cp-word__add')
-    await expect(add).toHaveText('+')
+    // Кнопка на обороте карточки: «В словарь» → «В словаре» (класс
+    // cp-word__save; раньше это был значок «+» с классом cp-word__add).
+    const card = page.locator('.cp-word').first()
+    await card.locator('.cp-word__flip').click()
+    const add = card.locator('.cp-word__save')
+    await expect(add).toHaveText('В словарь')
     await add.click()
-    await expect(add).toHaveText('✓')
+    await expect(add).toHaveText('В словаре')
     await expect(add).toBeDisabled()
 
     expect(sent?.items?.[0]?.word, 'слово не ушло в словарь').toBeTruthy()
@@ -69,9 +81,11 @@ test.describe('A0: карточки словаря', () => {
     )
     await bootVocab(page)
 
-    const add = page.locator('.cp-word').first().locator('.cp-word__add')
+    const card = page.locator('.cp-word').first()
+    await card.locator('.cp-word__flip').click()
+    const add = card.locator('.cp-word__save')
     await add.click()
-    await expect(add).toHaveText('+')
+    await expect(add).toHaveText('В словарь')
     await expect(add).toBeEnabled()
   })
 })

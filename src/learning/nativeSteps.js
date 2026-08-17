@@ -22,6 +22,40 @@ export function isStepLevel(level) {
   return STEP_LEVELS.includes(String(level || '').toLowerCase())
 }
 
+// Заметка становится экраном, если ей есть что показать: текст от 15 знаков,
+// картинка или примеры из таблицы. Порог в 15 — короче реального предложения
+// на этих уровнях не бывает, а вот обрывки («Note», «Oh no!») отсекает.
+// Заголовок считаем содержанием: короткий текст под собственным заголовком —
+// это подпись к материалу, а не мусор.
+function isWorthAScreen(html, title, examples) {
+  if (/<img\b/i.test(html) || (examples && examples.length)) return true
+  const text = textOf(html)
+  return text.length >= 15 || (!!title && text.length > 0)
+}
+
+// Название урока без хвоста стадии: «Coffee — yes. Mondays — no. · Warm-up» →
+// «Coffee — yes. Mondays — no.». По нему стадии одного урока и собираются в
+// один узел тропы.
+export function lessonBaseTitle(title) {
+  const s = String(title || '')
+  const i = s.indexOf('·')
+  return (i > 0 ? s.slice(0, i) : s).trim()
+}
+
+// Материал урока целиком. В нативных данных A0/A1 урок разложен по стадиям —
+// каждая приходит отдельной записью «<урок> · <стадия>», и тропа из них давала
+// по 6–14 узлов на одну тему (у A0 выходил 151 «урок» вместо 24). Тропу ведёт
+// курс (public/course/<level>/index.json), а сюда сходится содержимое: стадии
+// одного урока склеиваются в одну очередь экранов в порядке их кодов.
+export function nativeLessonSteps(levelData, title, lang = 'ru') {
+  const want = lessonBaseTitle(title).toLowerCase()
+  if (!want) return []
+  const parts = Object.values((levelData && levelData.lessons) || {}).filter(
+    (l) => lessonBaseTitle(l.title).toLowerCase() === want,
+  )
+  return parts.flatMap((l) => tasksToSteps(l, lang))
+}
+
 // Узел тропы — это одна секция урока, и в данных его название приходит с
 // хвостом: «Coffee — yes. Mondays — no. · Warm-up». В шапке плеера секция уже
 // стоит отдельной жирной строкой, поэтому хвост в подзаголовке — дубль.
@@ -697,7 +731,10 @@ export function tasksToSteps(lesson, lang = 'ru') {
           lead = lead
             ? { title: lead.title || l.title, sub: [lead.sub, lead.title ? l.title : '', l.sub].filter(Boolean).join(' ') }
             : l
-        else if (textOf(rest) || /<img\b/i.test(rest)) push({ stage, type: 'note', title, html: rest, examples }, !!title)
+        // Заметка длиной в пару слов — не экран: «Note», «Oh no!» — это
+        // обрывок реплики из примера, а не материал. Картинку и примеры из
+        // таблицы такой отбор не задевает: они несут содержание сами.
+        else if (isWorthAScreen(rest, title, examples)) push({ stage, type: 'note', title, html: rest, examples }, !!title)
 
         if (grid)
           for (const options of grid.groups) {
