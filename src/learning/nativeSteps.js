@@ -22,15 +22,30 @@ export function isStepLevel(level) {
   return STEP_LEVELS.includes(String(level || '').toLowerCase())
 }
 
-// Заметка становится экраном, если ей есть что показать: текст от 15 знаков,
-// картинка или примеры из таблицы. Порог в 15 — короче реального предложения
-// на этих уровнях не бывает, а вот обрывки («Note», «Oh no!») отсекает.
-// Заголовок считаем содержанием: короткий текст под собственным заголовком —
-// это подпись к материалу, а не мусор.
+// Блок, который несёт содержание сам по себе: картинка, таблица, список,
+// спойлер, запись.
+const RICH_BLOCK = /<(img|table|li|ul|ol|details|audio|iframe)\b/i
+
+// Сколько в блоке отдельных кусков текста. Сетка «was | were» — это восемь
+// знаков, но два куска, то есть противопоставление форм, а не обрывок; пустой
+// пузырь с одной подписью «Note» — один кусок и ничего больше.
+function textRuns(html) {
+  return String(html || '')
+    .split(/<[^>]+>/)
+    .map((s) => s.replace(/&nbsp;/g, ' ').trim())
+    .filter(Boolean).length
+}
+
+// Заметка становится экраном, если ей есть что показать: содержательная
+// разметка, примеры из таблицы, несколько кусков текста или текст от 15
+// знаков. Порог в 15 — короче реального предложения на этих уровнях не бывает,
+// а вот обрывки («Note», «Oh no!») отсекает. Заголовок тоже считаем
+// содержанием: короткий текст под собственным заголовком — это подпись к
+// материалу, а не мусор.
 function isWorthAScreen(html, title, examples) {
-  if (/<img\b/i.test(html) || (examples && examples.length)) return true
+  if (RICH_BLOCK.test(html) || (examples && examples.length)) return true
   const text = textOf(html)
-  return text.length >= 15 || (!!title && text.length > 0)
+  return text.length >= 15 || textRuns(html) >= 2 || (!!title && text.length > 0)
 }
 
 // Название урока без хвоста стадии: «Coffee — yes. Mondays — no. · Warm-up» →
