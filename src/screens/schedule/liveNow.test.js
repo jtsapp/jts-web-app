@@ -58,6 +58,14 @@ describe('pickFeaturedOccurrence', () => {
     expect(pickFeaturedOccurrence(list, now)?.lessonId).toBe(5)
   })
 
+  // Урок без длительности не должен пропадать из карточки в минуту начала —
+  // ему даётся стандартный час, чтобы преподаватель успел открыть класс.
+  it('урок без durationMinutes живёт в карточке ещё час после начала', () => {
+    const noDuration = { lessonId: 9, lessonStatus: 'SCHEDULED', scheduledAt: '2026-08-10T11:30:00' }
+    expect(pickFeaturedOccurrence([noDuration], now)?.lessonId).toBe(9)
+    expect(pickFeaturedOccurrence([{ ...noDuration, scheduledAt: '2026-08-10T10:30:00' }], now)).toBeNull()
+  })
+
   // Просроченный урок предлагать нельзя: время вышло, преподаватель класс так
   // и не открыл — кнопка «присоединиться» вела бы в никуда.
   it('просроченные, отменённые и проведённые уроки не показываются', () => {

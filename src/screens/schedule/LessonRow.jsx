@@ -18,7 +18,9 @@ export default function LessonRow({ occ, meetingUrl, onOpenLesson }) {
             <span className="sch-row__dot" aria-hidden="true" />
             {t(`schedule.format.${format}`)}
           </span>
-          <MeetLink url={meetingUrl} />
+          {/* Ссылка на звонок — только у уроков, куда ещё можно попасть:
+              на отменённом или уже проведённом она звала бы в пустую комнату. */}
+          {!['completed', 'cancelled', 'overdue'].includes(stateKey) && <MeetLink url={meetingUrl} />}
           {/* «Запланирован» — состояние по умолчанию, оно не несёт информации
               и только шумит в списке. Бейдж появляется, когда с уроком что-то
               случилось: идёт, отменён, проведён, просрочен. */}

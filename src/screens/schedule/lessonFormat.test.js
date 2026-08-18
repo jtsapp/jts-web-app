@@ -136,6 +136,19 @@ describe('lessonTopicFromSections', () => {
     expect(lessonTopicFromSections(list)).toBe('Coffee—yes. Mondays—no.')
   })
 
+  it('срезает и английские хвосты режимов, которые ставит бэкенд сейчас', () => {
+    expect(lessonTopicFromSections([sections([{ title: 'Coffee—yes. Mondays—no. · 1 to 1' }])]))
+      .toBe('Coffee—yes. Mondays—no.')
+    expect(lessonTopicFromSections([sections([{ title: 'Weekend plans · Group' }])]))
+      .toBe('Weekend plans')
+  })
+
+  // Точка-разделитель бывает и в честном названии — такое резать нельзя.
+  it('не режет « · » внутри настоящего названия материала', () => {
+    expect(lessonTopicFromSections([sections([{ title: 'Unit 3 · Present Perfect' }])]))
+      .toBe('Unit 3 · Present Perfect')
+  })
+
   it('идёт по разделам в порядке position, а не в порядке ответа', () => {
     const list = [
       sections([{ title: 'Второй' }], 2),
