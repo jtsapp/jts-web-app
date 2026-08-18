@@ -1,5 +1,6 @@
 import { useI18n } from '../../i18n.jsx'
 import HomeworkFileList from './HomeworkFileList.jsx'
+import HomeworkExercises from './HomeworkExercises.jsx'
 import { ALLOWED_EXTENSIONS, canAttach, canSubmit, homeworkStateKey } from './homeworkFormat.js'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
@@ -50,6 +51,10 @@ export default function HomeworkDetail({ hw, busy, error, onUpload, onRemoveFile
         <h3 className="hw-block__title">{t('homework.task')}</h3>
         <HomeworkFileList files={hw.materials} emptyLabel={t('homework.taskEmpty')} />
       </section>
+
+      {/* Задания, добавленные преподавателем прямо с живого урока. Секции нет,
+          когда их нет: домашка бывает и просто файлом. */}
+      <HomeworkExercises hw={hw} />
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.myAnswer')}</h3>
