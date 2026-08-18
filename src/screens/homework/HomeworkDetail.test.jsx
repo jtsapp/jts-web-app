@@ -42,13 +42,18 @@ describe('HomeworkDetail', () => {
     expect(screen.getByRole('button', { name: /отправить на проверку/i }).disabled).toBe(false)
   })
 
-  // Работа на проверке — файлы уже у преподавателя, второй раз её не отправляют.
-  it('отправленную работу нельзя отправить снова, но файлы ещё видны', () => {
+  // Работа на проверке зафиксирована: файлы видны, но не меняются — оценка
+  // должна встать под тем составом, который открыл преподаватель (то же
+  // правило держит бэкенд).
+  it('отправленная работа закрыта: ни загрузки, ни удаления, файлы видны', () => {
     const { container } = renderDetail({
       hw: hw({ status: 'SUBMITTED', submissions: [{ id: 9, fileName: 'answer.jpg', url: 'u' }] }),
     })
-    expect(screen.getByRole('button', { name: /отправить на проверку/i }).disabled).toBe(true)
+    expect(screen.queryByRole('button', { name: /отправить на проверку/i })).toBeNull()
+    expect(container.querySelector('.hw-upload')).toBeNull()
+    expect(container.querySelector('.hw-file__remove')).toBeNull()
     expect(container.querySelectorAll('.hw-file')).toHaveLength(2)
+    expect(screen.getByText('Работа у преподавателя — ждём проверки')).toBeTruthy()
   })
 
   it('после проверки нельзя ни приложить файл, ни удалить его', () => {

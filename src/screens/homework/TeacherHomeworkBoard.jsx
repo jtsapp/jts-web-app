@@ -50,11 +50,14 @@ export default function TeacherHomeworkBoard({ token }) {
   const selected = sorted.find((hw) => hw.id === selectedId) || null
 
   // Открывая работу, подставляем то, что уже написано и поставлено: отзыв
-  // правится, а не пишется заново с нуля.
+  // правится, а не пишется заново с нуля. Оценку вне шкалы 1–5 (работы,
+  // оценённые до её введения, хранят и 7, и 100) не подставляем: бэкенд такую
+  // больше не примет (@Min/@Max в GradeHomeworkRequest), и «Поставить оценку»
+  // улетала бы в 400 — пусть кнопка ждёт выбранный заново балл.
   const open = (hw) => {
     setSelectedId(hw.id)
     setComment(hw.teacherComment || '')
-    setGrade(hw.grade ?? null)
+    setGrade(GRADES.includes(hw.grade) ? hw.grade : null)
     setError(null)
     setDone(null)
   }

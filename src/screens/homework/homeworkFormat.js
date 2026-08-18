@@ -39,14 +39,19 @@ export function isOverdue(hw, now = new Date()) {
   return new Date(y, m - 1, d + 1) <= now
 }
 
-/** Пока работу не проверили, ученик добавляет и убирает свои файлы. */
+/**
+ * Файлы редактируются только пока работа у ученика: до сдачи (ASSIGNED) и
+ * после возврата (NEEDS_REVISION). Сданная работа зафиксирована — оценка
+ * должна встать под тем составом файлов, который видел преподаватель
+ * (то же правило держит бэкенд, assertOpenForSubmission).
+ */
 export function canAttach(hw) {
-  return !!hw && hw.status !== 'COMPLETED'
+  return !!hw && (hw.status === 'ASSIGNED' || hw.status === 'NEEDS_REVISION')
 }
 
 /** Отправлять на проверку нечего, пока не приложен хотя бы один файл. */
 export function canSubmit(hw) {
-  return canAttach(hw) && hw.status !== 'SUBMITTED' && (hw.submissions?.length ?? 0) > 0
+  return canAttach(hw) && (hw.submissions?.length ?? 0) > 0
 }
 
 /** Сколько работ ждут ученика — цифра на входе с главной. */
@@ -64,4 +69,14 @@ const REVIEW_ORDER = { SUBMITTED: 0, ASSIGNED: 1, NEEDS_REVISION: 2, COMPLETED: 
 
 export function reviewOrder(hw) {
   return REVIEW_ORDER[hw?.status] ?? REVIEW_ORDER.ASSIGNED
+}
+
+// Порядок в списке ученика — тоже по тому, чья очередь: возвращённое на
+// доработку ждёт его срочнее всего, затем просто заданное; сданное и
+// проверенное не ждут ничего. Внутри группы порядок бэкенда (новые сначала)
+// сохраняется — sort стабильный.
+const STUDENT_ORDER = { NEEDS_REVISION: 0, ASSIGNED: 1, SUBMITTED: 2, COMPLETED: 3 }
+
+export function studentOrder(hw) {
+  return STUDENT_ORDER[hw?.status] ?? STUDENT_ORDER.ASSIGNED
 }

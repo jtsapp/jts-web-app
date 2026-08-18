@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   fileExtension, isAllowedFile, homeworkStateKey, isOverdue,
-  canAttach, canSubmit, pendingCount, reviewOrder,
+  canAttach, canSubmit, pendingCount, reviewOrder, studentOrder,
 } from './homeworkFormat.js'
 
 const hw = (over = {}) => ({ id: 1, status: 'ASSIGNED', submissions: [], materials: [], ...over })
@@ -46,9 +46,12 @@ describe('homeworkStateKey', () => {
 })
 
 describe('что ученику можно делать', () => {
-  it('до проверки можно прикладывать файлы, после — нет', () => {
+  it('файлы редактируются, только пока работа у ученика', () => {
     expect(canAttach(hw())).toBe(true)
     expect(canAttach(hw({ status: 'NEEDS_REVISION' }))).toBe(true)
+    // Сданная работа зафиксирована — оценка встаёт под тем составом файлов,
+    // который видел преподаватель (то же правило на бэкенде).
+    expect(canAttach(hw({ status: 'SUBMITTED' }))).toBe(false)
     expect(canAttach(hw({ status: 'COMPLETED' }))).toBe(false)
     expect(canAttach(null)).toBe(false)
   })
@@ -76,6 +79,22 @@ describe('reviewOrder', () => {
   it('незнакомый статус не улетает в конец списка', () => {
     expect(reviewOrder({ status: 'WAT' })).toBe(reviewOrder({ status: 'ASSIGNED' }))
     expect(reviewOrder(null)).toBe(reviewOrder({ status: 'ASSIGNED' }))
+  })
+})
+
+describe('studentOrder', () => {
+  // Список ученика: сверху то, что ждёт его действий, внизу — проверенное.
+  it('возврат на доработку первее заданного, проверенное — последним', () => {
+    const order = ['COMPLETED', 'SUBMITTED', 'ASSIGNED', 'NEEDS_REVISION']
+      .map((status) => ({ status }))
+      .sort((a, b) => studentOrder(a) - studentOrder(b))
+      .map((x) => x.status)
+    expect(order).toEqual(['NEEDS_REVISION', 'ASSIGNED', 'SUBMITTED', 'COMPLETED'])
+  })
+
+  it('незнакомый статус читается как заданное', () => {
+    expect(studentOrder({ status: 'WAT' })).toBe(studentOrder({ status: 'ASSIGNED' }))
+    expect(studentOrder(null)).toBe(studentOrder({ status: 'ASSIGNED' }))
   })
 })
 

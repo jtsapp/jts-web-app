@@ -27,6 +27,11 @@ vi.mock('../api.js', () => ({
   attachHomeworkAnswer: vi.fn(async () => withAnswer),
   removeHomeworkAnswer: vi.fn(async () => ASSIGNMENT),
   submitHomework: vi.fn(async () => ({ ...withAnswer, status: 'SUBMITTED' })),
+  // Задания с живых уроков (назначенные материалы) — по умолчанию их нет.
+  getMyMaterialAssignments: vi.fn(async () => []),
+  startMaterialAssignment: vi.fn(async () => ({ id: 77 })),
+  materialAssignmentRenderUrl: vi.fn((materialId, assignmentId, token, sessionId) =>
+    `https://api.example/student/materials/${materialId}/render?assignmentId=${assignmentId}&sessionId=${sessionId}`),
 }))
 
 import HomeworkPage from './HomeworkPage.jsx'
@@ -148,5 +153,47 @@ describe('HomeworkPage', () => {
     api.getMyHomework.mockRejectedValueOnce(new Error('nope'))
     const { container } = renderPage()
     await waitFor(() => expect(container.querySelector('.hw__error')).not.toBeNull())
+  })
+
+  // --- Задания с живых уроков: материалы, назначенные преподавателем как ДЗ ---
+
+  const MATERIAL = {
+    id: 5, materialId: 12, materialTitle: 'Present Perfect · practice test',
+    materialType: 'INTERACTIVE_HTML', isGraded: true, fileUrl: 'https://files.example/m.html',
+    dueDate: '2026-08-25', teacherScore: null, teacherFeedback: null, gradedAt: null,
+  }
+
+  it('назначенный материал виден в общем списке с меткой «Задание с урока»', async () => {
+    api.getMyMaterialAssignments.mockResolvedValueOnce([MATERIAL])
+    const { container } = renderPage()
+    await waitFor(() => expect(screen.getByText('Present Perfect · practice test')).toBeTruthy())
+    expect(screen.getAllByText('Задание с урока').length).toBeGreaterThan(0)
+    // Обычная домашка никуда не делась.
+    expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
+  })
+
+  it('интерактив открывается через сессию: start, затем render в новой вкладке', async () => {
+    api.getMyMaterialAssignments.mockResolvedValueOnce([MATERIAL])
+    const opened = []
+    vi.stubGlobal('open', (url) => { opened.push(url); return null })
+
+    const { container } = renderPage()
+    await waitFor(() => expect(screen.getByText('Present Perfect · practice test')).toBeTruthy())
+    // Открываем карточку материала из списка.
+    fireEvent.click(screen.getAllByText('Present Perfect · practice test')[0])
+    fireEvent.click(await screen.findByRole('button', { name: 'Открыть задание' }))
+
+    await waitFor(() => expect(api.startMaterialAssignment).toHaveBeenCalledWith('TOK', 5))
+    expect(opened).toHaveLength(1)
+    expect(opened[0]).toContain('/student/materials/12/render')
+    expect(opened[0]).toContain('sessionId=77')
+    vi.unstubAllGlobals()
+  })
+
+  it('падение списка назначений не ломает обычную домашку', async () => {
+    api.getMyMaterialAssignments.mockRejectedValueOnce(new Error('403'))
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelector('.hw-card')).not.toBeNull())
+    expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
   })
 })

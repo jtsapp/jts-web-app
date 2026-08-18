@@ -110,6 +110,18 @@ describe('TeacherHomeworkBoard', () => {
     await waitFor(() => expect(container.querySelector('.hw__error')).not.toBeNull())
   })
 
+  // Работы, оценённые до шкалы 1–5, хранят и 7, и 100. Такой балл бэкенд
+  // больше не примет (@Min/@Max) — он не подставляется, и «Поставить оценку»
+  // ждёт заново выбранную оценку вместо гарантированного 400.
+  it('старая оценка вне шкалы не подставляется в кнопки', async () => {
+    api.getHomeworkBoard.mockResolvedValueOnce([{ ...graded, id: 4, grade: 100 }])
+    const { container } = renderBoard()
+    await openFirst(container)
+
+    expect(container.querySelector('.hw-grade-btn--on')).toBeNull()
+    expect(screen.getByRole('button', { name: /поставить оценку/i }).disabled).toBe(true)
+  })
+
   it('когда у учеников нет работ — честное пустое состояние', async () => {
     api.getHomeworkBoard.mockResolvedValueOnce([])
     const { container } = renderBoard()

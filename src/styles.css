@@ -6861,6 +6861,8 @@ textarea {
 }
 
 .hw-badge { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; background: #e6ecff; color: #2b57d6; }
+/* Метка «Задание с урока» — материал, назначенный преподавателем как ДЗ. */
+.hw-card__lesson { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; background: #f0e9ff; color: var(--purple); }
 .hw-badge--overdue { background: #fdecd2; color: #b26a12; }
 .hw-badge--submitted { background: #d3ecff; color: #0b74c4; }
 .hw-badge--needsRevision { background: #ffe0e0; color: #b02a2a; }

@@ -26,6 +26,9 @@ export default function HomeworkList({ items, selectedId, onSelect }) {
               <span className="hw-card__title">{hw.title}</span>
               <span className="hw-card__meta">
                 <span className={`hw-badge hw-badge--${stateKey}`}>{t(`homework.status.${stateKey}`)}</span>
+                {/* Задание с живого урока (назначенный материал) помечается отдельно:
+                    у него другой сценарий — решать в самом материале, без файлов ответа. */}
+                {hw.kind === 'material' && <span className="hw-card__lesson">{t('homework.lessonTask')}</span>}
                 {due && <span className="hw-card__due">{t('homework.dueShort', { date: due })}</span>}
                 {hw.grade != null && <span className="hw-card__grade">{hw.grade}</span>}
               </span>

@@ -18,10 +18,12 @@ const REVIEWED = {
 }
 
 /** Логин ученика + бэкенд, отвечающий заготовленными данными. */
-async function signIn(page, homework) {
+async function signIn(page, homework, assignments = []) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сакен', role: 'STUDENT', languageLevel: 'B1' } })))
   await page.route('**/admin/homework/my', (r) => r.fulfill(json(homework)))
+  // Задания с живых уроков (назначенные материалы) — вторая половина списка.
+  await page.route('**/student/assignments', (r) => r.fulfill(json(assignments)))
 }
 
 test('ученик скачивает задание, прикладывает файл и отправляет работу', async ({ page }) => {
@@ -57,4 +59,20 @@ test('проверенная работа показывает оценку и �
   await expect(page.getByText('Отличная работа, следи за артиклями')).toBeVisible()
   await expect(page.locator('.hw-upload__input')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Отправить на проверку' })).toHaveCount(0)
+})
+
+test('задание с живого урока видно в списке и открывается кнопкой', async ({ page }) => {
+  await signIn(page, [REVIEWED], [{
+    id: 5, materialId: 12, materialTitle: 'Present Perfect · practice test',
+    materialType: 'INTERACTIVE_HTML', isGraded: true, fileUrl: 'https://files.example/m.html',
+    dueDate: '2026-08-25', teacherScore: null, teacherFeedback: null, gradedAt: null,
+  }])
+
+  await page.goto('/?screen=homework')
+
+  // Назначенный материал стоит выше проверенной работы (ждёт действий ученика).
+  await expect(page.getByText('Present Perfect · practice test').first()).toBeVisible()
+  await expect(page.getByText('Задание с урока').first()).toBeVisible()
+  await page.getByText('Present Perfect · practice test').first().click()
+  await expect(page.getByRole('button', { name: 'Открыть задание' })).toBeVisible()
 })

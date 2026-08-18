@@ -164,6 +164,32 @@ export function submitHomework(token, id) {
   return authPut(`/admin/homework/${id}/submit`, token)
 }
 
+// Задания с живых уроков: преподаватель назначает материал через админку
+// («задать как ДЗ», MaterialAssignment), ученик видит назначенное здесь же,
+// в «Домашней работе». Ничего нового на бэкенде — это тот же студенческий
+// фасад, которым пользуется web-admin (/student/**).
+
+export function getMyMaterialAssignments(token) {
+  return authGet('/student/assignments', token)
+}
+
+// Интерактив с проверкой открывается только при живой сессии — без неё
+// ответы из открытой вкладки не дойдут до преподавателя. Повторный вызов
+// возвращает уже существующую сессию, так что дёргать можно при каждом открытии.
+export function startMaterialAssignment(token, assignmentId) {
+  return authPost(`/student/assignments/${assignmentId}/start`, token)
+}
+
+// Рендер интерактивного материала открывается навигацией браузера (новая
+// вкладка), а не fetch'ем — токен уезжает в query: JwtAuthenticationFilter
+// принимает ?access_token= ровно для этого пути (тот же приём, что в
+// lessonMaterialRenderUrl).
+export function materialAssignmentRenderUrl(materialId, assignmentId, token, sessionId) {
+  const params = new URLSearchParams({ assignmentId: String(assignmentId), mode: 'live', access_token: token || '' })
+  if (sessionId != null) params.set('sessionId', String(sessionId))
+  return `${BASE}/student/materials/${materialId}/render?${params.toString()}`
+}
+
 // Проверка домашних работ преподавателем. Бэкенд сам оставляет в выдаче только
 // его учеников (isVisibleToCurrentUser), поэтому фильтры здесь не нужны.
 export function getHomeworkBoard(token) {
