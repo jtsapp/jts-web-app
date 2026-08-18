@@ -7,6 +7,7 @@ import {
   transcribeWav,
   transcribeWavFast,
   resetFastTranscriptionCache,
+  assessAgainstReference,
 } from './azure-pronunciation.js'
 import { sonioxBudgetMs } from '../soniox-stt.js'
 
@@ -19,13 +20,23 @@ vi.mock('microsoft-cognitiveservices-speech-sdk', () => {
       this.recognized = null
       this.canceled = null
       this.sessionStopped = null
+      this.mode = null
       recognizers.push(this)
     }
     startContinuousRecognitionAsync(ok) {
+      this.mode = 'continuous'
       ok?.()
     }
     stopContinuousRecognitionAsync(ok) {
       ok?.()
+    }
+    recognizeOnceAsync(ok) {
+      this.mode = 'once'
+      ok?.({
+        reason: 3,
+        text: 'short phrase',
+        properties: { getProperty: () => '{}' },
+      })
     }
     close() {}
   }
@@ -35,6 +46,21 @@ vi.mock('microsoft-cognitiveservices-speech-sdk', () => {
     AudioInputStream: { createPushStream: () => ({ write() {}, close() {} }) },
     AudioConfig: { fromStreamInput: () => ({}) },
     SpeechRecognizer,
+    PronunciationAssessmentConfig: class {
+      applyTo() {}
+    },
+    PronunciationAssessmentGradingSystem: { HundredMark: 1 },
+    PronunciationAssessmentGranularity: { Phoneme: 3 },
+    PronunciationAssessmentResult: {
+      fromResult: () => ({
+        pronunciationScore: 90,
+        accuracyScore: 92,
+        fluencyScore: 88,
+        completenessScore: 100,
+        prosodyScore: 85,
+      }),
+    },
+    PropertyId: { SpeechServiceResponse_JsonResult: 'json' },
     ResultReason: { RecognizedSpeech: 3 },
     CancellationReason: { Error: 1, EndOfStream: 0 },
   }
@@ -81,6 +107,52 @@ describe('sonioxBudgetMs', () => {
   })
   it('короткой записи хватает запаса', () => {
     expect(sonioxBudgetMs(wavOf(3))).toBeGreaterThanOrEqual(30_000)
+  })
+})
+
+describe('assessAgainstReference (Shadowing)', () => {
+  // Замер на живом Azure: single-shot слушает ~30 с и молча обрывает остаток —
+  // 58 с речи на эталон в 102 слова дали 57 слов и completeness 56 вместо 100.
+  const KEY = process.env.AZURE_SPEECH_KEY
+  const REGION = process.env.AZURE_SPEECH_REGION
+
+  beforeEach(() => {
+    recognizers.length = 0
+    process.env.AZURE_SPEECH_KEY = 'test-key'
+    process.env.AZURE_SPEECH_REGION = 'eastus'
+  })
+  afterEach(() => {
+    if (KEY === undefined) delete process.env.AZURE_SPEECH_KEY
+    else process.env.AZURE_SPEECH_KEY = KEY
+    if (REGION === undefined) delete process.env.AZURE_SPEECH_REGION
+    else process.env.AZURE_SPEECH_REGION = REGION
+  })
+
+  it('короткую фразу оценивает одним выстрелом — он быстрее', async () => {
+    const res = await assessAgainstReference(wavOf(8), 'short phrase')
+    expect(recognizers[0].mode).toBe('once')
+    expect(res.completeness).toBe(100)
+  })
+
+  it('длинную фразу ведёт через continuous, иначе хвост уйдёт в Omission', async () => {
+    const promise = assessAgainstReference(wavOf(40), 'long reference text')
+    await vi.waitFor(() => expect(recognizers.length).toBe(1))
+    const rec = recognizers[0]
+    expect(rec.mode).toBe('continuous')
+    rec.recognized(null, {
+      result: { reason: 3, text: 'long reference text', properties: { getProperty: () => '{}' } },
+    })
+    rec.sessionStopped()
+    const res = await promise
+    expect(res.transcript).toBe('long reference text')
+    expect(res.completeness).toBe(100)
+  })
+
+  it('на записи без речи отдаёт null — вызывающий подставит mock', async () => {
+    const promise = assessAgainstReference(wavOf(40), 'long reference text')
+    await vi.waitFor(() => expect(recognizers.length).toBe(1))
+    recognizers[0].sessionStopped()
+    await expect(promise).resolves.toBeNull()
   })
 })
 
