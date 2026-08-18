@@ -27,6 +27,8 @@ import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { knowsFocusTarget } from './live/followFocus.js'
+import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
+import { liveLessonSteps } from './workspace/liveSteps.js'
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
@@ -72,6 +74,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [catalogLesson, setCatalogLesson] = useState(null)
   const [activeStepId, setActiveStepId] = useState(null)
   const [answers, setAnswers] = useState({})
+  // Несмотря на название — не id шагов, а составные ключи practice-карточек
+  // (`practiceBlockKey` в LessonContent): один шаг урока несёт по несколько
+  // независимых упражнений подряд, и «Проверить» должно снимать блокировку
+  // только с того, где нажали. Имя не переименовано, чтобы не разъезжаться с
+  // полем `checked` в сохранённом прогрессе (stepProgress.js) — формат тот же
+  // массив строк, просто теперь не голые id шагов.
   const [checkedSteps, setCheckedSteps] = useState(() => new Set())
   // Шаг, на котором стоит преподаватель. Приходит только событием focus, поэтому
   // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
@@ -191,6 +199,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Через useMemo, а не выражением: пустой массив создавался бы заново на каждый
   // рендер и обнулял мемоизацию статусов ниже.
   const lessonSteps = useMemo(() => catalogLesson?.steps || [], [catalogLesson])
+
+  // Урок ученика — очередь экранов (Figma «pitch JTS» → Уроки → Онлайн-уроки):
+  // одно задание на экран, прогресс сверху, одна кнопка снизу. Документ урока с
+  // маршрутом слева остаётся преподавателю: он ведёт занятие и смотрит работу
+  // ученика целиком, ему нужен весь шаг сразу, а не по одному вопросу.
+  const playerSteps = useMemo(() => liveLessonSteps(catalogLesson), [catalogLesson])
   const activeStepIndex = lessonSteps.findIndex((s) => s.id === activeStepId)
   const activeStep = activeStepIndex >= 0 ? lessonSteps[activeStepIndex] : null
 
@@ -236,6 +250,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const studentStepId = isStaff ? peerStepId : activeStepId
   const lessonTeacherStepId = isStaff ? activeStepId : peerStepId
 
+  // Ученик пролистнул экран плеера. Плеер знает только свой плоский индекс, а
+  // маршрут, бегунки и трансляция живут на шагах урока — переводим через
+  // stepId, который конвертер положил в каждый экран. Несколько экранов подряд
+  // приходятся на один шаг урока, поэтому шлём только смену шага, а не каждый
+  // клик «Продолжить»: иначе преподаватель получал бы поток одинаковых событий.
+  function handlePlayerStep(index) {
+    const stepId = playerSteps[index]?.stepId
+    if (!stepId || stepId === activeStepId) return
+    setActiveStepId(stepId)
+    persistProgress({ answers, checkedSteps, stepId })
+    sendStepProgress({
+      stepId,
+      sectionId: activeSectionId,
+      materialId: activeMaterial?.materialId ?? null,
+    })
+  }
+
   function handleAnswer(questionId, value) {
     const next = { ...answers, [questionId]: value }
     setAnswers(next)
@@ -252,14 +283,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     })
   }
 
-  function handleCheckStep() {
+  // `key` — составной ключ конкретной practice-карточки (LessonContent
+  // передаёт его в onCheck), а не id шага: см. комментарий у checkedSteps.
+  function handleCheckStep(key) {
     const next = new Set(checkedSteps)
-    next.add(activeStepId)
+    next.add(key)
     setCheckedSteps(next)
     persistProgress({ answers, checkedSteps: next, stepId: activeStepId })
     sendStepProgress({
       stepId: activeStepId,
       checked: true,
+      checkedKey: key,
       sectionId: activeSectionId,
       materialId: activeMaterial?.materialId ?? null,
     })
@@ -375,11 +409,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       if (evt.questionId != null) {
         setStudentAnswers((prev) => ({ ...prev, [evt.questionId]: parseAnswer(evt.value) }))
       }
-      if (evt.checked && evt.stepId != null) {
+      if (evt.checked && evt.checkedKey != null) {
         setStudentCheckedSteps((prev) => {
-          if (prev.has(evt.stepId)) return prev
+          if (prev.has(evt.checkedKey)) return prev
           const next = new Set(prev)
-          next.add(evt.stepId)
+          next.add(evt.checkedKey)
           return next
         })
       }
@@ -724,15 +758,30 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               onAction={() => setActiveStepId(peerStepId)}
                             />
                           )}
-                          <LessonContent
-                            step={activeStep}
-                            // Преподаватель смотрит работу ученика, ученик — свою.
-                            answers={isStaff ? studentAnswers : answers}
-                            checked={isStaff ? studentCheckedSteps.has(activeStepId) : checkedSteps.has(activeStepId)}
-                            onAnswer={handleAnswer}
-                            onCheck={handleCheckStep}
-                            readOnly={contentReadOnly}
-                          />
+                          {/* Плеер — только когда конвертеру было из чего собрать
+                              очередь. Шаг урока может не дать ни одного экрана
+                              (одна декоративная плашка, вопросы неизвестного
+                              типа) — тогда плеер отрисовал бы пустоту, и ученик
+                              остался бы без задания. В этом случае показываем
+                              документ, как раньше. */}
+                          {isStaff || playerSteps.length === 0 ? (
+                            <LessonContent
+                              step={activeStep}
+                              // Преподаватель смотрит работу ученика, ученик — свою.
+                              answers={isStaff ? studentAnswers : answers}
+                              checkedKeys={isStaff ? studentCheckedSteps : checkedSteps}
+                              onAnswer={handleAnswer}
+                              onCheck={handleCheckStep}
+                              readOnly={contentReadOnly}
+                            />
+                          ) : (
+                            <CourseStepPlayer
+                              bare
+                              steps={playerSteps}
+                              level={catalogLesson?.level}
+                              onStep={handlePlayerStep}
+                            />
+                          )}
                         </>
                       ) : view === 'loading' ? (
                         <p className="live__status-msg">{t('schedule.loading')}</p>
@@ -753,8 +802,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       )}
 
                       {/* Урок проходится кнопками под заданием, а не только
-                          кликом по маршруту сбоку — см. StepNav. */}
-                      <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
+                          кликом по маршруту сбоку — см. StepNav.
+
+                          У ученика этих кнопок нет: он идёт по очереди экранов,
+                          и её листает «Продолжить» самого плеера. Две навигации
+                          на одном экране противоречили друг другу — «Далее»
+                          перепрыгивала через весь шаг урока, мимо заданий,
+                          которые плеер только собирался показать. */}
+                      {isStaff && (
+                        <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
+                      )}
                     </div>
 
                     <div className="lw-live-aside">

@@ -82,10 +82,12 @@ for (const level of LEVELS) {
       await expect(unit1.last()).toHaveAttribute('aria-label', /Unit Test/)
     })
 
-    test('оболочка урока: стадия, прогресс и три сердца', async ({ page }) => {
+    test('оболочка урока: стадия и прогресс', async ({ page }) => {
       await openLesson(page, level)
       await expect(page.locator('.cp-bar__place b')).not.toBeEmpty()
-      await expect(page.locator('.cp-hud__hearts b')).toHaveText('3')
+      // Сердец у урока нет: ошибка стоит монет и процента в итогах, но не
+      // выбрасывает из урока (см. комментарий в CourseStepPlayer).
+      await expect(page.locator('.cp-hud__hearts')).toHaveCount(0)
       await expect(page.locator('.cp-hud__fill')).toHaveAttribute('style', /width/)
       await expect(page.locator('.cp-cta')).toBeVisible()
     })
@@ -104,7 +106,7 @@ for (const level of LEVELS) {
       await expect(cards.first().locator('.cp-word__back')).toBeVisible()
     })
 
-    test('верный ответ даёт монеты, неверный забирает сердце', async ({ page }) => {
+    test('верный ответ даёт монеты, неверный подсвечивается красным', async ({ page }) => {
       await openLesson(page, level)
       // Доходим до первого оценённого шага.
       for (let i = 0; i < 6 && !(await page.locator('.cp-choice').count()); i++) {
@@ -113,22 +115,20 @@ for (const level of LEVELS) {
       }
       await expect(page.locator('.cp-choice').first()).toBeVisible()
 
-      // Отвечаем заведомо неверно (кнопка не с правильным ответом) — сердце −1.
+      // Отвечаем первым вариантом: он может оказаться и верным, и неверным —
+      // проверяем обе развилки плашки результата.
       const right = await page.locator('.cp-step__prompt').textContent()
       expect(right).toBeTruthy()
       await page.locator('.cp-choice').first().click()
       await page.locator('.cp-cta:not([disabled])').click()
       await expect(page.locator('.cp-fb')).toBeVisible()
       const cls = await page.locator('.cp-fb').getAttribute('class')
-      const hearts = await page.locator('.cp-hud__hearts b').textContent()
       if (cls.includes('is-no')) {
-        expect(hearts).toBe('2')
         // В макете правильный вариант после ошибки не раскрывается: красным
         // подсвечен только выбранный, остальные кнопки остаются белыми.
         await expect(page.locator('.cp-choice.is-wrong')).toHaveCount(1)
         await expect(page.locator('.cp-choice.is-right')).toHaveCount(0)
       } else {
-        expect(hearts).toBe('3')
         await expect(page.locator('.cp-fb__coin')).toHaveText('+10')
       }
     })

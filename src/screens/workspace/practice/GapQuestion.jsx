@@ -41,6 +41,11 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
           {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}
         </p>
       )}
+      {/* Разбор из `data-why` курса — правило, которое проверяет задание. Показываем
+          только после ошибки: до неё это была бы подсказка с ответом. */}
+      {checked && !userCorrect && question.why && (
+        <p className="lw-q__why">{question.why}</p>
+      )}
     </div>
   )
 }

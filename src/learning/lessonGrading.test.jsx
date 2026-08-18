@@ -85,14 +85,14 @@ describe('CourseStepPlayer — впиши пропущенное', () => {
 
   it('принимает полную форму «do not» там, где в данных «don’t»', () => {
     playSteps(steps)
-    fireEvent.change(screen.getByPlaceholderText('…'), { target: { value: 'do not' } })
+    fireEvent.change(screen.getByPlaceholderText('Введите ответ'), { target: { value: 'do not' } })
     click(/проверить/i)
     expect(screen.queryByText(WRONG)).toBeNull()
   })
 
   it('чужой ответ остаётся ошибкой', () => {
     playSteps(steps)
-    fireEvent.change(screen.getByPlaceholderText('…'), { target: { value: 'does' } })
+    fireEvent.change(screen.getByPlaceholderText('Введите ответ'), { target: { value: 'does' } })
     click(/проверить/i)
     expect(screen.getByText(WRONG)).toBeTruthy()
   })

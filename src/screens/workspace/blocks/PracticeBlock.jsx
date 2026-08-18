@@ -3,18 +3,25 @@ import ChoiceQuestion from '../practice/ChoiceQuestion.jsx'
 import ChipsQuestion from '../practice/ChipsQuestion.jsx'
 import GapQuestion from '../practice/GapQuestion.jsx'
 import MatchQuestion from '../practice/MatchQuestion.jsx'
+import OrderQuestion from '../practice/OrderQuestion.jsx'
+import MultiQuestion from '../practice/MultiQuestion.jsx'
+import PickQuestion from '../practice/PickQuestion.jsx'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
   chips: ChipsQuestion,
   gap: GapQuestion,
   match: MatchQuestion,
+  order: OrderQuestion,
+  multi: MultiQuestion,
+  pick: PickQuestion,
 }
 
 // Карточка практики: заголовок + подсказка, список вопросов, кнопка
-// «Проверить» внизу. `checked` — уже вычисленный родителем флаг (весь шаг
-// проверен хотя бы раз) — прокидывается в вопросы как есть. Повторное
-// нажатие «Проверить» разрешено (просто снова вызывает `onCheck(block)`).
+// «Проверить» внизу. `checked` — уже вычисленный родителем флаг для ЭТОЙ
+// карточки (см. `practiceBlockKey` в LessonContent) — прокидывается в вопросы
+// как есть. Повторное нажатие «Проверить» разрешено (просто снова вызывает
+// `onCheck(block)`; чей это ключ — знает только родитель).
 export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly }) {
   const { t } = useI18n()
 

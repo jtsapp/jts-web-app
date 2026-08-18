@@ -298,14 +298,24 @@
   object-fit: cover;
   display: block;
 }
+/* Карточка без картинки (у A1 их нет в источнике): слово печатается один раз и
+   крупно, на сиреневой плашке макета — иначе оно дублировалось подписью снизу,
+   а сама плашка читалась как «картинка не загрузилась». */
 .cp-word__noimg {
   display: grid;
   place-items: center;
   height: 100%;
-  padding: 12px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #9047ff;
+  padding: 16px 12px;
+  background: linear-gradient(160deg, #f3ecff 0%, #e6dbff 100%);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  color: #6f2fd6;
+  hyphens: auto;
+}
+.cp-word.is-noimg .cp-word__label {
+  display: none;
 }
 /* Оборот накрывает лицевую сторону: он живёт отдельным блоком рядом с кнопкой
    переворота, потому что внутри него свои кнопки — «В словарь» и звук. */
@@ -333,6 +343,16 @@
 .cp-word__back > :not(.cp-word__unflip) {
   position: relative;
   z-index: 1;
+}
+/* Текст оборота кликов не перехватывает: он лежит поверх кнопки закрытия и
+   занимает почти всю карточку — тап по центру (по переводу) не закрывал её, и
+   карточка выглядела залипшей. Кликабельными остаются только сами кнопки. */
+.cp-word__head,
+.cp-word__trs {
+  pointer-events: none;
+}
+.cp-word__acts {
+  pointer-events: auto;
 }
 .cp-word__head b {
   display: block;
@@ -1230,4 +1250,183 @@
   font-weight: 700;
   color: #9d9d9d;
   cursor: pointer;
+}
+
+/* ═══════════ Мобильный урок по макету (Figma, «Веб-версия мобилка» →
+   «Обучение», кадры 440×956) ═══════════
+
+   Идёт последним намеренно: перекрывает мобильные правила выше. В макете урок
+   занимает экран целиком — своя полоса сверху (крестик, стадия, словарь),
+   поля 16 и одна кнопка снизу во всю ширину. */
+@media (max-width: 760px) {
+  .cp {
+    min-height: 100dvh;
+  }
+
+  /* Полоса урока: обе кнопки — только значки в круге 36, между ними стадия и
+     название. Подписи прячем, а не удаляем: на десктопе они остаются. */
+  .cp-bar {
+    gap: 8px;
+    height: 69px;
+    padding: 16px;
+  }
+  .cp-bar__exit,
+  .cp-bar__dict {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .cp-bar__exit {
+    border-radius: 50%;
+  }
+  .cp-bar__label {
+    display: none;
+  }
+  .cp-bar__place {
+    flex: 1;
+    min-width: 0;
+  }
+  .cp-bar__place b {
+    font-size: 16px;
+  }
+  .cp-bar__place span {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  /* Тело: поля 16, между полосой прогресса и вопросом — 32 (в макете это
+     отступ авто-лэйаута, у нас — margin самого вопроса). */
+  .cp-scroll {
+    padding: 16px 16px 32px;
+  }
+  .cp-hud {
+    width: 100%;
+    height: 38px;
+    padding: 4px 4px 4px 12px;
+  }
+  .cp-step {
+    margin-top: 32px;
+    gap: 6px;
+  }
+  /* Размеры вопроса в макете те же, что на десктопе (32 фиолетовым и 24
+     тёмным): раньше их резали до 26/20, и экран выглядел бледнее макета. */
+  .cp-step__title {
+    font-size: 24px;
+  }
+  .cp-step__prompt {
+    font-size: 32px;
+  }
+
+  /* Карточки «выбери что ближе»: три в ряд, как в макете (128×96 при 440). */
+  .cp-picks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .cp-pick {
+    min-height: 96px;
+    padding: 16px 12px;
+  }
+  .cp-pick__label {
+    font-size: 16px;
+  }
+
+  /* Слова урока: две колонки во всю ширину, картинка 192×245 из макета —
+     значит пропорция, а не фиксированные пиксели. */
+  .cp-words {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .cp-word {
+    width: auto;
+  }
+  .cp-word__face,
+  .cp-word__back {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 192 / 245;
+  }
+  /* В макете подпись карточки с прописной («Like»), в данных курса слово
+     лежит строчным — как и у карточек «выбери что ближе». */
+  .cp-word__label::first-letter {
+    text-transform: uppercase;
+  }
+
+  /* True/False: в макете это отдельные белые карточки со скруглением 20 и
+     зазором 12, а не одна карточка с разделителями. */
+  .cp-rows {
+    background: none;
+    border-radius: 0;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cp-rows__row {
+    border-top: none;
+    border-radius: 20px;
+    background: #fff;
+    padding: 16px;
+    /* В макете (440) утверждение и пара кнопок стоят в строку — правило выше
+       для узких экранов их складывало. Складываем обратно только там, где
+       строка действительно не помещается (см. блок 400px ниже). */
+    flex-direction: row;
+    align-items: center;
+  }
+  .cp-rows__opts {
+    flex-direction: row;
+  }
+
+  /* Остальные тела заданий на десктопе заданы фиксированной шириной из макета
+     (372, 722, 744…). На телефоне колонка одна и во всю ширину экрана. */
+  .cp-choices,
+  .cp-check,
+  .cp-match,
+  .cp-group,
+  .cp-rows,
+  .cp-order,
+  .cp-write,
+  .cp-model {
+    width: 100%;
+  }
+  .cp-choices.is-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cp-check {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* Кнопка внизу — во всю ширину колонки контента. Растягиваем и подвал: он
+     лежит во флекс-колонке с align-items: center, и сам по себе он шириной с
+     кнопку, а не с экран. */
+  .cp-foot {
+    width: 100%;
+    align-self: stretch;
+    padding: 24px 0 8px;
+  }
+  .cp-cta {
+    width: 100%;
+  }
+  /* Неактивная «Продолжить» в мобильном макете — сиреневая заливка с
+     фиолетовой подписью, а не выцветшая фиолетовая с белой. */
+  .cp-cta.is-go:disabled {
+    opacity: 1;
+    background: #ebdeff;
+    color: #9047ff;
+  }
+}
+
+/* Узкие телефоны (макета под них нет): строка утверждения и две кнопки в ряд
+   уже не помещаются — возвращаем колонку. */
+@media (max-width: 400px) {
+  .cp-rows__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cp-rows__opts {
+    flex-direction: column;
+  }
 }
