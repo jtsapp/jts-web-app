@@ -41,7 +41,10 @@ function budgetPayload(used) {
   }
 }
 
-const MAX_BYTES = 40 * 1024 * 1024 // до ~20 мин 16кГц mono WAV (целый отрывок)
+// ~15 минут 16кГц mono WAV — самый длинный отрывок в уроках идёт 14.6 минуты.
+// Было 40 МБ, но лимит обязан оставаться НИЖЕ client_max_body_size на nginx
+// (там 32m): иначе прокси отдаёт голый 413 вместо понятной ошибки роута.
+const MAX_BYTES = 30 * 1024 * 1024
 
 const TIP_SCHEMA = {
   type: 'object',
