@@ -391,6 +391,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       }
       materialFrameRef.current.replay(events)
     },
+    // Teacher only: a student's click/input/change/scroll inside the material they're
+    // both looking at — replay it into the teacher's own iframe so it stays a live
+    // mirror, not just a snapshot from when the page loaded. No pending-buffer here
+    // (unlike onPresent above): a stale mirror event replayed after a late reload
+    // would show a position the student has already moved past.
+    onMirror: (evt) => {
+      if (!isStaff) return
+      if (evt.materialId !== activeMaterial?.materialId) return
+      if (reviewStudentId != null && evt.studentId != null && evt.studentId !== reviewStudentId) return
+      materialFrameRef.current?.mirror?.(evt)
+    },
     onSectionsChanged: loadSections,
     // Учительский канал шагов слушает только преподаватель (см. хук).
     isStaff,
