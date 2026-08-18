@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
@@ -9,8 +10,19 @@ import { sanitizeHtml } from '../sanitizeHtml.js'
 // info-блоков. Экстрактор режет тело упражнения по прямым детям `.ex-body`, и
 // инструкция, подсказка и сама разметка приезжают отдельными блоками — карточка
 // на каждый превращала шаг в стопку белых плашек (см. комментарий там).
-export default function InfoBlock({ block }) {
-  const html = sanitizeHtml(block?.html)
+//
+// memo — не косметика: живой урок поллит статус/чат каждые 5с (LiveLessonPage),
+// и без него этот компонент честно ре-рендерится на каждый тик, хотя `block`
+// не менялся. Ре-рендер заново вызывает dangerouslySetInnerHTML тем же html —
+// и это ВСЁ РАВНО пересобирает поддерево через element.innerHTML = html,
+// уничтожая и создавая заново любой <audio>/<video> внутри: воспроизведение
+// сбрасывалось на 0 каждые ~5 секунд (поймано MutationObserver'ом на реальном
+// уроке — childList меняется 1:1 с интервалом поллинга). React пропускает
+// повторную запись dangerouslySetInnerHTML только когда есть prev-props для
+// сравнения; memo и даёт компоненту этот стабильный prev-render, блокируя
+// ре-рендер целиком, пока сам `block` не изменится по ссылке.
+function InfoBlock({ block }) {
+  const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
   if (!html && !block?.title) return null
 
   return (
@@ -20,3 +32,5 @@ export default function InfoBlock({ block }) {
     </div>
   )
 }
+
+export default memo(InfoBlock)
