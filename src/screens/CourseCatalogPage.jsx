@@ -9,6 +9,14 @@ const TYPE_ICON = { lesson: '📘', video: '▶', review: '🏆', leadin: '★',
 // Пикер живых уроков: опубликованное дерево уровень → юнит → урок из
 // /mobile/course-catalog. Выбор урока отдаёт его id наверх (onOpenLesson),
 // App грузит его в LessonWorkspacePage.
+// Тип урока приходит от бэкенда именем enum'а («LESSON»), а ключи словаря и
+// имена CSS-классов — в нижнем регистре. Без приведения на карточке урока
+// вместо «Урок» показывался сам ключ — «catalog.type.LESSON».
+function typeKey(type) {
+  const key = String(type || '').toLowerCase()
+  return key in TYPE_ICON ? key : 'lesson'
+}
+
 export default function CourseCatalogPage({ userName, userLevel = 'A1', token, onNav, onProfile, onOpenLesson, onBack }) {
   const { t } = useI18n()
   const [levels, setLevels] = useState(null) // null = ещё грузим
@@ -85,9 +93,9 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
                         className="cc-lesson"
                         onClick={() => onOpenLesson?.(lesson.id)}
                       >
-                        <span className={`cc-lesson__type cc-lesson__type--${lesson.type}`}>
-                          <span aria-hidden="true">{TYPE_ICON[lesson.type] || TYPE_ICON.lesson}</span>
-                          {t(`catalog.type.${lesson.type}`)}
+                        <span className={`cc-lesson__type cc-lesson__type--${typeKey(lesson.type)}`}>
+                          <span aria-hidden="true">{TYPE_ICON[typeKey(lesson.type)] || TYPE_ICON.lesson}</span>
+                          {t(`catalog.type.${typeKey(lesson.type)}`)}
                         </span>
                         <span className="cc-lesson__title">{lesson.title}</span>
                         <span className="cc-lesson__open">{t('catalog.open')}</span>
