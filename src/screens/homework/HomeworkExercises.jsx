@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
@@ -12,27 +12,22 @@ export default function HomeworkExercises({ hw }) {
   const { t } = useI18n()
   const exercises = useMemo(() => lessonExercises(hw), [hw])
 
-  const [answers, setAnswers] = useState({})
+  // Ответы поднимаются из хранилища один раз при монтировании: ученик мог
+  // закрыть вкладку на середине. Смену работы отрабатывает не эффект, а key
+  // на компоненте (см. HomeworkDetail) — так состояние пересоздаётся честно,
+  // без лишнего кадра с чужими ответами.
+  const [answers, setAnswers] = useState(() => loadAnswers(hw?.id))
   const [checked, setChecked] = useState(() => new Set())
 
-  // Ответы восстанавливаются на монтировании и при смене работы: ученик мог
-  // закрыть вкладку на середине.
-  useEffect(() => {
-    if (hw?.id != null) setAnswers(loadAnswers(hw.id))
-    setChecked(new Set())
-  }, [hw?.id])
-
-  const onAnswer = useCallback((questionId, value) => {
+  const onAnswer = (questionId, value) => {
     setAnswers((prev) => {
       const next = { ...prev, [questionId]: value }
       if (hw?.id != null) saveAnswers(hw.id, next)
       return next
     })
-  }, [hw?.id])
+  }
 
-  const onCheck = useCallback((key) => {
-    setChecked((prev) => new Set(prev).add(key))
-  }, [])
+  const onCheck = (key) => setChecked((prev) => new Set(prev).add(key))
 
   if (!exercises.length) return null
 

@@ -54,7 +54,7 @@ export default function HomeworkDetail({ hw, busy, error, onUpload, onRemoveFile
 
       {/* Задания, добавленные преподавателем прямо с живого урока. Секции нет,
           когда их нет: домашка бывает и просто файлом. */}
-      <HomeworkExercises hw={hw} />
+      <HomeworkExercises key={hw.id} hw={hw} />
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.myAnswer')}</h3>
