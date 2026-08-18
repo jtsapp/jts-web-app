@@ -1043,6 +1043,11 @@
   gap: 12px;
 }
 
+.lw-vcard-wrap {
+  position: relative;
+  width: 100%;
+}
+
 .lw-vcard {
   all: unset;
   cursor: pointer;
@@ -1050,6 +1055,28 @@
   width: 100%;
   aspect-ratio: 3 / 4;
   perspective: 1200px;
+}
+
+.lw-vcard__speak {
+  all: unset;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--lw-r-pill);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+  font-size: 13px;
+}
+
+.lw-vcard__speak:hover {
+  background: #fff;
 }
 
 .lw-vcard__inner {

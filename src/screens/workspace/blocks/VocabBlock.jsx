@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
+import { speak } from '../../../practice/vocab/audio.js'
 
 /**
  * Колода карточек словаря из урока каталога (`block.type === 'vocab'`).
@@ -34,47 +35,59 @@ export default function VocabBlock({ block }) {
           const key = `${card.word}-${i}`
           const isFlipped = flipped.has(key)
           return (
-            <button
-              key={key}
-              type="button"
-              className={`lw-vcard${isFlipped ? ' is-flipped' : ''}`}
-              onClick={() => toggle(key)}
-              aria-pressed={isFlipped}
-            >
-              <div className="lw-vcard__inner">
-                <div className="lw-vcard__face lw-vcard__front">
-                  {card.imageUrl && <img src={card.imageUrl} alt="" />}
-                  <div className="lw-vcard__word">{card.word}</div>
-                  {card.pos && <div className="lw-vcard__pos">{card.pos}</div>}
-                </div>
-                <div className="lw-vcard__face lw-vcard__back">
-                  <div className="lw-vcard__bhead">
+            // Кнопка озвучки — сосед lw-vcard, не потомок: сама карточка уже
+            // кнопка (клик — переворот), а вложенные <button> — невалидный
+            // HTML и ломают переворот (браузер закрывает внешний тег раньше).
+            <div key={key} className="lw-vcard-wrap">
+              <button
+                type="button"
+                className={`lw-vcard${isFlipped ? ' is-flipped' : ''}`}
+                onClick={() => toggle(key)}
+                aria-pressed={isFlipped}
+              >
+                <div className="lw-vcard__inner">
+                  <div className="lw-vcard__face lw-vcard__front">
+                    {card.imageUrl && <img src={card.imageUrl} alt="" />}
                     <div className="lw-vcard__word">{card.word}</div>
                     {card.pos && <div className="lw-vcard__pos">{card.pos}</div>}
-                    {card.ipa && <div className="lw-vcard__ipa">/{card.ipa}/</div>}
                   </div>
-                  <div className="lw-vcard__bbody">
-                    {card.definition && <div className="lw-vcard__def">{card.definition}</div>}
-                    {(card.translationKz || card.translationRu) && (
-                      <div className="lw-vcard__trs">
-                        {card.translationKz && (
-                          <div className="lw-vcard__tr">
-                            <b>KZ</b>
-                            <span>{card.translationKz}</span>
-                          </div>
-                        )}
-                        {card.translationRu && (
-                          <div className="lw-vcard__tr">
-                            <b>RU</b>
-                            <span>{card.translationRu}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                  <div className="lw-vcard__face lw-vcard__back">
+                    <div className="lw-vcard__bhead">
+                      <div className="lw-vcard__word">{card.word}</div>
+                      {card.pos && <div className="lw-vcard__pos">{card.pos}</div>}
+                      {card.ipa && <div className="lw-vcard__ipa">/{card.ipa}/</div>}
+                    </div>
+                    <div className="lw-vcard__bbody">
+                      {card.definition && <div className="lw-vcard__def">{card.definition}</div>}
+                      {(card.translationKz || card.translationRu) && (
+                        <div className="lw-vcard__trs">
+                          {card.translationKz && (
+                            <div className="lw-vcard__tr">
+                              <b>KZ</b>
+                              <span>{card.translationKz}</span>
+                            </div>
+                          )}
+                          {card.translationRu && (
+                            <div className="lw-vcard__tr">
+                              <b>RU</b>
+                              <span>{card.translationRu}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
+              </button>
+              <button
+                type="button"
+                className="lw-vcard__speak"
+                onClick={() => speak(card.word)}
+                aria-label={t('lesson.play')}
+              >
+                🔊
+              </button>
+            </div>
           )
         })}
       </div>
