@@ -33,17 +33,18 @@ export function useActiveQuestionTracker(containerRef, onActiveChange, enabled) 
       timerRef.current = null
       const nodes = containerEl.querySelectorAll('[data-question-id]')
       if (!nodes.length) return
-      const mid = window.innerHeight / 2
-      let best = null
-      let bestDist = Infinity
+      // «Ближе всего к центру экрана» тут не работает: длинная карточка
+      // (например "Why" на пол-экрана) держит центр даже когда студент уже
+      // читает следующую, короткую, у самого верха — отстающий блок
+      // систематически выигрывал бы гонку. Вместо этого — «линия чтения»
+      // чуть ниже верха вьюпорта: текущий блок это последний, чей верх её
+      // уже пересёк (порядок NodeList совпадает с порядком в документе) —
+      // тот же приём, которым доки со sticky-оглавлением подсвечивают
+      // активный пункт при скролле.
+      const readingLine = 100
+      let best = nodes[0]
       nodes.forEach((node) => {
-        const rect = node.getBoundingClientRect()
-        if (rect.bottom < 0 || rect.top > window.innerHeight) return
-        const dist = Math.abs((rect.top + rect.bottom) / 2 - mid)
-        if (dist < bestDist) {
-          bestDist = dist
-          best = node
-        }
+        if (node.getBoundingClientRect().top <= readingLine) best = node
       })
       const id = best?.getAttribute('data-question-id') || null
       if (id && id !== lastRef.current) {

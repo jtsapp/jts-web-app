@@ -31,11 +31,11 @@ afterEach(() => {
 })
 
 describe('useActiveQuestionTracker', () => {
-  it('picks the question closest to viewport center immediately on mount', () => {
+  it('picks the last block whose top has crossed the reading line immediately on mount', () => {
     const container = buildContainer([
-      ['q1', 0, 100],
-      ['q2', 380, 420], // центр вьюпорта — 400
-      ['q3', 700, 800],
+      ['q1', -300, -200], // уже пролистан выше экрана
+      ['q2', 50, 200], // как раз пересёк линию чтения (100) — читают его
+      ['q3', 500, 700], // ещё не долистали
     ])
     const onActiveChange = vi.fn()
     const ref = { current: container }
@@ -45,9 +45,23 @@ describe('useActiveQuestionTracker', () => {
     expect(onActiveChange).toHaveBeenCalledWith('q2')
   })
 
+  it('does not let a tall block that still fills the screen block the next, already-reached one', () => {
+    // Регрессия: старая метрика «ближе к центру» отдавала бы q1 (его центр —
+    // 400, центр вьюпорта), хотя студент уже читает q2 у самого верха.
+    const container = buildContainer([
+      ['q1', -100, 750], // высокая карточка, всё ещё занимает почти весь экран
+      ['q2', 50, 90], // короткая, но уже наверху — её и читают
+    ])
+    const onActiveChange = vi.fn()
+    const ref = { current: container }
+    renderHook(() => useActiveQuestionTracker(ref, onActiveChange, true))
+
+    expect(onActiveChange).toHaveBeenCalledWith('q2')
+  })
+
   it('throttles scroll, re-picks after settling, and skips duplicate ids', () => {
     const container = buildContainer([
-      ['q1', 380, 420],
+      ['q1', 50, 200],
       ['q2', 700, 800],
     ])
     const onActiveChange = vi.fn()
@@ -55,9 +69,9 @@ describe('useActiveQuestionTracker', () => {
     renderHook(() => useActiveQuestionTracker(ref, onActiveChange, true))
     expect(onActiveChange).toHaveBeenLastCalledWith('q1')
 
-    // Прокрутили: q2 теперь у центра. Событие ловится на document (capture).
+    // Прокрутили: q2 теперь пересёк линию чтения. Событие ловится на document (capture).
     mockRect(container.children[0], -400, -300)
-    mockRect(container.children[1], 380, 420)
+    mockRect(container.children[1], 50, 150)
     act(() => {
       document.dispatchEvent(new Event('scroll'))
       vi.advanceTimersByTime(199)
@@ -69,7 +83,7 @@ describe('useActiveQuestionTracker', () => {
     expect(onActiveChange).toHaveBeenCalledTimes(2)
     expect(onActiveChange).toHaveBeenLastCalledWith('q2')
 
-    // Ещё скролл, но геометрия не изменилась (тот же q2 у центра) — дубль не шлём.
+    // Ещё скролл, но геометрия не изменилась (тот же q2 читают) — дубль не шлём.
     act(() => {
       document.dispatchEvent(new Event('scroll'))
       vi.advanceTimersByTime(200)
@@ -78,7 +92,7 @@ describe('useActiveQuestionTracker', () => {
   })
 
   it('does nothing when disabled', () => {
-    const container = buildContainer([['q1', 380, 420]])
+    const container = buildContainer([['q1', 50, 90]])
     const onActiveChange = vi.fn()
     const ref = { current: container }
     renderHook(() => useActiveQuestionTracker(ref, onActiveChange, false))
@@ -87,7 +101,7 @@ describe('useActiveQuestionTracker', () => {
 
   it('keeps the scroll listener alive across a parent re-render with a new callback reference (regression: was torn down + reattached every render, losing scroll events)', () => {
     const container = buildContainer([
-      ['q1', 380, 420],
+      ['q1', 50, 200],
       ['q2', 700, 800],
     ])
     const calls1 = []
@@ -104,7 +118,7 @@ describe('useActiveQuestionTracker', () => {
     rerender({ onChange: (id) => calls2.push(id) })
 
     mockRect(container.children[0], -400, -300)
-    mockRect(container.children[1], 380, 420)
+    mockRect(container.children[1], 50, 150)
     act(() => {
       document.dispatchEvent(new Event('scroll'))
       vi.advanceTimersByTime(200)
@@ -113,14 +127,14 @@ describe('useActiveQuestionTracker', () => {
     expect(calls2).toEqual(['q2'])
   })
 
-  it('ignores questions fully outside the viewport', () => {
+  it('falls back to the very first block when nothing has reached the reading line yet', () => {
     const container = buildContainer([
-      ['q1', -500, -400],
+      ['q1', 500, 600],
       ['q2', 900, 1000],
     ])
     const onActiveChange = vi.fn()
     const ref = { current: container }
     renderHook(() => useActiveQuestionTracker(ref, onActiveChange, true))
-    expect(onActiveChange).not.toHaveBeenCalled()
+    expect(onActiveChange).toHaveBeenCalledWith('q1')
   })
 })
