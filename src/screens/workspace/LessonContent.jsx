@@ -31,16 +31,20 @@ const BLOCK_BY_TYPE = {
  */
 export function groupBlocks(blocks) {
   const groups = []
-  for (const block of blocks || []) {
+  ;(blocks || []).forEach((block, blockIndex) => {
     const last = groups[groups.length - 1]
     if (block?.type === 'info' && last?.type === 'info') {
       last.blocks.push(block)
     } else if (block?.type === 'info') {
-      groups.push({ type: 'info', blocks: [block] })
+      // blockIndex — позиция ПЕРВОГО блока серии в сыром step.blocks (не
+      // groups!) — это же и есть якорь для live-трекинга скролла ниже:
+      // и веб-админка, и этот компонент читают один и тот же сырой массив,
+      // а сериями info склеиваются только тут (см. комментарий выше).
+      groups.push({ type: 'info', blocks: [block], blockIndex })
     } else {
-      groups.push({ type: 'single', block })
+      groups.push({ type: 'single', block, blockIndex })
     }
-  }
+  })
   return groups
 }
 
@@ -60,9 +64,14 @@ export function practiceBlockKey(stepId, groupIndex) {
 // `answers`/`checkedKeys`/`onAnswer`/`onCheck` прокидываются в practice-блоки:
 // сам компонент состояния не хранит, только вычисляет per-карточный ключ.
 //
-// `liveQuestionId` — только у смотрящего (преподаватель/собеседник): вопрос,
-// на котором сейчас стоит ученик (см. useActiveQuestionTracker в
-// LiveLessonPage). Сам ученик его не получает — он не следует за собой.
+// `liveQuestionId` — только у смотрящего (преподаватель/собеседник): где
+// сейчас ученик (см. useActiveQuestionTracker в LiveLessonPage). Не только
+// вопрос practice — тот же id может указывать и на info/theory/vocab/
+// checklist-карточку (`block-<индекс>`, см. groupBlocks): ученик читает
+// правило или примеры так же долго, как отвечает на вопросы, и подглядывать
+// только за practice-блоками значило бы, что смотрящий застревает на
+// последнем вопросе шага, пока ученик уже читает материал дальше. Сам
+// ученик liveQuestionId не получает — он не следует за собой.
 export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId }) {
   const groups = groupBlocks(step?.blocks)
 
@@ -86,8 +95,13 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
     <div className="lw-content">
       {groups.map((group, i) => {
         if (group.type === 'info') {
+          const anchorId = `block-${group.blockIndex}`
           return (
-            <div className="lw-card lw-info" key={i}>
+            <div
+              className={`lw-card lw-info${anchorId === liveQuestionId ? ' lw-q--live-here' : ''}`}
+              key={i}
+              data-question-id={anchorId}
+            >
               {group.blocks.map((block, j) => (
                 <InfoBlock key={j} block={block} />
               ))}
@@ -113,7 +127,16 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
         }
         const Block = BLOCK_BY_TYPE[block.type]
         if (!Block) return null
-        return <Block key={i} block={block} />
+        const anchorId = `block-${group.blockIndex}`
+        return (
+          <div
+            key={i}
+            data-question-id={anchorId}
+            className={anchorId === liveQuestionId ? 'lw-q--live-here' : undefined}
+          >
+            <Block block={block} />
+          </div>
+        )
       })}
     </div>
   )

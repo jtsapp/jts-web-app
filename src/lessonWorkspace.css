@@ -1276,14 +1276,20 @@
   list-style: none;
 }
 
-/* Вопрос, на котором сейчас стоит ученик — виден только смотрящему
-   (LessonContent.liveQuestionId). Цвет — тот же --lw-student, что и метка
-   ученика на треке урока, чтобы не заводить второй смысл для нового оттенка. */
+/* Место, где сейчас ученик — виден только смотрящему (LessonContent.
+   liveQuestionId). Не только вопрос practice: тот же класс идёт и на
+   info/theory/vocab/checklist-карточки (см. LessonContent), у которых уже
+   есть свой .lw-card-паддинг — не переопределяем его тут, иначе подсветка
+   ещё и ужимала бы карточку. Цвет — тот же --lw-student, что и метка ученика
+   на треке урока, чтобы не заводить второй смысл для нового оттенка. */
 .lw-q--live-here {
-  padding: 10px 12px;
   border-radius: var(--lw-r-inner);
   box-shadow: inset 3px 0 0 var(--lw-student);
   background: color-mix(in srgb, var(--lw-student) 8%, transparent);
+}
+
+.lw-q--live-here:not(.lw-card) {
+  padding: 10px 12px;
 }
 
 .lw-q__prompt,
