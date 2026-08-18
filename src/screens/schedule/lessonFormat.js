@@ -21,10 +21,15 @@ export function lessonTimeRange(occ, locale = 'ru') {
 // Тема урока в карточке — название материала, прикреплённого к первому разделу.
 // Своего поля «тема» у урока на бэкенде нет: преподаватель вешает урок каталога
 // материалом в раздел, и его имя — единственное, что описывает занятие словами.
-// Хвост « · 1-на-1» ставит сам бэкенд, чтобы различать три регистрации одного
+// Хвост « · 1 to 1» ставит сам бэкенд, чтобы различать три регистрации одного
 // урока в библиотеке (LessonSectionService.createCatalogMaterial); ученику этот
 // служебный суффикс ничего не говорит, поэтому обрезаем.
 const MATERIAL_MODE_SEP = ' · '
+
+// Режем ТОЛЬКО известные хвосты режимов (CourseCatalogLessonMode.label() и их
+// русские варианты из старых регистраций): точка-разделитель встречается и в
+// честных названиях («Unit 3 · Present Perfect»), и такие резать нельзя.
+const MODE_SUFFIXES = new Set(['self study', '1 to 1', 'group', '1-на-1', 'группа', 'самостоятельно'])
 
 export function lessonTopicFromSections(sections) {
   const ordered = (Array.isArray(sections) ? sections : [])
@@ -36,7 +41,10 @@ export function lessonTopicFromSections(sections) {
     if (!titled) continue
     const title = titled.title.trim()
     const cut = title.lastIndexOf(MATERIAL_MODE_SEP)
-    return cut > 0 ? title.slice(0, cut).trim() : title
+    if (cut > 0 && MODE_SUFFIXES.has(title.slice(cut + MATERIAL_MODE_SEP.length).trim().toLowerCase())) {
+      return title.slice(0, cut).trim()
+    }
+    return title
   }
   return null
 }

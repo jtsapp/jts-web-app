@@ -23,7 +23,14 @@ export function pickFeaturedOccurrence(occurrences, now = new Date()) {
   const live = findLiveOccurrence(occurrences)
   if (live) return live
 
+  // Без durationMinutes конец совпадает с началом, и урок пропадал бы из
+  // карточки ровно в назначенную минуту — хотя преподаватель ещё может открыть
+  // класс с опозданием. Считаем такому уроку стандартный час.
+  const endOf = (o) => (o.durationMinutes
+    ? lessonEnd(o)
+    : new Date(parseLessonDate(o.scheduledAt).getTime() + 60 * 60000))
+
   return (occurrences || [])
-    .filter((o) => o.lessonStatus === 'SCHEDULED' && lessonEnd(o) >= now)
+    .filter((o) => o.lessonStatus === 'SCHEDULED' && endOf(o) >= now)
     .sort((a, b) => parseLessonDate(a.scheduledAt) - parseLessonDate(b.scheduledAt))[0] || null
 }
