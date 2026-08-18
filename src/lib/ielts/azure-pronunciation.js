@@ -369,11 +369,24 @@ export async function transcribeWav(wav) {
   })
 }
 
-// Reference-based pronunciation assessment for ONE short phrase (Shadowing). В
-// отличие от assessPronunciation (без сценария, continuous) здесь известен целевой
+// Граница, за которой recognizeOnce врёт. Single-shot слушает примерно 30
+// секунд и молча обрывает остаток, а эталон при этом передан целиком — хвост
+// засчитывается как Omission, и ученик получает заниженный балл за правильно
+// произнесённую фразу. Замер: 58 с речи на эталон в 102 слова → 57 слов,
+// completeness 56, overall 61; через continuous та же запись — 102 слова,
+// completeness 100, overall 94 (и быстрее: 14 с против 20 с).
+//
+// Сами фразы уроков короткие (самая длинная 19 с), в 30 секунд укладываются.
+// Порог нужен для ученика, который говорит медленнее оригинала: на длинной
+// фразе он выходит за стенку и без этой ветки получает 56 вместо 100.
+const REF_SINGLE_SHOT_MAX_SEC = 25
+
+// Reference-based pronunciation assessment for ONE phrase (Shadowing). В
+// отличие от assessPronunciation (без сценария) здесь известен целевой
 // текст: передаём его эталоном → Azure возвращает послово accuracy + errorType
-// (Mispronunciation/Omission/Insertion), из чего строится тепловая карта. Фраза
-// короткая (<15с) → recognizeOnce достаточно и быстрее continuous.
+// (Mispronunciation/Omission/Insertion), из чего строится тепловая карта.
+// Короткая фраза — recognizeOnce (быстрее), длинная — continuous с тем же
+// эталоном (см. assessRefContinuous).
 // Возвращает null при неконфигурации/сбое/тишине — вызывающий подставит mock.
 export async function assessAgainstReference(wav, refText) {
   const key = process.env.AZURE_SPEECH_KEY
@@ -391,6 +404,11 @@ export async function assessAgainstReference(wav, refText) {
     return null
   }
 
+  const durationSec = pcmDurationSec(parsed)
+  if (durationSec > REF_SINGLE_SHOT_MAX_SEC) {
+    return assessRefContinuous(sdk, { key, region, parsed, refText })
+  }
+
   return new Promise((resolve) => {
     let settled = false
     const done = (v) => {
@@ -401,6 +419,7 @@ export async function assessAgainstReference(wav, refText) {
     try {
       const speechConfig = sdk.SpeechConfig.fromSubscription(key, region)
       speechConfig.speechRecognitionLanguage = 'en-US'
+      applyNoThrottle(speechConfig)
       const format = sdk.AudioStreamFormat.getWaveFormatPCM(parsed.sampleRate, 16, 1)
       const pushStream = sdk.AudioInputStream.createPushStream(format)
       pushStream.write(
@@ -475,9 +494,144 @@ export async function assessAgainstReference(wav, refText) {
         },
       )
 
-      // Safety valve: короткая фраза оценивается быстро; не висим дольше 20с.
+      // Клапан от зависшего соединения. Раньше стояли фиксированные 20 с — на
+      // фразе под потолок single-shot этого не хватало, и ученик получал mock
+      // вместо реальных баллов. Считаем от длины записи, как везде.
       // unref, чтобы уже отданный ответ не держал таймер до конца интервала.
-      setTimeout(() => done(null), 20_000).unref?.()
+      setTimeout(() => done(null), recognitionBudgetMs(durationSec)).unref?.()
+    } catch (e) {
+      console.error('[azure-pa-ref] setup failed', e)
+      done(null)
+    }
+  })
+}
+
+// Длинная фраза Shadowing: тот же эталон и тот же enableMiscue, но
+// continuous-распознавание — оно не упирается в 15-секундный потолок
+// single-shot. Azure отдаёт результат по каждой реплике, поэтому баллы
+// взвешиваем по числу слов (как в assessPronunciation), а послово-карту
+// склеиваем по порядку реплик.
+function assessRefContinuous(sdk, { key, region, parsed, refText }) {
+  const durationSec = pcmDurationSec(parsed)
+  const budgetMs = recognitionBudgetMs(durationSec)
+
+  return new Promise((resolve) => {
+    let settled = false
+    const done = (v) => {
+      if (settled) return
+      settled = true
+      resolve(v)
+    }
+    try {
+      const speechConfig = sdk.SpeechConfig.fromSubscription(key, region)
+      speechConfig.speechRecognitionLanguage = 'en-US'
+      applyNoThrottle(speechConfig)
+      const format = sdk.AudioStreamFormat.getWaveFormatPCM(parsed.sampleRate, 16, 1)
+      const pushStream = sdk.AudioInputStream.createPushStream(format)
+      pushStream.write(
+        parsed.pcm.buffer.slice(
+          parsed.pcm.byteOffset,
+          parsed.pcm.byteOffset + parsed.pcm.byteLength,
+        ),
+      )
+      pushStream.close()
+
+      const paConfig = new sdk.PronunciationAssessmentConfig(
+        (refText || '').slice(0, 1000),
+        sdk.PronunciationAssessmentGradingSystem.HundredMark,
+        sdk.PronunciationAssessmentGranularity.Phoneme,
+        true, // enableMiscue
+      )
+      paConfig.enableProsodyAssessment = true
+
+      const recognizer = new sdk.SpeechRecognizer(
+        speechConfig,
+        sdk.AudioConfig.fromStreamInput(pushStream),
+      )
+      paConfig.applyTo(recognizer)
+
+      let weight = 0
+      let acc = 0
+      let flu = 0
+      let comp = 0
+      let pros = 0
+      let pron = 0
+      const words = []
+      const texts = []
+
+      recognizer.recognized = (_s, e) => {
+        if (e.result.reason !== sdk.ResultReason.RecognizedSpeech) return
+        const text = e.result.text?.trim()
+        if (!text) return
+        const pa = sdk.PronunciationAssessmentResult.fromResult(e.result)
+        const w = Math.max(1, text.split(/\s+/).length)
+        weight += w
+        acc += pa.accuracyScore * w
+        flu += pa.fluencyScore * w
+        comp += pa.completenessScore * w
+        pros += (pa.prosodyScore ?? pa.accuracyScore) * w
+        pron += pa.pronunciationScore * w
+        texts.push(text)
+        try {
+          const raw = e.result.properties.getProperty(
+            sdk.PropertyId.SpeechServiceResponse_JsonResult,
+          )
+          const nb = JSON.parse(raw || '{}')?.NBest?.[0]?.Words || []
+          for (const it of nb) {
+            words.push({
+              word: it.Word,
+              accuracy: Math.round(it.PronunciationAssessment?.AccuracyScore ?? 0),
+              error: it.PronunciationAssessment?.ErrorType || 'None',
+            })
+          }
+        } catch {
+          /* карта слов не построится — числа всё равно вернём */
+        }
+      }
+
+      let valve = null
+      const finish = () => {
+        if (valve) clearTimeout(valve)
+        valve = null
+        try {
+          recognizer.close()
+        } catch {
+          /* ignore */
+        }
+        if (weight === 0) return done(null)
+        done({
+          overall: Math.round(pron / weight),
+          accuracy: Math.round(acc / weight),
+          fluency: Math.round(flu / weight),
+          completeness: Math.round(comp / weight),
+          prosody: Math.round(pros / weight),
+          words,
+          transcript: texts.join(' '),
+          mock: false,
+        })
+      }
+
+      recognizer.canceled = (_s, e) => {
+        if (e.reason === sdk.CancellationReason.Error) {
+          console.error('[azure-pa-ref] canceled', e.errorDetails)
+        }
+        finish()
+      }
+      recognizer.sessionStopped = () => finish()
+      recognizer.startContinuousRecognitionAsync(
+        () => {},
+        (err) => {
+          console.error('[azure-pa-ref] start failed', err)
+          done(null)
+        },
+      )
+      valve = setTimeout(() => {
+        valve = null
+        console.warn(
+          `[azure-pa-ref] бюджет ${Math.round(budgetMs / 1000)}с исчерпан на ${Math.round(durationSec)}с аудио — оценка может быть неполной`,
+        )
+        recognizer.stopContinuousRecognitionAsync(finish, finish)
+      }, budgetMs)
     } catch (e) {
       console.error('[azure-pa-ref] setup failed', e)
       done(null)
