@@ -11,6 +11,7 @@ import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
+import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import LiveStatusBadge from './live/LiveStatusBadge.jsx'
 import PresenceRoster from './live/PresenceRoster.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
@@ -93,6 +94,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [peerName, setPeerName] = useState(null)
   const [studentAnswers, setStudentAnswers] = useState({})
   const [studentCheckedSteps, setStudentCheckedSteps] = useState(() => new Set())
+  // Вопрос, на котором ученик стоит прямо сейчас (может быть ещё не отвечен —
+  // отдельно от studentAnswers, см. onStepProgress ниже).
+  const [studentLiveQuestionId, setStudentLiveQuestionId] = useState(null)
   const [reloadToken, setReloadToken] = useState(0)
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
@@ -417,7 +421,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // (см. readOnly в ChoiceQuestion), и «ответ преподавателя» означал бы,
       // что где-то разъехались роли.
       if (evt.senderRole !== 'STUDENT') return
-      if (evt.questionId != null) {
+      // «Стою на вопросе X» и «ответил на вопрос X» — разные события с одним
+      // и тем же questionId (см. handleQuestionView/handleAnswer): первое
+      // приходит без value вовсе, и писать его в studentAnswers затёрло бы
+      // уже данный ответ пустотой, стоило ученику просто прокрутить назад.
+      if (evt.questionId != null) setStudentLiveQuestionId(evt.questionId)
+      if (evt.questionId != null && evt.value != null) {
         setStudentAnswers((prev) => ({ ...prev, [evt.questionId]: parseAnswer(evt.value) }))
       }
       if (evt.checked && evt.checkedKey != null) {
@@ -430,6 +439,25 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       }
     },
   })
+
+  // Ученик проскроллил/перешёл к вопросу, но ещё не обязательно ответил —
+  // отдельное от handleAnswer событие (см. onStepProgress выше: value там нет
+  // нарочно, чтобы не затирать уже данный ответ). useActiveQuestionTracker сам
+  // не шлёт повторно один и тот же questionId, здесь дедуп не нужен.
+  function handleQuestionView(questionId) {
+    sendStepProgress({
+      stepId: activeStepId,
+      questionId,
+      sectionId: activeSectionId,
+      materialId: activeMaterial?.materialId ?? null,
+    })
+  }
+
+  // Только у настоящего ученика на своём документе (не у преподавателя,
+  // который смотрит тот же LessonContent readOnly'ем — иначе его собственный
+  // скролл транслировался бы как будто это чужая позиция).
+  const lessonContentRef = useRef(null)
+  useActiveQuestionTracker(lessonContentRef, handleQuestionView, !isStaff && onLessonSteps)
 
   // --- сохранение работы ученика ------------------------------------------
   //
@@ -776,15 +804,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               остался бы без задания. В этом случае показываем
                               документ, как раньше. */}
                           {isStaff || playerSteps.length === 0 ? (
-                            <LessonContent
-                              step={activeStep}
-                              // Преподаватель смотрит работу ученика, ученик — свою.
-                              answers={isStaff ? studentAnswers : answers}
-                              checkedKeys={isStaff ? studentCheckedSteps : checkedSteps}
-                              onAnswer={handleAnswer}
-                              onCheck={handleCheckStep}
-                              readOnly={contentReadOnly}
-                            />
+                            <div ref={lessonContentRef}>
+                              <LessonContent
+                                step={activeStep}
+                                // Преподаватель смотрит работу ученика, ученик — свою.
+                                answers={isStaff ? studentAnswers : answers}
+                                checkedKeys={isStaff ? studentCheckedSteps : checkedSteps}
+                                onAnswer={handleAnswer}
+                                onCheck={handleCheckStep}
+                                readOnly={contentReadOnly}
+                                liveQuestionId={isStaff ? studentLiveQuestionId : null}
+                              />
+                            </div>
                           ) : (
                             <CourseStepPlayer
                               bare

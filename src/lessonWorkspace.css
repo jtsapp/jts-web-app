@@ -1276,6 +1276,16 @@
   list-style: none;
 }
 
+/* Вопрос, на котором сейчас стоит ученик — виден только смотрящему
+   (LessonContent.liveQuestionId). Цвет — тот же --lw-student, что и метка
+   ученика на треке урока, чтобы не заводить второй смысл для нового оттенка. */
+.lw-q--live-here {
+  padding: 10px 12px;
+  border-radius: var(--lw-r-inner);
+  box-shadow: inset 3px 0 0 var(--lw-student);
+  background: color-mix(in srgb, var(--lw-student) 8%, transparent);
+}
+
 .lw-q__prompt,
 .lw-q__sentence {
   font-size: 16px;
