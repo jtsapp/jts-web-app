@@ -14,6 +14,7 @@ services:
         # NEXT_PUBLIC_* вшивается в бандл на этапе `next build` — должен быть
         # доступен уже на build-стадии, обычный `environment:` тут не поможет.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     environment:
       # Мозг тьютора + оценка IELTS
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
