@@ -1,3 +1,5 @@
+import { useI18n } from '../../../i18n.jsx'
+import { speak } from '../../../practice/vocab/audio.js'
 import { gradeQuestion } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 
@@ -15,12 +17,27 @@ import { CheckIcon } from '../../../components/icons.jsx'
 // работу ученика. Отвечать за него он не должен, и дело не в дисциплине — его
 // клик ушёл бы в его же состояние, разъехавшись с тем, что видит ученик.
 export default function ChoiceQuestion({ question, answer, checked, onAnswer, readOnly }) {
+  const { t } = useI18n()
   const chosen = answer != null
   const correct = chosen && gradeQuestion(question, answer).correct
 
   return (
     <div className="lw-q lw-q--choice">
+      {/* В заданиях Listening формулировка — «🔊 Word 1», а что именно звучит,
+          знает только `say`: без кнопки вопрос не отвечаем в принципе. Речь
+          синтезируется — записи слова в курсе нет, есть только вызов синтеза. */}
+      {question.say && (
+        <button
+          type="button"
+          className="lw-say"
+          onClick={() => speak(question.say)}
+          aria-label={t('lesson.play')}
+        >
+          🔊
+        </button>
+      )}
       {question.prompt && <p className="lw-q__prompt">{question.prompt}</p>}
+      {question.imageUrl && <img className="lw-q__img" src={question.imageUrl} alt="" />}
       <div className="lw-opts">
         {(question.options || []).map((opt) => {
           const selected = answer === opt
@@ -54,6 +71,12 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
           )
         })}
       </div>
+      {/* Разбор из `data-why` курса — правило, по которому строка «какое слово
+          лишнее» проверяется. Выбор здесь мгновенный (без «Проверить»), поэтому
+          и разбор всплывает сразу за неверным кликом, а не ждёт общей проверки. */}
+      {chosen && !correct && question.why && (
+        <p className="lw-q__why">{question.why}</p>
+      )}
     </div>
   )
 }

@@ -41,6 +41,17 @@ describe('answerMatches', () => {
     expect(answerMatches("I don't like Mondays.", ['I don’t like Mondays.'])).toBe(true)
   })
 
+  // Апостроф на телефоне — лишний тап и часто другой символ, поэтому ответ без
+  // него обязан проходить: «I dont like» — то же самое, что «I don’t like».
+  it('апостроф не обязателен', () => {
+    expect(answerMatches('I dont like Mondays.', ['I don’t like Mondays.'])).toBe(true)
+    expect(answerMatches('dont', ["don't"])).toBe(true)
+    expect(answerMatches('I dont like rain', ['I don’t like rain.'])).toBe(true)
+    expect(answerMatches('Im Anna', ["I'm Anna"])).toBe(true)
+    expect(answerMatches('Whats your phone number?', ["What's your phone number?"])).toBe(true)
+    expect(answerMatches('No, Im not.', ["No, I'm not."])).toBe(true)
+  })
+
   it('пустой ответ не засчитывается', () => {
     expect(answerMatches('   ', ['do not'])).toBe(false)
   })

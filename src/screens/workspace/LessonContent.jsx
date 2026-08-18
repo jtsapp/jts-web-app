@@ -3,6 +3,7 @@ import TheoryBlock from './blocks/TheoryBlock.jsx'
 import InfoBlock from './blocks/InfoBlock.jsx'
 import PracticeBlock from './blocks/PracticeBlock.jsx'
 import VocabBlock from './blocks/VocabBlock.jsx'
+import ChecklistBlock from './blocks/ChecklistBlock.jsx'
 
 // `practice` — обрабатывается отдельно ниже (нужны answers/checked/onAnswer/onCheck).
 const BLOCK_BY_TYPE = {
@@ -10,6 +11,7 @@ const BLOCK_BY_TYPE = {
   theory: TheoryBlock,
   info: InfoBlock,
   vocab: VocabBlock,
+  checklist: ChecklistBlock,
 }
 
 /**
@@ -41,10 +43,22 @@ export function groupBlocks(blocks) {
   return groups
 }
 
+// Ключ practice-карточки в множестве `checkedKeys`. Шаг урока — это не одно
+// упражнение: экстрактор режет тело урока по прямым детям `.ex-body`, и в
+// реальном уроке один шаг («Vocabulary») несёт до дюжины пронумерованных
+// заданий подряд, каждое своей карточкой с собственной кнопкой «Проверить».
+// Ключ по одному только `stepId` считал бы весь шаг проверенным после первого
+// же клика — соседние карточки открывали бы чужие ответы и блокировали ввод,
+// хотя студент их ещё не касался. `groupIndex` — позиция карточки в потоке
+// `groupBlocks`, стабильна для данных шага (порядок блоков не меняется).
+export function practiceBlockKey(stepId, groupIndex) {
+  return `${stepId ?? ''}:${groupIndex}`
+}
+
 // Центр workspace: рендерит блоки активного шага диспетчером по `block.type`.
-// `answers`/`checked`/`onAnswer`/`onCheck` прокидываются в practice-блоки как
-// есть — сам компонент состояния не хранит.
-export default function LessonContent({ step, answers, checked, onAnswer, onCheck, readOnly }) {
+// `answers`/`checkedKeys`/`onAnswer`/`onCheck` прокидываются в practice-блоки:
+// сам компонент состояния не хранит, только вычисляет per-карточный ключ.
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly }) {
   const groups = groupBlocks(step?.blocks)
 
   return (
@@ -62,14 +76,15 @@ export default function LessonContent({ step, answers, checked, onAnswer, onChec
 
         const block = group.block
         if (block.type === 'practice') {
+          const key = practiceBlockKey(step?.id, i)
           return (
             <PracticeBlock
               key={i}
               block={block}
               answers={answers}
-              checked={checked}
+              checked={checkedKeys?.has(key) ?? false}
               onAnswer={onAnswer}
-              onCheck={onCheck}
+              onCheck={() => onCheck(key)}
               readOnly={readOnly}
             />
           )

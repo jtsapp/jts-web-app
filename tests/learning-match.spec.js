@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
-import { tasksToSteps } from '../src/learning/nativeSteps.js'
+import { nativeLessonSteps } from '../src/learning/nativeSteps.js'
 
 // Соединение пар уровня A0.
 //
@@ -11,14 +11,16 @@ import { tasksToSteps } from '../src/learning/nativeSteps.js'
 // «выбери 1 из 10» вместо соединения, и при трёх сердцах урок валился почти
 // гарантированно. Тест держит собранный экран и его механику.
 const LEVEL_FILE = path.join(process.cwd(), 'public/learning/a0.json')
-const VOCAB_NODE = 'L01-2'
+// Узел тропы — урок курса целиком: стадии одного урока склеены в одну очередь
+// экранов (см. nativeLessonSteps), поэтому и ожидаемые шаги считаем так же.
+const LESSON_TITLE = 'Coffee — yes. Mondays — no.'
 
 const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const exactly = (s) => new RegExp(`^\\s*${escapeRe(s)}\\s*$`)
 
 function vocabSteps() {
   const level = JSON.parse(fs.readFileSync(LEVEL_FILE, 'utf8'))
-  return tasksToSteps(level.lessons[VOCAB_NODE])
+  return nativeLessonSteps(level, LESSON_TITLE)
 }
 
 async function openVocab(page) {
@@ -30,7 +32,7 @@ async function openVocab(page) {
   await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
   await page.goto('/?screen=kingdom&unlock=1')
   await page.locator('.lp-node', { hasText: 'Уровень A0' }).first().click()
-  const vocab = page.locator('.kt-step:not([disabled])').nth(1)
+  const vocab = page.locator('.kt-step:not([disabled])').first()
   await expect(vocab).toBeVisible({ timeout: 15000 })
   await vocab.click()
   await expect(page.locator('.cp-step')).toBeVisible({ timeout: 15000 })
@@ -44,6 +46,9 @@ async function reachMatch(page, steps) {
     if (steps[i].answer) {
       await page.locator('.cp-choice', { hasText: exactly(steps[i].answer) }).first().click()
       await page.locator('.cp-cta:not([disabled])').click()
+    } else if (await page.locator('.cp-cta[disabled]').count()) {
+      // Разминка и чек-лист без правильного ответа, но кнопка ждёт отметки.
+      await page.locator('.cp-pick, .cp-check__row').first().click()
     }
     await page.locator('.cp-cta:not([disabled])').click()
   }
@@ -91,8 +96,9 @@ test.describe('A0: соединение пар', () => {
     }
     await page.locator('.cp-cta:not([disabled])').click()
 
+    // Упражнение засчитывается ОДНИМ ответом, а не по паре за каждую строку:
+    // плашка результата на экране одна.
     await expect(page.locator('.cp-fb.is-ok')).toBeVisible()
-    // Сердце за упражнение снимается один раз, а не за каждую пару.
-    await expect(page.locator('.cp-hud__hearts b')).toHaveText('3')
+    await expect(page.locator('.cp-fb')).toHaveCount(1)
   })
 })
