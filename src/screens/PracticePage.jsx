@@ -376,7 +376,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     let alive = true
     Promise.all(
       SHADOWING_LESSONS.map((l) =>
-        getLessonScores(l.id).then((m) => [l.id, lessonMastery(m, l.segments.length).mastered]),
+        getLessonScores(l.id).then((m) => [l.id, lessonMastery(m, l.segCount).mastered]),
       ),
     )
       .then((pairs) => alive && setShadowMastered(Object.fromEntries(pairs)))
@@ -568,11 +568,11 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                         className="sh-lcard__count sh-lcard__count--mastered"
                         title={t('shadowing.masteredHint')}
                       >
-                        ★ {shadowMastered[l.id]} / {l.segments.length}
+                        ★ {shadowMastered[l.id]} / {l.segCount}
                       </span>
                     ) : (
                       <span className="sh-lcard__count">
-                        {t('shadowing.card.count', { done: countLessonDone(l.id), total: l.segments.length })}
+                        {t('shadowing.card.count', { done: countLessonDone(l.id), total: l.segCount })}
                       </span>
                     )}
                   </div>

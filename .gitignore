@@ -31,5 +31,11 @@ agent/venv/
 
 # Local staging of extracted lesson media — uploaded to files-api via mc, not committed
 public/learning/media/
+
+# Сырьё Shadowing: выгруженные страницы Notion и промежуточный captions.txt.
+# В репозиторий едет только результат нарезки (public/shadowing/*.json) и
+# описание материалов — держать вторую копию тех же транскриптов ни к чему.
+scripts/shadowing-src/*
+!scripts/shadowing-src/sources.json
 # Локальный venv питон-агента (ставится из agent/requirements.txt)
 agent/venv/
