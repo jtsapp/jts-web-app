@@ -15,6 +15,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon, PlayIcon, MicIcon, StopIcon, RepeatIcon } from '../components/icons.jsx'
 import { LESSONS, getLesson } from '../practice/shadowing/lessons.js'
+import { loadLessonFile } from '../practice/shadowing/lessonContent.js'
 import { fmt, parseCaptions, segmentId } from '../practice/shadowing/engine.js'
 import {
   getLessonDone,
@@ -71,14 +72,21 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   // переключение табами. getLesson с фолбэком не даст упасть на битом id.
   const [curId, setCurId] = useState(() => getLesson(lessonId).id)
   const lesson = getLesson(curId)
-  // segments держим в состоянии: в dev-режиме их правит ретайминг/редактор.
-  const [segments, setSegments] = useState(lesson.segments)
+  // segments держим в состоянии: приезжают из public/shadowing/<id>.json, а в
+  // dev-режиме их поверх правит ретайминг/редактор. До загрузки — пустой массив,
+  // поэтому всё, что считает по фразам, обязано переживать total === 0.
+  const [segments, setSegments] = useState([])
+  const [segLoading, setSegLoading] = useState(true)
+  // Файл урока целиком — нужен авторскому режиму: source/level он не выдумывает,
+  // а переносит в выгрузку из того же JSON.
+  const [fileMeta, setFileMeta] = useState(null)
 
   const [activeIdx, setActiveIdx] = useState(-1)
   const [rate, setRate] = useState(1)
   const [loopIdx, setLoopIdx] = useState(null) // null = без повтора
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
+  const [segError, setSegError] = useState('') // не доехал файл с фразами
 
   // Прогресс: множество id пройденных фраз этого урока. Обновляем при записи и
   // на событие гидратации (сервер прислал прогресс аккаунта).
@@ -141,21 +149,37 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const takesRef = useRef({}) // takes[segIndex] = objectURL (в памяти, per lesson)
   const audioRef = useRef(null) // проигрывание своей записи
 
-  const total = segments.length
+  // Пока файл с фразами летит по сети, считаем по segCount из индекса — иначе
+  // шапка прогресса на секунду показывала бы «0 / 0 фраз записано».
+  const total = segments.length || lesson.segCount
   const doneCount = done.size
 
   // ── синхронизация состояния при смене урока ─────────────────────────────
   // Сколько фраз показывать в поэтапном режиме: до первой НЕзаписанной
   // включительно (= самый дальний пройденный индекс + 2), в пределах урока.
   function revealUpTo(doneSet) {
-    const n = getLesson(curId).segments.length
+    // Считаем по segCount из индекса, а не по segments: прогресс раскрываем
+    // сразу при смене урока, когда файл с фразами ещё летит по сети.
+    const n = getLesson(curId).segCount
     let furthest = 0
     for (let k = 0; k < n; k++) if (doneSet.has(segmentId(curId, k))) furthest = k + 1
     return Math.max(1, Math.min(n, furthest + 1))
   }
 
   useEffect(() => {
-    setSegments(lesson.segments)
+    let alive = true
+    setSegments([])
+    setFileMeta(null)
+    setSegLoading(true)
+    setSegError('')
+    loadLessonFile(curId)
+      .then((file) => {
+        if (!alive) return
+        setFileMeta(file)
+        setSegments(Array.isArray(file.segments) ? file.segments : [])
+        setSegLoading(false)
+      })
+      .catch(() => { if (alive) { setSegLoading(false); setSegError(t('shadowing.scriptLoadErr')) } })
     setActiveIdx(-1)
     activeRef.current = -1
     stopAtRef.current = null
@@ -174,7 +198,6 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     }
     takesRef.current = {}
     // лучшие баллы урока из IndexedDB (для мастерства и «освоено»)
-    let alive = true
     getLessonScores(curId).then((m) => { if (alive) setScores(m) })
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -749,6 +772,14 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                   : t('shadowing.limitLeft', { n: budget.remaining, limit: budget.limit })}
             </div>
           )}
+          {segError && <div className="sh-note sh-note--err">{segError}</div>}
+          {segLoading && !segError && (
+            <div className="sh-script sh-script--skeleton" aria-label={t('shadowing.scriptLoading')}>
+              {Array.from({ length: Math.min(6, lesson.segCount || 4) }, (_, i) => (
+                <div key={i} className="sh-skel__row" />
+              ))}
+            </div>
+          )}
           <div className="sh-script">
             {(stepMode ? segments.slice(0, Math.min(revealed, total)) : segments).map((s, i) => {
               const segId = segmentId(curId, i)
@@ -914,6 +945,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
         {dev && (
           <DevTools
             lesson={lesson}
+            fileMeta={fileMeta}
             segments={segments}
             onApply={(segs) => setSegments(segs)}
             player={playerRef}
@@ -929,7 +961,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
 // ── Авторский инструмент (?dev=1): пересобрать скрипт из субтитров, растянуть
 // тайминги под длину видео, выгрузить JSON для lessons.js. Обычный пользователь
 // сюда не попадает — тайминги уже выверены в lessons.js.
-function DevTools({ lesson, segments, onApply, player }) {
+function DevTools({ lesson, fileMeta, segments, onApply, player }) {
   const { t } = useI18n()
   const [raw, setRaw] = useState('')
   const [status, setStatus] = useState('')
@@ -946,6 +978,8 @@ function DevTools({ lesson, segments, onApply, player }) {
     let dur = 0
     try { dur = p && p.getDuration ? p.getDuration() : 0 } catch {}
     if (!dur || dur < 10) { setStatus(t('shadowing.dev.needVideo')); return }
+    // У болванки урока фраз ещё нет — растягивать нечего.
+    if (!segments.length) { setStatus(t('shadowing.dev.parseErr')); return }
     const last = segments[segments.length - 1][1]
     const k = (dur * 0.97) / last
     if (k < 0.3 || k > 3.5) { setStatus(t('shadowing.dev.fitOff')); return }
@@ -953,8 +987,23 @@ function DevTools({ lesson, segments, onApply, player }) {
     setStatus(t('shadowing.dev.fitDone', { k: k.toFixed(2) }))
   }
 
+  // Выгружаем файл в том же виде, в каком он лежит в public/shadowing/: меты
+  // (short/source/level) берём из уже загруженного JSON, чтобы после нарезки
+  // фраз файл можно было положить на место без ручной дописки.
   const exportJson = () => {
-    const json = JSON.stringify({ id: lesson.id, title: lesson.title, video: lesson.video, segments }, null, 1)
+    const json = JSON.stringify(
+      {
+        id: lesson.id,
+        title: lesson.title,
+        short: lesson.short,
+        video: lesson.video,
+        source: fileMeta?.source ?? null,
+        level: fileMeta?.level ?? null,
+        segments,
+      },
+      null,
+      1,
+    )
     const blob = new Blob([json], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
