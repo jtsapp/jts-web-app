@@ -2,22 +2,24 @@ import { useMemo, useState } from 'react'
 import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
-import { exerciseBlock, lessonExercises, loadAnswers, saveAnswers } from './homeworkExercises.js'
+import { saveHomeworkAnswer } from '../../api.js'
+import { exerciseBlock, lessonExercises, loadAnswers, saveAnswers, serverAnswers } from './homeworkExercises.js'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
-// PracticeBlock, что и на уроке, — здесь только состояние ответов и счётчик
-// решённого. Проверка тоже уроковая (gradeQuestion): у пропуска сверяется
-// список допустимых ответов, у открытого пропуска засчитывается любой непустой.
-export default function HomeworkExercises({ hw }) {
+// PracticeBlock, что и на уроке, — здесь только состояние ответов и отправка.
+// Проверка тоже уроковая (gradeQuestion): у пропуска сверяется список допустимых
+// ответов, у открытого засчитывается любой непустой.
+export default function HomeworkExercises({ hw, token }) {
   const { t } = useI18n()
   const exercises = useMemo(() => lessonExercises(hw), [hw])
 
-  // Ответы поднимаются из хранилища один раз при монтировании: ученик мог
-  // закрыть вкладку на середине. Смену работы отрабатывает не эффект, а key
-  // на компоненте (см. HomeworkDetail) — так состояние пересоздаётся честно,
-  // без лишнего кадра с чужими ответами.
-  const [answers, setAnswers] = useState(() => loadAnswers(hw?.id))
+  // Что уже сохранено на сервере, важнее черновика: ученик мог отвечать с другого
+  // устройства, а преподаватель — сбросить ответ через меню упражнения.
+  // Смену работы отрабатывает key на компоненте (см. HomeworkDetail), поэтому
+  // начальное состояние поднимается один раз и без эффекта.
+  const [answers, setAnswers] = useState(() => ({ ...loadAnswers(hw?.id), ...serverAnswers(hw) }))
   const [checked, setChecked] = useState(() => new Set())
+  const [failed, setFailed] = useState(() => new Set())
 
   const onAnswer = (questionId, value) => {
     setAnswers((prev) => {
@@ -27,12 +29,27 @@ export default function HomeworkExercises({ hw }) {
     })
   }
 
-  const onCheck = (key) => setChecked((prev) => new Set(prev).add(key))
+  // «Проверить» — момент, когда ответ осмыслен: показываем разбор и отправляем
+  // его преподавателю. Не сохранилось — говорим об этом, а не делаем вид, что
+  // работа ушла: ученик должен знать, что его ответ преподаватель не увидит.
+  const onCheck = (exercise) => {
+    const key = `hw-${exercise.id}`
+    setChecked((prev) => new Set(prev).add(key))
+    if (!token || hw?.id == null) return
+
+    const answer = answers[exercise.question.id] ?? null
+    const { correct } = gradeQuestion(exercise.question, answer)
+    saveHomeworkAnswer(hw.id, exercise.id, token, answer, correct)
+      .then(() => setFailed((prev) => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      }))
+      .catch(() => setFailed((prev) => new Set(prev).add(key)))
+  }
 
   if (!exercises.length) return null
 
-  // gradeQuestion отдаёт {correct}, а не булево: объект истинен всегда, и без
-  // .correct счётчик показывал бы «решено всё» с первого кадра.
   const solved = exercises.filter((e) => gradeQuestion(e.question, answers[e.question.id]).correct).length
 
   return (
@@ -44,18 +61,18 @@ export default function HomeworkExercises({ hw }) {
 
       <div className="hw-exercises">
         {exercises.map((e) => {
-          // Ключ проверки — сам вопрос: у каждого упражнения он ровно один,
-          // и «Проверить» относится только к нему.
           const key = `hw-${e.id}`
           return (
-            <PracticeBlock
-              key={e.id}
-              block={exerciseBlock(e)}
-              answers={answers}
-              checked={checked.has(key)}
-              onAnswer={onAnswer}
-              onCheck={() => onCheck(key)}
-            />
+            <div className="hw-exercise" key={e.id}>
+              <PracticeBlock
+                block={exerciseBlock(e)}
+                answers={answers}
+                checked={checked.has(key)}
+                onAnswer={onAnswer}
+                onCheck={() => onCheck(e)}
+              />
+              {failed.has(key) && <p className="hw-exercise__error">{t('homework.answerNotSaved')}</p>}
+            </div>
           )
         })}
       </div>

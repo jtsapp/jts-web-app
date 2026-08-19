@@ -7207,3 +7207,9 @@ textarea {
   font-weight: 400;
   color: var(--muted, #6b7280);
 }
+
+.hw-exercise__error {
+  margin: 6px 2px 0;
+  font-size: 13px;
+  color: var(--danger, #dc2626);
+}

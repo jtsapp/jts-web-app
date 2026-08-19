@@ -159,6 +159,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
               ) : (
                 <HomeworkDetail
                   hw={selected}
+                  token={token}
                   busy={busy}
                   error={error}
                   onUpload={handleUpload}

@@ -1,17 +1,24 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import HomeworkExercises from './HomeworkExercises.jsx'
 
+vi.mock('../../api.js', () => ({ saveHomeworkAnswer: vi.fn(() => Promise.resolve({})) }))
+import { saveHomeworkAnswer } from '../../api.js'
+
 const question = (id, type, extra = {}) => ({ id, type, prompt: `Вопрос ${id}`, ...extra })
 
-function show(hw) {
-  return render(<I18nProvider><HomeworkExercises hw={hw} /></I18nProvider>)
+function show(hw, token = 'jwt') {
+  return render(<I18nProvider><HomeworkExercises hw={hw} token={token} /></I18nProvider>)
 }
 
 describe('HomeworkExercises', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => {
+    localStorage.clear()
+    saveHomeworkAnswer.mockClear()
+    saveHomeworkAnswer.mockResolvedValue({})
+  })
 
   it('не рисует секцию, когда заданий с урока нет', () => {
     const { container } = show({ id: 1, exercises: [{ id: 9, taskId: 3, taskTitle: 'Из библиотеки' }] })
@@ -43,5 +50,63 @@ describe('HomeworkExercises', () => {
     ] })
 
     expect(screen.getByText('1 из 2 решено')).toBeTruthy()
+  })
+})
+
+describe('HomeworkExercises: ответ уходит преподавателю', () => {
+  const choice = { id: 1, title: 'Выбор', question: { id: 'q1', type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' } }
+
+  beforeEach(() => {
+    localStorage.clear()
+    saveHomeworkAnswer.mockClear()
+    saveHomeworkAnswer.mockResolvedValue({})
+  })
+
+  it('по «Проверить» отправляет ответ и вердикт', async () => {
+    show({ id: 7, exercises: [choice] })
+
+    fireEvent.click(screen.getByText('a'))
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    await waitFor(() => expect(saveHomeworkAnswer).toHaveBeenCalledTimes(1))
+    const [hwId, exerciseId, token, answer, correct] = saveHomeworkAnswer.mock.calls[0]
+    expect([hwId, exerciseId, token, answer, correct]).toEqual([7, 1, 'jwt', 'a', true])
+  })
+
+  it('неверный ответ уходит с correct=false, а не молчит', async () => {
+    show({ id: 7, exercises: [choice] })
+
+    fireEvent.click(screen.getByText('b'))
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    await waitFor(() => expect(saveHomeworkAnswer).toHaveBeenCalled())
+    expect(saveHomeworkAnswer.mock.calls[0][4]).toBe(false)
+  })
+
+  it('упавшая отправка честно сообщает, что преподаватель ответа не увидит', async () => {
+    saveHomeworkAnswer.mockRejectedValue(new Error('offline'))
+    show({ id: 7, exercises: [choice] })
+
+    fireEvent.click(screen.getByText('a'))
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(await screen.findByText(/Ответ не сохранился/)).toBeTruthy()
+  })
+
+  it('ответ с сервера важнее черновика в localStorage', () => {
+    localStorage.setItem('hw-answers:7', JSON.stringify({ q1: 'b' }))
+
+    show({ id: 7, exercises: [{ ...choice, studentAnswer: 'a' }] })
+
+    expect(screen.getByText('1 из 1 решено')).toBeTruthy()
+  })
+
+  it('без токена ничего не отправляет, но проверку показывает', async () => {
+    show({ id: 7, exercises: [choice] }, null)
+
+    fireEvent.click(screen.getByText('a'))
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(saveHomeworkAnswer).not.toHaveBeenCalled()
   })
 })
