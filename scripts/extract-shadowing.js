@@ -161,6 +161,7 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true })
   const parseCaptions = await loadParser()
   const rows = []
+  const held = []
 
   for (const s of list) {
     const inFile = path.join(SRC_DIR, `${s.id}.txt`)
@@ -186,7 +187,8 @@ async function main() {
     if (exists && !force) {
       const cur = JSON.parse(fs.readFileSync(outFile, 'utf8'))
       console.log(`· ${s.id}: captions.txt обновлён; json уже есть (${cur.segments.length} фраз) — нужен --force`)
-      rows.push(indexRow(s, cur.segments.length))
+      if (s.hold) held.push(`${s.id}: ${s.hold}`)
+      else rows.push(indexRow(s, cur.segments.length))
       continue
     }
 
@@ -209,7 +211,15 @@ async function main() {
     console.log(
       `· ${s.id}: ${segments.length} фраз (сшито ${joined}), конец ${segments.length ? segments[segments.length - 1][1] : 0}s, самая длинная ${longest.toFixed(1)}s`,
     )
-    rows.push(indexRow(s, segments.length))
+    // hold — материал нарезан, но в индекс не идёт: см. поле в sources.json.
+    // Файл всё равно пишем, чтобы решение можно было отменить одной строкой.
+    if (s.hold) held.push(`${s.id}: ${s.hold}`)
+    else rows.push(indexRow(s, segments.length))
+  }
+
+  if (held.length) {
+    console.log('\nНе идут в индекс:')
+    for (const h of held) console.log(`  ${h}`)
   }
 
   if (rows.length) {
