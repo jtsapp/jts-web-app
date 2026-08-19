@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import BannerBlock from './blocks/BannerBlock.jsx'
 import TheoryBlock from './blocks/TheoryBlock.jsx'
 import InfoBlock from './blocks/InfoBlock.jsx'
@@ -30,16 +31,20 @@ const BLOCK_BY_TYPE = {
  */
 export function groupBlocks(blocks) {
   const groups = []
-  for (const block of blocks || []) {
+  ;(blocks || []).forEach((block, blockIndex) => {
     const last = groups[groups.length - 1]
     if (block?.type === 'info' && last?.type === 'info') {
       last.blocks.push(block)
     } else if (block?.type === 'info') {
-      groups.push({ type: 'info', blocks: [block] })
+      // blockIndex — позиция ПЕРВОГО блока серии в сыром step.blocks (не
+      // groups!) — это же и есть якорь для live-трекинга скролла ниже:
+      // и веб-админка, и этот компонент читают один и тот же сырой массив,
+      // а сериями info склеиваются только тут (см. комментарий выше).
+      groups.push({ type: 'info', blocks: [block], blockIndex })
     } else {
-      groups.push({ type: 'single', block })
+      groups.push({ type: 'single', block, blockIndex })
     }
-  }
+  })
   return groups
 }
 
@@ -58,15 +63,45 @@ export function practiceBlockKey(stepId, groupIndex) {
 // Центр workspace: рендерит блоки активного шага диспетчером по `block.type`.
 // `answers`/`checkedKeys`/`onAnswer`/`onCheck` прокидываются в practice-блоки:
 // сам компонент состояния не хранит, только вычисляет per-карточный ключ.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly }) {
+//
+// `liveQuestionId` — только у смотрящего (преподаватель/собеседник): где
+// сейчас ученик (см. useActiveQuestionTracker в LiveLessonPage). Не только
+// вопрос practice — тот же id может указывать и на info/theory/vocab/
+// checklist-карточку (`block-<индекс>`, см. groupBlocks): ученик читает
+// правило или примеры так же долго, как отвечает на вопросы, и подглядывать
+// только за practice-блоками значило бы, что смотрящий застревает на
+// последнем вопросе шага, пока ученик уже читает материал дальше. Сам
+// ученик liveQuestionId не получает — он не следует за собой.
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId }) {
   const groups = groupBlocks(step?.blocks)
+
+  // Ученик перешёл/проскроллил на новый вопрос — подъезжаем к нему, а не
+  // ждём, пока смотрящий сам найдёт нужную карточку в потоке. Без задержки
+  // элемента ещё может не быть в DOM (смена шага и первого live-события
+  // приходят почти одновременно).
+  useEffect(() => {
+    if (liveQuestionId == null) return
+    const t = setTimeout(() => {
+      // instant, не smooth: smooth scrollIntoView внутри скроллящегося предка
+      // ненадёжен (проверено живьём — анимация иногда просто не запускается).
+      document
+        .querySelector(`[data-question-id="${CSS.escape(String(liveQuestionId))}"]`)
+        ?.scrollIntoView({ behavior: 'instant', block: 'center' })
+    }, 60)
+    return () => clearTimeout(t)
+  }, [liveQuestionId, step?.id])
 
   return (
     <div className="lw-content">
       {groups.map((group, i) => {
         if (group.type === 'info') {
+          const anchorId = `block-${group.blockIndex}`
           return (
-            <div className="lw-card lw-info" key={i}>
+            <div
+              className={`lw-card lw-info${anchorId === liveQuestionId ? ' lw-q--live-here' : ''}`}
+              key={i}
+              data-question-id={anchorId}
+            >
               {group.blocks.map((block, j) => (
                 <InfoBlock key={j} block={block} />
               ))}
@@ -86,12 +121,22 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               onAnswer={onAnswer}
               onCheck={() => onCheck(key)}
               readOnly={readOnly}
+              liveQuestionId={liveQuestionId}
             />
           )
         }
         const Block = BLOCK_BY_TYPE[block.type]
         if (!Block) return null
-        return <Block key={i} block={block} />
+        const anchorId = `block-${group.blockIndex}`
+        return (
+          <div
+            key={i}
+            data-question-id={anchorId}
+            className={anchorId === liveQuestionId ? 'lw-q--live-here' : undefined}
+          >
+            <Block block={block} />
+          </div>
+        )
       })}
     </div>
   )

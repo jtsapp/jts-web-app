@@ -42,6 +42,15 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     requestSnapshot() {
       post({ type: 'request-snapshot' })
     },
+    // Teacher watching a student review page: one live action (click/input/change/
+    // scroll) arrived over the socket — replay it here so the teacher's own iframe
+    // stays in sync with what the student is doing right now. Unlike `replay`,
+    // dropped events aren't queued: a mirror event describes the student's CURRENT
+    // position, and applying a stale one after a reload would be wrong, not late.
+    mirror(event) {
+      if (!loadedRef.current) return
+      post({ type: 'mirror', selector: event.selector, eventType: event.eventType, value: event.value ?? null })
+    },
   }), [])
 
   function post(payload) {

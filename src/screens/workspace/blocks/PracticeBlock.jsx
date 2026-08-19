@@ -22,7 +22,7 @@ const QUESTION_BY_TYPE = {
 // карточки (см. `practiceBlockKey` в LessonContent) — прокидывается в вопросы
 // как есть. Повторное нажатие «Проверить» разрешено (просто снова вызывает
 // `onCheck(block)`; чей это ключ — знает только родитель).
-export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly }) {
+export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId }) {
   const { t } = useI18n()
 
   return (
@@ -37,14 +37,23 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
           const Question = QUESTION_BY_TYPE[question.type]
           if (!Question) return null
           return (
-            <Question
+            // data-question-id — якорь для двух вещей на разных концах: у
+            // ученика по нему live-трекер (useActiveQuestionTracker) считает,
+            // какой вопрос сейчас в кадре; у смотрящего преподавателя по нему
+            // же ищет, куда проскроллить (см. эффект в LessonContent).
+            <div
               key={question.id}
-              question={question}
-              answer={answers?.[question.id] ?? null}
-              checked={checked}
-              onAnswer={onAnswer}
-              readOnly={readOnly}
-            />
+              data-question-id={question.id}
+              className={question.id === liveQuestionId ? 'lw-q--live-here' : undefined}
+            >
+              <Question
+                question={question}
+                answer={answers?.[question.id] ?? null}
+                checked={checked}
+                onAnswer={onAnswer}
+                readOnly={readOnly}
+              />
+            </div>
           )
         })}
       </div>

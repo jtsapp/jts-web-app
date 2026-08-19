@@ -1,0 +1,47 @@
+[
+  {
+    "id": "story60",
+    "title": "The Secret to Telling a Great Story",
+    "short": "Jenny Hoyos",
+    "video": "ZmNpeXTj2c4",
+    "channel": "TED",
+    "notion": "https://app.notion.com/p/The-Secret-to-Telling-a-Great-Story-3c0c7eb1700980a9949bf14d482efeb9",
+    "level": null
+  },
+  {
+    "id": "lying",
+    "title": "The Language of Lying",
+    "short": "Noah Zandan",
+    "video": "H0-WkpmTPrM",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/The-language-of-lying-3c0c7eb1700980f2aa18d6668ab4e8a2",
+    "level": null
+  },
+  {
+    "id": "miscomm",
+    "title": "How Miscommunication Happens",
+    "short": "Katherine Hampsten",
+    "video": "gCfzeONu3Mo",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/How-miscommunication-happens-3c0c7eb1700980dbbc35cc25d2129a44",
+    "level": null
+  },
+  {
+    "id": "argue",
+    "title": "How to Argue · Harvard Negotiator",
+    "short": "Dan Shapiro",
+    "video": "IDj1OBG5Tpw",
+    "channel": "Big Think",
+    "notion": "https://app.notion.com/p/Harvard-negotiator-explains-how-to-argue-3c0c7eb170098052ab6ecc6d1db129ee",
+    "level": null
+  },
+  {
+    "id": "smalltalk",
+    "title": "How to Never Run Out of Things to Say",
+    "short": "Smartish Stuff",
+    "video": "4816yu9QNro",
+    "channel": "Smartish Stuff",
+    "notion": "https://app.notion.com/p/How-to-Never-Run-Out-of-Things-to-Say-3c0c7eb1700980588593c16f92e25d93",
+    "level": null
+  }
+]
