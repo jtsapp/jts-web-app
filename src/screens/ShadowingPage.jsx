@@ -138,6 +138,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const playerRef = useRef(null)
   const timerRef = useRef(null)
   const stopAtRef = useRef(null)
+  const segmentsRef = useRef([]) // фразы для трекера: интервал переживает рендеры
   const loopRef = useRef(null)
   const rateRef = useRef(1)
   const activeRef = useRef(-1)
@@ -212,6 +213,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     }
   }, [])
 
+  useEffect(() => { segmentsRef.current = segments }, [segments])
   useEffect(() => { rateRef.current = rate }, [rate])
   useEffect(() => { loopRef.current = loopIdx }, [loopIdx])
 
@@ -287,23 +289,30 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
     if (e.data === YT.PlayerState.ENDED) setActive(-1)
   }
 
+  // Трекер читает фразы через ref, а не через замыкание: интервал создаётся один
+  // раз (сторож timerRef) и живёт до смены ролика, а segments теперь приезжают
+  // из сети уже ПОСЛЕ первого рендера. С замыканием play, нажатый в это окно,
+  // навсегда привязывал интервал к пустому массиву — подсветка фразы молча
+  // умирала до перехода на другой урок.
   function startTracking() {
     if (timerRef.current) return
     timerRef.current = setInterval(() => {
       const p = playerRef.current
       if (!p || !p.getCurrentTime) return
+      const rows = segmentsRef.current
+      if (!rows.length) return
       let cur
       try { cur = p.getCurrentTime() } catch { return }
       if (stopAtRef.current !== null && cur >= stopAtRef.current) {
-        if (loopRef.current !== null) {
-          try { p.seekTo(segments[loopRef.current][0], true) } catch {}
+        if (loopRef.current !== null && rows[loopRef.current]) {
+          try { p.seekTo(rows[loopRef.current][0], true) } catch {}
         } else {
           try { p.pauseVideo() } catch {}
           stopAtRef.current = null
         }
         return
       }
-      const i = segments.findIndex((s) => cur >= s[0] && cur < s[1])
+      const i = rows.findIndex((s) => cur >= s[0] && cur < s[1])
       setActive(i)
     }, 140)
   }
