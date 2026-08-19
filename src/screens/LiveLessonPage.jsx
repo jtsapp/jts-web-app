@@ -108,6 +108,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Focus can name a catalog step before that lesson's JSON has loaded; catalog
   // resolve used to always reset to steps[0] and wipe the teacher's target.
   const pendingFocusStepRef = useRef(null)
+  // Race: switching materials, `onLessonSteps` below still reads the PREVIOUS
+  // material's (non-empty) steps during the async gap before the new catalog
+  // lesson resolves — so the progress-restore effect can fire and land its
+  // saved stepId *before* the catalog-resolve effect below runs and defaults
+  // to steps[0], clobbering it right back to the start. This records what
+  // restore last set, keyed by material, so catalog-resolve can defer to it
+  // instead of blindly overwriting — see both effects below.
+  const restoredStepRef = useRef({ materialId: null, stepId: null })
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
   // К разделу можно прикрепить несколько материалов, и до сих пор ученик видел
@@ -185,8 +193,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         setCatalogLesson(loaded || null)
         const forced = pendingFocusStepRef.current
         pendingFocusStepRef.current = null
+        const restored = restoredStepRef.current
         if (forced != null && (loaded?.steps || []).some((s) => String(s.id) === String(forced))) {
           setActiveStepId(forced)
+        } else if (restored.materialId === activeMaterial?.materialId && restored.stepId != null) {
+          // Progress-restore already landed the real step for this exact
+          // material while this fetch was in flight — don't stomp it back
+          // to the beginning. Consume it once: a later re-resolve for the
+          // same material (e.g. a forced reload) shouldn't re-apply a now-
+          // stale step over wherever the student has since navigated to.
+          restoredStepRef.current = { materialId: null, stepId: null }
+          setActiveStepId(restored.stepId)
         } else {
           setActiveStepId(loaded?.steps?.[0]?.id ?? null)
         }
@@ -493,7 +510,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             setCheckedSteps(restored.checkedSteps)
             // Возвращаем на тот шаг, где остановились: иначе урок каждый раз
             // начинается сначала, а ответы «где-то дальше по ленте».
-            if (restored.stepId) setActiveStepId(restored.stepId)
+            if (restored.stepId) {
+              restoredStepRef.current = { materialId: stepMaterialId, stepId: restored.stepId }
+              setActiveStepId(restored.stepId)
+            }
           }
         }
         setProgressLoadedFor(stepMaterialId)

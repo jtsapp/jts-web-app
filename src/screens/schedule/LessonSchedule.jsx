@@ -33,6 +33,19 @@ export default function LessonSchedule({ token, onOpenLesson }) {
     return () => { cancelled = true }
   }, [token])
 
+  // Учитель нажал «Начать урок», пока ученик сидел на расписании — occurrences
+  // грузились только один раз при монтировании, и «Идёт сейчас» не появлялся
+  // без ручного F5 (тот же класс проблемы, что и опрос статуса внутри самого
+  // живого урока в LiveLessonPage). Тихий фон, без «loading»/мигания списка:
+  // ошибку одного тика тоже молчим — при следующем тике само поправится.
+  useEffect(() => {
+    if (!token) return undefined
+    const id = setInterval(() => {
+      getMyLessonOccurrences(token).then((o) => setOcc(Array.isArray(o) ? o : [])).catch(() => {})
+    }, 20000)
+    return () => clearInterval(id)
+  }, [token])
+
   const occByDay = useMemo(() => occurrencesByDayKey(occ), [occ])
   const liveNow = useMemo(() => findLiveOccurrence(occ), [occ])
 
