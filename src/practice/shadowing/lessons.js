@@ -19,11 +19,11 @@ const RAW = [
   { id: 'v5', title: 'Barack Obama · Victory Speech 2008', short: 'Obama', video: 'mi8N5gDVpeg', segCount: 129 },
   // Подборка клиента из Notion (scripts/shadowing-src/sources.json): короткие
   // ролики на 4–5 минут, речь быстрее и разговорнее, чем в речах выше.
-  { id: 'story60', title: 'The Secret to Telling a Great Story', short: 'Jenny Hoyos', video: 'ZmNpeXTj2c4', segCount: 57 },
-  { id: 'lying', title: 'The Language of Lying', short: 'Noah Zandan', video: 'H0-WkpmTPrM', segCount: 49 },
-  { id: 'miscomm', title: 'How Miscommunication Happens', short: 'Katherine Hampsten', video: 'gCfzeONu3Mo', segCount: 41 },
-  { id: 'argue', title: 'How to Argue · Harvard Negotiator', short: 'Dan Shapiro', video: 'IDj1OBG5Tpw', segCount: 56 },
-  { id: 'smalltalk', title: 'How to Never Run Out of Things to Say', short: 'Smartish Stuff', video: '4816yu9QNro', segCount: 30 },
+  { id: 'story60', title: 'The Secret to Telling a Great Story', short: 'Jenny Hoyos', video: 'ZmNpeXTj2c4', segCount: 56 },
+  { id: 'lying', title: 'The Language of Lying', short: 'Noah Zandan', video: 'H0-WkpmTPrM', segCount: 47 },
+  { id: 'miscomm', title: 'How Miscommunication Happens', short: 'Katherine Hampsten', video: 'gCfzeONu3Mo', segCount: 40 },
+  { id: 'argue', title: 'How to Argue · Harvard Negotiator', short: 'Dan Shapiro', video: 'IDj1OBG5Tpw', segCount: 54 },
+  { id: 'smalltalk', title: 'How to Never Run Out of Things to Say', short: 'Smartish Stuff', video: '4816yu9QNro', segCount: 23 },
 ]
 
 // Обложка ролика — превью YouTube. Берём mqdefault (320×180): это ЧЕСТНЫЙ 16:9
