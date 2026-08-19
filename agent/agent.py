@@ -2226,13 +2226,11 @@ def build_standalone_instructions(p: LearnerProfile) -> str:
     parts = [body] if body else []
     if p.user_name:
         parts.append(f"The person you are speaking with is called {p.user_name}.")
-    # Язык интерфейса — подсказка, а не приказ: если человек заговорит на другом,
-    # отвечать надо на нём. Ровно то же правило, что у обычных тьюторов.
-    lang_name = {"ru": "Russian", "kz": "Kazakh"}.get((p.lang or "en").strip().lower(), "English")
-    parts.append(
-        f"The interface language is {lang_name}. Answer in whatever language the "
-        "person speaks to you in — the whole turn, not one clarifying phrase."
-    )
+    # Язык НЕ добавляем, и это отличие от обычных тьюторов. У них язык зеркалит
+    # ученика (см. lang_g в build_instructions), а у персоны со своим промптом он
+    # часть характера: Джарвис говорит по-русски всегда, это секция LANGUAGE в
+    # data/persona-jarvis.md. Стандартная строка «отвечай на языке собеседника»
+    # прямо противоречила бы ей, и модель выбирала бы между двумя приказами.
     return "\n\n".join(parts).strip()
 
 
