@@ -14,7 +14,7 @@ export default function TutorVoiceIntroPage({
   onDecline,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', face = '' } = tutor
   return (
     <TutorShell
       active="tutor"
@@ -27,7 +27,7 @@ export default function TutorVoiceIntroPage({
       <TutorStatus
         heading={t('voiceIntro.heading', { name })}
         name={name}
-        avatar={avatar}
+        avatar={avatar} face={face}
         flow
       >
         <div className="t-btnstack">

@@ -115,7 +115,7 @@ export default function SpeakingTestPage({
   // Язык фидбека = язык интерфейса: раньше здесь стояло 'ru' числом, и казахский
   // ученик получал разбор уровня по-русски. Роут ждёт ISO 'kk', в приложении 'kz'.
   const uiLang = lang === 'kz' ? 'kk' : lang === 'en' ? 'en' : 'ru'
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', face = '' } = tutor
   const [supported] = useState(() => isMediaRecordingSupported())
   const rec = useWavRecorder()
   const [phase, setPhase] = useState('ready') // ready | recording | processing | error
@@ -241,7 +241,7 @@ export default function SpeakingTestPage({
           ? 'placeTest.stageGrade'
           : 'placeTest.stageAlmost'
     return shell(
-      <TutorStatus name={name} avatar={avatar} heading={t(headingKey)} flow dots pulse>
+      <TutorStatus name={name} avatar={avatar} face={face} heading={t(headingKey)} flow dots pulse>
         <div className="t-placetest__steps" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={idx + 1}>
           {stages.map((s, i) => (
             <span
@@ -257,7 +257,7 @@ export default function SpeakingTestPage({
 
   if (phase === 'error') {
     return shell(
-      <TutorStatus name={name} avatar={avatar} heading={t(errKey || 'placeTest.errGrade')} flow>
+      <TutorStatus name={name} avatar={avatar} face={face} heading={t(errKey || 'placeTest.errGrade')} flow>
         <div className="t-btnstack">
           <button
             className="t-pill t-pill--primary t-pill--lg"
@@ -280,7 +280,7 @@ export default function SpeakingTestPage({
 
   if (phase === 'recording') {
     return shell(
-      <TutorStatus name={name} avatar={avatar} heading={t('placeTest.recordingHeading')} flow pulse>
+      <TutorStatus name={name} avatar={avatar} face={face} heading={t('placeTest.recordingHeading')} flow pulse>
         <p className="t-placetest__prompt">{PLACEMENT_TASK.instruction}</p>
         <div className="t-placetest__timer">
           <span className="t-placetest__dot" />
@@ -304,7 +304,7 @@ export default function SpeakingTestPage({
 
   // phase === 'ready'
   return shell(
-    <TutorStatus name={name} avatar={avatar} heading={t('placeTest.heading')} flow>
+    <TutorStatus name={name} avatar={avatar} face={face} heading={t('placeTest.heading')} flow>
       <p className="t-placetest__prompt">{PLACEMENT_TASK.instruction}</p>
       <p className="t-placetest__hint">{t('placeTest.hint')}</p>
       {!supported && <p className="t-placetest__err">{t('placeTest.errUnsupported')}</p>}

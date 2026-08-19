@@ -63,6 +63,10 @@ const TUNING = {
   // Спарк (Soniox). Кроме темпа крутить нечего — эмоций провайдер не умеет.
   // Диапазон [0.7–1.3], берём заметно медленнее середины.
   spark: { speed: 0.85 },
+  // Джарвис (Fish Audio). Голос клонированный, характер задаётся самой моделью,
+  // поэтому ручек стиля нет — только температура/top_p, и те по умолчанию.
+  // latency balanced: визитка озвучивается офлайн, спешить некуда.
+  jarvis: { latency: 'balanced' },
 }
 
 // Тексты живут в src/tutor/tutors.js и берутся оттуда, а не дублируются здесь:
@@ -99,7 +103,10 @@ function loadEnv() {
     if (!fs.existsSync(p)) continue
     const raw = fs.readFileSync(p, 'utf8').replace(/^﻿/, '')
     for (const line of raw.split(/\r?\n/)) {
-      const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
+      // Имя допускаем в любом регистре: ключ Fish Audio приехал в .env.local
+      // как Fish_Audio_API, и строгий [A-Z0-9_] молча его не видел — скрипт
+      // ругался «ключ не задан», хотя ключ лежал строкой выше.
+      const m = line.match(/^([A-Za-z0-9_]+)=(.*)$/)
       if (m && !process.env[m[1]]) process.env[m[1]] = m[2]
     }
   }
@@ -223,7 +230,34 @@ async function ttsSoniox(text, lang) {
   return Buffer.from(await res.arrayBuffer())
 }
 
-const PROVIDER = { luna: ttsGemini, dexter: ttsEleven, spark: ttsSoniox }
+async function ttsFish(text) {
+  const key = process.env.FISH_AUDIO_API_KEY
+  if (!key) throw new Error('FISH_AUDIO_API_KEY не задан')
+  // Тот же reference_id, что у живого Джарвиса (FISH_VOICE в
+  // app/api/tutor-tts/route.js и FISH_TTS_VOICE в agent.py).
+  const voice = process.env.FISH_VOICE_ID_JARVIS || 'c47719f52ce34cc193b9bc2f00565e8a'
+  const res = await fetch('https://api.fish.audio/v1/tts', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      // Модель у Fish едет заголовком, а не полем тела.
+      // Та же модель, что у живого Джарвиса (см. FISH_MODEL в tutor-tts/route.js).
+      model: process.env.FISH_TTS_MODEL || 's2.1-pro',
+    },
+    body: JSON.stringify({
+      text,
+      reference_id: voice,
+      format: 'mp3',
+      mp3_bitrate: 128,
+      latency: TUNING.jarvis.latency,
+    }),
+  })
+  if (!res.ok) throw new Error(`Fish Audio ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  return Buffer.from(await res.arrayBuffer())
+}
+
+const PROVIDER = { luna: ttsGemini, dexter: ttsEleven, spark: ttsSoniox, jarvis: ttsFish }
 
 // ---- main ------------------------------------------------------------------
 async function main() {

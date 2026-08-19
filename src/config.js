@@ -23,3 +23,20 @@ export const TUTOR_ONLY = false
 // onNav('shadowing')), поэтому тоже в списке.
 // При TUTOR_ONLY = false список не используется.
 export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening', 'shadowing']
+
+// JARVIS_ENABLED — четвёртый тьютор «Джарвис» на экране выбора. Только для
+// разработки и dev-стенда, в прод не идёт.
+//
+// Почему переменная сборки, а не NODE_ENV: dev-стенд (dev-tutor.justtostudy.kz)
+// собирается тем же `next build` в том же образе, что и прод, — там
+// NODE_ENV === 'production', и проверка «не прод» спрятала бы Джарвиса именно
+// на стенде, ради которого он и делается.
+//
+// Почему НЕ ветка (как TUTOR_ONLY): флаг одинаков в develop и main, поэтому
+// мерж между ними его не переписывает и очередного тихого расхождения веток
+// не создаёт (см. инцидент выше). Включается только окружением сборки:
+// локально — строкой в .env.local, на стенде — переменной GitLab CI со scope
+// dev (плюс ARG в Dockerfile и build.args в compose-app.yaml — NEXT_PUBLIC_*
+// вшивается в бандл на этапе сборки). В прод-окружении переменной нет → false,
+// и карточка не попадает даже в бандл.
+export const JARVIS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_JARVIS === '1'

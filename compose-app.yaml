@@ -14,7 +14,9 @@ services:
         # NEXT_PUBLIC_* вшивается в бандл на этапе `next build` — должен быть
         # доступен уже на build-стадии, обычный `environment:` тут не поможет.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        # Джарвис (dev-only тьютор). Переменная задаётся только в dev-scope
+        # GitLab CI; в прод-окружении её быть не должно.
+        NEXT_PUBLIC_ENABLE_JARVIS: ${NEXT_PUBLIC_ENABLE_JARVIS:-}
     environment:
       # Мозг тьютора + оценка IELTS
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
@@ -34,6 +36,10 @@ services:
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
       ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID}
       ELEVEN_VOICE_ID_DEXTER: ${ELEVEN_VOICE_ID_DEXTER}
+      # Fish Audio — голос Джарвиса (dev-only тьютор). Пусто → его карточки на
+      # прод-сборке и так нет, роут просто не отдаст fish-провайдера.
+      FISH_AUDIO_API_KEY: ${FISH_AUDIO_API_KEY:-}
+      FISH_VOICE_ID_JARVIS: ${FISH_VOICE_ID_JARVIS:-}
       GOOGLE_CREDENTIALS_JSON: ${GOOGLE_CREDENTIALS_JSON}
     restart: always
     depends_on:

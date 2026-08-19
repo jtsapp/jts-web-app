@@ -14,7 +14,7 @@ export default function TutorLevelOfferPage({
   onLater,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', face = '' } = tutor
   return (
     <TutorShell
       active="tutor"
@@ -27,7 +27,7 @@ export default function TutorLevelOfferPage({
       <TutorStatus
         heading={t('offer.heading', { name })}
         name={name}
-        avatar={avatar}
+        avatar={avatar} face={face}
         headingColor="#d0b2ff"
         flow
       >

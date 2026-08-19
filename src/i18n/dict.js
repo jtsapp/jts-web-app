@@ -59,6 +59,16 @@ export const DICT = {
       'Тьютор специально для казахской аудитории. Объясняет по-казахски и свободно переключается между казахским и английским. Энергичный и свой в доску — подаёт английский через понятные примеры и заряжает «алға, сен істейсің!». С ним английский учится на родном языке.',
     'tutor.spark.listen': 'Послушать голос Спарка',
     'tutor.spark.choose': 'Выбрать Спарка',
+    // Джарвис — dev-only тьютор (JARVIS_ENABLED в src/config.js). Ключи лежат
+    // во всех трёх языках: на проде карточки нет, но словарь общий, и «дырка»
+    // в kz/en вылезла бы сырым ключом, если флаг включат.
+    'tutor.jarvis.trait1': 'Ассистент',
+    'tutor.jarvis.trait2': 'Англоязычный',
+    'tutor.jarvis.trait3': 'Только для теста',
+    'tutor.jarvis.desc':
+      'Экспериментальный ассистент, а не тьютор: он не ведёт урок по методичке, а отвечает на то, что спрашиваешь. Говорит по-английски, спокойно и по делу. Доступен только на тестовом стенде.',
+    'tutor.jarvis.listen': 'Послушать голос Джарвиса',
+    'tutor.jarvis.choose': 'Выбрать Джарвиса',
 
     // Загрузка
     'loading.heading': '{name} собирает\nтебе обучение...',
@@ -309,6 +319,13 @@ export const DICT = {
       'Қазақ аудиториясына арнайы жасалған тьютор. Ағылшынды қазақша түсіндіреді, қазақша мен ағылшынның арасында еркін ауысады. Жігерлі әрі өзіміздікі — ағылшынды таныс мысалдармен береді және «алға, сен істейсің!» деп жігерлендіреді. Онымен ағылшын ана тіліңде үйреніледі.',
     'tutor.spark.listen': 'Спарк дауысын тыңдау',
     'tutor.spark.choose': 'Спарк таңдау',
+    'tutor.jarvis.trait1': 'Ассистент',
+    'tutor.jarvis.trait2': 'Ағылшынша',
+    'tutor.jarvis.trait3': 'Тек тестке',
+    'tutor.jarvis.desc':
+      'Тәжірибелік ассистент, тьютор емес: әдістеме бойынша сабақ өткізбейді, сұрағаныңа жауап береді. Ағылшынша, байсалды әрі нақты сөйлейді. Тек тест стендінде қолжетімді.',
+    'tutor.jarvis.listen': 'Джарвис дауысын тыңдау',
+    'tutor.jarvis.choose': 'Джарвис таңдау',
 
     'loading.heading': '{name} саған оқу\nжинап жатыр...',
 
@@ -540,6 +557,13 @@ export const DICT = {
       'A tutor built specifically for Kazakh learners. Explains English in Kazakh and switches freely between Kazakh and English. Energetic and down-to-earth, he teaches through familiar examples and cheers you on «алға, сен істейсің!». With him you learn English in your own language.',
     'tutor.spark.listen': "Listen to Spark's voice",
     'tutor.spark.choose': 'Choose Spark',
+    'tutor.jarvis.trait1': 'Assistant',
+    'tutor.jarvis.trait2': 'English-speaking',
+    'tutor.jarvis.trait3': 'Test build only',
+    'tutor.jarvis.desc':
+      'An experimental assistant rather than a tutor: he does not run a lesson from the syllabus, he answers what you ask. Speaks English, calm and to the point. Available on the test build only.',
+    'tutor.jarvis.listen': "Listen to Jarvis's voice",
+    'tutor.jarvis.choose': 'Choose Jarvis',
 
     'loading.heading': '{name} is putting\nyour lessons together...',
 

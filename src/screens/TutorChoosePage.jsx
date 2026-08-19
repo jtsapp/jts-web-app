@@ -1,5 +1,6 @@
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorCarousel from '../tutor/TutorCarousel.jsx'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import { WindowIcon, SpeakIcon, VolumeIcon } from '../tutor/TutorIcons.jsx'
 import { TUTORS } from '../tutor/tutors.js'
 import { useLang } from '../i18n/LanguageContext.jsx'
@@ -55,7 +56,7 @@ export default function TutorChoosePage({
         <div className="t-choose__grid">
           {TUTORS.map((tt) => (
             <div className="t-tcard" key={tt.key}>
-              <img className="t-tcard__avatar" src={tt.avatar} alt="" />
+              <TutorThumb tutor={tt} className="t-tcard__avatar" />
               <div className="t-tcard__name">
                 {tt.name}
                 {tt.adult && (

@@ -1,4 +1,5 @@
 import TutorShell from '../tutor/TutorShell.jsx'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import { ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { groupCallsByDate } from '../tutor/callHistory.js'
@@ -17,7 +18,7 @@ export default function TutorManagePage({
   onOpenCall,
 }) {
   const { lang, t } = useLang()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк' } = tutor
   const history = groupCallsByDate(calls, t, lang)
   return (
     <TutorShell
@@ -31,7 +32,7 @@ export default function TutorManagePage({
     >
       <div className="t-manage">
         <div className="t-manage__card">
-          <img src={avatar} alt="" />
+          <TutorThumb tutor={tutor} />
           <div className="t-manage__name">
             <b>{name}</b>
             <span>{t('role.tutor')}</span>

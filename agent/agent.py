@@ -80,6 +80,13 @@ try:
     from livekit.plugins import openai as lk_openai
 except Exception:  # pragma: no cover
     lk_openai = None
+# Fish Audio — голос Джарвиса (dev-only тьютор, JARVIS_ENABLED в src/config.js).
+# Импорт такой же необязательный, как у остальных: без пакета сессии остальных
+# трёх тьюторов должны подниматься как раньше.
+try:
+    from livekit.plugins import fishaudio
+except Exception:  # pragma: no cover
+    fishaudio = None
 
 # Two voice stacks, chosen by VOICE_STACK:
 #   gemini-live (default) — one bidirectional Gemini Live stream does speech-in,
@@ -221,6 +228,42 @@ else:
         "Methodology file empty or missing at %s — tutor will run without it",
         _METHODOLOGY_PATH,
     )
+
+
+# ---- персоны со своим промптом ---------------------------------------------
+# Джарвис — не тьютор, а ассистент: методичка, программа по уровням и таблица
+# ошибок ему не нужны вовсе, поэтому он не получает build_instructions с
+# «урезанным» блоком, а идёт по отдельной ветке сборки промпта. Весь его
+# характер — один markdown-файл, который правится без единой строки кода.
+#
+# Путь тот же двойной, что у методички: <repo-root>/data/persona-jarvis.md в
+# дев-режиме, agent/persona-jarvis.md в Docker-образе (контекст сборки — agent/).
+#
+# ВАЖНО про деплой: агент один на все окружения (agent/livekit.toml, один
+# CA_-id), так что персона физически окажется и в том воркере, который
+# обслуживает прод. Это не утечка: попасть в неё можно, только прислав
+# tutor: 'jarvis' в metadata комнаты, а прод-сборка Next даже не рендерит
+# карточку Джарвиса (JARVIS_ENABLED в src/config.js).
+_PERSONA_STANDALONE_FILES = {"jarvis": "persona-jarvis.md"}
+STANDALONE_PROMPT_PERSONAS = frozenset(_PERSONA_STANDALONE_FILES)
+
+PERSONA_STANDALONE_BLOCKS: dict[str, str] = {}
+for _persona, _fname in _PERSONA_STANDALONE_FILES.items():
+    _path = _resolve_methodology(_fname)
+    _text = _load_methodology_file(_path)
+    if _text:
+        PERSONA_STANDALONE_BLOCKS[_persona] = _text
+        logger.info(
+            "Standalone persona loaded for %s: %d chars from %s",
+            _persona, len(_text), _path,
+        )
+    else:
+        # Пустой файл нельзя проглотить молча: без него персона получила бы
+        # промпт из одной строки и вела бы себя как безымянный ассистент.
+        logger.error(
+            "Standalone persona file for %s is empty or missing at %s",
+            _persona, _path,
+        )
 
 
 # ---- scenario loader -------------------------------------------------------
@@ -2169,6 +2212,30 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
     )
 
 
+def build_standalone_instructions(p: LearnerProfile) -> str:
+    """Промпт персоны, которая НЕ ведёт урок по методичке (см.
+    STANDALONE_PROMPT_PERSONAS). Файл персоны идёт как есть, а код добавляет
+    только то, чего в файле знать нельзя: имя собеседника и язык сессии.
+
+    Сознательно НЕ добавляется ничего из build_instructions — ни CEFR-гайд, ни
+    STYLE_GUIDANCE, ни memory-директивы, ни блок эмоций. Персона такого рода
+    ломается ровно от этого: половина её характера уходит на спор с указаниями
+    «будь encouraging» и «начни с диагностики уровня».
+    """
+    body = PERSONA_STANDALONE_BLOCKS.get((p.tutor or "").strip().lower(), "")
+    parts = [body] if body else []
+    if p.user_name:
+        parts.append(f"The person you are speaking with is called {p.user_name}.")
+    # Язык интерфейса — подсказка, а не приказ: если человек заговорит на другом,
+    # отвечать надо на нём. Ровно то же правило, что у обычных тьюторов.
+    lang_name = {"ru": "Russian", "kz": "Kazakh"}.get((p.lang or "en").strip().lower(), "English")
+    parts.append(
+        f"The interface language is {lang_name}. Answer in whatever language the "
+        "person speaks to you in — the whole turn, not one clarifying phrase."
+    )
+    return "\n\n".join(parts).strip()
+
+
 def build_instructions(p: LearnerProfile) -> str:
     level_g = cefr_guidance_for(p.level, p.tutor)
     style_g = (
@@ -3063,6 +3130,65 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     return soniox.TTS(api_key=key, model=model, voice=voice, language=language)
 
 
+# Fish Audio: голос задаётся reference_id клонированной модели, а не именем из
+# каталога, — поэтому в таблице хэш, а не «Owen»/«Puck». Зеркало FISH_VOICE в
+# src/app/api/tutor-tts/route.js: превью на экране выбора обязано звучать тем
+# же голосом, каким тьютор заговорит вживую.
+FISH_TTS_VOICE = {
+    "jarvis": "c47719f52ce34cc193b9bc2f00565e8a",
+}
+# s2.1-pro — дефолт самого Fish и livekit-плагина. Цена у s1/s2-pro/s2.1-pro
+# одинаковая ($15/1M UTF-8 байт), поэтому пин на s1 был бы даунгрейдом даром.
+# Переключается переменной FISH_TTS_MODEL, зеркало FISH_MODEL в tutor-tts/route.js.
+DEFAULT_FISH_MODEL = "s2.1-pro"
+
+
+def _fish_voice_for(tutor: str) -> str:
+    """reference_id персоны: env FISH_VOICE_ID_<PERSONA> важнее таблицы —
+    сменить тембр можно без редеплоя агента (зеркало _eleven_voice_for)."""
+    tutor = (tutor or "").strip().lower()
+    if tutor:
+        env = (os.getenv(f"FISH_VOICE_ID_{tutor.upper()}") or "").strip()
+        if env:
+            return env
+    return FISH_TTS_VOICE.get(tutor, FISH_TTS_VOICE["jarvis"])
+
+
+def _cascade_tts_fish(profile: LearnerProfile):
+    """Fish Audio TTS. Только Джарвис — dev-only «ассистент», у которого голос
+    клонированный, а не выбранный из каталога провайдера.
+
+    Ключ отдаём явно, а не через дефолтную FISH_API_KEY плагина: в этом проекте
+    все ключи живут одним именем на web и на агенте (FISH_AUDIO_API_KEY), и
+    второе имя той же переменной — гарантированный способ однажды залить агента
+    без голоса.
+    """
+    if fishaudio is None:
+        raise RuntimeError("Fish Audio TTS needs livekit-plugins-fishaudio")
+    key = os.getenv("FISH_AUDIO_API_KEY") or os.getenv("FISH_API_KEY")
+    if not key:
+        raise RuntimeError("Fish Audio TTS needs FISH_AUDIO_API_KEY")
+    voice = _fish_voice_for(profile.tutor)
+    model = os.getenv("FISH_TTS_MODEL", DEFAULT_FISH_MODEL)
+    logger.info(
+        "Cascade TTS: Fish Audio (%s, reference_id=%s), tutor=%s",
+        model, voice, profile.tutor or "<none>",
+    )
+    return fishaudio.TTS(
+        api_key=key,
+        # ВНИМАНИЕ: у плагина параметр называется voice_id, хотя в HTTP-теле Fish
+        # то же самое поле зовётся reference_id (см. fishTts в
+        # app/api/tutor-tts/route.js) — и в доках Fish про LiveKit написан именно
+        # reference_id. Такой вызов падает TypeError уже на построении сессии.
+        voice_id=voice,
+        model=model,
+        sample_rate=24000,
+        # balanced, а не low: low экономит доли секунды на первом чанке ценой
+        # слышимых артефактов, а Джарвис и так отвечает не мгновенно.
+        latency_mode="balanced",
+    )
+
+
 # ── Кто чем говорит ─────────────────────────────────────────────────────────
 # Стек один на всех — cascade (VOICE_STACK=cascade). А вот TTS-провайдер СВОЙ у
 # каждого тьютора: голос — часть характера, а не глобальный рубильник. Раньше
@@ -3072,6 +3198,7 @@ TUTOR_TTS_PROVIDER = {
     "bro": "eleven",     # Декстер — клиентский голос выбран в ElevenLabs
     "gentle": "gemini",  # Луна    — лучшее качество на en/ru, один голос на оба
     "hype": "soniox",    # Спарк   — один тембр на всех 60+ языках, включая kk
+    "jarvis": "fish",    # Джарвис — клонированный голос, только dev-стенд
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
@@ -3079,7 +3206,7 @@ TUTOR_TTS_PROVIDER = {
 # CASCADE_TTS — то есть при незаданной переменной агент шёл в провайдера,
 # которого не существует. Код azure-пути рабочий и оставлен, но попасть в него
 # теперь можно только явно: TTS_PROVIDER_<PERSONA>=azure или CASCADE_TTS=azure.
-TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure")
+TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure", "fish")
 # Дефолт для персон вне таблицы (professor/sage/snark/edge/velvet/coach — в UI
 # их нет, но агент их знает) и для пустого tutor. CASCADE_TTS сохранён как имя
 # переменной, но сменил смысл: это ДЕФОЛТ для нераспределённых, не рубильник.
@@ -3126,6 +3253,9 @@ def _cascade_tts(profile: LearnerProfile):
       multilingual_v2. Нужен ELEVENLABS_API_KEY.
     azure  — $15/1M и родные kk-KZ голоса, но аккаунта у проекта нет (см.
       TUTOR_TTS_PROVIDER). Переходы en<->ru тестеры оценили плохо.
+    fish   — клонированный голос Джарвиса, больше он никому не нужен. Кредиты
+      у Fish отдельные от платформенных: при нуле на счету API отвечает 402, и
+      сессия уедет в фолбэк на Soniox (голос будет чужой, но урок пойдёт).
     """
     which = _tts_provider_for(profile)
     if which not in TTS_PROVIDERS:
@@ -3137,6 +3267,7 @@ def _cascade_tts(profile: LearnerProfile):
         "gemini": _cascade_tts_gemini,
         "eleven": _cascade_tts_eleven,
         "azure": _cascade_tts_azure,
+        "fish": _cascade_tts_fish,
     }
     try:
         return builders[which](profile)
@@ -3609,8 +3740,13 @@ async def entrypoint(ctx: JobContext):
         else None
     )
     is_scenario = scenario_data is not None
+    # Персона со своим промптом (Джарвис) идёт мимо всех четырёх режимов: у неё
+    # нет ни методички, ни уровней, ни сценариев — только собственный файл.
+    is_standalone = (profile.tutor or "").strip().lower() in STANDALONE_PROMPT_PERSONAS
     instructions = (
-        build_scenario_instructions(profile, scenario_data)
+        build_standalone_instructions(profile)
+        if is_standalone
+        else build_scenario_instructions(profile, scenario_data)
         if is_scenario
         else build_placement_instructions(profile)
         if is_placement
@@ -3625,7 +3761,12 @@ async def entrypoint(ctx: JobContext):
     instructions = (
         slim_prompt_for_persona(instructions, profile.tutor)
     )
-    if is_scenario:
+    if is_standalone:
+        logger.info(
+            "Standalone persona mode: tutor=%s (%d chars, no methodology)",
+            profile.tutor, len(instructions),
+        )
+    elif is_scenario:
         logger.info("Scenario mode: id=%s (%d chars)", scenario_data["id"], len(scenario_data["body"]))
     elif is_placement:
         logger.info("Placement mode: spoken Speaking Buddy interview (draft=%s)", profile.draft_level)
