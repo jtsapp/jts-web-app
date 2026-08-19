@@ -53,6 +53,19 @@ describe('HomeworkExercises', () => {
     expect(screen.getAllByText('🔊 Word 1')).toHaveLength(1)
   })
 
+  it('инструкция с урока стоит над заданием, как на уроке', () => {
+    show({ id: 2, exercises: [
+      {
+        id: 1,
+        title: '🔊 Word 1',
+        instruction: 'Listen. Choose the word you hear.',
+        question: question('q1', 'choice', { prompt: '🔊 Word 1', options: ['a'], answer: 'a' }),
+      },
+    ] })
+
+    expect(screen.getByText('Listen. Choose the word you hear.')).toBeTruthy()
+  })
+
   it('считает решённые задания и восстанавливает ответы из хранилища', () => {
     localStorage.setItem('hw-answers:3', JSON.stringify({ q1: 'a' }))
 

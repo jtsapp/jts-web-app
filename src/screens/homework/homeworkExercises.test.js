@@ -22,16 +22,23 @@ describe('homeworkExercises', () => {
     expect(lessonExercises({})).toEqual([])
   })
 
-  it('заворачивает вопрос в practice-блок с заголовком упражнения', () => {
-    const exercise = { id: 3, title: 'I ___ coffee.', question: { id: 'q9', type: 'gap' } }
+  it('в шапку карточки идёт инструкция с урока, а не формулировка вопроса', () => {
+    const exercise = {
+      id: 3,
+      title: 'I ___ coffee.',
+      instruction: 'Listen. Choose the word you hear.',
+      question: { id: 'q9', type: 'gap' },
+    }
 
     const block = exerciseBlock(exercise)
 
     expect(block.type).toBe('practice')
-    // Заголовка нет намеренно: вопрос печатает свою формулировку сам, и в шапке
-    // она была бы второй копией того же текста.
-    expect(block.title).toBeUndefined()
+    expect(block.title).toBe('Listen. Choose the word you hear.')
     expect(block.questions).toEqual([exercise.question])
+  })
+
+  it('у задания без инструкции шапки нет — пустой строкой её не рисуем', () => {
+    expect(exerciseBlock({ id: 4, title: 'I ___ coffee.', question: { id: 'q1', type: 'gap' } }).title).toBe('')
   })
 
   it('ответы переживают перезагрузку и не путаются между работами', () => {
