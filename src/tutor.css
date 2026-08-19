@@ -460,6 +460,12 @@
   display: flex;
   gap: 10px;
   margin-top: 16px;
+  /* Перенос и центрирование появились вместе с четвёртым тьютором (Джарвис,
+     dev-only): три карточки по 322px в ряд помещались, четвёртая выезжала за
+     край контента, и крайние карточки обрезались с обеих сторон. На проде
+     тьюторов трое — ряд как был, ни один пиксель не двигается. */
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* Карточка тьютора */
@@ -1362,7 +1368,8 @@
   align-items: center;
   justify-content: center;
 }
-.t-analysis__glow img {
+.t-analysis__glow img,
+.t-analysis__glow .t-orb {
   width: 115px;
   height: 115px;
   border-radius: 50%;
@@ -1370,7 +1377,8 @@
   animation: t-avatar-pulse 1.4s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .t-analysis__glow img {
+  .t-analysis__glow img,
+.t-analysis__glow .t-orb {
     animation: none;
   }
 }
@@ -1491,7 +1499,8 @@
   align-items: center;
   gap: 12px;
 }
-.t-dash__tutor img {
+.t-dash__tutor img,
+.t-dash__tutor .t-orb {
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -2058,7 +2067,8 @@
   flex-direction: column;
   align-items: center;
 }
-.t-manage__card img {
+.t-manage__card img,
+.t-manage__card .t-orb {
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -2278,7 +2288,8 @@
   border-radius: 20px;
   padding: 10px;
 }
-.t-erran__card img {
+.t-erran__card img,
+.t-erran__card .t-orb {
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -2764,7 +2775,8 @@
     justify-content: center;
     color: #ffffff;
   }
-  .t-card__slide img {
+  .t-card__slide img,
+  .t-card__slide .t-orb {
     width: 128px;
     height: 128px;
     object-fit: contain;
@@ -2848,7 +2860,8 @@
   .t-dash__center {
     padding: 20px 16px 40px;
   }
-  .t-dash__tutor img {
+  .t-dash__tutor img,
+.t-dash__tutor .t-orb {
     width: 44px;
     height: 44px;
   }
@@ -3209,3 +3222,131 @@
   color: #6b6480;
   letter-spacing: 0.01em;
 }
+
+/* --- Орб Джарвиса (dev-only тьютор, см. JARVIS_ENABLED в src/config.js) --- */
+/* Обёртка занимает ровно тот бокс, который ей выдала вёрстка конкретного
+   места, — размер канвы движок берёт из неё через ResizeObserver, поэтому
+   ширину/высоту здесь НЕ задаём, кроме мест, где картинке они приходили из
+   правила на img (карусель и слайд маскота — ниже). */
+.t-orb {
+  position: relative;
+  border-radius: 50%;
+  /* Орб рисуется аддитивно и задумывался на тёмном фоне; на белой карточке
+     без своей подложки он выцветал в бледное пятно. Градиент гасится к краям,
+     поэтому квадратного шва у канвы не видно. */
+  background: radial-gradient(circle, #241608 0%, #150c05 62%, rgba(21, 12, 5, 0) 100%);
+}
+.t-orb canvas {
+  display: block;
+}
+
+/* Отрицательные поля .t-dash__face / .t-voice__face подобраны под TutorFace: у
+   него форма занимает ~2/3 канвы, а по краям прозрачное поле под тень и
+   конфетти, и его надо съесть. У орба пропорция своя, и тот же подъём затягивал
+   его под шапку дашборда на мобилке. */
+.t-dash__face.t-orb,
+.t-voice__face.t-orb {
+  margin: 0;
+}
+
+/* Дашборд ассистента: кроме орба в колонке ничего нет (ни кнопки разговора, ни
+   подсказки дня, ни тумблера — см. isAssistant в TutorDashboardPage).
+   ─────────────────────────────────────────────────────────────────────────
+   Фон здесь свой, и это не украшательство. Общий амбиент дашборда — пятно
+   брендового пурпура (.t-dash), а орб у Джарвиса тёплый оранжевый: холодный
+   сиреневый с ним спорит. Хуже другое — на светлом фоне тёмный диск орба
+   читался дыркой в странице, наклейкой, а не предметом.
+
+   Поэтому не «тёмная тема» на весь экран (тогда пришлось бы перекрашивать
+   сайдбар и шапку, и появился бы шов), а ВРЕЗКА: тёмное поле со скруглением
+   внутри светлого приложения. Шапка с именем и «Управление тьютором» остаётся
+   снаружи на светлом, диск перестаёт быть дыркой — он теперь ближнее поле
+   того же пространства, а свечение орба становится единственным источником
+   света на панели. */
+.t-dash__cta--solo {
+  /* Тёплая палитра врезки. Насыщенный цвет на экране один — сам орб
+     (#FF8C37 / #FFD08A), поэтому фон держим низкой чистоты. */
+  --j-void: #16100d;
+  --j-field: #241a14;
+  --j-pool: #3e2717;
+  --j-line: rgba(255, 140, 55, 0.055);
+
+  position: relative;
+  align-self: stretch;
+  /* Отступ сверху обязателен: без него круглая аватарка и пилюля «Управление
+     тьютором» ложатся прямо на кромку врезки и читаются приклеенными к ней. */
+  margin: 18px 0 8px;
+  border-radius: 28px;
+  overflow: hidden;
+  background:
+    /* пул света ровно под орбом — панель светлее в центре, темнее к краям */
+    radial-gradient(46% 40% at 50% 50%, var(--j-pool) 0%, rgba(62, 39, 23, 0) 72%),
+    radial-gradient(120% 95% at 50% 50%, var(--j-field) 0%, var(--j-void) 100%);
+}
+
+/* Фронты волн от орба: комната, по которой идёт голос. СТАТИЧНЫЕ намеренно —
+   движение на экране принадлежит орбу, вторая анимация превратила бы фон в
+   заставку. Маска гасит кольца к краям, чтобы это читалось полем, а не
+   узором в клеточку. */
+.t-dash__cta--solo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 140, 55, 0) 0 44px,
+    var(--j-line) 44px 45px
+  );
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 18%, transparent 74%);
+  mask-image: radial-gradient(circle at 50% 50%, #000 18%, transparent 74%);
+}
+
+/* Кнопка поверх колец. */
+.t-dash__cta--solo .t-dash__orb {
+  z-index: 1;
+}
+
+/* Дыхание ореола — то же, но тёплое: пурпур из общего правила на этом фоне
+   выглядел бы синяком вокруг оранжевого орба. */
+.t-dash__cta--solo .t-dash__orb::before {
+  background: radial-gradient(circle, rgba(255, 140, 55, 0.26), rgba(255, 140, 55, 0) 64%);
+}
+
+/* И главное: собственная подложка орба растворяется в поле. Ради этого всё и
+   затевалось — резкий край диска на светлом фоне и был «наклейкой». */
+.t-dash__cta--solo .t-orb {
+  background: radial-gradient(circle, rgba(62, 39, 23, 0.85) 0%, rgba(22, 16, 13, 0) 70%);
+}
+
+@media (max-width: 560px) {
+  .t-dash__cta--solo {
+    flex: 1;
+    justify-content: center;
+    padding: 0;
+    /* На мобилке врезка идёт почти во всю ширину контента — скругление мельче,
+       иначе панель выглядит как всплывшая карточка, а не как поле. */
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .t-dash__cta--solo::before {
+    background: repeating-radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 140, 55, 0) 0 34px,
+      var(--j-line) 34px 35px
+    );
+  }
+}
+/* Карточка выбора: у остальных тьюторов размер приходит с .t-tcard__avatar
+   (124px), у орба он тот же — правило общее, ловить нечего. */
+
+/* Мобильная карусель: слот 200px, у картинки было width/height 100%. */
+.t-car__orb {
+  width: 100%;
+  height: 100%;
+}
+
+/* Размеры орбу нигде не задаём отдельно: там, где у остальных тьюторов
+   размер приходил правилом на img (.t-dash__tutor img, .t-manage__card img,
+   .t-card__slide img и т.д.), селектор просто расширен на .t-orb — иначе див с
+   канвой раздувается по контенту, и аватарка в 52px становится во весь блок. */

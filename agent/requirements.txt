@@ -31,3 +31,8 @@ livekit-plugins-google==1.6.7
 # only one where concurrency is a plan you can buy today rather than a support
 # request: Pro = 20 parallel on Flash/Turbo, 10 on multilingual_v2.
 livekit-plugins-elevenlabs==1.6.7
+# Fish Audio (CASCADE_TTS=fish) — голос Джарвиса, dev-only тьютора. Плагин
+# официальный, версия та же 1.6.7, что и у livekit-agents: его 1.6.10 уже
+# требует agents>=1.6.10 и потащил бы за собой обновление всего стека, а вместе
+# с ним другие дефолты эндпойнтинга (см. шапку файла).
+livekit-plugins-fishaudio==1.6.7

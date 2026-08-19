@@ -1,9 +1,15 @@
+import JarvisOrb from './JarvisOrb.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
 // Шапка «статус-экранов» тьютора: аватар + имя/роль + крупный заголовок.
 // Используется на экранах загрузки и подготовки обучения.
+//
+// face — из tutors.js. 'orb' значит, что картинки у тьютора нет вообще и рисуем
+// живой орб; без этого пропа дефолт avatar подставлял Джарвису аватарку Спарка,
+// и экран «Джарвис хочет узнать твой уровень» шёл с чужим лицом.
 export default function TutorStatus({
   avatar = '/tutor/tutor-spark.png',
+  face = '',
   name = 'Спарк',
   role,
   heading,
@@ -24,11 +30,16 @@ export default function TutorStatus({
       style={flow ? { paddingTop: padTop } : undefined}
     >
       <div className="t-status__head">
-        <img
-          className={'t-status__avatar' + (pulse ? ' t-status__avatar--pulse' : '')}
-          src={avatar}
-          alt=""
-        />
+        {face === 'orb' ? (
+          // pulse орбу не нужен: он и так дышит и разгорается сам.
+          <JarvisOrb className="t-status__avatar" label={name} />
+        ) : (
+          <img
+            className={'t-status__avatar' + (pulse ? ' t-status__avatar--pulse' : '')}
+            src={avatar}
+            alt=""
+          />
+        )}
         <div className="t-status__meta">
           <span className="t-status__name">{name}</span>
           <span className="t-status__role">{roleLabel}</span>

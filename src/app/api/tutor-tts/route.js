@@ -9,6 +9,9 @@
 //   Dexter → ElevenLabs, ELEVENLABS_API_KEY + ELEVEN_VOICE_ID_DEXTER.
 //   Spark  → Soniox TTS (голос Owen), SONIOX_API_KEY. Единственный, кто говорит
 //            по-казахски; Soniox держит один тембр на kk и en.
+//   Jarvis → Fish Audio, FISH_AUDIO_API_KEY + reference_id клонированного
+//            голоса. Тьютор dev-only (JARVIS_ENABLED в src/config.js), но роут
+//            общий: на проде его просто некому позвать.
 // Язык сессии на выбор провайдера НЕ влияет: у Луны и Декстера "kz" — это язык
 // интерфейса, сами они русскоязычные и казахского текста не произносят.
 // Azure тут нет: аккаунта Azure Speech у проекта нет (см. TUTOR_TTS_PROVIDER).
@@ -34,7 +37,7 @@ const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass thr
 
 // Провайдер по тьютору — mirror agent TUTOR_TTS_PROVIDER. От языка не зависит:
 // по-казахски говорит только Спарк, а он и так на Soniox.
-const TUTOR_PROVIDER = { luna: 'gemini', dexter: 'eleven', spark: 'soniox' }
+const TUTOR_PROVIDER = { luna: 'gemini', dexter: 'eleven', spark: 'soniox', jarvis: 'fish' }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'
 
@@ -48,6 +51,17 @@ const ELEVEN_MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5'
 const ELEVEN_SETTINGS = {
   dexter: { stability: 0.32, similarity_boost: 0.75, style: 0.6, use_speaker_boost: true, speed: 1.04 },
 }
+
+// Fish Audio (только Джарвис) — mirror agent FISH_TTS_VOICE. Голос задаётся
+// reference_id клонированной модели, а не именем из каталога, поэтому и env, и
+// фолбэк — это хэш, а не «Owen»/«Puck».
+const FISH_VOICE = {
+  jarvis: process.env.FISH_VOICE_ID_JARVIS || 'c47719f52ce34cc193b9bc2f00565e8a',
+}
+// s2.1-pro — дефолт и у самого Fish, и у livekit-плагина, и цена у всех трёх
+// моделей одна ($15/1M UTF-8 байт), так что брать s1 смысла нет. Переключается
+// переменной FISH_TTS_MODEL: s1 | s2-pro | s2.1-pro.
+const FISH_MODEL = process.env.FISH_TTS_MODEL || 's2.1-pro'
 
 // Wrap raw little-endian PCM (Cloud TTS LINEAR16 = 24 kHz mono 16-bit) in a WAV
 // container so the browser <audio> can play it directly.
@@ -201,9 +215,47 @@ async function sonioxTts(text, voice, lang) {
   return { audio, contentType: 'audio/mpeg' }
 }
 
+async function fishTts(text, voice) {
+  const key = process.env.FISH_AUDIO_API_KEY
+  if (!key) return { status: 503 }
+  const upstream = await fetch('https://api.fish.audio/v1/tts', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${key}`,
+      // Модель едет ЗАГОЛОВКОМ, а не полем тела — так устроен их API.
+      model: FISH_MODEL,
+    },
+    body: JSON.stringify({
+      text,
+      reference_id: voice,
+      format: 'mp3',
+      mp3_bitrate: 128,
+      // balanced, а не low: тут озвучивается готовый текст целиком, гнаться за
+      // первым чанком незачем, а на low слышны артефакты.
+      latency: 'balanced',
+    }),
+  })
+  if (!upstream.ok) {
+    const detail = await upstream.text().catch(() => '')
+    // 402 — «кончился API-кредит», и это НЕ ошибка запроса: ключ рабочий, текст
+    // валиден, платить просто нечем. Вместе с 401 (ключ отозвали) и 429 (упёрлись
+    // в лимит) это ровно тот случай, для которого в POST уже есть откат на
+    // Soniox — иначе кнопка «послушать» у Джарвиса молчит до пополнения счёта.
+    if ([401, 402, 429].includes(upstream.status)) {
+      console.warn(`[tutor-tts] fish unavailable (${upstream.status}): ${detail.slice(0, 200)}`)
+      return { status: 503 }
+    }
+    throw new Error(`Fish Audio TTS ${upstream.status}: ${detail.slice(0, 200)}`)
+  }
+  const audio = Buffer.from(await upstream.arrayBuffer())
+  return { audio, contentType: 'audio/mpeg' }
+}
+
 function synth(provider, text, tutor, lang) {
   if (provider === 'soniox') return sonioxTts(text, SONIOX_VOICE[tutor] || 'Owen', lang)
   if (provider === 'eleven') return elevenTts(text, tutor)
+  if (provider === 'fish') return fishTts(text, FISH_VOICE[tutor] || FISH_VOICE.jarvis)
   return geminiTts(text, GEMINI_VOICE[tutor] || 'Puck')
 }
 
@@ -245,5 +297,6 @@ export async function GET() {
     gemini: Boolean(process.env.GOOGLE_CREDENTIALS_JSON),
     soniox: Boolean(process.env.SONIOX_API_KEY),
     eleven: Boolean(process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY),
+    fish: Boolean(process.env.FISH_AUDIO_API_KEY),
   })
 }

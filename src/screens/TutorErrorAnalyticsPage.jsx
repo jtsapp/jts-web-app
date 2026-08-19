@@ -1,4 +1,5 @@
 import TutorShell from '../tutor/TutorShell.jsx'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
 // Разбор ошибок после разговора. Секции приходят пропсом ({ h, p }) — их будет
@@ -15,7 +16,7 @@ export default function TutorErrorAnalyticsPage({
   onRetry,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк' } = tutor
   return (
     <TutorShell
       active="tutor"
@@ -28,7 +29,7 @@ export default function TutorErrorAnalyticsPage({
     >
       <div className="t-erran">
         <div className="t-erran__card">
-          <img src={avatar} alt="" />
+          <TutorThumb tutor={tutor} />
           <div className="t-erran__cardtext">
             <span>{t('erran.by')}</span>
             <b>{name}</b>

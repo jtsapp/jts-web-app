@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import TutorShell from '../tutor/TutorShell.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
@@ -20,7 +21,7 @@ export default function TutorAnalysisPage({
   delay = 2600,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк' } = tutor
 
   // Галочки зажигаются по одной за время «подготовки» тьютора: пункт 1, потом 2…
   const [done, setDone] = useState(0)
@@ -51,7 +52,7 @@ export default function TutorAnalysisPage({
         <h1 className="t-status__heading">{t('analysis.heading', { name })}</h1>
 
         <div className="t-analysis__glow">
-          <img src={avatar} alt="" />
+          <TutorThumb tutor={tutor} />
         </div>
 
         <div className="t-analysis__list">

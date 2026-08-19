@@ -17,6 +17,9 @@ COPY methodology.md ./methodology.md
 # Своя методичка Декстера (персона bro): у общей раздел про тон требует быть
 # encouraging/supportive, что противоположно характеру. См. _PERSONA_METHODOLOGY_FILES.
 COPY methodology-dexter.md ./methodology-dexter.md
+# Джарвис (персона jarvis) методичку не получает вообще — весь его промпт это
+# один файл. См. _PERSONA_STANDALONE_FILES / STANDALONE_PROMPT_PERSONAS.
+COPY persona-jarvis.md ./persona-jarvis.md
 # Structured voice scenarios (data/scenarios/*.md in dev). Bundled next to
 # agent.py; the loader's second candidate path (/app/scenarios) finds them.
 COPY scenarios/ ./scenarios/

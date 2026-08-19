@@ -20,8 +20,11 @@ COPY . .
 # доступны здесь, а не только в рантайм-environment контейнера.
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
-ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+# Джарвис — dev-only тьютор (см. JARVIS_ENABLED в src/config.js). Задавать
+# ТОЛЬКО в dev-окружении: без переменной флаг false и карточка не попадает
+# даже в бандл.
+ARG NEXT_PUBLIC_ENABLE_JARVIS
+ENV NEXT_PUBLIC_ENABLE_JARVIS=${NEXT_PUBLIC_ENABLE_JARVIS}
 RUN npm run build
 
 FROM node:20-slim AS runner
