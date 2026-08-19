@@ -97,3 +97,21 @@ describe('HomeworkDetail', () => {
     expect(container.querySelector('.hw-detail--empty')).not.toBeNull()
   })
 })
+
+describe('HomeworkDetail: два вида работы разведены', () => {
+  it('файлы и задания с урока — разные блоки, а не один список', () => {
+    const hw = {
+      id: 5, title: 'Работа', status: 'ASSIGNED',
+      materials: [{ id: 1, fileName: 'task.png', url: '#' }],
+      submissions: [],
+      exercises: [{ id: 1, question: { id: 'q1', type: 'choice', prompt: 'A?', options: ['a'], answer: 'a' } }],
+    }
+
+    const { container } = render(<I18nProvider><HomeworkDetail hw={hw} /></I18nProvider>)
+
+    expect(container.querySelector('.hw-block--files')).not.toBeNull()
+    expect(container.querySelector('.hw-block--exercises')).not.toBeNull()
+    // Файл лежит в файловом блоке, а не среди решаемых заданий.
+    expect(container.querySelector('.hw-block--exercises .hw-file')).toBeNull()
+  })
+})

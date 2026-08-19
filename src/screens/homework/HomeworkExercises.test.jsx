@@ -26,8 +26,8 @@ describe('HomeworkExercises', () => {
     expect(container.querySelector('.hw-exercises')).toBeNull()
   })
 
-  it('рисует все типы вопросов урока, включая те, которых нет в библиотеке задач', () => {
-    show({ id: 2, exercises: [
+  it('рисует каждый тип его же компонентом урока, а не текстом', () => {
+    const { container } = show({ id: 2, exercises: [
       { id: 1, title: 'Выбор', question: question('q1', 'choice', { options: ['a', 'b'], answer: 'a' }) },
       { id: 2, title: 'Пропуск', question: question('q2', 'gap', { gapBefore: 'I', gapAfter: 'coffee', answers: ['like'] }) },
       { id: 3, title: 'Пары', question: question('q3', 'match', { pairs: [{ left: 'cat', right: 'кот' }] }) },
@@ -36,9 +36,21 @@ describe('HomeworkExercises', () => {
       { id: 6, title: 'Опрос', question: question('q6', 'pick', { options: ['a', 'b'] }) },
     ] })
 
-    for (const title of ['Выбор', 'Пропуск', 'Пары', 'Порядок', 'Несколько', 'Опрос']) {
-      expect(screen.getByText(title)).toBeTruthy()
+    // Разметка та же, что на уроке: по ней задание и получает своё оформление
+    // и поведение — от неё зависят и стили, и проверка.
+    for (const type of ['choice', 'gap', 'match', 'order', 'multi', 'pick']) {
+      expect(container.querySelector(`.lw-q--${type}`)).not.toBeNull()
     }
+    expect(container.querySelectorAll('.lw-practice').length).toBe(6)
+  })
+
+  it('формулировку печатает сам вопрос, в шапке карточки её копии нет', () => {
+    const { container } = show({ id: 2, exercises: [
+      { id: 1, title: '🔊 Word 1', question: question('q1', 'choice', { prompt: '🔊 Word 1', options: ['a'], answer: 'a' }) },
+    ] })
+
+    expect(container.querySelector('.lw-practice__title')).toBeNull()
+    expect(screen.getAllByText('🔊 Word 1')).toHaveLength(1)
   })
 
   it('считает решённые задания и восстанавливает ответы из хранилища', () => {
@@ -108,5 +120,32 @@ describe('HomeworkExercises: ответ уходит преподавателю'
     fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
 
     expect(saveHomeworkAnswer).not.toHaveBeenCalled()
+  })
+})
+
+describe('HomeworkExercises: прогресс', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('полоса прогресса объявляет решённое ассистивным технологиям', () => {
+    localStorage.setItem('hw-answers:9', JSON.stringify({ q1: 'a' }))
+
+    const { container } = show({ id: 9, exercises: [
+      { id: 1, question: question('q1', 'choice', { options: ['a', 'b'], answer: 'a' }) },
+      { id: 2, question: question('q2', 'choice', { options: ['a', 'b'], answer: 'b' }) },
+    ] })
+
+    const bar = container.querySelector('[role="progressbar"]')
+    expect(bar.getAttribute('aria-valuenow')).toBe('1')
+    expect(bar.getAttribute('aria-valuemax')).toBe('2')
+  })
+
+  it('когда решено всё, счётчик меняет вид — это видно без чтения цифр', () => {
+    localStorage.setItem('hw-answers:9', JSON.stringify({ q1: 'a' }))
+
+    const { container } = show({ id: 9, exercises: [
+      { id: 1, question: question('q1', 'choice', { options: ['a', 'b'], answer: 'a' }) },
+    ] })
+
+    expect(container.querySelector('.hw-exercises__count--done')).not.toBeNull()
   })
 })

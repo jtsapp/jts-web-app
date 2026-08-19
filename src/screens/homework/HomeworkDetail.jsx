@@ -47,8 +47,14 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
         {due && <span>{t('homework.due', { date: due })}</span>}
       </div>
 
-      <section className="hw-block">
-        <h3 className="hw-block__title">{t('homework.task')}</h3>
+      {/* Файлы от преподавателя и задания с урока — разная работа: одно скачивают
+          и присылают ответом, другое решают прямо здесь. Поэтому у них разные
+          заголовки и разный фон, а не один общий список. */}
+      <section className="hw-block hw-block--files">
+        <div className="hw-block__head">
+          <h3 className="hw-block__title">{t('homework.taskFiles')}</h3>
+          {hw.materials?.length > 0 && <span className="hw-block__count">{hw.materials.length}</span>}
+        </div>
         <HomeworkFileList files={hw.materials} emptyLabel={t('homework.taskEmpty')} />
       </section>
 

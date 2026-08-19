@@ -25,11 +25,17 @@ export function serverAnswers(hw) {
   return out
 }
 
-/** Синтетический practice-блок вокруг одного вопроса — контракт PracticeBlock. */
+/**
+ * Синтетический practice-блок вокруг одного вопроса — контракт PracticeBlock.
+ *
+ * Без заголовка: на уроке в шапке карточки стоит инструкция к упражнению, а сам
+ * вопрос печатает свою формулировку внутри. `title` упражнения — это как раз
+ * формулировка (она нужна преподавателю в списке), и в шапке она давала бы вторую
+ * копию того же текста: «🔊 Word 1» сверху и «🔊 Word 1» под кнопкой звука.
+ */
 export function exerciseBlock(exercise) {
   return {
     type: 'practice',
-    title: exercise.title || '',
     questions: [exercise.question],
   }
 }

@@ -52,12 +52,30 @@ export default function HomeworkExercises({ hw, token }) {
 
   const solved = exercises.filter((e) => gradeQuestion(e.question, answers[e.question.id]).correct).length
 
+  const total = exercises.length
+  const done = total > 0 && solved === total
+
   return (
-    <section className="hw-block">
-      <h3 className="hw-block__title">
-        {t('homework.exercises')}
-        <span className="hw-exercises__count">{t('homework.exercisesSolved', { solved, total: exercises.length })}</span>
-      </h3>
+    <section className="hw-block hw-block--exercises">
+      <div className="hw-block__head">
+        <h3 className="hw-block__title">{t('homework.exercises')}</h3>
+        <span className={`hw-exercises__count${done ? ' hw-exercises__count--done' : ''}`}>
+          {t('homework.exercisesSolved', { solved, total })}
+        </span>
+      </div>
+
+      {/* Полоса прогресса — не украшение: заданий бывает два десятка, и по одному
+          счётчику не видно, много ли осталось. */}
+      <div
+        className="hw-progress"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={solved}
+        aria-label={t('homework.exercises')}
+      >
+        <span className="hw-progress__bar" style={{ width: `${total ? (solved / total) * 100 : 0}%` }} />
+      </div>
 
       <div className="hw-exercises">
         {exercises.map((e) => {

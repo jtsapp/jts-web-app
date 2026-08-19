@@ -28,7 +28,9 @@ describe('homeworkExercises', () => {
     const block = exerciseBlock(exercise)
 
     expect(block.type).toBe('practice')
-    expect(block.title).toBe('I ___ coffee.')
+    // Заголовка нет намеренно: вопрос печатает свою формулировку сам, и в шапке
+    // она была бы второй копией того же текста.
+    expect(block.title).toBeUndefined()
     expect(block.questions).toEqual([exercise.question])
   })
 
