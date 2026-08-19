@@ -4121,8 +4121,11 @@ def build_standalone_greeting(p: LearnerProfile) -> str:
     return (
         "Open the call yourself with ONE short line, in character and in your "
         "own language as defined by your persona: greet the person and ask what "
-        "they would like to do. Do not offer a lesson, an exercise or a grammar "
-        "walk-through — you are an assistant, not a tutor. One sentence, no more."
+        "they would like to do. Use the exact form of address your persona "
+        "prescribes — the very first line is where the character is established, "
+        "and a neutral greeting there sets the wrong register for the whole call. "
+        "Do not offer a lesson, an exercise or a grammar walk-through — you are "
+        "an assistant, not a tutor. One sentence, no more."
     )
 
 
