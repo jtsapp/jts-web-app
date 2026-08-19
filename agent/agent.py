@@ -4039,7 +4039,9 @@ async def entrypoint(ctx: JobContext):
     ctx.add_shutdown_callback(_persist_call)
 
     greeting_hint = (
-        build_scenario_greeting(profile, scenario_data)
+        build_standalone_greeting(profile)
+        if is_standalone
+        else build_scenario_greeting(profile, scenario_data)
         if is_scenario
         else build_placement_greeting(profile)
         if is_placement
@@ -4100,6 +4102,27 @@ def build_placement_greeting(p: LearnerProfile) -> str:
         "(e.g. \"Hi! Great to meet you!\"). Then introduce yourself, say in one "
         "sentence that you'll have a short spoken chat to find their speaking "
         "level, and ask the FIRST simple question. One question at a time."
+    )
+
+
+def build_standalone_greeting(p: LearnerProfile) -> str:
+    """Первая реплика персоны со своим промптом (см. STANDALONE_PROMPT_PERSONAS).
+
+    Отдельно от build_greeting_hint, потому что тот заточен под УРОК: он велит
+    открыть английской фразой «Hi! Great to see you!» и тут же предложить
+    упражнение, разбор правила или тему для беседы. Джарвис по-английски не
+    говорит вовсе (секция LANGUAGE в его персоне), и уроков не ведёт — на
+    английском приветствии он ломался в первой же реплике, ещё до того как
+    ученик что-то сказал.
+
+    Текст не задаём: как здоровается персона, решает её собственный промпт.
+    Здесь только рамка — коротко, в характере, и сразу спросить о деле.
+    """
+    return (
+        "Open the call yourself with ONE short line, in character and in your "
+        "own language as defined by your persona: greet the person and ask what "
+        "they would like to do. Do not offer a lesson, an exercise or a grammar "
+        "walk-through — you are an assistant, not a tutor. One sentence, no more."
     )
 
 
