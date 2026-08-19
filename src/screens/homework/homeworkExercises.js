@@ -16,6 +16,29 @@ export function lessonExercises(hw) {
   return (hw?.exercises || []).filter((e) => e && e.question)
 }
 
+/**
+ * Отправки: задания, добавленные преподавателем за одно нажатие, идут одной группой.
+ *
+ * Без этого несколько отправок сливались в одну кучу — «5 из 85 решено» без понимания,
+ * что задано вчера, а что сегодня и с какого урока. Порядок групп — по времени
+ * отправки: сверху то, что задали раньше, чтобы список не прыгал после новой выдачи.
+ *
+ * Задания, добавленные до появления отправок, ключа не имеют — они собираются в одну
+ * группу по уроку, иначе каждое стало бы отдельной секцией.
+ */
+export function exerciseBatches(hw) {
+  const groups = new Map()
+  for (const e of lessonExercises(hw)) {
+    const key = e.batchId || `legacy-${e.catalogLessonId ?? 'none'}`
+    const group = groups.get(key) || { key, addedAt: e.addedAt || null, lessonTitle: e.lessonTitle || '', exercises: [] }
+    group.exercises.push(e)
+    if (!group.addedAt && e.addedAt) group.addedAt = e.addedAt
+    if (!group.lessonTitle && e.lessonTitle) group.lessonTitle = e.lessonTitle
+    groups.set(key, group)
+  }
+  return [...groups.values()].sort((a, b) => String(a.addedAt || '').localeCompare(String(b.addedAt || '')))
+}
+
 /** Ответы, уже сохранённые на сервере, — по ним экран открывается после перезахода. */
 export function serverAnswers(hw) {
   const out = {}

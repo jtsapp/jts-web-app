@@ -7269,3 +7269,7 @@ textarea {
   font-size: 13px;
   color: var(--danger, #dc2626);
 }
+
+/* Шапка отправки: название урока и дата выдачи слева, счётчик справа. */
+.hw-batch__title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.hw-batch__date { font-size: 13px; color: var(--muted); }

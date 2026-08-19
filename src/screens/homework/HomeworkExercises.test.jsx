@@ -162,3 +162,25 @@ describe('HomeworkExercises: прогресс', () => {
     expect(container.querySelector('.hw-exercises__count--done')).not.toBeNull()
   })
 })
+
+describe('HomeworkExercises: отправки видны раздельно', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('каждая отправка — своя секция со своим счётчиком и названием урока', () => {
+    const { container } = show({ id: 4, exercises: [
+      { id: 1, batchId: 'b1', addedAt: '2026-08-19T10:00:00', lessonTitle: 'Two hellos',
+        question: question('q1', 'choice', { options: ['a', 'b'], answer: 'a' }) },
+      { id: 2, batchId: 'b2', addedAt: '2026-08-20T10:00:00', lessonTitle: 'Coffee — yes',
+        question: question('q2', 'choice', { options: ['a', 'b'], answer: 'a' }) },
+      { id: 3, batchId: 'b2', addedAt: '2026-08-20T10:00:00', lessonTitle: 'Coffee — yes',
+        question: question('q3', 'choice', { options: ['a', 'b'], answer: 'a' }) },
+    ] })
+
+    expect(container.querySelectorAll('.hw-block--exercises')).toHaveLength(2)
+    expect(screen.getByText('Two hellos')).toBeTruthy()
+    expect(screen.getByText('Coffee — yes')).toBeTruthy()
+    // Счётчик у каждой отправки свой: 1 задание в первой и 2 во второй.
+    expect(screen.getByText('0 из 1 решено')).toBeTruthy()
+    expect(screen.getByText('0 из 2 решено')).toBeTruthy()
+  })
+})
