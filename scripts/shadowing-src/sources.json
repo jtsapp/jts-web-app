@@ -43,5 +43,133 @@
     "channel": "Smartish Stuff",
     "notion": "https://app.notion.com/p/How-to-Never-Run-Out-of-Things-to-Say-3c0c7eb1700980588593c16f92e25d93",
     "level": null
+  },
+  {
+    "id": "selftalk",
+    "title": "Is It Normal to Talk to Yourself?",
+    "short": "TED-Ed",
+    "video": "iNyUmbmQQZg",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/Is-it-normal-to-talk-to-yourself-3c0c7eb17009803cbc87e58af6214c2a",
+    "level": null
+  },
+  {
+    "id": "calm",
+    "title": "How to Stay Calm Under Pressure",
+    "short": "Noa Kageyama",
+    "video": "CqgmozFr_GM",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/How-to-stay-calm-under-pressure-3c0c7eb170098039a2a6efa659491a1d",
+    "level": null
+  },
+  {
+    "id": "worksout",
+    "title": "What If It Actually Works Out?",
+    "short": "Buildingminds",
+    "video": "5aR-5cNABAI",
+    "channel": "Buildingminds",
+    "notion": "https://app.notion.com/p/What-if-it-actually-works-out-3c0c7eb17009801eb70bc2ba70534c8a",
+    "level": null
+  },
+  {
+    "id": "selfeducated",
+    "title": "The Art of Becoming Dangerously Self-Educated",
+    "short": "Realith",
+    "video": "w8Qv9czi7j8",
+    "channel": "Realith",
+    "notion": "https://app.notion.com/p/The-Art-of-Becoming-Dangerously-Self-Educated-3c0c7eb17009809b9593d5ff18c0ebb0",
+    "level": null
+  },
+  {
+    "id": "hardthings",
+    "title": "How to Force Your Brain to Crave Hard Things",
+    "short": "RelentX",
+    "video": "8SCv88yriYs",
+    "channel": "RelentX",
+    "notion": "https://app.notion.com/p/How-to-Force-Your-Brain-to-Crave-Doing-Hard-Things-3c0c7eb1700980b5be38cd5a2a955521",
+    "level": null
+  },
+  {
+    "id": "stoiccalm",
+    "title": "The Greek Method to Become Impossibly Calm",
+    "short": "Logz",
+    "video": "oJqzuMHhxoc",
+    "channel": "Logz",
+    "notion": "https://app.notion.com/p/The-Greek-Method-To-Become-So-Calm-People-Think-Your-Crazy-3c0c7eb170098053b99ae7d925034eac",
+    "level": null
+  },
+  {
+    "id": "dream",
+    "title": "Why Do We Dream?",
+    "short": "Learn English Podcast",
+    "video": "F18B-XPd1Y0",
+    "channel": "LEP - Learn English Podcast",
+    "notion": "https://app.notion.com/p/Why-Do-We-Dream-3c0c7eb17009800ea15bdec2a1cf546b",
+    "level": null,
+    "hold": "в транскрипте нет пунктуации — сплошной поток слов, границы фраз произвольные"
+  },
+  {
+    "id": "tired",
+    "title": "Why Do You Always Feel Tired?",
+    "short": "Learn English Podcast",
+    "video": "Ew5AcvkkHvo",
+    "channel": "LEP - Learn English Podcast",
+    "notion": "https://app.notion.com/p/Why-Do-You-Always-Feel-Tired-3c0c7eb1700980de8f79e317ee26c0fe",
+    "level": null,
+    "hold": "в транскрипте нет пунктуации — сплошной поток слов, границы фраз произвольные"
+  },
+  {
+    "id": "nosubs",
+    "title": "How to Understand English Movies Without Subtitles",
+    "short": "The English Class",
+    "video": "tB88DEBk5tw",
+    "channel": "The English Class",
+    "notion": "https://app.notion.com/p/How-to-Understand-English-Movies-Without-Subtitles-3c0c7eb17009801e8490d9cfddfa12d9",
+    "level": null
+  },
+  {
+    "id": "friendships",
+    "title": "How Some Friendships Last",
+    "short": "Iseult Gillespie",
+    "video": "kOVdiDUlNsg",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/How-some-friendships-last-and-others-don-t-3c0c7eb170098088a316ce68f2b5fe3b",
+    "level": null
+  },
+  {
+    "id": "egypt",
+    "title": "A Day in the Life of an Ancient Egyptian Doctor",
+    "short": "TED-Ed",
+    "video": "2rvLEJrQm7g",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/A-day-in-the-life-of-an-ancient-Egyptian-doctor-3c0c7eb1700980b3893cda93cddac5d6",
+    "level": null
+  },
+  {
+    "id": "emotions",
+    "title": "How to Manage Your Emotions",
+    "short": "TED-Ed",
+    "video": "Uew5BbvmLks",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/How-to-manage-your-emotions-3c0c7eb17009804abcbefde1c4b37a9a",
+    "level": null
+  },
+  {
+    "id": "mistakes",
+    "title": "How to Overcome Your Mistakes",
+    "short": "TED-Ed",
+    "video": "eBz7iUJu9UM",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/How-to-overcome-your-mistakes-3c0c7eb170098076b7dbd993c6637a36",
+    "level": null
+  },
+  {
+    "id": "love",
+    "title": "Why Do We Love? A Philosophical Inquiry",
+    "short": "Skye C. Cleary",
+    "video": "yJSiUm6jvI0",
+    "channel": "TED-Ed",
+    "notion": "https://app.notion.com/p/Why-do-we-love-3c0c7eb1700980a6835ee59ff3b2e263",
+    "level": null
   }
 ]
