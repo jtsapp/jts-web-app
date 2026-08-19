@@ -16,12 +16,12 @@ import { wsBase } from '../../lib/wsUrl.js'
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
-  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress })
-  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress } })
+  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset })
+  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -59,6 +59,19 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
         client.subscribe(`/topic/lesson/${lessonId}/step-progress`, onStep)
         // Работа учеников адресована преподавателю, и подписан на неё только он.
         if (isStaff) client.subscribe(`/topic/lesson/${lessonId}/step-progress/staff`, onStep)
+        // Учитель поправил мой ответ — канал персональный, свой senderUserId тут
+        // сравнивать не с чем (учитель не путает себя с учеником), эхо-фильтр не нужен.
+        if (!isStaff && selfUserId != null) {
+          client.subscribe(`/topic/lesson/${lessonId}/answer-correction/${selfUserId}`, (m) => {
+            const evt = parse(m.body)
+            if (evt) handlersRef.current.onAnswerCorrection?.(evt)
+          })
+          // Учитель сбросил мои ответы на шаге — тот же персональный канал, что и поправка.
+          client.subscribe(`/topic/lesson/${lessonId}/answer-reset/${selfUserId}`, (m) => {
+            const evt = parse(m.body)
+            if (evt) handlersRef.current.onAnswerReset?.(evt)
+          })
+        }
       },
     })
     client.activate()
@@ -84,8 +97,14 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   // Одно событие — одно поле: пустые поля не шлём, чтобы у смотрящего не
   // появился «ответ», которого не было (см. DTO на бэкенде).
   const sendStepProgress = useCallback((payload) => publish('step-progress', payload), [publish])
+  // Учитель: переписать ответ конкретного ученика на конкретный вопрос.
+  const sendAnswerCorrection = useCallback((studentId, stepId, questionId, value) =>
+    publish('answer-correction', { studentId, stepId, questionId, value }), [publish])
+  // Учитель: очистить ответы конкретного ученика на шаге целиком.
+  const sendAnswerReset = useCallback((studentId, stepId, questionIds, checkedKeys) =>
+    publish('answer-reset', { studentId, stepId, questionIds, checkedKeys }), [publish])
 
-  return { sendFocus, sendMirror, sendPresent, sendStepProgress }
+  return { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset }
 }
 
 function parse(body) {

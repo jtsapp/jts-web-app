@@ -127,6 +127,69 @@ describe('useLessonLiveSocket', () => {
     expect(onSectionsChanged).toHaveBeenCalled()
   })
 
+  // Канал персональный: только сам ученик на него подписан, преподаватель — нет
+  // (он шлёт, но не слушает; см. LessonLiveSocketController.answerCorrection).
+  it('на канал поправки ответа подписан только сам ученик', () => {
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, {}))
+    expect(Object.keys(lastClient.subs)).toContain('/topic/lesson/7/answer-correction/9')
+
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/answer-correction/1')
+  })
+
+  it('доставляет поправку ученику без фильтрации эха', () => {
+    const onAnswerCorrection = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { onAnswerCorrection }))
+
+    const evt = { senderUserId: 1, senderName: 'Учитель', stepId: 's2', questionId: 's2-c0', value: 'busy' }
+    act(() => {
+      lastClient.subs['/topic/lesson/7/answer-correction/9']({ body: JSON.stringify(evt) })
+    })
+    expect(onAnswerCorrection).toHaveBeenCalledWith(evt)
+  })
+
+  it('sendAnswerCorrection publishes to the right destination', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    act(() => { result.current.sendAnswerCorrection(9, 's2', 's2-c0', 'busy') })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/answer-correction',
+      body: JSON.stringify({ studentId: 9, stepId: 's2', questionId: 's2-c0', value: 'busy' }),
+    })
+  })
+
+  // Тот же персональный канал, что и у поправки, и по тем же причинам.
+  it('на канал сброса ответов подписан только сам ученик', () => {
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, {}))
+    expect(Object.keys(lastClient.subs)).toContain('/topic/lesson/7/answer-reset/9')
+
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/answer-reset/1')
+  })
+
+  it('доставляет сброс ученику без фильтрации эха', () => {
+    const onAnswerReset = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { onAnswerReset }))
+
+    const evt = { senderUserId: 1, senderName: 'Учитель', stepId: 's2', questionIds: ['s2-c0'], checkedKeys: ['s2:0'] }
+    act(() => {
+      lastClient.subs['/topic/lesson/7/answer-reset/9']({ body: JSON.stringify(evt) })
+    })
+    expect(onAnswerReset).toHaveBeenCalledWith(evt)
+  })
+
+  it('sendAnswerReset publishes to the right destination', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    act(() => { result.current.sendAnswerReset(9, 's2', ['s2-c0', 's2-c1'], ['s2:0']) })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/answer-reset',
+      body: JSON.stringify({ studentId: 9, stepId: 's2', questionIds: ['s2-c0', 's2-c1'], checkedKeys: ['s2:0'] }),
+    })
+  })
+
   it('sendFocus/sendMirror/sendPresent publish to the right destinations', async () => {
     const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, {}))
     await waitFor(() => expect(lastClient.connected).toBe(true))

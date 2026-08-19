@@ -37,13 +37,14 @@ const MESSAGE_POLL_MS = 5000
 
 /**
  * Ответ приходит строкой: у выбора и пропуска это сам ответ, у сопоставления —
- * JSON-карта {слово: пара}. Разбираем только объекты: строка `"commutes"` —
- * валидный JSON, и слепой JSON.parse превратил бы её ответ в мусор на первом
- * же слове, которое парсер прочтёт числом или ключевым словом («null», «7»).
+ * JSON-карта {слово: пара}, у множественного выбора — JSON-массив [опция, ...].
+ * Разбираем только объекты и массивы: строка `"commutes"` — валидный JSON, и
+ * слепой JSON.parse превратил бы её ответ в мусор на первом же слове, которое
+ * парсер прочтёт числом или ключевым словом («null», «7»).
  */
 function parseAnswer(value) {
   if (typeof value !== 'string') return value ?? null
-  if (!value.startsWith('{')) return value
+  if (!value.startsWith('{') && !value.startsWith('[')) return value
   try {
     const parsed = JSON.parse(value)
     return parsed && typeof parsed === 'object' ? parsed : value
@@ -454,6 +455,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // «где сейчас преподаватель».
       if (evt.senderName) setPeerName(evt.senderName)
       if (evt.stepId != null) setPeerStepId(evt.stepId)
+      // «Внимание на упражнение» включает followMode один раз (см. onFocus), но
+      // без этого студента переносило бы только на первый шаг — дальше
+      // преподаватель продолжает идти по уроку, а бегунок «Т» просто едет мимо
+      // застывшего экрана. Пока следование включено, каждый следующий шаг
+      // преподавателя переносит и сюда — до тех пор, пока студент сам не
+      // сменит раздел (см. selectSection, где followMode гасится).
+      if (!isStaff && followMode && evt.senderRole !== 'STUDENT' && evt.stepId != null) {
+        setActiveStepId(evt.stepId)
+      }
       // Ответы бывают только ученические: преподаватель за ученика не отвечает
       // (см. readOnly в ChoiceQuestion), и «ответ преподавателя» означал бы,
       // что где-то разъехались роли.
@@ -482,6 +492,30 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         }
         return { ...prev, [studentId]: next }
       })
+    },
+    // Учитель переписал мой ответ (web-admin: catalog-step-review). handleAnswer уже
+    // умеет и обновить экран, и сохранить в material_progress, и переотправить
+    // учителю — поправка возвращается в его ленту step-progress тем же путём, что
+    // и обычный ответ, поэтому отдельного эха сюда добавлять не нужно.
+    onAnswerCorrection: (evt) => {
+      if (isStaff || evt.questionId == null) return
+      handleAnswer(evt.questionId, parseAnswer(evt.value))
+    },
+    // Учитель сбросил мои ответы на шаге (кнопка «Сбросить ответы на этом шаге» в
+    // web-admin) — очищаем ровно те вопросы/карточки, что он видел на экране, и
+    // сохраняем сразу: иначе первый же мой клик где угодно на уроке заново
+    // отправил бы старый снимок answers/checkedSteps и незаметно откатил сброс.
+    onAnswerReset: (evt) => {
+      if (isStaff) return
+      const questionIds = evt.questionIds || []
+      const checkedKeys = evt.checkedKeys || []
+      const nextAnswers = { ...answers }
+      questionIds.forEach((id) => { delete nextAnswers[id] })
+      const nextChecked = new Set(checkedSteps)
+      checkedKeys.forEach((key) => nextChecked.delete(key))
+      setAnswers(nextAnswers)
+      setCheckedSteps(nextChecked)
+      persistProgress({ answers: nextAnswers, checkedSteps: nextChecked, stepId: activeStepId })
     },
   })
 
