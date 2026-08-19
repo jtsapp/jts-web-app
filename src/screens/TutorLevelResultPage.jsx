@@ -1,4 +1,5 @@
 import TutorShell from '../tutor/TutorShell.jsx'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
 // Экран результата теста разговорного уровня: крупный кружок с уровнем + честное
@@ -16,7 +17,7 @@ export default function TutorLevelResultPage({
   onRetry,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк' } = tutor
   const strengths = Array.isArray(assessment?.strengths) ? assessment.strengths : []
   const improvements = Array.isArray(assessment?.improvements) ? assessment.improvements : []
   return (
@@ -30,7 +31,7 @@ export default function TutorLevelResultPage({
     >
       <div className="t-status" style={{ paddingTop: 69 }}>
         <div className="t-status__head">
-          <img className="t-status__avatar" src={avatar} alt="" />
+          <TutorThumb tutor={tutor} className="t-status__avatar" />
           <div className="t-status__meta">
             <span className="t-status__name">{name}</span>
             <span className="t-status__role">{t('role.tutor')}</span>

@@ -28,7 +28,10 @@ import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
 
 export const runtime = 'nodejs'
 
-const TUTOR_KEY_TO_PERSONA = { dexter: 'bro', luna: 'gentle', spark: 'hype' }
+// Ключи UI → id персон в agent.py. У Джарвиса имя совпадает, и строка тут
+// формально лишняя (ниже стоит `|| p.tutor`), но без неё таблица врёт: она
+// читается как полный список тьюторов, которых знает агент.
+const TUTOR_KEY_TO_PERSONA = { dexter: 'bro', luna: 'gentle', spark: 'hype', jarvis: 'jarvis' }
 
 const MAX_LEN = 120
 function trimStr(s, max = MAX_LEN) {

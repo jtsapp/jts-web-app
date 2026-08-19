@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import TutorShell from '../tutor/TutorShell.jsx'
 import { INTEREST_TOPICS } from '../tutor/interests.js'
 import { useT } from '../i18n/LanguageContext.jsx'
@@ -15,7 +16,7 @@ export default function TutorInterestsPage({
   onContinue,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк' } = tutor
   // Ничего не предвыбираем: интересы — выбор ученика, а не наша догадка.
   const [selected, setSelected] = useState(() => new Set(initialIds))
 
@@ -38,7 +39,7 @@ export default function TutorInterestsPage({
     >
       <div className="t-status" style={{ paddingTop: 66 }}>
         <div className="t-status__head">
-          <img className="t-status__avatar" src={avatar} alt="" />
+          <TutorThumb tutor={tutor} className="t-status__avatar" />
           <div className="t-status__meta">
             <span className="t-status__name">{name}</span>
             <span className="t-status__role">{t('role.tutor')}</span>

@@ -16,7 +16,7 @@ export default function TutorLoadingPage({
   delay = 2200,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png', face = '' } = tutor
   const head = heading ?? t('loading.heading', { name })
   useEffect(() => {
     if (!onDone) return
@@ -33,7 +33,7 @@ export default function TutorLoadingPage({
       onBack={onBack}
       layout="center"
     >
-      <TutorStatus heading={head} name={name} avatar={avatar} pulse dots />
+      <TutorStatus heading={head} name={name} avatar={avatar} face={face} pulse dots />
     </TutorShell>
   )
 }

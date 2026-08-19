@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { TUTORS } from './tutors.js'
+import JarvisOrb from './JarvisOrb.jsx'
 import { VolumeIcon } from './TutorIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 
@@ -77,7 +78,15 @@ export default function TutorCarousel({ onChoose, onListen }) {
                 zIndex: center ? 2 : 1,
               }}
             >
-              <img src={tt.avatar} alt="" draggable="false" />
+              {tt.face === 'orb' ? (
+                // Орб — живая канва с rAF, и слайдов в карусели ВТРОЕ больше,
+                // чем тьюторов (три копии списка для бесшовной прокрутки).
+                // Монтируем только у видимых слотов, иначе за кадром крутились
+                // бы ещё две копии движка. Невидимые и так под opacity: 0.
+                visible ? <JarvisOrb className="t-car__orb" label={tt.name} /> : null
+              ) : (
+                <img src={tt.avatar} alt="" draggable="false" />
+              )}
             </div>
           )
         })}
