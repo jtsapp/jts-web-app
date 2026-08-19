@@ -6538,6 +6538,39 @@ textarea {
 .live-controls .btn-pause { background: #f0e9ff; color: #5b34d6; }
 .live-controls .btn-complete { background: #eceef1; color: #333; }
 
+/* Групповой урок — кого из участников сейчас смотрит преподаватель. Тот же
+   визуальный язык, что у .live-presence (аватар-кружок + точка присутствия),
+   но кликабельно и с активным состоянием — см. StudentReviewPicker. */
+.live-review-picker { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.live-review-picker__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 10px 4px 4px;
+  cursor: pointer;
+  font: inherit;
+}
+.live-review-picker__item.is-active { border-color: #7a4dff; background: #f0e9ff; }
+.live-review-picker__item.is-offline { opacity: .55; }
+.live-review-picker__avatar {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 999px;
+  background: #7a4dff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.live-review-picker__name { font-size: 13px; color: #333; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-review-picker__dot { width: 8px; height: 8px; border-radius: 50%; background: #c7cbd1; flex: none; }
+.live-review-picker__dot.is-online { background: #2c8a45; }
+
 /* Live whiteboard (sub-project #3) */
 /* Тот же формат колонки, что у .lw-material-frame (материал урока) - иначе
    доска на вкладке "Board" остаётся мелкой в углу, пока "Lesson" занимает

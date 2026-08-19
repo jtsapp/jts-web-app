@@ -14,6 +14,7 @@ import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import LiveStatusBadge from './live/LiveStatusBadge.jsx'
 import PresenceRoster from './live/PresenceRoster.jsx'
+import StudentReviewPicker from './live/StudentReviewPicker.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
@@ -61,6 +62,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const selfUserId = userIdFromToken(token)
   const isStaff = canControl(role)
   const { roster, connected } = useLessonPresence(lessonId, token)
+  const onlineUserIds = useMemo(() => new Set(roster.map((p) => p.userId)), [roster])
   const pollRef = useRef(null)
 
   // --- Разделы урока ("Маршрут урока") + материал активного раздела -------
@@ -86,17 +88,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
   // выдумывать ему позицию значило бы показывать ученику неправду.
   const [teacherStepId, setTeacherStepId] = useState(null)
-  // Живая трансляция урока, открытого шагами. Здесь лежит то, что делает
-  // собеседник: его шаг и — если это ученик — его ответы. Своё состояние
-  // (activeStepId/answers) сюда не смешивается: преподаватель волен смотреть
-  // другой шаг, и подменять ему экран без спроса нельзя.
+  // Живая трансляция урока, открытого шагами. peerStepId/peerName — позиция
+  // ЕДИНСТВЕННОГО учителя, как её видит студент (своё состояние —
+  // activeStepId/answers — сюда не смешивается: преподаватель волен смотреть
+  // другой шаг, и подменять ему экран без спроса нельзя).
   const [peerStepId, setPeerStepId] = useState(null)
   const [peerName, setPeerName] = useState(null)
-  const [studentAnswers, setStudentAnswers] = useState({})
-  const [studentCheckedSteps, setStudentCheckedSteps] = useState(() => new Set())
-  // Вопрос, на котором ученик стоит прямо сейчас (может быть ещё не отвечен —
-  // отдельно от studentAnswers, см. onStepProgress ниже).
-  const [studentLiveQuestionId, setStudentLiveQuestionId] = useState(null)
+  // Групповой урок — несколько студентов шлют прогресс одновременно. Карта по
+  // studentId, а не одно значение на всё занятие: иначе просмотр одного
+  // ученика стирал бы то, что уже прислал другой, пока на него не смотрели
+  // (см. onStepProgress ниже и StudentReviewPicker).
+  const [studentLiveState, setStudentLiveState] = useState({})
   const [reloadToken, setReloadToken] = useState(0)
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
@@ -124,9 +126,25 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const sectionMaterials = activeSection?.materials || []
   const [activeMaterialId, setActiveMaterialId] = useState(null)
   const activeMaterial = sectionMaterials.find((m) => m.materialId === activeMaterialId) || sectionMaterials[0] || null
-  // Без пикера студента на этот заход: учитель просматривает первого
-  // участника занятия (как loadLesson()/selectStudent() по умолчанию в web-admin).
-  const reviewStudentId = lesson?.participants?.[0]?.studentId ?? null
+  // Кого из участников смотрит преподаватель — выбирается через
+  // StudentReviewPicker (несколько студентов в групповом уроке), по умолчанию
+  // первый участник занятия, как и раньше (loadLesson()/selectStudent() в
+  // web-admin делают то же самое по умолчанию).
+  const [reviewStudentId, setReviewStudentId] = useState(null)
+  useEffect(() => {
+    if (reviewStudentId == null && lesson?.participants?.length) {
+      setReviewStudentId(lesson.participants[0].studentId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson?.participants])
+  // Срез studentLiveState именно для того, кого сейчас смотрит преподаватель —
+  // остальные студенты продолжают накапливаться в фоне (см. onStepProgress).
+  const reviewState = reviewStudentId != null ? studentLiveState[reviewStudentId] : null
+  const reviewStepId = reviewState?.stepId ?? null
+  const reviewPeerName = reviewState?.name ?? null
+  const reviewAnswers = reviewState?.answers ?? {}
+  const reviewCheckedSteps = reviewState?.checkedSteps ?? new Set()
+  const reviewLiveQuestionId = reviewState?.liveQuestionId ?? null
 
   const sectionStatusById = useMemo(() => {
     const map = {}
@@ -268,7 +286,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Ученик и преподаватель на треке. Смотрю на свой шаг всегда; собеседник —
   // там, куда его поставила трансляция, и пока он ничего не прислал, бегунка
   // нет: выдумывать ему позицию значило бы показывать неправду.
-  const studentStepId = isStaff ? peerStepId : activeStepId
+  const studentStepId = isStaff ? reviewStepId : activeStepId
   const lessonTeacherStepId = isStaff ? activeStepId : peerStepId
 
   // Ученик пролистнул экран плеера. Плеер знает только свой плоский индекс, а
@@ -432,28 +450,38 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // отдельно: переход по шагу приходит без ответа, ответ — без «Проверить».
     // Записывать их скопом значило бы стирать ответ при каждом переходе.
     onStepProgress: (evt) => {
+      // Единственный собеседник у студента — учитель, здесь без карты: просто
+      // «где сейчас преподаватель».
       if (evt.senderName) setPeerName(evt.senderName)
       if (evt.stepId != null) setPeerStepId(evt.stepId)
       // Ответы бывают только ученические: преподаватель за ученика не отвечает
       // (см. readOnly в ChoiceQuestion), и «ответ преподавателя» означал бы,
       // что где-то разъехались роли.
-      if (evt.senderRole !== 'STUDENT') return
-      // «Стою на вопросе X» и «ответил на вопрос X» — разные события с одним
-      // и тем же questionId (см. handleQuestionView/handleAnswer): первое
-      // приходит без value вовсе, и писать его в studentAnswers затёрло бы
-      // уже данный ответ пустотой, стоило ученику просто прокрутить назад.
-      if (evt.questionId != null) setStudentLiveQuestionId(evt.questionId)
-      if (evt.questionId != null && evt.value != null) {
-        setStudentAnswers((prev) => ({ ...prev, [evt.questionId]: parseAnswer(evt.value) }))
-      }
-      if (evt.checked && evt.checkedKey != null) {
-        setStudentCheckedSteps((prev) => {
-          if (prev.has(evt.checkedKey)) return prev
-          const next = new Set(prev)
-          next.add(evt.checkedKey)
-          return next
-        })
-      }
+      if (evt.senderRole !== 'STUDENT' || evt.senderUserId == null) return
+      // Групповой урок — событие может прийти от ЛЮБОГО студента, не только
+      // от того, кого сейчас просматривает преподаватель: пишем в его личную
+      // ячейку карты, а не поверх чужой (см. studentLiveState выше).
+      const studentId = evt.senderUserId
+      setStudentLiveState((prev) => {
+        const cur = prev[studentId] || { stepId: null, name: null, answers: {}, checkedSteps: new Set(), liveQuestionId: null }
+        const next = { ...cur }
+        if (evt.senderName) next.name = evt.senderName
+        if (evt.stepId != null) next.stepId = evt.stepId
+        // «Стою на вопросе X» и «ответил на вопрос X» — разные события с одним
+        // и тем же questionId (см. handleQuestionView/handleAnswer): первое
+        // приходит без value вовсе, и писать его в answers затёрло бы уже
+        // данный ответ пустотой, стоило ученику просто прокрутить назад.
+        if (evt.questionId != null) {
+          next.liveQuestionId = evt.questionId
+          if (evt.value != null) next.answers = { ...cur.answers, [evt.questionId]: parseAnswer(evt.value) }
+        }
+        if (evt.checked && evt.checkedKey != null && !cur.checkedSteps.has(evt.checkedKey)) {
+          const checkedNext = new Set(cur.checkedSteps)
+          checkedNext.add(evt.checkedKey)
+          next.checkedSteps = checkedNext
+        }
+        return { ...prev, [studentId]: next }
+      })
     },
   })
 
@@ -502,9 +530,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         const restored = parseStepProgress(saved?.eventsJson)
         if (restored) {
           if (isStaff) {
-            setStudentAnswers(restored.answers)
-            setStudentCheckedSteps(restored.checkedSteps)
-            if (restored.stepId) setPeerStepId(restored.stepId)
+            if (reviewStudentId != null) {
+              setStudentLiveState((prev) => {
+                const cur = prev[reviewStudentId] || { stepId: null, name: null, answers: {}, checkedSteps: new Set(), liveQuestionId: null }
+                return {
+                  ...prev,
+                  [reviewStudentId]: {
+                    ...cur,
+                    answers: restored.answers,
+                    checkedSteps: restored.checkedSteps,
+                    ...(restored.stepId ? { stepId: restored.stepId } : {}),
+                  },
+                }
+              })
+            }
           } else {
             setAnswers(restored.answers)
             setCheckedSteps(restored.checkedSteps)
@@ -679,7 +718,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Смотрящий не отвечает; на паузе и после урока — тоже, чтобы работа не
   // терялась и не дописывалась задним числом (спека §3.3, §3.4).
   const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
-  const ownProgress = stepProgress(lessonSteps, isStaff ? studentAnswers : answers)
+  const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
 
   return (
@@ -711,6 +750,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 onPause={() => act((tk, id) => pauseLiveLesson(tk, id, PAUSE_MINUTES))}
                 onResume={() => act(resumeLiveLesson)}
                 onComplete={() => act(completeLiveLesson)}
+              />
+            )}
+
+            {isStaff && (
+              <StudentReviewPicker
+                participants={lesson.participants}
+                reviewStudentId={reviewStudentId}
+                onSelect={setReviewStudentId}
+                onlineUserIds={onlineUserIds}
               />
             )}
 
@@ -806,15 +854,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <>
                           {/* Ученик ушёл на другой шаг — преподаватель об этом
                               узнаёт, а не догадывается по бегунку на треке. */}
-                          {isStaff && peerStepId && peerStepId !== activeStepId && (
+                          {isStaff && reviewStepId && reviewStepId !== activeStepId && (
                             <SystemBanner
                               tone="attention"
                               text={t('live.peerOnStep', {
-                                name: peerName || t('live.roster.student'),
-                                title: lessonSteps.find((s) => s.id === peerStepId)?.title || '',
+                                name: reviewPeerName || t('live.roster.student'),
+                                title: lessonSteps.find((s) => s.id === reviewStepId)?.title || '',
                               })}
                               actionLabel={t('live.peerGo')}
-                              onAction={() => setActiveStepId(peerStepId)}
+                              onAction={() => setActiveStepId(reviewStepId)}
                             />
                           )}
                           {/* Плеер — только когда конвертеру было из чего собрать
@@ -828,12 +876,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               <LessonContent
                                 step={activeStep}
                                 // Преподаватель смотрит работу ученика, ученик — свою.
-                                answers={isStaff ? studentAnswers : answers}
-                                checkedKeys={isStaff ? studentCheckedSteps : checkedSteps}
+                                answers={isStaff ? reviewAnswers : answers}
+                                checkedKeys={isStaff ? reviewCheckedSteps : checkedSteps}
                                 onAnswer={handleAnswer}
                                 onCheck={handleCheckStep}
                                 readOnly={contentReadOnly}
-                                liveQuestionId={isStaff ? studentLiveQuestionId : null}
+                                liveQuestionId={isStaff ? reviewLiveQuestionId : null}
                               />
                             </div>
                           ) : (
