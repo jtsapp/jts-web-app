@@ -12,7 +12,10 @@ export default function MonthCalendar({
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
   const weeks = buildMonthMatrix(year, month)
-  const monthLabel = new Date(year, month, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
+  // Месяц и год складываем сами: локаль отдаёт «август 2026 г.», а CSS-овский
+  // capitalize делает из хвоста «Г.» — заголовок с бессмысленной буквой.
+  const monthName = new Date(year, month, 1).toLocaleDateString(locale, { month: 'long' })
+  const monthLabel = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${year}`
   const todayKey = dayKey(new Date())
   const weekdayNames = Array.from({ length: 7 }, (_, i) =>
     new Date(MONDAY_ANCHOR.getFullYear(), 0, 1 + i).toLocaleDateString(locale, { weekday: 'short' })
@@ -21,9 +24,11 @@ export default function MonthCalendar({
   return (
     <div className="cal">
       <div className="cal__head">
-        <button className="cal__nav" type="button" aria-label={t('schedule.prevMonth')} onClick={onPrevMonth}>‹</button>
         <div className="cal__title">{monthLabel}</div>
-        <button className="cal__nav" type="button" aria-label={t('schedule.nextMonth')} onClick={onNextMonth}>›</button>
+        <div className="cal__navs">
+          <button className="cal__nav" type="button" aria-label={t('schedule.prevMonth')} onClick={onPrevMonth}>‹</button>
+          <button className="cal__nav" type="button" aria-label={t('schedule.nextMonth')} onClick={onNextMonth}>›</button>
+        </div>
       </div>
       <div className="cal__grid cal__grid--head">
         {weekdayNames.map((w, i) => <div key={i} className="cal__wd">{w}</div>)}
