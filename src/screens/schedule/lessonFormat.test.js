@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   parseLessonDate, canJoin, lessonStateKey, dayKey,
   buildMonthMatrix, occurrencesByDayKey, monthShift, dateFromKey,
+  lessonTimeRange, lessonTopicFromSections,
 } from './lessonFormat.js'
 
 describe('lessonFormat', () => {
@@ -110,5 +111,56 @@ describe('dateFromKey', () => {
     expect(d.getMonth()).toBe(7)
     expect(d.getDate()).toBe(4)
     expect(d.getHours()).toBe(0)
+  })
+})
+
+describe('lessonTimeRange', () => {
+  it('складывает конец урока из длительности', () => {
+    const occ = { scheduledAt: '2026-08-06T18:00:00', durationMinutes: 60 }
+    expect(lessonTimeRange(occ, 'ru')).toBe('18:00 – 19:00')
+  })
+
+  it('без длительности показывает только начало', () => {
+    expect(lessonTimeRange({ scheduledAt: '2026-08-06T18:00:00' }, 'ru')).toBe('18:00')
+  })
+})
+
+describe('lessonTopicFromSections', () => {
+  const sections = (materials, position = 0) => ({ position, materials })
+
+  it('берёт материал первого раздела и срезает служебный суффикс режима', () => {
+    const list = [
+      sections([{ title: 'Coffee—yes. Mondays—no. · 1-на-1' }], 0),
+      sections([{ title: 'Другой урок · Группа' }], 1),
+    ]
+    expect(lessonTopicFromSections(list)).toBe('Coffee—yes. Mondays—no.')
+  })
+
+  it('срезает и английские хвосты режимов, которые ставит бэкенд сейчас', () => {
+    expect(lessonTopicFromSections([sections([{ title: 'Coffee—yes. Mondays—no. · 1 to 1' }])]))
+      .toBe('Coffee—yes. Mondays—no.')
+    expect(lessonTopicFromSections([sections([{ title: 'Weekend plans · Group' }])]))
+      .toBe('Weekend plans')
+  })
+
+  // Точка-разделитель бывает и в честном названии — такое резать нельзя.
+  it('не режет « · » внутри настоящего названия материала', () => {
+    expect(lessonTopicFromSections([sections([{ title: 'Unit 3 · Present Perfect' }])]))
+      .toBe('Unit 3 · Present Perfect')
+  })
+
+  it('идёт по разделам в порядке position, а не в порядке ответа', () => {
+    const list = [
+      sections([{ title: 'Второй' }], 2),
+      sections([], 0),
+      sections([{ title: 'Первый' }], 1),
+    ]
+    expect(lessonTopicFromSections(list)).toBe('Первый')
+  })
+
+  it('без материалов темы нет', () => {
+    expect(lessonTopicFromSections([sections([]), sections([{ title: '  ' }])])).toBeNull()
+    expect(lessonTopicFromSections([])).toBeNull()
+    expect(lessonTopicFromSections(null)).toBeNull()
   })
 })

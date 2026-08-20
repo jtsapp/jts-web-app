@@ -11,6 +11,7 @@ import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
+import { setAudioReporter } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import LiveStatusBadge from './live/LiveStatusBadge.jsx'
 import PresenceRoster from './live/PresenceRoster.jsx'
@@ -394,7 +395,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
-  const { sendFocus, sendMirror, sendPresent, sendStepProgress } = useLessonLiveSocket(lessonId, token, selfUserId, {
+  const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onFocus: (evt) => {
       if (evt.sectionId == null) return
       // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
@@ -607,6 +608,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const saveTimerRef = useRef(null)
   useEffect(() => () => clearTimeout(saveTimerRef.current), [])
 
+  // Живое аудио: пока это не преподаватель, каждый 🔊/аудио-клип уходит
+  // собеседнику (см. audioReport.js — карточки словаря, вопросы на слух,
+  // CourseStepPlayer и настоящие <audio> в разметке зовут её сами). Ref для
+  // activeStepId, чтобы не пересоздавать подписку на каждый переход по шагу.
+  const activeStepIdRef = useRef(activeStepId)
+  useEffect(() => { activeStepIdRef.current = activeStepId })
+  useEffect(() => {
+    if (isStaff) return undefined
+    setAudioReporter((payload) => sendAudio({ ...payload, stepId: activeStepIdRef.current }))
+    return () => setAudioReporter(null)
+  }, [isStaff, sendAudio])
+
   function persistProgress(next) {
     if (isStaff || !stepMaterialId || !progressLoaded) return
     // Дебаунс: ответ в поле ввода меняется на каждую букву.
@@ -756,7 +769,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
       <div className="live live--wide">
         <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
 

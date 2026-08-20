@@ -1,5 +1,6 @@
-import { memo, useMemo } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { sanitizeHtml } from '../sanitizeHtml.js'
+import { reportAudio } from '../../live/audioReport.js'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
 // от учителя/экстрактора. Только для чтения, без answers/checked — как
@@ -23,12 +24,35 @@ import { sanitizeHtml } from '../sanitizeHtml.js'
 // ре-рендер целиком, пока сам `block` не изменится по ссылке.
 function InfoBlock({ block }) {
   const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
+  const bodyRef = useRef(null)
+
+  // Настоящие <audio> из разметки урока (аудирование) — репортим play/pause тем
+  // же каналом, что и TTS (см. audioReport.js), чтобы преподаватель в живом
+  // режиме слышал то же самое. play/pause не всплывают — слушаем на фазе
+  // захвата на контейнере, а не на каждом <audio> по отдельности.
+  useEffect(() => {
+    const root = bodyRef.current
+    if (!root) return undefined
+    const report = (action) => (e) => {
+      if (e.target?.tagName !== 'AUDIO') return
+      reportAudio({ kind: 'file', action, url: e.target.currentSrc || e.target.src })
+    }
+    const onPlay = report('play')
+    const onPause = report('stop')
+    root.addEventListener('play', onPlay, true)
+    root.addEventListener('pause', onPause, true)
+    return () => {
+      root.removeEventListener('play', onPlay, true)
+      root.removeEventListener('pause', onPause, true)
+    }
+  }, [html])
+
   if (!html && !block?.title) return null
 
   return (
     <div className="lw-info__item">
       {block?.title && <h3 className="lw-info__title">{block.title}</h3>}
-      {html && <div className="lw-info__body" dangerouslySetInnerHTML={{ __html: html }} />}
+      {html && <div className="lw-info__body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: html }} />}
     </div>
   )
 }

@@ -3,6 +3,7 @@ import AssetImage from '../components/AssetImage.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
+import { reportAudio } from '../screens/live/audioReport.js'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
 //
@@ -58,6 +59,9 @@ let liveAudio = null
 
 function speakEnglish(text, { src = null, rate = 1 } = {}) {
   stopSpeaking()
+  // На живом уроке преподаватель следует за тем же звуком — вне урока репортёр
+  // не подписан (см. audioReport.js), и вызов ничего не делает.
+  reportAudio({ kind: 'tts', action: 'play', text: String(text) })
   if (src) {
     liveAudio = new Audio(src)
     liveAudio.playbackRate = rate
@@ -968,6 +972,11 @@ function getStageAudio(src) {
     stageAudio?.pause()
     stageAudio = new Audio(src)
     stageAudioSrc = src
+    // Живой урок: преподаватель следует за той же дорожкой (см. audioReport.js).
+    // currentSrc — уже абсолютный URL, в отличие от переданного src, который
+    // может быть относительным путём под public/course/<level>/.
+    stageAudio.addEventListener('play', () => reportAudio({ kind: 'file', action: 'play', url: stageAudio.currentSrc || src }))
+    stageAudio.addEventListener('pause', () => reportAudio({ kind: 'file', action: 'stop', url: stageAudio.currentSrc || src }))
   }
   return stageAudio
 }
