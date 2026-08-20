@@ -12,11 +12,11 @@
 // файлы уроков не хочется. Расхождение ловит content.test.js.
 
 const RAW = [
-  { id: 'sg', title: 'Speak Like Selena Gomez', short: 'Selena Gomez', video: 'jG-4kBIDAzA', segCount: 46 },
-  { id: 'v2', title: 'Steve Jobs · Stanford Commencement', short: 'Steve Jobs', video: '1i9kcBHX2Nw', segCount: 146 },
-  { id: 'v3', title: 'Emma Watson · HeForShe (UN)', short: 'Emma Watson', video: 'nIwU-9ZTTJc', segCount: 77 },
-  { id: 'v4', title: 'Oprah Winfrey · Award Speech', short: 'Oprah', video: 'u1gg_L-syCw', segCount: 40 },
-  { id: 'v5', title: 'Barack Obama · Victory Speech 2008', short: 'Obama', video: 'mi8N5gDVpeg', segCount: 129 },
+  { id: 'sg', title: 'Speak Like Selena Gomez', short: 'Selena Gomez', video: 'jG-4kBIDAzA', segCount: 66 },
+  { id: 'v2', title: 'Steve Jobs · Stanford Commencement', short: 'Steve Jobs', video: '1i9kcBHX2Nw', segCount: 88 },
+  { id: 'v3', title: 'Emma Watson · HeForShe (UN)', short: 'Emma Watson', video: 'nIwU-9ZTTJc', segCount: 58 },
+  { id: 'v4', title: 'Oprah Winfrey · Award Speech', short: 'Oprah', video: 'u1gg_L-syCw', segCount: 12 },
+  { id: 'v5', title: 'Barack Obama · Victory Speech 2008', short: 'Obama', video: 'mi8N5gDVpeg', segCount: 52 },
   // Подборка клиента из Notion (scripts/shadowing-src/sources.json): короткие
   // ролики на 4–5 минут, речь быстрее и разговорнее, чем в речах выше.
   { id: 'story60', title: 'The Secret to Telling a Great Story', short: 'Jenny Hoyos', video: 'ZmNpeXTj2c4', segCount: 56 },
