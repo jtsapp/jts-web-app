@@ -2,6 +2,8 @@
 // логики. Модульные синглтоны (голоса, AudioContext), т.к. и то и другое —
 // ресурсы уровня вкладки, а не компонента.
 
+import { reportAudio } from '../../screens/live/audioReport.js'
+
 /* ─────────────── TTS ───────────────
    Качество Web Speech API зависит от голосов устройства: ранжируем все
    английские и берём самый «человеческий» для каждого акцента (en-US / en-GB),
@@ -117,6 +119,9 @@ export function speak(text, { accent = 'us', onStart, onEnd, onNoVoice } = {}) {
   speakTimer = setTimeout(() => {
     try {
       window.speechSynthesis.speak(u)
+      // На живом уроке преподаватель следует за тем же звуком — вне урока
+      // репортёр не подписан (см. audioReport.js), и вызов ничего не делает.
+      reportAudio({ kind: 'tts', action: 'play', text: String(text), accent: gb ? 'GB' : 'US' })
     } catch {
       onEnd && onEnd()
     }

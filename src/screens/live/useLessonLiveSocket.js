@@ -103,8 +103,13 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   // Учитель: очистить ответы конкретного ученика на шаге целиком.
   const sendAnswerReset = useCallback((studentId, stepId, questionIds, checkedKeys) =>
     publish('answer-reset', { studentId, stepId, questionIds, checkedKeys }), [publish])
+  // Студент проиграл 🔊-озвучку (kind: 'tts', text/accent) или настоящий аудио-файл
+  // (kind: 'file', url) — преподаватель в живом режиме следует за этим же звуком
+  // (см. LessonAudioMessage на бэкенде). Односторонний канал: студент не подписан
+  // на свой же /audio/staff, поэтому здесь только отправка.
+  const sendAudio = useCallback((payload) => publish('audio', payload), [publish])
 
-  return { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset }
+  return { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio }
 }
 
 function parse(body) {

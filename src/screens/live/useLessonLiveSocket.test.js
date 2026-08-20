@@ -214,4 +214,19 @@ describe('useLessonLiveSocket', () => {
       destination: '/app/lesson/7/present', body: JSON.stringify({ materialId: 5, events: [{ selector: '#a', eventType: 'click', value: null }] }),
     })
   })
+
+  // Односторонний канал: студент шлёт, но не подписан на свой же /audio/staff
+  // (см. 'на канал поправки ответа подписан только сам ученик' — та же причина).
+  it('sendAudio publishes to the right destination, no subscription either side', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { isStaff: true }))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/audio/staff')
+
+    act(() => { result.current.sendAudio({ kind: 'tts', action: 'play', text: 'busy', stepId: 's2' }) })
+    expect(lastClient.published.at(-1)).toEqual({
+      destination: '/app/lesson/7/audio',
+      body: JSON.stringify({ kind: 'tts', action: 'play', text: 'busy', stepId: 's2' }),
+    })
+  })
 })
