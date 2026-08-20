@@ -117,6 +117,11 @@ assert tutor_session_lang(harsh.tutor, harsh.lang) == "kz"
 harsh_prompt = build_instructions(harsh)
 assert "RUSSIAN IS NOT YOUR LANGUAGE" in harsh_prompt
 assert "SPEAK RUSSIAN TO THEM" not in harsh_prompt
-assert "ТЕК ҚАЗАҚША ЖӘНЕ АҒЫЛШЫНША" in harsh_prompt
+assert "KAZAKH AND ENGLISH, NOTHING ELSE" in harsh_prompt
+# Инструкции злой персоны — по-английски. Русско-казахская смесь в первой версии
+# заставила Спарка заговорить с учеником по-русски на первом же живом звонке.
+harsh_persona = PERSONA_OVERRIDE["hype_harsh"]
+for ru_word in ("ОБРАЩЕНИЕ", "ЗАПРЕЩЕНО", "НЕЛЬЗЯ", "ученик", "братан", "Грубость"):
+    assert ru_word not in harsh_persona, ru_word
 
 print("test_spark_language: ok")

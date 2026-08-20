@@ -14,6 +14,7 @@ const SCREENS = [
   { screen: 'tutor-practice-result', content: '.t-result2__title' },
   { screen: 'tutor-error-analytics', content: '.t-erran__empty' },
   { screen: 'tutor-chat-history', content: '.t-chat__empty' },
+  { screen: 'tutor-call-report', content: '.t-report__stats' },
 ]
 
 test.describe('внутренние экраны тьютора — мобилка', () => {
