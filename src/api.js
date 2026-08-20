@@ -164,6 +164,13 @@ export function submitHomework(token, id) {
   return authPut(`/admin/homework/${id}/submit`, token)
 }
 
+// Ответ на задание, взятое преподавателем с живого урока. Правильность считает
+// клиент — тем же gradeQuestion, что и на уроке: сервер вопрос не разбирает, а
+// преподавателю нужно видеть не только ответ, но и сошёлся ли он с ключом.
+export async function saveHomeworkAnswer(id, exerciseId, token, answer, correct) {
+  return authPut(`/admin/homework/${id}/exercises/${exerciseId}/answer`, token, { answer, correct })
+}
+
 // Задания с живых уроков: преподаватель назначает материал через админку
 // («задать как ДЗ», MaterialAssignment), ученик видит назначенное здесь же,
 // в «Домашней работе». Ничего нового на бэкенде — это тот же студенческий

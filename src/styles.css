@@ -7192,3 +7192,84 @@ textarea {
     height: 100dvh;
   }
 }
+
+/* Задания домашней работы, пришедшие с живого урока. Карточки практики уже
+   оформлены (.lw-practice), здесь только раскладка списка и счётчик решённого. */
+/* Шапка секции: заголовок слева, счётчик справа. Общая для обоих видов работы,
+   чтобы файлы и задания с урока читались как две части одного экрана. */
+.hw-block__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.hw-block__head .hw-block__title { margin: 0; }
+
+.hw-block__count {
+  flex: none;
+  min-width: 22px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #f0eff5;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Задания с урока — своя поверхность: их решают прямо здесь, а файлы скачивают
+   и присылают ответом. Тот же приём, что у блока проверки (.hw-block--review). */
+.hw-block--exercises {
+  margin-top: 20px;
+  padding: 16px;
+  border-top: 0;
+  border-radius: 16px;
+  background: #f7f4ff;
+}
+
+.hw-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hw-exercises__count {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.hw-exercises__count--done { color: #2e7d32; }
+
+.hw-progress {
+  height: 6px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  background: #e7e1f7;
+  overflow: hidden;
+}
+
+.hw-progress__bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--purple);
+  transition: width .2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-progress__bar { transition: none; }
+}
+
+.hw-exercise__error {
+  margin: 6px 2px 0;
+  font-size: 13px;
+  color: var(--danger, #dc2626);
+}
+
+/* Шапка отправки: название урока и дата выдачи слева, счётчик справа. */
+.hw-batch__title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.hw-batch__date { font-size: 13px; color: var(--muted); }

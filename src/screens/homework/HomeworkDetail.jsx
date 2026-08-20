@@ -1,5 +1,6 @@
 import { useI18n } from '../../i18n.jsx'
 import HomeworkFileList from './HomeworkFileList.jsx'
+import HomeworkExercises from './HomeworkExercises.jsx'
 import { ALLOWED_EXTENSIONS, canAttach, canSubmit, homeworkStateKey } from './homeworkFormat.js'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
@@ -16,7 +17,7 @@ function formatDate(value, locale) {
  * (это же правило стоит и на бэкенде), поэтому у COMPLETED тут нет ни загрузки,
  * ни удаления, ни кнопки отправки.
  */
-export default function HomeworkDetail({ hw, busy, error, onUpload, onRemoveFile, onSubmit }) {
+export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRemoveFile, onSubmit }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
 
@@ -46,10 +47,20 @@ export default function HomeworkDetail({ hw, busy, error, onUpload, onRemoveFile
         {due && <span>{t('homework.due', { date: due })}</span>}
       </div>
 
-      <section className="hw-block">
-        <h3 className="hw-block__title">{t('homework.task')}</h3>
+      {/* Файлы от преподавателя и задания с урока — разная работа: одно скачивают
+          и присылают ответом, другое решают прямо здесь. Поэтому у них разные
+          заголовки и разный фон, а не один общий список. */}
+      <section className="hw-block hw-block--files">
+        <div className="hw-block__head">
+          <h3 className="hw-block__title">{t('homework.taskFiles')}</h3>
+          {hw.materials?.length > 0 && <span className="hw-block__count">{hw.materials.length}</span>}
+        </div>
         <HomeworkFileList files={hw.materials} emptyLabel={t('homework.taskEmpty')} />
       </section>
+
+      {/* Задания, добавленные преподавателем прямо с живого урока. Секции нет,
+          когда их нет: домашка бывает и просто файлом. */}
+      <HomeworkExercises key={hw.id} hw={hw} token={token} />
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.myAnswer')}</h3>
