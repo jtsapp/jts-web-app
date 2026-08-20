@@ -9,6 +9,21 @@ export const norm = normAnswer
 // для match (live-уроки) — карта left→выбранный right; для order — массив слов
 // в том порядке, в каком их составил ученик; для multi — массив отмеченных
 // вариантов; для pick — сам факт выбора (оценивать нечего, опрос про себя).
+/**
+ * Есть ли у вопроса эталон, с которым можно сверить ответ.
+ *
+ * У свободного пропуска (`open`) и у опроса про себя эталона нет: gradeQuestion
+ * возвращает у них `correct` на любой непустой ответ — это «принято», а не
+ * «верно». Показывать такой ответ зелёной галочкой нельзя: ученик читает её как
+ * подтверждение, что написал правильно, хотя сверять было не с чем.
+ */
+export function isGraded(question) {
+  if (!question) return false
+  if (question.type === 'pick') return false
+  if (question.type === 'gap') return question.open !== true
+  return true
+}
+
 export function gradeQuestion(question, answer) {
   if (!question || answer == null) return { correct: false }
   if (question.type === 'choice') return { correct: answer === question.answer }

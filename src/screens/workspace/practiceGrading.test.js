@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { gradeQuestion } from './practiceGrading.js'
+import { gradeQuestion, isGraded } from './practiceGrading.js'
 
 describe('gradeQuestion — order (собери предложение)', () => {
   const question = { type: 'order', answer: ['I', 'like', 'coffee'] }
@@ -46,5 +46,29 @@ describe('gradeQuestion — pick (опрос про себя)', () => {
   it('пустой ответ не засчитывается', () => {
     expect(gradeQuestion({ type: 'pick' }, '').correct).toBe(false)
     expect(gradeQuestion({ type: 'pick' }, []).correct).toBe(false)
+  })
+})
+
+describe('isGraded', () => {
+  it('пропуск с эталоном проверяется', () => {
+    expect(isGraded({ type: 'gap', answers: ['like'] })).toBe(true)
+  })
+
+  it('свободный пропуск сверять не с чем', () => {
+    expect(isGraded({ type: 'gap', open: true })).toBe(false)
+  })
+
+  it('опрос про себя не оценивается', () => {
+    expect(isGraded({ type: 'pick', options: ['да', 'нет'] })).toBe(false)
+  })
+
+  it('остальные типы проверяются', () => {
+    for (const type of ['choice', 'chips', 'multi', 'order', 'match']) {
+      expect(isGraded({ type })).toBe(true)
+    }
+  })
+
+  it('без вопроса ничего не проверяется', () => {
+    expect(isGraded(null)).toBe(false)
   })
 })

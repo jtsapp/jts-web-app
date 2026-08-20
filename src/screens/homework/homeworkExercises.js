@@ -55,19 +55,59 @@ export function serverAnswers(hw) {
 }
 
 /**
- * Синтетический practice-блок вокруг одного вопроса — контракт PracticeBlock.
+ * Задания отправки, собранные в карточки по инструкции.
+ *
+ * Урок задаёт вопросы пачками под одной формулировкой («Build the word. Type the
+ * missing form.»), а на экране каждый становился отдельной карточкой — и четыре
+ * задания подряд повторяли одну и ту же шапку во весь экран, с четырьмя кнопками
+ * «Проверить». Собираем их обратно: одна инструкция — одна карточка со списком
+ * вопросов, как в самом уроке.
+ *
+ * Ключ группы — тип вопроса вместе с инструкцией: у пропуска и у выбора разный
+ * разбор, и под одну кнопку их класть нельзя, даже когда формулировка совпала.
+ * Порядок карточек — по первому вопросу группы: восстанавливать порядок урока,
+ * перескакивая по списку, ученику незачем.
+ */
+export function exerciseGroups(exercises) {
+  const groups = new Map()
+  for (const e of exercises || []) {
+    const key = `${e.question?.type || 'none'}|${e.instruction || ''}`
+    const group = groups.get(key) || { key, instruction: e.instruction || '', exercises: [] }
+    group.exercises.push(e)
+    groups.set(key, group)
+  }
+  return [...groups.values()]
+}
+
+/**
+ * Practice-блок вокруг группы — контракт PracticeBlock.
  *
  * В шапке — инструкция с урока («Listen. Choose the word you hear.»), ровно как
  * там: без неё ученик видит «🔊 Word 1» и четыре варианта, но не знает, что с ними
  * делать. Формулировку в шапку не ставим: её печатает сам вопрос, и получилась бы
  * вторая копия того же текста. У старых упражнений инструкции нет — шапки тоже.
  */
-export function exerciseBlock(exercise) {
+export function groupBlock(group) {
   return {
     type: 'practice',
-    title: exercise.instruction || '',
-    questions: [exercise.question],
+    title: group.instruction || '',
+    questions: group.exercises.map((e) => e.question),
   }
+}
+
+/**
+ * Ответил ли ученик — по нему решается, что отправлять преподавателю.
+ *
+ * В карточке теперь несколько вопросов, и одна кнопка «Проверить» на всю группу.
+ * Отправлять нетронутые вопросы нельзя: преподаватель увидел бы их неверными,
+ * хотя ученик до них не дошёл. Пустой ответ у каждого типа свой — строка у
+ * пропуска, список у порядка, карта пар у соединения.
+ */
+export function hasAnswer(value) {
+  if (value == null || value === '') return false
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'object') return Object.keys(value).length > 0
+  return true
 }
 
 export function answersKey(homeworkId) {

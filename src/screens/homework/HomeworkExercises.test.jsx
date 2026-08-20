@@ -184,3 +184,66 @@ describe('HomeworkExercises: отправки видны раздельно', ()
     expect(screen.getByText('0 из 2 решено')).toBeTruthy()
   })
 })
+
+describe('HomeworkExercises: задания под одной инструкцией — одна карточка', () => {
+  const build = (id, instruction) => ({
+    id,
+    instruction,
+    question: { id: `q${id}`, type: 'gap', gapBefore: `${id} =`, gapAfter: '', answers: [`ok${id}`] },
+  })
+
+  beforeEach(() => {
+    localStorage.clear()
+    saveHomeworkAnswer.mockClear()
+    saveHomeworkAnswer.mockResolvedValue({})
+  })
+
+  it('четыре вопроса одной инструкции печатают её один раз, а не четырьмя шапками', () => {
+    const instruction = 'Build the word. Type the missing form.'
+    const { container } = show({ id: 5, exercises: [1, 2, 3, 4].map((id) => build(id, instruction)) })
+
+    expect(container.querySelectorAll('.lw-practice')).toHaveLength(1)
+    expect(screen.getAllByText(instruction)).toHaveLength(1)
+    expect(container.querySelectorAll('.lw-q--gap')).toHaveLength(4)
+    // Одна карточка — одна кнопка: раньше их было по числу вопросов.
+    expect(screen.getAllByRole('button', { name: /Проверить/i })).toHaveLength(1)
+  })
+
+  it('одна «Проверить» отправляет все отвеченные вопросы карточки', async () => {
+    const instruction = 'Build the word.'
+    show({ id: 5, exercises: [build(1, instruction), build(2, instruction)] })
+
+    const fields = screen.getAllByRole('textbox')
+    fireEvent.change(fields[0], { target: { value: 'ok1' } })
+    fireEvent.change(fields[1], { target: { value: 'wrong' } })
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    await waitFor(() => expect(saveHomeworkAnswer).toHaveBeenCalledTimes(2))
+    expect(saveHomeworkAnswer.mock.calls.map((c) => [c[1], c[3], c[4]])).toEqual([
+      [1, 'ok1', true],
+      [2, 'wrong', false],
+    ])
+  })
+
+  it('нетронутый вопрос преподавателю не уходит — иначе он увидит его неверным', async () => {
+    const instruction = 'Build the word.'
+    show({ id: 5, exercises: [build(1, instruction), build(2, instruction)] })
+
+    fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: 'ok1' } })
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    await waitFor(() => expect(saveHomeworkAnswer).toHaveBeenCalledTimes(1))
+    expect(saveHomeworkAnswer.mock.calls[0][1]).toBe(1)
+  })
+
+  it('упавшая отправка помечает всю карточку, а не молчит про часть вопросов', async () => {
+    saveHomeworkAnswer.mockRejectedValue(new Error('offline'))
+    const instruction = 'Build the word.'
+    show({ id: 5, exercises: [build(1, instruction), build(2, instruction)] })
+
+    fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: 'ok1' } })
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(await screen.findByText(/Ответ не сохранился/)).toBeTruthy()
+  })
+})

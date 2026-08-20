@@ -1442,6 +1442,20 @@
   font-weight: 700;
 }
 
+/* Принято, но не проверено: у свободного пропуска эталона нет, и зелёный здесь
+   означал бы «написано верно» — сверять было не с чем. */
+.lw-gap-input.is-accepted {
+  background: var(--lw-tint-2);
+  color: var(--lw-ink);
+  font-weight: 600;
+}
+
+.lw-q__free {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--lw-muted);
+}
+
 .lw-gap-input__check {
   margin-left: 6px;
 }

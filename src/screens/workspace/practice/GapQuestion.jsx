@@ -1,5 +1,5 @@
 import { useI18n } from '../../../i18n.jsx'
-import { gradeQuestion } from '../practiceGrading.js'
+import { gradeQuestion, isGraded } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
 
@@ -9,10 +9,13 @@ import TapText from '../TapText.jsx'
 export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const value = answer || ''
-  const userCorrect = checked && gradeQuestion(question, value).correct
+  // Свободный пропуск сверять не с чем: ответ принимается, но «верным» не
+  // объявляется — иначе любой набор букв возвращался бы зелёной галочкой.
+  const graded = isGraded(question)
+  const userCorrect = checked && graded && gradeQuestion(question, value).correct
 
   let cls = 'lw-gap-input'
-  if (checked) cls += userCorrect ? ' is-correct' : ' is-wrong'
+  if (checked) cls += graded ? (userCorrect ? ' is-correct' : ' is-wrong') : ' is-accepted'
 
   return (
     <div className="lw-q lw-q--gap">
@@ -37,6 +40,9 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
         </span>
         <TapText text={question.gapAfter} onWord={onWord} />
       </p>
+      {checked && !graded && (
+        <p className="lw-q__free" aria-live="polite">{t('lesson.freeAnswer')}</p>
+      )}
       {checked && !userCorrect && !question.open && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}

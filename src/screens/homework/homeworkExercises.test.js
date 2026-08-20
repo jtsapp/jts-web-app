@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { lessonExercises, exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, answersKey } from './homeworkExercises.js'
+import { lessonExercises, exerciseBatches, exerciseGroups, groupBlock, hasAnswer, loadAnswers, saveAnswers, answersKey } from './homeworkExercises.js'
 
 describe('homeworkExercises', () => {
   beforeEach(() => localStorage.clear())
@@ -30,7 +30,7 @@ describe('homeworkExercises', () => {
       question: { id: 'q9', type: 'gap' },
     }
 
-    const block = exerciseBlock(exercise)
+    const block = groupBlock({ key: 'gap|', instruction: exercise.instruction, exercises: [exercise] })
 
     expect(block.type).toBe('practice')
     expect(block.title).toBe('Listen. Choose the word you hear.')
@@ -38,7 +38,9 @@ describe('homeworkExercises', () => {
   })
 
   it('у задания без инструкции шапки нет — пустой строкой её не рисуем', () => {
-    expect(exerciseBlock({ id: 4, title: 'I ___ coffee.', question: { id: 'q1', type: 'gap' } }).title).toBe('')
+    const exercise = { id: 4, title: 'I ___ coffee.', question: { id: 'q1', type: 'gap' } }
+
+    expect(groupBlock({ key: 'gap|', instruction: '', exercises: [exercise] }).title).toBe('')
   })
 
   it('ответы переживают перезагрузку и не путаются между работами', () => {
@@ -120,5 +122,67 @@ describe('отозванная выдача', () => {
 
     expect(batches).toHaveLength(1)
     expect(batches[0].lessonTitle).toBe('Осталась')
+  })
+})
+
+describe('задания под общей инструкцией стоят одной карточкой', () => {
+  const gap = (id, instruction) => ({
+    id,
+    instruction,
+    question: { id: `q${id}`, type: 'gap', gapBefore: 'a', gapAfter: 'b', answers: ['x'] },
+  })
+
+  it('одинаковая инструкция собирает вопросы в одну группу', () => {
+    const groups = exerciseGroups([gap(1, 'Build the word.'), gap(2, 'Build the word.'), gap(3, 'Build the word.')])
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].instruction).toBe('Build the word.')
+    expect(groups[0].exercises.map((e) => e.id)).toEqual([1, 2, 3])
+  })
+
+  it('разные инструкции остаются разными карточками', () => {
+    const groups = exerciseGroups([gap(1, 'Build the word.'), gap(2, 'Listen and choose.')])
+
+    expect(groups.map((g) => g.instruction)).toEqual(['Build the word.', 'Listen and choose.'])
+  })
+
+  it('одна инструкция, но разные типы — разные карточки: разбор у них свой', () => {
+    const groups = exerciseGroups([
+      gap(1, 'Do the task.'),
+      { id: 2, instruction: 'Do the task.', question: { id: 'q2', type: 'choice', prompt: 'A?', options: ['a'], answer: 'a' } },
+    ])
+
+    expect(groups).toHaveLength(2)
+    expect(groups.map((g) => g.key)).toEqual(['gap|Do the task.', 'choice|Do the task.'])
+  })
+
+  it('задания без инструкции собираются по типу, а не рассыпаются поштучно', () => {
+    const groups = exerciseGroups([gap(1, undefined), gap(2, undefined)])
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].instruction).toBe('')
+  })
+
+  it('блок группы отдаёт вопросы в исходном порядке', () => {
+    const [group] = exerciseGroups([gap(1, 'Build the word.'), gap(2, 'Build the word.')])
+
+    expect(groupBlock(group).questions.map((q) => q.id)).toEqual(['q1', 'q2'])
+  })
+})
+
+describe('hasAnswer', () => {
+  it('пустое не считается ответом', () => {
+    expect(hasAnswer(null)).toBe(false)
+    expect(hasAnswer(undefined)).toBe(false)
+    expect(hasAnswer('')).toBe(false)
+    expect(hasAnswer([])).toBe(false)
+    expect(hasAnswer({})).toBe(false)
+  })
+
+  it('ответ любого типа задания распознаётся', () => {
+    expect(hasAnswer('like')).toBe(true)
+    expect(hasAnswer(['a', 'b'])).toBe(true)
+    expect(hasAnswer({ cat: 'кот' })).toBe(true)
+    expect(hasAnswer(0)).toBe(true)
   })
 })

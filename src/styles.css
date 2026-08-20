@@ -7303,6 +7303,38 @@ textarea {
   color: var(--danger, #dc2626);
 }
 
+/* Карточка задания внутри домашней работы.
+   Инструкция здесь — подпись к списку вопросов, а не заголовок экрана: уроковый
+   кегль 21px занимал по две строки на каждую карточку и вытеснял сами задания
+   за экран. Вопросы разделены волоском — десяток пропусков подряд без него
+   читается сплошным полотном. */
+.hw-block--exercises .lw-practice {
+  padding: 14px 18px;
+}
+
+.hw-block--exercises .lw-practice__head {
+  margin-bottom: 10px;
+}
+
+.hw-block--exercises .lw-practice__title {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.hw-block--exercises .lw-practice__list {
+  gap: 12px;
+}
+
+.hw-block--exercises .lw-practice__list > * + * {
+  padding-top: 12px;
+  border-top: 1px solid #ece7f8;
+}
+
+.hw-block--exercises .lw-practice__check {
+  margin-top: 12px;
+  padding: 9px 20px;
+}
+
 /* Шапка отправки: название урока и дата выдачи слева, счётчик справа. */
 .hw-batch__title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .hw-batch__date { font-size: 13px; color: var(--muted); }
