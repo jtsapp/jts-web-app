@@ -857,27 +857,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
                 {tab === 'lesson' && (
                   <div className="lw-live-body">
-                    <div className="lw-live-route">
-                      {sections.length === 0 ? (
-                        <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
-                          {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
-                        </p>
-                      ) : (
-                        <LessonRoute
-                          steps={routeSteps}
-                          activeStepId={routeActiveId}
-                          statusById={onLessonSteps ? stepStatusById : sectionStatusById}
-                          onSelect={selectRouteStep}
-                          {...(onLessonSteps
-                            // На шагах урока позиции обоих приходят трансляцией
-                            // step-progress; на разделах занятия — событием focus,
-                            // и там известен только преподаватель.
-                            ? { studentStepId, teacherStepId: lessonTeacherStepId }
-                            : { teacherStepId })}
-                        />
-                      )}
-                    </div>
-
                     <div className="lw-live-main">
                       {isStaff && (
                         <button className="lw-focus-btn" disabled={!activeSectionId} onClick={handleFocusClick}>
@@ -999,6 +978,32 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     </div>
 
                     <div className="lw-live-aside">
+                      {/* Маршрут урока. В макете «Онлайн-уроки» своей колонки у
+                          него нет — там ровно две: контент 868 и правая 300. Но
+                          выкидывать его нельзя: только отсюда переходят на
+                          произвольный шаг и видно, где ученик, а где
+                          преподаватель. Поэтому он переехал сюда карточкой. */}
+                      <div className="lw-live-route">
+                        {sections.length === 0 ? (
+                          <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
+                            {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
+                          </p>
+                        ) : (
+                          <LessonRoute
+                            steps={routeSteps}
+                            activeStepId={routeActiveId}
+                            statusById={onLessonSteps ? stepStatusById : sectionStatusById}
+                            onSelect={selectRouteStep}
+                            {...(onLessonSteps
+                              // На шагах урока позиции обоих приходят трансляцией
+                              // step-progress; на разделах занятия — событием focus,
+                              // и там известен только преподаватель.
+                              ? { studentStepId, teacherStepId: lessonTeacherStepId }
+                              : { teacherStepId })}
+                          />
+                        )}
+                      </div>
+
                       {/* Урок кончился — звонка на его месте быть не должно:
                           звонить уже некуда. Вместо него итог (спека §3.4). */}
                       {status === 'COMPLETED' ? (

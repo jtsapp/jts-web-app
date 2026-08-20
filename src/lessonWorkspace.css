@@ -77,11 +77,6 @@
   --lw-col-center: 678px;
   --lw-col-right: 328px;
   --lw-gutter: 20px;
-  /* Маршрут в живом уроке (.lw-live-body) уже, чем в статичном классруме —
-     там ему нужно место под материал, а сама карточка маршрута показывает
-     только короткие названия разделов, не таблицы/формулы. Отдельный токен,
-     а не --lw-col-left: дизайн-тест держит его в 329px для .lw. */
-  --lw-live-col-left: 232px;
 
   /* Центр точки шага от верха строки: паддинг кнопки 6 + отступ точки 7 +
      половина её высоты 4. Держим одним токеном — от него зависят и концы
@@ -2230,7 +2225,11 @@
      пространства держат свои 328px, и трогать их эта работа не должна. */
   --lw-col-right: 300px;
   display: grid;
-  grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr) var(--lw-col-right);
+  /* Две колонки, как в макете: контент 868 + правая 300 на блоке 1168 (сверено
+     по всем 39 экранам Warm-up/Grammar/Practice/Listening/Speaking/Wrap — там
+     везде ровно эти две). Своей колонки у маршрута в макете нет, он переехал
+     карточкой в правую (см. LiveLessonPage). */
+  grid-template-columns: minmax(0, 1fr) var(--lw-col-right);
   gap: var(--lw-gutter);
   align-items: start;
   /* Раньше сетка была жёстко зажата в max-width 1600 без центрирования —
@@ -2241,10 +2240,16 @@
   margin-top: 16px;
 }
 
+/* Маршрут — карточка правой колонки, а не своя колонка (см. .lw-live-body).
+   Предел по высоте тот же приём, что у топиков ниже: на уроке в десяток шагов
+   список иначе съедает колонку и выдавливает чат за нижний край окна. */
 .lw-live-route {
   min-width: 0;
   /* Скроллбар маршрута не должен обрезать скругление карточки. */
   padding-right: 2px;
+  max-height: min(320px, 38vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .lw-live-main {
@@ -2320,7 +2325,6 @@
     align-items: stretch;
   }
 
-  .lw-live-route,
   .lw-live-main,
   .lw-live-aside {
     min-height: 0;
@@ -2328,23 +2332,27 @@
     overscroll-behavior: contain;
   }
 
-  /* Правая колонка: звонок + компактные топики, чат — основной блок снизу.
-     Список топиков на 10+ шагах раньше раздувался и при overflow:hidden
-     срезал чат до заголовка + полоски инпута. */
+  /* Правая колонка: маршрут, звонок, топики, чат. Карточек стало четыре —
+     в окно 900px их сумма не влезает, и пока колонка стояла на overflow:hidden
+     с лимитом на каждую карточку, лишнее не пряталось, а схлопывалось в ноль:
+     маршрут показывал 0px, топики — один заголовок. Поэтому бюджет высоты
+     больше не делится между карточками: каждая занимает свою высоту, а не
+     влезшее уезжает в прокрутку самой колонки. Ни одна карточка не пропадает.  */
   .lw-live-aside {
-    overflow: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
   }
 
   .lw-live-aside > .lw-meet,
-  .lw-live-aside > .lw-summary {
+  .lw-live-aside > .lw-summary,
+  .lw-live-aside > .lw-live-route {
     flex: none;
   }
 
   .lw-live-aside > .lw-topics {
-    flex: 0 1 auto;
-    min-height: 0;
+    flex: none;
     /* px/vh, не %: % от auto-высоты родителя игнорируется браузером. */
     max-height: min(220px, 28vh);
     overflow: hidden;
@@ -2363,8 +2371,11 @@
     overscroll-behavior: contain;
   }
 
+  /* Чат добирает остаток колонки, но не ужимается ниже рабочей высоты: если
+     карточки выше него уже заняли окно, он остаётся 280px и вместе с ними
+     уезжает в прокрутку колонки. */
   .lw-live-aside .lw-chat {
-    flex: 1 1 0;
+    flex: 1 0 auto;
     min-height: 280px;
     max-height: none;
     overflow: hidden;
@@ -2625,12 +2636,12 @@
 
 @media (max-width: 1420px) {
   .lw-live-body {
-    grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* Правая колонка вспомогательная — уходит вниз первой и раскладывается в ряд. */
   .lw-live-aside {
-    grid-column: 2;
+    grid-column: 1;
     position: static;
     flex-direction: row;
     flex-wrap: wrap;
@@ -2663,7 +2674,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .lw-live-route,
   .lw-live-aside {
     position: static;
     grid-column: 1;
