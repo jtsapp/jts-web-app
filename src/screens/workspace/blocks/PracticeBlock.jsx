@@ -24,11 +24,10 @@ const QUESTION_BY_TYPE = {
 // карточки (см. `practiceBlockKey` в LessonContent) — прокидывается в вопросы
 // как есть. Повторное нажатие «Проверить» разрешено (просто снова вызывает
 // `onCheck(block)`; чей это ключ — знает только родитель).
-export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId, onWord, optionCards = false }) {
+export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId, onWord }) {
   const { t } = useI18n()
   const questions = block?.questions || []
   const cardGrid =
-    optionCards &&
     questions.length > 1 &&
     questions.every((q) => q?.type === 'pick' && !!splitOptionLabel(q.prompt).emoji)
 
@@ -63,7 +62,6 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
-                optionCards={optionCards}
               />
             </div>
           )

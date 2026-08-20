@@ -166,11 +166,21 @@ describe('классрум — разметка урока каталога', ()
     expect(section).toMatch(/\.lw-info__body img,[\s\S]{0,40}{[^}]*max-width:\s*100%/)
   })
 
-  it('инструкция читается заголовком, подсказка — приглушённой', () => {
-    expect(rule('.lw-info__body .instruction')).toMatch(/font-weight:\s*700/)
-    expect(rule('.lw-info__body .subline,\n.lw-info__body .ohint')).toMatch(
-      /color:\s*var\(--lw-muted\)/
-    )
+  it('инструкция шага набрана по макету, подсказка — приглушённой', () => {
+    // Макет «Онлайн-уроки»: шаг открывается крупной фиолетовой строкой с
+    // подзаголовком под ней. Одинаково во всех уроках — рабочее пространство,
+    // каталог и живой урок показывают шаг одним и тем же способом.
+    const instruction = rule('.lw-info__body .instruction')
+    expect(instruction).toMatch(/font-size:\s*32px/)
+    expect(instruction).toMatch(/font-weight:\s*700/)
+    expect(instruction).toMatch(/color:\s*var\(--lw-primary/)
+    expect(instruction).toMatch(/text-align:\s*center/)
+
+    const subline = rule('.lw-info__body .subline')
+    expect(subline).toMatch(/font-size:\s*24px/)
+    expect(subline).toMatch(/text-align:\s*center/)
+
+    expect(rule('.lw-info__body .ohint')).toMatch(/color:\s*var\(--lw-muted\)/)
   })
 
   it('переменные исходного курса объявлены — иначе инлайн-стили пустые', () => {

@@ -7,18 +7,19 @@ import { optionsAreCards, splitOptionLabel } from './optionLabel.js'
 // (gradeQuestion в practiceGrading.js). `multiple` — «отметь сколько хочешь»
 // без ключа проверки: тогда answer — массив, иначе одна строка, как у
 // ChoiceQuestion.
-export default function PickQuestion({ question, answer, onAnswer, readOnly, onWord, optionCards = false }) {
+export default function PickQuestion({ question, answer, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const multiple = !!question?.multiple
   const selected = multiple ? (Array.isArray(answer) ? answer : []) : answer
-  // Карточками рисует только тот экран, который об этом просит (живой урок по
-  // макету), и только там, где вариант — картинка со словом: ответ из одного 👍
-  // карточкой во всю колонку был бы плитой без смысла. Везде ещё — пилюли, как были.
-  const asCards = optionCards && optionsAreCards(question?.options)
-  // Второй вид карточки из макета: карточка — сам пункт («☕️ Coffee»), а оценка
-  // стоит внутри неё. Так курс и пишет разминку: формулировка несёт картинку со
-  // словом, а варианты — это 👍 и 👎, которыми пункт отмечают.
-  const promptCard = optionCards && !asCards && !!splitOptionLabel(question?.prompt).emoji
+  // Карточки из макета — не режим отдельного экрана, а способ рисовать такие
+  // данные: вариант с картинкой и словом («☕️ Coffee») становится карточкой,
+  // ответ из одного 👍 остаётся пилюлей — карточкой во всю колонку он был бы
+  // плитой без смысла.
+  const asCards = optionsAreCards(question?.options)
+  // Второй вид карточки: карточка — сам пункт, а оценка стоит внутри неё. Так
+  // курс и пишет разминку: формулировка несёт картинку со словом, а варианты —
+  // это 👍 и 👎, которыми пункт отмечают.
+  const promptCard = !asCards && !!splitOptionLabel(question?.prompt).emoji
   const prompt = splitOptionLabel(question?.prompt)
 
   function toggle(opt) {
