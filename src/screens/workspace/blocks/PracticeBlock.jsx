@@ -1,4 +1,5 @@
 import { useI18n } from '../../../i18n.jsx'
+import TapText from '../TapText.jsx'
 import ChoiceQuestion from '../practice/ChoiceQuestion.jsx'
 import ChipsQuestion from '../practice/ChipsQuestion.jsx'
 import GapQuestion from '../practice/GapQuestion.jsx'
@@ -22,14 +23,14 @@ const QUESTION_BY_TYPE = {
 // карточки (см. `practiceBlockKey` в LessonContent) — прокидывается в вопросы
 // как есть. Повторное нажатие «Проверить» разрешено (просто снова вызывает
 // `onCheck(block)`; чей это ключ — знает только родитель).
-export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId }) {
+export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId, onWord }) {
   const { t } = useI18n()
 
   return (
     <div className="lw-card lw-practice">
       <div className="lw-practice__head">
-        {block?.title && <h3 className="lw-practice__title">{block.title}</h3>}
-        {block?.hint && <p className="lw-practice__hint">{block.hint}</p>}
+        {block?.title && <TapText as="h3" className="lw-practice__title" text={block.title} onWord={onWord} />}
+        {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
       </div>
 
       <div className="lw-practice__list">
@@ -52,6 +53,7 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
                 checked={checked}
                 onAnswer={onAnswer}
                 readOnly={readOnly}
+                onWord={onWord}
               />
             </div>
           )

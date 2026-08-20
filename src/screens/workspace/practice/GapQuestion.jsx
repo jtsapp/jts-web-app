@@ -1,11 +1,12 @@
 import { useI18n } from '../../../i18n.jsx'
 import { gradeQuestion } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
+import TapText from '../TapText.jsx'
 
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
 // через `gradeQuestion` (не дублируем `norm` здесь).
-export default function GapQuestion({ question, answer, checked, onAnswer, readOnly }) {
+export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const value = answer || ''
   const userCorrect = checked && gradeQuestion(question, value).correct
@@ -16,7 +17,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
   return (
     <div className="lw-q lw-q--gap">
       <p className="lw-q__sentence">
-        {question.gapBefore}
+        <TapText text={question.gapBefore} onWord={onWord} />
         <span className="lw-gap-input-wrap">
           <input
             type="text"
@@ -34,7 +35,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
             </span>
           )}
         </span>
-        {question.gapAfter}
+        <TapText text={question.gapAfter} onWord={onWord} />
       </p>
       {checked && !userCorrect && !question.open && (
         <p className="lw-q__answer" aria-live="polite">

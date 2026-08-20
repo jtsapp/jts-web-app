@@ -14,6 +14,11 @@ export default function VocabBlock({ block }) {
   const { t } = useI18n()
   const cards = Array.isArray(block?.cards) ? block.cards.filter((card) => card?.word) : []
   const [flipped, setFlipped] = useState(() => new Set())
+  // Картинка есть в данных, но файл не грузится (битая ссылка, 404) — так же
+  // считаем карточку безкартиночной: иначе .lw-vcard остаётся на 3:4 (место
+  // под картинку, которая не показалась), и лицо карточки — слово в углу
+  // пустой плашки, то же самое, что и без imageUrl вовсе.
+  const [imgFailed, setImgFailed] = useState(() => new Set())
 
   if (!cards.length && !block?.title) return null
 
@@ -34,6 +39,7 @@ export default function VocabBlock({ block }) {
         {cards.map((card, i) => {
           const key = `${card.word}-${i}`
           const isFlipped = flipped.has(key)
+          const hasImg = !!card.imageUrl && !imgFailed.has(key)
           return (
             // Кнопка озвучки — сосед lw-vcard, не потомок: сама карточка уже
             // кнопка (клик — переворот), а вложенные <button> — невалидный
@@ -41,13 +47,19 @@ export default function VocabBlock({ block }) {
             <div key={key} className="lw-vcard-wrap">
               <button
                 type="button"
-                className={`lw-vcard${isFlipped ? ' is-flipped' : ''}`}
+                className={`lw-vcard${isFlipped ? ' is-flipped' : ''}${hasImg ? '' : ' is-noimg'}`}
                 onClick={() => toggle(key)}
                 aria-pressed={isFlipped}
               >
                 <div className="lw-vcard__inner">
                   <div className="lw-vcard__face lw-vcard__front">
-                    {card.imageUrl && <img src={card.imageUrl} alt="" />}
+                    {hasImg && (
+                      <img
+                        src={card.imageUrl}
+                        alt=""
+                        onError={() => setImgFailed((prev) => new Set(prev).add(key))}
+                      />
+                    )}
                     <div className="lw-vcard__word">{card.word}</div>
                     {card.pos && <div className="lw-vcard__pos">{card.pos}</div>}
                   </div>

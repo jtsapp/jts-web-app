@@ -2,6 +2,7 @@ import { useI18n } from '../../../i18n.jsx'
 import { speak } from '../../../practice/vocab/audio.js'
 import { gradeQuestion } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
+import TapText from '../TapText.jsx'
 
 // Контролируемый выбор одного варианта из ряда кнопок. `answer` — текущая
 // выбранная строка (или null); `onAnswer(question.id, value)` репортит выбор
@@ -16,7 +17,7 @@ import { CheckIcon } from '../../../components/icons.jsx'
 // `readOnly` — единственное, что закрывает выбор: так преподаватель смотрит
 // работу ученика. Отвечать за него он не должен, и дело не в дисциплине — его
 // клик ушёл бы в его же состояние, разъехавшись с тем, что видит ученик.
-export default function ChoiceQuestion({ question, answer, checked, onAnswer, readOnly }) {
+export default function ChoiceQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const chosen = answer != null
   const correct = chosen && gradeQuestion(question, answer).correct
@@ -36,7 +37,7 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
           🔊
         </button>
       )}
-      {question.prompt && <p className="lw-q__prompt">{question.prompt}</p>}
+      {question.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
       {question.imageUrl && <img className="lw-q__img" src={question.imageUrl} alt="" />}
       <div className="lw-opts">
         {(question.options || []).map((opt) => {

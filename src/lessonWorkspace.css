@@ -1057,6 +1057,36 @@
   perspective: 1200px;
 }
 
+/* Слово без картинки (курс её просто не даёт для этого слова/уровня) — те же
+   3:4 оставляли на лицевой стороне одно слово в верхнем углу карточки высотой
+   под 500px, а остальное было пустым фоном. Первая попытка (130px, белый фон)
+   выглядела плоской кнопкой, а не карточкой словаря — здесь вместо картинки
+   лицевая сторона красится тем же тинтом, что и остальные пилюли урока, и
+   слово крупнее и по центру, чтобы карточка не терялась среди картиночных
+   соседей по сетке. Обратная сторона переживёт меньшую высоту без проблем —
+   у неё уже есть overflow-y на .lw-vcard__bbody. */
+.lw-vcard.is-noimg {
+  aspect-ratio: auto;
+  height: 170px;
+}
+
+.lw-vcard.is-noimg .lw-vcard__front {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: var(--lw-tint-2, #eadcff);
+}
+
+.lw-vcard.is-noimg .lw-vcard__word {
+  margin: 0;
+  font-size: 19px;
+  color: var(--lw-primary-ink, #7a2fe6);
+}
+
+.lw-vcard.is-noimg .lw-vcard__pos {
+  margin: 4px 0 0;
+}
+
 .lw-vcard__speak {
   all: unset;
   position: absolute;
@@ -2600,4 +2630,65 @@
   .lw-focus-btn {
     transition: none;
   }
+}
+
+/* Тап-перевод (см. useTapTranslate.js) — та же карточка, что в читалке книг
+   (.bk-w/.bk-pop в styles.css), портирована с её же палитрой. Попап — fixed
+   от вьюпорта, а не от прокручивающегося контейнера, поэтому left/top ставит
+   JS уже в системе координат окна, без пересчёта на скролл предков. */
+.lw-tap-w {
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s ease;
+}
+.lw-tap-w:hover {
+  background: var(--lw-tint-1);
+}
+
+.lw-tap-pop {
+  position: fixed;
+  z-index: 60;
+  background: var(--lw-surface);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18);
+  padding: 12px 14px;
+  min-width: 150px;
+  max-width: 260px;
+}
+.lw-tap-pop__word {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--lw-ink);
+}
+.lw-tap-pop__tr {
+  font-size: 14px;
+  color: var(--lw-ink-2);
+  margin: 2px 0 0;
+}
+.lw-tap-pop__alts {
+  font-size: 12px;
+  color: var(--lw-muted);
+  margin-top: 2px;
+}
+.lw-tap-pop__save {
+  width: 100%;
+  border: none;
+  background: var(--lw-primary);
+  color: #fff;
+  border-radius: var(--lw-r-inner);
+  margin-top: 10px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.lw-tap-pop__save:disabled {
+  background: #cbc6dd;
+  cursor: default;
+}
+.lw-tap-pop__save.is-on:disabled {
+  background: #23b061;
 }

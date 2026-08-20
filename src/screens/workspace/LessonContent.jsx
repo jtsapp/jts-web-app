@@ -5,6 +5,9 @@ import InfoBlock from './blocks/InfoBlock.jsx'
 import PracticeBlock from './blocks/PracticeBlock.jsx'
 import VocabBlock from './blocks/VocabBlock.jsx'
 import ChecklistBlock from './blocks/ChecklistBlock.jsx'
+import TranslatePopover from './TranslatePopover.jsx'
+import { useTapTranslate } from './useTapTranslate.js'
+import { useI18n } from '../../i18n.jsx'
 
 // `practice` — обрабатывается отдельно ниже (нужны answers/checked/onAnswer/onCheck).
 const BLOCK_BY_TYPE = {
@@ -72,8 +75,14 @@ export function practiceBlockKey(stepId, groupIndex) {
 // только за practice-блоками значило бы, что смотрящий застревает на
 // последнем вопросе шага, пока ученик уже читает материал дальше. Сам
 // ученик liveQuestionId не получает — он не следует за собой.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, token, source }) {
   const groups = groupBlocks(step?.blocks)
+  const { lang } = useI18n()
+  // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
+  // в читалке книг, см. useTapTranslate.js. Один экземпляр на весь шаг, а не
+  // по одному на info-блок: попап один, и клик по новому слову должен закрыть
+  // прошлый, а не открыть второй рядом.
+  const { pop, openWord, close, onSave } = useTapTranslate({ token, lang, source })
 
   // Ученик перешёл/проскроллил на новый вопрос — подъезжаем к нему, а не
   // ждём, пока смотрящий сам найдёт нужную карточку в потоке. Без задержки
@@ -92,7 +101,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
   }, [liveQuestionId, step?.id])
 
   return (
-    <div className="lw-content">
+    <div className="lw-content" onClick={close}>
       {groups.map((group, i) => {
         if (group.type === 'info') {
           const anchorId = `block-${group.blockIndex}`
@@ -103,7 +112,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               data-question-id={anchorId}
             >
               {group.blocks.map((block, j) => (
-                <InfoBlock key={j} block={block} />
+                <InfoBlock key={j} block={block} onWord={openWord} />
               ))}
             </div>
           )
@@ -122,6 +131,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               onCheck={() => onCheck(key)}
               readOnly={readOnly}
               liveQuestionId={liveQuestionId}
+              onWord={openWord}
             />
           )
         }
@@ -138,6 +148,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
           </div>
         )
       })}
+      <TranslatePopover pop={pop} onSave={onSave} />
     </div>
   )
 }

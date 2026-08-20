@@ -929,6 +929,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                                 onCheck={handleCheckStep}
                                 readOnly={contentReadOnly}
                                 liveQuestionId={isStaff ? reviewLiveQuestionId : null}
+                                token={token}
+                                source={catalogLesson?.title || lesson?.title}
                               />
                             </div>
                           ) : (

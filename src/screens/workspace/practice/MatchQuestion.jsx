@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { CheckIcon } from '../../../components/icons.jsx'
+import TapText from '../TapText.jsx'
 
 // Перемешивает копию массива (Fisher–Yates) — правый столбец не должен идти
 // в том же порядке, что и левый, иначе пары угадываются по позиции.
@@ -19,7 +20,7 @@ function shuffled(arr) {
 // левому слову снимает выделение. `answer` — карта {left: chosenRight},
 // репортится наверх через onAnswer(question.id, map) — грейдинг только через
 // gradeQuestion (practiceGrading.js), здесь не дублируется.
-export default function MatchQuestion({ question, answer, checked, onAnswer, readOnly }) {
+export default function MatchQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const [activeLeft, setActiveLeft] = useState(null)
   const pairs = question?.pairs || []
@@ -44,7 +45,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
 
   return (
     <div className="lw-q lw-q--match">
-      {question?.prompt && <p className="lw-q__prompt">{question.prompt}</p>}
+      {question?.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
       {!checked && <p className="lw-match__hint">{t('lesson.ws.matchHint')}</p>}
       <div className="lw-match" role="group" aria-label={question?.prompt || t('lesson.ws.matchHint')}>
         <div className="lw-match__col">
