@@ -1,5 +1,50 @@
 [
   {
+    "id": "sg",
+    "title": "Speak Like Selena Gomez",
+    "short": "Selena Gomez",
+    "video": "jG-4kBIDAzA",
+    "channel": "English Speeches",
+    "notion": "https://app.notion.com/p/Selena-3c1c7eb17009808ea204f95b27da0a34",
+    "level": null
+  },
+  {
+    "id": "v2",
+    "title": "Steve Jobs · Stanford Commencement",
+    "short": "Steve Jobs",
+    "video": "1i9kcBHX2Nw",
+    "channel": "English Speeches",
+    "notion": "https://app.notion.com/p/Steve-3c1c7eb170098070a2e7f3539d16ae69",
+    "level": null
+  },
+  {
+    "id": "v3",
+    "title": "Emma Watson · HeForShe (UN)",
+    "short": "Emma Watson",
+    "video": "nIwU-9ZTTJc",
+    "channel": "English Speeches",
+    "notion": "https://app.notion.com/p/Emma-3c1c7eb1700980e69805e0cd6a780e58",
+    "level": null
+  },
+  {
+    "id": "v4",
+    "title": "Oprah Winfrey · Award Speech",
+    "short": "Oprah",
+    "video": "u1gg_L-syCw",
+    "channel": "English Speeches",
+    "notion": "https://app.notion.com/p/OPRAH-WINFREY-3c1c7eb1700980d9ad6bf6ea77973948",
+    "level": null
+  },
+  {
+    "id": "v5",
+    "title": "Barack Obama · Victory Speech 2008",
+    "short": "Obama",
+    "video": "mi8N5gDVpeg",
+    "channel": "English Speeches",
+    "notion": "https://app.notion.com/p/Obama-3c1c7eb1700980fa8c3aface9f8e207e",
+    "level": null
+  },
+  {
     "id": "story60",
     "title": "The Secret to Telling a Great Story",
     "short": "Jenny Hoyos",
