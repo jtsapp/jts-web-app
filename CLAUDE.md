@@ -22,10 +22,14 @@ IELTS-модулем и голосовым AI-тьютором. Это тот с
 npm run dev     # локальная разработка (next dev)
 npm run build   # прод-сборка — гоняй перед PR, ловит ошибки импортов/SSR
 npm run lint    # eslint 9 + eslint-config-next
+npm test        # vitest run — юнит-тесты рядом с кодом (*.test.js/.jsx)
+npm run test:e2e  # playwright — tests/*.spec.js, порт 3100 (override E2E_PORT)
 ```
 
-Тест-раннера в проекте нет. Проверка изменений = `npm run build` + `npm run
-lint` + ручной прогон затронутого экрана (`npm run dev`, диплинк `?screen=…`).
+Тест-раннер ЕСТЬ (эта строка раньше утверждала обратное): vitest для чистых
+модулей и playwright для экранов. Проверка изменений = `npm run build` + `npm
+run lint` + `npm test` + ручной прогон затронутого экрана (`npm run dev`,
+диплинк `?screen=…`).
 
 ## Архитектура
 
@@ -137,6 +141,6 @@ Windows-пайпа — серверный код уже вырезает его;
   frontend-design (визуальный дизайн UI)
 - **Мета**: skill-creator (создание новых скиллов)
 
-Для этого репозитория в первую очередь: **webapp-testing** — тест-раннера тут
-нет, поэтому изменения экранов проверяй прогоном через Playwright (диплинк
-`?screen=…`); **frontend-design** — при работе над UI.
+Для этого репозитория в первую очередь: **webapp-testing** — изменения экранов
+проверяй прогоном через Playwright (диплинк `?screen=…`), рядом с уже
+существующими `tests/*.spec.js`; **frontend-design** — при работе над UI.

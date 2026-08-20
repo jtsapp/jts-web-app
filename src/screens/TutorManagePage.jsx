@@ -18,7 +18,8 @@ export default function TutorManagePage({
   onToggleTemper,
   // Сырые звонки из GET /api/profile/calls. Группировку по дате и локализацию
   // заголовков/статусов делаем здесь (зона тьютора: useLang). Строка звонка
-  // кликабельна → onOpenCall(call) открывает транскрипт.
+  // кликабельна → onOpenCall(call) открывает отчёт о разговоре, а расшифровка
+  // открывается уже из него.
   calls = [],
   onOpenCall,
 }) {

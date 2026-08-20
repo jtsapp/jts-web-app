@@ -18,8 +18,13 @@ function trimText(s, max = 240) {
 
 // FK-безопасность: mistake_log.device_id и остальные ссылаются на learner,
 // поэтому каждый писатель сначала создаёт строку ученика.
-export async function ensureLearner(deviceId) {
-  const sql = getSql()
+//
+// Необязательный `tx` — хэндл открытой транзакции (sql.begin). Без него запись
+// уходит своим соединением, то есть ВНЕ транзакции вызывающего: суммаризатору
+// звонка нужно, чтобы факты, темы и статус легли атомарно, иначе «факты
+// записались, строка в pending» неотличимо от «не отработало».
+export async function ensureLearner(deviceId, tx = null) {
+  const sql = tx || getSql()
   if (!sql) return
   await sql`
     insert into learner (device_id)
@@ -146,12 +151,12 @@ export async function reviewItem(deviceId, item, correct) {
   `
 }
 
-export async function appendTopics(deviceId, raw) {
-  const sql = getSql()
+export async function appendTopics(deviceId, raw, tx = null) {
+  const sql = tx || getSql()
   if (!sql) return
   const clean = raw.map((x) => trimText(x, 120)).filter(Boolean)
   if (clean.length === 0) return
-  await ensureLearner(deviceId)
+  await ensureLearner(deviceId, tx)
   // Нестрогий дедуп: пропускаем тему, если она уже есть среди последних 50,
   // иначе лента «обсуждённых тем» забивается повторами.
   await sql`
@@ -170,12 +175,12 @@ export async function appendTopics(deviceId, raw) {
   `
 }
 
-export async function appendFacts(deviceId, raw) {
-  const sql = getSql()
+export async function appendFacts(deviceId, raw, tx = null) {
+  const sql = tx || getSql()
   if (!sql) return
   const clean = raw.map((x) => trimText(x)).filter(Boolean)
   if (clean.length === 0) return
-  await ensureLearner(deviceId)
+  await ensureLearner(deviceId, tx)
   // Дедуп как у тем: тьютор, каждый раз логирующий «хочет в Лондон», не должен
   // множить один факт.
   await sql`
@@ -192,6 +197,34 @@ export async function appendFacts(deviceId, raw) {
       where recent.fact = t.fact
     )
   `
+}
+
+// Дедуп-окно для суммаризатора звонка: что тьютор уже знает, чтобы выжимка не
+// прислала это ещё раз. Два запроса по 50 строк, а не loadProfile: тот отдаёт
+// только последние 12 фактов, тогда как SQL-дедуп в appendFacts смотрит на 50 —
+// щель между 12 и 50 и есть место, где заводятся дубликаты. Плюс loadProfile
+// делает 9 запросов при пуле max: 10 и забирал бы соединения у фонового звонка.
+export async function loadKnownMemory(deviceId) {
+  const sql = getSql()
+  if (!sql) return { facts: [], topics: [] }
+  const [factsRows, topicsRows] = await Promise.all([
+    sql`
+      select fact from fact_log
+      where device_id = ${deviceId}
+      order by created_at desc
+      limit 50
+    `.catch(() => []),
+    sql`
+      select topic from topic_log
+      where device_id = ${deviceId}
+      order by created_at desc
+      limit 50
+    `.catch(() => []),
+  ])
+  return {
+    facts: factsRows.map((r) => r.fact),
+    topics: topicsRows.map((r) => r.topic),
+  }
 }
 
 // Липкий флаг безопасности. Внутри приложения обратно в false не возвращается.

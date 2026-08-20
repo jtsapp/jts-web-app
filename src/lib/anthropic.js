@@ -19,6 +19,12 @@ const DEFAULT_MODEL =
 // IELTS band-scoring wants Sonnet's accuracy — the voice brain's Haiku is tuned
 // for latency, not for grading against the official band descriptors.
 const DEFAULT_GRADING_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+// Post-call summariser. Deliberately NOT DEFAULT_MODEL: that one is wired to
+// VOICE_BRAIN_MODEL, whose documented meaning is "the live tutor's model".
+// Whoever flips the tutor to Sonnet for an experiment would silently flip the
+// summariser too (3x the price), with nothing in the config to show for it.
+export const SUMMARY_MODEL =
+  process.env.CALL_SUMMARY_MODEL || "claude-haiku-4-5-20251001";
 const MAX_OUTPUT_TOKENS = 4096;
 
 let cached = null;
@@ -232,9 +238,13 @@ function toJsonSchema(schema) {
  * text as a multimodal content array (the IELTS Task 1 chart, so the model
  * grades the description against the actual data rather than blind).
  *
+ * `timeoutMs` caps a single call. Without it the SDK default is 10 minutes with
+ * retries, and a hung request keeps its caller alive with it — fatal for the
+ * post-call summariser, which runs inside after() on a 1g container.
+ *
  * @param {{ systemPrompt: string, userMessage: string, schema: object,
  *           images?: {mimeType: string, dataBase64: string}[],
- *           model?: string, maxOutputTokens?: number }} args
+ *           model?: string, maxOutputTokens?: number, timeoutMs?: number }} args
  */
 export async function structured(args) {
   const client = getClient();
@@ -256,23 +266,26 @@ export async function structured(args) {
         ]
       : args.userMessage;
 
-  const res = await client.messages.create({
-    model,
-    max_tokens: args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
-    thinking: { type: "disabled" },
-    system: args.systemPrompt,
-    messages: [{ role: "user", content }],
-    tools: [
-      {
-        name: "record_result",
-        description:
-          "Record the structured result. Call this exactly once with the full result.",
-        input_schema: inputSchema,
-      },
-    ],
-    // Force the model to answer through the tool so we always get JSON.
-    tool_choice: { type: "tool", name: "record_result" },
-  });
+  const res = await client.messages.create(
+    {
+      model,
+      max_tokens: args.maxOutputTokens ?? MAX_OUTPUT_TOKENS,
+      thinking: { type: "disabled" },
+      system: args.systemPrompt,
+      messages: [{ role: "user", content }],
+      tools: [
+        {
+          name: "record_result",
+          description:
+            "Record the structured result. Call this exactly once with the full result.",
+          input_schema: inputSchema,
+        },
+      ],
+      // Force the model to answer through the tool so we always get JSON.
+      tool_choice: { type: "tool", name: "record_result" },
+    },
+    args.timeoutMs ? { timeout: args.timeoutMs } : undefined,
+  );
 
   try {
     const u = res.usage || {};

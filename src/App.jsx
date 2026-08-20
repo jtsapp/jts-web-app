@@ -45,6 +45,7 @@ import TutorPracticeResultPage from './screens/TutorPracticeResultPage.jsx'
 import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
+import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
 import ProfilePage from './screens/ProfilePage.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -204,6 +205,13 @@ export default function App() {
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
   const [selectedCall, setSelectedCall] = useState(null)
+  // Отчёт после разговора. reportCall = готовая строка (открыт из истории),
+  // null = экран сам дождётся, пока агент допишет звонок. prevCallId — слепок
+  // «последнего звонка ДО этого разговора», по нему отчёт отличает свежую запись
+  // от предыдущей (сравниваем id, а не время: created_at — часы базы).
+  const [reportCall, setReportCall] = useState(null)
+  const [reportOrigin, setReportOrigin] = useState('call')
+  const [prevCallId, setPrevCallId] = useState(null)
   // Оценка разговорного теста (уровень + честное обоснование от Sonnet).
   const [placementResult, setPlacementResult] = useState(null)
   // Грузим историю звонков при заходе в «Управление тьютором». Bearer решает
@@ -221,6 +229,28 @@ export default function App() {
         if (alive) setCallHistory(Array.isArray(data.calls) ? data.calls : [])
       } catch {
         if (alive) setCallHistory([])
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [screen, token])
+  // Слепок последнего звонка перед разговором — см. prevCallId выше.
+  useEffect(() => {
+    if (screen !== 'tutor-voice-chat') return
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch(
+          '/api/profile/calls?limit=1&deviceId=' + encodeURIComponent(getDeviceId()),
+          { headers: authHeaders(token) },
+        )
+        const data = await res.json().catch(() => ({}))
+        const last = Array.isArray(data.calls) ? data.calls[0] : null
+        if (alive) setPrevCallId(last?.id ?? null)
+      } catch {
+        // Не дозвонились — отчёт просто возьмёт первую же появившуюся строку.
+        if (alive) setPrevCallId(null)
       }
     })()
     return () => {
@@ -960,11 +990,13 @@ export default function App() {
           tutor={tutor}
           temper={temper}
           scenario={scenario}
-          onFinish={() =>
-            setScreen(
-              scenario ? 'tutor-scenarios' : tutorOnboarded ? 'tutor-dashboard' : 'tutor-level-result',
-            )
-          }
+          // Разговор больше не заканчивается ничем: ведём на отчёт, а он уже
+          // отпускает туда, куда раньше уходил onFinish (кнопка «Готово»).
+          onFinish={() => {
+            setReportCall(null)
+            setReportOrigin('call')
+            setScreen('tutor-call-report')
+          }}
           onSessionExpired={handleLogout}
         />
       )
@@ -1076,13 +1108,48 @@ export default function App() {
           }}
         />
       )
+    case 'tutor-call-report':
+      return (
+        <TutorCallReportPage
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
+          onProfile={() => setScreen('profile')}
+          onBack={() =>
+            setScreen(
+              reportOrigin === 'history'
+                ? 'tutor-manage'
+                : tutorOnboarded
+                  ? 'tutor-dashboard'
+                  : 'tutor-voice-intro',
+            )
+          }
+          tutor={tutor}
+          token={token}
+          call={reportCall}
+          prevCallId={prevCallId}
+          // Строку запоминаем: без неё возврат из расшифровки заново запустил бы
+          // поллинг, а звонок к тому моменту уже равен prevCallId — отчёт бы его
+          // не признал своим и показал пустое состояние.
+          onTranscript={(row) => {
+            setReportCall(row)
+            setSelectedCall(row)
+            setScreen('tutor-chat-history')
+          }}
+          onLogin={() => setScreen('welcome')}
+          onDone={() =>
+            setScreen(
+              scenario ? 'tutor-scenarios' : tutorOnboarded ? 'tutor-dashboard' : 'tutor-level-result',
+            )
+          }
+        />
+      )
     case 'tutor-chat-history':
       return (
         <TutorChatHistoryPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-manage')}
+          onBack={() => setScreen('tutor-call-report')}
           call={selectedCall}
         />
       )
@@ -1113,7 +1180,9 @@ export default function App() {
           calls={callHistory}
           onOpenCall={(call) => {
             setSelectedCall(call)
-            setScreen('tutor-chat-history')
+            setReportCall(call)
+            setReportOrigin('history')
+            setScreen('tutor-call-report')
           }}
         />
       )
