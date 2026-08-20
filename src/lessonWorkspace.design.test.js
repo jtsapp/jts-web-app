@@ -131,16 +131,17 @@ describe('классрум — сетка', () => {
 })
 
 describe('классрум — словарь', () => {
-  // Макет «Онлайн-уроки», секция словаря: ровно четыре колонки по 192px и
-  // подпись со словом под карточкой. До этого сетка была auto-fill от 150px —
-  // число колонок плавало вместе с шириной центральной колонки, и ни на одной
-  // ширине их не было четыре.
+  // Кадр Vocabulary живых уроков (Figma 4065:9259): сетка 804 шириной, GRID на
+  // 4 колонки, ячейка 192×275 — картинка 192×245 r12, под ней подпись 16/700
+  // #181818, зазор 8. Зазоры сетки РАЗНЫЕ: 12 по горизонтали, 24 по вертикали.
+  // До этого сетка была auto-fill от 150px — число колонок плавало вместе с
+  // шириной центральной колонки, и ни на одной ширине их не было четыре.
   it('сетка — четыре колонки по 192px, а не auto-fill', () => {
     const grid = css.match(/\.lw-vocab__grid\s*{([^}]+)}/)[1]
     expect(grid).toMatch(/grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/)
     expect(grid).not.toMatch(/auto-fill/)
     // 4×192 + 3×12 промежутка: предел ширины и держит колонку в 192px.
-    expect(grid).toMatch(/gap:\s*12px/)
+    expect(grid).toMatch(/gap:\s*24px 12px/)
     expect(grid).toMatch(/max-width:\s*804px/)
   })
 
@@ -150,10 +151,12 @@ describe('классрум — словарь', () => {
     const wrap = css.match(/\.lw-vcard-wrap\s*{([^}]+)}/)[1]
     expect(wrap).toMatch(/flex-direction:\s*column/)
 
-    // Тот же набор, что у карточек-вариантов макета (.lw-opt__text).
+    // 16/700 #181818 — из кадра словаря, а не 18/700 от карточек-вариантов:
+    // набор похожий, но это соседний паттерн той же секции.
     const caption = css.match(/\.lw-vcard__caption\s*{([^}]+)}/)[1]
-    expect(caption).toMatch(/font-size:\s*18px/)
+    expect(caption).toMatch(/font-size:\s*16px/)
     expect(caption).toMatch(/font-weight:\s*700/)
+    expect(caption).toMatch(/color:\s*#181818/)
     expect(caption).toMatch(/text-align:\s*center/)
 
     // Картинка занимает лицевую сторону целиком — под ней в карточке уже
@@ -161,7 +164,11 @@ describe('классрум — словарь', () => {
     expect(css).toMatch(/\.lw-vcard__front img\s*{[^}]*height:\s*100%/)
   })
 
-  it('карточка без картинки держит те же 3:4, а не свою высоту', () => {
+  it('пропорция карточки — 192/245 из макета, а не 3:4 на глаз', () => {
+    expect(css).toMatch(/\.lw-vcard\s*{[^}]*aspect-ratio:\s*192 \/ 245/)
+  })
+
+  it('карточка без картинки держит ту же пропорцию, а не свою высоту', () => {
     // height: 170px на .is-noimg делал ряд рваным. Слово ушло под карточку —
     // ломать пропорцию больше незачем, лицевая сторона просто красится тинтом.
     expect(css).not.toMatch(/\.lw-vcard\.is-noimg\s*{[^}]*height:/)
@@ -354,5 +361,99 @@ describe('токены доступны там, где рисуется прак
     const roots = css.match(/\.lw,\s*\.live,\s*\.hw-exercises\s*\{/)
 
     expect(roots).not.toBeNull()
+  })
+})
+
+// Слой заданий, снятый из макета «Онлайн-уроки». Раньше по макету был сделан
+// только `pick` — остальные типы сидели на старой палитре классрума, и рядом с
+// отредизайненными карточками выглядели как другое приложение. Значения ниже
+// взяты из кадров Figma напрямую; тест держит их от сползания «на глаз».
+describe('классрум — задания по макету', () => {
+  /** Тело правила по селектору. */
+  function rule(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const match = css.match(new RegExp(`${escaped}\\s*{([^}]+)}`))
+    return match ? match[1] : null
+  }
+
+  it('порядок слов: чип 65 r100, собранная строка отделена линией', () => {
+    // Practice → 4065:18365 и соседние состояния: чип высотой 65, r100,
+    // padding 24/13, текст 16/700; строка ответа над линией 1px #afafaf.
+    const chip = rule('.lw-q--order .lw-ochip')
+    expect(chip).toMatch(/min-height:\s*65px/)
+    expect(chip).toMatch(/border-radius:\s*100px/)
+    expect(chip).toMatch(/padding:\s*13px 24px/)
+    expect(chip).toMatch(/font-size:\s*16px/)
+    expect(chip).toMatch(/font-weight:\s*700/)
+
+    const line = rule('.lw-q--order .lw-order__sentence')
+    expect(line).toMatch(/border-bottom:\s*1px solid #afafaf/)
+    expect(line).toMatch(/gap:\s*8px/)
+
+    // Верный порядок — зелёный, неверный — красный; оба на всю строку.
+    expect(css).toMatch(/\.lw-q--order \.lw-order__sentence\.is-correct \.lw-ochip\s*{[^}]*background:\s*#31b423/)
+    expect(css).toMatch(/\.lw-q--order \.lw-order__sentence\.is-wrong \.lw-ochip\s*{[^}]*background:\s*var\(--fx-no\)/)
+  })
+
+  it('мультивыбор: сетка по три, карточка 96 r20, состояние обводкой', () => {
+    // Listening → 4065:26472 и соседние: карточка 173×96 r20, заливка ВСЕГДА
+    // белая, состояние несёт обводка 2px внутрь плюс цвет текста. Это же и
+    // требование доступности — состояние не только цветом заливки.
+    expect(rule('.lw-q--multi .lw-opts')).toMatch(/grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/)
+
+    const card = rule('.lw-q--multi .lw-opt')
+    expect(card).toMatch(/min-height:\s*96px/)
+    expect(card).toMatch(/border-radius:\s*20px/)
+    expect(card).toMatch(/font-size:\s*18px/)
+
+    expect(rule('.lw-q--multi .lw-opt.is-selected')).toMatch(/inset 0 0 0 2px var\(--lw-primary\)/)
+    expect(css).toMatch(/\.lw-q--multi \.lw-opt\.is-ok,[\s\S]{0,160}inset 0 0 0 2px var\(--fx-ok\)/)
+  })
+
+  it('одиночный выбор: колонка 372, вариант 59 r999, текст 16/700', () => {
+    // Grammar → 4065:13923 и соседние.
+    const opts = rule('.lw-q--choice .lw-opts')
+    expect(opts).toMatch(/flex-direction:\s*column/)
+    expect(opts).toMatch(/max-width:\s*372px/)
+    expect(opts).toMatch(/gap:\s*12px/)
+
+    const opt = rule('.lw-q--choice .lw-opt')
+    expect(opt).toMatch(/min-height:\s*59px/)
+    expect(opt).toMatch(/padding:\s*20px 24px/)
+    expect(opt).toMatch(/font-size:\s*16px/)
+    expect(opt).toMatch(/font-weight:\s*700/)
+  })
+
+  it('сопоставление: строка-карточка 72 r20, слот ответа пилюлей 118×48', () => {
+    // Задания на сопоставление в макете НЕТ — проверено программно по всем 39
+    // экранам (CONNECTOR: 0, LINE: 6 и все в порядке слов, поиск по текстам и
+    // именам слоёв дал ноль). Вид собран из соседнего паттерна той же секции —
+    // строк «Read and choose True or False» (4065:17297).
+    const row = rule('.lw-q--match .lw-match__left')
+    expect(row).toMatch(/min-height:\s*72px/)
+    expect(row).toMatch(/border-radius:\s*20px/)
+    expect(row).toMatch(/justify-content:\s*space-between/)
+
+    expect(rule('.lw-q--match .lw-match__left-label')).toMatch(/font-size:\s*20px/)
+
+    const slot = rule('.lw-q--match .lw-match__chosen')
+    expect(slot).toMatch(/min-width:\s*118px/)
+    expect(slot).toMatch(/min-height:\s*48px/)
+    expect(slot).toMatch(/border-radius:\s*30px/)
+  })
+
+  it('заголовок задания — 24/700, один для всех типов', () => {
+    expect(css).toMatch(
+      /\.lw-q--order \.lw-q__prompt,[\s\S]{0,180}font-size:\s*24px/,
+    )
+  })
+
+  it('красный и зелёный сведены к паре токенов на секцию', () => {
+    // В макете два красных (#ea4f4f, #ff4646) и четыре зелёных (#19c119,
+    // #31b423, #1eb04b, #067a32) на одну и ту же семантику. Без сведения
+    // при первой же правке разъедется.
+    const tokens = css.match(/\.lw-q--order,\n\.lw-q--multi,\n\.lw-q--match,\n\.lw-q--choice\s*{([^}]+)}/)[1]
+    expect(tokens).toMatch(/--fx-ok:\s*#19c119/)
+    expect(tokens).toMatch(/--fx-no:\s*#ea4f4f/)
   })
 })

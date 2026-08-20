@@ -1067,7 +1067,9 @@
 .lw-vocab__grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  /* Кадр Vocabulary живых уроков (4065:9259): сетка 804 шириной, GRID на 4
+     колонки, зазор по горизонтали 12, по вертикали 24 — не один и тот же. */
+  gap: 24px 12px;
   max-width: 804px;
 }
 
@@ -1091,12 +1093,14 @@
   width: 100%;
 }
 
+/* 192×245 из макета, а не 3:4 «на глаз»: на колонке 192 это 245, и ряд
+   сходится с сеткой 804×1471 (5 рядов по 275 с зазором 24). */
 .lw-vcard {
   all: unset;
   cursor: pointer;
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 192 / 245;
   perspective: 1200px;
 }
 
@@ -1169,13 +1173,15 @@
   display: block;
 }
 
-/* Подпись под карточкой — тот же набор, что у карточек-вариантов в макете:
-   18/700 по центру (см. .lw-opt__text). Часть речи — приглушённой строкой. */
+/* Подпись под карточкой. Значения из кадра Vocabulary живых уроков
+   (4065:9259): ячейка 192×275 — картинка 192×245 r12, под ней подпись 16/700
+   #181818, зазор 8. Раньше здесь стояло 18/700 от карточек-вариантов: набор
+   похожий, но это соседний паттерн, а не этот. */
 .lw-vcard__caption {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  line-height: 1.25;
-  color: var(--lw-ink, #17171c);
+  line-height: 1.35;
+  color: #181818;
   text-align: center;
 }
 
@@ -3036,3 +3042,295 @@
   .lw-practice__list--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+
+/* ================================================================== */
+/* =========  ЗАДАНИЯ ПО МАКЕТУ «Онлайн-уроки» (Figma)  ============= */
+/* ================================================================== */
+
+/* Значения сняты из Figma напрямую, не на глаз. Ссылки на кадры — в каждом
+   блоке. Правила висят на модификаторах типа (.lw-q--order/--multi/--match/
+   --choice): своих правил у них не было ни одного, поэтому старую палитру
+   классрума на .lw-opt/.lw-match они не ломают, а перебивают по месту — те же
+   компоненты рисуются и в «Домашней работе», и там задание с урока должно
+   выглядеть как на уроке.
+
+   Цвета состояний в макете расфасованы непоследовательно: два красных
+   (#ea4f4f у пилюль и чипов, #ff4646 у вариантов и иконки ошибки) и четыре
+   зелёных (#19c119, #31b423, #1eb04b, #067a32). Сводим к паре токенов на
+   секцию, иначе при первой же правке разъедется. */
+.lw-q--order,
+.lw-q--multi,
+.lw-q--match,
+.lw-q--choice {
+  --fx-ok: #19c119;
+  --fx-no: #ea4f4f;
+  --fx-idle: #ffffff;
+  --fx-ink: #181818;
+  --fx-tint: #ebdeff;
+}
+
+/* --- порядок слов (Figma, Practice → 4065:18365 и соседние состояния) ---
+   Собранная строка лежит НАД линией, банк — ПОД ней. Линия 536×1 #afafaf. */
+.lw-q--order .lw-order__sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  min-height: 65px;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #afafaf;
+}
+
+.lw-q--order .lw-order__bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Чип: высота 65, r100, padding 24/13, текст 16/700. Ширина по содержимому. */
+.lw-q--order .lw-ochip {
+  min-height: 65px;
+  padding: 13px 24px;
+  border: 0;
+  border-radius: 100px;
+  background: var(--fx-idle);
+  color: var(--fx-ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* Проверенная строка красится вся: в макете верный порядок — зелёные чипы,
+   неверный — красные. Отдельного «выбрано, но не проверено» у чипа нет. */
+.lw-q--order .lw-order__sentence.is-correct .lw-ochip {
+  background: #31b423;
+  color: #ffffff;
+}
+
+.lw-q--order .lw-order__sentence.is-wrong .lw-ochip {
+  background: var(--fx-no);
+  color: #ffffff;
+}
+
+.lw-q--order .lw-ochip:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+/* --- мультивыбор (Figma, Listening → 4065:26472 и соседние) ---
+   Сетка 3 колонки, карточка 173×96 r20. Заливка всегда белая: состояние несёт
+   обводка 2px внутрь плюс цвет текста — не только цветом, что и нужно. */
+.lw-q--multi .lw-opts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.lw-q--multi .lw-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 96px;
+  padding: 16px 12px;
+  border-radius: 20px;
+  background: var(--fx-idle);
+  box-shadow: 0 1px 2px rgba(23, 23, 28, 0.06);
+  color: #17171c;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.lw-q--multi .lw-opt.is-selected {
+  box-shadow: inset 0 0 0 2px var(--lw-primary);
+  color: var(--lw-primary);
+}
+
+.lw-q--multi .lw-opt.is-ok,
+.lw-q--multi .lw-opt.is-correct,
+.lw-q--multi .lw-opt.is-ok:hover,
+.lw-q--multi .lw-opt.is-correct:hover {
+  box-shadow: inset 0 0 0 2px var(--fx-ok);
+  background: var(--fx-idle);
+  color: var(--fx-ok);
+}
+
+.lw-q--multi .lw-opt.is-no,
+.lw-q--multi .lw-opt.is-wrong,
+.lw-q--multi .lw-opt.is-no:hover,
+.lw-q--multi .lw-opt.is-wrong:hover {
+  box-shadow: inset 0 0 0 2px var(--fx-no);
+  background: var(--fx-idle);
+  color: var(--fx-no);
+}
+
+.lw-q--multi .lw-opt:hover {
+  background: var(--fx-idle);
+}
+
+@media (max-width: 560px) {
+  .lw-q--multi .lw-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* --- одиночный выбор (Figma, Grammar → 4065:13923 и соседние) ---
+   Колонка вариантов шириной 372, вариант 59 высотой, r999, текст 16/700.
+   Внимание: в макете «выбранный» и «верный» — одна и та же заливка #9047ff,
+   различить их можно только по баннеру снизу. Копируем как есть. */
+.lw-q--choice .lw-opts {
+  flex-direction: column;
+  gap: 12px;
+  max-width: 372px;
+  margin-top: 12px;
+}
+
+.lw-q--choice .lw-opt {
+  min-height: 59px;
+  padding: 20px 24px;
+  border-radius: 999px;
+  background: var(--fx-idle);
+  color: #17171c;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.lw-q--choice .lw-opt.is-selected,
+.lw-q--choice .lw-opt.is-ok,
+.lw-q--choice .lw-opt.is-correct,
+.lw-q--choice .lw-opt.is-ok:hover,
+.lw-q--choice .lw-opt.is-correct:hover {
+  background: var(--lw-primary);
+  color: #ffffff;
+}
+
+.lw-q--choice .lw-opt.is-no,
+.lw-q--choice .lw-opt.is-wrong,
+.lw-q--choice .lw-opt.is-no:hover,
+.lw-q--choice .lw-opt.is-wrong:hover {
+  background: #ff4646;
+  color: #ffffff;
+}
+
+.lw-q--choice .lw-opt:hover {
+  background: var(--fx-tint);
+}
+
+/* --- сопоставление (в макете задания на сопоставление НЕТ) ---
+   Проверено программно по всем 39 экранам: узлов CONNECTOR ноль, все шесть
+   узлов LINE принадлежат порядку слов, поиск по текстам и именам слоёв
+   (match|соедин|соотнес|пар[аы]|column|drag) дал ноль совпадений.
+
+   Поэтому вид собран из того, что в макете есть: строка-карточка 726×72 r20
+   с утверждением слева и ответом справа — ровно приём задания «Read and choose
+   True or False» (4065:17297). Ничего нового не придумано, взят соседний
+   паттерн той же секции: слева пара, справа слот ответа вместо пилюль. */
+.lw-q--match .lw-match {
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.lw-q--match .lw-match__col:first-child {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+
+.lw-q--match .lw-match__left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 12px 12px 24px;
+  border-radius: 20px;
+  background: var(--fx-idle);
+  box-shadow: 0 1px 2px rgba(23, 23, 28, 0.06);
+}
+
+.lw-q--match .lw-match__left-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: #17171c;
+  text-align: left;
+}
+
+/* Слот ответа — пилюля 118×48 r30 из того же паттерна. */
+.lw-q--match .lw-match__chosen {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 118px;
+  min-height: 48px;
+  padding: 14px 20px;
+  border-radius: 30px;
+  background: var(--fx-tint);
+  color: var(--lw-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.lw-q--match .lw-match__left.is-selected {
+  background: var(--fx-idle);
+  box-shadow: inset 0 0 0 2px var(--lw-primary);
+}
+
+.lw-q--match .lw-match__left.is-correct,
+.lw-q--match .lw-match__left.is-wrong {
+  background: var(--fx-idle);
+  color: #17171c;
+}
+
+.lw-q--match .lw-match__left.is-correct .lw-match__chosen {
+  background: var(--fx-ok);
+  color: #ffffff;
+}
+
+.lw-q--match .lw-match__left.is-wrong .lw-match__chosen {
+  background: var(--fx-no);
+  color: #ffffff;
+}
+
+/* Банк вариантов справа — чипы того же вида, что у порядка слов. */
+.lw-q--match .lw-match__col:last-child {
+  gap: 8px;
+}
+
+.lw-q--match .lw-match__right {
+  min-height: 48px;
+  padding: 13px 24px;
+  border-radius: 100px;
+  background: var(--fx-idle);
+  box-shadow: 0 1px 2px rgba(23, 23, 28, 0.06);
+  color: var(--fx-ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.lw-q--match .lw-match__right.is-used {
+  background: var(--fx-tint);
+  color: var(--lw-primary);
+  box-shadow: none;
+}
+
+/* Заголовок задания — 24/700 по центру, как во всех кадрах секции. */
+.lw-q--order .lw-q__prompt,
+.lw-q--multi .lw-q__prompt,
+.lw-q--match .lw-q__prompt,
+.lw-q--choice .lw-q__prompt {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #17171c;
+}
