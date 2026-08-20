@@ -96,3 +96,29 @@ describe('отправки', () => {
     expect(batches[0].exercises).toHaveLength(2)
   })
 })
+
+describe('отозванная выдача', () => {
+  const q = (id) => ({ id, type: 'choice', prompt: id, options: ['a'], answer: 'a' })
+
+  it('задания отозванной выдачи ученику не показываются', () => {
+    const hw = { exercises: [
+      { id: 1, batchId: 'b1', question: q('q1') },
+      { id: 2, batchId: 'b2', question: q('q2'), revoked: true },
+    ] }
+
+    expect(lessonExercises(hw).map((e) => e.id)).toEqual([1])
+  })
+
+  it('отозванная выдача исчезает из списка целиком, а не наполовину', () => {
+    const hw = { exercises: [
+      { id: 1, batchId: 'b1', lessonTitle: 'Осталась', question: q('q1') },
+      { id: 2, batchId: 'b2', lessonTitle: 'Отозвана', question: q('q2'), revoked: true },
+      { id: 3, batchId: 'b2', lessonTitle: 'Отозвана', question: q('q3'), revoked: true },
+    ] }
+
+    const batches = exerciseBatches(hw)
+
+    expect(batches).toHaveLength(1)
+    expect(batches[0].lessonTitle).toBe('Осталась')
+  })
+})
