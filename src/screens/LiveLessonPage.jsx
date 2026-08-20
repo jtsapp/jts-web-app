@@ -19,6 +19,8 @@ import StudentReviewPicker from './live/StudentReviewPicker.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
+import LiveLessonHeader from './live/LiveLessonHeader.jsx'
+import LessonProgress from './live/LessonProgress.jsx'
 import LessonRoute from './workspace/LessonRoute.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
 import TopicsList from './workspace/TopicsList.jsx'
@@ -776,7 +778,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
       <div className="live live--wide">
-        <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
+        {/* Шапка урока по макету: выход, текущая стадия с названием занятия,
+            язык и словарь. Заменяет прежнюю строку «← Назад» — она уводила с
+            урока тем же действием, но без предупреждения о выходе. */}
+        <LiveLessonHeader
+          stage={activeSection?.title || lesson?.title || t('live.title')}
+          lessonTitle={activeSection?.title && lesson?.title !== activeSection.title ? lesson?.title : ''}
+          onExit={onBack}
+          onOpenVocab={() => onNav?.('vocab')}
+        />
 
         {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
         {state === 'error' && <p className="live__status-msg">{t('live.loadError')}</p>}
@@ -826,6 +836,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
             {lessonOpen && (
               <>
+                {/* Сколько урока позади: считаем по шагам маршрута — это то, чем
+                    урок листается и что ученик видит слева. */}
+                {routeSteps.length > 0 && (
+                  <LessonProgress
+                    done={Math.max(0, routeSteps.findIndex((s) => s.id === routeActiveId)) + (routeActiveId ? 1 : 0)}
+                    total={routeSteps.length}
+                  />
+                )}
+
                 <div className="ls__tabs">
                   <button className={`ls-tab ${tab === 'lesson' ? 'ls-tab--active' : ''}`} onClick={() => setTab('lesson')}>
                     {t('lesson.ws.tabLesson')}
