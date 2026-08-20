@@ -2854,6 +2854,50 @@
   .llh__tools { width: 100%; margin-left: 0; }
 }
 
+/* Варианты опроса карточками — макет «Pick anything you like»: сетка по три,
+   карточка 96px высотой r20, картинка 32px над словом 18/700. Включается пропом
+   от экрана урока, поэтому правило висит на модификаторе, а не на .lw-opts. */
+.lw-opts--cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lw-opt--card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 96px;
+  padding: 14px 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(23, 23, 28, 0.06);
+}
+
+.lw-opt--card.is-selected {
+  background: var(--lw-tint-2, #ebdeff);
+  box-shadow: inset 0 0 0 2px var(--lw-primary, #9047ff);
+}
+
+.lw-opt__emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.lw-opt__text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--lw-ink, #17171c);
+  text-align: center;
+}
+
+/* Три карточки по 173px ниже 560px просто не помещаются. */
+@media (max-width: 560px) {
+  .lw-opts--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .llh__line {
   display: inline-flex;
   align-items: center;
@@ -2907,4 +2951,40 @@
 .lw-live-aside .lw-meet__link {
   min-height: 48px;
   border-radius: 80px;
+}
+
+/* Разминка из макета: пункт — карточка, оценка внутри неё. */
+.lw-practice__list--cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lw-q--pick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(23, 23, 28, 0.06);
+}
+
+.lw-pick__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  text-align: center;
+}
+
+.lw-q--pick-card .lw-opts {
+  justify-content: center;
+  margin-top: 0;
+}
+
+@media (max-width: 560px) {
+  .lw-practice__list--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

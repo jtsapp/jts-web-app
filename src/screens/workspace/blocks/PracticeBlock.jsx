@@ -7,6 +7,7 @@ import MatchQuestion from '../practice/MatchQuestion.jsx'
 import OrderQuestion from '../practice/OrderQuestion.jsx'
 import MultiQuestion from '../practice/MultiQuestion.jsx'
 import PickQuestion from '../practice/PickQuestion.jsx'
+import { splitOptionLabel } from '../practice/optionLabel.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -23,8 +24,13 @@ const QUESTION_BY_TYPE = {
 // карточки (см. `practiceBlockKey` в LessonContent) — прокидывается в вопросы
 // как есть. Повторное нажатие «Проверить» разрешено (просто снова вызывает
 // `onCheck(block)`; чей это ключ — знает только родитель).
-export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId, onWord }) {
+export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId, onWord, optionCards = false }) {
   const { t } = useI18n()
+  const questions = block?.questions || []
+  const cardGrid =
+    optionCards &&
+    questions.length > 1 &&
+    questions.every((q) => q?.type === 'pick' && !!splitOptionLabel(q.prompt).emoji)
 
   return (
     <div className="lw-card lw-practice">
@@ -33,7 +39,10 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
         {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
       </div>
 
-      <div className="lw-practice__list">
+      {/* Разминка из макета: пункты стоят сеткой по три, а не колонкой. Сетку
+          включаем, только когда весь блок — такие карточки: смешанный список
+          из карточек и обычных вопросов в сетке ломается. */}
+      <div className={`lw-practice__list${cardGrid ? ' lw-practice__list--cards' : ''}`}>
         {(block?.questions || []).map((question) => {
           const Question = QUESTION_BY_TYPE[question.type]
           if (!Question) return null
@@ -54,6 +63,7 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
+                optionCards={optionCards}
               />
             </div>
           )

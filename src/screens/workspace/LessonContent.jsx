@@ -75,7 +75,7 @@ export function practiceBlockKey(stepId, groupIndex) {
 // только за practice-блоками значило бы, что смотрящий застревает на
 // последнем вопросе шага, пока ученик уже читает материал дальше. Сам
 // ученик liveQuestionId не получает — он не следует за собой.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, token, source }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, token, source, optionCards = false }) {
   const groups = groupBlocks(step?.blocks)
   const { lang } = useI18n()
   // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
@@ -132,6 +132,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               readOnly={readOnly}
               liveQuestionId={liveQuestionId}
               onWord={openWord}
+              optionCards={optionCards}
             />
           )
         }

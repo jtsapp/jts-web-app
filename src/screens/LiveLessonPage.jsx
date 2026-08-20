@@ -956,6 +956,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                                 liveQuestionId={isStaff ? reviewLiveQuestionId : null}
                                 token={token}
                                 source={catalogLesson?.title || lesson?.title}
+                                // Варианты «картинка + слово» — карточками, как в макете.
+                                optionCards
                               />
                             </div>
                           ) : (
