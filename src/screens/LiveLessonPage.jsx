@@ -785,7 +785,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
+    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="live live--wide">
         {/* Шапка урока по макету: выход, текущая стадия с названием занятия,
             язык и словарь. Заменяет прежнюю строку «← Назад» — она уводила с

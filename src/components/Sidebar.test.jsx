@@ -12,15 +12,32 @@ function renderSidebar(props) {
   )
 }
 
-describe('Sidebar rail mode', () => {
-  it('adds sb--rail when rail is true', () => {
+// Раньше экраны-рабочие места (каталог уроков, живой урок) просили сайдбар-рейл:
+// колонку 72px, где логотип, подписи разделов, имя в профиле, роль и баланс
+// убирались из потока через display: none и возвращались только по наведению.
+// На этих экранах от сайдбара оставались два безымянных кружка, и куда ведёт
+// иконка, узнать можно было только мышью. Рейла больше нет — сайдбар везде
+// один и тот же, и ничего из него не пропадает.
+describe('Sidebar', () => {
+  it('рейла нет: ни модификатора на сайдбаре, ни пропа', () => {
     const { container } = renderSidebar({ rail: true })
-    expect(container.querySelector('aside.sb.sb--rail')).not.toBeNull()
+    expect(container.querySelector('.sb--rail')).toBeNull()
+    expect(container.querySelector('aside.sb')).not.toBeNull()
   })
 
-  it('does not add sb--rail by default', () => {
+  it('показывает подписи разделов, а не одни иконки', () => {
     const { container } = renderSidebar()
-    expect(container.querySelector('aside.sb.sb--rail')).toBeNull()
-    expect(container.querySelector('aside.sb')).not.toBeNull()
+    const labels = [...container.querySelectorAll('.sb__item span')].map((s) => s.textContent.trim())
+    expect(labels.length).toBeGreaterThan(0)
+    expect(labels.every((l) => l.length > 0)).toBe(true)
+  })
+
+  it('ученик видит логотип, профиль с именем, роль и баланс', () => {
+    const { container } = renderSidebar()
+    expect(container.querySelector('.sb__logo')).not.toBeNull()
+    expect(container.querySelector('.sb__profile-text').textContent).toContain('Demo')
+    expect(container.querySelector('.sb__role-text').textContent.trim()).not.toBe('')
+    expect(container.querySelector('.sb__role-lvl').textContent).toBe('A1')
+    expect(container.querySelectorAll('.sb__stat-num')).toHaveLength(2)
   })
 })

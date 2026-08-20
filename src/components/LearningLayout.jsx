@@ -13,17 +13,13 @@ export default function LearningLayout({
   token,
   onNav,
   onProfile,
-  // Сайдбар-рейл: сворачивается в колонку иконок, чтобы рабочая область была
-  // во всю ширину. Просят его сами экраны-рабочие места (класс, каталог), а не
-  // раздел целиком: расписание — обычный экран и живёт с полным сайдбаром.
-  rail = false,
   children,
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
 
   return (
-    <div className={`learn ${rail ? 'learn--rail' : ''}`}>
+    <div className="learn">
       <MobileTopBar
         userName={userName}
         profileLabel={t('kingdom.profile')}
@@ -36,7 +32,6 @@ export default function LearningLayout({
           userName={userName}
           userLevel={userLevel}
           active={active}
-          rail={rail}
           token={token}
           onNav={onNav}
           onProfile={onProfile}
