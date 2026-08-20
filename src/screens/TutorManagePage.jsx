@@ -4,6 +4,7 @@ import TemperToggle from '../tutor/TemperToggle.jsx'
 import { ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { groupCallsByDate } from '../tutor/callHistory.js'
+import { INTEREST_TOPICS } from '../tutor/interests.js'
 
 export default function TutorManagePage({
   user,
@@ -16,6 +17,15 @@ export default function TutorManagePage({
   // и после онбординга — не гонять же ученика заново через экран выбора.
   temper = null,
   onToggleTemper,
+  // Ответы опросника и уровень. Опросник проходится один раз при первом
+  // онбординге (смена тьютора его больше не гоняет), поэтому правка интересов,
+  // статуса и пересдача теста живут здесь — иначе их негде поменять.
+  level = '',
+  interestIds = [],
+  profession = '',
+  onEditInterests,
+  onEditProfession,
+  onRetakeTest,
   // Сырые звонки из GET /api/profile/calls. Группировку по дате и локализацию
   // заголовков/статусов делаем здесь (зона тьютора: useLang). Строка звонка
   // кликабельна → onOpenCall(call) открывает отчёт о разговоре, а расшифровка
@@ -26,6 +36,16 @@ export default function TutorManagePage({
   const { lang, t } = useLang()
   const { name = 'Спарк' } = tutor
   const history = groupCallsByDate(calls, t, lang)
+  const interestsText = INTEREST_TOPICS.filter((topic) => interestIds.includes(topic.id))
+    .map((topic) => t(topic.tKey))
+    .join(', ')
+  // Профессия в профиле лежит английскими метками (их читает голосовой тьютор),
+  // поэтому показываем строку как есть: перевода для неё нет.
+  const prefs = [
+    { key: 'interests', label: t('manage.interests'), value: interestsText, onClick: onEditInterests },
+    { key: 'profession', label: t('manage.profession'), value: profession, onClick: onEditProfession },
+    { key: 'level', label: t('manage.retest'), value: level, onClick: onRetakeTest },
+  ].filter((row) => typeof row.onClick === 'function')
   return (
     <TutorShell
       active="tutor"
@@ -37,26 +57,43 @@ export default function TutorManagePage({
       layout="flow"
     >
       <div className="t-manage">
-        <div className="t-manage__card">
-          <TutorThumb tutor={tutor} />
-          <div className="t-manage__name">
-            <b>{name}</b>
-            <span>{t('role.tutor')}</span>
+        {/* Левая колонка: карточка тьютора, характер и ответы опросника. */}
+        <div className="t-manage__side">
+          <div className="t-manage__card">
+            <TutorThumb tutor={tutor} />
+            <div className="t-manage__name">
+              <b>{name}</b>
+              <span>{t('role.tutor')}</span>
+            </div>
+            <button className="t-manage__change" type="button" onClick={onChangeTutor}>
+              {t('manage.change')}
+              <span className="t-seeall__arrow">
+                <ArrowRightIcon size={14} />
+              </span>
+            </button>
           </div>
-          <button className="t-manage__change" type="button" onClick={onChangeTutor}>
-            {t('manage.change')}
-            <span className="t-seeall__arrow">
-              <ArrowRightIcon size={14} />
-            </span>
-          </button>
-        </div>
 
-        {tutor.tempers && (
-          <div className="t-manage__temper">
-            <span>{t('tutor.temper')}</span>
-            <TemperToggle tutor={tutor} temper={temper} onToggle={onToggleTemper} />
-          </div>
-        )}
+          {tutor.tempers && (
+            <div className="t-manage__temper">
+              <span>{t('tutor.temper')}</span>
+              <TemperToggle tutor={tutor} temper={temper} onToggle={onToggleTemper} />
+            </div>
+          )}
+
+          {prefs.length > 0 && (
+            <div className="t-manage__prefs">
+              {prefs.map((row) => (
+                <button className="t-manage__pref" type="button" key={row.key} onClick={row.onClick}>
+                  <span className="t-manage__pref-label">{row.label}</span>
+                  <span className="t-manage__pref-value">{row.value || t('manage.notSet')}</span>
+                  <span className="t-seeall__arrow">
+                    <ArrowRightIcon size={14} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="t-manage__history">
           <h2>{t('manage.history')}</h2>
