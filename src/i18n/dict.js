@@ -46,17 +46,25 @@ export const DICT = {
     'tutor.dexter.trait2': 'Вайбовый',
     'tutor.dexter.trait3': 'Свой парень',
     'tutor.dexter.desc':
-      'Свой парень из Америки. Говорит как в жизни, а не как в учебнике: сленг, шутки, крепкое словцо. Не поправляет свысока — просто по ходу подсказывает, как сказать по-человечески. С ним не стыдно ошибаться. Объясняет на русском, английский показывает на живых примерах.',
+      'Свой парень из Америки. Говорит как в жизни, а не как в учебнике: сленг, шутки, ноль официоза. Не поправляет свысока — просто по ходу подсказывает, как сказать по-человечески. С ним не стыдно ошибаться. Объясняет на русском, английский показывает на живых примерах.',
+    // Описание того же тьютора с включённой кнопкой 18+.
+    'tutor.dexter.desc18':
+      'Тот же Декстер, только без тормозов. Матерится в каждой фразе, орёт за короткие ответы и за русский вместо английского, хвалит сквозь зубы. Учит ровно тому же и так же — просто больно. Не для тех, кого это выбивает.',
     'tutor.dexter.listen': 'Послушать голос Декстера',
     'tutor.dexter.choose': 'Выбрать Декстера',
-    // Метка у имени тьютора, который матерится (tutors.js → adult: true).
+    // Кнопка нрава у имени тьютора (tutors.js → tempers). Не возрастной гейт:
+    // проверки возраста в приложении нет, это переключатель характера.
     'tutor.adult': '18+',
-    'tutor.adultHint': 'Разговор со сленгом и матом — для взрослых',
+    'tutor.adultHint': 'Жёсткий характер включён: мат и наезды. Нажми, чтобы выключить',
+    'tutor.adultHintOff': 'Включить жёсткий характер: мат и наезды',
+    'tutor.temper': 'Характер',
     'tutor.spark.trait1': 'Казахскоязычный',
     'tutor.spark.trait2': 'Энергичный',
     'tutor.spark.trait3': 'Свой',
     'tutor.spark.desc':
       'Тьютор специально для казахской аудитории. Объясняет по-казахски и свободно переключается между казахским и английским. Энергичный и свой в доску — подаёт английский через понятные примеры и заряжает «алға, сен істейсің!». С ним английский учится на родном языке.',
+    'tutor.spark.desc18':
+      'Тот же Спарк, только злой. Матерится по-казахски, орёт за халтуру и за отговорки, добрых слов не жди. По-русски всё так же не говорит — ругается тоже на казахском.',
     'tutor.spark.listen': 'Послушать голос Спарка',
     'tutor.spark.choose': 'Выбрать Спарка',
     // Джарвис — dev-only тьютор (JARVIS_ENABLED в src/config.js). Ключи лежат
@@ -307,16 +315,22 @@ export const DICT = {
     'tutor.dexter.trait2': 'Вайбты',
     'tutor.dexter.trait3': 'Өз жігіті',
     'tutor.dexter.desc':
-      'Америкадан келген өз жігіті. Оқулықтағыдай емес, өмірдегідей сөйлейді: сленг, әзіл, кейде қатқыл сөз. Жоғарыдан қарап түзетпейді — әңгіме үстінде «мынау былай айтылады» деп қана қояды. Онымен қателесуден ұялмайсың. Орысша түсіндіреді, ағылшынды тірі мысалдармен көрсетеді.',
+      'Америкадан келген өз жігіті. Оқулықтағыдай емес, өмірдегідей сөйлейді: сленг, әзіл, нөл ресмилік. Жоғарыдан қарап түзетпейді — әңгіме үстінде «мынау былай айтылады» деп қана қояды. Онымен қателесуден ұялмайсың. Орысша түсіндіреді, ағылшынды тірі мысалдармен көрсетеді.',
+    'tutor.dexter.desc18':
+      'Сол Декстер, бірақ тежеусіз. Әр сөйлемінде боқтайды, қысқа жауап пен ағылшыннан қашқаның үшін айқайлайды, мақтауы тісінің арасынан. Оқытуы дәл сол, тек ауыр. Мұны көтере алмайтындарға емес.',
     'tutor.dexter.listen': 'Декстер дауысын тыңдау',
     'tutor.dexter.choose': 'Декстер таңдау',
     'tutor.adult': '18+',
-    'tutor.adultHint': 'Сленг пен боқтық сөзі бар әңгіме — ересектерге',
+    'tutor.adultHint': 'Қатал мінез қосулы: боқтық пен айқай. Өшіру үшін бас',
+    'tutor.adultHintOff': 'Қатал мінезді қосу: боқтық пен айқай',
+    'tutor.temper': 'Мінез',
     'tutor.spark.trait1': 'Қазақша',
     'tutor.spark.trait2': 'Жігерлі',
     'tutor.spark.trait3': 'Өзіміздікі',
     'tutor.spark.desc':
       'Қазақ аудиториясына арнайы жасалған тьютор. Ағылшынды қазақша түсіндіреді, қазақша мен ағылшынның арасында еркін ауысады. Жігерлі әрі өзіміздікі — ағылшынды таныс мысалдармен береді және «алға, сен істейсің!» деп жігерлендіреді. Онымен ағылшын ана тіліңде үйреніледі.',
+    'tutor.spark.desc18':
+      'Сол Спарк, бірақ ашулы. Қазақша боқтайды, салғырттық пен сылтау үшін айқайлайды, жылы сөз күтпе. Орысша бәрібір сөйлемейді — ұрысатыны да қазақша.',
     'tutor.spark.listen': 'Спарк дауысын тыңдау',
     'tutor.spark.choose': 'Спарк таңдау',
     'tutor.jarvis.trait1': 'Ассистент',
@@ -545,16 +559,22 @@ export const DICT = {
     'tutor.dexter.trait2': 'Slangy',
     'tutor.dexter.trait3': 'Your boy',
     'tutor.dexter.desc':
-      'Your boy from the States. Talks like people actually talk, not like a textbook: slang, jokes, the odd swear word. He won\'t correct you from above — he just drops the natural way to say it mid-conversation. Nothing is embarrassing with him. Explains in Russian, shows English through real examples.',
+      'Your boy from the States. Talks like people actually talk, not like a textbook: slang, jokes, zero formality. He won\'t correct you from above — he just drops the natural way to say it mid-conversation. Nothing is embarrassing with him. Explains in Russian, shows English through real examples.',
+    'tutor.dexter.desc18':
+      'The same Dexter with the brakes off. Swears in every line, shouts at one-word answers and at Russian instead of English, and praises through gritted teeth. Same method, same syllabus — it just hurts. Not for anyone this throws off.',
     'tutor.dexter.listen': "Listen to Dexter's voice",
     'tutor.dexter.choose': 'Choose Dexter',
     'tutor.adult': '18+',
-    'tutor.adultHint': 'Slang and swearing — adults only',
+    'tutor.adultHint': 'Harsh mode on: swearing and shouting. Tap to turn it off',
+    'tutor.adultHintOff': 'Turn on harsh mode: swearing and shouting',
+    'tutor.temper': 'Character',
     'tutor.spark.trait1': 'Kazakh-speaking',
     'tutor.spark.trait2': 'Energetic',
     'tutor.spark.trait3': 'One of us',
     'tutor.spark.desc':
       'A tutor built specifically for Kazakh learners. Explains English in Kazakh and switches freely between Kazakh and English. Energetic and down-to-earth, he teaches through familiar examples and cheers you on «алға, сен істейсің!». With him you learn English in your own language.',
+    'tutor.spark.desc18':
+      'The same Spark, angry. Swears in Kazakh, shouts at half-hearted answers and excuses, and hands out no kind words. He still refuses to speak Russian — even the swearing stays Kazakh.',
     'tutor.spark.listen': "Listen to Spark's voice",
     'tutor.spark.choose': 'Choose Spark',
     'tutor.jarvis.trait1': 'Assistant',

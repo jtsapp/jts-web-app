@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { TUTORS } from './tutors.js'
+import { TUTORS, sampleKey } from './tutors.js'
 import JarvisOrb from './JarvisOrb.jsx'
+import TemperToggle from './TemperToggle.jsx'
 import { VolumeIcon } from './TutorIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 
@@ -10,7 +11,9 @@ import { useLang } from '../i18n/LanguageContext.jsx'
 // после перехода тихо возвращается в среднюю копию (без анимации).
 const SLOT = 170 // расстояние центр-к-центру соседних аватаров (Figma)
 
-export default function TutorCarousel({ onChoose, onListen }) {
+// tempers/onToggleTemper приходят пропами и своего состояния тут нет намеренно:
+// карусель и десктопная сетка — два вида одного выбора (см. TutorChoosePage).
+export default function TutorCarousel({ onChoose, onListen, tempers = {}, onToggleTemper }) {
   const { t } = useLang()
   const n = TUTORS.length
   const slides = [...TUTORS, ...TUTORS, ...TUTORS] // 3 копии для бесшовной прокрутки
@@ -95,11 +98,7 @@ export default function TutorCarousel({ onChoose, onListen }) {
       <div className="t-car__info" key={cur.key}>
         <div className="t-car__name">
           {cur.name}
-          {cur.adult && (
-            <span className="t-adult" title={t('tutor.adultHint')}>
-              {t('tutor.adult')}
-            </span>
-          )}
+          <TemperToggle tutor={cur} temper={tempers[cur.key]} onToggle={onToggleTemper} />
         </div>
         <div className="t-car__chips">
           {cur.traitColors.map((c, i) => (
@@ -108,15 +107,25 @@ export default function TutorCarousel({ onChoose, onListen }) {
             </span>
           ))}
         </div>
-        <p className="t-car__desc">{t(`tutor.${cur.key}.desc`)}</p>
+        <p className="t-car__desc">
+          {t(tempers[cur.key] === 'harsh' ? `tutor.${cur.key}.desc18` : `tutor.${cur.key}.desc`)}
+        </p>
       </div>
 
       <div className="t-car__actions">
-        <button className="t-car__listen" type="button" onClick={() => onListen && onListen(cur.key)}>
+        <button
+          className="t-car__listen"
+          type="button"
+          onClick={() => onListen && onListen(sampleKey(cur.key, tempers[cur.key]))}
+        >
           {t(`tutor.${cur.key}.listen`)}
           <VolumeIcon size={20} />
         </button>
-        <button className="t-car__choose" type="button" onClick={() => onChoose && onChoose(cur.key)}>
+        <button
+          className="t-car__choose"
+          type="button"
+          onClick={() => onChoose && onChoose(cur.key, tempers[cur.key] || null)}
+        >
           {t(`tutor.${cur.key}.choose`)}
         </button>
       </div>

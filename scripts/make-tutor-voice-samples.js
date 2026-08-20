@@ -257,7 +257,16 @@ async function ttsFish(text) {
   return Buffer.from(await res.arrayBuffer())
 }
 
-const PROVIDER = { luna: ttsGemini, dexter: ttsEleven, spark: ttsSoniox, jarvis: ttsFish }
+// Ключи с суффиксом -harsh — визитки жёсткого нрава (кнопка 18+ на карточке).
+// Провайдер и тембр у них те же: нрав меняет характер, а не голос.
+const PROVIDER = {
+  luna: ttsGemini,
+  dexter: ttsEleven,
+  spark: ttsSoniox,
+  jarvis: ttsFish,
+  'dexter-harsh': ttsEleven,
+  'spark-harsh': ttsSoniox,
+}
 
 // ---- main ------------------------------------------------------------------
 async function main() {

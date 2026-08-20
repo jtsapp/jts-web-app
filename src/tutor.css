@@ -496,25 +496,55 @@
   color: var(--t-ink);
   margin-bottom: 8px;
 }
-/* Метка 18+ у имени тьютора, который матерится (tutors.js → adult: true).
-   Общая для десктопной карточки и мобильной карусели. Красный не берём: рядом
-   лежат разноцветные трейт-чипы, и ещё одно яркое пятно читалось бы как
-   четвёртый трейт. Нейтральная тёмная плашка — это пометка, а не украшение. */
+/* Кнопка 18+ у имени тьютора (tutors.js → tempers). Общая для десктопной
+   карточки, мобильной карусели и «Управления тьютором» — см. TemperToggle.jsx.
+   Раньше это была статичная плашка у одного Декстера; теперь ею переключают
+   характер, поэтому у неё два состояния.
+   Красный не берём: рядом лежат разноцветные трейт-чипы, и ещё одно яркое пятно
+   читалось бы как четвёртый трейт. Тёмная — включено, серая — выключено. */
 .t-adult {
   display: inline-block;
   vertical-align: middle;
   margin-left: 8px;
   padding: 2px 7px;
+  border: 0;
   border-radius: 999px;
   background: #2b2b33;
   color: #fff;
   /* Имя 24px — метка не должна с ним конкурировать. */
+  font-family: inherit;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.4;
   letter-spacing: 0.02em;
-  /* Курсор-подсказка: у span есть title с расшифровкой. */
-  cursor: help;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+/* Выключено — жёсткого характера нет. Серая, но не «disabled»: кнопка живая,
+   и текст должен читаться, а не растворяться в карточке. */
+.t-adult--off {
+  background: #d5d5dd;
+  color: #6b6b78;
+}
+.t-adult:focus-visible {
+  outline: 2px solid #2b2b33;
+  outline-offset: 2px;
+}
+
+/* Строка «Характер» в «Управлении тьютором»: тот же тумблер, что на карточке,
+   чтобы характер можно было сменить, не проходя выбор тьютора заново. */
+.t-manage__temper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--t-ink);
 }
 .t-tcard__chips {
   display: flex;
