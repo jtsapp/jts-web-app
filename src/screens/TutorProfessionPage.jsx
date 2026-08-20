@@ -27,6 +27,24 @@ const PROF_EN = {
   'prof.opt.retired': 'Retired',
 }
 
+// Профиль хранит статус ОДНОЙ строкой (CSV английских меток + свободный текст),
+// поэтому для правки из «Управления тьютором» её надо разобрать обратно:
+// знакомые метки — в отмеченные плитки, остальное — в поле ввода.
+const EN_TO_KEY = new Map(Object.entries(PROF_EN).map(([key, en]) => [en.toLowerCase(), key]))
+
+function parseInitial(value) {
+  const parts =
+    typeof value === 'string' ? value.split(',').map((x) => x.trim()).filter(Boolean) : []
+  const picked = []
+  const rest = []
+  for (const part of parts) {
+    const key = EN_TO_KEY.get(part.toLowerCase())
+    if (key && !picked.includes(key)) picked.push(key)
+    else rest.push(part)
+  }
+  return { picked, text: rest.join(', ') }
+}
+
 // Экран «тьютор хочет узнать, чем ты занимаешься» — ввод или выбор статуса.
 export default function TutorProfessionPage({
   user,
@@ -34,16 +52,20 @@ export default function TutorProfessionPage({
   onProfile,
   onBack,
   tutor = {},
+  // Уже сохранённый статус: пусто на онбординге, заполнено при правке из
+  // «Управления тьютором» — экран открывается с прежним ответом.
+  initialValue = '',
   onSubmit,
   onSkip,
 }) {
   const t = useT()
   const { name = 'Спарк' } = tutor
-  const [value, setValue] = useState('')
+  const [initial] = useState(() => parseInitial(initialValue))
+  const [value, setValue] = useState(initial.text)
   // Мультивыбор: несколько профессий сразу. Клик по плитке переключает её,
   // submit — по кнопке «Продолжить». Собираем выбранное + текст в одну строку
   // (её читает голосовой тьютор в промпте, поэтому просто CSV английских меток).
-  const [picked, setPicked] = useState([])
+  const [picked, setPicked] = useState(initial.picked)
 
   const toggle = (key) =>
     setPicked((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
