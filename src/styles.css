@@ -2258,6 +2258,12 @@ textarea {
   justify-content: center;
   padding: 72px 32px;
 }
+/* Расписание занимает страницу целиком — без центрирования узкой колонкой,
+   которое нужно только заглушке «клубов». */
+.ls__body--wide {
+  display: block;
+  padding: 24px 32px 48px;
+}
 
 /* Заглушка «Страница в разработке» */
 .soon {
@@ -6249,108 +6255,150 @@ textarea {
 }
 
 /* --- Lesson schedule (Уроки → Онлайн) --- */
-.sch { margin: 0 0 20px; }
-.sch__title { font-size: 18px; font-weight: 700; margin: 0 0 12px; }
-.sch__status { color: #6b7280; font-size: 14px; padding: 8px 0; }
+.sch { margin: 0; }
+.sch__title { font-size: 20px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }
+.sch__title--second { margin-top: 28px; }
+.sch__status { color: var(--muted); font-size: 14px; padding: 8px 0; }
 .sch__status--error { color: #c0392b; }
-.sch__summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-.sch-tile { background: #f4f5f7; border-radius: 12px; padding: 10px; text-align: center; }
-.sch-tile__num { font-size: 20px; font-weight: 700; }
-.sch-tile__label { font-size: 11px; color: #6b7280; margin-top: 2px; }
-.sch__day { margin-bottom: 14px; }
-.sch__day-h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 8px; text-transform: capitalize; }
-.sch-row { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
-.sch-row__time { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 48px; }
-.sch-row__main { flex: 1; min-width: 0; }
-.sch-row__teacher { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sch-row__meta { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+
+/* Верх экрана: карточка урока и счётчики занятий одной строкой. */
+.sch__top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 16px; align-items: stretch; }
+.sch__summary { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr; gap: 12px; }
+.sch-tile { background: #fff; border-radius: 16px; padding: 16px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; }
+.sch-tile__num { font-size: 26px; font-weight: 800; line-height: 1.2; color: var(--ink); }
+.sch-tile__label { font-size: 13px; color: var(--muted); }
+
+.sch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; background: #f6f6f8; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+.sch-row:last-child { margin-bottom: 0; }
+.sch-row__main { flex: 1 1 160px; min-width: 0; }
+.sch-row__teacher { font-weight: 700; font-size: 15px; color: var(--ink); overflow-wrap: anywhere; }
+.sch-row__time { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.sch-row__meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 8px; }
+.sch-row__format { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
+.sch-row__dot { width: 8px; height: 8px; border-radius: 50%; background: #34c759; flex: none; }
+.sch-row__format--offline .sch-row__dot { background: #f5a623; }
 .sch-badge { font-size: 11px; border-radius: 999px; padding: 2px 8px; background: #e6ecff; color: #2b57d6; }
 .sch-badge--inProgress, .sch-badge--paused { background: #d3ecff; color: #0b74c4; }
 .sch-badge--completed { background: #dcf3e2; color: #2c8a45; }
 .sch-badge--overdue { background: #fdecd2; color: #b26a12; }
 .sch-badge--cancelled { background: #eceef1; color: #6b7280; }
-.sch-row__format { font-size: 11px; color: #6b7280; }
-.sch-row__join { background: #7a4dff; color: #fff; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
-.sch-row__hint { font-size: 11px; color: #9aa0a6; max-width: 120px; text-align: right; }
+.sch-row__join { flex: none; background: var(--purple); color: #fff; border: 0; border-radius: 999px; padding: 10px 16px; font-weight: 700; font-family: inherit; font-size: 14px; cursor: pointer; }
+.sch-row__join:hover { background: #7d34f5; }
+.sch-row__join:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-/* Полоса «урок идёт»: вход в класс — самое срочное действие на экране, и оно
-   не должно зависеть от того, какой день открыт в календаре. */
-.sch-live {
+/* Карточка урока над календарём: преподаватель, тема и вход в класс. Вход —
+   самое срочное действие экрана, и он не зависит от того, какой день открыт. */
+.lesson-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+.lesson-card--empty { justify-content: center; align-items: center; min-height: 160px; }
+.lesson-card__head { display: flex; align-items: center; gap: 16px; }
+.lesson-card__avatar {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f0e9ff;
+  color: var(--purple);
+  font-size: 22px;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #eef0ff;
-  border: 1px solid #d9dcff;
+  justify-content: center;
 }
-.sch-live__pulse {
+.lesson-card__who { min-width: 0; }
+.lesson-card__name { font-size: 20px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lesson-card__role { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.lesson-card__sep { height: 1px; background: #eeeeee; }
+.lesson-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.lesson-card__info { min-width: 0; }
+.lesson-card__topic { font-size: 16px; font-weight: 700; color: var(--ink); }
+.lesson-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 8px; font-size: 14px; }
+.lesson-card__state { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.lesson-card__state--live { color: #2c8a45; }
+.lesson-card__dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.lesson-card__when { color: var(--muted); font-variant-numeric: tabular-nums; }
+.lesson-card__join {
   flex: none;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #34c759;
-  box-shadow: 0 0 0 0 rgba(52, 199, 89, .6);
-  animation: sch-live-pulse 2s infinite;
-}
-.sch-live__text { flex: 1; min-width: 0; }
-.sch-live__title { font-weight: 700; font-size: 15px; color: #1c1c1e; }
-.sch-live__sub { font-size: 13px; color: #5b6478; margin-top: 2px; }
-.sch-live__join {
-  flex: none;
-  background: #7a4dff;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--purple);
   color: #fff;
   border: 0;
-  border-radius: 10px;
-  padding: 10px 18px;
+  border-radius: 999px;
+  padding: 12px 12px 12px 22px;
+  font-family: inherit;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 }
-.sch-live__join:hover { background: #6a3ded; }
-.sch-live__join:focus-visible { outline: 2px solid #1c1c1e; outline-offset: 2px; }
-
-@keyframes sch-live-pulse {
-  70% { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+.lesson-card__join:hover:enabled { background: #7d34f5; }
+.lesson-card__join:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.lesson-card__join:disabled { background: #ece9f5; color: #8b8a97; cursor: default; }
+.lesson-card__chev {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.lesson-card__join:disabled .lesson-card__chev { background: rgba(23, 19, 38, .07); }
 
-/* Точка не мигает у тех, кто просил уменьшить движение. */
-@media (prefers-reduced-motion: reduce) {
-  .sch-live__pulse { animation: none; }
-}
+/* Ссылка на видеозвонок — рядом со статусом урока и в строках дня. */
+.meet-link { display: inline-flex; align-items: center; gap: 6px; color: #1a73e8; font-size: 14px; text-decoration: none; }
+.meet-link:hover { text-decoration: underline; }
+.meet-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+.meet-link__icon { flex: none; }
 
-@media (max-width: 480px) {
-  .sch-live { flex-wrap: wrap; }
-  .sch-live__join { width: 100%; }
+@media (max-width: 900px) {
+  .sch__top { grid-template-columns: 1fr; }
 }
-@media (max-width: 480px) { .sch__summary { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) {
+  .lesson-card__foot { align-items: stretch; }
+  .lesson-card__join { width: 100%; justify-content: center; }
+}
 
 /* Lessons calendar */
 .cal-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 16px; align-items: start; }
-.cal { background: #fff; border: 1px solid #eceef1; border-radius: 16px; padding: 12px 12px 8px; }
-.cal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.cal__title { font-weight: 700; text-transform: capitalize; }
-.cal__nav { width: 32px; height: 32px; border: 0; background: #f4f5f7; border-radius: 8px; font-size: 18px; line-height: 1; cursor: pointer; color: var(--ink); }
-.cal__nav:hover { background: #e9eaf0; }
-.cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.cal__grid--head { margin-bottom: 4px; }
-.cal__wd { text-align: center; font-size: 11px; color: #8b8a97; text-transform: capitalize; padding: 2px 0; }
-.cal__day { position: relative; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; padding: 6px 2px; border: 1px solid transparent; border-radius: 10px; background: #fafafc; cursor: pointer; color: var(--ink); transition: background .15s ease, border-color .15s ease; }
-.cal__day:hover { background: #f1f0f7; }
+.cal { background: #fff; border-radius: 20px; padding: 20px; }
+.cal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.cal__title { font-size: 18px; font-weight: 700; color: var(--ink); }
+.cal__navs { display: flex; gap: 8px; }
+.cal__nav { width: 34px; height: 34px; border: 0; background: var(--purple); color: #fff; border-radius: 50%; font-size: 18px; line-height: 1; cursor: pointer; }
+.cal__nav:hover { background: #7d34f5; }
+.cal__nav:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal__grid--head { margin-bottom: 6px; }
+.cal__wd { text-align: center; font-size: 12px; color: var(--muted); text-transform: capitalize; padding: 2px 0; }
+.cal__day { position: relative; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 6px 2px; border: 0; border-radius: 12px; background: #f6f6f8; cursor: pointer; color: var(--ink); transition: background .15s ease; }
+.cal__day:hover { background: #efedf6; }
+.cal__day:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .cal__day--out { color: #c3c2cc; background: transparent; }
 .cal__day--today .cal__num { color: var(--purple); font-weight: 700; }
-.cal__day--sel { border-color: var(--purple); background: #f3eefe; }
-.cal__num { font-size: 13px; font-variant-numeric: tabular-nums; }
-.cal__dots { display: flex; align-items: center; gap: 3px; }
-.cal__dot { width: 6px; height: 6px; border-radius: 999px; background: #2b57d6; }
+.cal__day--sel { background: var(--purple); }
+.cal__day--sel:hover { background: #7d34f5; }
+.cal__day--sel .cal__num, .cal__day--sel.cal__day--today .cal__num { color: #fff; font-weight: 700; }
+.cal__day--sel .cal__dot { background: #fff; }
+.cal__day--sel .cal__more { color: #fff; }
+.cal__num { font-size: 14px; font-variant-numeric: tabular-nums; }
+.cal__dots { display: flex; align-items: center; gap: 3px; height: 6px; }
+.cal__dot { width: 6px; height: 6px; border-radius: 999px; background: var(--purple); }
 .cal__dot--inProgress, .cal__dot--paused { background: #0b74c4; }
 .cal__dot--completed { background: #2c8a45; }
 .cal__dot--overdue { background: #b26a12; }
 .cal__dot--cancelled { background: #6b7280; }
-.cal__more { font-size: 9px; color: #8b8a97; }
-.cal-day { background: #fff; border: 1px solid #eceef1; border-radius: 16px; padding: 12px; }
-.cal-day__h { font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 8px; text-transform: capitalize; }
+.cal__more { font-size: 9px; color: var(--muted); background: none; }
+.cal-day { background: #fff; border-radius: 20px; padding: 20px; }
+.cal-day__h { font-size: 16px; font-weight: 700; color: var(--ink); margin: 0 0 12px; }
 @media (max-width: 720px) { .cal-layout { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .cal__day { transition: none; } }
 

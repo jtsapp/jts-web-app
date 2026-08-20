@@ -7,6 +7,7 @@ const OCCURRENCES = [
   { lessonId: 13, participantId: 13, lessonType: 'INDIVIDUAL_STANDARD', scheduledAt: '2026-08-10T11:30:00', durationMinutes: 60, teacherId: 112, teacherName: 'Test Teacher DEV', studentId: 116, studentName: 'Сабина', format: 'ONLINE', lessonStatus: 'SCHEDULED', participantStatus: 'SCHEDULED' },
 ]
 const SUMMARY = { conducted: 3, remaining: 2, cancelled: 1, rescheduled: 0 }
+const MEET = 'https://meet.google.com/abc-defg-hij'
 
 test('schedule renders in Уроки and an in-progress lesson opens the live screen', async ({ page }) => {
   // Logged-in session: token in storage + /api/auth/me returns a student user.
@@ -14,8 +15,13 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сабина', role: 'STUDENT', languageLevel: 'A1' } })))
   await page.route('**/admin/lessons/occurrences', (r) => r.fulfill(json(OCCURRENCES)))
   await page.route('**/admin/lessons/summary', (r) => r.fulfill(json(SUMMARY)))
+  // Карточка урока догружает ссылку на видеозвонок и тему из самого урока —
+  // в списке occurrences их нет.
+  await page.route('**/admin/lessons/14/sections', (r) => r.fulfill(json([
+    { id: 1, title: 'Раздел 1', position: 0, materials: [{ id: 5, materialId: 5, title: 'Coffee—yes. Mondays—no. · 1-на-1' }] },
+  ])))
   // The live screen (built out in #4) now fetches the lesson itself on open.
-  await page.route('**/admin/lessons/14', (r) => r.fulfill(json({ id: 14, status: 'IN_PROGRESS', teacherName: 'Test Teacher DEV', participants: [] })))
+  await page.route('**/admin/lessons/14', (r) => r.fulfill(json({ id: 14, status: 'IN_PROGRESS', teacherName: 'Test Teacher DEV', meetingUrl: MEET, participants: [] })))
 
   await page.goto('/')
 
@@ -34,12 +40,16 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
   // Open the «Уроки» section from the nav.
   await page.getByText('Уроки', { exact: true }).first().click()
 
-  // Schedule block is visible with summary + rows.
+  // Обе секции экрана: карточка идущего урока и календарь под ней.
   await expect(page.getByText('Мой график')).toBeVisible()
+  await expect(page.getByText('Расписание')).toBeVisible()
   await expect(page.getByText('Test Teacher DEV').first()).toBeVisible()
-  await expect(page.getByText('Идёт').first()).toBeVisible()
+  await expect(page.getByText('Урок начался')).toBeVisible()
+  await expect(page.getByText('Coffee—yes. Mondays—no.')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Google Meet' }).first()).toHaveAttribute('href', MEET)
 
-  // Clicking «Войти в класс» on the in-progress lesson opens the live shell.
-  await page.getByRole('button', { name: 'Войти в класс' }).first().click()
+  // Идущий урок открывается прямо из карточки — какой бы день ни был выбран
+  // в календаре (урок начался 1 августа, а открыт сегодняшний день).
+  await page.getByRole('button', { name: 'Присоединиться к уроку' }).click()
   await expect(page.getByText('Живой урок')).toBeVisible()
 })

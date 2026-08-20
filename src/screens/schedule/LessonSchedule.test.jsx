@@ -8,6 +8,8 @@ vi.mock('../../api.js', () => ({
     { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
   ])),
   getLessonsSummary: vi.fn(async () => ({ conducted: 1, remaining: 0, cancelled: 0, rescheduled: 0 })),
+  getLessonById: vi.fn(async () => ({ id: 1, meetingUrl: 'https://meet.google.com/abc-defg-hij' })),
+  getLessonSections: vi.fn(async () => ([{ position: 0, materials: [{ title: 'Coffee—yes. Mondays—no. · 1-на-1' }] }])),
 }))
 
 import LessonSchedule from './LessonSchedule.jsx'
@@ -53,15 +55,16 @@ describe('LessonSchedule container', () => {
     await waitFor(() => expect(container.querySelector('.sch__status--error')).not.toBeNull())
   })
 
-  it('нет идущего урока — нет и полосы', async () => {
+  it('нет ближайших уроков — карточка сверху показывает пустое состояние', async () => {
     const { container } = renderSchedule()
     await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    expect(container.querySelector('.sch-live')).toBeNull()
+    // В моке единственный урок уже проведён — предлагать нечего.
+    expect(container.querySelector('.lesson-card--empty')).not.toBeNull()
   })
 
   // Тот самый случай: урок начали 8-го и не закрыли, календарь открыт на 10-м.
-  // Без полосы ученику не попасть в класс — на своей клетке он видит только
-  // «преподаватель ещё не начал урок» про другое занятие.
+  // Без карточки сверху ученику не попасть в класс — на своей клетке он видит
+  // только «преподаватель ещё не начал урок» про другое занятие.
   it('идущий урок с другого дня всё равно даёт вход в класс', async () => {
     const api = await import('../../api.js')
     api.getMyLessonOccurrences.mockResolvedValueOnce([
@@ -74,9 +77,36 @@ describe('LessonSchedule container', () => {
       </I18nProvider>
     )
 
-    const join = await screen.findByRole('button', { name: /войти в класс/i })
+    const join = await screen.findByRole('button', { name: /присоединиться к уроку/i })
     fireEvent.click(join)
 
     expect(opened).toEqual([49])
+  })
+
+  // Ссылка на видеозвонок лежит в карточке урока, а не в списке occurrences —
+  // расписание догружает её само и показывает рядом со статусом.
+  it('догружает ссылку на видеозвонок для показанного урока', async () => {
+    const api = await import('../../api.js')
+    api.getMyLessonOccurrences.mockResolvedValueOnce([
+      { lessonId: 49, participantId: 49, scheduledAt: '2026-08-10T23:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'SCHEDULED', format: 'ONLINE' },
+    ])
+    const { container } = renderSchedule()
+
+    await waitFor(() => expect(container.querySelector('.lesson-card .meet-link')).not.toBeNull())
+    expect(container.querySelector('.lesson-card .meet-link').getAttribute('href'))
+      .toBe('https://meet.google.com/abc-defg-hij')
+    expect(api.getLessonById).toHaveBeenCalledWith('TOK', '49')
+  })
+
+  it('тема урока из прикреплённого материала попадает в карточку', async () => {
+    const api = await import('../../api.js')
+    api.getMyLessonOccurrences.mockResolvedValueOnce([
+      { lessonId: 49, participantId: 49, scheduledAt: '2026-08-10T23:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'SCHEDULED', format: 'ONLINE' },
+    ])
+    const { container } = renderSchedule()
+
+    await waitFor(() =>
+      expect(container.querySelector('.lesson-card__topic').textContent).toBe('Coffee—yes. Mondays—no.')
+    )
   })
 })

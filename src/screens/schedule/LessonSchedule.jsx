@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { getMyLessonOccurrences, getLessonsSummary } from '../../api.js'
 import { occurrencesByDayKey, monthShift, dayKey, dateFromKey } from './lessonFormat.js'
-import { findLiveOccurrence } from './liveNow.js'
+import { pickFeaturedOccurrence } from './liveNow.js'
+import { useMeetingUrls, useLessonTopic } from './useLessonDetails.js'
 import ScheduleSummary from './ScheduleSummary.jsx'
 import MonthCalendar from './MonthCalendar.jsx'
 import DayPanel from './DayPanel.jsx'
-import LiveNowBanner from './LiveNowBanner.jsx'
+import NextLessonCard from './NextLessonCard.jsx'
 
 export default function LessonSchedule({ token, onOpenLesson }) {
   const { t } = useI18n()
@@ -47,7 +48,13 @@ export default function LessonSchedule({ token, onOpenLesson }) {
   }, [token])
 
   const occByDay = useMemo(() => occurrencesByDayKey(occ), [occ])
-  const liveNow = useMemo(() => findLiveOccurrence(occ), [occ])
+  const featured = useMemo(() => pickFeaturedOccurrence(occ), [occ])
+  const dayItems = useMemo(() => occByDay.get(selectedDayKey) || [], [occByDay, selectedDayKey])
+
+  // Ссылки на видеозвонок нужны и карточке сверху, и строкам открытого дня —
+  // грузим их одним списком, чтобы общий урок не запрашивался дважды.
+  const meetingUrls = useMeetingUrls(token, [featured?.lessonId, ...dayItems.map((o) => o.lessonId)])
+  const featuredTopic = useLessonTopic(token, featured?.lessonId ?? null)
 
   if (!token) return null
 
@@ -58,8 +65,17 @@ export default function LessonSchedule({ token, onOpenLesson }) {
       {state === 'error' && <p className="sch__status sch__status--error">{t('schedule.error')}</p>}
       {state === 'ready' && (
         <>
-          <LiveNowBanner occ={liveNow} onOpenLesson={onOpenLesson} />
-          <ScheduleSummary summary={summary} />
+          <div className="sch__top">
+            <NextLessonCard
+              occ={featured}
+              topic={featuredTopic}
+              meetingUrl={featured ? meetingUrls.get(String(featured.lessonId)) : null}
+              onOpenLesson={onOpenLesson}
+            />
+            <ScheduleSummary summary={summary} />
+          </div>
+
+          <h2 className="sch__title sch__title--second">{t('schedule.calendarTitle')}</h2>
           <div className="cal-layout">
             <MonthCalendar
               year={view.year}
@@ -72,7 +88,8 @@ export default function LessonSchedule({ token, onOpenLesson }) {
             />
             <DayPanel
               dayDate={dateFromKey(selectedDayKey)}
-              items={occByDay.get(selectedDayKey) || []}
+              items={dayItems}
+              meetingUrls={meetingUrls}
               onOpenLesson={onOpenLesson}
             />
           </div>
