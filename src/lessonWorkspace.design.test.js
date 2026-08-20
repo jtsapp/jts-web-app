@@ -391,7 +391,7 @@ describe('классрум — задания по макету', () => {
     expect(line).toMatch(/gap:\s*8px/)
 
     // Верный порядок — зелёный, неверный — красный; оба на всю строку.
-    expect(css).toMatch(/\.lw-q--order \.lw-order__sentence\.is-correct \.lw-ochip\s*{[^}]*background:\s*#31b423/)
+    expect(css).toMatch(/\.lw-q--order \.lw-order__sentence\.is-correct \.lw-ochip\s*{[^}]*background:\s*#25881b/)
     expect(css).toMatch(/\.lw-q--order \.lw-order__sentence\.is-wrong \.lw-ochip\s*{[^}]*background:\s*var\(--fx-no\)/)
   })
 
@@ -453,7 +453,67 @@ describe('классрум — задания по макету', () => {
     // #31b423, #1eb04b, #067a32) на одну и ту же семантику. Без сведения
     // при первой же правке разъедется.
     const tokens = css.match(/\.lw-q--order,\n\.lw-q--multi,\n\.lw-q--match,\n\.lw-q--choice\s*{([^}]+)}/)[1]
-    expect(tokens).toMatch(/--fx-ok:\s*#19c119/)
-    expect(tokens).toMatch(/--fx-no:\s*#ea4f4f/)
+    expect(tokens).toMatch(/--fx-ok:\s*#128912/)
+    expect(tokens).toMatch(/--fx-no:\s*#d04646/)
+    expect(tokens).toMatch(/--fx-accent-on-tint:\s*#7e3edf/)
+  })
+})
+
+// Контраст — не «на глаз», а по формуле WCAG 2.1. Значения макета его не
+// проходили: текст в пилюлях 16px bold, то есть не «крупный» (порог крупного
+// 18.66px bold), значит нужен 4.5:1, а было 2.42–3.67. Цвета состояний
+// сдвинуты по светлоте с сохранением оттенка; тест держит их от отката.
+describe('классрум — контраст состояний задания', () => {
+  /** Относительная яркость по WCAG 2.1. */
+  function luminance(hex) {
+    const ch = hex.replace('#', '').match(/../g).map((h) => {
+      const c = parseInt(h, 16) / 255
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
+  }
+
+  function ratio(fg, bg) {
+    const a = luminance(fg)
+    const b = luminance(bg)
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+  }
+
+  /** Значение переменной внутри блока токенов секции заданий. */
+  function fx(name) {
+    const block = css.match(/\.lw-q--order,\n\.lw-q--multi,\n\.lw-q--match,\n\.lw-q--choice\s*{([^}]+)}/)[1]
+    return block.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`))[1]
+  }
+
+  it('формула считает эталонные пары верно', () => {
+    // Контрольные точки: чёрное на белом — 21:1, белое на белом — 1:1.
+    expect(Math.round(ratio('#000000', '#ffffff'))).toBe(21)
+    expect(Math.round(ratio('#ffffff', '#ffffff'))).toBe(1)
+  })
+
+  it('белый текст на заливках «верно» и «неверно» проходит AA', () => {
+    expect(ratio('#ffffff', fx('fx-ok'))).toBeGreaterThanOrEqual(4.5)
+    expect(ratio('#ffffff', fx('fx-no'))).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('акцент на светлом тинте проходит AA', () => {
+    expect(ratio(fx('fx-accent-on-tint'), fx('fx-tint'))).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('белый текст на верном чипе порядка слов проходит AA', () => {
+    const chip = css.match(/\.lw-q--order \.lw-order__sentence\.is-correct \.lw-ochip\s*{[^}]*background:\s*(#[0-9a-f]{6})/)[1]
+    expect(ratio('#ffffff', chip)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('белый текст на неверном варианте выбора проходит AA', () => {
+    const wrong = css.match(/\.lw-q--choice \.lw-opt\.is-no,[\s\S]{0,200}?background:\s*(#[0-9a-f]{6})/)[1]
+    expect(ratio('#ffffff', wrong)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('«выбрано» и «верно» различаются не только заливкой', () => {
+    // В макете это одна заливка #9047ff. Верный вариант получает кольцо цвета
+    // успеха поверх неё — плюс галочку, которую рисует сам компонент.
+    expect(css).toMatch(/\.lw-q--choice \.lw-opt\[aria-pressed='true'\]\s*{[^}]*background:\s*var\(--lw-primary\)/)
+    expect(css).toMatch(/\.lw-q--choice \.lw-opt\.is-ok,[\s\S]{0,80}box-shadow:\s*inset 0 0 0 2px var\(--fx-ok\)/)
   })
 })

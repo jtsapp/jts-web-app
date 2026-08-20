@@ -3057,16 +3057,30 @@
    Цвета состояний в макете расфасованы непоследовательно: два красных
    (#ea4f4f у пилюль и чипов, #ff4646 у вариантов и иконки ошибки) и четыре
    зелёных (#19c119, #31b423, #1eb04b, #067a32). Сводим к паре токенов на
-   секцию, иначе при первой же правке разъедется. */
+   секцию, иначе при первой же правке разъедется.
+
+   Значения СДВИНУТЫ относительно макета — ровно настолько, чтобы пройти
+   WCAG 2.1 AA (4.5:1; текст здесь 16px bold, то есть не «крупный», порог
+   для крупного 18.66px). Считано скриптом, не на глаз; оттенок сохранён —
+   множитель по всем каналам, тон и насыщенность не плывут:
+     верно     #19c119 → #128912  (белый текст: 2.42 → 4.55)
+     неверно   #ea4f4f → #d04646  (белый текст: 3.67 → 4.52)
+     чип верно #31b423 → #25881b  (белый текст: 2.73 → 4.55)
+     на тинте  #9047ff → #7e3edf  (на #ebdeff:  3.62 → 4.51)
+   Тинт #ebdeff и белый оставлены как в макете — двигать поверхности не
+   потребовалось. Неактивная кнопка «Проверить» под требование контраста не
+   попадает вовсе: SC 1.4.3 выводит текст неактивных элементов из-под него. */
 .lw-q--order,
 .lw-q--multi,
 .lw-q--match,
 .lw-q--choice {
-  --fx-ok: #19c119;
-  --fx-no: #ea4f4f;
+  --fx-ok: #128912;
+  --fx-no: #d04646;
   --fx-idle: #ffffff;
   --fx-ink: #181818;
   --fx-tint: #ebdeff;
+  /* Акцент на светлом тинте — своя переменная: на белом хватает и #9047ff. */
+  --fx-accent-on-tint: #7e3edf;
 }
 
 /* --- порядок слов (Figma, Practice → 4065:18365 и соседние состояния) ---
@@ -3105,7 +3119,7 @@
 /* Проверенная строка красится вся: в макете верный порядок — зелёные чипы,
    неверный — красные. Отдельного «выбрано, но не проверено» у чипа нет. */
 .lw-q--order .lw-order__sentence.is-correct .lw-ochip {
-  background: #31b423;
+  background: #25881b;
   color: #ffffff;
 }
 
@@ -3213,7 +3227,7 @@
 .lw-q--choice .lw-opt.is-wrong,
 .lw-q--choice .lw-opt.is-no:hover,
 .lw-q--choice .lw-opt.is-wrong:hover {
-  background: #ff4646;
+  background: #d93c3c;
   color: #ffffff;
 }
 
@@ -3276,7 +3290,7 @@
   padding: 14px 20px;
   border-radius: 30px;
   background: var(--fx-tint);
-  color: var(--lw-primary);
+  color: var(--fx-accent-on-tint);
   font-size: 16px;
   font-weight: 700;
 }
@@ -3320,7 +3334,7 @@
 
 .lw-q--match .lw-match__right.is-used {
   background: var(--fx-tint);
-  color: var(--lw-primary);
+  color: var(--fx-accent-on-tint);
   box-shadow: none;
 }
 
@@ -3333,4 +3347,42 @@
   font-weight: 700;
   line-height: 1.2;
   color: #17171c;
+}
+
+/* --- «выбрано» против «верно» -------------------------------------- */
+
+/* В макете это одна и та же заливка #9047ff: отличить выбранный вариант от
+   подтверждённо верного можно только по баннеру внизу экрана. Для варианта
+   ответа так нельзя — состояние не должно держаться на одном цвете, да и
+   баннера в этом UI нет вовсе. Заливку макета оставляем, а «верно» получает
+   сверху кольцо цвета успеха; галочку компонент рисует и так (CheckIcon в
+   ChoiceQuestion/MultiQuestion), крестик — у неверного. Итог: три состояния
+   различимы и в оттенках серого, и на цветослабом экране.
+
+   Выбор в choice ловим по aria-pressed, а не по классу: ChoiceQuestion
+   класса is-selected не ставит вовсе — до этой правки выбранный вариант там
+   вообще никак не отмечался, пока не нажмут «Проверить». */
+.lw-q--choice .lw-opt[aria-pressed='true'] {
+  background: var(--lw-primary);
+  color: #ffffff;
+}
+
+.lw-q--choice .lw-opt.is-ok,
+.lw-q--choice .lw-opt.is-correct {
+  box-shadow: inset 0 0 0 2px var(--fx-ok);
+}
+
+.lw-q--choice .lw-opt.is-no,
+.lw-q--choice .lw-opt.is-wrong {
+  box-shadow: inset 0 0 0 2px var(--fx-no);
+}
+
+/* Кольцо состояния — не вместо фокуса: outline рисуется поверх и своим
+   цветом, поэтому клавиатурный обход остаётся видимым на любом состоянии. */
+.lw-q--choice .lw-opt:focus-visible,
+.lw-q--multi .lw-opt:focus-visible,
+.lw-q--match .lw-match__left:focus-visible,
+.lw-q--match .lw-match__right:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
 }
