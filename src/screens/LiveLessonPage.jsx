@@ -11,7 +11,7 @@ import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
-import { setAudioReporter } from './live/audioReport.js'
+import { setAudioReporter, playBroadcastAudio, stopBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import LiveStatusBadge from './live/LiveStatusBadge.jsx'
 import PresenceRoster from './live/PresenceRoster.jsx'
@@ -396,6 +396,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
   const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio } = useLessonLiveSocket(lessonId, token, selfUserId, {
+    // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
+    // которым уже следуем за самим учителем (focus/present).
+    onAudioBroadcast: (evt) => playBroadcastAudio(evt),
     onFocus: (evt) => {
       if (evt.sectionId == null) return
       // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
@@ -619,6 +622,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setAudioReporter((payload) => sendAudio({ ...payload, stepId: activeStepIdRef.current }))
     return () => setAudioReporter(null)
   }, [isStaff, sendAudio])
+  // Ушёл с урока — трансляция учителя, если играла, обрывается вместе с ним.
+  useEffect(() => () => stopBroadcastAudio(), [])
 
   function persistProgress(next) {
     if (isStaff || !stepMaterialId || !progressLoaded) return

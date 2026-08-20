@@ -29,6 +29,7 @@ describe('useLessonLiveSocket', () => {
       '/topic/lesson/7/present',
       '/topic/lesson/7/sections-changed',
       '/topic/lesson/7/step-progress',
+      '/topic/lesson/7/audio',
     ]))
   })
 
@@ -215,9 +216,10 @@ describe('useLessonLiveSocket', () => {
     })
   })
 
-  // Односторонний канал: студент шлёт, но не подписан на свой же /audio/staff
+  // Свою работу студент шлёт на общий /app/lesson/7/audio, но сервер её роутит
+  // на /audio/staff (см. audioDestination на бэкенде) — сюда студент не подписан
   // (см. 'на канал поправки ответа подписан только сам ученик' — та же причина).
-  it('sendAudio publishes to the right destination, no subscription either side', async () => {
+  it('sendAudio publishes to the right destination, no subscription to the staff echo', async () => {
     const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { isStaff: true }))
     await waitFor(() => expect(lastClient.connected).toBe(true))
 
@@ -228,5 +230,24 @@ describe('useLessonLiveSocket', () => {
       destination: '/app/lesson/7/audio',
       body: JSON.stringify({ kind: 'tts', action: 'play', text: 'busy', stepId: 's2' }),
     })
+  })
+
+  // Трансляция преподавателя ("Транслировать классу") — лесson-wide /topic/lesson/7/audio,
+  // тот же канал, что несёт позицию учителя в step-progress. Своё эхо глушится тем же
+  // приёмом, что у focus/present.
+  it('доставляет трансляцию учителя, но глушит собственное эхо', () => {
+    const onAudioBroadcast = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onAudioBroadcast }))
+
+    act(() => {
+      lastClient.subs['/topic/lesson/7/audio']({ body: JSON.stringify({ senderUserId: 1, kind: 'tts', text: 'echo' }) })
+    })
+    expect(onAudioBroadcast).not.toHaveBeenCalled()
+
+    const fromTeacher = { senderUserId: 140, senderName: 'Учитель', kind: 'tts', action: 'play', text: 'born' }
+    act(() => {
+      lastClient.subs['/topic/lesson/7/audio']({ body: JSON.stringify(fromTeacher) })
+    })
+    expect(onAudioBroadcast).toHaveBeenCalledWith(fromTeacher)
   })
 })

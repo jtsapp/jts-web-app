@@ -43,12 +43,14 @@ deploy:
     - main
 
 trash:
-  when: manual
   tags:
     - $GITLAB_RUNNER_TAG
   stage: trash
   script:
     - docker system prune -f --all --filter "until=720h"
+  only:
+    - develop
+    - main
 
 after_script:
   - echo "End CI"
