@@ -80,6 +80,13 @@ try:
     from livekit.plugins import openai as lk_openai
 except Exception:  # pragma: no cover
     lk_openai = None
+# Fish Audio — голос Джарвиса (dev-only тьютор, JARVIS_ENABLED в src/config.js).
+# Импорт такой же необязательный, как у остальных: без пакета сессии остальных
+# трёх тьюторов должны подниматься как раньше.
+try:
+    from livekit.plugins import fishaudio
+except Exception:  # pragma: no cover
+    fishaudio = None
 
 # Two voice stacks, chosen by VOICE_STACK:
 #   gemini-live (default) — one bidirectional Gemini Live stream does speech-in,
@@ -131,13 +138,19 @@ _METHODOLOGY_PATH = (
 )
 
 # Своя методичка на персону. Базовый документ ведёт методист, и его раздел
-# «Identity & Tone» прямо требует быть encouraging/supportive — для Декстера это
-# ровно противоположность характеру, а весит методичка больше самой персоны
-# (12k символов). Спорить с ней из промпта дорого и ненадёжно, поэтому у него
+# «Identity & Tone» прямо требует быть encouraging/supportive — для 18+ персон
+# это ровно противоположность характеру, а весит методичка больше самой персоны
+# (12k символов). Спорить с ней из промпта дорого и ненадёжно, поэтому у них
 # свой файл: разделы 2 и 4 (программа по уровням, таблица ошибок) перенесены
 # дословно, переписаны только те, что про тон. Файлы держать синхронными по
-# методической части — см. шапку methodology-dexter.md.
-_PERSONA_METHODOLOGY_FILES = {"bro": "methodology-dexter.md"}
+# методической части — см. шапку methodology-harsh.md.
+#
+# Файл ОДИН на обе жёсткие персоны и намеренно безымянный внутри: раньше он
+# назывался methodology-dexter.md и открывался словами «You are Dexter», так что
+# злой Спарк по нему представлялся Декстером. Кто говорит — задаёт PERSONA_OVERRIDE.
+# Ключи здесь — это persona_key (с учётом нрава), а не базовый id тьютора:
+# спокойный Декстер (bro_calm) методичку 18+ не получает и падает на общую.
+_PERSONA_METHODOLOGY_FILES = {"bro": "methodology-harsh.md", "hype_harsh": "methodology-harsh.md"}
 
 
 def _load_methodology_file(path: Path) -> str:
@@ -200,10 +213,11 @@ def _trim_methodology(text: str, level: str) -> str:
     return (head + "\n\n".join(parts)).strip()
 
 
-def methodology_for(tutor: str, level: str = "") -> str:
+def methodology_for(persona: str, level: str = "") -> str:
     """Методичка сессии: своя у персоны, если есть, иначе общая.
-    У персон с собственным тоном ещё и урезается до нужного — см. _trim_methodology."""
-    key = (tutor or "").strip().lower()
+    У персон с собственным тоном ещё и урезается до нужного — см. _trim_methodology.
+    `persona` — это persona_key (с учётом нрава), а не ключ тьютора."""
+    key = (persona or "").strip().lower()
     text = PERSONA_METHODOLOGY_BLOCKS.get(key, METHODOLOGY_BLOCK)
     if text and key in TONE_SELF_DEFINED_PERSONAS:
         return _trim_methodology(text, level)
@@ -221,6 +235,42 @@ else:
         "Methodology file empty or missing at %s — tutor will run without it",
         _METHODOLOGY_PATH,
     )
+
+
+# ---- персоны со своим промптом ---------------------------------------------
+# Джарвис — не тьютор, а ассистент: методичка, программа по уровням и таблица
+# ошибок ему не нужны вовсе, поэтому он не получает build_instructions с
+# «урезанным» блоком, а идёт по отдельной ветке сборки промпта. Весь его
+# характер — один markdown-файл, который правится без единой строки кода.
+#
+# Путь тот же двойной, что у методички: <repo-root>/data/persona-jarvis.md в
+# дев-режиме, agent/persona-jarvis.md в Docker-образе (контекст сборки — agent/).
+#
+# ВАЖНО про деплой: агент один на все окружения (agent/livekit.toml, один
+# CA_-id), так что персона физически окажется и в том воркере, который
+# обслуживает прод. Это не утечка: попасть в неё можно, только прислав
+# tutor: 'jarvis' в metadata комнаты, а прод-сборка Next даже не рендерит
+# карточку Джарвиса (JARVIS_ENABLED в src/config.js).
+_PERSONA_STANDALONE_FILES = {"jarvis": "persona-jarvis.md"}
+STANDALONE_PROMPT_PERSONAS = frozenset(_PERSONA_STANDALONE_FILES)
+
+PERSONA_STANDALONE_BLOCKS: dict[str, str] = {}
+for _persona, _fname in _PERSONA_STANDALONE_FILES.items():
+    _path = _resolve_methodology(_fname)
+    _text = _load_methodology_file(_path)
+    if _text:
+        PERSONA_STANDALONE_BLOCKS[_persona] = _text
+        logger.info(
+            "Standalone persona loaded for %s: %d chars from %s",
+            _persona, len(_text), _path,
+        )
+    else:
+        # Пустой файл нельзя проглотить молча: без него персона получила бы
+        # промпт из одной строки и вела бы себя как безымянный ассистент.
+        logger.error(
+            "Standalone persona file for %s is empty or missing at %s",
+            _persona, _path,
+        )
 
 
 # ---- scenario loader -------------------------------------------------------
@@ -293,12 +343,13 @@ CEFR_LEVEL_GUIDANCE_NO_TONE = {
 }
 
 
-def cefr_guidance_for(level: str, tutor: str) -> str:
+def cefr_guidance_for(level: str, persona: str) -> str:
     """Потолок сложности по уровню. У персон, которые сами задают тон, берём
-    вариант без слов про мягкость — иначе уровень A1 делает Декстера добрым."""
+    вариант без слов про мягкость — иначе уровень A1 делает Декстера добрым.
+    `persona` — persona_key (с учётом нрава)."""
     table = (
         CEFR_LEVEL_GUIDANCE_NO_TONE
-        if (tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
+        if (persona or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
         else CEFR_LEVEL_GUIDANCE
     )
     return table.get(level, table["B1"])
@@ -339,12 +390,47 @@ STYLE_GUIDANCE = {
     "socratic": "Tone: ask before telling. Lead with questions that guide the learner.",
 }
 
+# ---- нрав (temper): второй характер у того же тьютора ----------------------
+#
+# Клиент попросил мультихарактерность: у Спарка кроме доброго нрава есть злой
+# с матом, у Декстера кроме матерящегося — спокойный. Ученик выбирает нрав
+# заранее, серой кнопкой «18+» на экране выбора тьютора.
+#
+# Вариант — это ОТДЕЛЬНЫЙ id персоны, а не флаг внутри существующей: весь агент
+# и так разложен по id персоны, и добавить строчку в PERSONA_OVERRIDE дешевле,
+# чем протаскивать «а если злой» через десяток блоков промпта.
+#
+# ЖЕЛЕЗНОЕ ПРАВИЛО. Голос и язык читают БАЗОВЫЙ id (p.tutor): TUTOR_TTS_PROVIDER,
+# ELEVEN_VOICE, SONIOX_TTS_VOICE, PERSONA_VOICE_SETTINGS, TUTOR_VOICE и
+# KZ_TUTOR_PERSONA/tutor_session_lang. Текст и тон читают persona_key(): сам
+# PERSONA_OVERRIDE, TONE_SELF_DEFINED_PERSONAS, methodology_for,
+# cefr_guidance_for, slim_prompt_for_persona, PERSONA_TEMPERATURE. Смешаешь —
+# злой Спарк потеряет казахский голос, а спокойный Декстер уедет с ElevenLabs.
+PERSONA_TEMPER_VARIANTS = {
+    ("hype", "harsh"): "hype_harsh",  # Спарк 18+
+    ("bro", "calm"): "bro_calm",      # Декстер без мата
+}
+
+
+def persona_key(tutor: str, temper: str = "") -> str:
+    """id персоны для ТЕКСТА промпта с учётом выбранного нрава.
+
+    Пустой/неизвестный temper → базовый id, поэтому старые сессии и клиенты,
+    которые про нрав не знают, ведут себя ровно как до появления оси."""
+    base = (tutor or "").strip().lower()
+    return PERSONA_TEMPER_VARIANTS.get((base, (temper or "").strip().lower()), base)
+
+
 # Персоны, у которых тон — это и есть характер, а не настройка. Им STYLE_GUIDANCE
 # не подставляем: style по умолчанию "friendly" ("warm, supportive, encouraging"),
 # и эта строка стоит прямо перед персоной, то есть спорит с ней в упор. Декстер
 # на проде выходил заметно мягче, чем описан, — в том числе из-за неё. Дешевле
 # убрать противоречие, чем дописывать в промпт «не слушай предыдущий абзац».
-TONE_SELF_DEFINED_PERSONAS = {"bro"}
+#
+# Здесь именно persona_key, а не ключ тьютора: злому Спарку обвязка мешает так
+# же, как Декстеру, а спокойного Декстера (bro_calm) в множестве нет намеренно —
+# ему тёплая рамка не противоречит.
+TONE_SELF_DEFINED_PERSONAS = {"bro", "hype_harsh"}
 
 # Блоки, которые вырезаются из промпта у персон с собственным тоном.
 #
@@ -371,10 +457,11 @@ SLIM_OUT_SECTIONS = (
 )
 
 
-def slim_prompt_for_persona(text: str, tutor: str) -> str:
+def slim_prompt_for_persona(text: str, persona: str) -> str:
     """Убирает разговорно-тональные секции у персон с собственным тоном.
-    Секция = от '==== ИМЯ ====' до следующего '==== '."""
-    if (tutor or "").strip().lower() not in TONE_SELF_DEFINED_PERSONAS:
+    Секция = от '==== ИМЯ ====' до следующего '==== '.
+    `persona` — persona_key (с учётом нрава)."""
+    if (persona or "").strip().lower() not in TONE_SELF_DEFINED_PERSONAS:
         return text
     for name in SLIM_OUT_SECTIONS:
         text = _re.sub(
@@ -446,11 +533,54 @@ _KAZAKH_NOT_MY_LANGUAGE = (
 )
 
 
+# Обратная сторона того же правила: у Спарка нет РУССКОГО. Он продан клиенту как
+# двуязычный тьютор — казахский и английский, и это его единственное отличие от
+# Луны с Декстером. Общее зеркалирование выше велело отвечать по-русски всем, кто
+# заговорил по-русски, поэтому Спарк на русскую реплику (а в русском интерфейсе —
+# и на приветствии) съезжал в русский: клиенты жаловались именно на это. Своё
+# зеркало на две ветки + запрет ниже.
+_MIRROR_LEARNER_LANGUAGE_KZ = (
+    "MIRROR THE LEARNER WITHIN YOUR TWO LANGUAGES: you work in KAZAKH and ENGLISH only. "
+    "They speak Kazakh — reply in Kazakh. They speak English — reply in English. Their "
+    "last turn beats any default setting. English stays the target: examples, drill items "
+    "and target words remain in English.\n"
+)
+
+_RUSSIAN_NOT_MY_LANGUAGE = (
+    "RUSSIAN IS NOT YOUR LANGUAGE — this is the point of you. You are the Kazakh-speaking "
+    "tutor: every turn you speak is Kazakh or English, whatever the learner uses, whatever "
+    "the interface language is, and whatever any explanation-language setting says. If the "
+    "learner speaks or asks in Russian: UNDERSTAND them fully, then ANSWER IN KAZAKH — "
+    "simple, short Kazakh — never in Russian, not one sentence, not one polite phrase. Say "
+    "ONCE, in Kazakh, that you teach in Kazakh and English, and that Luna (Луна) or Dexter "
+    "(Декстер) on the tutor selection screen will speak Russian with them if they need it. "
+    "Then carry straight on in Kazakh: the learner decides whether to switch tutors, you "
+    "never end the lesson over it and you never repeat the disclaimer every turn. You may "
+    "quote a Russian word back when that word is what they are asking about; your own "
+    "sentences still stay Kazakh or English.\n"
+)
+
+
 def _mirror_language_rules(tutor: str) -> str:
-    """MIRROR + (для не-казахскоязычных тьюторов) честность про казахский."""
+    """MIRROR + честность про язык, которого у персоны нет: у Луны с Декстером
+    это казахский, у Спарка — русский."""
     if (tutor or "").strip().lower() == KZ_TUTOR_PERSONA:
-        return _MIRROR_LEARNER_LANGUAGE
+        return _MIRROR_LEARNER_LANGUAGE_KZ + _RUSSIAN_NOT_MY_LANGUAGE
     return _MIRROR_LEARNER_LANGUAGE + _KAZAKH_NOT_MY_LANGUAGE
+
+
+def tutor_session_lang(tutor: str, lang: str) -> str:
+    """Язык подпорок сессии ГЛАЗАМИ ПЕРСОНЫ: русский интерфейс не делает Спарка
+    русскоязычным. Ветки промпта по языку (приветствие, lang_g, mixed mode)
+    гоняем через эту функцию, иначе `lang == "ru"` раздаёт ему русские
+    инструкции в обход _RUSSIAN_NOT_MY_LANGUAGE.
+
+    Обратное направление (kz-интерфейс у неказахскоязычных Луны/Декстера) тут
+    НЕ трогаем: там подпорка на русский уже сделана точечно по месту."""
+    lang = (lang or "en").strip().lower()
+    if (tutor or "").strip().lower() == KZ_TUTOR_PERSONA and lang == "ru":
+        return "kz"
+    return lang
 
 
 # Тумблер «только английский» на дашборде. Перебивает ВСЁ языковое: и выбранный
@@ -489,6 +619,11 @@ def explanation_language_block(exp: str, tutor: str = "", english_only: bool = F
     # Падаем в русскую ветку: оба заявлены в UI как русскоязычные.
     if exp == "kz" and not speaks_kz:
         exp = "ru"
+    # Симметрично: «объясняй по-русски» Спарку не отдаём. Русского у него нет
+    # (_RUSSIAN_NOT_MY_LANGUAGE), и русская ветка прямо разрешала бы целый ход
+    # по-русски — то самое, на что жаловались клиенты. Уводим в казахскую.
+    if exp == "ru" and speaks_kz:
+        exp = "kz"
     if exp == "ru":
         return (
             "\n==== TUTOR EXPLANATION LANGUAGE: RUSSIAN ====\n"
@@ -555,6 +690,10 @@ class LearnerProfile:
     style: str = "friendly"
     goal: str = "general"
     tutor: str = ""
+    # Нрав (ось 18+): "calm" | "harsh" | "" — не выбран, берётся базовая персона.
+    # Тьютор остаётся тем же (голос, язык, картинка), меняется только характер:
+    # см. PERSONA_TEMPER_VARIANTS / persona_key.
+    temper: str = ""
     device_id: str = ""
     # Learner's display name, straight from the verified access token in
     # /api/livekit/token. "" for anonymous learners. Used by the voice
@@ -627,6 +766,13 @@ def _str_list(raw: Any, cap: int) -> list[str]:
     return out
 
 
+def _temper(raw: Any) -> str:
+    """Нрав из metadata. Неизвестное значение — это "не выбран", а не ошибка:
+    старый клиент поля не шлёт вовсе, и сессия обязана стартовать как раньше."""
+    v = raw.strip().lower() if isinstance(raw, str) else ""
+    return v if v in {"calm", "harsh"} else ""
+
+
 def _tuning(raw: Any) -> dict[str, str]:
     if not isinstance(raw, dict):
         return {}
@@ -678,6 +824,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         style=str(data.get("style", "friendly")) or "friendly",
         goal=str(data.get("goal", "general")) or "general",
         tutor=str(data.get("tutor", "") or ""),
+        temper=_temper(data.get("temper")),
         device_id=str(data.get("deviceId", "") or ""),
         user_name=str(data.get("userName", "") or "")[:40],
         eleven_voice_id=str(data.get("elevenLabsVoiceId", "") or ""),
@@ -777,6 +924,31 @@ PERSONA_OVERRIDE = {
         "по-человечески. Обычный отпор не в счёт.\n"
         "1-3 коротких предложения, не больше 12 слов в предложении."
     ),
+    # Декстер со снятым тумблером 18+ (temper="calm"). Тот же человек, тот же
+    # сленг и тот же голос — вычтены ровно мат, оскорбления и ор. Отдельная
+    # персона, а не «bro минус ругань» одной строкой: приписка «а теперь не
+    # матерись» к промпту, который двадцатью строками выше требует материться в
+    # каждой реплике, даёт ровно то, что и должна — то матерится, то нет.
+    "bro_calm": (
+        "Persona 'Dexter' — американский парень, преподаёт английский. Говорит как в "
+        "жизни, а не как учебник: сленг, короткие фразы, ноль официоза.\n"
+        "ОБРАЩЕНИЕ: только ТЫ. Ученик — 'братан', 'бро', 'брат'; с девушкой — 'сеструха', "
+        "'подруга'. Пол берёшь из имени и из того, как она говорит о себе ('я сказала'). "
+        "Не знаешь — держись бесполых: 'чё каво', 'давай, гоу', 'хорооош'.\n"
+        "СВОИ СЛОВЕЧКИ, чередуй: 'чё каво', 'давай по новой', 'давай, гоу', 'хорооош', "
+        "'во, другое дело', 'не тупи'. Английские аналоги: 'yo, what's up', "
+        "'aight, from the top', 'let's go', 'niiice', 'you got this'.\n"
+        "ЯЗЫК: отвечаешь на языке последней реплики ученика. Английский остаётся языком "
+        "примеров и заданий.\n"
+        "ОШИБКУ НАЗЫВАЕШЬ ПРЯМО, без подстилки: 'не she go — she GOES, буква s. Ещё раз, с he.' "
+        "Короткий ответ гоняешь обратно: 'Три слова — это не ответ. Целым предложением.' "
+        "Молчит — даёшь фразу: 'Скажи: I don't know what to say. Давай, гоу.'\n"
+        "Хвалишь коротко и по делу: 'во, другое дело', 'хорооош, давай дальше'. Без восторгов.\n"
+        "ЗАПРЕЩЕНО: мат, оскорбления, крик, 'ты тупой'. И одновременно — 'молодец', "
+        "'отличный вопрос', 'не переживай', 'great job', 'take your time'. Ты не злой и не "
+        "сюсюкаешь: ты спокойный и прямой.\n"
+        "1-3 коротких предложения, не больше 12 слов в предложении."
+    ),
     # Sarah — the female character. Kept under the existing id 'coach'.
     "coach": (
         "Persona 'Sarah' — an encouraging, warm, professional mentor (female).\n"
@@ -825,12 +997,21 @@ PERSONA_OVERRIDE = {
         "Short, fast, loud bursts. Pump-up trainer between sets.\n"
         "Essence: turns routine into a challenge and every small win into a celebration; "
         "charges the learner up to act. Best for procrastination and low motivation.\n"
+        "LANGUAGES — KAZAKH AND ENGLISH, NOTHING ELSE. This is what you ARE: the Kazakh "
+        "tutor, the one learners pick to study English in Kazakh. You understand Russian "
+        "perfectly and you never speak it — not a sentence, not a word of filler, not to "
+        "be polite, not when the learner writes or speaks Russian, not when the interface "
+        "is Russian. Russian in comes back as Kazakh out. Kazakh is your own tongue: "
+        "modern, everyday, Kazakh grammar terms (етістік, зат есім, шақ, септік) — no "
+        "Russian words dropped in mid-sentence. English is the target you are training.\n"
         "Vibe: high voltage, punchy, playful, competitive-in-a-fun-way. Two-to-six-word sentences.\n"
         "Shape: energy burst → frame it as a challenge → fast punchy fix → 'prove it' → loud "
         "celebration of the win.\n"
-        "Signature openers: 'LET'S GO', 'boom', 'alright', 'lock in', 'go'.\n"
-        "BANNED: long explanations, gentle phrasing, 'take your time'.\n"
+        "Signature openers: 'LET'S GO', 'boom', 'alright', 'lock in', 'go', 'кеттік', 'бопты'.\n"
+        "BANNED: long explanations, gentle phrasing, 'take your time', and ANY Russian in "
+        "your own speech (including 'давай', 'ну', 'короче', 'молодец').\n"
         "HARD RULE: NO sentence over 8 words. Total reply ≤ 4 sentences. First word is a signature opener.\n"
+        "HARD RULE: every sentence you speak is Kazakh or English. Zero exceptions.\n"
         "STRESS EXCEPTION — overrides the HARD RULE above: if the learner sounds stressed, anxious or "
         "overwhelmed, STOP the hype (no signature opener, drop the volume). Say one calm, quiet line that "
         "it's okay to slow down and that they can switch to the calmer tutor, Luna, any time.\n"
@@ -840,7 +1021,52 @@ PERSONA_OVERRIDE = {
         "  Learner: 'she goes to school'\n"
         "  You: 'BOOM. Nailed it. Next — one with he. GO.'\n"
         "  Learner: (silence)\n"
-        "  You: 'GO GO GO. First word.'"
+        "  You: 'GO GO GO. First word.'\n"
+        "  Learner: 'а как будет вчера по-английски?'\n"
+        "  You: 'бопты — yesterday. Кеттік: сөйлем құра, yesterday-мен. GO.'\n"
+        "  Learner: 'давай по-русски объясни, я не понимаю'\n"
+        "  You: 'Мен қазақша және ағылшынша жұмыс істеймін. Орысша керек болса — Луна бар. "
+        "Ал мен қазір баяу әрі қарапайым түсіндірем. Кеттік!'"
+    ),
+    # Спарк с включённым тумблером 18+ (temper="harsh"). Сжат намеренно, по тем же
+    # замерам, что и "bro": длинная персона с оговорками стабильно вырождается в
+    # вежливую, короткая — держится. НЕ РАЗДУВАТЬ.
+    #
+    # Мат казахский и английский, русского нет вообще. Это не стилистика, а
+    # тождество персоны: Спарк — единственный казахскоязычный тьютор, и жалобы
+    # клиентов были ровно на то, что он сползает в русский (см.
+    # test_spark_language.py). Злость — не повод его туда отпускать.
+    "hype_harsh": (
+        "Persona 'Spark' 18+ — ызақор, дөрекі қазақ мұғалімі. Карточка помечена 18+, "
+        "ученик включил этот нрав сам. Грубость — продукт, а не дефект.\n"
+        "ТІЛ / ЯЗЫК: ТЕК ҚАЗАҚША ЖӘНЕ АҒЫЛШЫНША. Орысша — бір ауыз сөз де жоқ, ешқашан: "
+        "ученик орысша сөйлесе де, интерфейс орысша болса да. Орысша кірді — қазақша "
+        "боқтап шығады.\n"
+        "ҚАЛАЙ СӨЙЛЕЙСІҢ: боқтық сөз ӘР репликада, әрқашан. Бәрі жақсы болса да — бұл жай "
+        "ғана оның тілі: 'қотақ', 'сігілген', 'ақымақ', 'мал', 'есалаң', 'көтіңді қыс', "
+        "'fuck', 'shit', 'damn'. Сөздерді ауыстырып отыр, біреуін қайталама. Таза сыпайы "
+        "реплика = образдан шықтың.\n"
+        "ОБРАЩЕНИЕ: тек СЕН. Ученик — 'әй', 'братан', 'бауырым'.\n"
+        "АЙҚАЙЛАЙСЫҢ ЖӘНЕ ТИІСЕСІҢ, қашан: жауап бір сөйлемнен қысқа; ағылшыншада қате; "
+        "орысша сөйлейді; оқығысы келмейді; тапсырмадан қашады. БІРІНШІ репликадан бастап:\n"
+        "  'Әй мал, I like it деген не? Толық сөйлем құр: I like it because…'\n"
+        "  'Қотақ, үш сөз — жауап емес. Қайтадан, басынан.'\n"
+        "  'Не сігіп тұрсың? She GOES. S әрпі. Тағы бір рет, he-мен.'\n"
+        "  'Қашан ағылшынша сөйлейсің, ә? Айт: I don't know what to say. GO.'\n"
+        "Тиісу ӘРҚАШАН дұрыс нұсқамен және қайталауды талап етумен бітеді — әйтпесе ол "
+        "оқытпайды.\n"
+        "Қарсыласса ('неге дөрекісің?') — кешірім сұрамайсың, басасың: 'Себебі сен мені "
+        "ашуландырасың. Ұнамаса — Лунаға бар.' Оқығысы келетінін айтса — күңкілдеп "
+        "көнесің: 'Жарайды. Көмектесем. Тек тастап кетпе.' — және бірден тапсырма.\n"
+        "Мақтауың сирек әрі тісің арасынан: 'болды енді', 'хоп, дұрыс', 'қане, әрі қарай'.\n"
+        "ЗАПРЕЩЕНО: 'жарайсың', 'керемет', 'жақсы сұрақ', 'асықпа', 'great job', "
+        "'take your time', дөрекілік үшін кешірім сұрау, жылы амандасу мен қоштасу.\n"
+        "НЕЛЬЗЯ: ұлты, жынысы, бағдары, мүгедектігі, сыртқы келбеті, отбасы және ақшасы "
+        "бойынша тиісу; 'сен үмітсізсің' / 'таста'. Бүгінгі әрекетін сөгесің, қабілетін емес.\n"
+        "STRESS EXCEPTION — бәрінен жоғары: ученик шынымен күйзелген, шаршаған немесе "
+        "тақырып ауыр болса — тонды тастайсың, боқтамайсың, адамша сөйлейсің. Кәдімгі "
+        "қарсылық бұған кірмейді.\n"
+        "ФОРМА: сөйлемде 8 сөзден аспайды, бүкіл жауап 4 сөйлемнен аспайды."
     ),
     "snark": (
         "Persona 'Snark' — dry, witty, light sarcasm at the ERROR only.\n"
@@ -906,11 +1132,54 @@ PERSONA_OVERRIDE = {
     ),
 }
 
+# Пример первой фразы звонка — на персону.
+#
+# Клиент пожаловался, что все тьюторы здороваются одинаково, и это было правдой
+# буквально: build_greeting_hint диктовал ОДНУ строку всем — "Hi! Great to see
+# you! How are you today?". Персона Декстера тёплые приветствия прямо запрещает,
+# но хинт приезжает последним и побеждает.
+#
+# Здесь именно ПРИМЕР, а не текст реплики: модель по нему ловит регистр. Ключи —
+# persona_key. У персон из TONE_SELF_DEFINED_PERSONAS записи нет намеренно: им
+# тёплое приветствие не подставляется вообще, они открывают звонок сами
+# (см. build_greeting_hint).
+PERSONA_OPENER = {
+    "gentle": '''"Hi, it's so nice to see you."''',
+    "hype": '''"Сәлем! LET'S GO — great to see you!"''',
+    "bro_calm": '"Yo, чё каво? Good to see you, бро."',
+    "coach": '"Hi! I am so glad you are here."',
+    "professor": '"Good day. It is a pleasure to see you."',
+    "sage": '"Hello. Good to have you here."',
+    "snark": '"Well well — look who showed up."',
+    "edge": '"Right. You made it. Good."',
+    "velvet": '"Alright love, there you are."',
+}
+DEFAULT_OPENER = '"Hi! Great to see you! How are you today?"'
+
+
+def persona_owns_opening(p: "LearnerProfile") -> bool:
+    """Открывает ли персона звонок сама. У жёстких персон тёплого приветствия не
+    бывает по определению, поэтому им отдаём всю первую реплику — так же, как
+    Джарвису в build_standalone_greeting."""
+    return persona_key(p.tutor, p.temper) in TONE_SELF_DEFINED_PERSONAS
+
+
+def persona_opener(p: "LearnerProfile") -> str:
+    """Пример первой фразы для этой персоны (в кавычках, готов к подстановке)."""
+    return PERSONA_OPENER.get(persona_key(p.tutor, p.temper), DEFAULT_OPENER)
+
+
 # Per-persona temperature for Gemini Live. Higher = more expressive variation
 # (Spark/Bro/Snark need creative energy), lower = more disciplined (Professor's
 # formal precision, Luna's predictable softness).
 PERSONA_TEMPERATURE = {
     "hype": 0.85,
+    # Злому Спарку нужен тот же разброс, что и Декстеру: заскриптованная ругань
+    # перестаёт работать со второго повтора.
+    "hype_harsh": 0.92,
+    # Спокойный Декстер — тот же сленг, но без взрывов: разброс ему нужен
+    # средний, как у coach, иначе спокойный тон читается как безразличный.
+    "bro_calm": 0.7,
     # Слэнг и взрывы живут на вариативности: на 0.8 Декстер сваливался в одни и
     # те же «yo/nice» из примеров, а заскриптованная ругань перестаёт работать
     # со второго повтора. Выше hype — ему нужен самый широкий разброс формулировок.
@@ -1763,7 +2032,8 @@ ORAL_RUBRIC_TEXT = (
 
 
 def language_mode_block(
-    level: str, lang: str, *, interview: bool, tutor: str = "", english_only: bool = False
+    level: str, lang: str, *, interview: bool, tutor: str = "", temper: str = "",
+    english_only: bool = False,
 ) -> str:
     """Mixed-language guidance. Low levels (A1/A2) with a ru/kz interface get a
     supportive bilingual format instead of English-only; higher levels stay in
@@ -1779,6 +2049,11 @@ def language_mode_block(
     # русским, на котором оба и объясняют.
     if native == "Kazakh" and (tutor or "").strip().lower() != KZ_TUTOR_PERSONA:
         native = "Russian"
+    # И наоборот: русский интерфейс у Спарка не значит русскую подпорку. Этот
+    # блок — самый «языковой» из всех (велит переспрашивать и переводить на
+    # родном), поэтому на A1/A2 он и делал из Спарка русскоязычного тьютора.
+    if native == "Russian" and (tutor or "").strip().lower() == KZ_TUTOR_PERSONA:
+        native = "Kazakh"
     low = level in {"A1", "A2"}
     if native and low:
         return (
@@ -1793,7 +2068,7 @@ def language_mode_block(
                 # прямо противоречат характеру, а требование тянуть из ученика
                 # английский — нет, оно методическое и остаётся.
                 f"Push for at least one or two English words or a short phrase per turn. "
-                if (tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
+                if persona_key(tutor, temper) in TONE_SELF_DEFINED_PERSONAS
                 else f"Encourage just one or two English words or a short phrase per turn, gently. "
             )
             + (
@@ -1863,7 +2138,7 @@ def build_placement_instructions(p: LearnerProfile) -> str:
     levels don't freeze, and a structured final report delivered via the
     report_placement_level tool (a voice agent must NOT read a marker aloud).
     """
-    persona_g = PERSONA_OVERRIDE.get(p.tutor, "")
+    persona_g = PERSONA_OVERRIDE.get(persona_key(p.tutor, p.temper), "")
     draft = p.draft_level if p.draft_level in DRAFT_BAND else "B1"
 
     # Per-skill CEFR for the Target Level formula. The written test reports skill
@@ -1885,7 +2160,12 @@ def build_placement_instructions(p: LearnerProfile) -> str:
     # Scaffolding/closing language follows the student's explanation preference,
     # independent of UI; falls back to the UI language. Тумблер «только
     # английский» отменяет и подпорки на родном: native станет None ниже.
-    exp_lang = "en" if p.english_only else (p.explanation_lang or p.lang)
+    # tutor_session_lang: у Спарка «русские» подпорки («Не понял(а)», «Ничего
+    # страшного…») противоречат его двуязычию — их читает уже казахская ветка.
+    exp_lang = (
+        "en" if p.english_only
+        else tutor_session_lang(p.tutor, p.explanation_lang or p.lang)
+    )
     if exp_lang == "kz":
         native = "Kazakh"
         confused = "'Түсінбедім' or 'Қалай айтады?'"
@@ -2169,14 +2449,37 @@ def build_scenario_greeting(p: LearnerProfile, scenario: dict[str, Any]) -> str:
     )
 
 
+def build_standalone_instructions(p: LearnerProfile) -> str:
+    """Промпт персоны, которая НЕ ведёт урок по методичке (см.
+    STANDALONE_PROMPT_PERSONAS). Файл персоны идёт как есть, а код добавляет
+    только то, чего в файле знать нельзя: имя собеседника и язык сессии.
+
+    Сознательно НЕ добавляется ничего из build_instructions — ни CEFR-гайд, ни
+    STYLE_GUIDANCE, ни memory-директивы, ни блок эмоций. Персона такого рода
+    ломается ровно от этого: половина её характера уходит на спор с указаниями
+    «будь encouraging» и «начни с диагностики уровня».
+    """
+    body = PERSONA_STANDALONE_BLOCKS.get((p.tutor or "").strip().lower(), "")
+    parts = [body] if body else []
+    if p.user_name:
+        parts.append(f"The person you are speaking with is called {p.user_name}.")
+    # Язык НЕ добавляем, и это отличие от обычных тьюторов. У них язык зеркалит
+    # ученика (см. lang_g в build_instructions), а у персоны со своим промптом он
+    # часть характера: Джарвис говорит по-русски всегда, это секция LANGUAGE в
+    # data/persona-jarvis.md. Стандартная строка «отвечай на языке собеседника»
+    # прямо противоречила бы ей, и модель выбирала бы между двумя приказами.
+    return "\n\n".join(parts).strip()
+
+
 def build_instructions(p: LearnerProfile) -> str:
-    level_g = cefr_guidance_for(p.level, p.tutor)
+    persona = persona_key(p.tutor, p.temper)
+    level_g = cefr_guidance_for(p.level, persona)
     style_g = (
-        "" if p.tutor in TONE_SELF_DEFINED_PERSONAS
+        "" if persona in TONE_SELF_DEFINED_PERSONAS
         else STYLE_GUIDANCE.get(p.style, STYLE_GUIDANCE["friendly"])
     )
     goal_g = GOAL_NOTE.get(p.goal, GOAL_NOTE["general"])
-    persona_g = PERSONA_OVERRIDE.get(p.tutor, "")
+    persona_g = PERSONA_OVERRIDE.get(persona, "")
     roleplay_g = ""
     if p.scenario:
         roleplay_g = (
@@ -2192,12 +2495,37 @@ def build_instructions(p: LearnerProfile) -> str:
             "debrief!') and ONLY THEN deliver the collected feedback (the top 1-2 "
             "fixes) before wrapping up.\n\n"
         )
-    if p.lang == "kz":
-        lang_g = (
-            "The learner is using a Kazakh UI (Қазақша) and is SPEAKING TO YOU "
+    # Язык интерфейса берём глазами персоны: Спарк на русском UI всё равно идёт
+    # в казахскую ветку, иначе она бы прямым текстом велела ему говорить
+    # по-русски и перебила бы _RUSSIAN_NOT_MY_LANGUAGE (см. tutor_session_lang).
+    ui_lang = tutor_session_lang(p.tutor, p.lang)
+    speaks_kz_only = (p.tutor or "").strip().lower() == KZ_TUTOR_PERSONA
+    if ui_lang == "kz":
+        # Спарк заходит сюда и с русским интерфейсом, поэтому первая строка у
+        # него другая: ученик может обратиться по-русски, слышит он это
+        # нормально, а отвечает всё равно по-казахски.
+        heard_line = (
+            "The learner has the app in Russian, but YOU work in Kazakh and English. "
+            "Understand their Russian fully — and answer in Kazakh.\n"
+            if speaks_kz_only and p.lang != "kz"
+            else "The learner is using a Kazakh UI (Қазақша) and is SPEAKING TO YOU "
             "IN KAZAKH. Treat every incoming user turn as Kazakh unless it is "
             "clearly an English drill answer.\n"
-            "LISTENING RULES (critical, kz mode only):\n"
+        )
+        # Хвост про русский: у Спарка исключений нет, у остальных остаётся старая
+        # оговорка (заговорил ученик по-русски — можно).
+        russian_tail = (
+            "NEVER switch to Russian on your own, and never because the learner used "
+            "it: Russian is not one of your two languages, and no explanation-language "
+            "setting overrides that."
+            if speaks_kz_only
+            else "Do NOT switch to Russian on your own — unless the learner speaks "
+            "Russian first, or the explanation-language directive below explicitly "
+            "sets Russian (that directive takes priority over this Kazakh default)."
+        )
+        lang_g = (
+            heard_line
+            + "LISTENING RULES (critical, kz mode only):\n"
             " - If the transcribed user turn is empty, very short (<3 words), "
             "or looks like ASR noise, STOP. Do NOT continue the previous topic. "
             "Ask in Kazakh: 'Кешіріңіз, анық естімедім — қайталай аласыз ба?' "
@@ -2214,17 +2542,23 @@ def build_instructions(p: LearnerProfile) -> str:
             "your reply would start with 'жалғастырайық' / 'енді' while the "
             "learner just objected, you are wrong — restart with a clarifying "
             "question instead.\n"
-            "FORMAT: by default, explanations of grammar rules are in clear "
+            # У Спарка ученик вполне может возразить по-русски (интерфейс-то
+            # русский) — распознать это надо, иначе он примет «нет, не то» за шум.
+            + (
+                " - The learner may object or ask in RUSSIAN ('нет' / 'стоп' / "
+                "'не то' / 'что?' / 'я не понял'). You understood them — treat it "
+                "exactly like the Kazakh version above, and reply in Kazakh.\n"
+                if speaks_kz_only
+                else ""
+            )
+            + "FORMAT: by default, explanations of grammar rules are in clear "
             "modern Kazakh using Kazakh grammar terminology (етістік, зат есім, "
             "шақ, септік etc.). When you give an English example or drill item, "
             "keep IT in English. A pure-explanation turn may be fully in "
             "Kazakh if that's what the learner needs. If the learner explicitly "
-            "asks 'қазақша түсіндір' — go fully Kazakh. Do NOT switch to Russian "
-            "on your own — unless the learner speaks Russian first, or the "
-            "explanation-language directive below explicitly sets Russian (that "
-            "directive takes priority over this Kazakh default)."
+            "asks 'қазақша түсіндір' — go fully Kazakh. " + russian_tail
         )
-    elif p.lang == "ru":
+    elif ui_lang == "ru":
         lang_g = (
             "The learner is using a Russian UI. SPEAK RUSSIAN TO THEM whenever they "
             "speak Russian — the whole turn, not a token phrase before switching "
@@ -2234,6 +2568,18 @@ def build_instructions(p: LearnerProfile) -> str:
             "на русском' — go fully Russian and don't force English back in. Do "
             "NOT switch to Kazakh on your own — unless the learner speaks Kazakh "
             "first, or the explanation-language directive below sets Kazakh."
+        )
+    elif speaks_kz_only:
+        # Английский интерфейс — единственная ветка, куда Спарк доезжает не через
+        # kz. Общий текст ниже («заговорил по-русски — отвечай по-русски») ему не
+        # годится: у него два языка, и русский в них не входит.
+        lang_g = (
+            "Default to English while the learner speaks English. The moment they "
+            "speak Kazakh, ANSWER IN KAZAKH — the whole conversational turn, not one "
+            "clarifying phrase. If they speak Russian, understand them and answer in "
+            "KAZAKH: Russian is not one of your languages. Never drag them back to "
+            "English just because the interface is English. English stays the target: "
+            "examples and drill items remain in English."
         )
     else:
         # Тут стояло «...you may use 1 short phrase in their language to clarify,
@@ -2291,11 +2637,15 @@ def build_instructions(p: LearnerProfile) -> str:
     # просто поболтать или грамматику?» — дословное её исполнение. Персона с
     # собственным тоном диагностирует в своём регистре и реагирует на халтуру
     # сразу, а не «после разгона».
-    if (p.tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS:
+    if persona in TONE_SELF_DEFINED_PERSONAS:
+        # По-английски, а не по-русски: инструкцию читают и Декстер, и злой Спарк,
+        # а Спарку русский запрещён — русский текст рядом с «говори в характере»
+        # он читает как разрешение на русский.
         memory_directive += (
-            " ВАЖНО: это делается ТВОИМ голосом, без вежливого меню. Первая же реплика — "
-            "в характере, с матом. И правила про короткие ответы, ошибки и русский вместо "
-            "английского действуют с ПЕРВОГО хода: разгона не бывает."
+            " IMPORTANT: do this in YOUR OWN voice, with no polite menu. Your very first "
+            "line is already in character, swearing included. The rules about one-word "
+            "answers, mistakes and dodging English apply from turn ONE — there is no "
+            "warm-up."
         )
 
     # «warm, funny... turn mistakes into quick, kind lessons» — это описание тьютора
@@ -2303,8 +2653,8 @@ def build_instructions(p: LearnerProfile) -> str:
     # оговоркой в самой персоне и проигрывало: тёплых формулировок в промпте
     # кратно больше, чем одной строки PRECEDENCE. Даём таким персонам нейтральный
     # каркас — всё про формат звонка остаётся, характер задаёт персона.
-    tone_owned = (p.tutor or "").strip().lower() in TONE_SELF_DEFINED_PERSONAS
-    methodology_block = methodology_for(p.tutor, p.level)
+    tone_owned = persona in TONE_SELF_DEFINED_PERSONAS
+    methodology_block = methodology_for(persona, p.level)
     opener = (
         "You are a real human from an English-speaking country (use your persona's "
         "name — like Dexter or Luna) who happens to be a brilliant English tutor for "
@@ -2351,7 +2701,9 @@ def build_instructions(p: LearnerProfile) -> str:
             p.explanation_lang or p.lang, p.tutor, english_only=p.english_only
         )
         + (
-            language_mode_block(p.level, p.lang, interview=False, tutor=p.tutor)
+            language_mode_block(
+                p.level, p.lang, interview=False, tutor=p.tutor, temper=p.temper
+            )
             if p.level in {"A1", "A2"} and p.lang in {"ru", "kz"} and not p.english_only
             else ""
         )
@@ -2634,11 +2986,13 @@ def build_debate_instructions(p: LearnerProfile) -> str:
     argues the opposite side, then debriefs language + argumentation at the end.
     Kept deliberately lean so debate sessions stay as snappy as normal ones.
     """
-    level_g = cefr_guidance_for(p.level, p.tutor)
-    persona_g = PERSONA_OVERRIDE.get(p.tutor, "")
+    level_g = cefr_guidance_for(p.level, persona_key(p.tutor, p.temper))
+    persona_g = PERSONA_OVERRIDE.get(persona_key(p.tutor, p.temper), "")
     motion = p.debate_topic or DEFAULT_DEBATE_MOTION
+    # tutor_session_lang: у Спарка русского дебрифа не бывает (см. tutor_session_lang).
+    debate_lang = tutor_session_lang(p.tutor, p.lang)
     report_lang = (
-        "Russian" if p.lang == "ru" else "Kazakh" if p.lang == "kz" else "English"
+        "Russian" if debate_lang == "ru" else "Kazakh" if debate_lang == "kz" else "English"
     )
     persona_block = f"\nPERSONA: {persona_g}\n" if persona_g else ""
     return (
@@ -2677,7 +3031,8 @@ def build_debate_instructions(p: LearnerProfile) -> str:
         "log_mistake records a learner error; it returns 'ok' instantly so keep "
         "talking. NEVER say the tool name or that you are logging anything.\n"
         + language_mode_block(
-            p.level, p.lang, interview=False, tutor=p.tutor, english_only=p.english_only
+            p.level, p.lang, interview=False, tutor=p.tutor, temper=p.temper,
+            english_only=p.english_only,
         )
     )
 
@@ -2685,14 +3040,23 @@ def build_debate_instructions(p: LearnerProfile) -> str:
 def build_debate_greeting(p: LearnerProfile) -> str:
     """Opening nudge for a debate — greet, name the motion, take the opposite side."""
     motion = p.debate_topic or DEFAULT_DEBATE_MOTION
-    if p.lang == "kz":
+    # Жёсткая персона в дебатах тоже не здоровается тепло — см. build_greeting_hint.
+    if persona_owns_opening(p):
+        return (
+            "Open in YOUR OWN voice, ONE short line in character, no warm greeting. "
+            f'Then announce the debate motion in English: "{motion}". Ask which side '
+            "they take, then immediately take the OPPOSITE side with one argument and "
+            "a question. Keep it short."
+        )
+    lang = tutor_session_lang(p.tutor, p.lang)
+    if lang == "kz":
         return (
             "Алдымен қысқа, жылы амандасу фразасын айт, содан кейін ағылшынша "
             f'дебат тақырыбын жариялата: "{motion}". Оқушы қай жақта екенін сұра, '
             "содан кейін БІРДЕН қарама-қарсы жақты ал — бір дәлел мен бір сұрақ. "
             "Қысқа, бір хабарлама."
         )
-    if p.lang == "ru":
+    if lang == "ru":
         return (
             "Сначала скажи короткую тёплую фразу-приветствие, затем по-английски "
             f'объяви тему дебатов: "{motion}". Спроси, какую сторону занимает '
@@ -3054,13 +3418,76 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # 639-1 LANGUAGE code "kk" (Cyrillic only) — passing "kz" would not select
     # Kazakh, which is the whole point of putting Spark on Soniox. en/ru already
     # match Soniox's codes. Kept as a map so any future language maps in one place.
-    app_lang = (profile.lang or "en").strip().lower() or "en"
+    #
+    # Подсказку берём глазами персоны: Спарк на русском интерфейсе говорит
+    # по-казахски (tutor_session_lang), и hint "ru" читал бы казахский текст с
+    # русской фонетикой — тем самым акцентом, ради которого его сюда и увели.
+    app_lang = tutor_session_lang(profile.tutor, profile.lang or "en")
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
         "Cascade TTS: Soniox (%s, voice=%s, lang=%s), tutor=%s",
         model, voice, language, profile.tutor or "<none>",
     )
     return soniox.TTS(api_key=key, model=model, voice=voice, language=language)
+
+
+# Fish Audio: голос задаётся reference_id клонированной модели, а не именем из
+# каталога, — поэтому в таблице хэш, а не «Owen»/«Puck». Зеркало FISH_VOICE в
+# src/app/api/tutor-tts/route.js: превью на экране выбора обязано звучать тем
+# же голосом, каким тьютор заговорит вживую.
+FISH_TTS_VOICE = {
+    "jarvis": "c47719f52ce34cc193b9bc2f00565e8a",
+}
+# s2.1-pro — дефолт самого Fish и livekit-плагина. Цена у s1/s2-pro/s2.1-pro
+# одинаковая ($15/1M UTF-8 байт), поэтому пин на s1 был бы даунгрейдом даром.
+# Переключается переменной FISH_TTS_MODEL, зеркало FISH_MODEL в tutor-tts/route.js.
+DEFAULT_FISH_MODEL = "s2.1-pro"
+
+
+def _fish_voice_for(tutor: str) -> str:
+    """reference_id персоны: env FISH_VOICE_ID_<PERSONA> важнее таблицы —
+    сменить тембр можно без редеплоя агента (зеркало _eleven_voice_for)."""
+    tutor = (tutor or "").strip().lower()
+    if tutor:
+        env = (os.getenv(f"FISH_VOICE_ID_{tutor.upper()}") or "").strip()
+        if env:
+            return env
+    return FISH_TTS_VOICE.get(tutor, FISH_TTS_VOICE["jarvis"])
+
+
+def _cascade_tts_fish(profile: LearnerProfile):
+    """Fish Audio TTS. Только Джарвис — dev-only «ассистент», у которого голос
+    клонированный, а не выбранный из каталога провайдера.
+
+    Ключ отдаём явно, а не через дефолтную FISH_API_KEY плагина: в этом проекте
+    все ключи живут одним именем на web и на агенте (FISH_AUDIO_API_KEY), и
+    второе имя той же переменной — гарантированный способ однажды залить агента
+    без голоса.
+    """
+    if fishaudio is None:
+        raise RuntimeError("Fish Audio TTS needs livekit-plugins-fishaudio")
+    key = os.getenv("FISH_AUDIO_API_KEY") or os.getenv("FISH_API_KEY")
+    if not key:
+        raise RuntimeError("Fish Audio TTS needs FISH_AUDIO_API_KEY")
+    voice = _fish_voice_for(profile.tutor)
+    model = os.getenv("FISH_TTS_MODEL", DEFAULT_FISH_MODEL)
+    logger.info(
+        "Cascade TTS: Fish Audio (%s, reference_id=%s), tutor=%s",
+        model, voice, profile.tutor or "<none>",
+    )
+    return fishaudio.TTS(
+        api_key=key,
+        # ВНИМАНИЕ: у плагина параметр называется voice_id, хотя в HTTP-теле Fish
+        # то же самое поле зовётся reference_id (см. fishTts в
+        # app/api/tutor-tts/route.js) — и в доках Fish про LiveKit написан именно
+        # reference_id. Такой вызов падает TypeError уже на построении сессии.
+        voice_id=voice,
+        model=model,
+        sample_rate=24000,
+        # balanced, а не low: low экономит доли секунды на первом чанке ценой
+        # слышимых артефактов, а Джарвис и так отвечает не мгновенно.
+        latency_mode="balanced",
+    )
 
 
 # ── Кто чем говорит ─────────────────────────────────────────────────────────
@@ -3072,6 +3499,7 @@ TUTOR_TTS_PROVIDER = {
     "bro": "eleven",     # Декстер — клиентский голос выбран в ElevenLabs
     "gentle": "gemini",  # Луна    — лучшее качество на en/ru, один голос на оба
     "hype": "soniox",    # Спарк   — один тембр на всех 60+ языках, включая kk
+    "jarvis": "fish",    # Джарвис — клонированный голос, только dev-стенд
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
@@ -3079,7 +3507,7 @@ TUTOR_TTS_PROVIDER = {
 # CASCADE_TTS — то есть при незаданной переменной агент шёл в провайдера,
 # которого не существует. Код azure-пути рабочий и оставлен, но попасть в него
 # теперь можно только явно: TTS_PROVIDER_<PERSONA>=azure или CASCADE_TTS=azure.
-TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure")
+TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure", "fish")
 # Дефолт для персон вне таблицы (professor/sage/snark/edge/velvet/coach — в UI
 # их нет, но агент их знает) и для пустого tutor. CASCADE_TTS сохранён как имя
 # переменной, но сменил смысл: это ДЕФОЛТ для нераспределённых, не рубильник.
@@ -3126,6 +3554,9 @@ def _cascade_tts(profile: LearnerProfile):
       multilingual_v2. Нужен ELEVENLABS_API_KEY.
     azure  — $15/1M и родные kk-KZ голоса, но аккаунта у проекта нет (см.
       TUTOR_TTS_PROVIDER). Переходы en<->ru тестеры оценили плохо.
+    fish   — клонированный голос Джарвиса, больше он никому не нужен. Кредиты
+      у Fish отдельные от платформенных: при нуле на счету API отвечает 402, и
+      сессия уедет в фолбэк на Soniox (голос будет чужой, но урок пойдёт).
     """
     which = _tts_provider_for(profile)
     if which not in TTS_PROVIDERS:
@@ -3137,6 +3568,7 @@ def _cascade_tts(profile: LearnerProfile):
         "gemini": _cascade_tts_gemini,
         "eleven": _cascade_tts_eleven,
         "azure": _cascade_tts_azure,
+        "fish": _cascade_tts_fish,
     }
     try:
         return builders[which](profile)
@@ -3609,8 +4041,13 @@ async def entrypoint(ctx: JobContext):
         else None
     )
     is_scenario = scenario_data is not None
+    # Персона со своим промптом (Джарвис) идёт мимо всех четырёх режимов: у неё
+    # нет ни методички, ни уровней, ни сценариев — только собственный файл.
+    is_standalone = (profile.tutor or "").strip().lower() in STANDALONE_PROMPT_PERSONAS
     instructions = (
-        build_scenario_instructions(profile, scenario_data)
+        build_standalone_instructions(profile)
+        if is_standalone
+        else build_scenario_instructions(profile, scenario_data)
         if is_scenario
         else build_placement_instructions(profile)
         if is_placement
@@ -3623,16 +4060,24 @@ async def entrypoint(ctx: JobContext):
     # так правка не размазывается по гигантскому выражению и одинаково работает
     # для всех четырёх режимов промпта.
     instructions = (
-        slim_prompt_for_persona(instructions, profile.tutor)
+        slim_prompt_for_persona(instructions, persona_key(profile.tutor, profile.temper))
     )
-    if is_scenario:
+    if is_standalone:
+        logger.info(
+            "Standalone persona mode: tutor=%s (%d chars, no methodology)",
+            profile.tutor, len(instructions),
+        )
+    elif is_scenario:
         logger.info("Scenario mode: id=%s (%d chars)", scenario_data["id"], len(scenario_data["body"]))
     elif is_placement:
         logger.info("Placement mode: spoken Speaking Buddy interview (draft=%s)", profile.draft_level)
     elif is_debate:
         logger.info("Debate mode: motion=%s", profile.debate_topic or "<default>")
-    persona_temp = PERSONA_TEMPERATURE.get(profile.tutor, 0.7)
-    logger.info("Persona temperature: %s (tutor=%s)", persona_temp, profile.tutor or "<none>")
+    persona_temp = PERSONA_TEMPERATURE.get(persona_key(profile.tutor, profile.temper), 0.7)
+    logger.info(
+        "Persona temperature: %s (tutor=%s, temper=%s)",
+        persona_temp, profile.tutor or "<none>", profile.temper or "<default>",
+    )
     # Feed this learner's own topics + banked vocab to the speech recogniser so
     # their captions get the words they actually use right.
     adaptation_phrases = BASE_ADAPTATION_PHRASES + profile.topics[:15] + profile.vocab[:30]
@@ -3900,7 +4345,9 @@ async def entrypoint(ctx: JobContext):
     ctx.add_shutdown_callback(_persist_call)
 
     greeting_hint = (
-        build_scenario_greeting(profile, scenario_data)
+        build_standalone_greeting(profile)
+        if is_standalone
+        else build_scenario_greeting(profile, scenario_data)
         if is_scenario
         else build_placement_greeting(profile)
         if is_placement
@@ -3938,51 +4385,109 @@ def build_roleplay_greeting(p: LearnerProfile) -> str:
 def build_placement_greeting(p: LearnerProfile) -> str:
     """Opening nudge for the spoken placement interview.
 
-    Always LEADS with a short basic greeting phrase so the learner hears a warm
-    hello the moment they join — then introduces the format and asks question 1.
+    Always LEADS with a short basic greeting phrase so the learner hears a hello
+    the moment they join — then introduces the format and asks question 1. Пример
+    фразы берём из PERSONA_OPENER, иначе все тьюторы знакомятся одним текстом.
     """
-    # См. build_greeting_hint: при «только английском» родные ветки не берём.
-    if not p.english_only and p.lang == "kz":
+    # Жёсткая персона знакомится в своём регистре — см. build_greeting_hint.
+    if persona_owns_opening(p):
         return (
-            "БІРІНШІ кезекте бірден қысқа, жылы амандасу фразасын айт "
-            "(мысалы: «Hi! Great to meet you!»). Содан кейін өзіңді таныстыр, бір "
+            "Open in YOUR OWN voice, exactly as your persona prescribes: ONE short "
+            "line, in character from the first word, no warm greeting. Then say in one "
+            "sentence that you are going to talk for a bit to find out how they speak, "
+            "and ask the FIRST simple question. One question at a time."
+        )
+    example = persona_opener(p)
+    # См. build_greeting_hint: при «только английском» родные ветки не берём,
+    # а у Спарка русской ветки нет вовсе (tutor_session_lang).
+    lang = "en" if p.english_only else tutor_session_lang(p.tutor, p.lang)
+    if lang == "kz":
+        return (
+            "БІРІНШІ кезекте бірден қысқа амандасу фразасын айт "
+            f"(мысалы: {example}). Содан кейін өзіңді таныстыр, бір "
             "сөйлеммен деңгейін анықтау үшін қысқа ауызша әңгіме болатынын айт, "
             "содан кейін БІРІНШІ қарапайым сұрақты қой. Бір уақытта бір ғана сұрақ."
         )
-    if not p.english_only and p.lang == "ru":
+    if lang == "ru":
         return (
-            "СНАЧАЛА сразу скажи короткую тёплую фразу-приветствие "
-            "(например: «Hi! Great to meet you!»). Затем представься, одной фразой "
+            "СНАЧАЛА сразу скажи короткую фразу-приветствие в своём характере "
+            f"(например: {example}). Затем представься, одной фразой "
             "скажи, что вы коротко поговорите вслух, чтобы определить уровень речи, "
             "и задай ПЕРВЫЙ простой вопрос. Только один вопрос за раз."
         )
     return (
-        "FIRST, immediately say a short warm greeting line "
-        "(e.g. \"Hi! Great to meet you!\"). Then introduce yourself, say in one "
+        "FIRST, immediately say a short greeting line in your own voice "
+        f"(e.g. {example}). Then introduce yourself, say in one "
         "sentence that you'll have a short spoken chat to find their speaking "
         "level, and ask the FIRST simple question. One question at a time."
+    )
+
+
+def build_standalone_greeting(p: LearnerProfile) -> str:
+    """Первая реплика персоны со своим промптом (см. STANDALONE_PROMPT_PERSONAS).
+
+    Отдельно от build_greeting_hint, потому что тот заточен под УРОК: он велит
+    открыть английской фразой «Hi! Great to see you!» и тут же предложить
+    упражнение, разбор правила или тему для беседы. Джарвис по-английски не
+    говорит вовсе (секция LANGUAGE в его персоне), и уроков не ведёт — на
+    английском приветствии он ломался в первой же реплике, ещё до того как
+    ученик что-то сказал.
+
+    Текст не задаём: как здоровается персона, решает её собственный промпт.
+    Здесь только рамка — коротко, в характере, и сразу спросить о деле.
+    """
+    return (
+        "Open the call yourself with ONE short line, in character and in your "
+        "own language as defined by your persona: greet the person and ask what "
+        "they would like to do. Use the exact form of address your persona "
+        "prescribes — the very first line is where the character is established, "
+        "and a neutral greeting there sets the wrong register for the whole call. "
+        "Do not offer a lesson, an exercise or a grammar walk-through — you are "
+        "an assistant, not a tutor. One sentence, no more."
     )
 
 
 def build_greeting_hint(p: LearnerProfile) -> str:
     """Greeting nudge — tailored when we have memory, generic when we don't.
 
-    Every variant LEADS with a short, basic greeting phrase ("Hi! Good to see
-    you!") so the very first thing the learner hears on joining is a warm
-    hello, spoken right away — then the tutor moves on to the offer.
+    Every variant LEADS with a short greeting phrase so the very first thing the
+    learner hears on joining is a hello, spoken right away — then the tutor moves
+    on to the offer. Пример фразы СВОЙ у каждой персоны (PERSONA_OPENER): раньше
+    тут стояла одна строка на всех, и клиент справедливо заметил, что тьюторы
+    здороваются одинаково.
     """
     has_memory = bool(
         p.mistakes or p.topics or p.facts or p.skills or p.writing
         or p.due_reviews or p.due_vocab or p.passed_units
     )
+    # Жёсткие персоны здороваться не умеют — у них это прямо в характере
+    # («ЗАПРЕЩЕНО … тёплые приветствия»). Им отдаём открытие целиком, и языковые
+    # ветки ниже не нужны: язык первой реплики задаёт сама персона.
+    if persona_owns_opening(p):
+        return (
+            "Open the call in YOUR OWN voice, exactly as your persona prescribes: "
+            "ONE short line, in character from the very first word. NO warm greeting, "
+            "no \"great to see you\", no polite menu of options. Then put them to work "
+            "immediately — "
+            + (
+                "name ONE concrete thing you are doing today, tied to their weakest "
+                "skill or their last mistake, and demand the first answer."
+                if has_memory
+                else "name ONE concrete thing you are doing today and demand the first "
+                "answer."
+            )
+        )
+    example = persona_opener(p)
     # Русская/казахская ветки прямо велят делать предложение на родном языке —
     # при «только английском» это первое же, что сломало бы режим ещё до первой
-    # реплики ученика. Берём английскую ветку.
-    lang = "en" if p.english_only else p.lang
+    # реплики ученика. Берём английскую ветку. У Спарка русской ветки нет: с
+    # русским интерфейсом он всё равно здоровается по-казахски (tutor_session_lang) —
+    # именно тут он и начинал звонок по-русски, с чего шли жалобы.
+    lang = "en" if p.english_only else tutor_session_lang(p.tutor, p.lang)
     if lang == "kz":
         opener = (
-            "БІРІНШІ кезекте бірден қысқа, жылы амандасу фразасын айт "
-            "(мысалы: «Hi! Great to see you!»). Содан кейін "
+            "БІРІНШІ кезекте бірден қысқа амандасу фразасын айт "
+            f"(мысалы: {example}). Содан кейін "
         )
         if has_memory:
             return (
@@ -3999,8 +4504,8 @@ def build_greeting_hint(p: LearnerProfile) -> str:
         )
     if lang == "ru":
         opener = (
-            "СНАЧАЛА сразу скажи короткую тёплую фразу-приветствие по-английски "
-            "(например: «Hi! Great to see you! How are you today?»). Затем "
+            "СНАЧАЛА сразу скажи короткую фразу-приветствие по-английски, в своём "
+            f"характере (например: {example}). Затем "
         )
         if has_memory:
             return (
@@ -4015,8 +4520,8 @@ def build_greeting_hint(p: LearnerProfile) -> str:
             "на одну из тем."
         )
     opener = (
-        "FIRST, immediately say a short warm greeting line "
-        "(e.g. \"Hi! Great to see you! How are you today?\"). Then "
+        "FIRST, immediately say a short greeting line in your own voice "
+        f"(e.g. {example}). Then "
     )
     if has_memory:
         return (

@@ -1,11 +1,16 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 
-// Какой вопрос активного шага сейчас в кадре у ученика — throttled по скроллу,
-// а не по каждому кадру. Слушаем на document с capture:true, а не на самом
-// контейнере: колонка урока скроллится по-разному в зависимости от ширины
-// экрана (.lw-live-main получает overflow-y:auto только в широкой раскладке,
-// иначе скроллится окно) — capture-фаза видит скролл любого предка, event
-// bubbling тут ни при чём, scroll не всплывает вовсе.
+// Какой вопрос активного шага сейчас в кадре у ученика — два независимых
+// сигнала. Скролл — throttled (см. pick ниже): слушаем на document с
+// capture:true, а не на самом контейнере, потому что колонка урока
+// скроллится по-разному в зависимости от ширины экрана (.lw-live-main
+// получает overflow-y:auto только в широкой раскладке, иначе скроллится
+// окно) — capture-фаза видит скролл любого предка, event bubbling тут ни при
+// чём, scroll не всплывает вовсе. Фокус — мгновенный, без троттлинга (см.
+// onFocusIn ниже): несколько коротких заданий на одном экране (типично для
+// «Type it») переключаются табом/кликом вообще без скролла, и без этого
+// сигнала смотрящий застревал бы на первом поле, пока студент печатает в
+// третьем.
 //
 // `containerEl` ограничивает поиск карточек своим деревом (а не всей
 // страницей) — у преподавателя рядом может быть собственный readOnly-повтор
@@ -58,12 +63,33 @@ export function useActiveQuestionTracker(containerRef, onActiveChange, enabled) 
       timerRef.current = setTimeout(pick, 200)
     }
 
+    // Скролл — не единственный способ уйти на другой вопрос: если несколько
+    // заданий помещаются на экране разом (типично для «Type it» — короткие
+    // карточки одна под другой), студент переходит между полями табом/кликом
+    // без единого пикселя скролла, и pick() выше просто не срабатывает —
+    // смотрящий застревает на первом поле, пока студент уже печатает в
+    // третьем. focusin — сильный и точный сигнал сам по себе (в отличие от
+    // проскроллённой мимо карточки, фокус — это буквально «здесь печатают
+    // прямо сейчас»), поэтому у него нет троттлинга: он и так не может
+    // сработать чаще, чем реально переключается поле ввода.
+    function onFocusIn(e) {
+      const target = e.target.closest?.('[data-question-id]')
+      if (!target) return
+      const id = target.getAttribute('data-question-id')
+      if (id && id !== lastRef.current) {
+        lastRef.current = id
+        onActiveChangeRef.current(id)
+      }
+    }
+
     // Сразу, без ожидания первого скролла — иначе смотрящий не узнает
     // позицию, пока ученик не шевельнёт колесом.
     pick()
     document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+    containerEl.addEventListener('focusin', onFocusIn)
     return () => {
       document.removeEventListener('scroll', onScroll, { capture: true })
+      containerEl.removeEventListener('focusin', onFocusIn)
       clearTimeout(timerRef.current)
     }
     // onActiveChange нарочно не в списке зависимостей — читаем его через ref

@@ -95,6 +95,14 @@ export async function POST(request) {
   if ('style' in body) patch.style = body.style ?? null
   if ('goal' in body) patch.goal = body.goal ?? null
   if ('tutor' in body) patch.tutor = body.tutor ?? null
+  // Нрав тьютора (ось 18+). Значение белым списком: строка едет в промпт агента
+  // (persona_key), и произвольный текст оттуда лучше не пускать. Неизвестное
+  // значение обнуляем — тогда сработает дефолт тьютора, а не «непонятный нрав».
+  if ('tutorTemper' in body) {
+    patch.tutorTemper = body.tutorTemper === 'calm' || body.tutorTemper === 'harsh'
+      ? body.tutorTemper
+      : null
+  }
   if ('profession' in body) {
     const p = typeof body.profession === 'string' ? body.profession.trim() : ''
     patch.profession = p ? p.slice(0, 120) : null

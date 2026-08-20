@@ -1,4 +1,5 @@
 import { TUTORS } from './tutors.js'
+import TutorThumb from './TutorThumb.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
 
 // Карточка с 3D-маскотом: белый скруглённый блок, слева фиолетовая панель
@@ -14,7 +15,7 @@ export default function MascotCard({ children }) {
         <div className="t-card__carousel">
           {TUTORS.map((tt) => (
             <div className="t-card__slide" key={tt.key}>
-              <img src={tt.avatar} alt="" />
+              <TutorThumb tutor={tt} />
               <b>{tt.name}</b>
               <span>{t('role.tutor')}</span>
             </div>

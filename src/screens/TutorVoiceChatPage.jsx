@@ -14,6 +14,8 @@ import { ConnectionState, Track } from 'livekit-client'
 import '@livekit/components-styles'
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
+import JarvisOrb from '../tutor/JarvisOrb.jsx'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import { moodToEmotion } from '../tutor/avatarEmotions.js'
 import { cutAtSec } from '../tutor/scenarioClock.js'
 import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
@@ -49,6 +51,9 @@ export default function TutorVoiceChatPage({
   onBack,
   onFinish,
   tutor = {},
+  // Нрав тьютора (ось 18+): 'calm' | 'harsh' | null. Меняет только характер,
+  // не тьютора — голос, язык и аватар остаются те же.
+  temper = null,
   scenario = null,
   // Интересы (англ. метки) и профессия из профиля — уходят в metadata комнаты,
   // чтобы тьютор цеплялся за темы ученика.
@@ -71,7 +76,9 @@ export default function TutorVoiceChatPage({
   // agent already folds into a generic ROLEPLAY MODE system-prompt block.
   const scenarioPrompt =
     scenario && typeof scenario === 'object' && !scenario.id ? scenario.prompt || '' : ''
-  const { name: tutorName = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  // avatar сюда больше не разбираем: картинку рисует TutorThumb, а у Джарвиса
+  // её нет вовсе — дефолт подставил бы ему аватарку Спарка.
+  const { name: tutorName = 'Спарк' } = tutor
 
   const [perm, setPerm] = useState('prompt') // 'prompt' | 'granted'
   // Сцены с брифингом не стартуют сами: сначала ученик читает ситуацию и
@@ -142,6 +149,10 @@ export default function TutorVoiceChatPage({
           level: user?.level || 'B1',
           lang,
           tutor: tutor.key,
+          // Нрав читаем в момент выдачи токена, как и englishOnly ниже: внутри
+          // уже начатого разговора он не меняется — промпт агента собирается
+          // один раз на старте комнаты.
+          ...(temper ? { temper } : {}),
           // Тумблер с дашборда. Читаем в момент выдачи токена: внутри уже
           // начатого разговора настройка не меняется — промпт агента собирается
           // один раз на старте комнаты.
@@ -216,7 +227,7 @@ export default function TutorVoiceChatPage({
 
       <div className="t-voice">
         <div className="t-status__head">
-          <img className="t-status__avatar" src={avatar} alt="" />
+          <TutorThumb tutor={tutor} className="t-status__avatar" />
           <div className="t-status__meta">
             <span className="t-status__name">{tutorName}</span>
             <span className="t-status__role">{t('role.tutor')}</span>
@@ -241,7 +252,7 @@ export default function TutorVoiceChatPage({
           />
         ) : error ? (
           <div className="t-voice__card">
-            <TutorFace emotion="idle" />
+            <CallFace face={tutor.face || ''} emotion="idle" agentState="idle" />
             <div className="t-voice__text">{errorText}</div>
           </div>
         ) : connected ? (
@@ -269,11 +280,12 @@ export default function TutorVoiceChatPage({
               briefId={briefId}
               limitSec={tokenData.scenarioLimitSec || 0}
               holdRef={holdRef}
+              face={tutor.face || ''}
             />
           </LiveKitRoom>
         ) : (
           <div className="t-voice__card">
-            <TutorFace emotion="idle" />
+            <CallFace face={tutor.face || ''} emotion="idle" agentState="idle" />
             <div className="t-voice__text">
               {perm === 'granted' ? t('voice.connecting') : t('voice.permHint')}
             </div>
@@ -337,8 +349,31 @@ function MicButton({ track, listening, micOn, onClick, label }) {
   )
 }
 
+// Аватар звонка: у обычных тьюторов — лицо, у Джарвиса — орб (tutors.js →
+// face: 'orb'). Орбу эмоции не нужны, ему хватает состояния агента: он живёт
+// свечением, а не мимикой.
+//
+// Уровень МИКРОФОНА орбу сюда намеренно не заводим — useTrackVolume тикает по
+// несколько раз в секунду и перерисовывал бы весь CallStage (ровно поэтому он
+// и заперт в MicButton, см. комментарий выше). Что ученика слышат, показывает
+// кольцо на кнопке мика; орб отражает сторону тьютора.
+function CallFace({ face, emotion, intensity, speaking, agentState, audioTrack }) {
+  if (face === 'orb') {
+    const state = ['listening', 'thinking', 'speaking'].includes(agentState) ? agentState : 'idle'
+    return <JarvisOrb state={state} audioTrack={audioTrack} />
+  }
+  return (
+    <TutorFace
+      emotion={emotion}
+      intensity={intensity}
+      speaking={speaking}
+      audioTrack={audioTrack}
+    />
+  )
+}
+
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
-function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
+function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face = '' }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
   const room = useRoomContext()
@@ -594,10 +629,12 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef }) {
       )}
       {/* Лицо не завершает звонок по клику: неподписанный клик по картинке
           рвал разговор случайным тапом. Завершение — явной кнопкой ниже. */}
-      <TutorFace
+      <CallFace
+        face={face}
         emotion={emotion}
         intensity={intensity}
         speaking={speaking}
+        agentState={va.state}
         audioTrack={agentTrack}
       />
       <div className="t-voice__text">

@@ -137,4 +137,55 @@ describe('useActiveQuestionTracker', () => {
     renderHook(() => useActiveQuestionTracker(ref, onActiveChange, true))
     expect(onActiveChange).toHaveBeenCalledWith('q1')
   })
+
+  it('reports the focused field immediately, without waiting for scroll (regression: several short cards fit on screen at once - focusin is the only signal, scroll never fires at all)', () => {
+    const container = buildContainer([
+      ['q1', 500, 600], // ниже линии чтения — скролл ничего не выбрал
+      ['q2', 700, 800],
+    ])
+    const input = document.createElement('input')
+    container.children[1].appendChild(input)
+    const onActiveChange = vi.fn()
+    const ref = { current: container }
+    renderHook(() => useActiveQuestionTracker(ref, onActiveChange, true))
+    onActiveChange.mockClear() // сбросить исходный pick() при монтировании (q1)
+
+    act(() => {
+      input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    })
+
+    expect(onActiveChange).toHaveBeenCalledWith('q2')
+  })
+
+  it('skips a duplicate report when focusin lands on a field whose question is already the tracked one', () => {
+    const container = buildContainer([['q1', 50, 90]])
+    const input = document.createElement('input')
+    container.children[0].appendChild(input)
+    const onActiveChange = vi.fn()
+    const ref = { current: container }
+    renderHook(() => useActiveQuestionTracker(ref, onActiveChange, true))
+    expect(onActiveChange).toHaveBeenCalledTimes(1) // исходный pick() уже выбрал q1
+
+    act(() => {
+      input.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    })
+
+    expect(onActiveChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores focusin on an element outside any tracked question', () => {
+    const container = buildContainer([['q1', 500, 600]])
+    const outside = document.createElement('input')
+    container.appendChild(outside) // не внутри [data-question-id]
+    const onActiveChange = vi.fn()
+    const ref = { current: container }
+    renderHook(() => useActiveQuestionTracker(ref, onActiveChange, true))
+    onActiveChange.mockClear()
+
+    act(() => {
+      outside.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    })
+
+    expect(onActiveChange).not.toHaveBeenCalled()
+  })
 })

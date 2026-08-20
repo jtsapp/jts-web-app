@@ -6,6 +6,7 @@
 //   * TTL clamped to the remaining daily budget so a session can't overrun.
 //   * openSession() so the room_finished webhook can bill the minutes.
 //   * JTS tutor keys (dexter/luna/spark) → agent persona ids (bro/gentle/hype).
+//   * temper ('calm'/'harsh') — ось 18+, второй характер того же тьютора.
 //   * tier forwarded in metadata (free → agent skips paid Krisp BVC).
 //
 // Secrets (LIVEKIT_*, DATABASE_URL) live in server env only — never
@@ -28,7 +29,10 @@ import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
 
 export const runtime = 'nodejs'
 
-const TUTOR_KEY_TO_PERSONA = { dexter: 'bro', luna: 'gentle', spark: 'hype' }
+// Ключи UI → id персон в agent.py. У Джарвиса имя совпадает, и строка тут
+// формально лишняя (ниже стоит `|| p.tutor`), но без неё таблица врёт: она
+// читается как полный список тьюторов, которых знает агент.
+const TUTOR_KEY_TO_PERSONA = { dexter: 'bro', luna: 'gentle', spark: 'hype', jarvis: 'jarvis' }
 
 const MAX_LEN = 120
 function trimStr(s, max = MAX_LEN) {
@@ -81,6 +85,11 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   if (name) meta.userName = name
   const persona = p.tutor ? TUTOR_KEY_TO_PERSONA[p.tutor] || p.tutor : undefined
   if (persona) meta.tutor = persona
+  // Нрав (ось 18+) едет ОТДЕЛЬНЫМ полем, а не подмешивается в persona: у агента
+  // голос, язык и провайдер TTS считаются по базовому id, а характер — по паре
+  // (id, нрав). См. persona_key в agent/agent.py. Значение белым списком —
+  // строка попадает в системный промпт.
+  if (p.temper === 'calm' || p.temper === 'harsh') meta.temper = p.temper
   const interests = trimList(p.interests, 6, 40)
   if (interests.length) meta.interests = interests
   if (typeof p.profession === 'string' && p.profession.trim())

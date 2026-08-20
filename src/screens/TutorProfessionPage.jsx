@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import TutorThumb from '../tutor/TutorThumb.jsx'
 import TutorShell from '../tutor/TutorShell.jsx'
 import { SendIcon } from '../tutor/TutorIcons.jsx'
 import { useT } from '../i18n/LanguageContext.jsx'
@@ -37,7 +38,7 @@ export default function TutorProfessionPage({
   onSkip,
 }) {
   const t = useT()
-  const { name = 'Спарк', avatar = '/tutor/tutor-spark.png' } = tutor
+  const { name = 'Спарк' } = tutor
   const [value, setValue] = useState('')
   // Мультивыбор: несколько профессий сразу. Клик по плитке переключает её,
   // submit — по кнопке «Продолжить». Собираем выбранное + текст в одну строку
@@ -68,7 +69,7 @@ export default function TutorProfessionPage({
     >
       <div className="t-status" style={{ paddingTop: 63 }}>
         <div className="t-status__head">
-          <img className="t-status__avatar" src={avatar} alt="" />
+          <TutorThumb tutor={tutor} className="t-status__avatar" />
           <div className="t-status__meta">
             <span className="t-status__name">{name}</span>
             <span className="t-status__role">{t('role.tutor')}</span>

@@ -49,6 +49,7 @@ export async function upsertProfile(deviceId, patch) {
       style           = coalesce(${patch.style ?? null}, style),
       goal            = coalesce(${patch.goal ?? null}, goal),
       tutor           = coalesce(${patch.tutor ?? null}, tutor),
+      tutor_temper    = coalesce(${patch.tutorTemper ?? null}, tutor_temper),
       profession      = coalesce(${patch.profession ?? null}, profession),
       interests       = case
                           when ${patch.interests !== undefined}
@@ -269,7 +270,7 @@ export async function loadProfile(deviceId) {
   const sql = getSql()
   if (!sql) return null
   const baseRows = await sql`
-    select level, lang, style, goal, tutor, interests, profession,
+    select level, lang, style, goal, tutor, tutor_temper, interests, profession,
            minutes_per_day, skills, writing, safety_alert
     from learner
     where device_id = ${deviceId}
@@ -358,6 +359,9 @@ export async function loadProfile(deviceId) {
     style: base.style,
     goal: base.goal,
     tutor: base.tutor,
+    // Нрав тьютора (ось 18+): 'calm' | 'harsh' | null. null — ученик не выбирал,
+    // дефолт берёт клиент (temperFor в src/tutor/tutors.js).
+    tutorTemper: base.tutor_temper,
     interests: Array.isArray(base.interests) ? base.interests : [],
     profession: base.profession,
     minutesPerDay: base.minutes_per_day,
