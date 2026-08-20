@@ -24,6 +24,28 @@ describe('readDecl', () => {
   it('возвращает null для отсутствующего объявления', () => {
     expect(readDecl('const A=1;', 'B')).toBeNull()
   })
+
+  // Новая выгрузка Pre-Intermediate: внутри шаблона урока есть вложенный
+  // шаблон и регулярка с апострофом. Прежний сканер обрывал на них литерал, и
+  // весь курс не читался — «Unexpected token ';'» на eval.
+  it('переживает вложенный шаблон внутри подстановки', () => {
+    const src = 'const A={h:`<b>${x?`<i>y</i>`:""}</b>`,z:1};\nconst B=[1];'
+    expect(readDecl(src, 'A')).toBe('{h:`<b>${x?`<i>y</i>`:""}</b>`,z:1}')
+  })
+
+  it('не принимает апостроф внутри регулярки за начало строки', () => {
+    const src = 'const A={h:`${w.replace(/\'/g,"x")}`,z:2};'
+    expect(readDecl(src, 'A')).toBe('{h:`${w.replace(/\'/g,"x")}`,z:2}')
+  })
+
+  it('пропускает комментарии со скобками и кавычками', () => {
+    expect(readDecl("const A={\n // don't } touch\n z:3};", 'A')).toBe("{\n // don't } touch\n z:3}")
+    expect(readDecl('const A={/* } */ z:4};', 'A')).toBe('{/* } */ z:4}')
+  })
+
+  it('не путает деление с регуляркой', () => {
+    expect(readDecl('const A={z: 10/2, y:1};', 'A')).toBe('{z: 10/2, y:1}')
+  })
 })
 
 describe('readLevel через readCourse', () => {
@@ -47,6 +69,26 @@ describe('readLevel через readCourse', () => {
 })
 
 describe('readCourse', () => {
+  // Новые выгрузки пишут ступень словами, и код уровня стоит не сразу за тире.
+  it('находит уровень, когда в заголовке есть название ступени', () => {
+    const file = tmpCourse(`
+      <title>just to study &mdash; Pre-Intermediate A2 &middot; Course</title>
+      <script>
+      const LESSONS={1:{unit:1,no:1,title:"One",blurb:"",tracks:{},html:"<b>x</b>"}};
+      </script>`)
+    expect(readCourse(file).level).toBe('a2')
+  })
+
+  // «B1+» — маркетинговое название ступени; уровни приложения a0…c1.
+  it('срезает плюс у ступени вида B1+', () => {
+    const file = tmpCourse(`
+      <title>just to study &mdash; Intermediate B1+ &middot; Course</title>
+      <script>
+      const LESSONS={1:{unit:1,no:1,title:"One",blurb:"",tracks:{},html:"<b>x</b>"}};
+      </script>`)
+    expect(readCourse(file).level).toBe('b1')
+  })
+
   // Находка ревью: ошибка про уровень была единственной в модуле без пути к
   // файлу, а экстрактор запускают сразу по нескольким --src.
   it('бросает ошибку с именем файла, если уровень в <title> не найден', () => {
