@@ -3,6 +3,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getCourseCatalog } from '../api.js'
 import { ChevronRightIcon } from '../components/icons.jsx'
+import { groupLessonsByMode, lessonMode } from './catalog/catalogModes.js'
 
 const TYPE_ICON = { lesson: '📘', video: '▶', review: '🏆', leadin: '★', test: '🎓' }
 
@@ -30,8 +31,8 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
       .map((level) => ({
         ...level,
         units: (level.units || [])
-          .map((unit) => ({ ...unit, lessons: (unit.lessons || []).filter((l) => !l.locked) }))
-          .filter((unit) => unit.lessons.length > 0),
+          .map((unit) => ({ ...unit, groups: groupLessonsByMode((unit.lessons || []).filter((l) => !l.locked)) }))
+          .filter((unit) => unit.groups.length > 0),
       }))
       .filter((level) => level.units.length > 0)
   }, [levels])
@@ -82,24 +83,39 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
                 <div className="cc-unit__head">
                   {unit.emoji && <span className="cc-unit__emoji" aria-hidden="true">{unit.emoji}</span>}
                   <span className="cc-unit__name">{unit.name}</span>
-                  <span className="cc-unit__count">{(unit.lessons || []).length}</span>
+                  {/* Считаем уроки, а не записи каталога: у урока их три — по одной
+                      на режим, — и счётчик показывал бы «9» там, где уроков три. */}
+                  <span className="cc-unit__count">{unit.groups.length}</span>
                 </div>
 
                 <ul className="cc-lessons">
-                  {unit.lessons.map((lesson) => (
-                    <li key={lesson.id}>
-                      <button
-                        type="button"
-                        className="cc-lesson"
-                        onClick={() => onOpenLesson?.(lesson.id)}
-                      >
-                        <span className={`cc-lesson__type cc-lesson__type--${typeKey(lesson.type)}`}>
-                          <span aria-hidden="true">{TYPE_ICON[typeKey(lesson.type)] || TYPE_ICON.lesson}</span>
-                          {t(`catalog.type.${typeKey(lesson.type)}`)}
+                  {unit.groups.map((group) => (
+                    <li key={group.key}>
+                      <div className="cc-lesson">
+                        <span className={`cc-lesson__type cc-lesson__type--${typeKey(group.type)}`}>
+                          <span aria-hidden="true">{TYPE_ICON[typeKey(group.type)] || TYPE_ICON.lesson}</span>
+                          {t(`catalog.type.${typeKey(group.type)}`)}
                         </span>
-                        <span className="cc-lesson__title">{lesson.title}</span>
-                        <span className="cc-lesson__open">{t('catalog.open')}</span>
-                      </button>
+                        <span className="cc-lesson__title">{group.title}</span>
+                        {/* Режимы урока кнопками: у каждого своя запись каталога со
+                            своим разбором — 1-to-1 и group ведёт преподаватель, self
+                            study ученик проходит сам. Когда режим один, кнопка
+                            остаётся прежней «Открыть». */}
+                        <span className="cc-lesson__modes">
+                          {group.entries.map((entry) => (
+                            <button
+                              key={entry.id}
+                              type="button"
+                              className="cc-mode"
+                              onClick={() => onOpenLesson?.(entry.id)}
+                            >
+                              {group.entries.length > 1
+                                ? t(`catalog.mode.${lessonMode(entry)}`)
+                                : t('catalog.open')}
+                            </button>
+                          ))}
+                        </span>
+                      </div>
                     </li>
                   ))}
                 </ul>

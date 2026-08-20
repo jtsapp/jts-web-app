@@ -152,7 +152,6 @@
   border: none;
   border-top: 1px solid #f3f1fb;
   background: #fff;
-  cursor: pointer;
   text-align: left;
   font: inherit;
   transition: background 0.15s;
@@ -163,8 +162,40 @@
 }
 
 .cc-lesson:hover,
-.cc-lesson:focus-visible {
+.cc-lesson:focus-within {
   background: #f7f5ff;
+}
+
+/* Режимы урока: у каждого своя запись каталога, поэтому это отдельные кнопки, а
+   не переключатель — нажатие сразу открывает выбранный режим. */
+.cc-lesson__modes {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.cc-mode {
+  padding: 6px 12px;
+  border: 1px solid #e7e1f7;
+  border-radius: 999px;
+  background: #fff;
+  color: #874bf8;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.cc-mode:hover {
+  background: #f1ebff;
+  border-color: #cdbcf5;
+}
+
+.cc-mode:focus-visible {
+  outline: 2px solid #874bf8;
+  outline-offset: 2px;
 }
 
 .cc-lesson:focus-visible {
