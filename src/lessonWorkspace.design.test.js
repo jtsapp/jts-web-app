@@ -130,6 +130,47 @@ describe('классрум — сетка', () => {
   })
 })
 
+describe('классрум — словарь', () => {
+  // Макет «Онлайн-уроки», секция словаря: ровно четыре колонки по 192px и
+  // подпись со словом под карточкой. До этого сетка была auto-fill от 150px —
+  // число колонок плавало вместе с шириной центральной колонки, и ни на одной
+  // ширине их не было четыре.
+  it('сетка — четыре колонки по 192px, а не auto-fill', () => {
+    const grid = css.match(/\.lw-vocab__grid\s*{([^}]+)}/)[1]
+    expect(grid).toMatch(/grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/)
+    expect(grid).not.toMatch(/auto-fill/)
+    // 4×192 + 3×12 промежутка: предел ширины и держит колонку в 192px.
+    expect(grid).toMatch(/gap:\s*12px/)
+    expect(grid).toMatch(/max-width:\s*804px/)
+  })
+
+  it('подпись со словом лежит под карточкой, а не на её лицевой стороне', () => {
+    // Обёртка — колонка (карточка, затем подпись), иначе подпись легла бы
+    // поверх карточки: у .lw-vcard-wrap есть position: relative под озвучку.
+    const wrap = css.match(/\.lw-vcard-wrap\s*{([^}]+)}/)[1]
+    expect(wrap).toMatch(/flex-direction:\s*column/)
+
+    // Тот же набор, что у карточек-вариантов макета (.lw-opt__text).
+    const caption = css.match(/\.lw-vcard__caption\s*{([^}]+)}/)[1]
+    expect(caption).toMatch(/font-size:\s*18px/)
+    expect(caption).toMatch(/font-weight:\s*700/)
+    expect(caption).toMatch(/text-align:\s*center/)
+
+    // Картинка занимает лицевую сторону целиком — под ней в карточке уже
+    // ничего не стоит.
+    expect(css).toMatch(/\.lw-vcard__front img\s*{[^}]*height:\s*100%/)
+  })
+
+  it('карточка без картинки держит те же 3:4, а не свою высоту', () => {
+    // height: 170px на .is-noimg делал ряд рваным. Слово ушло под карточку —
+    // ломать пропорцию больше незачем, лицевая сторона просто красится тинтом.
+    expect(css).not.toMatch(/\.lw-vcard\.is-noimg\s*{[^}]*height:/)
+    expect(css).toMatch(
+      /\.lw-vcard\.is-noimg \.lw-vcard__front\s*{[^}]*background:\s*var\(--lw-tint-2/,
+    )
+  })
+})
+
 describe('классрум — разметка урока каталога', () => {
   // Экстрактор отдаёт куски разметки файла урока (.vlist, .instruction, .gtable…).
   // Правил на них не было ни одного: словарь приезжал маркированным списком с

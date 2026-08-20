@@ -176,6 +176,35 @@ describe('LessonContent — карточки шага', () => {
     expect(container.querySelectorAll('.lw-vcard')).toHaveLength(2)
   })
 
+  // Макет: слово подписано под карточкой и не уезжает на оборот вместе с ней.
+  // Пока подпись жила внутри .lw-vcard, перевёрнутая карточка теряла слово, а
+  // сетка получала два разных слоя текста в одной ячейке.
+  it('слово подписано под карточкой, а не внутри кнопки переворота', () => {
+    const { container } = renderContent([
+      {
+        type: 'vocab',
+        cards: [{ word: 'friendship', pos: 'n', imageUrl: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=' }],
+      },
+    ])
+
+    const caption = container.querySelector('.lw-vcard__caption')
+    expect(caption).not.toBeNull()
+    expect(caption.textContent).toContain('friendship')
+    expect(caption.textContent).toContain('n')
+    // Подпись — сосед карточки внутри обёртки, а не её потомок.
+    expect(caption.closest('.lw-vcard')).toBeNull()
+    expect(caption.parentElement.classList.contains('lw-vcard-wrap')).toBe(true)
+
+    // Лицевая сторона несёт только картинку.
+    const front = container.querySelector('.lw-vcard__front')
+    expect(front.textContent).toBe('')
+    expect(front.querySelectorAll('img')).toHaveLength(1)
+
+    // Без слова на лицевой стороне кнопке нужна своя подпись, иначе её именем
+    // становится весь текст оборота.
+    expect(container.querySelector('.lw-vcard').getAttribute('aria-label')).toBe('friendship')
+  })
+
   it('рисует чек-лист «You can now…», а не выкидывает неизвестный тип', () => {
     const { container } = renderContent([
       { type: 'checklist', title: 'You can now…', items: ['talk about your friendships', 'speak for a minute'] },

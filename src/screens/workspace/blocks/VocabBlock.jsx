@@ -50,8 +50,15 @@ export default function VocabBlock({ block }) {
                 className={`lw-vcard${isFlipped ? ' is-flipped' : ''}${hasImg ? '' : ' is-noimg'}`}
                 onClick={() => toggle(key)}
                 aria-pressed={isFlipped}
+                // Слово ушло из лицевой стороны под карточку, а обратная сторона
+                // из дерева доступности не исчезает (backface-visibility прячет
+                // только от глаз) — без явной подписи кнопка называлась бы всем
+                // текстом оборота: слово, транскрипция, определение, переводы.
+                aria-label={card.word}
               >
                 <div className="lw-vcard__inner">
+                  {/* Лицевая сторона — только картинка: слово в макете стоит
+                      подписью под карточкой (.lw-vcard__caption ниже). */}
                   <div className="lw-vcard__face lw-vcard__front">
                     {hasImg && (
                       <img
@@ -60,8 +67,6 @@ export default function VocabBlock({ block }) {
                         onError={() => setImgFailed((prev) => new Set(prev).add(key))}
                       />
                     )}
-                    <div className="lw-vcard__word">{card.word}</div>
-                    {card.pos && <div className="lw-vcard__pos">{card.pos}</div>}
                   </div>
                   <div className="lw-vcard__face lw-vcard__back">
                     <div className="lw-vcard__bhead">
@@ -99,6 +104,12 @@ export default function VocabBlock({ block }) {
               >
                 🔊
               </button>
+              {/* Подпись вне кнопки переворота: в макете она под карточкой и
+                  не уезжает вместе с ней на оборот. */}
+              <div className="lw-vcard__caption">
+                {card.word}
+                {card.pos && <span className="lw-vcard__pos">{card.pos}</span>}
+              </div>
             </div>
           )
         })}
