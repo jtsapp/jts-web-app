@@ -784,6 +784,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         <LiveLessonHeader
           stage={activeSection?.title || lesson?.title || t('live.title')}
           lessonTitle={activeSection?.title && lesson?.title !== activeSection.title ? lesson?.title : ''}
+          status={lesson ? <LiveStatusBadge status={status} /> : null}
           onExit={onBack}
           onOpenVocab={() => onNav?.('vocab')}
         />
@@ -793,15 +794,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
         {state === 'ready' && lesson && (
           <>
-            <div className="live__head">
-              <h1 className="live__title">{t('live.title')}</h1>
-              <span className="live__teacher">{lesson.teacherName || ''}</span>
-              <LiveStatusBadge status={status} />
-              {/* Кто в классе — здесь же, строкой. Отдельной карточкой во всю
-                  ширину это отодвигало материал урока ниже первого экрана. */}
-              <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
-            </div>
-
             {!isStaff && status === 'SCHEDULED' && <p className="live__status-msg">{t('live.waiting')}</p>}
 
             {isStaff && (
@@ -1009,6 +1001,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         </div>
                       ) : (
                       <div className="lw-card lw-meet">
+                        {/* Карточка звонка по макету: учитель в лицо, под ним — кто
+                            сейчас на связи, и только потом действие. Ученик ищет
+                            здесь «с кем и как соединиться», а не строку-ссылку. */}
+                        {!editingMeetingUrl && (
+                          <div className="lw-meet__who">
+                            <span className="lw-meet__avatar" aria-hidden="true">
+                              {(lesson.teacherName || '?').trim().charAt(0).toUpperCase()}
+                            </span>
+                            <span className="lw-meet__name">{lesson.teacherName || t('live.teacher')}</span>
+                            <span className="lw-meet__role">{t('live.teacherRole')}</span>
+                            <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
+                          </div>
+                        )}
                         {editingMeetingUrl ? (
                           <div className="lw-meet__form">
                             <input

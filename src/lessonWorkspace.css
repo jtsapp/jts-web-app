@@ -2849,3 +2849,86 @@
   .llh { flex-wrap: wrap; gap: 10px; }
   .llh__tools { width: 100%; margin-left: 0; }
 }
+
+.llh__line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Кто ведёт урок — в карточке звонка, как в макете: лицо, имя, роль. */
+.lw-meet__who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.lw-meet__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--lw-tint-2, #ebdeff);
+  color: var(--lw-primary, #9047ff);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.lw-meet__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lw-ink, #17171c);
+}
+
+.lw-meet__role {
+  font-size: 13px;
+  color: var(--lw-muted, #9d9d9d);
+}
+
+/* Варианты опроса карточками — макет «Pick anything you like»: сетка по три,
+   карточка 173×96 r20, картинка 32px над словом 18/700. Ниже 560px строится в
+   две колонки: три карточки по 173px туда просто не помещаются. */
+.lw-opts--cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lw-opt--card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 96px;
+  padding: 14px 12px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(23, 23, 28, 0.06);
+}
+
+.lw-opt--card.is-selected {
+  background: var(--lw-tint-2, #ebdeff);
+  box-shadow: inset 0 0 0 2px var(--lw-primary, #9047ff);
+}
+
+.lw-opt__emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.lw-opt__text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--lw-ink, #17171c);
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .lw-opts--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

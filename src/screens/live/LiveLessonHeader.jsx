@@ -7,7 +7,7 @@ import { VocabIcon } from '../../components/icons.jsx'
 //
 // Стадия крупнее названия урока намеренно: на уроке ученик держит в голове «где
 // я сейчас», а не «как называется занятие» — название стоит подписью.
-export default function LiveLessonHeader({ stage, lessonTitle, onExit, onOpenVocab }) {
+export default function LiveLessonHeader({ stage, lessonTitle, status, onExit, onOpenVocab }) {
   const { t } = useI18n()
 
   return (
@@ -18,7 +18,12 @@ export default function LiveLessonHeader({ stage, lessonTitle, onExit, onOpenVoc
       </button>
 
       <div className="llh__what">
-        {stage && <span className="llh__stage">{stage}</span>}
+        <span className="llh__line">
+          {stage && <span className="llh__stage">{stage}</span>}
+          {/* Идёт / на паузе / завершён — рядом со стадией: в макете этой строки
+              нет вовсе, но состояние урока ученику знать надо. */}
+          {status}
+        </span>
         {lessonTitle && <span className="llh__lesson">{lessonTitle}</span>}
       </div>
 
