@@ -207,6 +207,10 @@ export const DICT = {
     // Управление тьютором
     'manage.title': 'Управление тьютором',
     'manage.change': 'Поменять тьютора',
+    'manage.interests': 'Интересы',
+    'manage.profession': 'Чем занимаешься',
+    'manage.retest': 'Пересдать тест уровня',
+    'manage.notSet': 'Не указано',
     'manage.history': 'История разговоров',
     'manage.historyEmpty': 'Здесь появится история ваших разговоров с тьютором',
     'hist.free': 'Свободный разговор',
@@ -484,6 +488,10 @@ export const DICT = {
 
     'manage.title': 'Тьюторды басқару',
     'manage.change': 'Тьюторды ауыстыру',
+    'manage.interests': 'Қызығушылықтар',
+    'manage.profession': 'Немен айналысасың',
+    'manage.retest': 'Деңгей тестін қайта тапсыру',
+    'manage.notSet': 'Көрсетілмеген',
     'manage.history': 'Әңгімелер тарихы',
     'manage.historyEmpty': 'Мұнда тьютормен әңгімелеріңіздің тарихы пайда болады',
     'hist.free': 'Еркін әңгіме',
@@ -756,6 +764,10 @@ export const DICT = {
 
     'manage.title': 'Manage tutor',
     'manage.change': 'Change tutor',
+    'manage.interests': 'Interests',
+    'manage.profession': 'What you do',
+    'manage.retest': 'Retake the level test',
+    'manage.notSet': 'Not set',
     'manage.history': 'Conversation history',
     'manage.historyEmpty': 'Your conversation history with the tutor will appear here',
     'hist.free': 'Free conversation',

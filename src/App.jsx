@@ -198,6 +198,12 @@ export default function App() {
   const [profileId, setProfileId] = useState(null)
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
+  // Откуда открыт экран онбординг-цепочки: null — обычный первый проход,
+  // 'manage' — точечная правка из «Управления тьютором». Тест уровня и опросник
+  // ученик проходит ОДИН раз: их ответы лежат в профиле (tutor, interests,
+  // profession, level), поэтому смена тьютора и правка данных возвращают в
+  // управление/на дашборд, а не гоняют всю цепочку заново.
+  const [tutorEditFrom, setTutorEditFrom] = useState(null)
   const [userLevel, setUserLevel] = useState('A1')
   // Демо-статус текущего аккаунта — решает, показывать ли на экранах «лимит
   // исчерпан» демо-CTA со ссылкой на WhatsApp поддержки (см. src/lib/support.js)
@@ -574,6 +580,19 @@ export default function App() {
   // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
   const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
 
+  // Куда уходить с экрана онбординг-цепочки. Обычный проход идёт дальше по
+  // цепочке; заход из «Управления тьютором» (смена тьютора, правка интересов,
+  // пересдача теста) возвращает назад в управление и снимает пометку, чтобы она
+  // не протекла в следующий проход.
+  function goAfterTutorEdit(nextInChain, back = 'tutor-manage') {
+    if (tutorEditFrom === 'manage') {
+      setTutorEditFrom(null)
+      setScreen(back)
+      return
+    }
+    setScreen(nextInChain)
+  }
+
   // Отметка «тур дашборда показан» — на профиль. Профиль ещё не подтянулся
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
@@ -923,7 +942,10 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onSelect={() => setScreen('tutor-choose')}
+          onSelect={() => {
+            setTutorEditFrom(null)
+            setScreen('tutor-choose')
+          }}
         />
       )
     case 'tutor-choose':
@@ -932,7 +954,7 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-lang')}
+          onBack={() => goAfterTutorEdit('tutor-lang')}
           tutorKey={tutorKey}
           temper={temper}
           onChoose={(key, chosenTemper = null) => {
@@ -959,8 +981,9 @@ export default function App() {
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
           // После «подстройки» — голосовой placement-тест (Спарк), затем интересы
-          // и работа. Уровень определяет Sonnet по записи монолога.
-          onDone={() => setScreen('tutor-voice-intro')}
+          // и работа. Уровень определяет Sonnet по записи монолога. Смена тьютора
+          // (пришли из управления) эту цепочку пропускает: ответы уже в профиле.
+          onDone={() => goAfterTutorEdit('tutor-voice-intro', 'tutor-dashboard')}
         />
       )
     case 'tutor-level-offer':
@@ -981,14 +1004,14 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-choose')}
+          onBack={() => goAfterTutorEdit('tutor-choose')}
           tutor={tutor}
           onStart={() => {
             setScenario(null)
             setScreen('speaking-test')
           }}
           // «Не могу говорить сейчас» — пропуск теста, дальше по онбордингу.
-          onDecline={() => setScreen('tutor-interests')}
+          onDecline={() => goAfterTutorEdit('tutor-interests')}
         />
       )
     case 'tutor-voice-chat':
@@ -1028,7 +1051,7 @@ export default function App() {
           tutor={tutor}
           level={userLevel}
           assessment={placementResult}
-          onContinue={() => setScreen('tutor-interests')}
+          onContinue={() => goAfterTutorEdit('tutor-interests')}
           onRetry={() => setScreen('speaking-test')}
         />
       )
@@ -1038,13 +1061,13 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-choose')}
+          onBack={() => goAfterTutorEdit('tutor-choose')}
           tutor={tutor}
           initialIds={interestIds}
           onContinue={(ids) => {
             setInterestIds(ids)
             saveTutorPrefs(token, { interests: interestIdsToEn(ids) })
-            setScreen('tutor-profession')
+            goAfterTutorEdit('tutor-profession')
           }}
         />
       )
@@ -1054,17 +1077,18 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-interests')}
+          onBack={() => goAfterTutorEdit('tutor-interests')}
           tutor={tutor}
+          initialValue={profession}
           onSubmit={(prof) => {
             const p = typeof prof === 'string' ? prof.trim() : ''
             if (p) {
               setProfession(p)
               saveTutorPrefs(token, { profession: p })
             }
-            setScreen('tutor-analysis')
+            goAfterTutorEdit('tutor-analysis')
           }}
-          onSkip={() => setScreen('tutor-analysis')}
+          onSkip={() => goAfterTutorEdit('tutor-analysis')}
         />
       )
     case 'tutor-analysis':
@@ -1187,7 +1211,27 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-dashboard')}
           tutor={tutor}
-          onChangeTutor={() => setScreen('tutor-choose')}
+          onChangeTutor={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-choose')
+          }}
+          level={userLevel}
+          interestIds={interestIds}
+          profession={profession}
+          // Опросник больше не показывается на каждую смену тьютора, поэтому
+          // единственная точка правки этих ответов — здесь.
+          onEditInterests={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-interests')
+          }}
+          onEditProfession={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-profession')
+          }}
+          onRetakeTest={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-voice-intro')
+          }}
           temper={temper}
           onToggleTemper={() => {
             const next = temper === 'harsh' ? 'calm' : 'harsh'
