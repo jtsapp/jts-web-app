@@ -17,6 +17,7 @@ import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
+import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -56,6 +57,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
+import { isTeacher } from './lib/jwt.js'
 import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
@@ -154,6 +156,10 @@ export default function App() {
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
         if (deepLink) setScreen(deepLink)
+        // Преподаватель приходит сюда работать, а не учиться: карта уровней с
+        // запертыми королевствами — ученический экран, и открывать его первым
+        // ему бессмысленно (сайдбар ему всё остальное и так не показывает).
+        else if (session && isTeacher(session.token)) setScreen('lessons')
         else if (session) setScreen(TUTOR_ONLY ? (profile?.tutor ? 'tutor-dashboard' : 'tutor-welcome') : 'kingdom')
       })
       .finally(() => {
@@ -552,6 +558,7 @@ export default function App() {
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -567,6 +574,7 @@ export default function App() {
     else if (key === 'shadowing') setScreen('shadowing')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -712,7 +720,13 @@ export default function App() {
       return (
         <SuccessPage
           onDone={() =>
-            setScreen(TUTOR_ONLY ? tutorHome : needsLevelTest ? 'test-intro' : 'kingdom')
+            // Преподавателя ведём в «Уроки»: карта уровней и CEFR-тест — часть
+            // ученического пути, ему они не нужны (см. восстановление сессии).
+            setScreen(
+              isTeacher(token) ? 'lessons'
+                : TUTOR_ONLY ? tutorHome
+                  : needsLevelTest ? 'test-intro' : 'kingdom'
+            )
           }
         />
       )
@@ -742,6 +756,7 @@ export default function App() {
           unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          onOpenHomework={() => setScreen('homework')}
           onOpenKingdom={(k) => {
             setKingdom(k)
             setScreen('kingdom-interior')
@@ -796,6 +811,8 @@ export default function App() {
       )
     case 'lessons':
       return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+    case 'homework':
+      return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
       return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
     case 'live-lesson':

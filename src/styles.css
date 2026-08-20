@@ -2851,6 +2851,43 @@ textarea {
   font-weight: 400;
   color: #fff;
 }
+/* Вход в домашнюю работу поверх карты. Шапка карты не ловит клики
+   (pointer-events: none у .lp-isle__head), поэтому кнопке они возвращаются. */
+.lp-hw {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(2, 2, 2, 0.18);
+}
+.lp-hw:hover { background: #f4f1ff; }
+.lp-hw:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.lp-hw svg { color: var(--purple); }
+.lp-hw__count {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #f0e9ff;
+  color: var(--purple);
+  font-size: 13px;
+  font-weight: 700;
+}
+@media (max-width: 720px) {
+  /* На узком экране заголовок занимает всю ширину — кнопка уходит под него. */
+  .lp-hw { top: 148px; right: 16px; padding: 10px 14px; font-size: 14px; }
+}
+
 /* Кадр острова — как на проде: колонка 820 по центру контента, а не вылет под
    сайдбар. Отрицательный отступ ровно на высоту шапки: карта начинается от
    верха панели и уходит под затемнение, иначе над океаном серая полоса. */
@@ -6762,6 +6799,224 @@ textarea {
 .pl-limit__back:hover {
   background: #e8e5f3;
 }
+
+/* --- Домашняя работа (ученик) --- */
+.hw {
+  min-height: 100%;
+  background: #f8f8f8;
+  display: flex;
+  flex-direction: column;
+}
+.hw__head {
+  background: #fff;
+  border-bottom: 1px solid #eeeeee;
+  padding: 19px 32px;
+}
+.hw__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.hw__body { flex: 1; padding: 24px 32px 48px; }
+.hw__layout { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
+.hw__col { display: block; }
+.hw__hint { color: var(--muted); font-size: 14px; }
+.hw__error { color: #c0392b; font-size: 14px; margin-top: 8px; }
+
+/* Список работ: история сверху вниз, новые первыми. */
+.hw-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.hw-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 16px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow .15s ease;
+}
+.hw-card:hover { box-shadow: 0 4px 16px rgba(2, 2, 2, .08); }
+.hw-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.hw-card--sel { box-shadow: inset 0 0 0 2px var(--purple); }
+.hw-card__title { font-size: 16px; font-weight: 700; color: var(--ink); }
+.hw-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hw-card__due { font-size: 13px; color: var(--muted); }
+.hw-card__grade {
+  margin-left: auto;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #f0e9ff;
+  color: var(--purple);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hw-badge { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; background: #e6ecff; color: #2b57d6; }
+/* Метка «Задание с урока» — материал, назначенный преподавателем как ДЗ. */
+.hw-card__lesson { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; background: #f0e9ff; color: var(--purple); }
+.hw-badge--overdue { background: #fdecd2; color: #b26a12; }
+.hw-badge--submitted { background: #d3ecff; color: #0b74c4; }
+.hw-badge--needsRevision { background: #ffe0e0; color: #b02a2a; }
+.hw-badge--completed { background: #dcf3e2; color: #2c8a45; }
+
+/* Карточка открытого задания. */
+.hw-detail { background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 4px; }
+.hw-detail--empty { align-items: center; justify-content: center; min-height: 200px; }
+.hw-detail__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hw-detail__title { font-size: 20px; font-weight: 700; color: var(--ink); margin: 0; }
+.hw-detail__meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: 14px; margin-top: 6px; }
+.hw-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid #eeeeee; }
+.hw-block__title { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
+
+.hw-files { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.hw-file { display: flex; align-items: center; gap: 10px; background: #f6f6f8; border-radius: 12px; padding: 10px 12px; }
+.hw-file__glyph {
+  flex: none;
+  width: 40px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.hw-file__glyph--pdf { background: #ffe3e3; color: #b02a2a; }
+.hw-file__glyph--img { background: #e2f0ff; color: #0b74c4; }
+.hw-file__name { flex: 1; min-width: 0; color: var(--ink); font-size: 14px; overflow-wrap: anywhere; }
+.hw-file__name:hover { text-decoration: underline; }
+.hw-file__remove {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #eceef1;
+  color: #5b6478;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hw-file__remove:hover { background: #e0e2e8; }
+.hw-file__remove:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.hw-upload { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+/* Настоящий input остаётся в разметке (клавиатура и screen reader идут к нему),
+   но выглядит кнопкой через <label>: браузерный «Choose file» не стилизуется. */
+.hw-upload__input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.hw-upload__btn {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: #f0e9ff;
+  color: var(--purple);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+.hw-upload__btn:hover { background: #e6dbff; }
+.hw-upload__input:focus-visible + .hw-upload__btn { outline: 2px solid var(--ink); outline-offset: 2px; }
+.hw-upload__input:disabled + .hw-upload__btn { opacity: .6; cursor: default; }
+
+.hw-submit {
+  margin-top: 16px;
+  align-self: flex-start;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 22px;
+  background: var(--purple);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hw-submit:hover:enabled { background: #7d34f5; }
+.hw-submit:disabled { background: #ece9f5; color: #8b8a97; cursor: default; }
+.hw-submit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.hw-block--review { background: #f7f4ff; border-radius: 16px; padding: 16px; border-top: 0; }
+.hw-grade { display: flex; align-items: baseline; gap: 10px; }
+.hw-grade__num { font-size: 32px; font-weight: 800; color: var(--purple); line-height: 1; }
+.hw-grade__label { color: var(--muted); font-size: 14px; }
+.hw-comment { margin-top: 10px; color: var(--ink); font-size: 15px; line-height: 1.5; }
+
+@media (max-width: 900px) {
+  .hw__layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .hw__head { padding: 16px; }
+  .hw__body { padding: 16px 16px 32px; }
+  .hw-detail { padding: 18px; }
+}
+
+/* Проверка домашних работ (вкладка преподавателя в «Уроках») */
+.hw__section-title { font-size: 20px; font-weight: 700; margin: 0 0 14px; color: var(--ink); }
+.hw__done { color: #2c8a45; font-size: 14px; margin-top: 8px; }
+.hw-card__student { font-size: 13px; font-weight: 700; color: var(--purple); }
+.hw-card__files { font-size: 13px; color: var(--muted); }
+
+.hw-grades { display: flex; gap: 8px; margin-bottom: 14px; }
+.hw-grade-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e6e3ef;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.hw-grade-btn:hover { border-color: var(--purple); }
+.hw-grade-btn--on { background: var(--purple); border-color: var(--purple); color: #fff; }
+.hw-grade-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.hw-field { display: block; }
+.hw-field__label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.hw-field__input {
+  width: 100%;
+  border: 1px solid #e6e3ef;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+}
+.hw-field__input:focus-visible { outline: 2px solid var(--purple); outline-offset: 0; border-color: var(--purple); }
+
+.hw-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.hw-actions .hw-submit { margin-top: 0; }
+.hw-btn {
+  border: 1px solid #e6e3ef;
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: #fff;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hw-btn:hover:enabled { background: #f4f1ff; border-color: var(--purple); }
+.hw-btn:disabled { color: #a9a6b6; cursor: default; }
+.hw-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .hw-grade-btn { transition: none; } }
 
 /* ═══════════ Мобильный «Обучение» по макету (Figma, страница «Веб-версия
    мобилка», секция «Обучение», кадр 440×955) ═══════════
