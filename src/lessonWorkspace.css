@@ -2988,3 +2988,30 @@
 @media (max-width: 560px) {
   .lw-practice__list--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Заголовок стадии из макета: крупная фиолетовая строка с подзаголовком под ней.
+   Курс размечает их сам — `.instruction` и `.subline` внутри info-блока, — и в
+   макете это первое, что видит ученик на шаге. Правило живёт под .lw-live-body:
+   на остальных экранах рабочего пространства текст урока остаётся как был. */
+.lw-live-body .lw-info .instruction {
+  margin: 0 0 4px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--lw-primary, #9047ff);
+  text-align: center;
+}
+
+.lw-live-body .lw-info .subline {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--lw-ink, #17171c);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .lw-live-body .lw-info .instruction { font-size: 24px; }
+  .lw-live-body .lw-info .subline { font-size: 18px; }
+}
