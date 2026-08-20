@@ -2188,6 +2188,10 @@
 }
 
 .lw-live-body {
+  /* Ширина правой колонки из макета «Онлайн-уроки»: карточки 284px плюс отступы.
+     Переменную переопределяем здесь, а не в :root — остальные экраны рабочего
+     пространства держат свои 328px, и трогать их эта работа не должна. */
+  --lw-col-right: 300px;
   display: grid;
   grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr) var(--lw-col-right);
   gap: var(--lw-gutter);
@@ -2931,4 +2935,18 @@
 
 @media (max-width: 560px) {
   .lw-opts--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+
+/* Карточки правой колонки по макету: белое поле со скруглением 20 и ровным
+   внутренним отступом — до этого у каждой был свой радиус и своя набивка. */
+.lw-live-aside .lw-card {
+  padding: 16px;
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+.lw-live-aside .lw-meet__link {
+  min-height: 48px;
+  border-radius: 80px;
 }

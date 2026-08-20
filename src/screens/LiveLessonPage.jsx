@@ -56,6 +56,15 @@ function parseAnswer(value) {
   }
 }
 
+/** Ссылка на Google Meet — по хосту, а не по подстроке: «meet.google.com.evil.tld» не в счёт. */
+function isMeetLink(url) {
+  try {
+    return new URL(url).hostname === 'meet.google.com'
+  } catch {
+    return false
+  }
+}
+
 export default function LiveLessonPage({ lessonId, userName, userLevel, token, onNav, onProfile, onBack }) {
   const { t } = useI18n()
   const [lesson, setLesson] = useState(null)
@@ -1040,7 +1049,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                                   d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2Z"
                                 />
                               </svg>
-                              {t('lesson.ws.call')}
+                              {/* Куда ведёт кнопка, видно по её подписи: Meet
+                                  открывается новой вкладкой, и «Позвонить
+                                  учителю» обещало звонок внутри урока. */}
+                              {t(isMeetLink(lesson.meetingUrl) ? 'lesson.ws.joinMeet' : 'lesson.ws.call')}
                             </a>
                             {isStaff && (
                               <button className="lw-meet__edit-btn" onClick={openMeetingUrlEditor}>{t('lesson.ws.meetEdit')}</button>
