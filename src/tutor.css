@@ -2378,6 +2378,215 @@
   height: 56px;
 }
 
+/* ------------------- Отчёт после разговора ----------------------- */
+.t-report {
+  padding-top: 24px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto 40px;
+}
+.t-report__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.t-report__avatar {
+  width: 56px;
+  height: 56px;
+  flex: none;
+}
+.t-report__headtext {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.t-report__headtext b {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--t-ink);
+}
+.t-report__headtext span {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--t-muted);
+}
+/* Сетка 2×2, а не ряд: .t-result2__stats — это flex-строка, и скругления там
+   прибиты к :first-child/:last-child, поэтому углы задаём заново здесь. */
+.t-report__stats {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.t-report__stats .t-stat {
+  border-radius: 16px;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+  padding: 16px 18px;
+}
+.t-report__stats .t-stat b {
+  font-size: 28px;
+}
+.t-report__stats .t-stat span {
+  color: var(--t-muted);
+}
+.t-report__card {
+  margin-top: 12px;
+  padding: 20px 18px;
+  background: #ffffff;
+  border-radius: 16px;
+}
+.t-report__cardtitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--t-ink);
+}
+.t-report__text {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--t-ink);
+}
+.t-report__note {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--t-muted);
+}
+.t-report__waiting {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--t-muted);
+}
+.t-report__topics {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.t-report__topic {
+  background: var(--t-purple);
+}
+.t-report__link {
+  margin-top: 14px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--t-purple);
+  cursor: pointer;
+  text-align: left;
+}
+.t-report__list {
+  margin-top: 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  list-style: none;
+}
+.t-report__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.t-report__item + .t-report__item {
+  padding-top: 16px;
+  border-top: 1px solid var(--t-border);
+}
+.t-report__item b {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--t-ink);
+}
+.t-report__item i {
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--t-muted);
+}
+.t-report__fix {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--t-purple);
+}
+.t-report__words {
+  margin-top: 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+.t-report__word {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.t-report__word + .t-report__word {
+  padding-top: 12px;
+  border-top: 1px solid var(--t-border);
+}
+.t-report__wordtext {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.t-report__wordtext b {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--t-ink);
+}
+.t-report__wordtext span {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--t-ink);
+}
+.t-report__wordtext i {
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--t-muted);
+}
+.t-report__add {
+  flex: none;
+  height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 80px;
+  background: var(--t-purple);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.t-report__add.is-done {
+  background: #b7f0ff;
+  color: var(--t-purple);
+}
+.t-report__add:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.t-report__add.is-done:disabled {
+  opacity: 1;
+}
+.t-report__btns {
+  margin-top: 28px;
+  width: 100%;
+}
+
 /* ------------------- Сценарии (страница) ------------------------- */
 .t-scen {
   padding-top: 30px;
@@ -3025,6 +3234,34 @@
   /* --- Транскрипт разговора: пузыри пошире на узком экране --- */
   .t-bubble {
     max-width: 85%;
+  }
+  /* --- Отчёт после разговора --- */
+  .t-report {
+    padding-top: 16px;
+    max-width: 100%;
+  }
+  .t-report__headtext b {
+    font-size: 20px;
+  }
+  .t-report__stats {
+    gap: 6px;
+  }
+  .t-report__stats .t-stat {
+    min-height: 82px;
+    padding: 14px;
+  }
+  .t-report__stats .t-stat b {
+    font-size: 24px;
+  }
+  /* Слово и кнопка в столбик: на 390px «contemplate» + «В словарь» в одну
+     строку не помещаются и распирают контент за экран. */
+  .t-report__word {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .t-report__add {
+    align-self: flex-start;
   }
 }
 

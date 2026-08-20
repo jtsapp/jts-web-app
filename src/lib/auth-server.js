@@ -34,8 +34,12 @@ const DEVICE_ID_RE = /^[A-Za-z0-9_-]{6,64}$/
  *
  * Не настроен INTERNAL_API_KEY → канал закрыт. Пустая переменная НЕ должна
  * означать «пускаем всех» — иначе забытый env открывает запись в любой аккаунт.
+ *
+ * Экспортируется ещё и наружу: суммаризатор звонка гоняет платный Haiku и
+ * должен запускаться только для нашего же агента, а не для любого POST с
+ * подделанным deviceId (см. src/lib/callSummary/index.js).
  */
-function isTrustedInternalCaller(request) {
+export function isTrustedInternalCaller(request) {
   const expected = process.env.INTERNAL_API_KEY
   if (!expected) return false
   const got = request.headers.get('x-internal-key')
