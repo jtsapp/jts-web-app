@@ -50,6 +50,35 @@ const MARKER = /\((?:laughter|applause|music|video|stage|cheers|cheering|singing
 // Кандидат в метку говорящего: «Mother:», «JH:», «Jenny Hoyos:» в начале строки.
 const LABEL = /^([A-Z][A-Za-z.'-]*(?: [A-Z][A-Za-z.'-]*){0,2}):\s+/
 
+// Второй формат страницы Notion: готовые диапазоны «[чч:мм:сс - чч:мм:сс] текст».
+// Так оформлена подборка «old ones». Тут склейка не нужна — блоки уже разбиты
+// по фразам и вычитаны руками, поэтому берём их как есть, не трогая parseCaptions.
+const TIMED = /^\s*\[(\d{1,2}):(\d{2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2}):(\d{2})\]\s*(.*)$/
+
+function toSec(h, m, s) {
+  return +h * 3600 + +m * 60 + +s
+}
+
+function parseTimedBlocks(raw) {
+  const out = []
+  for (const ln of raw.replace(/\r/g, '').split('\n')) {
+    const m = ln.match(TIMED)
+    if (!m) continue
+    const text = m[7].trim()
+    if (!text) continue
+    out.push([toSec(m[1], m[2], m[3]), toSec(m[4], m[5], m[6]), text])
+  }
+  // Часть блоков приходит с концом не больше начала (в источнике одна и та же
+  // секунда с обеих сторон). Тянем конец до старта следующего блока — так же,
+  // как это делает parseCaptions для субтитров без конца.
+  for (let i = 0; i < out.length; i++) {
+    if (out[i][1] > out[i][0]) continue
+    const next = i + 1 < out.length ? out[i + 1][0] : out[i][0] + 1.2
+    out[i][1] = Math.max(next, out[i][0] + 1.2)
+  }
+  return out
+}
+
 function stripNotionHeader(raw) {
   const lines = raw.replace(/\r/g, '').split('\n')
   const first = lines.findIndex((l) => STAMP.test(l))
@@ -169,7 +198,41 @@ async function main() {
       console.warn(`· ${s.id}: нет ${path.relative(process.cwd(), inFile)} — пропуск`)
       continue
     }
-    const head = stripNotionHeader(fs.readFileSync(inFile, 'utf8'))
+    const rawText = fs.readFileSync(inFile, 'utf8')
+
+    // Страница с готовыми диапазонами: своя короткая ветка без склейки.
+    const timed = parseTimedBlocks(rawText)
+    if (timed.length) {
+      const outFile = path.join(OUT_DIR, `${s.id}.json`)
+      const exists = fs.existsSync(outFile)
+      if (exists && !force) {
+        const cur = JSON.parse(fs.readFileSync(outFile, 'utf8'))
+        console.log(`· ${s.id}: ${timed.length} блоков в источнике; json уже есть (${cur.segments.length} фраз) — нужен --force`)
+        if (s.hold) held.push(`${s.id}: ${s.hold}`)
+        else rows.push(indexRow(s, cur.segments.length))
+        continue
+      }
+      const meta = exists
+        ? JSON.parse(fs.readFileSync(outFile, 'utf8'))
+        : {
+            id: s.id,
+            title: s.title,
+            short: s.short,
+            video: s.video,
+            source: { channel: s.channel || null, url: `https://www.youtube.com/watch?v=${s.video}` },
+            level: s.level || null,
+          }
+      writeLesson(outFile, { ...meta, segments: [] }, timed)
+      const longest = timed.reduce((m, x) => Math.max(m, x[1] - x[0]), 0)
+      console.log(
+        `· ${s.id}: ${timed.length} фраз из готовых диапазонов, конец ${timed[timed.length - 1][1]}s, самая длинная ${longest.toFixed(1)}s`,
+      )
+      if (s.hold) held.push(`${s.id}: ${s.hold}`)
+      else rows.push(indexRow(s, timed.length))
+      continue
+    }
+
+    const head = stripNotionHeader(rawText)
     if (!head) {
       console.warn(`· ${s.id}: в тексте нет таймкодов — пропуск`)
       continue
