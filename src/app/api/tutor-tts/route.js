@@ -31,25 +31,44 @@ const GEMINI_HOST = process.env.GEMINI_TTS_HOST || 'https://texttospeech.googlea
 
 // Soniox voices — mirror agent SONIOX_TTS_VOICE. Постоянно тут только Спарк;
 // у Луны и Декстера свои строки на случай отката, иначе оба заговорили бы Owen.
-const SONIOX_VOICE = { spark: 'Owen', dexter: 'Noah', luna: 'Grace' }
+// Ключи с суффиксом -harsh — жёсткий нрав тьютора (ось 18+): тот же голос, тот
+// же провайдер. Алиасы нужны потому, что кнопка «послушать» и генератор визиток
+// зовут тьютора именно суффиксным ключом.
+const SONIOX_VOICE = { spark: 'Owen', dexter: 'Noah', luna: 'Grace', 'spark-harsh': 'Owen' }
 const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
 
 // Провайдер по тьютору — mirror agent TUTOR_TTS_PROVIDER. От языка не зависит:
 // по-казахски говорит только Спарк, а он и так на Soniox.
-const TUTOR_PROVIDER = { luna: 'gemini', dexter: 'eleven', spark: 'soniox', jarvis: 'fish' }
+const TUTOR_PROVIDER = {
+  luna: 'gemini',
+  dexter: 'eleven',
+  spark: 'soniox',
+  jarvis: 'fish',
+  'dexter-harsh': 'eleven',
+  'spark-harsh': 'soniox',
+}
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'
 
 // ElevenLabs per tutor key (только Декстер) — mirror agent ELEVEN_VOICE /
 // _eleven_voice_for. Voice id живёт в env, чтобы менять тембр без деплоя;
 // фолбэк — тот же id, что зашит в agent.py.
-const ELEVEN_VOICE = { dexter: process.env.ELEVEN_VOICE_ID_DEXTER || 'rHWSYoq8UlV0YIBKMryp' }
+const DEXTER_VOICE_ID = process.env.ELEVEN_VOICE_ID_DEXTER || 'rHWSYoq8UlV0YIBKMryp'
+const ELEVEN_VOICE = { dexter: DEXTER_VOICE_ID, 'dexter-harsh': DEXTER_VOICE_ID }
 const ELEVEN_MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5'
 // Совпадает с PERSONA_VOICE_SETTINGS["bro"] в agent.py: низкая stability +
 // высокий style — иначе сленг звучит как диктор новостей.
+const DEXTER_ELEVEN_SETTINGS = {
+  stability: 0.32,
+  similarity_boost: 0.75,
+  style: 0.6,
+  use_speaker_boost: true,
+  speed: 1.04,
+}
 const ELEVEN_SETTINGS = {
-  dexter: { stability: 0.32, similarity_boost: 0.75, style: 0.6, use_speaker_boost: true, speed: 1.04 },
+  dexter: DEXTER_ELEVEN_SETTINGS,
+  'dexter-harsh': DEXTER_ELEVEN_SETTINGS,
 }
 
 // Fish Audio (только Джарвис) — mirror agent FISH_TTS_VOICE. Голос задаётся

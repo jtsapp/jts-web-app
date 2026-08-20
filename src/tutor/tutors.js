@@ -7,6 +7,15 @@
 // внутри разговора эмоция всё так же приходит тегом от агента.
 import { JARVIS_ENABLED } from '../config.js'
 
+// Нрав (ось 18+) — второй характер у того же тьютора: тот же голос, тот же язык,
+// та же картинка, другой характер. У Спарка 'harsh' — матерящийся казах, у
+// Декстера 'calm' — тот же парень без мата и ора. Персону из пары (тьютор, нрав)
+// собирает агент, см. PERSONA_TEMPER_VARIANTS в agent/agent.py.
+//
+// Поле tempers у тьютора = «на карточке есть кнопка 18+». У Луны и Джарвиса его
+// нет, и кнопка не рисуется вовсе.
+export const TEMPERS = ['calm', 'harsh']
+
 const BASE_TUTORS = [
   {
     key: 'luna',
@@ -21,11 +30,11 @@ const BASE_TUTORS = [
     avatar: '/tutor/tutor-dexter.png',
     traitColors: ['#2cbf45', '#4a40c3', '#c39520'],
     mood: 'angry', // злой
-
-    // Персона матерится (см. PERSONA_OVERRIDE['bro'] в agent/agent.py) — метка
-    // 18+ у имени во всех местах, где карточка тьютора показывается. Это именно
-    // ПОМЕТКА, а не возрастной гейт: проверки возраста в приложении нет.
-    adult: true,
+    tempers: TEMPERS,
+    // Декстер знакомится спокойным. Раньше он был матерящимся всегда, и это
+    // решение продукта, а не оплошность: злой характер должен включаться
+    // осознанно, кнопкой, у обоих тьюторов одинаково.
+    defaultTemper: 'calm',
   },
   {
     key: 'spark',
@@ -33,6 +42,8 @@ const BASE_TUTORS = [
     avatar: '/tutor/tutor-spark.png',
     traitColors: ['#ffa200', '#f12929', '#51a41e'],
     mood: 'happy', // радостный
+    tempers: TEMPERS,
+    defaultTemper: 'calm',
   },
 ]
 
@@ -87,11 +98,25 @@ export const TUTOR_GREETING = {
   // data/persona-jarvis.md). Обращение «сэр» на «вы» — его опознавательный знак,
   // поэтому оно стоит уже в первой фразе.
   jarvis: 'Здравствуйте, сэр, что будем делать сегодня?',
+  // Визитки жёсткого нрава (кнопка 18+ на карточке). Отдельные файлы, а не
+  // подмена текста на лету: кнопка «послушать» играет готовый mp3 по ключу, а
+  // ключ у режима свой — <tutor>-harsh. Мат в визитке намеренный, это и есть
+  // превью режима.
+  'dexter-harsh': 'Здарова, бля. Я Декстер. Тут я на тебя ору, а ты учишь английский.',
+  'spark-harsh':
+    'Сәлем, мен Спарк. Қотақ, мұнда сыпайылық жоқ — айқайлаймын, боқтаймын, сені ағылшынша сөйлетемін.',
 }
 
 // Язык визитки — нужен генератору: Soniox читает казахский только с явным "kk",
 // иначе произносит его как набор латинских букв.
-export const TUTOR_GREETING_LANG = { luna: 'ru', dexter: 'ru', spark: 'kk', jarvis: 'ru' }
+export const TUTOR_GREETING_LANG = {
+  luna: 'ru',
+  dexter: 'ru',
+  spark: 'kk',
+  jarvis: 'ru',
+  'dexter-harsh': 'ru',
+  'spark-harsh': 'kk',
+}
 
 // Тьютор по умолчанию (если пользователь ещё не выбрал). Спарк — им же
 // инициализируется tutorKey в App.jsx и фолбэки всех экранов.
@@ -99,4 +124,26 @@ export const DEFAULT_TUTOR = TUTORS.find((t) => t.key === 'spark')
 
 export function getTutor(key) {
   return TUTORS.find((t) => t.key === key) || DEFAULT_TUTOR
+}
+
+/**
+ * Нрав тьютора: сохранённый выбор ученика → дефолт тьютора → null.
+ *
+ * null означает «у этого тьютора оси нет» (Луна, Джарвис) — тогда наверх ничего
+ * не уходит и агент берёт базовую персону. Живёт здесь, а не в App.jsx, потому
+ * что дефолт спрашивают три места (App, карточка, карусель), и разъехавшись, они
+ * дали бы ученику один характер на экране и другой в звонке.
+ */
+/**
+ * Ключ визитки для кнопки «послушать голос»: у жёсткого нрава своя запись в
+ * TUTOR_GREETING и свой файл public/tutor/voice/<key>.mp3.
+ */
+export function sampleKey(tutorKey, temper) {
+  return temper === 'harsh' ? `${tutorKey}-harsh` : tutorKey
+}
+
+export function temperFor(tutorKey, saved) {
+  const tutor = getTutor(tutorKey)
+  if (!tutor.tempers) return null
+  return tutor.tempers.includes(saved) ? saved : tutor.defaultTemper
 }

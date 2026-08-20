@@ -1,5 +1,6 @@
 import TutorShell from '../tutor/TutorShell.jsx'
 import TutorThumb from '../tutor/TutorThumb.jsx'
+import TemperToggle from '../tutor/TemperToggle.jsx'
 import { ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { groupCallsByDate } from '../tutor/callHistory.js'
@@ -11,6 +12,10 @@ export default function TutorManagePage({
   onBack,
   tutor = {},
   onChangeTutor,
+  // Нрав тьютора и его переключение. Менять характер, не меняя тьютора, нужно
+  // и после онбординга — не гонять же ученика заново через экран выбора.
+  temper = null,
+  onToggleTemper,
   // Сырые звонки из GET /api/profile/calls. Группировку по дате и локализацию
   // заголовков/статусов делаем здесь (зона тьютора: useLang). Строка звонка
   // кликабельна → onOpenCall(call) открывает транскрипт.
@@ -44,6 +49,13 @@ export default function TutorManagePage({
             </span>
           </button>
         </div>
+
+        {tutor.tempers && (
+          <div className="t-manage__temper">
+            <span>{t('tutor.temper')}</span>
+            <TemperToggle tutor={tutor} temper={temper} onToggle={onToggleTemper} />
+          </div>
+        )}
 
         <div className="t-manage__history">
           <h2>{t('manage.history')}</h2>

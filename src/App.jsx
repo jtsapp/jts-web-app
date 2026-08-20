@@ -49,7 +49,7 @@ import ProfilePage from './screens/ProfilePage.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
-import { getTutor } from './tutor/tutors.js'
+import { getTutor, temperFor } from './tutor/tutors.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
@@ -146,6 +146,7 @@ export default function App() {
         if (profile) {
           if (profile.tutor) {
             setTutorKey(profile.tutor)
+            setTemper(temperFor(profile.tutor, profile.tutorTemper))
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
@@ -173,6 +174,10 @@ export default function App() {
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
+  // Нрав выбранного тьютора (ось 18+): 'calm' | 'harsh' | null. null — у тьютора
+  // оси нет (Луна, Джарвис) либо профиль ещё не загрузился. Хранится рядом с
+  // tutorKey, потому что это ровно то же самое решение ученика: кого слушать.
+  const [temper, setTemper] = useState(null)
   // Онбординг тьютора пройден (тьютор сохранён в профиле) — сайдбар-«Тьютор»
   // ведёт сразу на dashboard, а не на welcome-цепочку.
   const [tutorOnboarded, setTutorOnboarded] = useState(false)
@@ -325,6 +330,7 @@ export default function App() {
       // юзера этого браузера (merge анкету тоже не переносит — см. merge.js).
       if (mode === 'register') {
         setTutorKey('spark')
+        setTemper(null)
         setTutorOnboarded(false)
         setInterestIds([])
         setProfession('')
@@ -341,6 +347,7 @@ export default function App() {
             if (!profile) return
             if (profile.tutor) {
               setTutorKey(profile.tutor)
+              setTemper(temperFor(profile.tutor, profile.tutorTemper))
               setTutorOnboarded(true)
             }
             setInterestIds(enToInterestIds(profile.interests))
@@ -403,6 +410,7 @@ export default function App() {
           if (!profile) return
           if (profile.tutor) {
             setTutorKey(profile.tutor)
+            setTemper(temperFor(profile.tutor, profile.tutorTemper))
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
@@ -453,6 +461,7 @@ export default function App() {
           if (!profile) return
           if (profile.tutor) {
             setTutorKey(profile.tutor)
+            setTemper(temperFor(profile.tutor, profile.tutorTemper))
             setTutorOnboarded(true)
           }
           setInterestIds(enToInterestIds(profile.interests))
@@ -517,6 +526,7 @@ export default function App() {
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
+    setTemper(null)
     setTutorOnboarded(false)
     setProfileId(null)
     setInterestIds([])
@@ -876,11 +886,16 @@ export default function App() {
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-lang')}
-          onChoose={(key) => {
+          tutorKey={tutorKey}
+          temper={temper}
+          onChoose={(key, chosenTemper = null) => {
             setTutorKey(key)
+            setTemper(chosenTemper)
             // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
             setTutorOnboarded(true)
-            saveTutorPrefs(token, { tutor: key })
+            // Тьютор и нрав пишутся ОДНИМ патчем: разними их — и при осечке сети
+            // в профиле останется тьютор с чужим характером.
+            saveTutorPrefs(token, { tutor: key, tutorTemper: chosenTemper })
             setScreen('tutor-loading')
           }}
           // Образец голоса — готовый файл, а не живой синтез: фраза одна и та
@@ -943,6 +958,7 @@ export default function App() {
           // placement-цепочке (voice-intro), достижимой диплинком.
           onBack={() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro')}
           tutor={tutor}
+          temper={temper}
           scenario={scenario}
           onFinish={() =>
             setScreen(
@@ -1088,6 +1104,12 @@ export default function App() {
           onBack={() => setScreen('tutor-dashboard')}
           tutor={tutor}
           onChangeTutor={() => setScreen('tutor-choose')}
+          temper={temper}
+          onToggleTemper={() => {
+            const next = temper === 'harsh' ? 'calm' : 'harsh'
+            setTemper(next)
+            saveTutorPrefs(token, { tutorTemper: next })
+          }}
           calls={callHistory}
           onOpenCall={(call) => {
             setSelectedCall(call)

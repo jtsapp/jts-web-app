@@ -108,4 +108,15 @@ assert "speak Russian or Kazakh, ANSWER IN THAT LANGUAGE" in prompt_dexter
 # --- характер ---------------------------------------------------------------
 assert "KAZAKH AND ENGLISH, NOTHING ELSE" in PERSONA_OVERRIDE[SPARK]
 
+# --- нрав 18+ не открывает Спарку русский ----------------------------------
+# Второй характер (temper="harsh") меняет тон, но не язык: он всё так же
+# казахскоязычный. Подробные ассерты — в test_persona_temper.py, здесь только
+# то, что относится к языку.
+harsh = _spark(lang="ru", temper="harsh")
+assert tutor_session_lang(harsh.tutor, harsh.lang) == "kz"
+harsh_prompt = build_instructions(harsh)
+assert "RUSSIAN IS NOT YOUR LANGUAGE" in harsh_prompt
+assert "SPEAK RUSSIAN TO THEM" not in harsh_prompt
+assert "ТЕК ҚАЗАҚША ЖӘНЕ АҒЫЛШЫНША" in harsh_prompt
+
 print("test_spark_language: ok")
