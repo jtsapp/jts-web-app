@@ -874,6 +874,33 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     шапкой и уроком и отодвигала материал вниз на пустом месте. */}
                 {tab === 'lesson' && (
                   <div className="lw-live-body">
+                    {/* Маршрут — своя колонка слева, как и был. Пробовал
+                        перенести его карточкой в правую колонку (в макете
+                        отдельной колонки под маршрут нет), но там у колонки своя
+                        прокрутка: маршрут уезжал за верхний край и с экрана
+                        пропадал. Видимость важнее совпадения с макетом. */}
+                    <div className="lw-live-route">
+
+                      {sections.length === 0 ? (
+                          <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
+                            {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
+                          </p>
+                        ) : (
+                          <LessonRoute
+                            steps={routeSteps}
+                            activeStepId={routeActiveId}
+                            statusById={onLessonSteps ? stepStatusById : sectionStatusById}
+                            onSelect={selectRouteStep}
+                            {...(onLessonSteps
+                              // На шагах урока позиции обоих приходят трансляцией
+                              // step-progress; на разделах занятия — событием focus,
+                              // и там известен только преподаватель.
+                              ? { studentStepId, teacherStepId: lessonTeacherStepId }
+                              : { teacherStepId })}
+                          />
+                        )}
+                      </div>
+
                     <div className="lw-live-main">
                       {isStaff && (
                         <button className="lw-focus-btn" disabled={!activeSectionId} onClick={handleFocusClick}>
@@ -984,43 +1011,24 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       {/* Урок проходится кнопками под заданием, а не только
                           кликом по маршруту сбоку — см. StepNav.
 
-                          У ученика этих кнопок нет: он идёт по очереди экранов,
-                          и её листает «Продолжить» самого плеера. Две навигации
-                          на одном экране противоречили друг другу — «Далее»
-                          перепрыгивала через весь шаг урока, мимо заданий,
-                          которые плеер только собирался показать. */}
-                      {isStaff && (
+                          Ученику кнопки нужны НЕ всегда: когда урок разобрался в
+                          очередь экранов, его листает «Продолжить» самого плеера,
+                          и вторая навигация рядом противоречила первой — «Далее»
+                          перепрыгивала через весь шаг, мимо заданий, которые
+                          плеер только собирался показать.
+
+                          Но когда очередь не собралась (в уроке есть vocab,
+                          match, order — см. liveSteps.js), плеера нет вовсе, и
+                          ученик оставался БЕЗ всякой навигации: ни «Продолжить»,
+                          ни «Далее», перейти на следующий шаг нечем. Поэтому
+                          условие ровно то же, по которому выбирается сам вид
+                          урока ниже: нет плеера — есть кнопки. */}
+                      {(isStaff || playerSteps.length === 0) && (
                         <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
                       )}
                     </div>
 
                     <div className="lw-live-aside">
-                      {/* Маршрут урока. В макете «Онлайн-уроки» своей колонки у
-                          него нет — там ровно две: контент 868 и правая 300. Но
-                          выкидывать его нельзя: только отсюда переходят на
-                          произвольный шаг и видно, где ученик, а где
-                          преподаватель. Поэтому он переехал сюда карточкой. */}
-                      <div className="lw-live-route">
-                        {sections.length === 0 ? (
-                          <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
-                            {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
-                          </p>
-                        ) : (
-                          <LessonRoute
-                            steps={routeSteps}
-                            activeStepId={routeActiveId}
-                            statusById={onLessonSteps ? stepStatusById : sectionStatusById}
-                            onSelect={selectRouteStep}
-                            {...(onLessonSteps
-                              // На шагах урока позиции обоих приходят трансляцией
-                              // step-progress; на разделах занятия — событием focus,
-                              // и там известен только преподаватель.
-                              ? { studentStepId, teacherStepId: lessonTeacherStepId }
-                              : { teacherStepId })}
-                          />
-                        )}
-                      </div>
-
                       {/* Урок кончился — звонка на его месте быть не должно:
                           звонить уже некуда. Вместо него итог (спека §3.4). */}
                       {status === 'COMPLETED' ? (

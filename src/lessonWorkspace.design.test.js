@@ -272,12 +272,18 @@ describe('классрум — живой урок: колонки и перех
   // ни на одном. Сам маршрут при этом остаётся в каждом уроке — карточкой
   // правой колонки: только через него переходят на произвольный шаг и видно,
   // где ученик, а где преподаватель.
-  it('сетка урока — две колонки, контент и правая 300', () => {
+  // Макет даёт две колонки (868 + 300), и маршрут туда не помещается. Его
+  // пробовали перенести карточкой в правую колонку — но у неё своя прокрутка,
+  // и маршрут уезжал за верхний край, то есть просто пропадал с экрана вместе
+  // с возможностью перейти на другой шаг. Колонка под маршрут вернулась: это
+  // осознанное отступление от макета в пользу того, чем пользуются.
+  it('сетка урока — три колонки: маршрут, контент и правая 300', () => {
     const body = css.match(/\.lw-live-body\s*{([^}]+)}/)[1]
     expect(body).toMatch(/--lw-col-right:\s*300px/)
-    expect(body).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*var\(--lw-col-right\)/)
-    // Колонки под маршрут больше нет — вместе с ней ушёл и её токен ширины.
-    expect(css).not.toMatch(/--lw-live-col-left/)
+    expect(body).toMatch(/--lw-live-col-left:\s*232px/)
+    expect(body).toMatch(
+      /grid-template-columns:\s*var\(--lw-live-col-left\)\s*minmax\(0,\s*1fr\)\s*var\(--lw-col-right\)/,
+    )
   })
 
   it('экран урока занимает окно, прокрутка уезжает внутрь колонок', () => {
@@ -304,11 +310,8 @@ describe('классрум — живой урок: колонки и перех
     const aside = css.match(/\.lw-live-aside\s*{\s*\n\s*overflow-y:\s*auto;([^}]+)}/)
     expect(aside).not.toBeNull()
     expect(css).toMatch(
-      /\.lw-live-aside > \.lw-meet,\n\s*\.lw-live-aside > \.lw-summary,\n\s*\.lw-live-aside > \.lw-live-route\s*{[^}]*flex:\s*none/,
+      /\.lw-live-aside > \.lw-meet,\n\s*\.lw-live-aside > \.lw-summary\s*{[^}]*flex:\s*none/,
     )
-    // Свой предел у маршрута остаётся: десяток шагов не должен вытеснять
-    // остальные карточки за один экран прокрутки.
-    expect(css).toMatch(/\.lw-live-route\s*{[^}]*max-height:\s*min\(320px/)
     expect(css).toMatch(/\.lw-live-aside > \.lw-topics\s*{[^}]*max-height:\s*min\(220px/)
     // Чат добирает остаток, но ниже рабочей высоты не ужимается.
     expect(css).toMatch(/\.lw-live-aside \.lw-chat\s*{[^}]*flex:\s*1 0 auto;[^}]*min-height:\s*280px/)

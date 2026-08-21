@@ -2263,7 +2263,12 @@
      по всем 39 экранам Warm-up/Grammar/Practice/Listening/Speaking/Wrap — там
      везде ровно эти две). Своей колонки у маршрута в макете нет, он переехал
      карточкой в правую (см. LiveLessonPage). */
-  grid-template-columns: minmax(0, 1fr) var(--lw-col-right);
+  /* Три колонки: маршрут 232 + контент + правая 300. В макете колонки две
+     (868 + 300), и маршрут я переносил карточкой в правую — но у неё своя
+     прокрутка, и маршрут уезжал за верхний край, то есть пропадал с экрана.
+     Видеть, где ты в уроке, и переходить по шагам важнее совпадения с макетом. */
+  --lw-live-col-left: 232px;
+  grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr) var(--lw-col-right);
   /* Встык, без зазора: в макете 868 + 300 = 1168 ровно. Воздух между
      колонками дают их собственные паддинги — 32 справа у контента и 8 слева
      у правой, — а не промежуток сетки. */
@@ -2280,13 +2285,12 @@
 /* Маршрут — карточка правой колонки, а не своя колонка (см. .lw-live-body).
    Предел по высоте тот же приём, что у топиков ниже: на уроке в десяток шагов
    список иначе съедает колонку и выдавливает чат за нижний край окна. */
+/* Маршрут — своя колонка слева. */
 .lw-live-route {
   min-width: 0;
   /* Скроллбар маршрута не должен обрезать скругление карточки. */
   padding-right: 2px;
-  max-height: min(320px, 38vh);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  padding-top: 24px;
 }
 
 /* Внутренность центральной колонки — по макету, а не на глаз. Значения сверены
@@ -2393,6 +2397,7 @@
     align-items: stretch;
   }
 
+  .lw-live-route,
   .lw-live-main,
   .lw-live-aside {
     min-height: 0;
@@ -2414,8 +2419,7 @@
   }
 
   .lw-live-aside > .lw-meet,
-  .lw-live-aside > .lw-summary,
-  .lw-live-aside > .lw-live-route {
+  .lw-live-aside > .lw-summary {
     flex: none;
   }
 
@@ -2704,12 +2708,12 @@
 
 @media (max-width: 1420px) {
   .lw-live-body {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: var(--lw-live-col-left) minmax(0, 1fr);
   }
 
   /* Правая колонка вспомогательная — уходит вниз первой и раскладывается в ряд. */
   .lw-live-aside {
-    grid-column: 1;
+    grid-column: 2;
     position: static;
     flex-direction: row;
     flex-wrap: wrap;
@@ -3602,4 +3606,14 @@
   .lw-doc__body > .lw-aside {
     width: 100%;
   }
+}
+
+/* Серый фон урока — на всю высоту рабочей области, а не только под контентом.
+   .learn__main белый и занимает окно целиком; .live--wide кончается вместе с
+   содержимым (768 из 900), и снизу оставалась белая полоса. Раньше её частично
+   закрывал внешний отступ 16px, который убран ради ширины колонки 868.
+   :has, а не правило на .learn__main — тот же контейнер держит другие экраны
+   раздела, и красить их фон в серый эта работа не должна. */
+.learn:has(.live--wide) .learn__main {
+  background: var(--lw-bg);
 }
