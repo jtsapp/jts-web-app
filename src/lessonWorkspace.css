@@ -846,6 +846,60 @@
   color: var(--lw-muted);
 }
 
+/* Банк слов к gap-fill (voc-context) и реплики диалога, если они доехали
+   info-блоком, а не отдельным practice. */
+.lw-info__body .bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--lw-tint-3);
+}
+
+.lw-info__body .blabel {
+  width: 100%;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lw-muted);
+}
+
+.lw-info__body .bw {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--lw-line, #e6e8ef);
+  font-size: 14px;
+}
+
+.lw-info__body .bnote {
+  width: 100%;
+  font-size: 12px;
+  color: var(--lw-muted);
+}
+
+.lw-info__body .chat {
+  display: grid;
+  gap: 10px;
+}
+
+.lw-info__body .msg {
+  padding: 10px 12px;
+  border: 1px solid var(--lw-line, #e6e8ef);
+  border-radius: 12px;
+  background: var(--lw-tint-3);
+}
+
+.lw-info__body .msg b {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--lw-primary-ink);
+}
+
 /* Формула — ряд токенов со знаком «+» между ними. */
 .lw-forms {
   display: flex;
@@ -1615,6 +1669,54 @@
 .lw-chip.is-wrong {
   background: var(--lw-error);
   color: #ffffff;
+}
+
+/* «Разложи по категориям» — банк нераспределённых слов сверху, колонки
+   категорий снизу; см. MatchQuestion.jsx (isSort). */
+.lw-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.lw-sort__bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--lw-tint-3);
+}
+
+.lw-sort__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.lw-sort__col {
+  min-height: 90px;
+  padding: 10px;
+  border: 1.5px dashed var(--lw-track);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.lw-sort__col-label {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lw-muted);
+}
+
+.lw-sort__col-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .lw-match__hint,
