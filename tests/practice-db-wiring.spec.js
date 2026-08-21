@@ -12,14 +12,20 @@ function fakeSql(selectRows) {
     return Promise.resolve(calls.length === 1 ? selectRows : [])
   }
   fn.calls = calls
+  // Модуль оборачивает состояние в sql.json() — porsager сериализует параметр
+  // сам, и ::jsonb-каст ставится уже на готовое значение (см. комментарий в
+  // src/lib/db/practice.js). Фейк про это не знал и падал с «sql.json is not a
+  // function» на первом же upsert, до любой проверки merge-семантики.
+  // Заворачиваем так же, как драйвер: помеченный объект, из которого тест
+  // достаёт полезную нагрузку.
+  fn.json = (value) => ({ __json: value })
   return fn
 }
 
-// Достаём jsonb-строку, переданную в upsert (JSON.stringify(merged)).
+/** Что ушло в upsert: значение, завёрнутое в sql.json(). */
 function mergedFrom(calls) {
-  const upsertValues = calls[1]
-  const jsonStr = upsertValues.find((v) => typeof v === 'string' && v.includes('"'))
-  return JSON.parse(jsonStr)
+  const wrapped = calls[1].find((v) => v && typeof v === 'object' && '__json' in v)
+  return wrapped.__json
 }
 
 test.describe('savePracticeState — обвязка read-merge-write', () => {

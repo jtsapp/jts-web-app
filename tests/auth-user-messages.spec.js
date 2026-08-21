@@ -33,6 +33,13 @@ test('регистрация занятого номера: «Пользоват
   await page.locator('.phone-field input').fill('7771234567')
   await page.locator('.form-primary').click()
 
+  // Регистрация теперь в два шага: reg-phone → reg-email → otp (App.jsx:314), и
+  // /registration/initiate уходит только после почты (api.js:547) — вместе с
+  // именем, телефоном и почтой. Значит и ответ «уже существует» приходит
+  // экраном позже, чем ждал этот тест.
+  await page.getByPlaceholder('you@example.com').fill('taken@example.com')
+  await page.locator('.form-primary').click()
+
   await expect(page.locator('.form-error')).toContainText('уже существует')
   // Не ушли на ввод кода — регистрация занятого номера остановлена.
   await expect(page.locator('.otp-box')).toHaveCount(0)
@@ -45,8 +52,11 @@ test('вход незарегистрированным номером: «Пол
   )
 
   await page.goto('/')
-  // «Войти» (intent=login) → сразу телефон, без /registration/initiate.
+  // «Войти» больше не ведёт сразу на телефон: теперь это экран «Вход в аккаунт»
+  // с телефоном/почтой и паролем (App.jsx: screen='login-password'). Вход по
+  // коду — ссылка оттуда, и именно он проверяется этим тестом.
   await page.locator('.btn--secondary').click()
+  await page.getByText('Войти по коду из сообщения').click()
   await page.locator('.phone-field input').fill('7770000000')
   await page.locator('.form-primary').click()
 

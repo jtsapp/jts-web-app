@@ -3,9 +3,18 @@ import { norm, gradeQuestion } from '../src/screens/workspace/practiceGrading.js
 import { SAMPLE_LESSON } from '../src/screens/workspace/sampleLesson.js'
 
 test.describe('practiceGrading', () => {
-  test('norm убирает регистр/пунктуацию/пробелы', () => {
+  // norm() больше не «просто вырезает апостроф»: с переходом на общий
+  // normAnswer (src/lib/answer-match.js) стяжения РАСКРЫВАЮТСЯ в полную форму.
+  // Это не регресс, а починка: движок исходного курса принимает и «don't», и
+  // «do not», а наши плееры принимали только вторую форму — урок A0 браковал
+  // верные ответы. Плюс типографский апостроф (U+2019) из данных B2/C1 раньше
+  // не вырезался вовсе.
+  test('norm убирает регистр и пунктуацию, а стяжения раскрывает', () => {
     expect(norm('  Does  ')).toBe('does')
-    expect(norm("don't do!")).toBe('dont do')
+    expect(norm("don't do!")).toBe('do not do')
+    // Три записи одного ответа — одна строка: ради этого правило и вводили.
+    expect(norm("don't do")).toBe(norm('do not do'))
+    expect(norm('don\u2019t do')).toBe(norm('do not do'))
   })
   test('choice — верно только при точном совпадении', () => {
     const q = { id: 'q', type: 'choice', options: ['commute', 'commutes', 'is commute'], answer: 'commutes' }

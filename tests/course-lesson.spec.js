@@ -37,6 +37,31 @@ async function answerKey(page, level, n = 1) {
   )
 }
 
+// Шлюзы кнопки: у части шагов CTA намеренно бледная, пока не ответишь — так в
+// макете. Плеер держит её через canCheck (CourseStepPlayer.jsx:303-307):
+// `pick` ждёт хотя бы одну отмеченную карточку, `rows` — заполненную КАЖДУЮ
+// строку. Обход этого не знал и упирался в disabled-кнопку на первом же шаге
+// урока B1 (там шаг 0 — pick) и на шаге 19 урока A2 (rows), считая, что урок
+// кончился. Продукт исправен; чинить надо обход.
+async function satisfyGate(page, answers = {}) {
+  const picks = page.locator('.cp-pick')
+  if (await picks.count()) {
+    await picks.first().click()
+    return
+  }
+  const rows = page.locator('.cp-rows__row')
+  const n = await rows.count()
+  for (let i = 0; i < n; i++) {
+    const row = rows.nth(i)
+    const q = ((await row.locator('.cp-rows__q').textContent().catch(() => '')) || '').trim()
+    const opts = row.locator('.cp-rows__opt')
+    const texts = await opts.allTextContents()
+    const want = answers[q]
+    const j = want ? texts.findIndex((t) => t.trim() === want) : -1
+    await opts.nth(j >= 0 ? j : 0).click()
+  }
+}
+
 // Проходит урок до конца, отвечая верно. maxSteps — предохранитель от зацикливания.
 async function playThrough(page, answers, maxSteps = 80) {
   for (let i = 0; i < maxSteps; i++) {
@@ -50,6 +75,9 @@ async function playThrough(page, answers, maxSteps = 80) {
       await page.locator('.cp-write').fill('I like coffee')
       await page.locator('.cp-cta:not([disabled])').click()
     } else {
+      // Шаг может держать кнопку до ответа — снимаем шлюз, а уже потом решаем,
+      // что урок встал.
+      await satisfyGate(page, answers)
       const cta = page.locator('.cp-cta:not([disabled])')
       if (!(await cta.count())) return false
       await cta.click()
@@ -95,7 +123,8 @@ for (const level of LEVELS) {
     test('карточки слов показывают перевод по клику', async ({ page }) => {
       await openLesson(page, level)
       // Шаг со словами — первый или второй в уроке.
-      for (let i = 0; i < 3 && !(await page.locator('.cp-word').count()); i++) {
+      for (let i = 0; i < 4 && !(await page.locator('.cp-word').count()); i++) {
+        await satisfyGate(page)
         await page.locator('.cp-cta:not([disabled])').click()
         await page.waitForTimeout(150)
       }
@@ -109,7 +138,8 @@ for (const level of LEVELS) {
     test('верный ответ даёт монеты, неверный подсвечивается красным', async ({ page }) => {
       await openLesson(page, level)
       // Доходим до первого оценённого шага.
-      for (let i = 0; i < 6 && !(await page.locator('.cp-choice').count()); i++) {
+      for (let i = 0; i < 8 && !(await page.locator('.cp-choice').count()); i++) {
+        await satisfyGate(page)
         await page.locator('.cp-cta:not([disabled])').click()
         await page.waitForTimeout(150)
       }
@@ -133,17 +163,29 @@ for (const level of LEVELS) {
       }
     })
 
-    test('аудио шага слушания отдаётся из public/course', async ({ page }) => {
+    // Дорожка урока: у B1 это отдельный шаг `listen`, у A2 такого шага в
+    // steps-1.json нет вовсе — там плеер дорожки стоит над шагом `rows`.
+    // Поэтому ищем сам плеер, а не тип шага.
+    test('дорожка урока отдаётся из public/course', async ({ page }) => {
+      // Слушаем ответы с самого начала: дорожку плеер заводит при показе шага
+      // (getStageAudio), поэтому запрос успевает уйти ДО того, как тест до неё
+      // доберётся, — ждать его после клика бесполезно.
+      const audioResponses = []
+      page.on('response', (r) => {
+        if (/\/course\/(a2|b1)\/audio\//.test(r.url())) audioResponses.push(r)
+      })
+
       await openLesson(page, level)
       const answers = await answerKey(page, level)
       let found = false
       for (let i = 0; i < 40 && !found; i++) {
-        if (await page.locator('.cp-audio audio').count()) { found = true; break }
+        if (await page.locator('.cp-audio').count()) { found = true; break }
         if (await page.locator('.cp-fb').count()) await page.locator('.cp-cta:not([disabled])').click()
         else if (await page.locator('.cp-choice:not([disabled])').count()) {
           await pickCorrect(page, answers)
           await page.locator('.cp-cta:not([disabled])').click()
         } else {
+          await satisfyGate(page, answers)
           const cta = page.locator('.cp-cta:not([disabled])')
           if (!(await cta.count())) break
           await cta.click()
@@ -151,10 +193,22 @@ for (const level of LEVELS) {
         await page.waitForTimeout(120)
       }
       expect(found).toBeTruthy()
-      const src = await page.locator('.cp-audio audio').first().getAttribute('src')
-      expect(src).toContain(`/course/${level.toLowerCase()}/audio/`)
-      const status = await page.evaluate((u) => fetch(u, { method: 'HEAD' }).then((r) => r.status), src)
-      expect(status).toBe(200)
+
+      // Узла <audio> в разметке нет с коммита 6a9040d: дорожка живёт в
+      // модульном new Audio() (getStageAudio), чтобы переживать смену шага.
+      // Поэтому проверяем не атрибут, а сам запрос — это строже: доказывает,
+      // что файл реально запрошен и отдан, а не просто прописан в разметке.
+      await page.locator('.cp-audio__play').first().click()
+      await expect
+        .poll(() => audioResponses.length, { timeout: 10_000 })
+        .toBeGreaterThan(0)
+
+      const resp = audioResponses[0]
+      expect(resp.url()).toContain(`/course/${level.toLowerCase()}/audio/`)
+      // 206, а не 200: браузер тянет медиа диапазонным запросом (Range), и
+      // сервер честно отвечает Partial Content. Оба статуса означают «файл на
+      // месте и отдан» — 404/500 отсекаются так же надёжно.
+      expect([200, 206]).toContain(resp.status())
     })
 
     test('пройденный урок засчитывается в тропе', async ({ page }) => {
