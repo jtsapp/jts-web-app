@@ -3574,3 +3574,32 @@
   box-shadow: none;
   padding: 0;
 }
+
+/* Документальная ветка рабочего пространства: задание слева, правая колонка
+   справа — та же раскладка, что и у очереди экранов, чтобы два вида одного
+   урока не разъезжались. */
+.lw-doc__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.lw-doc__body > .lw-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.lw-doc__body > .lw-aside {
+  flex: none;
+  width: 300px;
+}
+
+@media (max-width: 1000px) {
+  .lw-doc__body {
+    flex-direction: column;
+  }
+
+  .lw-doc__body > .lw-aside {
+    width: 100%;
+  }
+}

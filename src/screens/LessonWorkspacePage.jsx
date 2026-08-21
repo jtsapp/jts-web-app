@@ -157,14 +157,26 @@ export default function LessonWorkspacePage({
                   ))}
                 </div>
               )}
-              <LessonContent
-                step={docStep}
-                answers={docAnswers}
-                checkedKeys={docChecked}
-                onAnswer={handleDocAnswer}
-                onCheck={handleDocCheck}
-                readOnly={false}
-              />
+              <div className="lw-doc__body">
+                <LessonContent
+                  step={docStep}
+                  answers={docAnswers}
+                  checkedKeys={docChecked}
+                  onAnswer={handleDocAnswer}
+                  onCheck={handleDocCheck}
+                  readOnly={false}
+                />
+                {/* Правая колонка обещана шапкой этого файла и в очереди
+                    экранов уже есть — а в документальной ветке её не было
+                    вовсе. Урок, который плеер не осилил, оставался без звонка,
+                    тем и чата: те же три карточки, тот же компонент. */}
+                <LessonAside
+                  lesson={lesson}
+                  activeTopicId={activeTopicId}
+                  messages={chatMessages}
+                  onSend={handleSend}
+                />
+              </div>
             </div>
           ) : (
             <CourseStepPlayer

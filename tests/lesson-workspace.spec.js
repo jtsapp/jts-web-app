@@ -5,8 +5,10 @@ test.describe('lesson workspace', () => {
     await page.goto('/?screen=lesson-workspace')
     const root = page.locator('[data-testid="lesson-workspace"]')
     await expect(root).toBeVisible({ timeout: 20000 })
-    // маршрут: 9 шагов
-    await expect(page.locator('.lw-route__step')).toHaveCount(9)
+    // Шаги урока: панель маршрута (.lw-route__step) осталась только у
+    // преподавателя в живом уроке — на этом экране её осознанно заменили
+    // вкладками (коммит 8dd3c6b). Шагов по-прежнему девять, селектор другой.
+    await expect(page.locator('.ls-tab')).toHaveCount(9)
     // центр: теория + инфо-блок + практика присутствуют
     await expect(page.locator('.lw-theory').first()).toBeVisible()
     await expect(page.locator('.lw-info').first()).toBeVisible()
@@ -24,7 +26,7 @@ test.describe('lesson workspace', () => {
     await page.locator('.lw-chat__send').click()
     await expect(page.locator('.lw-chat__msg')).toHaveCount(before + 1)
     // клик по другому шагу меняет контент
-    await page.locator('.lw-route__step').nth(2).click()
+    await page.locator('.ls-tab').nth(2).click()
     await expect(root).toBeVisible()
   })
 
@@ -35,7 +37,10 @@ test.describe('lesson workspace', () => {
     const firstChoice = page.locator('.lw-q--choice').first()
     await firstChoice.locator('.lw-opt').first().click()
     await page.locator('.lw-practice__check').first().click()
-    await expect(firstChoice.locator('.lw-opt.is-correct')).toHaveCount(1)
+    // Верный вариант компонент метит классом is-ok (ChoiceQuestion.jsx:52);
+    // is-correct понимает только CSS, разметка его не ставит — тест искал
+    // класс, которого на экране нет.
+    await expect(firstChoice.locator('.lw-opt.is-ok')).toHaveCount(1)
   })
 
   test('match — выбор пары красится после проверки', async ({ page }) => {

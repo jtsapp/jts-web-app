@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import AssetImage from '../components/AssetImage.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
+import LangSelector from '../components/LangSelector.jsx'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
 import { reportAudio } from '../screens/live/audioReport.js'
 
@@ -144,7 +145,7 @@ function shuffle(arr, seed) {
  * которую из живого урока убрали намеренно. Плюс корень с min-height: 100vh и
  * своим фоном внутри колонки фиксированной высоты давал лишнюю прокрутку.
  */
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, bare = false, onExit, onVocab, onDone }) {
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, bare = false, withLang = false, aside = null, onStep, onExit, onVocab, onDone }) {
   const { t } = useI18n()
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
@@ -155,6 +156,15 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   // Дорожка живёт вне экрана задания (см. getStageAudio) — значит, обрывать её
   // надо на выходе из урока, иначе запись догоняет студента уже на тропе.
   useEffect(() => stopStageAudio, [])
+
+  // Где сейчас студент — наружу. Проп `onStep` страница передавала с самого
+  // начала, но здесь он не читался: откат PR #243 снял его вместе с остальным,
+  // а следующий фикс вернул только вызов на стороне страницы. Из-за этого
+  // stepIndex у неё навсегда оставался нулём, и подсветка темы урока стояла на
+  // первой независимо от того, куда ушёл студент.
+  useEffect(() => {
+    onStep?.(idx)
+  }, [idx, onStep])
 
   const total = steps.length
   const step = steps[idx]
@@ -185,7 +195,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   if (!step) return null
 
   return (
-    <div className={`cp${bare ? ' cp--bare' : ''}`}>
+    <div className={`cp${bare ? ' cp--bare' : ''}${aside ? ' cp--aside' : ''}`}>
       {!bare && (
       <div className="cp-bar">
         {/* Значок стоит ПЕРЕД подписью у обеих кнопок полосы — так в макете.
@@ -216,6 +226,10 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           </svg>
           <span className="cp-bar__label">{t('nav.vocab')}</span>
         </button>
+        {/* Урок каталога читается на языке интерфейса — переключатель нужен
+            прямо здесь, не выходя из урока. Просит его сама страница: на тропе
+            обучения он не нужен, там язык уже выбран в сайдбаре. */}
+        {withLang && <LangSelector />}
       </div>
       )}
 
@@ -247,6 +261,14 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           t={t}
         />
       </div>
+
+      {/* Правая колонка страницы — звонок, темы урока и чат с учителем. Слот,
+          а не своя разметка: что в нём стоит, решает экран, плеер только даёт
+          ему место рядом с заданием. Проп пришёл вместе с `onStep` и
+          `withLang` и вместе с ними же потерялся при откате PR #243 — страница
+          его передавала, плеер не объявлял, и CallTile/TopicsList/TeacherChat
+          на этом экране были мёртвым кодом. */}
+      {aside && <div className="cp-aside">{aside}</div>}
     </div>
   )
 }
