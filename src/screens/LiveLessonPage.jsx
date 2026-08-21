@@ -1026,7 +1026,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           условие ровно то же, по которому выбирается сам вид
                           урока ниже: нет плеера — есть кнопки. */}
                       {(isStaff || playerSteps.length === 0) && (
-                        <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
+                        <StepNav
+                          steps={routeSteps}
+                          activeStepId={routeActiveId}
+                          // Шаг считается пройденным тем же способом, что и в
+                          // маршруте слева: все его задания отвечены верно.
+                          // Преподавателю ждать нечего — он ведёт занятие.
+                          stepDone={isStaff || !activeStep || stepProgress([activeStep], answers).done === 1}
+                          onSelect={selectRouteStep}
+                        />
                       )}
                     </div>
 

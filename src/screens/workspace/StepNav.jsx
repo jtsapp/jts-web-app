@@ -9,7 +9,10 @@ import { useI18n } from '../../i18n.jsx'
 //
 // Состояния своего не держит: активный шаг и список приходят сверху, наружу
 // уходит только id выбранного — тот же контракт, что у LessonRoute.
-export default function StepNav({ steps, activeStepId, onSelect }) {
+// `stepDone` — пройден ли текущий шаг. «Далее» до этого не работает: иначе
+// кнопка зовёт вперёд с недоделанного задания, а на длинном шаге ещё и
+// перепрыгивает через то, что ученик не видел.
+export default function StepNav({ steps, activeStepId, stepDone = true, onSelect }) {
   const { t } = useI18n()
   const list = steps || []
   const index = list.findIndex((step) => step.id === activeStepId)
@@ -39,7 +42,7 @@ export default function StepNav({ steps, activeStepId, onSelect }) {
       <button
         type="button"
         className="lw-stepnav__btn lw-stepnav__btn--primary"
-        disabled={!hasNext}
+        disabled={!hasNext || !stepDone}
         onClick={() => onSelect(list[index + 1].id)}
       >
         {t('lesson.ws.nextStep')}
