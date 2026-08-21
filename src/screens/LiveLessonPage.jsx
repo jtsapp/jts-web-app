@@ -1030,6 +1030,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           steps={routeSteps}
                           activeStepId={routeActiveId}
                           onSelect={selectRouteStep}
+                          // Материал кончился — выводим из него тем же путём,
+                          // что и «Выйти» в шапке. Урок закрывает преподаватель.
+                          onFinish={onBack}
                         />
                       )}
                     </div>

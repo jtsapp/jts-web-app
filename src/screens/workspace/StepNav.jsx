@@ -13,7 +13,7 @@ import { useI18n } from '../../i18n.jsx'
 // вправе посмотреть дальше, вернуться, пройти шаги не по порядку, а на задании,
 // которое почему-либо не отвечается, запертая кнопка не оставляла выхода вовсе.
 // Кнопка гаснет только на последнем шаге — вести дальше действительно некуда.
-export default function StepNav({ steps, activeStepId, onSelect }) {
+export default function StepNav({ steps, activeStepId, onSelect, onFinish }) {
   const { t } = useI18n()
   const list = steps || []
   const index = list.findIndex((step) => step.id === activeStepId)
@@ -40,14 +40,28 @@ export default function StepNav({ steps, activeStepId, onSelect }) {
         {t('lesson.ws.stepPosition', { current: index + 1, total: list.length })}
       </span>
 
-      <button
-        type="button"
-        className="lw-stepnav__btn lw-stepnav__btn--primary"
-        disabled={!hasNext}
-        onClick={() => onSelect(list[index + 1].id)}
-      >
-        {t('lesson.ws.nextStep')}
-      </button>
+      {/* На последнем шаге вести дальше некуда, и серая «Далее» там читалась как
+          поломка: ученик дошёл до конца материала и упёрся в мёртвую кнопку.
+          Меняем на «Завершить» — она честно говорит, что материал кончился, и
+          выводит из него. Сам урок закрывает преподаватель, это не про него. */}
+      {hasNext ? (
+        <button
+          type="button"
+          className="lw-stepnav__btn lw-stepnav__btn--primary"
+          onClick={() => onSelect(list[index + 1].id)}
+        >
+          {t('lesson.ws.nextStep')}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="lw-stepnav__btn lw-stepnav__btn--primary"
+          disabled={!onFinish}
+          onClick={() => onFinish?.()}
+        >
+          {t('lesson.finish')}
+        </button>
+      )}
     </nav>
   )
 }
