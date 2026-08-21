@@ -420,10 +420,13 @@
 
 /* ==================== ЦЕНТР — ЛЕНТА ШАГОВ ======================== */
 
+/* Зазор между карточками задания — 24 из макета («Frame 427321882»), а не 12.
+   Правило общее для классрума, живого урока и домашки: одно и то же задание
+   должно выглядеть одинаково, где бы его ни открыли. */
 .lw-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 24px;
   min-width: 0;
 }
 
@@ -2222,7 +2225,11 @@
 .live--wide {
   background: var(--lw-bg);
   border-radius: var(--lw-r-card);
-  padding: 16px;
+  /* Без внешнего отступа: в макете Block шириной 1168 стоит вплотную к Menu,
+     а весь воздух внутри — паддинги шапки (12/32) и колонок (24/32 и 24/8).
+     Отступ 16 здесь съедал 32px ширины, и центральная колонка выходила 816
+     вместо 868. */
+  padding: 0;
 }
 
 .lw-live-body {
@@ -2236,7 +2243,10 @@
      везде ровно эти две). Своей колонки у маршрута в макете нет, он переехал
      карточкой в правую (см. LiveLessonPage). */
   grid-template-columns: minmax(0, 1fr) var(--lw-col-right);
-  gap: var(--lw-gutter);
+  /* Встык, без зазора: в макете 868 + 300 = 1168 ровно. Воздух между
+     колонками дают их собственные паддинги — 32 справа у контента и 8 слева
+     у правой, — а не промежуток сетки. */
+  gap: 0;
   align-items: start;
   /* Раньше сетка была жёстко зажата в max-width 1600 без центрирования —
      на широком экране это оставляло пустую полосу справа, а не растягивало
@@ -2258,17 +2268,48 @@
   overscroll-behavior: contain;
 }
 
+/* Внутренность центральной колонки — по макету, а не на глаз. Значения сверены
+   по всем 39 экранам шести стадий и совпадают везде; плавает только высота:
+     Content            868 · VERTICAL · padding 24/32 · counterAxisAlign CENTER
+     └ Frame 427321883  804 · VERTICAL · itemSpacing 32 · CENTER
+        └ Frame 427321882  804 · VERTICAL · itemSpacing 24 · CENTER
+
+   Обёртки 804 отдельным узлом в разметке нет и не надо: у Content ровно один
+   ребёнок, поэтому его itemSpacing 48 нигде не срабатывает, а роль обёртки
+   играет ограничение ширины на прямых детях колонки. */
 .lw-live-main {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 32px;
+  padding: 24px 32px;
   min-width: 0;
+}
+
+.lw-live-main > * {
+  width: 100%;
+  max-width: 804px;
+}
+
+/* Кнопка «Внимание на упражнение» — по содержимому, а не во всю колонку: у неё
+   есть align-self: flex-start, но width: 100% выше его перебивает. */
+.lw-live-main > .lw-focus-btn {
+  width: auto;
+}
+
+/* Материал, который показывается файлом в iframe, под 804 не загоняем: там
+   чужая вёрстка целиком, и лимит колонки её просто обрезал бы. Свой предел у
+   него уже есть (.lw-material-frame, max-width 1160). */
+.lw-live-main > .lw-material-frame {
+  max-width: 1160px;
 }
 
 .lw-live-aside {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  /* 300 снаружи, карточки 284 внутри — ровно по 8 с каждой стороны. */
+  padding: 24px 8px;
   min-width: 0;
 }
 
@@ -2766,7 +2807,7 @@
   align-items: center;
   gap: 16px;
   min-height: 61px;
-  margin: -12px -12px 16px;
+  margin: 0 0 16px;
   padding: 12px 16px;
   border-radius: 0 0 16px 16px;
   background: #ffffff;
