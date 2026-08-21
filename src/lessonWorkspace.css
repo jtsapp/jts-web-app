@@ -2858,50 +2858,6 @@
   outline-offset: 2px;
 }
 
-.llp {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  /* Ширину задаём явно: родитель — колонка с выравниванием по центру, и без неё
-     капсула сжималась до счётчика, а дорожка исчезала вовсе. */
-  width: 100%;
-  max-width: 543px;
-  margin: 0 auto 16px;
-  padding: 13px 16px;
-  border-radius: 50px;
-  background: #ffffff;
-}
-
-.llp__track {
-  flex: 1;
-  height: 14px;
-  border-radius: 30px;
-  background: #ebdeff;
-  overflow: hidden;
-}
-
-.llp__bar {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--lw-primary, #9047ff);
-  transition: width .25s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .llp__bar { transition: none; }
-}
-
-.llp__count {
-  flex: none;
-  padding: 4px 10px;
-  border-radius: 30px;
-  background: #fafafa;
-  color: var(--lw-primary, #9047ff);
-  font-size: 15px;
-  font-weight: 700;
-}
-
 @media (max-width: 720px) {
   .llh { flex-wrap: wrap; gap: 10px; }
   .llh__tools { width: 100%; margin-left: 0; }

@@ -13,14 +13,12 @@ import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
 import { setAudioReporter, playBroadcastAudio, stopBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
-import LiveStatusBadge from './live/LiveStatusBadge.jsx'
 import PresenceRoster from './live/PresenceRoster.jsx'
 import StudentReviewPicker from './live/StudentReviewPicker.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
 import LiveLessonHeader from './live/LiveLessonHeader.jsx'
-import LessonProgress from './live/LessonProgress.jsx'
 import LessonRoute from './workspace/LessonRoute.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
 import TopicsList from './workspace/TopicsList.jsx'
@@ -28,7 +26,7 @@ import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
-import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
+import { catalogLessonIdFor, catalogLessonMetaFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { knowsFocusTarget } from './live/followFocus.js'
@@ -245,6 +243,21 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         setCatalogLesson(null)
         setCatalogResolvedFor(url)
       })
+    return () => { cancelled = true }
+  }, [materialFileUrl, token])
+
+  // Уровень и название урока для шапки. Отдельно от загрузки самого урока:
+  // подпись нужна и тогда, когда урок каталога не разобрался на шаги (материал
+  // не INTERACTIVE_HTML, урок ещё не подтверждён) — а раньше в шапке в таком
+  // случае стояло название раздела, то есть служебное «Материал урока».
+  // Каталог кэшируется в api.js, лишнего запроса здесь нет.
+  const [catalogMeta, setCatalogMeta] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.resolve(materialFileUrl ? catalogLessonMetaFor(materialFileUrl, token) : null)
+      .then((meta) => { if (!cancelled) setCatalogMeta(meta) })
+      .catch(() => { if (!cancelled) setCatalogMeta(null) })
     return () => { cancelled = true }
   }, [materialFileUrl, token])
 
@@ -790,10 +803,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         {/* Шапка урока по макету: выход, текущая стадия с названием занятия,
             язык и словарь. Заменяет прежнюю строку «← Назад» — она уводила с
             урока тем же действием, но без предупреждения о выходе. */}
+        {/* В центре шапки — «A0 · Coffee — yes. Mondays — no.», а не служебное
+            название раздела («Материал урока»), по которому не понять ни уровня,
+            ни того, какой это урок. Если материал не из каталога (преподаватель
+            приложил свой файл), уровня у него нет — остаётся прежний запасной
+            вариант. */}
         <LiveLessonHeader
-          stage={activeSection?.title || lesson?.title || t('live.title')}
-          lessonTitle={activeSection?.title && lesson?.title !== activeSection.title ? lesson?.title : ''}
-          status={lesson ? <LiveStatusBadge status={status} /> : null}
+          stage={
+            catalogMeta
+              ? [catalogMeta.level, catalogMeta.title].filter(Boolean).join(' · ')
+              : activeSection?.title || lesson?.title || t('live.title')
+          }
+          lessonTitle=""
           onExit={onBack}
           onOpenVocab={() => onNav?.('vocab')}
         />
@@ -837,15 +858,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
             {lessonOpen && (
               <>
-                {/* Сколько урока позади: считаем по шагам маршрута — это то, чем
-                    урок листается и что ученик видит слева. */}
-                {routeSteps.length > 0 && (
-                  <LessonProgress
-                    done={Math.max(0, routeSteps.findIndex((s) => s.id === routeActiveId)) + (routeActiveId ? 1 : 0)}
-                    total={routeSteps.length}
-                  />
-                )}
-
                 <div className="ls__tabs">
                   <button className={`ls-tab ${tab === 'lesson' ? 'ls-tab--active' : ''}`} onClick={() => setTab('lesson')}>
                     {t('lesson.ws.tabLesson')}

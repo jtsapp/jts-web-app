@@ -27,6 +27,50 @@ function flatten(levels) {
   return out
 }
 
+/** То же, но с уровнем при каждом уроке — для подписи «уровень + урок». */
+function flattenWithLevel(levels) {
+  const out = []
+  for (const level of levels || []) {
+    // В дереве каталога уровень несёт `code` («A0») и `label` — берём code,
+    // это то, чем уровень называют и в админке, и в тропе обучения.
+    const code = level.code || level.label || ''
+    for (const unit of level.units || []) {
+      for (const lesson of unit.lessons || []) out.push({ lesson, level: code })
+    }
+  }
+  return out
+}
+
+/** Ссылка урока совпадает точно либо без `?mode=` (см. findCatalogLessonId). */
+function matches(lesson, target) {
+  const own = normalize(lesson.fileUrl)
+  return own === target || own.split('?')[0] === target.split('?')[0]
+}
+
+/**
+ * Уровень и название урока каталога по ссылке на его файл — подпись «A0 ·
+ * Coffee — yes. Mondays — no.» в шапке живого урока. null, если материал не
+ * из каталога: преподаватель мог прикрепить свой файл, и уровня у него нет.
+ */
+export function findCatalogLessonMeta(levels, fileUrl) {
+  const target = normalize(fileUrl)
+  if (!target) return null
+
+  const found = flattenWithLevel(levels).find((entry) => matches(entry.lesson, target))
+  if (!found) return null
+  return { level: found.level, title: found.lesson.title || '', code: found.lesson.code || '' }
+}
+
+/** То же, но с походом за каталогом. Каталог кэшируется на уровне api.js. */
+export async function catalogLessonMetaFor(fileUrl, token) {
+  if (!fileUrl || !token) return null
+  try {
+    return findCatalogLessonMeta(await getCourseCatalog(token), fileUrl)
+  } catch {
+    return null
+  }
+}
+
 /**
  * id урока каталога по ссылке на его файл, или null — если такого урока в
  * каталоге нет (материал загружен преподавателем сам, а не выбран из каталога).

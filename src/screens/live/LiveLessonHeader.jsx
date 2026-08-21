@@ -1,13 +1,19 @@
-import LangSelector from '../../components/LangSelector.jsx'
 import { useI18n } from '../../i18n.jsx'
 import { VocabIcon } from '../../components/icons.jsx'
 
-// Шапка живого урока по макету: выход слева, что сейчас идёт — в центре,
-// язык интерфейса и словарь справа.
+// Шапка живого урока: выход слева, какой урок открыт — в центре, словарь справа.
 //
-// Стадия крупнее названия урока намеренно: на уроке ученик держит в голове «где
-// я сейчас», а не «как называется занятие» — название стоит подписью.
-export default function LiveLessonHeader({ stage, lessonTitle, status, onExit, onOpenVocab }) {
+// В центре стоит «уровень · название урока» (A0 · Coffee — yes. Mondays — no.),
+// а не название раздела занятия. Раздел назывался «Материал урока» — служебная
+// строка, по которой не понять ни уровня, ни того, какой это урок; уровень и
+// название приходят из каталога по ссылке материала (catalogLessonByUrl).
+//
+// Чего здесь намеренно нет:
+//   • значка состояния (идёт / на паузе / завершён) — в макете его нет, и
+//     владелец просил убрать;
+//   • переключателя языка — в макете он есть (пилюля 119×33 r40), но убран по
+//     той же просьбе. Язык остаётся переключаемым на других экранах.
+export default function LiveLessonHeader({ stage, lessonTitle, onExit, onOpenVocab }) {
   const { t } = useI18n()
 
   return (
@@ -20,15 +26,11 @@ export default function LiveLessonHeader({ stage, lessonTitle, status, onExit, o
       <div className="llh__what">
         <span className="llh__line">
           {stage && <span className="llh__stage">{stage}</span>}
-          {/* Идёт / на паузе / завершён — рядом со стадией: в макете этой строки
-              нет вовсе, но состояние урока ученику знать надо. */}
-          {status}
         </span>
         {lessonTitle && <span className="llh__lesson">{lessonTitle}</span>}
       </div>
 
       <div className="llh__tools">
-        <LangSelector />
         {onOpenVocab && (
           <button type="button" className="llh__vocab" onClick={onOpenVocab}>
             <VocabIcon size={20} />
