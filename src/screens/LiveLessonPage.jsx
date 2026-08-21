@@ -873,12 +873,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                     LiveLessonHeader): она стояла отдельной белой строкой между
                     шапкой и уроком и отодвигала материал вниз на пустом месте. */}
                 {tab === 'lesson' && (
-                  <div className="lw-live-body">
-                    {/* Маршрут — своя колонка слева, как и был. Пробовал
-                        перенести его карточкой в правую колонку (в макете
-                        отдельной колонки под маршрут нет), но там у колонки своя
-                        прокрутка: маршрут уезжал за верхний край и с экрана
-                        пропадал. Видимость важнее совпадения с макетом. */}
+                  <div className={`lw-live-body${isStaff ? ' lw-live-body--route' : ''}`}>
+                    {/* Маршрут — колонка преподавателя. Ученику он не нужен:
+                        по уроку его ведут «Назад/Далее» под заданием, а прыгать
+                        по произвольным шагам — работа того, кто ведёт занятие.
+                        Заодно у ученика остаются ровно две колонки, как в
+                        макете: контент и правая. */}
+                    {isStaff && (
                     <div className="lw-live-route">
 
                       {sections.length === 0 ? (
@@ -900,8 +901,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           />
                         )}
                       </div>
+                    )}
 
-                    <div className="lw-live-main">
+<div className="lw-live-main">
                       {isStaff && (
                         <button className="lw-focus-btn" disabled={!activeSectionId} onClick={handleFocusClick}>
                           {t('lesson.ws.focus')}
