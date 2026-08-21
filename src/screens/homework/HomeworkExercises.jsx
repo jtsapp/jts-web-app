@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { saveHomeworkAnswer } from '../../api.js'
-import { exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, saveAnswers, serverAnswers } from './homeworkExercises.js'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
 // PracticeBlock, что и на уроке, — здесь только состояние ответов и отправка.
@@ -12,7 +12,7 @@ import { exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, serverAnswers
 //
 // Каждая отправка — своя секция: преподаватель выдаёт задания по ходу занятий, и
 // сваленные в одну кучу они не дают понять, что задано сегодня, а что на прошлом уроке.
-export default function HomeworkExercises({ hw, token }) {
+export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   const { t, lang } = useI18n()
   const batches = useMemo(() => exerciseBatches(hw), [hw])
 
@@ -23,6 +23,22 @@ export default function HomeworkExercises({ hw, token }) {
   const [answers, setAnswers] = useState(() => ({ ...loadAnswers(hw?.id), ...serverAnswers(hw) }))
   const [checked, setChecked] = useState(() => new Set())
   const [failed, setFailed] = useState(() => new Set())
+
+  // Сколько заданий отвечено прямо сейчас — вместе с черновиком, который ещё не
+  // уехал на сервер. По этому числу оживает «Отправить на проверку»: решённая
+  // работа должна сдаваться, даже если ученик не жал «Проверить» у каждого
+  // задания. Отдаём с id работы, иначе при переключении между работами счёт
+  // на мгновение относился бы к предыдущей.
+  const answeredNow = useMemo(
+    () => batches.reduce(
+      (sum, batch) => sum + batch.exercises.filter((e) => isAnswered(answers[e.question.id])).length,
+      0,
+    ),
+    [batches, answers],
+  )
+  useEffect(() => {
+    onAnswered?.({ homeworkId: hw?.id, answered: answeredNow })
+  }, [onAnswered, hw?.id, answeredNow])
 
   const onAnswer = (questionId, value) => {
     setAnswers((prev) => {
@@ -41,13 +57,27 @@ export default function HomeworkExercises({ hw, token }) {
     if (!token || hw?.id == null) return
 
     const answer = answers[exercise.question.id] ?? null
+    // Кнопка «Проверить» на нетронутом задании — просьба показать разбор, а не
+    // ответ. Отправлять пустое нельзя: попытка записывалась как состоявшаяся и
+    // неверная, и преподаватель получал красный крест с прочерком вместо
+    // ответа — хуже, чем честное «ещё не отвечал». Разбор при этом показываем:
+    // setChecked выше уже сработал.
+    if (!isAnswered(answer)) return
+
     const { correct } = gradeQuestion(exercise.question, answer)
     saveHomeworkAnswer(hw.id, exercise.id, token, answer, correct)
-      .then(() => setFailed((prev) => {
-        const next = new Set(prev)
-        next.delete(key)
-        return next
-      }))
+      .then((saved) => {
+        setFailed((prev) => {
+          const next = new Set(prev)
+          next.delete(key)
+          return next
+        })
+        // Сервер возвращает работу целиком. Раньше её выбрасывали, и «Отправить
+        // на проверку» весь сеанс считала по данным на момент открытия: ученик
+        // решал задания, а кнопка оставалась мёртвой, пока он не перезагрузит
+        // страницу.
+        if (saved) onSaved?.(saved)
+      })
       .catch(() => setFailed((prev) => new Set(prev).add(key)))
   }
 

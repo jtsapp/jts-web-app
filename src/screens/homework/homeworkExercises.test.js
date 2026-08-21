@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { lessonExercises, exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, answersKey, dedupeTail, readableInstruction } from './homeworkExercises.js'
+import { lessonExercises, exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, answersKey, dedupeTail, readableInstruction, isAnswered, pendingAnswers } from './homeworkExercises.js'
 
 describe('homeworkExercises', () => {
   beforeEach(() => localStorage.clear())
@@ -184,5 +184,55 @@ describe('exerciseBlock — чистит и подпись, и пары', () => 
     expect(block.title).toBe('')
     expect(block.questions[0].pairs[0].left).toBe('Japan Япония · Жапония')
     expect(block.questions[0].pairs[0].right).toBe('Japanese')
+  })
+})
+
+// Правило отбора решает, что уедет преподавателю при сдаче работы: ошибка здесь
+// тихо теряет ответы — ровно та беда, которую эти хелперы и чинят.
+describe('isAnswered', () => {
+  it('пустое — это отсутствие выбора, а не ответ', () => {
+    for (const пусто of [null, undefined, '', '   ', [], {}]) expect(isAnswered(пусто)).toBe(false)
+  })
+
+  it('ноль и false выбраны так же осознанно, как любой вариант', () => {
+    for (const ответ of [0, false, '0', ['a'], { a: 'b' }, 'like']) expect(isAnswered(ответ)).toBe(true)
+  })
+})
+
+describe('pendingAnswers', () => {
+  const q = (id) => ({ id, type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' })
+
+  it('собирает решённое, чего ещё нет на сервере', () => {
+    const hw = { exercises: [{ id: 1, question: q('q1') }, { id: 2, question: q('q2') }] }
+
+    const pending = pendingAnswers(hw, { q1: 'a', q2: 'b' })
+
+    expect(pending.map((p) => [p.exercise.id, p.answer])).toEqual([[1, 'a'], [2, 'b']])
+  })
+
+  it('уже сохранённое на сервере не пересылает', () => {
+    const hw = { exercises: [{ id: 1, question: q('q1'), studentAnswer: 'a' }] }
+
+    expect(pendingAnswers(hw, { q1: 'a' })).toEqual([])
+  })
+
+  it('пустое в черновике не считается решённым', () => {
+    const hw = { exercises: [{ id: 1, question: q('q1') }, { id: 2, question: q('q2') }] }
+
+    expect(pendingAnswers(hw, { q1: '', q2: undefined })).toEqual([])
+  })
+
+  it('отозванные и задачи из библиотеки не в счёт', () => {
+    const hw = { exercises: [
+      { id: 1, question: q('q1'), revoked: true },
+      { id: 2, taskId: 7, taskTitle: 'Из библиотеки' },
+    ] }
+
+    expect(pendingAnswers(hw, { q1: 'a' })).toEqual([])
+  })
+
+  it('пустой черновик не роняет отбор', () => {
+    expect(pendingAnswers({ exercises: [{ id: 1, question: q('q1') }] }, null)).toEqual([])
+    expect(pendingAnswers(null, { q1: 'a' })).toEqual([])
   })
 })

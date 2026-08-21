@@ -17,7 +17,7 @@ function formatDate(value, locale) {
  * (это же правило стоит и на бэкенде), поэтому у COMPLETED тут нет ни загрузки,
  * ни удаления, ни кнопки отправки.
  */
-export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRemoveFile, onSubmit }) {
+export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRemoveFile, onSubmit, onSaved, onAnswered, draftAnswered = 0 }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
 
@@ -25,7 +25,7 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
 
   const stateKey = homeworkStateKey(hw)
   const attachable = canAttach(hw)
-  const submittable = canSubmit(hw)
+  const submittable = canSubmit(hw, draftAnswered)
   const due = formatDate(hw.dueDate, locale)
 
   const pickFiles = (event) => {
@@ -60,7 +60,7 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
 
       {/* Задания, добавленные преподавателем прямо с живого урока. Секции нет,
           когда их нет: домашка бывает и просто файлом. */}
-      <HomeworkExercises key={hw.id} hw={hw} token={token} />
+      <HomeworkExercises key={hw.id} hw={hw} token={token} onSaved={onSaved} onAnswered={onAnswered} />
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.myAnswer')}</h3>
