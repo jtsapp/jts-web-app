@@ -162,21 +162,35 @@ test.describe('A0: слова звучат', () => {
     const target = steps.findIndex((s) => s.type === 'choice' && s.say)
     expect(target, 'в узле словаря A0 нет задания со словом на слух').toBeGreaterThan(-1)
 
-    for (let i = 0; i < target; i++) {
+    // Идём НЕ с нуля: bootVocab останавливается НА экране карточек, а не после
+    // него, — значит плеер уже стоит на шаге `cards`, и отсчёт с нуля сдвигал
+    // ответы на чужие шаги. Плюс ветки match/answer жали кнопку дважды за
+    // итерацию (свой клик и общий в конце), пролистывая по два шага разом.
+    const start = steps.findIndex((s) => s.type === 'cards')
+    expect(start, 'в узле словаря A0 нет экрана карточек').toBeGreaterThan(-1)
+
+    for (let i = start; i < target; i++) {
       const step = steps[i]
       if (step.type === 'match') {
         for (const [k, pair] of step.pairs.entries()) {
           await page.locator('.cp-match__item').nth(k).click()
           await page.locator('.cp-match__bank .cp-chip', { hasText: exactly(pair.right) }).first().click()
         }
-        await page.locator('.cp-cta:not([disabled])').click()
       } else if (step.answer) {
         await page.locator('.cp-choice', { hasText: exactly(step.answer) }).first().click()
-        await page.locator('.cp-cta:not([disabled])').click()
       } else {
         await unlockStep(page)
       }
+      // У оценённых шагов кнопка работает в два такта: первый клик проверяет и
+      // показывает плашку результата, второй листает дальше. Один клик на шаг
+      // оставлял плеер на плашке, а счётчик уходил вперёд — дальше цикл отвечал
+      // за чужой шаг и упирался в уже связанные пары.
       await page.locator('.cp-cta:not([disabled])').click()
+      await page.waitForTimeout(120)
+      if (await page.locator('.cp-fb').count()) {
+        await page.locator('.cp-cta:not([disabled])').click()
+        await page.waitForTimeout(120)
+      }
     }
 
     await page.evaluate(() => (window.__played = []))

@@ -102,6 +102,9 @@ test.describe('нативный урок «Обучения»', () => {
   })
 
   test('на экране итогов урока под ними нет — и выходить из него нечем', async ({ page }) => {
+    // Урок прощёлкивается целиком, шаг за шагом — в дефолтные 30с это не
+    // укладывается. Соседние спеки этого раздела поднимают лимит так же.
+    test.setTimeout(120000)
     await bootLearning(page)
     await openKingdomA1(page)
     const node = page.locator('.kt-step:not([disabled])').first()
@@ -110,9 +113,33 @@ test.describe('нативный урок «Обучения»', () => {
     await expect(page.locator('.cp-step')).toBeVisible({ timeout: 15000 })
 
     // Прощёлкиваем урок до итогов.
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 80; i++) {
       if (await page.locator('.le-over').isVisible().catch(() => false)) break
-      const cta = page.locator('.cp-cta, button', { hasText: /Продолжить|Завершить урок|Проверить/ }).first()
+      // Часть шагов намеренно держит кнопку бледной, пока не ответишь (pick —
+      // хотя бы одна карточка, rows — каждая строка, match — все пары; см.
+      // canCheck в CourseStepPlayer). Прощёлкивание вслепую упиралось в
+      // disabled-кнопку и обрывало цикл, хотя урок был жив.
+      if (await page.locator('.cp-cta[disabled]').count()) {
+        const picks = page.locator('.cp-pick')
+        const rows = page.locator('.cp-rows__row')
+        if (await picks.count()) {
+          await picks.first().click()
+        } else if (await rows.count()) {
+          const n = await rows.count()
+          for (let r = 0; r < n; r++) {
+            await rows.nth(r).locator('.cp-rows__opt').first().click()
+          }
+        } else if (await page.locator('.cp-choice').count()) {
+          await page.locator('.cp-choice').first().click()
+        } else {
+          // Заполняем ВСЕ поля шага, а не первое: у шага-группы их три, и
+          // «Проверить» ждёт каждое (canCheck перебирает items).
+          const inputs = page.locator('.cp-gap__in, .cp-write, .cp-group__in')
+          const n = await inputs.count()
+          for (let k = 0; k < n; k++) await inputs.nth(k).fill('test').catch(() => {})
+        }
+      }
+      const cta = page.locator('.cp-cta:not([disabled])').first()
       if (!(await cta.isVisible().catch(() => false))) break
       await cta.click()
       await page.waitForTimeout(150)

@@ -75,20 +75,30 @@ test.describe('вывод экстрактора a1 корректен', () => {
     expect(idx.a1.lessons.length).toBe(Object.keys(a1.lessons).length)
 
     let speak = 0
-    let mediaUrls = 0
+    let tracks = 0
     for (const code of Object.keys(a1.lessons)) {
       const les = a1.lessons[code]
       expect(les.tasks.length).toBeGreaterThan(0)
       for (const t of les.tasks) {
         if (t.type === 'speak') speak++
-        if (t.type === 'watch' && t.src) {
-          expect(t.src).toMatch(/^https:\/\/files-api\.iqra\.space\//)
-          mediaUrls++
+        // Задачи `watch` бывают только у данных из Speakout-экстрактора. Если
+        // такая встретилась — ссылка обязана быть абсолютной, как и раньше.
+        if (t.type === 'watch' && t.src) expect(t.src).toMatch(/^https:\/\//)
+        if (t.type === 'listen') {
+          for (const tr of t.tracks) {
+            expect(tr.src).toMatch(/^https:\/\//)
+            tracks++
+          }
         }
-        if (t.type === 'listen') for (const tr of t.tracks) expect(tr.src).toMatch(/^https:\/\//)
       }
     }
     expect(speak).toBe(0)
-    expect(mediaUrls).toBeGreaterThan(0)
+    // Раньше здесь стояло `mediaUrls > 0` — счётчик задач `watch` со ссылками
+    // на files-api.iqra.space. Такого в a1 больше нет и быть не должно: уровень
+    // производит scripts/extract-jts-self-lessons.js из файла курса, а
+    // Speakout-экстрактор оставлен только под B2/C1 (его прогон по a1 затёр бы
+    // новый курс — см. CLAUDE.md). Проверка медиа осталась, но по тому, что в
+    // данных действительно есть: дорожки шагов слушания.
+    expect(tracks).toBeGreaterThan(0)
   })
 })
