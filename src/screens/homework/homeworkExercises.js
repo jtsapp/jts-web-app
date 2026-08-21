@@ -127,6 +127,41 @@ export function exerciseBlock(exercise) {
   }
 }
 
+/**
+ * У ответа есть содержимое: пустая строка, пустой список и пустая карта пар —
+ * это «ученик ничего не выбрал», а не ответ.
+ *
+ * Нужно в двух местах сразу: «Проверить» на нетронутом задании не должно
+ * уезжать на сервер, а сдача работы — досылать только то, что действительно
+ * решено. Ноль и false пустыми не считаем: их выбирают так же осознанно.
+ */
+export function isAnswered(value) {
+  if (value == null) return false
+  if (typeof value === 'string') return value.trim() !== ''
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'object') return Object.keys(value).length > 0
+  return true
+}
+
+/**
+ * Ответы из черновика, которых ещё нет на сервере.
+ *
+ * Ответ уезжает преподавателю только по кнопке «Проверить» у каждого задания.
+ * Ученик, который решил всё и нажал «Отправить на проверку», сдавал пустоту:
+ * работа числилась сданной, а преподаватель видел «ученик ещё не отвечал».
+ * Сдача — момент, когда обе картины обязаны сойтись, поэтому недосланное
+ * собирается здесь и уходит перед сменой статуса.
+ */
+export function pendingAnswers(hw, draft) {
+  const out = []
+  for (const exercise of lessonExercises(hw)) {
+    if (exercise.studentAnswer != null) continue
+    const answer = draft?.[exercise.question.id]
+    if (isAnswered(answer)) out.push({ exercise, answer })
+  }
+  return out
+}
+
 export function answersKey(homeworkId) {
   return `${KEY_PREFIX}:${homeworkId}`
 }

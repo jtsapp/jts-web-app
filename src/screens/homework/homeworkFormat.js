@@ -72,9 +72,13 @@ export function answeredExercises(hw) {
  * ловушка, из-за которой это и чинится. Преподаватель и так видит по каждому
  * заданию, отвечено оно и засчиталось ли.
  */
-export function canSubmit(hw) {
+export function canSubmit(hw, draftAnswered = 0) {
   if (!canAttach(hw)) return false
-  return (hw.submissions?.length ?? 0) > 0 || answeredExercises(hw) > 0
+  // draftAnswered — задания, решённые в этом сеансе, но ещё не досланные: ответ
+  // уезжает по кнопке «Проверить», а нажимать её ученик не обязан. Без этого
+  // тот, кто просто решил всё и хочет сдать, упирался в мёртвую кнопку. Сама
+  // досылка происходит при сдаче (HomeworkPage.handleSubmit).
+  return (hw.submissions?.length ?? 0) > 0 || answeredExercises(hw) > 0 || draftAnswered > 0
 }
 
 /** Сколько работ ждут ученика — цифра на входе с главной. */
