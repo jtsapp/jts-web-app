@@ -3635,3 +3635,54 @@
 .learn:has(.live--wide) {
   background: #f8f8f8;
 }
+
+/* --- задание по центру колонки ------------------------------------- */
+
+/* В макете тело задания выровнено по центру: у Content и у обоих внутренних
+   фреймов counterAxisAlignItems = CENTER. У нас всё жалось влево, и на колонке
+   868 задание читалось прижатым к краю, хотя место вокруг пустое.
+
+   Центрируем ИМЕННО задание — заголовок, вопрос, варианты и их обёртки. Текст
+   для чтения (.lw-info__body) не трогаем: абзац в несколько строк по центру
+   читать неудобно, и в макете он тоже слева. */
+.lw-vocab__title,
+.lw-vocab__hint,
+.lw-checklist__title,
+.lw-checklist__hint,
+.lw-practice__title,
+.lw-practice__hint,
+.lw-q__prompt,
+.lw-match__hint,
+.lw-order__hint,
+.lw-pick__hint {
+  text-align: center;
+}
+
+/* Колонки и ряды вариантов — по центру колонки, а не по левому краю.
+   margin-inline, а не align-items: у .lw-opts свой flex-direction, и менять
+   его выравнивание значило бы разъехаться с рядами чипов. */
+.lw-q--choice .lw-opts,
+.lw-q--chips .lw-opts,
+.lw-q--multi .lw-opts,
+.lw-q--gap .lw-opts {
+  margin-inline: auto;
+}
+
+.lw-q--order .lw-order__sentence,
+.lw-q--order .lw-order__bank,
+.lw-q--match .lw-match__col:last-child {
+  justify-content: center;
+}
+
+/* Строки сопоставления и колода словаря — тем же приёмом. */
+.lw-q--match .lw-match__col:first-child,
+.lw-vocab__grid {
+  margin-inline: auto;
+}
+
+/* Поле-пропуск стоит в строке предложения — центрируем саму строку. */
+.lw-q--gap .lw-q__sentence,
+.lw-q--chips .lw-q__sentence {
+  justify-content: center;
+  text-align: center;
+}
