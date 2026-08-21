@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  fileExtension, isAllowedFile, homeworkStateKey, isOverdue,
-  canAttach, canSubmit, pendingCount, reviewOrder, studentOrder,
-} from './homeworkFormat.js'
+import { fileExtension, isAllowedFile, homeworkStateKey, isOverdue, canAttach, canSubmit, pendingCount, reviewOrder, studentOrder, answeredExercises } from './homeworkFormat.js'
 
 const hw = (over = {}) => ({ id: 1, status: 'ASSIGNED', submissions: [], materials: [], ...over })
 
@@ -109,5 +106,49 @@ describe('pendingCount', () => {
     expect(pendingCount(list)).toBe(2)
     expect(pendingCount([])).toBe(0)
     expect(pendingCount(null)).toBe(0)
+  })
+})
+
+// Регрессия: домашка, собранная из заданий урока, файлов не имеет вовсе.
+// Условие «есть прикреплённый файл» запирало её навсегда — ученик решал всё
+// подряд, а «Отправить на проверку» оставалась мёртвой.
+describe('canSubmit — есть ли что сдавать', () => {
+  const open = (extra) => ({ status: 'ASSIGNED', submissions: [], exercises: [], ...extra })
+
+  it('прикреплённый файл по-прежнему даёт сдать', () => {
+    expect(canSubmit(open({ submissions: [{ fileName: 'a.pdf', url: '/a' }] }))).toBe(true)
+  })
+
+  it('решённое задание урока тоже даёт сдать — файла у такой работы нет', () => {
+    expect(canSubmit(open({
+      exercises: [{ question: { id: 'q1' }, studentAnswer: 'is' }],
+    }))).toBe(true)
+  })
+
+  it('не требует решить ВСЕ: одно неотвечаемое не должно запирать работу', () => {
+    expect(canSubmit(open({
+      exercises: [
+        { question: { id: 'q1' }, studentAnswer: 'is' },
+        { question: { id: 'q2' }, studentAnswer: null },
+      ],
+    }))).toBe(true)
+  })
+
+  it('ничего не сделано — сдавать нечего', () => {
+    expect(canSubmit(open({ exercises: [{ question: { id: 'q1' }, studentAnswer: null }] }))).toBe(false)
+    expect(canSubmit(open())).toBe(false)
+  })
+
+  it('отозванное задание не считается сделанным', () => {
+    expect(canSubmit(open({
+      exercises: [{ question: { id: 'q1' }, studentAnswer: 'is', revoked: true }],
+    }))).toBe(false)
+  })
+
+  it('уже сданную сдать нельзя', () => {
+    expect(canSubmit(open({
+      status: 'SUBMITTED',
+      exercises: [{ question: { id: 'q1' }, studentAnswer: 'is' }],
+    }))).toBe(false)
   })
 })
