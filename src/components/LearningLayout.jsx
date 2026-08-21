@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
-import Footer from './Footer.jsx'
 import { useI18n } from '../i18n.jsx'
 
 // Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал;
@@ -40,7 +39,6 @@ export default function LearningLayout({
         />
         <main className="learn__main">{children}</main>
       </div>
-      <Footer />
     </div>
   )
 }
