@@ -750,6 +750,16 @@ class LearnerProfile:
     # Бюджет времени СЦЕНЫ (не дневного лимита) в секундах. Приходит из реестра
     # сценариев через /api/livekit/token. 0 → у сцены своих часов нет.
     scenario_limit_sec: int = 0
+    # Адрес веб-приложения, ВЫДАВШЕГО этот токен (дев или прод).
+    #
+    # Агент один на оба стенда, а JTS_API_URL у него один — и до появления этого
+    # поля всё, что агент писал во время разговора на деве (log_fact, log_topic,
+    # log_mistake) и в конце (call_log), молча уходило в прод-базу: дев-история
+    # звонков была пуста всегда, а прод собирал тестовый мусор. Поймано 21.08.2026.
+    #
+    # Хост сверяется с JTS_API_URL в _resolve_api_url — метаданные подписывает наш
+    # же токен-роут, но доверять им вслепую нельзя.
+    api_url: str = ""
 
 
 def _str_list(raw: Any, cap: int) -> list[str]:
@@ -864,7 +874,51 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
             if isinstance(data.get("scenarioLimitSec"), (int, float))
             else 0
         ),
+        api_url=str(data.get("apiUrl", "") or "")[:200],
     )
+
+
+def _same_site(host: str, other: str) -> bool:
+    """Хосты из одного домена второго уровня (dev-tutor.justtostudy.kz ~ justtostudy.kz)."""
+    a = host.lower().split(".")
+    b = other.lower().split(".")
+    return len(a) >= 2 and len(b) >= 2 and a[-2:] == b[-2:]
+
+
+def _resolve_api_url(meta_url: str, env_url: str) -> str:
+    """Куда писать память и звонки: адрес выдавшего токен стенда, если он наш.
+
+    Пускаем только https (или localhost для локальной разработки) и только хост
+    из того же домена, что JTS_API_URL. Чужой или кривой адрес игнорируем и
+    громко пишем в лог — потерять записи молча мы уже один раз смогли.
+    """
+    candidate = (meta_url or "").strip().rstrip("/")
+    fallback = (env_url or "").strip().rstrip("/")
+    if not candidate or candidate == fallback:
+        return fallback
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(candidate)
+        env_parsed = urlparse(fallback)
+        host = parsed.hostname or ""
+        local = host in ("localhost", "127.0.0.1")
+        if parsed.scheme not in ("http", "https") or not host:
+            raise ValueError("bad scheme/host")
+        if parsed.scheme == "http" and not local:
+            raise ValueError("plain http is only allowed for localhost")
+        if not local and not _same_site(host, env_parsed.hostname or ""):
+            raise ValueError("host outside JTS_API_URL site")
+    except Exception as err:
+        logger.warning(
+            "[api-url] metadata apiUrl %r rejected (%s) — writing to %s instead",
+            candidate,
+            err,
+            fallback,
+        )
+        return fallback
+    logger.info("[api-url] writing to %s (from token metadata)", candidate)
+    return candidate
 
 
 # Each persona is a distinct CHARACTER. Concrete signature phrasing + banlist
@@ -1623,7 +1677,18 @@ class TutorAgent(Agent):
             headers["X-Internal-Key"] = key
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:
-                await client.post(url, json=body, headers=headers)
+                res = await client.post(url, json=body, headers=headers)
+            # 401/403 — это НЕ исключение, и раньше они уходили в тишину: агент
+            # месяц писал в чужой стенд, а в логах не было ни строки. Любой
+            # не-2xx теперь виден.
+            if res.status_code >= 400:
+                logger.warning(
+                    "Tool POST %s -> %s %s (key=%s)",
+                    path,
+                    res.status_code,
+                    (res.text or "")[:200],
+                    "set" if key else "MISSING",
+                )
         except Exception:
             logger.exception("Tool POST failed: %s", path)
 
@@ -4093,6 +4158,9 @@ async def entrypoint(ctx: JobContext):
             "will fail. Voice still works on gemini-live. Set JTS_API_URL to the web app URL."
         )
         api_url = "http://localhost:3000"
+
+    # Стенд, выдавший токен, важнее нашего env: агент общий для дева и прода.
+    api_url = _resolve_api_url(profile.api_url, api_url)
 
     if voice_stack == "cascade":
         # Tool calls (report_placement_level / log_*) flow through the brain

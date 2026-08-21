@@ -4,6 +4,7 @@ import TutorShell from '../tutor/TutorShell.jsx'
 import TutorThumb from '../tutor/TutorThumb.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { callStats, formatDuration } from '../lib/callSummary/stats.js'
+import { classifyCall } from '../lib/callSummary/freshCall.js'
 import { authHeaders, getDeviceId } from '../lib/identity.js'
 import { saveWord } from '../api.js'
 
@@ -16,12 +17,17 @@ import { saveWord } from '../api.js'
 //   2) из истории разговоров — строка уже на руках, приходит пропсом `call`,
 //      поллинг не нужен вообще.
 
-const POLL_MS = 1500
-// ~21 секунда. Столько ждём и появления строки, и фоновой выжимки.
-const MAX_TRIES = 14
+// Первые попытки частые (обычно строка появляется за секунды), дальше реже:
+// звонок пишет агент в shutdown-колбэке, и когда именно LiveKit завершит его
+// джобу — мы не управляем. Итого ждём около минуты, а не 21 секунду, как в
+// первой версии: там отчёт сдавался раньше, чем приезжали данные.
+const POLL_FAST_MS = 1500
+const POLL_SLOW_MS = 3000
+const FAST_TRIES = 10
+const MAX_TRIES = 24
 // После стольких попыток перестаём ждать выжимку, которая даже не началась
 // (summary_status так и остался null — суммаризатор не дошёл до 'pending').
-const GIVE_UP_ON_NULL_AFTER = 6
+const GIVE_UP_ON_NULL_AFTER = 8
 const SETTLED = new Set(['done', 'failed', 'skipped'])
 
 // Ловушка кодов: зона тьютора живёт на ru|kz|en, а бэкенд словаря принимает коды
@@ -30,6 +36,8 @@ const SETTLED = new Set(['done', 'failed', 'skipped'])
 function backendLang(lang) {
   return lang === 'kz' ? 'kk' : lang === 'en' ? 'en' : 'ru'
 }
+
+const DASH = '—'
 
 function Section({ title, children }) {
   return (
@@ -56,6 +64,7 @@ export default function TutorCallReportPage({
   onTranscript,
   onDone,
   onLogin,
+  onHistory,
 }) {
   const { lang, t } = useLang()
   // Готовый звонок из истории и звонок, дождавшийся поллинга, держим порознь:
@@ -73,6 +82,9 @@ export default function TutorCallReportPage({
     let timer = null
     let tries = 0
     let found = false
+    // Что означают значения baseline и почему первую попавшуюся строку брать
+    // нельзя — см. classifyCall.
+    let baseline = prevCallId
 
     const poll = async () => {
       tries += 1
@@ -83,7 +95,9 @@ export default function TutorCallReportPage({
         )
         const data = await res.json().catch(() => ({}))
         const next = Array.isArray(data.calls) ? data.calls[0] : null
-        if (next && next.id !== prevCallId) {
+        const verdict = classifyCall(next?.id, baseline)
+        baseline = verdict.baseline
+        if (verdict.fresh) {
           found = true
           if (!alive) return
           setPolled(next)
@@ -103,7 +117,7 @@ export default function TutorCallReportPage({
         setPollState(found ? 'ready' : 'empty')
         return
       }
-      timer = setTimeout(poll, POLL_MS)
+      timer = setTimeout(poll, tries < FAST_TRIES ? POLL_FAST_MS : POLL_SLOW_MS)
     }
 
     poll()
@@ -170,24 +184,33 @@ export default function TutorCallReportPage({
         </div>
 
         {status === 'empty' ? (
-          <p className="t-erran__empty">{t('report.empty')}</p>
+          <>
+            <p className="t-erran__empty">{t('report.empty')}</p>
+            {onHistory ? (
+              <button className="t-report__link" type="button" onClick={onHistory}>
+                {t('report.toHistory')}
+              </button>
+            ) : null}
+          </>
         ) : (
           <>
-            <div className="t-report__stats">
+            {/* Пока строки звонка нет, в плитках прочерк, а не нули: «0 слов»
+                читается как факт разговора, а не как «ещё считаем». */}
+            <div className={`t-report__stats${row ? '' : ' is-pending'}`}>
               <div className="t-stat">
-                <b>{formatDuration(row?.durationSec)}</b>
+                <b>{row ? formatDuration(row.durationSec) : DASH}</b>
                 <span>{t('report.stat.duration')}</span>
               </div>
               <div className="t-stat">
-                <b>{stats.words}</b>
+                <b>{row ? stats.words : DASH}</b>
                 <span>{t('report.stat.words')}</span>
               </div>
               <div className="t-stat">
-                <b>{stats.sentences}</b>
+                <b>{row ? stats.sentences : DASH}</b>
                 <span>{t('report.stat.sentences')}</span>
               </div>
               <div className="t-stat">
-                <b>{stats.uniqueWords}</b>
+                <b>{row ? stats.uniqueWords : DASH}</b>
                 <span>{t('report.stat.unique')}</span>
               </div>
             </div>
