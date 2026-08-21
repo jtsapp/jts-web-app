@@ -2820,6 +2820,36 @@
   color: var(--lw-primary, #9047ff);
 }
 
+/* Какой урок открыт — пилюля того же набора, что «Словарь» справа: в шапке
+   всё нажимаемое выглядит одинаково. Тинт, а не заливка акцентом, — кнопка
+   информационная, а не главное действие экрана.
+   Текст #7e3edf, а не #9047ff: на тинте #ebdeff акцент даёт 3.62:1 и AA не
+   проходит (см. блок токенов секции заданий). */
+.llh__lesson-btn {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 80px;
+  background: #ebdeff;
+  color: #7e3edf;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llh__lesson-btn:hover { background: #e0cdff; }
+
+.llh__lesson-btn:focus-visible {
+  outline: 2px solid var(--lw-primary, #9047ff);
+  outline-offset: 2px;
+}
+
 .llh__lesson {
   font-size: 14px;
   font-weight: 500;
@@ -2905,12 +2935,6 @@
 /* Три карточки по 173px ниже 560px просто не помещаются. */
 @media (max-width: 560px) {
   .lw-opts--cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-.llh__line {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* Кто ведёт урок — в карточке звонка, как в макете: лицо, имя, роль. */

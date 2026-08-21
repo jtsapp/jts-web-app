@@ -815,6 +815,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               : activeSection?.title || lesson?.title || t('live.title')
           }
           lessonTitle=""
+          // Кнопка ведёт на сам урок: возвращает на вкладку «Урок» (с «Доски»
+          // это единственный быстрый путь обратно) и подматывает к материалу.
+          onOpenLesson={() => {
+            setTab('lesson')
+            lessonContentRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' })
+          }}
           onExit={onBack}
           onOpenVocab={() => onNav?.('vocab')}
         />

@@ -13,7 +13,7 @@ import { VocabIcon } from '../../components/icons.jsx'
 //     владелец просил убрать;
 //   • переключателя языка — в макете он есть (пилюля 119×33 r40), но убран по
 //     той же просьбе. Язык остаётся переключаемым на других экранах.
-export default function LiveLessonHeader({ stage, lessonTitle, onExit, onOpenVocab }) {
+export default function LiveLessonHeader({ stage, lessonTitle, onOpenLesson, onExit, onOpenVocab }) {
   const { t } = useI18n()
 
   return (
@@ -24,9 +24,20 @@ export default function LiveLessonHeader({ stage, lessonTitle, onExit, onOpenVoc
       </button>
 
       <div className="llh__what">
-        <span className="llh__line">
-          {stage && <span className="llh__stage">{stage}</span>}
-        </span>
+        {/* Какой урок открыт — настоящая кнопка, а не подпись: в шапке всё
+            остальное тоже кнопки, и элемент, который выглядит нажимаемым и не
+            нажимается, экрану не нужен. Ведёт на сам урок — на вкладку «Урок»
+            и к началу материала.
+
+            Подпись живая: `stage` пересобирается, когда меняется материал
+            раздела, а меняет его преподаватель — своим выбором раздела или
+            командой «Внимание на упражнение», которая доезжает до ученика
+            трансляцией. Ученику при этом ничего нажимать не надо. */}
+        {stage && (
+          <button type="button" className="llh__lesson-btn" onClick={onOpenLesson}>
+            {stage}
+          </button>
+        )}
         {lessonTitle && <span className="llh__lesson">{lessonTitle}</span>}
       </div>
 
