@@ -821,6 +821,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             setTab('lesson')
             lessonContentRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' })
           }}
+          // Вкладки показываем только когда урок открыт: до старта переключать
+          // нечего, а пустая пара кнопок в шапке — тот самый элемент, который
+          // выглядит рабочим и ничего не делает.
+          tab={lessonOpen ? tab : undefined}
+          onTab={lessonOpen ? setTab : undefined}
           onExit={onBack}
           onOpenVocab={() => onNav?.('vocab')}
         />
@@ -864,15 +869,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
             {lessonOpen && (
               <>
-                <div className="ls__tabs">
-                  <button className={`ls-tab ${tab === 'lesson' ? 'ls-tab--active' : ''}`} onClick={() => setTab('lesson')}>
-                    {t('lesson.ws.tabLesson')}
-                  </button>
-                  <button className={`ls-tab ${tab === 'board' ? 'ls-tab--active' : ''}`} onClick={() => setTab('board')}>
-                    {t('lesson.ws.tabBoard')}
-                  </button>
-                </div>
-
+                {/* Полоса вкладок «Урок / Доска» переехала в шапку (см.
+                    LiveLessonHeader): она стояла отдельной белой строкой между
+                    шапкой и уроком и отодвигала материал вниз на пустом месте. */}
                 {tab === 'lesson' && (
                   <div className="lw-live-body">
                     <div className="lw-live-main">

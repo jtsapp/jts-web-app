@@ -13,7 +13,19 @@ import { VocabIcon } from '../../components/icons.jsx'
 //     владелец просил убрать;
 //   • переключателя языка — в макете он есть (пилюля 119×33 r40), но убран по
 //     той же просьбе. Язык остаётся переключаемым на других экранах.
-export default function LiveLessonHeader({ stage, lessonTitle, onOpenLesson, onExit, onOpenVocab }) {
+export default function LiveLessonHeader({
+  stage,
+  lessonTitle,
+  onOpenLesson,
+  onExit,
+  onOpenVocab,
+  // Вкладки «Урок / Доска». Приходят сюда, а не рисуются отдельной полосой под
+  // шапкой: полоса занимала целую белую строку и отодвигала материал вниз, хотя
+  // в шапке место есть. Проп, а не жёстко внутри, потому что переключатель —
+  // состояние страницы урока, а шапка про него ничего не знает.
+  tab,
+  onTab,
+}) {
   const { t } = useI18n()
 
   return (
@@ -40,6 +52,29 @@ export default function LiveLessonHeader({ stage, lessonTitle, onOpenLesson, onE
         )}
         {lessonTitle && <span className="llh__lesson">{lessonTitle}</span>}
       </div>
+
+      {onTab && (
+        <div className="ls__tabs llh__tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'lesson'}
+            className={`ls-tab ${tab === 'lesson' ? 'ls-tab--active' : ''}`}
+            onClick={() => onTab('lesson')}
+          >
+            {t('lesson.ws.tabLesson')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'board'}
+            className={`ls-tab ${tab === 'board' ? 'ls-tab--active' : ''}`}
+            onClick={() => onTab('board')}
+          >
+            {t('lesson.ws.tabBoard')}
+          </button>
+        </div>
+      )}
 
       <div className="llh__tools">
         {onOpenVocab && (
