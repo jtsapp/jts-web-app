@@ -3073,7 +3073,9 @@
 .lw-q--order,
 .lw-q--multi,
 .lw-q--match,
-.lw-q--choice {
+.lw-q--choice,
+.lw-q--chips,
+.lw-q--gap {
   --fx-ok: #128912;
   --fx-no: #d04646;
   --fx-idle: #ffffff;
@@ -3196,14 +3198,16 @@
    Колонка вариантов шириной 372, вариант 59 высотой, r999, текст 16/700.
    Внимание: в макете «выбранный» и «верный» — одна и та же заливка #9047ff,
    различить их можно только по баннеру снизу. Копируем как есть. */
-.lw-q--choice .lw-opts {
+.lw-q--choice .lw-opts,
+.lw-q--chips .lw-opts {
   flex-direction: column;
   gap: 12px;
   max-width: 372px;
   margin-top: 12px;
 }
 
-.lw-q--choice .lw-opt {
+.lw-q--choice .lw-opt,
+.lw-q--chips .lw-opt {
   min-height: 59px;
   padding: 20px 24px;
   border-radius: 999px;
@@ -3342,7 +3346,9 @@
 .lw-q--order .lw-q__prompt,
 .lw-q--multi .lw-q__prompt,
 .lw-q--match .lw-q__prompt,
-.lw-q--choice .lw-q__prompt {
+.lw-q--choice .lw-q__prompt,
+.lw-q--chips .lw-q__prompt,
+.lw-q--gap .lw-q__prompt {
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
@@ -3362,13 +3368,16 @@
    Выбор в choice ловим по aria-pressed, а не по классу: ChoiceQuestion
    класса is-selected не ставит вовсе — до этой правки выбранный вариант там
    вообще никак не отмечался, пока не нажмут «Проверить». */
-.lw-q--choice .lw-opt[aria-pressed='true'] {
+.lw-q--choice .lw-opt[aria-pressed='true'],
+.lw-q--chips .lw-opt[aria-pressed='true'] {
   background: var(--lw-primary);
   color: #ffffff;
 }
 
 .lw-q--choice .lw-opt.is-ok,
-.lw-q--choice .lw-opt.is-correct {
+.lw-q--choice .lw-opt.is-correct,
+.lw-q--chips .lw-opt.is-ok,
+.lw-q--chips .lw-opt.is-correct {
   box-shadow: inset 0 0 0 2px var(--fx-ok);
 }
 
@@ -3380,9 +3389,96 @@
 /* Кольцо состояния — не вместо фокуса: outline рисуется поверх и своим
    цветом, поэтому клавиатурный обход остаётся видимым на любом состоянии. */
 .lw-q--choice .lw-opt:focus-visible,
+.lw-q--chips .lw-opt:focus-visible,
 .lw-q--multi .lw-opt:focus-visible,
 .lw-q--match .lw-match__left:focus-visible,
 .lw-q--match .lw-match__right:focus-visible {
   outline: 2px solid var(--lw-primary);
   outline-offset: 2px;
+}
+
+/* --- кнопка действия (Figma: 370×48 r80, 16/700) -------------------- */
+
+/* Эталон значений уже есть в проекте — .cp-cta в course.css:893: плеер курса
+   собран по этому же макету. Здесь те же числа переносятся в .lw-*, чтобы
+   запасной вид урока (в который экран падает, как только в уроке встречается
+   match/order/multi или колода словаря) не выглядел из другого приложения.
+
+   Строку «Назад / счётчик / Далее» не ломаем: в макете кнопка одна, но это
+   наша навигация, а не его. Переносится язык кнопки — высота, радиус, кегль,
+   заливки, — а не раскладка. */
+.lw-practice__check,
+.lw-stepnav__btn {
+  min-height: 48px;
+  padding: 12px 32px;
+  border-radius: 80px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* «Проверить» в макете — светлая кнопка, а не фиолетовая: фиолетовая там
+   означает «Продолжить», то есть шаг вперёд, а не проверку.
+   Текст #9047ff на #b7f0ff даёт 3.73:1 и AA не проходит — берём затемнённый
+   до 4.53:1 оттенок той же краски (см. блок токенов секции заданий). */
+.lw-practice__check {
+  align-self: center;
+  width: 370px;
+  max-width: 100%;
+  background: #b7f0ff;
+  color: #803fe3;
+}
+
+.lw-practice__check:hover {
+  background: #a5ebff;
+}
+
+/* Неактивная «Проверить»: в макете заливка та же, гаснет только текст. Под
+   требование контраста это состояние не подпадает — SC 1.4.3 выводит текст
+   неактивных элементов из-под него. */
+.lw-practice__check:disabled {
+  background: #b7f0ff;
+  color: #cfafff;
+  cursor: default;
+}
+
+/* --- поля-пропуски (Figma: r20, белое, 18/500) --------------------- */
+
+/* Приём макета: заливка и радиус поля НЕ меняются ни в одном состоянии —
+   ни рамки, ни тени там нет вовсе, состояние несёт только цвет текста.
+   Размер 516×70 из макета не переносим: там поле стоит отдельной строкой,
+   у нас пропуск живёт внутри предложения и должен быть шириной со слово. */
+.lw-q--gap .lw-gap-input,
+.lw-q--chips .lw-gap-input {
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(23, 23, 28, 0.06);
+  font-size: 18px;
+  font-weight: 500;
+  color: #9047ff;
+}
+
+.lw-q--gap .lw-gap-input::placeholder,
+.lw-q--chips .lw-gap-input::placeholder {
+  /* #9c9c9c из макета даёт 2.75:1 — затемнено до 4.54:1. */
+  color: #767676;
+}
+
+.lw-q--gap .lw-gap-input.is-ok,
+.lw-q--gap .lw-gap-input.is-correct,
+.lw-q--chips .lw-gap-input.is-ok,
+.lw-q--chips .lw-gap-input.is-correct {
+  background: #ffffff;
+  color: #128912;
+  font-weight: 700;
+}
+
+.lw-q--gap .lw-gap-input.is-no,
+.lw-q--gap .lw-gap-input.is-wrong,
+.lw-q--chips .lw-gap-input.is-no,
+.lw-q--chips .lw-gap-input.is-wrong {
+  background: #ffffff;
+  color: #d93c3c;
+  font-weight: 700;
 }

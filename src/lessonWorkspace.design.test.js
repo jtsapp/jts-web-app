@@ -319,11 +319,11 @@ describe('классрум — живой урок: колонки и перех
     expect(live).not.toMatch(/\.lw-live-(route|aside)[^{]*{[^}]*position:\s*sticky/)
   })
 
-  it('кнопки шагов — пилюли из палитры спеки, без градиентов', () => {
-    const btn = css.match(/\.lw-stepnav__btn\s*{([^}]+)}/)[1]
-    expect(btn).toMatch(/border-radius:\s*var\(--lw-r-pill\)/)
-    expect(btn).toMatch(/padding:\s*11px 22px/)
-
+  it('кнопки шагов — заливки из палитры спеки, без градиентов', () => {
+    // Размеры кнопки больше не здесь: они приехали из макета «Онлайн-уроки»
+    // (48 высотой, r80, 16/700) и проверяются ниже, в блоке про кнопку
+    // действия. Раньше тут стояли padding 11px 22px и r-pill — значения
+    // старого классрума, которые макету противоречат.
     expect(css).toMatch(/\.lw-stepnav__btn--primary\s*{[^}]*background:\s*var\(--lw-primary\)/)
     expect(css).toMatch(/\.lw-stepnav__btn--ghost\s*{[^}]*background:\s*var\(--lw-tint-1\)/)
     expect(css).toMatch(/\.lw-stepnav__btn:disabled\s*{[^}]*background:\s*var\(--lw-track\)/)
@@ -412,12 +412,12 @@ describe('классрум — задания по макету', () => {
 
   it('одиночный выбор: колонка 372, вариант 59 r999, текст 16/700', () => {
     // Grammar → 4065:13923 и соседние.
-    const opts = rule('.lw-q--choice .lw-opts')
+    const opts = rule('.lw-q--choice .lw-opts,\n.lw-q--chips .lw-opts')
     expect(opts).toMatch(/flex-direction:\s*column/)
     expect(opts).toMatch(/max-width:\s*372px/)
     expect(opts).toMatch(/gap:\s*12px/)
 
-    const opt = rule('.lw-q--choice .lw-opt')
+    const opt = rule('.lw-q--choice .lw-opt,\n.lw-q--chips .lw-opt')
     expect(opt).toMatch(/min-height:\s*59px/)
     expect(opt).toMatch(/padding:\s*20px 24px/)
     expect(opt).toMatch(/font-size:\s*16px/)
@@ -452,7 +452,7 @@ describe('классрум — задания по макету', () => {
     // В макете два красных (#ea4f4f, #ff4646) и четыре зелёных (#19c119,
     // #31b423, #1eb04b, #067a32) на одну и ту же семантику. Без сведения
     // при первой же правке разъедется.
-    const tokens = css.match(/\.lw-q--order,\n\.lw-q--multi,\n\.lw-q--match,\n\.lw-q--choice\s*{([^}]+)}/)[1]
+    const tokens = css.match(/\.lw-q--order,\n\.lw-q--multi,\n\.lw-q--match,\n\.lw-q--choice,\n\.lw-q--chips,\n\.lw-q--gap\s*{([^}]+)}/)[1]
     expect(tokens).toMatch(/--fx-ok:\s*#128912/)
     expect(tokens).toMatch(/--fx-no:\s*#d04646/)
     expect(tokens).toMatch(/--fx-accent-on-tint:\s*#7e3edf/)
@@ -481,7 +481,7 @@ describe('классрум — контраст состояний задани�
 
   /** Значение переменной внутри блока токенов секции заданий. */
   function fx(name) {
-    const block = css.match(/\.lw-q--order,\n\.lw-q--multi,\n\.lw-q--match,\n\.lw-q--choice\s*{([^}]+)}/)[1]
+    const block = css.match(/\.lw-q--order,\n\.lw-q--multi,\n\.lw-q--match,\n\.lw-q--choice,\n\.lw-q--chips,\n\.lw-q--gap\s*{([^}]+)}/)[1]
     return block.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`))[1]
   }
 
@@ -513,7 +513,68 @@ describe('классрум — контраст состояний задани�
   it('«выбрано» и «верно» различаются не только заливкой', () => {
     // В макете это одна заливка #9047ff. Верный вариант получает кольцо цвета
     // успеха поверх неё — плюс галочку, которую рисует сам компонент.
-    expect(css).toMatch(/\.lw-q--choice \.lw-opt\[aria-pressed='true'\]\s*{[^}]*background:\s*var\(--lw-primary\)/)
-    expect(css).toMatch(/\.lw-q--choice \.lw-opt\.is-ok,[\s\S]{0,80}box-shadow:\s*inset 0 0 0 2px var\(--fx-ok\)/)
+    expect(css).toMatch(/\.lw-q--choice \.lw-opt\[aria-pressed='true'\],\n\.lw-q--chips \.lw-opt\[aria-pressed='true'\]\s*{[^}]*background:\s*var\(--lw-primary\)/)
+    expect(css).toMatch(/\.lw-q--choice \.lw-opt\.is-ok,[\s\S]{0,200}box-shadow:\s*inset 0 0 0 2px var\(--fx-ok\)/)
+  })
+})
+
+// Кнопка действия и поля-пропуски. Эталон значений уже был в проекте —
+// .cp-cta в course.css собран по этому же макету; здесь те же числа живут в
+// .lw-*, потому что запасной вид урока показывается ровно там, где в уроке
+// есть match/order/multi или колода словаря.
+describe('классрум — кнопка действия и поля-пропуски по макету', () => {
+  function rule(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const match = css.match(new RegExp(`${escaped}\\s*{([^}]+)}`))
+    return match ? match[1] : null
+  }
+
+  /** Последнее правило по селектору: у .lw-practice__check их два — старое
+   *  базовое выше по файлу и переопределение по макету в конце. */
+  function lastRule(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const all = [...css.matchAll(new RegExp(`${escaped}\\s*{([^}]+)}`, 'g'))]
+    return all.length ? all[all.length - 1][1] : null
+  }
+
+  it('кнопка — 48 высотой, r80, 16/700, как в макете', () => {
+    const btn = rule('.lw-practice__check,\n.lw-stepnav__btn')
+    expect(btn).toMatch(/min-height:\s*48px/)
+    expect(btn).toMatch(/border-radius:\s*80px/)
+    expect(btn).toMatch(/font-size:\s*16px/)
+    expect(btn).toMatch(/font-weight:\s*700/)
+    // Старые значения классрума не должны вернуться.
+    expect(btn).not.toMatch(/padding:\s*11px 22px/)
+  })
+
+  it('«Проверить» — светлая кнопка 370px, а не фиолетовая', () => {
+    // Фиолетовая в макете означает «Продолжить» — шаг вперёд, а не проверку.
+    const check = lastRule('.lw-practice__check')
+    expect(check).toMatch(/width:\s*370px/)
+    expect(check).toMatch(/background:\s*#b7f0ff/)
+    // Текст затемнён до AA: #9047ff на #b7f0ff даёт 3.73:1.
+    expect(check).toMatch(/color:\s*#803fe3/)
+  })
+
+  it('поле-пропуск: заливка и радиус не меняются, состояние — цветом текста', () => {
+    // Приём макета: ни рамки, ни тени, ни смены фона ни в одном состоянии.
+    const base = rule('.lw-q--gap .lw-gap-input,\n.lw-q--chips .lw-gap-input')
+    expect(base).toMatch(/border-radius:\s*20px/)
+    expect(base).toMatch(/background:\s*#ffffff/)
+    expect(base).toMatch(/font-size:\s*18px/)
+
+    for (const state of ['is-ok', 'is-no']) {
+      const body = css.match(new RegExp(`\\.lw-q--gap \\.lw-gap-input\\.${state}[\\s\\S]{0,200}?{([^}]+)}`))[1]
+      expect(body).toMatch(/background:\s*#ffffff/)
+    }
+  })
+
+  it('chips не забыт: у него те же правила, что у одиночного выбора', () => {
+    // liveSteps.js сводит chips к choice (case 'chips' → type 'choice'), но
+    // компонент отдельный и свой модификатор рисует — без него задания на
+    // выбор из банка остались бы на старой палитре.
+    expect(css).toMatch(/\.lw-q--choice \.lw-opts,\n\.lw-q--chips \.lw-opts\s*{/)
+    expect(css).toMatch(/\.lw-q--choice \.lw-opt,\n\.lw-q--chips \.lw-opt\s*{/)
+    expect(css).toMatch(/\.lw-q--chips \.lw-opt:focus-visible/)
   })
 })
