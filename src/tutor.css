@@ -2480,6 +2480,11 @@
 .t-report__stats .t-stat b {
   font-size: 28px;
 }
+/* Данных ещё нет — цифра заменена прочерком, гасим её, чтобы плитка не
+   выглядела заполненной. */
+.t-report__stats.is-pending .t-stat b {
+  color: var(--t-muted);
+}
 .t-report__stats .t-stat span {
   color: var(--t-muted);
 }

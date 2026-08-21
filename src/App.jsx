@@ -47,6 +47,7 @@ import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
 import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
+import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -259,9 +260,10 @@ export default function App() {
         )
         const data = await res.json().catch(() => ({}))
         const last = Array.isArray(data.calls) ? data.calls[0] : null
-        if (alive) setPrevCallId(last?.id ?? null)
+        // NO_PREVIOUS_CALL — звонков ещё не было; это НЕ то же самое, что null
+        // (мы не смогли узнать). Разницу разбирает classifyCall.
+        if (alive) setPrevCallId(last?.id ?? NO_PREVIOUS_CALL)
       } catch {
-        // Не дозвонились — отчёт просто возьмёт первую же появившуюся строку.
         if (alive) setPrevCallId(null)
       }
     })()
@@ -1177,6 +1179,7 @@ export default function App() {
             setScreen('tutor-chat-history')
           }}
           onLogin={() => setScreen('welcome')}
+          onHistory={() => setScreen('tutor-manage')}
           onDone={() =>
             setScreen(
               scenario ? 'tutor-scenarios' : tutorOnboarded ? 'tutor-dashboard' : 'tutor-level-result',
