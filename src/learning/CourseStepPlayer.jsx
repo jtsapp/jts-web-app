@@ -135,7 +135,16 @@ function shuffle(arr, seed) {
   return a
 }
 
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, onExit, onVocab, onDone }) {
+/**
+ * `bare` — плеер внутри чужого экрана (живой урок), а не сам по себе.
+ *
+ * Проп передавался из LiveLessonPage с самого начала, но здесь не читался, и
+ * плеер рисовал внутри урока весь свой хром: полосу с «Выйти» и «Словарём» —
+ * ровно под теми же кнопками шапки урока, — и собственную полосу прогресса,
+ * которую из живого урока убрали намеренно. Плюс корень с min-height: 100vh и
+ * своим фоном внутри колонки фиксированной высоты давал лишнюю прокрутку.
+ */
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, bare = false, onExit, onVocab, onDone }) {
   const { t } = useI18n()
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
@@ -176,7 +185,8 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   if (!step) return null
 
   return (
-    <div className="cp">
+    <div className={`cp${bare ? ' cp--bare' : ''}`}>
+      {!bare && (
       <div className="cp-bar">
         {/* Значок стоит ПЕРЕД подписью у обеих кнопок полосы — так в макете.
             Раньше оба висели справа, и «Выйти ✕» читалось как «закрыть эту
@@ -207,13 +217,18 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           <span className="cp-bar__label">{t('nav.vocab')}</span>
         </button>
       </div>
+      )}
 
       <div className="cp-scroll">
+        {/* Полоса прогресса — только у самостоятельного плеера: из живого урока
+            её убрали, и вторая такая же тут выглядела бы как недосмотр. */}
+        {!bare && (
         <div className="cp-hud">
           <div className="cp-hud__track">
             <div className="cp-hud__fill" style={{ width: `${Math.round((idx / Math.max(1, total)) * 100)}%` }} />
           </div>
         </div>
+        )}
 
         <Step
           key={idx}
