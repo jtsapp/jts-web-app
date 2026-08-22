@@ -186,10 +186,7 @@ export function liveLessonSteps(lesson) {
           if (made) out.push({ ...made, stepId })
           else unsupported = true
         }
-      } else if (block.type === 'vocab') {
-        // Колода-переворачивашка: у плеера самообучения свой тип `cards` под
-        // другую форму данных (`step.words`), а не `block.cards` каталога —
-        // конвертировать нечем, и подменять её текстовым списком тоже не дело.
+      } else if (block.type === 'vocab' || block.type === 'writing' || block.type === 'speaking' || block.type === 'grammar_concept' || block.type === 'checklist') {
         unsupported = true
       }
     }

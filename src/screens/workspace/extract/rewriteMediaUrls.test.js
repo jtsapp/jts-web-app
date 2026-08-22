@@ -35,8 +35,25 @@ describe('rewriteMediaUrls', () => {
     }
     const out = rewriteMediaUrls(lesson, BASE)
     expect(out.steps[0].blocks[0].html).toContain('/a1/lessons/audio/x.mp3')
-    // practice block untouched
     expect(out.steps[0].blocks[1]).toEqual(lesson.steps[0].blocks[1])
+  })
+
+  it('rewrites relative audio.src and html on a practice compound block', () => {
+    const lesson = {
+      title: 'L',
+      steps: [{
+        id: 's1',
+        blocks: [{
+          type: 'practice',
+          html: '<div class="gconcept"><img src="images/a.png"></div>',
+          audio: { src: 'audio/x.mp3' },
+          questions: [{ id: 'q', type: 'choice', options: ['a'], answer: 'a' }],
+        }],
+      }],
+    }
+    const out = rewriteMediaUrls(lesson, BASE)
+    expect(out.steps[0].blocks[0].audio.src).toContain('/a1/lessons/audio/x.mp3')
+    expect(out.steps[0].blocks[0].html).toContain('/a1/lessons/images/a.png')
   })
 
   it('returns the lesson unchanged when base URL is missing', () => {

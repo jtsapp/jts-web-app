@@ -467,11 +467,56 @@
   line-height: 1.2;
 }
 
-.lw-practice__title {
-  margin: 0;
-  font-size: 21px;
-  font-weight: 700;
+.lw-practice__instruction {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--lw-ink);
+  line-height: 1.4;
+}
+
+.lw-practice__audio {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+}
+
+.lw-practice__html {
+  margin: 0 0 14px;
+}
+
+.lw-practice__html .gconcept,
+.lw-practice__html .bank,
+.lw-practice__html .bubble {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--lw-tint-2, #f4f1ff);
+}
+
+.lw-writing__field,
+.csr-writing-field {
+  width: 100%;
+  min-height: 140px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font: inherit;
+}
+
+.lw-speaking__task {
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.lw-speaking__steps,
+.lw-speaking__phrases {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+
+.lw-speaking__rec {
+  margin: 0;
+  color: var(--lw-muted, #5b6478);
+  font-size: 14px;
 }
 
 .lw-theory__minutes,

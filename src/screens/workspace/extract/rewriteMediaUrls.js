@@ -21,10 +21,18 @@ function rewriteBlock(block, baseUrl) {
       cards: block.cards.map((card) => rewriteCardImage(card, baseUrl)),
     }
   }
-  if (block && typeof block.html === 'string') {
-    return { ...block, html: rewriteHtml(block.html, baseUrl) }
+  let next = block
+  if (next && typeof next.html === 'string') {
+    next = { ...next, html: rewriteHtml(next.html, baseUrl) }
   }
-  return block
+  if (next?.audio?.src && !isAbsolute(next.audio.src)) {
+    try {
+      next = { ...next, audio: { ...next.audio, src: new URL(next.audio.src, baseUrl).href } }
+    } catch {
+      // leave unparseable src
+    }
+  }
+  return next
 }
 
 function rewriteCardImage(card, baseUrl) {

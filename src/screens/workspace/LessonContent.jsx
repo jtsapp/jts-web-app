@@ -5,6 +5,8 @@ import InfoBlock from './blocks/InfoBlock.jsx'
 import PracticeBlock from './blocks/PracticeBlock.jsx'
 import VocabBlock from './blocks/VocabBlock.jsx'
 import ChecklistBlock from './blocks/ChecklistBlock.jsx'
+import WritingBlock from './blocks/WritingBlock.jsx'
+import SpeakingBlock from './blocks/SpeakingBlock.jsx'
 import TranslatePopover from './TranslatePopover.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
 import { useI18n } from '../../i18n.jsx'
@@ -16,6 +18,8 @@ const BLOCK_BY_TYPE = {
   info: InfoBlock,
   vocab: VocabBlock,
   checklist: ChecklistBlock,
+  writing: WritingBlock,
+  speaking: SpeakingBlock,
 }
 
 /**
@@ -119,6 +123,18 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
         }
 
         const block = group.block
+        if (block.type === 'grammar_concept') {
+          const anchorId = `block-${group.blockIndex}`
+          return (
+            <div
+              className={`lw-card lw-info${anchorId === liveQuestionId ? ' lw-q--live-here' : ''}`}
+              key={i}
+              data-question-id={anchorId}
+            >
+              <InfoBlock block={block} onWord={openWord} />
+            </div>
+          )
+        }
         if (block.type === 'practice') {
           const key = practiceBlockKey(step?.id, i)
           return (
@@ -144,7 +160,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
             data-question-id={anchorId}
             className={anchorId === liveQuestionId ? 'lw-q--live-here' : undefined}
           >
-            <Block block={block} />
+            <Block block={block} onWord={openWord} />
           </div>
         )
       })}

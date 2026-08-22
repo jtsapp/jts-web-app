@@ -176,6 +176,52 @@ describe('LessonContent — карточки шага', () => {
     expect(container.querySelectorAll('.lw-vcard')).toHaveLength(2)
   })
 
+  it('склеивает инструкцию, аудио и вопрос в одну practice-карточку', () => {
+    const { container } = renderContent([
+      {
+        type: 'practice',
+        title: 'Grammar',
+        instruction: 'Choose the right form.',
+        audio: { src: 'https://example.test/clip.mp3' },
+        html: '<div class="gconcept">With I we say I’m.</div>',
+        questions: [{ id: 'q1', type: 'choice', prompt: 'I ___ Anna.', options: ["'m", 'are'], answer: "'m" }],
+      },
+    ])
+    expect(container.querySelectorAll('.lw-practice')).toHaveLength(1)
+    expect(container.querySelectorAll('.lw-info')).toHaveLength(0)
+    expect(container.querySelector('.lw-practice__instruction').textContent).toContain('Choose the right form')
+    expect(container.querySelector('.lw-practice__audio').getAttribute('src')).toContain('clip.mp3')
+    expect(container.querySelector('.lw-practice__html').textContent).toContain('I’m')
+  })
+
+  it('рисует writing одним полем, а не стопкой info', () => {
+    const { container } = renderContent([
+      {
+        type: 'writing',
+        instruction: 'Write five sentences.',
+        placeholder: '1.',
+        html: '<div class="bubble">Model</div>',
+      },
+    ])
+    expect(container.querySelectorAll('.lw-writing')).toHaveLength(1)
+    expect(container.querySelector('.lw-practice__instruction').textContent).toContain('Write five sentences')
+    expect(container.querySelector('.lw-writing__field').getAttribute('placeholder')).toBe('1.')
+  })
+
+  it('рисует speaking одной карточкой с шагами', () => {
+    const { container } = renderContent([
+      {
+        type: 'speaking',
+        taskDescription: 'Say hello to your teacher.',
+        steps: ['Greet', 'Say your name'],
+        hasRecorder: true,
+      },
+    ])
+    expect(container.querySelectorAll('.lw-speaking')).toHaveLength(1)
+    expect(container.textContent).toContain('Say hello to your teacher')
+    expect(container.textContent).toContain('Greet')
+  })
+
   it('рисует чек-лист «You can now…», а не выкидывает неизвестный тип', () => {
     const { container } = renderContent([
       { type: 'checklist', title: 'You can now…', items: ['talk about your friendships', 'speak for a minute'] },
