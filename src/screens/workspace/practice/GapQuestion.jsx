@@ -10,10 +10,16 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
   const { t } = useI18n()
   const value = answer || ''
   const attempted = hasAttempt(question, value)
-  const userCorrect = checked && attempted && gradeQuestion(question, value).correct
+  const verdict = checked && attempted ? gradeQuestion(question, value) : null
+  // Открытый пропуск сверять не с чем: показывать по нему «верно» — врать.
+  const needsReview = !!verdict?.manual
+  const userCorrect = !!verdict?.correct && !needsReview
 
   let cls = 'lw-gap-input'
-  if (checked && attempted) cls += userCorrect ? ' is-correct' : ' is-wrong'
+  if (checked && attempted) {
+    if (needsReview) cls += ' is-review'
+    else cls += userCorrect ? ' is-correct' : ' is-wrong'
+  }
 
   return (
     <div className="lw-q lw-q--gap">
@@ -38,14 +44,17 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
         </span>
         <TapText text={question.gapAfter} onWord={onWord} />
       </p>
-      {checked && attempted && !userCorrect && !question.open && (
+      {needsReview && (
+        <p className="lw-q__review" aria-live="polite">{t('lesson.needsTeacherReview')}</p>
+      )}
+      {checked && attempted && !userCorrect && !needsReview && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}
         </p>
       )}
       {/* Разбор из `data-why` курса — правило, которое проверяет задание. Показываем
           только после ошибки: до неё это была бы подсказка с ответом. */}
-      {checked && attempted && !userCorrect && question.why && (
+      {checked && attempted && !userCorrect && !needsReview && question.why && (
         <p className="lw-q__why">{question.why}</p>
       )}
     </div>

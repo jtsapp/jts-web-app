@@ -65,3 +65,31 @@ describe('hasAttempt', () => {
     expect(hasAttempt({ type: 'match' }, { a: 'b' })).toBe(true)
   })
 })
+
+// Регрессия на живую поломку: ученик вписывал в открытый пропуск набор букв
+// («cwdcwdcwdc») и получал зелёную галочку. Проверить такой ответ может только
+// преподаватель — вердикта у клиента нет и быть не может (FR-74).
+describe('открытый ответ вердикта не получает', () => {
+  const openGap = { id: 'g1', type: 'gap', open: true, gapBefore: 'Do your brother live with you? →', gapAfter: '' }
+
+  it('набор букв не объявляется верным', () => {
+    const verdict = gradeQuestion(openGap, 'cwdcwdcwdc')
+    expect(verdict.manual).toBe(true)
+  })
+
+  it('correct тут значит «ответ дан», а не «верно»', () => {
+    // Оно нужно, чтобы шаг засчитался и работу можно было сдать.
+    expect(gradeQuestion(openGap, 'cwdcwdcwdc').correct).toBe(true)
+    expect(gradeQuestion(openGap, '   ').correct).toBe(false)
+  })
+
+  it('у пропуска с эталоном вердикт настоящий и manual не выставляется', () => {
+    const withKey = { id: 'g2', type: 'gap', answers: ['does'], gapBefore: '', gapAfter: '' }
+    expect(gradeQuestion(withKey, 'does')).toEqual({ correct: true })
+    expect(gradeQuestion(withKey, 'cwdcwdcwdc')).toEqual({ correct: false })
+  })
+
+  it('опрос про себя тоже без вердикта — сверять не с чем', () => {
+    expect(gradeQuestion({ id: 'p1', type: 'pick' }, '👍').manual).toBe(true)
+  })
+})

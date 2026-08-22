@@ -16,7 +16,10 @@ export function gradeQuestion(question, answer) {
   // Опрос про себя. Верного ответа нет — засчитываем сам факт выбора, иначе шаг
   // с ним никогда не считался бы пройденным.
   if (question.type === 'pick') {
-    return { correct: Array.isArray(answer) ? answer.length > 0 : norm(answer) !== '' }
+    // manual: вердикта нет и быть не может — сверять не с чем. `correct` здесь
+    // означает только «ответ дан», чтобы шаг считался пройденным и работу можно
+    // было сдать; показывать по нему галочку «верно» нельзя.
+    return { correct: Array.isArray(answer) ? answer.length > 0 : norm(answer) !== '', manual: true }
   }
   if (question.type === 'multi') {
     // Засчитываем только полный набор: отмечено всё верное и ничего лишнего.
@@ -40,8 +43,13 @@ export function gradeQuestion(question, answer) {
     }
   }
   if (question.type === 'gap') {
-    // open-гэп (live-уроки, свободный ответ без эталонов): принимаем любой непустой ответ.
-    if (question.open === true) return { correct: norm(answer) !== '' }
+    // Открытый пропуск — эталона у него нет: либо курс его не дал, либо он
+    // потерялся при разборе урока. Раньше здесь любой непустой ответ получал
+    // зелёную галочку, и набор случайных букв показывался ученику как верный
+    // ответ. Проверить такое может только преподаватель (FR-74), поэтому
+    // говорим об этом прямо: correct лишь означает «ответ дан» и нужен, чтобы
+    // шаг засчитался, а вердикта — нет.
+    if (question.open === true) return { correct: norm(answer) !== '', manual: true }
     return { correct: answerMatches(answer, question.answers) }
   }
   if (question.type === 'match') {
