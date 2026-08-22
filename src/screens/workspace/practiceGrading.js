@@ -50,7 +50,13 @@ export function gradeQuestion(question, answer) {
     // говорим об этом прямо: correct лишь означает «ответ дан» и нужен, чтобы
     // шаг засчитался, а вердикта — нет.
     if (question.open === true) return { correct: norm(answer) !== '', manual: true }
-    return { correct: answerMatches(answer, question.answers) }
+    // Контекст задания передаём так же, как остальные три места (LessonPlayer,
+    // CourseStepPlayer) и как считает сервер: в «перепиши предложение» эталоном
+    // записана только изменяемая часть, а ученик пишет фразу целиком. Без cue
+    // расширение выключено (answer-match.js: `if (!cue) return false`), и на
+    // экране он видел красный крест там, где сервер засчитывал ответ верным.
+    const cue = `${question.gapBefore || ''} ${question.gapAfter || ''}`
+    return { correct: answerMatches(answer, question.answers, cue) }
   }
   if (question.type === 'match') {
     const pairs = question.pairs || []

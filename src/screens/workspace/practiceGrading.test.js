@@ -93,3 +93,25 @@ describe('открытый ответ вердикта не получает', (
     expect(gradeQuestion({ id: 'p1', type: 'pick' }, '👍').manual).toBe(true)
   })
 })
+
+// Зеркало серверного AutoGradingTest.переписаннаяФразаЗасчитываетсяЦеликом.
+// Пока экран считал без контекста задания, ученик видел красный крест там, где
+// сервер засчитывал ответ верным, а преподаватель — третье.
+describe('пропуск: ответ-продолжение эталона', () => {
+  const rewrite = {
+    id: 'g1', type: 'gap', answers: ['does not live'],
+    gapBefore: 'He', gapAfter: 'here',
+  }
+
+  it('фраза целиком словами задания засчитывается', () => {
+    expect(gradeQuestion(rewrite, 'does not live here').correct).toBe(true)
+  })
+
+  it('сам эталон тоже', () => {
+    expect(gradeQuestion(rewrite, 'does not live').correct).toBe(true)
+  })
+
+  it('чужие слова так не проходят', () => {
+    expect(gradeQuestion(rewrite, 'does not live in Almaty').correct).toBe(false)
+  })
+})
