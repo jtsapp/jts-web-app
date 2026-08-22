@@ -255,7 +255,9 @@ export const DICT = {
     'report.done': 'Готово',
     'report.waiting': 'Собираю разбор разговора…',
     'report.partial': 'Подробный разбор не собрался, но цифры и расшифровка на месте',
-    'report.empty': 'Отчёта нет: разговор не записался',
+    'report.empty':
+      'Разбор ещё готовится — обычно это меньше минуты. Он появится в истории разговоров.',
+    'report.toHistory': 'История разговоров',
     'report.toDash': 'На главную',
 
     // Сценарии
@@ -535,7 +537,9 @@ export const DICT = {
     'report.done': 'Дайын',
     'report.waiting': 'Әңгіме талдауын жинап жатырмын…',
     'report.partial': 'Толық талдау жиналмады, бірақ сандар мен жазба орнында',
-    'report.empty': 'Есеп жоқ: әңгіме жазылмады',
+    'report.empty':
+      'Талдау әзірленуде — әдетте бір минуттан аз. Ол әңгімелер тарихында пайда болады.',
+    'report.toHistory': 'Әңгімелер тарихы',
     'report.toDash': 'Басты бетке',
 
     'scen.title': 'Сценарийлер',
@@ -811,7 +815,9 @@ export const DICT = {
     'report.done': 'Done',
     'report.waiting': 'Putting your feedback together…',
     'report.partial': 'The detailed breakdown did not come through, but the numbers and transcript are here',
-    'report.empty': 'No report: the conversation was not recorded',
+    'report.empty':
+      'Your feedback is still being prepared — usually under a minute. It will appear in your conversation history.',
+    'report.toHistory': 'Conversation history',
     'report.toDash': 'Home',
 
     'scen.title': 'Scenarios',

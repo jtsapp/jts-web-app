@@ -29,6 +29,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       # Сервисный ключ агент↔Next (Bearer на /api/voice/brain)
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      # Публичный адрес ИМЕННО ЭТОГО стенда: уезжает в метаданные комнаты, и
+      # общий на дев/прод агент по нему понимает, в какую базу писать память и
+      # звонки. Пусто → агент пишет туда, куда смотрит его JTS_API_URL.
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
       # IELTS — опционально, каждая часть деградирует сама при пустом ключе
       SONIOX_API_KEY: ${SONIOX_API_KEY}
       AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY}
