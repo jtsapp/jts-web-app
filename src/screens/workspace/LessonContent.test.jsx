@@ -141,7 +141,10 @@ describe('LessonContent — карточки шага', () => {
     const GAP1 = { type: 'practice', title: 'P1', questions: [{ id: 'g1', type: 'gap', gapBefore: 'I like', gapAfter: '.', answers: ['coffee'] }] }
     const GAP2 = { type: 'practice', title: 'P2', questions: [{ id: 'g2', type: 'gap', gapBefore: 'I see', gapAfter: '.', answers: ['you'] }] }
 
-    const { container } = renderContent([GAP1, GAP2], { onCheck })
+    const { container } = renderContent([GAP1, GAP2], {
+      onCheck,
+      answers: { g1: 'coffee', g2: 'you' },
+    })
     const checkButtons = container.querySelectorAll('.lw-practice__check')
     fireEvent.click(checkButtons[1])
 
@@ -208,6 +211,16 @@ describe('LessonContent — карточки шага', () => {
     expect(container.querySelector('.lw-writing__field').getAttribute('placeholder')).toBe('1.')
   })
 
+  it('текст writing уходит преподавателю, а не остаётся только на устройстве', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderContent(
+      [{ type: 'writing', id: 'wr-w0', instruction: 'Write.', placeholder: '1.' }],
+      { onAnswer },
+    )
+    fireEvent.change(container.querySelector('.lw-writing__field'), { target: { value: 'Friendship is real.' } })
+    expect(onAnswer).toHaveBeenCalledWith('wr-w0', 'Friendship is real.')
+  })
+
   it('рисует speaking одной карточкой с шагами', () => {
     const { container } = renderContent([
       {
@@ -220,6 +233,15 @@ describe('LessonContent — карточки шага', () => {
     expect(container.querySelectorAll('.lw-speaking')).toHaveLength(1)
     expect(container.textContent).toContain('Say hello to your teacher')
     expect(container.textContent).toContain('Greet')
+  })
+
+  it('«Проверить» без ответа не нажимается — иначе зелёный ключ выглядит как успех', () => {
+    const onCheck = vi.fn()
+    const { container } = renderContent([PRACTICE], { onCheck })
+    const btn = container.querySelector('.lw-practice__check')
+    expect(btn.disabled).toBe(true)
+    fireEvent.click(btn)
+    expect(onCheck).not.toHaveBeenCalled()
   })
 
   it('рисует чек-лист «You can now…», а не выкидывает неизвестный тип', () => {

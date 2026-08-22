@@ -10,6 +10,7 @@ import SpeakingBlock from './blocks/SpeakingBlock.jsx'
 import TranslatePopover from './TranslatePopover.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
 import { useI18n } from '../../i18n.jsx'
+import { isTapSelection } from '../../lib/wordTranslate.js'
 
 // `practice` — обрабатывается отдельно ниже (нужны answers/checked/onAnswer/onCheck).
 const BLOCK_BY_TYPE = {
@@ -79,7 +80,7 @@ export function practiceBlockKey(stepId, groupIndex) {
 // только за practice-блоками значило бы, что смотрящий застревает на
 // последнем вопросе шага, пока ученик уже читает материал дальше. Сам
 // ученик liveQuestionId не получает — он не следует за собой.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, token, source }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source }) {
   const groups = groupBlocks(step?.blocks)
   const { lang } = useI18n()
   // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
@@ -102,10 +103,30 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
         ?.scrollIntoView({ behavior: 'instant', block: 'center' })
     }, 60)
     return () => clearTimeout(t)
-  }, [liveQuestionId, step?.id])
+  }, [liveQuestionId, liveFocusNonce, step?.id])
 
   return (
-    <div className="lw-content" onClick={close}>
+    <div
+      className="lw-content"
+      onClick={(e) => {
+        const raw = window.getSelection()?.toString() || ''
+        if (isTapSelection(raw)) return
+        close()
+      }}
+      onMouseUp={(e) => {
+        const sel = window.getSelection()
+        const raw = sel?.toString() || ''
+        if (isTapSelection(raw)) {
+          if (!e.currentTarget.contains(sel.anchorNode)) return
+          if (!sel.rangeCount) return
+          const rect = sel.getRangeAt(0).getBoundingClientRect()
+          if (!rect.width && !rect.height) return
+          openWord(raw, { getBoundingClientRect: () => rect })
+          return
+        }
+        if (raw.trim()) close()
+      }}
+    >
       {groups.map((group, i) => {
         if (group.type === 'info') {
           const anchorId = `block-${group.blockIndex}`
@@ -137,18 +158,24 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
         }
         if (block.type === 'practice') {
           const key = practiceBlockKey(step?.id, i)
+          const anchorId = `block-${group.blockIndex}`
           return (
-            <PracticeBlock
+            <div
               key={i}
-              block={block}
-              answers={answers}
-              checked={checkedKeys?.has(key) ?? false}
-              onAnswer={onAnswer}
-              onCheck={() => onCheck(key)}
-              readOnly={readOnly}
-              liveQuestionId={liveQuestionId}
-              onWord={openWord}
-            />
+              data-question-id={anchorId}
+              className={anchorId === liveQuestionId ? 'lw-q--live-here' : undefined}
+            >
+              <PracticeBlock
+                block={block}
+                answers={answers}
+                checked={checkedKeys?.has(key) ?? false}
+                onAnswer={onAnswer}
+                onCheck={() => onCheck(key)}
+                readOnly={readOnly}
+                liveQuestionId={liveQuestionId}
+                onWord={openWord}
+              />
+            </div>
           )
         }
         const Block = BLOCK_BY_TYPE[block.type]
@@ -160,7 +187,14 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
             data-question-id={anchorId}
             className={anchorId === liveQuestionId ? 'lw-q--live-here' : undefined}
           >
-            <Block block={block} onWord={openWord} />
+            <Block
+              block={block}
+              onWord={openWord}
+              answer={answers?.[block.id || `write-${group.blockIndex}`]}
+              onAnswer={onAnswer}
+              readOnly={readOnly}
+              answerKey={`write-${group.blockIndex}`}
+            />
           </div>
         )
       })}

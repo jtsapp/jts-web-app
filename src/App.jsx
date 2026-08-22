@@ -599,11 +599,11 @@ export default function App() {
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
 
-  // Fullscreen belongs to the Lessons screen only — exit it on any other screen,
-  // including paths that bypass the nav handlers (profile button, opening a lesson).
+  // Fullscreen belongs to Lessons and the live class — exit it on any other screen,
+  // including paths that bypass the nav handlers (profile button).
   // The *request* stays in the click handlers because it needs a user gesture.
   useEffect(() => {
-    if (screen !== 'lessons') exitAppFullscreen()
+    if (screen !== 'lessons' && screen !== 'live-lesson') exitAppFullscreen()
   }, [screen])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
@@ -871,7 +871,7 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); requestAppFullscreen(); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { gradeQuestion } from './practiceGrading.js'
+import { gradeQuestion, hasAttempt } from './practiceGrading.js'
 
 describe('gradeQuestion — order (собери предложение)', () => {
   const question = { type: 'order', answer: ['I', 'like', 'coffee'] }
@@ -46,5 +46,22 @@ describe('gradeQuestion — pick (опрос про себя)', () => {
   it('пустой ответ не засчитывается', () => {
     expect(gradeQuestion({ type: 'pick' }, '').correct).toBe(false)
     expect(gradeQuestion({ type: 'pick' }, []).correct).toBe(false)
+  })
+})
+
+describe('hasAttempt', () => {
+  it('пустой выбор/ввод — не попытка', () => {
+    expect(hasAttempt({ type: 'choice' }, null)).toBe(false)
+    expect(hasAttempt({ type: 'choice' }, '')).toBe(false)
+    expect(hasAttempt({ type: 'gap' }, '  ')).toBe(false)
+    expect(hasAttempt({ type: 'order' }, [])).toBe(false)
+    expect(hasAttempt({ type: 'match' }, {})).toBe(false)
+  })
+
+  it('любой ввод считается попыткой', () => {
+    expect(hasAttempt({ type: 'choice' }, 'are')).toBe(true)
+    expect(hasAttempt({ type: 'gap' }, 'lately')).toBe(true)
+    expect(hasAttempt({ type: 'order' }, ['I'])).toBe(true)
+    expect(hasAttempt({ type: 'match' }, { a: 'b' })).toBe(true)
   })
 })

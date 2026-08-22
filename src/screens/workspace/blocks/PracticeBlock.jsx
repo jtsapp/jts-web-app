@@ -11,6 +11,7 @@ import PickQuestion from '../practice/PickQuestion.jsx'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 import { wrapTapWords } from '../wrapTapWords.js'
 import { reportAudio } from '../../live/audioReport.js'
+import { hasAttempt } from '../practiceGrading.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -27,6 +28,7 @@ const QUESTION_BY_TYPE = {
 // `practiceBlockKey` в LessonContent) — прокидывается в вопросы как есть.
 export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId, onWord }) {
   const { t } = useI18n()
+  const canCheck = (block?.questions || []).some((q) => hasAttempt(q, answers?.[q.id]))
   const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const htmlRef = useRef(null)
@@ -110,7 +112,13 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
       </div>
 
       {!readOnly && (
-        <button type="button" className="lw-practice__check" onClick={() => onCheck(block)}>
+        <button
+          type="button"
+          className="lw-practice__check"
+          disabled={!canCheck}
+          title={canCheck ? undefined : t('lesson.ws.checkNeedAnswer')}
+          onClick={() => canCheck && onCheck(block)}
+        >
           {t('lesson.ws.check')}
         </button>
       )}

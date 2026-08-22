@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
+import { hasAttempt } from '../practiceGrading.js'
 
 // Перемешивает копию массива (Fisher–Yates) — правый столбец не должен идти
 // в том же порядке, что и левый, иначе пары угадываются по позиции.
@@ -31,6 +32,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
   const [activeLeft, setActiveLeft] = useState(null)
   const pairs = question?.pairs || []
   const map = answer && typeof answer === 'object' ? answer : {}
+  const attempted = hasAttempt(question, map)
 
   // Перемешиваем один раз на вопрос, а не на каждый рендер — иначе правый
   // столбец «прыгал» бы при каждом клике.
@@ -102,8 +104,8 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
                   {pairs
                     .filter((pair) => map[pair.left] === category)
                     .map((pair) => {
-                      const isCorrect = checked && category === pair.right
-                      const isWrong = checked && category !== pair.right
+                      const isCorrect = checked && attempted && category === pair.right
+                      const isWrong = checked && attempted && category !== pair.right
                       let cls = 'lw-chip'
                       if (isCorrect) cls += ' is-correct'
                       else if (isWrong) cls += ' is-wrong'
@@ -141,8 +143,8 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
         <div className="lw-match__col">
           {pairs.map((pair) => {
             const chosen = map[pair.left]
-            const isCorrect = checked && chosen === pair.right
-            const isWrong = checked && chosen != null && chosen !== pair.right
+            const isCorrect = checked && attempted && chosen === pair.right
+            const isWrong = checked && attempted && chosen != null && chosen !== pair.right
             let cls = 'lw-match__left'
             if (isCorrect) cls += ' is-correct'
             else if (isWrong) cls += ' is-wrong'

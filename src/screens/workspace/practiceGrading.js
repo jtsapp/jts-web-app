@@ -52,6 +52,19 @@ export function gradeQuestion(question, answer) {
   return { correct: false }
 }
 
+/** Ученик реально что-то ввёл/выбрал. Пустой «Проверить» — не попытка: ключ
+ *  тогда нельзя красить зелёным, будто ответ угадали. */
+export function hasAttempt(question, answer) {
+  if (answer == null) return false
+  if (question?.type === 'multi' || question?.type === 'order' || (question?.type === 'pick' && question?.multiple)) {
+    return Array.isArray(answer) && answer.length > 0
+  }
+  if (question?.type === 'match') {
+    return typeof answer === 'object' && !Array.isArray(answer) && Object.keys(answer).length > 0
+  }
+  return String(answer).trim() !== ''
+}
+
 // Шаг «пройден», если все его practice-вопросы отвечены верно.
 export function stepProgress(steps, answers = {}) {
   let done = 0

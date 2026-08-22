@@ -94,8 +94,8 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   }, [lessonId])
 
   // Учитель: указать всем, на какой раздел/материал/шаг смотреть.
-  const sendFocus = useCallback((sectionId, materialId, stepId = null) => {
-    publish('focus', { sectionId, materialId, stepId })
+  const sendFocus = useCallback((sectionId, materialId, stepId = null, questionId = null) => {
+    publish('focus', { sectionId, materialId, stepId, questionId })
   }, [publish])
   // Студент: передать одно захваченное действие внутри материала.
   const sendMirror = useCallback((materialId, event) => publish('material-mirror', { materialId, ...event }), [publish])

@@ -1,5 +1,5 @@
 import { useI18n } from '../../../i18n.jsx'
-import { gradeQuestion } from '../practiceGrading.js'
+import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
 
@@ -9,10 +9,11 @@ import TapText from '../TapText.jsx'
 export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const value = answer || ''
-  const userCorrect = checked && gradeQuestion(question, value).correct
+  const attempted = hasAttempt(question, value)
+  const userCorrect = checked && attempted && gradeQuestion(question, value).correct
 
   let cls = 'lw-gap-input'
-  if (checked) cls += userCorrect ? ' is-correct' : ' is-wrong'
+  if (checked && attempted) cls += userCorrect ? ' is-correct' : ' is-wrong'
 
   return (
     <div className="lw-q lw-q--gap">
@@ -37,14 +38,14 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
         </span>
         <TapText text={question.gapAfter} onWord={onWord} />
       </p>
-      {checked && !userCorrect && !question.open && (
+      {checked && attempted && !userCorrect && !question.open && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}
         </p>
       )}
       {/* Разбор из `data-why` курса — правило, которое проверяет задание. Показываем
           только после ошибки: до неё это была бы подсказка с ответом. */}
-      {checked && !userCorrect && question.why && (
+      {checked && attempted && !userCorrect && question.why && (
         <p className="lw-q__why">{question.why}</p>
       )}
     </div>

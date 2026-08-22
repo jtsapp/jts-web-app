@@ -1,6 +1,6 @@
 import { useI18n } from '../../../i18n.jsx'
 import { speak } from '../../../practice/vocab/audio.js'
-import { gradeQuestion } from '../practiceGrading.js'
+import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
 
@@ -19,7 +19,7 @@ import TapText from '../TapText.jsx'
 // клик ушёл бы в его же состояние, разъехавшись с тем, что видит ученик.
 export default function ChoiceQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
-  const chosen = answer != null
+  const chosen = hasAttempt(question, answer)
   const correct = chosen && gradeQuestion(question, answer).correct
 
   return (
@@ -44,9 +44,9 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
           const selected = answer === opt
           const isOk = selected && correct
           const isNo = selected && !correct
-          // После «Проверить» подсвечиваем верный вариант, даже если ученик
-          // его не выбрал — иначе на ошибке не видно, где правильный ответ.
-          const revealCorrect = checked && !correct && opt === question.answer
+          // После «Проверить» подсвечиваем верный вариант только если ученик
+          // вообще отвечал — пустой клик не должен красить ключ зелёным.
+          const revealCorrect = checked && chosen && !correct && opt === question.answer
 
           let cls = 'lw-opt'
           if (isOk || revealCorrect) cls += ' is-ok'

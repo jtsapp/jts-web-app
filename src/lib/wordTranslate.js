@@ -8,7 +8,31 @@
 // Разбивает текст на слова, чтобы навесить тап-перевод. Знаки препинания
 // остаются частью «токена», но для поиска перевода чистим их.
 export function cleanWord(w) {
-  return w.replace(/[^A-Za-zА-Яа-яЁё'-]/g, '')
+  return String(w || '')
+    .replace(/[^A-Za-zА-Яа-яЁё'\-\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Выделенная фраза для перевода — короткое словосочетание, не абзац.
+// Длинное выделение почти всегда артефакт пересборки DOM (поллинг чата /
+// Angular CD), и слать его в переводчик бессмысленно.
+export function isPhraseSelection(raw) {
+  const t = String(raw || '').trim()
+  if (!t || t.includes('\n')) return false
+  const compact = t.replace(/\s+/g, ' ')
+  if (!compact.includes(' ')) return false
+  const words = compact.split(' ').filter(Boolean)
+  return words.length >= 2 && words.length <= 8 && compact.length <= 60
+}
+
+/** Слово или короткая фраза, с которой открываем тултип. Иначе выделение
+ *  мусорное (абзац) — старый перевод надо закрыть, а не оставлять висеть. */
+export function isTapSelection(raw) {
+  const word = cleanWord(raw)
+  if (!word) return false
+  if (!word.includes(' ')) return true
+  return isPhraseSelection(raw)
 }
 
 const TR_CACHE_KEY = 'jts_word_tr_v2'
