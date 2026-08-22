@@ -62,12 +62,104 @@ export function serverAnswers(hw) {
  * делать. Формулировку в шапку не ставим: её печатает сам вопрос, и получилась бы
  * вторая копия того же текста. У старых упражнений инструкции нет — шапки тоже.
  */
+/**
+ * Снимает удвоенный хвост в подписи.
+ *
+ * Уроки каталога собраны конвертером, который берёт подпись плитки текстом всей
+ * строки — вместе с уже подставленным переводом, и перевод к тому моменту
+ * подставлен дважды. В снимке остаётся «Japan Япония · ЖапонияЯпония · Жапония»,
+ * и ученик читает мусор. Правим на чтении: сами данные уже разъехались, и
+ * перезаливать из-за этого уровень никто не будет.
+ *
+ * Правило узкое: режем только если конец строки — это дважды подряд один и тот
+ * же кусок, БЕЗ разделителя между копиями. «bye bye» так не пострадает (там
+ * пробел), «ss» тоже (короче порога).
+ */
+export function dedupeTail(value) {
+  const text = String(value ?? '').trim()
+  const n = text.length
+  for (let len = Math.floor(n / 2); len >= 3; len--) {
+    const tail = text.slice(n - len)
+    if (text.slice(n - 2 * len, n - len) === tail) return text.slice(0, n - len).trim()
+  }
+  return text
+}
+
+/**
+ * Инструкция, которую стоит показать над заданием.
+ *
+ * У части упражнений в снимок попала не формулировка задания, а вступление
+ * урока целиком («By the end you can say… How to study this lesson… About
+ * 20–30 minutes…»), одинаковое для всех и обрезанное на полуслове. Печатать её
+ * перед каждым вопросом — стена текста, в которой само задание теряется.
+ *
+ * Признак: вступление длинное и содержит методические обороты, которых в
+ * формулировке задания не бывает. Не подошло — заголовка просто нет, как у
+ * старых упражнений.
+ */
+const LESSON_PREAMBLE = /how to study this lesson|by the end you can|headphones on/i
+
+export function readableInstruction(value) {
+  const text = String(value ?? '').trim()
+  if (!text) return ''
+  if (LESSON_PREAMBLE.test(text)) return ''
+  // Формулировка задания — одна фраза. Всё длиннее пришло из тела урока.
+  return text.length > 160 ? '' : text
+}
+
+/** Подписи внутри вопроса — те же данные, та же чистка. */
+function cleanQuestion(question) {
+  if (!question || typeof question !== 'object') return question
+  const out = { ...question }
+  if (Array.isArray(out.pairs)) {
+    out.pairs = out.pairs.map((p) => ({ ...p, left: dedupeTail(p.left), right: dedupeTail(p.right) }))
+  }
+  if (Array.isArray(out.options)) out.options = out.options.map((o) => (typeof o === 'string' ? dedupeTail(o) : o))
+  if (typeof out.prompt === 'string') out.prompt = dedupeTail(out.prompt)
+  return out
+}
+
 export function exerciseBlock(exercise) {
   return {
     type: 'practice',
-    title: exercise.instruction || '',
-    questions: [exercise.question],
+    title: readableInstruction(exercise.instruction),
+    questions: [cleanQuestion(exercise.question)],
   }
+}
+
+/**
+ * У ответа есть содержимое: пустая строка, пустой список и пустая карта пар —
+ * это «ученик ничего не выбрал», а не ответ.
+ *
+ * Нужно в двух местах сразу: «Проверить» на нетронутом задании не должно
+ * уезжать на сервер, а сдача работы — досылать только то, что действительно
+ * решено. Ноль и false пустыми не считаем: их выбирают так же осознанно.
+ */
+export function isAnswered(value) {
+  if (value == null) return false
+  if (typeof value === 'string') return value.trim() !== ''
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'object') return Object.keys(value).length > 0
+  return true
+}
+
+/**
+ * Ответы из черновика, которых ещё нет на сервере.
+ *
+ * Ответ уезжает преподавателю только по кнопке «Проверить» у каждого задания.
+ * Ученик, который решил всё и нажал «Отправить на проверку», сдавал пустоту:
+ * работа числилась сданной, а преподаватель видел «ученик ещё не отвечал».
+ * Сдача — момент, когда обе картины обязаны сойтись, поэтому недосланное
+ * собирается здесь и уходит перед сменой статуса.
+ */
+export function pendingAnswers(hw, draft) {
+  const out = []
+  for (const exercise of lessonExercises(hw)) {
+    if (exercise.studentAnswer != null) continue
+    const answer = draft?.[exercise.question.id]
+    if (isAnswered(answer)) out.push({ exercise, answer })
+  }
+  return out
 }
 
 export function answersKey(homeworkId) {

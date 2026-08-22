@@ -3,13 +3,15 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import {
   getMyHomework, getHomeworkById, uploadMedia,
-  attachHomeworkAnswer, removeHomeworkAnswer, submitHomework,
+  attachHomeworkAnswer, removeHomeworkAnswer, submitHomework, saveHomeworkAnswer,
   getMyMaterialAssignments,
 } from '../api.js'
 import HomeworkList from './homework/HomeworkList.jsx'
 import HomeworkDetail from './homework/HomeworkDetail.jsx'
 import MaterialAssignmentDetail from './homework/MaterialAssignmentDetail.jsx'
 import { isAllowedFile, studentOrder } from './homework/homeworkFormat.js'
+import { loadAnswers, pendingAnswers } from './homework/homeworkExercises.js'
+import { gradeQuestion } from './workspace/practiceGrading.js'
 import { materialCard } from './homework/materialAssignments.js'
 
 /**
@@ -125,13 +127,33 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
     }
   }
 
+  // Отвечено в этом сеансе, включая то, что ещё не уехало на сервер: по этому
+  // числу оживает «Отправить на проверку». Храним вместе с id работы — иначе
+  // после переключения счёт от предыдущей работы на мгновение разрешал бы сдачу.
+  const [draft, setDraft] = useState({ homeworkId: null, answered: 0 })
+  const draftAnswered = selected && draft.homeworkId === selected.id ? draft.answered : 0
+
   const handleSubmit = async () => {
     if (!selected) return
     setError(null)
     setBusy(true)
     try {
+      // Ответ уезжает преподавателю по кнопке «Проверить» у каждого задания, и
+      // ученик не обязан её нажимать — он решает и сдаёт работу. Всё решённое,
+      // но недосланное, отправляем здесь: иначе статус «сдано» стоит, а
+      // преподаватель видит «ученик ещё не отвечал» и оценивать ему нечего.
+      //
+      // Последовательно, как и загрузка файлов выше: каждый ответ возвращает
+      // работу целиком, и параллельные затирали бы друг друга.
+      const pending = pendingAnswers(selected, loadAnswers(selected.id))
+      for (const { exercise, answer } of pending) {
+        const { correct } = gradeQuestion(exercise.question, answer)
+        await saveHomeworkAnswer(selected.id, exercise.id, token, answer, correct)
+      }
       replace(await submitHomework(token, selected.id))
     } catch {
+      // Статус не двигаем: работа, сданная без ответов, выглядит проверяемой,
+      // а проверять в ней нечего.
       setError(t('homework.submitFailed'))
       await refresh(selected.id)
     } finally {
@@ -165,6 +187,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   onUpload={handleUpload}
                   onRemoveFile={handleRemove}
                   onSubmit={handleSubmit}
+                  onSaved={replace}
+                  onAnswered={setDraft}
+                  draftAnswered={draftAnswered}
                 />
               )}
             </div>

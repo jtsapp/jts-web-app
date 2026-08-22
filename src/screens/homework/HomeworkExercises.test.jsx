@@ -126,6 +126,46 @@ describe('HomeworkExercises: ответ уходит преподавателю'
     expect(screen.getByText('1 из 1 решено')).toBeTruthy()
   })
 
+  // Регрессия на «преподаватель не видит ответов ученика». Кнопка «Проверить»
+  // на нетронутом задании — просьба показать разбор; клиент слал answer=null,
+  // и попытка записывалась как состоявшаяся неверная. На стенде так испортились
+  // 10 заданий из 22 в одной заявке: у преподавателя красный крест и прочерк
+  // вместо ответа.
+  it('«Проверить» без выбранного варианта не отправляет пустой ответ', async () => {
+    show({ id: 7, exercises: [choice] })
+
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    // Разбор ученику показали: верный вариант подсвечен (ChoiceQuestion:49).
+    await waitFor(() => expect(screen.getByText('a').closest('.lw-opt').className).toMatch(/is-ok/))
+    expect(saveHomeworkAnswer).not.toHaveBeenCalled()
+  })
+
+  it('пустая строка и пустой набор — тоже не ответ', async () => {
+    const gap = { id: 2, question: { id: 'g1', type: 'gap', gapBefore: 'I', gapAfter: '.', answers: ['like'] } }
+    show({ id: 7, exercises: [gap] })
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '   ' } })
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(saveHomeworkAnswer).not.toHaveBeenCalled()
+  })
+
+  // Сервер возвращает работу целиком; раньше её выбрасывали, и «Отправить на
+  // проверку» весь сеанс считала по данным на момент открытия экрана.
+  it('обновлённую работу отдаёт наверх, чтобы кнопка сдачи ожила', async () => {
+    const onSaved = vi.fn()
+    const hw = { id: 7, exercises: [choice] }
+    saveHomeworkAnswer.mockResolvedValue({ ...hw, exercises: [{ ...choice, studentAnswer: 'a' }] })
+    render(<I18nProvider><HomeworkExercises hw={hw} token="jwt" onSaved={onSaved} /></I18nProvider>)
+
+    fireEvent.click(screen.getByText('a'))
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1))
+    expect(onSaved.mock.calls[0][0].exercises[0].studentAnswer).toBe('a')
+  })
+
   it('без токена ничего не отправляет, но проверку показывает', async () => {
     show({ id: 7, exercises: [choice] }, null)
 

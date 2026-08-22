@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { lessonExercises, exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, answersKey } from './homeworkExercises.js'
+import { lessonExercises, exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, answersKey, dedupeTail, readableInstruction, isAnswered, pendingAnswers } from './homeworkExercises.js'
 
 describe('homeworkExercises', () => {
   beforeEach(() => localStorage.clear())
@@ -120,5 +120,119 @@ describe('отозванная выдача', () => {
 
     expect(batches).toHaveLength(1)
     expect(batches[0].lessonTitle).toBe('Осталась')
+  })
+})
+
+// Данные уроков каталога разъехались на этапе сборки: конвертер берёт подпись
+// плитки текстом всей строки, а перевод к тому моменту подставлен дважды.
+// Чиним на чтении — перезаливать уровень из-за этого никто не будет.
+describe('dedupeTail — удвоенный хвост подписи', () => {
+  it('снимает повтор перевода в паре сопоставления', () => {
+    expect(dedupeTail('Japan Япония · ЖапонияЯпония · Жапония')).toBe('Japan Япония · Жапония')
+    expect(dedupeTail('the USA США · АҚШСША · АҚШ')).toBe('the USA США · АҚШ')
+    expect(dedupeTail('China Китай · ҚытайКитай · Қытай')).toBe('China Китай · Қытай')
+  })
+
+  it('не трогает то, что повтором не является', () => {
+    expect(dedupeTail('Japan Япония · Жапония')).toBe('Japan Япония · Жапония')
+    expect(dedupeTail('Brazilian')).toBe('Brazilian')
+    // Повтор через разделитель — это не склейка, а нормальный текст.
+    expect(dedupeTail('bye bye')).toBe('bye bye')
+    // Короткие варианты ответа резать нельзя: «ss» — валидный вариант.
+    expect(dedupeTail('ss')).toBe('ss')
+    expect(dedupeTail('es')).toBe('es')
+  })
+
+  it('пустое и мусорное переживает', () => {
+    expect(dedupeTail(null)).toBe('')
+    expect(dedupeTail(undefined)).toBe('')
+    expect(dedupeTail('   ')).toBe('')
+  })
+})
+
+describe('readableInstruction — что показывать над заданием', () => {
+  it('формулировку задания показывает', () => {
+    expect(readableInstruction('Listen. Choose the country you hear.')).toBe('Listen. Choose the country you hear.')
+    expect(readableInstruction('Match the country to the nationality.')).toBe('Match the country to the nationality.')
+  })
+
+  it('вступление урока прячет — оно одинаково у всех заданий и обрезано', () => {
+    const preamble = "By the end you can say where you're from and your nationality, and use to be (I'm, he isn't, they aren't). How to study this lesson • About 20–30 minutes."
+    expect(readableInstruction(preamble)).toBe('')
+    expect(readableInstruction('How to study this lesson • Headphones on. Say your answers out loud.')).toBe('')
+  })
+
+  it('слишком длинное прячет даже без методических оборотов', () => {
+    expect(readableInstruction('а'.repeat(200))).toBe('')
+  })
+
+  it('пустое остаётся пустым', () => {
+    expect(readableInstruction(null)).toBe('')
+  })
+})
+
+describe('exerciseBlock — чистит и подпись, и пары', () => {
+  it('пары сопоставления приходят читаемыми, вступление не печатается', () => {
+    const block = exerciseBlock({
+      instruction: 'How to study this lesson • About 20–30 minutes.',
+      question: {
+        id: 'q1',
+        type: 'match',
+        pairs: [{ left: 'Japan Япония · ЖапонияЯпония · Жапония', right: 'Japanese' }],
+      },
+    })
+    expect(block.title).toBe('')
+    expect(block.questions[0].pairs[0].left).toBe('Japan Япония · Жапония')
+    expect(block.questions[0].pairs[0].right).toBe('Japanese')
+  })
+})
+
+// Правило отбора решает, что уедет преподавателю при сдаче работы: ошибка здесь
+// тихо теряет ответы — ровно та беда, которую эти хелперы и чинят.
+describe('isAnswered', () => {
+  it('пустое — это отсутствие выбора, а не ответ', () => {
+    for (const пусто of [null, undefined, '', '   ', [], {}]) expect(isAnswered(пусто)).toBe(false)
+  })
+
+  it('ноль и false выбраны так же осознанно, как любой вариант', () => {
+    for (const ответ of [0, false, '0', ['a'], { a: 'b' }, 'like']) expect(isAnswered(ответ)).toBe(true)
+  })
+})
+
+describe('pendingAnswers', () => {
+  const q = (id) => ({ id, type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' })
+
+  it('собирает решённое, чего ещё нет на сервере', () => {
+    const hw = { exercises: [{ id: 1, question: q('q1') }, { id: 2, question: q('q2') }] }
+
+    const pending = pendingAnswers(hw, { q1: 'a', q2: 'b' })
+
+    expect(pending.map((p) => [p.exercise.id, p.answer])).toEqual([[1, 'a'], [2, 'b']])
+  })
+
+  it('уже сохранённое на сервере не пересылает', () => {
+    const hw = { exercises: [{ id: 1, question: q('q1'), studentAnswer: 'a' }] }
+
+    expect(pendingAnswers(hw, { q1: 'a' })).toEqual([])
+  })
+
+  it('пустое в черновике не считается решённым', () => {
+    const hw = { exercises: [{ id: 1, question: q('q1') }, { id: 2, question: q('q2') }] }
+
+    expect(pendingAnswers(hw, { q1: '', q2: undefined })).toEqual([])
+  })
+
+  it('отозванные и задачи из библиотеки не в счёт', () => {
+    const hw = { exercises: [
+      { id: 1, question: q('q1'), revoked: true },
+      { id: 2, taskId: 7, taskTitle: 'Из библиотеки' },
+    ] }
+
+    expect(pendingAnswers(hw, { q1: 'a' })).toEqual([])
+  })
+
+  it('пустой черновик не роняет отбор', () => {
+    expect(pendingAnswers({ exercises: [{ id: 1, question: q('q1') }] }, null)).toEqual([])
+    expect(pendingAnswers(null, { q1: 'a' })).toEqual([])
   })
 })
