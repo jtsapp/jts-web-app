@@ -257,6 +257,32 @@
   color: #9047ff;
 }
 
+/* Длинные варианты — строками во всю ширину. Карточка тогда перестаёт быть
+   квадратом: высота по тексту, эмодзи слева, текст по левому краю — читать
+   предложение по центру в узкой колонке невозможно. */
+.cp-picks.is-rows {
+  grid-template-columns: minmax(0, 620px);
+  gap: 10px;
+}
+.cp-picks.is-rows .cp-pick {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px 20px;
+  border-radius: 18px;
+  text-align: left;
+}
+.cp-picks.is-rows .cp-pick__emoji {
+  font-size: 24px;
+}
+.cp-picks.is-rows .cp-pick__label {
+  font-size: 17px;
+  line-height: 1.35;
+  text-align: left;
+}
+
 /* Слова урока: картинка, по клику — перевод */
 .cp-words {
   width: 100%;
@@ -689,6 +715,17 @@
 }
 
 /* Аудио */
+/* Видео-репортаж юнита (B2). Ширина по колонке шага, высота по ролику: рамка
+   с фиксированной высотой обрезала бы кадр 16:9 на узком экране. */
+.cp-watch {
+  width: 100%;
+  margin-top: 18px;
+  border-radius: 18px;
+  background: #000;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
+
 .cp-audio {
   margin-top: 18px;
   display: flex;
@@ -935,7 +972,7 @@
   .cp-step__prompt {
     font-size: 26px;
   }
-  .cp-picks {
+  .cp-picks:not(.is-rows) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .cp-words {
@@ -1321,11 +1358,11 @@
   }
 
   /* Карточки «выбери что ближе»: три в ряд, как в макете (128×96 при 440). */
-  .cp-picks {
+  .cp-picks:not(.is-rows) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
-  .cp-pick {
+  .cp-picks:not(.is-rows) .cp-pick {
     min-height: 96px;
     padding: 16px 12px;
   }

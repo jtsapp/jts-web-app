@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import fs from 'node:fs'
 import { isGraded } from './CourseStepPlayer.jsx'
 
 // Шаг, который плеер считает проверяемым, требует ответа перед «Продолжить».
@@ -25,5 +26,32 @@ describe('CourseStepPlayer — что считается проверяемым 
     expect(isGraded({ type: 'note' })).toBe(false)
     expect(isGraded({ type: 'cards' })).toBe(false)
     expect(isGraded({ type: 'checklist' })).toBe(false)
+  })
+})
+
+// Вариант «выбери что ближе» рассчитан на слово с эмодзи, но у курса это бывает
+// целая ситуация на десять слов (85 экранов B2, 29 у B1): в колонку 173px такой
+// текст не влезал и вылезал за карточку. Длинные варианты идут строками, и
+// адаптив обязан этот вид уважать — иначе на планшете они снова схлопнутся
+// в три колонки и всё вернётся.
+describe('CourseStepPlayer — длинные варианты «выбери что ближе»', () => {
+  const css = fs.readFileSync(new URL('../course.css', import.meta.url), 'utf8')
+  // Комментарий перед правилом попадает в тот же кусок, что и селектор, —
+  // режем его, иначе селектор базового правила никогда не совпадёт.
+  const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, head, body]) => ({
+    head: head.replace(/\/\*[\s\S]*?\*\//g, '').trim(),
+    body,
+  }))
+  const columnRules = rules.filter((r) => r.head.includes('.cp-picks') && /grid-template-columns/.test(r.body))
+
+  it('строчный вид — одна колонка', () => {
+    const rows = columnRules.find((r) => r.head.includes('.is-rows'))
+    expect(rows).toBeTruthy()
+    expect(rows.body).toMatch(/grid-template-columns:\s*minmax\(0,\s*620px\)/)
+  })
+
+  it('медиазапросы перекладывают только карточный вид', () => {
+    const clashing = columnRules.filter((r) => r.head !== '.cp-picks' && !r.head.includes('is-rows') && !r.head.includes(':not(.is-rows)'))
+    expect(clashing.map((r) => r.head)).toEqual([])
   })
 })

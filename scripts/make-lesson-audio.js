@@ -9,6 +9,11 @@
 //
 //   words     слова словаря и слова заданий «Listen. Choose the word you hear»
 //             → Soniox (SONIOX_API_KEY, им же говорит Спарк в тьюторе)
+//             Слова берутся из того же источника, что и у сайта: есть
+//             public/course/<level>/ — из него, иначе из
+//             public/learning/<level>.json. Без этой развилки у B2 озвучился
+//             бы старый Speakout из public/learning/b2.json, который на экране
+//             давно не показывается.
 //   narration связные куски материала на 30–50 слов
 //             → Google Cloud TTS, gemini-2.5-flash-tts — голос Луны
 //
@@ -35,11 +40,15 @@ const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { sayAudioFile } = require('./jts-self/say-audio')
+const { strip } = require('./build-course-steps.js')
 
 const ROOT = path.join(__dirname, '..')
 const LEARNING = path.join(ROOT, 'public/learning')
 const AUDIO_DIR = path.join(LEARNING, 'audio')
-const LEVELS = ['a0', 'a1']
+const COURSE = path.join(ROOT, 'public/course')
+// Уровни, где карточки словаря сейчас немые. A2/B1 гоняются тем же
+// `--level a2`, просто до них пока не доходили руки.
+const LEVELS = ['a0', 'a1', 'b2']
 
 // Диктор материала урока — не тьютор: он не знакомится и не поддерживает, он
 // читает текст. Поэтому просим ровное чтение без игры голосом. Отдельно
@@ -127,6 +136,37 @@ async function synthesizeSoniox(text, attempt = 0) {
  * проверяло бы не память, а способность узнать другой голос.
  */
 function wordsOf(level) {
+  return isCourseLevel(level) ? courseWordsOf(level) : nativeWordsOf(level)
+}
+
+// Уровень переведён на перенесённый курс: словарь лежит не в
+// public/learning/<level>.json, а строками VOCAB внутри каждого урока.
+const isCourseLevel = (level) => fs.existsSync(path.join(COURSE, level, 'index.json'))
+
+// Слова курса. Первое поле строки VOCAB — само слово; сущности раскрываем тем
+// же strip, что и сборщик шагов, иначе Soniox прочитает «don&rsquo;t», а хэш
+// файла не совпадёт с тем, что ищет плеер.
+function courseWordsOf(level) {
+  const dir = path.join(COURSE, level)
+  const { lessons = [] } = JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'))
+  const seen = new Map()
+  for (const l of lessons) {
+    const file = path.join(dir, `lesson-${l.n}.json`)
+    if (!fs.existsSync(file)) continue
+    const lesson = JSON.parse(fs.readFileSync(file, 'utf8'))
+    const v = lesson.VOCAB
+    const rows = Array.isArray(v) ? v : (v && (v.self || v.group || v.solo)) || []
+    for (const row of rows) {
+      const word = strip(Array.isArray(row) ? row[0] : row)
+      if (!word) continue
+      const key = sayAudioFile(word)
+      if (!seen.has(key)) seen.set(key, { file: key, text: word, code: `L${l.n}`, title: l.title, provider: 'soniox' })
+    }
+  }
+  return [...seen.values()]
+}
+
+function nativeWordsOf(level) {
   const file = path.join(LEARNING, `${level}.json`)
   if (!fs.existsSync(file)) return []
   const { lessons } = JSON.parse(fs.readFileSync(file, 'utf8'))
@@ -225,6 +265,10 @@ async function synthesize(token, text, voice) {
 
 /** Тексты уровня, которым нужна запись: у задания есть say и нет своей дорожки. */
 function narrationsOf(level) {
+  // У курс-уровней связного материала для озвучки нет: записи стадий приехали
+  // вместе с курсом. А файл public/learning/<level>.json у них хоть и лежит,
+  // но это старый Speakout, который сайт уже не показывает.
+  if (isCourseLevel(level)) return []
   const file = path.join(LEARNING, `${level}.json`)
   if (!fs.existsSync(file)) return []
   const { lessons } = JSON.parse(fs.readFileSync(file, 'utf8'))
@@ -259,12 +303,15 @@ function parseArgs() {
     only: kindAt >= 0 && argv[kindAt + 1] ? argv[kindAt + 1] : 'all',
     dry: argv.includes('--dry'),
     force: argv.includes('--force'),
+    // --limit N — сначала записать несколько штук и послушать, а потом уже
+    // запускать словарь целиком: прогон на семь сотен слов идёт минут двадцать.
+    limit: argv.indexOf('--limit') >= 0 ? Number(argv[argv.indexOf('--limit') + 1]) : 0,
   }
 }
 
 async function run() {
   loadEnv()
-  const { levels, only, dry, force } = parseArgs()
+  const { levels, only, dry, force, limit } = parseArgs()
 
   const plan = []
   for (const level of levels) {
@@ -279,12 +326,15 @@ async function run() {
     }
   }
 
+  const planned = plan.length
+  if (limit > 0) plan.length = Math.min(plan.length, limit)
+
   if (!plan.length) {
     console.log('нечего генерировать: записи всех текстов уже на месте')
     return
   }
   const words = plan.filter((i) => i.provider === 'soniox').length
-  console.log(`нужно записей: ${plan.length} (слов ${words}, связного материала ${plan.length - words})`)
+  console.log(`нужно записей: ${plan.length}${planned > plan.length ? ` из ${planned} (--limit)` : ''} (слов ${words}, связного материала ${plan.length - words})`)
   if (dry) {
     for (const item of plan) {
       const who = item.provider === 'soniox' ? SONIOX_VOICE : item.voice
@@ -317,7 +367,8 @@ async function run() {
       console.log(`  ${done}/${plan.length} — ${(bytes / 1048576).toFixed(1)} МБ`)
     }
   }
-  console.log(`готово: ${done} записей, ${(bytes / 1048576).toFixed(1)} МБ. Дальше прогоняй экстрактор — он привяжет записи к заданиям.`)
+  console.log(`готово: ${done} записей, ${(bytes / 1048576).toFixed(1)} МБ.`)
+  console.log('Дальше: нативные уровни — экстрактор, курс-уровни — build-course-steps.js. Оба привязывают записи к заданиям по хэшу слова.')
 }
 
 if (require.main === module) {
