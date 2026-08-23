@@ -10,7 +10,7 @@ import SpeakingBlock from './blocks/SpeakingBlock.jsx'
 import TranslatePopover from './TranslatePopover.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
 import { useI18n } from '../../i18n.jsx'
-import { isTapSelection } from '../../lib/wordTranslate.js'
+import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../../lib/wordTranslate.js'
 
 // `practice` — обрабатывается отдельно ниже (нужны answers/checked/onAnswer/onCheck).
 const BLOCK_BY_TYPE = {
@@ -80,14 +80,14 @@ export function practiceBlockKey(stepId, groupIndex) {
 // только за practice-блоками значило бы, что смотрящий застревает на
 // последнем вопросе шага, пока ученик уже читает материал дальше. Сам
 // ученик liveQuestionId не получает — он не следует за собой.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId }) {
   const groups = groupBlocks(step?.blocks)
   const { lang } = useI18n()
   // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
   // в читалке книг, см. useTapTranslate.js. Один экземпляр на весь шаг, а не
   // по одному на info-блок: попап один, и клик по новому слову должен закрыть
   // прошлый, а не открыть второй рядом.
-  const { pop, openWord, close, onSave } = useTapTranslate({ token, lang, source })
+  const { pop, openWord, openLimit, close, onSave } = useTapTranslate({ token, lang, source, catalogLessonId })
 
   // Ученик перешёл/проскроллил на новый вопрос — подъезжаем к нему, а не
   // ждём, пока смотрящий сам найдёт нужную карточку в потоке. Без задержки
@@ -110,18 +110,20 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
       className="lw-content"
       onClick={(e) => {
         const raw = window.getSelection()?.toString() || ''
-        if (isTapSelection(raw)) return
+        if (isTapSelection(raw) || isOversizedPhrase(raw)) return
         close()
       }}
       onMouseUp={(e) => {
         const sel = window.getSelection()
         const raw = sel?.toString() || ''
-        if (isTapSelection(raw)) {
+        if (isPhraseSelection(raw) || isOversizedPhrase(raw)) {
           if (!e.currentTarget.contains(sel.anchorNode)) return
           if (!sel.rangeCount) return
           const rect = sel.getRangeAt(0).getBoundingClientRect()
           if (!rect.width && !rect.height) return
-          openWord(raw, { getBoundingClientRect: () => rect })
+          const anchor = { getBoundingClientRect: () => rect }
+          if (isOversizedPhrase(raw)) openLimit(raw, anchor)
+          else openWord(raw, anchor)
           return
         }
         if (raw.trim()) close()
@@ -169,8 +171,10 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 block={block}
                 answers={answers}
                 checked={checkedKeys?.has(key) ?? false}
+                checkedKeys={checkedKeys}
+                cardKey={key}
                 onAnswer={onAnswer}
-                onCheck={() => onCheck(key)}
+                onCheck={() => onCheck(key, (block.questions || []).map((q) => q.id))}
                 readOnly={readOnly}
                 liveQuestionId={liveQuestionId}
                 onWord={openWord}
@@ -198,7 +202,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
           </div>
         )
       })}
-      <TranslatePopover pop={pop} onSave={onSave} />
+      <TranslatePopover pop={pop} onSave={token ? onSave : undefined} />
     </div>
   )
 }

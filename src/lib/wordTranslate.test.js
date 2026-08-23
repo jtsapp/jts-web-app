@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanWord, isPhraseSelection, isTapSelection, sentenceContaining, splitSentences } from './wordTranslate.js'
+import { cleanWord, isOversizedPhrase, isPhraseSelection, isTapSelection, sentenceContaining, splitSentences, wordFromTap } from './wordTranslate.js'
 
 describe('splitSentences / sentenceContaining', () => {
   it('режет по концу предложения', () => {
@@ -38,6 +38,16 @@ describe('isPhraseSelection', () => {
     expect(isPhraseSelection('line one\nline two')).toBe(false)
     expect(
       isPhraseSelection(
+        'Emma a final-year student at a business school is thinking about her future after graduation and what kind of job would really suit her best in the long run.',
+      ),
+    ).toBe(false)
+    expect(
+      isOversizedPhrase(
+        'Emma a final-year student at a business school is thinking about her future after graduation and what kind of job would really suit her best in the long run.',
+      ),
+    ).toBe(true)
+    expect(
+      isPhraseSelection(
         'First sentence here. Second sentence here. Third sentence here. Fourth one too.',
       ),
     ).toBe(false)
@@ -60,8 +70,13 @@ describe('isTapSelection', () => {
   })
 })
 
-describe('cleanWord', () => {
+describe('cleanWord / wordFromTap', () => {
   it('оставляет пробелы внутри фразы', () => {
     expect(cleanWord('get on!')).toBe('get on')
+  })
+
+  it('с тапа по слову берёт только это слово', () => {
+    const el = { textContent: 'minutes,' }
+    expect(wordFromTap(el)).toBe('minutes')
   })
 })

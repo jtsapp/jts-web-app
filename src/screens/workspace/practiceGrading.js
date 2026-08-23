@@ -11,7 +11,10 @@ export const norm = normAnswer
 // вариантов; для pick — сам факт выбора (оценивать нечего, опрос про себя).
 export function gradeQuestion(question, answer) {
   if (!question || answer == null) return { correct: false }
-  if (question.type === 'choice') return { correct: answer === question.answer }
+  if (question.type === 'choice') {
+    if (question.open) return { correct: String(answer).trim() !== '' }
+    return { correct: answer === question.answer }
+  }
   if (question.type === 'chips') return { correct: answer === question.answer }
   // Опрос про себя. Верного ответа нет — засчитываем сам факт выбора, иначе шаг
   // с ним никогда не считался бы пройденным.

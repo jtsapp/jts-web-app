@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  parseLessonDate, canJoin, lessonStateKey, dayKey,
+  parseLessonDate, canJoin, canOpen, lessonStateKey, dayKey,
   buildMonthMatrix, occurrencesByDayKey, monthShift, dateFromKey,
   lessonTimeRange, lessonTopicFromSections,
 } from './lessonFormat.js'
@@ -21,6 +21,13 @@ describe('lessonFormat', () => {
     expect(canJoin('SCHEDULED')).toBe(false)
     expect(canJoin('COMPLETED')).toBe(false)
     expect(canJoin('CANCELLED')).toBe(false)
+  })
+
+  it('canOpen lets a student reopen a completed lesson in view-only', () => {
+    expect(canOpen('COMPLETED')).toBe(true)
+    expect(canOpen('IN_PROGRESS')).toBe(true)
+    expect(canOpen('SCHEDULED')).toBe(false)
+    expect(canOpen('CANCELLED')).toBe(false)
   })
 
   it('lessonStateKey marks a SCHEDULED lesson whose end has passed as overdue', () => {

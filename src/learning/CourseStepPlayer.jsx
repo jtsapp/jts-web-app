@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
+import { saveWord } from '../api.js'
 import { useI18n } from '../i18n.jsx'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
 import { reportAudio } from '../screens/live/audioReport.js'
-import { isTapSelection } from '../lib/wordTranslate.js'
+import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../lib/wordTranslate.js'
 import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
 import TapText from '../screens/workspace/TapText.jsx'
 import TappableHtml from '../screens/workspace/TappableHtml.jsx'
@@ -140,9 +141,9 @@ function shuffle(arr, seed) {
   return a
 }
 
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, onExit, onVocab, onDone }) {
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, catalogLessonId, onExit, onVocab, onDone }) {
   const { t, lang } = useI18n()
-  const { pop, openWord, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}` })
+  const { pop, openWord, openLimit, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}`, catalogLessonId })
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [wrong, setWrong] = useState(0)
@@ -218,18 +219,20 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
         className="cp-scroll"
         onClick={() => {
           const raw = window.getSelection()?.toString() || ''
-          if (isTapSelection(raw)) return
+          if (isTapSelection(raw) || isOversizedPhrase(raw)) return
           close()
         }}
         onMouseUp={(e) => {
           const sel = window.getSelection()
           const raw = sel?.toString() || ''
-          if (isTapSelection(raw)) {
+          if (isPhraseSelection(raw) || isOversizedPhrase(raw)) {
             if (!e.currentTarget.contains(sel.anchorNode)) return
             if (!sel.rangeCount) return
             const rect = sel.getRangeAt(0).getBoundingClientRect()
             if (!rect.width && !rect.height) return
-            openWord(raw, { getBoundingClientRect: () => rect })
+            const anchor = { getBoundingClientRect: () => rect }
+            if (isOversizedPhrase(raw)) openLimit(raw, anchor)
+            else openWord(raw, anchor)
             return
           }
           if (raw.trim()) close()
@@ -257,6 +260,8 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           }}
           t={t}
           onWord={openWord}
+          token={token}
+          catalogLessonId={catalogLessonId}
         />
       </div>
       <TranslatePopover pop={pop} onSave={token ? onSave : undefined} />
@@ -266,7 +271,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
 
 // Один экран задания: тело по типу шага, снизу кнопка «Проверить»/«Продолжить»
 // и, после проверки, плашка результата.
-function Step({ step, seed, level, onAdvance, onGraded, t, onWord }) {
+function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalogLessonId }) {
   const graded = isGraded(step)
   const [picked, setPicked] = useState(null)
   const [checked, setChecked] = useState(false)
@@ -388,6 +393,8 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord }) {
           level={level}
           t={t}
           onWord={onWord}
+          token={token}
+          catalogLessonId={catalogLessonId}
         />
       </div>
 
@@ -428,7 +435,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord }) {
   )
 }
 
-function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t, onWord }) {
+function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t, onWord, token, catalogLessonId }) {
   switch (step.type) {
     // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
@@ -524,7 +531,15 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
 
     // Слова урока: карточка переворачивается на перевод по клику.
     case 'cards':
-      return <WordCards words={step.words} t={t} />
+      return (
+        <WordCards
+          words={step.words}
+          t={t}
+          token={token}
+          catalogLessonId={catalogLessonId}
+          source={`course:${level || 'lesson'}`}
+        />
+      )
 
     case 'note':
       return (
@@ -844,7 +859,26 @@ function FlagRU() {
   )
 }
 
-function WordCards({ words, t }) {
+async function saveCourseWordToLessonDict(token, w, catalogLessonId, source) {
+  if (!token || !String(w?.en || '').trim()) return false
+  const word = String(w.en).trim()
+  let ok = false
+  if (w.ru) {
+    try {
+      await saveWord(token, { word, translation: w.ru, language: 'ru', source, catalogLessonId })
+      ok = true
+    } catch { /* словарь уроков — best-effort, как vocab_bank */ }
+  }
+  if (w.kk) {
+    try {
+      await saveWord(token, { word, translation: w.kk, language: 'kk', source, catalogLessonId })
+      ok = true
+    } catch { /* kk отдельно: ru уже мог сохраниться */ }
+  }
+  return ok
+}
+
+function WordCards({ words, t, token, catalogLessonId, source }) {
   const [open, setOpen] = useState({})
   // Уходя со стадии словаря, обрываем речь: иначе последнее слово догоняет
   // студента уже на следующем экране.
@@ -857,12 +891,15 @@ function WordCards({ words, t }) {
 
   const add = async (i, w) => {
     setSaved((s) => ({ ...s, [i]: true }))
-    // Подсказка словаря — перевод, а где его нет (B2 весь на английском) —
-    // определение слова: пустая подсказка в vocab_bank бесполезна.
-    const ok = await addVocabWords([{ word: w.en, hint: [w.ru, w.kk].filter(Boolean).join(' · ') || w.def || '' }])
-    // Не сохранилось — возвращаем кнопку, иначе галочка врёт про слово,
-    // которого в словаре нет.
-    if (!ok) setSaved((s) => ({ ...s, [i]: false }))
+      // Подсказка словаря — перевод, а где его нет (B2 весь на английском) —
+      // определение слова: пустая подсказка в vocab_bank бесполезна.
+    const [bankOk, lessonOk] = await Promise.all([
+      addVocabWords([{ word: w.en, hint: [w.ru, w.kk].filter(Boolean).join(' · ') }]),
+      saveCourseWordToLessonDict(token, w, catalogLessonId, source),
+    ])
+      // Не сохранилось — возвращаем кнопку, иначе галочка врёт про слово,
+      // которого в словаре нет.
+    if (!bankOk && !lessonOk) setSaved((s) => ({ ...s, [i]: false }))
   }
 
   return (

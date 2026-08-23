@@ -76,6 +76,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
   // (так открываются и материалы, которые преподаватель загрузил сам).
   const [catalogLesson, setCatalogLesson] = useState(null)
+  const [resolvedCatalogLessonId, setResolvedCatalogLessonId] = useState(null)
   const [activeStepId, setActiveStepId] = useState(null)
   const [answers, setAnswers] = useState({})
   // Несмотря на название — не id шагов, а составные ключи practice-карточек
@@ -209,9 +210,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
     Promise.resolve(url ? catalogLessonIdFor(url, token) : null)
-      .then((id) => (id == null ? null : loadCatalogLesson(id, token)))
-      .then((loaded) => {
+      .then((id) =>
+        id == null
+          ? Promise.resolve({ id: null, loaded: null })
+          : loadCatalogLesson(id, token).then((loaded) => ({ id, loaded })),
+      )
+      .then(({ id, loaded }) => {
         if (cancelled) return
+        setResolvedCatalogLessonId(id)
         setCatalogLesson(loaded || null)
         const forced = pendingFocusStepRef.current
         pendingFocusStepRef.current = null
@@ -233,6 +239,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       })
       .catch(() => {
         if (cancelled) return
+        setResolvedCatalogLessonId(null)
         setCatalogLesson(null)
         setCatalogResolvedFor(url)
       })
@@ -305,9 +312,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // `key` — составной ключ конкретной practice-карточки (LessonContent
   // передаёт его в onCheck), а не id шага: см. комментарий у checkedSteps.
-  function handleCheckStep(key) {
+  function handleCheckStep(key, questionIds = []) {
     const next = new Set(checkedSteps)
     next.add(key)
+    questionIds.forEach((id) => next.add(id))
     setCheckedSteps(next)
     persistProgress({ answers, checkedSteps: next, stepId: activeStepId })
     sendStepProgress({
@@ -504,6 +512,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       const nextAnswers = { ...answers }
       questionIds.forEach((id) => { delete nextAnswers[id] })
       const nextChecked = new Set(checkedSteps)
+      questionIds.forEach((id) => nextChecked.delete(id))
       checkedKeys.forEach((key) => nextChecked.delete(key))
       setAnswers(nextAnswers)
       setCheckedSteps(nextChecked)
@@ -921,6 +930,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               liveFocusNonce={isStaff ? 0 : focusNonce}
                               token={token}
                               source={catalogLesson?.title || lesson?.title}
+                              catalogLessonId={resolvedCatalogLessonId}
                             />
                           </div>
                         </>

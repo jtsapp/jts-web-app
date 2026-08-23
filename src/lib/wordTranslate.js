@@ -42,8 +42,14 @@ export function sentenceContaining(blockText, hint) {
 const TAP_BLOCK =
   'p, li, h1, h2, h3, h4, td, th, blockquote, figcaption, .instruction, .subline, .byline, .explain, .bubble, .msg, .card, .cp-step__prompt, .cp-step__title, .cp-note__h, .cp-note__body, .cp-egs__card, .lw-q__prompt, .lw-q__sentence, .lw-practice__instruction, .lw-practice__hint, .lw-practice__title, .lw-info__title, .lw-speaking__task, .kl-task__title, .kl-task__sub, .kl-sentence, .kl-info, .kl-note'
 
-/** Текст, который уходит в переводчик с тапа по слову: целое предложение,
- *  а не изолированный токен. */
+/** Текст, который уходит в переводчик с тапа по `.lw-tap-w`: одно слово.
+ *  Фразу берём только из выделения мышью (mouseup + isPhraseSelection). */
+export function wordFromTap(el) {
+  return cleanWord(el?.textContent)
+}
+
+/** Предложение вокруг тапнутого слова — для тестов и редких вызовов, где
+ *  нужен контекст, а не словарная карточка. */
 export function sentenceFromTap(el) {
   if (!el) return ''
   const host = el.closest?.(TAP_BLOCK) || el.parentElement || el
@@ -65,8 +71,18 @@ export function isPhraseSelection(raw) {
   const compact = t.replace(/\s+/g, ' ')
   if (!compact.includes(' ')) return false
   const words = compact.split(' ').filter(Boolean)
-  if (words.length < 2 || words.length > 50 || compact.length > 400) return false
+  if (words.length < 2 || words.length > 50 || compact.length > PHRASE_MAX_CHARS) return false
   return splitSentences(compact).length <= 2
+}
+
+/** Как в Edvibe: перевод фразы — до 100 символов. */
+export const PHRASE_MAX_CHARS = 100
+
+export function isOversizedPhrase(raw) {
+  const t = String(raw || '').trim()
+  if (!t || t.includes('\n')) return false
+  const compact = t.replace(/\s+/g, ' ')
+  return compact.includes(' ') && compact.length > PHRASE_MAX_CHARS
 }
 
 /** Слово или предложение, с которым открываем тултип. Иначе выделение

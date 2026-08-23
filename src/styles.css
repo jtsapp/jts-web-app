@@ -615,21 +615,12 @@ textarea {
 
 .auth-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
 }
-/* Тот же ряд на экране входа: там форма уже, поэтому на узких экранах
-   кнопки становятся в столбик, а не сжимаются до нечитаемых. */
 .auth-row--center {
   margin-top: 12px;
 }
-@media (max-width: 420px) {
-  .auth-row--center {
-    grid-template-columns: 1fr;
-  }
-}
-/* Неподключённый провайдер (сейчас Apple ID) — кнопка видна, но явно не
-   активна, чтобы не выглядела рабочей. */
 .auth-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -651,13 +642,6 @@ textarea {
 }
 .auth-btn:hover {
   transform: translateY(-1px);
-}
-.auth-btn--apple {
-  background: #111114;
-  color: #fff;
-}
-.auth-btn--apple:hover {
-  filter: brightness(1.25);
 }
 .auth-btn--google {
   background: #f1f1f4;
@@ -699,12 +683,6 @@ textarea {
   flex: 1;
   height: 1px;
   background: #e6e4ef;
-}
-
-@media (max-width: 480px) {
-  .auth-row {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ======================================================= */

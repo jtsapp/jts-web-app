@@ -2,6 +2,7 @@ import { useI18n } from '../../../i18n.jsx'
 import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
+import { tidyLessonText } from '../tidyLessonText.js'
 
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
@@ -42,7 +43,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
             </span>
           )}
         </span>
-        <TapText text={question.gapAfter} onWord={onWord} />
+        <TapText text={tidyLessonText(question.gapAfter)} onWord={onWord} />
       </p>
       {needsReview && (
         <p className="lw-q__review" aria-live="polite">{t('lesson.needsTeacherReview')}</p>
@@ -55,7 +56,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
       {/* Разбор из `data-why` курса — правило, которое проверяет задание. Показываем
           только после ошибки: до неё это была бы подсказка с ответом. */}
       {checked && attempted && !userCorrect && !needsReview && question.why && (
-        <p className="lw-q__why">{question.why}</p>
+        <p className="lw-q__why">{tidyLessonText(question.why)}</p>
       )}
     </div>
   )

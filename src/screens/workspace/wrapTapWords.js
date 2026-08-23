@@ -29,12 +29,13 @@ export function wrapTapWords(html) {
     for (const tok of text.split(/(\s+)/)) {
       if (!tok) continue
       if (/^\s+$/.test(tok) || !/[A-Za-z]/.test(tok)) {
+        if (/^\s*[>"']+\s*$/.test(tok) && tok.includes('>')) continue
         wrap.appendChild(document.createTextNode(tok))
         continue
       }
       const span = document.createElement('span')
       span.className = 'lw-tap-w'
-      span.textContent = tok
+      span.textContent = tok.replace(/>+$/g, '')
       wrap.appendChild(span)
     }
     textNode.parentNode.replaceChild(wrap, textNode)

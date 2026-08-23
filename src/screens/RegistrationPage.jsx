@@ -6,7 +6,6 @@ import {
   ChevronLeftIcon,
   SendIcon,
   PhoneChatIcon,
-  AppleIcon,
   GoogleIcon,
 } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -164,10 +163,6 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       <span>{t('auth.phone')}</span>
                     </button>
                     <div className="auth-row">
-                      <button className="auth-btn auth-btn--apple" type="button">
-                        <AppleIcon size={17} />
-                        <span>{t('auth.apple')}</span>
-                      </button>
                       {/* Кнопку рисует Google (GIS); пока не отрисована или
                           client ID не настроен — неактивный фолбэк */}
                       <div

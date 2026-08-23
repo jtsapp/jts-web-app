@@ -3,7 +3,7 @@ import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
-import { isTapSelection } from '../lib/wordTranslate.js'
+import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../lib/wordTranslate.js'
 import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
 import TapText from '../screens/workspace/TapText.jsx'
 import TappableHtml from '../screens/workspace/TappableHtml.jsx'
@@ -51,9 +51,9 @@ function skillsForTask(task) {
   return [...out]
 }
 
-export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
+export default function LessonPlayer({ lesson, level, token, catalogLessonId, onExit, onDone }) {
   const { t, lang } = useI18n()
-  const { pop, openWord, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}` })
+  const { pop, openWord, openLimit, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}`, catalogLessonId })
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [wrong, setWrong] = useState(0)
@@ -101,18 +101,20 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
       className="kl"
       onClick={() => {
         const raw = window.getSelection()?.toString() || ''
-        if (isTapSelection(raw)) return
+        if (isTapSelection(raw) || isOversizedPhrase(raw)) return
         close()
       }}
       onMouseUp={(e) => {
         const sel = window.getSelection()
         const raw = sel?.toString() || ''
-        if (isTapSelection(raw)) {
+        if (isPhraseSelection(raw) || isOversizedPhrase(raw)) {
           if (!e.currentTarget.contains(sel.anchorNode)) return
           if (!sel.rangeCount) return
           const rect = sel.getRangeAt(0).getBoundingClientRect()
           if (!rect.width && !rect.height) return
-          openWord(raw, { getBoundingClientRect: () => rect })
+          const anchor = { getBoundingClientRect: () => rect }
+          if (isOversizedPhrase(raw)) openLimit(raw, anchor)
+          else openWord(raw, anchor)
           return
         }
         if (raw.trim()) close()

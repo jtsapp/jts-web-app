@@ -26,4 +26,12 @@ describe('wrapTapWords', () => {
     expect(div.querySelector('button .lw-tap-w')).toBeNull()
     expect(div.querySelector('p .lw-tap-w')?.textContent).toMatch(/awkward|She|felt/)
   })
+
+  it('не оставляет хвостовой > из сломанной вёрстки курса', () => {
+    const out = wrapTapWords('<p>make small talk." &gt;</p>')
+    const div = document.createElement('div')
+    div.innerHTML = out
+    expect(div.textContent).toContain('talk')
+    expect(div.textContent).not.toMatch(/>\s*$/)
+  })
 })

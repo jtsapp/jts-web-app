@@ -148,7 +148,7 @@ describe('LessonContent — карточки шага', () => {
     const checkButtons = container.querySelectorAll('.lw-practice__check')
     fireEvent.click(checkButtons[1])
 
-    expect(onCheck).toHaveBeenCalledWith(practiceBlockKey(undefined, 1))
+    expect(onCheck).toHaveBeenCalledWith(practiceBlockKey(undefined, 1), ['g2'])
   })
 
   it('theory и banner не сливаются с info', () => {

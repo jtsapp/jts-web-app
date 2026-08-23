@@ -1,8 +1,9 @@
 import { memo, useEffect, useMemo, useRef } from 'react'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 import { reportAudio } from '../../live/audioReport.js'
-import { sentenceFromTap } from '../../../lib/wordTranslate.js'
+import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
 import { wrapTapWords } from '../wrapTapWords.js'
+import { bindWordBank } from '../bindWordBank.js'
 import TapText from '../TapText.jsx'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
@@ -56,11 +57,19 @@ function InfoBlock({ block, onWord }) {
 
   useEffect(() => {
     const root = bodyRef.current
+    if (!root) return undefined
+    return bindWordBank(root)
+  }, [tappableHtml])
+
+  useEffect(() => {
+    const root = bodyRef.current
     if (!root || !onWord) return undefined
     const onClick = (e) => {
       if (e.target?.tagName !== 'SPAN' || !e.target.classList.contains('lw-tap-w')) return
+      const selected = window.getSelection()?.toString() || ''
+      if (isPhraseSelection(selected) || isOversizedPhrase(selected)) return
       e.stopPropagation()
-      onWord(sentenceFromTap(e.target), e.target)
+      onWord(wordFromTap(e.target), e.target)
     }
     root.addEventListener('click', onClick)
     return () => root.removeEventListener('click', onClick)

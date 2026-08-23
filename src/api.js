@@ -270,6 +270,15 @@ async function cachedAuthGet(path, token, onFresh) {
   return refresh()
 }
 
+function dropCachedAuthGet(path, token) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(catalogCacheKey(path, token))
+  } catch {
+    /* кэш мог быть недоступен */
+  }
+}
+
 // Учебный путь королевства (уроки из dev-admin) по уровню CEFR.
 // SWR-кэш: прогресс меняется после уроков, поэтому передавайте onFresh —
 // он донесёт обновлённые счётчики, когда фоновый запрос завершится.
@@ -708,21 +717,48 @@ export function getSavedWords(token, onFresh) {
   return cachedAuthGet('/mobile/saved-words', token, onFresh)
 }
 
+export function listLessonVocab(token, onFresh) {
+  return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
+}
+
+function isSavedVocabRef(lessonId) {
+  return lessonId == null || lessonId === '' || lessonId === 'saved' || lessonId === 'SAVED'
+}
+
+export function openLessonVocab(lessonId, token) {
+  const path = isSavedVocabRef(lessonId)
+    ? '/mobile/lesson-vocab/saved'
+    : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}`
+  return authGet(path, token)
+}
+
+export function completeLessonVocabCycle(lessonId, cycle, results, token) {
+  const path = isSavedVocabRef(lessonId)
+    ? `/mobile/lesson-vocab/saved/cycles/${encodeURIComponent(cycle)}`
+    : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}/cycles/${encodeURIComponent(cycle)}`
+  return authPost(path, token, { results }).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    return data
+  })
+}
+
 // Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).
 // alternates — строка «через запятую», language — язык перевода ("ru"/"kk"),
 // source — откуда слово (название книги). Возвращает SavedWordResponse.
-export async function saveWord(token, { word, translation, alternates, language = 'ru', source }) {
+export async function saveWord(token, { word, translation, alternates, language = 'ru', source, catalogLessonId }) {
   let res
   try {
     res = await fetch(`${BASE}/mobile/saved-words`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ word, translation, alternates, language, source }),
+      body: JSON.stringify({ word, translation, alternates, language, source, catalogLessonId }),
     })
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
+  dropCachedAuthGet('/mobile/lesson-vocab', token)
+  dropCachedAuthGet('/mobile/saved-words', token)
   return res.json().catch(() => ({}))
 }
 

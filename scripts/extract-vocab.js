@@ -199,6 +199,9 @@ const INTEGRATION = `
 .vc .v-screen{ position:relative; inset:auto; flex:1; min-height:0; opacity:1 }
 .vc .v-screen:not(.v-show){ display:none }
 .vc .v-scroll{ padding-bottom:8px }
+@media (prefers-reduced-motion: reduce) {
+  .vc *{ animation: none !important; transition-duration: .01ms !important }
+}
 `
 
 const built = buildCss()
