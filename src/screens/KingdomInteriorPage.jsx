@@ -457,6 +457,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
             <CourseStepPlayer
               key={`${open.code}-${open.attempt}`}
               level={level}
+              token={token}
               steps={open.steps.steps}
               title={open.steps.title}
               subtitle={open.steps.blurb}

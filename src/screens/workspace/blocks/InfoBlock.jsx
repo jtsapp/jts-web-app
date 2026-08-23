@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef } from 'react'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 import { reportAudio } from '../../live/audioReport.js'
+import { sentenceFromTap } from '../../../lib/wordTranslate.js'
 import { wrapTapWords } from '../wrapTapWords.js'
 import TapText from '../TapText.jsx'
 
@@ -59,7 +60,7 @@ function InfoBlock({ block, onWord }) {
     const onClick = (e) => {
       if (e.target?.tagName !== 'SPAN' || !e.target.classList.contains('lw-tap-w')) return
       e.stopPropagation()
-      onWord(e.target.textContent, e.target)
+      onWord(sentenceFromTap(e.target), e.target)
     }
     root.addEventListener('click', onClick)
     return () => root.removeEventListener('click', onClick)

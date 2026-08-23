@@ -12,6 +12,7 @@ import { sanitizeHtml } from '../sanitizeHtml.js'
 import { wrapTapWords } from '../wrapTapWords.js'
 import { reportAudio } from '../../live/audioReport.js'
 import { hasAttempt } from '../practiceGrading.js'
+import { sentenceFromTap } from '../../../lib/wordTranslate.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -40,7 +41,7 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
     const onClick = (e) => {
       if (e.target?.tagName !== 'SPAN' || !e.target.classList.contains('lw-tap-w')) return
       e.stopPropagation()
-      onWord(e.target.textContent, e.target)
+      onWord(sentenceFromTap(e.target), e.target)
     }
     root.addEventListener('click', onClick)
     return () => root.removeEventListener('click', onClick)

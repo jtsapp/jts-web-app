@@ -58,6 +58,7 @@ export default function TranslatePopover({ pop, onSave }) {
         <div className="lw-tap-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
       </div>
       {pop.alternates.length > 0 && <div className="lw-tap-pop__alts">{pop.alternates.join(', ')}</div>}
+      {onSave ? (
       <button
         className={`lw-tap-pop__save ${pop.saved ? 'is-on' : ''}`}
         onClick={onSave}
@@ -65,6 +66,7 @@ export default function TranslatePopover({ pop, onSave }) {
       >
         {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : 'Сохранить в словарь'}
       </button>
+      ) : null}
     </div>
   )
 }

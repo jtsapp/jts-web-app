@@ -18,4 +18,12 @@ describe('wrapTapWords', () => {
     expect(card.querySelectorAll('.lw-tap-w').length).toBe(2)
     expect(card.textContent.replace(/\s+/g, ' ').trim()).toContain('at home')
   })
+
+  it('не оборачивает слова внутри кнопки ответа', () => {
+    const out = wrapTapWords('<button class="opt">awkward</button><p>She felt awkward.</p>')
+    const div = document.createElement('div')
+    div.innerHTML = out
+    expect(div.querySelector('button .lw-tap-w')).toBeNull()
+    expect(div.querySelector('p .lw-tap-w')?.textContent).toMatch(/awkward|She|felt/)
+  })
 })

@@ -1,10 +1,10 @@
-import { cleanWord } from '../../lib/wordTranslate.js'
+import { cleanWord, sentenceFromTap } from '../../lib/wordTranslate.js'
 
 // Оборачивает слова обычного JSX-текста (не HTML) в тап-перевод — тот же
 // приём, что читалка книг делает через split() прямо в JSX (BookDetail.jsx),
 // портирован для формулировок вопросов практики (`question.prompt`,
-// `gapBefore`/`gapAfter`). Только для текста, который сам по себе не кликабелен:
-// варианты ответа (кнопки выбора) сюда не заворачиваются — тап по слову внутри
+// `gapBefore`/`gapAfter`). Тап по слову переводит предложение целиком.
+// Варианты ответа (кнопки выбора) сюда не заворачиваются — тап по слову внутри
 // кнопки конфликтовал бы с выбором ответа (см. useTapTranslate.js).
 export default function TapText({ text, onWord, as: As = 'span', className }) {
   if (!text) return null
@@ -22,7 +22,7 @@ export default function TapText({ text, onWord, as: As = 'span', className }) {
               className="lw-tap-w"
               onClick={(e) => {
                 e.stopPropagation()
-                onWord(tok, e.currentTarget)
+                onWord(sentenceFromTap(e.currentTarget), e.currentTarget)
               }}
             >
               {tok}

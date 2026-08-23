@@ -4,6 +4,11 @@ import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
 import { reportAudio } from '../screens/live/audioReport.js'
+import { isTapSelection } from '../lib/wordTranslate.js'
+import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
+import TapText from '../screens/workspace/TapText.jsx'
+import TappableHtml from '../screens/workspace/TappableHtml.jsx'
+import TranslatePopover from '../screens/workspace/TranslatePopover.jsx'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
 //
@@ -135,8 +140,9 @@ function shuffle(arr, seed) {
   return a
 }
 
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, onExit, onVocab, onDone }) {
-  const { t } = useI18n()
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, onExit, onVocab, onDone }) {
+  const { t, lang } = useI18n()
+  const { pop, openWord, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}` })
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [wrong, setWrong] = useState(0)
@@ -208,7 +214,27 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
         </button>
       </div>
 
-      <div className="cp-scroll">
+      <div
+        className="cp-scroll"
+        onClick={() => {
+          const raw = window.getSelection()?.toString() || ''
+          if (isTapSelection(raw)) return
+          close()
+        }}
+        onMouseUp={(e) => {
+          const sel = window.getSelection()
+          const raw = sel?.toString() || ''
+          if (isTapSelection(raw)) {
+            if (!e.currentTarget.contains(sel.anchorNode)) return
+            if (!sel.rangeCount) return
+            const rect = sel.getRangeAt(0).getBoundingClientRect()
+            if (!rect.width && !rect.height) return
+            openWord(raw, { getBoundingClientRect: () => rect })
+            return
+          }
+          if (raw.trim()) close()
+        }}
+      >
         <div className="cp-hud">
           <div className="cp-hud__track">
             <div className="cp-hud__fill" style={{ width: `${Math.round((idx / Math.max(1, total)) * 100)}%` }} />
@@ -230,15 +256,17 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
             }
           }}
           t={t}
+          onWord={openWord}
         />
       </div>
+      <TranslatePopover pop={pop} onSave={token ? onSave : undefined} />
     </div>
   )
 }
 
 // Один экран задания: тело по типу шага, снизу кнопка «Проверить»/«Продолжить»
 // и, после проверки, плашка результата.
-function Step({ step, seed, level, onAdvance, onGraded, t }) {
+function Step({ step, seed, level, onAdvance, onGraded, t, onWord }) {
   const graded = isGraded(step)
   const [picked, setPicked] = useState(null)
   const [checked, setChecked] = useState(false)
@@ -320,13 +348,13 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
         {step.type !== 'note' &&
           (promptFirst ? (
             <>
-              {big && <div className="cp-step__prompt">{big}</div>}
-              {small && <h2 className="cp-step__title">{small}</h2>}
+              {big && <TapText as="div" className="cp-step__prompt" text={big} onWord={onWord} />}
+              {small && <TapText as="h2" className="cp-step__title" text={small} onWord={onWord} />}
             </>
           ) : (
             <>
-              {small && <h2 className="cp-step__title">{small}</h2>}
-              {big && <div className="cp-step__prompt">{big}</div>}
+              {small && <TapText as="h2" className="cp-step__title" text={small} onWord={onWord} />}
+              {big && <TapText as="div" className="cp-step__prompt" text={big} onWord={onWord} />}
             </>
           ))}
 
@@ -359,6 +387,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
           revealed={revealed}
           level={level}
           t={t}
+          onWord={onWord}
         />
       </div>
 
@@ -399,7 +428,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t }) {
   )
 }
 
-function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t }) {
+function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t, onWord }) {
   switch (step.type) {
     // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
@@ -501,12 +530,12 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
       return (
         <>
           <div className="cp-note">
-            {step.title && <h2 className="cp-note__h">{step.title}</h2>}
-            <div className="cp-note__body" dangerouslySetInnerHTML={{ __html: step.html || '' }} />
+            {step.title && <TapText as="h2" className="cp-note__h" text={step.title} onWord={onWord} />}
+            <TappableHtml className="cp-note__body" html={step.html || ''} onWord={onWord} />
           </div>
           {/* Примеры правила в макете лежат каруселью ПОД карточкой, а не
               внутри неё: карточка — это правило, а карусель — как оно звучит. */}
-          {(step.examples || []).length > 0 && <ExampleCarousel items={step.examples} />}
+          {(step.examples || []).length > 0 && <ExampleCarousel items={step.examples} onWord={onWord} />}
         </>
       )
 
@@ -520,9 +549,9 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
               задание («Read each script — and play it out loud»), поэтому он
               стоит под плеером, а не прячется. */}
           {step.html && (
-            <div className="cp-note">
-              <div className="cp-note__body" dangerouslySetInnerHTML={{ __html: step.html }} />
-            </div>
+              <div className="cp-note">
+                <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+              </div>
           )}
           {/* На слух варианты в макете лежат в две колонки: слово короткое,
               и колонкой во всю высоту экрана оно смотрелось бы пусто. */}
@@ -570,9 +599,9 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
               {/* У A0/A1 образец размеченный: в нём список «Check yourself»,
                   плоским текстом он склеился бы в одну строку. */}
               {step.modelHtml ? (
-                <div className="cp-model__body" dangerouslySetInnerHTML={{ __html: step.modelHtml }} />
+                <TappableHtml className="cp-model__body" html={step.modelHtml} onWord={onWord} />
               ) : (
-                <span>{step.model}</span>
+                <TapText as="span" text={step.model} onWord={onWord} />
               )}
             </div>
           )}
@@ -592,7 +621,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
 // не нажимаются.
 const EGS_WINDOW = 3
 
-function ExampleCarousel({ items }) {
+function ExampleCarousel({ items, onWord }) {
   const [from, setFrom] = useState(0)
   const last = Math.max(0, items.length - EGS_WINDOW)
   return (
@@ -604,9 +633,7 @@ function ExampleCarousel({ items }) {
       </button>
       <div className="cp-egs__list">
         {items.slice(from, from + EGS_WINDOW).map((x, i) => (
-          <span key={from + i} className="cp-egs__card">
-            {x}
-          </span>
+          <TapText key={from + i} as="span" className="cp-egs__card" text={x} onWord={onWord} />
         ))}
       </div>
       <button className="cp-egs__nav" type="button" disabled={from >= last} aria-label="→" onClick={() => setFrom((f) => Math.min(last, f + 1))}>

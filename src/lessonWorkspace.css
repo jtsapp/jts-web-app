@@ -891,6 +891,57 @@
   color: var(--lw-muted);
 }
 
+/* Те же .row / select, что в исходнике курса: без flex номер лип к слову,
+   а нативный <select> с длинными option распирает колонку. Info и practice
+   html несут одну разметку. */
+.lw-info__body .row,
+.lw-practice__html .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.lw-info__body .row > *,
+.lw-practice__html .row > * {
+  min-width: 0;
+}
+.lw-info__body .row > .num,
+.lw-practice__html .row > .num {
+  min-width: 22px;
+  flex: none;
+}
+.lw-info__body .body,
+.lw-practice__html .body {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lw-info__body select,
+.lw-info__body input:not([type="checkbox"]):not([type="radio"]),
+.lw-info__body textarea,
+.lw-practice__html select,
+.lw-practice__html input:not([type="checkbox"]):not([type="radio"]),
+.lw-practice__html textarea {
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lw-practice__html .num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  border-radius: 6px;
+  background: var(--lw-tint-3);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lw-muted);
+}
+
 /* Банк слов к gap-fill (voc-context) и реплики диалога, если они доехали
    info-блоком, а не отдельным practice. */
 .lw-info__body .bank {
@@ -2808,7 +2859,7 @@
   box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18);
   padding: 12px 14px;
   min-width: 180px;
-  max-width: 280px;
+  max-width: min(420px, calc(100vw - 16px));
 }
 .lw-tap-pop__src,
 .lw-tap-pop__tr-row {
@@ -2832,6 +2883,7 @@
   font-weight: 800;
   color: var(--lw-ink);
   padding-top: 4px;
+  overflow-wrap: anywhere;
 }
 .lw-tap-pop__tr-row {
   margin-top: 8px;
@@ -2844,6 +2896,7 @@
 .lw-tap-pop__tr {
   font-size: 14px;
   color: var(--lw-ink-2);
+  overflow-wrap: anywhere;
 }
 .lw-tap-pop__alts {
   font-size: 12px;
