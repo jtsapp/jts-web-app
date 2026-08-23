@@ -87,25 +87,36 @@ export function courseTrail(index) {
     if (!byUnit.has(l.unit)) byUnit.set(l.unit, [])
     byUnit.get(l.unit).push(l)
   }
-  const testByUnit = new Map((index.tests || []).map((t) => [t.unit, t]))
+  // Тест после юнита бывает двух видов. У A0–B1 он свой у каждого юнита
+  // (test-<u>.json, код T<u>), у B2 их четыре на весь уровень — большие, с
+  // общим банком вопросов, и стоят после юнитов 3, 6, 9 и 12 (поле after,
+  // код X<id>). Тропа рисует и те и другие одинаково — узлом в конце юнита.
+  const testByUnit = new Map((index.tests || []).filter((t) => !t.id).map((t) => [t.unit, t]))
+  const examByUnit = new Map((index.tests || []).filter((t) => t.id).map((t) => [t.after, t]))
   const units = [...byUnit.keys()].sort((a, b) => a - b)
   // type — только «печенька» узла на тропе (иконка и цвет), как у старой
-  // тропы: три урока юнита различаются по виду, тест закрывает юнит.
-  const COOKIE_BY_NO = { 1: 'choice', 2: 'info', 3: 'audio' }
+  // тропы: уроки юнита различаются по виду, тест закрывает юнит. Считаем по
+  // месту урока В ЮНИТЕ, а не по полю no: у A2/B1 оно и есть номер внутри
+  // юнита, а у A0/A1/B2 — сквозной номер по уровню, и все уроки с четвёртого
+  // получали одну и ту же печеньку.
+  const COOKIE_CYCLE = ['choice', 'info', 'audio']
   let order = 0
   for (const u of units) {
-    for (const l of byUnit.get(u).sort((a, b) => a.no - b.no)) {
-      out.push({
-        code: `L${l.n}`,
-        kind: 'lesson',
-        n: l.n,
-        unit: u,
-        order: order++,
-        title: l.title,
-        blurb: l.blurb,
-        type: COOKIE_BY_NO[l.no] || 'choice',
+    byUnit
+      .get(u)
+      .sort((a, b) => a.no - b.no)
+      .forEach((l, j) => {
+        out.push({
+          code: `L${l.n}`,
+          kind: 'lesson',
+          n: l.n,
+          unit: u,
+          order: order++,
+          title: l.title,
+          blurb: l.blurb,
+          type: COOKIE_CYCLE[j % COOKIE_CYCLE.length],
+        })
       })
-    }
     const t = testByUnit.get(u)
     if (t) {
       out.push({
@@ -117,6 +128,21 @@ export function courseTrail(index) {
         title: t.title,
         items: t.items,
         pass: t.pass,
+        type: 'final',
+      })
+    }
+    const e = examByUnit.get(u)
+    if (e) {
+      out.push({
+        code: `X${e.id}`,
+        kind: 'test',
+        n: e.id,
+        unit: u,
+        order: order++,
+        title: e.title,
+        blurb: e.blurb || '',
+        items: e.items,
+        pass: e.pass,
         type: 'final',
       })
     }

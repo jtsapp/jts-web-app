@@ -1586,6 +1586,22 @@
 }
 
 .lw-gap-input.is-no,
+/* Открытый ответ: сверять не с чем, поэтому ни зелёного, ни красного —
+   нейтральная подсветка «ответ принят, вердикт за преподавателем». Зелёный тут
+   означал бы «верно», а проверить было нечем. */
+.lw-gap-input.is-review {
+  background: #f1f2f4;
+  color: #181818;
+  font-weight: 600;
+}
+
+.lw-q__review {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--lw-muted);
+  font-style: italic;
+}
+
 .lw-gap-input.is-wrong {
   background: #ffecec;
   color: var(--lw-error);

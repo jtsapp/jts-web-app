@@ -16,7 +16,10 @@ export function gradeQuestion(question, answer) {
   // Опрос про себя. Верного ответа нет — засчитываем сам факт выбора, иначе шаг
   // с ним никогда не считался бы пройденным.
   if (question.type === 'pick') {
-    return { correct: Array.isArray(answer) ? answer.length > 0 : norm(answer) !== '' }
+    // manual: вердикта нет и быть не может — сверять не с чем. `correct` здесь
+    // означает только «ответ дан», чтобы шаг считался пройденным и работу можно
+    // было сдать; показывать по нему галочку «верно» нельзя.
+    return { correct: Array.isArray(answer) ? answer.length > 0 : norm(answer) !== '', manual: true }
   }
   if (question.type === 'multi') {
     // Засчитываем только полный набор: отмечено всё верное и ничего лишнего.
@@ -40,9 +43,20 @@ export function gradeQuestion(question, answer) {
     }
   }
   if (question.type === 'gap') {
-    // open-гэп (live-уроки, свободный ответ без эталонов): принимаем любой непустой ответ.
-    if (question.open === true) return { correct: norm(answer) !== '' }
-    return { correct: answerMatches(answer, question.answers) }
+    // Открытый пропуск — эталона у него нет: либо курс его не дал, либо он
+    // потерялся при разборе урока. Раньше здесь любой непустой ответ получал
+    // зелёную галочку, и набор случайных букв показывался ученику как верный
+    // ответ. Проверить такое может только преподаватель (FR-74), поэтому
+    // говорим об этом прямо: correct лишь означает «ответ дан» и нужен, чтобы
+    // шаг засчитался, а вердикта — нет.
+    if (question.open === true) return { correct: norm(answer) !== '', manual: true }
+    // Контекст задания передаём так же, как остальные три места (LessonPlayer,
+    // CourseStepPlayer) и как считает сервер: в «перепиши предложение» эталоном
+    // записана только изменяемая часть, а ученик пишет фразу целиком. Без cue
+    // расширение выключено (answer-match.js: `if (!cue) return false`), и на
+    // экране он видел красный крест там, где сервер засчитывал ответ верным.
+    const cue = `${question.gapBefore || ''} ${question.gapAfter || ''}`
+    return { correct: answerMatches(answer, question.answers, cue) }
   }
   if (question.type === 'match') {
     const pairs = question.pairs || []

@@ -37,6 +37,7 @@ from livekit.agents import (
     JobContext,
     JobExecutorType,
     RoomInputOptions,
+    RoomOutputOptions,
     WorkerOptions,
     cli,
     function_tool,
@@ -4046,6 +4047,46 @@ def _attach_latency_logging(session: AgentSession) -> None:
             )
 
 
+# Скорость субтитров тьютора. По умолчанию livekit-agents выдаёт их СИНХРОННО
+# со звуком: синхронизатор сыплет слова по одному, засыпая между ними, а темп
+# берёт из STANDARD_SPEECH_RATE = 3.83 слога/сек (livekit.agents
+# voice/transcription/synchronizer.py). Речь TTS обычно быстрее, поэтому подпись
+# отстаёт всё сильнее к концу реплики — ученик глазами догоняет то, что уже
+# отзвучало. Это и зовут «субтитры тормозят»; клиент тут ни при чём, подбор
+# кегля стоит полмиллисекунды на обновление.
+#
+# Множитель > 1 пускает текст вперёд голоса, не разрывая пару «слышу–вижу».
+# 0 или меньше выключает синхронизацию совсем: реплика появляется целиком, как
+# только её выдал LLM, ещё до озвучки. Читать удобно, но аудирование как
+# упражнение это убивает — поэтому не дефолт.
+#
+# Через env, как языки STT и прочие ручки агента: подкрутить можно перезапуском
+# воркера, без пересборки образа.
+TRANSCRIPT_SPEED_DEFAULT = 1.5
+
+
+def _transcript_output_options() -> RoomOutputOptions | None:
+    """None = оставить дефолты livekit-agents (множитель ровно 1.0)."""
+    raw = (os.getenv("TRANSCRIPT_SPEED") or "").strip()
+    if not raw:
+        factor = TRANSCRIPT_SPEED_DEFAULT
+    else:
+        try:
+            factor = float(raw)
+        except ValueError:
+            logger.warning(
+                "TRANSCRIPT_SPEED=%r не число — беру %s", raw, TRANSCRIPT_SPEED_DEFAULT
+            )
+            factor = TRANSCRIPT_SPEED_DEFAULT
+    if factor <= 0:
+        logger.info("Субтитры: синхронизация со звуком выключена (TRANSCRIPT_SPEED=%s)", raw)
+        return RoomOutputOptions(sync_transcription=False)
+    if factor == 1.0:
+        return None
+    logger.info("Субтитры: множитель скорости %.2f", factor)
+    return RoomOutputOptions(transcription_speed_factor=factor)
+
+
 async def entrypoint(ctx: JobContext):
     await ctx.connect()
     participant = await ctx.wait_for_participant()
@@ -4222,12 +4263,13 @@ async def entrypoint(ctx: JobContext):
         if use_krisp
         else None
     )
+    start_kwargs: dict[str, Any] = {"agent": agent, "room": ctx.room}
     if room_input_options is not None:
-        await session.start(
-            agent=agent, room=ctx.room, room_input_options=room_input_options
-        )
-    else:
-        await session.start(agent=agent, room=ctx.room)
+        start_kwargs["room_input_options"] = room_input_options
+    output_options = _transcript_output_options()
+    if output_options is not None:
+        start_kwargs["room_output_options"] = output_options
+    await session.start(**start_kwargs)
 
     # ── Жёсткий серверный потолок длительности сессии ─────────────────────────
     # Клиентский countdown display-only, а истечение TTL LiveKit-токена уже
