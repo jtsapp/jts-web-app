@@ -125,6 +125,9 @@ export const DICT = {
     'voice.prompt': 'О чём хочешь поговорить со мной?',
     'voice.connecting': 'Соединяю с тьютором…',
     'voice.waiting': 'Ждём тьютора…',
+    'voice.script': 'Показать текст',
+    'voice.scriptClose': 'Скрыть текст',
+    'voice.scriptEmpty': 'Здесь появятся реплики разговора',
     'voice.micDenied':
       'Доступ к микрофону запрещён. Разрешите его в настройках браузера и попробуйте снова.',
     'voice.unavailable': 'Голосовой режим временно недоступен. Попробуйте позже.',
@@ -416,6 +419,9 @@ export const DICT = {
     'voice.prompt': 'Немен туралы сөйлескің келеді?',
     'voice.connecting': 'Тьюторға қосылудамын…',
     'voice.waiting': 'Тьюторды күтудеміз…',
+    'voice.script': 'Мәтінді көрсету',
+    'voice.scriptClose': 'Мәтінді жасыру',
+    'voice.scriptEmpty': 'Мұнда әңгіме репликалары шығады',
     'voice.micDenied':
       'Микрофонға қолжетімділік бұғатталған. Оны браузер баптауларынан рұқсат етіп, қайта көріңіз.',
     'voice.unavailable': 'Дауыстық режим уақытша қолжетімсіз. Кейінірек көріңіз.',
@@ -694,6 +700,9 @@ export const DICT = {
     'voice.prompt': 'What do you want to talk about?',
     'voice.connecting': 'Connecting to your tutor…',
     'voice.waiting': 'Waiting for the tutor…',
+    'voice.script': 'Show text',
+    'voice.scriptClose': 'Hide text',
+    'voice.scriptEmpty': 'The lines of your conversation will appear here',
     'voice.micDenied':
       'Microphone access is blocked. Allow it in your browser settings and try again.',
     'voice.unavailable': 'Voice mode is temporarily unavailable. Please try later.',
