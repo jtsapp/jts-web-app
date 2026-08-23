@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { getDeviceId } from '../lib/identity.js'
 
 // Пульс вкладки. 20 с против запаса HEARTBEAT_GRACE_SEC=45 на сервере — два
 // пропуска подряд ещё переживаем, три уже нет. Чаще незачем: цена ошибки —
@@ -10,7 +9,11 @@ export const PING_INTERVAL_MS = 20000
 // «closed» доехал, даже если вкладку закрывают прямо сейчас.
 export function reportCallSession(room, event, { beacon = false } = {}) {
   if (!room) return
-  const payload = JSON.stringify({ room, deviceId: getDeviceId(), event })
+  // deviceId сюда НЕ кладём. Чей это разговор, решил токен-роут, когда заводил
+  // строку сессии: у залогиненного там `user-<id>`, а не device-id браузера, и
+  // присланный клиентом id просто не совпадал — сессия не тарифицировалась
+  // вовсе, а лимит после звонка выглядел выросшим.
+  const payload = JSON.stringify({ room, event })
   if (beacon && typeof navigator !== 'undefined' && navigator.sendBeacon) {
     // sendBeacon переживает выгрузку страницы, fetch — нет.
     navigator.sendBeacon('/api/livekit/session', payload)

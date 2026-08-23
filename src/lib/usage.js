@@ -180,43 +180,46 @@ export async function openSession(room, deviceId) {
  * Тьютор вошёл в комнату — с этого момента идут минуты. Повторные вызовы
  * игнорируются (armed_at IS NULL в условии): переподключение агента посреди
  * разговора не должно сдвигать начало отсчёта вперёд и дарить минуты.
+ *
+ * ВЛАДЕЛЬЦА строки здесь НЕ сверяем, и это важно. Чей это разговор, уже решил
+ * токен-роут: он положил в device_id тот же profileId, по которому считает
+ * лимит, — а у залогиненного это `user-<id>`, а вовсе не device-id из
+ * браузера. Первая версия сверяла присланный клиентом deviceId и у всех
+ * авторизованных не находила строку: armed_at не проставлялся, разговор не
+ * тарифицировался вообще, и через час уборщик выносил сессию как «тьютор не
+ * пришёл». Со стороны это выглядело так, будто лимит после звонка ПРИБАВЛЯЛСЯ.
+ *
+ * Право на вызов даёт знание имени комнаты: его отдаёт только токен-роут и
+ * только тому, кто прошёл проверку. Ставка низкая — сдвинуть счётчик
+ * честного лимита, а не достать чужие данные.
  */
-export async function armSession(room, deviceId) {
+export async function armSession(room) {
   const db = getSql();
   if (!db) return false;
   const rows = await db`
     UPDATE voice_session
     SET armed_at = now(), last_seen_at = now()
-    WHERE room = ${room} AND device_id = ${deviceId} AND armed_at IS NULL
+    WHERE room = ${room} AND armed_at IS NULL
     RETURNING room
   `;
   return rows.length > 0;
 }
 
-/** Пульс вкладки: разговор ещё идёт. */
-export async function touchSession(room, deviceId) {
+/** Пульс вкладки: разговор ещё идёт. Про владельца — см. armSession. */
+export async function touchSession(room) {
   const db = getSql();
   if (!db) return false;
   const rows = await db`
     UPDATE voice_session
     SET last_seen_at = now()
-    WHERE room = ${room} AND device_id = ${deviceId} AND armed_at IS NOT NULL
+    WHERE room = ${room} AND armed_at IS NOT NULL
     RETURNING room
   `;
   return rows.length > 0;
 }
 
-/**
- * Явное завершение с клиента. Проверяем владельца строки: закрыть чужую сессию
- * по одному лишь имени комнаты быть не должно.
- */
-export async function closeSession(room, deviceId) {
-  const db = getSql();
-  if (!db) return false;
-  const rows = await db`
-    SELECT room FROM voice_session WHERE room = ${room} AND device_id = ${deviceId}
-  `;
-  if (!rows.length) return false;
+/** Явное завершение с клиента. Про владельца — см. armSession. */
+export async function closeSession(room) {
   return recordSession(room);
 }
 
