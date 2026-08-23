@@ -27,6 +27,7 @@ vi.mock('../api.js', () => ({
   attachHomeworkAnswer: vi.fn(async () => withAnswer),
   removeHomeworkAnswer: vi.fn(async () => ASSIGNMENT),
   submitHomework: vi.fn(async () => ({ ...withAnswer, status: 'SUBMITTED' })),
+  saveHomeworkAnswer: vi.fn(async () => ASSIGNMENT),
   // Задания с живых уроков (назначенные материалы) — по умолчанию их нет.
   getMyMaterialAssignments: vi.fn(async () => []),
   startMaterialAssignment: vi.fn(async () => ({ id: 77 })),
@@ -195,5 +196,71 @@ describe('HomeworkPage', () => {
     const { container } = renderPage()
     await waitFor(() => expect(container.querySelector('.hw-card')).not.toBeNull())
     expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
+  })
+})
+
+// Регрессия на «преподаватель не видит ответов ученика». Ответ уезжает по кнопке
+// «Проверить» у каждого задания, но нажимать её ученик не обязан — он решает и
+// сдаёт работу. Раньше сдача ничего не досылала: статус «сдано» стоял, а у
+// преподавателя было «ученик ещё не отвечал» и оценивать нечего.
+describe('HomeworkPage: сдача досылает решённое', () => {
+  const CHOICE = { id: 11, question: { id: 'q1', type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' } }
+  const GAP = { id: 12, question: { id: 'g1', type: 'gap', gapBefore: 'I', gapAfter: '.', answers: ['like'] } }
+  const withExercises = { ...ASSIGNMENT, exercises: [CHOICE, GAP] }
+
+  // Кнопка оживает эффектом из HomeworkExercises (черновик посчитан → onAnswered),
+  // а не в первом же кадре. Ждём именно доступности, иначе клик уходит в
+  // disabled и тест ловит не поведение, а гонку.
+  const жмёмСдать = async () => {
+    const button = await screen.findByRole('button', { name: /Отправить на проверку/i })
+    await waitFor(() => expect(button.disabled).toBe(false))
+    fireEvent.click(button)
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    vi.clearAllMocks()
+    api.getMyHomework.mockResolvedValue([withExercises])
+    api.getHomeworkById.mockResolvedValue(withExercises)
+    api.getMyMaterialAssignments.mockResolvedValue([])
+    api.getBalance.mockResolvedValue({ coins: 0, streak: 0, streakActiveToday: false })
+    api.saveHomeworkAnswer.mockResolvedValue(withExercises)
+    api.submitHomework.mockResolvedValue({ ...withExercises, status: 'SUBMITTED' })
+  })
+
+  it('черновик уходит преподавателю перед сменой статуса', async () => {
+    localStorage.setItem('hw-answers:7', JSON.stringify({ q1: 'b', g1: 'like' }))
+    renderPage()
+
+    await жмёмСдать()
+
+    await waitFor(() => expect(api.submitHomework).toHaveBeenCalled())
+    expect(api.saveHomeworkAnswer).toHaveBeenCalledTimes(2)
+    // Вердикт считается тем же грейдингом, что и на уроке: 'b' — мимо, 'like' — в точку.
+    expect(api.saveHomeworkAnswer.mock.calls.map((c) => [c[1], c[3], c[4]]))
+      .toEqual([[11, 'b', false], [12, 'like', true]])
+  })
+
+  it('уже сохранённое на сервере повторно не шлёт', async () => {
+    const сохранено = { ...withExercises, exercises: [{ ...CHOICE, studentAnswer: 'a' }, GAP] }
+    api.getMyHomework.mockResolvedValue([сохранено])
+    localStorage.setItem('hw-answers:7', JSON.stringify({ q1: 'a', g1: 'like' }))
+    renderPage()
+
+    await жмёмСдать()
+
+    await waitFor(() => expect(api.submitHomework).toHaveBeenCalled())
+    expect(api.saveHomeworkAnswer.mock.calls.map((c) => c[1])).toEqual([12])
+  })
+
+  it('упавшая досылка не даёт работе уйти «сданной» без ответов', async () => {
+    localStorage.setItem('hw-answers:7', JSON.stringify({ q1: 'a' }))
+    api.saveHomeworkAnswer.mockRejectedValue(new Error('offline'))
+    renderPage()
+
+    await жмёмСдать()
+
+    await waitFor(() => expect(screen.getByText(/Не удалось отправить/i)).toBeTruthy())
+    expect(api.submitHomework).not.toHaveBeenCalled()
   })
 })
