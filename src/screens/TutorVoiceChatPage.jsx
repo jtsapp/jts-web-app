@@ -21,7 +21,8 @@ import { cutAtSec } from '../tutor/scenarioClock.js'
 import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
 import { hasBrief } from '../tutor/scenarioBrief.js'
 import { micLevel } from '../tutor/micLevel.js'
-import { lastSentence, mergeTurns, nextLive } from '../tutor/captions.js'
+import { lastSentence, mergeTurns } from '../tutor/captions.js'
+import { useLiveCaption } from '../tutor/useLiveCaption.js'
 import { useCallSession } from '../tutor/callSession.js'
 import CallCaption from '../tutor/CallCaption.jsx'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
@@ -543,12 +544,7 @@ function CallStage({
   }, [userStreams])
 
   // На экране последняя по времени реплика — чья бы она ни была (см. nextLive).
-  const [live, setLive] = useState({ text: '', isUser: false })
-  const seenRef = useRef({ tutor: '', user: '' })
-  useEffect(() => {
-    setLive((prev) => nextLive(prev, seenRef.current, tutorCaption, userCaption))
-    seenRef.current = { tutor: tutorCaption, user: userCaption }
-  }, [tutorCaption, userCaption])
+  const live = useLiveCaption(tutorCaption, userCaption)
 
   // Копилка реплик для панели: живая подпись показывает одну фразу, и вернуться
   // к пропущенному прямо во время звонка было негде — только в отчёте после.
