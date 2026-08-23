@@ -22,6 +22,7 @@ import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
 import { hasBrief } from '../tutor/scenarioBrief.js'
 import { micLevel } from '../tutor/micLevel.js'
 import { lastSentence, mergeTurns, nextLive } from '../tutor/captions.js'
+import { useCallSession } from '../tutor/callSession.js'
 import CallCaption from '../tutor/CallCaption.jsx'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
@@ -275,6 +276,7 @@ export default function TutorVoiceChatPage({
               limitSec={tokenData.scenarioLimitSec || 0}
               holdRef={holdRef}
               face={tutor.face || ''}
+              roomName={tokenData.room || ''}
             />
           </LiveKitRoom>
         ) : (
@@ -292,16 +294,23 @@ export default function TutorVoiceChatPage({
 
 // Обратный отсчёт до конца сессии — сервер отдаёт ttl (остаток секунд), токен
 // LiveKit истекает ровно тогда же, так что таймер отражает реальный лимит.
-function useCountdown(ttl) {
+//
+// `running` включается, когда в комнату вошёл ТЬЮТОР: минуты на сервере тоже
+// идут с этого момента (armSession в usage.js), и таймер обязан показывать то
+// же самое. Пока идёт соединение, на экране полный остаток и он не тает.
+function useCountdown(ttl, running = true) {
   const [left, setLeft] = useState(typeof ttl === 'number' ? ttl : null)
   useEffect(() => {
     if (typeof ttl !== 'number') return
     setLeft(ttl)
+  }, [ttl])
+  useEffect(() => {
+    if (!running || typeof ttl !== 'number') return
     const iv = setInterval(() => {
       setLeft((s) => (s !== null && s > 0 ? s - 1 : 0))
     }, 1000)
     return () => clearInterval(iv)
-  }, [ttl])
+  }, [running, ttl])
   return left
 }
 
@@ -367,15 +376,36 @@ function CallFace({ face, emotion, intensity, speaking, agentState, audioTrack }
 }
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
-function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face = '' }) {
+function CallStage({
+  onFinish,
+  t,
+  ttl,
+  briefId = '',
+  limitSec = 0,
+  holdRef,
+  face = '',
+  roomName = '',
+}) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
   const room = useRoomContext()
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
   const transcriptions = useTranscriptions()
+
+  const connected = state === ConnectionState.Connected
+  const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
+  const speaking = va.state === 'speaking'
+
+  // Учётная сессия: минуты идут с появления тьютора в комнате и держатся
+  // пульсом. Раньше сервер считал их от выдачи токена до room_finished, то есть
+  // прихватывал и ожидание соединения, и время после того, как ученик положил
+  // трубку (комната живёт дальше), а при потерянном вебхуке лимит вообще тёк
+  // сам по себе, пока ученик читал разбор.
+  const closeCallSession = useCallSession(roomName, agentPresent)
+
   // У сцены со своими часами на экране идёт её бюджет, а не остаток дневного
   // лимита: ученику обещали пять минут — он и должен видеть пять минут.
-  const left = useCountdown(limitSec > 0 ? limitSec : ttl)
+  const left = useCountdown(limitSec > 0 ? limitSec : ttl, agentPresent)
 
   // Scenario outcome — the agent publishes a JSON verdict on topic "lesson"
   // (report_task_complete) when a structured scenario ends. We render it as a
@@ -451,10 +481,6 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face
       /* ignore malformed payloads */
     }
   })
-
-  const connected = state === ConnectionState.Connected
-  const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
-  const speaking = va.state === 'speaking'
 
   // Реакция держится всю реплику, а гаснет через окно после неё.
   useEffect(() => {
@@ -555,8 +581,13 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face
   // Явное завершение разговора. Раньше выйти можно было только кликом по орбу
   // (ничем не подписанным) или «назад», и минуты списывались только когда комната
   // закрывалась сама. Рвём соединение → onDisconnected у LiveKitRoom уводит на
-  // onFinish, а room_finished-вебхук биллит сессию.
+  // onFinish.
+  //
+  // Сессию закрываем ДО disconnect: комната переживает уход ученика (агент её
+  // не удаляет), room_finished придёт минутами позже или не придёт вовсе, а
+  // считать эти минуты ученику не за что.
   const endCall = () => {
+    closeCallSession()
     if (room) void room.disconnect()
     else onFinish?.()
   }
