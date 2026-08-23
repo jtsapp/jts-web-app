@@ -539,6 +539,20 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
         </>
       )
 
+    // Видео-репортаж юнита (B2): его смотрят и идут дальше — проверять тут
+    // нечего, вопросы к ролику стоят следующими экранами. Файл лежит рядом с
+    // уроком, как и дорожки: /course/<level>/video/<файл>.
+    case 'watch':
+      return (
+        <video
+          className="cp-watch"
+          controls
+          preload="metadata"
+          playsInline
+          src={step.src || `/course/${String(level).toLowerCase()}/video/${step.video}`}
+        />
+      )
+
     case 'listen':
       return (
         <>
@@ -785,9 +799,16 @@ function RowsBoard({ step, answers, setAnswers, checked }) {
 
 // Карточки разминки. У «Tap one» выбор один — прежняя отметка снимается сама,
 // иначе инструкция обещает одно, а экран разрешает другое.
+// Карточка «выбери что ближе» рассчитана на слово с эмодзи («Coffee»), а у
+// курса в варианте бывает целая ситуация на десять слов. В колонку 173px такой
+// текст не влезает и вылезает за карточку, поэтому длинные варианты идут
+// строками во всю ширину — по одному в ряд.
+const PICK_LONG_OPTION = 28
+
 function PickCards({ options, single, picks: on, setPicks: setOn }) {
+  const rows = (options || []).some((o) => String(o.label || '').length > PICK_LONG_OPTION)
   return (
-    <div className="cp-picks">
+    <div className={`cp-picks ${rows ? 'is-rows' : ''}`}>
       {(options || []).map((o, i) => (
         <button
           key={i}
@@ -836,7 +857,9 @@ function WordCards({ words, t }) {
 
   const add = async (i, w) => {
     setSaved((s) => ({ ...s, [i]: true }))
-    const ok = await addVocabWords([{ word: w.en, hint: [w.ru, w.kk].filter(Boolean).join(' · ') }])
+    // Подсказка словаря — перевод, а где его нет (B2 весь на английском) —
+    // определение слова: пустая подсказка в vocab_bank бесполезна.
+    const ok = await addVocabWords([{ word: w.en, hint: [w.ru, w.kk].filter(Boolean).join(' · ') || w.def || '' }])
     // Не сохранилось — возвращаем кнопку, иначе галочка врёт про слово,
     // которого в словаре нет.
     if (!ok) setSaved((s) => ({ ...s, [i]: false }))

@@ -39,7 +39,7 @@ function arg(name, fallback = null) {
 const SRC = arg('src')
 const LEVEL = String(arg('level') || '').toLowerCase()
 if (!SRC || !LEVEL) {
-  console.error('нужны --src <file.html> и --level <a2|b1>')
+  console.error('нужны --src <file.html> и --level <a0|a1|a2|b1|b2>')
   process.exit(1)
 }
 const OUT = path.join(ROOT, 'public/course', LEVEL)
@@ -235,6 +235,203 @@ function patchEngine(src) {
   return head + out + tail
 }
 
+// --- курс-файл нового поколения (B2) -----------------------------------------
+// B2 собран иначе, чем A0–B1, и общего с ними у разбора почти нет:
+//   • медиа лежит в MEDIA чанками `Object.assign(MEDIA,{…})` под коротким
+//     ключом (a15, v7), а урок ссылается на него из разметки — data-track и
+//     <source data-src>. Поля tracks у урока больше нет, зато появилось видео
+//     (12 юнит-репортажей).
+//   • тесты — не разметка юнит-ревью (REVIEWS), а банк вопросов EXAMS: четыре
+//     больших теста после юнитов 3, 6, 9 и 12, вопрос = {l,c,q,a,d[]}.
+//   • урок держит только {unit,no,title,blurb,VOCAB,tids,html}: ни IMG, ни
+//     SLIDES, ни QS — всё внутри разметки, а картинка слова стоит прямо
+//     последним полем строки VOCAB.
+// Оболочку, стили и движок для такого уровня не выгружаем: урок давно рисует
+// сам сайт своими шагами (loadCourseShell никто не зовёт), а движок B2 патчить
+// нечем — в нём нет ни trackSrc, ни IMGX, ни boot-хвоста прежнего вида.
+//
+// Файл на 339 МБ читаем построчно: readFileSync + split('\n') держали бы в
+// памяти две его копии разом.
+const readline = require('readline')
+
+// audio/mpeg → .mp3: расширение из mime («mpeg») дало бы файлы, которые ни один
+// браузер не проигрывает по имени.
+const MEDIA_EXT = { 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'video/mp4': 'mp4' }
+
+async function eachLine(file, onLine) {
+  const rl = readline.createInterface({ input: fs.createReadStream(file, { encoding: 'utf8' }), crlfDelay: Infinity })
+  for await (const line of rl) if (onLine(line) === false) break
+  rl.close()
+}
+
+// Поколение курс-файла: у A0–B1 аудио объявлено как AUDIO_B64, у B2 — MEDIA.
+// Маркер обязан встретиться раньше уроков, поэтому дальше LESSONS не читаем.
+async function sniffFormat(file) {
+  let fmt = null
+  await eachLine(file, (l) => {
+    if (l.startsWith('const AUDIO_B64=')) return (fmt = 'legacy'), false
+    if (l.startsWith('var MEDIA') || /Object\.assign\(MEDIA/.test(l)) return (fmt = 'next'), false
+    if (l.startsWith('const LESSONS=')) return false
+    return true
+  })
+  return fmt || 'legacy'
+}
+
+// Один проход по файлу: медиа пишем на диск сразу (иначе в памяти окажутся все
+// 214 МБ), литералы UNITS/LESSONS копим построчно и разбираем в конце.
+async function parseNext(file) {
+  const media = {} // ключ → { file, kind }
+  const bytes = { audio: 0, video: 0 }
+  const unitsBuf = []
+  const lessonsBuf = []
+  let examsLine = null
+  let examLimits = { items: 0, pass: 0 }
+  let state = 'head'
+  const MEDIA_RE = /([A-Za-z0-9_]+):"data:([^;"]+);base64,([^"]*)"/g
+
+  await eachLine(file, (line) => {
+    if (state === 'head') {
+      if (line.startsWith('const UNITS=')) {
+        unitsBuf.push(line)
+        state = 'units'
+      }
+      return true
+    }
+    if (state === 'units') {
+      unitsBuf.push(line)
+      if (/^[\]}];?\s*$/.test(line)) state = 'media'
+      return true
+    }
+    if (state === 'media') {
+      if (line.startsWith('const LESSONS=')) {
+        lessonsBuf.push(line)
+        state = 'lessons'
+        return true
+      }
+      MEDIA_RE.lastIndex = 0
+      let m
+      while ((m = MEDIA_RE.exec(line))) {
+        const [, key, mime, b64] = m
+        const kind = mime.startsWith('video/') ? 'video' : 'audio'
+        const name = `${key}.${MEDIA_EXT[mime] || mime.split('/')[1] || 'bin'}`
+        const buf = Buffer.from(b64, 'base64')
+        fs.writeFileSync(path.join(OUT, kind, name), buf)
+        media[key] = { file: name, kind }
+        bytes[kind] += buf.length
+      }
+      return true
+    }
+    if (state === 'lessons') {
+      lessonsBuf.push(line)
+      if (/^[\]}];?\s*$/.test(line)) state = 'tail'
+      return true
+    }
+    if (!examsLine && /^\s*const EXAMS\s*=/.test(line)) examsLine = line
+    const lim = /const EXAM_ITEMS\s*=\s*(\d+)\s*,\s*EXAM_PASS\s*=\s*(\d+)/.exec(line)
+    if (lim) examLimits = { items: +lim[1], pass: +lim[2] }
+    return true
+  })
+
+  if (!unitsBuf.length) throw new Error('UNITS: объявление не найдено')
+  if (!lessonsBuf.length) throw new Error('LESSONS: объявление не найдено')
+  return {
+    UNITS: evalLiteral(unitsBuf.join('\n')),
+    LESSONS: evalLiteral(lessonsBuf.join('\n')),
+    EXAMS: examsLine ? evalLiteral(examsLine) : [],
+    examLimits,
+    media,
+    bytes,
+  }
+}
+
+async function runNext() {
+  fs.rmSync(OUT, { recursive: true, force: true })
+  for (const d of ['img', 'audio', 'video']) fs.mkdirSync(path.join(OUT, d), { recursive: true })
+
+  const { UNITS, LESSONS, EXAMS, examLimits, media, bytes } = await parseNext(SRC)
+
+  const imgIndex = {}
+  let imgBytes = 0
+  const catalog = []
+
+  for (const key of Object.keys(LESSONS).sort((a, b) => a - b)) {
+    const L = LESSONS[key]
+    // Картинка слова стоит последним полем строки VOCAB. Кладём её файлом рядом
+    // и оставляем в строке путь: иначе урок в JSON весит мегабайты и целиком
+    // едет в браузер при первом же открытии.
+    const VOCAB = (L.VOCAB || []).map((row) => {
+      if (!Array.isArray(row) || !row.length) return row
+      const out = row.slice()
+      const last = out.length - 1
+      if (typeof out[last] !== 'string' || !out[last].startsWith('data:image/')) return out
+      const file = writeDataUri(out[last], path.join(OUT, 'img'), `l${key}-${slug(out[0])}`)
+      if (!file) {
+        out[last] = ''
+        return out
+      }
+      imgBytes += fs.statSync(path.join(OUT, 'img', file)).size
+      out[last] = `/course/${LEVEL}/img/${file}`
+      if (!imgIndex[out[0]]) imgIndex[out[0]] = out[last]
+      return out
+    })
+
+    // Разметка зовёт медиа коротким ключом (data-track="a15", data-src="v7") —
+    // собираем карту ключ→файл, чтобы сборщик шагов не знал ни про MEDIA, ни
+    // про расширения.
+    const html = L.html || ''
+    const tracks = {}
+    const videos = {}
+    for (const m of html.matchAll(/data-track="([^"]+)"/g)) {
+      if (media[m[1]]) tracks[m[1]] = media[m[1]].file
+      else console.warn(`  ! урок ${key}: нет аудио ${m[1]}`)
+    }
+    for (const m of html.matchAll(/<source[^>]*data-src="([^"]+)"/g)) {
+      if (media[m[1]]) videos[m[1]] = media[m[1]].file
+      else console.warn(`  ! урок ${key}: нет видео ${m[1]}`)
+    }
+
+    fs.writeFileSync(path.join(OUT, `lesson-${key}.json`), JSON.stringify({ ...L, VOCAB, tracks, videos }))
+    catalog.push({ n: +key, unit: L.unit, no: L.no, title: L.title, blurb: L.blurb || '' })
+  }
+
+  // Тесты уровня: четыре больших с общим банком вопросов. `after` — номер
+  // юнита, после которого тест стоит на тропе (у A0–B1 тест был у каждого
+  // юнита, поэтому в каталоге тут id и after, а не unit).
+  const tests = []
+  for (const e of EXAMS) {
+    fs.writeFileSync(path.join(OUT, `exam-${e.id}.json`), JSON.stringify(e))
+    tests.push({
+      id: e.id,
+      kind: e.kind || 'Test',
+      title: strip(e.title || e.label || ''),
+      blurb: strip(e.blurb || ''),
+      after: e.after,
+      lo: e.lo,
+      hi: e.hi,
+      items: examLimits.items || 0,
+      pass: examLimits.pass || 0,
+    })
+  }
+
+  fs.writeFileSync(path.join(OUT, 'img-index.json'), JSON.stringify(imgIndex))
+  fs.writeFileSync(path.join(OUT, 'index.json'), JSON.stringify({ level: LEVEL, units: UNITS, lessons: catalog, tests }))
+
+  const mb = (n) => (n / 1048576).toFixed(1) + ' MB'
+  console.log(`${LEVEL}: ${catalog.length} уроков, ${tests.length} тестов`)
+  console.log(`  картинки ${Object.keys(imgIndex).length} слов → ${mb(imgBytes)}`)
+  console.log(`  аудио ${mb(bytes.audio)} · видео ${mb(bytes.video)}`)
+}
+
+// Сущности в заголовках теста те же, что и в разметке: «Test &mdash; Lessons
+// 1&ndash;12» на тропе читался бы как есть.
+const strip = (s) =>
+  String(s || '')
+    .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(+n))
+    .replace(/&(mdash|ndash|middot|hellip|rsquo|lsquo|ldquo|rdquo|amp|nbsp);/g, (m, name) =>
+      ({ mdash: '—', ndash: '–', middot: '·', hellip: '…', rsquo: '’', lsquo: '‘', ldquo: '“', rdquo: '”', amp: '&', nbsp: ' ' })[name],
+    )
+    .trim()
+
 // --- прогон ------------------------------------------------------------------
 function run() {
   const lines = readLines(SRC)
@@ -335,13 +532,15 @@ function run() {
   console.log(`  css ${(fs.statSync(path.join(OUT, 'course.css')).size / 1024) | 0} KB · engine ${(fs.statSync(path.join(OUT, 'engine.js')).size / 1024) | 0} KB · shell ${(fs.statSync(path.join(OUT, 'shell.html')).size / 1024) | 0} KB`)
 }
 
+// Поколение курс-файла определяем по нему самому, а не по уровню: уровень —
+// только имя папки, а формат зависит от того, чем курс собран.
 if (require.main === module) {
-  try {
-    run()
-  } catch (e) {
-    console.error(e)
-    process.exit(1)
-  }
+  sniffFormat(SRC)
+    .then((fmt) => (fmt === 'next' ? runNext() : run()))
+    .catch((e) => {
+      console.error(e)
+      process.exit(1)
+    })
 }
 
-module.exports = { scopeCss, scopeSelector, patchEngine }
+module.exports = { scopeCss, scopeSelector, patchEngine, sniffFormat }

@@ -16,14 +16,26 @@
 //   listen    { title, track, options:[…], answer }             — оценивается
 //   rows      { title, track, items:[{q,options,answer}] }       — оценивается
 //   write     { title, sub, placeholder, model }               — самопроверка
+//   watch     { title, sub, video }                            — без оценки (B2)
 //   checklist { title, sub, items:[…] }                        — без оценки
 //
-// Запуск: node scripts/build-course-steps.js [--level a2|b1]
+// Запуск: node scripts/build-course-steps.js [--level a0|a1|a2|b1|b2]
 const fs = require('fs')
 const path = require('path')
+const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
 const ROOT = path.join(__dirname, '..')
-const LEVELS = ['a0', 'a1', 'a2', 'b1']
+const LEVELS = ['a0', 'a1', 'a2', 'b1', 'b2']
+
+// Запись слова, если она уже сгенерирована (scripts/make-lesson-audio.js).
+// Имя файла — хэш самого слова, поэтому привязка переживает пересборку шагов:
+// порядок уроков и заданий на неё не влияет. Записи нет — карточка читает
+// слово синтезом браузера, как и раньше.
+const AUDIO_ROOT = path.join(ROOT, 'public/learning/audio')
+function wordAudio(level, word) {
+  if (!level || !word) return null
+  return fs.existsSync(path.join(AUDIO_ROOT, level, sayAudioFile(word))) ? sayAudioUrl(level, word) : null
+}
 
 // Один верный и четыре неверных на экране выбора — как в макете «Обучения».
 const MAX_CHOICES = 5
@@ -222,7 +234,7 @@ function slideHtml(slide) {
 }
 
 // --- сборка шагов урока -------------------------------------------------------
-function buildSteps(lesson) {
+function buildSteps(lesson, level) {
   const html = lesson.html || ''
   const steps = []
   const names = stageNames(html)
@@ -261,6 +273,7 @@ function buildSteps(lesson) {
         kk: strip(kk),
         def: strip(def),
         img: (lesson.IMG && lesson.IMG[en]) || null,
+        ...(wordAudio(level, strip(en)) ? { audio: wordAudio(level, strip(en)) } : {}),
       })),
     })
     // Перевод: правильный вариант из слова, четыре отвлекающих — из соседних
@@ -353,6 +366,328 @@ function buildSteps(lesson) {
   return dedupe(steps).map(({ _idx, ...s }) => s)
 }
 
+// --- уроки нового поколения (B2) ---------------------------------------------
+// B2 собран другим генератором, и совпадений с A0–B1 у него мало: стадий семь
+// (Production вместо «Now you», Quiz с двадцатью готовыми вопросами, у половины
+// уроков Reading вместо Listening), слайдов и полей QS/SLIDES/CTX нет вовсе —
+// всё живёт в разметке, а перевода слов нет ни на русский, ни на казахский:
+// вместо него английское определение. Поэтому у уровня свой сборщик; общими
+// остаются разборщики заданий (optsTasks/selectTasks) и strip.
+
+// Курс держит три режима в одной разметке и прячет чужие правилом
+// [data-only]{display:none}. Сайт играет только self, и в шаги обязано попасть
+// ровно то, что видит студент-самоучка: у B2 в group/solo-блоках лежат задания
+// для работы с преподавателем («Read your card. Do not show it to your
+// partner»), а объяснение грамматики целиком — наоборот, только в self.
+function selfOnly(html) {
+  let out = ''
+  let rest = String(html || '')
+  for (;;) {
+    const m = /<([a-z0-9]+)([^>]*?)\sdata-only="([^"]*)"([^>]*)>/i.exec(rest)
+    if (!m) return out + rest
+    out += rest.slice(0, m.index)
+    const tag = m[1].toLowerCase()
+    const open = m.index + m[0].length
+    // Парный закрывающий тег с учётом вложенных одноимённых.
+    const re = new RegExp(`<(/?)${tag}\\b`, 'gi')
+    re.lastIndex = open
+    let depth = 1
+    let mm
+    while ((mm = re.exec(rest))) {
+      depth += mm[1] ? -1 : 1
+      if (depth === 0) break
+      re.lastIndex = mm.index + mm[0].length
+    }
+    const close = mm ? rest.indexOf('>', mm.index) + 1 : rest.length
+    if (m[3].split(/\s+/).includes('self')) out += rest.slice(m.index, close)
+    rest = rest.slice(close)
+  }
+}
+
+// Открытое задание («выбери, что тебе ближе») — блок .opentask со своими
+// кнопками. Один экран на блок: в разминке B2 их три подряд про разное, и
+// склеить их кнопки в один список значило бы соврать про задание.
+function openPicks(chunk, stage, limit) {
+  const out = []
+  for (const m of chunk.matchAll(/<div class="opentask"[^>]*>([\s\S]*?)(?=<div class="opentask"|<div class="writebox"|<\/section>|$)/g)) {
+    let opts = [...m[1].matchAll(/<button class="opt"[^>]*>([\s\S]*?)<\/button>/g)].map((o) => strip(o[1])).filter(Boolean)
+    if (opts.length < 2) continue
+    // Часть заданий нумерует варианты буквами, а сами варианты держит строками
+    // выше («A — You are ten minutes into a meeting…»). Кнопки «A B C D» на
+    // экране шага бессмысленны: строки на него не попадают.
+    if (opts.every((o) => o.length <= 2)) {
+      const rows = [...m[1].matchAll(/<span class="body">([\s\S]*?)<\/span>/g)]
+        // Последняя строка блока держит сами кнопки и подсказку — вариантом
+        // она не является («A B C D Choose one and write two sentences…»).
+        .filter((r) => !/class="(?:opt|ohint)"/.test(r[1]))
+        .map((r) => strip(r[1]))
+        .filter((t) => t && t.length > 2)
+      if (rows.length < 2) continue
+      opts = rows
+    }
+    out.push({
+      stage,
+      type: 'pick',
+      title: nearestInstruction(chunk, m.index) || 'Выбери, что тебе ближе',
+      sub: 'Здесь нет правильного ответа',
+      options: opts.slice(0, 8).map((label) => ({ label })),
+    })
+    if (out.length >= limit) break
+  }
+  return out
+}
+
+// Задания идут в разметке разделами; ровно по кругу разделов — значит, экран
+// не будет шесть раз подряд про одно и то же.
+function roundRobin(tasks, limit) {
+  const groups = new Map()
+  for (const t of tasks) {
+    const key = t.title || ''
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(t)
+  }
+  const lists = [...groups.values()]
+  const out = []
+  for (let i = 0; out.length < limit && lists.some((l) => l.length > i); i++) {
+    for (const l of lists) {
+      if (l[i] && out.length < limit) out.push(l[i])
+    }
+  }
+  return out
+}
+
+// Объяснение правила: .bubble с подписью .blab. У B2 это связный текст на
+// два-три абзаца — он и есть «как это работает» для самоучки.
+function bubbleNotes(chunk, limit) {
+  const out = []
+  for (const m of chunk.matchAll(/<div class="bubble[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div class="(?:instruction|bubble|task|opentask|writebox)|<table|<\/section>|$)/g)) {
+    const body = m[1]
+    const lab = /<div class="blab">([\s\S]*?)<\/div>/.exec(body)
+    const html = body.replace(/<div class="blab">[\s\S]*?<\/div>/, '').trim()
+    if (strip(html).length < 120) continue
+    out.push({ stage: 'Grammar', type: 'note', title: strip(lab ? lab[1] : '') || 'Как это работает', html })
+    if (out.length >= limit) break
+  }
+  return out
+}
+
+// Текст для чтения: у уроков с Reading вход — не запись, а два текста по 300
+// слов. Без них вопросы стадии неразрешимы, поэтому текст едет отдельным
+// экраном перед ними.
+function readNotes(chunk, limit) {
+  const out = []
+  for (const m of chunk.matchAll(/<div class="rtext">([\s\S]*?)<\/div>\s*(?=<div class="(?:instruction|task|opentask|rtext|writebox)|<\/section>|$)/g)) {
+    const body = m[1]
+    const h = /<h4>([\s\S]*?)<\/h4>/.exec(body)
+    if (strip(body).length < 200) continue
+    out.push({
+      stage: 'Reading',
+      type: 'note',
+      title: strip(h ? h[1] : '') || 'Прочитай текст',
+      html: body.replace(/<h4>[\s\S]*?<\/h4>/, '').trim(),
+    })
+    if (out.length >= limit) break
+  }
+  return out
+}
+
+// Вопросы к тексту — то же самое, что и к записи, но без плеера: пять строк
+// одного задания («Which text does each statement describe?») пятью экранами
+// подряд читаются как заедание, а списком это одно задание и есть.
+function readScreens(tasks) {
+  const out = []
+  for (let i = 0; i < tasks.length; ) {
+    const head = tasks[i]
+    const run = []
+    while (i < tasks.length && tasks[i].title === head.title) run.push(tasks[i++])
+    if (run.length < 2) {
+      out.push(head)
+      continue
+    }
+    for (let from = 0; from < run.length; from += ROWS_PER_SCREEN) {
+      out.push({
+        stage: head.stage,
+        type: 'rows',
+        title: head.title,
+        sub: head.sub || '',
+        items: run.slice(from, from + ROWS_PER_SCREEN).map((t) => ({ q: t.prompt, options: t.options, answer: t.answer })),
+      })
+    }
+  }
+  return out
+}
+
+// Ключ дорожки и видео разметка держит коротким именем (data-track="a11",
+// <source data-src="v1">), а файл к нему подобрал экстрактор.
+const trackOf = (chunk, lesson) => {
+  const m = /data-track="([^"]+)"/.exec(chunk)
+  return (m && (lesson.tracks || {})[m[1]]) || null
+}
+// Видео-репортаж юнита стоит в последнем уроке юнита, но не всегда в одной и
+// той же стадии: до 24-го урока — в Production, дальше — во входной стадии.
+// Поэтому экран «посмотри» собирается там, где видео нашлось, а не там, где
+// его ожидали.
+function watchSteps(chunk, lesson, stage) {
+  const m = /<source[^>]*data-src="([^"]+)"/.exec(chunk)
+  const video = m && (lesson.videos || {})[m[1]]
+  if (!video) return []
+  return [
+    {
+      stage,
+      type: 'watch',
+      title: nearestInstruction(chunk, chunk.indexOf('<video')) || 'Посмотри видео',
+      sub: 'Смотри и слушай — задания дальше',
+      video,
+    },
+  ]
+}
+
+// Карточки слов и проверка. Перевода в источнике нет вовсе, поэтому карточка
+// живёт английским определением, и проверка тоже: «слово ↔ определение».
+// Отвлекающие — определения соседних слов урока: они из одной темы, так что
+// выбор не сводится к «какое предложение вообще про это».
+function vocabStepsNext(lesson, level) {
+  const rows = (lesson.VOCAB || []).filter((r) => Array.isArray(r) && r[0])
+  if (!rows.length) return []
+  const steps = [
+    {
+      stage: 'Vocabulary',
+      type: 'cards',
+      title: 'Слова урока',
+      sub: 'Нажми на карточку, чтобы увидеть значение',
+      words: rows.slice(0, 18).map(([en, pos, ipa, def, , , , img]) => ({
+        en: strip(en),
+        pos: pos || '',
+        ipa: ipa || '',
+        def: strip(def),
+        img: typeof img === 'string' && img.startsWith('/') ? img : null,
+        // Поле только при живой записи: иначе у уровней без озвучки каждое
+        // слово в шагах обрастает "audio":null и файл растёт на пустом месте.
+        ...(wordAudio(level, strip(en)) ? { audio: wordAudio(level, strip(en)) } : {}),
+      })),
+    },
+  ]
+  const defs = rows.map((r) => strip(r[3])).filter(Boolean)
+  rows.slice(0, 4).forEach(([en, , , rawDef], i) => {
+    const answer = strip(rawDef)
+    if (!answer) return
+    const others = defs.filter((d) => d !== answer)
+    const options = [...new Set([answer, ...Array.from({ length: MAX_CHOICES - 2 }, (_, k) => others[(i * 3 + k) % others.length])])].filter(Boolean)
+    if (options.length < 3) return
+    steps.push({ stage: 'Vocabulary', type: 'choice', title: 'Выбери значение слова', prompt: strip(en), options, answer })
+  })
+  return steps
+}
+
+function buildStepsNext(lesson, level) {
+  const html = selfOnly(lesson.html || '')
+  const names = stageNames(html)
+  const steps = []
+
+  const warm = stageHtml(html, 'Warm-up')
+  if (warm) steps.push(...openPicks(warm, 'Warm-up', 2))
+
+  steps.push(...vocabStepsNext(lesson, level))
+  const vocab = stageHtml(html, 'Vocabulary')
+  if (vocab) steps.push(...selectTasks(vocab, 'Vocabulary', 2))
+
+  const gram = stageHtml(html, 'Grammar')
+  if (gram) steps.push(...bubbleNotes(gram, 2), ...selectTasks(gram, 'Grammar', 2), ...optsTasks(gram, 'Grammar', 1))
+
+  // Вход стадии: у половины уроков запись, у другой половины — два текста.
+  const inputStage = names.includes('Listening') ? 'Listening' : 'Reading'
+  const input = stageHtml(html, inputStage)
+  if (input) {
+    const tasks = [...optsTasks(input, inputStage, 2), ...selectTasks(input, inputStage, 5)]
+    steps.push(...watchSteps(input, lesson, inputStage))
+    if (inputStage === 'Listening') {
+      const track = trackOf(input, lesson)
+      steps.push(...(track ? listenScreens(tasks, track) : tasks))
+    } else {
+      steps.push(...readNotes(input, 2), ...readScreens(tasks))
+    }
+  }
+
+  const prod = stageHtml(html, 'Production')
+  if (prod) {
+    steps.push(...watchSteps(prod, lesson, 'Production'))
+    steps.push(...selectTasks(prod, 'Production', 1))
+    // Образец — письмо целиком, с абзацами: плоским текстом оно склеится.
+    const model = /<div class="bubble cy"[^>]*>([\s\S]*?)<\/div>\s*(?=<div class="(?:instruction|task|writebox)|<\/section>|$)/.exec(prod)
+    steps.push({
+      stage: 'Production',
+      type: 'write',
+      title: 'Напиши свой текст',
+      sub: 'Напиши ответ, затем сверься с образцом',
+      placeholder: 'Твой ответ…',
+      modelHtml: model ? model[1].replace(/<div class="blab">[\s\S]*?<\/div>/, '').trim() : '',
+    })
+  }
+
+  // Квиз урока — двадцать готовых вопросов тремя разделами (лексика,
+  // грамматика, функция). Подряд они дали бы шесть вопросов одной лексики,
+  // поэтому берём по кругу разделов. Счётчик «questions 1–7» из заголовка
+  // убираем: на экране шага он ссылается на нумерацию, которой там нет.
+  const quiz = stageHtml(html, 'Quiz').replace(/<span class="qcount">[\s\S]*?<\/span>/g, '')
+  if (quiz) steps.push(...roundRobin(selectTasks(quiz, 'Quiz', 40), 6))
+
+  // Чек-лист «что я уже могу»: у B2 пункты — кнопки .opt, а не <li>.
+  const wrap = stageHtml(html, 'Wrap')
+  if (wrap) {
+    const items = [...wrap.matchAll(/<button class="opt"[^>]*>([\s\S]*?)<\/button>/g)].map((m) => strip(m[1])).filter(Boolean)
+    if (items.length) steps.push({ stage: 'Wrap', type: 'checklist', title: 'Отметь, чему научился', sub: 'Я могу…', items: items.slice(0, 6) })
+  }
+
+  return dedupe(steps).map(({ _idx, ...s }) => s)
+}
+
+// Большой тест уровня: у B2 их четыре (после юнитов 3, 6, 9 и 12), и вопросы
+// приходят не разметкой, а банком — {l:урок, c:область, q, a, d:[неверные]}.
+// Оригинал набирает сорок вопросов случайно на каждую попытку; шаги у нас
+// статичные, поэтому берём детерминированно и ровным слоем: по кругу областям
+// (лексика/грамматика/функция) и по возрастанию урока.
+const EXAM_AREA = { v: 'Vocabulary', g: 'Grammar', f: 'Function' }
+
+function buildExamSteps(exam, want) {
+  const byArea = new Map()
+  for (const q of exam.bank || []) {
+    if (!q || !q.q || !q.a) continue
+    if (!byArea.has(q.c)) byArea.set(q.c, [])
+    byArea.get(q.c).push(q)
+  }
+  for (const list of byArea.values()) list.sort((a, b) => (a.l || 0) - (b.l || 0))
+  const areas = [...byArea.keys()]
+  const picked = []
+  for (let round = 0; picked.length < want && areas.some((a) => byArea.get(a).length > round); round++) {
+    for (const a of areas) {
+      const q = byArea.get(a)[round]
+      if (q && picked.length < want) picked.push(q)
+    }
+  }
+  const steps = picked.map((q, i) => {
+    const wrong = (q.d || []).map(strip).filter(Boolean)
+    const answer = strip(q.a)
+    // Верный ответ не должен всегда стоять первым: место двигаем по номеру
+    // вопроса, порядок при этом остаётся одинаковым от сборки к сборке.
+    const options = [...wrong]
+    options.splice(i % (options.length + 1), 0, answer)
+    return {
+      stage: 'Test',
+      type: 'choice',
+      title: EXAM_AREA[q.c] || 'Test',
+      prompt: strip(q.q),
+      options,
+      answer,
+    }
+  })
+  return {
+    id: exam.id,
+    title: strip(exam.title || exam.label || ''),
+    passRatio: exam.items ? Math.round(Math.min(1, (exam.pass || 0) / exam.items) * 100) / 100 : 0.7,
+    steps,
+  }
+}
+
 // Одну и ту же строку урока ловят оба разборщика — и кнопки-варианты, и
 // выпадающий список, — поэтому вопрос приезжал на экран дважды подряд
 // («I get up ___ the morning.» два раза в одном уроке). Совпадение считаем по
@@ -398,15 +733,26 @@ function run() {
     let total = 0
     for (const l of index.lessons) {
       const lesson = JSON.parse(fs.readFileSync(path.join(dir, `lesson-${l.n}.json`), 'utf8'))
-      const steps = buildSteps(lesson)
+      // Поколение урока видно по нему самому: у нового (B2) есть список
+      // заданий tids и нет ни SLIDES, ни QS — всё в разметке.
+      const steps = lesson.tids ? buildStepsNext(lesson, level) : buildSteps(lesson, level)
       fs.writeFileSync(path.join(dir, `steps-${l.n}.json`), JSON.stringify({ n: l.n, title: l.title, blurb: l.blurb, steps }))
       for (const s of steps) counts[s.type] = (counts[s.type] || 0) + 1
       total += steps.length
       if (steps.length < 6) console.warn(`  ! урок ${l.n} (${l.title}): всего ${steps.length} шагов`)
     }
-    // Юнит-тесты уровня — по одному файлу на юнит.
+    // Тесты уровня: у A0–B1 по одному на юнит (test-<u>.json), у B2 — четыре
+    // больших с банком вопросов (exam-<id>.json), они и лежат в каталоге с id.
     let tSteps = 0
     for (const t of index.tests || []) {
+      if (t.id) {
+        const exam = JSON.parse(fs.readFileSync(path.join(dir, `exam-${t.id}.json`), 'utf8'))
+        const built = buildExamSteps({ ...exam, items: t.items, pass: t.pass }, t.items || 40)
+        fs.writeFileSync(path.join(dir, `steps-X${t.id}.json`), JSON.stringify(built))
+        tSteps += built.steps.length
+        if (built.steps.length < 20) console.warn(`  ! тест ${t.id}: всего ${built.steps.length} вопросов`)
+        continue
+      }
       const test = JSON.parse(fs.readFileSync(path.join(dir, `test-${t.unit}.json`), 'utf8'))
       const built = buildTestSteps(test, t.unit)
       fs.writeFileSync(path.join(dir, `steps-T${t.unit}.json`), JSON.stringify(built))
@@ -420,4 +766,4 @@ function run() {
 
 if (require.main === module) run()
 
-module.exports = { buildSteps, strip, stageHtml, listenScreens }
+module.exports = { buildSteps, buildStepsNext, buildExamSteps, selfOnly, wordAudio, strip, stageHtml, listenScreens }

@@ -199,9 +199,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       setRestricted(false)
       try {
         // Урок курса — очередь шагов, собранная из его же контента
-        // (scripts/build-course-steps.js). L<n> — урок, T<u> — тест юнита.
+        // (scripts/build-course-steps.js). L<n> — урок, T<u> — тест юнита,
+        // X<id> — большой тест уровня (B2: четыре штуки на весь курс).
         if (course) {
-          const m = /^([LT])(\d+)$/.exec(code)
+          const m = /^([LTX])([a-z0-9]+)$/i.exec(code)
           if (!m) return
           const entry = lessons.find((l) => l.code === code)
           // A0/A1 ведёт курс (24 и 32 урока с юнит-тестами), а содержимое
@@ -216,8 +217,8 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               return
             }
           }
-          // L<n> — урок, T<u> — юнит-тест: файлы шагов лежат рядом.
-          const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : 'T' + m[2])
+          // Файлы шагов лежат рядом с уроком: steps-<n>, steps-T<u>, steps-X<id>.
+          const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : m[1].toUpperCase() + m[2])
           if (data) setOpen({ code, attempt: 0, steps: { ...data, title: stripStageTail(data.title, data.steps) } })
           return
         }
