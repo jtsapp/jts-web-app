@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { lessonExercises, exerciseBatches, exerciseBlock, loadAnswers, saveAnswers, answersKey, dedupeTail, readableInstruction, isAnswered, pendingAnswers } from './homeworkExercises.js'
+import { answersKey, dedupeTail, exerciseBatches, exerciseBlock, isAnswered, lessonExercises, loadAnswers, pendingAnswers, readableInstruction, revokedEverything, saveAnswers } from './homeworkExercises.js'
 
 describe('homeworkExercises', () => {
   beforeEach(() => localStorage.clear())
@@ -234,5 +234,27 @@ describe('pendingAnswers', () => {
   it('пустой черновик не роняет отбор', () => {
     expect(pendingAnswers({ exercises: [{ id: 1, question: q('q1') }] }, null)).toEqual([])
     expect(pendingAnswers(null, { q1: 'a' })).toEqual([])
+  })
+})
+
+describe('отозванная выдача', () => {
+  const задание = (over = {}) => ({ id: 1, question: { type: 'gap', answers: ['a'] }, ...over })
+
+  it('всё отозвано — это не то же самое, что заданий не было', () => {
+    expect(revokedEverything({ exercises: [задание({ revoked: true })] })).toBe(true)
+    // Заданий не было вовсе — работа просто про файлы, объяснять нечего.
+    expect(revokedEverything({ exercises: [] })).toBe(false)
+    expect(revokedEverything({})).toBe(false)
+  })
+
+  it('отозвали часть — секция остаётся, подписи нет', () => {
+    expect(revokedEverything({
+      exercises: [задание({ id: 1, revoked: true }), задание({ id: 2 })]
+    })).toBe(false)
+  })
+
+  it('отозванные не попадают в список заданий', () => {
+    const hw = { exercises: [задание({ id: 1, revoked: true }), задание({ id: 2 })] }
+    expect(lessonExercises(hw).map((e) => e.id)).toEqual([2])
   })
 })

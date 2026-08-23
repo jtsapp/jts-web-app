@@ -3,7 +3,7 @@ import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { saveHomeworkAnswer } from '../../api.js'
-import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
 // PracticeBlock, что и на уроке, — здесь только состояние ответов и отправка.
@@ -81,6 +81,11 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
       .catch(() => setFailed((prev) => new Set(prev).add(key)))
   }
 
+  // Задания были, но их отозвали — говорим об этом. Молча спрятать секцию значит
+  // оставить ученика гадать, куда делось вчерашнее задание.
+  if (!batches.length && revokedEverything(hw)) {
+    return <p className="hw__hint hw__hint--revoked">{t('homework.revokedAll')}</p>
+  }
   if (!batches.length) return null
 
   const solvedIn = (list) => list.filter((e) => gradeQuestion(e.question, answers[e.question.id]).correct).length

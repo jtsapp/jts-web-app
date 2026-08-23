@@ -136,8 +136,10 @@ describe('HomeworkExercises: ответ уходит преподавателю'
 
     fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
 
-    // Разбор ученику показали: верный вариант подсвечен (ChoiceQuestion:49).
-    await waitFor(() => expect(screen.getByText('a').closest('.lw-opt').className).toMatch(/is-ok/))
+    // Ключ при пустом клике не подсвечивается — иначе «Проверить» превращается
+    // в кнопку «показать ответ» (ChoiceQuestion: revealCorrect требует chosen).
+    await waitFor(() => expect(screen.getByText('a').closest('.lw-opt').className).not.toMatch(/is-ok/))
+    // Главное: пустое не уезжает преподавателю как неверный ответ.
     expect(saveHomeworkAnswer).not.toHaveBeenCalled()
   })
 

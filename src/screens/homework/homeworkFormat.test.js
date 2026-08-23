@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fileExtension, isAllowedFile, homeworkStateKey, isOverdue, canAttach, canSubmit, pendingCount, reviewOrder, studentOrder, answeredExercises } from './homeworkFormat.js'
+import { answeredExercises, canAttach, canSubmit, fileExtension, homeworkStateKey, isAllowedFile, isOverdue, pendingCount, reviewOrder, studentOrder } from './homeworkFormat.js'
 
 const hw = (over = {}) => ({ id: 1, status: 'ASSIGNED', submissions: [], materials: [], ...over })
 
@@ -150,5 +150,29 @@ describe('canSubmit — есть ли что сдавать', () => {
       status: 'SUBMITTED',
       exercises: [{ question: { id: 'q1' }, studentAnswer: 'is' }],
     }))).toBe(false)
+  })
+})
+
+describe('счётчик «ждут тебя» и отзыв', () => {
+  const задание = (over = {}) => ({ id: 1, question: { type: 'gap', answers: ['a'] }, ...over })
+
+  it('работа, из которой всё отозвали, ученика не ждёт', () => {
+    // Сделать в ней нельзя ничего: заданий нет, приложить нечего.
+    const пустая = { status: 'ASSIGNED', exercises: [задание({ revoked: true })], materials: [] }
+    expect(pendingCount([пустая])).toBe(0)
+  })
+
+  it('но если есть что приложить — ждёт', () => {
+    const сФайлом = {
+      status: 'ASSIGNED',
+      exercises: [задание({ revoked: true })],
+      materials: [{ id: 1, fileName: 'task.pdf' }]
+    }
+    expect(pendingCount([сФайлом])).toBe(1)
+  })
+
+  it('обычная работа считается как раньше', () => {
+    expect(pendingCount([{ status: 'ASSIGNED', exercises: [задание()] }])).toBe(1)
+    expect(pendingCount([{ status: 'SUBMITTED', exercises: [задание()] }])).toBe(0)
   })
 })
