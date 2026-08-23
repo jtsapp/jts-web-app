@@ -11,16 +11,14 @@
 //   ping   — пульс вкладки, разговор ещё идёт;
 //   closed — разговор кончился, списываем платное окно.
 //
-// Чужую сессию тронуть нельзя: каждый запрос проверяет, что строка комнаты
-// принадлежит этому device_id.
+// Право на вызов даёт знание имени комнаты — его отдаёт только токен-роут и
+// только прошедшему проверку. Присланному клиентом deviceId тут верить НЕЛЬЗЯ,
+// и сверять по нему тоже нечего: строку уже подписал токен-роут тем же
+// profileId, по которому считается лимит (у залогиненного это `user-<id>`, а не
+// device-id браузера). Первая версия сверяла — и у всех авторизованных не
+// находила строку, из-за чего разговор не тарифицировался вовсе.
 
-import {
-  armSession,
-  closeSession,
-  isDbConfigured,
-  isValidDeviceId,
-  touchSession,
-} from '@/lib/usage.js'
+import { armSession, closeSession, isDbConfigured, touchSession } from '@/lib/usage.js'
 
 export const runtime = 'nodejs'
 
@@ -39,10 +37,9 @@ export async function POST(request) {
   }
 
   const room = typeof body.room === 'string' ? body.room.trim() : ''
-  const deviceId = typeof body.deviceId === 'string' ? body.deviceId.trim() : ''
   const event = typeof body.event === 'string' ? body.event : ''
 
-  if (!room || !isValidDeviceId(deviceId) || !EVENTS.has(event)) {
+  if (!room || !EVENTS.has(event)) {
     return Response.json({ error: 'bad request' }, { status: 400 })
   }
   // Без базы лимитов нет вовсе — молча соглашаемся, чтобы клиент не сыпал
@@ -51,9 +48,9 @@ export async function POST(request) {
 
   try {
     let applied = false
-    if (event === 'armed') applied = await armSession(room, deviceId)
-    else if (event === 'ping') applied = await touchSession(room, deviceId)
-    else applied = await closeSession(room, deviceId)
+    if (event === 'armed') applied = await armSession(room)
+    else if (event === 'ping') applied = await touchSession(room)
+    else applied = await closeSession(room)
     return Response.json({ ok: true, applied })
   } catch (err) {
     console.error('[livekit.session] failed', event, err)

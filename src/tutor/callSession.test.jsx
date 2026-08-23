@@ -50,7 +50,11 @@ describe('useCallSession', () => {
       rerender(<Stage room="jts-tutor-1" tutorPresent onReady={(f) => (closeFn = f)} />)
     })
     expect(events()).toEqual(['armed'])
-    expect(sent[0]).toMatchObject({ room: 'jts-tutor-1', event: 'armed' })
+    expect(sent[0]).toEqual({ room: 'jts-tutor-1', event: 'armed' })
+    // deviceId в теле быть НЕ должно. Пока он там был, сервер сверял его с
+    // владельцем строки — а токен-роут пишет туда `user-<id>` залогиненного, не
+    // device-id браузера. Не совпадало, и разговор не тарифицировался вовсе.
+    expect(sent[0]).not.toHaveProperty('deviceId')
 
     // Агент моргнул и вернулся — начало отсчёта не должно сдвигаться.
     act(() => {
