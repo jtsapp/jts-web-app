@@ -17,6 +17,9 @@ services:
         # Джарвис (dev-only тьютор). Переменная задаётся только в dev-scope
         # GitLab CI; в прод-окружении её быть не должно.
         NEXT_PUBLIC_ENABLE_JARVIS: ${NEXT_PUBLIC_ENABLE_JARVIS:-}
+        # Google Sign-In (см. src/lib/googleAuth.js). Пусто → кнопка неактивна,
+        # ничего не ломается — но раз задали в GitLab CI, должна доехать сюда.
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     environment:
       # Мозг тьютора + оценка IELTS
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
