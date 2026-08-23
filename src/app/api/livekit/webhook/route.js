@@ -31,7 +31,15 @@ export async function POST(request) {
   try {
     if (event.event === 'room_finished' && event.room?.name && isDbConfigured()) {
       const fallback = Number(event.room.duration) || 0
-      await recordSession(event.room.name, fallback)
+      const billed = await recordSession(event.room.name, fallback)
+      // Успешная доставка раньше не оставляла в логах ничего, и «вебхук не
+      // настроен» было не отличить от «настроен и работает» — диагностика
+      // упиралась в молчание. Теперь в логах web видно каждое событие.
+      console.log(
+        `[livekit.webhook] room_finished ${event.room.name} → ${
+          billed ? 'сессия закрыта' : 'открытой сессии не было'
+        }`
+      )
     }
   } catch (err) {
     console.error('[livekit.webhook] recordSession failed', err)
