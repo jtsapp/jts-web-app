@@ -290,6 +290,10 @@ export const DICT = {
       'звонок в 911: объяснить диспетчеру, где ты, не зная адреса — пять минут',
     'scen.brief.911-call':
       'Ты на втором этаже заброшенной бумажной фабрики на окраине города.\nАдреса ты не знаешь. Телефон почти разряжен.\nВнизу трое мужчин — они ищут тебя. Слышны шаги на лестнице.\nИз окна видно: река, красная кирпичная труба, ржавая вывеска MILLER & SONS PAPER MILL, вдалеке жёлтый мост. На двери рядом — номер GATE 4.\nЗадача: за 5 минут добиться, чтобы полиция выехала. Говори тихо.',
+    'scen.desc.neighbour-noise':
+      'соседка снизу в дверях: договориться о времени, отбиться от чужой дрели и не поссориться',
+    'scen.brief.neighbour-noise':
+      'Суббота, без двадцати одиннадцать вечера. У тебя дома шесть друзей — день рождения, торт, колонка на подоконнике.\nТы въехал в квартиру 14 два месяца назад. Тишина в доме — с одиннадцати, объявление висит в лифте.\nВ дверь пришла соседка снизу, Гульнара из 12-й. Ей вставать в пять утра.\nВАЖНО: сверлит не у тебя. Сверлят сверху, в квартире 16 — но Гульнара уверена, что это ты.\nЗадача: сказать, во сколько выключишь музыку, и объяснить, что дрель не твоя.',
     'scen.start': 'Начать разговор',
     'scen.briefTitle': 'Ситуация',
     'scen.briefReady': 'Я готов, звоню',
@@ -576,6 +580,10 @@ export const DICT = {
       '911-ге қоңырау: мекенжайды білмей тұрып, диспетчерге қайдасың екенін түсіндір — бес минут',
     'scen.brief.911-call':
       'Сен қала шетіндегі тасталған қағаз фабрикасының екінші қабатындасың.\nМекенжайды білмейсің. Телефон отыруға жақын.\nТөменде үш еркек — олар сені іздеп жүр. Баспалдақтан қадам дыбысы естіледі.\nТерезеден көрінеді: өзен, қызыл кірпіш мұржа, тот басқан MILLER & SONS PAPER MILL жазуы, алыста сары көпір. Қасындағы есікте — GATE 4 нөмірі.\nМіндет: 5 минут ішінде полицияны шақыру. Ақырын сөйле.',
+    'scen.desc.neighbour-noise':
+      'астыңғы қабаттағы көрші есік алдында: уақытты келісу, бөтен бұрғыдан ақталу және ұрыспау',
+    'scen.brief.neighbour-noise':
+      'Сенбі, кешкі он бірге жиырма минут қалды. Үйіңде алты дос — туған күн, торт, терезе алдында колонка.\nСен 14-пәтерге екі ай бұрын көшіп келдің. Үйдегі тыныштық сағат он бірден басталады, хабарландыру лифтте ілулі.\nЕсікті астыңғы қабаттағы көрші — 12-пәтердегі Гүлнара қақты. Оған таңғы бесте тұру керек.\nМАҢЫЗДЫ: бұрғылап жатқан сен емес. Жоғарыда, 16-пәтерде бұрғылап жатыр — бірақ Гүлнара оны сен деп сенімді.\nМіндет: музыканы сағат нешеде өшіретіңді айт және бұрғы сенікі емес екенін түсіндір.',
     'scen.start': 'Әңгімені бастау',
     'scen.briefTitle': 'Жағдай',
     'scen.briefReady': 'Дайынмын, қоңырау шаламын',
@@ -860,6 +868,10 @@ export const DICT = {
       'a 911 call: make the dispatcher understand where you are without an address — five minutes',
     'scen.brief.911-call':
       "You're on the second floor of an abandoned paper mill on the edge of town.\nYou don't know the address. Your phone is almost dead.\nThree men are downstairs, looking for you. You can hear steps on the stairs.\nFrom the window: a river, a red brick chimney, a rusted sign reading MILLER & SONS PAPER MILL, a yellow bridge in the distance. The nearest door is marked GATE 4.\nYour task: get the police on the way within 5 minutes. Keep your voice down.",
+    'scen.desc.neighbour-noise':
+      "the neighbour at your door: agree a time, prove the drilling isn't yours, and stay on speaking terms",
+    'scen.brief.neighbour-noise':
+      "It's Saturday, twenty to eleven at night. Six friends are at your place — a birthday, a cake, a speaker on the windowsill.\nYou moved into flat 14 two months ago. Quiet hours in the building start at eleven; the notice is in the lift.\nYour downstairs neighbour Gulnara, from flat 12, is at the door. She has to be up at five.\nIMPORTANT: the drilling is not yours. It comes from flat 16, upstairs — but Gulnara is sure it's you.\nYour task: name the time you'll turn the music off, and explain that the drill isn't yours.",
     'scen.start': 'Start conversation',
     'scen.briefTitle': 'The situation',
     'scen.briefReady': "I'm ready — call",
