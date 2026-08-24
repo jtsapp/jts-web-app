@@ -257,6 +257,9 @@ export const DICT = {
     'report.focus': 'Что дальше',
     'report.done': 'Готово',
     'report.waiting': 'Собираю разбор разговора…',
+    'report.analyzing': 'Разбираю разговор',
+    'report.analyzingHint':
+      'Считаю слова и собираю разбор — обычно это занимает 10–20 секунд. Не закрывай экран.',
     'report.partial': 'Подробный разбор не собрался, но цифры и расшифровка на месте',
     'report.empty':
       'Разбор ещё готовится — обычно это меньше минуты. Он появится в истории разговоров.',
@@ -542,6 +545,9 @@ export const DICT = {
     'report.focus': 'Әрі қарай не',
     'report.done': 'Дайын',
     'report.waiting': 'Әңгіме талдауын жинап жатырмын…',
+    'report.analyzing': 'Әңгімені талдап жатырмын',
+    'report.analyzingHint':
+      'Сөздерді санап, талдау жинап жатырмын — әдетте 10–20 секунд. Экранды жаппаңыз.',
     'report.partial': 'Толық талдау жиналмады, бірақ сандар мен жазба орнында',
     'report.empty':
       'Талдау әзірленуде — әдетте бір минуттан аз. Ол әңгімелер тарихында пайда болады.',
@@ -823,6 +829,9 @@ export const DICT = {
     'report.focus': 'What next',
     'report.done': 'Done',
     'report.waiting': 'Putting your feedback together…',
+    'report.analyzing': 'Analysing your conversation',
+    'report.analyzingHint':
+      'Counting words and putting the feedback together — usually 10–20 seconds. Keep this screen open.',
     'report.partial': 'The detailed breakdown did not come through, but the numbers and transcript are here',
     'report.empty':
       'Your feedback is still being prepared — usually under a minute. It will appear in your conversation history.',
