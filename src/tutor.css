@@ -2526,11 +2526,6 @@
 .t-report__stats .t-stat b {
   font-size: 28px;
 }
-/* Данных ещё нет — цифра заменена прочерком, гасим её, чтобы плитка не
-   выглядела заполненной. */
-.t-report__stats.is-pending .t-stat b {
-  color: var(--t-muted);
-}
 .t-report__stats .t-stat span {
   color: var(--t-muted);
 }
@@ -2561,8 +2556,74 @@
 }
 .t-report__waiting {
   margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 16px;
   font-weight: 500;
+  color: var(--t-muted);
+}
+/* Кольцо загрузки. Отдельный класс, а не только в отчёте: тот же индикатор
+   нужен и в плитках счётчиков, и в плашке ожидания разбора. */
+.t-spin {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid rgba(144, 71, 255, 0.18);
+  border-top-color: var(--t-purple);
+  animation: t-spin 0.8s linear infinite;
+}
+.t-spin--lg {
+  width: 34px;
+  height: 34px;
+  border-width: 4px;
+}
+@keyframes t-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Кольцо остаётся видимым — оно и без вращения читается как «ещё грузится». */
+  .t-spin {
+    animation: none;
+  }
+}
+/* Кольцо вместо цифры: высоту держим равной строке числа (28px), иначе плитка
+   подпрыгивает в момент, когда счётчик приезжает. */
+.t-stat__spin {
+  width: 26px;
+  height: 26px;
+  margin: 3px 0;
+}
+/* Плашка «идёт разбор» — главная надпись, ради которой всё затевалось:
+   пользователи не понимали, что после звонка тьютор ещё считает. */
+.t-report__pending {
+  margin-top: 16px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f3eaff;
+  border-radius: 16px;
+  border: 1px solid rgba(144, 71, 255, 0.35);
+}
+.t-report__pendingtext {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.t-report__pendingtext b {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--t-purple);
+}
+.t-report__pendingtext span {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
   color: var(--t-muted);
 }
 .t-report__topics {
@@ -3355,6 +3416,17 @@
   }
   .t-report__stats .t-stat b {
     font-size: 24px;
+  }
+  .t-stat__spin {
+    width: 22px;
+    height: 22px;
+  }
+  .t-report__pending {
+    padding: 14px;
+    gap: 12px;
+  }
+  .t-report__pendingtext b {
+    font-size: 16px;
   }
   /* Слово и кнопка в столбик: на 390px «contemplate» + «В словарь» в одну
      строку не помещаются и распирают контент за экран. */

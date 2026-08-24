@@ -37,14 +37,34 @@ function backendLang(lang) {
   return lang === 'kz' ? 'kk' : lang === 'en' ? 'en' : 'ru'
 }
 
-const DASH = '—'
-
 function Section({ title, children }) {
   return (
     <section className="t-report__card">
       <h2 className="t-report__cardtitle">{title}</h2>
       {children}
     </section>
+  )
+}
+
+// Плитка счётчика. Пока строки звонка нет, цифр не существует — прочерк на её
+// месте читался как готовый отчёт («поговорил, а слов ноль»). Кольцо честнее:
+// место занято, и видно, что значение ещё считается.
+function Stat({ value, label, pending }) {
+  return (
+    <div className="t-stat">
+      {pending ? <span className="t-spin t-stat__spin" aria-hidden="true" /> : <b>{value}</b>}
+      <span>{label}</span>
+    </div>
+  )
+}
+
+// Строка ожидания внутри карточки: кольцо + текст.
+function Waiting({ text }) {
+  return (
+    <p className="t-report__waiting" role="status" aria-live="polite">
+      <span className="t-spin" aria-hidden="true" />
+      <span>{text}</span>
+    </p>
   )
 }
 
@@ -163,6 +183,8 @@ export default function TutorCallReportPage({
   }, [words, addWord])
 
   const waiting = status === 'waiting'
+  // Строки звонка ещё нет — считать нечего, плитки показывают кольца.
+  const statsPending = waiting && !row
 
   return (
     <TutorShell
@@ -176,12 +198,31 @@ export default function TutorCallReportPage({
     >
       <div className="t-report">
         <div className="t-report__head">
-          <TutorThumb tutor={tutor} className="t-report__avatar" />
+          <TutorThumb
+            tutor={tutor}
+            className={`t-report__avatar${waiting ? ' t-status__avatar--pulse' : ''}`}
+          />
           <div className="t-report__headtext">
             <b>{t('report.title')}</b>
-            <span>{t('report.by')}</span>
+            <span>{waiting ? t('report.analyzing') : t('report.by')}</span>
           </div>
         </div>
+
+        {/* Жаловались, что непонятно, идёт ли разбор: экран выглядел готовым и
+            молча ждал агента. Поэтому пока ждём — крупная плашка с кольцом
+            наверху, а не только серая строчка внутри карточки. */}
+        {waiting ? (
+          <div className="t-report__pending" role="status" aria-live="polite">
+            <span className="t-spin t-spin--lg" aria-hidden="true" />
+            <div className="t-report__pendingtext">
+              <b>
+                {t('report.analyzing')}
+                <span className="t-status__dots" />
+              </b>
+              <span>{t('report.analyzingHint')}</span>
+            </div>
+          </div>
+        ) : null}
 
         {status === 'empty' ? (
           <>
@@ -194,32 +235,30 @@ export default function TutorCallReportPage({
           </>
         ) : (
           <>
-            {/* Пока строки звонка нет, в плитках прочерк, а не нули: «0 слов»
-                читается как факт разговора, а не как «ещё считаем». */}
-            <div className={`t-report__stats${row ? '' : ' is-pending'}`}>
-              <div className="t-stat">
-                <b>{row ? formatDuration(row.durationSec) : DASH}</b>
-                <span>{t('report.stat.duration')}</span>
-              </div>
-              <div className="t-stat">
-                <b>{row ? stats.words : DASH}</b>
-                <span>{t('report.stat.words')}</span>
-              </div>
-              <div className="t-stat">
-                <b>{row ? stats.sentences : DASH}</b>
-                <span>{t('report.stat.sentences')}</span>
-              </div>
-              <div className="t-stat">
-                <b>{row ? stats.uniqueWords : DASH}</b>
-                <span>{t('report.stat.unique')}</span>
-              </div>
+            {/* Нулей в плитках быть не должно: «0 слов» читается как факт
+                разговора, а не как «ещё считаем». */}
+            <div className="t-report__stats">
+              <Stat
+                value={formatDuration(row?.durationSec)}
+                label={t('report.stat.duration')}
+                pending={statsPending}
+              />
+              <Stat value={stats.words} label={t('report.stat.words')} pending={statsPending} />
+              <Stat
+                value={stats.sentences}
+                label={t('report.stat.sentences')}
+                pending={statsPending}
+              />
+              <Stat
+                value={stats.uniqueWords}
+                label={t('report.stat.unique')}
+                pending={statsPending}
+              />
             </div>
 
             <Section title={t('report.about')}>
               {waiting && !row?.recap ? (
-                <p className="t-report__waiting" role="status" aria-live="polite">
-                  {t('report.waiting')}
-                </p>
+                <Waiting text={t('report.waiting')} />
               ) : (
                 <>
                   {row?.recap ? <p className="t-report__text">{row.recap}</p> : null}
@@ -280,56 +319,58 @@ export default function TutorCallReportPage({
               </Section>
             ) : null}
 
-            {!waiting || words.length > 0 ? (
-              <Section title={t('report.words')}>
-                {words.length === 0 ? (
-                  <p className="t-report__note">{t('report.wordsEmpty')}</p>
-                ) : (
-                  <>
-                    <ul className="t-report__words">
-                      {words.map((word) => {
-                        const state = saved[word.term]
-                        return (
-                          <li className="t-report__word" key={word.term}>
-                            <div className="t-report__wordtext">
-                              <b>{word.term}</b>
-                              <span>{word.translation}</span>
-                              {word.example ? <i>«{word.example}»</i> : null}
-                            </div>
-                            <button
-                              className={`t-report__add${state === 'ok' ? ' is-done' : ''}`}
-                              type="button"
-                              disabled={!token || state === 'ok' || state === 'busy'}
-                              onClick={() => addWord(word)}
-                            >
-                              {state === 'ok'
-                                ? t('report.added')
-                                : state === 'err'
-                                  ? t('report.addFail')
-                                  : t('report.add')}
-                            </button>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                    {token ? (
-                      <button className="t-report__link" type="button" onClick={addAll}>
-                        {t('report.addAll')}
+            {/* Карточку слов показываем и в ожидании: раньше её просто не было,
+                пока не приедет выжимка, и экран выглядел законченным. */}
+            <Section title={t('report.words')}>
+              {waiting && words.length === 0 ? (
+                <Waiting text={t('report.waiting')} />
+              ) : words.length === 0 ? (
+                <p className="t-report__note">{t('report.wordsEmpty')}</p>
+              ) : (
+                <>
+                  <ul className="t-report__words">
+                    {words.map((word) => {
+                      const state = saved[word.term]
+                      return (
+                        <li className="t-report__word" key={word.term}>
+                          <div className="t-report__wordtext">
+                            <b>{word.term}</b>
+                            <span>{word.translation}</span>
+                            {word.example ? <i>«{word.example}»</i> : null}
+                          </div>
+                          <button
+                            className={`t-report__add${state === 'ok' ? ' is-done' : ''}`}
+                            type="button"
+                            disabled={!token || state === 'ok' || state === 'busy'}
+                            onClick={() => addWord(word)}
+                          >
+                            {state === 'ok'
+                              ? t('report.added')
+                              : state === 'err'
+                                ? t('report.addFail')
+                                : t('report.add')}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {token ? (
+                    <button className="t-report__link" type="button" onClick={addAll}>
+                      {t('report.addAll')}
+                    </button>
+                  ) : (
+                    // Ручка словаря — Bearer-only, анонимного пути у неё нет.
+                    // Список всё равно показываем: слова полезны и без сохранения.
+                    <p className="t-report__note">
+                      {t('report.loginToSave')}{' '}
+                      <button className="t-report__link" type="button" onClick={onLogin}>
+                        {t('report.login')}
                       </button>
-                    ) : (
-                      // Ручка словаря — Bearer-only, анонимного пути у неё нет.
-                      // Список всё равно показываем: слова полезны и без сохранения.
-                      <p className="t-report__note">
-                        {t('report.loginToSave')}{' '}
-                        <button className="t-report__link" type="button" onClick={onLogin}>
-                          {t('report.login')}
-                        </button>
-                      </p>
-                    )}
-                  </>
-                )}
-              </Section>
-            ) : null}
+                    </p>
+                  )}
+                </>
+              )}
+            </Section>
 
             {row?.focus ? (
               <Section title={t('report.focus')}>
