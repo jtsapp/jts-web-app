@@ -1,15 +1,16 @@
-"""Ассерты для порогов перебивания. pytest в проекте нет — файл запускается
-напрямую:
+"""Ассерты для порогов перебивания и Krisp BVC. pytest в проекте нет — файл
+запускается напрямую:
     agent/venv/Scripts/python.exe agent/test_interruption.py
 Падает с AssertionError на первом расхождении, молчит когда всё сошлось.
 
 Проверяется чтение env и то, что пороги доезжают в ОБЕ ветки turn_handling —
 и с семантическим детектором, и на голом VAD. Живой звонок здесь не нужен:
-_interruption_options и _turn_handling — чистые функции над env.
+_interruption_options, _turn_handling и _krisp_enabled — чистые функции над env.
 """
 import os
 
-from agent import _interruption_options, _turn_handling
+import agent as A
+from agent import _interruption_options, _krisp_enabled, _krisp_reason, _turn_handling
 
 
 def _env(**vals):
@@ -72,4 +73,35 @@ assert _turn_handling(None)["interruption"]["min_words"] == 0
 assert _turn_handling(object())["interruption"]["min_words"] == 0
 _env(INTERRUPT_MIN_WORDS=None)
 
-print("interruption thresholds: ok")
+# --- Krisp BVC ---------------------------------------------------------------
+# Главная проверка всей этой функции: при незаданном секрете BVC включён. Раньше
+# условие звучало `profile.tier != "free"`, а tier захардкожен free в токен-роуте
+# — подавления эха не было ни у одной сессии, и поймали это только по жалобам.
+_plugin = A.noise_cancellation
+try:
+    A.noise_cancellation = object()  # плагин на месте
+
+    _env(KRISP_BVC=None)
+    assert _krisp_enabled() is True
+    assert _krisp_reason() == "on"
+
+    for off in ("off", "OFF", " off ", "0", "false"):
+        _env(KRISP_BVC=off)
+        assert _krisp_enabled() is False, off
+        assert _krisp_reason().startswith("off — KRISP_BVC="), off
+
+    # Мусор в секрете не должен выключать шумодав молча: выключает только явное
+    # значение из списка.
+    _env(KRISP_BVC="yes")
+    assert _krisp_enabled() is True
+
+    # Без плагина включать нечего, каким бы ни был секрет.
+    A.noise_cancellation = None
+    _env(KRISP_BVC=None)
+    assert _krisp_enabled() is False
+    assert "плагин" in _krisp_reason()
+finally:
+    A.noise_cancellation = _plugin
+    _env(KRISP_BVC=None)
+
+print("interruption thresholds + krisp: ok")
