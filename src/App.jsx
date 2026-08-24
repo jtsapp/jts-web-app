@@ -617,7 +617,13 @@ export default function App() {
     // Shadowing открывается с карточки Практики — payload несёт id урока.
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'tutor') setScreen(tutorHome)
-    else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'lessons') {
+      if (payload && payload.lessonId) {
+        setLiveLessonId(payload.lessonId)
+        requestAppFullscreen()
+        setScreen('live-lesson')
+      } else setScreen('lessons')
+    }
     else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')

@@ -134,6 +134,15 @@ export function CloseIcon({ size = 24 }) {
   )
 }
 
+export function BellIcon({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6.4 9.2a5.6 5.6 0 0 1 11.2 0c0 4.1 1.7 5.7 1.7 5.7H4.7s1.7-1.6 1.7-5.7Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M10 18.2a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function SendIcon({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
