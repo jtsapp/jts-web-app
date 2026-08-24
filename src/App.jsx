@@ -77,6 +77,16 @@ function phoneErrorKey(e) {
   return null
 }
 
+// Экраны верхнего уровня (сайдбар «Обучение»/«Практика»/«Домашняя работа»/…),
+// которые можно синхронизировать в ?screen= без доп. параметров. Экраны с
+// обязательным runtime-id (live-lesson, lesson-workspace, kingdom-interior,
+// shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
+// ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
+const PERSISTABLE_SCREENS = new Set([
+  'kingdom', 'practice', 'listening', 'homework', 'lessons',
+  'ielts', 'vocab', 'course-catalog', 'profile',
+])
+
 export default function App() {
   const { t } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
@@ -111,6 +121,15 @@ export default function App() {
     if (catalogParam) {
       setLiveWorkspaceId(catalogParam)
       setWorkspaceSource('catalog')
+    }
+    // ?live=<id> — id живого урока для «Живой урок» (диплинк
+    // ?screen=live-lesson&live=<id>). Отдельный параметр от lessonParam выше:
+    // тот наполняет liveWorkspaceId для другого экрана (lesson-workspace), а
+    // тут своё состояние — liveLessonId для LiveLessonPage.
+    const liveParam = searchParams.get('live')
+    if (liveParam) {
+      setLiveLessonId(liveParam)
+      requestAppFullscreen()
     }
     // ?level=<A1|A2|…> — королевство для kingdom-interior (диплинк
     // ?screen=kingdom-interior&level=b1). Через карту туда не попасть, пока
@@ -173,6 +192,7 @@ export default function App() {
       cancelled = true
     }
   }, [])
+
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   // Почта студента при регистрации: номер → почта → код (на почту) → пароль,
@@ -605,6 +625,31 @@ export default function App() {
   useEffect(() => {
     if (screen !== 'live-lesson') exitAppFullscreen()
   }, [screen])
+
+  // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
+  // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
+  // читает их тем же deepLink-путём, что и явный диплинк, и остаётся там же, а
+  // не на дефолтном экране роли (жалоба: во время живого урока F5 выбрасывал
+  // на главную).
+  useEffect(() => {
+    if (restoring) return
+    const url = new URL(window.location.href)
+    const hadScreen = url.searchParams.get('screen')
+    const hadLive = url.searchParams.get('live')
+    const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
+    const wantLive = isLiveLesson ? String(liveLessonId) : null
+    if (PERSISTABLE_SCREENS.has(screen) || isLiveLesson) {
+      if (hadScreen === screen && hadLive === wantLive) return
+      url.searchParams.set('screen', screen)
+      if (wantLive != null) url.searchParams.set('live', wantLive)
+      else url.searchParams.delete('live')
+    } else {
+      if (!hadScreen && !hadLive) return
+      url.searchParams.delete('screen')
+      url.searchParams.delete('live')
+    }
+    window.history.replaceState(null, '', url)
+  }, [screen, restoring, liveLessonId])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
