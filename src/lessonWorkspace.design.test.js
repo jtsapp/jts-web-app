@@ -223,10 +223,9 @@ describe('классрум — живой урок: колонки и перех
     expect(columns).toMatch(/min-height:\s*0/)
   })
 
-  it('в правой колонке топики остаются видимыми при зуме, чат не съедает их', () => {
-    expect(css).toMatch(/\.lw-live-aside > \.lw-topics\s*{[^}]*min-height:\s*140px/)
-    expect(css).toMatch(/\.lw-live-aside > \.lw-topics\s*{[^}]*max-height:\s*min\(280px/)
-    expect(css).toMatch(/\.lw-live-aside \.lw-chat\s*{[^}]*min-height:\s*160px/)
+  it('в правой колонке чат забирает оставшуюся высоту под звонком', () => {
+    expect(css).toMatch(/\.lw-live-aside \.lw-chat\s*{[^}]*min-height:\s*280px/)
+    expect(css).toMatch(/\.lw-aside \.lw-chat\s*{[^}]*min-height:\s*280px/)
   })
 
   it('sticky для колонок живого урока не используется — над экраном он не работает', () => {

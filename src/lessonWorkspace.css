@@ -999,6 +999,8 @@
   background: #fff;
   font: inherit;
   font-size: 14.5px;
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 .lw-practice__html .num {
@@ -1590,6 +1592,14 @@
 
 .lw-q--live-here:not(.lw-card) {
   padding: 10px 12px;
+}
+
+.lw-info__body input.gap.lw-q--live-here,
+.lw-practice__html input.gap.lw-q--live-here {
+  padding: 2px 8px;
+  border-color: var(--lw-student);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lw-student) 40%, transparent);
+  background: color-mix(in srgb, var(--lw-student) 12%, #fff);
 }
 
 .lw-q__prompt,
@@ -2270,6 +2280,18 @@
   min-height: 0;
 }
 
+/* Без списка топиков чат занимает место сразу под звонком. */
+.lw-aside .lw-chat {
+  flex: 1 1 auto;
+  min-height: 280px;
+}
+
+.lw-aside .lw-chat__list {
+  flex: 1 1 auto;
+  max-height: min(52vh, 480px);
+  min-height: 180px;
+}
+
 .lw-chat__head {
   margin-bottom: 10px;
   display: flex;
@@ -2650,7 +2672,7 @@
 
   .lw-live-aside .lw-chat {
     flex: 1 1 0;
-    min-height: 160px;
+    min-height: 280px;
     max-height: none;
     overflow: hidden;
   }

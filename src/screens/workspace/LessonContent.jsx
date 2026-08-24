@@ -68,6 +68,17 @@ export function practiceBlockKey(stepId, groupIndex) {
   return `${stepId ?? ''}:${groupIndex}`
 }
 
+function isLiveHere(anchorId, liveQuestionId) {
+  if (liveQuestionId == null || anchorId == null) return false
+  const a = String(anchorId)
+  const live = String(liveQuestionId)
+  return live === a || live.startsWith(`${a}-gap-`)
+}
+
+function wordBankGapPrefix(step, anchorId) {
+  return step?.id != null ? `step-${step.id}` : anchorId
+}
+
 // Центр workspace: рендерит блоки активного шага диспетчером по `block.type`.
 // `answers`/`checkedKeys`/`onAnswer`/`onCheck` прокидываются в practice-блоки:
 // сам компонент состояния не хранит, только вычисляет per-карточный ключ.
@@ -134,12 +145,21 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
           const anchorId = `block-${group.blockIndex}`
           return (
             <div
-              className={`lw-card lw-info${anchorId === liveQuestionId ? ' lw-q--live-here' : ''}`}
+              className={`lw-card lw-info${isLiveHere(anchorId, liveQuestionId) ? ' lw-q--live-here' : ''}`}
               key={i}
               data-question-id={anchorId}
             >
               {group.blocks.map((block, j) => (
-                <InfoBlock key={j} block={block} onWord={openWord} />
+                <InfoBlock
+                  key={j}
+                  block={block}
+                  onWord={openWord}
+                  answers={answers}
+                  onAnswer={onAnswer}
+                  readOnly={readOnly}
+                  liveQuestionId={liveQuestionId}
+                  gapPrefix={wordBankGapPrefix(step, anchorId)}
+                />
               ))}
             </div>
           )
@@ -150,11 +170,19 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
           const anchorId = `block-${group.blockIndex}`
           return (
             <div
-              className={`lw-card lw-info${anchorId === liveQuestionId ? ' lw-q--live-here' : ''}`}
+              className={`lw-card lw-info${isLiveHere(anchorId, liveQuestionId) ? ' lw-q--live-here' : ''}`}
               key={i}
               data-question-id={anchorId}
             >
-              <InfoBlock block={block} onWord={openWord} />
+              <InfoBlock
+                block={block}
+                onWord={openWord}
+                answers={answers}
+                onAnswer={onAnswer}
+                readOnly={readOnly}
+                liveQuestionId={liveQuestionId}
+                gapPrefix={wordBankGapPrefix(step, anchorId)}
+              />
             </div>
           )
         }
@@ -165,7 +193,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
             <div
               key={i}
               data-question-id={anchorId}
-              className={anchorId === liveQuestionId ? 'lw-q--live-here' : undefined}
+              className={isLiveHere(anchorId, liveQuestionId) ? 'lw-q--live-here' : undefined}
             >
               <PracticeBlock
                 block={block}
@@ -178,6 +206,8 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 readOnly={readOnly}
                 liveQuestionId={liveQuestionId}
                 onWord={openWord}
+                gapPrefix={wordBankGapPrefix(step, anchorId)}
+                cardAnchorId={anchorId}
               />
             </div>
           )
@@ -189,7 +219,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
           <div
             key={i}
             data-question-id={anchorId}
-            className={anchorId === liveQuestionId ? 'lw-q--live-here' : undefined}
+            className={isLiveHere(anchorId, liveQuestionId) ? 'lw-q--live-here' : undefined}
           >
             <Block
               block={block}

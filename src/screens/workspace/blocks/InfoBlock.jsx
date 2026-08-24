@@ -3,41 +3,24 @@ import { sanitizeHtml } from '../sanitizeHtml.js'
 import { reportAudio } from '../../live/audioReport.js'
 import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
 import { wrapTapWords } from '../wrapTapWords.js'
-import { bindWordBank } from '../bindWordBank.js'
+import { bindWordBank, applyWordBankAnswers } from '../bindWordBank.js'
 import TapText from '../TapText.jsx'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
-// от учителя/экстрактора. Только для чтения, без answers/checked — как
-// banner/theory. html санитизируется перед dangerouslySetInnerHTML (см.
-// sanitizeHtml.js), не дублируем эту логику здесь.
+// от учителя/экстрактора. html санитизируется перед dangerouslySetInnerHTML
+// (см. sanitizeHtml.js). Банк слов (`.wbank` + `input.gap`) — это не practice-
+// вопрос, но в live его ячейки всё равно едут тем же каналом ответов, иначе
+// преподаватель не видит, что ученик вставил, и наоборот.
 //
 // Карточки на себе не несёт: её рисует LessonContent сразу на серию соседних
-// info-блоков. Экстрактор режет тело упражнения по прямым детям `.ex-body`, и
-// инструкция, подсказка и сама разметка приезжают отдельными блоками — карточка
-// на каждый превращала шаг в стопку белых плашек (см. комментарий там).
-//
-// memo — не косметика: живой урок поллит статус/чат каждые 5с (LiveLessonPage),
-// и без него этот компонент честно ре-рендерится на каждый тик, хотя `block`
-// не менялся. Ре-рендер заново вызывает dangerouslySetInnerHTML тем же html —
-// и это ВСЁ РАВНО пересобирает поддерево через element.innerHTML = html,
-// уничтожая и создавая заново любой <audio>/<video> внутри: воспроизведение
-// сбрасывалось на 0 каждые ~5 секунд (поймано MutationObserver'ом на реальном
-// уроке — childList меняется 1:1 с интервалом поллинга). React пропускает
-// повторную запись dangerouslySetInnerHTML только когда есть prev-props для
-// сравнения; memo и даёт компоненту этот стабильный prev-render, блокируя
-// ре-рендер целиком, пока сам `block` не изменится по ссылке.
-function InfoBlock({ block, onWord }) {
+// info-блоков.
+function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix }) {
   const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
-  // Английские слова обёрнуты в .lw-tap-w для тап-перевода (см. useTapTranslate.js) —
-  // тот же приём, что читалка книг делает через split() в JSX, только здесь текст
-  // уже HTML-строка, поэтому оборачиваем DOM-обходом текстовых узлов.
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const bodyRef = useRef(null)
+  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId })
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId }
 
-  // Настоящие <audio> из разметки урока (аудирование) — репортим play/pause тем
-  // же каналом, что и TTS (см. audioReport.js), чтобы преподаватель в живом
-  // режиме слышал то же самое. play/pause не всплывают — слушаем на фазе
-  // захвата на контейнере, а не на каждом <audio> по отдельности.
   useEffect(() => {
     const root = bodyRef.current
     if (!root) return undefined
@@ -58,8 +41,26 @@ function InfoBlock({ block, onWord }) {
   useEffect(() => {
     const root = bodyRef.current
     if (!root) return undefined
-    return bindWordBank(root)
-  }, [tappableHtml])
+    const unbind = bindWordBank(root, {
+      prefix: gapPrefix,
+      get readOnly() { return !!liveRef.current.readOnly },
+      onChange: (id, value) => { if (id) liveRef.current.onAnswer?.(id, value) },
+    })
+    applyWordBankAnswers(root, liveRef.current.answers, liveRef.current.liveQuestionId, {
+      sync: true,
+      prefix: gapPrefix,
+      clearMissing: false,
+    })
+    return unbind
+  }, [tappableHtml, gapPrefix])
+
+  useEffect(() => {
+    applyWordBankAnswers(bodyRef.current, answers, liveQuestionId, {
+      sync: true,
+      prefix: gapPrefix,
+      clearMissing: false,
+    })
+  }, [answers, liveQuestionId, tappableHtml, gapPrefix])
 
   useEffect(() => {
     const root = bodyRef.current
