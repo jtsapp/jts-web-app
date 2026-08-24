@@ -3829,6 +3829,28 @@ def _turn_handling(detector: Any) -> dict[str, Any]:
     }
 
 
+def _krisp_enabled() -> bool:
+    """Включать ли Krisp BVC этой сессии.
+
+    Отдельной функцией, а не выражением в entrypoint: ровно это условие раньше
+    молча не выполнялось ни у кого (`profile.tier != "free"` при захардкоженном
+    free в токен-роуте), и проверять его хочется тестом, а не звонком.
+    """
+    if noise_cancellation is None:
+        return False
+    return (os.getenv("KRISP_BVC") or "").strip().lower() not in ("off", "0", "false")
+
+
+def _krisp_reason() -> str:
+    """Строка для лога: включён BVC или нет и почему."""
+    if noise_cancellation is None:
+        return "off — плагин livekit-plugins-noise-cancellation не установлен"
+    raw = (os.getenv("KRISP_BVC") or "").strip()
+    if not _krisp_enabled():
+        return f"off — KRISP_BVC={raw!r}"
+    return "on"
+
+
 def _attach_interruption_logging(session: AgentSession) -> None:
     """Сделать перебивания видимыми в `lk agent logs`.
 
@@ -4351,8 +4373,13 @@ async def entrypoint(ctx: JobContext):
     # Krisp BVC — платный аддон LiveKit Cloud (~$0.003/мин, то есть меньше цента
     # на 20-минутный дневной лимит одного ученика). KRISP_BVC=off выключает его
     # секретом воркера, если счёт вдруг окажется заметным.
-    krisp_env = (os.getenv("KRISP_BVC") or "").strip().lower()
-    use_krisp = noise_cancellation is not None and krisp_env not in ("off", "0", "false")
+    use_krisp = _krisp_enabled()
+    # Печатаем факт включения. В логах воркера есть строка «[livekit-nc] noise
+    # cancellation active», но это сервис LiveKit Cloud, и она приходит одинаково
+    # с BVC и без него — по ней не проверить, доехал RoomInputOptions или нет.
+    # А проверять надо: условие включения уже один раз молча не выполнялось ни у
+    # одной сессии, и заметили это только через жалобы на рваную речь.
+    logger.info("Krisp BVC: %s", _krisp_reason())
     room_input_options = (
         RoomInputOptions(noise_cancellation=noise_cancellation.BVC())
         if use_krisp
