@@ -3,14 +3,16 @@ import { sanitizeHtml } from '../sanitizeHtml.js'
 import { reportAudio } from '../../live/audioReport.js'
 import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
 import { wrapTapWords } from '../wrapTapWords.js'
-import { bindWordBank, applyWordBankAnswers } from '../bindWordBank.js'
+import { useWordBankRoot } from '../useWordBankRoot.js'
 import TapText from '../TapText.jsx'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
-// от учителя/экстрактора. html санитизируется перед dangerouslySetInnerHTML
-// (см. sanitizeHtml.js). Банк слов (`.wbank` + `input.gap`) — это не practice-
-// вопрос, но в live его ячейки всё равно едут тем же каналом ответов, иначе
-// преподаватель не видит, что ученик вставил, и наоборот.
+// от учителя/экстрактора. html санитизируется (см. sanitizeHtml.js), а в DOM
+// его ставит useWordBankRoot — не dangerouslySetInnerHTML: опрос занятия
+// каждые 5 с иначе пересобирает пропуски и стирает слова. Банк слов
+// (`.wbank` + `input.gap`) — не practice-вопрос, но в live его ячейки всё
+// равно едут тем же каналом ответов, иначе преподаватель не видит, что
+// ученик вставил, и наоборот.
 //
 // Карточки на себе не несёт: её рисует LessonContent сразу на серию соседних
 // info-блоков.
@@ -38,29 +40,7 @@ function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId,
     }
   }, [tappableHtml])
 
-  useEffect(() => {
-    const root = bodyRef.current
-    if (!root) return undefined
-    const unbind = bindWordBank(root, {
-      prefix: gapPrefix,
-      get readOnly() { return !!liveRef.current.readOnly },
-      onChange: (id, value) => { if (id) liveRef.current.onAnswer?.(id, value) },
-    })
-    applyWordBankAnswers(root, liveRef.current.answers, liveRef.current.liveQuestionId, {
-      sync: true,
-      prefix: gapPrefix,
-      clearMissing: false,
-    })
-    return unbind
-  }, [tappableHtml, gapPrefix])
-
-  useEffect(() => {
-    applyWordBankAnswers(bodyRef.current, answers, liveQuestionId, {
-      sync: true,
-      prefix: gapPrefix,
-      clearMissing: false,
-    })
-  }, [answers, liveQuestionId, tappableHtml, gapPrefix])
+  useWordBankRoot(bodyRef, tappableHtml, gapPrefix, liveRef)
 
   useEffect(() => {
     const root = bodyRef.current
@@ -81,7 +61,7 @@ function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId,
   return (
     <div className="lw-info__item">
       {block?.title && <TapText as="h3" className="lw-info__title" text={block.title} onWord={onWord} />}
-      {html && <div className="lw-info__body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: tappableHtml }} />}
+      {html && <div className="lw-info__body" ref={bodyRef} />}
     </div>
   )
 }

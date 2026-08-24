@@ -125,6 +125,24 @@ function setGapWord(gap, word) {
 }
 
 /**
+ * Put `html` into `root` only when the markup/prefix changed, or when a
+ * parent re-render wiped the gaps (React `dangerouslySetInnerHTML` and
+ * Angular `[innerHTML]` both replace the subtree and drop input values).
+ * Returns true if the DOM was replaced and must be rebound.
+ */
+export function restampWordBankHtml(root, html, prefix, stampRef) {
+  if (!root) return false
+  const stamp = `${prefix ?? ''}::${html ?? ''}`
+  const expectGaps = typeof html === 'string' && /\bclass=["'][^"']*\bgap\b/.test(html)
+  const wiped = expectGaps && !root.querySelector(GAP)
+  const empty = !!html && !root.firstChild
+  if (stampRef.current === stamp && !wiped && !empty) return false
+  root.innerHTML = html || ''
+  stampRef.current = stamp
+  return true
+}
+
+/**
  * Paint gap values from the live answers map and mark the live gap.
  * `sync` false — only the live outline (teacher sandbox with no student yet).
  * `clearMissing` false — do not empty a gap whose key is not in `answers`

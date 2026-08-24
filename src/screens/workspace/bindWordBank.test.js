@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
-import { bindWordBank, applyWordBankAnswers } from './bindWordBank.js'
+import { bindWordBank, applyWordBankAnswers, restampWordBankHtml } from './bindWordBank.js'
 
 function mount() {
   const root = document.createElement('div')
@@ -223,5 +223,42 @@ describe('bindWordBank', () => {
     unbindBank()
     rebind()
     step.remove()
+  })
+
+  it('restampWordBankHtml keeps filled gaps until the markup is actually wiped', () => {
+    const root = document.createElement('div')
+    const html = '<input class="gap"><input class="gap">'
+    const stamp = { current: '' }
+    expect(restampWordBankHtml(root, html, 'step-1', stamp)).toBe(true)
+    root.querySelector('input.gap').value = 'kept'
+    expect(restampWordBankHtml(root, html, 'step-1', stamp)).toBe(false)
+    expect(root.querySelector('input.gap').value).toBe('kept')
+    root.innerHTML = ''
+    expect(restampWordBankHtml(root, html, 'step-1', stamp)).toBe(true)
+    expect(root.querySelectorAll('input.gap')).toHaveLength(2)
+    root.remove()
+  })
+
+  it('rebind after unbind still accepts chip clicks', () => {
+    const { root, unbind } = mount()
+    unbind()
+    const again = bindWordBank(root)
+    const chip = root.querySelector('.wchip')
+    chip.click()
+    expect(chip.classList.contains('on')).toBe(true)
+    again()
+    root.remove()
+  })
+
+  it('paints an empty string into a gap even when clearMissing is false', () => {
+    const { root, unbind } = mount()
+    const gap = root.querySelector('input.gap')
+    const id = gap.getAttribute('data-question-id')
+    applyWordBankAnswers(root, { [id]: 'hit it off' }, null, { sync: true, clearMissing: false })
+    expect(gap.value).toBe('hit it off')
+    applyWordBankAnswers(root, { [id]: '' }, null, { sync: true, clearMissing: false })
+    expect(gap.value).toBe('')
+    unbind()
+    root.remove()
   })
 })

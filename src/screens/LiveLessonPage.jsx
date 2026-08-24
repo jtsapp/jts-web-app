@@ -29,6 +29,7 @@ import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { knowsFocusTarget } from './live/followFocus.js'
+import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
@@ -260,7 +261,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Через useMemo, а не выражением: пустой массив создавался бы заново на каждый
   // рендер и обнулял мемоизацию статусов ниже.
   const lessonSteps = useMemo(() => catalogLesson?.steps || [], [catalogLesson])
-  const activeStepIndex = lessonSteps.findIndex((s) => s.id === activeStepId)
+  const activeStepIndex = lessonSteps.findIndex((s) => String(s.id) === String(activeStepId))
   const activeStep = activeStepIndex >= 0 ? lessonSteps[activeStepIndex] : null
 
   // Статусы шагов урока: текущий — активный, пройденные — до него, остальные
@@ -374,7 +375,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   })
 
   function refreshMessages() {
-    getLessonMessages(token, lessonId).then(setMessages).catch(() => {})
+    getLessonMessages(token, lessonId)
+      .then((list) => {
+        setMessages((prev) => (sameMessageSnapshot(prev, list) ? prev : list))
+      })
+      .catch(() => {})
   }
 
   function handleSendMessage(text) {
@@ -397,8 +402,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setTab('lesson')
     followModeRef.current = true
     setFollowMode(true)
-    if (evt.sectionId != null) setActiveSectionId(evt.sectionId)
-    if (evt.materialId != null) setActiveMaterialId(evt.materialId)
+    if (evt.sectionId != null && evt.sectionId !== activeSectionId) setActiveSectionId(evt.sectionId)
+    if (evt.materialId != null && evt.materialId !== activeMaterialId) setActiveMaterialId(evt.materialId)
     if (evt.stepId != null) {
       pendingFocusStepRef.current = evt.stepId
       // Same step as a different type (`3` vs `"3"`) remounts LessonContent
@@ -477,12 +482,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // застывшего экрана. Пока следование включено, каждый следующий шаг
       // преподавателя переносит и сюда — до тех пор, пока студент сам не
       // сменит раздел (см. selectSection, где followMode гасится).
-      if (!isStaff && evt.senderRole !== 'STUDENT' && (evt.stepId != null || evt.questionId != null)) {
-        applyTeacherPointer(evt)
+      if (!isStaff && evt.senderRole !== 'STUDENT') {
+        // Teacher filled a word-bank gap (or corrected an answer) — apply it
+        // here. A remount via applyTeacherPointer would wipe the uncontrolled
+        // inputs before this paint, so only follow the teacher when the STEP
+        // actually changes; a fill on this cloze just updates the highlight.
+        if (evt.questionId != null && evt.value != null) {
+          handleAnswer(evt.questionId, parseAnswer(evt.value))
+        }
+        if (evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
+          applyTeacherPointer(evt)
+        } else if (evt.questionId != null) {
+          setFocusTargetId(String(evt.questionId))
+        }
       }
-      // Ответы бывают только ученические: преподаватель за ученика не отвечает
-      // (см. readOnly в ChoiceQuestion), и «ответ преподавателя» означал бы,
-      // что где-то разъехались роли.
+      // Practice answers from classmates stay on the staff topic. Teacher
+      // word-bank fills arrive above (value + non-STUDENT role) on the class
+      // topic so the student can paint them without a selected-student gate.
       if (evt.senderRole !== 'STUDENT' || evt.senderUserId == null) return
       // Групповой урок — событие может прийти от ЛЮБОГО студента, не только
       // от того, кого сейчас просматривает преподаватель: пишем в его личную
@@ -526,7 +542,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       const questionIds = evt.questionIds || []
       const checkedKeys = evt.checkedKeys || []
       const nextAnswers = { ...answersRef.current }
-      questionIds.forEach((id) => { delete nextAnswers[id] })
+      // Empty string, not delete: word-bank apply uses clearMissing: false,
+      // so a missing key would leave the filled gap on screen.
+      questionIds.forEach((id) => { nextAnswers[id] = '' })
       answersRef.current = nextAnswers
       const nextChecked = new Set(checkedSteps)
       questionIds.forEach((id) => nextChecked.delete(id))
@@ -761,7 +779,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   function load() {
     return getLessonById(token, lessonId)
-      .then((data) => { setLesson(data); setState('ready') })
+      .then((data) => {
+        setLesson((prev) => (sameLessonSnapshot(prev, data) ? prev : data))
+        setState('ready')
+      })
       .catch(() => setState('error'))
   }
 
@@ -771,7 +792,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // No STOMP status topic exists; a student polls so "teacher started" appears on its own.
     if (!isStaff) {
       pollRef.current = setInterval(() => {
-        getLessonById(token, lessonId).then((d) => { setLesson(d); setState('ready') }).catch(() => {})
+        getLessonById(token, lessonId).then((d) => {
+          setLesson((prev) => (sameLessonSnapshot(prev, d) ? prev : d))
+          setState((s) => (s === 'ready' ? s : 'ready'))
+        }).catch(() => {})
       }, 5000)
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current) }

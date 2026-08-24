@@ -10,7 +10,7 @@ import MultiQuestion from '../practice/MultiQuestion.jsx'
 import PickQuestion from '../practice/PickQuestion.jsx'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 import { wrapTapWords } from '../wrapTapWords.js'
-import { bindWordBank, applyWordBankAnswers } from '../bindWordBank.js'
+import { useWordBankRoot } from '../useWordBankRoot.js'
 import { reportAudio } from '../../live/audioReport.js'
 import { hasAttempt } from '../practiceGrading.js'
 import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
@@ -43,29 +43,7 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
   const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId })
   liveRef.current = { onAnswer, readOnly, answers, liveQuestionId }
 
-  useEffect(() => {
-    const root = htmlRef.current
-    if (!root) return undefined
-    const unbind = bindWordBank(root, {
-      prefix: gapPrefix,
-      get readOnly() { return !!liveRef.current.readOnly },
-      onChange: (id, value) => { if (id) liveRef.current.onAnswer?.(id, value) },
-    })
-    applyWordBankAnswers(root, liveRef.current.answers, liveRef.current.liveQuestionId, {
-      sync: true,
-      prefix: gapPrefix,
-      clearMissing: false,
-    })
-    return unbind
-  }, [tappableHtml, gapPrefix])
-
-  useEffect(() => {
-    applyWordBankAnswers(htmlRef.current, answers, liveQuestionId, {
-      sync: true,
-      prefix: gapPrefix,
-      clearMissing: false,
-    })
-  }, [answers, liveQuestionId, tappableHtml, gapPrefix])
+  useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
   useEffect(() => {
     const root = htmlRef.current
@@ -115,13 +93,7 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
       {block?.audio?.src && (
         <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
       )}
-      {html && (
-        <div
-          className="lw-practice__html"
-          ref={htmlRef}
-          dangerouslySetInnerHTML={{ __html: tappableHtml }}
-        />
-      )}
+      {html && <div className="lw-practice__html" ref={htmlRef} />}
 
       <div className="lw-practice__list">
         {(block?.questions || []).map((question) => {
