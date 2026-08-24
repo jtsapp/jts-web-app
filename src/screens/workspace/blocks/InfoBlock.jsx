@@ -1,6 +1,10 @@
 import { memo, useEffect, useMemo, useRef } from 'react'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 import { reportAudio } from '../../live/audioReport.js'
+import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
+import { wrapTapWords } from '../wrapTapWords.js'
+import { bindWordBank } from '../bindWordBank.js'
+import TapText from '../TapText.jsx'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
 // от учителя/экстрактора. Только для чтения, без answers/checked — как
@@ -22,8 +26,12 @@ import { reportAudio } from '../../live/audioReport.js'
 // повторную запись dangerouslySetInnerHTML только когда есть prev-props для
 // сравнения; memo и даёт компоненту этот стабильный prev-render, блокируя
 // ре-рендер целиком, пока сам `block` не изменится по ссылке.
-function InfoBlock({ block }) {
+function InfoBlock({ block, onWord }) {
   const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
+  // Английские слова обёрнуты в .lw-tap-w для тап-перевода (см. useTapTranslate.js) —
+  // тот же приём, что читалка книг делает через split() в JSX, только здесь текст
+  // уже HTML-строка, поэтому оборачиваем DOM-обходом текстовых узлов.
+  const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const bodyRef = useRef(null)
 
   // Настоящие <audio> из разметки урока (аудирование) — репортим play/pause тем
@@ -45,14 +53,34 @@ function InfoBlock({ block }) {
       root.removeEventListener('play', onPlay, true)
       root.removeEventListener('pause', onPause, true)
     }
-  }, [html])
+  }, [tappableHtml])
+
+  useEffect(() => {
+    const root = bodyRef.current
+    if (!root) return undefined
+    return bindWordBank(root)
+  }, [tappableHtml])
+
+  useEffect(() => {
+    const root = bodyRef.current
+    if (!root || !onWord) return undefined
+    const onClick = (e) => {
+      if (e.target?.tagName !== 'SPAN' || !e.target.classList.contains('lw-tap-w')) return
+      const selected = window.getSelection()?.toString() || ''
+      if (isPhraseSelection(selected) || isOversizedPhrase(selected)) return
+      e.stopPropagation()
+      onWord(wordFromTap(e.target), e.target)
+    }
+    root.addEventListener('click', onClick)
+    return () => root.removeEventListener('click', onClick)
+  }, [tappableHtml, onWord])
 
   if (!html && !block?.title) return null
 
   return (
     <div className="lw-info__item">
-      {block?.title && <h3 className="lw-info__title">{block.title}</h3>}
-      {html && <div className="lw-info__body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: html }} />}
+      {block?.title && <TapText as="h3" className="lw-info__title" text={block.title} onWord={onWord} />}
+      {html && <div className="lw-info__body" ref={bodyRef} dangerouslySetInnerHTML={{ __html: tappableHtml }} />}
     </div>
   )
 }

@@ -1,11 +1,12 @@
 import { useI18n } from '../../i18n.jsx'
-import { lessonStateKey, lessonTimeRange, canJoin } from './lessonFormat.js'
+import { lessonStateKey, lessonTimeRange, canJoin, canOpen } from './lessonFormat.js'
 import MeetLink from './MeetLink.jsx'
 
 export default function LessonRow({ occ, meetingUrl, onOpenLesson }) {
   const { t, lang } = useI18n()
   const stateKey = lessonStateKey(occ)
   const joinable = canJoin(occ.lessonStatus)
+  const openable = canOpen(occ.lessonStatus)
   const format = (occ.format || 'ONLINE').toLowerCase()
 
   return (
@@ -29,9 +30,9 @@ export default function LessonRow({ occ, meetingUrl, onOpenLesson }) {
           )}
         </div>
       </div>
-      {joinable && (
+      {openable && (
         <button type="button" className="sch-row__join" onClick={() => onOpenLesson(occ.lessonId)}>
-          {t('schedule.join')}
+          {joinable ? t('schedule.join') : t('schedule.viewLesson')}
         </button>
       )}
     </div>

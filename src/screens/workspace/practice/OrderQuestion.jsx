@@ -1,6 +1,7 @@
 import { useI18n } from '../../../i18n.jsx'
-import { gradeQuestion } from '../practiceGrading.js'
+import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
+import TapText from '../TapText.jsx'
 
 /**
  * Слова банка, ещё не поставленные в предложение: жадно вычёркиваем из
@@ -26,12 +27,13 @@ function bankIndices(words, answer) {
 // предложения; клик по слову в предложении откатывает всё ПОСЛЕ него тоже
 // (включая само слово) — простое и всегда однозначное правило, в отличие от
 // удаления одного слова из середины при повторяющихся словах в банке.
-export default function OrderQuestion({ question, answer, checked, onAnswer, readOnly }) {
+export default function OrderQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const words = question?.words || []
   const built = Array.isArray(answer) ? answer : []
   const used = bankIndices(words, built)
   const done = built.length === words.length
+  const attempted = hasAttempt(question, built)
   const correct = done && gradeQuestion(question, built).correct
 
   function pick(word, index) {
@@ -45,11 +47,11 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
   }
 
   let sentenceCls = 'lw-order__sentence'
-  if (checked) sentenceCls += correct ? ' is-correct' : ' is-wrong'
+  if (checked && attempted) sentenceCls += correct ? ' is-correct' : ' is-wrong'
 
   return (
     <div className="lw-q lw-q--order">
-      {question?.prompt && <p className="lw-q__prompt">{question.prompt}</p>}
+      {question?.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
       {!checked && <p className="lw-order__hint">{t('lesson.ws.orderHint')}</p>}
 
       <div className={sentenceCls} role="group" aria-label={question?.prompt}>
@@ -91,7 +93,7 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
         })}
       </div>
 
-      {checked && !correct && (
+      {checked && attempted && !correct && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answer || []).join(' ')}
         </p>

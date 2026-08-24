@@ -16,12 +16,12 @@ import { wsBase } from '../../lib/wsUrl.js'
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
-  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset })
-  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset } })
+  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast })
+  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -46,6 +46,14 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
         })
         client.subscribe(`/topic/lesson/${lessonId}/sections-changed`, () => {
           handlersRef.current.onSectionsChanged?.()
+        })
+        // Учитель транслирует аудио всему классу ("Транслировать классу") — лесson-wide
+        // топик, как и позиция учителя в step-progress. Своё эхо глушим тем же приёмом,
+        // что и focus/present: у teacher-клиента звук уже играет локально по клику.
+        client.subscribe(`/topic/lesson/${lessonId}/audio`, (m) => {
+          const evt = parse(m.body)
+          if (!evt || evt.senderUserId === selfUserId) return
+          handlersRef.current.onAudioBroadcast?.(evt)
         })
         // Урок каталога, открытый шагами: где стоит собеседник и что он ответил.
         // Своё эхо глушим здесь же — иначе ответ ученика вернулся бы ему извне и
@@ -86,8 +94,8 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   }, [lessonId])
 
   // Учитель: указать всем, на какой раздел/материал/шаг смотреть.
-  const sendFocus = useCallback((sectionId, materialId, stepId = null) => {
-    publish('focus', { sectionId, materialId, stepId })
+  const sendFocus = useCallback((sectionId, materialId, stepId = null, questionId = null) => {
+    publish('focus', { sectionId, materialId, stepId, questionId })
   }, [publish])
   // Студент: передать одно захваченное действие внутри материала.
   const sendMirror = useCallback((materialId, event) => publish('material-mirror', { materialId, ...event }), [publish])

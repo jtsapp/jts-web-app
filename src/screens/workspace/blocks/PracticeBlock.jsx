@@ -1,4 +1,6 @@
+import { useEffect, useMemo, useRef } from 'react'
 import { useI18n } from '../../../i18n.jsx'
+import TapText from '../TapText.jsx'
 import ChoiceQuestion from '../practice/ChoiceQuestion.jsx'
 import ChipsQuestion from '../practice/ChipsQuestion.jsx'
 import GapQuestion from '../practice/GapQuestion.jsx'
@@ -6,6 +8,12 @@ import MatchQuestion from '../practice/MatchQuestion.jsx'
 import OrderQuestion from '../practice/OrderQuestion.jsx'
 import MultiQuestion from '../practice/MultiQuestion.jsx'
 import PickQuestion from '../practice/PickQuestion.jsx'
+import { sanitizeHtml } from '../sanitizeHtml.js'
+import { wrapTapWords } from '../wrapTapWords.js'
+import { bindWordBank } from '../bindWordBank.js'
+import { reportAudio } from '../../live/audioReport.js'
+import { hasAttempt } from '../practiceGrading.js'
+import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -17,30 +25,89 @@ const QUESTION_BY_TYPE = {
   pick: PickQuestion,
 }
 
-// Карточка практики: заголовок + подсказка, список вопросов, кнопка
-// «Проверить» внизу. `checked` — уже вычисленный родителем флаг для ЭТОЙ
-// карточки (см. `practiceBlockKey` в LessonContent) — прокидывается в вопросы
-// как есть. Повторное нажатие «Проверить» разрешено (просто снова вызывает
-// `onCheck(block)`; чей это ключ — знает только родитель).
-export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId }) {
+// Карточка практики: заголовок + инструкция/аудио/правило + список вопросов.
+// `checked` — флаг всей карточки; `checkedKeys`/`cardKey` нужны, чтобы
+// после сброса одного вопроса остальными нельзя было снова тыкать.
+export default function PracticeBlock({ block, answers, checked, checkedKeys, cardKey, onAnswer, onCheck, readOnly, liveQuestionId, onWord }) {
+  function questionChecked(question) {
+    if (checkedKeys?.has(question.id)) return true
+    if (cardKey && checkedKeys?.has(cardKey)) return true
+    return !!checked
+  }
   const { t } = useI18n()
+  const canCheck = (block?.questions || []).some((q) => hasAttempt(q, answers?.[q.id]))
+  const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
+  const tappableHtml = useMemo(() => wrapTapWords(html), [html])
+  const htmlRef = useRef(null)
+  const audioRef = useRef(null)
+
+  useEffect(() => {
+    const root = htmlRef.current
+    if (!root) return undefined
+    return bindWordBank(root)
+  }, [tappableHtml])
+
+  useEffect(() => {
+    const root = htmlRef.current
+    if (!root || !onWord) return undefined
+    const onClick = (e) => {
+      if (e.target?.tagName !== 'SPAN' || !e.target.classList.contains('lw-tap-w')) return
+      const selected = window.getSelection()?.toString() || ''
+      if (isPhraseSelection(selected) || isOversizedPhrase(selected)) return
+      e.stopPropagation()
+      onWord(wordFromTap(e.target), e.target)
+    }
+    root.addEventListener('click', onClick)
+    return () => root.removeEventListener('click', onClick)
+  }, [tappableHtml, onWord])
+
+  useEffect(() => {
+    const nodes = [audioRef.current, htmlRef.current].filter(Boolean)
+    if (!nodes.length) return undefined
+    const report = (action) => (e) => {
+      if (e.target?.tagName !== 'AUDIO') return
+      reportAudio({ kind: 'file', action, url: e.target.currentSrc || e.target.src })
+    }
+    const onPlay = report('play')
+    const onPause = report('stop')
+    nodes.forEach((node) => {
+      node.addEventListener('play', onPlay, true)
+      node.addEventListener('pause', onPause, true)
+    })
+    return () => {
+      nodes.forEach((node) => {
+        node.removeEventListener('play', onPlay, true)
+        node.removeEventListener('pause', onPause, true)
+      })
+    }
+  }, [tappableHtml, block?.audio?.src])
 
   return (
     <div className="lw-card lw-practice">
       <div className="lw-practice__head">
-        {block?.title && <h3 className="lw-practice__title">{block.title}</h3>}
-        {block?.hint && <p className="lw-practice__hint">{block.hint}</p>}
+        {block?.title && <TapText as="h3" className="lw-practice__title" text={block.title} onWord={onWord} />}
+        {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
       </div>
+
+      {block?.instruction && (
+        <TapText as="p" className="lw-practice__instruction" text={block.instruction} onWord={onWord} />
+      )}
+      {block?.audio?.src && (
+        <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
+      )}
+      {html && (
+        <div
+          className="lw-practice__html"
+          ref={htmlRef}
+          dangerouslySetInnerHTML={{ __html: tappableHtml }}
+        />
+      )}
 
       <div className="lw-practice__list">
         {(block?.questions || []).map((question) => {
           const Question = QUESTION_BY_TYPE[question.type]
           if (!Question) return null
           return (
-            // data-question-id — якорь для двух вещей на разных концах: у
-            // ученика по нему live-трекер (useActiveQuestionTracker) считает,
-            // какой вопрос сейчас в кадре; у смотрящего преподавателя по нему
-            // же ищет, куда проскроллить (см. эффект в LessonContent).
             <div
               key={question.id}
               data-question-id={question.id}
@@ -49,19 +116,24 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
               <Question
                 question={question}
                 answer={answers?.[question.id] ?? null}
-                checked={checked}
+                checked={questionChecked(question)}
                 onAnswer={onAnswer}
                 readOnly={readOnly}
+                onWord={onWord}
               />
             </div>
           )
         })}
       </div>
 
-      {/* Смотрящему кнопка не нужна: проверяет свою работу тот, кто её делает,
-          а чужую «Проверить» нажимать нечем — ответы приходят зеркалом. */}
-      {!readOnly && (
-        <button type="button" className="lw-practice__check" onClick={() => onCheck(block)}>
+      {!readOnly && (block?.questions || []).length > 0 && (
+        <button
+          type="button"
+          className="lw-practice__check"
+          disabled={!canCheck}
+          title={canCheck ? undefined : t('lesson.ws.checkNeedAnswer')}
+          onClick={() => canCheck && onCheck(block)}
+        >
           {t('lesson.ws.check')}
         </button>
       )}

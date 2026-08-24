@@ -7,8 +7,8 @@ const SECTIONS = [
 ]
 
 describe('knowsFocusTarget', () => {
-  it('знает раздел и материал, которые уже загружены', () => {
-    expect(knowsFocusTarget(SECTIONS, { sectionId: 1, materialId: 3 })).toBe(true)
+  it('сравнивает id как строки — STOMP и REST часто дают number vs string', () => {
+    expect(knowsFocusTarget(SECTIONS, { sectionId: '1', materialId: '3' })).toBe(true)
   })
 
   it('не знает материал, прикреплённый после загрузки разделов', () => {

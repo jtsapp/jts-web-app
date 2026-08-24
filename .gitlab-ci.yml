@@ -2,7 +2,12 @@ variables:
   GITLAB_RUNNER_TAG: justtostudy.kz
   GIT_STRATEGY: fetch
   GIT_CHECKOUT: fetch
-  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_COMMIT_BRANCH/$CI_PIPELINE_ID/$CI_PROJECT_NAME'
+  # Без $CI_PIPELINE_ID: с ним каждый пайплайн получал новую папку на диске
+  # раннера, GIT_STRATEGY: fetch не мог её переиспользовать (fetch'ить
+  # нечего — папка каждый раз пустая), и старые чекауты копились вечно —
+  # 34ГБ на сервере набежало именно так. Одна папка на ветку — раннер сам
+  # дотягивает изменения в неё, как и задумывает fetch.
+  GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_COMMIT_BRANCH/$CI_PROJECT_NAME'
 
 stages:
   - deploy
@@ -43,12 +48,19 @@ deploy:
     - main
 
 trash:
-  when: manual
   tags:
     - $GITLAB_RUNNER_TAG
   stage: trash
   script:
-    - docker system prune -f --all --filter "until=720h"
+    # until=720h (30 дней) на build cache не освобождал ничего: при частых
+    # деплоях кэш не доживает до месяца — проверено на сервере вживую
+    # (0B reclaimed). Кэш чистим без пощады к возрасту, образы/контейнеры —
+    # только старше суток, с запасом на откат.
+    - docker builder prune -a -f
+    - docker system prune -f --all --filter "until=24h"
+  only:
+    - develop
+    - main
 
 after_script:
   - echo "End CI"

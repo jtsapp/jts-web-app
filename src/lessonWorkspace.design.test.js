@@ -223,9 +223,10 @@ describe('классрум — живой урок: колонки и перех
     expect(columns).toMatch(/min-height:\s*0/)
   })
 
-  it('в правой колонке топики ограничены по высоте, чат не схлопывается', () => {
-    expect(css).toMatch(/\.lw-live-aside > \.lw-topics\s*{[^}]*max-height:\s*min\(220px/)
-    expect(css).toMatch(/\.lw-live-aside \.lw-chat\s*{[^}]*min-height:\s*280px/)
+  it('в правой колонке топики остаются видимыми при зуме, чат не съедает их', () => {
+    expect(css).toMatch(/\.lw-live-aside > \.lw-topics\s*{[^}]*min-height:\s*140px/)
+    expect(css).toMatch(/\.lw-live-aside > \.lw-topics\s*{[^}]*max-height:\s*min\(280px/)
+    expect(css).toMatch(/\.lw-live-aside \.lw-chat\s*{[^}]*min-height:\s*160px/)
   })
 
   it('sticky для колонок живого урока не используется — над экраном он не работает', () => {
@@ -263,5 +264,17 @@ describe('классрум — доступность', () => {
 
   it('анимации выключаются при prefers-reduced-motion', () => {
     expect(css).toMatch(/@media\s*\(prefers-reduced-motion:\s*reduce\)/)
+  })
+})
+
+describe('токены доступны там, где рисуется практика', () => {
+  it('объявлены на всех корнях, включая задания домашней работы', () => {
+    // Компоненты практики переиспользуются в «Домашней работе»: задание, взятое
+    // с урока, должно выглядеть как на уроке. Токены объявлены на корнях, поэтому
+    // новый корень обязан быть в том же объявлении — иначе карточка останется
+    // без фона и отступов, а заметят это только глазами.
+    const roots = css.match(/\.lw,\s*\.live,\s*\.hw-exercises\s*\{/)
+
+    expect(roots).not.toBeNull()
   })
 })

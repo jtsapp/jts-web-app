@@ -29,6 +29,22 @@ import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
 
 export const runtime = 'nodejs'
 
+// Адрес ЭТОГО стенда. Уезжает в метаданные комнаты, чтобы общий на дев и прод
+// агент писал память и звонки туда, откуда пришёл токен, а не туда, куда
+// смотрит его собственный JTS_API_URL. Без этого всё, что агент писал на деве
+// (log_fact/log_topic/log_mistake и call_log), молча ложилось в прод-базу:
+// дев-история звонков была пуста всегда (поймано 21.08.2026).
+//
+// Пусто → поле не шлём вовсе, агент остаётся на своём JTS_API_URL. Значит на
+// проде переменную можно не заводить: поведение прежнее.
+//
+// BOM вырезаем как везде: значение из Windows-пайпа приходит с U+FEFF и ломает
+// URL (инцидент с BACKEND_URL 17.07.2026).
+const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || '')
+  .replace(/^\uFEFF/, '')
+  .trim()
+  .replace(/\/+$/, '')
+
 // Ключи UI → id персон в agent.py. У Джарвиса имя совпадает, и строка тут
 // формально лишняя (ниже стоит `|| p.tutor`), но без неё таблица врёт: она
 // читается как полный список тьюторов, которых знает агент.
@@ -75,6 +91,9 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
     // SESSION_CAP_SEC не списывались (см. usage.js).
     sessionTtlSec: ttl,
   }
+  // Куда агенту писать. Значение из НАШЕГО env, не из тела запроса — клиент на
+  // него не влияет; агент вдобавок сверяет хост со своим JTS_API_URL.
+  if (APP_PUBLIC_URL) meta.apiUrl = APP_PUBLIC_URL
   // Именно resolveProfileId, а не p.deviceId из тела: у залогиненного это
   // user-<id>, и агент запишет память в аккаунт, а не в device-корзину.
   if (profileId) meta.deviceId = profileId

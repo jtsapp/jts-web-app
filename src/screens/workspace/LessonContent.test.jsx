@@ -141,11 +141,14 @@ describe('LessonContent — карточки шага', () => {
     const GAP1 = { type: 'practice', title: 'P1', questions: [{ id: 'g1', type: 'gap', gapBefore: 'I like', gapAfter: '.', answers: ['coffee'] }] }
     const GAP2 = { type: 'practice', title: 'P2', questions: [{ id: 'g2', type: 'gap', gapBefore: 'I see', gapAfter: '.', answers: ['you'] }] }
 
-    const { container } = renderContent([GAP1, GAP2], { onCheck })
+    const { container } = renderContent([GAP1, GAP2], {
+      onCheck,
+      answers: { g1: 'coffee', g2: 'you' },
+    })
     const checkButtons = container.querySelectorAll('.lw-practice__check')
     fireEvent.click(checkButtons[1])
 
-    expect(onCheck).toHaveBeenCalledWith(practiceBlockKey(undefined, 1))
+    expect(onCheck).toHaveBeenCalledWith(practiceBlockKey(undefined, 1), ['g2'])
   })
 
   it('theory и banner не сливаются с info', () => {
@@ -174,6 +177,71 @@ describe('LessonContent — карточки шага', () => {
     expect(container.textContent).toContain('friendship')
     expect(container.textContent).toContain('get on (well with someone)')
     expect(container.querySelectorAll('.lw-vcard')).toHaveLength(2)
+  })
+
+  it('склеивает инструкцию, аудио и вопрос в одну practice-карточку', () => {
+    const { container } = renderContent([
+      {
+        type: 'practice',
+        title: 'Grammar',
+        instruction: 'Choose the right form.',
+        audio: { src: 'https://example.test/clip.mp3' },
+        html: '<div class="gconcept">With I we say I’m.</div>',
+        questions: [{ id: 'q1', type: 'choice', prompt: 'I ___ Anna.', options: ["'m", 'are'], answer: "'m" }],
+      },
+    ])
+    expect(container.querySelectorAll('.lw-practice')).toHaveLength(1)
+    expect(container.querySelectorAll('.lw-info')).toHaveLength(0)
+    expect(container.querySelector('.lw-practice__instruction').textContent).toContain('Choose the right form')
+    expect(container.querySelector('.lw-practice__audio').getAttribute('src')).toContain('clip.mp3')
+    expect(container.querySelector('.lw-practice__html').textContent).toContain('I’m')
+  })
+
+  it('рисует writing одним полем, а не стопкой info', () => {
+    const { container } = renderContent([
+      {
+        type: 'writing',
+        instruction: 'Write five sentences.',
+        placeholder: '1.',
+        html: '<div class="bubble">Model</div>',
+      },
+    ])
+    expect(container.querySelectorAll('.lw-writing')).toHaveLength(1)
+    expect(container.querySelector('.lw-practice__instruction').textContent).toContain('Write five sentences')
+    expect(container.querySelector('.lw-writing__field').getAttribute('placeholder')).toBe('1.')
+  })
+
+  it('текст writing уходит преподавателю, а не остаётся только на устройстве', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderContent(
+      [{ type: 'writing', id: 'wr-w0', instruction: 'Write.', placeholder: '1.' }],
+      { onAnswer },
+    )
+    fireEvent.change(container.querySelector('.lw-writing__field'), { target: { value: 'Friendship is real.' } })
+    expect(onAnswer).toHaveBeenCalledWith('wr-w0', 'Friendship is real.')
+  })
+
+  it('рисует speaking одной карточкой с шагами', () => {
+    const { container } = renderContent([
+      {
+        type: 'speaking',
+        taskDescription: 'Say hello to your teacher.',
+        steps: ['Greet', 'Say your name'],
+        hasRecorder: true,
+      },
+    ])
+    expect(container.querySelectorAll('.lw-speaking')).toHaveLength(1)
+    expect(container.textContent).toContain('Say hello to your teacher')
+    expect(container.textContent).toContain('Greet')
+  })
+
+  it('«Проверить» без ответа не нажимается — иначе зелёный ключ выглядит как успех', () => {
+    const onCheck = vi.fn()
+    const { container } = renderContent([PRACTICE], { onCheck })
+    const btn = container.querySelector('.lw-practice__check')
+    expect(btn.disabled).toBe(true)
+    fireEvent.click(btn)
+    expect(onCheck).not.toHaveBeenCalled()
   })
 
   it('рисует чек-лист «You can now…», а не выкидывает неизвестный тип', () => {

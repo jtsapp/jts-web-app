@@ -553,8 +553,52 @@
   .vc .v-ob-h, .vc .v-setup-title{ font-size:22px }
   .vc .v-fld-hd .v-fld-tt, .vc .v-ovw-hd .v-ovw-tt{ font-size:21px }
 }
-@media(prefers-reduced-motion:reduce){
-  .vc *{animation:none!important; transition-duration:.01ms!important}
+.vc .v-lv-list{ list-style:none; margin:0 0 18px; padding:0; display:flex; flex-direction:column; gap:8px }
+.vc .v-lv-card{
+  display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+  padding:12px 14px; border-radius:var(--r); background:#fff; border:1.5px solid var(--line);
+  box-shadow:var(--shadow-sm)
+}
+.vc .v-lv-card:hover:not(:disabled){ border-color:var(--line-hover) }
+.vc .v-lv-card:disabled{ opacity:.55; cursor:default }
+.vc .v-lv-code{
+  flex:none; min-width:52px; padding:4px 10px; border-radius:999px; text-align:center;
+  background:var(--violet-50); color:var(--violet-700); font-size:12px; font-weight:800
+}
+.vc .v-lv-meta{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px }
+.vc .v-lv-meta b{ font-size:15px; color:var(--ink) }
+.vc .v-lv-meta span{ font-size:12.5px; color:var(--ink-60) }
+.vc .v-lv-cycle{ flex:none; font-size:12px; font-weight:800; color:var(--violet-700) }
+.vc .v-lv-cycle.is-done{ color:var(--green) }
+.vc .v-lv-state{ color:var(--ink-60); font-size:14px; margin:12px 0 }
+.vc .v-lv-preview{ list-style:none; margin:0 0 18px; padding:0; display:flex; flex-direction:column; gap:8px }
+.vc .v-lv-preview li{
+  display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  padding:12px 14px; border-radius:var(--r); background:#fff; border:1.5px solid var(--line)
+}
+.vc .v-lv-preview b{ font-size:16px; color:var(--ink) }
+.vc .v-lv-preview span{ font-size:14px; color:var(--ink-60); text-align:right }
+.vc .v-oxford-link{ margin-top:8px }
+.vc .v-lessons-link{ margin:12px 0 20px }
+.vc .v-lessons-back{ margin:0 0 12px; width:auto; padding:10px 14px }
+.vc .v-lv-head{ flex:1; display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px }
+.vc .v-lv-bar{ height:4px; background:var(--line); margin:0 16px 8px }
+.vc .v-lv-bar i{ display:block; height:100%; background:var(--violet); border-radius:99px }
+.vc .v-lv-task{ display:flex; flex-direction:column; gap:12px; padding:8px 0 24px }
+.vc .v-lv-prompt{ font-size:28px; font-weight:800; text-align:center }
+.vc .v-lv-ipa{ text-align:center; color:var(--ink-60); font-size:14px }
+.vc .v-lv-opts{ display:flex; flex-direction:column; gap:8px }
+.vc .v-lv-input{
+  width:100%; padding:12px 14px; border-radius:var(--r); border:1.5px solid var(--line);
+  font:inherit; font-size:16px
+}
+.vc .v-lv-input.v-ok{ border-color:var(--green); background:var(--green-50) }
+.vc .v-lv-input.v-bad{ border-color:var(--red); background:var(--red-50) }
+.vc .v-lv-key{ text-align:center; font-weight:700; color:var(--ink) }
+.vc .v-lv-match{ margin-top:8px }
+
+@media (prefers-reduced-motion: reduce) {
+  .vc *{ animation: none !important; transition-duration: .01ms !important }
 }
 
 /* ── интеграция в оболочку сайта (дописано скриптом, не из прототипа) ── */

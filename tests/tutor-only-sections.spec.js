@@ -27,6 +27,7 @@ async function loginToTutorZone(page) {
   await page.route('**/mobile/situativki**', (r) => r.fulfill(json([])))
   await page.route('**/mobile/audio-lessons', (r) => r.fulfill(json([])))
   await page.route('**/mobile/saved-words', (r) => r.fulfill(json([])))
+  await page.route('**/mobile/lesson-vocab', (r) => r.fulfill(json([])))
 
   await page.goto('/')
   await page.locator('.btn--secondary').click()

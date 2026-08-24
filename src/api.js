@@ -106,6 +106,115 @@ async function authPost(path, token, body) {
   return res.json().catch(() => null)
 }
 
+async function authDelete(path, token) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'DELETE',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
+// ─── Домашняя работа ─────────────────────────────────────────────────────────
+// Файл ученика попадает в задание в два шага, как и у преподавателя в админке:
+// сначала /media/upload кладёт его в хранилище и отдаёт ссылку, потом ссылка
+// прикрепляется к домашней работе. Отдельной «загрузки в ДЗ» на бэкенде нет.
+
+export function getMyHomework(token) {
+  return authGet('/admin/homework/my', token)
+}
+
+export function getHomeworkById(token, id) {
+  return authGet(`/admin/homework/${id}`, token)
+}
+
+// Поле формы называется `material` — так его читает MediaController.
+export async function uploadMedia(token, file) {
+  const form = new FormData()
+  form.append('material', file)
+  let res
+  try {
+    res = await fetch(BASE + '/media/upload', {
+      method: 'POST',
+      // Content-Type для multipart ставит сам браузер — вместе с boundary.
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`Не удалось загрузить файл (${res.status})`)
+  return res.json()
+}
+
+export function attachHomeworkAnswer(token, id, fileName, url) {
+  return authPost(`/admin/homework/${id}/submission-materials`, token, { fileName, url })
+}
+
+export function removeHomeworkAnswer(token, id, materialId) {
+  return authDelete(`/admin/homework/${id}/submission-materials/${materialId}`, token)
+}
+
+export function submitHomework(token, id) {
+  return authPut(`/admin/homework/${id}/submit`, token)
+}
+
+// Ответ на задание, взятое преподавателем с живого урока. Правильность считает
+// клиент — тем же gradeQuestion, что и на уроке: сервер вопрос не разбирает, а
+// преподавателю нужно видеть не только ответ, но и сошёлся ли он с ключом.
+export async function saveHomeworkAnswer(id, exerciseId, token, answer, correct) {
+  return authPut(`/admin/homework/${id}/exercises/${exerciseId}/answer`, token, { answer, correct })
+}
+
+// Задания с живых уроков: преподаватель назначает материал через админку
+// («задать как ДЗ», MaterialAssignment), ученик видит назначенное здесь же,
+// в «Домашней работе». Ничего нового на бэкенде — это тот же студенческий
+// фасад, которым пользуется web-admin (/student/**).
+
+export function getMyMaterialAssignments(token) {
+  return authGet('/student/assignments', token)
+}
+
+// Интерактив с проверкой открывается только при живой сессии — без неё
+// ответы из открытой вкладки не дойдут до преподавателя. Повторный вызов
+// возвращает уже существующую сессию, так что дёргать можно при каждом открытии.
+export function startMaterialAssignment(token, assignmentId) {
+  return authPost(`/student/assignments/${assignmentId}/start`, token)
+}
+
+// Рендер интерактивного материала открывается навигацией браузера (новая
+// вкладка), а не fetch'ем — токен уезжает в query: JwtAuthenticationFilter
+// принимает ?access_token= ровно для этого пути (тот же приём, что в
+// lessonMaterialRenderUrl).
+export function materialAssignmentRenderUrl(materialId, assignmentId, token, sessionId) {
+  const params = new URLSearchParams({ assignmentId: String(assignmentId), mode: 'live', access_token: token || '' })
+  if (sessionId != null) params.set('sessionId', String(sessionId))
+  return `${BASE}/student/materials/${materialId}/render?${params.toString()}`
+}
+
+// Проверка домашних работ преподавателем. Бэкенд сам оставляет в выдаче только
+// его учеников (isVisibleToCurrentUser), поэтому фильтры здесь не нужны.
+export function getHomeworkBoard(token) {
+  return authGet('/admin/homework', token)
+}
+
+export function saveHomeworkFeedback(token, id, comment) {
+  return authPut(`/admin/homework/${id}/feedback`, token, { comment })
+}
+
+export function gradeHomework(token, id, grade, comment) {
+  return authPut(`/admin/homework/${id}/grade`, token, { grade, comment })
+}
+
+export function returnHomeworkForRevision(token, id, comment) {
+  return authPut(`/admin/homework/${id}/return-for-revision`, token, { comment })
+}
+
 // ─── Кэш каталогов Практики (stale-while-revalidate) ─────────────────────────
 // Админ-каталоги меняются редко (только правками в dev-admin), поэтому повторные
 // открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в
@@ -159,6 +268,15 @@ async function cachedAuthGet(path, token, onFresh) {
     return cached
   }
   return refresh()
+}
+
+function dropCachedAuthGet(path, token) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.removeItem(catalogCacheKey(path, token))
+  } catch {
+    /* кэш мог быть недоступен */
+  }
 }
 
 // Учебный путь королевства (уроки из dev-admin) по уровню CEFR.
@@ -599,21 +717,48 @@ export function getSavedWords(token, onFresh) {
   return cachedAuthGet('/mobile/saved-words', token, onFresh)
 }
 
+export function listLessonVocab(token, onFresh) {
+  return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
+}
+
+function isSavedVocabRef(lessonId) {
+  return lessonId == null || lessonId === '' || lessonId === 'saved' || lessonId === 'SAVED'
+}
+
+export function openLessonVocab(lessonId, token) {
+  const path = isSavedVocabRef(lessonId)
+    ? '/mobile/lesson-vocab/saved'
+    : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}`
+  return authGet(path, token)
+}
+
+export function completeLessonVocabCycle(lessonId, cycle, results, token) {
+  const path = isSavedVocabRef(lessonId)
+    ? `/mobile/lesson-vocab/saved/cycles/${encodeURIComponent(cycle)}`
+    : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}/cycles/${encodeURIComponent(cycle)}`
+  return authPost(path, token, { results }).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    return data
+  })
+}
+
 // Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).
 // alternates — строка «через запятую», language — язык перевода ("ru"/"kk"),
 // source — откуда слово (название книги). Возвращает SavedWordResponse.
-export async function saveWord(token, { word, translation, alternates, language = 'ru', source }) {
+export async function saveWord(token, { word, translation, alternates, language = 'ru', source, catalogLessonId }) {
   let res
   try {
     res = await fetch(`${BASE}/mobile/saved-words`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ word, translation, alternates, language, source }),
+      body: JSON.stringify({ word, translation, alternates, language, source, catalogLessonId }),
     })
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
   if (!res.ok) throw new Error(`Не удалось сохранить слово (${res.status})`)
+  dropCachedAuthGet('/mobile/lesson-vocab', token)
+  dropCachedAuthGet('/mobile/saved-words', token)
   return res.json().catch(() => ({}))
 }
 

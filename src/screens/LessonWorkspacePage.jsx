@@ -29,6 +29,7 @@ export default function LessonWorkspacePage({
   onExit,
   lessonId,
   token,
+  catalogLessonId,
   loadLesson = loadLiveLesson,
   userName,
   userLevel = 'A1',
@@ -76,8 +77,12 @@ export default function LessonWorkspacePage({
   const handleDocAnswer = useCallback((questionId, value) => {
     setDocAnswers((prev) => ({ ...prev, [questionId]: value }))
   }, [])
-  const handleDocCheck = useCallback((key) => {
-    setDocChecked((prev) => new Set(prev).add(key))
+  const handleDocCheck = useCallback((key, questionIds = []) => {
+    setDocChecked((prev) => {
+      const next = new Set(prev).add(key)
+      questionIds.forEach((id) => next.add(id))
+      return next
+    })
   }, [])
 
   // Номер открытого экрана приходит из плеера: индекс живёт там, а правой
@@ -164,6 +169,9 @@ export default function LessonWorkspacePage({
                 onAnswer={handleDocAnswer}
                 onCheck={handleDocCheck}
                 readOnly={false}
+                token={token}
+                source={lesson?.title}
+                catalogLessonId={catalogLessonId}
               />
             </div>
           ) : (
@@ -172,6 +180,8 @@ export default function LessonWorkspacePage({
               steps={steps}
               title={lesson.title || lesson.unit || ''}
               level={lesson.level}
+              token={token}
+              catalogLessonId={catalogLessonId}
               onExit={() => setConfirmExit(true)}
               onVocab={onVocab}
               withLang

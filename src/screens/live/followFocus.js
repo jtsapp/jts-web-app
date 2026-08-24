@@ -15,11 +15,11 @@
 export function knowsFocusTarget(sections, evt) {
   if (!evt || evt.sectionId == null) return true
 
-  const section = (sections || []).find((s) => s.id === evt.sectionId)
+  const section = (sections || []).find((s) => String(s.id) === String(evt.sectionId))
   if (!section) return false
 
   // materialId может не прийти — тогда достаточно знать сам раздел.
   if (evt.materialId == null) return true
 
-  return (section.materials || []).some((m) => m.materialId === evt.materialId)
+  return (section.materials || []).some((m) => String(m.materialId) === String(evt.materialId))
 }

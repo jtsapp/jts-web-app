@@ -25,6 +25,11 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 # даже в бандл.
 ARG NEXT_PUBLIC_ENABLE_JARVIS
 ENV NEXT_PUBLIC_ENABLE_JARVIS=${NEXT_PUBLIC_ENABLE_JARVIS}
+# Google Sign-In (см. src/lib/googleAuth.js). Пусто → кнопка входа остаётся
+# неактивной заглушкой, ничего не падает — но если переменная задана в GitLab
+# CI и не доезжает досюда, именно так это и выглядит: настроено, а не работает.
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
 RUN npm run build
 
 FROM node:20-slim AS runner

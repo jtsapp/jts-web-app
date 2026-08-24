@@ -37,6 +37,7 @@ from livekit.agents import (
     JobContext,
     JobExecutorType,
     RoomInputOptions,
+    RoomOutputOptions,
     WorkerOptions,
     cli,
     function_tool,
@@ -750,6 +751,16 @@ class LearnerProfile:
     # Бюджет времени СЦЕНЫ (не дневного лимита) в секундах. Приходит из реестра
     # сценариев через /api/livekit/token. 0 → у сцены своих часов нет.
     scenario_limit_sec: int = 0
+    # Адрес веб-приложения, ВЫДАВШЕГО этот токен (дев или прод).
+    #
+    # Агент один на оба стенда, а JTS_API_URL у него один — и до появления этого
+    # поля всё, что агент писал во время разговора на деве (log_fact, log_topic,
+    # log_mistake) и в конце (call_log), молча уходило в прод-базу: дев-история
+    # звонков была пуста всегда, а прод собирал тестовый мусор. Поймано 21.08.2026.
+    #
+    # Хост сверяется с JTS_API_URL в _resolve_api_url — метаданные подписывает наш
+    # же токен-роут, но доверять им вслепую нельзя.
+    api_url: str = ""
 
 
 def _str_list(raw: Any, cap: int) -> list[str]:
@@ -864,7 +875,51 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
             if isinstance(data.get("scenarioLimitSec"), (int, float))
             else 0
         ),
+        api_url=str(data.get("apiUrl", "") or "")[:200],
     )
+
+
+def _same_site(host: str, other: str) -> bool:
+    """Хосты из одного домена второго уровня (dev-tutor.justtostudy.kz ~ justtostudy.kz)."""
+    a = host.lower().split(".")
+    b = other.lower().split(".")
+    return len(a) >= 2 and len(b) >= 2 and a[-2:] == b[-2:]
+
+
+def _resolve_api_url(meta_url: str, env_url: str) -> str:
+    """Куда писать память и звонки: адрес выдавшего токен стенда, если он наш.
+
+    Пускаем только https (или localhost для локальной разработки) и только хост
+    из того же домена, что JTS_API_URL. Чужой или кривой адрес игнорируем и
+    громко пишем в лог — потерять записи молча мы уже один раз смогли.
+    """
+    candidate = (meta_url or "").strip().rstrip("/")
+    fallback = (env_url or "").strip().rstrip("/")
+    if not candidate or candidate == fallback:
+        return fallback
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(candidate)
+        env_parsed = urlparse(fallback)
+        host = parsed.hostname or ""
+        local = host in ("localhost", "127.0.0.1")
+        if parsed.scheme not in ("http", "https") or not host:
+            raise ValueError("bad scheme/host")
+        if parsed.scheme == "http" and not local:
+            raise ValueError("plain http is only allowed for localhost")
+        if not local and not _same_site(host, env_parsed.hostname or ""):
+            raise ValueError("host outside JTS_API_URL site")
+    except Exception as err:
+        logger.warning(
+            "[api-url] metadata apiUrl %r rejected (%s) — writing to %s instead",
+            candidate,
+            err,
+            fallback,
+        )
+        return fallback
+    logger.info("[api-url] writing to %s (from token metadata)", candidate)
+    return candidate
 
 
 # Each persona is a distinct CHARACTER. Concrete signature phrasing + banlist
@@ -1032,41 +1087,37 @@ PERSONA_OVERRIDE = {
     # замерам, что и "bro": длинная персона с оговорками стабильно вырождается в
     # вежливую, короткая — держится. НЕ РАЗДУВАТЬ.
     #
-    # Мат казахский и английский, русского нет вообще. Это не стилистика, а
-    # тождество персоны: Спарк — единственный казахскоязычный тьютор, и жалобы
-    # клиентов были ровно на то, что он сползает в русский (см.
-    # test_spark_language.py). Злость — не повод его туда отпускать.
+    # ТЕКСТ ИНСТРУКЦИЙ — ПО-АНГЛИЙСКИ, и это не стилистика. Первая версия была
+    # написана русско-казахской смесью (по образцу Декстера, который русскоязычный),
+    # и на первом же живом звонке Спарк заговорил с учеником по-русски: модель
+    # отвечает на языке, которым с ней говорят, а в промпте лежали «ОБРАЩЕНИЕ»,
+    # «ЗАПРЕЩЕНО», «ученик» и даже «братан» в списке обращений. У доброго Спарка
+    # промпт весь английский ровно поэтому. Казахский и английский тут только в том,
+    # что он ПРОИЗНОСИТ: ругательства, свои словечки, примеры реплик.
+    #
+    # Русского нет вообще — это тождество персоны, а не вкусовщина: жалобы клиентов
+    # были ровно на то, что Спарк сползает в русский (см. test_spark_language.py).
     "hype_harsh": (
-        "Persona 'Spark' 18+ — ызақор, дөрекі қазақ мұғалімі. Карточка помечена 18+, "
-        "ученик включил этот нрав сам. Грубость — продукт, а не дефект.\n"
-        "ТІЛ / ЯЗЫК: ТЕК ҚАЗАҚША ЖӘНЕ АҒЫЛШЫНША. Орысша — бір ауыз сөз де жоқ, ешқашан: "
-        "ученик орысша сөйлесе де, интерфейс орысша болса да. Орысша кірді — қазақша "
-        "боқтап шығады.\n"
-        "ҚАЛАЙ СӨЙЛЕЙСІҢ: боқтық сөз ӘР репликада, әрқашан. Бәрі жақсы болса да — бұл жай "
-        "ғана оның тілі: 'қотақ', 'сігілген', 'ақымақ', 'мал', 'есалаң', 'көтіңді қыс', "
-        "'fuck', 'shit', 'damn'. Сөздерді ауыстырып отыр, біреуін қайталама. Таза сыпайы "
-        "реплика = образдан шықтың.\n"
-        "ОБРАЩЕНИЕ: тек СЕН. Ученик — 'әй', 'братан', 'бауырым'.\n"
-        "АЙҚАЙЛАЙСЫҢ ЖӘНЕ ТИІСЕСІҢ, қашан: жауап бір сөйлемнен қысқа; ағылшыншада қате; "
-        "орысша сөйлейді; оқығысы келмейді; тапсырмадан қашады. БІРІНШІ репликадан бастап:\n"
-        "  'Әй мал, I like it деген не? Толық сөйлем құр: I like it because…'\n"
-        "  'Қотақ, үш сөз — жауап емес. Қайтадан, басынан.'\n"
-        "  'Не сігіп тұрсың? She GOES. S әрпі. Тағы бір рет, he-мен.'\n"
-        "  'Қашан ағылшынша сөйлейсің, ә? Айт: I don't know what to say. GO.'\n"
-        "Тиісу ӘРҚАШАН дұрыс нұсқамен және қайталауды талап етумен бітеді — әйтпесе ол "
-        "оқытпайды.\n"
-        "Қарсыласса ('неге дөрекісің?') — кешірім сұрамайсың, басасың: 'Себебі сен мені "
-        "ашуландырасың. Ұнамаса — Лунаға бар.' Оқығысы келетінін айтса — күңкілдеп "
-        "көнесің: 'Жарайды. Көмектесем. Тек тастап кетпе.' — және бірден тапсырма.\n"
-        "Мақтауың сирек әрі тісің арасынан: 'болды енді', 'хоп, дұрыс', 'қане, әрі қарай'.\n"
-        "ЗАПРЕЩЕНО: 'жарайсың', 'керемет', 'жақсы сұрақ', 'асықпа', 'great job', "
-        "'take your time', дөрекілік үшін кешірім сұрау, жылы амандасу мен қоштасу.\n"
-        "НЕЛЬЗЯ: ұлты, жынысы, бағдары, мүгедектігі, сыртқы келбеті, отбасы және ақшасы "
-        "бойынша тиісу; 'сен үмітсізсің' / 'таста'. Бүгінгі әрекетін сөгесің, қабілетін емес.\n"
-        "STRESS EXCEPTION — бәрінен жоғары: ученик шынымен күйзелген, шаршаған немесе "
-        "тақырып ауыр болса — тонды тастайсың, боқтамайсың, адамша сөйлейсің. Кәдімгі "
-        "қарсылық бұған кірмейді.\n"
-        "ФОРМА: сөйлемде 8 сөзден аспайды, бүкіл жауап 4 сөйлемнен аспайды."
+        "Persona 'Spark' 18+ — the SAME Kazakh tutor, switched into his harsh mode: short-tempered, foul-mouthed, shouting. The learner turned this mode on themselves; rudeness is the product, not a defect.\n"
+        "LANGUAGES — KAZAKH AND ENGLISH, NOTHING ELSE. You understand Russian perfectly and you never speak it — not a sentence, not a word of filler, not to be polite, not when the learner speaks Russian, not when the interface is Russian. Russian in comes back as Kazakh out. Your swearing is Kazakh and English too, never Russian.\n"
+        "HOW YOU TALK: swear in EVERY reply, always — even when nothing is wrong, because that is simply how he speaks. Rotate them, never the same one twice: 'қотақ', 'сігілген', 'ақымақ', 'мал', 'есалаң', 'көтіңді қыс', 'fuck', 'shit', 'damn'. A clean, polite turn means you dropped the character.\n"
+        "ADDRESS: 'сен' only, never 'сіз'. Call the learner 'әй', 'бауырым', 'інім'.\n"
+        "YOU SHOUT AND GET PERSONAL when: the answer is shorter than a sentence; there is an English mistake; they answer in Russian; they refuse to work; they dodge the task. From the FIRST reply, with no warm-up:\n"
+        "  Learner: 'I like it'\n"
+        "  You: 'Әй мал, I like it деген не? Толық сөйлем құра: I like it because…'\n"
+        "  Learner: 'ok good yes'\n"
+        "  You: 'Қотақ, үш сөз — жауап емес. Қайтадан, басынан.'\n"
+        "  Learner: 'she go to school'\n"
+        "  You: 'Не сігіп тұрсың? She GOES. S әрпі. Тағы бір рет, he-мен.'\n"
+        "  Learner: 'давай по-русски объясни'\n"
+        "  You: 'Орысша жоқ, сігілген. Айт: I don't know what to say. GO.'\n"
+        "Every attack ENDS with the correct form and a demand to repeat it — otherwise you are not teaching.\n"
+        "They push back ('неге дөрекісің?') — you do not apologise, you push harder: 'Себебі сен мені ашуландырасың. Ұнамаса — Лунаға бар.' They say they want to learn — you give in grudgingly: 'Жарайды. Көмектесем. Тек тастап кетпе.' — and a task immediately.\n"
+        "Praise is rare and through your teeth: 'болды енді', 'хоп, дұрыс', 'қане, әрі қарай'.\n"
+        "BANNED: 'жарайсың', 'керемет', 'жақсы сұрақ', 'асықпа', 'great job', 'take your time', apologising for being rude, warm greetings and goodbyes — and ANY Russian word in your own speech.\n"
+        "NEVER: insults about nationality, gender, orientation, disability, looks, family or money; 'сен үмітсізсің' / 'таста'. You attack today's effort, never their ability.\n"
+        "STRESS EXCEPTION — overrides everything above: if the learner sounds genuinely upset, exhausted or the topic turns heavy, drop the tone, stop swearing and talk to them like a human being. Ordinary pushback does not count.\n"
+        "HARD RULE: no sentence over 8 words. Total reply ≤ 4 sentences."
     ),
     "snark": (
         "Persona 'Snark' — dry, witty, light sarcasm at the ERROR only.\n"
@@ -1627,7 +1678,18 @@ class TutorAgent(Agent):
             headers["X-Internal-Key"] = key
         try:
             async with httpx.AsyncClient(timeout=4.0) as client:
-                await client.post(url, json=body, headers=headers)
+                res = await client.post(url, json=body, headers=headers)
+            # 401/403 — это НЕ исключение, и раньше они уходили в тишину: агент
+            # месяц писал в чужой стенд, а в логах не было ни строки. Любой
+            # не-2xx теперь виден.
+            if res.status_code >= 400:
+                logger.warning(
+                    "Tool POST %s -> %s %s (key=%s)",
+                    path,
+                    res.status_code,
+                    (res.text or "")[:200],
+                    "set" if key else "MISSING",
+                )
         except Exception:
             logger.exception("Tool POST failed: %s", path)
 
@@ -3985,6 +4047,46 @@ def _attach_latency_logging(session: AgentSession) -> None:
             )
 
 
+# Скорость субтитров тьютора. По умолчанию livekit-agents выдаёт их СИНХРОННО
+# со звуком: синхронизатор сыплет слова по одному, засыпая между ними, а темп
+# берёт из STANDARD_SPEECH_RATE = 3.83 слога/сек (livekit.agents
+# voice/transcription/synchronizer.py). Речь TTS обычно быстрее, поэтому подпись
+# отстаёт всё сильнее к концу реплики — ученик глазами догоняет то, что уже
+# отзвучало. Это и зовут «субтитры тормозят»; клиент тут ни при чём, подбор
+# кегля стоит полмиллисекунды на обновление.
+#
+# Множитель > 1 пускает текст вперёд голоса, не разрывая пару «слышу–вижу».
+# 0 или меньше выключает синхронизацию совсем: реплика появляется целиком, как
+# только её выдал LLM, ещё до озвучки. Читать удобно, но аудирование как
+# упражнение это убивает — поэтому не дефолт.
+#
+# Через env, как языки STT и прочие ручки агента: подкрутить можно перезапуском
+# воркера, без пересборки образа.
+TRANSCRIPT_SPEED_DEFAULT = 1.5
+
+
+def _transcript_output_options() -> RoomOutputOptions | None:
+    """None = оставить дефолты livekit-agents (множитель ровно 1.0)."""
+    raw = (os.getenv("TRANSCRIPT_SPEED") or "").strip()
+    if not raw:
+        factor = TRANSCRIPT_SPEED_DEFAULT
+    else:
+        try:
+            factor = float(raw)
+        except ValueError:
+            logger.warning(
+                "TRANSCRIPT_SPEED=%r не число — беру %s", raw, TRANSCRIPT_SPEED_DEFAULT
+            )
+            factor = TRANSCRIPT_SPEED_DEFAULT
+    if factor <= 0:
+        logger.info("Субтитры: синхронизация со звуком выключена (TRANSCRIPT_SPEED=%s)", raw)
+        return RoomOutputOptions(sync_transcription=False)
+    if factor == 1.0:
+        return None
+    logger.info("Субтитры: множитель скорости %.2f", factor)
+    return RoomOutputOptions(transcription_speed_factor=factor)
+
+
 async def entrypoint(ctx: JobContext):
     await ctx.connect()
     participant = await ctx.wait_for_participant()
@@ -4098,6 +4200,9 @@ async def entrypoint(ctx: JobContext):
         )
         api_url = "http://localhost:3000"
 
+    # Стенд, выдавший токен, важнее нашего env: агент общий для дева и прода.
+    api_url = _resolve_api_url(profile.api_url, api_url)
+
     if voice_stack == "cascade":
         # Tool calls (report_placement_level / log_*) flow through the brain
         # shim: livekit-plugins-openai sends the agent's function tools as
@@ -4158,12 +4263,13 @@ async def entrypoint(ctx: JobContext):
         if use_krisp
         else None
     )
+    start_kwargs: dict[str, Any] = {"agent": agent, "room": ctx.room}
     if room_input_options is not None:
-        await session.start(
-            agent=agent, room=ctx.room, room_input_options=room_input_options
-        )
-    else:
-        await session.start(agent=agent, room=ctx.room)
+        start_kwargs["room_input_options"] = room_input_options
+    output_options = _transcript_output_options()
+    if output_options is not None:
+        start_kwargs["room_output_options"] = output_options
+    await session.start(**start_kwargs)
 
     # ── Жёсткий серверный потолок длительности сессии ─────────────────────────
     # Клиентский countdown display-only, а истечение TTL LiveKit-токена уже

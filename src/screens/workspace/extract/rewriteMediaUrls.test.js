@@ -20,6 +20,25 @@ describe('rewriteHtml', () => {
     expect(out).toContain('src="data:image/png;base64,AAA"')
     expect(out).toContain('href="#top"')
   })
+
+  it('turns a B2 custom player into a real <audio> and does not leave the speed <select>', () => {
+    const html = `
+      <div class="player" data-track="a11">
+        <div class="meta"><b>The rules of conversation</b>Navigate B2 · Audio 1.1</div>
+        <button class="btn btn-audio pp" type="button">Play</button>
+        <div class="bar"><i></i></div>
+        <span class="time">0:00 / --:--</span>
+        <label class="rate">Speed
+          <select><option value="1">1×</option><option value="0.85">0.85×</option></select>
+        </label>
+      </div>`
+    const out = rewriteHtml(html, BASE)
+    expect(out).toContain('<audio')
+    expect(out).toContain('/a1/audio/a11.mp3')
+    expect(out).not.toContain('<select')
+    expect(out).not.toContain('0:00 / --:--')
+    expect(out).toContain('The rules of conversation')
+  })
 })
 
 describe('rewriteMediaUrls', () => {
@@ -35,13 +54,30 @@ describe('rewriteMediaUrls', () => {
     }
     const out = rewriteMediaUrls(lesson, BASE)
     expect(out.steps[0].blocks[0].html).toContain('/a1/lessons/audio/x.mp3')
-    // practice block untouched
     expect(out.steps[0].blocks[1]).toEqual(lesson.steps[0].blocks[1])
+  })
+
+  it('rewrites relative audio.src and html on a practice compound block', () => {
+    const lesson = {
+      title: 'L',
+      steps: [{
+        id: 's1',
+        blocks: [{
+          type: 'practice',
+          html: '<div class="gconcept"><img src="images/a.png"></div>',
+          audio: { src: 'audio/x.mp3' },
+          questions: [{ id: 'q', type: 'choice', options: ['a'], answer: 'a' }],
+        }],
+      }],
+    }
+    const out = rewriteMediaUrls(lesson, BASE)
+    expect(out.steps[0].blocks[0].audio.src).toContain('/a1/lessons/audio/x.mp3')
+    expect(out.steps[0].blocks[0].html).toContain('/a1/lessons/images/a.png')
   })
 
   it('returns the lesson unchanged when base URL is missing', () => {
     const lesson = { steps: [] }
-    expect(rewriteMediaUrls(lesson, '')).toBe(lesson)
+    expect(rewriteMediaUrls(lesson, '')).toEqual(lesson)
   })
 
   it('rewrites relative pictures on vocab cards', () => {

@@ -1,9 +1,10 @@
 import { gradeQuestion } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
+import TapText from '../TapText.jsx'
 
 // Контролируемый вопрос-пропуск, заполняемый чипом из банка. `answer` —
 // выбранное слово (или null); выбранный чип подставляется в предложение.
-export default function ChipsQuestion({ question, answer, checked, onAnswer, readOnly }) {
+export default function ChipsQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const userCorrect = checked && gradeQuestion(question, answer).correct
 
   let gapCls = 'lw-gap'
@@ -13,12 +14,12 @@ export default function ChipsQuestion({ question, answer, checked, onAnswer, rea
   return (
     <div className="lw-q lw-q--chips">
       <p className="lw-q__sentence">
-        {question.gapBefore}
+        <TapText text={question.gapBefore} onWord={onWord} />
         <span className={gapCls}>
           {checked ? question.answer : answer || '____'}
           {checked && userCorrect && <CheckIcon size={14} />}
         </span>
-        {question.gapAfter}
+        <TapText text={question.gapAfter} onWord={onWord} />
       </p>
       <div className="lw-bank">
         {(question.bank || []).map((word) => {

@@ -29,7 +29,7 @@ const silence = async (page) => {
 const openVocab = async (page) => {
   await silence(page)
   await page.goto('/?screen=vocab')
-  await expect(page.locator('.v-setup-title')).toBeVisible()
+  await expect(page.locator('.v-lvl-cell').first()).toBeVisible()
 }
 
 // Детерминированный Math.random (mulberry32): подбор заданий в engine.js
@@ -99,6 +99,16 @@ const startLearnPhase = async (page) => {
 }
 
 test.describe('Словарь — нативный экран', () => {
+  test('сначала Oxford, словарь уроков — отдельный раздел', async ({ page }) => {
+    await silence(page)
+    await page.goto('/?screen=vocab')
+    await expect(page.locator('.v-lvl-cell').first()).toBeVisible()
+    await expect(page.locator('.v-lessons-link')).toBeVisible()
+    await expect(page.locator('.v-lv-card')).toHaveCount(0)
+    await page.locator('.v-lessons-link').click()
+    await expect(page.locator('.v-setup-title')).toContainText(/Словарь уроков|Lesson vocabulary|Сабақ/)
+  })
+
   test('никакого iframe: экран собран в React', async ({ page }) => {
     await openVocab(page)
     await expect(page.locator('iframe')).toHaveCount(0)

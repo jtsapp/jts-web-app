@@ -17,6 +17,7 @@ import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
+import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
 import IeltsPage from './screens/IeltsPage.jsx'
 import IeltsWritingPage from './screens/IeltsWritingPage.jsx'
@@ -45,6 +46,8 @@ import TutorPracticeResultPage from './screens/TutorPracticeResultPage.jsx'
 import TutorErrorAnalyticsPage from './screens/TutorErrorAnalyticsPage.jsx'
 import TutorScenariosPage from './screens/TutorScenariosPage.jsx'
 import TutorChatHistoryPage from './screens/TutorChatHistoryPage.jsx'
+import TutorCallReportPage from './screens/TutorCallReportPage.jsx'
+import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
@@ -56,6 +59,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
+import { isTeacher } from './lib/jwt.js'
 import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
@@ -155,6 +159,10 @@ export default function App() {
         }
         // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
         if (deepLink) setScreen(deepLink)
+        // Преподаватель приходит сюда работать, а не учиться: карта уровней с
+        // запертыми королевствами — ученический экран, и открывать его первым
+        // ему бессмысленно (сайдбар ему всё остальное и так не показывает).
+        else if (session && isTeacher(session.token)) setScreen('lessons')
         else if (session) setScreen(TUTOR_ONLY ? (profile?.tutor ? 'tutor-dashboard' : 'tutor-welcome') : 'kingdom')
       })
       .finally(() => {
@@ -191,6 +199,12 @@ export default function App() {
   const [profileId, setProfileId] = useState(null)
   const [interestIds, setInterestIds] = useState([]) // id тем из tutor/interests.js
   const [profession, setProfession] = useState('')
+  // Откуда открыт экран онбординг-цепочки: null — обычный первый проход,
+  // 'manage' — точечная правка из «Управления тьютором». Тест уровня и опросник
+  // ученик проходит ОДИН раз: их ответы лежат в профиле (tutor, interests,
+  // profession, level), поэтому смена тьютора и правка данных возвращают в
+  // управление/на дашборд, а не гоняют всю цепочку заново.
+  const [tutorEditFrom, setTutorEditFrom] = useState(null)
   const [userLevel, setUserLevel] = useState('A1')
   // Демо-статус текущего аккаунта — решает, показывать ли на экранах «лимит
   // исчерпан» демо-CTA со ссылкой на WhatsApp поддержки (см. src/lib/support.js)
@@ -204,6 +218,13 @@ export default function App() {
   // История голосовых звонков (список + транскрипт) для «Управления тьютором».
   const [callHistory, setCallHistory] = useState([])
   const [selectedCall, setSelectedCall] = useState(null)
+  // Отчёт после разговора. reportCall = готовая строка (открыт из истории),
+  // null = экран сам дождётся, пока агент допишет звонок. prevCallId — слепок
+  // «последнего звонка ДО этого разговора», по нему отчёт отличает свежую запись
+  // от предыдущей (сравниваем id, а не время: created_at — часы базы).
+  const [reportCall, setReportCall] = useState(null)
+  const [reportOrigin, setReportOrigin] = useState('call')
+  const [prevCallId, setPrevCallId] = useState(null)
   // Оценка разговорного теста (уровень + честное обоснование от Sonnet).
   const [placementResult, setPlacementResult] = useState(null)
   // Грузим историю звонков при заходе в «Управление тьютором». Bearer решает
@@ -221,6 +242,29 @@ export default function App() {
         if (alive) setCallHistory(Array.isArray(data.calls) ? data.calls : [])
       } catch {
         if (alive) setCallHistory([])
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [screen, token])
+  // Слепок последнего звонка перед разговором — см. prevCallId выше.
+  useEffect(() => {
+    if (screen !== 'tutor-voice-chat') return
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch(
+          '/api/profile/calls?limit=1&deviceId=' + encodeURIComponent(getDeviceId()),
+          { headers: authHeaders(token) },
+        )
+        const data = await res.json().catch(() => ({}))
+        const last = Array.isArray(data.calls) ? data.calls[0] : null
+        // NO_PREVIOUS_CALL — звонков ещё не было; это НЕ то же самое, что null
+        // (мы не смогли узнать). Разницу разбирает classifyCall.
+        if (alive) setPrevCallId(last?.id ?? NO_PREVIOUS_CALL)
+      } catch {
+        if (alive) setPrevCallId(null)
       }
     })()
     return () => {
@@ -538,15 +582,28 @@ export default function App() {
   // Домашний экран тьютора: dashboard после онбординга, welcome-цепочка до.
   const tutorHome = tutorOnboarded ? 'tutor-dashboard' : 'tutor-welcome'
 
+  // Куда уходить с экрана онбординг-цепочки. Обычный проход идёт дальше по
+  // цепочке; заход из «Управления тьютором» (смена тьютора, правка интересов,
+  // пересдача теста) возвращает назад в управление и снимает пометку, чтобы она
+  // не протекла в следующий проход.
+  function goAfterTutorEdit(nextInChain, back = 'tutor-manage') {
+    if (tutorEditFrom === 'manage') {
+      setTutorEditFrom(null)
+      setScreen(back)
+      return
+    }
+    setScreen(nextInChain)
+  }
+
   // Отметка «тур дашборда показан» — на профиль. Профиль ещё не подтянулся
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
 
-  // Fullscreen belongs to the Lessons screen only — exit it on any other screen,
-  // including paths that bypass the nav handlers (profile button, opening a lesson).
+  // Fullscreen belongs to Lessons and the live class — exit it on any other screen,
+  // including paths that bypass the nav handlers (profile button).
   // The *request* stays in the click handlers because it needs a user gesture.
   useEffect(() => {
-    if (screen !== 'lessons') exitAppFullscreen()
+    if (screen !== 'lessons' && screen !== 'live-lesson') exitAppFullscreen()
   }, [screen])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
@@ -562,6 +619,7 @@ export default function App() {
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -577,6 +635,7 @@ export default function App() {
     else if (key === 'shadowing') setScreen('shadowing')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -722,7 +781,13 @@ export default function App() {
       return (
         <SuccessPage
           onDone={() =>
-            setScreen(TUTOR_ONLY ? tutorHome : needsLevelTest ? 'test-intro' : 'kingdom')
+            // Преподавателя ведём в «Уроки»: карта уровней и CEFR-тест — часть
+            // ученического пути, ему они не нужны (см. восстановление сессии).
+            setScreen(
+              isTeacher(token) ? 'lessons'
+                : TUTOR_ONLY ? tutorHome
+                  : needsLevelTest ? 'test-intro' : 'kingdom'
+            )
           }
         />
       )
@@ -752,6 +817,7 @@ export default function App() {
           unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
+          onOpenHomework={() => setScreen('homework')}
           onOpenKingdom={(k) => {
             setKingdom(k)
             setScreen('kingdom-interior')
@@ -805,7 +871,9 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); requestAppFullscreen(); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+    case 'homework':
+      return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
       return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
     case 'live-lesson':
@@ -876,7 +944,10 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onSelect={() => setScreen('tutor-choose')}
+          onSelect={() => {
+            setTutorEditFrom(null)
+            setScreen('tutor-choose')
+          }}
         />
       )
     case 'tutor-choose':
@@ -885,7 +956,7 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-lang')}
+          onBack={() => goAfterTutorEdit('tutor-lang')}
           tutorKey={tutorKey}
           temper={temper}
           onChoose={(key, chosenTemper = null) => {
@@ -912,8 +983,9 @@ export default function App() {
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
           // После «подстройки» — голосовой placement-тест (Спарк), затем интересы
-          // и работа. Уровень определяет Sonnet по записи монолога.
-          onDone={() => setScreen('tutor-voice-intro')}
+          // и работа. Уровень определяет Sonnet по записи монолога. Смена тьютора
+          // (пришли из управления) эту цепочку пропускает: ответы уже в профиле.
+          onDone={() => goAfterTutorEdit('tutor-voice-intro', 'tutor-dashboard')}
         />
       )
     case 'tutor-level-offer':
@@ -934,14 +1006,14 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-choose')}
+          onBack={() => goAfterTutorEdit('tutor-choose')}
           tutor={tutor}
           onStart={() => {
             setScenario(null)
             setScreen('speaking-test')
           }}
           // «Не могу говорить сейчас» — пропуск теста, дальше по онбордингу.
-          onDecline={() => setScreen('tutor-interests')}
+          onDecline={() => goAfterTutorEdit('tutor-interests')}
         />
       )
     case 'tutor-voice-chat':
@@ -960,11 +1032,13 @@ export default function App() {
           tutor={tutor}
           temper={temper}
           scenario={scenario}
-          onFinish={() =>
-            setScreen(
-              scenario ? 'tutor-scenarios' : tutorOnboarded ? 'tutor-dashboard' : 'tutor-level-result',
-            )
-          }
+          // Разговор больше не заканчивается ничем: ведём на отчёт, а он уже
+          // отпускает туда, куда раньше уходил onFinish (кнопка «Готово»).
+          onFinish={() => {
+            setReportCall(null)
+            setReportOrigin('call')
+            setScreen('tutor-call-report')
+          }}
           onSessionExpired={handleLogout}
         />
       )
@@ -979,7 +1053,7 @@ export default function App() {
           tutor={tutor}
           level={userLevel}
           assessment={placementResult}
-          onContinue={() => setScreen('tutor-interests')}
+          onContinue={() => goAfterTutorEdit('tutor-interests')}
           onRetry={() => setScreen('speaking-test')}
         />
       )
@@ -989,13 +1063,13 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-choose')}
+          onBack={() => goAfterTutorEdit('tutor-choose')}
           tutor={tutor}
           initialIds={interestIds}
           onContinue={(ids) => {
             setInterestIds(ids)
             saveTutorPrefs(token, { interests: interestIdsToEn(ids) })
-            setScreen('tutor-profession')
+            goAfterTutorEdit('tutor-profession')
           }}
         />
       )
@@ -1005,17 +1079,18 @@ export default function App() {
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-interests')}
+          onBack={() => goAfterTutorEdit('tutor-interests')}
           tutor={tutor}
+          initialValue={profession}
           onSubmit={(prof) => {
             const p = typeof prof === 'string' ? prof.trim() : ''
             if (p) {
               setProfession(p)
               saveTutorPrefs(token, { profession: p })
             }
-            setScreen('tutor-analysis')
+            goAfterTutorEdit('tutor-analysis')
           }}
-          onSkip={() => setScreen('tutor-analysis')}
+          onSkip={() => goAfterTutorEdit('tutor-analysis')}
         />
       )
     case 'tutor-analysis':
@@ -1076,13 +1151,49 @@ export default function App() {
           }}
         />
       )
+    case 'tutor-call-report':
+      return (
+        <TutorCallReportPage
+          user={{ name, level: userLevel }}
+          onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
+          onProfile={() => setScreen('profile')}
+          onBack={() =>
+            setScreen(
+              reportOrigin === 'history'
+                ? 'tutor-manage'
+                : tutorOnboarded
+                  ? 'tutor-dashboard'
+                  : 'tutor-voice-intro',
+            )
+          }
+          tutor={tutor}
+          token={token}
+          call={reportCall}
+          prevCallId={prevCallId}
+          // Строку запоминаем: без неё возврат из расшифровки заново запустил бы
+          // поллинг, а звонок к тому моменту уже равен prevCallId — отчёт бы его
+          // не признал своим и показал пустое состояние.
+          onTranscript={(row) => {
+            setReportCall(row)
+            setSelectedCall(row)
+            setScreen('tutor-chat-history')
+          }}
+          onLogin={() => setScreen('welcome')}
+          onHistory={() => setScreen('tutor-manage')}
+          onDone={() =>
+            setScreen(
+              scenario ? 'tutor-scenarios' : tutorOnboarded ? 'tutor-dashboard' : 'tutor-level-result',
+            )
+          }
+        />
+      )
     case 'tutor-chat-history':
       return (
         <TutorChatHistoryPage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, 'tutor-dashboard')}
           onProfile={() => setScreen('profile')}
-          onBack={() => setScreen('tutor-manage')}
+          onBack={() => setScreen('tutor-call-report')}
           call={selectedCall}
         />
       )
@@ -1103,7 +1214,27 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-dashboard')}
           tutor={tutor}
-          onChangeTutor={() => setScreen('tutor-choose')}
+          onChangeTutor={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-choose')
+          }}
+          level={userLevel}
+          interestIds={interestIds}
+          profession={profession}
+          // Опросник больше не показывается на каждую смену тьютора, поэтому
+          // единственная точка правки этих ответов — здесь.
+          onEditInterests={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-interests')
+          }}
+          onEditProfession={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-profession')
+          }}
+          onRetakeTest={() => {
+            setTutorEditFrom('manage')
+            setScreen('tutor-voice-intro')
+          }}
           temper={temper}
           onToggleTemper={() => {
             const next = temper === 'harsh' ? 'calm' : 'harsh'
@@ -1113,7 +1244,9 @@ export default function App() {
           calls={callHistory}
           onOpenCall={(call) => {
             setSelectedCall(call)
-            setScreen('tutor-chat-history')
+            setReportCall(call)
+            setReportOrigin('history')
+            setScreen('tutor-call-report')
           }}
         />
       )
@@ -1143,7 +1276,7 @@ export default function App() {
         />
       )
     case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} loadLesson={workspaceSource === 'catalog' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} catalogLessonId={workspaceSource === 'catalog' && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     default:
       return null
   }

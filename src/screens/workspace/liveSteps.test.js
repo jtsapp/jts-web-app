@@ -133,6 +133,14 @@ describe('liveLessonSteps', () => {
     expect(liveLessonSteps(withVocab)).toEqual([])
   })
 
+  it('writing/speaking/grammar_concept тоже обнуляют очередь — документ LessonContent их знает', () => {
+    for (const type of ['writing', 'speaking', 'grammar_concept']) {
+      expect(liveLessonSteps(lesson({
+        steps: [{ id: 's1', topicId: 't1', blocks: [{ type, title: type }] }],
+      }))).toEqual([])
+    }
+  })
+
   it('собирает правило в html карточки', () => {
     const note = liveLessonSteps(lesson())[2]
     expect(note.type).toBe('note')

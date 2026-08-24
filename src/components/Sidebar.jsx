@@ -11,6 +11,7 @@ import {
   PracticeIcon,
   TutorIcon,
   LessonsIcon,
+  HomeworkIcon,
   IeltsIcon,
   VocabIcon,
   ChevronRightIcon,
@@ -23,6 +24,7 @@ const NAV_FULL = [
   { key: 'practice', label: 'nav.practice', Icon: PracticeIcon },
   { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
   { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
+  { key: 'homework', label: 'nav.homework', Icon: HomeworkIcon },
   { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
   { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
