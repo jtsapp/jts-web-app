@@ -599,11 +599,11 @@ export default function App() {
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
 
-  // Fullscreen belongs to Lessons and the live class — exit it on any other screen,
-  // including paths that bypass the nav handlers (profile button).
-  // The *request* stays in the click handlers because it needs a user gesture.
+  // Fullscreen only for the live class — the Lessons tab stays a normal page.
+  // Exit on any other screen, including paths that bypass the nav handlers
+  // (profile button). The *request* stays in the click handler (needs a gesture).
   useEffect(() => {
-    if (screen !== 'lessons' && screen !== 'live-lesson') exitAppFullscreen()
+    if (screen !== 'live-lesson') exitAppFullscreen()
   }, [screen])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
@@ -611,7 +611,6 @@ export default function App() {
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
   function handleNav(key, payload) {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'lessons') requestAppFullscreen()
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -628,7 +627,6 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'lessons') requestAppFullscreen()
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
