@@ -73,6 +73,21 @@ describe('CourseStepPlayer — собери предложение (A0/A1)', () 
   })
 })
 
+describe('CourseStepPlayer — тап-перевод предложения на заметке', () => {
+  it('оборачивает слова правила, чтобы тап открыл перевод фразы', () => {
+    playSteps([
+      {
+        type: 'note',
+        stage: 'Grammar',
+        title: 'Awkward',
+        html: '<p>She felt awkward at the party.</p>',
+      },
+    ])
+    const words = [...document.querySelectorAll('.cp-note__body .lw-tap-w')].map((el) => el.textContent)
+    expect(words).toEqual(['She', 'felt', 'awkward', 'at', 'the', 'party.'])
+  })
+})
+
 describe('CourseStepPlayer — впиши пропущенное', () => {
   const steps = tasksToSteps(
     {

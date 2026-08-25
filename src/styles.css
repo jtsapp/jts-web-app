@@ -1791,6 +1791,130 @@ textarea {
      выхода кроют область контента, а не весь вьюпорт — сайдбар остаётся. */
   position: relative;
 }
+.learn__bell {
+  display: none;
+}
+@media (min-width: 761px) {
+  .learn__bell {
+    display: block;
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    z-index: 40;
+  }
+}
+
+.nbell {
+  position: relative;
+}
+.nbell__btn {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 12px;
+  background: #f5f2fe;
+  color: var(--purple, #7b3cff);
+  cursor: pointer;
+}
+.nbell__badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+.nbell__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(420px, 70vh);
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #efeef4;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(20, 16, 40, 0.16);
+  z-index: 50;
+}
+.nbell__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0eef5;
+}
+.nbell__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nbell__textbtn,
+.nbell__iconbtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--purple, #7b3cff);
+  font-size: 12px;
+  font-weight: 700;
+}
+.nbell__textbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.nbell__empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted, #8b8698);
+  font-size: 14px;
+}
+.nbell__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+}
+.nbell__item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.nbell__item:hover {
+  background: #f7f4ff;
+}
+.nbell__item--unread {
+  background: #f4efff;
+}
+.nbell__item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #1c1630);
+}
+.nbell__item-msg {
+  font-size: 13px;
+  color: var(--muted, #8b8698);
+}
+.nbell__item-date {
+  font-size: 11px;
+  color: #aba7b6;
+}
 
 /* Словарь: прототип занимает всю зону контента */
 .vocab__frame {

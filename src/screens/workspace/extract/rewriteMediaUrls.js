@@ -6,7 +6,7 @@
 /** Returns a copy of `lesson` with every relative media URL in its info-block
  *  HTML resolved to absolute against `baseUrl`. */
 export function rewriteMediaUrls(lesson, baseUrl) {
-  if (!lesson || !baseUrl) return lesson
+  if (!lesson) return lesson
   const steps = (lesson.steps || []).map((step) => ({
     ...step,
     blocks: (step.blocks || []).map((block) => rewriteBlock(block, baseUrl)),
@@ -16,6 +16,7 @@ export function rewriteMediaUrls(lesson, baseUrl) {
 
 function rewriteBlock(block, baseUrl) {
   if (block?.type === 'vocab' && Array.isArray(block.cards)) {
+    if (!baseUrl) return block
     return {
       ...block,
       cards: block.cards.map((card) => rewriteCardImage(card, baseUrl)),
@@ -23,9 +24,9 @@ function rewriteBlock(block, baseUrl) {
   }
   let next = block
   if (next && typeof next.html === 'string') {
-    next = { ...next, html: rewriteHtml(next.html, baseUrl) }
+    next = { ...next, html: rewriteHtml(next.html, baseUrl || '') }
   }
-  if (next?.audio?.src && !isAbsolute(next.audio.src)) {
+  if (baseUrl && next?.audio?.src && !isAbsolute(next.audio.src)) {
     try {
       next = { ...next, audio: { ...next.audio, src: new URL(next.audio.src, baseUrl).href } }
     } catch {
@@ -48,9 +49,43 @@ function rewriteCardImage(card, baseUrl) {
 /** Exported for tests: absolutise `src`/`href` in a fragment of HTML. */
 export function rewriteHtml(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html')
-  doc.querySelectorAll('[src]').forEach((el) => absolutizeAttr(el, 'src', baseUrl))
-  doc.querySelectorAll('[href]').forEach((el) => absolutizeAttr(el, 'href', baseUrl))
+  hydrateCoursePlayers(doc.body)
+  if (baseUrl) {
+    doc.querySelectorAll('[src]').forEach((el) => absolutizeAttr(el, 'src', baseUrl))
+    doc.querySelectorAll('[href]').forEach((el) => absolutizeAttr(el, 'href', baseUrl))
+  }
   return doc.body.innerHTML
+}
+
+/**
+ * B2 (и тот же виджет на других уровнях) рисует плеер разметкой: Play, полоса,
+ * «0:00 / --:--», <select> скорости. В приложении этого JS нет, поэтому на
+ * экране остаётся голый текст, а скорость уезжает в вопрос с «Проверить».
+ * Подменяем на настоящий <audio controls>, ключ дорожки — data-track.
+ */
+function audioFileForTrack(track) {
+  const id = String(track).trim()
+  return /\.(mp3|m4a|ogg)$/i.test(id) ? id : `${id}.mp3`
+}
+
+function hydrateCoursePlayers(root) {
+  root.querySelectorAll('.player').forEach((el) => {
+    const isWidget =
+      el.hasAttribute('data-track') ||
+      el.hasAttribute('data-jts-media') ||
+      el.querySelector('.bar, .wave, .time, .rate, audio')
+    if (!isWidget) return
+    el.querySelectorAll('button, .bar, .wave, .time, .rate, select').forEach((node) => node.remove())
+    if (el.querySelector('audio')) return
+    const track = el.getAttribute('data-track') || el.getAttribute('data-jts-media')
+    if (!track) return
+    const audio = el.ownerDocument.createElement('audio')
+    audio.setAttribute('controls', '')
+    audio.setAttribute('preload', 'none')
+    // Урок в каталоге лежит в lessons/, дорожки — рядом в audio/, как у convertPlayer.
+    audio.setAttribute('src', `../audio/${audioFileForTrack(track)}`)
+    el.appendChild(audio)
+  })
 }
 
 function absolutizeAttr(el, attr, baseUrl) {

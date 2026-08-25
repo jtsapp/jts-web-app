@@ -11,17 +11,21 @@ import { Illus, SpeakBtn } from '../practice/vocab/tasks/shared.jsx'
 import Session from '../practice/vocab/Session.jsx'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
+import { listLessonVocab, openLessonVocab } from '../api.js'
+import LessonVocabHome from './vocab/LessonVocabHome.jsx'
+import LessonVocabSession from './vocab/LessonVocabSession.jsx'
 
 // Словарь — нативный экран (раньше прототип public/vocab/index.html в iframe).
 // Слова и строки собираются scripts/extract-vocab.js; вёрстка и логика
 // перенесены 1-в-1, но живут внутри LearningLayout и языка сайта.
-// Экраны: setup → (fields) → overview → collect → session → results.
+// Экраны: setup → (fields) → overview → collect → session → results;
+// словарь уроков — отдельный раздел с кнопки на setup.
 
 // Прототип знает только ru/kk; для английского интерфейса сайта берём ru.
 const vocabLang = (lang) => (lang === 'kk' ? 'kk' : 'ru')
 
 export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
-  const { lang } = useI18n()
+  const { lang, t } = useI18n()
   const vlang = vocabLang(lang)
   const T = tx(vlang)
   const { S, set, setQuiet } = useVocabState()
@@ -33,6 +37,10 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const [collected, setCollected] = useState(null)
   const [results, setResults] = useState(null)
   const [toastMsg, setToastMsg] = useState('')
+  const [lessons, setLessons] = useState([])
+  const [lessonsLoading, setLessonsLoading] = useState(!!token)
+  const [lessonsError, setLessonsError] = useState(false)
+  const [lessonSession, setLessonSession] = useState(null)
 
   const toast = useCallback((m) => {
     setToastMsg(m)
@@ -43,6 +51,37 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     initVoices()
     loadVocabIndex().then(setIndex)
   }, [])
+
+  useEffect(() => {
+    if (!token) {
+      setLessonsLoading(false)
+      return
+    }
+    let alive = true
+    setLessonsLoading(true)
+    setLessonsError(false)
+    listLessonVocab(token, (fresh) => alive && setLessons(fresh || []))
+      .then((data) => {
+        if (!alive) return
+        setLessons(data || [])
+        setLessonsLoading(false)
+      })
+      .catch(() => {
+        if (!alive) return
+        setLessonsError(true)
+        setLessonsLoading(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [token])
+
+  const reloadLessons = useCallback(() => {
+    if (!token) return
+    listLessonVocab(token, (fresh) => setLessons(fresh || []))
+      .then((data) => setLessons(data || []))
+      .catch(() => {})
+  }, [token])
 
   // Смена экрана: мотаем страницу наверх — иначе после клика по кнопке внизу
   // настроек следующий экран открывался уже прокрученным.
@@ -89,6 +128,17 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   )
 
   const ctx = { T, lang: vlang, speak, sfx, tr, S }
+
+  const openLesson = (lesson) => {
+    if (!token || lesson?.locked) return
+    ac()
+    openLessonVocab(lesson.lessonId ?? 'saved', token)
+      .then((data) => {
+        setLessonSession(data)
+        setScreen('lesson-session')
+      })
+      .catch(() => toast(t('vocab.lesson.error')))
+  }
 
   const entitlement = usePracticeEntitlement('vocab', token)
   if (!entitlement.loading && !entitlement.allowed) {
@@ -161,6 +211,37 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     )
   }
 
+  if (screen === 'lesson-session' && lessonSession) {
+    return shell(
+      <LessonVocabSession
+        session={lessonSession}
+        token={token}
+        lang={vlang}
+        onExit={() => {
+          setLessonSession(null)
+          setScreen('lessons')
+          reloadLessons()
+        }}
+        onFinished={reloadLessons}
+      />,
+    )
+  }
+
+  if (screen === 'lessons') {
+    return shell(
+      <LessonVocabHome
+        lessons={lessons}
+        loading={lessonsLoading}
+        error={lessonsError}
+        onOpen={openLesson}
+        onBack={() => {
+          ac()
+          setScreen('setup')
+        }}
+      />,
+    )
+  }
+
   return shell(
     <Setup
       T={T}
@@ -170,6 +251,12 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       speak={speak}
       loading={loading}
       count={scope.length}
+      onLessons={() => {
+        ac()
+        setScreen('lessons')
+        reloadLessons()
+      }}
+      lessonsLabel={t('vocab.lesson.open')}
       onFields={() => {
         ac()
         setScreen('fields')
@@ -184,13 +271,18 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 }
 
 /* ─────────────── Настройка сессии ─────────────── */
-function Setup({ T, S, set, sfx, speak, loading, count, onFields, onNext }) {
+function Setup({ T, S, set, sfx, speak, loading, count, onFields, onNext, onLessons, lessonsLabel }) {
   const personal = S.mode === 'personalized'
   return (
     <section className="v-screen v-show">
       <div className="v-scroll v-pad">
         <h1 className="v-setup-title">{T.setupTitle}</h1>
         <p className="v-setup-lead">{T.setupLead}</p>
+        {onLessons && (
+          <button type="button" className="v-btn v-ghost v-lessons-link" onClick={onLessons}>
+            {lessonsLabel}
+          </button>
+        )}
 
         <div className="v-setup-sec">
           <div className="v-lbl">{T.s_level_h}</div>

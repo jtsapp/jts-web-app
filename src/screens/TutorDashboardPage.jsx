@@ -203,6 +203,9 @@ export default function TutorDashboardPage({
                         style={{ backgroundImage: `url(${s.img})` }}
                       >
                         <span className="t-scenario__badge">{s.badge}</span>
+                        {s.level && (
+                          <span className="t-scen__level">{s.level}</span>
+                        )}
                       </span>
                       <span className="t-scenario__label">{s.label}</span>
                     </button>

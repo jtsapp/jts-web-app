@@ -1,5 +1,5 @@
 import { useI18n } from '../../../i18n.jsx'
-import { gradeQuestion } from '../practiceGrading.js'
+import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
 
@@ -33,6 +33,7 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
   const built = Array.isArray(answer) ? answer : []
   const used = bankIndices(words, built)
   const done = built.length === words.length
+  const attempted = hasAttempt(question, built)
   const correct = done && gradeQuestion(question, built).correct
 
   function pick(word, index) {
@@ -46,7 +47,7 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
   }
 
   let sentenceCls = 'lw-order__sentence'
-  if (checked) sentenceCls += correct ? ' is-correct' : ' is-wrong'
+  if (checked && attempted) sentenceCls += correct ? ' is-correct' : ' is-wrong'
 
   return (
     <div className="lw-q lw-q--order">
@@ -92,7 +93,7 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
         })}
       </div>
 
-      {checked && !correct && (
+      {checked && attempted && !correct && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answer || []).join(' ')}
         </p>

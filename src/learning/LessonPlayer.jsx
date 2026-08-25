@@ -3,6 +3,11 @@ import { useI18n } from '../i18n.jsx'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
+import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../lib/wordTranslate.js'
+import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
+import TapText from '../screens/workspace/TapText.jsx'
+import TappableHtml from '../screens/workspace/TappableHtml.jsx'
+import TranslatePopover from '../screens/workspace/TranslatePopover.jsx'
 
 // Нативный плеер урока «Обучения» (Kingdom lessons) — порт hosted-Speakout-урока
 // (window.TASKS + движок show/render/grade) на React. Заменяет iframe в
@@ -46,8 +51,9 @@ function skillsForTask(task) {
   return [...out]
 }
 
-export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
-  const { t } = useI18n()
+export default function LessonPlayer({ lesson, level, token, catalogLessonId, onExit, onDone }) {
+  const { t, lang } = useI18n()
+  const { pop, openWord, openLimit, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}`, catalogLessonId })
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [wrong, setWrong] = useState(0)
@@ -91,7 +97,29 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
   const pct = Math.round((idx / Math.max(1, total)) * 100)
 
   return (
-    <div className="kl">
+    <div
+      className="kl"
+      onClick={() => {
+        const raw = window.getSelection()?.toString() || ''
+        if (isTapSelection(raw) || isOversizedPhrase(raw)) return
+        close()
+      }}
+      onMouseUp={(e) => {
+        const sel = window.getSelection()
+        const raw = sel?.toString() || ''
+        if (isPhraseSelection(raw) || isOversizedPhrase(raw)) {
+          if (!e.currentTarget.contains(sel.anchorNode)) return
+          if (!sel.rangeCount) return
+          const rect = sel.getRangeAt(0).getBoundingClientRect()
+          if (!rect.width && !rect.height) return
+          const anchor = { getBoundingClientRect: () => rect }
+          if (isOversizedPhrase(raw)) openLimit(raw, anchor)
+          else openWord(raw, anchor)
+          return
+        }
+        if (raw.trim()) close()
+      }}
+    >
       <div className="kl__hud">
         <button className="kl__back" onClick={onExit} aria-label={t('common.back')}>
           <ChevronLeftIcon size={18} />
@@ -108,13 +136,15 @@ export default function LessonPlayer({ lesson, level, token, onExit, onDone }) {
         onGraded={onGraded}
         onContinue={advance}
         t={t}
+        onWord={openWord}
       />
+      <TranslatePopover pop={pop} onSave={token ? onSave : undefined} />
     </div>
   )
 }
 
 // Оболочка задания: кикер, заголовок, тело по типу, фидбэк, футер.
-function LessonTask({ task, graded, onGraded, onContinue, t }) {
+function LessonTask({ task, graded, onGraded, onContinue, t, onWord }) {
   const [answered, setAnswered] = useState(false)
   const [feedback, setFeedback] = useState(null) // {ok, answer?}
   const [canCheck, setCanCheck] = useState(!graded) // инфо-типы сразу активны
@@ -141,11 +171,11 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
             {sec.label}
           </div>
         )}
-        {task.title && <h2 className="kl-task__title">{task.title}</h2>}
-        {task.sub && <p className="kl-task__sub">{task.sub}</p>}
+        {task.title && <TapText as="h2" className="kl-task__title" text={task.title} onWord={onWord} />}
+        {task.sub && <TapText as="p" className="kl-task__sub" text={task.sub} onWord={onWord} />}
 
         <div className="kl-task__body">
-          <TaskBody task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
+          <TaskBody task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} onWord={onWord} />
         </div>
       </div>
 
@@ -181,14 +211,14 @@ function LessonTask({ task, graded, onGraded, onContinue, t }) {
   )
 }
 
-function TaskBody({ task, answered, finish, setCanCheck, bind, t }) {
+function TaskBody({ task, answered, finish, setCanCheck, bind, t, onWord }) {
   switch (task.type) {
     case 'choice':
       return <Choice task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} />
     case 'chips':
-      return <Chips task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
+      return <Chips task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} onWord={onWord} />
     case 'gap':
-      return <Gap task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} />
+      return <Gap task={task} answered={answered} finish={finish} setCanCheck={setCanCheck} bind={bind} t={t} onWord={onWord} />
     case 'check':
       return <Check task={task} />
     case 'listen':
@@ -196,7 +226,7 @@ function TaskBody({ task, answered, finish, setCanCheck, bind, t }) {
     case 'watch':
       return <Watch task={task} />
     case 'info':
-      return <Info task={task} />
+      return <Info task={task} onWord={onWord} />
     default:
       return null
   }
@@ -235,7 +265,7 @@ function Choice({ task, answered, finish, setCanCheck, bind }) {
 }
 
 // ——— chips (собрать пропуск из банка слов) ———
-function Chips({ task, answered, finish, setCanCheck, bind }) {
+function Chips({ task, answered, finish, setCanCheck, bind, onWord }) {
   const bank = useMemo(() => shuffle(task.bank || []), [task])
   const [picked, setPicked] = useState(null)
   useEffect(() => setCanCheck(picked !== null && !answered), [picked, answered, setCanCheck])
@@ -247,11 +277,11 @@ function Chips({ task, answered, finish, setCanCheck, bind }) {
   return (
     <>
       <div className="kl-sentence">
-        {task.gapBefore}
+        <TapText text={task.gapBefore} onWord={onWord} />
         <span className={`kl-gap ${answered ? (normAnswer(chosen) === normAnswer(task.answer) ? 'ok' : 'no') : chosen ? 'filled' : ''}`}>
           {answered ? task.answer : chosen || '____'}
         </span>
-        {task.gapAfter}
+        <TapText text={task.gapAfter} onWord={onWord} />
       </div>
       <div className="kl-bank">
         {bank.map((w, i) => (
@@ -265,7 +295,7 @@ function Chips({ task, answered, finish, setCanCheck, bind }) {
 }
 
 // ——— gap (вписать пропуск) ———
-function Gap({ task, answered, finish, setCanCheck, bind, t }) {
+function Gap({ task, answered, finish, setCanCheck, bind, t, onWord }) {
   const [value, setValue] = useState('')
   const [shown, setShown] = useState(null)
   const inputRef = useRef(null)
@@ -286,7 +316,7 @@ function Gap({ task, answered, finish, setCanCheck, bind, t }) {
   const cls = answered ? (shown === null ? 'ok' : 'no') : ''
   return (
     <div className="kl-sentence">
-      {task.gapBefore}
+      <TapText text={task.gapBefore} onWord={onWord} />
       <input
         ref={inputRef}
         className={`kl-gap-input ${cls}`}
@@ -299,7 +329,7 @@ function Gap({ task, answered, finish, setCanCheck, bind, t }) {
         aria-label={t('lesson.yourAnswer')}
         placeholder="…"
       />
-      {task.gapAfter}
+      <TapText text={task.gapAfter} onWord={onWord} />
     </div>
   )
 }
@@ -345,6 +375,6 @@ function Watch({ task }) {
 }
 
 // ——— info (rich-контент, классы префиксованы l- экстрактором) ———
-function Info({ task }) {
-  return <div className="kl-info" dangerouslySetInnerHTML={{ __html: task.html || '' }} />
+function Info({ task, onWord }) {
+  return <TappableHtml className="kl-info" html={task.html || ''} onWord={onWord} />
 }

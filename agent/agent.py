@@ -37,6 +37,7 @@ from livekit.agents import (
     JobContext,
     JobExecutorType,
     RoomInputOptions,
+    RoomOutputOptions,
     WorkerOptions,
     cli,
     function_tool,
@@ -3748,6 +3749,135 @@ def _turn_detector_mode_for(profile: LearnerProfile) -> str:
     return mode
 
 
+# ── Перебивание тьютора ──────────────────────────────────────────────────────
+# Жаловались, что тьютор «глючит и съедает пару букв или даже слов». Это не TTS
+# и не сеть (на стенде 0 потерянных пакетов, concealment 0.03% за 85 секунд
+# разговора) — это ложные перебивания.
+#
+# Дефолты livekit-agents 1.6.7 (voice/turn.py, _INTERRUPTION_DEFAULTS):
+#   min_duration=0.5, min_words=0, resume_false_interruption=True,
+#   false_interruption_timeout=2.0
+# То есть полсекунды ЛЮБОГО звука, прошедшего Silero VAD, ставят речь тьютора на
+# паузу, а через две секунды она возобновляется — но уже с границы следующего
+# куска. На слух это и есть «проглотил слово». Слов при этом не требовалось
+# вовсе (min_words=0), поэтому резать могли кашель, стук клавиш, чужой голос в
+# комнате и собственный голос тьютора из колонок.
+#
+# min_words=1 — главная ручка: пауза теперь ждёт РАСПОЗНАННОЕ слово, а не просто
+# энергию в микрофоне. Настоящее перебивание («стоп», «wait») по-прежнему
+# проходит, шум — нет. min_duration поднят до 0.8с как второй фильтр.
+#
+# Через env, как и остальные ручки агента: подкрутить можно секретом воркера,
+# без пересборки образа. 0 в INTERRUPT_MIN_WORDS возвращает старое поведение.
+INTERRUPT_MIN_WORDS_DEFAULT = 1
+INTERRUPT_MIN_SEC_DEFAULT = 0.8
+
+
+def _interruption_options() -> dict[str, Any]:
+    """Пороги перебивания для turn_handling. Читаются из env на каждой сессии."""
+
+    def _num(name: str, default: float, cast):
+        raw = (os.getenv(name) or "").strip()
+        if not raw:
+            return default
+        try:
+            value = cast(raw)
+        except ValueError:
+            logger.warning("%s=%r не число — беру %s", name, raw, default)
+            return default
+        if value < 0:
+            logger.warning("%s=%r отрицательное — беру %s", name, raw, default)
+            return default
+        return value
+
+    return {
+        "min_words": _num("INTERRUPT_MIN_WORDS", INTERRUPT_MIN_WORDS_DEFAULT, int),
+        "min_duration": _num("INTERRUPT_MIN_SEC", INTERRUPT_MIN_SEC_DEFAULT, float),
+    }
+
+
+def _turn_handling(detector: Any) -> dict[str, Any]:
+    """Сборка turn_handling сессии. Вынесено из build_cascade_session отдельно,
+    чтобы пороги перебивания проверялись тестом: сама сборка сессии тянет STT,
+    TTS и ключи, а это чистая функция над env и уже готовым детектором."""
+    if detector is not None:
+        return {
+            "turn_detection": detector,
+            "endpointing": {
+                # Законченная фраза: пол задержки, короткое «yes» отвечается быстро.
+                "min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.35")),
+                # Незаконченная: сколько ученику дают молча подумать, не теряя ход.
+                # Ради этого потолка всё и затевалось — на VAD его не существует.
+                "max_delay": float(os.getenv("MAX_ENDPOINTING_SEC", "4.0")),
+            },
+            # Отличает поддакивание ученика от настоящего перебивания. Если
+            # начнёт глотать настоящие — вернуть {"mode": "vad"}.
+            "interruption": {"mode": "adaptive", **_interruption_options()},
+            "preemptive_generation": {"enabled": True},
+        }
+    # Старый путь ровно как был: Soniox не шлёт END_OF_SPEECH (#4034), поэтому
+    # ход закрывает VAD, а 0.3с — компромисс между «рвёт на паузе» и «мёртвый
+    # воздух после ответа».
+    return {
+        "turn_detection": "vad",
+        "endpointing": {"min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.3"))},
+        # Без детектора порог перебивания тем более нужен: решение «это
+        # перебивание» принимает один Silero, а он одинаково реагирует и на
+        # слово, и на хлопок дверью.
+        "interruption": _interruption_options(),
+        "preemptive_generation": {"enabled": True},
+    }
+
+
+def _krisp_enabled() -> bool:
+    """Включать ли Krisp BVC этой сессии.
+
+    Отдельной функцией, а не выражением в entrypoint: ровно это условие раньше
+    молча не выполнялось ни у кого (`profile.tier != "free"` при захардкоженном
+    free в токен-роуте), и проверять его хочется тестом, а не звонком.
+    """
+    if noise_cancellation is None:
+        return False
+    return (os.getenv("KRISP_BVC") or "").strip().lower() not in ("off", "0", "false")
+
+
+def _krisp_reason() -> str:
+    """Строка для лога: включён BVC или нет и почему."""
+    if noise_cancellation is None:
+        return "off — плагин livekit-plugins-noise-cancellation не установлен"
+    raw = (os.getenv("KRISP_BVC") or "").strip()
+    if not _krisp_enabled():
+        return f"off — KRISP_BVC={raw!r}"
+    return "on"
+
+
+def _attach_interruption_logging(session: AgentSession) -> None:
+    """Сделать перебивания видимыми в `lk agent logs`.
+
+    Событие agent_false_interruption в 1.6.7 есть, но агент на него не был
+    подписан — поэтому «тьютор глотает слова» не оставляло в логах ни следа, и
+    причину искали в TTS. Теперь каждое ложное перебивание печатается, и после
+    выкатки видно, ушла ли жалоба или пороги надо крутить дальше.
+    """
+
+    @session.on("agent_false_interruption")
+    def _on_false(ev: Any) -> None:  # pragma: no cover - runtime telemetry
+        logger.info(
+            "INTERRUPT false (resumed=%s) — тьютора прервал шум, а не ученик",
+            getattr(ev, "resumed", "?"),
+        )
+
+    # Перекрытие речи ловит только адаптивный детектор (turn_handling
+    # interruption.mode=adaptive); на голом VAD событие не приходит вовсе.
+    @session.on("overlapping_speech")
+    def _on_overlap(ev: Any) -> None:  # pragma: no cover - runtime telemetry
+        logger.info(
+            "INTERRUPT overlap (interrupt=%s prob=%s)",
+            getattr(ev, "should_interrupt", "?"),
+            getattr(ev, "probability", "?"),
+        )
+
+
 def _build_turn_detector(mode: str):
     """Детектор или None. Любая ошибка конструктора — не повод ронять звонок:
     сессия молча откатывается на старое VAD-эндпойнтинг."""
@@ -3912,30 +4042,7 @@ def build_cascade_session(
         else None
     )
     detector = _build_turn_detector(_turn_detector_mode_for(profile))
-    if detector is not None:
-        turn_handling: dict[str, Any] = {
-            "turn_detection": detector,
-            "endpointing": {
-                # Законченная фраза: пол задержки, короткое «yes» отвечается быстро.
-                "min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.35")),
-                # Незаконченная: сколько ученику дают молча подумать, не теряя ход.
-                # Ради этого потолка всё и затевалось — на VAD его не существует.
-                "max_delay": float(os.getenv("MAX_ENDPOINTING_SEC", "4.0")),
-            },
-            # Отличает поддакивание ученика от настоящего перебивания. Если
-            # начнёт глотать настоящие — вернуть {"mode": "vad"}.
-            "interruption": {"mode": "adaptive"},
-            "preemptive_generation": {"enabled": True},
-        }
-    else:
-        # Старый путь ровно как был: Soniox не шлёт END_OF_SPEECH (#4034),
-        # поэтому ход закрывает VAD, а 0.3с — компромисс между «рвёт на паузе»
-        # и «мёртвый воздух после ответа».
-        turn_handling = {
-            "turn_detection": "vad",
-            "endpointing": {"min_delay": float(os.getenv("MIN_ENDPOINTING_SEC", "0.3"))},
-            "preemptive_generation": {"enabled": True},
-        }
+    turn_handling = _turn_handling(detector)
     kwargs: dict[str, Any] = {
         "stt": stt,
         "llm": llm,
@@ -4044,6 +4151,46 @@ def _attach_latency_logging(session: AgentSession) -> None:
             logger.info(
                 "LATENCY tts_ttfb=%.3fs tts_duration=%.3fs", g("ttfb"), g("duration"),
             )
+
+
+# Скорость субтитров тьютора. По умолчанию livekit-agents выдаёт их СИНХРОННО
+# со звуком: синхронизатор сыплет слова по одному, засыпая между ними, а темп
+# берёт из STANDARD_SPEECH_RATE = 3.83 слога/сек (livekit.agents
+# voice/transcription/synchronizer.py). Речь TTS обычно быстрее, поэтому подпись
+# отстаёт всё сильнее к концу реплики — ученик глазами догоняет то, что уже
+# отзвучало. Это и зовут «субтитры тормозят»; клиент тут ни при чём, подбор
+# кегля стоит полмиллисекунды на обновление.
+#
+# Множитель > 1 пускает текст вперёд голоса, не разрывая пару «слышу–вижу».
+# 0 или меньше выключает синхронизацию совсем: реплика появляется целиком, как
+# только её выдал LLM, ещё до озвучки. Читать удобно, но аудирование как
+# упражнение это убивает — поэтому не дефолт.
+#
+# Через env, как языки STT и прочие ручки агента: подкрутить можно перезапуском
+# воркера, без пересборки образа.
+TRANSCRIPT_SPEED_DEFAULT = 1.5
+
+
+def _transcript_output_options() -> RoomOutputOptions | None:
+    """None = оставить дефолты livekit-agents (множитель ровно 1.0)."""
+    raw = (os.getenv("TRANSCRIPT_SPEED") or "").strip()
+    if not raw:
+        factor = TRANSCRIPT_SPEED_DEFAULT
+    else:
+        try:
+            factor = float(raw)
+        except ValueError:
+            logger.warning(
+                "TRANSCRIPT_SPEED=%r не число — беру %s", raw, TRANSCRIPT_SPEED_DEFAULT
+            )
+            factor = TRANSCRIPT_SPEED_DEFAULT
+    if factor <= 0:
+        logger.info("Субтитры: синхронизация со звуком выключена (TRANSCRIPT_SPEED=%s)", raw)
+        return RoomOutputOptions(sync_transcription=False)
+    if factor == 1.0:
+        return None
+    logger.info("Субтитры: множитель скорости %.2f", factor)
+    return RoomOutputOptions(transcription_speed_factor=factor)
 
 
 async def entrypoint(ctx: JobContext):
@@ -4192,6 +4339,7 @@ async def entrypoint(ctx: JobContext):
         )
 
     _attach_latency_logging(session)
+    _attach_interruption_logging(session)
 
     if not profile.device_id:
         logger.warning(
@@ -4214,20 +4362,36 @@ async def entrypoint(ctx: JobContext):
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
     # tutor's own audio leaking back through speakers — the echo/hiss testers hit.
-    # Krisp BVC is a paid LiveKit Cloud add-on (~$0.003/min) → skip it on the free
-    # tier to hold the cost budget; paid tier keeps it.
-    use_krisp = noise_cancellation is not None and profile.tier != "free"
+    #
+    # Раньше здесь стояло `profile.tier != "free"`, и это условие не выполнялось
+    # НИКОГДА: tier приезжает из токен-роута, а там `const freeTier = true`
+    # захардкожен (платного тарифа нет, см. src/app/api/livekit/token/route.js).
+    # То есть подавления эха не было ни у одной сессии, и голос тьютора из
+    # колонок возвращался в микрофон — а полсекунды такого «звука» хватает,
+    # чтобы перебить его на полуслове (см. _interruption_options).
+    #
+    # Krisp BVC — платный аддон LiveKit Cloud (~$0.003/мин, то есть меньше цента
+    # на 20-минутный дневной лимит одного ученика). KRISP_BVC=off выключает его
+    # секретом воркера, если счёт вдруг окажется заметным.
+    use_krisp = _krisp_enabled()
+    # Печатаем факт включения. В логах воркера есть строка «[livekit-nc] noise
+    # cancellation active», но это сервис LiveKit Cloud, и она приходит одинаково
+    # с BVC и без него — по ней не проверить, доехал RoomInputOptions или нет.
+    # А проверять надо: условие включения уже один раз молча не выполнялось ни у
+    # одной сессии, и заметили это только через жалобы на рваную речь.
+    logger.info("Krisp BVC: %s", _krisp_reason())
     room_input_options = (
         RoomInputOptions(noise_cancellation=noise_cancellation.BVC())
         if use_krisp
         else None
     )
+    start_kwargs: dict[str, Any] = {"agent": agent, "room": ctx.room}
     if room_input_options is not None:
-        await session.start(
-            agent=agent, room=ctx.room, room_input_options=room_input_options
-        )
-    else:
-        await session.start(agent=agent, room=ctx.room)
+        start_kwargs["room_input_options"] = room_input_options
+    output_options = _transcript_output_options()
+    if output_options is not None:
+        start_kwargs["room_output_options"] = output_options
+    await session.start(**start_kwargs)
 
     # ── Жёсткий серверный потолок длительности сессии ─────────────────────────
     # Клиентский countdown display-only, а истечение TTL LiveKit-токена уже

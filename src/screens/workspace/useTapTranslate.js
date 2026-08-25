@@ -15,7 +15,7 @@ import { saveWord } from '../../api.js'
 // <audio> внутри разметки на каждый поллинг живого урока (см. комментарий
 // там); нестабильная ссылка на функцию сломала бы этот memo так же, как
 // сломал бы её сам объект block.
-export function useTapTranslate({ token, lang, source }) {
+export function useTapTranslate({ token, lang, source, catalogLessonId }) {
   const tl = lang === 'kk' ? 'kk' : 'ru'
   const [pop, setPop] = useState(null)
   const popRef = useRef(null)
@@ -23,10 +23,24 @@ export function useTapTranslate({ token, lang, source }) {
     popRef.current = pop
   }, [pop])
   const seqRef = useRef(0)
-  const ctxRef = useRef({ token, tl, source })
+  const ctxRef = useRef({ token, tl, source, catalogLessonId })
   useEffect(() => {
-    ctxRef.current = { token, tl, source }
+    ctxRef.current = { token, tl, source, catalogLessonId }
   })
+
+  const openLimit = useCallback((raw, anchorEl) => {
+    if (!anchorEl) return
+    setPop({
+      word: String(raw || '').trim(),
+      translation: '',
+      alternates: [],
+      loading: false,
+      saving: false,
+      saved: false,
+      tooLong: true,
+      rect: anchorEl.getBoundingClientRect(),
+    })
+  }, [])
 
   const openWord = useCallback((raw, anchorEl) => {
     const w = cleanWord(raw)
@@ -49,7 +63,7 @@ export function useTapTranslate({ token, lang, source }) {
     const current = popRef.current
     if (!current?.translation || current.saving || current.saved) return
     const seq = seqRef.current
-    setPop((p) => p && { ...p, saving: true })
+    setPop((p) => p && { ...p, saving: true, saveError: false })
     try {
       await saveWord(ctxRef.current.token, {
         word: current.word,
@@ -57,10 +71,11 @@ export function useTapTranslate({ token, lang, source }) {
         alternates: current.alternates.length ? current.alternates.join(', ') : undefined,
         language: ctxRef.current.tl,
         source: ctxRef.current.source,
+        catalogLessonId: ctxRef.current.catalogLessonId,
       })
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true })
+      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saved: true, saveError: false })
     } catch {
-      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false })
+      if (seqRef.current === seq) setPop((p) => p && { ...p, saving: false, saveError: true })
     }
   }, [])
 
@@ -70,5 +85,5 @@ export function useTapTranslate({ token, lang, source }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [close])
 
-  return { pop, openWord, close, onSave }
+  return { pop, openWord, openLimit, close, onSave }
 }

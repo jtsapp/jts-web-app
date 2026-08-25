@@ -21,7 +21,6 @@ import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
 import LessonRoute from './workspace/LessonRoute.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
-import TopicsList from './workspace/TopicsList.jsx'
 import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
@@ -29,9 +28,9 @@ import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
+import { visibleSteps } from './workspace/visibleSteps.js'
 import { knowsFocusTarget } from './live/followFocus.js'
-import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
-import { liveLessonSteps } from './workspace/liveSteps.js'
+import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
@@ -73,12 +72,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // true пока открытый материал — «догоняющая» копия для follow-me: не
   // восстанавливает свой прогресс и не сохраняет его (см. SectionMaterialFrame).
   const [followMode, setFollowMode] = useState(false)
+  const followModeRef = useRef(false)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
   // (так открываются и материалы, которые преподаватель загрузил сам).
   const [catalogLesson, setCatalogLesson] = useState(null)
+  const [resolvedCatalogLessonId, setResolvedCatalogLessonId] = useState(null)
   const [activeStepId, setActiveStepId] = useState(null)
+  const activeStepIdRef = useRef(null)
+  activeStepIdRef.current = activeStepId
   const [answers, setAnswers] = useState({})
+  const answersRef = useRef(answers)
+  answersRef.current = answers
   // Несмотря на название — не id шагов, а составные ключи practice-карточек
   // (`practiceBlockKey` в LessonContent): один шаг урока несёт по несколько
   // независимых упражнений подряд, и «Проверить» должно снимать блокировку
@@ -90,6 +95,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // до первого «Внимание на упражнение» бегунка «Т» на треке нет — и это честно:
   // выдумывать ему позицию значило бы показывать ученику неправду.
   const [teacherStepId, setTeacherStepId] = useState(null)
+  const [focusTargetId, setFocusTargetId] = useState(null)
+  const [focusNonce, setFocusNonce] = useState(0)
   // Живая трансляция урока, открытого шагами. peerStepId/peerName — позиция
   // ЕДИНСТВЕННОГО учителя, как её видит студент (своё состояние —
   // activeStepId/answers — сюда не смешивается: преподаватель волен смотреть
@@ -120,6 +127,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // restore last set, keyed by material, so catalog-resolve can defer to it
   // instead of blindly overwriting — see both effects below.
   const restoredStepRef = useRef({ materialId: null, stepId: null })
+  const restoredForRef = useRef(null)
+  const flushProgressRef = useRef(false)
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
   // К разделу можно прикрепить несколько материалов, и до сих пор ученик видел
@@ -163,7 +172,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return getLessonSections(token, lessonId).then((list) => {
       setSections(list)
       setSectionsFailed(false)
-      setActiveSectionId((prev) => (prev != null && list.some((s) => s.id === prev)) ? prev : (list[0]?.id ?? null))
+      setActiveSectionId((prev) => (prev != null && list.some((s) => String(s.id) === String(prev))) ? prev : (list[0]?.id ?? null))
       return list
     }).catch(() => {
       setSectionsFailed(true)
@@ -177,6 +186,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // и без сброса первый рендер сваливался бы на «первый по списку» молча.
     setActiveMaterialId(null)
     setFollowMode(false)
+    followModeRef.current = false
     if (isStaff) setPresenting(false)
   }
 
@@ -207,16 +217,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
     Promise.resolve(url ? catalogLessonIdFor(url, token) : null)
-      .then((id) => (id == null ? null : loadCatalogLesson(id, token)))
-      .then((loaded) => {
+      .then((id) =>
+        id == null
+          ? Promise.resolve({ id: null, loaded: null })
+          : loadCatalogLesson(id, token).then((loaded) => ({ id, loaded })),
+      )
+      .then(({ id, loaded }) => {
         if (cancelled) return
+        setResolvedCatalogLessonId(id)
         setCatalogLesson(loaded || null)
         const forced = pendingFocusStepRef.current
         pendingFocusStepRef.current = null
         const restored = restoredStepRef.current
-        if (forced != null && (loaded?.steps || []).some((s) => String(s.id) === String(forced))) {
+        const steps = loaded?.steps || []
+        const hasStep = (id) => id != null && steps.some((s) => String(s.id) === String(id))
+        if (forced != null && hasStep(forced)) {
           setActiveStepId(forced)
-        } else if (restored.materialId === activeMaterial?.materialId && restored.stepId != null) {
+        } else if (restored.materialId === activeMaterial?.materialId && hasStep(restored.stepId)) {
           // Progress-restore already landed the real step for this exact
           // material while this fetch was in flight — don't stomp it back
           // to the beginning. Consume it once: a later re-resolve for the
@@ -224,6 +241,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           // stale step over wherever the student has since navigated to.
           restoredStepRef.current = { materialId: null, stepId: null }
           setActiveStepId(restored.stepId)
+        } else if (hasStep(activeStepIdRef.current)) {
+          // Already on a valid step (pointer, restore, or the student
+          // picked one). Rewinding to steps[0] remounts the cloze and
+          // wipes uncontrolled gap inputs.
         } else {
           setActiveStepId(loaded?.steps?.[0]?.id ?? null)
         }
@@ -231,22 +252,39 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       })
       .catch(() => {
         if (cancelled) return
+        setResolvedCatalogLessonId(null)
         setCatalogLesson(null)
         setCatalogResolvedFor(url)
       })
     return () => { cancelled = true }
   }, [materialFileUrl, token])
 
-  // Через useMemo, а не выражением: пустой массив создавался бы заново на каждый
-  // рендер и обнулял мемоизацию статусов ниже.
-  const lessonSteps = useMemo(() => catalogLesson?.steps || [], [catalogLesson])
+  // Упражнения, скрытые преподавателем поштучно («Скрыть это упражнение от ученика»).
+  // Вырезать их на сервере нельзя: шаги приезжают из каталога — один и тот же урок на
+  // все занятия, — а скрыты они в конкретном материале конкретного занятия. Поэтому
+  // список едет вместе с материалом раздела, а выкидывает шаги клиент.
+  //
+  // Только у ученика: преподаватель скрытый шаг видит и ведёт по нему урок (в его
+  // маршруте шаг помечен), иначе он не смог бы вернуть его обратно.
+  // Не оборачиваем в useMemo: ссылка приходит из ответа сервера и живёт, пока живут
+  // разделы, — новый массив на рендер тут неоткуда взяться.
+  const hiddenStepIds = isStaff ? null : activeMaterial?.hiddenStepIds
 
-  // Урок ученика — очередь экранов (Figma «pitch JTS» → Уроки → Онлайн-уроки):
-  // одно задание на экран, прогресс сверху, одна кнопка снизу. Документ урока с
-  // маршрутом слева остаётся преподавателю: он ведёт занятие и смотрит работу
-  // ученика целиком, ему нужен весь шаг сразу, а не по одному вопросу.
-  const playerSteps = useMemo(() => liveLessonSteps(catalogLesson), [catalogLesson])
-  const activeStepIndex = lessonSteps.findIndex((s) => s.id === activeStepId)
+  // Через useMemo, а не выражением: пустой массив создавался бы заново на каждый
+  // рендер и обнулял мемоизацию статусов ниже. `visibleSteps` ради этого же отдаёт
+  // исходный массив, когда скрывать нечего.
+  const lessonSteps = useMemo(
+    () => visibleSteps(catalogLesson?.steps, hiddenStepIds),
+    [catalogLesson?.steps, hiddenStepIds],
+  )
+  // Преподаватель может скрыть шаг, на котором ученик прямо сейчас стоит (или на
+  // который сам же и указал «Вниманием на упражнение» минутой раньше). Тогда ученик
+  // остался бы на пустом месте: в маршруте шага больше нет, показывать нечего.
+  // Отступаем к первому видимому — вычислением, а не поправкой activeStepId через
+  // setState: это был бы каскад рендеров, и вдобавок ученик не вернулся бы на своё
+  // место, когда преподаватель откроет шаг обратно.
+  const requestedStepIndex = lessonSteps.findIndex((s) => String(s.id) === String(activeStepId))
+  const activeStepIndex = requestedStepIndex >= 0 ? requestedStepIndex : (lessonSteps.length ? 0 : -1)
   const activeStep = activeStepIndex >= 0 ? lessonSteps[activeStepIndex] : null
 
   // Статусы шагов урока: текущий — активный, пройденные — до него, остальные
@@ -291,25 +329,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const studentStepId = isStaff ? reviewStepId : activeStepId
   const lessonTeacherStepId = isStaff ? activeStepId : peerStepId
 
-  // Ученик пролистнул экран плеера. Плеер знает только свой плоский индекс, а
-  // маршрут, бегунки и трансляция живут на шагах урока — переводим через
-  // stepId, который конвертер положил в каждый экран. Несколько экранов подряд
-  // приходятся на один шаг урока, поэтому шлём только смену шага, а не каждый
-  // клик «Продолжить»: иначе преподаватель получал бы поток одинаковых событий.
-  function handlePlayerStep(index) {
-    const stepId = playerSteps[index]?.stepId
-    if (!stepId || stepId === activeStepId) return
-    setActiveStepId(stepId)
-    persistProgress({ answers, checkedSteps, stepId })
-    sendStepProgress({
-      stepId,
-      sectionId: activeSectionId,
-      materialId: activeMaterial?.materialId ?? null,
-    })
-  }
-
   function handleAnswer(questionId, value) {
-    const next = { ...answers, [questionId]: value }
+    const next = { ...answersRef.current, [questionId]: value }
+    answersRef.current = next
     setAnswers(next)
     persistProgress({ answers: next, checkedSteps, stepId: activeStepId })
     // Ответ уходит собеседнику сразу, а не по «Проверить»: преподаватель должен
@@ -326,9 +348,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // `key` — составной ключ конкретной practice-карточки (LessonContent
   // передаёт его в onCheck), а не id шага: см. комментарий у checkedSteps.
-  function handleCheckStep(key) {
+  function handleCheckStep(key, questionIds = []) {
     const next = new Set(checkedSteps)
     next.add(key)
+    questionIds.forEach((id) => next.add(id))
     setCheckedSteps(next)
     persistProgress({ answers, checkedSteps: next, stepId: activeStepId })
     sendStepProgress({
@@ -375,7 +398,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   })
 
   function refreshMessages() {
-    getLessonMessages(token, lessonId).then(setMessages).catch(() => {})
+    getLessonMessages(token, lessonId)
+      .then((list) => {
+        setMessages((prev) => (sameMessageSnapshot(prev, list) ? prev : list))
+      })
+      .catch(() => {})
   }
 
   function handleSendMessage(text) {
@@ -394,6 +421,27 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       .finally(() => setChatSending(false))
   }
 
+  function applyTeacherPointer(evt) {
+    setTab('lesson')
+    followModeRef.current = true
+    setFollowMode(true)
+    if (evt.sectionId != null && evt.sectionId !== activeSectionId) setActiveSectionId(evt.sectionId)
+    if (evt.materialId != null && evt.materialId !== activeMaterialId) setActiveMaterialId(evt.materialId)
+    if (evt.stepId != null) {
+      pendingFocusStepRef.current = evt.stepId
+      // Same step as a different type (`3` vs `"3"`) remounts LessonContent
+      // and wipes the uncontrolled word-bank inputs. Stay put if we're here.
+      if (String(evt.stepId) !== String(activeStepIdRef.current)) {
+        setActiveStepId(evt.stepId)
+      }
+    }
+    const qid = evt.questionId != null && String(evt.questionId) !== ''
+      ? String(evt.questionId)
+      : (evt.stepId != null ? 'block-0' : null)
+    if (qid != null) setFocusTargetId(qid)
+    setFocusNonce((n) => n + 1)
+  }
+
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
   const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio } = useLessonLiveSocket(lessonId, token, selfUserId, {
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
@@ -404,25 +452,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
       setTeacherStepId(evt.stepId ?? evt.sectionId)
       if (isStaff) return
-      // Учитель мог прикрепить урок из каталога уже после того, как ученик
-      // открыл занятие: раздел и материал из события тогда ученику незнакомы,
-      // и переключаться было бы не на что. Перечитываем разделы — иначе он
-      // молча остаётся на прежнем уроке.
-      const apply = () => {
-        setActiveSectionId(evt.sectionId)
-        setActiveMaterialId(evt.materialId ?? null)
-        if (evt.stepId != null) {
-          pendingFocusStepRef.current = evt.stepId
-          setActiveStepId(evt.stepId)
-        }
-        setFollowMode(true)
-        setReloadToken((n) => n + 1)
+      const run = () => {
+        applyTeacherPointer(evt)
+        // iframe catch-up только для HTML-материала. На шагах каталога
+        // reloadToken только лишний ре-рендер LessonContent.
+        if (evt.stepId == null) setReloadToken((n) => n + 1)
       }
       if (!knowsFocusTarget(sections, evt)) {
-        loadSections().then(apply)
+        loadSections().then((list) => { if (list) run() })
         return
       }
-      apply()
+      run()
     },
     onPresent: (evt) => {
       if (isStaff) return
@@ -465,12 +505,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // застывшего экрана. Пока следование включено, каждый следующий шаг
       // преподавателя переносит и сюда — до тех пор, пока студент сам не
       // сменит раздел (см. selectSection, где followMode гасится).
-      if (!isStaff && followMode && evt.senderRole !== 'STUDENT' && evt.stepId != null) {
-        setActiveStepId(evt.stepId)
+      if (!isStaff && evt.senderRole !== 'STUDENT') {
+        // Teacher filled a word-bank gap (or corrected an answer) — apply it
+        // here. A remount via applyTeacherPointer would wipe the uncontrolled
+        // inputs before this paint, so only follow the teacher when the STEP
+        // actually changes; a fill on this cloze just updates the highlight.
+        if (evt.questionId != null && evt.value != null) {
+          handleAnswer(evt.questionId, parseAnswer(evt.value))
+        }
+        if (evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
+          applyTeacherPointer(evt)
+        } else if (evt.questionId != null) {
+          setFocusTargetId(String(evt.questionId))
+        }
       }
-      // Ответы бывают только ученические: преподаватель за ученика не отвечает
-      // (см. readOnly в ChoiceQuestion), и «ответ преподавателя» означал бы,
-      // что где-то разъехались роли.
+      // Practice answers from classmates stay on the staff topic. Teacher
+      // word-bank fills arrive above (value + non-STUDENT role) on the class
+      // topic so the student can paint them without a selected-student gate.
       if (evt.senderRole !== 'STUDENT' || evt.senderUserId == null) return
       // Групповой урок — событие может прийти от ЛЮБОГО студента, не только
       // от того, кого сейчас просматривает преподаватель: пишем в его личную
@@ -513,9 +564,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       if (isStaff) return
       const questionIds = evt.questionIds || []
       const checkedKeys = evt.checkedKeys || []
-      const nextAnswers = { ...answers }
-      questionIds.forEach((id) => { delete nextAnswers[id] })
+      const nextAnswers = { ...answersRef.current }
+      // Empty string, not delete: word-bank apply uses clearMissing: false,
+      // so a missing key would leave the filled gap on screen.
+      questionIds.forEach((id) => { nextAnswers[id] = '' })
+      answersRef.current = nextAnswers
       const nextChecked = new Set(checkedSteps)
+      questionIds.forEach((id) => nextChecked.delete(id))
       checkedKeys.forEach((key) => nextChecked.delete(key))
       setAnswers(nextAnswers)
       setCheckedSteps(nextChecked)
@@ -566,7 +621,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       .then((saved) => {
         if (cancelled) return
         const restored = parseStepProgress(saved?.eventsJson)
-        if (restored) {
+        // Один раз на материал: повторный GET (сменился token) иначе затирал
+        // ответы, которые ученик уже успел вставить, пока ехал первый запрос —
+        // пропуски word-bank после этого вспыхивали пустыми.
+        const already = restoredForRef.current === stepMaterialId
+        if (restored && !already) {
           if (isStaff) {
             if (reviewStudentId != null) {
               setStudentLiveState((prev) => {
@@ -575,16 +634,21 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   ...prev,
                   [reviewStudentId]: {
                     ...cur,
-                    answers: restored.answers,
-                    checkedSteps: restored.checkedSteps,
-                    ...(restored.stepId ? { stepId: restored.stepId } : {}),
+                    answers: { ...restored.answers, ...cur.answers },
+                    checkedSteps: cur.checkedSteps.size ? cur.checkedSteps : restored.checkedSteps,
+                    ...(restored.stepId && !cur.stepId ? { stepId: restored.stepId } : {}),
                   },
                 }
               })
             }
           } else {
-            setAnswers(restored.answers)
-            setCheckedSteps(restored.checkedSteps)
+            setAnswers((prev) => {
+              const merged = { ...restored.answers, ...prev }
+              answersRef.current = merged
+              if (Object.keys(prev).length) flushProgressRef.current = true
+              return merged
+            })
+            setCheckedSteps((prev) => (prev.size ? prev : restored.checkedSteps))
             // Возвращаем на тот шаг, где остановились: иначе урок каждый раз
             // начинается сначала, а ответы «где-то дальше по ленте».
             if (restored.stepId) {
@@ -593,9 +657,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             }
           }
         }
+        restoredForRef.current = stepMaterialId
         setProgressLoadedFor(stepMaterialId)
       })
-      .catch(() => { if (!cancelled) setProgressLoadedFor(stepMaterialId) })
+      .catch(() => {
+        if (!cancelled) {
+          restoredForRef.current = stepMaterialId
+          setProgressLoadedFor(stepMaterialId)
+        }
+      })
     return () => { cancelled = true }
   }, [stepMaterialId, lessonId, token, isStaff, reviewStudentId])
 
@@ -615,8 +685,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // собеседнику (см. audioReport.js — карточки словаря, вопросы на слух,
   // CourseStepPlayer и настоящие <audio> в разметке зовут её сами). Ref для
   // activeStepId, чтобы не пересоздавать подписку на каждый переход по шагу.
-  const activeStepIdRef = useRef(activeStepId)
-  useEffect(() => { activeStepIdRef.current = activeStepId })
   useEffect(() => {
     if (isStaff) return undefined
     setAudioReporter((payload) => sendAudio({ ...payload, stepId: activeStepIdRef.current }))
@@ -634,6 +702,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       saveLessonMaterialProgress(token, lessonId, materialId, serializeStepProgress(next)).catch(() => {})
     }, 800)
   }
+
+  useEffect(() => {
+    if (!progressLoaded || !flushProgressRef.current) return
+    flushProgressRef.current = false
+    persistProgress({ answers: answersRef.current, checkedSteps, stepId: activeStepId })
+  }, [progressLoaded])
 
   // Свой шаг уходит собеседнику при каждом переходе — так на треке появляются
   // оба бегунка. Раньше позиция преподавателя приходила только событием focus,
@@ -678,7 +752,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   function handleFocusClick() {
     if (!activeSectionId) return
     const stepId = onLessonSteps && activeStepId ? activeStepId : null
-    sendFocus(activeSectionId, activeMaterial?.materialId ?? null, stepId)
+    sendFocus(activeSectionId, activeMaterial?.materialId ?? null, stepId, stepId ? 'block-0' : null)
     // Своё эхо брокера сокет глушит, поэтому onFocus здесь не сработает —
     // бегунок «Т» ставим сразу, иначе преподаватель не увидит себя на треке.
     setTeacherStepId(onLessonSteps ? activeStepId : activeSectionId)
@@ -728,7 +802,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   function load() {
     return getLessonById(token, lessonId)
-      .then((data) => { setLesson(data); setState('ready') })
+      .then((data) => {
+        setLesson((prev) => (sameLessonSnapshot(prev, data) ? prev : data))
+        setState('ready')
+      })
       .catch(() => setState('error'))
   }
 
@@ -738,7 +815,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // No STOMP status topic exists; a student polls so "teacher started" appears on its own.
     if (!isStaff) {
       pollRef.current = setInterval(() => {
-        getLessonById(token, lessonId).then((d) => { setLesson(d); setState('ready') }).catch(() => {})
+        getLessonById(token, lessonId).then((d) => {
+          setLesson((prev) => (sameLessonSnapshot(prev, d) ? prev : d))
+          setState((s) => (s === 'ready' ? s : 'ready'))
+        }).catch(() => {})
       }, 5000)
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
@@ -766,12 +846,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // разница в том, можно ли отвечать. Раньше ветка была только под «идёт» и
   // «пауза», и после «Завершить» ученик оставался с пустым экраном: ни ленты,
   // ни ответов, ни итога (спека §3.4 описывает совсем другое).
-  const lessonOpen = status === 'IN_PROGRESS' || status === 'PAUSED' || status === 'COMPLETED'
+  const lessonOpen = status === 'IN_PROGRESS' || status === 'PAUSED' || status === 'COMPLETED' || followMode
   // Смотрящий не отвечает; на паузе и после урока — тоже, чтобы работа не
   // терялась и не дописывалась задним числом (спека §3.3, §3.4).
   const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
-  const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
+  // Урок разобран, но все его упражнения скрыты от этого ученика поштучно.
+  const allStepsHidden = (catalogLesson?.steps?.length || 0) > 0 && lessonSteps.length === 0
+  const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved, allStepsHidden })
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
@@ -926,38 +1008,30 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               onAction={() => setActiveStepId(reviewStepId)}
                             />
                           )}
-                          {/* Плеер — только когда конвертеру было из чего собрать
-                              очередь. Шаг урока может не дать ни одного экрана
-                              (одна декоративная плашка, вопросы неизвестного
-                              типа) — тогда плеер отрисовал бы пустоту, и ученик
-                              остался бы без задания. В этом случае показываем
-                              документ, как раньше. */}
-                          {isStaff || playerSteps.length === 0 ? (
-                            <div ref={lessonContentRef}>
-                              <LessonContent
-                                step={activeStep}
-                                // Преподаватель смотрит работу ученика, ученик — свою.
-                                answers={isStaff ? reviewAnswers : answers}
-                                checkedKeys={isStaff ? reviewCheckedSteps : checkedSteps}
-                                onAnswer={handleAnswer}
-                                onCheck={handleCheckStep}
-                                readOnly={contentReadOnly}
-                                liveQuestionId={isStaff ? reviewLiveQuestionId : null}
-                                token={token}
-                                source={catalogLesson?.title || lesson?.title}
-                              />
-                            </div>
-                          ) : (
-                            <CourseStepPlayer
-                              bare
-                              steps={playerSteps}
-                              level={catalogLesson?.level}
-                              onStep={handlePlayerStep}
+                          {/* Документ шага — тот же LessonContent, что у преподавателя.
+                              Плеер «один вопрос = один экран» прятал указку: questionId
+                              `block-N` живёт в карточках, а не в очереди CourseStepPlayer. */}
+                          <div ref={lessonContentRef}>
+                            <LessonContent
+                              step={activeStep}
+                              // Преподаватель смотрит работу ученика, ученик — свою.
+                              answers={isStaff ? reviewAnswers : answers}
+                              checkedKeys={isStaff ? reviewCheckedSteps : checkedSteps}
+                              onAnswer={handleAnswer}
+                              onCheck={handleCheckStep}
+                              readOnly={contentReadOnly}
+                              liveQuestionId={isStaff ? reviewLiveQuestionId : (followMode ? focusTargetId : null)}
+                              liveFocusNonce={isStaff ? 0 : focusNonce}
+                              token={token}
+                              source={catalogLesson?.title || lesson?.title}
+                              catalogLessonId={resolvedCatalogLessonId}
                             />
-                          )}
+                          </div>
                         </>
                       ) : view === 'loading' ? (
                         <p className="live__status-msg">{t('schedule.loading')}</p>
+                      ) : view === 'hidden' ? (
+                        <p className="live__status-msg">{t('live.allStepsHidden')}</p>
                       ) : (
                         <SectionMaterialFrame
                           ref={materialFrameRef}
@@ -1039,9 +1113,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
                         )}
                       </div>
-                      )}
-                      {catalogLesson?.topics?.length > 0 && (
-                        <TopicsList topics={catalogLesson.topics} activeTopicId={activeStep?.topicId} />
                       )}
                       <TeacherChat
                         messages={chatMessages}

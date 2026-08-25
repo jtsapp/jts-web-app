@@ -15,8 +15,8 @@ test.describe('lesson workspace', () => {
     const match = page.locator('.lw-q--match').first()
     await expect(match).toBeVisible()
     await expect(match.locator('.lw-match__left')).toHaveCount(3)
-    // правая колонка: топики + чат
-    await expect(page.locator('.lw-topics')).toBeVisible()
+    // правая колонка: чат сразу под звонком
+    await expect(page.locator('.lw-topics')).toHaveCount(0)
     await expect(page.locator('.lw-chat')).toBeVisible()
     // отправка сообщения добавляет пузырь
     const before = await page.locator('.lw-chat__msg').count()

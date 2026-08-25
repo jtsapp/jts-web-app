@@ -22,6 +22,14 @@ describe('DayPanel', () => {
     expect(container.querySelectorAll('.sch-row')).toHaveLength(2)
   })
 
+  it('lets a student reopen a completed lesson in view-only', () => {
+    const items = [
+      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
+    ]
+    const { getByRole } = renderPanel({ items })
+    expect(getByRole('button', { name: 'Смотреть' })).toBeTruthy()
+  })
+
   it('shows the empty state when there are no items', () => {
     const { container } = renderPanel({ items: [] })
     expect(container.querySelectorAll('.sch-row')).toHaveLength(0)

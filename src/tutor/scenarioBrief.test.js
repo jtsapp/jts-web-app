@@ -32,15 +32,40 @@ describe('911-call', () => {
     expect(s.brief).toBe(true)
     expect(s.timeLimitSec).toBe(300)
   })
-  it('у сцены с флагом brief текст есть во всех трёх языках', () => {
-    // Две разные правды о том, «есть ли брифинг»: флаг в реестре и ключ в
-    // словаре. Разъедутся — гейт покажет пустую плашку без кнопки, и сцену
-    // будет не начать.
-    expect(hasBrief('911-call')).toBe(true)
-    for (const lang of LANGS) {
-      expect(DICT[lang]['scen.brief.911-call']).toBeTruthy()
-    }
+})
+
+describe('neighbour-noise', () => {
+  it('помечен как сцена с брифингом и без своих часов', () => {
+    // Брифинг обязателен: поворот сцены в том, что сверлит квартира 16, а не
+    // ученик, и узнать это ему больше неоткуда — соседка пришла ругаться.
+    // Часов нет: 22:40 и «тишина с 23:00» — время внутри сцены, не таймер.
+    const s = SCENARIOS.find((x) => x.id === 'neighbour-noise')
+    expect(s.brief).toBe(true)
+    expect(s.timeLimitSec).toBeUndefined()
   })
+})
+
+describe('реестр и словарь не разъезжаются', () => {
+  // Три правды на одну карточку: флаг brief в реестре, ключ scen.brief.<id> и
+  // ключ scen.desc.<id> в словаре. Разъедутся — гейт покажет пустую плашку без
+  // кнопки (сцену не начать), а карточка — сырой ключ вместо описания. Проверка
+  // общая по реестру, а не по конкретному слагу: ровно так следующая новая
+  // сцена и уезжает в прод наполовину подключённой.
+  for (const s of SCENARIOS) {
+    it(`${s.id}: описание есть во всех трёх языках`, () => {
+      for (const lang of LANGS) {
+        expect(DICT[lang][`scen.desc.${s.id}`]).toBeTruthy()
+      }
+    })
+    if (s.brief) {
+      it(`${s.id}: брифинг есть во всех трёх языках`, () => {
+        expect(hasBrief(s.id)).toBe(true)
+        for (const lang of LANGS) {
+          expect(DICT[lang][`scen.brief.${s.id}`]).toBeTruthy()
+        }
+      })
+    }
+  }
 })
 
 describe('hasBrief', () => {

@@ -53,6 +53,13 @@ export function canJoin(lessonStatus) {
   return lessonStatus === 'IN_PROGRESS' || lessonStatus === 'PAUSED'
 }
 
+// Прошедший урок ученик может открыть, но только смотреть: LiveLessonPage
+// уже ставит contentReadOnly на COMPLETED. Без этой кнопки занятие пропадает
+// из расписания сразу после «Завершить».
+export function canOpen(lessonStatus) {
+  return canJoin(lessonStatus) || lessonStatus === 'COMPLETED'
+}
+
 // Maps backend lessonStatus (+ wall-clock) to an i18n suffix under schedule.status.*.
 // A SCHEDULED lesson whose end time is in the past is "overdue" (mirrors web-admin).
 export function lessonStateKey(occ, now = new Date()) {

@@ -25,7 +25,10 @@ const mobile = css.slice(css.lastIndexOf('═══════════ Мо
 
 /** Тело правила внутри переданного куска CSS. */
 function rule(chunk, selector) {
-  const match = chunk.match(new RegExp(`(^|\\n)\\s*\\${selector}\\s*\\{([^}]*)\\}`))
+  // Селектор экранируем целиком: у него бывают скобки (:not(.is-rows)), и без
+  // этого они читались бы как группа регулярки — правило «не находилось».
+  const safe = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = chunk.match(new RegExp(`(^|\\n)\\s*${safe}\\s*\\{([^}]*)\\}`))
   return match ? match[2] : null
 }
 
@@ -48,9 +51,11 @@ describe('мобильный урок — вопрос и карточки', () 
     expect(rule(mobile, '.cp-step__prompt')).toMatch(/font-size:\s*32px/)
   })
 
+  // Селектор с :not(.is-rows) — у карточек появился второй режим (строки),
+  // сетка из кадра осталась за обычным.
   it('карточки «выбери что ближе» — три в ряд, подпись 18', () => {
-    expect(rule(mobile, '.cp-picks')).toMatch(/repeat\(3,/)
-    expect(rule(mobile, '.cp-pick')).toMatch(/min-height:\s*96px/)
+    expect(rule(mobile, '.cp-picks:not(.is-rows)')).toMatch(/repeat\(3,/)
+    expect(rule(mobile, '.cp-picks:not(.is-rows) .cp-pick')).toMatch(/min-height:\s*96px/)
     expect(rule(mobile, '.cp-pick__label')).toMatch(/font-size:\s*18px/)
   })
 

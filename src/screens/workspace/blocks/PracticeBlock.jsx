@@ -10,7 +10,10 @@ import MultiQuestion from '../practice/MultiQuestion.jsx'
 import PickQuestion from '../practice/PickQuestion.jsx'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 import { wrapTapWords } from '../wrapTapWords.js'
+import { useWordBankRoot } from '../useWordBankRoot.js'
 import { reportAudio } from '../../live/audioReport.js'
+import { hasAttempt } from '../practiceGrading.js'
+import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -23,22 +26,34 @@ const QUESTION_BY_TYPE = {
 }
 
 // Карточка практики: заголовок + инструкция/аудио/правило + список вопросов.
-// `checked` — уже вычисленный родителем флаг для ЭТОЙ карточки (см.
-// `practiceBlockKey` в LessonContent) — прокидывается в вопросы как есть.
-export default function PracticeBlock({ block, answers, checked, onAnswer, onCheck, readOnly, liveQuestionId, onWord }) {
+// `checked` — флаг всей карточки; `checkedKeys`/`cardKey` нужны, чтобы
+// после сброса одного вопроса остальными нельзя было снова тыкать.
+export default function PracticeBlock({ block, answers, checked, checkedKeys, cardKey, onAnswer, onCheck, readOnly, liveQuestionId, onWord, gapPrefix, cardAnchorId }) {
+  function questionChecked(question) {
+    if (checkedKeys?.has(question.id)) return true
+    if (cardKey && checkedKeys?.has(cardKey)) return true
+    return !!checked
+  }
   const { t } = useI18n()
+  const canCheck = (block?.questions || []).some((q) => hasAttempt(q, answers?.[q.id]))
   const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
+  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId })
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId }
+
+  useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
   useEffect(() => {
     const root = htmlRef.current
     if (!root || !onWord) return undefined
     const onClick = (e) => {
       if (e.target?.tagName !== 'SPAN' || !e.target.classList.contains('lw-tap-w')) return
+      const selected = window.getSelection()?.toString() || ''
+      if (isPhraseSelection(selected) || isOversizedPhrase(selected)) return
       e.stopPropagation()
-      onWord(e.target.textContent, e.target)
+      onWord(wordFromTap(e.target), e.target)
     }
     root.addEventListener('click', onClick)
     return () => root.removeEventListener('click', onClick)
@@ -66,7 +81,7 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
   }, [tappableHtml, block?.audio?.src])
 
   return (
-    <div className="lw-card lw-practice">
+    <div className="lw-card lw-practice" data-question-id={cardAnchorId || gapPrefix}>
       <div className="lw-practice__head">
         {block?.title && <TapText as="h3" className="lw-practice__title" text={block.title} onWord={onWord} />}
         {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
@@ -78,13 +93,7 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
       {block?.audio?.src && (
         <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
       )}
-      {html && (
-        <div
-          className="lw-practice__html"
-          ref={htmlRef}
-          dangerouslySetInnerHTML={{ __html: tappableHtml }}
-        />
-      )}
+      {html && <div className="lw-practice__html" ref={htmlRef} />}
 
       <div className="lw-practice__list">
         {(block?.questions || []).map((question) => {
@@ -99,7 +108,7 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
               <Question
                 question={question}
                 answer={answers?.[question.id] ?? null}
-                checked={checked}
+                checked={questionChecked(question)}
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
@@ -109,8 +118,14 @@ export default function PracticeBlock({ block, answers, checked, onAnswer, onChe
         })}
       </div>
 
-      {!readOnly && (
-        <button type="button" className="lw-practice__check" onClick={() => onCheck(block)}>
+      {!readOnly && (block?.questions || []).length > 0 && (
+        <button
+          type="button"
+          className="lw-practice__check"
+          disabled={!canCheck}
+          title={canCheck ? undefined : t('lesson.ws.checkNeedAnswer')}
+          onClick={() => canCheck && onCheck(block)}
+        >
           {t('lesson.ws.check')}
         </button>
       )}

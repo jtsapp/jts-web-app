@@ -8,7 +8,7 @@ import LessonResultCard from '../components/LessonResultCard.jsx'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 import { SAMPLE_LESSON } from './workspace/sampleLesson.js'
 import { loadLiveLesson } from './workspace/liveLessonData.js'
-import { liveLessonSteps, topicIdAtStep } from './workspace/liveSteps.js'
+import { liveLessonSteps } from './workspace/liveSteps.js'
 import LessonAside from './workspace/LessonAside.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
 
@@ -18,7 +18,7 @@ import LessonContent from './workspace/LessonContent.jsx'
 // что и в «Обучении» (CourseStepPlayer). Поэтому здесь нет второго движка
 // заданий: экран только готовит плееру шаги (liveLessonSteps) и добавляет то,
 // чего у урока «Обучения» нет — сайдбар приложения слева и правую колонку со
-// звонком, топиками и чатом с учителем.
+// звонком и чатом с учителем.
 //
 // `lessonId` — id урока (диплинк `?screen=lesson-workspace&lesson=…` в App.jsx).
 // `loadLesson` — как достать контент по id: по умолчанию loadLiveLesson
@@ -29,6 +29,7 @@ export default function LessonWorkspacePage({
   onExit,
   lessonId,
   token,
+  catalogLessonId,
   loadLesson = loadLiveLesson,
   userName,
   userLevel = 'A1',
@@ -76,13 +77,14 @@ export default function LessonWorkspacePage({
   const handleDocAnswer = useCallback((questionId, value) => {
     setDocAnswers((prev) => ({ ...prev, [questionId]: value }))
   }, [])
-  const handleDocCheck = useCallback((key) => {
-    setDocChecked((prev) => new Set(prev).add(key))
+  const handleDocCheck = useCallback((key, questionIds = []) => {
+    setDocChecked((prev) => {
+      const next = new Set(prev).add(key)
+      questionIds.forEach((id) => next.add(id))
+      return next
+    })
   }, [])
 
-  // Номер открытого экрана приходит из плеера: индекс живёт там, а правой
-  // колонке он нужен, чтобы подсветить текущий топик.
-  const [stepIndex, setStepIndex] = useState(0)
   const [messages, setMessages] = useState([])
   const [confirmExit, setConfirmExit] = useState(false)
   const [end, setEnd] = useState(null)
@@ -93,8 +95,6 @@ export default function LessonWorkspacePage({
   useEffect(() => {
     setMessages(lesson?.chat || [])
   }, [lesson])
-
-  const handleStep = useCallback((index) => setStepIndex(index), [])
 
   const handleSend = useCallback((text) => {
     setMessages((prev) => [...prev, { id: `student-${Date.now()}-${prev.length}`, from: 'student', text }])
@@ -122,7 +122,6 @@ export default function LessonWorkspacePage({
     )
   }
 
-  const activeTopicId = useDocView ? (docStep?.topicId ?? null) : topicIdAtStep(lesson, steps, stepIndex)
   const accuracy = end?.accuracy ?? 100
 
   return (
@@ -164,6 +163,9 @@ export default function LessonWorkspacePage({
                 onAnswer={handleDocAnswer}
                 onCheck={handleDocCheck}
                 readOnly={false}
+                token={token}
+                source={lesson?.title}
+                catalogLessonId={catalogLessonId}
               />
             </div>
           ) : (
@@ -172,15 +174,15 @@ export default function LessonWorkspacePage({
               steps={steps}
               title={lesson.title || lesson.unit || ''}
               level={lesson.level}
+              token={token}
+              catalogLessonId={catalogLessonId}
               onExit={() => setConfirmExit(true)}
               onVocab={onVocab}
               withLang
-              onStep={handleStep}
               onDone={setEnd}
               aside={
                 <LessonAside
                   lesson={lesson}
-                  activeTopicId={activeTopicId}
                   messages={chatMessages}
                   onSend={handleSend}
                 />

@@ -60,7 +60,6 @@ import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLogi
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
-import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
@@ -76,6 +75,16 @@ function phoneErrorKey(e) {
   if (e?.code === 'USER_NOT_FOUND') return 'err.userNotFound'
   return null
 }
+
+// Экраны верхнего уровня (сайдбар «Обучение»/«Практика»/«Домашняя работа»/…),
+// которые можно синхронизировать в ?screen= без доп. параметров. Экраны с
+// обязательным runtime-id (live-lesson, lesson-workspace, kingdom-interior,
+// shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
+// ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
+const PERSISTABLE_SCREENS = new Set([
+  'kingdom', 'practice', 'listening', 'homework', 'lessons',
+  'ielts', 'vocab', 'course-catalog', 'profile',
+])
 
 export default function App() {
   const { t } = useI18n()
@@ -111,6 +120,14 @@ export default function App() {
     if (catalogParam) {
       setLiveWorkspaceId(catalogParam)
       setWorkspaceSource('catalog')
+    }
+    // ?live=<id> — id живого урока для «Живой урок» (диплинк
+    // ?screen=live-lesson&live=<id>). Отдельный параметр от lessonParam выше:
+    // тот наполняет liveWorkspaceId для другого экрана (lesson-workspace), а
+    // тут своё состояние — liveLessonId для LiveLessonPage.
+    const liveParam = searchParams.get('live')
+    if (liveParam) {
+      setLiveLessonId(liveParam)
     }
     // ?level=<A1|A2|…> — королевство для kingdom-interior (диплинк
     // ?screen=kingdom-interior&level=b1). Через карту туда не попасть, пока
@@ -173,6 +190,7 @@ export default function App() {
       cancelled = true
     }
   }, [])
+
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   // Почта студента при регистрации: номер → почта → код (на почту) → пароль,
@@ -550,26 +568,48 @@ export default function App() {
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
 
-  // Fullscreen belongs to the Lessons screen only — exit it on any other screen,
-  // including paths that bypass the nav handlers (profile button, opening a lesson).
-  // The *request* stays in the click handlers because it needs a user gesture.
+  // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
+  // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
+  // читает их тем же deepLink-путём, что и явный диплинк, и остаётся там же, а
+  // не на дефолтном экране роли (жалоба: во время живого урока F5 выбрасывал
+  // на главную).
   useEffect(() => {
-    if (screen !== 'lessons') exitAppFullscreen()
-  }, [screen])
+    if (restoring) return
+    const url = new URL(window.location.href)
+    const hadScreen = url.searchParams.get('screen')
+    const hadLive = url.searchParams.get('live')
+    const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
+    const wantLive = isLiveLesson ? String(liveLessonId) : null
+    if (PERSISTABLE_SCREENS.has(screen) || isLiveLesson) {
+      if (hadScreen === screen && hadLive === wantLive) return
+      url.searchParams.set('screen', screen)
+      if (wantLive != null) url.searchParams.set('live', wantLive)
+      else url.searchParams.delete('live')
+    } else {
+      if (!hadScreen && !hadLive) return
+      url.searchParams.delete('screen')
+      url.searchParams.delete('live')
+    }
+    window.history.replaceState(null, '', url)
+  }, [screen, restoring, liveLessonId])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
   function handleNav(key, payload) {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'lessons') requestAppFullscreen()
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
     // Shadowing открывается с карточки Практики — payload несёт id урока.
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'tutor') setScreen(tutorHome)
-    else if (key === 'lessons') setScreen('lessons')
+    else if (key === 'lessons') {
+      if (payload && payload.lessonId) {
+        setLiveLessonId(payload.lessonId)
+        setScreen('live-lesson')
+      } else setScreen('lessons')
+    }
     else if (key === 'homework') setScreen('homework')
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
@@ -579,7 +619,6 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'lessons') requestAppFullscreen()
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -1229,7 +1268,7 @@ export default function App() {
         />
       )
     case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} loadLesson={workspaceSource === 'catalog' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} catalogLessonId={workspaceSource === 'catalog' && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     default:
       return null
   }

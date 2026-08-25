@@ -16,6 +16,9 @@ export function wrapTapWords(html) {
   for (const textNode of textNodes) {
     const text = textNode.nodeValue
     if (!text || !/[A-Za-z]/.test(text)) continue
+    // Кнопки ответа / ссылки / поля — не трогаем: тап там выбирает вариант,
+    // а не просит перевод.
+    if (textNode.parentElement?.closest('button, a, input, textarea, select, label')) continue
     // Обёртка — ОДИН узел на место текстового, а не россыпь соседних (было
     // раньше): курс кладёт целые фразы одним текстовым узлом прямо в
     // flex/grid-карточку («иконка + подпись», класс .card в разметке урока) —
@@ -26,12 +29,13 @@ export function wrapTapWords(html) {
     for (const tok of text.split(/(\s+)/)) {
       if (!tok) continue
       if (/^\s+$/.test(tok) || !/[A-Za-z]/.test(tok)) {
+        if (/^\s*[>"']+\s*$/.test(tok) && tok.includes('>')) continue
         wrap.appendChild(document.createTextNode(tok))
         continue
       }
       const span = document.createElement('span')
       span.className = 'lw-tap-w'
-      span.textContent = tok
+      span.textContent = tok.replace(/>+$/g, '')
       wrap.appendChild(span)
     }
     textNode.parentNode.replaceChild(wrap, textNode)

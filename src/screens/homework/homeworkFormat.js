@@ -1,3 +1,4 @@
+import { revokedEverything } from './homeworkExercises.js'
 // Чистые правила экрана «Домашняя работа». Ни сети, ни React — под юнит-тесты.
 
 // Те же расширения, что принимает бэкенд (HomeworkFileTypes). Дублируются
@@ -81,9 +82,21 @@ export function canSubmit(hw, draftAnswered = 0) {
   return (hw.submissions?.length ?? 0) > 0 || answeredExercises(hw) > 0 || draftAnswered > 0
 }
 
-/** Сколько работ ждут ученика — цифра на входе с главной. */
+/**
+ * Сколько работ ждут ученика — цифра на входе с главной.
+ *
+ * Работа, из которой отозвали все задания и в которой нечего прикладывать, не
+ * ждёт ничего: сделать в ней нельзя ровно ничего, и держать её в счётчике —
+ * значит гонять ученика к пустому экрану.
+ */
 export function pendingCount(list) {
-  return (list || []).filter((hw) => hw.status === 'ASSIGNED' || hw.status === 'NEEDS_REVISION').length
+  return (list || [])
+    .filter((hw) => hw.status === 'ASSIGNED' || hw.status === 'NEEDS_REVISION')
+    // canAttach тут не годится: он означает «работу ещё можно пополнять», и у
+    // ASSIGNED он верен всегда. Нам нужно другое — есть ли ЧТО делать: задания
+    // отозвали все, и материалов преподаватель не прикладывал.
+    .filter((hw) => !(revokedEverything(hw) && (hw.materials?.length ?? 0) === 0))
+    .length
 }
 
 /** Школьная шкала: бэкенд принимает только 1–5 (GradeHomeworkRequest). */

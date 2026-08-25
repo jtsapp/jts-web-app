@@ -20,6 +20,25 @@ describe('rewriteHtml', () => {
     expect(out).toContain('src="data:image/png;base64,AAA"')
     expect(out).toContain('href="#top"')
   })
+
+  it('turns a B2 custom player into a real <audio> and does not leave the speed <select>', () => {
+    const html = `
+      <div class="player" data-track="a11">
+        <div class="meta"><b>The rules of conversation</b>Navigate B2 · Audio 1.1</div>
+        <button class="btn btn-audio pp" type="button">Play</button>
+        <div class="bar"><i></i></div>
+        <span class="time">0:00 / --:--</span>
+        <label class="rate">Speed
+          <select><option value="1">1×</option><option value="0.85">0.85×</option></select>
+        </label>
+      </div>`
+    const out = rewriteHtml(html, BASE)
+    expect(out).toContain('<audio')
+    expect(out).toContain('/a1/audio/a11.mp3')
+    expect(out).not.toContain('<select')
+    expect(out).not.toContain('0:00 / --:--')
+    expect(out).toContain('The rules of conversation')
+  })
 })
 
 describe('rewriteMediaUrls', () => {
@@ -58,7 +77,7 @@ describe('rewriteMediaUrls', () => {
 
   it('returns the lesson unchanged when base URL is missing', () => {
     const lesson = { steps: [] }
-    expect(rewriteMediaUrls(lesson, '')).toBe(lesson)
+    expect(rewriteMediaUrls(lesson, '')).toEqual(lesson)
   })
 
   it('rewrites relative pictures on vocab cards', () => {

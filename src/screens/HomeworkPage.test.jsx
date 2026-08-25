@@ -19,6 +19,9 @@ const withAnswer = {
 }
 
 vi.mock('../api.js', () => ({
+  // Оболочка теперь рисует колокольчик уведомлений (LearningLayout →
+  // NotificationBell), и он ходит в api.js — без заглушки падает весь экран.
+  getUnreadNotificationCount: vi.fn(async () => 0),
   // Сайдбар оболочки тянет баланс — без заглушки падает весь экран.
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getMyHomework: vi.fn(async () => [ASSIGNMENT]),

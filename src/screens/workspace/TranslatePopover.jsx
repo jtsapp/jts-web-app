@@ -1,13 +1,16 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { speak } from '../../practice/vocab/audio.js'
+import { useI18n } from '../../i18n.jsx'
 
 function clamp(v, min, max) {
   return Math.min(Math.max(v, min), Math.max(min, max))
 }
 
-// Попап тап-перевода живого урока — та же карточка, что в читалке книг
-// (.bk-pop), но position: fixed от вьюпорта (см. useTapTranslate.js), поэтому
-// раскладка проще: без хоста, только край экрана.
+// Попап тап-перевода живого урока — карточка как в читалке, плюс 🔊 как в Edvibe:
+// произношение выбранного слова или фразы, не только словарной колоды.
 export default function TranslatePopover({ pop, onSave }) {
+  const { t } = useI18n()
   const [pos, setPos] = useState(null)
   const ref = useRef(null)
 
@@ -33,25 +36,53 @@ export default function TranslatePopover({ pop, onSave }) {
     if (!pop) setPos(null)
   }, [pop])
 
-  if (!pop) return null
+  if (!pop || typeof document === 'undefined') return null
 
-  return (
+  // Портал на body: иначе opacity/filter у .cp/.km-lesson просвечивают карточку,
+  // а сбросы button в родителе гасят «Сохранить в словарь».
+  return createPortal(
     <div
       ref={ref}
       className="lw-tap-pop"
       style={{ left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? 'visible' : 'hidden' }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="lw-tap-pop__word">{pop.word}</div>
-      <div className="lw-tap-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
-      {pop.alternates.length > 0 && <div className="lw-tap-pop__alts">{pop.alternates.join(', ')}</div>}
+      {pop.tooLong ? (
+        <div className="lw-tap-pop__limit">
+          <span className="lw-tap-pop__info" aria-hidden="true">i</span>
+          <div className="lw-tap-pop__tr">{t('lesson.phraseLimit')}</div>
+        </div>
+      ) : (
+        <>
+      <div className="lw-tap-pop__src">
+        <button
+          type="button"
+          className="lw-tap-pop__say"
+          onClick={() => speak(pop.word)}
+          aria-label="Произнести"
+        >
+          🔊
+        </button>
+        <div className="lw-tap-pop__word">{pop.word}</div>
+      </div>
+      <div className="lw-tap-pop__tr-row">
+        <span className="lw-tap-pop__tr-icon" aria-hidden="true">☰</span>
+        <div className="lw-tap-pop__tr">{pop.loading ? 'Переводим…' : pop.translation || 'Перевод не найден'}</div>
+      </div>
+      {(pop.alternates || []).length > 0 && <div className="lw-tap-pop__alts">{pop.alternates.join(', ')}</div>}
+      {onSave ? (
       <button
+        type="button"
         className={`lw-tap-pop__save ${pop.saved ? 'is-on' : ''}`}
         onClick={onSave}
         disabled={!pop.translation || pop.loading || pop.saving || pop.saved}
       >
-        {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : 'Сохранить в словарь'}
+        {pop.saved ? '✓ В словаре' : pop.saving ? 'Сохраняем…' : pop.saveError ? 'Не удалось сохранить' : 'Сохранить в словарь'}
       </button>
-    </div>
+      ) : null}
+        </>
+      )}
+    </div>,
+    document.body,
   )
 }

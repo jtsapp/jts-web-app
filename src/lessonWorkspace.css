@@ -487,6 +487,7 @@
 
 .lw-practice__html .gconcept,
 .lw-practice__html .bank,
+.lw-practice__html .wbank,
 .lw-practice__html .bubble {
   padding: 12px;
   border-radius: 12px;
@@ -652,8 +653,48 @@
   border-radius: var(--lw-r-inner);
 }
 
-.lw-info__body audio {
+.lw-info__body audio,
+.lw-practice__html audio {
   width: 100%;
+}
+
+/* Кастомный плеер курса (B2 и A0–B1 `.player`): заголовок с курса — отдельная
+   строка, фейковые Play/полоса/скорость скрыты. Живой контрол — <audio>. */
+.lw-info__body .player,
+.lw-practice__html .player {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+
+.lw-info__body .player .meta b,
+.lw-practice__html .player .meta b {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--lw-ink, #181818);
+}
+
+.lw-info__body .player .meta,
+.lw-practice__html .player .meta {
+  font-size: 13px;
+  color: var(--lw-muted, #6b6578);
+}
+
+.lw-info__body .player button,
+.lw-info__body .player .bar,
+.lw-info__body .player .wave,
+.lw-info__body .player .time,
+.lw-info__body .player .rate,
+.lw-info__body .player select,
+.lw-practice__html .player button,
+.lw-practice__html .player .bar,
+.lw-practice__html .player .wave,
+.lw-practice__html .player .time,
+.lw-practice__html .player .rate,
+.lw-practice__html .player select {
+  display: none;
 }
 
 .lw-info__body .track b {
@@ -891,9 +932,95 @@
   color: var(--lw-muted);
 }
 
+/* Те же .row / select, что в исходнике курса: без flex номер лип к слову,
+   а нативный <select> с длинными option распирает колонку. Info и practice
+   html несут одну разметку. */
+.lw-info__body .row,
+.lw-practice__html .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.lw-info__body .row > *,
+.lw-practice__html .row > * {
+  min-width: 0;
+}
+.lw-info__body .row > .num,
+.lw-practice__html .row > .num {
+  min-width: 22px;
+  flex: none;
+}
+.lw-info__body .body,
+.lw-practice__html .body {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lw-info__body select,
+.lw-info__body input:not([type="checkbox"]):not([type="radio"]),
+.lw-info__body textarea,
+.lw-practice__html select,
+.lw-practice__html input:not([type="checkbox"]):not([type="radio"]),
+.lw-practice__html textarea {
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* B2 `.wbank` cloze: a paragraph of inline gaps must not grow like form fields
+   (`.row { display:flex }` + `input { flex: 1 1 8rem }` stretched gap-lg to a
+   third of the line and collapsed the rest). */
+.lw-info__body .row:has(input.gap),
+.lw-practice__html .row:has(input.gap) {
+  display: block;
+}
+.lw-info__body .row:has(input.gap) .body,
+.lw-practice__html .row:has(input.gap) .body {
+  display: inline;
+  flex: none;
+}
+.lw-info__body input.gap,
+.lw-practice__html input.gap {
+  display: inline-block;
+  flex: none;
+  box-sizing: content-box;
+  width: 8.5em;
+  min-width: 6em;
+  max-width: 16em;
+  height: 1.7em;
+  margin: 0 4px;
+  padding: 2px 8px;
+  vertical-align: baseline;
+  border: 1.5px solid var(--lw-line, #d5d0e2);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 14.5px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.lw-practice__html .num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  border-radius: 6px;
+  background: var(--lw-tint-3);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lw-muted);
+}
+
 /* Банк слов к gap-fill (voc-context) и реплики диалога, если они доехали
    info-блоком, а не отдельным practice. */
-.lw-info__body .bank {
+.lw-info__body .bank,
+.lw-info__body .wbank,
+.lw-practice__html .wbank {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -901,6 +1028,45 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: var(--lw-tint-3);
+}
+
+.lw-info__body .wbank,
+.lw-practice__html .wbank {
+  border: 1px dashed var(--lw-line, #d5d0e2);
+  margin-bottom: 14px;
+  padding: 14px;
+}
+
+.lw-info__body .wchip,
+.lw-practice__html .wchip {
+  margin: 0;
+  padding: 8px 16px;
+  border: 1.5px solid var(--lw-line, #d5d0e2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--lw-ink, #181818);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lw-info__body .wchip:hover,
+.lw-practice__html .wchip:hover {
+  border-color: var(--lw-primary, #9047ff);
+}
+
+.lw-info__body .wchip.on,
+.lw-practice__html .wchip.on {
+  background: var(--lw-primary, #9047ff);
+  border-color: var(--lw-primary, #9047ff);
+  color: #fff;
+}
+
+.lw-info__body .wchip.used,
+.lw-practice__html .wchip.used {
+  opacity: 0.32;
+  pointer-events: none;
 }
 
 .lw-info__body .blabel {
@@ -1428,6 +1594,14 @@
   padding: 10px 12px;
 }
 
+.lw-info__body input.gap.lw-q--live-here,
+.lw-practice__html input.gap.lw-q--live-here {
+  padding: 2px 8px;
+  border-color: var(--lw-student);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lw-student) 40%, transparent);
+  background: color-mix(in srgb, var(--lw-student) 12%, #fff);
+}
+
 .lw-q__prompt,
 .lw-q__sentence {
   font-size: 16px;
@@ -1535,6 +1709,22 @@
 }
 
 .lw-gap-input.is-no,
+/* Открытый ответ: сверять не с чем, поэтому ни зелёного, ни красного —
+   нейтральная подсветка «ответ принят, вердикт за преподавателем». Зелёный тут
+   означал бы «верно», а проверить было нечем. */
+.lw-gap-input.is-review {
+  background: #f1f2f4;
+  color: #181818;
+  font-weight: 600;
+}
+
+.lw-q__review {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: var(--lw-muted);
+  font-style: italic;
+}
+
 .lw-gap-input.is-wrong {
   background: #ffecec;
   color: var(--lw-error);
@@ -2090,6 +2280,18 @@
   min-height: 0;
 }
 
+/* Без списка топиков чат занимает место сразу под звонком. */
+.lw-aside .lw-chat {
+  flex: 1 1 auto;
+  min-height: 280px;
+}
+
+.lw-aside .lw-chat__list {
+  flex: 1 1 auto;
+  max-height: min(52vh, 480px);
+  min-height: 180px;
+}
+
 .lw-chat__head {
   margin-bottom: 10px;
   display: flex;
@@ -2449,10 +2651,9 @@
   }
 
   .lw-live-aside > .lw-topics {
-    flex: 0 1 auto;
-    min-height: 0;
-    /* px/vh, не %: % от auto-высоты родителя игнорируется браузером. */
-    max-height: min(220px, 28vh);
+    flex: 1 1 auto;
+    min-height: 140px;
+    max-height: min(280px, 40vh);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -2755,7 +2956,8 @@
   }
 
   .lw-live-aside > .lw-topics {
-    max-height: 240px;
+    min-height: 140px;
+    max-height: 280px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -2805,36 +3007,71 @@
 
 .lw-tap-pop {
   position: fixed;
-  z-index: 60;
-  background: var(--lw-surface);
+  z-index: 4000;
+  isolation: isolate;
+  opacity: 1;
+  /* --lw-* объявлены только на .lw/.live/.hw-exercises. В курсе/королевстве
+     без fallback фон invalid → transparent, текст урока светится сквозь карточку. */
+  background-color: #ffffff;
+  background: var(--lw-surface, #ffffff);
+  color: var(--lw-ink, #181818);
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 14px;
   box-shadow: 0 12px 30px rgba(23, 19, 38, 0.18);
   padding: 12px 14px;
-  min-width: 150px;
-  max-width: 260px;
+  min-width: 180px;
+  max-width: min(420px, calc(100vw - 16px));
+}
+.lw-tap-pop__src,
+.lw-tap-pop__tr-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.lw-tap-pop__say {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: var(--lw-tint-2, #f4f1fb);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
 }
 .lw-tap-pop__word {
   font-size: 15px;
   font-weight: 800;
-  color: var(--lw-ink);
+  color: var(--lw-ink, #181818);
+  padding-top: 4px;
+  overflow-wrap: anywhere;
+}
+.lw-tap-pop__tr-row {
+  margin-top: 8px;
+}
+.lw-tap-pop__tr-icon {
+  color: var(--lw-muted, #94a3b8);
+  font-size: 14px;
+  line-height: 1.4;
 }
 .lw-tap-pop__tr {
   font-size: 14px;
-  color: var(--lw-ink-2);
-  margin: 2px 0 0;
+  color: var(--lw-ink-2, #3f3a4d);
+  overflow-wrap: anywhere;
 }
 .lw-tap-pop__alts {
   font-size: 12px;
-  color: var(--lw-muted);
-  margin-top: 2px;
+  color: var(--lw-muted, #6b6578);
+  margin-top: 4px;
+  padding-left: 36px;
 }
-.lw-tap-pop__save {
+button.lw-tap-pop__save {
   width: 100%;
   border: none;
-  background: var(--lw-primary);
+  background-color: #9047ff;
+  background: var(--lw-primary, #9047ff);
   color: #fff;
-  border-radius: var(--lw-r-inner);
+  border-radius: var(--lw-r-inner, 10px);
   margin-top: 10px;
   padding: 8px;
   font-family: inherit;
@@ -2843,10 +3080,29 @@
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.lw-tap-pop__save:disabled {
+button.lw-tap-pop__save:disabled {
   background: #cbc6dd;
+  color: #fff;
   cursor: default;
 }
-.lw-tap-pop__save.is-on:disabled {
+button.lw-tap-pop__save.is-on:disabled {
   background: #23b061;
+}
+.lw-tap-pop__limit {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.lw-tap-pop__info {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 13px;
+  font-weight: 800;
+  font-style: italic;
+  display: grid;
+  place-items: center;
 }

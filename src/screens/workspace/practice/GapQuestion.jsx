@@ -1,7 +1,8 @@
 import { useI18n } from '../../../i18n.jsx'
-import { gradeQuestion } from '../practiceGrading.js'
+import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
+import { tidyLessonText } from '../tidyLessonText.js'
 
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
@@ -9,10 +10,17 @@ import TapText from '../TapText.jsx'
 export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const value = answer || ''
-  const userCorrect = checked && gradeQuestion(question, value).correct
+  const attempted = hasAttempt(question, value)
+  const verdict = checked && attempted ? gradeQuestion(question, value) : null
+  // Открытый пропуск сверять не с чем: показывать по нему «верно» — врать.
+  const needsReview = !!verdict?.manual
+  const userCorrect = !!verdict?.correct && !needsReview
 
   let cls = 'lw-gap-input'
-  if (checked) cls += userCorrect ? ' is-correct' : ' is-wrong'
+  if (checked && attempted) {
+    if (needsReview) cls += ' is-review'
+    else cls += userCorrect ? ' is-correct' : ' is-wrong'
+  }
 
   return (
     <div className="lw-q lw-q--gap">
@@ -35,17 +43,20 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
             </span>
           )}
         </span>
-        <TapText text={question.gapAfter} onWord={onWord} />
+        <TapText text={tidyLessonText(question.gapAfter)} onWord={onWord} />
       </p>
-      {checked && !userCorrect && !question.open && (
+      {needsReview && (
+        <p className="lw-q__review" aria-live="polite">{t('lesson.needsTeacherReview')}</p>
+      )}
+      {checked && attempted && !userCorrect && !needsReview && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}
         </p>
       )}
       {/* Разбор из `data-why` курса — правило, которое проверяет задание. Показываем
           только после ошибки: до неё это была бы подсказка с ответом. */}
-      {checked && !userCorrect && question.why && (
-        <p className="lw-q__why">{question.why}</p>
+      {checked && attempted && !userCorrect && !needsReview && question.why && (
+        <p className="lw-q__why">{tidyLessonText(question.why)}</p>
       )}
     </div>
   )

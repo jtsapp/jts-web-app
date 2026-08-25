@@ -7,6 +7,7 @@
 // зависящим от скорости машины. Теперь это стоит один GET.
 import { getCourseCatalogLessonContent } from '../../api.js'
 import { rewriteMediaUrls } from './extract/rewriteMediaUrls.js'
+import { hoistSelectQuestions } from './hoistSelectQuestions.js'
 
 // Кэш по id урока: содержимое не меняется до перерегистрации уровня.
 const cache = new Map()
@@ -18,7 +19,7 @@ export async function loadCatalogLesson(id, token) {
     if (!stored?.content) return null
 
     // Медиа внутри info-блоков лежит относительно файла урока, а не API.
-    const lesson = rewriteMediaUrls(stored.content, stored.fileUrl)
+    const lesson = hoistSelectQuestions(rewriteMediaUrls(stored.content, stored.fileUrl))
     if (!lesson.title && stored.title) lesson.title = stored.title
 
     cache.set(id, lesson)

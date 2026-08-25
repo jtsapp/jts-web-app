@@ -21,6 +21,10 @@ import { cutAtSec } from '../tutor/scenarioClock.js'
 import ScenarioBrief from '../tutor/ScenarioBrief.jsx'
 import { hasBrief } from '../tutor/scenarioBrief.js'
 import { micLevel } from '../tutor/micLevel.js'
+import { lastSentence, mergeTurns } from '../tutor/captions.js'
+import { useLiveCaption } from '../tutor/useLiveCaption.js'
+import { useCallSession } from '../tutor/callSession.js'
+import CallCaption from '../tutor/CallCaption.jsx'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
@@ -32,14 +36,6 @@ function ArrowUpIcon({ size = 22 }) {
       <path d="M12 5l6 6-1.4 1.4L13 8.8V19h-2V8.8l-3.6 3.6L6 11l6-6z" fill="currentColor" />
     </svg>
   )
-}
-
-// Последнее предложение текущей реплики — подпись сменяется, а не растёт.
-function lastSentence(text) {
-  const s = (text || '').trim()
-  if (!s) return ''
-  const parts = s.split(/(?<=[.!?…])\s+/)
-  return (parts[parts.length - 1] || s).trim()
 }
 
 // Живой разговор: подключается к LiveKit-комнате (голосовой тьютор cascade),
@@ -281,6 +277,7 @@ export default function TutorVoiceChatPage({
               limitSec={tokenData.scenarioLimitSec || 0}
               holdRef={holdRef}
               face={tutor.face || ''}
+              roomName={tokenData.room || ''}
             />
           </LiveKitRoom>
         ) : (
@@ -298,16 +295,23 @@ export default function TutorVoiceChatPage({
 
 // Обратный отсчёт до конца сессии — сервер отдаёт ttl (остаток секунд), токен
 // LiveKit истекает ровно тогда же, так что таймер отражает реальный лимит.
-function useCountdown(ttl) {
+//
+// `running` включается, когда в комнату вошёл ТЬЮТОР: минуты на сервере тоже
+// идут с этого момента (armSession в usage.js), и таймер обязан показывать то
+// же самое. Пока идёт соединение, на экране полный остаток и он не тает.
+function useCountdown(ttl, running = true) {
   const [left, setLeft] = useState(typeof ttl === 'number' ? ttl : null)
   useEffect(() => {
     if (typeof ttl !== 'number') return
     setLeft(ttl)
+  }, [ttl])
+  useEffect(() => {
+    if (!running || typeof ttl !== 'number') return
     const iv = setInterval(() => {
       setLeft((s) => (s !== null && s > 0 ? s - 1 : 0))
     }, 1000)
     return () => clearInterval(iv)
-  }, [ttl])
+  }, [running, ttl])
   return left
 }
 
@@ -373,15 +377,36 @@ function CallFace({ face, emotion, intensity, speaking, agentState, audioTrack }
 }
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
-function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face = '' }) {
+function CallStage({
+  onFinish,
+  t,
+  ttl,
+  briefId = '',
+  limitSec = 0,
+  holdRef,
+  face = '',
+  roomName = '',
+}) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
   const room = useRoomContext()
   const { localParticipant, isMicrophoneEnabled } = useLocalParticipant()
   const transcriptions = useTranscriptions()
+
+  const connected = state === ConnectionState.Connected
+  const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
+  const speaking = va.state === 'speaking'
+
+  // Учётная сессия: минуты идут с появления тьютора в комнате и держатся
+  // пульсом. Раньше сервер считал их от выдачи токена до room_finished, то есть
+  // прихватывал и ожидание соединения, и время после того, как ученик положил
+  // трубку (комната живёт дальше), а при потерянном вебхуке лимит вообще тёк
+  // сам по себе, пока ученик читал разбор.
+  const closeCallSession = useCallSession(roomName, agentPresent)
+
   // У сцены со своими часами на экране идёт её бюджет, а не остаток дневного
   // лимита: ученику обещали пять минут — он и должен видеть пять минут.
-  const left = useCountdown(limitSec > 0 ? limitSec : ttl)
+  const left = useCountdown(limitSec > 0 ? limitSec : ttl, agentPresent)
 
   // Scenario outcome — the agent publishes a JSON verdict on topic "lesson"
   // (report_task_complete) when a structured scenario ends. We render it as a
@@ -458,10 +483,6 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face
     }
   })
 
-  const connected = state === ConnectionState.Connected
-  const agentPresent = va.state !== 'disconnected' && Boolean(va.audioTrack)
-  const speaking = va.state === 'speaking'
-
   // Реакция держится всю реплику, а гаснет через окно после неё.
   useEffect(() => {
     if (speaking || !reaction || reactionTimer.current) return
@@ -497,49 +518,56 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face
   } else if (va.state === 'listening') emotion = 'listening'
 
   // Субтитры ТЬЮТОРА — из agentTranscriptions (синхрон с аудио). Показываем
-  // предложение, которое он произносит сейчас; держится, пока не дойдёт до
-  // следующего сегмента. Липкая ссылка не даёт подписи гаснуть между сегментами.
-  const tutorRef = useRef('')
+  // предложение, которое он произносит сейчас. Гаснуть между сегментами подписи
+  // не даёт `live` ниже: там последняя непустая реплика и держится.
   const tutorCaption = useMemo(() => {
     const segs = va.agentTranscriptions ?? []
-    if (segs.length > 0) {
-      const latest = [...segs]
-        .sort((a, b) => (a.firstReceivedTime ?? 0) - (b.firstReceivedTime ?? 0))
-        .pop()
-      const s = lastSentence(latest?.text || '')
-      if (s) tutorRef.current = s
-    }
-    return tutorRef.current
+    if (segs.length === 0) return ''
+    const latest = [...segs]
+      .sort((a, b) => (a.firstReceivedTime ?? 0) - (b.firstReceivedTime ?? 0))
+      .pop()
+    return lastSentence(latest?.text || '')
   }, [va.agentTranscriptions])
 
   // Субтитры УЧЕНИКА — его собственная речь (транскрипции локального участника),
-  // чтобы он видел, что сказал.
-  const userRef = useRef('')
+  // чтобы он видел, что сказал. Тем же списком кормится панель «показать текст».
   const userId = localParticipant?.identity
+  const userStreams = useMemo(
+    () => transcriptions.filter((ts) => ts.participantInfo?.identity === userId && ts.text.trim()),
+    [transcriptions, userId]
+  )
   const userCaption = useMemo(() => {
-    const mine = transcriptions
-      .filter((ts) => ts.participantInfo?.identity === userId && ts.text.trim())
+    const last = [...userStreams]
       .sort((a, b) => (a.streamInfo?.timestamp ?? 0) - (b.streamInfo?.timestamp ?? 0))
-    const last = mine[mine.length - 1]
-    if (last) userRef.current = lastSentence(last.text)
-    return userRef.current
-  }, [transcriptions, userId])
+      .pop()
+    return last ? lastSentence(last.text) : ''
+  }, [userStreams])
 
-  // Тьютор говорит → его строка (тёмная). Иначе — строка ученика (фиолетовая,
-  // как в макете). Фолбэк-статусы, пока ни у кого нет реплики.
-  const tutorSpeaking = speaking
-  let text
-  let isUser = false
-  if (tutorSpeaking && tutorCaption) {
-    text = tutorCaption
-  } else if (userCaption) {
-    text = userCaption
-    isUser = true
-  } else if (tutorCaption) {
-    text = tutorCaption
-  } else {
-    text = !connected ? t('voice.connecting') : !agentPresent ? t('voice.waiting') : t('voice.prompt')
-  }
+  // На экране последняя по времени реплика — чья бы она ни была (см. nextLive).
+  const live = useLiveCaption(tutorCaption, userCaption)
+
+  // Копилка реплик для панели: живая подпись показывает одну фразу, и вернуться
+  // к пропущенному прямо во время звонка было негде — только в отчёте после.
+  const [turns, setTurns] = useState([])
+  useEffect(() => {
+    setTurns((prev) =>
+      mergeTurns(prev, { agentSegments: va.agentTranscriptions ?? [], userStreams })
+    )
+  }, [va.agentTranscriptions, userStreams])
+
+  const [script, setScript] = useState(false)
+  const scriptRef = useRef(null)
+  useEffect(() => {
+    if (!script) return
+    const el = scriptRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [script, turns])
+
+  // Фолбэк-статусы, пока ни у кого нет реплики.
+  const text =
+    live.text ||
+    (!connected ? t('voice.connecting') : !agentPresent ? t('voice.waiting') : t('voice.prompt'))
+  const isUser = Boolean(live.text) && live.isUser
 
   const micOn = isMicrophoneEnabled
   const toggleMic = () => {
@@ -549,8 +577,13 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face
   // Явное завершение разговора. Раньше выйти можно было только кликом по орбу
   // (ничем не подписанным) или «назад», и минуты списывались только когда комната
   // закрывалась сама. Рвём соединение → onDisconnected у LiveKitRoom уводит на
-  // onFinish, а room_finished-вебхук биллит сессию.
+  // onFinish.
+  //
+  // Сессию закрываем ДО disconnect: комната переживает уход ученика (агент её
+  // не удаляет), room_finished придёт минутами позже или не придёт вовсе, а
+  // считать эти минуты ученику не за что.
   const endCall = () => {
+    closeCallSession()
     if (room) void room.disconnect()
     else onFinish?.()
   }
@@ -615,6 +648,31 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face
           {t('scen.briefPeek')}
         </button>
       )}
+      {/* Расшифровка звонка. В сцене со шпаргалкой левый верхний угол уже занят
+          кнопкой ситуации — тогда эта встаёт под неё. */}
+      <button
+        className={'t-voice__script' + (briefId ? ' is-stacked' : '')}
+        type="button"
+        aria-expanded={script}
+        onClick={() => setScript((v) => !v)}
+      >
+        {script ? t('voice.scriptClose') : t('voice.script')}
+      </button>
+      {script && (
+        <div className={'t-voice__scriptpanel' + (briefId ? ' is-stacked' : '')}>
+          <div className="t-voice__scriptlist" ref={scriptRef}>
+            {turns.length === 0 ? (
+              <p className="t-voice__scriptempty">{t('voice.scriptEmpty')}</p>
+            ) : (
+              turns.map((turn) => (
+                <div className={'t-bubble t-bubble--' + turn.who} key={turn.id}>
+                  {turn.text}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
       {briefId && peek && (
         <div className="t-voice__peekpanel">
           <ScenarioBrief
@@ -637,9 +695,7 @@ function CallStage({ onFinish, t, ttl, briefId = '', limitSec = 0, holdRef, face
         agentState={va.state}
         audioTrack={agentTrack}
       />
-      <div className="t-voice__text">
-        <span className={'t-voice__cap' + (isUser ? ' is-user' : '')}>{text}</span>
-      </div>
+      <CallCaption text={text} isUser={isUser} />
       <MicButton
         track={micTrack}
         listening={va.state === 'listening'}

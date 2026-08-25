@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
 import Footer from './Footer.jsx'
+import { NotificationProvider, NotificationBell } from './NotificationBell.jsx'
 import { useI18n } from '../i18n.jsx'
 
 // Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал;
@@ -23,6 +24,7 @@ export default function LearningLayout({
   const [drawer, setDrawer] = useState(false)
 
   return (
+    <NotificationProvider token={token} onNavigate={onNav}>
     <div className={`learn ${rail ? 'learn--rail' : ''}`}>
       <MobileTopBar
         userName={userName}
@@ -30,6 +32,7 @@ export default function LearningLayout({
         menuLabel={t('nav.learning')}
         onMenu={() => setDrawer(true)}
         onProfile={onProfile}
+        right={<NotificationBell />}
       />
       <div className="learn__body">
         <Sidebar
@@ -43,9 +46,13 @@ export default function LearningLayout({
           open={drawer}
           onClose={() => setDrawer(false)}
         />
-        <main className="learn__main">{children}</main>
+        <main className="learn__main">
+          <div className="learn__bell"><NotificationBell /></div>
+          {children}
+        </main>
       </div>
       <Footer />
     </div>
+    </NotificationProvider>
   )
 }

@@ -197,12 +197,20 @@ describe('useLessonLiveSocket', () => {
 
     act(() => { result.current.sendFocus(2, 5) })
     expect(lastClient.published.at(-1)).toEqual({
-      destination: '/app/lesson/7/focus', body: JSON.stringify({ sectionId: 2, materialId: 5, stepId: null }),
+      destination: '/app/lesson/7/focus', body: JSON.stringify({ sectionId: 2, materialId: 5, stepId: null, questionId: null }),
     })
 
     act(() => { result.current.sendFocus(2, 5, 's3') })
+    expect(
+      lastClient.published.at(-1),
+    ).toEqual({
+      destination: '/app/lesson/7/focus', body: JSON.stringify({ sectionId: 2, materialId: 5, stepId: 's3', questionId: null }),
+    })
+
+    act(() => { result.current.sendFocus(2, 5, 's3', 'block-2') })
     expect(lastClient.published.at(-1)).toEqual({
-      destination: '/app/lesson/7/focus', body: JSON.stringify({ sectionId: 2, materialId: 5, stepId: 's3' }),
+      destination: '/app/lesson/7/focus',
+      body: JSON.stringify({ sectionId: 2, materialId: 5, stepId: 's3', questionId: 'block-2' }),
     })
 
     act(() => { result.current.sendMirror(5, { selector: '#a', eventType: 'click', value: null }) })

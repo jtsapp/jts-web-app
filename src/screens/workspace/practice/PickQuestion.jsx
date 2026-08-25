@@ -6,13 +6,14 @@ import TapText from '../TapText.jsx'
 // (gradeQuestion в practiceGrading.js). `multiple` — «отметь сколько хочешь»
 // без ключа проверки: тогда answer — массив, иначе одна строка, как у
 // ChoiceQuestion.
-export default function PickQuestion({ question, answer, onAnswer, readOnly, onWord }) {
+export default function PickQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const { t } = useI18n()
   const multiple = !!question?.multiple
   const selected = multiple ? (Array.isArray(answer) ? answer : []) : answer
+  const locked = checked || readOnly
 
   function toggle(opt) {
-    if (readOnly) return
+    if (locked) return
     if (!multiple) {
       onAnswer(question.id, opt)
       return
@@ -36,7 +37,7 @@ export default function PickQuestion({ question, answer, onAnswer, readOnly, onW
               type="button"
               className={`lw-opt${isSelected ? ' is-selected' : ''}`}
               aria-pressed={isSelected}
-              disabled={readOnly}
+              disabled={locked}
               onClick={() => toggle(opt)}
             >
               <span>{opt}</span>
