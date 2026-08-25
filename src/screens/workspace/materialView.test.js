@@ -30,4 +30,16 @@ describe('что показать в центре урока', () => {
   it('материала нет вовсе — ждать нечего, показываем пустой файл-слот', () => {
     expect(materialView({ hasStep: false, fileUrl: null, catalogResolved: false })).toBe('file')
   })
+
+  // Регрессия: скрытие всех упражнений по одному не должно оборачиваться показом
+  // файла урока — в нём те же упражнения, просто не разобранные на шаги.
+  it('все упражнения скрыты — ни шагов, ни файла', () => {
+    expect(materialView({ hasStep: false, fileUrl: 'https://f/a2/L01.html', catalogResolved: true, allStepsHidden: true }))
+      .toBe('hidden')
+  })
+
+  it('скрыты не все — на видимом шаге ничего не меняется', () => {
+    expect(materialView({ hasStep: true, fileUrl: 'https://f/a2/L01.html', catalogResolved: true, allStepsHidden: false }))
+      .toBe('steps')
+  })
 })

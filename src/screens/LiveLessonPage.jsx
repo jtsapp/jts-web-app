@@ -28,6 +28,7 @@ import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
+import { visibleSteps } from './workspace/visibleSteps.js'
 import { knowsFocusTarget } from './live/followFocus.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -258,10 +259,32 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return () => { cancelled = true }
   }, [materialFileUrl, token])
 
+  // Упражнения, скрытые преподавателем поштучно («Скрыть это упражнение от ученика»).
+  // Вырезать их на сервере нельзя: шаги приезжают из каталога — один и тот же урок на
+  // все занятия, — а скрыты они в конкретном материале конкретного занятия. Поэтому
+  // список едет вместе с материалом раздела, а выкидывает шаги клиент.
+  //
+  // Только у ученика: преподаватель скрытый шаг видит и ведёт по нему урок (в его
+  // маршруте шаг помечен), иначе он не смог бы вернуть его обратно.
+  // Не оборачиваем в useMemo: ссылка приходит из ответа сервера и живёт, пока живут
+  // разделы, — новый массив на рендер тут неоткуда взяться.
+  const hiddenStepIds = isStaff ? null : activeMaterial?.hiddenStepIds
+
   // Через useMemo, а не выражением: пустой массив создавался бы заново на каждый
-  // рендер и обнулял мемоизацию статусов ниже.
-  const lessonSteps = useMemo(() => catalogLesson?.steps || [], [catalogLesson])
-  const activeStepIndex = lessonSteps.findIndex((s) => String(s.id) === String(activeStepId))
+  // рендер и обнулял мемоизацию статусов ниже. `visibleSteps` ради этого же отдаёт
+  // исходный массив, когда скрывать нечего.
+  const lessonSteps = useMemo(
+    () => visibleSteps(catalogLesson?.steps, hiddenStepIds),
+    [catalogLesson?.steps, hiddenStepIds],
+  )
+  // Преподаватель может скрыть шаг, на котором ученик прямо сейчас стоит (или на
+  // который сам же и указал «Вниманием на упражнение» минутой раньше). Тогда ученик
+  // остался бы на пустом месте: в маршруте шага больше нет, показывать нечего.
+  // Отступаем к первому видимому — вычислением, а не поправкой activeStepId через
+  // setState: это был бы каскад рендеров, и вдобавок ученик не вернулся бы на своё
+  // место, когда преподаватель откроет шаг обратно.
+  const requestedStepIndex = lessonSteps.findIndex((s) => String(s.id) === String(activeStepId))
+  const activeStepIndex = requestedStepIndex >= 0 ? requestedStepIndex : (lessonSteps.length ? 0 : -1)
   const activeStep = activeStepIndex >= 0 ? lessonSteps[activeStepIndex] : null
 
   // Статусы шагов урока: текущий — активный, пройденные — до него, остальные
@@ -828,7 +851,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // терялась и не дописывалась задним числом (спека §3.3, §3.4).
   const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
-  const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved })
+  // Урок разобран, но все его упражнения скрыты от этого ученика поштучно.
+  const allStepsHidden = (catalogLesson?.steps?.length || 0) > 0 && lessonSteps.length === 0
+  const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved, allStepsHidden })
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
@@ -996,6 +1021,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         </>
                       ) : view === 'loading' ? (
                         <p className="live__status-msg">{t('schedule.loading')}</p>
+                      ) : view === 'hidden' ? (
+                        <p className="live__status-msg">{t('live.allStepsHidden')}</p>
                       ) : (
                         <SectionMaterialFrame
                           ref={materialFrameRef}

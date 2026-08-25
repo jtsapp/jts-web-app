@@ -10,8 +10,12 @@
  * успевал записать поверх них пустой список. Ученик открывал урок и находил
  * свою работу стёртой.
  */
-export function materialView({ hasStep, fileUrl, catalogResolved }) {
+export function materialView({ hasStep, fileUrl, catalogResolved, allStepsHidden }) {
   if (hasStep) return 'steps'
+  // Урок разобран, но преподаватель скрыл от ученика все упражнения до одного.
+  // Провалиться отсюда в файл — значит показать целиком ровно то, что прятали:
+  // файл урока несёт те же упражнения, только не разобранные на шаги.
+  if (allStepsHidden) return 'hidden'
   if (fileUrl && !catalogResolved) return 'loading'
   return 'file'
 }

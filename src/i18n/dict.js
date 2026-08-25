@@ -294,6 +294,84 @@ export const DICT = {
       'соседка снизу в дверях: договориться о времени, отбиться от чужой дрели и не поссориться',
     'scen.brief.neighbour-noise':
       'Суббота, без двадцати одиннадцать вечера. У тебя дома шесть друзей — день рождения, торт, колонка на подоконнике.\nТы въехал в квартиру 14 два месяца назад. Тишина в доме — с одиннадцати, объявление висит в лифте.\nВ дверь пришла соседка снизу, Гульнара из 12-й. Ей вставать в пять утра.\nВАЖНО: сверлит не у тебя. Сверлят сверху, в квартире 16 — но Гульнара уверена, что это ты.\nЗадача: сказать, во сколько выключишь музыку, и объяснить, что дрель не твоя.',
+    // Вторая партия сцен. Брифинг у каждой: NPC не может рассказать
+    // ученику то, что знает про себя сам ученик.
+    'scen.desc.lost-boy-info-desk':
+      'потерявшийся мальчик у стойки информации: собрать приметы и добиться объявления',
+    'scen.brief.lost-boy-info-desk':
+      'У фонтана на первом этаже ты нашёл плачущего мальчика и привёл его к стойке информации.\nОн говорит, что его зовут Тимур и что ему пять.\nВ руках пластиковый динозавр, куртка красная.\nИмя мамы он не называет.\nЗадача: чтобы в объявление попали имя, возраст и ещё одна примета — иначе его не найдут.',
+    'scen.desc.museum-ticket-desk':
+      'касса музея перед закрытием: взять правильные билеты и разобраться с рюкзаком',
+    'scen.brief.museum-ticket-desk':
+      'Ты у кассы музея, музей закрывается в шесть, за тобой уже стоит семья.\nВас трое: двое взрослых и ребёнок семи лет.\nСтуденческого с собой нет, он остался дома.\nЗа спиной рюкзак.\nЗадача: взять правильные билеты и выяснить, что делать с рюкзаком.',
+    'scen.desc.clothing-store':
+      'куртка к собеседованию в понедельник: сравнить три, уложиться в деньги и понять условие возврата',
+    'scen.brief.clothing-store':
+      'Суббота, вечер. В понедельник утром у тебя собеседование, а куртки нет.\nВ кармане 20 000 тенге, и домой хочется к половине девятого.\nПродавщица Динара работает за процент — уговаривать будет.\nЗадача: выбрать одну куртку вслух, сравнив их между собой, и выяснить, можно ли её вернуть.',
+    'scen.desc.corner-shop':
+      'магазин у дома перед гостями: всё за прилавком, спросить количество и уложиться в наличные',
+    'scen.brief.corner-shop':
+      'Гости придут в половине десятого, ты готовишь ужин.\nСписок: курица, рис, помидоры, хлеб, молоко.\nМагазин маленький, всё за прилавком — сам ничего не возьмёшь, только попросить у продавца.\nВ кармане ровно 2 000 тенге наличными.\nЗадача: собрать корзину в эти деньги, называя вслух, сколько чего нужно.',
+    'scen.desc.hairdresser':
+      'парикмахер стрижёт быстрее, чем слушает: назвать длину числом и остановить вовремя',
+    'scen.brief.hairdresser':
+      'Ты в кресле, кресло уже развёрнуто к зеркалу.\nСнять надо два сантиметра, не больше — длину ты хочешь сохранить.\nУ Риты следующая клиентка в пять, и та никогда не опаздывает, так что мастер торопится.\nОна стрижёт быстрее, чем слушает, и «немного» понимает по-своему.\nЗадача: назвать длину числом и остановить её, если пойдёт не так.',
+    'scen.desc.market-melon-stall':
+      'торг на рынке: выбрать фрукты, спросить, какая слаще, и уложиться в три тысячи',
+    'scen.brief.market-melon-stall':
+      'Открытый рынок, полшестого, до закрытия полчаса.\nТы остановился у прилавка с дынями. Гульзат торгует тут девятнадцать лет и лёгкого покупателя видит сразу.\nВ кармане 3 000 тенге.\nЗадача: уйти с фруктами и назвать общую сумму вслух, не выйдя за эти деньги.',
+    'scen.desc.pharmacy-night-window':
+      'ночное окно аптеки: нужного лекарства нет — попросить замену и дожить до утра',
+    'scen.brief.pharmacy-night-window':
+      'Без двадцати двенадцать ночи. Кашель не даёт спать, ты вышел в пальто поверх пижамы.\nАптека закрыта, открыто только ночное окошко — форточка в двери.\nРецепта у тебя нет.\nЗадача: уйти с чем-то, что дотянет до утра, и узнать, когда открывается поликлиника.',
+    'scen.desc.station-ticket-window':
+      'окно вокзала: разобрать расписание и купить билет с нужным днём, временем и платформой',
+    'scen.brief.station-ticket-window':
+      'Пятница, десять минут третьего. За тобой очередь из шести человек, кассир торопится.\nВ Караганде тебе надо быть в воскресенье до полудня.\nРасписание висит за спиной кассира — что там, ты узнаешь только от него.\nЗадача: выбрать между поездом и автобусом и повторить вслух день, время и платформу.',
+    'scen.desc.bank-lost-card':
+      'карта пропала, а по ней платят: заблокировать, оспорить чужие списания и подписать заявление',
+    'scen.brief.bank-lost-card':
+      'Карты нет со вчерашнего вечера. Ты в отделении, у окна операционист Зарина.\nПаспорт с собой — без него ничего не начнут.\nВчерашние платежи твои: кофе, супермаркет, такси. А две попытки сегодня утром на заправке в Кокшетау — не твои, тебя там не было.\nБлокировка мгновенная, и обратно её не отыграть.\nЗадача: заблокировать карту, оспорить чужие списания и подписать заявление сегодня.',
+    'scen.desc.explaining-your-job':
+      'объяснить свою работу девятилетнему: без терминов, пока он не перескажет своими словами',
+    'scen.brief.explaining-your-job':
+      'Ты в офисе, коллега попросила пятнадцать минут посидеть с её сыном Амиром. Ему девять.\nОн хочет быть геймдизайнером и уверен, что всё на компьютере — это либо игра, либо скука.\nМама сказала ему, что ты «занимаешься чем-то с компьютерами». Он не верит, что это работа.\nЕщё ему в школе сказали, что роботы заберут все профессии.\nЗадача: объяснить, чем ты занимаешься, так, чтобы он пересказал это своими словами.',
+    'scen.desc.hotel-room-problem':
+      'номер не тот, что бронировал: добиться компенсации за сегодня и переезда на завтра',
+    'scen.brief.hotel-room-problem':
+      'Ты бронировал двухместный номер с окном, 22 000 за ночь, на три ночи.\nДали 208: две односпальные кровати, окна нет, кондиционер гремит.\nЧетверть двенадцатого ночи, ты спустился к стойке. Дежурит ночной администратор Канат.\nЗадача: получить что-то за сегодняшнюю ночь и зафиксировать переезд на завтра.',
+    'scen.desc.passport-control':
+      'паспортный контроль в Хитроу: объяснить все девять дней, не имея ни одной бумаги',
+    'scen.brief.passport-control':
+      'Ты прилетел из Астаны, семь утра, третье октября. Обратный рейс — двенадцатого.\nРаспечатана только гостиница у Кингс-Кросс, три ночи: с третьего по шестое.\nДальше ты едешь в Манчестер к двоюродной сестре Алие — её адрес только в телефоне. Девятого у неё выпускной.\nС собой 400 фунтов наличными и карта. Приглашения нет, распечаток после шестого нет.\nЗадача: объяснить все девять дней вслух и получить штамп, не уехав на второе собеседование.',
+    'scen.desc.police-report':
+      'заявление о телефоне: добиться, чтобы в бумаге стояла «кража», а не «потеря»',
+    'scen.brief.police-report':
+      'Час назад в автобусе 24 пропал телефон — чёрный iPhone 12 в чёрном чехле.\nЕхал между остановкой у рынка и остановкой у парка, автобус был битком. Пропажу заметил в тридцать пять минут седьмого.\nIMEI дома на коробке, с собой его нет.\nСтраховая примет заявление только в первые сутки, и в нём должна стоять «кража»: если запишут «потеря», не заплатят ничего.\nЗадача: объяснить, почему это кража, и уйти с номером заявления.',
+    'scen.desc.taxi-long-way':
+      'таксист поехал в объезд: оспорить счётчик и договориться о сумме на месте',
+    'scen.brief.taxi-long-way':
+      'Десять вечера, ты у своего подъезда, мотор ещё работает.\nОбычно эта поездка стоит около 2 600 и занимает двадцать минут. Сегодня вышло тридцать пять, на счётчике 4 800.\nВодитель поехал через мост, а не по проспекту Республики.\nКошелёк ты ещё не достал.\nЗадача: договориться о сумме вслух и расплатиться.',
+    'scen.desc.the-empty-chair':
+      'звонок другу, чей ужин ты пропустил: извиниться конкретно и дать ответ про четверг',
+    'scen.brief.the-empty-chair':
+      'В субботу у Даны был день рождения: ресторан, двенадцать человек. Ты сказал, что придёшь, и не пришёл.\nНе позвонил и не написал — она писала тебе дважды, ты ответил только утром в воскресенье.\nЗа пустой стул она заплатила 9 000.\nСейчас воскресенье, день, и она звонит сама.\nЗадача: извиниться за что-то конкретное и дать чёткий ответ, если она предложит увидеться в четверг.',
+    'scen.desc.disputing-an-invoice':
+      'счёт из автосервиса вдвое больше названного: разобрать строки и договориться о сумме',
+    'scen.brief.disputing-an-invoice':
+      'В понедельник по телефону тебе назвали 45 000 тенге — колодки и работа.\nСейчас вечер пятницы, и в руках счёт на 78 500.\nПисьменного ничего нет: был только телефонный разговор.\nМашину не отдадут, пока не заплачено, а сервис закрывается в семь.\nЗадача: разобрать счёт по строкам и уехать с ключами и суммой, которую вы оба произнесли вслух.',
+    'scen.desc.essay-extension':
+      'просьба об отсрочке: назвать причину, которую преподаватель готов записать в дело',
+    'scen.brief.essay-extension':
+      'Эссе надо было сдать во вторник в пять. Ты не сдал.\nШтраф — 5% за день, выходные считаются.\nПриём закончился одиннадцать минут назад, но ты постучал.\nОтсрочку дают только под причину, которую преподаватель готов записать в дело; «был занят» он не запишет.\nЗадача: договориться о новой дате и о том, что именно пойдёт в файл.',
+    'scen.desc.party-nobody-you-know':
+      'вечеринка, где ты никого не знаешь: разговор с незнакомцем на балконе и ответ на приглашение',
+    'scen.brief.party-nobody-you-know':
+      'Новоселье у Айнур, суббота, десять вечера. Кроме неё ты здесь никого не знаешь, а она ушла на кухню сорок минут назад.\nТы вышел на балкон подышать. Там стоит незнакомый парень.\nВнутри музыка такая, что говорить можно только тут.\nЗадания у тебя нет — просто разговор, и он оборвётся, как только собеседнику станет скучно.\nЗадача: удержать разговор живым и дать настоящий ответ, если тебе что-нибудь предложат.',
+    'scen.desc.turning-down-the-offer':
+      'отказ от предложения о работе: сказать «нет» вслух и не сжечь мост',
+    'scen.brief.turning-down-the-offer':
+      'Тебя дважды собеседовали и сделали оффер. Ты решил отказаться — на руках другое предложение.\nЧетверг, двадцать минут двенадцатого. Алина звонит согласовать дату выхода и ещё не знает, что услышит «нет».\nОна потратила на этот наём шесть недель и будет уговаривать.\nЗадача: отказаться вслух, не оставив «может быть», и решить осознанно — закрыть дверь или оставить открытой.',
     'scen.start': 'Начать разговор',
     'scen.briefTitle': 'Ситуация',
     'scen.briefReady': 'Я готов, звоню',
@@ -584,6 +662,84 @@ export const DICT = {
       'астыңғы қабаттағы көрші есік алдында: уақытты келісу, бөтен бұрғыдан ақталу және ұрыспау',
     'scen.brief.neighbour-noise':
       'Сенбі, кешкі он бірге жиырма минут қалды. Үйіңде алты дос — туған күн, торт, терезе алдында колонка.\nСен 14-пәтерге екі ай бұрын көшіп келдің. Үйдегі тыныштық сағат он бірден басталады, хабарландыру лифтте ілулі.\nЕсікті астыңғы қабаттағы көрші — 12-пәтердегі Гүлнара қақты. Оған таңғы бесте тұру керек.\nМАҢЫЗДЫ: бұрғылап жатқан сен емес. Жоғарыда, 16-пәтерде бұрғылап жатыр — бірақ Гүлнара оны сен деп сенімді.\nМіндет: музыканы сағат нешеде өшіретіңді айт және бұрғы сенікі емес екенін түсіндір.',
+    // Вторая партия сцен. Брифинг у каждой: NPC не может рассказать
+    // ученику то, что знает про себя сам ученик.
+    'scen.desc.lost-boy-info-desk':
+      'ақпарат үстеліндегі адасқан бала: белгілерін жинап, хабарландыру жасату',
+    'scen.brief.lost-boy-info-desk':
+      'Бірінші қабаттағы субұрқақтың жанынан жылап тұрған баланы тауып, ақпарат үстеліне әкелдің.\nАты Тимур, жасы бесте деп айтады.\nҚолында пластик динозавр, үстінде қызыл куртка.\nАнасының атын айтпайды.\nМіндет: хабарландыруға аты, жасы және тағы бір белгісі кірсін — әйтпесе оны таппайды.',
+    'scen.desc.museum-ticket-desk':
+      'жабылар алдындағы мұражай кассасы: дұрыс билет алып, рюкзакты шешу',
+    'scen.brief.museum-ticket-desk':
+      'Мұражай кассасындасың, мұражай алтыда жабылады, артыңда бір отбасы тұр.\nСендер үшеусің: екі ересек және жеті жасар бала.\nСтуденттік билет үйде қалды, қолыңда жоқ.\nАрқаңда рюкзак.\nМіндет: дұрыс билеттерді алып, рюкзакты қайда қою керегін білу.',
+    'scen.desc.clothing-store':
+      'дүйсенбідегі сұхбатқа куртка: үшеуін салыстырып, ақшаға сыйып, қайтару шартын білу',
+    'scen.brief.clothing-store':
+      'Сенбі, кеш. Дүйсенбі таңертең сұхбатың бар, ал курткаң жоқ.\nҚалтаңда 20 000 теңге, үйге тоғыз жарымға дейін жеткің келеді.\nСатушы Динара пайызбен жұмыс істейді — көндіруге тырысады.\nМіндет: курткаларды салыстырып, біреуін дауыстап таңдау және оны қайтаруға бола ма, соны анықтау.',
+    'scen.desc.corner-shop':
+      'қонақтар алдындағы дүкен: бәрі сөре артында, мөлшерін сұрап, қолма-қол ақшаға сыю',
+    'scen.brief.corner-shop':
+      'Қонақтар тоғыз жарымда келеді, сен кешкі ас дайындап жатырсың.\nТізім: тауық, күріш, қызанақ, нан, сүт.\nДүкен шағын, бәрі прилавка артында — өзің алмайсың, сатушыдан сұрайсың.\nҚалтаңда дәл 2 000 теңге қолма-қол.\nМіндет: осы ақшаға сыятын себет жинау, нешеу керегін дауыстап айтып.',
+    'scen.desc.hairdresser':
+      'шаштараз тыңдағаннан гөрі тез қияды: ұзындықты санмен айтып, уақытында тоқтату',
+    'scen.brief.hairdresser':
+      'Сен орындықтасың, орындық айнаға бұрылып қойылған.\nЕкі сантиметр ғана алу керек, одан артық емес — ұзындықты сақтағың келеді.\nРитаның келесі клиенті сағат бесте, ол ешқашан кешікпейді, сондықтан шаштараз асығады.\nОл тыңдағаннан гөрі тез қияды, ал «сәл ғана» дегенді өзінше түсінеді.\nМіндет: ұзындықты санмен айту және бұрыс кетсе оны тоқтату.',
+    'scen.desc.market-melon-stall':
+      'базардағы сауда: жеміс таңдау, қайсысы тәтті екенін сұрау және үш мыңға сыю',
+    'scen.brief.market-melon-stall':
+      'Ашық базар, бес жарым, жабылуға жарты сағат қалды.\nҚауын сатылатын сөренің қасында тұрсың. Гүлзат мұнда он тоғыз жыл сауда жасайды және оңай сатып алушыны бірден таниды.\nҚалтаңда 3 000 теңге.\nМіндет: жемісті алып кету және жалпы соманы дауыстап айту, осы ақшадан аспай.',
+    'scen.desc.pharmacy-night-window':
+      'дәріхананың түнгі терезесі: керек дәрі жоқ — алмастыру сұрап, таңға дейін жету',
+    'scen.brief.pharmacy-night-window':
+      'Түнгі он екіге жиырма минут қалды. Жөтел ұйықтатпайды, пижаманың сыртынан пальто киіп шықтың.\nДәріхана жабық, тек түнгі кішкентай терезе ашық.\nРецептің жоқ.\nМіндет: таңға дейін жететін бірдеңемен кету және емхана қашан ашылатынын білу.',
+    'scen.desc.station-ticket-window':
+      'вокзал терезесі: кестені түсініп, керек күні, уақыты және платформасы бар билет алу',
+    'scen.brief.station-ticket-window':
+      'Жұма, үшке он минут қалды. Артыңда алты адам кезекте тұр, кассир асығады.\nҚарағандыда жексенбі түскі уақытқа дейін болуың керек.\nКесте кассирдің артында ілулі — онда не бар екенін тек одан білесің.\nМіндет: пойыз бен автобустың арасынан таңдап, күнін, уақытын және платформасын дауыстап қайталау.',
+    'scen.desc.bank-lost-card':
+      'карта жоғалды, ал онымен төлеп жатыр: бұғаттау, бөтен шығысты даулау және өтініш қалдыру',
+    'scen.brief.bank-lost-card':
+      'Карта кеше кештен бері жоқ. Банк бөлімшесіндесің, терезеде операционист Зарина отыр.\nЖеке куәлігің қасыңда — онсыз ештеңе бастамайды.\nКешегі төлемдер сенікі: кофе, супермаркет, такси. Ал бүгін таңертеңгі Көкшетаудағы жанармай құюдағы екі әрекет сенікі емес — сен онда болған жоқсың.\nБұғаттау бірден жасалады, кері қайтарылмайды.\nМіндет: картаны бұғаттау, бөтен шығысты даулау және бүгін өтінішке қол қою.',
+    'scen.desc.explaining-your-job':
+      'жұмысыңды тоғыз жасар балаға түсіндіру: терминсіз, ол өз сөзімен қайталағанша',
+    'scen.brief.explaining-your-job':
+      'Кеңседесің, әріптесің он бес минут ұлы Әмірмен отыруды сұрады. Ол тоғыз жаста.\nОл геймдизайнер болғысы келеді және компьютердегі нәрсенің бәрі не ойын, не жалықтыратын дүние деп есептейді.\nАнасы оған сен «компьютермен бірдеңе істейсің» деген. Ол мұны нағыз жұмыс деп сенбейді.\nОған мектепте роботтар барлық мамандықты алып кетеді деп те айтқан.\nМіндет: немен айналысатыныңды ол өз сөзімен қайталайтындай етіп түсіндіру.',
+    'scen.desc.hotel-room-problem':
+      'нөмір брондағаныңдай емес: бүгінге өтемақы алу және ертеңге көшуді бекіту',
+    'scen.brief.hotel-room-problem':
+      'Сен терезесі бар екі орындық нөмір брондағансың — түніне 22 000, үш түнге.\nБерген нөмір 208: екі жалғыз төсек, терезе жоқ, кондиционер сылдырлайды.\nТүнгі он бірден он бес минут өтті, сен қабылдау бөліміне түстің. Түнгі әкімші Қанат кезекші.\nМіндет: бүгінгі түн үшін бірдеңе алу және ертеңгі көшуді жазбаша бекіту.',
+    'scen.desc.passport-control':
+      'Хитроудағы шекара бақылауы: бірде-бір қағазсыз тоғыз күннің бәрін түсіндіру',
+    'scen.brief.passport-control':
+      'Астанадан ұштың, таңғы жеті, үшінші қазан. Кері рейс — он екісінде.\nБасып шығарылғаны тек Кингс-Кросс маңындағы қонақүй, үш түн: үшінен алтысына дейін.\nОдан кейін Манчестерге немере әпкең Әлияға барасың — оның мекенжайы тек телефонда. Тоғызында оның бітіру кеші.\nҚасыңда 400 фунт қолма-қол және карта. Шақыру хаты жоқ, алтысынан кейінгіге қағаз жоқ.\nМіндет: тоғыз күннің бәрін дауыстап түсіндіріп, мөр алу және екінші сұхбатқа жіберілмеу.',
+    'scen.desc.police-report':
+      'телефон туралы өтініш: қағазда «ұрлық» деп жазылуына жету, «жоғалту» емес',
+    'scen.brief.police-report':
+      'Бір сағат бұрын 24-автобуста телефон жоғалды — қара iPhone 12, қара қапта.\nБазар аялдамасы мен саябақ аялдамасының арасында келе жаттың, автобус лық толы еді. Жоғалғанын алтыдан отыз бес минут өткенде байқадың.\nIMEI үйде қорапта, қасыңда жоқ.\nСақтандыру өтінішті тек бірінші тәулікте қабылдайды, әрі онда «ұрлық» деп тұруы керек: «жоғалту» деп жазылса, ештеңе төлемейді.\nМіндет: неге бұл ұрлық екенін түсіндіріп, өтініш нөмірімен шығу.',
+    'scen.desc.taxi-long-way':
+      'таксишi айналып жүрді: есептегішті даулап, соманы сол жерде келісу',
+    'scen.brief.taxi-long-way':
+      'Кешкі он, сен өз подъезіңнің алдындасың, мотор әлі жұмыс істеп тұр.\nӘдетте бұл жол шамамен 2 600 тұрады және жиырма минут алады. Бүгін отыз бес минут кетті, есептегіште 4 800.\nЖүргізуші Республика даңғылымен емес, көпірмен жүрді.\nӘмиеніңді әлі шығарған жоқсың.\nМіндет: соманы дауыстап келісіп, төлеу.',
+    'scen.desc.the-empty-chair':
+      'кешін өткізіп жіберген досыңа қоңырау: нақты кешірім сұрап, бейсенбіге жауап беру',
+    'scen.brief.the-empty-chair':
+      'Сенбіде Дананың туған күні болды: мейрамхана, он екі адам. Сен келемін дедің де, келмедің.\nҚоңырау да шалмадың, жазбадың да — ол саған екі рет жазды, сен тек жексенбі таңертең жауап бердің.\nБос орын үшін ол 9 000 төледі.\nҚазір жексенбі, күндіз, және ол өзі қоңырау шалып тұр.\nМіндет: нақты бір нәрсе үшін кешірім сұрау және бейсенбіде кездесуді ұсынса, анық жауап беру.',
+    'scen.desc.disputing-an-invoice':
+      'автосервис шоты айтылғаннан екі есе көп: жолдарын талдап, сома туралы келісу',
+    'scen.brief.disputing-an-invoice':
+      'Дүйсенбіде телефон арқылы саған 45 000 теңге деген — қалыптар мен жұмыс.\nҚазір жұма кеші, ал қолыңда 78 500-ге шот.\nЖазбаша ештеңе жоқ: тек телефон арқылы сөйлескенсің.\nТөлемейінше көлікті бермейді, ал сервис жетіде жабылады.\nМіндет: шотты жол-жолымен талдап, кілттермен және екеуің дауыстап айтқан сомамен кету.',
+    'scen.desc.essay-extension':
+      'мерзімді ұзарту өтініші: оқытушы іске жазуға дайын себепті атау',
+    'scen.brief.essay-extension':
+      'Эссені сейсенбіде сағат беске дейін тапсыру керек еді. Тапсырмадың.\nАйыппұл — күніне 5%, демалыс күндері де саналады.\nҚабылдау уақыты он бір минут бұрын аяқталды, бірақ сен есікті қақтың.\nҰзартуды тек оқытушы іске жазуға дайын себеппен береді; «бос болмадым» дегенді ол жазбайды.\nМіндет: жаңа мерзімді және іске нақты не жазылатынын келісу.',
+    'scen.desc.party-nobody-you-know':
+      'ешкімді танымайтын кеш: балкондағы бейтаныспен әңгіме және ұсынысқа жауап',
+    'scen.brief.party-nobody-you-know':
+      'Айнұрдың үй тойы, сенбі, кешкі он. Одан басқа мұнда ешкімді танымайсың, ал ол қырық минут бұрын асүйге кетті.\nАуа жұтуға балконға шықтың. Онда бейтаныс жігіт тұр.\nІште музыка қатты, сөйлесуге тек осы жер жарайды.\nСаған тапсырма жоқ — жай әңгіме, әрі әңгімелесушіге жалықса, ол бірден үзіледі.\nМіндет: әңгімені тірі ұстау және саған бірдеңе ұсынылса, шынайы жауап беру.',
+    'scen.desc.turning-down-the-offer':
+      'жұмыс ұсынысынан бас тарту: «жоқ» деп дауыстап айту және көпірді өртемеу',
+    'scen.brief.turning-down-the-offer':
+      'Сені екі рет сұхбаттан өткізіп, ұсыныс жасады. Сен бас тартуды шештің — қолыңда басқа ұсыныс бар.\nБейсенбі, он екіге жиырма минут қалды. Алина жұмысқа шығу күнін келісуге қоңырау шалып тұр және «жоқ» естиді деп ойламайды.\nОл бұл жалдауға алты апта жұмсаған, сондықтан көндіруге тырысады.\nМіндет: «мүмкін» деп қалдырмай, дауыстап бас тарту және есікті жабу керек пе, ашық қалдыру керек пе — саналы түрде шешу.',
     'scen.start': 'Әңгімені бастау',
     'scen.briefTitle': 'Жағдай',
     'scen.briefReady': 'Дайынмын, қоңырау шаламын',
@@ -872,6 +1028,84 @@ export const DICT = {
       "the neighbour at your door: agree a time, prove the drilling isn't yours, and stay on speaking terms",
     'scen.brief.neighbour-noise':
       "It's Saturday, twenty to eleven at night. Six friends are at your place — a birthday, a cake, a speaker on the windowsill.\nYou moved into flat 14 two months ago. Quiet hours in the building start at eleven; the notice is in the lift.\nYour downstairs neighbour Gulnara, from flat 12, is at the door. She has to be up at five.\nIMPORTANT: the drilling is not yours. It comes from flat 16, upstairs — but Gulnara is sure it's you.\nYour task: name the time you'll turn the music off, and explain that the drill isn't yours.",
+    // Вторая партия сцен. Брифинг у каждой: NPC не может рассказать
+    // ученику то, что знает про себя сам ученик.
+    'scen.desc.lost-boy-info-desk':
+      'a lost boy at the information desk: gather what he tells you and get the announcement made',
+    'scen.brief.lost-boy-info-desk':
+      "You found a crying boy by the fountain on floor 1 and walked him to the information desk.\nHe says his name is Timur and that he is five.\nHe is holding a plastic dinosaur and wearing a red jacket.\nHe will not say his mother's name.\nYour task: get his name, his age and one more detail into the announcement — without them nobody will find him.",
+    'scen.desc.museum-ticket-desk':
+      'a museum desk before closing: buy the right tickets and sort out the bag',
+    'scen.brief.museum-ticket-desk':
+      'You are at the museum ticket window; the museum closes at six and a family is waiting behind you.\nThere are three of you: two adults and a seven-year-old.\nYour student card is at home, not in your hand.\nYou have a rucksack on your back.\nYour task: leave the desk with the right tickets and know what to do with the bag.',
+    'scen.desc.clothing-store':
+      "a jacket for Monday's interview: compare three, stay inside your money, and learn the returns rule",
+    'scen.brief.clothing-store':
+      'Saturday evening. You have a job interview on Monday morning and no jacket.\nYou have 20,000 tenge on you and you want to be home by half past eight.\nDinara the assistant works on commission — she will push.\nYour task: compare the jackets, choose one out loud, and find out whether you can bring it back.',
+    'scen.desc.corner-shop':
+      'the corner shop before guests arrive: everything is behind the counter, ask for amounts and stay inside your cash',
+    'scen.brief.corner-shop':
+      'Your guests arrive at half past nine and you are cooking dinner.\nYour list: chicken, rice, tomatoes, bread, milk.\nThe shop is small and everything is behind the counter — you cannot pick anything up yourself, you have to ask.\nYou have exactly 2,000 tenge in cash.\nYour task: put together a basket inside that money, saying out loud how much of each you need.',
+    'scen.desc.hairdresser':
+      'a hairdresser who cuts faster than she listens: give the length as a number and stop her in time',
+    'scen.brief.hairdresser':
+      'You are in the chair and the chair is already turned to the mirror.\nYou want two centimetres off, no more — you are keeping the length.\nRita\'s next client is at five and never late, so she is in a hurry.\nShe cuts faster than she listens, and "a little" means whatever she decides.\nYour task: give the length as a number and stop her if it starts going wrong.',
+    'scen.desc.market-melon-stall':
+      'haggling at the market: choose your fruit, ask which one is sweetest, and stay inside three thousand',
+    'scen.brief.market-melon-stall':
+      'An open market at half past five, half an hour before closing.\nYou have stopped at the melons. Gulzat has sold fruit here for nineteen years and spots an easy customer instantly.\nYou have 3,000 tenge on you.\nYour task: leave with fruit and say the total out loud, without going over that money.',
+    'scen.desc.pharmacy-night-window':
+      'the pharmacy night hatch: what you came for is sold out — ask for something else and get to morning',
+    'scen.brief.pharmacy-night-window':
+      'Twenty to midnight. A cough is keeping you awake and you have come out in a coat over your pyjamas.\nThe shop is locked; only the night hatch in the door is open.\nYou have no prescription.\nYour task: leave with something that gets you to morning, and find out when the clinic opens.',
+    'scen.desc.station-ticket-window':
+      'the station window: work out the timetable and buy a ticket with the right day, time and platform',
+    'scen.brief.station-ticket-window':
+      'Friday, ten past two. Six people are queueing behind you and the clerk is in a hurry.\nYou have to be in Karaganda by Sunday midday.\nThe timetable is on the board behind him — the only way to learn it is to ask.\nYour task: choose between the train and the bus, then say the day, the time and the platform back to him.',
+    'scen.desc.bank-lost-card':
+      'your card is gone and someone is spending on it: block it, dispute the payments, sign the form',
+    'scen.brief.bank-lost-card':
+      "Your card has been missing since last night. You are at the branch; Zarina is at counter 2.\nYou have your ID with you — nothing starts without it.\nYesterday's payments are yours: coffee, the supermarket, a taxi. The two attempts this morning at a petrol station in Kokshetau are not — you were not there.\nBlocking the card is instant and cannot be undone.\nYour task: block the card, dispute the payments that are not yours, and get the form signed today.",
+    'scen.desc.explaining-your-job':
+      'explain your job to a nine-year-old: no jargon, until he can say it back in his own words',
+    'scen.brief.explaining-your-job':
+      'You are at the office; a colleague asked you to sit with her son Amir for fifteen minutes. He is nine.\nHe wants to be a game designer and thinks anything on a computer is either a game or boring.\nHis mother told him you "do something with computers". He does not believe that is a real job.\nHis teacher also told the class that robots will take most jobs.\nYour task: explain what you do so that he can say it back in his own words.',
+    'scen.desc.hotel-room-problem':
+      'the room is not the one you booked: get something back for tonight and the move fixed for tomorrow',
+    'scen.brief.hotel-room-problem':
+      "You booked a double with a window, 22,000 a night, for three nights.\nYou were given 208: two single beds, no window, an air conditioner that rattles.\nIt is quarter past eleven at night and you have come back down to the desk. Kanat is on the night shift.\nYour task: get something for tonight and get tomorrow's move written down.",
+    'scen.desc.passport-control':
+      'passport control at Heathrow: account for all nine days with nothing printed',
+    'scen.brief.passport-control':
+      "You have flown in from Astana. Seven in the morning, 3 October. Your return flight is on the 12th.\nThe only thing you have printed is a hotel near King's Cross, three nights: the 3rd to the 6th.\nAfter that you are going to Manchester to your cousin Aliya — her address is only in your phone. Her graduation is on the 9th.\nYou have 400 pounds in cash and a card. No invitation letter, nothing printed after the 6th.\nYour task: account for all nine days out loud and get the stamp, without being sent to the second interview room.",
+    'scen.desc.police-report':
+      'reporting a stolen phone: get the paper to say theft, not lost',
+    'scen.brief.police-report':
+      'An hour ago your phone went missing on bus 24 — a black iPhone 12 in a black case.\nYou were between the market stop and the park stop and the bus was packed. You noticed at twenty-five to seven.\nThe IMEI is on the box at home, not with you.\nYour insurance only accepts a report filed within twenty-four hours, and it has to say stolen: if it says lost, they pay nothing.\nYour task: explain why it was taken, and leave with the report number.',
+    'scen.desc.taxi-long-way':
+      'the driver took the long way: challenge the meter and settle a fare on the spot',
+    'scen.brief.taxi-long-way':
+      'Ten at night. You are outside your building and the engine is still running.\nThis trip normally costs about 2,600 and takes twenty minutes. Tonight it took thirty-five and the meter says 4,800.\nThe driver came over the bridge instead of down Republic Avenue.\nYou have not opened your wallet yet.\nYour task: agree a fare out loud and pay it.',
+    'scen.desc.the-empty-chair':
+      'calling the friend whose dinner you missed: apologise for something specific and answer about Thursday',
+    'scen.brief.the-empty-chair':
+      "Dana's birthday dinner was on Saturday: a restaurant, twelve people. You said yes and did not come.\nYou did not call or message — she wrote to you twice and you only answered on Sunday morning.\nShe paid 9,000 for the empty seat.\nIt is Sunday afternoon and she is the one calling.\nYour task: apologise for something specific, and give a clear answer if she suggests Thursday.",
+    'scen.desc.disputing-an-invoice':
+      'a garage invoice at double the quote: take it apart line by line and settle on a figure',
+    'scen.brief.disputing-an-invoice':
+      'On Monday, on the phone, you were quoted 45,000 tenge — pads and labour.\nIt is Friday evening and the invoice in your hand says 78,500.\nNothing was ever put in writing; it was a phone call.\nThey do not release the car until it is paid, and the workshop closes at seven.\nYour task: take the invoice apart line by line and drive away with the keys and a figure you both said out loud.',
+    'scen.desc.essay-extension':
+      'asking for an extension: give a reason your tutor is willing to write in the file',
+    'scen.brief.essay-extension':
+      'The essay was due Tuesday at five. You did not hand it in.\nThe late penalty is 5% a day, weekends included.\nOffice hours ended eleven minutes ago, but you knocked anyway.\nExtensions are only granted for a reason the tutor is willing to write in the file, and "I was busy" is not one he will write.\nYour task: agree a new deadline and agree what exactly goes in the file.',
+    'scen.desc.party-nobody-you-know':
+      'a party where you know nobody: keep a stranger talking on the balcony and answer his offer for real',
+    'scen.brief.party-nobody-you-know':
+      "Ainur's flat-warming, Saturday, ten at night. She is the only person you know here and she disappeared into the kitchen forty minutes ago.\nYou have come out onto the balcony for air. There is a man out there you have never met.\nThe music inside is too loud to talk over; this is the only place you can.\nYou have no task here — it is just a conversation, and it ends the moment he gets bored.\nYour task: keep it alive, and give a real answer if he offers you something.",
+    'scen.desc.turning-down-the-offer':
+      'turning down a job offer: say no out loud without burning the bridge',
+    'scen.brief.turning-down-the-offer':
+      'They interviewed you twice and made you an offer. You have decided to turn it down — you have another offer in hand.\nThursday, twenty past eleven. Alina is calling to confirm a start date and has no idea she is about to hear no.\nShe has spent six weeks on this hire and she will push.\nYour task: decline out loud, leave no "maybe", and decide on purpose whether the door stays open or shuts.',
     'scen.start': 'Start conversation',
     'scen.briefTitle': 'The situation',
     'scen.briefReady': "I'm ready — call",
