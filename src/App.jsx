@@ -60,7 +60,6 @@ import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLogi
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
-import { requestAppFullscreen, exitAppFullscreen } from './lib/fullscreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
@@ -129,7 +128,6 @@ export default function App() {
     const liveParam = searchParams.get('live')
     if (liveParam) {
       setLiveLessonId(liveParam)
-      requestAppFullscreen()
     }
     // ?level=<A1|A2|…> — королевство для kingdom-interior (диплинк
     // ?screen=kingdom-interior&level=b1). Через карту туда не попасть, пока
@@ -619,13 +617,6 @@ export default function App() {
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
 
-  // Fullscreen only for the live class — the Lessons tab stays a normal page.
-  // Exit on any other screen, including paths that bypass the nav handlers
-  // (profile button). The *request* stays in the click handler (needs a gesture).
-  useEffect(() => {
-    if (screen !== 'live-lesson') exitAppFullscreen()
-  }, [screen])
-
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
   // читает их тем же deepLink-путём, что и явный диплинк, и остаётся там же, а
@@ -665,7 +656,6 @@ export default function App() {
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
         setLiveLessonId(payload.lessonId)
-        requestAppFullscreen()
         setScreen('live-lesson')
       } else setScreen('lessons')
     }
@@ -920,7 +910,7 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); requestAppFullscreen(); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
