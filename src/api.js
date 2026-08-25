@@ -500,6 +500,26 @@ export function getBalance(token, onFresh) {
   return cachedAuthGet('/mobile/balance/info', token, onFresh)
 }
 
+export function listNotifications(token, limit = 20) {
+  return authGet(`/notifications?limit=${limit}`, token)
+}
+
+export function getUnreadNotificationCount(token) {
+  return authGet('/notifications/unread-count', token)
+}
+
+export function markNotificationRead(token, id) {
+  return authPut(`/notifications/${id}/read`, token)
+}
+
+export function markAllNotificationsRead(token) {
+  return authPut('/notifications/read-all', token)
+}
+
+export function deleteNotification(token, id) {
+  return authDelete(`/notifications/${id}`, token)
+}
+
 // Считает уроки/пройдено по LearningPathModel (modules -> sections -> activities)
 const LESSON_TYPES = new Set(['LESSON', 'QUIZ', 'PRACTICE', 'REVIEW', 'ASSESSMENT', 'ORDINARY', 'MNEMOTECHNIC'])
 export function countProgress(path) {

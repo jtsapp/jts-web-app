@@ -57,6 +57,40 @@ const renderReport = async (page) => {
   await expect(page.locator('.t-report')).toBeVisible()
 }
 
+// Состояние ожидания: звонок ещё не доехал из базы, разбор собирается. Раньше
+// жаловались, что непонятно, идёт ли анализ вообще.
+const renderPending = async (page) => {
+  await page.setContent(`
+    <div class="t-app"><div class="t-body"><main class="t-main"><div class="t-content t-content--flow">
+      <div class="t-report">
+        <div class="t-report__head">
+          <img class="t-report__avatar t-status__avatar--pulse" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==">
+          <div class="t-report__headtext"><b>Итоги разговора</b><span>Разбираю разговор</span></div>
+        </div>
+        <div class="t-report__pending" role="status">
+          <span class="t-spin t-spin--lg"></span>
+          <div class="t-report__pendingtext">
+            <b>Разбираю разговор<span class="t-status__dots"></span></b>
+            <span>Считаю слова и собираю разбор — обычно это занимает 10–20 секунд. Не закрывай экран.</span>
+          </div>
+        </div>
+        <div class="t-report__stats">
+          <div class="t-stat"><span class="t-spin t-stat__spin"></span><span>длительность</span></div>
+          <div class="t-stat"><span class="t-spin t-stat__spin"></span><span>слов</span></div>
+          <div class="t-stat"><span class="t-spin t-stat__spin"></span><span>предложений</span></div>
+          <div class="t-stat"><span class="t-spin t-stat__spin"></span><span>уникальных слов</span></div>
+        </div>
+        <section class="t-report__card">
+          <h2 class="t-report__cardtitle">О чём говорили</h2>
+          <p class="t-report__waiting" role="status"><span class="t-spin"></span><span>Собираю разбор разговора…</span></p>
+        </section>
+      </div>
+    </div></main></div></div>
+  `)
+  await page.addStyleTag({ content: `body { margin: 0 }\n${CSS}` })
+  await expect(page.locator('.t-report')).toBeVisible()
+}
+
 const box = async (page, selector, nth = 0) => {
   const b = await page.locator(selector).nth(nth).boundingBox()
   expect(b, `нет геометрии у ${selector}[${nth}]`).not.toBeNull()
@@ -109,5 +143,36 @@ test.describe('Отчёт после разговора', () => {
     const text = await box(page, '.t-report__wordtext')
     const button = await box(page, '.t-report__add')
     expect(button.x).toBeGreaterThan(text.x + text.width - 1)
+  })
+})
+
+test.describe('Отчёт: ожидание разбора', () => {
+  test('плашка «идёт разбор» видна и не вылезает за экран', async ({ page, viewport }) => {
+    await renderPending(page)
+    const banner = await box(page, '.t-report__pending')
+    expect(banner.height).toBeGreaterThan(40)
+    expect(banner.x).toBeGreaterThanOrEqual(-1)
+    expect(banner.x + banner.width).toBeLessThanOrEqual(viewport.width + 1)
+
+    // Плашка стоит над плитками — иначе её не заметят, а ради этого всё и делалось.
+    const stats = await box(page, '.t-report__stats')
+    expect(banner.y + banner.height).toBeLessThanOrEqual(stats.y + 1)
+  })
+
+  test('кольца крутятся и держат высоту плитки', async ({ page }) => {
+    await renderPending(page)
+    const spin = page.locator('.t-report__stats .t-spin').first()
+    const style = await spin.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { name: s.animationName, radius: s.borderTopLeftRadius, w: s.width }
+    })
+    expect(style.name).toBe('t-spin')
+    expect(style.radius).not.toBe('0px')
+    expect(style.w).not.toBe('0px')
+
+    // Плитка без цифры не должна схлопываться: иначе при появлении счётчиков
+    // сетка прыгает.
+    const tile = await box(page, '.t-report__stats .t-stat')
+    expect(tile.height).toBeGreaterThanOrEqual(80)
   })
 })

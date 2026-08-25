@@ -10,7 +10,7 @@ import MultiQuestion from '../practice/MultiQuestion.jsx'
 import PickQuestion from '../practice/PickQuestion.jsx'
 import { sanitizeHtml } from '../sanitizeHtml.js'
 import { wrapTapWords } from '../wrapTapWords.js'
-import { bindWordBank } from '../bindWordBank.js'
+import { useWordBankRoot } from '../useWordBankRoot.js'
 import { reportAudio } from '../../live/audioReport.js'
 import { hasAttempt } from '../practiceGrading.js'
 import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
@@ -28,7 +28,7 @@ const QUESTION_BY_TYPE = {
 // Карточка практики: заголовок + инструкция/аудио/правило + список вопросов.
 // `checked` — флаг всей карточки; `checkedKeys`/`cardKey` нужны, чтобы
 // после сброса одного вопроса остальными нельзя было снова тыкать.
-export default function PracticeBlock({ block, answers, checked, checkedKeys, cardKey, onAnswer, onCheck, readOnly, liveQuestionId, onWord }) {
+export default function PracticeBlock({ block, answers, checked, checkedKeys, cardKey, onAnswer, onCheck, readOnly, liveQuestionId, onWord, gapPrefix, cardAnchorId }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
     if (cardKey && checkedKeys?.has(cardKey)) return true
@@ -40,12 +40,10 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
+  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId })
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId }
 
-  useEffect(() => {
-    const root = htmlRef.current
-    if (!root) return undefined
-    return bindWordBank(root)
-  }, [tappableHtml])
+  useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
   useEffect(() => {
     const root = htmlRef.current
@@ -83,7 +81,7 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
   }, [tappableHtml, block?.audio?.src])
 
   return (
-    <div className="lw-card lw-practice">
+    <div className="lw-card lw-practice" data-question-id={cardAnchorId || gapPrefix}>
       <div className="lw-practice__head">
         {block?.title && <TapText as="h3" className="lw-practice__title" text={block.title} onWord={onWord} />}
         {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
@@ -95,13 +93,7 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
       {block?.audio?.src && (
         <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
       )}
-      {html && (
-        <div
-          className="lw-practice__html"
-          ref={htmlRef}
-          dangerouslySetInnerHTML={{ __html: tappableHtml }}
-        />
-      )}
+      {html && <div className="lw-practice__html" ref={htmlRef} />}
 
       <div className="lw-practice__list">
         {(block?.questions || []).map((question) => {
