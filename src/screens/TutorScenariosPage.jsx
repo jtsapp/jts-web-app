@@ -67,6 +67,7 @@ export default function TutorScenariosPage({
                 style={{ backgroundImage: `url(${s.img})` }}
               >
                 <span className="t-scenario__badge">{s.badge}</span>
+                {s.level && <span className="t-scen__level">{s.level}</span>}
               </span>
               <div className="t-scen__label">{s.label}</div>
               <p className="t-scen__desc">{t(`scen.desc.${s.id}`)}</p>
