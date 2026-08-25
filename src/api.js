@@ -613,6 +613,12 @@ export async function verifyLoginOtp(identifier, code) {
   return post('/auth/otp/verify', { ...identifierBody(identifier), otp: code })
 }
 
+// Вход через Google: id_token из Google Identity Services → LoginResponse
+// с accessToken. Бэкенд сам создаёт пользователя при первом входе.
+export function loginWithGoogle(idToken) {
+  return post('/auth/google', { idToken })
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Практика: контент из dev-admin (mobile-эндпоинты бэкенда, требуют Bearer).
 // dev-admin.justtostudy.kz читает из того же dev-server, поэтому всё, что

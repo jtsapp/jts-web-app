@@ -633,6 +633,76 @@ textarea {
   filter: brightness(1.04);
 }
 
+/* Вход через Google. Apple ID с сайта убран, поэтому кнопка Google занимает
+   всю ширину второй строки блока входа — то место, где в кадре 4095:39775
+   стояла пара «Apple | Google». Размеры оттуда же: 64 высотой, r60, светлая
+   заливка #f8f8f8 с тёмной подписью 14/700. */
+.auth-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.auth-row--center {
+  margin-top: 12px;
+}
+.auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 64px;
+  border: none;
+  border-radius: 60px;
+  padding: 14px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+.auth-btn--google {
+  background: #f8f8f8;
+  color: #2f2f2f;
+}
+.auth-btn--google:hover {
+  background: #efefef;
+}
+/* Провайдер не настроен (нет client ID) — кнопка видна, но явно не активна,
+   чтобы не выглядела рабочей. */
+.auth-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Слот, в который GIS рисует официальную кнопку Google */
+.google-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.google-slot--center {
+  margin-top: 4px;
+}
+
+/* Разделитель «или» между формой телефона и входом через Google */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 10px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e6e4ef;
+}
+
 /* ======================================================= */
 /* ============  ФОРМЫ: ТЕЛЕФОН и СМС-КОД  =============== */
 /* ======================================================= */

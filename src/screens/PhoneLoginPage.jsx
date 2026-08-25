@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from 'react'
 import Shell from '../components/Shell.jsx'
 import { ChevronRightIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
+import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 import Multiline from '../components/Multiline.jsx'
 import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
 import { isEmailIdentifier } from '../api.js'
 
-export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
+export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loading, error }) {
   const { t, lang } = useI18n()
   // 'phone' — прежняя форма со страной/маской; 'email' — простое поле почты.
   // Одна и та же onSubmit(identifier) обслуживает оба режима — App.jsx/api.js
@@ -22,6 +23,25 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const pickerRef = useRef(null)
   const inputRef = useRef(null)
+
+  const [googleReady, setGoogleReady] = useState(false)
+  const googleRef = useRef(null)
+
+  // Google-вход и здесь: пользователи, зарегистрированные через Google, не
+  // имеют телефона и войти по OTP не могут. Перерисовка — при смене языка.
+  useEffect(() => {
+    if (!isGoogleAuthEnabled()) return
+    let cancelled = false
+    renderGoogleButton(googleRef.current, (idToken) => onGoogleToken?.(idToken), lang)
+      .then((ok) => {
+        if (!cancelled && ok) setGoogleReady(true)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
 
   // Закрытие выпадашки по клику вне неё.
   useEffect(() => {
@@ -153,6 +173,12 @@ export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
             </a>
           </p>
 
+          {googleReady && <div className="auth-divider">{t('auth.or')}</div>}
+          <div
+            className="google-slot google-slot--center"
+            ref={googleRef}
+            style={googleReady ? undefined : { display: 'none' }}
+          />
         </form>
       </div>
     </Shell>

@@ -56,7 +56,7 @@ import { getTutor, temperFor } from './tutor/tutors.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
@@ -491,6 +491,55 @@ export default function App() {
     }
   }
 
+  // Вход через Google: GIS уже отдал проверяемый id_token, бэкенд его
+  // верифицирует и находит/создаёт пользователя. Дальше — тот же пост-логин,
+  // что и после OTP: токен, уровень из профиля, перенос анонимного прогресса.
+  async function handleGoogleCredential(idToken, chatName) {
+    setError('')
+    setLoading(true)
+    try {
+      const data = await loginWithGoogle(idToken)
+      const tok = data?.accessToken || null
+      if (!tok) throw new Error(t('err.otp'))
+      // Имя из Google-профиля надёжнее введённого в чате, но чат — фолбэк.
+      setName(data?.name || chatName || '')
+      setToken(tok)
+      saveToken(tok)
+      try {
+        const lvl = await getLanguageLevel(tok)
+        if (lvl) setUserLevel(lvl)
+        // Уровня в профиле нет — Google-аккаунт свежесозданный (или тест
+        // пропускали), после success ведём на CEFR-тест.
+        setNeedsLevelTest(!lvl)
+      } catch (e) {
+        console.warn('Не удалось получить уровень из профиля:', e)
+      }
+      getIsDemoAccount(tok).then(setIsDemoAccount)
+      // Как и после OTP: перенос анонимного прогресса, затем тьютор-профиль
+      // аккаунта (тьютор/интересы/профессия с прошлых сессий).
+      mergeAnonymousProgress(tok)
+        .then(() => loadTutorProfile(tok))
+        .then((profile) => {
+          if (!profile) return
+          if (profile.tutor) {
+            setTutorKey(profile.tutor)
+            setTemper(temperFor(profile.tutor, profile.tutorTemper))
+            setTutorOnboarded(true)
+          }
+          setInterestIds(enToInterestIds(profile.interests))
+          setProfileId(profile.deviceId || null)
+          if (profile.profession) setProfession(profile.profession)
+        })
+      clearLocalPractice()
+      hydratePractice(tok)
+      setScreen('success')
+    } catch (e) {
+      setError(e.message || t('err.otp'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Завершение письменного CEFR-теста (после регистрации) — сохраняем уровень и
   // открываем королевство. Уровень пишем в оба стора: backend — источник правды
   // при входе, Neon-профиль — то, что читает голосовой тьютор; без второй
@@ -695,6 +744,7 @@ export default function App() {
     case 'chat':
       return (
         <RegistrationPage
+          onGoogleToken={handleGoogleCredential}
           onBack={() => setScreen('welcome')}
           onPhoneLogin={(userName) => {
             setName(userName || '')
@@ -709,6 +759,7 @@ export default function App() {
     case 'phone':
       return (
         <PhoneLoginPage
+          onGoogleToken={handleGoogleCredential}
           onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePhoneSubmit}
           loading={loading}
@@ -747,6 +798,7 @@ export default function App() {
     case 'login-password':
       return (
         <PasswordLoginPage
+          onGoogleToken={handleGoogleCredential}
           onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePasswordLogin}
           onOtpLogin={() => { setError(''); setScreen('phone') }}

@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Входы через Apple ID и Google с сайта убраны по решению владельца
-// (2026-08-24): на сайте остаётся вход по номеру телефона.
+// Вход через Apple ID с сайта убран, вход через Google — оставлен (решение
+// владельца, 2026-08-25: сначала убрали оба, потом Google вернули).
 //
-// Убирали их из шести мест сразу — экран регистрации, два экрана входа, App.jsx,
-// клиент api.js и модуль GIS, — поэтому вернуться они могут так же незаметно:
-// достаточно одной кнопки в новом экране. Тест читает исходники как текст,
-// потому что предмет проверки — отсутствие кода, а не поведение.
+// Apple жил в шести местах сразу — два экрана входа, регистрация, иконки,
+// переводы и стили, — поэтому вернуться он может так же незаметно: достаточно
+// одной кнопки в новом экране. Тест читает исходники как текст, потому что
+// предмет проверки — отсутствие кода, а не поведение.
 
 const src = dirname(fileURLToPath(import.meta.url))
 
@@ -23,49 +23,42 @@ function sources(dir = src, acc = []) {
   return acc
 }
 
-// Google тут упоминается по другим поводам: шрифты, Google Meet в расписании,
-// Cloud TTS у голоса Луны. Ищем только следы ВХОДА.
-const AUTH_MARKS = [
-  /googleAuth/,
-  /renderGoogleButton|isGoogleAuthEnabled/,
-  /loginWithGoogle/,
-  /GOOGLE_CLIENT_ID/,
-  /['"]\/auth\/google['"]/,
-  /AppleIcon|GoogleIcon/,
-  /auth-btn--(apple|google)|google-slot/,
-]
+const files = sources().map((path) => [path, readFileSync(path, 'utf8')])
 
-describe('вход только по номеру телефона', () => {
-  it('в исходниках не осталось следов входа через Apple ID и Google', () => {
+// Ищем только следы ВХОДА через Apple: слово apple встречается и в безобидных
+// местах (apple-touch-icon, -apple-system в шрифтах).
+const APPLE_MARKS = [/AppleIcon/, /auth-btn--apple/, /['"]auth\.apple/, /AppleID|appleid/]
+
+describe('вход: Apple убран, Google на месте', () => {
+  it('следов входа через Apple ID в исходниках нет', () => {
     const hits = []
-    for (const file of sources()) {
-      const text = readFileSync(file, 'utf8')
-      for (const mark of AUTH_MARKS) {
-        if (mark.test(text)) hits.push(`${file.slice(src.length + 1)} — ${mark}`)
+    for (const [path, text] of files) {
+      for (const mark of APPLE_MARKS) {
+        if (mark.test(text)) hits.push(`${path.slice(src.length + 1)} — ${mark}`)
       }
     }
     expect(hits).toEqual([])
   })
 
-  it('модуль Google Identity Services удалён', () => {
-    expect(existsSync(join(src, 'lib', 'googleAuth.js'))).toBe(false)
+  it('стилей кнопки Apple в styles.css тоже нет', () => {
+    expect(readFileSync(join(src, 'styles.css'), 'utf8')).not.toMatch(/auth-btn--apple/)
   })
 
-  it('стилей чужих кнопок входа в styles.css тоже нет', () => {
-    const css = readFileSync(join(src, 'styles.css'), 'utf8')
-    expect(css).not.toMatch(/auth-btn|google-slot|auth-divider/)
+  it('вход через Google на месте: модуль GIS, вызов бэкенда и кнопка', () => {
+    expect(existsSync(join(src, 'lib', 'googleAuth.js'))).toBe(true)
+    expect(readFileSync(join(src, 'api.js'), 'utf8')).toMatch(/loginWithGoogle/)
+    const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
+    expect(reg).toMatch(/auth-btn--google/)
+    expect(reg).toMatch(/google-slot/)
   })
 
-  it('на экране регистрации ровно одна кнопка входа — по телефону', () => {
-    const page = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
-    expect(page).toMatch(/auth-primary/)
-    expect(page.match(/className="auth[^"]*"/g)).toEqual(['className="auth"', 'className="auth-primary"'])
+  it('кнопка Google стоит второй строкой блока входа — под номером телефона', () => {
+    const reg = readFileSync(join(src, 'screens', 'RegistrationPage.jsx'), 'utf8')
+    expect(reg.indexOf("t('auth.phone')")).toBeLessThan(reg.indexOf("t('auth.google')"))
   })
 
-  it('ключи переводов для чужих кнопок убраны', () => {
+  it('подписи кнопки есть во всех трёх языках', () => {
     const dict = readFileSync(join(src, 'i18n.jsx'), 'utf8')
-    for (const key of ['auth.apple', 'auth.appleSoon', 'auth.google']) {
-      expect(dict).not.toContain(`'${key}'`)
-    }
+    expect(dict.match(/'auth\.google':/g) || []).toHaveLength(3)
   })
 })
