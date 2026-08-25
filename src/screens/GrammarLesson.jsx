@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useI18n } from '../i18n.jsx'
-import { ChevronLeftIcon } from '../components/icons.jsx'
+import LangSelector from '../components/LangSelector.jsx'
 import { loadGrammarLevel } from '../practice/grammar/grammarData.js'
 import { uiStr } from '../practice/grammar/strings.js'
 import RichBlock from '../practice/grammar/RichContent.jsx'
@@ -66,14 +66,21 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
   return (
     <div className="gr-lesson">
       {/* Крошки: назад к каталогу + Unit N / Грамматика */}
+      {/* Полоса урока по кадру 4273:9107: круглый крестик, крошка «Unit N /
+          Грамматика», переключатель языка. На телефоне она заменяет шапку
+          оболочки — в макете двух шапок подряд нет (см. styles.css). */}
       <div className="gr-lesson__bar">
-        <button className="gr-back" onClick={onExit}>
-          <ChevronLeftIcon size={18} /> {uiStr(lang, 'nav_back')}
+        <button className="gr-back" onClick={onExit} aria-label={uiStr(lang, 'nav_back')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+          <span className="gr-back__label">{uiStr(lang, 'nav_back')}</span>
         </button>
         <div className="gr-lesson__crumb">
           <b>Unit {unit.id}</b>
           <span>{uiStr(lang, 'crumb_grammar')}</span>
         </div>
+        <LangSelector compact />
       </div>
 
       {/* Панель вкладок (выход из урока — «Назад» в крошках выше) */}

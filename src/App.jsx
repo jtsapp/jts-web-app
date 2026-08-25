@@ -56,7 +56,7 @@ import { getTutor, temperFor } from './tutor/tutors.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
@@ -429,8 +429,8 @@ export default function App() {
     }
   }
 
-  // Вход по паролю (телефон или почта). Пост-логин — тот же, что у Google и
-  // OTP: уровень из профиля, перенос анонимного прогресса, тьютор-профиль.
+  // Вход по паролю (телефон или почта). Пост-логин — тот же, что у OTP:
+  // уровень из профиля, перенос анонимного прогресса, тьютор-профиль.
   async function handlePasswordLogin(identifier, password) {
     setError('')
     setLoading(true)
@@ -468,55 +468,6 @@ export default function App() {
       // Бэкенд на неверную пару отдаёт 401 с техническим текстом — показываем
       // человеческую формулировку.
       setError(e?.status === 401 ? t('login.failed') : e.message || t('login.failed'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Вход через Google: GIS уже отдал проверяемый id_token, бэкенд его
-  // верифицирует и находит/создаёт пользователя. Дальше — тот же пост-логин,
-  // что и после OTP: токен, уровень из профиля, перенос анонимного прогресса.
-  async function handleGoogleCredential(idToken, chatName) {
-    setError('')
-    setLoading(true)
-    try {
-      const data = await loginWithGoogle(idToken)
-      const tok = data?.accessToken || null
-      if (!tok) throw new Error(t('err.otp'))
-      // Имя из Google-профиля надёжнее введённого в чате, но чат — фолбэк.
-      setName(data?.name || chatName || '')
-      setToken(tok)
-      saveToken(tok)
-      try {
-        const lvl = await getLanguageLevel(tok)
-        if (lvl) setUserLevel(lvl)
-        // Уровня в профиле нет — Google-аккаунт свежесозданный (или тест
-        // пропускали), после success ведём на CEFR-тест.
-        setNeedsLevelTest(!lvl)
-      } catch (e) {
-        console.warn('Не удалось получить уровень из профиля:', e)
-      }
-      getIsDemoAccount(tok).then(setIsDemoAccount)
-      // Как и после OTP: перенос анонимного прогресса, затем тьютор-профиль
-      // аккаунта (тьютор/интересы/профессия с прошлых сессий).
-      mergeAnonymousProgress(tok)
-        .then(() => loadTutorProfile(tok))
-        .then((profile) => {
-          if (!profile) return
-          if (profile.tutor) {
-            setTutorKey(profile.tutor)
-            setTemper(temperFor(profile.tutor, profile.tutorTemper))
-            setTutorOnboarded(true)
-          }
-          setInterestIds(enToInterestIds(profile.interests))
-          setProfileId(profile.deviceId || null)
-          if (profile.profession) setProfession(profile.profession)
-        })
-      clearLocalPractice()
-      hydratePractice(tok)
-      setScreen('success')
-    } catch (e) {
-      setError(e.message || t('err.otp'))
     } finally {
       setLoading(false)
     }
@@ -711,7 +662,6 @@ export default function App() {
             setError('')
             setScreen('reg-phone')
           }}
-          onGoogleToken={handleGoogleCredential}
           error={error}
         />
       )
@@ -722,7 +672,6 @@ export default function App() {
         <PhoneLoginPage
           onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePhoneSubmit}
-          onGoogleToken={handleGoogleCredential}
           loading={loading}
           error={error}
         />
@@ -730,6 +679,7 @@ export default function App() {
     case 'reg-phone':
       return (
         <RegisterPhonePage
+          onBack={() => { setError(''); setScreen('chat') }}
           onSubmit={handleRegPhoneSubmit}
           loading={loading}
           error={error}
@@ -738,6 +688,7 @@ export default function App() {
     case 'reg-email':
       return (
         <RegisterEmailPage
+          onBack={() => { setError(''); setScreen('reg-phone') }}
           onSubmit={handleRegEmailSubmit}
           loading={loading}
           error={error}
@@ -760,7 +711,6 @@ export default function App() {
           onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePasswordLogin}
           onOtpLogin={() => { setError(''); setScreen('phone') }}
-          onGoogleToken={handleGoogleCredential}
           loading={loading}
           error={error}
         />
@@ -982,10 +932,13 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
-          // После «подстройки» — голосовой placement-тест (Спарк), затем интересы
-          // и работа. Уровень определяет Sonnet по записи монолога. Смена тьютора
-          // (пришли из управления) эту цепочку пропускает: ответы уже в профиле.
-          onDone={() => goAfterTutorEdit('tutor-voice-intro', 'tutor-dashboard')}
+          // После «подстройки» — предложение пройти голосовой placement-тест
+          // (экран tutor-level-offer), оттуда либо сам тест, либо «позже» сразу
+          // к интересам. Раньше загрузка вела прямо в тест, и экран-предложение,
+          // хотя и свёрстан по макету, был недостижим — уйти от теста было
+          // нечем. Смена тьютора (пришли из управления) цепочку пропускает:
+          // ответы уже в профиле.
+          onDone={() => goAfterTutorEdit('tutor-level-offer', 'tutor-dashboard')}
         />
       )
     case 'tutor-level-offer':

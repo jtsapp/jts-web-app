@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import TrainerResult from '../components/TrainerResult.jsx'
+import LangSelector from '../components/LangSelector.jsx'
 import { useI18n } from '../i18n.jsx'
-import { VolumeIcon, ChevronLeftIcon } from '../components/icons.jsx'
+import { VolumeIcon } from '../components/icons.jsx'
 import {
   buildSession,
   checkAnswer,
@@ -124,7 +125,7 @@ function ChoiceTask({ task, response, setResponse, disabled, result }) {
   )
 }
 
-function AssembleTask({ task, response, setResponse, disabled }) {
+function AssembleTask({ task, response, setResponse, disabled, verdict }) {
   const { t } = useI18n()
   const bank = useMemo(() => mix([...(task.tokens || []), ...(task.distractors || [])]), [task.id])
   const chosen = response || []
@@ -141,11 +142,25 @@ function AssembleTask({ task, response, setResponse, disabled }) {
     <div className="lt-asm">
       <div className="lt-asm__slot">
         {chosen.length === 0 && <span className="lt-asm__ph">{t('listening.asmPh')}</span>}
-        {chosen.map((w, i) => (
-          <button key={i} type="button" className="lt-tile lt-tile--on" disabled={disabled} onClick={() => removeAt(i)}>
-            {w}
-          </button>
-        ))}
+        {chosen.map((w, i) => {
+          // После проверки плитка показывает, где именно разошлось с эталоном:
+          // раньше вся фраза оставалась фиолетовой, и ошибку приходилось искать
+          // глазами по плашке снизу. Эталон — task.tokens, тот же, по которому
+          // движок и считает ответ.
+          const state = verdict ? ((task.tokens || [])[i] === w ? 'ok' : 'no') : null
+          return (
+            <button
+              key={i}
+              type="button"
+              className="lt-tile lt-tile--on"
+              data-state={state || undefined}
+              disabled={disabled}
+              onClick={() => removeAt(i)}
+            >
+              {w}
+            </button>
+          )
+        })}
       </div>
       <div className="lt-asm__bank">
         {bank.map((w, i) => {
@@ -168,11 +183,15 @@ function AssembleTask({ task, response, setResponse, disabled }) {
   )
 }
 
-function TypeTask({ task, response, setResponse, disabled, onEnter }) {
+function TypeTask({ task, response, setResponse, disabled, onEnter, verdict }) {
   const { t } = useI18n()
   return (
     <input
       className="lt-input"
+      // Проверенный диктант в макете подсвечивается сам: зелёная рамка и текст
+      // при верном ответе, красные — при ошибке. Раньше поле просто гасло, и
+      // результат читался только по плашке снизу.
+      data-state={verdict || undefined}
       type="text"
       value={response || ''}
       disabled={disabled}
@@ -304,6 +323,13 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     const data = content || (await loadContent())
     if (!data) return
     const session = buildSession(data, SESSION_SIZE)
+    // Пустая выборка — контент есть, но заданий под уровень не набралось. Без
+    // этой проверки экран уходил в phase='task' без единого задания и молча
+    // показывал пустоту; остаёмся на интро с уже существующей плашкой ошибки.
+    if (!session.length) {
+      setError(t('listening.loadError'))
+      return
+    }
     setQueue(session)
     setResponse(null)
     setAnswered(null)
@@ -314,7 +340,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     setStepsTotal(session.length)
     setExitOpen(false)
     setPhase('task')
-  }, [content, loadContent])
+  }, [content, loadContent, t])
 
   const submit = useCallback(() => {
     if (!current || answered) return
@@ -373,14 +399,33 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className="lt">
+        {/* Полоса раздела по кадру 4273:9630: круглый крестик, крошка
+            «Аудирование / Практика», переключатель языка и словарь. На телефоне
+            она заменяет шапку оболочки (та скрыта в styles.css), как в макете —
+            двух шапок подряд там нет. */}
         <div className="lt-top">
-          <button type="button" className="lt-back" onClick={requestBack}>
-            <ChevronLeftIcon size={16} /> {t('common.back')}
+          <button type="button" className="lt-back" onClick={requestBack} aria-label={t('common.back')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            </svg>
+            <span className="lt-back__label">{t('common.back')}</span>
           </button>
           <div className="lt-crumb">
             <b>{t('practice.listening.title')}</b>
             <span>{t('practice.title')}</span>
           </div>
+          <LangSelector compact />
+          <button
+            type="button"
+            className="lt-dict"
+            onClick={() => onNav?.('vocab')}
+            aria-label={t('nav.vocab')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v18H6.5A2.5 2.5 0 0 1 4 18.5z" stroke="currentColor" strokeWidth="2" />
+              <path d="M8 7h7M8 11h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
         {error && <div className="lt-note lt-note--err">{error}</div>}
@@ -410,23 +455,29 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
               <ChoiceTask task={current} response={response} setResponse={setResponse} disabled={!!answered} result={answered} />
             )}
             {current.type === 'listen_assemble' && (
-              <AssembleTask task={current} response={response} setResponse={setResponse} disabled={!!answered} />
+              <AssembleTask task={current} response={response} setResponse={setResponse} disabled={!!answered} verdict={answered ? (answered.ok ? 'ok' : 'no') : null} />
             )}
             {current.type === 'listen_type' && (
-              <TypeTask task={current} response={response} setResponse={setResponse} disabled={!!answered} onEnter={() => canSubmit && submit()} />
+              <TypeTask task={current} response={response} setResponse={setResponse} disabled={!!answered} onEnter={() => canSubmit && submit()} verdict={answered ? (answered.ok ? 'ok' : 'no') : null} />
             )}
 
             {answered && <Feedback ok={answered.ok} body={answered.body} />}
 
-            {answered ? (
-              <button type="button" className="lt-primary" onClick={next}>
-                {t('listening.continue')}
-              </button>
-            ) : (
-              <button type="button" className="lt-primary" disabled={!canSubmit} onClick={submit}>
-                {t('listening.check')}
-              </button>
-            )}
+            {/* Кнопка шага живёт в собственной полосе у нижней кромки экрана
+                (кадры раздела: Frame 440×80 с полем 16 на том же сером фоне).
+                Раньше она ехала вместе с контентом, и на длинном задании до неё
+                надо было домотать. */}
+            <div className="lt-dock">
+              {answered ? (
+                <button type="button" className="lt-primary" onClick={next}>
+                  {t('listening.continue')}
+                </button>
+              ) : (
+                <button type="button" className="lt-primary" disabled={!canSubmit} onClick={submit}>
+                  {t('listening.check')}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

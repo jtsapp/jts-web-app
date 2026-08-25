@@ -6,14 +6,11 @@ import {
   ChevronLeftIcon,
   SendIcon,
   PhoneChatIcon,
-  AppleIcon,
-  GoogleIcon,
 } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 
-export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, error }) {
-  const { t, lang } = useI18n()
+export default function RegistrationPage({ onBack, onPhoneLogin, error }) {
+  const { t } = useI18n()
 
   // Реплики Декстера после того, как пользователь назвал имя.
   // delay — сколько «печатать» перед показом. В стейте лежат i18n-ключи, а не
@@ -32,26 +29,8 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   const [value, setValue] = useState('')
   const [showAuth, setShowAuth] = useState(false)
   const [name, setName] = useState('')
-  const [googleReady, setGoogleReady] = useState(false)
   const listRef = useRef(null)
-  const googleRef = useRef(null)
   const timers = useRef([])
-
-  // Официальную кнопку Google рисует GIS — только когда дошли до вариантов
-  // входа. Перерисовываем при смене языка интерфейса.
-  useEffect(() => {
-    if (!showAuth || !isGoogleAuthEnabled()) return
-    let cancelled = false
-    renderGoogleButton(googleRef.current, (idToken) => onGoogleToken?.(idToken, name), lang)
-      .then((ok) => {
-        if (!cancelled && ok) setGoogleReady(true)
-      })
-      .catch(() => {}) // остаётся фолбэк-кнопка
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAuth, lang])
 
   // Автоскролл вниз при новых сообщениях/индикаторе печати/появлении кнопок
   useEffect(() => {
@@ -152,7 +131,8 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                   )}
                 </div>
 
-                {/* Варианты входа появляются после диалога */}
+                {/* Вход после диалога — только по номеру телефона: входы
+                    через Apple ID и Google с сайта убраны. */}
                 {showAuth && (
                   <div className="auth">
                     <button
@@ -163,25 +143,6 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       <PhoneChatIcon size={18} />
                       <span>{t('auth.phone')}</span>
                     </button>
-                    <div className="auth-row">
-                      <button className="auth-btn auth-btn--apple" type="button">
-                        <AppleIcon size={17} />
-                        <span>{t('auth.apple')}</span>
-                      </button>
-                      {/* Кнопку рисует Google (GIS); пока не отрисована или
-                          client ID не настроен — неактивный фолбэк */}
-                      <div
-                        className="google-slot"
-                        ref={googleRef}
-                        style={googleReady ? undefined : { display: 'none' }}
-                      />
-                      {!googleReady && (
-                        <button className="auth-btn auth-btn--google" type="button" disabled>
-                          <GoogleIcon size={17} />
-                          <span>{t('auth.google')}</span>
-                        </button>
-                      )}
-                    </div>
                     {error && <div className="form-error">{error}</div>}
                   </div>
                 )}

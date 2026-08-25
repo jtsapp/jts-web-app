@@ -2,7 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronRightIcon } from './icons.jsx'
 import { LANGS, useI18n } from '../i18n.jsx'
 
-export default function LangSelector() {
+/**
+ * Выбор языка интерфейса.
+ *
+ * `compact` — вариант для полосы урока: в макете «Обучение» там стоит пилюля
+ * 58×33 только с флагом и шевроном, без подписи языка (места рядом с названием
+ * шага нет). Меню и поведение те же.
+ */
+export default function LangSelector({ compact = false }) {
   const { lang, setLang } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -23,14 +30,15 @@ export default function LangSelector() {
   return (
     <div className="lang-wrap" ref={ref}>
       <button
-        className="lang-selector"
+        className={`lang-selector ${compact ? 'lang-selector--compact' : ''}`}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={compact ? current.label : undefined}
       >
         <CurrentFlag />
-        <span>{current.label}</span>
+        {!compact && <span>{current.label}</span>}
         <span className={`chev ${open ? 'chev--open' : ''}`}>
           <ChevronRightIcon size={14} />
         </span>

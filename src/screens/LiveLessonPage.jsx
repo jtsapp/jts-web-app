@@ -778,8 +778,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       <div className="live live--wide">
         <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
 
-        {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
-        {state === 'error' && <p className="live__status-msg">{t('live.loadError')}</p>}
+        {/* Без токена или без id урока грузить нечего: эффект ниже молча выходит,
+            и экран навсегда оставался на «Загрузка графика…». Тот же случай, что
+            и у домашки с расписанием — говорим, что произошло. */}
+        {!token || !lessonId ? (
+          <p className="live__status-msg">{t(!token ? 'schedule.needAuth' : 'live.noLesson')}</p>
+        ) : (
+          <>
+            {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
+            {state === 'error' && <p className="live__status-msg">{t('live.loadError')}</p>}
+          </>
+        )}
 
         {state === 'ready' && lesson && (
           <>

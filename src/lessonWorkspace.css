@@ -2556,6 +2556,10 @@
 @media (max-width: 700px) {
   .lw-stepnav {
     padding: 10px 14px;
+    /* Прилипшая к низу навигация шага упиралась в нижний край экрана, где в
+       мобильном Safari лежит его собственная панель — та же история, что и с
+       кнопкой шага в «Обучении» (см. --safe-bottom в styles.css). */
+    bottom: var(--safe-bottom);
   }
 
   .lw-stepnav__btn {

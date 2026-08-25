@@ -197,6 +197,21 @@ describe('HomeworkPage', () => {
     await waitFor(() => expect(container.querySelector('.hw-card')).not.toBeNull())
     expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
   })
+
+  // Регрессия: без токена экран навсегда оставался в стартовом 'loading' —
+  // «Загрузка домашних работ…» крутилась вечно, потому что запроса не было и
+  // состояние никто не менял. Так открывался диплинк ?screen=homework у гостя.
+  it('гостю показывает «войдите», а не вечную загрузку', async () => {
+    render(
+      <I18nProvider>
+        <HomeworkPage userName="Сакен" onNav={() => {}} onProfile={() => {}} />
+      </I18nProvider>
+    )
+
+    await waitFor(() => expect(screen.getByText(/Войдите в аккаунт/i)).toBeTruthy())
+    expect(screen.queryByText(/Загрузка домашних работ/i)).toBeNull()
+    expect(api.getMyHomework).not.toHaveBeenCalled()
+  })
 })
 
 // Регрессия на «преподаватель не видит ответов ученика». Ответ уезжает по кнопке

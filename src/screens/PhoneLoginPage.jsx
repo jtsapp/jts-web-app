@@ -3,11 +3,10 @@ import Shell from '../components/Shell.jsx'
 import { ChevronRightIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
-import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
 import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
 import { isEmailIdentifier } from '../api.js'
 
-export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loading, error }) {
+export default function PhoneLoginPage({ onBack, onSubmit, loading, error }) {
   const { t, lang } = useI18n()
   // 'phone' — прежняя форма со страной/маской; 'email' — простое поле почты.
   // Одна и та же onSubmit(identifier) обслуживает оба режима — App.jsx/api.js
@@ -21,26 +20,8 @@ export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loadin
   const [digits, setDigits] = useState('') // только цифры нац. номера, без кода страны
   const [email, setEmail] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [googleReady, setGoogleReady] = useState(false)
-  const googleRef = useRef(null)
   const pickerRef = useRef(null)
   const inputRef = useRef(null)
-
-  // Google-вход и здесь: пользователи, зарегистрированные через Google, не
-  // имеют телефона и войти по OTP не могут. Перерисовка — при смене языка.
-  useEffect(() => {
-    if (!isGoogleAuthEnabled()) return
-    let cancelled = false
-    renderGoogleButton(googleRef.current, (idToken) => onGoogleToken?.(idToken), lang)
-      .then((ok) => {
-        if (!cancelled && ok) setGoogleReady(true)
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang])
 
   // Закрытие выпадашки по клику вне неё.
   useEffect(() => {
@@ -172,12 +153,6 @@ export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loadin
             </a>
           </p>
 
-          {googleReady && <div className="auth-divider">{t('auth.or')}</div>}
-          <div
-            className="google-slot google-slot--center"
-            ref={googleRef}
-            style={googleReady ? undefined : { display: 'none' }}
-          />
         </form>
       </div>
     </Shell>

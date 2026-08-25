@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
+import LangSelector from '../components/LangSelector.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
 import { useI18n } from '../i18n.jsx'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
@@ -142,6 +143,9 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   const [wrong, setWrong] = useState(0)
   const [points, setPoints] = useState(0)
   const endedRef = useRef(false)
+  // Лист словаря по макету («Обучение», кадр 4108:1689): null — закрыт,
+  // иначе открытая вкладка.
+  const [dict, setDict] = useState(null)
 
   // Дорожка живёт вне экрана задания (см. getStageAudio) — значит, обрывать её
   // надо на выходе из урока, иначе запись догоняет студента уже на тропе.
@@ -149,6 +153,27 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
 
   const total = steps.length
   const step = steps[idx]
+
+  // Слова урока для листа словаря — те же карточки, что показывает стадия
+  // Vocabulary; ничего нового не собираем и никуда не ходим. Повторы убираем:
+  // одно слово может встретиться в нескольких стадиях.
+  const lessonWords = useMemo(() => {
+    const seen = new Set()
+    return steps
+      .filter((s) => s.type === 'cards')
+      .flatMap((s) => s.words || [])
+      .filter((w) => {
+        const key = String(w?.en || '').toLowerCase()
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+  }, [steps])
+
+  const closeDict = () => {
+    stopSpeaking()
+    setDict(null)
+  }
 
   // Провалить можно только юнит-тест, и решает это доля верных ответов
   // (passRatio из данных теста). Обычный урок всегда доходит до итогов: там
@@ -196,10 +221,18 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           <b>{step.stage}</b>
           <span>{title}</span>
         </div>
-        {/* «Словарь» — живая кнопка: в макете она активна. Уводит в раздел
-            словаря тем же путём, что и пункт сайдбара, который и так открыт
-            рядом; отдельного подтверждения нет ровно по этой причине. */}
-        <button className="cp-bar__dict" type="button" onClick={onVocab} disabled={!onVocab} aria-label={t('nav.vocab')}>
+        {/* Язык интерфейса прямо в уроке: в макете «Обучение» пилюля с флагом
+            стоит на каждом шаге между названием и словарём. Урок — самый
+            длинный сценарий в приложении, и уходить за сменой языка в профиль,
+            теряя шаг, незачем. Подпись языка скрыта (compact): рядом с
+            названием шага на 440px её некуда положить. */}
+        <LangSelector compact />
+
+        {/* «Словарь» открывает лист поверх урока, а не уводит из него: в макете
+            это отдельный экран со словами, и раньше кнопка выбрасывала студента
+            в раздел словаря посреди шага. Уйти в сам раздел по-прежнему можно —
+            ссылкой на вкладке «Сохранено». */}
+        <button className="cp-bar__dict" type="button" onClick={() => setDict('lesson')} aria-label={t('nav.vocab')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v18H6.5A2.5 2.5 0 0 1 4 18.5z" stroke="currentColor" strokeWidth="2" />
             <path d="M8 7h7M8 11h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -232,6 +265,103 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           t={t}
         />
       </div>
+
+      {dict && (
+        <DictSheet
+          tab={dict}
+          words={lessonWords}
+          onTab={setDict}
+          onClose={closeDict}
+          onVocab={onVocab}
+          t={t}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Лист словаря поверх урока — макет «Обучение», кадр 4108:1689.
+ *
+ * Вкладка «Практика» показывает слова самого урока: это те же карточки стадии
+ * Vocabulary, никакой новой механики за ними нет. Вкладка «Сохранено» — пока
+ * заглушка: прочитать личный словарь отсюда нечем (`vocabBank` умеет только
+ * складывать слова, читает их раздел «Словарь»), и вместо выдуманного списка
+ * здесь стоит объяснение и переход в сам раздел.
+ */
+function DictSheet({ tab, words, onTab, onClose, onVocab, t }) {
+  return (
+    <div className="cp-dict" role="dialog" aria-modal="true" aria-label={t('nav.vocab')}>
+      <div className="cp-dict__bar">
+        <h2 className="cp-dict__title">{t('nav.vocab')}</h2>
+        <button className="cp-dict__close" type="button" onClick={onClose} aria-label={t('common.close')}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="cp-dict__tabs" role="tablist">
+        <button
+          className={`cp-dict__tab ${tab === 'saved' ? 'is-on' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={tab === 'saved'}
+          onClick={() => onTab('saved')}
+        >
+          {t('lesson.dictSaved')}
+        </button>
+        <button
+          className={`cp-dict__tab ${tab === 'lesson' ? 'is-on' : ''}`}
+          type="button"
+          role="tab"
+          aria-selected={tab === 'lesson'}
+          onClick={() => onTab('lesson')}
+        >
+          {t('lesson.dictLesson')}
+        </button>
+      </div>
+
+      {tab === 'lesson' ? (
+        words.length ? (
+          <ul className="cp-dict__list">
+            {words.map((w, i) => (
+              <li key={`${w.en}-${i}`}>
+                {/* Строка целиком — кнопка озвучки: в макете значок стоит
+                    справа, но попадать пальцем в 18px на телефоне неудобно. */}
+                <button
+                  className="cp-dict__row"
+                  type="button"
+                  onClick={() => speakEnglish(w.en, { src: w.audio || null })}
+                  aria-label={t('lesson.hearWord', { word: w.en })}
+                >
+                  <span className="cp-dict__word">
+                    <b>{w.en}</b>
+                    <span>{[w.ru, w.kk].filter(Boolean).join(' · ')}</span>
+                  </span>
+                  <span className="cp-dict__say" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor" />
+                      <path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="cp-dict__empty">{t('lesson.dictEmpty')}</p>
+        )
+      ) : (
+        <div className="cp-dict__empty">
+          <p>{t('lesson.dictSavedHint')}</p>
+          {onVocab && (
+            <button className="cp-dict__link" type="button" onClick={onVocab}>
+              {t('lesson.dictOpen')}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

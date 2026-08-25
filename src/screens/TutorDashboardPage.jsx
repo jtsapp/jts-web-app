@@ -91,9 +91,12 @@ export default function TutorDashboardPage({
                   <span>{t('dash.level', { level: user?.level || 'A1' })}</span>
                 </div>
               </div>
-              <button className="t-dash__manage" type="button" onClick={onManage}>
+              {/* На телефоне в кадре 4338:2205 это круглая кнопка-значок без
+                  подписи — подпись прячется стилями, поэтому имя кнопке даём
+                  явно. */}
+              <button className="t-dash__manage" type="button" onClick={onManage} aria-label={t('dash.manage')}>
                 <MenuIcon size={20} />
-                {t('dash.manage')}
+                <span className="t-dash__managelabel">{t('dash.manage')}</span>
               </button>
             </div>
 

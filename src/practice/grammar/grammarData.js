@@ -30,9 +30,17 @@ export function levelToCourse(userLevel) {
 let _indexPromise = null
 export function loadGrammarIndex() {
   if (!_indexPromise) {
+    // Промах НЕ кэшируем: раньше единственный сбой (офлайн в момент открытия,
+    // 404 сразу после деплоя) записывал null навсегда, и раздел «Грамматика»
+    // молча исчезал из Практики до перезагрузки страницы — тот же приём с
+    // обнулением кэша уже применён к демо-токену в api.js.
     _indexPromise = fetch('/practice/grammar/index.json')
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
+      .then((data) => {
+        if (!data) _indexPromise = null
+        return data
+      })
   }
   return _indexPromise
 }

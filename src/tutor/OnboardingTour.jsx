@@ -111,7 +111,7 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
         height: rect.height + pad * 2,
       }
     : null
-  const pos = placePopover(hole, 300, 210)
+  const pos = placePopover(hole, 393, 184) // размеры карточки из кадра тура
   const last = i + 1 === steps.length
 
   // Портал в body: обёртка смены экранов (.scr-in) анимируется transform'ом и

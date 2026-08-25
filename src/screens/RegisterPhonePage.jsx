@@ -11,7 +11,7 @@ import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '
  * (см. RegistrationService: email — канал по умолчанию, когда есть оба поля).
  * Порядок: номер → почта → код на почту → пароль.
  */
-export default function RegisterPhonePage({ onSubmit, loading, error }) {
+export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) {
   const { t } = useI18n()
   const [country, setCountry] = useState(DEFAULT_COUNTRY)
   const [digits, setDigits] = useState('')
@@ -54,7 +54,7 @@ export default function RegisterPhonePage({ onSubmit, loading, error }) {
   }
 
   return (
-    <Shell>
+    <Shell onBack={onBack}>
       <div className="form-inner">
         <form className="form-card" onSubmit={submit}>
           <h2 className="form-title">
