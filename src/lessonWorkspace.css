@@ -1789,6 +1789,7 @@
 .lw-practice__check {
   align-self: flex-start;
   margin-top: 16px;
+  margin-bottom: 6px;
   padding: 11px 22px;
   border: none;
   border-radius: var(--lw-r-pill);
@@ -3458,12 +3459,16 @@ button.lw-tap-pop__save.is-on:disabled {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: 0;
 }
 
 /* Две колонки вместо трёх: маршрут слева убран, темы переехали направо. */
 .lv .lw-live-body {
   grid-template-columns: minmax(0, 1fr) var(--lw-col-right);
   margin-top: 0;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .lv .live__status-msg {
@@ -3693,6 +3698,8 @@ button.lw-tap-pop__save.is-on:disabled {
 .lv .ls__tabs {
   background: none;
   padding: 0;
+  margin: 0 0 18px;
+  flex: none;
 }
 
 .lv .ls-tab {
@@ -3721,17 +3728,26 @@ button.lw-tap-pop__save.is-on:disabled {
 
 /* В макете центр — одна белая карточка: шапка с темой и счётчиком заданий,
    лента заданий, кнопки перехода внизу. Отдельные карточки внутри неё остаются
-   карточками, но лежат на белом, а не на сером фоне классрума. */
+   карточками, но лежат на белом, а не на сером фоне классрума.
+
+   Нельзя ставить flex:1 + min-height:0 + overflow-x:clip вместе: по спецификации
+   overflow-y тогда тоже становится не-visible, полотно сжимается до высоты
+   колонки, белый фон обрывается, а карточки с заданиями рисуются УЖЕ на тёмном
+   .lw-live-main и визуально «вылезают за край». Высоту даёт контент, скролл —
+   у .lw-live-main. */
 .lv-sheet {
   background: var(--lw-surface);
   border-radius: var(--lw-r-step);
   padding: 24px;
   display: flex;
   flex-direction: column;
-  /* Больше воздуха между лентой заданий и «Назад / Следующая тема». */
-  gap: 32px;
-  flex: 1 1 auto;
-  min-height: 0;
+  gap: 28px;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .lv-sheet__head {
@@ -3802,8 +3818,80 @@ button.lw-tap-pop__save.is-on:disabled {
    их отделяет собственный отступ, а не подложка. */
 .lv-sheet .lw-content {
   gap: 16px;
-  flex: 1 1 auto;
-  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.lv-sheet .lw-card,
+.lv-sheet .lw-practice,
+.lv-sheet .lw-info,
+.lv-sheet .lw-theory {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Сопоставление и банки вариантов: длинные фразы переносятся, ряд не
+   раздувает полотно за край. */
+.lw-match,
+.lw-match__col,
+.lw-q--match,
+.lw-opts,
+.lw-practice__list,
+.lw-q {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lw-match__col,
+.lw-opts {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.lw-match__left {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.lw-match__left-label {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.lw-info__body,
+.lw-practice__html {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.lw-info__body table,
+.lw-practice__html table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  word-break: break-word;
+}
+
+.lw-info__body img,
+.lw-info__body video,
+.lw-practice__html img,
+.lw-practice__html video {
+  max-width: 100%;
+  height: auto;
+}
+
+.lv .lw-live-main {
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* Кнопки перехода прижаты к правому краю полотна — «Назад» рядом с

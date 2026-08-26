@@ -20,7 +20,7 @@ import {
   htmlHasCheckableWordBank,
   wordBankAnswersAttempted,
 } from '../wordBankCheck.js'
-import { stripExerciseNumber } from '../stripExerciseNumber.js'
+import { stripExerciseNumber, stripExerciseNumbersInHtml, stripExerciseNumbersInText } from '../stripExerciseNumber.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -47,11 +47,17 @@ export default function PracticeBlock({
     return !!checked
   }
   const { t } = useI18n()
-  // Badge already shows card order — drop «3 ·» from the course title so the
-  // student does not see two different numbers for one task.
+  // Badge already shows card order — drop «3 ·» from course title/instruction
+  // (and from leftover .instruction HTML) so the student sees one number.
   const displayTitle = stripExerciseNumber(block?.title)
+  const displayInstruction = block?.instruction
+    ? stripExerciseNumbersInText(block.instruction)
+    : ''
   const showBlockTitle = Boolean(displayTitle && displayTitle !== stepTitle)
-  const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
+  const html = useMemo(
+    () => stripExerciseNumbersInHtml(sanitizeHtml(block?.html)),
+    [block?.html],
+  )
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
@@ -156,8 +162,8 @@ export default function PracticeBlock({
         )}
       </div>
 
-      {block?.instruction && (
-        <TapText as="p" className="lw-practice__instruction" text={block.instruction} onWord={onWord} />
+      {displayInstruction && (
+        <TapText as="p" className="lw-practice__instruction" text={displayInstruction} onWord={onWord} />
       )}
       {block?.audio?.src && (
         <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
