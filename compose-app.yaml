@@ -47,6 +47,10 @@ services:
       # прод-сборке и так нет, роут просто не отдаст fish-провайдера.
       FISH_AUDIO_API_KEY: ${FISH_AUDIO_API_KEY:-}
       FISH_VOICE_ID_JARVIS: ${FISH_VOICE_ID_JARVIS:-}
+      # OpenAI TTS — ВРЕМЕННЫЙ голос Джарвиса вместо клона Fish (голос ash).
+      # Только озвучка: мозг тьютора ходит в Anthropic, ключ ему не нужен.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_TTS_VOICE_JARVIS: ${OPENAI_TTS_VOICE_JARVIS:-}
       GOOGLE_CREDENTIALS_JSON: ${GOOGLE_CREDENTIALS_JSON}
     restart: always
     depends_on:

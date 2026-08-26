@@ -7,11 +7,13 @@
 //            продукт, что у агента в _cascade_tts_gemini (Cloud TTS, НЕ
 //            Developer API с ai.google.dev).
 //   Dexter → ElevenLabs, ELEVENLABS_API_KEY + ELEVEN_VOICE_ID_DEXTER.
-//   Spark  → Soniox TTS (голос Owen), SONIOX_API_KEY. Единственный, кто говорит
-//            по-казахски; Soniox держит один тембр на kk и en.
-//   Jarvis → Fish Audio, FISH_AUDIO_API_KEY + reference_id клонированного
-//            голоса. Тьютор dev-only (JARVIS_ENABLED в src/config.js), но роут
-//            общий: на проде его просто некому позвать.
+//   Spark  → Soniox TTS (голос Owen), SONIOX_API_KEY. Soniox держит один тембр
+//            на kk и en. По-казахски говорят двое — он и Джарвис.
+//   Jarvis → ВРЕМЕННО OpenAI TTS (gpt-4o-mini-tts, голос ash), OPENAI_API_KEY.
+//            Тьютор dev-only (JARVIS_ENABLED в src/config.js) — на нём и
+//            перебираем голоса; путь Fish Audio (FISH_AUDIO_API_KEY +
+//            reference_id клона) остался рабочим, возврат — строкой в
+//            TUTOR_PROVIDER. Роут общий: на проде Джарвиса некому позвать.
 // Язык сессии на выбор провайдера НЕ влияет: у Луны и Декстера "kz" — это язык
 // интерфейса, сами они русскоязычные и казахского текста не произносят.
 // Azure тут нет: аккаунта Azure Speech у проекта нет (см. TUTOR_TTS_PROVIDER).
@@ -19,6 +21,8 @@
 // 503, и клиент падает на браузерный speech, чтобы кнопка всегда что-то делала.
 
 import crypto from 'node:crypto'
+
+import { normalizeForSpeech, openaiInstructions, openaiSpeed } from '../../../tutor/openaiTtsStyle.js'
 
 export const runtime = 'nodejs'
 
@@ -39,14 +43,15 @@ const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
 
 // Провайдер по тьютору — mirror agent TUTOR_TTS_PROVIDER. От языка не зависит:
-// по-казахски говорит только Спарк, а он и так на Soniox.
+// тьютор озвучивается своим голосом всегда.
 const TUTOR_PROVIDER = {
   luna: 'gemini',
   dexter: 'eleven',
   spark: 'soniox',
-  jarvis: 'fish',
+  jarvis: 'openai', // ВРЕМЕННО вместо 'fish' — перебираем голоса на dev-тьюторе
   'dexter-harsh': 'eleven',
   'spark-harsh': 'soniox',
+  'jarvis-harsh': 'openai',
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'
@@ -81,6 +86,24 @@ const FISH_VOICE = {
 // моделей одна ($15/1M UTF-8 байт), так что брать s1 смысла нет. Переключается
 // переменной FISH_TTS_MODEL: s1 | s2-pro | s2.1-pro.
 const FISH_MODEL = process.env.FISH_TTS_MODEL || 's2.1-pro'
+
+// OpenAI TTS (сейчас Джарвис) — mirror agent OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
+// / OPENAI_TTS_PERSONA_STYLE / OPENAI_TTS_LIVENESS / OPENAI_TTS_PRONUNCIATION.
+// Голос — имя пресета из каталога, всё остальное правится только ТЕКСТОМ:
+// настроек вроде stability/style у провайдера нет.
+//
+// Голос один на оба нрава (ключ jarvis), подача разная (ключи jarvis /
+// jarvis-harsh) — та же развилка, что у агента: тембр по базовому id, тон по
+// персоне с нравом.
+const OPENAI_VOICE = {
+  jarvis: process.env.OPENAI_TTS_VOICE_JARVIS || 'ash',
+}
+// gpt-4o-mini-tts, а не tts-1: только он принимает instructions.
+const OPENAI_MODEL = process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts'
+// Характер, живость, произношение и темп живут в общем модуле: их же читает
+// офлайн-генератор визиток (scripts/make-tutor-voice-samples.js), и две копии
+// одного текста разъехались бы на первой же правке интонации.
+const OPENAI_KEY = () => process.env.OPENAI_API_KEY || process.env.OpenAI_API_KEY || ''
 
 // Wrap raw little-endian PCM (Cloud TTS LINEAR16 = 24 kHz mono 16-bit) in a WAV
 // container so the browser <audio> can play it directly.
@@ -271,10 +294,44 @@ async function fishTts(text, voice) {
   return { audio, contentType: 'audio/mpeg' }
 }
 
+async function openaiTts(text, tutor, lang) {
+  const key = OPENAI_KEY()
+  if (!key) return { status: 503 }
+  const upstream = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      // Голос по БАЗОВОМУ ключу: нрав меняет подачу, а не тембр.
+      voice: OPENAI_VOICE[tutor.replace(/-harsh$/, '')] || OPENAI_VOICE.jarvis,
+      // Разметку снимаем и цифры разворачиваем словами — иначе синтез читает
+      // звёздочку вслух, а число на языке, который угадал сам.
+      input: normalizeForSpeech(text, lang),
+      instructions: openaiInstructions(tutor, lang),
+      speed: openaiSpeed(tutor),
+      response_format: 'mp3',
+    }),
+  })
+  if (!upstream.ok) {
+    const detail = await upstream.text().catch(() => '')
+    // Та же логика, что у Fish: 401 (ключ отозвали), 429 (лимит) и 402 (кончились
+    // деньги на счету) — не ошибка запроса, а «провайдера сейчас нет». Отдаём
+    // 503, чтобы POST откатился на Soniox и кнопка «послушать» не молчала.
+    if ([401, 402, 429].includes(upstream.status)) {
+      console.warn(`[tutor-tts] openai unavailable (${upstream.status}): ${detail.slice(0, 200)}`)
+      return { status: 503 }
+    }
+    throw new Error(`OpenAI TTS ${upstream.status}: ${detail.slice(0, 200)}`)
+  }
+  const audio = Buffer.from(await upstream.arrayBuffer())
+  return { audio, contentType: 'audio/mpeg' }
+}
+
 function synth(provider, text, tutor, lang) {
   if (provider === 'soniox') return sonioxTts(text, SONIOX_VOICE[tutor] || 'Owen', lang)
   if (provider === 'eleven') return elevenTts(text, tutor)
   if (provider === 'fish') return fishTts(text, FISH_VOICE[tutor] || FISH_VOICE.jarvis)
+  if (provider === 'openai') return openaiTts(text, tutor, lang)
   return geminiTts(text, GEMINI_VOICE[tutor] || 'Puck')
 }
 
@@ -317,5 +374,6 @@ export async function GET() {
     soniox: Boolean(process.env.SONIOX_API_KEY),
     eleven: Boolean(process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY),
     fish: Boolean(process.env.FISH_AUDIO_API_KEY),
+    openai: Boolean(OPENAI_KEY()),
   })
 }

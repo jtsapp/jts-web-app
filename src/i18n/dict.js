@@ -74,7 +74,11 @@ export const DICT = {
     'tutor.jarvis.trait2': 'Тестируется',
     'tutor.jarvis.trait3': 'Это же Джарвис!',
     'tutor.jarvis.desc':
-      'Ассистент, а не тьютор: урок по методичке не ведёт, отвечает на то, что спрашиваешь. Говорит по-русски, обращается на «сэр», держит себя как вышколенный дворецкий — спокойно, коротко и по делу. Доступен только на тестовом стенде.',
+      'Ассистент, а не тьютор: урок по методичке не ведёт, отвечает на то, что спрашиваешь. Говорит по-казахски и по-английски, обращается «мырза» на «сіз», держит себя как вышколенный дворецкий — спокойно, коротко и по делу. Доступен только на тестовом стенде.',
+    // Жёсткий нрав у Джарвиса — не мат вместо манер: выучка на месте, «сіз» и
+    // «мырза» никуда не делись, и именно поэтому его презрение режет.
+    'tutor.jarvis.desc18':
+      'Тот же Джарвис, которому надоело. Всё так же на «сіз» и всё так же «мырза» — только вежливость теперь работает как оружие: холодно, коротко, с матом там, где вы его заслужили. Плану вашему он скажет, что о нём думает. Отвечает при этом ровно так же точно.',
     'tutor.jarvis.listen': 'Послушать голос Джарвиса',
     'tutor.jarvis.choose': 'Выбрать Джарвиса',
 
@@ -459,7 +463,9 @@ export const DICT = {
     'tutor.jarvis.trait2': 'Сынақтан өтуде',
     'tutor.jarvis.trait3': 'Бұл Джарвис қой!',
     'tutor.jarvis.desc':
-      'Ассистент, тьютор емес: әдістеме бойынша сабақ өткізбейді, сұрағаныңа жауап береді. Орысша сөйлейді, «сэр» деп қаратады, тәрбиелі дворецкий іспетті — байсалды, қысқа әрі нақты. Тек сынақ стендінде қолжетімді.',
+      'Ассистент, тьютор емес: әдістеме бойынша сабақ өткізбейді, сұрағаныңа жауап береді. Қазақша және ағылшынша сөйлейді, «мырза» деп, «сіз» деп қаратады, тәрбиелі дворецкий іспетті — байсалды, қысқа әрі нақты. Тек сынақ стендінде қолжетімді.',
+    'tutor.jarvis.desc18':
+      'Сол Джарвис, бірақ шыдамы таусылған. Бәрібір «сіз» деп, «мырза» деп қаратады — тек сыпайылығы енді қару: суық, қысқа, лайық жерінде боқтап та жібереді. Жоспарыңыз туралы ойын тура айтады. Жауабының дәлдігі сол күйі қалады.',
     'tutor.jarvis.listen': 'Джарвис дауысын тыңдау',
     'tutor.jarvis.choose': 'Джарвис таңдау',
 
@@ -825,7 +831,9 @@ export const DICT = {
     'tutor.jarvis.trait2': 'In testing',
     'tutor.jarvis.trait3': "It's Jarvis!",
     'tutor.jarvis.desc':
-      'An assistant rather than a tutor: he does not run a lesson from the syllabus, he answers what you ask. Speaks Russian, calls you "sir", carries himself like a well-trained butler — composed, brief, to the point. Available on the test build only.',
+      'An assistant rather than a tutor: he does not run a lesson from the syllabus, he answers what you ask. Speaks Kazakh and English, calls you "мырза", carries himself like a well-trained butler — composed, brief, to the point. Available on the test build only.',
+    'tutor.jarvis.desc18':
+      'The same Jarvis, out of patience. Still formal, still "мырза" — only now the courtesy is the weapon: cold, clipped, and swearing exactly where you have earned it. He will tell you what he thinks of your plan. The answers stay just as accurate.',
     'tutor.jarvis.listen': "Listen to Jarvis's voice",
     'tutor.jarvis.choose': 'Choose Jarvis',
 
