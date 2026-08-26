@@ -3924,6 +3924,55 @@ button.lw-tap-pop__save.is-on:disabled {
 }
 
 /* На десктопе ряда значков нет — там свои кнопки с подписями. */
+/* Урок и словарь на телефоне: поля полотна вдвое меньше десктопных — на 440
+   отступ в 24 съедал по половине сантиметра с каждой стороны, и карточка
+   словаря вставала в одну колонку вместо двух. Карточки vivaclons (.lw-vcard)
+   рассчитаны на сетку от 150px: на узком экране опускаем порог до 132, чтобы
+   их оставалось по две в ряд, а не одна во весь экран. */
+@media (max-width: 760px) {
+  .lv .live--wide {
+    padding: 12px 12px 20px;
+  }
+
+  .lv-sheet {
+    padding: 16px 14px;
+    border-radius: var(--lw-r-card);
+  }
+
+  .lv-sheet__head {
+    gap: 12px;
+  }
+
+  .lv-sheet__title {
+    font-size: 19px;
+  }
+
+  .lv-sheet__progress {
+    min-width: 0;
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .lv-sheet__bar {
+    width: 100%;
+    max-width: 180px;
+  }
+
+  .lv .lw-vocab__grid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 10px;
+  }
+
+  /* Кнопки перехода по темам — во всю ширину: рядом они ужимались до подписи
+     в две строки. */
+  .lv-sheet .lw-stepnav {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
 @media (min-width: 761px) {
   .lv-top__actions {
     display: none;
