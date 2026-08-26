@@ -26,9 +26,23 @@ function NoCopyGuard() {
       e.preventDefault()
     }
 
-    const events = ['contextmenu', 'copy', 'cut', 'dragstart', 'selectstart']
+    // Выделение в тексте урока разрешено: на нём держится перевод фразы (до 100
+    // символов), а тапом переводится только одно слово. Копирование при этом
+    // по-прежнему закрыто — `copy`/`cut`/`contextmenu`/`dragstart` гасятся везде,
+    // так что выделить, чтобы перевести, можно, а унести текст — нет.
+    const blockSelect = (e) => {
+      if (inEditable(e.target)) return
+      if (e.target?.closest?.('[data-selectable]')) return
+      e.preventDefault()
+    }
+
+    const events = ['contextmenu', 'copy', 'cut', 'dragstart']
     events.forEach((ev) => document.addEventListener(ev, block))
-    return () => events.forEach((ev) => document.removeEventListener(ev, block))
+    document.addEventListener('selectstart', blockSelect)
+    return () => {
+      events.forEach((ev) => document.removeEventListener(ev, block))
+      document.removeEventListener('selectstart', blockSelect)
+    }
   }, [])
 
   return null

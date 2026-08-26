@@ -30,6 +30,11 @@
    объявлены на корнях, а не на :root, поэтому вне классрума карточки оставались
    без фона, отступов и типографики — задание выглядело голым текстом, хотя
    механика работала. */
+/* `.lv` — оболочка живого урока: её шапка лежит СНАРУЖИ `.live`, и без
+   объявления здесь `var(--lw-primary)` в ней не разрешалась вовсе — кнопка
+   «Выйти из урока» выходила тёмной вместо акцентной, а аватар преподавателя
+   прозрачным. */
+.lv,
 .lw,
 .live,
 .hw-exercises {
@@ -3105,4 +3110,822 @@ button.lw-tap-pop__save.is-on:disabled {
   font-style: italic;
   display: grid;
   place-items: center;
+}
+
+/* ================================================================== */
+/* ==========  ЖИВОЙ УРОК — ОБОЛОЧКА ПО МАКЕТУ «ОНЛАЙН-УРОКИ»  ====== */
+/* ================================================================== */
+
+/* Урок занимает экран целиком и стоит на тёмном: в макете светлая только
+   карточка с заданиями — она и есть контент, всё вокруг (шапка, колонка тем,
+   чат) тёмное. Токены отдельные от `--lw-*`: те описывают светлый классрум и
+   переиспользуются домашкой, а здесь другая поверхность, и «переопределить
+   --lw-surface в тёмный» перекрасило бы заодно все карточки задания. */
+.lv {
+  --lv-bg: #0f0f12;
+  --lv-panel: #17171c;
+  --lv-panel-2: #26262c;   /* пузырь собеседника, поле ввода */
+  --lv-line: #2c2c34;
+  --lv-ink: #f2f2f5;
+  --lv-muted: #8e8e98;
+  --lv-active: #3a2a66;    /* активная тема в списке */
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--lv-bg);
+  /* Опора для оверлеев урока (.lx-over — absolute inset:0): раньше ею была
+     .learn__main прежней оболочки, а без positioned предка диалог считался
+     бы от вьюпорта и уезжал при прокрутке. */
+  position: relative;
+}
+
+/* --- шапка урока ---------------------------------------------------- */
+
+/* Три зоны: преподаватель слева, словарь по центру, действия справа. Grid,
+   а не flex: с flex центральная зона встала бы по центру ОСТАТКА, и стоило
+   имени преподавателя стать длиннее — значок уезжал бы вправо. */
+.lv-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--lv-panel);
+}
+
+.lv-top__left,
+.lv-top__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lv-top__center {
+  display: flex;
+  justify-content: center;
+}
+
+.lv-top__right {
+  justify-content: flex-end;
+}
+
+.lv-top__teacher {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Точка присутствия на аватаре преподавателя: серая — не в классе, зелёная —
+   на связи. Раньше это же сообщал ростер «В классе» строкой под шапкой. */
+.lv-top__dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lv-muted);
+  box-shadow: 0 0 0 2px var(--lv-panel);
+}
+
+.lv-top__dot.is-on {
+  background: var(--lw-online);
+}
+
+.lv-top__presence {
+  font-weight: 600;
+}
+
+.lv-top__avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--lw-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  flex: none;
+}
+
+.lv-top__teacher-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lv-top__teacher-name {
+  color: var(--lv-ink);
+  font-weight: 700;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lv-top__teacher-role {
+  color: var(--lv-muted);
+  font-size: 12px;
+}
+
+.lv-top__offline {
+  padding: 4px 10px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-error-bg);
+  color: #b3282b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lv-top__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lv-panel-2);
+  color: var(--lv-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.lv-top__btn:hover {
+  background: #32323a;
+}
+
+/* Значок в шапке (словарь): квадрат 40×40 той же заливки, что и кнопки —
+   подписи у него нет, она уходит в title/aria-label. */
+.lv-top__icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--lv-panel-2);
+  color: var(--lv-ink);
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.lv-top__icon-btn:hover {
+  background: #32323a;
+}
+
+.lv-top__icon-btn:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lv-top__exit {
+  padding: 9px 18px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.lv-top__exit:hover {
+  background: var(--lw-primary-ink);
+}
+
+.lv-top__btn:focus-visible,
+.lv-top__exit:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+/* --- тело урока ------------------------------------------------------ */
+
+/* Светлая подложка классрума здесь не нужна — фон держит .lv. */
+.lv .live--wide {
+  background: transparent;
+  border-radius: 0;
+  padding: 20px 24px 28px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Две колонки вместо трёх: маршрут слева убран, темы переехали направо. */
+.lv .lw-live-body {
+  grid-template-columns: minmax(0, 1fr) var(--lw-col-right);
+  margin-top: 0;
+}
+
+.lv .live__status-msg {
+  color: var(--lv-muted);
+}
+
+/* --- «Темы урока» ---------------------------------------------------- */
+
+.lv-topics {
+  background: var(--lv-panel);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lv-topics__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lv-topics__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--lv-ink);
+}
+
+.lv-topics__count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--lv-muted);
+}
+
+.lv-topics__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lv-topics__btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--lw-r-block);
+  background: none;
+  color: var(--lv-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.lv-topics__btn:hover {
+  background: var(--lv-panel-2);
+}
+
+.lv-topics__btn:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: -2px;
+}
+
+/* Кружок слева — он же статус: пустой (впереди), с галочкой (пройдено),
+   залитый акцентом (текущая тема). */
+.lv-topics__marker {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--lv-panel-2);
+  color: var(--lw-ok);
+  flex: none;
+}
+
+.lv-topics__text {
+  min-width: 0;
+}
+
+.lv-topics__item.is-done .lv-topics__marker {
+  background: var(--lw-ok-bg);
+  color: #0f7a0f;
+}
+
+.lv-topics__item.is-done .lv-topics__btn {
+  color: var(--lv-ink);
+}
+
+.lv-topics__item.is-active .lv-topics__btn {
+  background: var(--lv-active);
+  color: #fff;
+  font-weight: 700;
+}
+
+.lv-topics__item.is-active .lv-topics__marker {
+  background: var(--lw-primary);
+}
+
+.lv-topics__item.is-active .lv-topics__marker::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* --- правая колонка: чат на тёмном ----------------------------------- */
+
+.lv .lw-live-aside > .lw-card {
+  background: var(--lv-panel);
+}
+
+.lv .lw-chat__title,
+.lv .lw-summary__title,
+.lv .lw-summary__value {
+  color: var(--lv-ink);
+}
+
+.lv .lw-chat__hint,
+.lv .lw-chat__empty,
+.lv .lw-chat__sender {
+  color: var(--lv-muted);
+}
+
+.lv .lw-chat__msg {
+  background: var(--lv-panel-2);
+  color: var(--lv-ink);
+}
+
+.lv .lw-chat__msg.is-student {
+  background: var(--lw-primary);
+  color: #fff;
+}
+
+.lv .lw-chat__input {
+  background: var(--lv-panel-2);
+  color: var(--lv-ink);
+}
+
+.lv .lw-chat__input::placeholder {
+  color: var(--lv-muted);
+}
+
+/* --- вкладки «Урок» / «Доска» ----------------------------------------- */
+
+/* Вкладки достались от светлого экрана расписания: у `.ls__tabs` белая
+   заливка во всю ширину и свои боковые поля в 32px — на тёмном фоне это
+   читалось белой полосой поперёк урока, а голубые пилюли — чужой вставкой. */
+.lv .ls__tabs {
+  background: none;
+  padding: 0;
+}
+
+.lv .ls-tab {
+  padding: 9px 18px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lv-panel);
+  color: var(--lv-muted);
+  font-size: 14px;
+}
+
+.lv .ls-tab:hover {
+  background: var(--lv-panel-2);
+}
+
+.lv .ls-tab--active {
+  background: var(--lw-primary);
+  color: #fff;
+}
+
+.lv .ls-tab:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+/* --- полотно урока --------------------------------------------------- */
+
+/* В макете центр — одна белая карточка: шапка с темой и счётчиком заданий,
+   лента заданий, кнопки перехода внизу. Отдельные карточки внутри неё остаются
+   карточками, но лежат на белом, а не на сером фоне классрума. */
+.lv-sheet {
+  background: var(--lw-surface);
+  border-radius: var(--lw-r-step);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.lv-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.lv-sheet__titles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.lv-sheet__level {
+  padding: 4px 10px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-2);
+  color: var(--lw-primary-ink);
+  font-size: 12px;
+  font-weight: 800;
+  flex: none;
+}
+
+.lv-sheet__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--lw-ink);
+  min-width: 0;
+}
+
+.lv-sheet__progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.lv-sheet__counter {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lw-ink-2);
+}
+
+.lv-sheet__bar {
+  display: block;
+  width: 168px;
+  height: 4px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-track);
+  overflow: hidden;
+}
+
+.lv-sheet__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  transition: width .2s;
+}
+
+/* Лента заданий внутри полотна: карточки уже не лежат на сером фоне, поэтому
+   их отделяет собственный отступ, а не подложка. */
+.lv-sheet .lw-content {
+  gap: 16px;
+}
+
+/* Кнопки перехода прижаты к правому краю полотна — «Назад» рядом с
+   «Следующая тема», как в макете. */
+.lv-sheet .lw-stepnav {
+  position: static;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* --- карточка задания: номер и состояние ------------------------------ */
+
+.lw-practice__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lw-practice__top .lw-practice__head {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Номер задания — он же статус: серый круг у ещё не сделанного, акцентный у
+   текущего, зелёная галочка у проверенного. */
+.lw-practice__num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-3);
+  color: var(--lw-muted);
+  font-size: 13px;
+  font-weight: 800;
+  flex: none;
+}
+
+.lw-practice.is-current .lw-practice__num {
+  background: var(--lw-primary);
+  color: #fff;
+}
+
+.lw-practice.is-done .lw-practice__num {
+  background: var(--lw-ok-bg);
+  color: #0f7a0f;
+}
+
+/* Задание, на которое преподаватель навёл указку. Заливка и обводка — та же
+   пара, что у подсвеченного вопроса (.lw-q--live-here), чтобы «внимание сюда»
+   на экране выглядело одинаково. */
+.lw-practice.is-highlighted {
+  background: var(--lw-tint-1);
+  outline: 2px solid var(--lw-primary);
+  outline-offset: -2px;
+}
+
+.lw-practice__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+
+/* --- скрытая тема в списке (виден только преподавателю) --------------- */
+
+/* «Т» у темы — здесь сейчас преподаватель (бывший бегунок на треке маршрута). */
+.lv-topics__teacher {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 8px;
+  padding: 0 5px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
+.lv-topics__hidden {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--lv-muted);
+}
+
+/* Колонки прокручиваются каждая своя. Порог — 1000px, а не 1421 (как в
+   унаследованном правиле для трёхколоночного классрума): при двух колонках
+   раскладка складывается уже здесь, а до этой правки на окне 1200–1420
+   независимой прокрутки не было вовсе — колонка уходила вниз за край экрана
+   вместе с чатом, и добраться до него было нечем.
+
+   Высоту раздаёт сам флекс — шапка по контенту, тело остаток, — вместо
+   вычитания магических 132px под шапку и подвал прежней оболочки. */
+@media (min-width: 1000px) {
+  .lv {
+    height: 100dvh;
+  }
+
+  .lv .lv-top {
+    flex: none;
+  }
+
+  .lv .live--wide {
+    height: auto;
+    max-height: none;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .lv .lw-live-body {
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .lv .lw-live-main {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lv .lw-live-aside {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Список тем не должен съедать колонку: на восьми темах чат уезжал за нижний
+     край, и написать преподавателю было нечем. px/vh, не % — процент от
+     auto-высоты родителя браузер игнорирует. */
+  .lv .lv-topics {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: min(300px, 38vh);
+  }
+
+  .lv .lv-topics__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .lv .lw-live-aside > .lw-meet,
+  .lv .lw-live-aside > .lw-summary {
+    flex: none;
+  }
+
+  /* Чат забирает остаток колонки — он и есть то, ради чего в неё смотрят. */
+  .lv .lw-live-aside .lw-chat {
+    flex: 1 1 auto;
+    min-height: 220px;
+    max-height: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .lv .lw-live-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lv .live--wide {
+    padding: 16px 12px 24px;
+  }
+}
+
+/* ================================================================== */
+/* ==========  ЖИВОЙ УРОК НА ТЕЛЕФОНЕ (макет мобильного урока)  ===== */
+/* ================================================================== */
+
+/* На 440 шапка урока разъезжалась: подписи «Ссылка на Google Meet» и «Выйти из
+   урока» не помещались в строку, наезжали друг на друга и ломались на три
+   строки каждая, а имя преподавателя обрезалось до «QA Te…».
+
+   В макете это две строки: сверху преподаватель и статус, под ними ряд
+   значков — темы, словарь, звонок и красный выход. */
+@media (max-width: 760px) {
+  .lv-top {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
+  }
+  .lv-top__left {
+    min-width: 0;
+    gap: 10px;
+  }
+  /* В макете слева аватар с именем, справа — отдельная пилюля со временем.
+     Времени старта бэкенд не отдаёт (у урока есть только длительность), и
+     выдуманный отсчёт «с момента открытия страницы» врал бы; в этом углу
+     стоит статус занятия — он приходит с бэкенда и отвечает на тот же вопрос
+     «урок уже идёт?». */
+  .lv-top__left > :first-child {
+    order: 2;
+    margin-left: auto;
+  }
+  /* Имя сжимается многоточием, а не выталкивает соседей за экран. */
+  .lv-top__teacher {
+    min-width: 0;
+  }
+  .lv-top__teacher-body {
+    min-width: 0;
+  }
+  .lv-top__teacher-name,
+  .lv-top__teacher-role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Кнопки с подписями и одиночный значок словаря — их заменяет ряд значков. */
+  .lv-top__center,
+  .lv-top__right {
+    display: none;
+  }
+
+  .lv-top__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lv-top__act {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: var(--lv-elev, #1b1b1f);
+    color: #fff;
+    cursor: pointer;
+  }
+  .lv-top__act--exit {
+    flex: 0 0 64px;
+    background: #e5484d;
+    color: #fff;
+  }
+  /* Значки в макете фиолетовые на тёмной плитке; на красной кнопке — белый. */
+  .lv-top__act {
+    color: #9047ff;
+  }
+  /* Листы «Темы урока» и «Чат урока» — самостоятельные экраны поверх урока,
+     как в макете: тёмный фон, крестик в правом верхнем углу, внутри тот же
+     список тем или чат, но во всю высоту. */
+  .lv-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px var(--safe-bottom);
+    background: var(--lv-bg, #0f0f12);
+  }
+  .lv-modal > .lw-card {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  /* Список тем и лента чата прокручиваются внутри листа, а не тянут его вниз. */
+  .lv-modal .lv-topics__list,
+  .lv-modal .lw-chat__list {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+  /* Чат в листе: лента тянется, поле ввода прижато к низу — как в макете.
+     Без этого композер уезжал за пределы карточки и написать было нечем. */
+  .lv-modal .lw-chat {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .lv-modal .lw-chat__composer {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+  .lv-modal .lw-chat__input {
+    background: var(--lv-elev, #1b1b1f);
+    border-color: #2a2a31;
+    color: #fff;
+  }
+
+  .lv-modal__close {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    right: 16px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: var(--lv-elev, #1b1b1f);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .lv-top__sep {
+    flex: none;
+    width: 1px;
+    align-self: stretch;
+    margin: 6px 0;
+    background: #2a2a31;
+  }
+
+}
+
+/* На десктопе ряда значков нет — там свои кнопки с подписями. */
+@media (min-width: 761px) {
+  .lv-top__actions {
+    display: none;
+  }
 }

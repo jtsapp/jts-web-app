@@ -858,7 +858,6 @@ export default function App() {
           unlockAll={devUnlock}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
-          onOpenHomework={() => setScreen('homework')}
           onOpenKingdom={(k) => {
             setKingdom(k)
             setScreen('kingdom-interior')

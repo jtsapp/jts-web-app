@@ -250,6 +250,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
 
       <div
         className="cp-scroll"
+        data-selectable=""
         onClick={() => {
           const raw = window.getSelection()?.toString() || ''
           if (isTapSelection(raw) || isOversizedPhrase(raw)) return

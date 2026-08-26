@@ -1,4 +1,4 @@
-import { cleanWord, wordFromTap } from '../../lib/wordTranslate.js'
+import { cleanWord, wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../lib/wordTranslate.js'
 
 // Оборачивает слова обычного JSX-текста (не HTML) в тап-перевод — тот же
 // приём, что читалка книг делает через split() прямо в JSX (BookDetail.jsx),
@@ -21,6 +21,15 @@ export default function TapText({ text, onWord, as: As = 'span', className }) {
               key={i}
               className="lw-tap-w"
               onClick={(e) => {
+                // Выделенную фразу уже перевёл mouseup родителя (LessonContent,
+                // CourseStepPlayer, LessonPlayer). Клик по слову приходит следом
+                // и без этой проверки перебивал фразу одним словом — из-за чего
+                // в формулировках вопросов и в пропусках у ученика работал
+                // только перевод слова, хотя выделение до 100 символов умеет всё
+                // остальное. Ту же проверку делают InfoBlock и PracticeBlock для
+                // своих span'ов из wrapTapWords.
+                const selected = window.getSelection()?.toString() || ''
+                if (isPhraseSelection(selected) || isOversizedPhrase(selected)) return
                 e.stopPropagation()
                 onWord(wordFromTap(e.currentTarget), e.currentTarget)
               }}

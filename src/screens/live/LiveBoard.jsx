@@ -32,6 +32,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
   const lastCursorSentRef = useRef(0)
 
   const [tool, setTool] = useState('pen')
+  const [hasSelection, setHasSelection] = useState(false)
   const [settings, setSettings] = useState({ drawingDisabled: false, cursorsHidden: false })
   const [cursors, setCursors] = useState({}) // userId -> { name, x, y }
   const [canUndo, setCanUndo] = useState(false)
@@ -218,6 +219,25 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId, token])
 
+  // Есть ли что удалять. «Удалить» работает по выделенным объектам, а выделять
+  // умеет только «Курсор» — с активным пером кнопка выглядела рабочей и молча
+  // ничего не делала (§0.6 спеки: неработающих кнопок на экране нет).
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return undefined
+    const sync = () => setHasSelection(canvas.getActiveObjects().length > 0)
+    canvas.on('selection:created', sync)
+    canvas.on('selection:updated', sync)
+    canvas.on('selection:cleared', sync)
+    sync()
+    return () => {
+      canvas.off('selection:created', sync)
+      canvas.off('selection:updated', sync)
+      canvas.off('selection:cleared', sync)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId, token])
+
   // ── reflect tool + drawing restrictions onto the canvas ────────────────────
   useEffect(() => {
     const canvas = canvasRef.current
@@ -233,6 +253,12 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     // When drawing is blocked for a student, lock selection/manipulation too.
     canvas.selection = !drawingBlocked && tool === 'select'
     canvas.forEachObject((o) => { o.selectable = !drawingBlocked && tool === 'select'; o.evented = !drawingBlocked })
+    // Уходя с «Курсора», снимаем выделение сами: fabric оставил бы рамку на
+    // объекте, которым уже нельзя управлять.
+    if (tool !== 'select') {
+      canvas.discardActiveObject()
+      setHasSelection(false)
+    }
     canvas.requestRenderAll()
   }, [tool, drawingBlocked])
 
@@ -249,6 +275,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       canvas.remove(obj)
     })
     canvas.discardActiveObject()
+    setHasSelection(false)
     canvas.requestRenderAll()
     redoRef.current = []
     refreshUndoState()
@@ -308,7 +335,15 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
           </button>
         ))}
         <span className="board__sep" aria-hidden="true" />
-        <button type="button" className="board__tool" onClick={deleteSelected} disabled={drawingBlocked}>{t('board.delete')}</button>
+        <button
+          type="button"
+          className="board__tool"
+          onClick={deleteSelected}
+          disabled={drawingBlocked || !hasSelection}
+          title={hasSelection ? undefined : t('board.deleteHint')}
+        >
+          {t('board.delete')}
+        </button>
         <button type="button" className="board__tool" onClick={undo} disabled={!canUndo}>{t('board.undo')}</button>
         <button type="button" className="board__tool" onClick={redo} disabled={!canRedo}>{t('board.redo')}</button>
         {isStaff && <button type="button" className="board__tool board__tool--danger" onClick={clearBoard}>{t('board.clear')}</button>}
