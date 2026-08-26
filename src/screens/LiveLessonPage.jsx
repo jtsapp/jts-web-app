@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import {
   getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson,
@@ -13,14 +12,15 @@ import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
 import { setAudioReporter, playBroadcastAudio, stopBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
-import LiveStatusBadge from './live/LiveStatusBadge.jsx'
+import LiveHeader from './live/LiveHeader.jsx'
+import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import PresenceRoster from './live/PresenceRoster.jsx'
 import StudentReviewPicker from './live/StudentReviewPicker.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
-import LessonRoute from './workspace/LessonRoute.jsx'
-import LessonContent from './workspace/LessonContent.jsx'
+import LessonTopics from './live/LessonTopics.jsx'
+import LessonContent, { practiceCardStats } from './workspace/LessonContent.jsx'
 import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
@@ -59,6 +59,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState('lesson') // 'lesson' | 'board'
+  // Выход из живого урока спрашивает подтверждение — тем же диалогом, что и
+  // остальные уроки. Раньше «Назад» уводила молча, посреди занятия.
+  const [confirmExit, setConfirmExit] = useState(false)
+
+  // Кнопки «темы» и «чат» в шапке прокручивают к нужному блоку: на телефоне
+  // колонка с ними лежит под уроком, и до чата приходилось мотать вручную мимо
+  // всего задания. Листом поверх урока это сделать не вышло — колонка держит
+  // свои ограничения по высоте, и лист открывался пустым.
+  const scrollAsideTo = (selector) => {
+    const el = document.querySelector(`.lv ${selector}`) || document.querySelector('.lv .lw-live-aside')
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   const role = roleFromToken(token)
   const selfUserId = userIdFromToken(token)
   const isStaff = canControl(role)
@@ -855,28 +867,40 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // терялась и не дописывалась задним числом (спека §3.3, §3.4).
   const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
+  // Шапка урока считает задания открытой темы теми же карточками, что лента их
+  // и нумерует, — иначе «Задание 3 из 7» разъедется с цифрой на карточке.
+  const taskCards = practiceCardStats(activeStep, isStaff ? reviewCheckedSteps : checkedSteps)
   // Урок разобран, но все его упражнения скрыты от этого ученика поштучно.
   const allStepsHidden = (catalogLesson?.steps?.length || 0) > 0 && lessonSteps.length === 0
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved, allStepsHidden })
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile} rail>
+    // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
+    // а всё, что из него было нужно (словарь, выход), переехало в шапку урока.
+    <div className="lv">
+      <LiveHeader
+        status={status}
+        teacherName={lesson?.teacherName}
+        meetingUrl={lesson?.meetingUrl}
+        connected={connected}
+        lessonKind={t((lesson?.participants?.length || 0) > 1 ? 'live.kindGroup' : 'live.kindSolo')}
+        onVocab={onNav ? () => onNav('vocab') : undefined}
+        onTopics={() => scrollAsideTo('.lv-topics')}
+        onChat={() => scrollAsideTo('.lw-chat')}
+        onExit={() => setConfirmExit(true)}
+      />
       <div className="live live--wide">
-        <button className="live__back" onClick={onBack}>← {t('schedule.back')}</button>
 
         {state === 'loading' && <p className="live__status-msg">{t('schedule.loading')}</p>}
         {state === 'error' && <p className="live__status-msg">{t('live.loadError')}</p>}
 
         {state === 'ready' && lesson && (
           <>
-            <div className="live__head">
-              <h1 className="live__title">{t('live.title')}</h1>
-              <span className="live__teacher">{lesson.teacherName || ''}</span>
-              <LiveStatusBadge status={status} />
-              {/* Кто в классе — здесь же, строкой. Отдельной карточкой во всю
-                  ширину это отодвигало материал урока ниже первого экрана. */}
-              <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
-            </div>
+            {/* Кто в классе — только преподавателю: ученик видит своего
+                преподавателя в шапке урока, и вторая строка с тем же именем
+                макету не нужна. Преподавателю же важно, кто из учеников на
+                связи. */}
+            {isStaff && <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />}
 
             {!isStaff && status === 'SCHEDULED' && <p className="live__status-msg">{t('live.waiting')}</p>}
 
@@ -923,27 +947,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
                 {tab === 'lesson' && (
                   <div className="lw-live-body">
-                    <div className="lw-live-route">
-                      {sections.length === 0 ? (
-                        <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
-                          {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
-                        </p>
-                      ) : (
-                        <LessonRoute
-                          steps={routeSteps}
-                          activeStepId={routeActiveId}
-                          statusById={onLessonSteps ? stepStatusById : sectionStatusById}
-                          onSelect={selectRouteStep}
-                          {...(onLessonSteps
-                            // На шагах урока позиции обоих приходят трансляцией
-                            // step-progress; на разделах занятия — событием focus,
-                            // и там известен только преподаватель.
-                            ? { studentStepId, teacherStepId: lessonTeacherStepId }
-                            : { teacherStepId })}
-                        />
-                      )}
-                    </div>
-
                     <div className="lw-live-main">
                       {isStaff && (
                         <button className="lw-focus-btn" disabled={!activeSectionId} onClick={handleFocusClick}>
@@ -1006,6 +1009,38 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           {/* Документ шага — тот же LessonContent, что у преподавателя.
                               Плеер «один вопрос = один экран» прятал указку: questionId
                               `block-N` живёт в карточках, а не в очереди CourseStepPlayer. */}
+                          {/* Белое полотно урока: в макете центр — одна
+                              карточка с шапкой, лентой заданий и кнопками
+                              перехода, а не стопка отдельных плашек. */}
+                          <div className="lv-sheet">
+                            <div className="lv-sheet__head">
+                              <div className="lv-sheet__titles">
+                                {catalogLesson?.level && (
+                                  <span className="lv-sheet__level">{catalogLesson.level}</span>
+                                )}
+                                <h1 className="lv-sheet__title">
+                                  {activeStep?.title || catalogLesson?.title || lesson?.title || t('live.title')}
+                                </h1>
+                              </div>
+
+                              {/* Полоса и счётчик — только когда в теме есть что
+                                  считать: у теории заданий нет, и «Задание 0 из
+                                  0» под пустой полосой ничего не сообщает. */}
+                              {taskCards.total > 0 && (
+                                <div className="lv-sheet__progress">
+                                  <span className="lv-sheet__counter">
+                                    {t('live.taskCounter', { n: taskCards.current, total: taskCards.total })}
+                                  </span>
+                                  <span className="lv-sheet__bar">
+                                    <span
+                                      className="lv-sheet__bar-fill"
+                                      style={{ width: `${Math.round((taskCards.current / taskCards.total) * 100)}%` }}
+                                    />
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
                           <div ref={lessonContentRef}>
                             <LessonContent
                               step={activeStep}
@@ -1021,6 +1056,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               source={catalogLesson?.title || lesson?.title}
                               catalogLessonId={resolvedCatalogLessonId}
                               hiddenBlocks={hiddenBlocks}
+                            />
+                          </div>
+
+                            {/* Кнопки перехода живут внутри полотна и ведут по
+                                темам — так их и рисует макет. У ученика их
+                                раньше не было: он листал очередь экранов
+                                плеера. Плеера в живом уроке больше нет, лента
+                                показывает всю тему сразу, и переходить между
+                                темами ему теперь нечем, кроме списка справа. */}
+                            <StepNav
+                              steps={routeSteps}
+                              activeStepId={routeActiveId}
+                              onSelect={selectRouteStep}
                             />
                           </div>
                         </>
@@ -1052,12 +1100,27 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           на одном экране противоречили друг другу — «Далее»
                           перепрыгивала через весь шаг урока, мимо заданий,
                           которые плеер только собирался показать. */}
-                      {isStaff && (
+                      {isStaff && view !== 'steps' && (
                         <StepNav steps={routeSteps} activeStepId={routeActiveId} onSelect={selectRouteStep} />
                       )}
                     </div>
 
                     <div className="lw-live-aside">
+                      {/* Маршрут урока и «Топики урока» были двумя списками в
+                          двух колонках — в макете это один список справа. */}
+                      {sections.length === 0 ? (
+                        <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
+                          {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
+                        </p>
+                      ) : (
+                        <LessonTopics
+                          steps={routeSteps}
+                          activeStepId={routeActiveId}
+                          statusById={onLessonSteps ? stepStatusById : sectionStatusById}
+                          onSelect={selectRouteStep}
+                          hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
+                        />
+                      )}
                       {/* Урок кончился — звонка на его месте быть не должно:
                           звонить уже некуда. Вместо него итог (спека §3.4). */}
                       {status === 'COMPLETED' ? (
@@ -1067,7 +1130,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                             {t('live.summaryDone', { done: ownProgress.done, total: ownProgress.total })}
                           </p>
                         </div>
-                      ) : (
+                      ) : isStaff ? (
+                      /* Ученику карточка звонка здесь не нужна: ссылка на Meet
+                         теперь в шапке урока, и вторая кнопка с тем же
+                         действием только отнимала место у чата. У
+                         преподавателя карточка остаётся — ссылкой управляет он. */
                       <div className="lw-card lw-meet">
                         {editingMeetingUrl ? (
                           <div className="lw-meet__form">
@@ -1109,7 +1176,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           <p className="lw-meet__empty">{t('lesson.ws.callNoLink')}</p>
                         )}
                       </div>
-                      )}
+                      ) : null}
                       <TeacherChat
                         messages={chatMessages}
                         onSend={handleSendMessage}
@@ -1128,6 +1195,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           </>
         )}
       </div>
-    </LearningLayout>
+
+      {confirmExit && <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={onBack} />}
+    </div>
   )
 }

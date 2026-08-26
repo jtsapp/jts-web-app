@@ -28,7 +28,7 @@ const QUESTION_BY_TYPE = {
 // Карточка практики: заголовок + инструкция/аудио/правило + список вопросов.
 // `checked` — флаг всей карточки; `checkedKeys`/`cardKey` нужны, чтобы
 // после сброса одного вопроса остальными нельзя было снова тыкать.
-export default function PracticeBlock({ block, answers, checked, checkedKeys, cardKey, onAnswer, onCheck, readOnly, liveQuestionId, onWord, gapPrefix, cardAnchorId }) {
+export default function PracticeBlock({ block, answers, checked, checkedKeys, cardKey, onAnswer, onCheck, readOnly, liveQuestionId, onWord, gapPrefix, cardAnchorId, number, status = 'upcoming', highlighted = false }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
     if (cardKey && checkedKeys?.has(cardKey)) return true
@@ -81,10 +81,36 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
   }, [tappableHtml, block?.audio?.src])
 
   return (
-    <div className="lw-card lw-practice" data-question-id={cardAnchorId || gapPrefix}>
-      <div className="lw-practice__head">
-        {block?.title && <TapText as="h3" className="lw-practice__title" text={block.title} onWord={onWord} />}
-        {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
+    <div
+      className={`lw-card lw-practice is-${status}${highlighted ? ' is-highlighted' : ''}`}
+      data-question-id={cardAnchorId || gapPrefix}
+    >
+      <div className="lw-practice__top">
+        {/* Номер задания — он же его статус: галочка вместо цифры, когда
+            задание проверено (макет «Онлайн-уроки»). */}
+        {number != null && (
+          <span className="lw-practice__num" aria-hidden="true">
+            {status === 'done' ? (
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                <path d="m4 8.4 2.6 2.6L12 5.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              number
+            )}
+          </span>
+        )}
+        <div className="lw-practice__head">
+          {block?.title && <TapText as="h3" className="lw-practice__title" text={block.title} onWord={onWord} />}
+          {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
+        </div>
+        {highlighted && (
+          <span className="lw-practice__flag">
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+              <path fill="currentColor" d="M3 10v4h3l5 4V6L6 10H3Zm12.5 2c0-1.5-.8-2.8-2-3.4v6.8c1.2-.6 2-1.9 2-3.4Zm-2-7v2c2.6.7 4.5 3 4.5 5s-1.9 4.3-4.5 5v2c3.7-.8 6.5-4 6.5-7s-2.8-6.2-6.5-7Z" />
+            </svg>
+            {t('live.highlighted')}
+          </span>
+        )}
       </div>
 
       {block?.instruction && (

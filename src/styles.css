@@ -4378,118 +4378,127 @@ textarea {
   position: absolute;
   inset: 0;
   z-index: 7;
-  background: rgba(0, 0, 0, 0.57);
+  background: rgba(23, 19, 38, 0.45);
   display: flex;
-  padding: 64px 24px 24px;
+  padding: 24px;
   overflow: auto;
 }
+/* Карточка макета «Выход из урока»: шапка с заголовком и крестиком, под ней
+   ряд кнопок. Крестик переехал внутрь карточки, поэтому верхнего поля под него
+   больше не нужно — оверлей вернулся к равным полям. */
 .lx-card {
   margin: auto;
   position: relative;
   background: #fff;
-  border-radius: 60px;
-  padding: 43px 70px;
-  width: 405px;
+  border-radius: 24px;
+  width: 560px;
   max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 14px;
   box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
 }
-/* По центру над карточкой, как в макете: справа он читался как «закрыть
-   что-то в правом верхнем углу», а не «закрыть эту модалку». */
+.lx-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px 20px;
+  /* Разделитель из макета — единственная линия в карточке: он отделяет вопрос
+     от действий, а не обводит блок. */
+  border-bottom: 1px solid #f0eff4;
+}
+.lx-texts {
+  min-width: 0;
+}
 .lx-close {
-  position: absolute;
-  top: -44px;
-  left: 50%;
-  transform: translateX(-50%);
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: none;
-  background: none;
-  color: #fff;
+  border-radius: 12px;
+  background: #f5f2fb;
+  color: #504b5a;
   line-height: 1;
   cursor: pointer;
   font-family: inherit;
+  flex: none;
+  transition: background 0.15s ease;
 }
-/* Арт в макете — круглый портрет, а не картинка во всю карточку. Серый круг под
-   ним — из макета: у портрета прозрачные поля, и подложка держит форму. Пока
-   портрет едет, её перекрывает шиммер (.aimg), иначе плоский серый кружок
-   читается как «картинка не пришла» — ровно это клиент и видел на 4G. */
-.lx-art {
-  width: 112px;
-  height: 112px;
-  margin-bottom: 2px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #d9d9d9;
+.lx-close:hover {
+  background: #ece7f7;
 }
 .lx-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #000;
-  line-height: 1.2;
+  font-size: 22px;
+  font-weight: 800;
+  color: #171326;
+  line-height: 1.25;
 }
 .lx-sub {
-  color: #181818;
-  font-size: 14px;
+  margin: 6px 0 0;
+  color: #6b6976;
+  font-size: 15px;
   font-weight: 400;
-  margin-top: -8px;
 }
 .lx-acts {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 264px;
-  max-width: 100%;
-  margin-top: 41px; /* с gap карточки — те самые 55 из макета */
+  gap: 12px;
+  padding: 20px 28px 24px;
 }
+/* Имена классов — по действию, а не по виду: `lx-leave` уводит из урока и
+   в макете стоит первым и залитым, `lx-continue` оставляет в уроке. */
 .lx-continue,
 .lx-leave {
-  width: 100%;
-  height: 48px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 56px;
   padding: 0 20px;
   border: none;
-  border-radius: 80px;
+  border-radius: 14px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
-.lx-continue {
+.lx-leave {
   background: var(--purple);
   color: #fff;
 }
-.lx-leave {
-  background: #b7f0ff;
-  color: var(--purple);
-  transition: filter 0.15s ease;
-}
 .lx-leave:hover {
-  filter: brightness(0.97);
+  background: #7a2fe6;
+}
+.lx-continue {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e6e4ee;
+  color: #171326;
+}
+.lx-continue:hover {
+  background: #f7f6fb;
+}
+.lx-close:focus-visible,
+.lx-continue:focus-visible,
+.lx-leave:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
 }
 
-/* Телефон: боковые поля 70px из макета съедали 140px из 327 доступных, кнопка
-   сжималась до 187px и подпись «Продолжить обучение» в неё не влезала.
+
+/* Телефон: диалог узкий, и боковые поля в 28px съедают заметную долю ширины.
    Блок стоит после базовых правил .lx-* намеренно: медиазапрос специфичности не
    добавляет, и раньше по файлу он бы проиграл. */
 @media (max-width: 760px) {
-  .lx-card {
-    padding: 32px 20px;
-    border-radius: 40px;
+  .lx-head {
+    padding: 20px 18px 16px;
   }
+  .lx-title {
+    font-size: 19px;
+  }
+  /* На узком экране две кнопки по 56px в ряд оставляют по 140px на подпись —
+     «Выйти из урока» переносится в две строки. Колонкой они читаются. */
   .lx-acts {
-    margin-top: 24px;
-    /* В мобильном макете кнопки идут во всю ширину карточки, а не колонкой
-       в 264 по центру (Figma «Веб-версия мобилка» → Выход из обучения). */
-    width: 100%;
-    gap: 12px;
+    flex-direction: column;
+    padding: 16px 18px 20px;
   }
 }
 

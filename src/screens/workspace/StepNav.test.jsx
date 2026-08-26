@@ -32,9 +32,19 @@ describe('StepNav — переход по шагам кнопками', () => {
     expect(onSelect).toHaveBeenCalledWith('s1')
   })
 
-  it('показывает, где ученик находится', () => {
+  // Счётчик между кнопками убран по макету «Онлайн-уроки»: место в уроке
+  // показывают шапка полотна и список тем справа. Незрячему позиция осталась
+  // доступной — она в подписи самой навигации.
+  it('позиция в уроке осталась доступной с клавиатуры и скринридера', () => {
     const { container } = renderNav()
-    expect(container.querySelector('.lw-stepnav__pos').textContent).toBe('Шаг 2 из 3')
+    expect(container.querySelector('.lw-stepnav__pos')).toBeNull()
+    expect(container.querySelector('.lw-stepnav').getAttribute('aria-label')).toBe('Шаг 2 из 3')
+  })
+
+  it('правая кнопка ведёт на следующую тему', () => {
+    const { container } = renderNav()
+    const [, next] = container.querySelectorAll('.lw-stepnav__btn')
+    expect(next.textContent).toContain('Следующая тема')
   })
 
   it('на первом шаге назад некуда, на последнем — вперёд', () => {

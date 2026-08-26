@@ -80,6 +80,38 @@ function wordBankGapPrefix(step, anchorId) {
   return step?.id != null ? `step-${step.id}` : anchorId
 }
 
+/**
+ * Задания шага: сколько их и на каком стоит ученик.
+ *
+ * Макет подписывает каждую карточку практики номером и считает в шапке урока
+ * «Задание N из M». Номер — позиция среди практик, а не индекс блока: между
+ * заданиями стоят info/theory/vocab, и сквозной счётчик дал бы «Задание 9 из 3»
+ * там, где заданий три.
+ *
+ * Текущее задание — первое непроверенное: ученик идёт лентой сверху вниз и
+ * нажимает «Проверить» по очереди, так что именно оно у него под руками.
+ */
+export function practiceCardStats(step, checkedKeys) {
+  const cards = []
+  groupBlocks(step?.blocks).forEach((group, i) => {
+    if (group.type !== 'info' && group.block?.type === 'practice') {
+      cards.push(practiceBlockKey(step?.id, i))
+    }
+  })
+
+  const firstOpen = cards.findIndex((key) => !checkedKeys?.has(key))
+  // Все проверены — стоим на последнем задании, а не за концом списка:
+  // «Задание 4 из 3» читается опечаткой, а не «шаг пройден».
+  const current = cards.length === 0 ? 0 : (firstOpen === -1 ? cards.length : firstOpen + 1)
+
+  return {
+    total: cards.length,
+    current,
+    currentKey: cards.length === 0 ? null : cards[current - 1],
+    numberByKey: Object.fromEntries(cards.map((key, i) => [key, i + 1])),
+  }
+}
+
 // Центр workspace: рендерит блоки активного шага диспетчером по `block.type`.
 // `answers`/`checkedKeys`/`onAnswer`/`onCheck` прокидываются в practice-блоки:
 // сам компонент состояния не хранит, только вычисляет per-карточный ключ.
@@ -101,6 +133,7 @@ function wordBankGapPrefix(step, anchorId) {
 // скрытую карточку он видит помеченной и может вернуть.
 export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks }) {
   const groups = groupBlocks(step?.blocks)
+  const cards = practiceCardStats(step, checkedKeys)
   const { lang } = useI18n()
   // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
   // в читалке книг, см. useTapTranslate.js. Один экземпляр на весь шаг, а не
@@ -209,6 +242,18 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 block={block}
                 answers={answers}
                 checked={checkedKeys?.has(key) ?? false}
+                number={cards.numberByKey[key]}
+                status={
+                  checkedKeys?.has(key) ? 'done' : key === cards.currentKey ? 'current' : 'upcoming'
+                }
+                // Указка преподавателя стоит на этой карточке — бейдж макета
+                // «Подсвечено у учителя». Указать он может и на блок целиком
+                // (`block-N`), и на конкретный вопрос внутри него.
+                highlighted={
+                  liveQuestionId != null &&
+                  (isLiveHere(anchorId, liveQuestionId) ||
+                    (block.questions || []).some((q) => q.id === liveQuestionId))
+                }
                 checkedKeys={checkedKeys}
                 cardKey={key}
                 onAnswer={onAnswer}
