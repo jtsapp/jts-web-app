@@ -7,7 +7,7 @@ import { useWordBankRoot } from '../useWordBankRoot.js'
 import TapText from '../TapText.jsx'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
-// от учителя/экстрактора. html санитизируется (см. sanitizeHtml.js), а в DOM
+// от курса/экстрактора. html санитизируется (см. sanitizeHtml.js), а в DOM
 // его ставит useWordBankRoot — не dangerouslySetInnerHTML: опрос занятия
 // каждые 5 с иначе пересобирает пропуски и стирает слова. Банк слов
 // (`.wbank` + `input.gap`) — не practice-вопрос, но в live его ячейки всё
@@ -15,13 +15,13 @@ import TapText from '../TapText.jsx'
 // ученик вставил, и наоборот.
 //
 // Карточки на себе не несёт: её рисует LessonContent сразу на серию соседних
-// info-блоков.
-function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix }) {
+// info-блоков. `checked` — ученик нажал «Проверить» на этой карточке.
+function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix, checked }) {
   const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const bodyRef = useRef(null)
-  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId })
-  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId }
+  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId, checked })
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked }
 
   useEffect(() => {
     const root = bodyRef.current

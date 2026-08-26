@@ -102,4 +102,32 @@ describe('LessonContent — номер и состояние карточки з
     const { container } = renderContent()
     expect(container.querySelectorAll('.lw-practice__flag')).toHaveLength(0)
   })
+
+  it('в заголовке карточки нет второго номера, если курс прислал «3 · …»', () => {
+    const numbered = {
+      id: 's9',
+      blocks: [
+        {
+          type: 'practice',
+          title: '3 · Choose the sentence closest in meaning.',
+          questions: [{ id: 'q1', type: 'choice', options: ['a', 'b'], answer: 'a' }],
+        },
+      ],
+    }
+    const { container } = render(
+      <I18nProvider>
+        <LessonContent
+          step={numbered}
+          answers={{}}
+          checkedKeys={new Set()}
+          onAnswer={() => {}}
+          onCheck={() => {}}
+        />
+      </I18nProvider>,
+    )
+    expect(container.querySelector('.lw-practice__num')?.textContent).toBe('1')
+    expect(container.querySelector('.lw-practice__title')?.textContent).toBe(
+      'Choose the sentence closest in meaning.',
+    )
+  })
 })

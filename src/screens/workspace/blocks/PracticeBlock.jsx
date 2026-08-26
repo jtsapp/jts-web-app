@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import TapText from '../TapText.jsx'
 import ChoiceQuestion from '../practice/ChoiceQuestion.jsx'
@@ -14,6 +14,13 @@ import { useWordBankRoot } from '../useWordBankRoot.js'
 import { reportAudio } from '../../live/audioReport.js'
 import { hasAttempt } from '../practiceGrading.js'
 import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/wordTranslate.js'
+import {
+  collectCheckableGapIds,
+  gradeWordBankInRoot,
+  htmlHasCheckableWordBank,
+  wordBankAnswersAttempted,
+} from '../wordBankCheck.js'
+import { stripExerciseNumber } from '../stripExerciseNumber.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -28,22 +35,49 @@ const QUESTION_BY_TYPE = {
 // Карточка практики: заголовок + инструкция/аудио/правило + список вопросов.
 // `checked` — флаг всей карточки; `checkedKeys`/`cardKey` нужны, чтобы
 // после сброса одного вопроса остальными нельзя было снова тыкать.
-export default function PracticeBlock({ block, answers, checked, checkedKeys, cardKey, onAnswer, onCheck, readOnly, liveQuestionId, onWord, gapPrefix, cardAnchorId, number, status = 'upcoming', highlighted = false }) {
+// Word-bank в `html` (B2 cloze) тоже получает «Проверить» — иначе ключи в
+// data-answer есть, а кнопки нет.
+export default function PracticeBlock({
+  block, answers, checked, checkedKeys, cardKey, stepTitle, onAnswer, onCheck, readOnly,
+  liveQuestionId, onWord, gapPrefix, cardAnchorId, status, highlighted, number,
+}) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
     if (cardKey && checkedKeys?.has(cardKey)) return true
     return !!checked
   }
   const { t } = useI18n()
-  const canCheck = (block?.questions || []).some((q) => hasAttempt(q, answers?.[q.id]))
+  // Badge already shows card order — drop «3 ·» from the course title so the
+  // student does not see two different numbers for one task.
+  const displayTitle = stripExerciseNumber(block?.title)
+  const showBlockTitle = Boolean(displayTitle && displayTitle !== stepTitle)
   const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
-  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId })
-  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId }
+  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId, checked })
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked }
+
+  const hasWbCheck = htmlHasCheckableWordBank(html)
+  const questions = block?.questions || []
+  const canCheckQuestions = questions.some((q) => hasAttempt(q, answers?.[q.id]))
+  const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
+  const canCheck = canCheckQuestions || canCheckWb
+  const showCheck = !readOnly && (questions.length > 0 || hasWbCheck)
+
+  const [wbScore, setWbScore] = useState(null)
 
   useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
+
+  useEffect(() => {
+    if (!checked) {
+      setWbScore(null)
+      return
+    }
+    if (htmlRef.current && hasWbCheck) {
+      setWbScore(gradeWordBankInRoot(htmlRef.current))
+    }
+  }, [checked, hasWbCheck, answers, tappableHtml])
 
   useEffect(() => {
     const root = htmlRef.current
@@ -80,6 +114,15 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
     }
   }, [tappableHtml, block?.audio?.src])
 
+  function handleCheck() {
+    if (!canCheck) return
+    const gapIds = collectCheckableGapIds(htmlRef.current)
+    if (htmlRef.current && hasWbCheck) {
+      setWbScore(gradeWordBankInRoot(htmlRef.current))
+    }
+    onCheck?.(gapIds)
+  }
+
   return (
     <div
       className={`lw-card lw-practice is-${status}${highlighted ? ' is-highlighted' : ''}`}
@@ -100,8 +143,8 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
           </span>
         )}
         <div className="lw-practice__head">
-          {block?.title && <TapText as="h3" className="lw-practice__title" text={block.title} onWord={onWord} />}
-          {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
+            {showBlockTitle && <TapText as="h3" className="lw-practice__title" text={displayTitle} onWord={onWord} />}
+            {block?.hint && <TapText as="p" className="lw-practice__hint" text={block.hint} onWord={onWord} />}
         </div>
         {highlighted && (
           <span className="lw-practice__flag">
@@ -122,7 +165,7 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
       {html && <div className="lw-practice__html" ref={htmlRef} />}
 
       <div className="lw-practice__list">
-        {(block?.questions || []).map((question) => {
+        {questions.map((question) => {
           const Question = QUESTION_BY_TYPE[question.type]
           if (!Question) return null
           return (
@@ -144,16 +187,21 @@ export default function PracticeBlock({ block, answers, checked, checkedKeys, ca
         })}
       </div>
 
-      {!readOnly && (block?.questions || []).length > 0 && (
+      {showCheck && (
         <button
           type="button"
           className="lw-practice__check"
           disabled={!canCheck}
           title={canCheck ? undefined : t('lesson.ws.checkNeedAnswer')}
-          onClick={() => canCheck && onCheck(block)}
+          onClick={handleCheck}
         >
           {t('lesson.ws.check')}
         </button>
+      )}
+      {checked && wbScore && wbScore.total > 0 && (
+        <div className="lw-practice__wb-score" role="status">
+          {wbScore.correct} / {wbScore.total} {t('lesson.ws.correctCount')}
+        </div>
       )}
     </div>
   )

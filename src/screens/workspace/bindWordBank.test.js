@@ -261,4 +261,28 @@ describe('bindWordBank', () => {
     unbind()
     root.remove()
   })
+
+  it('после checked красит верные/неверные пропуски по data-answer', () => {
+    const { root, unbind } = mount()
+    const [first, second] = root.querySelectorAll('input.gap')
+    const id0 = first.getAttribute('data-question-id')
+    const id1 = second.getAttribute('data-question-id')
+    applyWordBankAnswers(
+      root,
+      { [id0]: 'hit it off', [id1]: 'wrong' },
+      null,
+      { sync: true, clearMissing: false, checked: true },
+    )
+    expect(first.classList.contains('is-correct')).toBe(true)
+    expect(second.classList.contains('is-wrong')).toBe(true)
+    applyWordBankAnswers(root, { [id0]: 'hit it off', [id1]: 'wrong' }, null, {
+      sync: true,
+      clearMissing: false,
+      checked: false,
+    })
+    expect(first.classList.contains('is-correct')).toBe(false)
+    expect(second.classList.contains('is-wrong')).toBe(false)
+    unbind()
+    root.remove()
+  })
 })

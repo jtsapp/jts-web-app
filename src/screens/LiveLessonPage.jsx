@@ -1079,6 +1079,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               source={catalogLesson?.title || lesson?.title}
                               catalogLessonId={resolvedCatalogLessonId}
                               hiddenBlocks={hiddenBlocks}
+                              hideStepTitle
                             />
                           </div>
 

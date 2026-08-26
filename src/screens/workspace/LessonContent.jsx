@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import BannerBlock from './blocks/BannerBlock.jsx'
 import TheoryBlock from './blocks/TheoryBlock.jsx'
 import InfoBlock from './blocks/InfoBlock.jsx'
@@ -8,10 +8,17 @@ import ChecklistBlock from './blocks/ChecklistBlock.jsx'
 import WritingBlock from './blocks/WritingBlock.jsx'
 import SpeakingBlock from './blocks/SpeakingBlock.jsx'
 import TranslatePopover from './TranslatePopover.jsx'
+import TapText from './TapText.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
 import { useI18n } from '../../i18n.jsx'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../../lib/wordTranslate.js'
 import { hiddenBlockKey } from './visibleSteps.js'
+import {
+  collectCheckableGapIds,
+  gradeWordBankInRoot,
+  htmlHasCheckableWordBank,
+  wordBankAnswersAttempted,
+} from './wordBankCheck.js'
 
 // `practice` — обрабатывается отдельно ниже (нужны answers/checked/onAnswer/onCheck).
 const BLOCK_BY_TYPE = {
@@ -112,6 +119,77 @@ export function practiceCardStats(step, checkedKeys) {
   }
 }
 
+/** Info-карточка с word-bank: кнопка «Проверить» и счёт, как в HTML-курсе. */
+function InfoWordBankCard({
+  group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, openWord,
+}) {
+  const { t } = useI18n()
+  const cardRef = useRef(null)
+  const anchorId = `block-${group.blockIndex}`
+  const key = practiceBlockKey(step?.id, group._groupIndex)
+  const checked = checkedKeys?.has(key) ?? false
+  const gapPrefix = wordBankGapPrefix(step, anchorId)
+  const hasCheckable = group.blocks.some((b) => htmlHasCheckableWordBank(b.html))
+  const canCheck = hasCheckable && wordBankAnswersAttempted(answers, gapPrefix)
+  const [wbScore, setWbScore] = useState(null)
+
+  useEffect(() => {
+    if (!checked) {
+      setWbScore(null)
+      return
+    }
+    if (cardRef.current && hasCheckable) {
+      setWbScore(gradeWordBankInRoot(cardRef.current))
+    }
+  }, [checked, hasCheckable, answers])
+
+  function handleCheck() {
+    if (!canCheck || !cardRef.current) return
+    const score = gradeWordBankInRoot(cardRef.current)
+    setWbScore(score)
+    onCheck(key, collectCheckableGapIds(cardRef.current))
+  }
+
+  return (
+    <div
+      ref={cardRef}
+      className={`lw-card lw-info${isLiveHere(anchorId, liveQuestionId) ? ' lw-q--live-here' : ''}`}
+      data-question-id={anchorId}
+      data-group-index={group._groupIndex}
+    >
+      {group.blocks.map((block, j) => (
+        <InfoBlock
+          key={j}
+          block={block}
+          onWord={openWord}
+          answers={answers}
+          onAnswer={onAnswer}
+          readOnly={readOnly || checked}
+          liveQuestionId={liveQuestionId}
+          gapPrefix={gapPrefix}
+          checked={checked}
+        />
+      ))}
+      {!readOnly && hasCheckable && (
+        <button
+          type="button"
+          className="lw-practice__check"
+          disabled={!canCheck}
+          title={canCheck ? undefined : t('lesson.ws.checkNeedAnswer')}
+          onClick={handleCheck}
+        >
+          {t('lesson.ws.check')}
+        </button>
+      )}
+      {checked && wbScore && wbScore.total > 0 && (
+        <div className="lw-practice__wb-score" role="status">
+          {wbScore.correct} / {wbScore.total} {t('lesson.ws.correctCount')}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Центр workspace: рендерит блоки активного шага диспетчером по `block.type`.
 // `answers`/`checkedKeys`/`onAnswer`/`onCheck` прокидываются в practice-блоки:
 // сам компонент состояния не хранит, только вычисляет per-карточный ключ.
@@ -131,7 +209,7 @@ export function practiceCardStats(step, checkedKeys) {
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys)
   const { lang } = useI18n()
@@ -182,29 +260,43 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
         if (raw.trim()) close()
       }}
     >
+      {(() => {
+        // Live sheet already shows the stage title in `.lv-sheet__head` — repeating
+        // it here looked like two titles. Lead stays only when it adds something.
+        const title = hideStepTitle ? '' : String(step?.title || '').trim()
+        const lead = String(step?.subtitle || '').trim()
+        const sheetTitle = String(step?.title || '').trim()
+        const showLead = Boolean(
+          lead && lead.toLowerCase() !== sheetTitle.toLowerCase(),
+        )
+        if (!title && !showLead) return null
+        return (
+          <header className="lw-step-head">
+            {title && (
+              <TapText as="h2" className="lw-step-head__title" text={title} onWord={openWord} />
+            )}
+            {showLead && (
+              <TapText as="p" className="lw-step-head__lead" text={lead} onWord={openWord} />
+            )}
+          </header>
+        )
+      })()}
       {groups.map((group, i) => {
         if (hiddenBlocks?.has(hiddenBlockKey(step?.id, group.blockIndex))) return null
         if (group.type === 'info') {
-          const anchorId = `block-${group.blockIndex}`
           return (
-            <div
-              className={`lw-card lw-info${isLiveHere(anchorId, liveQuestionId) ? ' lw-q--live-here' : ''}`}
+            <InfoWordBankCard
               key={i}
-              data-question-id={anchorId}
-            >
-              {group.blocks.map((block, j) => (
-                <InfoBlock
-                  key={j}
-                  block={block}
-                  onWord={openWord}
-                  answers={answers}
-                  onAnswer={onAnswer}
-                  readOnly={readOnly}
-                  liveQuestionId={liveQuestionId}
-                  gapPrefix={wordBankGapPrefix(step, anchorId)}
-                />
-              ))}
-            </div>
+              group={{ ...group, _groupIndex: i }}
+              step={step}
+              answers={answers}
+              checkedKeys={checkedKeys}
+              onAnswer={onAnswer}
+              onCheck={onCheck}
+              readOnly={readOnly}
+              liveQuestionId={liveQuestionId}
+              openWord={openWord}
+            />
           )
         }
 
@@ -256,8 +348,9 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 }
                 checkedKeys={checkedKeys}
                 cardKey={key}
+                stepTitle={step?.title}
                 onAnswer={onAnswer}
-                onCheck={() => onCheck(key, (block.questions || []).map((q) => q.id))}
+                onCheck={(gapIds = []) => onCheck(key, [...(block.questions || []).map((q) => q.id), ...gapIds])}
                 readOnly={readOnly}
                 liveQuestionId={liveQuestionId}
                 onWord={openWord}

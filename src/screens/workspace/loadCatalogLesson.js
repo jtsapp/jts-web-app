@@ -8,6 +8,8 @@
 import { getCourseCatalogLessonContent } from '../../api.js'
 import { rewriteMediaUrls } from './extract/rewriteMediaUrls.js'
 import { hoistSelectQuestions } from './hoistSelectQuestions.js'
+import { foldOrphanAudioSteps } from './foldOrphanAudioSteps.js'
+import { hoistStepLeads } from './hoistStepLead.js'
 
 // Кэш по id урока: содержимое не меняется до перерегистрации уровня.
 const cache = new Map()
@@ -21,6 +23,10 @@ export async function loadCatalogLesson(id, token) {
     // Медиа внутри info-блоков лежит относительно файла урока, а не API.
     const lesson = hoistSelectQuestions(rewriteMediaUrls(stored.content, stored.fileUrl))
     if (!lesson.title && stored.title) lesson.title = stored.title
+    // Хвостовой «Audio» из старой конвертации — в Practice/Listening, не отдельным шагом.
+    if (Array.isArray(lesson.steps)) {
+      lesson.steps = hoistStepLeads(foldOrphanAudioSteps(lesson.steps))
+    }
 
     cache.set(id, lesson)
     return lesson

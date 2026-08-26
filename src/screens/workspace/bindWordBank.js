@@ -12,6 +12,8 @@
 // so fills travel on the same step-progress channel as practice answers, and
 // the teacher's pointer can land on a single blank rather than the whole card.
 
+import { clearWordBankGrades, gradeWordBankInRoot } from './wordBankCheck.js'
+
 const BANK = '.wbank, .wordbank'
 const CHIP = '.wchip'
 const GAP = 'input.gap, textarea.gap'
@@ -152,7 +154,7 @@ export function restampWordBankHtml(root, html, prefix, stampRef) {
  * grouped live card so split bank/paragraph keep one id series; a bank-only
  * info block must not paint (and clear) the paragraph's blanks.
  */
-export function applyWordBankAnswers(root, answers = {}, liveGapId = null, { sync = true, prefix, clearMissing = true } = {}) {
+export function applyWordBankAnswers(root, answers = {}, liveGapId = null, { sync = true, prefix, clearMissing = true, checked = false } = {}) {
   if (!root) return
   tagWordBankGaps(root, prefix)
   const card = liveScope(root)
@@ -169,6 +171,8 @@ export function applyWordBankAnswers(root, answers = {}, liveGapId = null, { syn
     gap.classList.toggle('is-live-here', on)
   })
   paintChips(card)
+  if (checked) gradeWordBankInRoot(root)
+  else clearWordBankGrades(root)
 }
 
 export function bindWordBank(root, options = {}) {

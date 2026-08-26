@@ -32,6 +32,7 @@ export function useWordBankRoot(rootRef, html, prefix, liveRef) {
       sync: true,
       prefix,
       clearMissing: false,
+      checked: !!liveRef.current.checked,
     })
     return () => {
       unbindRef.current?.()
@@ -46,6 +47,7 @@ export function useWordBankRoot(rootRef, html, prefix, liveRef) {
       sync: true,
       prefix,
       clearMissing: false,
+      checked: !!liveRef.current.checked,
     })
   })
 }

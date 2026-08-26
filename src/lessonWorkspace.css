@@ -437,6 +437,27 @@
   min-width: 0;
 }
 
+.lw-step-head {
+  margin: 0 0 4px;
+  padding: 0 2px;
+}
+
+.lw-step-head__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--lw-ink, #1c1c1e);
+}
+
+.lw-step-head__lead {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--lw-muted, #5b6478);
+}
+
 .lw-card,
 .lw-theory,
 .lw-info,
@@ -1006,6 +1027,30 @@
   font-size: 14.5px;
   cursor: pointer;
   pointer-events: auto;
+}
+
+.lw-info__body input.gap.is-correct,
+.lw-practice__html input.gap.is-correct {
+  border-color: #1a9e6a;
+  background: #e8f8f0;
+  color: #0f6b45;
+}
+
+.lw-info__body input.gap.is-wrong,
+.lw-practice__html input.gap.is-wrong {
+  border-color: #d64545;
+  background: #fdecec;
+  color: #8b1e1e;
+}
+
+.lw-practice__wb-score {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f4f1fb;
+  color: #5b21b6;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .lw-practice__html .num {
@@ -3218,7 +3263,9 @@ button.lw-tap-pop__save.is-on:disabled {
   --lv-muted: #8e8e98;
   --lv-active: #3a2a66;    /* активная тема в списке */
 
-  min-height: 100vh;
+  /* На весь вьюпорт сразу — без сайдбара приложения и без «полосы» снизу. */
+  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--lv-bg);
@@ -3226,6 +3273,7 @@ button.lw-tap-pop__save.is-on:disabled {
      .learn__main прежней оболочки, а без positioned предка диалог считался
      бы от вьюпорта и уезжал при прокрутке. */
   position: relative;
+  overflow: hidden;
 }
 
 /* --- шапка урока ---------------------------------------------------- */
@@ -3408,6 +3456,8 @@ button.lw-tap-pop__save.is-on:disabled {
   padding: 20px 24px 28px;
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Две колонки вместо трёх: маршрут слева убран, темы переехали направо. */
@@ -3678,7 +3728,10 @@ button.lw-tap-pop__save.is-on:disabled {
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  /* Больше воздуха между лентой заданий и «Назад / Следующая тема». */
+  gap: 32px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .lv-sheet__head {
@@ -3749,6 +3802,8 @@ button.lw-tap-pop__save.is-on:disabled {
    их отделяет собственный отступ, а не подложка. */
 .lv-sheet .lw-content {
   gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Кнопки перехода прижаты к правому краю полотна — «Назад» рядом с
@@ -3757,9 +3812,11 @@ button.lw-tap-pop__save.is-on:disabled {
   position: static;
   justify-content: flex-end;
   gap: 12px;
-  padding: 0;
+  padding: 8px 0 0;
+  margin-top: 4px;
   background: none;
   box-shadow: none;
+  flex: none;
 }
 
 /* --- карточка задания: номер и состояние ------------------------------ */
@@ -3920,6 +3977,12 @@ button.lw-tap-pop__save.is-on:disabled {
 }
 
 @media (max-width: 1000px) {
+  .lv {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
   .lv .lw-live-body {
     grid-template-columns: minmax(0, 1fr);
   }
