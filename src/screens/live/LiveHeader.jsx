@@ -1,14 +1,15 @@
 import { useI18n } from '../../i18n.jsx'
+import { formatTimer } from './useLessonTimer.js'
 import LiveStatusBadge from './LiveStatusBadge.jsx'
 import { VocabIcon } from '../../components/icons.jsx'
 
 // Шапка живого урока (макет «Онлайн-уроки»): тёмная полоса над уроком —
 // преподаватель слева, ссылка на звонок и выход справа.
 //
-// Таймера из макета здесь нет намеренно: бэкенд не отдаёт время старта урока
-// (у занятия есть только `durationMinutes`), а отсчёт от загрузки страницы был
-// бы выдуманным временем — ученик, открывший урок на двадцатой минуте, увидел
-// бы «00:00». Вместо таймера — статус занятия, он приходит с бэкенда.
+// Таймер в шапке — тот самый, что рисует макет. Своего отсчёта он не ведёт:
+// время присылает преподаватель трансляцией (useLessonTimer), поэтому у всех
+// в классе на экране одно и то же число, а ученик, открывший урок на двадцатой
+// минуте, видит остаток, а не «00:00» от загрузки страницы.
 export default function LiveHeader({
   status,
   teacherName,
@@ -16,6 +17,8 @@ export default function LiveHeader({
   meetingUrl,
   connected,
   teacherOnline,
+  timerLeft,
+  timerExpired,
   onVocab,
   onTopics,
   onChat,
@@ -34,7 +37,14 @@ export default function LiveHeader({
   return (
     <header className="lv-top">
       <div className="lv-top__left">
-        <LiveStatusBadge status={status} />
+        {timerLeft !== null && timerLeft !== undefined ? (
+          <span className={`lv-top__timer${timerExpired ? ' is-out' : ''}`}>
+            <span className="lv-top__timer-dot" aria-hidden="true" />
+            {timerExpired ? t('live.timerOut') : formatTimer(timerLeft)}
+          </span>
+        ) : (
+          <LiveStatusBadge status={status} />
+        )}
         <span className="lv-top__teacher">
           {/* На связи преподаватель или нет — точкой на аватаре. Это показывал
               ростер «В классе» под шапкой; в макете его нет, а знать ученику

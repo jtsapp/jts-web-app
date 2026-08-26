@@ -208,9 +208,19 @@ textarea {
 .lang-selector:hover {
   transform: translateY(-1px);
 }
+
+/* Компактный вид для шапки кабинета: флаг и код вместо названия. Полное
+   «Қазақша» рядом с колокольчиком занимало бы половину строки, а на мобильной
+   шапке не помещалось вовсе. */
+.lang-selector--compact {
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  letter-spacing: .02em;
+
 /* Пилюля языка в полосе урока: размеры и радиус из макета «Обучение»
    (58×33, r40, белая заливка). Тени там нет — полоса и так белая. */
-.lang-selector--compact {
+.lang-selector--flag {
   gap: 4px;
   height: 33px;
   padding: 0 10px;
@@ -1888,8 +1898,11 @@ textarea {
   display: none;
 }
 @media (min-width: 761px) {
+  /* Язык и уведомления — одной группой в правом верхнем углу кабинета. */
   .learn__bell {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     position: absolute;
     top: 16px;
     right: 20px;
@@ -2336,9 +2349,13 @@ textarea {
   font-size: 12.5px;
   color: var(--muted);
 }
+/* Язык и колокольчик стоят здесь вдвоём — строкой, а не стопкой. */
 .mtop__right {
   flex-shrink: 0;
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Затемнение под открытым drawer и кнопка закрытия внутри него —
@@ -6682,6 +6699,36 @@ textarea {
 .live-badge--inProgress, .live-badge--paused { background: #d3ecff; color: #0b74c4; }
 .live-badge--completed { background: #dcf3e2; color: #2c8a45; }
 .live-badge--cancelled { background: #eceef1; color: #6b7280; }
+/* Таймер преподавателя у ученика. В шапке, а не в колонке справа: на него
+   смотрят, не отрываясь от задания, и он не должен уезжать со скроллом
+   материала. Моноширинные цифры — чтобы строка не дёргалась на каждой секунде. */
+.live__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f0e9ff;
+  color: var(--purple);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.live__timer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: liveTimerPulse 1s infinite;
+}
+/* Время вышло — красным и без пульсации: отсчёт закончился, мигать больше нечему. */
+.live__timer--out { background: #fdeaf0; color: #c92a2d; }
+.live__timer--out .live__timer-dot { animation: none; }
+@keyframes liveTimerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
 .live__status-msg { color: #6b7280; margin: 8px 0; }
 /* Сбой загрузки разделов читается иначе, чем «преподаватель ещё ничего не
    открыл»: ждать во втором случае бессмысленно. */

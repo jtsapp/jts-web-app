@@ -29,6 +29,8 @@ import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
+import { useLessonTimer, formatTimer } from './live/useLessonTimer.js'
+import LessonDictionary from './live/LessonDictionary.jsx'
 import { knowsFocusTarget } from './live/followFocus.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -454,7 +456,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
+  // Таймер преподавателя идёт и у ученика: «две минуты на задание» работает,
+  // когда время видят обе стороны.
+  const { remaining: timerLeft, expired: timerExpired, onTimer } = useLessonTimer()
+
   const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio } = useLessonLiveSocket(lessonId, token, selfUserId, {
+    onTimer,
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
     onAudioBroadcast: (evt) => playBroadcastAudio(evt),
@@ -879,6 +886,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         meetingUrl={lesson?.meetingUrl}
         connected={connected}
         teacherOnline={isStaff ? null : (lesson?.teacherId != null ? onlineUserIds.has(lesson.teacherId) : null)}
+        timerLeft={timerLeft}
+        timerExpired={timerExpired}
         lessonKind={t((lesson?.participants?.length || 0) > 1 ? 'live.kindGroup' : 'live.kindSolo')}
         onVocab={onNav ? () => onNav('vocab') : undefined}
         onTopics={() => setSheet('topics')}
@@ -1192,6 +1201,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         sending={chatSending}
                         title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
                       />
+                      {/* Словарь школы, чтобы посмотреть слово из задания и не
+                          уходить из урока в раздел «Словарь». */}
+                      <LessonDictionary token={token} />
                     </div>
                   </div>
                 )}

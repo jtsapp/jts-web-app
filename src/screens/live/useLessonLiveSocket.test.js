@@ -30,7 +30,32 @@ describe('useLessonLiveSocket', () => {
       '/topic/lesson/7/sections-changed',
       '/topic/lesson/7/step-progress',
       '/topic/lesson/7/audio',
+      '/topic/lesson/7/timer',
     ]))
+  })
+
+  /* Таймер преподавателя идёт и у ученика: «две минуты на задание» работает,
+     когда время видят обе стороны. Своё эхо глушим, как у focus/present, —
+     у преподавателя таймер уже тикает локально с момента нажатия, и повторный
+     запуск сбросил бы ему секунды. */
+  it('таймер преподавателя доходит до ученика, своё эхо глушится', () => {
+    const onTimer = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onTimer }))
+
+    act(() => {
+      lastClient.subs['/topic/lesson/7/timer']({
+        body: JSON.stringify({ senderUserId: 5, action: 'start', durationSeconds: 120 }),
+      })
+    })
+    expect(onTimer).toHaveBeenCalledWith({ senderUserId: 5, action: 'start', durationSeconds: 120 })
+
+    onTimer.mockClear()
+    act(() => {
+      lastClient.subs['/topic/lesson/7/timer']({
+        body: JSON.stringify({ senderUserId: 1, action: 'stop' }),
+      })
+    })
+    expect(onTimer).not.toHaveBeenCalled()
   })
 
   // Работа ученика идёт не в общий топик урока: иначе в групповом занятии

@@ -80,7 +80,7 @@ export default function GrammarLesson({ level, units, unit, token, onExit, onOpe
           <b>Unit {unit.id}</b>
           <span>{uiStr(lang, 'crumb_grammar')}</span>
         </div>
-        <LangSelector compact />
+        <LangSelector flagOnly />
       </div>
 
       {/* Панель вкладок (выход из урока — «Назад» в крошках выше) */}

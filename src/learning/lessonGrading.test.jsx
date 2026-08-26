@@ -150,7 +150,11 @@ describe('CourseStepPlayer — язык прямо в полосе урока', 
     const { container } = playSteps(steps)
     const pill = container.querySelector('.cp-bar .lang-selector')
     expect(pill).not.toBeNull()
-    expect(pill.classList.contains('lang-selector--compact')).toBe(true)
+    // `--flag`, а не `--compact`: узких видов теперь два. `--compact` — шапка
+    // кабинета (флаг и код языка), `--flag` — полоса урока (только флаг и
+    // шеврон, подписи рядом с названием шага не помещаются).
+    expect(pill.classList.contains('lang-selector--flag')).toBe(true)
+    expect(pill.classList.contains('lang-selector--compact')).toBe(false)
     // Подпись языка скрыта, но кнопка остаётся названной для скринридера.
     expect(pill.textContent.trim()).toBe('')
     expect(pill.getAttribute('aria-label')).toBe('Русский')

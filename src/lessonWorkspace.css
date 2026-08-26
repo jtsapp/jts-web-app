@@ -3112,6 +3112,93 @@ button.lw-tap-pop__save.is-on:disabled {
   place-items: center;
 }
 
+/* ==========================================================================
+   Словарь школы в уроке (у ученика его не было — за словом он уходил из урока).
+
+   Свёрнут по умолчанию: в колонке уже стоят звонок, темы и чат, и четвёртая
+   раскрытая карточка вытолкнула бы чат за пределы экрана.
+   ========================================================================== */
+.lw-dict {
+  border: 1px solid #e9e6f2;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.lw-dict__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #15131a;
+  cursor: pointer;
+}
+
+.lw-dict__title { flex: 1; text-align: left; }
+
+.lw-dict__chev {
+  color: #898787;
+  font-size: 18px;
+  line-height: 1;
+  transition: transform .18s ease;
+}
+.lw-dict__chev--open { transform: rotate(90deg); }
+
+.lw-dict__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.lw-dict__search input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #e9e6f2;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13.5px;
+  color: #15131a;
+  outline: none;
+}
+.lw-dict__search input:focus { border-color: var(--purple); }
+
+.lw-dict__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Словарь длинный: прокрутка внутри карточки, а не всей колонки — иначе чат
+     под ним уезжает вниз на каждый поиск. */
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.lw-dict__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f3f1f8;
+  font-size: 13.5px;
+}
+.lw-dict__row:last-child { border-bottom: 0; }
+
+.lw-dict__word { font-weight: 700; color: #15131a; }
+.lw-dict__tr { color: #898787; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.lw-dict__state {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #898787;
+
 /* ================================================================== */
 /* ==========  ЖИВОЙ УРОК — ОБОЛОЧКА ПО МАКЕТУ «ОНЛАЙН-УРОКИ»  ====== */
 /* ================================================================== */
@@ -3440,6 +3527,74 @@ button.lw-tap-pop__save.is-on:disabled {
   height: 6px;
   border-radius: 50%;
   background: #fff;
+}
+
+/* --- таймер урока в шапке -------------------------------------------- */
+
+/* Время присылает преподаватель (useLessonTimer), поэтому в шапке оно стоит
+   на месте бейджа статуса: пока урок идёт, «сколько осталось» важнее слова
+   «Идёт», а когда таймера нет — бейдж возвращается. */
+.lv-top__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lv-panel-2);
+  color: var(--lv-ink);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lv-top__timer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lw-online);
+}
+
+.lv-top__timer.is-out {
+  background: var(--lw-error-bg);
+  color: #b3282b;
+}
+
+.lv-top__timer.is-out .lv-top__timer-dot {
+  background: var(--lw-error);
+}
+
+/* --- словарь школы на тёмном ----------------------------------------- */
+
+/* Панель словаря (LessonDictionary) приехала со светлого экрана и в тёмной
+   колонке светилась белым прямоугольником. Перекрашиваем только внутри `.lv`:
+   у преподавателя на светлом классруме она остаётся прежней. */
+.lv .lw-dict {
+  background: var(--lv-panel);
+}
+
+.lv .lw-dict__head,
+.lv .lw-dict__title,
+.lv .lw-dict__word {
+  color: var(--lv-ink);
+}
+
+.lv .lw-dict__tr,
+.lv .lw-dict__state {
+  color: var(--lv-muted);
+}
+
+.lv .lw-dict__search input {
+  background: var(--lv-panel-2);
+  border-color: transparent;
+  color: var(--lv-ink);
+}
+
+.lv .lw-dict__search input::placeholder {
+  color: var(--lv-muted);
+}
+
+.lv .lw-dict__row {
+  border-bottom-color: var(--lv-line);
 }
 
 /* --- правая колонка: чат на тёмном ----------------------------------- */

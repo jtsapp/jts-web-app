@@ -3,6 +3,7 @@ import Sidebar from './Sidebar.jsx'
 import MobileTopBar from './MobileTopBar.jsx'
 import Footer from './Footer.jsx'
 import { NotificationProvider, NotificationBell } from './NotificationBell.jsx'
+import LangSelector from './LangSelector.jsx'
 import { useI18n } from '../i18n.jsx'
 
 // Оболочка обучающей зоны: на десктопе сайдбар слева + контент + подвал;
@@ -32,7 +33,7 @@ export default function LearningLayout({
         menuLabel={t('nav.learning')}
         onMenu={() => setDrawer(true)}
         onProfile={onProfile}
-        right={<NotificationBell />}
+        right={<><LangSelector compact /><NotificationBell /></>}
       />
       <div className="learn__body">
         <Sidebar
@@ -47,7 +48,12 @@ export default function LearningLayout({
           onClose={() => setDrawer(false)}
         />
         <main className="learn__main">
-          <div className="learn__bell"><NotificationBell /></div>
+          {/* Язык рядом с колокольчиком: до этого переключатель был только на
+              входных экранах, и сменить язык из кабинета было нечем. */}
+          <div className="learn__bell">
+            <LangSelector compact />
+            <NotificationBell />
+          </div>
           {children}
         </main>
       </div>

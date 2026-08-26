@@ -414,7 +414,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
             <b>{t('practice.listening.title')}</b>
             <span>{t('practice.title')}</span>
           </div>
-          <LangSelector compact />
+          <LangSelector flagOnly />
           <button
             type="button"
             className="lt-dict"

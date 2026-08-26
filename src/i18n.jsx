@@ -1,10 +1,13 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { RuFlagIcon, GbFlagIcon, KzFlagIcon } from './components/icons.jsx'
 
+// `short` — для мест, где на подпись нет ширины (шапка кабинета рядом с
+// колокольчиком). `KZ`, а не `KK`: код языка казахский — `kk`, но на флаге и в
+// речи это Казахстан, и «KK» читается как опечатка.
 export const LANGS = [
-  { code: 'ru', label: 'Русский', Flag: RuFlagIcon },
-  { code: 'en', label: 'English', Flag: GbFlagIcon },
-  { code: 'kk', label: 'Қазақша', Flag: KzFlagIcon },
+  { code: 'ru', label: 'Русский', short: 'RU', Flag: RuFlagIcon },
+  { code: 'en', label: 'English', short: 'EN', Flag: GbFlagIcon },
+  { code: 'kk', label: 'Қазақша', short: 'KZ', Flag: KzFlagIcon },
 ]
 
 // Официальные строки взяты из mobile-app/lib/l10n/app_{ru,en,kk}.arb,
@@ -281,6 +284,11 @@ const dict = {
     'live.yourVocab': 'Ваш словарь',
     'live.meetLink': 'Ссылка на Google Meet',
     'live.topicsCount': '{n} из {total}',
+    'live.timerOut': 'Время вышло',
+    'lesson.ws.dictionary': 'Словарь',
+    'lesson.ws.dictionarySearch': 'Слово или перевод…',
+    'lesson.ws.dictionaryEmpty': 'Ничего не найдено',
+    'lesson.ws.dictionaryFailed': 'Не удалось загрузить словарь',
     'live.loadError': 'Не удалось загрузить урок',
     'live.noLesson': 'Урок не выбран — откройте его из расписания',
     'live.waiting': 'Преподаватель ещё не начал урок',
@@ -922,6 +930,11 @@ const dict = {
     'live.yourVocab': 'Your vocabulary',
     'live.meetLink': 'Google Meet link',
     'live.topicsCount': '{n} of {total}',
+    'live.timerOut': "Time's up",
+    'lesson.ws.dictionary': 'Dictionary',
+    'lesson.ws.dictionarySearch': 'Word or translation…',
+    'lesson.ws.dictionaryEmpty': 'Nothing found',
+    'lesson.ws.dictionaryFailed': 'Could not load the dictionary',
     'live.loadError': 'Could not load the lesson',
     'live.noLesson': 'No lesson selected — open one from the schedule',
     'live.waiting': 'The teacher has not started the lesson yet',
@@ -1561,6 +1574,11 @@ const dict = {
     'live.yourVocab': 'Сіздің сөздігіңіз',
     'live.meetLink': 'Google Meet сілтемесі',
     'live.topicsCount': '{total} ішінен {n}',
+    'live.timerOut': 'Уақыт бітті',
+    'lesson.ws.dictionary': 'Сөздік',
+    'lesson.ws.dictionarySearch': 'Сөз немесе аударма…',
+    'lesson.ws.dictionaryEmpty': 'Ештеңе табылмады',
+    'lesson.ws.dictionaryFailed': 'Сөздікті жүктеу мүмкін болмады',
     'live.loadError': 'Сабақты жүктеу мүмкін болмады',
     'live.noLesson': 'Сабақ таңдалмаған — оны кестеден ашыңыз',
     'live.waiting': 'Мұғалім сабақты әлі бастаған жоқ',
