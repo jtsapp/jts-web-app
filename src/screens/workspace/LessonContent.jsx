@@ -127,6 +127,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
   return (
     <div
       className="lw-content"
+      data-selectable=""
       onClick={(e) => {
         const raw = window.getSelection()?.toString() || ''
         if (isTapSelection(raw) || isOversizedPhrase(raw)) return
