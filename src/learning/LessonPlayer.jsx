@@ -99,6 +99,7 @@ export default function LessonPlayer({ lesson, level, token, catalogLessonId, on
   return (
     <div
       className="kl"
+      data-selectable=""
       onClick={() => {
         const raw = window.getSelection()?.toString() || ''
         if (isTapSelection(raw) || isOversizedPhrase(raw)) return

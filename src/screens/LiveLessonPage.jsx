@@ -28,7 +28,7 @@ import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
-import { visibleSteps } from './workspace/visibleSteps.js'
+import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
 import { knowsFocusTarget } from './live/followFocus.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -277,6 +277,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     () => visibleSteps(catalogLesson?.steps, hiddenStepIds),
     [catalogLesson?.steps, hiddenStepIds],
   )
+  // Скрытые поштучно карточки внутри шага. Отдельно от `lessonSteps`, потому что
+  // блок не вырезается, а пропускается на рендере: `blockIndex` — позиция в сыром
+  // `step.blocks`, и удаление сдвинуло бы её у всех следующих (см. hiddenBlockKeys).
+  const hiddenBlocks = useMemo(() => hiddenBlockKeys(hiddenStepIds), [hiddenStepIds])
   // Преподаватель может скрыть шаг, на котором ученик прямо сейчас стоит (или на
   // который сам же и указал «Вниманием на упражнение» минутой раньше). Тогда ученик
   // остался бы на пустом месте: в маршруте шага больше нет, показывать нечего.
@@ -1016,6 +1020,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               token={token}
                               source={catalogLesson?.title || lesson?.title}
                               catalogLessonId={resolvedCatalogLessonId}
+                              hiddenBlocks={hiddenBlocks}
                             />
                           </div>
                         </>

@@ -42,6 +42,29 @@ select,
   -ms-user-select: text;
   user-select: text;
 }
+/* Текст урока выделять можно — иначе не работает перевод фразы.
+   Запрет выше стоит ради копирования, и он остаётся в силе: `copy`, `cut`,
+   `contextmenu` и `dragstart` по-прежнему гасит NoCopyGuard. Выделить, чтобы
+   перевести до 100 символов, — можно; унести текст из урока — нет.
+   Помечается атрибутом `data-selectable` на корне текста (LessonContent,
+   CourseStepPlayer, LessonPlayer): так новая поверхность подключается одной
+   строкой, а не ещё одним селектором здесь. */
+[data-selectable],
+[data-selectable] * {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+/* Кнопки внутри урока — не текст: варианты ответа выбирают нажатием, и
+   протаскивание по ним должно выбирать ответ, а не подсвечивать подпись. */
+[data-selectable] button,
+[data-selectable] [role='button'] {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 img,
 video,
 canvas {
@@ -2953,43 +2976,6 @@ textarea {
   font-weight: 400;
   color: #fff;
 }
-/* Вход в домашнюю работу поверх карты. Шапка карты не ловит клики
-   (pointer-events: none у .lp-isle__head), поэтому кнопке они возвращаются. */
-.lp-hw {
-  position: absolute;
-  top: 32px;
-  right: 32px;
-  pointer-events: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
-  border: 0;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(2, 2, 2, 0.18);
-}
-.lp-hw:hover { background: #f4f1ff; }
-.lp-hw:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.lp-hw svg { color: var(--purple); }
-.lp-hw__count {
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: #f0e9ff;
-  color: var(--purple);
-  font-size: 13px;
-  font-weight: 700;
-}
-@media (max-width: 720px) {
-  /* На узком экране заголовок занимает всю ширину — кнопка уходит под него. */
-  .lp-hw { top: 148px; right: 16px; padding: 10px 14px; font-size: 14px; }
-}
-
 /* Кадр острова — как на проде: колонка 820 по центру контента, а не вылет под
    сайдбар. Отрицательный отступ ровно на высоту шапки: карта начинается от
    верха панели и уходит под затемнение, иначе над океаном серая полоса. */

@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import LessonContent, { groupBlocks, practiceBlockKey } from './LessonContent.jsx'
+import { hiddenBlockKey, hiddenBlockKeys } from './visibleSteps.js'
 
 // Регрессия на расхождение экранов ученика и преподавателя.
 //
@@ -149,6 +150,44 @@ describe('LessonContent — карточки шага', () => {
     fireEvent.click(checkButtons[1])
 
     expect(onCheck).toHaveBeenCalledWith(practiceBlockKey(undefined, 1), ['g2'])
+  })
+
+  // Преподаватель прячет карточки поштучно («Скрыть от ученика» в меню ⋮
+  // упражнения). Ключ строится из id шага и позиции блока — той же, что у якоря
+  // `block-N` указки, поэтому скрывается ровно та карточка, на которую смотрели.
+  it('скрытая карточка ученику не показывается', () => {
+    const GAP1 = { type: 'practice', title: 'P1', questions: [{ id: 'g1', type: 'gap', gapBefore: 'I like', gapAfter: '.', answers: ['coffee'] }] }
+    const GAP2 = { type: 'practice', title: 'P2', questions: [{ id: 'g2', type: 'gap', gapBefore: 'I see', gapAfter: '.', answers: ['you'] }] }
+
+    const { container } = renderContent([GAP1, GAP2], {
+      step: { id: 'ex1', blocks: [GAP1, GAP2] },
+      hiddenBlocks: hiddenBlockKeys([hiddenBlockKey('ex1', 0)]),
+    })
+
+    const cards = container.querySelectorAll('.lw-practice')
+    expect(cards).toHaveLength(1)
+    expect(container.textContent).not.toContain('P1')
+    expect(container.textContent).toContain('P2')
+  })
+
+  // Регрессия: карточка пропускается на рендере, а не вырезается из step.blocks.
+  // Вырезав её, мы сдвинули бы позиции следующих — и ключи «Проверить» у ученика
+  // разъехались бы с преподавательскими, молча открывая ответы не в той карточке.
+  it('скрытие не сдвигает ключи оставшихся карточек', () => {
+    const onCheck = vi.fn()
+    const GAP1 = { type: 'practice', title: 'P1', questions: [{ id: 'g1', type: 'gap', gapBefore: 'I like', gapAfter: '.', answers: ['coffee'] }] }
+    const GAP2 = { type: 'practice', title: 'P2', questions: [{ id: 'g2', type: 'gap', gapBefore: 'I see', gapAfter: '.', answers: ['you'] }] }
+
+    const { container } = renderContent([GAP1, GAP2], {
+      step: { id: 'ex1', blocks: [GAP1, GAP2] },
+      hiddenBlocks: hiddenBlockKeys([hiddenBlockKey('ex1', 0)]),
+      onCheck,
+      answers: { g2: 'you' },
+    })
+    fireEvent.click(container.querySelector('.lw-practice__check'))
+
+    // Единственная видимая карточка — по-прежнему вторая по счёту.
+    expect(onCheck).toHaveBeenCalledWith(practiceBlockKey('ex1', 1), ['g2'])
   })
 
   it('theory и banner не сливаются с info', () => {

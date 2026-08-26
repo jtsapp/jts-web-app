@@ -18,3 +18,41 @@ export function visibleSteps(steps, hiddenStepIds) {
   const hidden = new Set(hiddenList.map(String))
   return all.filter((step) => !hidden.has(String(step?.id)))
 }
+
+/**
+ * Ключ ОДНОГО упражнения шага в том же списке скрытого.
+ *
+ * Шаг урока каталога — не одно упражнение: в «Vocabulary» их идёт по дюжине
+ * подряд, и скрытие целым шагом снимало с урока сразу все. Ключ карточки едет в
+ * том же списке с приставкой `block@`, поэтому на сервере ничего не поменялось —
+ * он хранит строки как есть, а старые записи (голый id шага) означают ровно то
+ * же, что означали. Фильтр выше их и подхватывает: ключ карточки ни с одним
+ * id шага не совпадёт.
+ *
+ * Формат обязан совпадать с `hiddenBlockKey` в web-admin
+ * (`core/utils/hidden-block-key.util.ts`): разойдутся — ученик просто не увидит
+ * скрытия, молча.
+ */
+export function hiddenBlockKey(stepId, blockIndex) {
+  return `block@${stepId ?? ''}:${blockIndex}`
+}
+
+/** Одна ссылка на пустой случай — иначе новое множество на каждый рендер
+ *  обнуляло бы мемоизацию у вызывающего. */
+const EMPTY_HIDDEN_BLOCKS = new Set()
+
+/**
+ * Множество скрытых карточек — для `LessonContent`.
+ *
+ * Именно множество, а не отфильтрованный `step.blocks`: карточка адресуется
+ * позицией блока (`blockIndex`, тот же якорь `block-N`, что у «Внимания на
+ * упражнение»), и вырезав блок, мы сдвинули бы позиции всех следующих. Тогда
+ * ключи `checkedKeys` у ученика и у преподавателя разъехались бы, и «Проверить»
+ * на одной карточке открывал бы ответы на другой.
+ */
+export function hiddenBlockKeys(hiddenStepIds) {
+  const list = hiddenStepIds || []
+  if (!list.length) return EMPTY_HIDDEN_BLOCKS
+  const keys = list.map(String).filter((entry) => entry.startsWith('block@'))
+  return keys.length ? new Set(keys) : EMPTY_HIDDEN_BLOCKS
+}
