@@ -29,7 +29,7 @@ import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
-import { useLessonTimer, formatTimer } from './live/useLessonTimer.js'
+import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
 import { knowsFocusTarget } from './live/followFocus.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
@@ -67,6 +67,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // «Темы урока» и «Чат урока» на телефоне — два отдельных экрана поверх урока
   // (макет). null — закрыт, 'topics' | 'chat' — какой открыт.
   const [sheet, setSheet] = useState(null)
+
+  // Esc закрывает лист тем/чата — он объявлен модальным, и без этого с
+  // клавиатуры из него не выйти.
+  useEffect(() => {
+    if (!sheet) return undefined
+    const onKey = (e) => { if (e.key === 'Escape') setSheet(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [sheet])
 
   const role = roleFromToken(token)
   const selfUserId = userIdFromToken(token)
@@ -1221,7 +1230,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           целиком сюда не переносим — у неё свои ограничения по высоте, из-за
           которых лист открывался пустым экраном. */}
       {sheet && (
-        <div className="lv-modal" role="dialog" aria-modal="true">
+        <div
+          className="lv-modal"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) setSheet(null) }}
+        >
           <button
             type="button"
             className="lv-modal__close"
@@ -1242,6 +1256,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 setSheet(null)
               }}
               hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
+              teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
             />
           ) : (
             <TeacherChat

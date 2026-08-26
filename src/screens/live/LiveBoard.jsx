@@ -231,6 +231,10 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     canvas.on('selection:cleared', sync)
     sync()
     return () => {
+      // Холст мог быть уже освобождён: cleanup эффекта, который его создаёт,
+      // объявлен выше и выполняется раньше — снимать обработчики с
+      // disposed-канваса незачем.
+      if (canvasRef.current !== canvas) return
       canvas.off('selection:created', sync)
       canvas.off('selection:updated', sync)
       canvas.off('selection:cleared', sync)
