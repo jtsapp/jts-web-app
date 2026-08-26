@@ -52,6 +52,21 @@ describe('LessonTopics — единый список тем живого уро�
     expect(onSelect).toHaveBeenCalledWith(5)
   })
 
+  // Где преподаватель — это показывал бегунок «Т» на треке маршрута. Маршрут
+  // убран, метка переехала в список: без неё ученик не видит, что учитель ушёл
+  // смотреть другую тему.
+  it('метка «Т» стоит у темы, которую открыл преподаватель', () => {
+    const { container } = renderTopics({ teacherStepId: 5 })
+    const marks = container.querySelectorAll('.lv-topics__teacher')
+    expect(marks).toHaveLength(1)
+    expect(marks[0].closest('.lv-topics__item').textContent).toContain('Свободная практика')
+  })
+
+  it('позиция преподавателя неизвестна — метки нет вовсе', () => {
+    const { container } = renderTopics()
+    expect(container.querySelectorAll('.lv-topics__teacher')).toHaveLength(0)
+  })
+
   it('галочка рисуется только у пройденных тем', () => {
     const { container } = renderTopics()
     expect(container.querySelectorAll('.lv-topics__marker svg')).toHaveLength(2)

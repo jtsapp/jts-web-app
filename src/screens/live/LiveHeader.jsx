@@ -15,6 +15,7 @@ export default function LiveHeader({
   lessonKind,
   meetingUrl,
   connected,
+  teacherOnline,
   onVocab,
   onTopics,
   onChat,
@@ -35,10 +36,24 @@ export default function LiveHeader({
       <div className="lv-top__left">
         <LiveStatusBadge status={status} />
         <span className="lv-top__teacher">
-          <span className="lv-top__avatar" aria-hidden="true">{initial}</span>
+          {/* На связи преподаватель или нет — точкой на аватаре. Это показывал
+              ростер «В классе» под шапкой; в макете его нет, а знать ученику
+              надо: пустой класс и молчащий преподаватель выглядят одинаково. */}
+          <span className="lv-top__avatar" aria-hidden="true">
+            {initial}
+            {teacherOnline != null && <span className={`lv-top__dot${teacherOnline ? ' is-on' : ''}`} />}
+          </span>
           <span className="lv-top__teacher-body">
             <span className="lv-top__teacher-name">{teacherName || t('lesson.ws.teacher')}</span>
-            <span className="lv-top__teacher-role">{lessonKind || t('live.yourTeacher')}</span>
+            <span className="lv-top__teacher-role">
+              {lessonKind || t('live.yourTeacher')}
+              {teacherOnline != null && (
+                <span className="lv-top__presence">
+                  {' · '}
+                  {t(teacherOnline ? 'live.teacherOnline' : 'live.teacherOffline')}
+                </span>
+              )}
+            </span>
           </span>
         </span>
         {/* Связь показываем только когда её нет: зелёная надпись «На связи» в

@@ -3174,7 +3174,29 @@ button.lw-tap-pop__save.is-on:disabled {
   min-width: 0;
 }
 
+/* Точка присутствия на аватаре преподавателя: серая — не в классе, зелёная —
+   на связи. Раньше это же сообщал ростер «В классе» строкой под шапкой. */
+.lv-top__dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lv-muted);
+  box-shadow: 0 0 0 2px var(--lv-panel);
+}
+
+.lv-top__dot.is-on {
+  background: var(--lw-online);
+}
+
+.lv-top__presence {
+  font-weight: 600;
+}
+
 .lv-top__avatar {
+  position: relative;
   display: grid;
   place-items: center;
   width: 34px;
@@ -3642,6 +3664,22 @@ button.lw-tap-pop__save.is-on:disabled {
 
 /* --- скрытая тема в списке (виден только преподавателю) --------------- */
 
+/* «Т» у темы — здесь сейчас преподаватель (бывший бегунок на треке маршрута). */
+.lv-topics__teacher {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 8px;
+  padding: 0 5px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+
 .lv-topics__hidden {
   display: block;
   margin-top: 4px;
@@ -3808,6 +3846,69 @@ button.lw-tap-pop__save.is-on:disabled {
   .lv-top__act {
     color: #9047ff;
   }
+  /* Листы «Темы урока» и «Чат урока» — самостоятельные экраны поверх урока,
+     как в макете: тёмный фон, крестик в правом верхнем углу, внутри тот же
+     список тем или чат, но во всю высоту. */
+  .lv-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px var(--safe-bottom);
+    background: var(--lv-bg, #0f0f12);
+  }
+  .lv-modal > .lw-card {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  /* Список тем и лента чата прокручиваются внутри листа, а не тянут его вниз. */
+  .lv-modal .lv-topics__list,
+  .lv-modal .lw-chat__list {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+  /* Чат в листе: лента тянется, поле ввода прижато к низу — как в макете.
+     Без этого композер уезжал за пределы карточки и написать было нечем. */
+  .lv-modal .lw-chat {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .lv-modal .lw-chat__composer {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+  .lv-modal .lw-chat__input {
+    background: var(--lv-elev, #1b1b1f);
+    border-color: #2a2a31;
+    color: #fff;
+  }
+
+  .lv-modal__close {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    right: 16px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: var(--lv-elev, #1b1b1f);
+    color: #fff;
+    cursor: pointer;
+  }
+
   .lv-top__sep {
     flex: none;
     width: 1px;

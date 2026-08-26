@@ -9,10 +9,12 @@ import { useI18n } from '../../i18n.jsx'
 // кружок). Переходить по темам всё так же можно кликом — этим список и
 // заменяет маршрут.
 //
-// Бегунков «У»/«Т» здесь нет: в макете их нет, и по решению владельца экран
-// собирается по макету. Преподаватель узнаёт, где ученик, из баннера над
+// Бегунка «У» здесь нет: ученик и так стоит на подсвеченной теме. А вот где
+// преподаватель — метка осталась: раньше это показывал бегунок «Т» на треке
+// маршрута, и без неё ученик не видит, что учитель ушёл смотреть другую тему.
+// Преподаватель, в свою очередь, узнаёт позицию ученика из баннера над
 // заданием («{имя} сейчас на шаге …») — см. LiveLessonPage.
-export default function LessonTopics({ steps, activeStepId, statusById, onSelect, hiddenIds }) {
+export default function LessonTopics({ steps, activeStepId, statusById, onSelect, hiddenIds, teacherStepId }) {
   const { t } = useI18n()
   // Скрытые темы видит только преподаватель — у ученика их вовсе нет в списке
   // (`visibleSteps` отфильтровал их выше по течению). Бейдж макета «Скрыто от
@@ -55,6 +57,11 @@ export default function LessonTopics({ steps, activeStepId, statusById, onSelect
                 </span>
                 <span className="lv-topics__text">
                   {step.title}
+                  {teacherStepId != null && String(step.id) === String(teacherStepId) && (
+                    <span className="lv-topics__teacher" title={t('lesson.ws.riderTeacher')}>
+                      {t('lesson.ws.riderTeacherShort')}
+                    </span>
+                  )}
                   {hidden.has(String(step.id)) && (
                     <span className="lv-topics__hidden">{t('live.hiddenFromStudent')}</span>
                   )}

@@ -62,15 +62,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Выход из живого урока спрашивает подтверждение — тем же диалогом, что и
   // остальные уроки. Раньше «Назад» уводила молча, посреди занятия.
   const [confirmExit, setConfirmExit] = useState(false)
+  // «Темы урока» и «Чат урока» на телефоне — два отдельных экрана поверх урока
+  // (макет). null — закрыт, 'topics' | 'chat' — какой открыт.
+  const [sheet, setSheet] = useState(null)
 
-  // Кнопки «темы» и «чат» в шапке прокручивают к нужному блоку: на телефоне
-  // колонка с ними лежит под уроком, и до чата приходилось мотать вручную мимо
-  // всего задания. Листом поверх урока это сделать не вышло — колонка держит
-  // свои ограничения по высоте, и лист открывался пустым.
-  const scrollAsideTo = (selector) => {
-    const el = document.querySelector(`.lv ${selector}`) || document.querySelector('.lv .lw-live-aside')
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
   const role = roleFromToken(token)
   const selfUserId = userIdFromToken(token)
   const isStaff = canControl(role)
@@ -883,10 +878,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         teacherName={lesson?.teacherName}
         meetingUrl={lesson?.meetingUrl}
         connected={connected}
+        teacherOnline={isStaff ? null : (lesson?.teacherId != null ? onlineUserIds.has(lesson.teacherId) : null)}
         lessonKind={t((lesson?.participants?.length || 0) > 1 ? 'live.kindGroup' : 'live.kindSolo')}
         onVocab={onNav ? () => onNav('vocab') : undefined}
-        onTopics={() => scrollAsideTo('.lv-topics')}
-        onChat={() => scrollAsideTo('.lw-chat')}
+        onTopics={() => setSheet('topics')}
+        onChat={() => setSheet('chat')}
         onExit={() => setConfirmExit(true)}
       />
       <div className="live live--wide">
@@ -1119,6 +1115,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           statusById={onLessonSteps ? stepStatusById : sectionStatusById}
                           onSelect={selectRouteStep}
                           hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
+                          // Где преподаватель — это показывал бегунок «Т» на
+                          // треке маршрута; маршрута больше нет, метка живёт в
+                          // списке тем.
+                          teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
                         />
                       )}
                       {/* Урок кончился — звонка на его месте быть не должно:
@@ -1195,6 +1195,43 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           </>
         )}
       </div>
+
+      {/* Лист поверх урока: свой экземпляр того же списка тем или чата. Колонку
+          целиком сюда не переносим — у неё свои ограничения по высоте, из-за
+          которых лист открывался пустым экраном. */}
+      {sheet && (
+        <div className="lv-modal" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            className="lv-modal__close"
+            onClick={() => setSheet(null)}
+            aria-label={t('common.close')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+          {sheet === 'topics' ? (
+            <LessonTopics
+              steps={routeSteps}
+              activeStepId={routeActiveId}
+              statusById={onLessonSteps ? stepStatusById : sectionStatusById}
+              onSelect={(id) => {
+                selectRouteStep(id)
+                setSheet(null)
+              }}
+              hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
+            />
+          ) : (
+            <TeacherChat
+              messages={chatMessages}
+              onSend={handleSendMessage}
+              sending={chatSending}
+              title={t('live.chatSheetTitle')}
+            />
+          )}
+        </div>
+      )}
 
       {confirmExit && <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={onBack} />}
     </div>
