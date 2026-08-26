@@ -36,8 +36,8 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
   const googleRef = useRef(null)
   const timers = useRef([])
 
-  // Официальную кнопку Google рисует GIS — только когда дошли до вариантов
-  // входа. Перерисовываем при смене языка интерфейса.
+  // Официальную кнопку рисует сам Google (GIS) — только когда диалог дошёл до
+  // вариантов входа. Перерисовываем при смене языка интерфейса.
   useEffect(() => {
     if (!showAuth || !isGoogleAuthEnabled()) return
     let cancelled = false
@@ -151,7 +151,8 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                   )}
                 </div>
 
-                {/* Варианты входа появляются после диалога */}
+                {/* Вход после диалога: номер телефона и Google. Apple ID с
+                    сайта убран по решению владельца. */}
                 {showAuth && (
                   <div className="auth">
                     <button
@@ -162,9 +163,12 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       <PhoneChatIcon size={18} />
                       <span>{t('auth.phone')}</span>
                     </button>
+
+                    {/* Вторая строка блока входа — в кадре там пара «Apple |
+                        Google»; Apple с сайта убран, поэтому Google занимает
+                        строку целиком. Кнопку рисует GIS; пока не отрисована
+                        или client ID не задан — неактивный фолбэк. */}
                     <div className="auth-row">
-                      {/* Кнопку рисует Google (GIS); пока не отрисована или
-                          client ID не настроен — неактивный фолбэк */}
                       <div
                         className="google-slot"
                         ref={googleRef}
@@ -172,7 +176,7 @@ export default function RegistrationPage({ onBack, onPhoneLogin, onGoogleToken, 
                       />
                       {!googleReady && (
                         <button className="auth-btn auth-btn--google" type="button" disabled>
-                          <GoogleIcon size={17} />
+                          <GoogleIcon size={20} />
                           <span>{t('auth.google')}</span>
                         </button>
                       )}

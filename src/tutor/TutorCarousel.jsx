@@ -9,7 +9,7 @@ import { useLang } from '../i18n/LanguageContext.jsx'
 // Центральный аватар 200px, соседи 111px выглядывают за края. Свайп плавно
 // слайдит с масштабом (coverflow); бесконечный цикл — три копии списка, индекс
 // после перехода тихо возвращается в среднюю копию (без анимации).
-const SLOT = 170 // расстояние центр-к-центру соседних аватаров (Figma)
+const SLOT = 186 // расстояние центр-к-центру соседних аватаров (кадр 4338:1568)
 
 // tempers/onToggleTemper приходят пропами и своего состояния тут нет намеренно:
 // карусель и десктопная сетка — два вида одного выбора (см. TutorChoosePage).
@@ -75,7 +75,7 @@ export default function TutorCarousel({ onChoose, onListen, tempers = {}, onTogg
               key={i}
               className={`t-car__slot${center ? ' t-car__slot--center' : ''}`}
               style={{
-                transform: `translateX(calc(-50% + ${off * SLOT + dx * 0.5}px)) scale(${center ? 1 : 0.555})`,
+                transform: `translateX(calc(-50% + ${off * SLOT + dx * 0.5}px)) scale(${center ? 1 : 0.62})`,
                 transition: anim ? 'transform 0.34s cubic-bezier(0.3, 0.8, 0.3, 1)' : 'none',
                 opacity: visible ? 1 : 0,
                 zIndex: center ? 2 : 1,

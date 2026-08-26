@@ -9,6 +9,17 @@
   --page-bg: #0c0a14;
   --footer-bg: #14101f;
   --card-radius: 22px;
+
+  /* Нижняя кромка экрана в мобильном браузере странице не принадлежит: снизу
+     полоса жестов (env(safe-area-inset-bottom)), а над ней свёрнутая панель
+     Safari — она лежит ПОВЕРХ страницы и закрывает ещё около 50px. Элемент,
+     доведённый до конца документа, оказывается под ней. Проверено на
+     симуляторе iPhone 17 Pro Max: докрутив словарный шаг урока до низа,
+     «Продолжить» видно наполовину — по кнопке идёт пилюля с адресом, и
+     нажимается только её край. Поэтому всё, что упирается в конец экрана
+     (кнопка шага, последняя строка выезжающего меню), отбивается на эту
+     величину. */
+  --safe-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
 }
 
 * {
@@ -206,6 +217,16 @@ textarea {
   padding: 8px 12px;
   font-size: 13px;
   letter-spacing: .02em;
+}
+
+/* Пилюля языка в полосе урока: размеры и радиус из макета «Обучение»
+   (58×33, r40, белая заливка). Тени там нет — полоса и так белая. */
+.lang-selector--flag {
+  gap: 4px;
+  height: 33px;
+  padding: 0 10px;
+  border-radius: 40px;
+  box-shadow: none;
 }
 .lang-selector .chev {
   display: inline-flex;
@@ -646,6 +667,10 @@ textarea {
   filter: brightness(1.04);
 }
 
+/* Вход через Google. Apple ID с сайта убран, поэтому кнопка Google занимает
+   всю ширину второй строки блока входа — то место, где в кадре 4095:39775
+   стояла пара «Apple | Google». Размеры оттуда же: 64 высотой, r60, светлая
+   заливка #f8f8f8 с тёмной подписью 14/700. */
 .auth-row {
   display: grid;
   grid-template-columns: 1fr;
@@ -654,39 +679,33 @@ textarea {
 .auth-row--center {
   margin-top: 12px;
 }
-.auth-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .auth-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
+  height: 64px;
   border: none;
-  border-radius: 14px;
+  border-radius: 60px;
   padding: 14px 12px;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
-}
-.auth-btn:hover {
-  transform: translateY(-1px);
+  transition: filter 0.15s ease, background 0.15s ease;
 }
 .auth-btn--google {
-  background: #f1f1f4;
-  color: #1f1f1f;
+  background: #f8f8f8;
+  color: #2f2f2f;
 }
 .auth-btn--google:hover {
-  background: #e8e8ee;
+  background: #efefef;
 }
+/* Провайдер не настроен (нет client ID) — кнопка видна, но явно не активна,
+   чтобы не выглядела рабочей. */
 .auth-btn:disabled {
   opacity: 0.5;
   cursor: default;
-  transform: none;
 }
 
 /* Слот, в который GIS рисует официальную кнопку Google */
@@ -700,7 +719,7 @@ textarea {
   margin-top: 4px;
 }
 
-/* Разделитель «или» между формой телефона и Google-входом */
+/* Разделитель «или» между формой телефона и входом через Google */
 .auth-divider {
   display: flex;
   align-items: center;
@@ -2854,6 +2873,9 @@ textarea {
     border-right: 1px solid #efeef4;
     box-shadow: 8px 0 40px rgba(24, 16, 40, 0.18);
     padding-top: 64px; /* место под кнопку-крестик */
+    /* Панель во всю высоту 100dvh, поэтому её низ — строка со стриком и
+       монетами — уезжал под панель браузера. */
+    padding-bottom: var(--safe-bottom);
   }
   .sb.is-open {
     transform: translateX(0);
@@ -4395,118 +4417,127 @@ textarea {
   position: absolute;
   inset: 0;
   z-index: 7;
-  background: rgba(0, 0, 0, 0.57);
+  background: rgba(23, 19, 38, 0.45);
   display: flex;
-  padding: 64px 24px 24px;
+  padding: 24px;
   overflow: auto;
 }
+/* Карточка макета «Выход из урока»: шапка с заголовком и крестиком, под ней
+   ряд кнопок. Крестик переехал внутрь карточки, поэтому верхнего поля под него
+   больше не нужно — оверлей вернулся к равным полям. */
 .lx-card {
   margin: auto;
   position: relative;
   background: #fff;
-  border-radius: 60px;
-  padding: 43px 70px;
-  width: 405px;
+  border-radius: 24px;
+  width: 560px;
   max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 14px;
   box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
 }
-/* По центру над карточкой, как в макете: справа он читался как «закрыть
-   что-то в правом верхнем углу», а не «закрыть эту модалку». */
+.lx-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px 20px;
+  /* Разделитель из макета — единственная линия в карточке: он отделяет вопрос
+     от действий, а не обводит блок. */
+  border-bottom: 1px solid #f0eff4;
+}
+.lx-texts {
+  min-width: 0;
+}
 .lx-close {
-  position: absolute;
-  top: -44px;
-  left: 50%;
-  transform: translateX(-50%);
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: none;
-  background: none;
-  color: #fff;
+  border-radius: 12px;
+  background: #f5f2fb;
+  color: #504b5a;
   line-height: 1;
   cursor: pointer;
   font-family: inherit;
+  flex: none;
+  transition: background 0.15s ease;
 }
-/* Арт в макете — круглый портрет, а не картинка во всю карточку. Серый круг под
-   ним — из макета: у портрета прозрачные поля, и подложка держит форму. Пока
-   портрет едет, её перекрывает шиммер (.aimg), иначе плоский серый кружок
-   читается как «картинка не пришла» — ровно это клиент и видел на 4G. */
-.lx-art {
-  width: 112px;
-  height: 112px;
-  margin-bottom: 2px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #d9d9d9;
+.lx-close:hover {
+  background: #ece7f7;
 }
 .lx-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #000;
-  line-height: 1.2;
+  font-size: 22px;
+  font-weight: 800;
+  color: #171326;
+  line-height: 1.25;
 }
 .lx-sub {
-  color: #181818;
-  font-size: 14px;
+  margin: 6px 0 0;
+  color: #6b6976;
+  font-size: 15px;
   font-weight: 400;
-  margin-top: -8px;
 }
 .lx-acts {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 264px;
-  max-width: 100%;
-  margin-top: 41px; /* с gap карточки — те самые 55 из макета */
+  gap: 12px;
+  padding: 20px 28px 24px;
 }
+/* Имена классов — по действию, а не по виду: `lx-leave` уводит из урока и
+   в макете стоит первым и залитым, `lx-continue` оставляет в уроке. */
 .lx-continue,
 .lx-leave {
-  width: 100%;
-  height: 48px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 56px;
   padding: 0 20px;
   border: none;
-  border-radius: 80px;
+  border-radius: 14px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
-.lx-continue {
+.lx-leave {
   background: var(--purple);
   color: #fff;
 }
-.lx-leave {
-  background: #b7f0ff;
-  color: var(--purple);
-  transition: filter 0.15s ease;
-}
 .lx-leave:hover {
-  filter: brightness(0.97);
+  background: #7a2fe6;
+}
+.lx-continue {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e6e4ee;
+  color: #171326;
+}
+.lx-continue:hover {
+  background: #f7f6fb;
+}
+.lx-close:focus-visible,
+.lx-continue:focus-visible,
+.lx-leave:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
 }
 
-/* Телефон: боковые поля 70px из макета съедали 140px из 327 доступных, кнопка
-   сжималась до 187px и подпись «Продолжить обучение» в неё не влезала.
+
+/* Телефон: диалог узкий, и боковые поля в 28px съедают заметную долю ширины.
    Блок стоит после базовых правил .lx-* намеренно: медиазапрос специфичности не
    добавляет, и раньше по файлу он бы проиграл. */
 @media (max-width: 760px) {
-  .lx-card {
-    padding: 32px 20px;
-    border-radius: 40px;
+  .lx-head {
+    padding: 20px 18px 16px;
   }
+  .lx-title {
+    font-size: 19px;
+  }
+  /* На узком экране две кнопки по 56px в ряд оставляют по 140px на подпись —
+     «Выйти из урока» переносится в две строки. Колонкой они читаются. */
   .lx-acts {
-    margin-top: 24px;
-    /* В мобильном макете кнопки идут во всю ширину карточки, а не колонкой
-       в 264 по центру (Figma «Веб-версия мобилка» → Выход из обучения). */
-    width: 100%;
-    gap: 12px;
+    flex-direction: column;
+    padding: 16px 18px 20px;
   }
 }
 
@@ -4855,12 +4886,10 @@ textarea {
 
 /* Секции настроек */
 .pf-label {
-  margin: 26px 4px 8px;
-  font-size: 11px;
+  margin: 26px 4px 12px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: #a6a5b2;
+  color: #181818;
 }
 .pf-card {
   background: #fff;
@@ -4899,9 +4928,9 @@ textarea {
 }
 .pf-row__title {
   flex: 1;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
-  color: var(--ink);
+  color: #181818;
 }
 .pf-row__trailing {
   font-size: 13px;
@@ -6394,6 +6423,9 @@ textarea {
   .km-lesson { height: calc(100dvh - 64px); }
   .kl-task__title { font-size: 20px; }
   .kl-sentence { font-size: 18px; line-height: 1.9; }
+  /* Подвал старого плеера (B2/C1) прижат к низу экрана — тот же случай, что и
+     .cp-foot: одной safe-area мало, панель браузера лежит выше неё. */
+  .kl-task__foot { padding-bottom: var(--safe-bottom); }
 }
 
 /* --- Lesson schedule (Уроки → Онлайн) --- */
@@ -7206,7 +7238,9 @@ textarea {
     height: 48px;
     border-radius: 10px;
     background: #b7f0ff;
-    color: #fff;
+    /* В кадрах полоски бургера фиолетовые на голубой плашке (4095:40620),
+       белым они на ней почти не читались. */
+    color: #9047ff;
   }
   .mtop__menu:hover {
     background: #a4e9fb;
@@ -7441,3 +7475,356 @@ textarea {
 /* Шапка отправки: название урока и дата выдачи слева, счётчик справа. */
 .hw-batch__title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .hw-batch__date { font-size: 13px; color: var(--muted); }
+
+/* iOS Safari масштабирует страницу, когда фокус попадает в поле с текстом
+   мельче 16px: экран прыгает, вёрстка уезжает вбок и часть кнопок оказывается
+   за краем — на регистрации так уезжала кнопка «Отправить» рядом с полем
+   имени. Возвращать масштаб пользователю приходится жестом, поэтому на
+   телефоне поднимаем такие поля до 16. Селекторы перечислены поимённо: те, что
+   и так 16 и больше (например .cp-field в уроке), трогать незачем. */
+@media (max-width: 760px) {
+  .chat__input input,
+  .pp-search input,
+  .pf-input,
+  .hw-field__input {
+    font-size: 16px;
+  }
+}
+
+/* Регистрация на телефоне: в макете (кадр 4095:39775) кнопка входа стоит внизу
+   экрана, а не сразу под последней репликой Декстера — диалог короткий, и
+   иначе кнопка висит посреди пустого экрана. Растягиваем карточку чата на всю
+   доступную высоту и прижимаем блок входа к её низу. */
+@media (max-width: 760px) {
+  /* Низ карточки не должен упираться в панель браузера: под ней лежит и поле
+     ввода имени, и кнопка входа. */
+  .reg-body {
+    padding-bottom: var(--safe-bottom);
+  }
+  .reg-inner {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .chat {
+    flex: 1;
+  }
+  /* Блок входа лежит внутри прокручиваемой области чата, поэтому прижать его
+     к низу можно только сделав саму область колонкой. */
+  .chat__scroll {
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .auth {
+    margin-top: auto;
+    padding-inline: 0;
+  }
+}
+
+/* Всплывающая подсказка профиля («Сохранено», «Ссылка скопирована») висела в
+   34px от низа — на телефоне это ровно та полоса, где Safari держит свою
+   панель, и подсказку было не прочитать. */
+@media (max-width: 760px) {
+  .pf-toast {
+    bottom: var(--safe-bottom);
+  }
+}
+
+/* ═══════════ Практика и её разделы по макету (JTS Адаптивка → Практика,
+   кадры 440×956) ═══════════ */
+@media (max-width: 760px) {
+  /* Внутри раздела шапка в макете ОДНА: полоса оболочки (бургер + профиль,
+     Navbar 80) заменяется на собственную полосу раздела (Navbar 69 с круглым
+     крестиком, крошкой, языком и словарём). У нас показывались обе сразу —
+     первый экран каждого раздела начинался с двух шапок подряд.
+     Кадры: 4273:9630 (аудирование), 4273:9107 (урок грамматики). */
+  .learn:has(.lt) .mtop,
+  .learn:has(.gr-lesson) .mtop {
+    display: none;
+  }
+
+  /* Липкая полоса с кнопкой (.lt-dock / .gr-act__foot) не работала: у
+     .learn__main стоит overflow:auto, и он становится «скроллером» для своих
+     потомков — а сам при этом не прокручивается (высота по контенту, катится
+     страница). Sticky внутри такого блока не за что цеплять. Тем же приёмом,
+     что и у карты королевств выше, отдаём прокрутку странице. */
+  .learn__main:has(.lt),
+  .learn__main:has(.gr-lesson) {
+    overflow: visible;
+  }
+
+  /* Заголовка «Практика» над чипами в кадре 4254:2188 нет — сразу строка
+     фильтров под шапкой. */
+  .pp__title {
+    display: none;
+  }
+
+  /* Заголовок секции — 24/700 тёмным (в кадре «Аудирование», «Грамматика»). */
+  .pp-sec__head h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #181818;
+  }
+
+  /* Чипы-фильтры (кадр 4254:2188): 38 высотой, r30; неактивный — голубой
+     #b7f0ff с фиолетовой подписью 16/700, активный — фиолетовый с белой. */
+  .pp-chip {
+    height: 38px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 30px;
+    background: #b7f0ff;
+    font-size: 16px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+  .pp-chip--on {
+    background: #9047ff;
+    color: #fff;
+  }
+
+  /* «Посмотреть все» — прозрачная пилюля 32 с сиреневой обводкой и фиолетовой
+     подписью 14/700, а не серая на белом. */
+  .pp-all {
+    height: 32px;
+    padding: 6px 6px 6px 16px;
+    border: 1px solid #d6bcff;
+    border-radius: 30px;
+    background: none;
+    font-size: 14px;
+    color: #9047ff;
+  }
+}
+
+/* ═══════════ Книжки, аудиокниги и рилсы по макету (JTS Адаптивка →
+   Практика → Книжки / Мемы и рилсы, кадры 440×956) ═══════════
+
+   Раздел жил десктопной вёрсткой: обзор книги в две колонки, список глав
+   сбоку, карточки без подложек. Числа сняты из узлов Figma. */
+@media (max-width: 760px) {
+  /* Все три режима книги (обзор, чтение, аудио) — на сером фоне раздела. */
+  .bk {
+    background: #f8f8f8;
+    min-height: 100%;
+  }
+
+  /* Обзор: колонка «обложка → текст → кнопки», обложка во всю ширину. */
+  .bk-ov {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .bk-ov__left {
+    display: contents;
+  }
+  .bk-ov__cover {
+    order: 1;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 408 / 600;
+    border-radius: 20px;
+    box-shadow: none;
+  }
+  .bk-ov__body {
+    order: 2;
+  }
+  .bk-ov__actions {
+    order: 3;
+    flex-direction: row;
+    margin: 0;
+  }
+  .bk-ov__actions .bk-btn {
+    flex: 1;
+  }
+
+  /* Прогресс чтения — белая карточка r20, а не голая полоса. */
+  .bk-ov__progress {
+    background: #fff;
+    border-radius: 20px;
+    padding: 16px;
+  }
+  .bk-ov__progress-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .bk-ov__progress-top b {
+    color: #9047ff;
+  }
+
+  /* Главы — отдельные белые карточки r20 с зазором 5 (как строки True/False
+     в «Обучении»), а не список с разделителями. */
+  .bk-chapters {
+    gap: 5px;
+  }
+  .bk-chapter {
+    border: none;
+    border-radius: 20px;
+    background: #fff;
+    padding: 16px 12px;
+    gap: 8px;
+  }
+  .bk-chapter__title {
+    font-weight: 700;
+    line-height: 20px;
+  }
+  .bk-chapter__dur {
+    font-size: 14px;
+    font-weight: 500;
+    color: #afafaf;
+  }
+
+  /* Чтение: список глав в кадре стоит НАД текстом, а не колонкой сбоку. */
+  .bk-read {
+    display: flex;
+    flex-direction: column;
+  }
+  .bk-read:has(> .bk-read__text) .bk-read__side {
+    order: -1;
+    position: static;
+  }
+  .bk-read__title {
+    margin: 0 0 24px;
+    font-size: 36px;
+    line-height: 40px;
+    font-weight: 700;
+    color: #181818;
+  }
+  .bk-read__next {
+    display: block;
+    width: 100%;
+    font-size: 16px;
+  }
+
+  /* Аудиокнига: обложка 280 по центру, текст слева. */
+  .bk-audio {
+    max-width: none;
+    align-items: stretch;
+    text-align: left;
+  }
+  .bk-audio__cover {
+    width: 280px;
+    height: auto;
+    aspect-ratio: 280 / 412;
+    align-self: center;
+    border-radius: 20px;
+    box-shadow: none;
+  }
+  .bk-audio__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+
+  /* Кнопки книги — пилюли r80; «призрачная» в кадре сиреневая. */
+  .bk-btn {
+    border-radius: 80px;
+    padding: 15px 20px;
+  }
+  .bk-btn--ghost {
+    background: #eadcff;
+  }
+
+  /* Всплывашка перевода слова: подпись серым сверху, перевод тёмным. */
+  .bk-pop {
+    padding: 19px 15px;
+  }
+  .bk-pop__word {
+    font-size: 14px;
+    font-weight: 700;
+    color: #afafaf;
+  }
+  .bk-pop__tr {
+    font-size: 16px;
+    font-weight: 700;
+    color: #181818;
+  }
+
+  /* Карточка книжки в сетке: пропорция и радиус из кадра. */
+  .pp-rail--grid .pp-bcard__cover {
+    height: auto;
+    aspect-ratio: 198 / 292;
+    border-radius: 10px;
+  }
+  .pp-rail--grid .pp-bcard__title {
+    margin-top: 8px;
+    font-size: 16px;
+    line-height: 22px;
+  }
+  .pp-bcard__meta {
+    margin-top: 4px;
+  }
+
+  /* Поиск по книжкам — тот же прямоугольник r20, что и в грамматике. */
+  .pp-search {
+    border-radius: 20px;
+    border-color: #eee;
+    padding: 14px;
+  }
+  .pp-search > svg {
+    color: #9047ff;
+  }
+  .pp-search input::placeholder {
+    color: #afafaf;
+    font-weight: 500;
+  }
+
+  /* Карточка мема: пропорция 198×320 и радиус 10, значок просмотров 14/700. */
+  .pp-thumb--portrait {
+    aspect-ratio: 99 / 160;
+    border-radius: 10px;
+  }
+  .pp-mcard__views {
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  /* В режиме фильтра над сеткой в кадре только чипы — «Посмотреть все»
+     дублирует уже открытый раздел. */
+  .pp-sec:has(.pp-rail--grid) .pp-all {
+    display: none;
+  }
+
+  /* Плеер рилсов: шапка — белый бар НАД видео (в кадре), а не полупрозрачный
+     оверлей поверх кадра; кнопка выхода — фиолетовый круг 36. */
+  .rl .vd__head {
+    position: static;
+    background: #fff;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
+    gap: 8px;
+  }
+  .rl .vd__headtitle b {
+    color: #9047ff;
+    font-size: 16px;
+  }
+  .rl .vd__back {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    border-radius: 50%;
+    background: #9047ff;
+    backdrop-filter: none;
+    font-size: 0;
+  }
+  /* Подсказка о свайпе в кадре без тёмной плашки — просто крупный текст по
+     центру кадра. */
+  .rl__hint {
+    top: 50%;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    width: 255px;
+    padding: 0;
+    gap: 11px;
+    border-radius: 0;
+    background: none;
+    backdrop-filter: none;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+}

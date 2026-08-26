@@ -21,6 +21,10 @@
   padding: 12px 32px;
   background: #fff;
 }
+/* Пилюля языка не сжимается: сжимается название шага (.cp-bar__place). */
+.cp-bar .lang-wrap {
+  flex: none;
+}
 .cp-bar__exit,
 .cp-bar__dict {
   display: inline-flex;
@@ -242,16 +246,19 @@
   text-transform: uppercase;
 }
 /* Три состояния карточки из макета: обычная — без рамки, под курсором — светлая
-   сиреневая, выбранная — насыщенная и с фиолетовой подписью. */
-.cp-pick:hover {
-  border-color: #c9a4ff;
+   сиреневая, выбранная — насыщенная и с фиолетовой подписью.
+
+   Подсветка курсором — только там, где курсор есть. На телефоне iOS оставляет
+   :hover на карточке до следующего тапа в другом месте, и тронутая карточка
+   висела обведённой, будто выбрана: в макете такого состояния нет вовсе. */
+@media (hover: hover) {
+  .cp-pick:hover {
+    border-color: #c9a4ff;
+  }
 }
 .cp-pick.is-on,
 .cp-pick.is-on:hover {
   border-color: #9047ff;
-}
-.cp-pick.is-on .cp-pick__label {
-  color: #9047ff;
 }
 .cp-pick.is-on .cp-pick__label {
   color: #9047ff;
@@ -770,8 +777,10 @@
   color: #9d9d9d;
   cursor: pointer;
 }
-.cp-audio__restart:hover {
-  color: #9047ff;
+@media (hover: hover) {
+  .cp-audio__restart:hover {
+    color: #9047ff;
+  }
 }
 
 /* Поле ответа — одно на «впиши пропуск» и свободный ответ: в макете это один
@@ -811,7 +820,13 @@
   background: #f4ecff;
   font-size: 16px;
   font-weight: 700;
+  /* Сам образец в макете фиолетовый (кадр 4109:5941), тёмным там набраны
+     только подсказки «Did you use…» под ним. */
+  color: #9047ff;
+}
+.cp-model__body {
   color: #17171c;
+  font-weight: 400;
 }
 .cp-model b {
   display: block;
@@ -850,6 +865,7 @@
 }
 .cp-check__row.is-on {
   border-color: #9047ff;
+  color: #9047ff;
 }
 .cp-check__box {
   display: grid;
@@ -862,9 +878,12 @@
   color: #9047ff;
   font-weight: 700;
 }
+/* Отмеченный пункт в макете (кадр 4109:6453) — кружок залит фиолетовым с белой
+   галочкой, а не подкрашен сиреневым. */
 .cp-check__row.is-on .cp-check__box {
   border-color: #9047ff;
-  background: #ebdeff;
+  background: #9047ff;
+  color: #fff;
 }
 
 /* ——— Плашка результата и кнопка ——— */
@@ -1154,7 +1173,7 @@
   background: #31b423;
 }
 .cp-order__line.is-wrong .cp-chip {
-  background: #ea4f4f;
+  background: #ff4646;
 }
 .cp-order__bank {
   display: flex;
@@ -1366,8 +1385,10 @@
     min-height: 96px;
     padding: 16px 12px;
   }
+  /* Подпись карточки в макете (кадры Warm-up и Listening) — те же 18, что и на
+     десктопе; резали до 16 без причины, и ряд карточек выглядел мельче макета. */
   .cp-pick__label {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   /* Слова урока: две колонки во всю ширину, картинка 192×245 из макета —
@@ -1391,21 +1412,39 @@
     text-transform: uppercase;
   }
 
-  /* True/False: в макете это отдельные белые карточки со скруглением 20 и
-     зазором 12, а не одна карточка с разделителями. */
+  /* True/False: в макете это отдельные белые карточки со скруглением 20, а не
+     одна карточка с разделителями. Зазор между ними — 5 (кадр 4108:3489: пять
+     строк по 72 в контейнере 380). */
   .cp-rows {
     background: none;
     border-radius: 0;
     overflow: visible;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 5px;
+  }
+  /* Утверждение в мобильном кадре крупнее и легче десктопного: 20/400 против
+     16/500 — на 440 строка занимает две строчки по 24. */
+  .cp-rows__q {
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.2;
+  }
+  /* Пара True/False: кнопки выше и уже, зазор 4 — блок целиком 138×43. */
+  .cp-rows__opts {
+    gap: 4px;
+  }
+  .cp-rows__opt {
+    min-width: 67px;
+    height: 43px;
+    padding: 0 12px;
   }
   .cp-rows__row {
     border-top: none;
     border-radius: 20px;
     background: #fff;
-    padding: 16px;
+    /* 12 по вертикали: в кадре строка ровно 72 при двух строках текста по 24. */
+    padding: 12px 16px;
     /* В макете (440) утверждение и пара кнопок стоят в строку — правило выше
        для узких экранов их складывало. Складываем обратно только там, где
        строка действительно не помещается (см. блок 400px ниже). */
@@ -1414,6 +1453,21 @@
   }
   .cp-rows__opts {
     flex-direction: row;
+  }
+
+  /* Соединение пар в макете отдельным кадром не описано (там оно картинками),
+     поэтому подгоняем под соседей по экрану: строка — такая же белая карточка
+     r20, как в True/False и чек-листе, а не пилюля во всю ширину.
+
+     Линию между собранной фразой и банком слов макет рисует сплошной в один
+     пиксель (кадр 4108:3822), а не пунктиром. */
+  .cp-match__item {
+    border-radius: 20px;
+    padding: 12px 16px;
+    min-height: 72px;
+  }
+  .cp-order__line {
+    border-bottom: 1px solid #afafaf;
   }
 
   /* Остальные тела заданий на десктопе заданы фиксированной шириной из макета
@@ -1438,11 +1492,15 @@
 
   /* Кнопка внизу — во всю ширину колонки контента. Растягиваем и подвал: он
      лежит во флекс-колонке с align-items: center, и сам по себе он шириной с
-     кнопку, а не с экран. */
+     кнопку, а не с экран.
+
+     Нижний отступ — --safe-bottom (styles.css): с 8px кнопка в конце длинного
+     шага (словарь — это два десятка карточек) упиралась в самый низ документа
+     и уходила под плавающую панель мобильного Safari. */
   .cp-foot {
     width: 100%;
     align-self: stretch;
-    padding: 24px 0 8px;
+    padding: 24px 0 var(--safe-bottom);
   }
   .cp-cta {
     width: 100%;
@@ -1466,4 +1524,148 @@
   .cp-rows__opts {
     flex-direction: column;
   }
+}
+
+/* ═══════════ Словарь поверх урока (Figma «Обучение», кадр 4108:1689) ═══════════
+
+   Отдельный экран, а не выпадашка: в макете он занимает страницу целиком —
+   заголовок с крестиком, переключатель вкладок и список слов. Размеры и цвета
+   сняты с кадра. */
+.cp-dict {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 16px var(--safe-bottom);
+  background: #fff;
+  overflow-y: auto;
+}
+.cp-dict__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cp-dict__title {
+  flex: 1;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #181818;
+}
+.cp-dict__close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 20px;
+  background: #f6f5fa;
+  color: #929292;
+  cursor: pointer;
+}
+
+/* Переключатель вкладок: пилюля 193×40 с внутренним отступом 4. Подложка в
+   макете белая, то есть на белом листе её не видно — цветная только выбранная
+   вкладка. */
+.cp-dict__tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 40px;
+  background: #fff;
+}
+.cp-dict__tab {
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 30px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+  cursor: pointer;
+}
+.cp-dict__tab.is-on {
+  background: #9047ff;
+  color: #fff;
+}
+
+.cp-dict__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cp-dict__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  background: #f8f8f8;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cp-dict__word {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cp-dict__word b {
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+}
+.cp-dict__word span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #929292;
+}
+.cp-dict__say {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #9047ff;
+  color: #fff;
+}
+
+.cp-dict__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #6b6b76;
+}
+.cp-dict__link {
+  height: 48px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 80px;
+  background: #9047ff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
 }

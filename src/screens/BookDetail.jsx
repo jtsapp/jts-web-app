@@ -370,6 +370,9 @@ function BookRead({ book, chapters, dict, token, ch, onPick, onNext, onBack, onW
         {/* key={ch} ремоунтит статью при смене главы — CSS-анимация входа
             проигрывается заново (и отключена при prefers-reduced-motion). */}
         <article key={ch} className="bk-read__text" onClick={() => setPop(null)}>
+          {/* Название главы в кадре стоит над текстом крупной строкой — раньше
+              его можно было увидеть только в шапке и в списке глав. */}
+          <h1 className="bk-read__title">{chapter.title || `Глава ${ch + 1}`}</h1>
           {text ? (
             toParas(text).map((para, pi) =>
               para.trim() === '' ? (

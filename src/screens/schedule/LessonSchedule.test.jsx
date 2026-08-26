@@ -110,3 +110,17 @@ describe('LessonSchedule container', () => {
     )
   })
 })
+
+// Гость на вкладке «Онлайн-уроки» видел абсолютно пустое белое поле: расписание
+// висит на аккаунте, а компонент возвращал null. Тот же класс дыры, что и
+// вечная «Загрузка домашних работ…» у гостя.
+describe('LessonSchedule — гость', () => {
+  it('без токена объясняет, что нужен вход, а не рисует пустоту', () => {
+    const { container } = render(
+      <I18nProvider>
+        <LessonSchedule token={null} onOpenLesson={() => {}} />
+      </I18nProvider>
+    )
+    expect(container.textContent).toMatch(/Войдите в аккаунт/i)
+  })
+})

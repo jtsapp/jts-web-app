@@ -56,7 +56,10 @@ export default function LessonSchedule({ token, onOpenLesson }) {
   const meetingUrls = useMeetingUrls(token, [featured?.lessonId, ...dayItems.map((o) => o.lessonId)])
   const featuredTopic = useLessonTopic(token, featured?.lessonId ?? null)
 
-  if (!token) return null
+  // Гость расписания не имеет: уроки висят на аккаунте. Раньше здесь стоял
+  // возврат null, и вкладка «Онлайн-уроки» открывалась пустым белым полем без
+  // единого слова — тот же случай, что и вечная загрузка домашки.
+  if (!token) return <p className="sch__status">{t('schedule.needAuth')}</p>
 
   return (
     <section className="sch">
