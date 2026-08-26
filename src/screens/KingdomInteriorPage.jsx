@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
+import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -579,33 +580,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         </div>
       )}
 
-      {/* Подтверждение выхода из незаконченного урока */}
+      {/* Подтверждение выхода из незаконченного урока — общий диалог всех
+          уроков (раньше та же карточка была выписана здесь ещё раз). */}
       {confirmExit && (
-        <div className="lx-over" onClick={() => setConfirmExit(false)}>
-          <div className="lx-card" onClick={(e) => e.stopPropagation()}>
-            {/* Крестик в макете стоит по центру НАД карточкой и рисуется
-                толстым штрихом — глиф «×» рядом с ним выглядел засечкой. */}
-            <button className="lx-close" aria-label={t('common.close')} onClick={() => setConfirmExit(false)}>
-              <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
-                <path d="M6 6 24 24M24 6 6 24" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
-              </svg>
-            </button>
-            {/* Арт рисуется в круг 112px, а исходный PNG был 1664px и 2.6 МБ —
-                на 4G он не успевал приехать, и вместо портрета висел серый
-                кружок. Тот же кадр, пережатый под показ, весит 42 КБ. */}
-            <AssetImage className="lx-art" src="/assets/lesson/exit.webp" alt="" hideOnError />
-            <h2 className="lx-title">{t('lesson.exitAsk')}</h2>
-            <div className="lx-sub">{t('lesson.exitAskSub')}</div>
-            <div className="lx-acts">
-              <button className="le-btn lx-continue" onClick={() => setConfirmExit(false)}>
-                {t('lesson.exitStay')}
-              </button>
-              <button className="lx-leave" onClick={exitLesson}>
-                {t('lesson.exitLeave')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={exitLesson} />
       )}
     </LearningLayout>
   )

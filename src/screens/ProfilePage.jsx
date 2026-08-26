@@ -354,10 +354,13 @@ export default function ProfilePage({
           ))}
         </div>
 
+        {/* В кадре 4352:13735 значки «Настроек» лежат в таких же сиреневых
+            плитках, что и в «Персонализации» — плитка есть у каждой строки
+            списка, а не только у верхнего блока. */}
         <div className="pf-label">{t('profile.sectionSettings')}</div>
         <div className="pf-card">
           {settings.map((it, i) => (
-            <SettingRow key={it.key} item={it} last={i === settings.length - 1} />
+            <SettingRow key={it.key} item={it} chip last={i === settings.length - 1} />
           ))}
         </div>
 

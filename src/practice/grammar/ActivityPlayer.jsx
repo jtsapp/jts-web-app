@@ -270,7 +270,7 @@ function MC({ a, answered, finish, setCanCheck, bind }) {
 // ——— gap / transform / dictation ———
 function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
   const [value, setValue] = useState('')
-  const [shownAnswer, setShownAnswer] = useState(null)
+  const [wrong, setWrong] = useState(false)
   const inputRef = useRef(null)
   useEffect(() => setCanCheck(value.trim() !== '' && !answered), [value, answered, setCanCheck])
 
@@ -278,7 +278,10 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
     if (answered || !value.trim()) return
     const good = [a.answer, ...(a.alts || [])].map(norm)
     const ok = good.includes(norm(value))
-    if (!ok) setShownAnswer(a.answer)
+    // Раньше здесь ответ студента подменялся правильным — человек видел в своём
+    // поле чужой текст, покрашенный красным, и не понимал, что именно он
+    // написал. Правильный вариант и так объясняется в разборе (a.why).
+    if (!ok) setWrong(true)
     finish(ok, a.why)
   }
   bind(check)
@@ -288,7 +291,7 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
     if (el) setTimeout(() => el.focus(), 250)
   }, [])
 
-  const okCls = answered ? (shownAnswer === null ? 'correct' : 'wrong') : ''
+  const okCls = answered ? (wrong ? 'wrong' : 'correct') : ''
   const speakText = () => {
     try {
       const u = new SpeechSynthesisUtterance(a.text)
@@ -305,7 +308,7 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
     <input
       ref={inputRef}
       className={`gr-gap-input ${a.type === 'gap' ? '' : 'gr-tf-input'} ${okCls}`}
-      value={shownAnswer !== null ? shownAnswer : value}
+      value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={(e) => e.key === 'Enter' && value.trim() && check()}
       disabled={answered}
@@ -630,19 +633,23 @@ function TrueFalse({ a, lang, answered, finish }) {
           return (
             <div key={i} className={`gr-tf-row ${cls}`}>
               <Html className="gr-tf-row__s" as="span" html={it.s} />
+              {/* Цвет ложится на НАЖАТЫЙ чип, а не на правильный: раньше
+                  подсвечивался тот, что совпал с истиной, и на ошибочной
+                  строке красным заливался как раз верный вариант — студент
+                  читал это ровно наоборот. */}
               <button
-                className={`gr-fchip ${p && it.ok ? 'reveal' : ''}`}
+                className={`gr-fchip ${p && p.val === true ? (p.ok ? 'picked-ok' : 'picked-no') : ''}`}
                 disabled={!!p}
                 onClick={() => pick(i, true)}
               >
-                ✓
+                True
               </button>
               <button
-                className={`gr-fchip ${p && !it.ok ? 'reveal' : ''}`}
+                className={`gr-fchip ${p && p.val === false ? (p.ok ? 'picked-ok' : 'picked-no') : ''}`}
                 disabled={!!p}
                 onClick={() => pick(i, false)}
               >
-                ✗
+                False
               </button>
             </div>
           )

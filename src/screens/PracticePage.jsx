@@ -593,7 +593,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                 {clips.map((c, i) => (
                   <button key={c.id} type="button" className="pp-mcard" onClick={() => setOpenReel(i)}>
                     <Thumb src={c.thumbnailUrl} alt={c.title} className="pp-thumb--portrait" />
-                    <span className="pp-mcard__views"><EyeIcon size={13} /> {formatViews(c.views, t)}</span>
+                    <span className="pp-mcard__views"><EyeIcon size={12} /> {formatViews(c.views, t)}</span>
                   </button>
                 ))}
               </Rail>
@@ -687,40 +687,50 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           {show('situations') && (
           <section id="sec-situations" className="pp-sec">
             <SectionHead title={t('practice.chip.situations')} onAll={() => setFilter('situations')} />
-            <Rail grid={grid}>
-              {/* Заблокированные сценарии не показываем вовсе (раньше висели
-                  замком): преподаватель закрывает контент, а не дразнит им. */}
-              {SITUATION_LEVELS.filter((l) => !levelLocked.has(l.code)).map((l) => (
-                <button
-                  key={l.code}
-                  type="button"
-                  className="pp-scard"
-                  onClick={() => openSituationsLevel(l.code)}
-                >
-                  <Thumb src={l.poster} alt={`${l.label} Speaking`} className="pp-thumb--situation">
-                    <span className="pp-play"><PlayIcon size={22} /></span>
-                  </Thumb>
-                  <div className="pp-scard__title">
-                    Speaking · {l.label} {l.desc}
-                  </div>
-                </button>
-              ))}
-              {situations
-                .filter((s) => !s.locked && (s.level || '').toUpperCase() === (userLevel || '').toUpperCase())
-                .map((s) => (
+            {/* Уровни и ситуативки собираем в один список, чтобы отличить
+                «ещё грузится» от «преподаватель всё закрыл»: раньше при пустой
+                выдаче секция рисовала заголовок и пустоту под ним — соседние
+                секции этого же экрана так не делают.
+
+                Заблокированные сценарии не показываем вовсе (раньше висели
+                замком): преподаватель закрывает контент, а не дразнит им. */}
+            {(() => {
+              const cards = [
+                ...SITUATION_LEVELS.filter((l) => !levelLocked.has(l.code)).map((l) => (
                   <button
-                    key={s.id}
+                    key={l.code}
                     type="button"
-                    className={`pp-scard${s.completed ? ' pp-scard--done' : ''}`}
-                    onClick={() => setOpenSituation(s)}
+                    className="pp-scard"
+                    onClick={() => openSituationsLevel(l.code)}
                   >
-                    <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
-                      {s.completed && <span className="pp-scard__check">✓</span>}
+                    <Thumb src={l.poster} alt={`${l.label} Speaking`} className="pp-thumb--situation">
+                      <span className="pp-play"><PlayIcon size={22} /></span>
                     </Thumb>
-                    <div className="pp-scard__title">{s.title}</div>
+                    <div className="pp-scard__title">
+                      Speaking · {l.label} {l.desc}
+                    </div>
                   </button>
-                ))}
-            </Rail>
+                )),
+                ...situations
+                  .filter((s) => !s.locked && (s.level || '').toUpperCase() === (userLevel || '').toUpperCase())
+                  .map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`pp-scard${s.completed ? ' pp-scard--done' : ''}`}
+                      onClick={() => setOpenSituation(s)}
+                    >
+                      <Thumb src={s.coverUrl} alt={s.title} className="pp-thumb--situation">
+                        {s.completed && <span className="pp-scard__check">✓</span>}
+                      </Thumb>
+                      <div className="pp-scard__title">{s.title}</div>
+                    </button>
+                  )),
+              ]
+              return cards.length === 0
+                ? <Empty loading={state.loading} skeleton="portrait" />
+                : <Rail grid={grid}>{cards}</Rail>
+            })()}
           </section>
           )}
 

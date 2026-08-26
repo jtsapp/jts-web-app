@@ -941,8 +941,10 @@
   transition: 0.16s;
 }
 .gr-fchip:hover:not(:disabled) { border-color: var(--violet); color: var(--violet-ink); }
-.gr-fchip.reveal { background: var(--correct); border-color: var(--correct); color: #fff; }
-.gr-tf-row.no .gr-fchip.reveal { background: var(--incorrect); border-color: var(--incorrect); color: #fff; }
+/* Заливается выбранный чип: зелёным, если студент угадал, красным — если нет
+   (см. комментарий в ActivityPlayer у .gr-fchip). */
+.gr-fchip.picked-ok { background: var(--correct); border-color: var(--correct); color: #fff; }
+.gr-fchip.picked-no { background: var(--incorrect); border-color: var(--incorrect); color: #fff; }
 
 /* когда это происходит */
 .gr-tzones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px; }
@@ -1131,4 +1133,316 @@
   .gr-practice { padding-left: 16px; padding-right: 16px; }
   .gr-block { padding: 20px 18px; }
   .gr-tzones { grid-template-columns: 1fr; }
+}
+
+/* ═══════════ Мобильная «Грамматика» по макету (JTS Адаптивка → Практика →
+   Граммар, кадры 440×956) ═══════════
+
+   Раздел рисовался десктопными размерами: на 440 пилюли, плашки и кнопки
+   расходились с кадрами, хотя система у макета общая с «Обучением» и
+   «Аудированием». Числа сняты из узлов Figma. */
+@media (max-width: 760px) {
+  /* Поиск: скруглённый прямоугольник 48 r20, а не капсула. */
+  .gr-search {
+    height: 48px;
+    border-radius: 20px;
+    border-color: #eee;
+  }
+
+  /* Неактивные пилюли (уровни, «Unit 1-9», вкладки урока) в макете голубые с
+     фиолетовой подписью — та же пара, что у кнопки «Проверить» в уроке. */
+  .gr-levelchip,
+  .gr-unitpill,
+  .gr-levelpill,
+  .gr-tab {
+    background: #b7f0ff;
+    color: #9047ff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .gr-levelchip {
+    padding: 10px 20px;
+  }
+  .gr-tab {
+    padding: 10px 20px;
+  }
+  .gr-levelchip.on,
+  .gr-tab.on {
+    background: #9047ff;
+    color: #fff;
+  }
+
+  /* Прогресс урока — белая капсула 38 с треком 14, как в остальных разделах. */
+  .gr-lprog-row {
+    height: 38px;
+    padding: 4px 4px 4px 12px;
+    border-radius: 50px;
+    background: #fff;
+  }
+  .gr-lprog {
+    height: 14px;
+    border-radius: 30px;
+    background: #ebdeff;
+  }
+  .gr-lprog__bar {
+    border-radius: 30px;
+    background: #9047ff;
+  }
+
+  /* Заголовок задания: 24/700 тёмным. */
+  .gr-actq {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.21;
+    color: #17171c;
+  }
+
+  /* Варианты: пилюля 59 без обводки, 16/700; цвета проверки общие. */
+  .gr-opts {
+    gap: 12px;
+  }
+  .gr-opt {
+    min-height: 59px;
+    padding: 20px 24px;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .gr-opt.sel {
+    background: #9047ff;
+    color: #fff;
+  }
+  .gr-opt.correct {
+    background: #31b423;
+    color: #fff;
+  }
+  .gr-opt.wrong {
+    background: #ff4646;
+    color: #fff;
+  }
+
+  /* True/False: строки — белые карточки r20 с зазором 5, как в «Обучении». */
+  .gr-tf-rows {
+    gap: 5px;
+  }
+  .gr-tf-row {
+    border: none;
+    border-radius: 20px;
+    background: #fff;
+    padding: 12px 16px;
+  }
+  .gr-fchip {
+    height: 43px;
+    border: none;
+    border-radius: 30px;
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+
+  /* Плашка ответа: 77 высотой капсулой, зелёная #aeffc7 / персиковая #fff0e8. */
+  .gr-fb {
+    min-height: 77px;
+    max-width: none;
+    padding: 16px;
+    border-radius: 90px;
+    border: none;
+  }
+  .gr-fb.ok {
+    background: #aeffc7;
+  }
+  .gr-fb.no {
+    background: #fff0e8;
+  }
+
+  /* Кнопки шага: во всю ширину, 48 r80. */
+  .gr-check,
+  .gr-next,
+  .gr-btn {
+    max-width: none;
+    width: 100%;
+    height: 48px;
+    border-radius: 80px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .gr-check:disabled {
+    background: #b7f0ff;
+    color: #cfafff;
+  }
+
+  /* Каталог: секции — горизонтальные ленты (кадр 4254:4143), а не сетка в одну
+     колонку. Карточка фиксированной ширины, лента уезжает под край экрана —
+     тем же приёмом, что и рейлы Практики. */
+  .gr-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    margin: 0 -16px;
+    padding: 0 16px 4px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 16px;
+  }
+  .gr-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .gr-grid > * {
+    flex: 0 0 236px;
+    width: 236px;
+    scroll-snap-align: start;
+  }
+
+  /* Задание лежит прямо на сером фоне: белой подложки под ним в кадрах нет —
+     белые в них сами элементы (варианты, строки, поля). */
+  .gr-act {
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    min-height: 0;
+  }
+
+  /* Процент урока — чип на светлой подложке, как в аудировании. */
+  .gr-lprog__pct {
+    min-width: 49px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 30px;
+    background: #fafafa;
+    font-size: 16px;
+    font-weight: 700;
+    color: #9047ff;
+  }
+
+  /* Значок в плашке ответа — 42 (кадры 4273:7044 и 4273:7118). */
+  .gr-fb__ic {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+  }
+
+  /* Точки карусели теории лежат в белой капсуле (кадр каталога грамматики). */
+  .gr-dots {
+    align-self: center;
+    gap: 8px;
+    margin: 16px auto;
+    padding: 6px;
+    border-radius: 30px;
+    background: #fff;
+  }
+
+  /* Карточка теории: r20 без обводки и с полями 16. */
+  .gr-block {
+    padding: 16px;
+    border: none;
+    border-radius: 20px;
+  }
+
+  /* Строка задания с пропуском — крупная фиолетовая, как вопрос в уроке. */
+  .gr-gap-sentence {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #9047ff;
+  }
+
+  /* «Найди ошибку»: слова — отдельные пилюли, а не строка текста. */
+  .gr-error-sentence {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    line-height: 1.2;
+  }
+  .gr-eword {
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 30px;
+    background: #fff;
+  }
+
+  /* Полоса урока по кадру 4273:9107: крестик 36 в фиолетовом круге, крошка,
+     переключатель языка. Подпись «Назад» на телефоне не нужна. */
+  .gr-lesson__bar {
+    gap: 8px;
+    height: 69px;
+    padding: 16px;
+    align-items: center;
+  }
+  .gr-back {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    background: #9047ff;
+    color: #fff;
+  }
+  .gr-back__label {
+    display: none;
+  }
+  .gr-lesson__crumb {
+    flex: 1;
+    min-width: 0;
+  }
+  .gr-lesson__bar .lang-wrap {
+    flex: none;
+  }
+
+  /* Тело карточки каталога — вертикальная колонка «Unit N → описание» (кадр
+     4254:4143), а не строка с бейджем и таймером сбоку. */
+  .gr-gcard__body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px;
+  }
+
+  /* Отметка «Пройдено» в кадре — бейдж поверх обложки в левом верхнем углу,
+     а не зелёная полоса под телом карточки. */
+  .gr-gcard {
+    position: relative;
+  }
+  .gr-gcard__done {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 1;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 12px;
+  }
+
+  /* У вариантов ответа в кадрах нет значков ✓/✗ — состояние передаёт заливка. */
+  .gr-opt__mk {
+    display: none;
+  }
+
+  /* Кнопка урока — в полосе у нижней кромки (кадр: Frame 440×80, поле 16,
+     фон раздела), а не в конце длинного задания. */
+  .gr-act__foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 8px -16px 0;
+    padding: 16px 16px var(--safe-bottom);
+    background: #f8f8f8;
+  }
+
+  /* Зона сборки фразы: без пунктирной коробки — сплошная линия в пиксель. */
+  .gr-slots {
+    min-height: 65px;
+    border: none;
+    border-bottom: 1px solid #afafaf;
+    border-radius: 0;
+    background: none;
+  }
 }

@@ -447,8 +447,8 @@ export default function App() {
     }
   }
 
-  // Вход по паролю (телефон или почта). Пост-логин — тот же, что у Google и
-  // OTP: уровень из профиля, перенос анонимного прогресса, тьютор-профиль.
+  // Вход по паролю (телефон или почта). Пост-логин — тот же, что у OTP:
+  // уровень из профиля, перенос анонимного прогресса, тьютор-профиль.
   async function handlePasswordLogin(identifier, password) {
     setError('')
     setLoading(true)
@@ -744,13 +744,13 @@ export default function App() {
     case 'chat':
       return (
         <RegistrationPage
+          onGoogleToken={handleGoogleCredential}
           onBack={() => setScreen('welcome')}
           onPhoneLogin={(userName) => {
             setName(userName || '')
             setError('')
             setScreen('reg-phone')
           }}
-          onGoogleToken={handleGoogleCredential}
           error={error}
         />
       )
@@ -759,9 +759,9 @@ export default function App() {
     case 'phone':
       return (
         <PhoneLoginPage
+          onGoogleToken={handleGoogleCredential}
           onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePhoneSubmit}
-          onGoogleToken={handleGoogleCredential}
           loading={loading}
           error={error}
         />
@@ -769,6 +769,7 @@ export default function App() {
     case 'reg-phone':
       return (
         <RegisterPhonePage
+          onBack={() => { setError(''); setScreen('chat') }}
           onSubmit={handleRegPhoneSubmit}
           loading={loading}
           error={error}
@@ -777,6 +778,7 @@ export default function App() {
     case 'reg-email':
       return (
         <RegisterEmailPage
+          onBack={() => { setError(''); setScreen('reg-phone') }}
           onSubmit={handleRegEmailSubmit}
           loading={loading}
           error={error}
@@ -796,10 +798,10 @@ export default function App() {
     case 'login-password':
       return (
         <PasswordLoginPage
+          onGoogleToken={handleGoogleCredential}
           onBack={() => { setError(''); setScreen('welcome') }}
           onSubmit={handlePasswordLogin}
           onOtpLogin={() => { setError(''); setScreen('phone') }}
-          onGoogleToken={handleGoogleCredential}
           loading={loading}
           error={error}
         />
@@ -1020,10 +1022,13 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onBack={() => setScreen('tutor-choose')}
           tutor={tutor}
-          // После «подстройки» — голосовой placement-тест (Спарк), затем интересы
-          // и работа. Уровень определяет Sonnet по записи монолога. Смена тьютора
-          // (пришли из управления) эту цепочку пропускает: ответы уже в профиле.
-          onDone={() => goAfterTutorEdit('tutor-voice-intro', 'tutor-dashboard')}
+          // После «подстройки» — предложение пройти голосовой placement-тест
+          // (экран tutor-level-offer), оттуда либо сам тест, либо «позже» сразу
+          // к интересам. Раньше загрузка вела прямо в тест, и экран-предложение,
+          // хотя и свёрстан по макету, был недостижим — уйти от теста было
+          // нечем. Смена тьютора (пришли из управления) цепочку пропускает:
+          // ответы уже в профиле.
+          onDone={() => goAfterTutorEdit('tutor-level-offer', 'tutor-dashboard')}
         />
       )
     case 'tutor-level-offer':

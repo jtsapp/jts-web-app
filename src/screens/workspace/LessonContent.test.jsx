@@ -283,6 +283,28 @@ describe('LessonContent — карточки шага', () => {
     expect(onCheck).not.toHaveBeenCalled()
   })
 
+  it('у info word-bank с data-answer есть «Проверить», и после ответа оно шлёт ключ', () => {
+    const onCheck = vi.fn()
+    const html = `
+      <div class="wbank"><button class="wchip" data-w="weather">weather</button></div>
+      <input class="gap" data-answer="weather">
+    `
+    const gapId = 'step-wb1-gap-0'
+    const { container } = renderContent(
+      [{ type: 'info', html }],
+      {
+        step: { id: 'wb1', blocks: [{ type: 'info', html }] },
+        answers: { [gapId]: 'weather' },
+        onCheck,
+      },
+    )
+    const btn = container.querySelector('.lw-practice__check')
+    expect(btn).toBeTruthy()
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(btn)
+    expect(onCheck).toHaveBeenCalledWith(practiceBlockKey('wb1', 0), expect.any(Array))
+  })
+
   it('рисует чек-лист «You can now…», а не выкидывает неизвестный тип', () => {
     const { container } = renderContent([
       { type: 'checklist', title: 'You can now…', items: ['talk about your friendships', 'speak for a minute'] },

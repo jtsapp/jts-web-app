@@ -19,6 +19,7 @@ export default function PasswordLoginPage({ onBack, onSubmit, onOtpLogin, onGoog
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
+
   const [googleReady, setGoogleReady] = useState(false)
   const googleRef = useRef(null)
 

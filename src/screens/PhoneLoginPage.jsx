@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import Shell from '../components/Shell.jsx'
 import { ChevronRightIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
-import Multiline from '../components/Multiline.jsx'
 import { isGoogleAuthEnabled, renderGoogleButton } from '../lib/googleAuth.js'
+import Multiline from '../components/Multiline.jsx'
 import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
 import { isEmailIdentifier } from '../api.js'
 
@@ -21,10 +21,11 @@ export default function PhoneLoginPage({ onBack, onSubmit, onGoogleToken, loadin
   const [digits, setDigits] = useState('') // только цифры нац. номера, без кода страны
   const [email, setEmail] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [googleReady, setGoogleReady] = useState(false)
-  const googleRef = useRef(null)
   const pickerRef = useRef(null)
   const inputRef = useRef(null)
+
+  const [googleReady, setGoogleReady] = useState(false)
+  const googleRef = useRef(null)
 
   // Google-вход и здесь: пользователи, зарегистрированные через Google, не
   // имеют телефона и войти по OTP не могут. Перерисовка — при смене языка.

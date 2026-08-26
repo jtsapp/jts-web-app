@@ -410,3 +410,342 @@
   cursor: pointer;
 }
 .lt-modal__leave:hover { filter: brightness(0.97); }
+
+/* ═══════════ Мобильный «Аудирование» по макету (JTS Адаптивка → Практика →
+   Аудирование, кадры 440×956) ═══════════
+
+   До этого файл жил без единого медиа-запроса: на 440 показывались десктопные
+   размеры, и раздел заметно расходился с макетом, хотя рисовался он в той же
+   системе, что и «Обучение». Числа сняты из узлов Figma. */
+@media (max-width: 760px) {
+  .lt {
+    padding: 16px 16px 40px;
+  }
+
+  /* Рабочая область раздела в макете серая (#f8f8f8), а карточки на ней белые —
+     как в «Обучении». У нас оболочка красит её белым, и белые пилюли вариантов
+     на белом фоне были не видны вовсе: после снятия обводки (её в кадрах нет)
+     от варианта оставался голый текст. */
+  .learn__main:has(.lt) {
+    background: #f8f8f8;
+  }
+
+  /* Прогресс — белая капсула 408×38 с треком 14 (кадр 4273:12059), а не голая
+     полоса на фоне, как было. */
+  .lt-bar {
+    height: 38px;
+    padding: 4px 4px 4px 12px;
+    border-radius: 50px;
+    background: #fff;
+    margin-bottom: 32px;
+  }
+  .lt-bar__track {
+    height: 14px;
+    border-radius: 30px;
+    background: #ebdeff;
+  }
+  .lt-bar__track span {
+    border-radius: 30px;
+    background: #9047ff;
+  }
+
+  /* Вопрос: 24/700 фиолетовым по центру. */
+  .lt-heading {
+    font-size: 24px;
+    font-weight: 700;
+    color: #9047ff;
+    margin: 0 0 24px;
+  }
+
+  /* Кнопка воспроизведения 124 и «Прослушать медленно» 274×48 r30 —
+     те же значения, что у аудио-шага в «Обучении» (.cp-audio). */
+  .lt-audio__btn {
+    width: 124px;
+    height: 124px;
+  }
+  .lt-audio__btn svg {
+    width: 48px;
+    height: 48px;
+  }
+  .lt-audio__slow {
+    height: 48px;
+    padding: 12px 36px;
+    border-radius: 30px;
+    background: #b7f0ff;
+    color: #9047ff;
+    font-size: 16px;
+  }
+
+  /* Варианты ответа: пилюля 59 без обводки, 16/700; цвета проверки общие для
+     всего приложения. */
+  .lt-opts {
+    gap: 12px;
+  }
+  .lt-opt {
+    min-height: 59px;
+    padding: 20px 24px;
+    border: none;
+    font-size: 16px;
+    font-weight: 700;
+    color: #17171c;
+  }
+  .lt-opt.is-on {
+    background: #9047ff;
+  }
+  .lt-opt.is-correct {
+    background: #31b423;
+  }
+  .lt-opt.is-wrong {
+    background: #ff4646;
+  }
+
+  /* Сборка фразы: разделитель — сплошная линия в пиксель, как в кадре
+     (в «Обучении» такой же). */
+  .lt-asm__slot {
+    min-height: 65px;
+    border-bottom: 1px solid #afafaf;
+  }
+
+  /* Плашка ответа: 77 высотой, капсулой; зелёная #aeffc7, ошибка — персиковая
+     #fff0e8, как во всех остальных разделах. */
+  .lt-fb {
+    min-height: 77px;
+    padding: 16px;
+    border-radius: 90px;
+  }
+  .lt-fb--ok {
+    background: #aeffc7;
+  }
+  .lt-fb--no {
+    background: #fff0e8;
+  }
+
+  /* Полоса раздела по кадру 4273:9630: крестик 36 в круге, крошка, язык и
+     словарь; подпись «Назад» на телефоне не нужна — там круглый значок. */
+  .lt-top {
+    gap: 8px;
+    height: 69px;
+    margin: 0 0 8px;
+  }
+  /* Крестик в круге 36 — как в кадре: фиолетовая заливка, белый значок. */
+  .lt-back {
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    background: #9047ff;
+    color: #fff;
+  }
+  .lt-back__label {
+    display: none;
+  }
+  .lt-crumb {
+    flex: 1;
+    min-width: 0;
+  }
+  .lt-crumb b {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .lt-crumb span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #9d9d9d;
+  }
+  .lt-top .lang-wrap {
+    flex: none;
+  }
+  .lt-dict {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 80px;
+    background: #ebdeff;
+    color: #9047ff;
+    cursor: pointer;
+  }
+
+  /* Интро раздела: карточка во всю ширину с полями 32 и скруглением 20
+     (кадр 4273:9630) — вместо узкой 520-пиксельной с радиусом 24. */
+  .lt-intro {
+    max-width: none;
+    padding: 32px;
+    border-radius: 20px;
+    box-shadow: none;
+  }
+
+  /* Модалка выхода: 40 радиус и поля 24 (кадр 4273:13274). */
+  .lt-modal__card {
+    width: calc(100vw - 32px);
+    padding: 24px;
+    border-radius: 40px;
+  }
+
+  /* Процент прогресса — отдельный чип 49×30 на светлой подложке (кадр
+     4273:13274), а не голая цифра у края полосы. */
+  .lt-bar__pct {
+    min-width: 49px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 30px;
+    background: #fafafa;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* Поле диктанта: карточка 67 r20 с полями 24/16 (кадр 4273:13274). */
+  .lt-input {
+    min-height: 67px;
+    padding: 24px 16px;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  /* ── Экран итогов (кадры 4273:14444 «85%» и 4273:14699 «12%») ──
+     На телефоне он вертикальный: маскот сверху, под ним процент пилюлей,
+     заголовок, две карточки-счётчика и кнопки. Десктопная раскладка ставила
+     маскота слева, а колонку итогов ужимала до 320px. */
+  .lt-res {
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    max-width: none;
+    margin-top: 0;
+  }
+  .lt-res__hero {
+    width: 240px;
+    height: 243px;
+    border-radius: 80px;
+    padding: 0;
+  }
+  .lt-res--good .lt-res__hero,
+  .lt-res--bad .lt-res__hero {
+    /* В макете подложка у обоих исходов одна — фиолетовая; исход читается по
+       пилюле с процентом и подписям счётчиков. */
+    background: #7f42ee;
+  }
+  .lt-res__info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  /* Процент — пилюля 60 высотой: зелёная при удаче, приглушённо-красная при
+     провале; цифра белая 36/700. */
+  .lt-res__pct {
+    height: 60px;
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: #fff;
+  }
+  .lt-res--good .lt-res__pct {
+    background: #19c119;
+    color: #fff;
+  }
+  .lt-res--bad .lt-res__pct {
+    background: #dc6d6b;
+    color: #fff;
+  }
+  .lt-res__title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .lt-res__stats {
+    width: 100%;
+    gap: 8px;
+    margin: 8px 0 0;
+  }
+  .lt-res__stat {
+    min-height: 120px;
+    padding: 23px 22px 17px 23px;
+    border-radius: 20px;
+    background: #fff;
+    gap: 8px;
+  }
+  .lt-res__num {
+    font-size: 24px;
+    font-weight: 700;
+  }
+  /* Подпись счётчика в макете цветная: красная у неверных, зелёная у верных. */
+  .lt-res__label {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .lt-res__stat:first-child .lt-res__label {
+    color: #ff4646;
+  }
+  .lt-res__stat:last-child .lt-res__label {
+    color: #1eb04b;
+  }
+  .lt-res__btn {
+    height: 56px;
+  }
+  .lt-ghost {
+    font-size: 15px;
+    font-weight: 700;
+    color: #afafaf;
+  }
+
+  /* Собранная фраза после проверки: верные плитки зелёные, ошибочная красная
+     (кадры 4273:12995 и 4273:13053). */
+  .lt-tile--on[data-state='ok'] {
+    background: #31b423;
+    color: #fff;
+  }
+  .lt-tile--on[data-state='no'] {
+    background: #ea4f4f;
+    color: #fff;
+  }
+
+  /* Диктант после проверки: зелёная рамка и текст при верном ответе, красные —
+     при ошибке (кадры 4273:13438 и 4273:13505). */
+  .lt-input[data-state='ok'] {
+    border-color: #19c119;
+    color: #19c119;
+    background: #fff;
+  }
+  .lt-input[data-state='no'] {
+    border-color: #ea4f4f;
+    color: #ea4f4f;
+    background: #fff;
+  }
+
+  /* Полоса с кнопкой прижата к низу экрана: в кадрах это отдельный Frame
+     440×80 с полем 16 на сером фоне раздела. Липнет к нижней кромке, а не
+     уезжает вниз вместе с длинным заданием. */
+  .lt-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 8px -16px 0;
+    padding: 16px 16px var(--safe-bottom);
+    background: #f8f8f8;
+  }
+
+  /* Кнопка шага: 48 r80, подпись 15/700. */
+  .lt-primary {
+    max-width: none;
+    height: 48px;
+    padding: 0 24px;
+    border-radius: 80px;
+    font-size: 15px;
+  }
+}

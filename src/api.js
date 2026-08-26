@@ -762,6 +762,22 @@ export function completeLessonVocabCycle(lessonId, cycle, results, token) {
   })
 }
 
+/**
+ * Словарь школы (GET /dictionary/search).
+ *
+ * Тот же список, что открыт преподавателю в уроке: слова курируются админкой.
+ * Пустой запрос — первая страница по алфавиту, режим «полистать».
+ *
+ * Это НЕ личный словарь ученика (`/mobile/saved-words` ниже): там то, что он
+ * сохранил сам с тап-перевода, и живёт оно в разделе «Словарь».
+ */
+export async function searchDictionary(token, q = '', size = 30) {
+  const query = String(q || '').trim()
+  const path = `/dictionary/search?q=${encodeURIComponent(query)}&page=0&size=${size}`
+  const page = await authGet(path, token)
+  return page?.content ?? []
+}
+
 // Сохранить слово из тап-перевода читалки (POST /mobile/saved-words).
 // alternates — строка «через запятую», language — язык перевода ("ru"/"kk"),
 // source — откуда слово (название книги). Возвращает SavedWordResponse.

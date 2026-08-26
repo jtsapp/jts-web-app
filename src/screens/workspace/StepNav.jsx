@@ -7,8 +7,12 @@ import { useI18n } from '../../i18n.jsx'
 // центр, а рука уходит за край экрана. В исходном файле курса ровно эта пара
 // кнопок и счётчик «Stage 3 of 7» стоят под заданием, и урок проходится ими.
 //
-// Состояния своего не держит: активный шаг и список приходят сверху, наружу
-// уходит только id выбранного — тот же контракт, что у LessonRoute.
+// Состояния своего не держит: активная тема и список приходят сверху, наружу
+// уходит только id выбранной — тот же контракт, что у LessonTopics.
+//
+// Счётчика между кнопками больше нет: в макете внизу только «Назад» и
+// «Следующая тема», а место в уроке показывает шапка полотна («Задание N из M»)
+// и список тем справа. Позиция осталась в aria-label — незрячему она нужна.
 export default function StepNav({ steps, activeStepId, onSelect }) {
   const { t } = useI18n()
   const list = steps || []
@@ -32,17 +36,14 @@ export default function StepNav({ steps, activeStepId, onSelect }) {
         {t('lesson.ws.prevStep')}
       </button>
 
-      <span className="lw-stepnav__pos">
-        {t('lesson.ws.stepPosition', { current: index + 1, total: list.length })}
-      </span>
-
       <button
         type="button"
         className="lw-stepnav__btn lw-stepnav__btn--primary"
         disabled={!hasNext}
         onClick={() => onSelect(list[index + 1].id)}
       >
-        {t('lesson.ws.nextStep')}
+        {t('lesson.ws.nextTopic')}
+        <span aria-hidden="true"> →</span>
       </button>
     </nav>
   )

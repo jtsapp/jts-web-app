@@ -4,6 +4,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 vi.mock('../api.js', () => ({
+  // Оболочка теперь рисует колокольчик уведомлений (LearningLayout →
+  // NotificationBell), и он ходит в api.js — без заглушки падает весь экран.
+  getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getCourseCatalog: vi.fn(async () => ([
     {

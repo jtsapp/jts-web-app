@@ -14,7 +14,13 @@ import json
 from agent import (
     DEFAULT_OPENER,
     ELEVEN_VOICE,
+    OPENAI_TTS_VOICE,
+    PERSONA_STANDALONE_BLOCKS,
+    STANDALONE_PROMPT_PERSONAS,
     LearnerProfile,
+    _openai_instructions_for,
+    _openai_speed_for,
+    build_standalone_instructions,
     PERSONA_OPENER,
     PERSONA_OVERRIDE,
     PERSONA_METHODOLOGY_BLOCKS,
@@ -51,7 +57,11 @@ assert persona_key(SPARK, "") == SPARK
 assert persona_key(DEXTER, "") == DEXTER
 # У кого варианта нет — нрав ничего не меняет.
 assert persona_key(LUNA, "harsh") == LUNA
-assert persona_key("jarvis", "harsh") == "jarvis"
+# У Джарвиса нрав ВРЕМЕННО есть — 18+ и новую озвучку обкатывают на нём, а не на
+# живых Спарке с Декстером. Спокойный вариант при этом остаётся базовым id.
+assert persona_key("jarvis", "harsh") == "jarvis_harsh"
+assert persona_key("jarvis", "calm") == "jarvis"
+assert persona_key("jarvis", "") == "jarvis"
 # Мусор и регистр.
 assert persona_key(SPARK, "MUSOR") == SPARK
 assert persona_key("HYPE", "HARSH") == "hype_harsh"
@@ -73,10 +83,36 @@ assert PERSONA_TEMPERATURE["hype_harsh"] > PERSONA_TEMPERATURE[SPARK]
 # --- ось голоса и языка не поехала -----------------------------------------
 # Эти таблицы обязаны читаться по БАЗОВОМУ id: у вариантов записей нет, и если
 # кто-то переведёт их на persona_key, оба варианта тихо уедут на дефолтный голос.
-for variant in ("hype_harsh", "bro_calm"):
+for variant in ("hype_harsh", "bro_calm", "jarvis_harsh"):
     assert variant not in TUTOR_TTS_PROVIDER
     assert variant not in SONIOX_TTS_VOICE
     assert variant not in ELEVEN_VOICE
+    assert variant not in OPENAI_TTS_VOICE
+
+# Джарвис 18+ — персона со СВОИМ файлом промпта, а не строкой в PERSONA_OVERRIDE
+# (в отличие от hype_harsh/bro_calm). Пустой блок здесь = ассистент без
+# характера, и заметно это будет только в живом звонке.
+assert PERSONA_STANDALONE_BLOCKS["jarvis_harsh"]
+assert PERSONA_STANDALONE_BLOCKS["jarvis_harsh"] != PERSONA_STANDALONE_BLOCKS["jarvis"]
+# Ветку «свой промпт» выбирает persona_key: по базовому id злой Джарвис уехал бы
+# в обычную сборку и получил бы методичку с CEFR, которой у ассистента нет.
+assert "jarvis_harsh" in STANDALONE_PROMPT_PERSONAS
+jarvis_harsh = LearnerProfile(tutor="jarvis", temper="harsh", lang="ru")
+assert build_standalone_instructions(jarvis_harsh) != build_standalone_instructions(
+    LearnerProfile(tutor="jarvis", lang="ru")
+)
+
+# ПОДАЧА — единственная ось, которая у OpenAI-TTS читает persona_key, а не
+# базовый id, и это осознанно: 18+ обязан менять интонацию, а не только слова.
+# Голос (пресет) при этом у обоих один — проверено выше через OPENAI_TTS_VOICE.
+assert _openai_instructions_for("jarvis_harsh", "ru") != _openai_instructions_for("jarvis", "ru")
+assert _openai_speed_for("jarvis_harsh") > _openai_speed_for("jarvis")
+# Произношение цепляется по языку сессии, а не по персоне.
+assert "Kazakh" in _openai_instructions_for("hype", "kz")
+assert "Kazakh" not in _openai_instructions_for("jarvis", "ru")
+# Блок живости достаётся всем — он и лечит «дикторское» чтение.
+for persona, lang in (("jarvis", "ru"), ("jarvis_harsh", "ru"), ("hype", "kz")):
+    assert "not a narrator reading" in _openai_instructions_for(persona, lang)
 
 # Казахский Спарка от злости не исчезает.
 assert tutor_session_lang(SPARK, "ru") == "kz"

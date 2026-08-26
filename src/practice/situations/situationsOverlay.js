@@ -45,6 +45,10 @@ const CSS = `
   flex:none;position:relative;z-index:5;
   background:linear-gradient(135deg,var(--purple) 0%,var(--purple-deep) 72%,#5a2fce 100%);
   color:#fff;box-shadow:0 10px 30px -18px rgba(78,40,160,.85);
+  /* Оверлей перекрывает экран целиком, поэтому его шапка обязана сама
+     отступить от «чёлки»: без этого на телефоне логотип и кнопка «Выйти»
+     оказывались под системной строкой. */
+  padding-top:env(safe-area-inset-top, 0px);
 }
 #sitworld .sw-appbar-row{
   max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px;

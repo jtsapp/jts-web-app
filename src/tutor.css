@@ -3468,6 +3468,173 @@
    мобильный топбар, но десктоп-грид (3 карточки ~966px в ряд) → съезд экрана
    и горизонтальный скролл. Карусель обязана покрывать весь диапазон шелла. */
 @media (max-width: 760px) {
+  /* ═══ Тьютор по кадрам «JTS Адаптивка» (440×956) ═══
+     Числа сняты из узлов Figma: 4338:1182/1515 (велком и язык), 4338:1568
+     (карусель), 4338:2205 (дашборд), 4338:2384 (статус-экраны). */
+
+  /* Велком и выбор языка: в кадре это одна белая карточка r30, маскот сверху,
+     текст под ним по центру. У нас карточка была перевёрнута (текст первым) и
+     без подложки. */
+  .t-card {
+    background: #fff;
+    border-radius: 30px;
+    gap: 0;
+  }
+  .t-card__panel {
+    order: 1;
+  }
+  .t-card__content {
+    order: 2;
+    padding: 24px;
+    text-align: center;
+  }
+  .t-welcome__title,
+  .t-lang__title {
+    white-space: normal;
+  }
+  .t-lang__list {
+    margin-top: 32px;
+  }
+
+  /* Кнопки экранов онбординга в кадрах прижаты к нижней кромке, а не висят
+     сразу под текстом. Колонку тянем на всю высоту — иначе margin-top:auto
+     не за что зацепиться. */
+  .t-content--flow {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+  .t-content--flow .t-status {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .t-btnstack,
+  .t-offer__later {
+    margin-top: auto;
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* Заголовок статус-экранов — фиолетовый 28/700, как в кадрах интересов и
+     анализа. */
+  .t-status__heading {
+    color: var(--t-purple);
+  }
+
+  /* Карусель тьюторов: описание во всю ширину колонки и 16/400; чипы черт —
+     32 высотой с подписью 14/500. */
+  .t-car__desc {
+    max-width: none;
+    margin-top: 16px;
+    font-size: 16px;
+  }
+  .t-car__chips {
+    gap: 2px;
+  }
+  .t-car__chip {
+    padding: 0 12px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* Дашборд: контент во всю ширину 408 (было 370 — поля по 35 вместо 16). */
+  .t-dash__talk,
+  .t-dash__suggest,
+  .t-dash__engonly {
+    max-width: 408px;
+  }
+  .t-dash__talk {
+    height: 60px;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  /* Фон героя: вертикальный градиент от серого к сиреневому вместо
+     радиального пятна на всю колонку. */
+  .t-dash {
+    background: none;
+  }
+  .t-dash__center {
+    background: linear-gradient(180deg, #f2f2f2 0%, rgba(229, 216, 255, 0.97) 100%);
+  }
+  /* Уровень под именем — обычная строка, а не бейдж-пилюля. */
+  .t-dash__tutormeta span {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #9047ff;
+  }
+  /* «Советуем сегодня» — обычный регистр 14/500, без капса и разрядки. */
+  .t-dash__suggesttext small {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  /* «Только английский» — белая карточка r20, а не сиреневая пилюля. */
+  .t-dash__engonly {
+    border-radius: 20px;
+    background: #fff;
+    padding: 12px 16px;
+  }
+  .t-dash__engonlytext b {
+    font-size: 16px;
+    color: var(--d-ink);
+  }
+  .t-dash__engonlytext small {
+    font-size: 14px;
+    color: #898989;
+  }
+  /* Кнопка управления тьютором — круг 36 со значком, подпись скрыта. */
+  .t-dash__manage {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    gap: 0;
+    border-radius: 50%;
+    background: #b7f0ff;
+    color: #9047ff;
+  }
+  .t-dash__managelabel {
+    display: none;
+  }
+  /* Превью сценария — пропорция 198×240 из кадра (десктопные 150px не трогаем:
+     там липкая панель на семь карточек). */
+  .t-scenario__img {
+    height: auto;
+    aspect-ratio: 198 / 240;
+  }
+  /* «Посмотреть все» — прозрачная пилюля с сиреневой обводкой. */
+  .t-seeall {
+    background: transparent;
+    border: 1px solid #d6bcff;
+  }
+  /* Круг уровня в результате теста — 160 (в кадре 4338:2211). */
+  .t-levelcircle {
+    width: 160px;
+    height: 160px;
+  }
+  /* Карточка коуч-марка — 393 шириной, r20, поля 24. */
+  .t-tour__pop {
+    width: min(393px, calc(100vw - 32px));
+    border-radius: 20px;
+    padding: 24px;
+  }
+
+  /* Плашка «дайте доступ к микрофону» имитирует всплывашку браузера у адресной
+     строки — на десктопе она сверху слева, и там это правда. В мобильном Safari
+     адресная строка внизу, а плашка на 440 накрывала шапку экрана вместе с
+     кнопкой «Назад»: уйти с экрана было нечем. Кладём её вниз, над панелью
+     браузера, и растягиваем по ширине экрана. */
+  .t-micperm {
+    top: auto;
+    bottom: var(--safe-bottom);
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+
   /* Десктоп-версия экрана выбора скрыта, показываем карусель */
   .t-choose__title,
   .t-choose__pills,

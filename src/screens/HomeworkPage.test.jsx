@@ -19,6 +19,9 @@ const withAnswer = {
 }
 
 vi.mock('../api.js', () => ({
+  // Оболочка теперь рисует колокольчик уведомлений (LearningLayout →
+  // NotificationBell), и он ходит в api.js — без заглушки падает весь экран.
+  getUnreadNotificationCount: vi.fn(async () => 0),
   // Сайдбар оболочки тянет баланс — без заглушки падает весь экран.
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getMyHomework: vi.fn(async () => [ASSIGNMENT]),
@@ -196,6 +199,21 @@ describe('HomeworkPage', () => {
     const { container } = renderPage()
     await waitFor(() => expect(container.querySelector('.hw-card')).not.toBeNull())
     expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
+  })
+
+  // Регрессия: без токена экран навсегда оставался в стартовом 'loading' —
+  // «Загрузка домашних работ…» крутилась вечно, потому что запроса не было и
+  // состояние никто не менял. Так открывался диплинк ?screen=homework у гостя.
+  it('гостю показывает «войдите», а не вечную загрузку', async () => {
+    render(
+      <I18nProvider>
+        <HomeworkPage userName="Сакен" onNav={() => {}} onProfile={() => {}} />
+      </I18nProvider>
+    )
+
+    await waitFor(() => expect(screen.getByText(/Войдите в аккаунт/i)).toBeTruthy())
+    expect(screen.queryByText(/Загрузка домашних работ/i)).toBeNull()
+    expect(api.getMyHomework).not.toHaveBeenCalled()
   })
 })
 

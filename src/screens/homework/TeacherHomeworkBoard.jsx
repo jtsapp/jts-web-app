@@ -21,7 +21,7 @@ export default function TeacherHomeworkBoard({ token }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
   const [items, setItems] = useState([])
-  const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
+  const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error' (гость — см. view ниже)
   const [selectedId, setSelectedId] = useState(null)
   const [comment, setComment] = useState('')
   const [grade, setGrade] = useState(null)
@@ -86,8 +86,13 @@ export default function TeacherHomeworkBoard({ token }) {
     }
   }
 
-  if (state === 'loading') return <p className="hw__hint">{t('homework.loading')}</p>
-  if (state === 'error') return <p className="hw__error">{t('homework.loadError')}</p>
+  // Без токена доска не запрашивается — и без этой строки висела бы на вечной
+  // «Загрузке домашних работ…», как ученический экран (см. HomeworkPage).
+  const view = token ? state : 'anon'
+
+  if (view === 'loading') return <p className="hw__hint">{t('homework.loading')}</p>
+  if (view === 'anon') return <p className="hw__hint">{t('homework.needAuth')}</p>
+  if (view === 'error') return <p className="hw__error">{t('homework.loadError')}</p>
   if (sorted.length === 0) return <p className="hw__hint">{t('homework.boardEmpty')}</p>
 
   return (

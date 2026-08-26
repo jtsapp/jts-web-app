@@ -5,9 +5,10 @@ import { wordFromTap, isPhraseSelection, isOversizedPhrase } from '../../../lib/
 import { wrapTapWords } from '../wrapTapWords.js'
 import { useWordBankRoot } from '../useWordBankRoot.js'
 import TapText from '../TapText.jsx'
+import { stripExerciseNumber, stripExerciseNumbersInHtml } from '../stripExerciseNumber.js'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
-// от учителя/экстрактора. html санитизируется (см. sanitizeHtml.js), а в DOM
+// от курса/экстрактора. html санитизируется (см. sanitizeHtml.js), а в DOM
 // его ставит useWordBankRoot — не dangerouslySetInnerHTML: опрос занятия
 // каждые 5 с иначе пересобирает пропуски и стирает слова. Банк слов
 // (`.wbank` + `input.gap`) — не practice-вопрос, но в live его ячейки всё
@@ -15,13 +16,17 @@ import TapText from '../TapText.jsx'
 // ученик вставил, и наоборот.
 //
 // Карточки на себе не несёт: её рисует LessonContent сразу на серию соседних
-// info-блоков.
-function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix }) {
-  const html = useMemo(() => sanitizeHtml(block?.html), [block?.html])
+// info-блоков. `checked` — ученик нажал «Проверить» на этой карточке.
+function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix, checked }) {
+  const html = useMemo(
+    () => stripExerciseNumbersInHtml(sanitizeHtml(block?.html)),
+    [block?.html],
+  )
+  const title = block?.title ? stripExerciseNumber(block.title) : ''
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const bodyRef = useRef(null)
-  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId })
-  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId }
+  const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId, checked })
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked }
 
   useEffect(() => {
     const root = bodyRef.current
@@ -56,11 +61,11 @@ function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId,
     return () => root.removeEventListener('click', onClick)
   }, [tappableHtml, onWord])
 
-  if (!html && !block?.title) return null
+  if (!html && !title) return null
 
   return (
     <div className="lw-info__item">
-      {block?.title && <TapText as="h3" className="lw-info__title" text={block.title} onWord={onWord} />}
+      {title && <TapText as="h3" className="lw-info__title" text={title} onWord={onWord} />}
       {html && <div className="lw-info__body" ref={bodyRef} />}
     </div>
   )

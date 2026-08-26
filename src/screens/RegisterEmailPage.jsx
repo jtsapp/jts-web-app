@@ -10,7 +10,7 @@ import { isEmailIdentifier } from '../api.js'
  * идентификаторами (handleRegEmailSubmit → sendRegistrationOtp), и бэкенд
  * шлёт его на эту почту. Порядок: номер → почта → код на почту → пароль.
  */
-export default function RegisterEmailPage({ onSubmit, loading, error }) {
+export default function RegisterEmailPage({ onBack, onSubmit, loading, error }) {
   const { t } = useI18n()
   const [email, setEmail] = useState('')
 
@@ -23,7 +23,7 @@ export default function RegisterEmailPage({ onSubmit, loading, error }) {
   }
 
   return (
-    <Shell>
+    <Shell onBack={onBack}>
       <div className="form-inner">
         <form className="form-card" onSubmit={submit}>
           <h2 className="form-title">

@@ -28,7 +28,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   const { t } = useI18n()
   const [items, setItems] = useState([])
   const [materials, setMaterials] = useState([])
-  const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
+  const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error' (гость — см. view ниже)
   const [selectedId, setSelectedId] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -56,6 +56,13 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
       .catch(() => { if (!cancelled) setState('error') })
     return () => { cancelled = true }
   }, [token])
+
+  // Гостю запрашивать нечего: домашние работы висят на аккаунте, и эффект выше
+  // молча выходит без токена. Стартовое состояние при этом остаётся 'loading',
+  // и экран навсегда застревал на «Загрузка домашних работ…» — так открывался
+  // диплинк ?screen=homework без входа. Состояние гостя выводим из токена, а не
+  // держим четвёртым setState: менять его в эффекте нечем и незачем.
+  const view = token ? state : 'anon'
 
   // Сверху то, что ждёт ученика (возврат на доработку, заданное), внизу —
   // сданное и проверенное; внутри группы сохраняется порядок бэкенда
@@ -169,9 +176,10 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         </header>
 
         <div className="hw__body">
-          {state === 'loading' && <p className="hw__hint">{t('homework.loading')}</p>}
-          {state === 'error' && <p className="hw__error">{t('homework.loadError')}</p>}
-          {state === 'ready' && (
+          {view === 'loading' && <p className="hw__hint">{t('homework.loading')}</p>}
+          {view === 'anon' && <p className="hw__hint">{t('homework.needAuth')}</p>}
+          {view === 'error' && <p className="hw__error">{t('homework.loadError')}</p>}
+          {view === 'ready' && (
             <div className="hw__layout">
               <div className="hw__col">
                 <HomeworkList items={combined} selectedId={selectedId} onSelect={setSelectedId} />

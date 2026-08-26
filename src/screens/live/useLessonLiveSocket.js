@@ -16,12 +16,12 @@ import { wsBase } from '../../lib/wsUrl.js'
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
-  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast })
-  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast } })
+  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer })
+  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -54,6 +54,14 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
           const evt = parse(m.body)
           if (!evt || evt.senderUserId === selfUserId) return
           handlersRef.current.onAudioBroadcast?.(evt)
+        })
+        // Таймер урока: преподаватель включил отсчёт — он идёт и у ученика.
+        // Своё эхо глушим, как у focus/present: у преподавателя таймер уже тикает
+        // локально с момента нажатия, и повторный запуск сбросил бы ему секунды.
+        client.subscribe(`/topic/lesson/${lessonId}/timer`, (m) => {
+          const evt = parse(m.body)
+          if (!evt || evt.senderUserId === selfUserId) return
+          handlersRef.current.onTimer?.(evt)
         })
         // Урок каталога, открытый шагами: где стоит собеседник и что он ответил.
         // Своё эхо глушим здесь же — иначе ответ ученика вернулся бы ему извне и

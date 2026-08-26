@@ -39,3 +39,6 @@ scripts/shadowing-src/*
 !scripts/shadowing-src/sources.json
 # Локальный venv питон-агента (ставится из agent/requirements.txt)
 agent/venv/
+
+# Вывод дев-сервера: попал в гит по недосмотру, меняется при каждом запуске.
+dev.log
