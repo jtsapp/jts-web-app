@@ -29,6 +29,7 @@ import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
+import { useLessonTimer, formatTimer } from './live/useLessonTimer.js'
 import { knowsFocusTarget } from './live/followFocus.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -447,7 +448,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
+  // Таймер преподавателя идёт и у ученика: «две минуты на задание» работает,
+  // когда время видят обе стороны.
+  const { remaining: timerLeft, expired: timerExpired, onTimer } = useLessonTimer()
+
   const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio } = useLessonLiveSocket(lessonId, token, selfUserId, {
+    onTimer,
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
     onAudioBroadcast: (evt) => playBroadcastAudio(evt),
@@ -873,6 +879,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               <h1 className="live__title">{t('live.title')}</h1>
               <span className="live__teacher">{lesson.teacherName || ''}</span>
               <LiveStatusBadge status={status} />
+              {/* Таймер преподавателя. В шапке, а не в колонке справа: на него
+                  смотрят, не отрываясь от задания, и он не должен уезжать со
+                  скроллом материала. */}
+              {timerLeft !== null && (
+                <span className={`live__timer${timerExpired ? ' live__timer--out' : ''}`}>
+                  <span className="live__timer-dot" aria-hidden="true" />
+                  {timerExpired ? t('live.timerOut') : formatTimer(timerLeft)}
+                </span>
+              )}
               {/* Кто в классе — здесь же, строкой. Отдельной карточкой во всю
                   ширину это отодвигало материал урока ниже первого экрана. */}
               <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />
