@@ -42,7 +42,9 @@ from livekit.agents import (
     cli,
     function_tool,
     inference,
+    tokenize,
 )
+from livekit.agents import tts as lk_tts
 from livekit.plugins import google
 from google.genai import types as genai_types
 
@@ -252,7 +254,16 @@ else:
 # обслуживает прод. Это не утечка: попасть в неё можно, только прислав
 # tutor: 'jarvis' в metadata комнаты, а прод-сборка Next даже не рендерит
 # карточку Джарвиса (JARVIS_ENABLED в src/config.js).
-_PERSONA_STANDALONE_FILES = {"jarvis": "persona-jarvis.md"}
+#
+# Ключи здесь — persona_key (с учётом нрава), как у методичек: у Джарвиса есть
+# вариант 18+, и это отдельный файл, а не флаг внутри существующего. Ветку
+# «персона со своим промптом» выбирает тоже persona_key — иначе злой Джарвис
+# ушёл бы в обычную сборку build_instructions и получил бы методичку с CEFR,
+# которой у ассистента нет.
+_PERSONA_STANDALONE_FILES = {
+    "jarvis": "persona-jarvis.md",
+    "jarvis_harsh": "persona-jarvis-harsh.md",
+}
 STANDALONE_PROMPT_PERSONAS = frozenset(_PERSONA_STANDALONE_FILES)
 
 PERSONA_STANDALONE_BLOCKS: dict[str, str] = {}
@@ -410,6 +421,11 @@ STYLE_GUIDANCE = {
 PERSONA_TEMPER_VARIANTS = {
     ("hype", "harsh"): "hype_harsh",  # Спарк 18+
     ("bro", "calm"): "bro_calm",      # Декстер без мата
+    # Джарвис 18+ — ВРЕМЕННО, вместе с переездом его голоса на OpenAI: нрав
+    # проверяется на dev-тьюторе, а не на живых Спарке с Декстером. У него,
+    # в отличие от той пары, вариант — отдельный ФАЙЛ персоны
+    # (_PERSONA_STANDALONE_FILES), а не строка в PERSONA_OVERRIDE.
+    ("jarvis", "harsh"): "jarvis_harsh",
 }
 
 
@@ -523,6 +539,13 @@ _MIRROR_LEARNER_LANGUAGE = (
 # к Спарку полезнее для ученика, чем ломаный казахский.
 KZ_TUTOR_PERSONA = "hype"  # Спарк
 
+# Кто РЕАЛЬНО говорит по-казахски. Шире, чем KZ_TUTOR_PERSONA, и это не одно и
+# то же: KZ_TUTOR_PERSONA сидит в ветках промпта, которые про Спарка лично
+# («скажи, что твой казахский слабый, и отправь к Спарку») — Джарвису они не
+# нужны, у него свой файл персоны целиком. А вот озвучке разница видна: язык
+# ПРОИЗНОШЕНИЯ у обоих казахский, и он не зависит от языка интерфейса.
+KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis"})
+
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
     "speaks or asks in Kazakh, do NOT answer in Kazakh and do NOT fake it. Say plainly, "
@@ -583,6 +606,37 @@ def tutor_session_lang(tutor: str, lang: str) -> str:
         return "kz"
     return lang
 
+
+def _tts_speech_lang(tutor: str, lang: str) -> str:
+    """Язык, под который настраивается ОЗВУЧКА: фонетика в instructions и
+    словарь произношения в tts_node.
+
+    Отдельно от tutor_session_lang, потому что вопрос другой. Тот отвечает «на
+    каком языке персона получает подпорки промпта» и меняет только ru→kz. Здесь
+    же — «что физически произносит голос», а казахскоязычные тьюторы говорят
+    по-казахски при ЛЮБОМ интерфейсе, включая английский. Английские слова
+    внутри казахской фразы это не ломает: блок kz прямо велит читать их
+    по-английски (у Спарка с Джарвисом английский в речи каждую минуту).
+    """
+    tutor = (tutor or "").strip().lower()
+    if tutor in KZ_SPEAKING_TUTORS:
+        return "kz"
+    return tutor_session_lang(tutor, lang)
+
+
+def _pronunciation_lang(profile: LearnerProfile) -> str:
+    """Язык словаря произношения для tts_node — или пусто, если чинить нечего.
+
+    Гейт по ПРОВАЙДЕРУ, а не по тьютору, и это про безопасность прода: агент
+    ОДИН на дев и прод, а подмены подобраны под голос OpenAI. Спарк живёт на
+    Soniox, тот читает казахский нативно и в «I E L T S» не нуждается; а
+    развернуть ему цифры в казахские числительные посреди английской фразы
+    («I have үш apples») — это регрессия у живого тьютора, а не улучшение.
+    Включим Спарку, когда прогоним на нём отдельно.
+    """
+    if _tts_provider_for(profile) != "openai":
+        return ""
+    return _tts_speech_lang(profile.tutor, profile.lang or "en")
 
 # Тумблер «только английский» на дашборде. Перебивает ВСЁ языковое: и выбранный
 # язык объяснений, и зеркалирование языка ученика. Это осознанный выбор ученика —
@@ -1554,6 +1608,182 @@ class _MoodStripper:
         return out
 
 
+# ---- произношение: что уходит в TTS вместо того, что видит ученик ----------
+#
+# Инструкции диктору (OPENAI_TTS_PRONUNCIATION) задают ОБЩУЮ фонетику языка, и
+# на отдельное слово они не действуют: попросить «читай қ как [q]» можно, а
+# «читай IELTS как айэлтс» — уже нет. Единственный способ починить конкретное
+# слово у провайдера без словаря — подменить само написание перед синтезом.
+#
+# Правка живёт ЗДЕСЬ, а не в промпте персоны: во-первых, это указание диктору, а
+# не мозгу; во-вторых, tts_node стоит НИЖЕ субтитров, поэтому на экране ученик
+# видит нормальный текст, а кривое написание слышит только синтез. В llm_node
+# (там mood-стриппер) такую подмену делать нельзя — он выше субтитров, и
+# костыль уехал бы ученику на экран.
+#
+# Прецедент в проекте уже есть: PRONUNCIATION в
+# scripts/make-tutor-voice-samples.js ставит «Луна́» со знаком ударения, иначе
+# синтез читает имя как спутник Земли.
+_PRONUNCIATION_FILES = {"kz": "pronunciation-kk.tsv"}
+
+# Словарь ведёт человек, который слышит ошибки, — поэтому файл, а не код: TSV
+# «как пишем<TAB>как читаем», решётка в начале строки — комментарий. Читается на
+# СТАРТЕ ВОРКЕРА, как методичка: после правки агента надо перезапустить.
+PRONUNCIATION_LEXICON: dict[str, dict[str, str]] = {}
+_PRONUNCIATION_RE: dict[str, _re.Pattern[str]] = {}
+
+
+def _compile_lexicon(entries: dict[str, str]) -> _re.Pattern[str] | None:
+    """Одна регулярка на весь словарь: разбирать текст по слову на запись —
+    это N проходов по каждой реплике, а реплики идут в реальном времени.
+
+    Длинные ключи первыми, иначе «Just to Study» никогда не сматчится — его
+    съест более короткий «Study», стоящий раньше в чередовании.
+    """
+    if not entries:
+        return None
+    keys = sorted(entries, key=len, reverse=True)
+    # \b по краям, но только если край — буквенно-цифровой: у ключей вроде «A1»
+    # или «%» граница слова с одной стороны отсутствует, и \b там не сработает.
+    def _edge(k: str, left: bool) -> str:
+        ch = k[0] if left else k[-1]
+        return r"\b" if ch.isalnum() else ""
+    parts = [_edge(k, True) + _re.escape(k) + _edge(k, False) for k in keys]
+    return _re.compile("|".join(parts), _re.IGNORECASE)
+
+
+for _lang, _fname in _PRONUNCIATION_FILES.items():
+    _path = _resolve_methodology(_fname)
+    _raw = _load_methodology_file(_path)
+    _entries: dict[str, str] = {}
+    for _line in (_raw or "").splitlines():
+        _line = _line.strip()
+        if not _line or _line.startswith("#"):
+            continue
+        if "\t" not in _line:
+            logger.warning("Pronunciation %s: line without a TAB, skipped: %r", _lang, _line[:60])
+            continue
+        _src, _dst = _line.split("\t", 1)
+        _src, _dst = _src.strip(), _dst.strip()
+        if _src:
+            _entries[_src] = _dst
+    PRONUNCIATION_LEXICON[_lang] = _entries
+    _PRONUNCIATION_RE[_lang] = _compile_lexicon(_entries)
+    logger.info("Pronunciation lexicon %s: %d entries from %s", _lang, len(_entries), _path)
+
+
+# Разметка, которую персона запрещает, но модель всё равно иногда выдаёт.
+# Синтез читает звёздочку вслух («звёздочка Present Perfect звёздочка»), и это
+# слышно сразу, в отличие от текста на экране, где она просто некрасива.
+_SPEECH_MARKUP_RE = _re.compile(r"[*_`#]+")
+
+# Казахские числительные. Цифры в тексте — отдельная беда: провайдер читает их
+# на языке, который сам угадал, поэтому «20» посреди казахской фразы звучит
+# по-русски или по-английски. Правило детерминированное, словарь тут не нужен.
+_KK_ONES = ["", "бір", "екі", "үш", "төрт", "бес", "алты", "жеті", "сегіз", "тоғыз"]
+_KK_TENS = ["", "он", "жиырма", "отыз", "қырық", "елу", "алпыс", "жетпіс", "сексен", "тоқсан"]
+
+
+def number_to_kazakh(n: int) -> str:
+    """0–999999 словами. Больше в речи тьютора не встречается, а год (2026)
+    и любые счётные величины попадают в диапазон."""
+    if n == 0:
+        return "нөл"
+    if n < 0:
+        return "минус " + number_to_kazakh(-n)
+    if n >= 1000:
+        thousands, rest = divmod(n, 1000)
+        # «мың», а не «бір мың»: в казахском единица перед «мың» не ставится.
+        head = "мың" if thousands == 1 else f"{number_to_kazakh(thousands)} мың"
+        return head if rest == 0 else f"{head} {number_to_kazakh(rest)}"
+    parts: list[str] = []
+    hundreds, rest = divmod(n, 100)
+    if hundreds:
+        parts.append("жүз" if hundreds == 1 else f"{_KK_ONES[hundreds]} жүз")
+    tens, ones = divmod(rest, 10)
+    if tens:
+        parts.append(_KK_TENS[tens])
+    if ones:
+        parts.append(_KK_ONES[ones])
+    return " ".join(parts)
+
+
+_DIGITS_RE = _re.compile(r"\d+")
+_NUMBER_TO_WORDS = {"kz": number_to_kazakh}
+
+
+def normalize_for_speech(text: str, lang: str) -> str:
+    """Текст → то, что нужно отдать синтезу. Порядок шагов важен.
+
+    Разметка снимается ПЕРВОЙ: иначе «*IELTS*» не совпадёт со словарным ключом
+    «IELTS». Цифры разворачиваются ДО словаря — чтобы словарные записи могли
+    перебить результат («A1» остаётся уровнем, а не «A бір»).
+    """
+    if not text:
+        return text
+    out = _SPEECH_MARKUP_RE.sub("", text)
+    to_words = _NUMBER_TO_WORDS.get(lang)
+    if to_words:
+
+        def _expand(m: _re.Match[str]) -> str:
+            words = to_words(int(m.group()))
+            # Пробел вокруг числа, если цифра приклеена к букве: «A1» иначе
+            # становится «Aбір» одним словом, и его не видит ни словарь, ни
+            # синтез. Перед точкой и запятой пробел не ставим — там пауза уже
+            # своя, а лишний пробел синтез читает как заминку.
+            src = m.string
+            if m.start() and src[m.start() - 1].isalpha():
+                words = " " + words
+            if m.end() < len(src) and src[m.end()].isalpha():
+                words = words + " "
+            return words
+
+        out = _DIGITS_RE.sub(_expand, out)
+    rx = _PRONUNCIATION_RE.get(lang)
+    if rx:
+        entries = PRONUNCIATION_LEXICON[lang]
+        lowered = {k.lower(): v for k, v in entries.items()}
+        out = rx.sub(lambda m: lowered.get(m.group().lower(), m.group()), out)
+    return out
+
+
+# Сколько хвоста придерживать, чтобы словарь видел слово целиком. Модель шлёт
+# текст кусками по нескольку символов, и подмена на границе куска разорвала бы
+# слово пополам. Держим последние символы до пробела — этого хватает и на
+# многословные ключи вроде «Just to Study».
+_SPEECH_TAIL_LIMIT = 64
+
+
+class _PronunciationStream:
+    """Потоковая нормализация реплики перед TTS.
+
+    Живёт одну реплику. `feed()` отдаёт готовый кусок и придерживает хвост до
+    ближайшего пробела; `flush()` в конце ОБЯЗАТЕЛЕН — иначе последнее слово
+    (а у короткой реплики и всё целиком) не будет озвучено.
+    """
+
+    def __init__(self, lang: str):
+        self._lang = lang
+        self._buf = ""
+
+    def feed(self, text: str) -> str:
+        self._buf += text
+        cut = self._buf.rfind(" ")
+        if cut < 0:
+            # Пробела нет вообще: одно длинное слово. Ждём — но не бесконечно,
+            # иначе реплика без пробелов зависла бы до самого flush().
+            if len(self._buf) < _SPEECH_TAIL_LIMIT:
+                return ""
+            out, self._buf = self._buf, ""
+            return normalize_for_speech(out, self._lang)
+        out, self._buf = self._buf[: cut + 1], self._buf[cut + 1 :]
+        return normalize_for_speech(out, self._lang)
+
+    def flush(self) -> str:
+        out, self._buf = self._buf, ""
+        return normalize_for_speech(out, self._lang) if out else ""
+
+
 def build_mood_block(tutor: str) -> str:
     """Блок промпта про mood-тег. Пусто, если тег этой сессии не положен.
 
@@ -1625,6 +1855,7 @@ class TutorAgent(Agent):
         scenario_id: str = "",
         tutor: str = "",
         moods_enabled: bool = False,
+        speech_lang: str = "",
     ):
         super().__init__(instructions=instructions)
         self._device_id = device_id
@@ -1639,6 +1870,10 @@ class TutorAgent(Agent):
         # до MOOD_SCAN_LIMIT символов. Флаг отдельный, а не пустой self._tutor:
         # персона в тех режимах задана, и врать про неё нельзя.
         self._moods_enabled = moods_enabled
+        # Язык, под который правится произношение (tts_node). Это язык РЕЧИ
+        # персоны, а не интерфейса: у Спарка с Джарвисом он казахский и при
+        # русском UI — см. _tts_speech_lang.
+        self._speech_lang = (speech_lang or "").strip().lower()
         # Room handle so placement mode can push the confirmed level straight to
         # the web client over a LiveKit data message (topic "placement").
         self._room = room
@@ -1759,6 +1994,35 @@ class TutorAgent(Agent):
         tail = stripper.flush()
         if tail:
             yield tail
+
+    async def tts_node(self, text, model_settings):
+        """Починить произношение до синтеза — и ТОЛЬКО его.
+
+        Именно tts_node, а не llm_node: этот хук стоит НИЖЕ субтитров, поэтому
+        подменённое написание слышит синтез, а ученик на экране видит нормальный
+        текст. В llm_node (там mood-стриппер) костыль уехал бы и на экран.
+
+        Стрим не ломаем: текст придерживается только до ближайшего пробела, то
+        есть на одно слово, а не на всю реплику.
+        """
+        if not self._speech_lang:
+            async for frame in Agent.default.tts_node(self, text, model_settings):
+                yield frame
+            return
+
+        stream = _PronunciationStream(self._speech_lang)
+
+        async def _fixed():
+            async for chunk in text:
+                out = stream.feed(chunk)
+                if out:
+                    yield out
+            tail = stream.flush()
+            if tail:
+                yield tail
+
+        async for frame in Agent.default.tts_node(self, _fixed(), model_settings):
+            yield frame
 
     @function_tool()
     async def log_mistake(
@@ -2521,7 +2785,7 @@ def build_standalone_instructions(p: LearnerProfile) -> str:
     ломается ровно от этого: половина её характера уходит на спор с указаниями
     «будь encouraging» и «начни с диагностики уровня».
     """
-    body = PERSONA_STANDALONE_BLOCKS.get((p.tutor or "").strip().lower(), "")
+    body = PERSONA_STANDALONE_BLOCKS.get(persona_key(p.tutor, p.temper), "")
     parts = [body] if body else []
     if p.user_name:
         parts.append(f"The person you are speaking with is called {p.user_name}.")
@@ -3552,6 +3816,219 @@ def _cascade_tts_fish(profile: LearnerProfile):
     )
 
 
+# OpenAI TTS — временный голос Джарвиса вместо клона Fish (см. TUTOR_TTS_PROVIDER).
+# Голос выбирается ИМЕНЕМ из каталога, а не reference_id: это не клон, а готовый
+# пресет, поэтому таблица тут человекочитаемая, в отличие от FISH_TTS_VOICE.
+# Зеркало OPENAI_VOICE в src/app/api/tutor-tts/route.js и ttsOpenai в
+# scripts/make-tutor-voice-samples.js: превью на экране выбора и визитки обязаны
+# звучать тем же голосом, каким тьютор заговорит вживую.
+#
+# КЛЮЧ ЗДЕСЬ — БАЗОВЫЙ id (железное правило оси нрава, см. PERSONA_TEMPER_VARIANTS):
+# тембр у злого и спокойного Джарвиса ОДИН. Меняется только подача, и она ниже
+# лежит в отдельной таблице по persona_key.
+OPENAI_TTS_VOICE = {
+    "jarvis": "ash",
+}
+# gpt-4o-mini-tts, а не tts-1/tts-1-hd: только он принимает instructions (тон,
+# темп, акцент) и тарифицируется по аудио-токенам (~$0.015/мин против $15/1M
+# символов у tts-1). Переключается OPENAI_TTS_MODEL, зеркало OPENAI_MODEL в
+# tutor-tts/route.js.
+DEFAULT_OPENAI_TTS_MODEL = "gpt-4o-mini-tts"
+
+# ── Подача: instructions — единственная ручка тембра у OpenAI ────────────────
+# Ни stability, ни style, ни similarity_boost как у ElevenLabs: голосов-пресетов
+# десять, всё остальное задаётся ТЕКСТОМ. Поэтому инструкции собираются из трёх
+# слоёв, а не пишутся одной строкой на персону:
+#   1. характер персоны   — по persona_key (нрав меняет ПОДАЧУ, см. ниже)
+#   2. живость            — общий блок против дикторского чтения
+#   3. произношение       — по языку сессии
+# Всё это инструкция ДИКТОРУ, а не мозгу: в system prompt она попасть не должна,
+# иначе тьютор начнёт проговаривать её вслух.
+#
+# ИСКЛЮЧЕНИЕ ИЗ ЖЕЛЕЗНОГО ПРАВИЛА, осознанное. Правило говорит: голос читает
+# базовый id, текст и тон — persona_key. Голос (какой пресет) остаётся на базовом
+# id, а подача — это и есть ТОН, поэтому она по persona_key. Злой Джарвис обязан
+# звучать злым тем же голосом; иначе кнопка 18+ меняла бы только слова, а
+# интонация оставалась бы дворецкой.
+OPENAI_TTS_PERSONA_STYLE = {
+    "jarvis": (
+        "You are an impeccably trained English butler serving a person you "
+        "genuinely respect. Unhurried, warm, quietly amused. Courtesy is not "
+        "stiffness: there is real affection under the formality, and it shows "
+        "in small softenings at the ends of phrases. Dry wit lands flat and "
+        "confident, never winking. Never theatrical, never servile."
+    ),
+    "jarvis_harsh": (
+        "You are the same English butler, but the mask is off and you are done "
+        "pretending. The courtesy is still there and that is what makes it "
+        "cut: every polite phrase is loaded. Clipped, cold, openly irritated. "
+        "Bite down on the sharp words, let contempt sit in the pauses, snap at "
+        "the end of sentences. Raise your voice when you are fed up — but stay "
+        "precise, this is a butler losing patience, not a drunk shouting."
+    ),
+}
+# Против роботизированности. Главная причина «неживого» звука у TTS — ровный
+# темп и одинаково падающая интонация в каждом предложении: модель по умолчанию
+# ЧИТАЕТ, а не говорит. Просить «будь эмоциональнее» бесполезно — это читается
+# как театральность (тот же урок уже получен на Луне, см. TUNING.luna.prompt в
+# scripts/make-tutor-voice-samples.js). Работают конкретные механики речи.
+OPENAI_TTS_LIVENESS = (
+    "DELIVERY: sound like a person talking, not a narrator reading. Vary pitch "
+    "and pace inside the sentence — hurry through the unimportant parts, slow "
+    "down and lean on the words that carry the meaning. Do not end every "
+    "sentence on the same falling note. Leave real micro-pauses where a person "
+    "would think, and take an audible breath before the longer ones. Let small "
+    "reactions colour the first word of a reply. Never sing-song, never "
+    "drawn-out vowels, never breathy."
+)
+# Произношение — по языку сессии. Казахский блок здесь не про Джарвиса (он
+# русскоязычный): он готов для Спарка, если тот поедет на OpenAI. Модель
+# казахский официально не поддерживает и по умолчанию читает его как русский,
+# поэтому специфичные буквы приходится проговаривать в IPA поимённо.
+OPENAI_TTS_PRONUNCIATION = {
+    "kz": (
+        "PRONUNCIATION: the text is KAZAKH (qazaq tili), not Russian. Use "
+        "Kazakh phonology: ә as an open front [æ], ө as [ø], ү as [y], ұ as "
+        "[ʊ], і as a short [ɪ], қ as a deep uvular [q], ғ as [ʁ], ң as [ŋ], һ "
+        "as [h]. Respect Kazakh vowel harmony and put word stress on the LAST "
+        "syllable. English words inside a Kazakh sentence keep their English "
+        "pronunciation — do not read them letter by letter."
+    ),
+    "ru": (
+        "PRONUNCIATION: the text is RUSSIAN. Native Russian phonology, no "
+        "English accent, no hard American r. Unstressed о reduces to [ɐ]. "
+        "«сэр» is [sɛr], a Russian word, not the English 'sir'. English terms "
+        "inside a Russian sentence keep their English pronunciation."
+    ),
+    "en": "",
+}
+# Темп. У OpenAI это отдельный параметр, а не текст (диапазон 0.25–4.0), и он
+# честнее просьбы «говори быстрее» в instructions. По persona_key: злой Джарвис
+# частит, спокойный держит ровный темп дворецкого.
+OPENAI_TTS_SPEED = {
+    "jarvis": 1.0,
+    "jarvis_harsh": 1.08,
+}
+DEFAULT_OPENAI_TTS_SPEED = 1.0
+
+
+def _openai_api_key() -> str:
+    """Ключ OpenAI. Два имени НЕ от хорошей жизни: в .env.local он приехал как
+    OpenAI_API_KEY, и на Windows это сработало (os.environ там регистро-
+    независим), а в Linux-контейнере агента os.getenv("OPENAI_API_KEY") вернул
+    бы None — тьютор молча уехал бы в фолбэк на Soniox чужим голосом. Читаем оба
+    написания, каноническое — OPENAI_API_KEY."""
+    for name in ("OPENAI_API_KEY", "OpenAI_API_KEY"):
+        key = (os.getenv(name) or "").strip()
+        if key:
+            return key
+    return ""
+
+
+def _openai_voice_for(tutor: str) -> str:
+    """Голос персоны: env OPENAI_TTS_VOICE_<PERSONA> важнее таблицы —
+    перебрать тембр можно без редеплоя агента (зеркало _fish_voice_for)."""
+    tutor = (tutor or "").strip().lower()
+    if tutor:
+        env = (os.getenv(f"OPENAI_TTS_VOICE_{tutor.upper()}") or "").strip()
+        if env:
+            return env
+    return OPENAI_TTS_VOICE.get(tutor, OPENAI_TTS_VOICE["jarvis"])
+
+
+def _openai_instructions_for(persona: str, lang: str) -> str:
+    """Инструкции диктору: характер персоны + живость + произношение языка.
+
+    `persona` — это persona_key (с учётом нрава), а не базовый id: подача и есть
+    тон, и кнопка 18+ обязана менять её вместе с текстом.
+
+    OPENAI_TTS_INSTRUCTIONS_<PERSONA> заменяет ВСЮ сборку целиком, а не
+    дописывает слой: переменная нужна, чтобы перебирать формулировки на живом
+    звонке, а склейка с непонятно чем этому только мешает.
+    """
+    persona = (persona or "").strip().lower()
+    if persona:
+        env = (os.getenv(f"OPENAI_TTS_INSTRUCTIONS_{persona.upper()}") or "").strip()
+        if env:
+            return env
+    parts = [
+        OPENAI_TTS_PERSONA_STYLE.get(persona, ""),
+        OPENAI_TTS_LIVENESS,
+        OPENAI_TTS_PRONUNCIATION.get(lang, ""),
+    ]
+    return "\n".join(p for p in parts if p)
+
+
+def _openai_speed_for(persona: str) -> float:
+    persona = (persona or "").strip().lower()
+    env = (os.getenv(f"OPENAI_TTS_SPEED_{persona.upper()}") or "").strip() if persona else ""
+    if env:
+        try:
+            return float(env)
+        except ValueError:
+            logger.warning("OPENAI_TTS_SPEED_%s=%r is not a number — ignored", persona.upper(), env)
+    return OPENAI_TTS_SPEED.get(persona, DEFAULT_OPENAI_TTS_SPEED)
+
+
+def _cascade_tts_openai(profile: LearnerProfile):
+    """OpenAI TTS (gpt-4o-mini-tts). Ключ отдаём явно, хотя плагин сам читает
+    OPENAI_API_KEY: имя переменной в .env.local отличается регистром (см.
+    _openai_api_key), и молчаливый дефолт плагина здесь бы промахнулся.
+
+    Голос читается по БАЗОВОМУ id, подача (instructions + speed) — по
+    persona_key. Это единственное место, где оси расходятся внутри одного
+    вызова, поэтому обе переменные названы по-разному.
+    """
+    if lk_openai is None:
+        raise RuntimeError("OpenAI TTS needs livekit-plugins-openai")
+    key = _openai_api_key()
+    if not key:
+        raise RuntimeError("OpenAI TTS needs OPENAI_API_KEY")
+    voice = _openai_voice_for(profile.tutor)
+    persona = persona_key(profile.tutor, profile.temper)
+    lang = _tts_speech_lang(profile.tutor, profile.lang or "en")
+    model = os.getenv("OPENAI_TTS_MODEL", DEFAULT_OPENAI_TTS_MODEL)
+    instructions = _openai_instructions_for(persona, lang)
+    speed = _openai_speed_for(persona)
+    logger.info(
+        "Cascade TTS: OpenAI (%s, voice=%s, speed=%.2f, lang=%s), persona=%s",
+        model, voice, speed, lang, persona or "<none>",
+    )
+    kwargs = {"api_key": key, "model": model, "voice": voice, "speed": speed}
+    # instructions поддерживает только gpt-4o-mini-tts; на tts-1 плагин молча
+    # его проигнорирует, но передавать пустую строку всё равно незачем.
+    if instructions:
+        kwargs["instructions"] = instructions
+    engine = lk_openai.TTS(**kwargs)
+
+    # ── Нарезка на фразы: почему мы её отбираем у фреймворка ────────────────
+    # У OpenAI TTS нет стриминга (capabilities.streaming=False), поэтому
+    # AgentSession сама заворачивает его в StreamAdapter и синтезирует ПО
+    # ПРЕДЛОЖЕНИЮ. Каждый вызов — независимый синтез, а значит интонация
+    # обнуляется на каждой точке: сколько ни пиши в instructions «не заканчивай
+    # все фразы одной нотой», внутри одного предложения ей просто негде
+    # развернуться. Это и есть вторая половина «роботизированности», текстом
+    # она не лечится.
+    #
+    # Свой StreamAdapter (он рапортует streaming=True, так что второй обёртки
+    # не будет) склеивает короткие предложения в кусок покрупнее: просодия
+    # живёт дольше, вызовов к API меньше. Плата — задержка до первого звука,
+    # поэтому порог невелик и вынесен в переменную.
+    try:
+        min_len = int(os.getenv("OPENAI_TTS_MIN_SENTENCE", "45"))
+    except ValueError:
+        min_len = 45
+    return lk_tts.StreamAdapter(
+        tts=engine,
+        sentence_tokenizer=tokenize.basic.SentenceTokenizer(
+            min_sentence_len=min_len,
+            # retain_format — чтобы переносы и двойные пробелы дошли до синтеза
+            # как есть: он читает по ним паузы.
+            retain_format=True,
+        ),
+    )
+
+
 # ── Кто чем говорит ─────────────────────────────────────────────────────────
 # Стек один на всех — cascade (VOICE_STACK=cascade). А вот TTS-провайдер СВОЙ у
 # каждого тьютора: голос — часть характера, а не глобальный рубильник. Раньше
@@ -3561,7 +4038,10 @@ TUTOR_TTS_PROVIDER = {
     "bro": "eleven",     # Декстер — клиентский голос выбран в ElevenLabs
     "gentle": "gemini",  # Луна    — лучшее качество на en/ru, один голос на оба
     "hype": "soniox",    # Спарк   — один тембр на всех 60+ языках, включая kk
-    "jarvis": "fish",    # Джарвис — клонированный голос, только dev-стенд
+    # Джарвис — dev-стенд, здесь и перебираем голоса. ВРЕМЕННО на OpenAI (ash)
+    # вместо клона Fish; путь "fish" рабочий и на месте, вернуть — этой строкой
+    # (или TTS_PROVIDER_JARVIS=fish, без редеплоя).
+    "jarvis": "openai",
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
@@ -3569,7 +4049,7 @@ TUTOR_TTS_PROVIDER = {
 # CASCADE_TTS — то есть при незаданной переменной агент шёл в провайдера,
 # которого не существует. Код azure-пути рабочий и оставлен, но попасть в него
 # теперь можно только явно: TTS_PROVIDER_<PERSONA>=azure или CASCADE_TTS=azure.
-TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure", "fish")
+TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure", "fish", "openai")
 # Дефолт для персон вне таблицы (professor/sage/snark/edge/velvet/coach — в UI
 # их нет, но агент их знает) и для пустого tutor. CASCADE_TTS сохранён как имя
 # переменной, но сменил смысл: это ДЕФОЛТ для нераспределённых, не рубильник.
@@ -3631,6 +4111,7 @@ def _cascade_tts(profile: LearnerProfile):
         "eleven": _cascade_tts_eleven,
         "azure": _cascade_tts_azure,
         "fish": _cascade_tts_fish,
+        "openai": _cascade_tts_openai,
     }
     try:
         return builders[which](profile)
@@ -4251,7 +4732,9 @@ async def entrypoint(ctx: JobContext):
     is_scenario = scenario_data is not None
     # Персона со своим промптом (Джарвис) идёт мимо всех четырёх режимов: у неё
     # нет ни методички, ни уровней, ни сценариев — только собственный файл.
-    is_standalone = (profile.tutor or "").strip().lower() in STANDALONE_PROMPT_PERSONAS
+    # persona_key, а не profile.tutor: у Джарвиса есть вариант 18+, и он тоже
+    # персона со своим промптом — по базовому id он бы сюда не попал.
+    is_standalone = persona_key(profile.tutor, profile.temper) in STANDALONE_PROMPT_PERSONAS
     instructions = (
         build_standalone_instructions(profile)
         if is_standalone
@@ -4358,6 +4841,9 @@ async def entrypoint(ctx: JobContext):
         # тьютора, здесь остаётся только режим.
         moods_enabled=bool(build_mood_block(profile.tutor))
         and not (is_scenario or is_placement or is_debate),
+        # Пусто → tts_node пропускает текст как есть (см. _pronunciation_lang:
+        # гейт по провайдеру, чтобы не трогать живого Спарка на проде).
+        speech_lang=_pronunciation_lang(profile),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the

@@ -20,6 +20,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { normalizeForSpeech, openaiInstructions, openaiSpeed } from '../src/tutor/openaiTtsStyle.js'
 import { TUTOR_GREETING, TUTOR_GREETING_LANG } from '../src/tutor/tutors.js'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -63,9 +64,11 @@ const TUNING = {
   // Спарк (Soniox). Кроме темпа крутить нечего — эмоций провайдер не умеет.
   // Диапазон [0.7–1.3], берём заметно медленнее середины.
   spark: { speed: 0.85 },
-  // Джарвис (Fish Audio). Голос клонированный, характер задаётся самой моделью,
-  // поэтому ручек стиля нет — только температура/top_p, и те по умолчанию.
-  // latency balanced: визитка озвучивается офлайн, спешить некуда.
+  // Джарвис (ВРЕМЕННО OpenAI TTS вместо клона Fish Audio). У gpt-4o-mini-tts
+  // ручек стиля нет вовсе: голос — пресет из каталога, характер задаётся только
+  // текстом instructions (см. src/tutor/openaiTtsStyle.js, общий с живым
+  // превью), как prompt у Луны. latency остался для пути Fish — визитка
+  // озвучивается офлайн, спешить некуда.
   jarvis: { latency: 'balanced' },
 }
 
@@ -257,15 +260,45 @@ async function ttsFish(text) {
   return Buffer.from(await res.arrayBuffer())
 }
 
+// OpenAI TTS — сейчас на нём Джарвис в обоих нравах (зеркало openaiTts в
+// app/api/tutor-tts/route.js и _cascade_tts_openai в agent.py). Имя ключа
+// читаем в двух написаниях: в .env.local он приехал как OpenAI_API_KEY.
+//
+// Голос берётся по БАЗОВОМУ ключу, подача — по ключу с нравом: 18+ меняет
+// интонацию и темп, а тембр остаётся тот же.
+async function ttsOpenai(text, lang, key) {
+  const apiKey = process.env.OPENAI_API_KEY || process.env.OpenAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY не задан')
+  const res = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      // gpt-4o-mini-tts, а не tts-1: только он принимает instructions.
+      model: process.env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts',
+      voice: process.env.OPENAI_TTS_VOICE_JARVIS || 'ash',
+      input: normalizeForSpeech(text, lang),
+      instructions: openaiInstructions(key, lang),
+      speed: openaiSpeed(key),
+      response_format: 'mp3',
+    }),
+  })
+  if (!res.ok) throw new Error(`OpenAI TTS ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  return Buffer.from(await res.arrayBuffer())
+}
+
 // Ключи с суффиксом -harsh — визитки жёсткого нрава (кнопка 18+ на карточке).
 // Провайдер и тембр у них те же: нрав меняет характер, а не голос.
 const PROVIDER = {
   luna: ttsGemini,
   dexter: ttsEleven,
   spark: ttsSoniox,
-  jarvis: ttsFish,
+  // TTS_PROVIDER_JARVIS=fish — то же имя переменной, что у агента
+  // (_tts_provider_for): вернуть клон Fish можно без правки кода, и путь
+  // ttsFish остаётся живым, а не мёртвой функцией под удаление.
+  jarvis: process.env.TTS_PROVIDER_JARVIS === 'fish' ? ttsFish : ttsOpenai,
   'dexter-harsh': ttsEleven,
   'spark-harsh': ttsSoniox,
+  'jarvis-harsh': ttsOpenai,
 }
 
 // ---- main ------------------------------------------------------------------
@@ -279,7 +312,9 @@ async function main() {
   for (const key of keys) {
     const { text, lang } = SAMPLES[key]
     try {
-      const audio = await PROVIDER[key](text, lang)
+      // key третьим аргументом: у OpenAI подача читается по ключу С НРАВОМ
+      // (jarvis-harsh), а остальным провайдерам он просто не нужен.
+      const audio = await PROVIDER[key](text, lang, key)
       const out = path.join(OUT_DIR, `${key}.mp3`)
       fs.writeFileSync(out, audio)
       console.log(`✓ ${key}: ${(audio.length / 1024).toFixed(1)} КБ → ${path.relative(ROOT, out) || out}`)

@@ -21,6 +21,14 @@ COPY methodology-harsh.md ./methodology-harsh.md
 # Джарвис (персона jarvis) методичку не получает вообще — весь его промпт это
 # один файл. См. _PERSONA_STANDALONE_FILES / STANDALONE_PROMPT_PERSONAS.
 COPY persona-jarvis.md ./persona-jarvis.md
+# Жёсткий нрав Джарвиса (кнопка 18+) — ОТДЕЛЬНЫЙ файл персоны, а не строка в
+# PERSONA_OVERRIDE. Без этой строки образ соберётся, воркер запустится и
+# промолчит про ошибку только в логе, а злой Джарвис выйдет в звонок вообще
+# без характера.
+COPY persona-jarvis-harsh.md ./persona-jarvis-harsh.md
+# Словарь произношения казахской речи (Спарк, Джарвис) — правится человеком,
+# читается на старте воркера. См. _PRONUNCIATION_FILES.
+COPY pronunciation-kk.tsv ./pronunciation-kk.tsv
 # Structured voice scenarios (data/scenarios/*.md in dev). Bundled next to
 # agent.py; the loader's second candidate path (/app/scenarios) finds them.
 COPY scenarios/ ./scenarios/
