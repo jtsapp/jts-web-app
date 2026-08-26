@@ -197,6 +197,16 @@ textarea {
 .lang-selector:hover {
   transform: translateY(-1px);
 }
+
+/* Компактный вид для шапки кабинета: флаг и код вместо названия. Полное
+   «Қазақша» рядом с колокольчиком занимало бы половину строки, а на мобильной
+   шапке не помещалось вовсе. */
+.lang-selector--compact {
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  letter-spacing: .02em;
+}
 .lang-selector .chev {
   display: inline-flex;
   color: var(--muted);
@@ -1870,8 +1880,11 @@ textarea {
   display: none;
 }
 @media (min-width: 761px) {
+  /* Язык и уведомления — одной группой в правом верхнем углу кабинета. */
   .learn__bell {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     position: absolute;
     top: 16px;
     right: 20px;
@@ -2318,9 +2331,13 @@ textarea {
   font-size: 12.5px;
   color: var(--muted);
 }
+/* Язык и колокольчик стоят здесь вдвоём — строкой, а не стопкой. */
 .mtop__right {
   flex-shrink: 0;
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Затемнение под открытым drawer и кнопка закрытия внутри него —

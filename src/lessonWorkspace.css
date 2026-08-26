@@ -3102,3 +3102,91 @@ button.lw-tap-pop__save.is-on:disabled {
   display: grid;
   place-items: center;
 }
+
+/* ==========================================================================
+   Словарь школы в уроке (у ученика его не было — за словом он уходил из урока).
+
+   Свёрнут по умолчанию: в колонке уже стоят звонок, темы и чат, и четвёртая
+   раскрытая карточка вытолкнула бы чат за пределы экрана.
+   ========================================================================== */
+.lw-dict {
+  border: 1px solid #e9e6f2;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.lw-dict__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #15131a;
+  cursor: pointer;
+}
+
+.lw-dict__title { flex: 1; text-align: left; }
+
+.lw-dict__chev {
+  color: #898787;
+  font-size: 18px;
+  line-height: 1;
+  transition: transform .18s ease;
+}
+.lw-dict__chev--open { transform: rotate(90deg); }
+
+.lw-dict__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 14px 14px;
+}
+
+.lw-dict__search input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #e9e6f2;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13.5px;
+  color: #15131a;
+  outline: none;
+}
+.lw-dict__search input:focus { border-color: var(--purple); }
+
+.lw-dict__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* Словарь длинный: прокрутка внутри карточки, а не всей колонки — иначе чат
+     под ним уезжает вниз на каждый поиск. */
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.lw-dict__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f3f1f8;
+  font-size: 13.5px;
+}
+.lw-dict__row:last-child { border-bottom: 0; }
+
+.lw-dict__word { font-weight: 700; color: #15131a; }
+.lw-dict__tr { color: #898787; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.lw-dict__state {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #898787;
+}

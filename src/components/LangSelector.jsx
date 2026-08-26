@@ -2,7 +2,15 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronRightIcon } from './icons.jsx'
 import { LANGS, useI18n } from '../i18n.jsx'
 
-export default function LangSelector() {
+/**
+ * Переключатель языка.
+ *
+ * `compact` — вид для шапки кабинета рядом с колокольчиком: флаг и код вместо
+ * полного названия. Полное «Қазақша» рядом с уведомлениями занимало бы половину
+ * строки, а на мобильной шапке не помещалось вовсе. В самом списке названия
+ * остаются полными — там их и читают.
+ */
+export default function LangSelector({ compact = false }) {
   const { lang, setLang } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -23,17 +31,20 @@ export default function LangSelector() {
   return (
     <div className="lang-wrap" ref={ref}>
       <button
-        className="lang-selector"
+        className={`lang-selector ${compact ? 'lang-selector--compact' : ''}`}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={current.label}
       >
         <CurrentFlag />
-        <span>{current.label}</span>
-        <span className={`chev ${open ? 'chev--open' : ''}`}>
-          <ChevronRightIcon size={14} />
-        </span>
+        <span>{compact ? current.short : current.label}</span>
+        {!compact && (
+          <span className={`chev ${open ? 'chev--open' : ''}`}>
+            <ChevronRightIcon size={14} />
+          </span>
+        )}
       </button>
 
       {open && (

@@ -30,6 +30,7 @@ import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
 import { useLessonTimer, formatTimer } from './live/useLessonTimer.js'
+import LessonDictionary from './live/LessonDictionary.jsx'
 import { knowsFocusTarget } from './live/followFocus.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -1131,6 +1132,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         sending={chatSending}
                         title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
                       />
+                      {/* Словарь школы, чтобы посмотреть слово из задания и не
+                          уходить из урока в раздел «Словарь». */}
+                      <LessonDictionary token={token} />
                     </div>
                   </div>
                 )}

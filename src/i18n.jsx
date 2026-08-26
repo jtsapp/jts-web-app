@@ -1,10 +1,13 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { RuFlagIcon, GbFlagIcon, KzFlagIcon } from './components/icons.jsx'
 
+// `short` — для мест, где на подпись нет ширины (шапка кабинета рядом с
+// колокольчиком). `KZ`, а не `KK`: код языка казахский — `kk`, но на флаге и в
+// речи это Казахстан, и «KK» читается как опечатка.
 export const LANGS = [
-  { code: 'ru', label: 'Русский', Flag: RuFlagIcon },
-  { code: 'en', label: 'English', Flag: GbFlagIcon },
-  { code: 'kk', label: 'Қазақша', Flag: KzFlagIcon },
+  { code: 'ru', label: 'Русский', short: 'RU', Flag: RuFlagIcon },
+  { code: 'en', label: 'English', short: 'EN', Flag: GbFlagIcon },
+  { code: 'kk', label: 'Қазақша', short: 'KZ', Flag: KzFlagIcon },
 ]
 
 // Официальные строки взяты из mobile-app/lib/l10n/app_{ru,en,kk}.arb,
@@ -268,6 +271,10 @@ const dict = {
     'live.wipSubtitle': 'Урок #{id} — раздел в разработке',
     'live.title': 'Живой урок',
     'live.timerOut': 'Время вышло',
+    'lesson.ws.dictionary': 'Словарь',
+    'lesson.ws.dictionarySearch': 'Слово или перевод…',
+    'lesson.ws.dictionaryEmpty': 'Ничего не найдено',
+    'lesson.ws.dictionaryFailed': 'Не удалось загрузить словарь',
     'live.loadError': 'Не удалось загрузить урок',
     'live.waiting': 'Преподаватель ещё не начал урок',
     'live.roster.title': 'В классе',
@@ -888,6 +895,10 @@ const dict = {
     'live.wipSubtitle': 'Lesson #{id} — under construction',
     'live.title': 'Live lesson',
     'live.timerOut': "Time's up",
+    'lesson.ws.dictionary': 'Dictionary',
+    'lesson.ws.dictionarySearch': 'Word or translation…',
+    'lesson.ws.dictionaryEmpty': 'Nothing found',
+    'lesson.ws.dictionaryFailed': 'Could not load the dictionary',
     'live.loadError': 'Could not load the lesson',
     'live.waiting': 'The teacher has not started the lesson yet',
     'live.roster.title': 'In class',
@@ -1506,6 +1517,10 @@ const dict = {
     'live.wipSubtitle': '#{id} сабақ — әзірленуде',
     'live.title': 'Тікелей сабақ',
     'live.timerOut': 'Уақыт бітті',
+    'lesson.ws.dictionary': 'Сөздік',
+    'lesson.ws.dictionarySearch': 'Сөз немесе аударма…',
+    'lesson.ws.dictionaryEmpty': 'Ештеңе табылмады',
+    'lesson.ws.dictionaryFailed': 'Сөздікті жүктеу мүмкін болмады',
     'live.loadError': 'Сабақты жүктеу мүмкін болмады',
     'live.waiting': 'Мұғалім сабақты әлі бастаған жоқ',
     'live.roster.title': 'Сыныпта',
