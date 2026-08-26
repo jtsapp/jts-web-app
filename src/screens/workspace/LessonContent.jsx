@@ -11,6 +11,7 @@ import TranslatePopover from './TranslatePopover.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
 import { useI18n } from '../../i18n.jsx'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../../lib/wordTranslate.js'
+import { hiddenBlockKey } from './visibleSteps.js'
 
 // `practice` — обрабатывается отдельно ниже (нужны answers/checked/onAnswer/onCheck).
 const BLOCK_BY_TYPE = {
@@ -91,7 +92,14 @@ function wordBankGapPrefix(step, anchorId) {
 // только за practice-блоками значило бы, что смотрящий застревает на
 // последнем вопросе шага, пока ученик уже читает материал дальше. Сам
 // ученик liveQuestionId не получает — он не следует за собой.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId }) {
+//
+// `hiddenBlocks` — карточки, которые преподаватель скрыл поштучно (множество
+// ключей, см. hiddenBlockKeys в visibleSteps.js). Пропускаются на рендере, а не
+// вырезаются из `step.blocks`: `blockIndex` — это позиция в сыром массиве, и
+// удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
+// ученика относительно преподавательских. У преподавателя множество пустое —
+// скрытую карточку он видит помеченной и может вернуть.
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks }) {
   const groups = groupBlocks(step?.blocks)
   const { lang } = useI18n()
   // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
@@ -141,6 +149,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
       }}
     >
       {groups.map((group, i) => {
+        if (hiddenBlocks?.has(hiddenBlockKey(step?.id, group.blockIndex))) return null
         if (group.type === 'info') {
           const anchorId = `block-${group.blockIndex}`
           return (

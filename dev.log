@@ -1,0 +1,20 @@
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.71:3000
+- Environments: .env.local
+✓ Ready in 1003ms
+{
+  severity_local: 'NOTICE',
+  severity: 'NOTICE',
+  code: '42P07',
+  message: 'relation "schema_migrations" already exists, skipping',
+  file: 'parse_utilcmd.c',
+  line: '208',
+  routine: 'transformCreateStmt'
+}
+[migrate] применяю 0002_tutor_temper.sql
+[migrate] применяю 0003_call_summary.sql
+[migrate] применяю 0004_voice_session_armed.sql
+
+ GET / 200 in 708ms (next.js: 228ms, application-code: 481ms)
+ GET / 200 in 49ms (next.js: 4ms, application-code: 45ms)
