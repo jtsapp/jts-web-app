@@ -9,11 +9,13 @@ import {
   LISTENING_KEY,
   SHADOWING_KEY,
   SITUATIONS_KEY,
+  WORKBOOKS_KEY,
   WRITING_KEY,
   GRAMMAR_PROGRESS_EVENT,
   LISTENING_PROGRESS_EVENT,
   SHADOWING_PROGRESS_EVENT,
   SITUATIONS_PROGRESS_EVENT,
+  WORKBOOKS_PROGRESS_EVENT,
   WRITING_PROGRESS_EVENT,
 } from './practiceKeys.js'
 
@@ -51,6 +53,10 @@ export function applyHydratedState(serverState, { setItem, dispatch }) {
   if (serverState.situations) {
     setItem(SITUATIONS_KEY, JSON.stringify(normalizeDone(serverState.situations.done)))
     dispatch(SITUATIONS_PROGRESS_EVENT)
+  }
+  if (serverState.workbooks) {
+    setItem(WORKBOOKS_KEY, JSON.stringify(normalizeDone(serverState.workbooks.done)))
+    dispatch(WORKBOOKS_PROGRESS_EVENT)
   }
   // В отличие от vocab (его экран сам перечитывает стейт при открытии), каталог
   // письма слушает событие — без него кольца прогресса не обновятся после входа.

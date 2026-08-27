@@ -18,9 +18,18 @@ import {
 
 test.describe('practiceContract — валидация и merge', () => {
   test('модули: белый список', () => {
-    expect(PRACTICE_MODULES).toEqual(['vocab', 'grammar', 'listening', 'shadowing', 'situations', 'writing'])
+    expect(PRACTICE_MODULES).toEqual([
+      'vocab',
+      'grammar',
+      'listening',
+      'shadowing',
+      'situations',
+      'workbooks',
+      'writing',
+    ])
     expect(isValidModule('grammar')).toBe(true)
     expect(isValidModule('situations')).toBe(true)
+    expect(isValidModule('workbooks')).toBe(true)
     expect(isValidModule('writing')).toBe(true)
     expect(isValidModule('tutor')).toBe(false)
     expect(isValidModule(undefined)).toBe(false)
@@ -35,6 +44,7 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(emptyState('grammar')).toEqual({ done: [] })
     expect(emptyState('listening')).toEqual({ done: [] })
     expect(emptyState('situations')).toEqual({ done: [] })
+    expect(emptyState('workbooks')).toEqual({ done: [] })
     expect(emptyState('vocab')).toEqual({})
     expect(emptyState('writing')).toEqual({})
   })
@@ -44,6 +54,11 @@ test.describe('practiceContract — валидация и merge', () => {
     // иначе вход с другого устройства обнулял бы потраченную квоту.
     expect(mergeModuleState('situations', { done: ['a1'] }, { done: ['a2', 'a1'] }))
       .toEqual({ done: ['a1', 'a2'] })
+  })
+
+  test('mergeModuleState: workbooks объединяет открытые уровни', () => {
+    expect(mergeModuleState('workbooks', { done: ['a0'] }, { done: ['a1', 'a0'] }))
+      .toEqual({ done: ['a0', 'a1'] })
   })
 
   test('mergeModuleState: grammar/listening объединяют done', () => {
