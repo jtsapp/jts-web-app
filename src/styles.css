@@ -7895,14 +7895,11 @@ textarea {
    до нажатия, а не после. */
 .plc-plays { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: #fff; font-size: 13px; }
 
-/* LexTALE: слова отмечаются как знакомые, поэтому это переключатели, а не
-   кнопки-ответы — отсюда aria-pressed и залитый вид у выбранных. */
-.plc-lex { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 10px; margin-bottom: 26px; }
-.plc-lexw {
-  padding: 13px 10px; border-radius: 14px; border: 1.5px solid var(--line, #e6e8ef);
-  background: #fff; font: inherit; font-size: 16px; color: var(--ink); cursor: pointer; text-align: center;
-}
-.plc-lexw.on { background: var(--purple); border-color: var(--purple); color: #fff; font-weight: 600; }
+/* Словарь: спрашиваемое слово крупно, «Не знаю» приглушённой кнопкой —
+   честный пропуск без штрафа лучше угадывания (vocabScore его учитывает). */
+.plc-stem--word { font-size: 30px; letter-spacing: -0.01em; }
+.plc-opt--idk { color: var(--muted); }
+.plc-opt--idk.on { color: var(--ink); }
 
 .plc-slots { display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; margin-bottom: 12px; }
 .plc-bank { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -7972,6 +7969,14 @@ textarea {
 .plc-slots__empty { color: var(--muted); font-size: 15px; padding: 8px 2px; }
 
 .plc-video { display: block; width: 100%; max-height: 360px; border-radius: 16px; background: #14131c; margin-bottom: 14px; }
+
+/* Говорение: индикатор записи и подтверждение */
+.plc-foot--center { justify-content: center; }
+.plc-rec { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 18px 0 22px; font-size: 17px; }
+.plc-rec__light { color: #d1344a; font-weight: 700; animation: plc-blink 1.2s ease-in-out infinite; }
+.plc-rec__ok { margin: 14px 0 22px; font-size: 17px; font-weight: 700; color: #12923f; }
+@keyframes plc-blink { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .plc-rec__light { animation: none; } }
 
 .plc-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 30px; }
 .plc-primary {

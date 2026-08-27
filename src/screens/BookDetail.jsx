@@ -52,9 +52,15 @@ async function loadStaticContent(title) {
     index.find((b) => normTitle(b.title).includes(want) || want.includes(normTitle(b.title)))
   if (!hit) return null
   if (!_bookContentCache[hit.id]) {
+    // Промах не кэшируем: единственный сбой сети (офлайн, 404 в момент
+    // деплоя) навсегда оставил бы книгу «без текста» до перезагрузки страницы.
     _bookContentCache[hit.id] = fetch(`/practice/books/${hit.id}.json`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
+      .then((res) => {
+        if (!res) delete _bookContentCache[hit.id]
+        return res
+      })
   }
   return _bookContentCache[hit.id]
 }
@@ -66,12 +72,19 @@ async function loadBookContent(book, token) {
   if (id == null) return fromStatic
   const key = `api:${id}`
   if (!_bookContentCache[key]) {
+    // Тот же принцип: null (сбой сети, просроченный токен, книга без текста
+    // глав) не замораживаем — иначе повторное открытие книги не ходило бы в
+    // сеть до перезагрузки страницы.
     _bookContentCache[key] = getAudiobook(token, id)
       .then((full) => {
         const chapters = chaptersFromTracks(full?.tracks)
         return chapters ? { book: full, chapters, dict: {} } : null
       })
       .catch(() => null)
+      .then((res) => {
+        if (!res) delete _bookContentCache[key]
+        return res
+      })
   }
   return _bookContentCache[key]
 }

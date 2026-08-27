@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
@@ -11,7 +11,6 @@ import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
-import LevelTestPage from './screens/LevelTestPage.jsx'
 import PlacementTestPage from './screens/PlacementTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
@@ -545,11 +544,14 @@ export default function App() {
   // открываем королевство. Уровень пишем в оба стора: backend — источник правды
   // при входе, Neon-профиль — то, что читает голосовой тьютор; без второй
   // записи они расходились.
-  // Сохранение уровня отделено от перехода: тест присылает результат дважды —
-  // сразу по окончании и по кнопке «Let's go», — и записать уровень надо на
-  // первом же сообщении, а увести с экрана только по кнопке.
+  // Сохранение уровня отделено от перехода: тест отдаёт уровень дважды —
+  // сразу по подсчёту и по кнопке «Let's go», — и записать его надо на первом
+  // же событии, а увести с экрана только по кнопке. Повтор того же уровня в
+  // сеть не шлём: второй вызов приходит через секунды с тем же значением.
+  const lastSavedTestLevel = useRef(null)
   async function saveTestLevel(level) {
-    if (!level) return
+    if (!level || lastSavedTestLevel.current === level) return
+    lastSavedTestLevel.current = level
     setNeedsLevelTest(false)
     setUserLevel(level)
     savePlacementLevel(token, level) // best-effort, не блокируем переход

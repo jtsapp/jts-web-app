@@ -49,9 +49,16 @@ export function loadGrammarIndex() {
 const _levelPromises = {}
 export function loadGrammarLevel(code) {
   if (!_levelPromises[code]) {
+    // Промах НЕ кэшируем — по той же причине, что и в loadGrammarIndex выше:
+    // один сбой сети при первом уроке уровня делал все его уроки «пустыми»
+    // до перезагрузки страницы.
     _levelPromises[code] = fetch(`/practice/grammar/${code}.json`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
+      .then((data) => {
+        if (!data) delete _levelPromises[code]
+        return data
+      })
   }
   return _levelPromises[code]
 }

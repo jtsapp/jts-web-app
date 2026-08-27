@@ -16,7 +16,7 @@ import {
   scoreMatch,
 } from '../practice/placement/engine.generated.js'
 import { T } from '../practice/placement/strings.js'
-import { placementLevel } from '../lib/placement.js'
+import { placementLevel, placementSummary } from '../lib/placement.js'
 
 // Тест на определение уровня. Расчёты — перенесённый движок школы
 // (practice/placement/engine.generated.js, сверен с бандлом в
@@ -24,24 +24,29 @@ import { placementLevel } from '../lib/placement.js'
 //
 // Ход теста повторяет бандл: самооценка задаёт стартовую θ, разделы идут по
 // очереди с экраном-объяснением перед каждым, внутри раздела ответы можно
-// менять до кнопки «Завершить раздел», таймера нет. Аудирование собирает все
-// вопросы одной записи на одном экране (см. introListening) — остальные
-// разделы идут по одному заданию на экран.
+// менять до кнопки «Завершить раздел», таймера нет. Провал разминки уводит на
+// A0-мост (два простых задания: ранний выход с A0 либо возврат со старта A1).
+// Аудирование собирает все вопросы одной записи на одном экране; полный
+// вариант заканчивается говорением с микрофоном.
 
 const CANDO_KEYS = ['cando0', 'cando1', 'cando2', 'cando3', 'cando4']
 
+// Ключ черновика: у заданий словаря нет собственных id, поэтому ключуем
+// позицию; у остальных заданий id уникален в банке.
+const draftKey = (screen) => (screen.kind === 'vocab' ? `vocab:${screen.idx}` : screen.item.id)
+
 export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
   const t = useCallback((k) => T(lang, k), [lang])
-  const [phase, setPhase] = useState('loading') // loading | error | variant | cando | intro | items | vocab | writing | result
+  const [phase, setPhase] = useState('loading') // loading | error | variant | cando | intro | items | speaking | result
   const [data, setData] = useState(null)
   const [plan, setPlan] = useState([])
   const [secIdx, setSecIdx] = useState(0)
-  // Экран раздела: {kind:'item', item, text?} или {kind:'group', src, items}
+  // Экраны раздела: {kind:'item'|'vocab', item, text?, media?, idx?} или {kind:'group', src, items}
   const [screens, setScreens] = useState([])
   const [pos, setPos] = useState(0)
   const [drafts, setDrafts] = useState({})
-  const [lexWords, setLexWords] = useState([])
-  const [lexPicked, setLexPicked] = useState({})
+  // A0-мост: после провала разминки идут два задания-«моста» вне плана секций.
+  const [bridgeMode, setBridgeMode] = useState(false)
   const [result, setResult] = useState(null)
   const sess = useRef(null)
   const startedAt = useRef(0)
@@ -62,7 +67,7 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
   // Отсчёт времени на задание — в эффекте: Date.now() во время рендера сделал
   // бы его нечистым, а число уходит в лог для калибровки банка.
   useEffect(() => {
-    if (phase === 'items' || phase === 'writing') startedAt.current = Date.now()
+    if (phase === 'items') startedAt.current = Date.now()
   }, [phase, pos])
 
   const buildPlan = (s) => {
@@ -78,6 +83,8 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
       { key: 'uoe', title: t('blockUoe'), hint: t('introUoe') },
       { key: 'writing', title: t('blockWriting'), hint: t('introWriting') },
     )
+    // Говорение — последний раздел полного варианта, как в бандле.
+    if (s.cfg.speaking) out.push({ key: 'speaking', title: t('blockSpeaking'), hint: t('introSpeaking') })
     return out
   }
 
@@ -98,21 +105,29 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     const sec = plan[i]
     if (!sec) return finish()
     const s = sess.current
+    // Раздела нет в этом варианте или банк пуст: числимся уже на следующем,
+    // иначе finishSection вернул бы студента в тот же раздел второй раз.
+    const skipTo = (n) => {
+      setSecIdx(n)
+      return openSection(n)
+    }
     let next = []
 
     if (sec.key === 'vocab') {
       s.lex = { items: vocabDraw(data.vocab, s.theta0, s.rnd) }
-      setLexWords(s.lex.items)
-      setLexPicked({})
-      return setPhase('vocab')
-    }
-    if (sec.key === 'writing') {
-      const item = s.pick(s.itemsOf('writing', null))
-      setScreens(item ? [{ kind: 'item', item }] : [])
-      setDrafts({})
-      return setPhase(item ? 'writing' : 'result')
-    }
-    if (sec.key === 'listening') {
+      if (!s.lex.items.length) return skipTo(i + 1)
+      next = s.lex.items.map((item, idx) => ({ kind: 'vocab', item, idx }))
+    } else if (sec.key === 'writing') {
+      // Уровень задания письма следует за текущей θ — как в бандле.
+      const item = s.pickAtLevel('writing', 1)[0]
+      if (!item) return skipTo(i + 1)
+      next = [{ kind: 'item', item }]
+    } else if (sec.key === 'speaking') {
+      const items = s.pickAtLevel('speaking', s.cfg.speaking)
+      if (!items.length) return finish()
+      setScreens(items.map((item) => ({ kind: 'item', item })))
+      return setPhase('speaking')
+    } else if (sec.key === 'listening') {
       // Все вопросы одной записи — на одном экране, как в бандле.
       const L = s.buildListening()
       next = L.sources
@@ -132,21 +147,36 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
       }))
     } else if (sec.key === 'routing') next = s.buildRouting().map((item) => ({ kind: 'item', item }))
     else if (sec.key === 'minpair') next = s.buildMinpairs().map((item) => ({ kind: 'item', item }))
-    else if (sec.key === 'clip') next = s.buildClips().map((item) => ({ kind: 'item', item }))
-    else if (sec.key === 'uoe')
+    else if (sec.key === 'clip') {
+      // Файл клипа лежит в манифесте (video: true), сам item несёт только source.
+      next = s.buildClips().map((item) => ({
+        kind: 'item',
+        item,
+        media: (data.manifest.sources || []).find((m) => m.id === item.source) || null,
+      }))
+    } else if (sec.key === 'uoe')
       next = [...s.buildUoeBatch(s.cfg.uoe), ...s.buildInteractive()].map((item) => ({ kind: 'item', item }))
 
-    if (!next.length) return openSection(i + 1) // раздела нет в этом варианте
+    if (!next.length) return skipTo(i + 1)
     setScreens(next)
     setPos(0)
     setDrafts({})
     setPhase('items')
   }
 
+  const openBridge = () => {
+    const bi = sess.current.bridgeItems()
+    setScreens(bi.map((item) => ({ kind: 'item', item })))
+    setPos(0)
+    setDrafts({})
+    setPhase('items')
+  }
+
   // Ответил ли студент на задание (для блокировки «Далее»).
-  const isAnswered = (item) => {
-    const d = drafts[item.id]
+  const isAnswered = (screen, item) => {
+    const d = drafts[screen.kind === 'vocab' ? draftKey(screen) : item.id]
     if (!d) return false
+    if (screen.kind === 'vocab') return d.optIndex != null // -1 («не знаю») — тоже ответ
     if (item.type === 'tfns') return item.statements.every((_, k) => d.answers?.[k])
     if (item.type === 'order' && item.steps) return (d.seq || []).length === item.steps.length
     if (item.type === 'order') return (d.arr || []).length === orderWordsOf(item).length
@@ -154,7 +184,8 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     if (item.type === 'match') return (d.map || []).filter((x) => x != null).length === item.pairs.length
     return d.optIndex != null || !!(d.text || '').trim() || d.fraction != null
   }
-  const screenAnswered = (sc) => (sc.kind === 'group' ? sc.items.every(isAnswered) : isAnswered(sc.item))
+  const screenAnswered = (sc) =>
+    sc.kind === 'group' ? sc.items.every((it) => isAnswered(sc, it)) : isAnswered(sc, sc.item)
 
   // Сдача ответа в движок — теми же score-функциями, что и бандл.
   const submitItem = (s, item) => {
@@ -165,39 +196,74 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     if (item.type === 'bankfill') return s.answerGraded(item, scoreBankfill(item, d.gaps || []), { gaps: (d.gaps || []).slice() })
     if (item.type === 'match') return s.answerGraded(item, scoreMatch(item, d.map || []), { map: (d.map || []).slice() })
     if (d.fraction != null) return s.answerGraded(item, d.fraction, { playsUsed: d.plays || 1 })
-    return s.answer(item, { optIndex: d.optIndex ?? null, text: d.text || '', tMs: d.tMs || 0, shownOrder: d.shownOrder || null })
+    return s.answer(item, {
+      optIndex: d.optIndex ?? null,
+      text: d.text || '',
+      tMs: d.tMs || 0,
+      shownOrder: d.shownOrder || null,
+      playsUsed: d.plays || null,
+    })
+  }
+
+  const advance = () => {
+    const next = secIdx + 1
+    setSecIdx(next)
+    if (next >= plan.length) return finish()
+    setPhase('intro')
   }
 
   const finishSection = () => {
     const s = sess.current
+    const sec = plan[secIdx]
+
+    if (bridgeMode) {
+      for (const sc of screens) submitItem(s, sc.item)
+      setBridgeMode(false)
+      // Мост не пройден — ранний выход с A0; пройден — движок сам сбросил
+      // приор на A1, и тест продолжается со следующего раздела.
+      if (!s.bridgeVerdict()) return finish()
+      return advance()
+    }
+
+    if (sec?.key === 'vocab') {
+      s.finishVocab(screens.map((sc) => drafts[draftKey(sc)]?.optIndex ?? null))
+      return advance()
+    }
+    if (sec?.key === 'writing') {
+      const item = screens[0]?.item
+      if (item) s.answerWriting(item, drafts[item.id]?.text || '')
+      return advance()
+    }
+
     for (const sc of screens) {
       const list = sc.kind === 'group' ? sc.items : [sc.item]
       for (const item of list) submitItem(s, item)
     }
-    const next = secIdx + 1
-    setSecIdx(next)
-    if (next >= plan.length) return finish()
-    setPhase('intro')
-  }
 
-  const finishVocab = () => {
-    sess.current.finishVocab(lexWords.map((_, i) => (lexPicked[i] ? 1 : 0)))
-    const next = secIdx + 1
-    setSecIdx(next)
-    if (next >= plan.length) return finish()
-    setPhase('intro')
-  }
-
-  const finishWriting = () => {
-    const item = screens[0]?.item
-    if (item) sess.current.answerWriting(item, drafts[item.id]?.text || '')
-    finish()
+    // Провал разминки (4+ ошибок из 6) уводит на A0-мост, как в бандле.
+    if (sec?.key === 'routing' && s.routingVerdict() && s.bridgeItems().length) {
+      setBridgeMode(true)
+      return setPhase('intro')
+    }
+    return advance()
   }
 
   const finish = () => {
     const r = sess.current.result()
     setResult(r)
     setPhase('result')
+    // Сводка и полный лог сессии (время на задание, флаги качества) — то, ради
+    // чего движок пишет tMs каждого ответа: без этого пилотная калибровка
+    // банка невозможна. Бэкенд-приёмника пока нет, храним последнюю сессию
+    // локально — преподаватель может снять её с устройства студента.
+    try {
+      localStorage.setItem(
+        'jts_placement_last',
+        JSON.stringify({ summary: placementSummary(r), session: sess.current.exportJson() }),
+      )
+    } catch {
+      /* приватный режим / квота — тест завершается без сохранения лога */
+    }
     // Уровень проверяем перед тем, как отдать наружу: это единственное поле,
     // которое уезжает в профиль студента и определяет весь его контент.
     const level = placementLevel(r)
@@ -268,15 +334,15 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
   }
 
   if (phase === 'intro') {
-    const sec = plan[secIdx]
+    const sec = bridgeMode ? { title: t('a0Title'), hint: t('a0Note') } : plan[secIdx]
     return (
       <Shell>
         <div className="plc">
           <div className="plc-card plc-card--center">
-            <div className="plc-step">{secIdx + 1} / {plan.length}</div>
+            {!bridgeMode && <div className="plc-step">{secIdx + 1} / {plan.length}</div>}
             <h1 className="plc-h1">{sec.title}</h1>
             {sec.hint && <p className="plc-hint">{sec.hint}</p>}
-            <button className="plc-primary" onClick={() => openSection(secIdx)}>
+            <button className="plc-primary" onClick={() => (bridgeMode ? openBridge() : openSection(secIdx))}>
               {t('startSection')}
             </button>
           </div>
@@ -285,59 +351,14 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     )
   }
 
-  if (phase === 'vocab') {
-    const picked = Object.values(lexPicked).filter(Boolean).length
+  if (phase === 'speaking') {
     return (
-      <Shell>
-        <div className="plc">
-          <div className="plc-card">
-            <h1 className="plc-h1">{t('blockVocab')}</h1>
-            <p className="plc-hint">{t('introVocab')}</p>
-            <div className="plc-lex">
-              {lexWords.map((w, i) => (
-                <button
-                  key={w.w + i}
-                  type="button"
-                  className={`plc-lexw ${lexPicked[i] ? 'on' : ''}`}
-                  aria-pressed={!!lexPicked[i]}
-                  onClick={() => setLexPicked((p) => ({ ...p, [i]: !p[i] }))}
-                >
-                  {w.w}
-                </button>
-              ))}
-            </div>
-            <div className="plc-foot">
-              <span className="plc-count">{picked} / {lexWords.length}</span>
-              <button className="plc-primary" onClick={finishVocab}>{t('finishSection')}</button>
-            </div>
-          </div>
-        </div>
-      </Shell>
-    )
-  }
-
-  if (phase === 'writing') {
-    const item = screens[0]?.item
-    const text = drafts[item?.id]?.text || ''
-    return (
-      <Shell>
-        <div className="plc">
-          <div className="plc-card">
-            <h1 className="plc-h1">{t('blockWriting')}</h1>
-            <p className="plc-hint">{item?.stem}</p>
-            <textarea
-              className="plc-textarea"
-              rows={7}
-              value={text}
-              onChange={(e) => setDrafts({ [item.id]: { text: e.target.value } })}
-            />
-            <div className="plc-foot">
-              <span className="plc-count">{text.trim().split(/\s+/).filter(Boolean).length} слов</span>
-              <button className="plc-primary" onClick={finishWriting}>{t('finishSection')}</button>
-            </div>
-          </div>
-        </div>
-      </Shell>
+      <SpeakingSection
+        session={sess.current}
+        items={screens.map((sc) => sc.item)}
+        lang={lang}
+        onDone={finish}
+      />
     )
   }
 
@@ -347,10 +368,10 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
 
   // ─── экраны раздела ─────────────────────────────────────────────────────
   const screen = screens[pos]
-  const sec = plan[secIdx]
-  const draftFor = (item) => drafts[item.id] || {}
-  const setDraftFor = (item) => (patch) =>
-    setDrafts((d) => ({ ...d, [item.id]: { ...d[item.id], ...patch, tMs: Date.now() - startedAt.current } }))
+  const sec = bridgeMode ? { title: t('a0Title') } : plan[secIdx]
+  const draftFor = (key) => drafts[key] || {}
+  const setDraftFor = (key) => (patch) =>
+    setDrafts((d) => ({ ...d, [key]: { ...d[key], ...patch, tMs: Date.now() - startedAt.current } }))
   const answered = screen ? screenAnswered(screen) : false
 
   return (
@@ -365,6 +386,15 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
 
           {screen?.kind === 'group' ? (
             <ListeningGroup key={screen.src.id} group={screen} draftFor={draftFor} setDraftFor={setDraftFor} lang={lang} />
+          ) : screen?.kind === 'vocab' ? (
+            <VocabQuestion
+              key={draftKey(screen)}
+              item={screen.item}
+              vocab={data.vocab}
+              draft={draftFor(draftKey(screen))}
+              setDraft={setDraftFor(draftKey(screen))}
+              lang={lang}
+            />
           ) : (
             <>
               {screen?.text && (
@@ -374,7 +404,14 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
                 </details>
               )}
               {screen && (
-                <QuestionBody item={screen.item} draft={draftFor(screen.item)} setDraft={setDraftFor(screen.item)} lang={lang} />
+                <QuestionBody
+                  key={screen.item.id}
+                  item={screen.item}
+                  media={screen.media}
+                  draft={draftFor(screen.item.id)}
+                  setDraft={setDraftFor(screen.item.id)}
+                  lang={lang}
+                />
               )}
             </>
           )}
@@ -405,6 +442,38 @@ function orderWordsOf(item) {
   return item.answer.replace(/\.$/, '').split(' ')
 }
 
+// ─── словарь: слово → значение на языке интерфейса ───────────────────────
+// Движок ждёт индекс выбранной опции (0..3), −1 — «не знаю», null — пропуск:
+// vocabScore считает и попадания, и поправку на угадывание.
+function VocabQuestion({ item, vocab, draft, setDraft, lang }) {
+  const gloss = (w) => (vocab[w] && (vocab[w][lang] || vocab[w].en)) || w
+  return (
+    <>
+      <p className="plc-hint">{T(lang, 'meaningOf')}:</p>
+      <p className="plc-stem plc-stem--word">{item.w}</p>
+      <div className="plc-list">
+        {item.options.map((w, i) => (
+          <button
+            key={w + i}
+            type="button"
+            className={`plc-opt ${draft.optIndex === i ? 'on' : ''}`}
+            onClick={() => setDraft({ optIndex: i })}
+          >
+            {gloss(w)}
+          </button>
+        ))}
+        <button
+          type="button"
+          className={`plc-opt plc-opt--idk ${draft.optIndex === -1 ? 'on' : ''}`}
+          onClick={() => setDraft({ optIndex: -1 })}
+        >
+          {T(lang, 'idk')}
+        </button>
+      </div>
+    </>
+  )
+}
+
 // ─── аудирование: запись + все её вопросы на одном экране ────────────────
 function ListeningGroup({ group, draftFor, setDraftFor, lang }) {
   const [plays, setPlays] = useState(0)
@@ -419,7 +488,7 @@ function ListeningGroup({ group, draftFor, setDraftFor, lang }) {
         onClick={() => {
           setPlays((p) => p + 1)
           // Число прослушиваний уходит в лог каждого вопроса записи.
-          group.items.forEach((item) => setDraftFor(item)({ plays: plays + 1 }))
+          group.items.forEach((item) => setDraftFor(item.id)({ plays: plays + 1 }))
           ref.current?.play().catch(() => {})
         }}
       >
@@ -427,7 +496,7 @@ function ListeningGroup({ group, draftFor, setDraftFor, lang }) {
       </button>
       {group.items.map((item, k) => (
         <div key={item.id} className="plc-q">
-          <QuestionBody item={item} n={k + 1} draft={draftFor(item)} setDraft={setDraftFor(item)} lang={lang} />
+          <QuestionBody item={item} n={k + 1} draft={draftFor(item.id)} setDraft={setDraftFor(item.id)} lang={lang} />
         </div>
       ))}
     </>
@@ -435,7 +504,7 @@ function ListeningGroup({ group, draftFor, setDraftFor, lang }) {
 }
 
 // ─── тело задания по типу ────────────────────────────────────────────────
-function QuestionBody({ item, n, draft, setDraft, lang }) {
+function QuestionBody({ item, n, media, draft, setDraft, lang }) {
   // Порядок вариантов перемешивается один раз на задание: иначе он менялся бы
   // на каждый рендер, и студент терял бы уже выбранный ответ из виду. Хук
   // стоит до любых ранних выходов — порядок хуков обязан совпадать.
@@ -454,7 +523,22 @@ function QuestionBody({ item, n, draft, setDraft, lang }) {
   if (item.type === 'bankfill') return <Bankfill item={item} draft={draft} setDraft={setDraft} lang={lang} />
   if (item.type === 'match') return <MatchPairs item={item} draft={draft} setDraft={setDraft} lang={lang} />
   if (item.block === 'minpair') return <MinPair item={item} draft={draft} setDraft={setDraft} lang={lang} />
-  if (item.block === 'clip') return <Clip item={item} draft={draft} setDraft={setDraft} order={order} lang={lang} />
+  if (item.block === 'writing') {
+    const words = (draft.text || '').trim().split(/\s+/).filter(Boolean).length
+    return (
+      <>
+        <p className="plc-stem">{item.stem}</p>
+        <textarea
+          className="plc-textarea"
+          rows={7}
+          value={draft.text || ''}
+          onChange={(e) => setDraft({ text: e.target.value })}
+        />
+        <p className="plc-count">{words} {T(lang, 'minWords')}{item.minWords || ''}</p>
+      </>
+    )
+  }
+  if (item.block === 'clip') return <Clip item={item} media={media} draft={draft} setDraft={setDraft} order={order} lang={lang} />
 
   if (item.options?.length) {
     return (
@@ -708,15 +792,16 @@ function MatchPairs({ item, draft, setDraft, lang }) {
   )
 }
 
-// Видеоклип с вариантами: лимит воспроизведений, как в бандле.
-function Clip({ item, draft, setDraft, order, lang }) {
+// Видеоклип с вариантами: файл приходит из манифеста (сам item несёт только
+// source), лимит воспроизведений — как в бандле.
+function Clip({ item, media, draft, setDraft, order, lang }) {
   const [plays, setPlays] = useState(0)
   const ref = useRef(null)
-  const max = item.playsAllowed || 2
+  const max = media?.playsAllowed || 2
   return (
     <>
       {item.stem && <p className="plc-stem">{item.stem}</p>}
-      <video ref={ref} className="plc-video" src={audioUrl(item.file || item.audio)} preload="metadata" playsInline />
+      <video ref={ref} className="plc-video" src={audioUrl(media?.file)} preload="metadata" playsInline />
       <button
         className="plc-audio"
         disabled={plays >= max}
@@ -744,9 +829,12 @@ function Clip({ item, draft, setDraft, order, lang }) {
   )
 }
 
-// Минимальные пары: два слова, одно прозвучало. Файлов озвучки в бандле пока
-// нет — как и он, падаем на синтез речи браузера.
+// Минимальные пары: два слова, одно прозвучало. Порядок пары перемешан —
+// иначе правильный ответ всегда стоял бы первой кнопкой и блок можно было бы
+// закрыть не слушая. Файлов озвучки в бандле пока нет — как и он, падаем на
+// синтез речи браузера.
 function MinPair({ item, draft, setDraft, lang }) {
+  const opts = useMemo(() => seededShuffle([item.word, item.distractor], Math.random), [item])
   const say = () => {
     const a = new Audio(audioUrl(item.file))
     a.play().catch(() => {
@@ -760,7 +848,6 @@ function MinPair({ item, draft, setDraft, lang }) {
       }
     })
   }
-  const opts = [item.word, item.distractor]
   return (
     <>
       <p className="plc-stem">{T(lang, 'introMinpair')}</p>
@@ -771,13 +858,175 @@ function MinPair({ item, draft, setDraft, lang }) {
             key={w}
             type="button"
             className={`plc-opt ${draft.optIndex === i ? 'on' : ''}`}
-            onClick={() => setDraft({ optIndex: i, fraction: i === 0 ? 1 : 0 })}
+            onClick={() => setDraft({ optIndex: i, fraction: w === item.word ? 1 : 0 })}
           >
             {w}
           </button>
         ))}
       </div>
     </>
+  )
+}
+
+// ─── говорение: запись с микрофона, последний раздел полного варианта ────
+// Порт recordItem/sectionSpeaking из бандла: RMS-метр считает секунды живой
+// речи, SpeechRecognition (если есть) снимает транскрипт, жёсткий стоп 35с.
+// Без микрофона раздел пропускается с флагом speaking_skipped — как в бандле.
+// Вся механика записи — в модульной функции: у неё есть таймеры и Date.now(),
+// которым не место в теле компонента.
+function createRecorderRig(stream, { onElapsed, onHardStop }) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)()
+  const srcNode = ctx.createMediaStreamSource(stream)
+  const an = ctx.createAnalyser()
+  an.fftSize = 2048
+  srcNode.connect(an)
+  const buf = new Float32Array(an.fftSize)
+  const rig = { t0: Date.now(), voicedMs: 0, transcript: null, rec: null }
+  let lastT = rig.t0
+  rig.meter = setInterval(() => {
+    an.getFloatTimeDomainData(buf)
+    let rms = 0
+    for (let k = 0; k < buf.length; k++) rms += buf[k] * buf[k]
+    rms = Math.sqrt(rms / buf.length)
+    const now = Date.now()
+    if (rms > 0.015) rig.voicedMs += now - lastT
+    lastT = now
+  }, 100)
+  rig.tInt = setInterval(() => onElapsed(Math.floor((Date.now() - rig.t0) / 1000)), 250)
+  rig.mr = new MediaRecorder(stream)
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (SR) {
+    try {
+      rig.rec = new SR()
+      rig.rec.lang = 'en-US'
+      rig.rec.continuous = true
+      rig.rec.interimResults = false
+      rig.transcript = ''
+      rig.rec.onresult = (e) => {
+        for (const res of e.results) rig.transcript += ' ' + res[0].transcript
+      }
+      rig.rec.onerror = () => {}
+      rig.rec.start()
+    } catch {
+      rig.rec = null
+      rig.transcript = null
+    }
+  }
+  rig.hardStop = setTimeout(onHardStop, 35000)
+  rig.mr.start()
+  rig.stop = () => {
+    clearInterval(rig.meter)
+    clearInterval(rig.tInt)
+    clearTimeout(rig.hardStop)
+    try { rig.mr.stop() } catch { /* уже остановлен */ }
+    if (rig.rec) try { rig.rec.stop() } catch { /* распознавание уже стоит */ }
+    try { srcNode.disconnect() } catch { /* контекст уже закрыт */ }
+    ctx.close().catch(() => {})
+    return {
+      durationSec: (Date.now() - rig.t0) / 1000,
+      voicedSec: rig.voicedMs / 1000,
+      transcript: rig.transcript && rig.transcript.trim() ? rig.transcript.trim() : null,
+    }
+  }
+  return rig
+}
+
+function SpeakingSection({ session, items, lang, onDone }) {
+  const [step, setStep] = useState('gate') // gate | rec | done
+  const [idx, setIdx] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
+  const rig = useRef(null)
+  const streamRef = useRef(null)
+
+  // Уход с экрана посреди записи: глушим всё, ответ не сдаём.
+  useEffect(
+    () => () => {
+      rig.current?.stop()
+      rig.current = null
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    },
+    [],
+  )
+
+  const skip = () => {
+    session.addFlag('speaking_skipped')
+    items.forEach((it) => session.answerSpeaking(it, null))
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    onDone()
+  }
+
+  const finishRec = () => {
+    const r = rig.current
+    if (!r) return
+    rig.current = null
+    session.answerSpeaking(items[idxRef.current], r.stop())
+    setStep('done')
+  }
+  // finishRec зовётся и из setTimeout жёсткого стопа — индекс держим в ref,
+  // чтобы замыкание таймера не утащило устаревший.
+  const idxRef = useRef(0)
+
+  const startRec = (i) => {
+    idxRef.current = i
+    setIdx(i)
+    setElapsed(0)
+    rig.current = createRecorderRig(streamRef.current, { onElapsed: setElapsed, onHardStop: () => finishRec() })
+    setStep('rec')
+  }
+
+  const nextItem = () => {
+    const n = idx + 1
+    if (n >= items.length) {
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+      return onDone()
+    }
+    startRec(n)
+  }
+
+  const allow = async () => {
+    try {
+      streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      return skip() // доступа нет — как в бандле, раздел пропускается
+    }
+    startRec(0)
+  }
+
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  const item = items[idx]
+
+  return (
+    <Shell>
+      <div className="plc">
+        <div className="plc-card plc-card--center">
+          {step === 'gate' && (
+            <>
+              <h1 className="plc-h1">{T(lang, 'blockSpeaking')}</h1>
+              <p className="plc-hint">{T(lang, 'introSpeaking')}</p>
+              <div className="plc-foot plc-foot--center">
+                <button className="plc-ghost" onClick={skip}>{T(lang, 'skip')}</button>
+                <button className="plc-primary" onClick={allow}>{T(lang, 'micAllow')}</button>
+              </div>
+            </>
+          )}
+          {step === 'rec' && (
+            <>
+              <p className="plc-stem">«{item.stem}»</p>
+              <p className="plc-hint">{T(lang, 'recHint')}</p>
+              <p className="plc-rec"><span className="plc-rec__light">{T(lang, 'rec')}</span> <b>{fmt(elapsed)}</b></p>
+              <button className="plc-primary" onClick={finishRec}>{T(lang, 'recStop')}</button>
+            </>
+          )}
+          {step === 'done' && (
+            <>
+              <p className="plc-stem">«{item.stem}»</p>
+              <p className="plc-rec__ok">{T(lang, 'recDone')}</p>
+              <button className="plc-primary" onClick={nextItem}>{T(lang, 'next')}</button>
+            </>
+          )}
+        </div>
+      </div>
+    </Shell>
   )
 }
 
@@ -824,6 +1073,12 @@ function PlacementResult({ result, lang, onDone }) {
               )}
               {result.writing && (
                 <div className="plc-row"><span>{t('blockWriting')}</span><b>{result.writing.score.total}/9</b></div>
+              )}
+              {result.speaking?.length > 0 && result.speaking[0]?.score && (
+                <div className="plc-row">
+                  <span>{t('blockSpeaking')}</span>
+                  <b>{result.speaking.reduce((a, x) => a + (x.score?.got || 0), 0)} / {result.speaking.reduce((a, x) => a + (x.score?.max || 0), 0)}</b>
+                </div>
               )}
             </div>
           )}

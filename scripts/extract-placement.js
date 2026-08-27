@@ -51,21 +51,31 @@ function literalAfter(src, declaration) {
   throw new Error(`литерал ${declaration} оборван`)
 }
 
-/** Патчи дистракторов из BANK_PATCHES применяются к банку при загрузке —
- *  делаем это здесь, чтобы в рантайме лежал уже выверенный банк. Логика
- *  повторяет applyBankPatches() из бандла. */
+/** Патчи дистракторов из BANK_PATCHES применяются к банку при выгрузке —
+ *  чтобы в рантайме лежал уже выверенный банк. Логика — копия
+ *  applyBankPatches() из бандла: патч несёт kind (option/answer/stem) и
+ *  findText/replace/add, а не готовые поля item. Первая версия копировала
+ *  несуществующие p.options/p.key — «применила» 13 патчей, не изменив банк,
+ *  и дополнительные допустимые ответы («less», «may»…) не попали в выгрузку. */
 function applyPatches(bank, patches) {
   const byId = new Map(bank.items.map((it) => [it.id, it]))
   const applied = []
   for (const p of patches) {
     const item = byId.get(p.id)
     if (!item) continue
-    if (p.options) item.options = p.options
-    if (p.key != null) item.key = p.key
-    if (p.answer != null) item.answer = p.answer
-    if (p.accept) item.accept = p.accept
-    if (p.stem != null) item.stem = p.stem
-    applied.push(p.id)
+    if (p.kind === 'option' && item.options) {
+      const i = item.options.findIndex((o) => o.t === p.findText)
+      if (i >= 0 && i !== item.key) {
+        item.options[i] = { t: p.replace.t, m: p.replace.m }
+        applied.push(p.id)
+      }
+    } else if (p.kind === 'answer' && Array.isArray(item.answer)) {
+      for (const a of p.add) if (!item.answer.includes(a)) item.answer.push(a)
+      applied.push(p.id)
+    } else if (p.kind === 'stem' && item.stem === p.findText) {
+      item.stem = p.replace
+      applied.push(p.id)
+    }
   }
   return applied
 }
