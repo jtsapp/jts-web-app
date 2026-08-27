@@ -4,22 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>JTS Placement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+/* Токены приведены к палитре приложения (src/styles.css): тест открывается
+   внутри него, и прежний экран уровня выглядел именно так — фиолетовый
+   #9047ff, ink #171326, светлая подложка карточки. Акцентные cyan/green/
+   orange/gold оставлены как есть: раннер метит ими блоки и статусы, в
+   приложении прямых аналогов у них нет. */
 :root {
-  --violet: #874BF8; --cyan: #0AAFFF; --green: #00D441; --orange: #FF631E; --gold: #FFAD00;
-  --ink: #1c1630; --muted: #6b6480; --bg: #f7f5fc; --card: #ffffff; --line: #e6e1f2;
+  --violet: #9047ff; --cyan: #0AAFFF; --green: #00D441; --orange: #FF631E; --gold: #FFAD00;
+  --ink: #171326; --muted: #8b8a97; --bg: #f4f5f7; --card: #ffffff; --line: #e6e8ef;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
 body {
-  font-family: 'PT Root UI', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   background: var(--bg); color: var(--ink); font-size: 17px; line-height: 1.45;
 }
 #app { max-width: 560px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; padding: 0 14px 14px; }
 
 .hdr { display: flex; align-items: center; gap: 10px; padding: 12px 2px 8px; flex-wrap: wrap; }
-.brand { font-weight: 700; font-size: 18px; color: var(--violet); letter-spacing: .3px; }
-.brand .dot { color: var(--cyan); }
+/* Логотип приложения (src/components/Logo.jsx): та же начертание и цвет.
+   Элемент остаётся кликабельным — по нему открывается режим преподавателя. */
+.brand { font-weight: 800; font-size: 18px; color: var(--violet); letter-spacing: -.2px; }
 .timers { margin-left: auto; display: flex; gap: 12px; font-size: 13px; color: var(--muted); }
 .timers b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .tbar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
@@ -1454,7 +1463,7 @@ mergeBank2(BANK, MANIFEST, BANK2);
   function shell(inner, blockName) {
     return `
     <header class="hdr">
-      <div class="brand">JTS<span class="dot">·</span>placement</div>
+      <div class="brand">just to study</div>
       ${S.pilotMode && teacherMode ? `<span class="pill pill-pilot">${T('pilot')}</span>` : ''}
     </header>
     ${blockName ? `<div class="bname">${blockName}</div>` : ''}
