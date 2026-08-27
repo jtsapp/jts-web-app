@@ -116,7 +116,13 @@ export async function translateWord(word, tl = 'ru') {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`translate ${res.status}`)
   const data = await res.json()
-  const primary = String(data?.[0]?.[0]?.[0] || '').trim()
+  // Для текста из двух предложений gtx отдаёт НЕСКОЛЬКО сегментов в data[0];
+  // раньше брался только первый ([0][0][0]) и хвост выделения терялся —
+  // склеиваем все (у одного слова сегмент один, поведение то же).
+  const primary = (Array.isArray(data?.[0]) ? data[0] : [])
+    .map((seg) => String(seg?.[0] || ''))
+    .join('')
+    .trim()
   const alternates = []
   if (Array.isArray(data?.[1])) {
     for (const pos of data[1]) {
