@@ -11,6 +11,7 @@ import {
 } from './lessonReview.js'
 import { recordVocabMisses } from './vocabMisses.js'
 import { recordVocabLearned } from './vocabLearned.js'
+import { saveStudentVocab } from '../../api.js'
 import {
   IconSpeaker,
   IconCheck,
@@ -19,6 +20,7 @@ import {
   IconRefresh,
   IconPin,
   IconBulb,
+  IconBookmark,
 } from './VocabIcons.jsx'
 
 function toWord(card) {
@@ -44,15 +46,124 @@ function shuffle(arr) {
 function sentenceFor(word) {
   const raw = String(word.example || '')
   if (!raw) return null
-  const blanked = raw
-    .replace(/\{\{.+?\}\}/g, '________')
-    .replace(new RegExp(`\\b${escapeRe(word.word)}\\b`, 'i'), '________')
+  // Поддержка эталона: слово в тексте, {{word}}, или пропуск ___ / ______
+  if (/_{3,}/.test(raw) || /\{\{.+?\}\}/.test(raw)) {
+    return raw
+      .replace(/\{\{.+?\}\}/g, '________')
+      .replace(/_{3,}/g, '________')
+  }
+  const blanked = raw.replace(new RegExp(`\\b${escapeRe(word.word)}\\b`, 'i'), '________')
   if (!blanked.includes('________')) return null
   return blanked
 }
 
 function escapeRe(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function examplePlain(word) {
+  return String(word.example || '')
+    .replace(/\{\{(.+?)\}\}/g, '$1')
+    .replace(/___+/g, word.word || '')
+    .trim()
+}
+
+function exampleHtml(word) {
+  const raw = String(word.example || '')
+  if (!raw) return ''
+  const w = word.word || ''
+  if (/\{\{.+\}\}/.test(raw) || /___+/.test(raw)) {
+    return raw
+      .replace(/\{\{(.+?)\}\}/g, '<b>$1</b>')
+      .replace(/___+/g, w ? `<b>${w}</b>` : '___')
+  }
+  if (!w) return raw
+  return raw.replace(new RegExp(`\\b(${escapeRe(w)})\\b`, 'i'), '<b>$1</b>')
+}
+
+/** Карточка «Правильный ответ» при ошибке (слово / IPA / перевод / пример). */
+function CorrectReveal({ word, lang, t, speak, token }) {
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const tr = translationOf(word, lang)
+  const ipa = word.ipa ? `/${String(word.ipa).replace(/\//g, '')}/` : ''
+  const exHtml = exampleHtml(word)
+  const exSpeak = examplePlain(word)
+
+  const save = () => {
+    if (!token || saved || saving) return
+    setSaving(true)
+    const body = { word: word.word, source: 'practice' }
+    if (lang === 'kk') {
+      if (word.translationKz || word.kk) body.translationKz = word.translationKz || word.kk
+      else if (tr) body.translationKz = tr
+    } else if (word.translationRu || word.ru || tr) {
+      body.translationRu = word.translationRu || word.ru || tr
+    }
+    if (word.ipa) body.ipa = String(word.ipa).replace(/\//g, '')
+    saveStudentVocab(token, body)
+      .then(() => setSaved(true))
+      .catch(() => {})
+      .finally(() => setSaving(false))
+  }
+
+  return (
+    <div className="vp-reveal">
+      <div className="vp-reveal-card">
+        <div className="vp-reveal-lbl">{t('vocab.prac.rightAnswer')}</div>
+        <div className="vp-reveal-row">
+          <div className="vp-reveal-main">
+            <b className="vp-reveal-word">{word.word}</b>
+            {ipa ? <span className="vp-reveal-ipa">{ipa}</span> : null}
+            {tr ? <span className="vp-reveal-tr">— {tr}</span> : null}
+          </div>
+          <div className="vp-reveal-acts">
+            {speak ? (
+              <button type="button" className="vp-spk" onClick={() => speak(word.word)} aria-label={t('vocab.lesson.listen')}>
+                <IconSpeaker />
+              </button>
+            ) : null}
+            {token ? (
+              <button
+                type="button"
+                className={`vp-spk vp-bookmark${saved ? ' is-on' : ''}`}
+                onClick={save}
+                disabled={saved || saving}
+                aria-label={saved ? t('vocab.prac.saved') : t('vocab.prac.saveWord')}
+                title={saved ? t('vocab.prac.saved') : t('vocab.prac.saveWord')}
+              >
+                <IconBookmark />
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {exHtml ? (
+          <div className="vp-reveal-ex">
+            <span dangerouslySetInnerHTML={{ __html: exHtml }} />
+            {speak && exSpeak ? (
+              <button type="button" className="vp-spk" onClick={() => speak(exSpeak)} aria-label={t('vocab.lesson.listen')}>
+                <IconSpeaker />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      <div className="vp-fb no">
+        <IconX /> {t('vocab.prac.incorrect')}
+      </div>
+    </div>
+  )
+}
+
+function AnswerFeedback({ ok, word, lang, t, speak, token }) {
+  if (ok) {
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <span className="vp-fb ok"><IconCheck /> {t('vocab.prac.correct')}</span>
+      </div>
+    )
+  }
+  return <CorrectReveal word={word} lang={lang} t={t} speak={speak} token={token} />
 }
 
 export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId }) {
@@ -231,31 +342,31 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       </div>
 
       {task?.type === 'choice' && itemWords[0] && (
-        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} onDone={onDone} />
+        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
       {task?.type === 'match' && itemWords.length >= 3 && (
         <MatchUI key={idx} words={itemWords} lang={lang} t={t} onDone={onDone} />
       )}
       {task?.type === 'match' && itemWords.length < 3 && itemWords[0] && (
-        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} onDone={onDone} />
+        <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
       {task?.type === 'dictation' && itemWords[0] && (
-        <DictationUI key={idx} word={itemWords[0]} t={t} speak={speak} onDone={onDone} />
+        <DictationUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
       {task?.type === 'write' && itemWords[0] && (
         sentenceFor(itemWords[0])
-          ? <FillUI key={idx} word={itemWords[0]} sentence={sentenceFor(itemWords[0])} lang={lang} t={t} onDone={onDone} />
-          : <WriteUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} onDone={onDone} />
+          ? <FillUI key={idx} word={itemWords[0]} sentence={sentenceFor(itemWords[0])} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+          : <WriteUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
       {toast ? <p className="vp-state">{toast}</p> : null}
     </div>
   )
 }
 
-function ChoiceUI({ word, bank, lang, t, speak, onDone }) {
+function ChoiceUI({ word, bank, lang, t, speak, token, onDone }) {
   const options = useMemo(() => buildChoiceOptions(word, bank, lang), [word.key, lang, bank])
   const [picked, setPicked] = useState(null)
-  if (!options) return <WriteUI word={word} lang={lang} t={t} speak={speak} onDone={onDone} />
+  if (!options) return <WriteUI word={word} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
 
   return (
     <>
@@ -296,11 +407,7 @@ function ChoiceUI({ word, bank, lang, t, speak, onDone }) {
         })}
       </div>
       {picked && (
-        <div style={{ textAlign: 'center' }}>
-          <span className={`vp-fb ${picked.ok ? 'ok' : 'no'}`}>
-            {picked.ok ? <><IconCheck /> {t('vocab.prac.correct')}</> : <><IconX /> {t('vocab.prac.incorrect')}</>}
-          </span>
-        </div>
+        <AnswerFeedback ok={!!picked.ok} word={word} lang={lang} t={t} speak={speak} token={token} />
       )}
       <div className="vp-foot">
         <button
@@ -390,7 +497,7 @@ function MatchUI({ words, lang, t, onDone }) {
   )
 }
 
-function DictationUI({ word, t, speak, onDone }) {
+function DictationUI({ word, lang, t, speak, token, onDone }) {
   const [value, setValue] = useState('')
   const [checked, setChecked] = useState(null)
   const submit = () => {
@@ -420,14 +527,7 @@ function DictationUI({ word, t, speak, onDone }) {
         disabled={checked != null}
       />
       {checked != null && (
-        <div style={{ textAlign: 'center' }}>
-          <span className={`vp-fb ${checked ? 'ok' : 'no'}`}>
-            {checked ? <><IconCheck /> {t('vocab.prac.correct')}</> : <><IconX /> {t('vocab.prac.incorrect')}</>}
-          </span>
-          {!checked && (
-            <p className="vp-right-answer">{t('vocab.prac.rightAnswer', { word: word.word })}</p>
-          )}
-        </div>
+        <AnswerFeedback ok={!!checked} word={word} lang={lang} t={t} speak={speak} token={token} />
       )}
       <div className="vp-foot">
         {checked == null ? (
@@ -444,7 +544,7 @@ function DictationUI({ word, t, speak, onDone }) {
   )
 }
 
-function WriteUI({ word, lang, t, speak, onDone }) {
+function WriteUI({ word, lang, t, speak, token, onDone }) {
   const [value, setValue] = useState('')
   const [checked, setChecked] = useState(null)
   const submit = () => {
@@ -476,12 +576,7 @@ function WriteUI({ word, lang, t, speak, onDone }) {
         disabled={checked != null}
       />
       {checked != null && (
-        <div style={{ textAlign: 'center' }}>
-          <span className={`vp-fb ${checked ? 'ok' : 'no'}`}>
-            {checked ? <><IconCheck /> {t('vocab.prac.correct')}</> : <><IconX /> {t('vocab.prac.incorrect')}</>}
-          </span>
-          {!checked && <p className="vp-state">{translationOf(word, lang)}</p>}
-        </div>
+        <AnswerFeedback ok={!!checked} word={word} lang={lang} t={t} speak={speak} token={token} />
       )}
       <div className="vp-foot">
         {checked == null ? (
@@ -498,7 +593,7 @@ function WriteUI({ word, lang, t, speak, onDone }) {
   )
 }
 
-function FillUI({ word, sentence, lang, t, onDone }) {
+function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
   const letters = word.word.split('')
   const [chars, setChars] = useState(() => letters.map(() => ''))
   const [opened, setOpened] = useState(() => letters.map((_, i) => i === 0))
@@ -590,6 +685,9 @@ function FillUI({ word, sentence, lang, t, onDone }) {
           </button>
         </div>
       </div>
+      {checked != null && (
+        <AnswerFeedback ok={checked === true} word={word} lang={lang} t={t} speak={speak} token={token} />
+      )}
       <div className="vp-foot">
         {checked == null ? (
           <button type="button" className="vp-btn wide" disabled={!filled} onClick={submit}>

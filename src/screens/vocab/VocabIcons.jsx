@@ -68,3 +68,11 @@ export function IconBulb({ size = 14 }) {
     </svg>
   )
 }
+
+export function IconBookmark({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 4h12a1 1 0 0 1 1 1v16l-7-4-7 4V5a1 1 0 0 1 1-1z" />
+    </svg>
+  )
+}
