@@ -444,6 +444,26 @@
    сиреневой вёрстки это читается как сбой, а не как «я выделил слово». Тот же
    лиловый, что в читалке «Книжек» (.bk-w:hover, styles.css) — подсветка
    выглядит частью раздела и объясняет, что именно уехало в перевод. */
+/* Наведение на слово: рука вместо каретки и сиреневая подсветка — тот же
+   сигнал «сюда можно нажать», что у .bk-w:hover в «Книжках». Класс ставит
+   хук useSelectionTranslate, пока под курсором есть английское слово;
+   подсветку рисует CSS Custom Highlight API по Range, без обёрток в DOM
+   (текст рендерит React, свои спаны туда не вставить). */
+.wr--wordhover,
+.wr--wordhover * {
+  cursor: pointer;
+}
+/* Поля ввода и редактор Блокнота — обычная каретка: там печатают. */
+.wr--wordhover .wr-editor,
+.wr--wordhover .wr-inp,
+.wr--wordhover input,
+.wr--wordhover textarea {
+  cursor: text;
+}
+::highlight(wr-word) {
+  background: #efe6ff;
+}
+
 .wr ::selection {
   background: #efe6ff;
   color: inherit;
