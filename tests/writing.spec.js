@@ -383,11 +383,28 @@ test.describe('Письмо — выделение и перевод', () => {
 
     // Если из селекторов writing.css уберут префикс `.wr`, специфичности не
     // хватит против `[data-selectable] button` и здесь снова будет 'none'.
-    expect(await userSelect('.wr-chip'), '.wr-chip').toBe('text')
     expect(await userSelect('.wr-opt'), '.wr-opt').toBe('text')
     // Обратная сторона починки: подписи навигации выделять незачем, общий
     // запрет копирования на них остаётся.
     expect(await userSelect('.wr-stepchip'), '.wr-stepchip').toBe('none')
+    // Слова-фишки самих упражнений — исключение: это варианты ответа, их
+    // перевод был бы подсказкой (см. .wr-chip--task в writing.css).
+    expect(await userSelect('.wr-chip--task'), '.wr-chip--task').toBe('none')
+  })
+
+  test('справочные фишки (таблица связок на шаге 3) переводятся: они не ответ', async ({ page }) => {
+    await openTrainer(page)
+    await page.locator('.wr-stepchip', { hasText: 'Связки' }).click()
+    const chip = page.locator('.wr-tbl .wr-chip').first()
+    await expect(chip).toBeVisible()
+    // Модификатора задания на них нет — значит и запрет не действует.
+    await expect(chip).not.toHaveClass(/wr-chip--task/)
+    expect(
+      await chip.evaluate((el) => {
+        const cs = getComputedStyle(el)
+        return cs.userSelect || cs.webkitUserSelect
+      }),
+    ).toBe('text')
   })
 
   test('клик по чипу без выделения — обычный ход: слово встаёт в строку сборки', async ({ page }) => {
@@ -402,7 +419,7 @@ test.describe('Письмо — выделение и перевод', () => {
     await expect(item.locator('.wr-ph')).toHaveCount(0)
   })
 
-  test('протаскивание мышью по слову-чипу переводит, но хода не делает', async ({ page }) => {
+  test('слово-фишку упражнения протаскиванием не выделить и не перевести', async ({ page }) => {
     expect(CHIP).toBeTruthy()
     const gtx = await blockGtx(page)
     await openStep4(page)
@@ -411,14 +428,13 @@ test.describe('Письмо — выделение и перевод', () => {
     const chip = item.locator('.wr-chipbank .wr-chip').filter({ hasText: exact(CHIP.word) })
     const box = await wordBox(chip, CHIP.word)
 
-    // Браузер после такого жеста шлёт ещё и click (mousedown и mouseup пришлись
-    // на одну кнопку) — его обязан погасить страж onClickCapture, иначе
-    // «протащил, чтобы перевести» = поставил слово в предложение.
     await dragOver(page, box)
 
-    await expectTip(page, CHIP.word, CHIP.tr)
-    await expect(item.locator('.wr-ph')).toBeVisible()
-    await expect(item.locator('.wr-slotline .wr-chip')).toHaveCount(0)
+    // Ни выделения, ни карточки: фишка — вариант ответа, её перевод был бы
+    // подсказкой, а копировать варианты незачем.
+    await page.waitForTimeout(300)
+    expect(await page.evaluate(() => String(window.getSelection()))).toBe('')
+    await expect(page.locator('.wr-tpop')).toBeHidden()
     expect(gtx).toEqual([])
   })
 
