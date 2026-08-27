@@ -1,0 +1,1110 @@
+{
+  "id": "c1-discursive",
+  "title": "A discursive essay",
+  "subtitle": "A question examined, not won",
+  "goal": "You can examine a contested question at length: frame it precisely, develop competing positions on their strongest form, and arrive at a qualified position of your own.",
+  "why": "At C1 the examiner is looking for control of qualification: which parts of your claim are strong, which are provisional, and whether you know the difference.",
+  "example": "Aliya's essay on automation defined 'work' before arguing about it. Her tutor's comment: 'the definition does the arguing'.",
+  "targetWords": [
+    280,
+    320
+  ],
+  "register": "formal",
+  "timerMinutes": 50,
+  "writeTask": "Write a discursive essay (280–320 words) on whether automation threatens employment: define the terms, develop the strongest case on each side, identify what the disagreement actually turns on, and give a qualified conclusion.",
+  "level": "c1",
+  "outline": [
+    {
+      "label": "Framing",
+      "job": "Frame the question precisely"
+    },
+    {
+      "label": "Position one",
+      "job": "Develop the first position"
+    },
+    {
+      "label": "Evidence",
+      "job": "Support it"
+    },
+    {
+      "label": "Position two",
+      "job": "Develop the second position"
+    },
+    {
+      "label": "Turning point",
+      "job": "Identify what the disagreement turns on"
+    },
+    {
+      "label": "Distribution",
+      "job": "Introduce the distributional point"
+    },
+    {
+      "label": "Position",
+      "job": "State your qualified position"
+    },
+    {
+      "label": "Limit",
+      "job": "State the limit of your conclusion"
+    }
+  ],
+  "phrases": [
+    {
+      "fn": "Opening",
+      "items": [
+        {
+          "t": "Debates about … usually founder on a conflation: …",
+          "lv": "C1",
+          "ru": "Споры о … обычно тонут в смешении понятий: …",
+          "kk": "… туралы талас әдетте ұғым шатасуынан бұзылады: …"
+        },
+        {
+          "t": "The evidence points in different directions for each.",
+          "lv": "C1",
+          "ru": "Данные указывают в разные стороны для каждого.",
+          "kk": "Деректер әрқайсысы үшін әртүрлі бағыт көрсетеді."
+        }
+      ]
+    },
+    {
+      "fn": "Giving opinion",
+      "items": [
+        {
+          "t": "The case for … is historical and strong: …",
+          "lv": "C1",
+          "ru": "Аргумент в пользу … исторический и сильный: …",
+          "kk": "… пайдасына дәлел тарихи әрі күшті: …"
+        },
+        {
+          "t": "The pessimistic case does not deny this; it denies that …",
+          "lv": "C1",
+          "ru": "Пессимистичный довод не отрицает этого; он отрицает, что …",
+          "kk": "Пессимистік дәлел мұны жоққа шығармайды; ол … жоққа шығарады."
+        }
+      ]
+    },
+    {
+      "fn": "Contrasting",
+      "items": [
+        {
+          "t": "The disagreement turns on a single empirical question: …",
+          "lv": "C1",
+          "ru": "Разногласие сводится к одному эмпирическому вопросу: …",
+          "kk": "Келіспеушілік бір эмпирикалық сұраққа саяды: …"
+        },
+        {
+          "t": "There is a further consideration that neither camp emphasises: …",
+          "lv": "C1",
+          "ru": "Есть ещё соображение, которое не подчёркивает ни один лагерь: …",
+          "kk": "Екі тарап та баса айтпайтын тағы бір мәселе бар: …"
+        }
+      ]
+    },
+    {
+      "fn": "Closing",
+      "items": [
+        {
+          "t": "My own position is therefore split.",
+          "lv": "C1",
+          "ru": "Моя позиция поэтому раздвоена.",
+          "kk": "Сондықтан ұстанымым екіге бөлінген."
+        },
+        {
+          "t": "… is not an answer to somebody who …",
+          "lv": "C1",
+          "ru": "… не ответ тому, кто …",
+          "kk": "… деген адамға жауап емес."
+        }
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "fn": "Adding",
+      "items": [
+        "by the same token",
+        "equally",
+        "not least"
+      ],
+      "hint": "You extend the argument without repeating it."
+    },
+    {
+      "fn": "Contrast",
+      "items": [
+        "conversely",
+        "by contrast",
+        "if anything"
+      ],
+      "hint": "You turn the argument on its axis."
+    },
+    {
+      "fn": "Concession",
+      "items": [
+        "notwithstanding",
+        "granted that",
+        "for all its merits"
+      ],
+      "hint": "You concede fully, then hold your ground."
+    },
+    {
+      "fn": "Qualification",
+      "items": [
+        "insofar as",
+        "to the extent that",
+        "in principle"
+      ],
+      "hint": "You limit a claim so that it survives scrutiny."
+    },
+    {
+      "fn": "Evaluation",
+      "items": [
+        "arguably",
+        "paradoxically",
+        "tellingly"
+      ],
+      "hint": "You signal how the reader should weigh the evidence."
+    }
+  ],
+  "wordlist": [
+    "automation",
+    "conflation",
+    "aggregate",
+    "displace",
+    "cognitive",
+    "empirical",
+    "distribution",
+    "transition"
+  ],
+  "gloss": [
+    [
+      "automation",
+      "автоматизация",
+      "автоматтандыру"
+    ],
+    [
+      "conflation",
+      "смешение",
+      "шатастыру"
+    ],
+    [
+      "aggregate",
+      "совокупный",
+      "жиынтық"
+    ],
+    [
+      "displace",
+      "вытеснять",
+      "ығыстыру"
+    ],
+    [
+      "cognitive",
+      "когнитивный",
+      "танымдық"
+    ],
+    [
+      "empirical",
+      "эмпирический",
+      "эмпирикалық"
+    ],
+    [
+      "distribution",
+      "распределение",
+      "бөліну"
+    ],
+    [
+      "transition",
+      "переход",
+      "өтпелі кезең"
+    ]
+  ],
+  "checklist": [
+    {
+      "text": "I used a phrase for opening",
+      "auto": [
+        "debates about …",
+        "the evidence points"
+      ]
+    },
+    {
+      "text": "I used a phrase for giving opinion",
+      "auto": [
+        "the case for",
+        "the pessimistic case"
+      ]
+    },
+    {
+      "text": "I used a phrase for contrasting",
+      "auto": [
+        "the disagreement turns",
+        "there is a"
+      ]
+    },
+    {
+      "text": "I used a phrase for closing",
+      "auto": [
+        "my own position",
+        "… is not"
+      ]
+    },
+    {
+      "text": "I used at least two linking words",
+      "auto": [
+        "conversely",
+        "notwithstanding",
+        "by the same token",
+        "insofar as",
+        "paradoxically",
+        "arguably"
+      ]
+    },
+    {
+      "text": "I used the topic words of this genre",
+      "auto": [
+        "automation",
+        "conflation",
+        "aggregate",
+        "displace",
+        "cognitive",
+        "empirical",
+        "distribution",
+        "transition"
+      ]
+    },
+    {
+      "text": "I wrote in paragraphs, not one block",
+      "manual": true
+    },
+    {
+      "text": "I checked my verb tenses",
+      "manual": true
+    },
+    {
+      "text": "I checked articles a / an / the",
+      "manual": true
+    },
+    {
+      "text": "I read the text out loud before sending",
+      "manual": true
+    }
+  ],
+  "rubricHints": {
+    "task": "Does the text answer the exact question, hold one position, and address the strongest objection to it?",
+    "organisation": "Paragraphs that each do one job, with the logic visible at the joins.",
+    "vocabulary": "Register held consistently; collocation and connotation controlled, not merely varied.",
+    "grammar": "Subordination, inversion, nominalisation and hedging used for effect rather than for display."
+  },
+  "tasks": [
+    {
+      "id": "t1",
+      "step": 4,
+      "type": "word-order",
+      "items": [
+        {
+          "id": "wo0",
+          "words": [
+            "The",
+            "pessimistic",
+            "case",
+            "denies",
+            "that",
+            "the",
+            "mechanism",
+            "transfers."
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "wo1",
+          "words": [
+            "Fifty",
+            "years",
+            "is",
+            "not",
+            "an",
+            "answer",
+            "to",
+            "somebody",
+            "with",
+            "thirty."
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "wo2",
+          "words": [
+            "Debates",
+            "about",
+            "automation",
+            "usually",
+            "founder",
+            "on",
+            "a",
+            "conflation."
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "wo3",
+          "words": [
+            "The",
+            "disagreement",
+            "turns",
+            "on",
+            "a",
+            "single",
+            "empirical",
+            "question."
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "wo4",
+          "words": [
+            "Every",
+            "previous",
+            "wave",
+            "destroyed",
+            "identifiable",
+            "occupations."
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "wo5",
+          "words": [
+            "Employment",
+            "in",
+            "textiles",
+            "rose",
+            "for",
+            "decades",
+            "after",
+            "the",
+            "power",
+            "loom."
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "wo6",
+          "words": [
+            "Earlier",
+            "machines",
+            "substituted",
+            "for",
+            "muscle",
+            "and",
+            "left",
+            "judgement",
+            "alone."
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "wo7",
+          "words": [
+            "Falling",
+            "prices",
+            "raised",
+            "demand",
+            "faster",
+            "than",
+            "machines",
+            "displaced",
+            "labour."
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        }
+      ],
+      "title": "Build the sentence",
+      "howto": "Tap the words in the right order — they move into the line. Tap a word in the line to send it back. English word order is fixed, so the order itself carries the meaning."
+    },
+    {
+      "id": "t2",
+      "step": 4,
+      "type": "transform",
+      "items": [
+        {
+          "id": "tr0",
+          "cue": "Replace the personal frame",
+          "src": "I think the second argument is weaker.",
+          "answers": [
+            "The second argument is the weaker of the two."
+          ],
+          "must": [
+            "weaker"
+          ],
+          "avoid": [
+            "i think"
+          ],
+          "why": "At C1 the judgement carries itself; the first person adds nothing."
+        },
+        {
+          "id": "tr1",
+          "cue": "Nominalise and compress",
+          "src": "The government failed to regulate the sector, and this led to the crisis.",
+          "answers": [
+            "The government's failure to regulate the sector precipitated the crisis."
+          ],
+          "must": [
+            "failure"
+          ],
+          "why": "Nominalisation is what makes advanced prose dense rather than merely long."
+        },
+        {
+          "id": "tr2",
+          "cue": "Qualify the scope",
+          "src": "Remote work damages junior staff.",
+          "answers": [
+            "Remote work appears to disadvantage junior staff in their first year."
+          ],
+          "must": [
+            "appears"
+          ],
+          "why": "Naming the scope makes a claim defensible instead of merely bold."
+        },
+        {
+          "id": "tr3",
+          "cue": "Sharpen a vague evaluation",
+          "src": "The ending of the novel is a bit disappointing.",
+          "answers": [
+            "The novel's ending resolves too neatly for the questions it has raised."
+          ],
+          "must": [
+            "ending"
+          ],
+          "why": "Say what the flaw is, not how you feel about it."
+        },
+        {
+          "id": "tr4",
+          "cue": "Convert to formal recommendation",
+          "src": "They should stop cutting the budget.",
+          "answers": [
+            "Further reductions to the budget should be suspended."
+          ],
+          "must": [
+            "should be"
+          ],
+          "why": "The passive recommendation depersonalises the demand."
+        },
+        {
+          "id": "tr5",
+          "cue": "Merge two claims with a semicolon",
+          "src": "The data are consistent. The interpretation is not.",
+          "answers": [
+            "The data are consistent; the interpretation offered for them is not."
+          ],
+          "must": [
+            ";"
+          ],
+          "why": "A semicolon holds two clauses in balance where a full stop would break them."
+        },
+        {
+          "id": "tr6",
+          "cue": "Make the concession explicit",
+          "src": "The study is useful. Its sample is too small.",
+          "answers": [
+            "For all its usefulness, the study rests on too small a sample."
+          ],
+          "must": [
+            "for all its"
+          ],
+          "why": "For all its X concedes and criticises in a single clause."
+        },
+        {
+          "id": "tr7",
+          "cue": "Invert for emphasis",
+          "src": "The committee has rarely acted so quickly.",
+          "answers": [
+            "Rarely has the committee acted so quickly."
+          ],
+          "must": [
+            "rarely has"
+          ],
+          "why": "Fronting a negative adverb and inverting is a marker of C1 control."
+        }
+      ],
+      "title": "Rewrite it",
+      "howto": "Read the sentence and the instruction next to it. Write your own version: same meaning, different form. The model answer appears after you check."
+    },
+    {
+      "id": "t3",
+      "step": 4,
+      "type": "connectors",
+      "bank": [
+        "By contrast",
+        "insofar as",
+        "Notwithstanding",
+        "Conversely",
+        "Nevertheless",
+        "Paradoxically",
+        "Tellingly",
+        "By the same token",
+        "Arguably"
+      ],
+      "items": [
+        {
+          "id": "cn0",
+          "before": "Funding rose steadily until 2019.",
+          "gap": true,
+          "after": ", it has fallen in real terms every year since.",
+          "answer": "By contrast",
+          "why": "By contrast separates two periods with opposite trends."
+        },
+        {
+          "id": "cn1",
+          "before": "The argument holds",
+          "gap": true,
+          "after": "the data come from comparable institutions.",
+          "answer": "insofar as",
+          "why": "Insofar as fixes the exact boundary within which a claim is defensible."
+        },
+        {
+          "id": "cn2",
+          "before": "",
+          "gap": true,
+          "after": "its methodological flaws, the study reshaped the debate for a decade.",
+          "answer": "Notwithstanding",
+          "why": "Notwithstanding concedes a serious weakness without surrendering the claim."
+        },
+        {
+          "id": "cn3",
+          "before": "The reform widened access to universities.",
+          "gap": true,
+          "after": ", it did nothing to improve completion rates.",
+          "answer": "Conversely",
+          "why": "Conversely reverses the direction of the argument rather than merely opposing it."
+        },
+        {
+          "id": "cn4",
+          "before": "The author documents the problem in detail.",
+          "gap": true,
+          "after": ", the remedies she proposes occupy two pages.",
+          "answer": "By contrast",
+          "why": "The imbalance between diagnosis and cure is the criticism."
+        },
+        {
+          "id": "cn5",
+          "before": "The evidence is thin.",
+          "gap": true,
+          "after": ", the conclusion has been repeated as settled fact.",
+          "answer": "Nevertheless",
+          "why": "The gap between evidence and reception is the point of the sentence."
+        },
+        {
+          "id": "cn6",
+          "before": "Critics dismissed the book as derivative.",
+          "gap": true,
+          "after": ", its central metaphor has outlived the works it borrowed from.",
+          "answer": "Paradoxically",
+          "why": "The reversal is what gives a critical review its edge."
+        },
+        {
+          "id": "cn7",
+          "before": "The committee accepted the recommendation.",
+          "gap": true,
+          "after": ", it postponed every measure that carried a cost.",
+          "answer": "Tellingly",
+          "why": "Tellingly instructs the reader how to read the fact that follows."
+        }
+      ],
+      "title": "Add the linking word",
+      "howto": "The linking words are in the bank at the top. Tap a linking word, then tap the gap — or drag it with the mouse. Each word is used once."
+    },
+    {
+      "id": "t4",
+      "step": 4,
+      "type": "punctuation",
+      "items": [
+        {
+          "id": "pu0",
+          "raw": "earlier machines substituted for muscle and left judgement alone",
+          "answer": "Earlier machines substituted for muscle and left judgement alone.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu1",
+          "raw": "its mechanism has been observed rather than inferred",
+          "answer": "Its mechanism has been observed rather than inferred.",
+          "why": "The passive is be + third form: the box was damaged, the report is written."
+        },
+        {
+          "id": "pu2",
+          "raw": "even a transition that ends well distributes costs badly",
+          "answer": "Even a transition that ends well distributes costs badly.",
+          "why": "Use who for people and that/which for things: the parcel that arrived late."
+        },
+        {
+          "id": "pu3",
+          "raw": "every previous wave destroyed identifiable occupations",
+          "answer": "Every previous wave destroyed identifiable occupations.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu4",
+          "raw": "the disagreement turns on a single empirical question",
+          "answer": "The disagreement turns on a single empirical question.",
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "pu5",
+          "raw": "employment in textiles rose for decades after the power loom",
+          "answer": "Employment in textiles rose for decades after the power loom.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu6",
+          "raw": "falling prices raised demand faster than machines displaced labour",
+          "answer": "Falling prices raised demand faster than machines displaced labour.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu7",
+          "raw": "the pessimistic case denies that the mechanism transfers",
+          "answer": "The pessimistic case denies that the mechanism transfers.",
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        }
+      ],
+      "title": "Capitals and punctuation",
+      "howto": "Rewrite the sentence with capital letters and punctuation. Do not change the words themselves."
+    },
+    {
+      "id": "t5",
+      "step": 4,
+      "type": "expand",
+      "items": [
+        {
+          "id": "ex0",
+          "cue": "fifty / years / not / answer / somebody / thirty",
+          "answers": [
+            "Fifty years is not an answer to somebody with thirty."
+          ],
+          "must": [
+            "fifty",
+            "years"
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "ex1",
+          "cue": "mechanism / observed / rather / than / inferred",
+          "answers": [
+            "Its mechanism has been observed rather than inferred."
+          ],
+          "must": [
+            "mechanism",
+            "observed"
+          ],
+          "why": "The passive is be + third form: the box was damaged, the report is written."
+        },
+        {
+          "id": "ex2",
+          "cue": "even / transition / ends / well / distributes / costs",
+          "answers": [
+            "Even a transition that ends well distributes costs badly."
+          ],
+          "must": [
+            "even",
+            "transition"
+          ],
+          "why": "Use who for people and that/which for things: the parcel that arrived late."
+        },
+        {
+          "id": "ex3",
+          "cue": "pessimistic / case / denies / mechanism / transfers",
+          "answers": [
+            "The pessimistic case denies that the mechanism transfers."
+          ],
+          "must": [
+            "pessimistic",
+            "case"
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "ex4",
+          "cue": "earlier / machines / substituted / muscle / left / judgement",
+          "answers": [
+            "Earlier machines substituted for muscle and left judgement alone."
+          ],
+          "must": [
+            "earlier",
+            "machines"
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "ex5",
+          "cue": "disagreement / turns / single / empirical / question",
+          "answers": [
+            "The disagreement turns on a single empirical question."
+          ],
+          "must": [
+            "disagreement",
+            "turns"
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "ex6",
+          "cue": "falling / prices / raised / demand / faster / than",
+          "answers": [
+            "Falling prices raised demand faster than machines displaced labour."
+          ],
+          "must": [
+            "falling",
+            "prices"
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "ex7",
+          "cue": "employment / textiles / rose / decades / after / power",
+          "answers": [
+            "Employment in textiles rose for decades after the power loom."
+          ],
+          "must": [
+            "employment",
+            "textiles"
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        }
+      ],
+      "title": "Notes into sentences",
+      "howto": "Turn the notes into a full sentence: add articles, prepositions and the right verb form. Keep the meaning."
+    },
+    {
+      "id": "t6",
+      "step": 4,
+      "type": "register",
+      "items": [
+        {
+          "id": "rg0",
+          "ctx": "A discursive essay",
+          "a": "The question is less whether the policy works than for whom.",
+          "b": "The real question is who it actually helps.",
+          "answer": "a",
+          "why": "The formal construction carries the distinction more exactly."
+        },
+        {
+          "id": "rg1",
+          "ctx": "A note to a friend who is also a colleague",
+          "a": "It would be most agreeable to meet at your convenience.",
+          "b": "Free for coffee on Thursday?",
+          "answer": "b",
+          "why": "Register follows the relationship, not the medium."
+        },
+        {
+          "id": "rg2",
+          "ctx": "A letter of complaint with justification",
+          "a": "The response I received did not address the substance of my complaint.",
+          "b": "Your answer completely missed the point.",
+          "answer": "a",
+          "why": "Restraint is what makes a formal complaint difficult to dismiss."
+        },
+        {
+          "id": "rg3",
+          "ctx": "A critical review",
+          "a": "The argument is elegantly framed but thinly evidenced.",
+          "b": "The argument sounds great but there's not much proof.",
+          "answer": "a",
+          "why": "Criticism at this level lives in precise, compact evaluation."
+        },
+        {
+          "id": "rg4",
+          "ctx": "A comment among peers",
+          "a": "One might posit that the sample is unrepresentative.",
+          "b": "The sample looks unrepresentative to me.",
+          "answer": "b",
+          "why": "'One might posit' in a peer discussion is pastiche, not register."
+        },
+        {
+          "id": "rg5",
+          "ctx": "A summary and response",
+          "a": "The author's central claim is that attention is a finite resource.",
+          "b": "Basically the author says we only have so much attention.",
+          "answer": "a",
+          "why": "A summary reproduces the claim in the register of the original."
+        },
+        {
+          "id": "rg6",
+          "ctx": "An email to a close friend",
+          "a": "I trust you will find the enclosed of interest.",
+          "b": "Thought you'd like this — have a look.",
+          "answer": "b",
+          "why": "Business formulas between friends read as parody."
+        },
+        {
+          "id": "rg7",
+          "ctx": "A message to a colleague you know well",
+          "a": "I should be grateful if you would forward the file at your earliest convenience.",
+          "b": "Could you send the file today?",
+          "answer": "b",
+          "why": "Excessive formality between peers reads as irony or as distance."
+        }
+      ],
+      "title": "Who are you writing to?",
+      "howto": "The same idea, two versions. Choose the one that fits the reader. Register is not about being polite — it is about distance."
+    },
+    {
+      "id": "t7",
+      "step": 5,
+      "type": "idea-bank",
+      "columns": [
+        {
+          "id": "in",
+          "label": "Goes into my text"
+        },
+        {
+          "id": "out",
+          "label": "Leave it out"
+        }
+      ],
+      "items": [
+        {
+          "id": "ib0",
+          "text": "A precise definition of the contested term",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib1",
+          "text": "Each position in its strongest form",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib2",
+          "text": "What the disagreement actually turns on",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib3",
+          "text": "A conclusion with a stated limit",
+          "side": "in",
+          "strong": false,
+          "why": "A fact the reader needs in order to act."
+        },
+        {
+          "id": "ib4",
+          "text": "A confident prediction about the future",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ib5",
+          "text": "An anecdote about a job I once had",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ibx0",
+          "text": "A claim about what most readers will feel",
+          "side": "out",
+          "strong": false,
+          "why": "You cannot evidence other readers' reactions."
+        },
+        {
+          "id": "ibx1",
+          "text": "A recommendation with no mechanism",
+          "side": "out",
+          "strong": false,
+          "why": "A proposal without a mechanism is a wish."
+        },
+        {
+          "id": "ibx2",
+          "text": "A summary of the whole text instead of a response",
+          "side": "out",
+          "strong": false,
+          "why": "Summary crowds out the analysis the genre exists for."
+        },
+        {
+          "id": "ibx3",
+          "text": "Praise with no supporting quotation",
+          "side": "out",
+          "strong": false,
+          "why": "Unanchored praise is indistinguishable from padding."
+        }
+      ],
+      "pickCount": 3,
+      "title": "Idea bank",
+      "howto": "Sort the ideas into two columns: what goes into your text and what only waters it down. Then choose the three strongest ideas."
+    },
+    {
+      "id": "t8",
+      "step": 5,
+      "type": "outline-builder",
+      "slots": [
+        {
+          "id": "intro",
+          "label": "1. Opening"
+        },
+        {
+          "id": "body1",
+          "label": "2. Main part"
+        },
+        {
+          "id": "body2",
+          "label": "3. Details"
+        },
+        {
+          "id": "conc",
+          "label": "4. Closing"
+        }
+      ],
+      "items": [
+        {
+          "id": "ob0",
+          "text": "Frame the question precisely",
+          "slot": "intro",
+          "why": "“Frame the question precisely” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob1",
+          "text": "Develop the first position",
+          "slot": "intro",
+          "why": "“Develop the first position” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob2",
+          "text": "Support it",
+          "slot": "body1",
+          "why": "“Support it” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob3",
+          "text": "Develop the second position",
+          "slot": "body1",
+          "why": "“Develop the second position” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob4",
+          "text": "Identify what the disagreement turns on",
+          "slot": "body2",
+          "why": "“Identify what the disagreement turns on” is the job of the details in this genre."
+        },
+        {
+          "id": "ob5",
+          "text": "Introduce the distributional point",
+          "slot": "body2",
+          "why": "“Introduce the distributional point” is the job of the details in this genre."
+        },
+        {
+          "id": "ob6",
+          "text": "State your qualified position",
+          "slot": "conc",
+          "why": "“State your qualified position” is the job of the closing in this genre."
+        },
+        {
+          "id": "ob7",
+          "text": "State the limit of your conclusion",
+          "slot": "conc",
+          "why": "“State the limit of your conclusion” is the job of the closing in this genre."
+        }
+      ],
+      "rules": [
+        {
+          "check": "requestNotIntro",
+          "msg": "The thesis may open the text, but the recommendation cannot: it has to be earned by the evidence between them."
+        },
+        {
+          "check": "noNewFactsInConclusion",
+          "msg": "A conclusion that introduces evidence admits that the body of the text was incomplete."
+        }
+      ],
+      "title": "Build the plan",
+      "howto": "Put the blocks into the four parts of the text. The checker knows the logic of the genre: some blocks cannot stand where you put them."
+    },
+    {
+      "id": "t9",
+      "step": 6,
+      "type": "guided-write",
+      "items": [
+        {
+          "id": "gw0",
+          "q": "Frame the question precisely.",
+          "hint": "One or two sentences. A phrase you can use: Debates about … usually founder on a conflation: …"
+        },
+        {
+          "id": "gw1",
+          "q": "Develop the first position.",
+          "hint": "One or two sentences. A phrase you can use: The evidence points in different directions for each."
+        },
+        {
+          "id": "gw2",
+          "q": "Support it.",
+          "hint": "One or two sentences. A phrase you can use: The case for … is historical and strong: …"
+        },
+        {
+          "id": "gw3",
+          "q": "Develop the second position.",
+          "hint": "One or two sentences. A phrase you can use: The pessimistic case does not deny this; it denies that …"
+        },
+        {
+          "id": "gw4",
+          "q": "Identify what the disagreement turns on.",
+          "hint": "One or two sentences. A phrase you can use: The disagreement turns on a single empirical question: …"
+        },
+        {
+          "id": "gw5",
+          "q": "Introduce the distributional point.",
+          "hint": "One or two sentences. A phrase you can use: There is a further consideration that neither camp emphasises: …"
+        },
+        {
+          "id": "gw6",
+          "q": "State your qualified position.",
+          "hint": "One or two sentences. A phrase you can use: My own position is therefore split."
+        }
+      ],
+      "title": "Write it step by step",
+      "howto": "Answer one question at a time, in English, one or two sentences. At the end your answers become a draft in the Writing Pad. The hints are questions, not ready sentences: the text stays yours."
+    },
+    {
+      "id": "t10",
+      "step": 6,
+      "type": "free-write",
+      "target": [
+        280,
+        320
+      ],
+      "minutes": 50,
+      "prompt": "Write a discursive essay (280–320 words) on whether automation threatens employment: define the terms, develop the strongest case on each side, identify what the disagreement actually turns on, and give a qualified conclusion.",
+      "title": "Your own text",
+      "howto": "Now the whole text, on your own. The Writing Pad gives you the checklist, the phrase bank, the linking words and your plan. The timer is optional."
+    },
+    {
+      "id": "t11",
+      "step": 6,
+      "type": "overall",
+      "items": [
+        {
+          "id": "task",
+          "label": "Task achieved",
+          "hint": "Does the text answer the exact question, hold one position, and address the strongest objection to it?"
+        },
+        {
+          "id": "organisation",
+          "label": "Organisation",
+          "hint": "Paragraphs that each do one job, with the logic visible at the joins."
+        },
+        {
+          "id": "vocabulary",
+          "label": "Vocabulary",
+          "hint": "Register held consistently; collocation and connotation controlled, not merely varied."
+        },
+        {
+          "id": "grammar",
+          "label": "Grammar",
+          "hint": "Subordination, inversion, nominalisation and hedging used for effect rather than for display."
+        }
+      ],
+      "title": "Overall",
+      "howto": "This is the site's own summary of the genre. It counts the exercises you have finished, how accurate you were, and the scores of the text you submitted, and turns all of that into one band. Nothing here is a school grade — it only shows what to work on next."
+    }
+  ]
+}

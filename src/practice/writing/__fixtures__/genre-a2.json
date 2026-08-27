@@ -1,0 +1,1083 @@
+{
+  "id": "a2-informal",
+  "title": "An informal letter",
+  "subtitle": "Answering your friend's news",
+  "goal": "You can answer a friend's letter: react to their news, tell your own, ask two questions and close warmly.",
+  "why": "An informal letter is the most tested A2 genre — and the one where students forget to answer the questions they were asked.",
+  "example": "Aliya answered a pen-friend's letter point by point. Her partner wrote: 'you are the only one who answered everything'.",
+  "targetWords": [
+    60,
+    90
+  ],
+  "register": "informal",
+  "timerMinutes": 20,
+  "writeTask": "Answer a letter from your friend (60–90 words): thank them, react to their news, tell two pieces of your own news, ask two questions and close warmly.",
+  "level": "a2",
+  "outline": [
+    {
+      "label": "Greeting",
+      "job": "Greet your friend"
+    },
+    {
+      "label": "Thanks",
+      "job": "Thank them for the letter"
+    },
+    {
+      "label": "Reaction",
+      "job": "React to their news"
+    },
+    {
+      "label": "My news",
+      "job": "Give your own news"
+    },
+    {
+      "label": "More news",
+      "job": "Add a second piece of news"
+    },
+    {
+      "label": "Questions",
+      "job": "Ask two questions"
+    },
+    {
+      "label": "Closing",
+      "job": "Close warmly"
+    }
+  ],
+  "phrases": [
+    {
+      "fn": "Opening",
+      "items": [
+        {
+          "t": "Thanks for your letter.",
+          "lv": "A2",
+          "ru": "Спасибо за твоё письмо.",
+          "kk": "Хатың үшін рақмет."
+        },
+        {
+          "t": "It was great to hear from you.",
+          "lv": "A2",
+          "ru": "Было здорово получить от тебя весточку.",
+          "kk": "Сенен хабар алғаныма қуандым."
+        }
+      ]
+    },
+    {
+      "fn": "Giving opinion",
+      "items": [
+        {
+          "t": "I am really glad that …",
+          "lv": "A2",
+          "ru": "Я очень рад, что …",
+          "kk": "Мен қатты қуаныштымын, себебі …"
+        },
+        {
+          "t": "I was sorry to hear about …",
+          "lv": "A2",
+          "ru": "Жаль было услышать о …",
+          "kk": "… туралы естігенде өкіндім."
+        }
+      ]
+    },
+    {
+      "fn": "Giving facts",
+      "items": [
+        {
+          "t": "As for me, I …",
+          "lv": "A2",
+          "ru": "Что касается меня, я …",
+          "kk": "Ал мен …"
+        },
+        {
+          "t": "Guess what — I …",
+          "lv": "A2",
+          "ru": "Знаешь что — я …",
+          "kk": "Білесің бе — мен …"
+        }
+      ]
+    },
+    {
+      "fn": "Closing",
+      "items": [
+        {
+          "t": "Write soon!",
+          "lv": "A2",
+          "ru": "Пиши скорее!",
+          "kk": "Тезірек жаз!"
+        },
+        {
+          "t": "Say hello to your family.",
+          "lv": "A2",
+          "ru": "Передавай привет семье.",
+          "kk": "Отбасыңа сәлем айт."
+        }
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "fn": "Adding",
+      "items": [
+        "also",
+        "as well",
+        "and then"
+      ],
+      "hint": "You add a second point of the same kind."
+    },
+    {
+      "fn": "Contrast",
+      "items": [
+        "however",
+        "but",
+        "although"
+      ],
+      "hint": "The second idea works against the first one."
+    },
+    {
+      "fn": "Reason",
+      "items": [
+        "because",
+        "that is why",
+        "so"
+      ],
+      "hint": "You explain why something happened."
+    },
+    {
+      "fn": "Time",
+      "items": [
+        "first",
+        "after that",
+        "finally"
+      ],
+      "hint": "You put the events of a story in order."
+    }
+  ],
+  "wordlist": [
+    "letter",
+    "news",
+    "glad",
+    "exam",
+    "flat",
+    "summer",
+    "photo",
+    "soon"
+  ],
+  "gloss": [
+    [
+      "letter",
+      "письмо",
+      "хат"
+    ],
+    [
+      "news",
+      "новости",
+      "жаңалық"
+    ],
+    [
+      "glad",
+      "рад",
+      "қуанышты"
+    ],
+    [
+      "exam",
+      "экзамен",
+      "емтихан"
+    ],
+    [
+      "flat",
+      "квартира",
+      "пәтер"
+    ],
+    [
+      "summer",
+      "лето",
+      "жаз"
+    ],
+    [
+      "photo",
+      "фотография",
+      "сурет"
+    ],
+    [
+      "soon",
+      "скоро",
+      "жақында"
+    ]
+  ],
+  "checklist": [
+    {
+      "text": "I used a phrase for opening",
+      "auto": [
+        "thanks for your",
+        "it was great"
+      ]
+    },
+    {
+      "text": "I used a phrase for giving opinion",
+      "auto": [
+        "i am really",
+        "i was sorry"
+      ]
+    },
+    {
+      "text": "I used a phrase for giving facts",
+      "auto": [
+        "as for me,",
+        "guess what —"
+      ]
+    },
+    {
+      "text": "I used a phrase for closing",
+      "auto": [
+        "write soon!",
+        "say hello to"
+      ]
+    },
+    {
+      "text": "I used at least two linking words",
+      "auto": [
+        "because",
+        "however",
+        "after that",
+        "also",
+        "although",
+        "so"
+      ]
+    },
+    {
+      "text": "I used the topic words of this genre",
+      "auto": [
+        "letter",
+        "news",
+        "glad",
+        "exam",
+        "flat",
+        "summer",
+        "photo",
+        "soon"
+      ]
+    },
+    {
+      "text": "I wrote in paragraphs, not one block",
+      "manual": true
+    },
+    {
+      "text": "I checked my verb tenses",
+      "manual": true
+    },
+    {
+      "text": "I checked articles a / an / the",
+      "manual": true
+    },
+    {
+      "text": "I read the text out loud before sending",
+      "manual": true
+    }
+  ],
+  "rubricHints": {
+    "task": "Did you cover every point of the task and keep to the genre?",
+    "organisation": "One paragraph, one idea, and linking words between the sentences.",
+    "vocabulary": "Topic words and precise adjectives instead of good, bad and nice.",
+    "grammar": "Past forms, articles, prepositions and subject-verb agreement."
+  },
+  "tasks": [
+    {
+      "id": "t1",
+      "step": 4,
+      "type": "word-order",
+      "items": [
+        {
+          "id": "wo0",
+          "words": [
+            "I",
+            "have",
+            "not",
+            "been",
+            "to",
+            "the",
+            "new",
+            "cinema",
+            "yet."
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "wo1",
+          "words": [
+            "We",
+            "can",
+            "meet",
+            "in",
+            "August",
+            "if",
+            "you",
+            "come."
+          ],
+          "why": "In an if-clause English uses the present, not will: If it rains, I will stay at home."
+        },
+        {
+          "id": "wo2",
+          "words": [
+            "Write",
+            "soon",
+            "and",
+            "send",
+            "some",
+            "photos."
+          ],
+          "why": "After can, should, must and will the verb has no 'to': I can send, you should write."
+        },
+        {
+          "id": "wo3",
+          "words": [
+            "I",
+            "have",
+            "my",
+            "own",
+            "room",
+            "at",
+            "last."
+          ],
+          "why": "English word order is fixed: subject → verb → object. Time and place go at the end."
+        },
+        {
+          "id": "wo4",
+          "words": [
+            "As",
+            "for",
+            "me,",
+            "I",
+            "have",
+            "started",
+            "swimming",
+            "twice",
+            "a",
+            "week."
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "wo5",
+          "words": [
+            "Thanks",
+            "for",
+            "your",
+            "letter,",
+            "it",
+            "arrived",
+            "on",
+            "my",
+            "birthday."
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "wo6",
+          "words": [
+            "My",
+            "family",
+            "moved",
+            "to",
+            "a",
+            "new",
+            "flat",
+            "near",
+            "the",
+            "park."
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "wo7",
+          "words": [
+            "What",
+            "are",
+            "you",
+            "doing",
+            "in",
+            "the",
+            "summer?"
+          ],
+          "why": "A question inverts the order: Could you…? Do you…? Have you…?"
+        }
+      ],
+      "title": "Build the sentence",
+      "howto": "Tap the words in the right order — they move into the line. Tap a word in the line to send it back. English word order is fixed, so the order itself carries the meaning."
+    },
+    {
+      "id": "t2",
+      "step": 4,
+      "type": "transform",
+      "items": [
+        {
+          "id": "tr0",
+          "cue": "Use the comparative",
+          "src": "This café is good. That café is not so good.",
+          "answers": [
+            "This café is better than that one."
+          ],
+          "must": [
+            "better than"
+          ],
+          "why": "A comparison needs the comparative form plus than."
+        },
+        {
+          "id": "tr1",
+          "cue": "Report the time clearly",
+          "src": "I will come later.",
+          "answers": [
+            "I will come at half past seven."
+          ],
+          "must": [
+            "seven"
+          ],
+          "why": "Later means nothing to the reader; a time does."
+        },
+        {
+          "id": "tr2",
+          "cue": "Add an adjective and a detail",
+          "src": "It was a house.",
+          "answers": [
+            "It was a small wooden house near the river."
+          ],
+          "must": [
+            "house"
+          ],
+          "why": "One adjective and one place detail change a bare sentence into a picture."
+        },
+        {
+          "id": "tr3",
+          "cue": "Use going to",
+          "src": "I will visit my aunt next week. It is my plan.",
+          "answers": [
+            "I am going to visit my aunt next week."
+          ],
+          "must": [
+            "going to"
+          ],
+          "why": "Going to is for plans you have already made."
+        },
+        {
+          "id": "tr4",
+          "cue": "Use so instead of because",
+          "src": "The film was boring, because I left.",
+          "answers": [
+            "The film was boring, so I left."
+          ],
+          "must": [
+            "so"
+          ],
+          "why": "Because gives the reason, so gives the result. They face opposite ways."
+        },
+        {
+          "id": "tr5",
+          "cue": "Join with because",
+          "src": "I was late. The bus did not come.",
+          "answers": [
+            "I was late because the bus did not come."
+          ],
+          "must": [
+            "because"
+          ],
+          "why": "Because turns two short sentences into one clear idea."
+        },
+        {
+          "id": "tr6",
+          "cue": "Use Present Perfect",
+          "src": "I never visit Turkey.",
+          "answers": [
+            "I have never visited Turkey."
+          ],
+          "must": [
+            "have never"
+          ],
+          "why": "Experience up to now takes Present Perfect: I have never visited."
+        },
+        {
+          "id": "tr7",
+          "cue": "Make it more polite",
+          "src": "Send me the photos.",
+          "answers": [
+            "Could you send me the photos, please?"
+          ],
+          "must": [
+            "could you"
+          ],
+          "why": "Could you…? turns an order into a request."
+        }
+      ],
+      "title": "Rewrite it",
+      "howto": "Read the sentence and the instruction next to it. Write your own version: same meaning, different form. The model answer appears after you check."
+    },
+    {
+      "id": "t3",
+      "step": 4,
+      "type": "connectors",
+      "bank": [
+        "because",
+        "although",
+        "However",
+        "but",
+        "Also",
+        "After that",
+        "So"
+      ],
+      "items": [
+        {
+          "id": "cn0",
+          "before": "I study English every evening",
+          "gap": true,
+          "after": "I want to work abroad.",
+          "answer": "because",
+          "why": "Because answers the reader's question 'why?'."
+        },
+        {
+          "id": "cn1",
+          "before": "I did not go out",
+          "gap": true,
+          "after": "the weather was terrible.",
+          "answer": "because",
+          "why": "Because gives the reason inside one sentence."
+        },
+        {
+          "id": "cn2",
+          "before": "The film was three hours long",
+          "gap": true,
+          "after": "I was never bored.",
+          "answer": "although",
+          "why": "Although shows that the second fact is a surprise."
+        },
+        {
+          "id": "cn3",
+          "before": "I wanted to come to your party.",
+          "gap": true,
+          "after": ", I had to work on Saturday.",
+          "answer": "However",
+          "why": "However opens a sentence that works against the one before it."
+        },
+        {
+          "id": "cn4",
+          "before": "The café was small and noisy.",
+          "gap": true,
+          "after": ", the coffee was excellent.",
+          "answer": "However",
+          "why": "You admit a problem and then give the positive side."
+        },
+        {
+          "id": "cn5",
+          "before": "The room was clean",
+          "gap": true,
+          "after": "the shower did not work.",
+          "answer": "but",
+          "why": "But joins a good point and a bad point in one sentence."
+        },
+        {
+          "id": "cn6",
+          "before": "We booked the tickets in May",
+          "gap": true,
+          "after": "they were much cheaper then.",
+          "answer": "because",
+          "why": "Because explains a decision you made."
+        },
+        {
+          "id": "cn7",
+          "before": "I like the new café.",
+          "gap": true,
+          "after": ", the prices are quite low.",
+          "answer": "Also",
+          "why": "Also adds one more reason to like it."
+        }
+      ],
+      "title": "Add the linking word",
+      "howto": "The linking words are in the bank at the top. Tap a linking word, then tap the gap — or drag it with the mouse. Each word is used once."
+    },
+    {
+      "id": "t4",
+      "step": 4,
+      "type": "punctuation",
+      "items": [
+        {
+          "id": "pu0",
+          "raw": "as for me i have started swimming twice a week",
+          "answer": "As for me, I have started swimming twice a week.",
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "pu1",
+          "raw": "i have my own room at last",
+          "answer": "I have my own room at last.",
+          "why": "English word order is fixed: subject → verb → object. Time and place go at the end."
+        },
+        {
+          "id": "pu2",
+          "raw": "write soon and send some photos",
+          "answer": "Write soon and send some photos.",
+          "why": "After can, should, must and will the verb has no 'to': I can send, you should write."
+        },
+        {
+          "id": "pu3",
+          "raw": "my family moved to a new flat near the park",
+          "answer": "My family moved to a new flat near the park.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu4",
+          "raw": "thanks for your letter it arrived on my birthday",
+          "answer": "Thanks for your letter, it arrived on my birthday.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu5",
+          "raw": "i have not been to the new cinema yet",
+          "answer": "I have not been to the new cinema yet.",
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "pu6",
+          "raw": "i am really glad your exams went well",
+          "answer": "I am really glad your exams went well.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu7",
+          "raw": "we can meet in august if you come",
+          "answer": "We can meet in August if you come.",
+          "why": "In an if-clause English uses the present, not will: If it rains, I will stay at home."
+        }
+      ],
+      "title": "Capitals and punctuation",
+      "howto": "Rewrite the sentence with capital letters and punctuation. Do not change the words themselves."
+    },
+    {
+      "id": "t5",
+      "step": 4,
+      "type": "expand",
+      "items": [
+        {
+          "id": "ex0",
+          "cue": "brother / much / taller / than / me / now",
+          "answers": [
+            "My brother is much taller than me now."
+          ],
+          "must": [
+            "brother",
+            "much"
+          ],
+          "why": "One comparative at a time: better, not more better; cheaper, not more cheaper."
+        },
+        {
+          "id": "ex1",
+          "cue": "we / meet / august / if / you / come",
+          "answers": [
+            "We can meet in August if you come."
+          ],
+          "must": [
+            "meet",
+            "august"
+          ],
+          "why": "In an if-clause English uses the present, not will: If it rains, I will stay at home."
+        },
+        {
+          "id": "ex2",
+          "cue": "i / own / room / last",
+          "answers": [
+            "I have my own room at last."
+          ],
+          "must": [
+            "room",
+            "last"
+          ],
+          "why": "English word order is fixed: subject → verb → object. Time and place go at the end."
+        },
+        {
+          "id": "ex3",
+          "cue": "i / not / new / cinema / yet",
+          "answers": [
+            "I have not been to the new cinema yet."
+          ],
+          "must": [
+            "cinema"
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "ex4",
+          "cue": "as / me / i / started / swimming / twice",
+          "answers": [
+            "As for me, I have started swimming twice a week."
+          ],
+          "must": [
+            "started",
+            "swimming"
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "ex5",
+          "cue": "thanks / letter / arrived / birthday",
+          "answers": [
+            "Thanks for your letter, it arrived on my birthday."
+          ],
+          "must": [
+            "thanks",
+            "letter"
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "ex6",
+          "cue": "family / moved / new / flat / near / park",
+          "answers": [
+            "My family moved to a new flat near the park."
+          ],
+          "must": [
+            "family",
+            "moved"
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "ex7",
+          "cue": "what / you / doing / summer",
+          "answers": [
+            "What are you doing in the summer?"
+          ],
+          "must": [
+            "what",
+            "doing"
+          ],
+          "why": "A question inverts the order: Could you…? Do you…? Have you…?"
+        }
+      ],
+      "title": "Notes into sentences",
+      "howto": "Turn the notes into a full sentence: add articles, prepositions and the right verb form. Keep the meaning."
+    },
+    {
+      "id": "t6",
+      "step": 4,
+      "type": "register",
+      "items": [
+        {
+          "id": "rg0",
+          "ctx": "A message to your teacher",
+          "a": "Could I hand in my essay on Monday?",
+          "b": "can i give the essay monday",
+          "answer": "a",
+          "why": "A request to a teacher keeps capital letters and a question mark."
+        },
+        {
+          "id": "rg1",
+          "ctx": "A note of apology to a neighbour",
+          "a": "I am sorry about the noise last night.",
+          "b": "sorry about the noise btw",
+          "answer": "a",
+          "why": "An apology loses its value in chat abbreviations."
+        },
+        {
+          "id": "rg2",
+          "ctx": "An email to a hotel",
+          "a": "I would like to book a double room.",
+          "b": "I need a room, two people, ok?",
+          "answer": "a",
+          "why": "A booking is business: it needs the standard formula."
+        },
+        {
+          "id": "rg3",
+          "ctx": "A comment on a blog",
+          "a": "I hereby express my disagreement.",
+          "b": "I do not really agree with this.",
+          "answer": "b",
+          "why": "A blog comment is everyday English, not a legal document."
+        },
+        {
+          "id": "rg4",
+          "ctx": "A message to a friend",
+          "a": "I regret that I am unable to join you.",
+          "b": "Sorry, I can't make it.",
+          "answer": "b",
+          "why": "Between friends short is warm; long is cold."
+        },
+        {
+          "id": "rg5",
+          "ctx": "An email to a friend",
+          "a": "I would like to inform you of my arrival.",
+          "b": "I arrive on Friday at six.",
+          "answer": "b",
+          "why": "With a friend, facts beat formulas."
+        },
+        {
+          "id": "rg6",
+          "ctx": "A story for the school magazine",
+          "a": "It was the best day of the summer.",
+          "b": "omg that day was lit",
+          "answer": "a",
+          "why": "Slang ages fast and closes the text to many readers."
+        },
+        {
+          "id": "rg7",
+          "ctx": "A comment under a photo",
+          "a": "I would like to state that this is beautiful.",
+          "b": "This place looks amazing!",
+          "answer": "b",
+          "why": "A comment is spoken English written down."
+        }
+      ],
+      "title": "Who are you writing to?",
+      "howto": "The same idea, two versions. Choose the one that fits the reader. Register is not about being polite — it is about distance."
+    },
+    {
+      "id": "t7",
+      "step": 5,
+      "type": "idea-bank",
+      "columns": [
+        {
+          "id": "in",
+          "label": "Goes into my text"
+        },
+        {
+          "id": "out",
+          "label": "Leave it out"
+        }
+      ],
+      "items": [
+        {
+          "id": "ib0",
+          "text": "Thanks for the letter",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib1",
+          "text": "A reaction to their news",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib2",
+          "text": "Two pieces of my own news",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib3",
+          "text": "Two questions for them",
+          "side": "in",
+          "strong": false,
+          "why": "A fact the reader needs in order to act."
+        },
+        {
+          "id": "ib4",
+          "text": "A long description of my school building",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ib5",
+          "text": "My opinion about the postal service",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ibx0",
+          "text": "What my brother thinks about the topic",
+          "side": "out",
+          "strong": false,
+          "why": "Another person's opinion weakens your own text."
+        },
+        {
+          "id": "ibx1",
+          "text": "A long description of the weather",
+          "side": "out",
+          "strong": false,
+          "why": "Weather is background, not content, unless the task asks for it."
+        },
+        {
+          "id": "ibx2",
+          "text": "My plans to learn Spanish",
+          "side": "out",
+          "strong": false,
+          "why": "Another subject entirely."
+        },
+        {
+          "id": "ibx3",
+          "text": "The name of the hotel receptionist",
+          "side": "out",
+          "strong": false,
+          "why": "A private detail that helps nobody."
+        }
+      ],
+      "pickCount": 3,
+      "title": "Idea bank",
+      "howto": "Sort the ideas into two columns: what goes into your text and what only waters it down. Then choose the three strongest ideas."
+    },
+    {
+      "id": "t8",
+      "step": 5,
+      "type": "outline-builder",
+      "slots": [
+        {
+          "id": "intro",
+          "label": "1. Opening"
+        },
+        {
+          "id": "body1",
+          "label": "2. Main part"
+        },
+        {
+          "id": "body2",
+          "label": "3. Details"
+        },
+        {
+          "id": "conc",
+          "label": "4. Closing"
+        }
+      ],
+      "items": [
+        {
+          "id": "ob0",
+          "text": "Greet your friend",
+          "slot": "intro",
+          "why": "“Greet your friend” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob1",
+          "text": "Thank them for the letter",
+          "slot": "intro",
+          "why": "“Thank them for the letter” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob2",
+          "text": "React to their news",
+          "slot": "body1",
+          "why": "“React to their news” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob3",
+          "text": "Give your own news",
+          "slot": "body1",
+          "why": "“Give your own news” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob4",
+          "text": "Add a second piece of news",
+          "slot": "body2",
+          "why": "“Add a second piece of news” is the job of the details in this genre."
+        },
+        {
+          "id": "ob5",
+          "text": "Ask two questions",
+          "slot": "conc",
+          "why": "“Ask two questions” is the job of the closing in this genre."
+        },
+        {
+          "id": "ob6",
+          "text": "Close warmly",
+          "slot": "conc",
+          "why": "“Close warmly” is the job of the closing in this genre."
+        }
+      ],
+      "rules": [
+        {
+          "check": "openingFirst",
+          "msg": "The opening line names the subject: a reader who does not know the topic stops after one sentence."
+        },
+        {
+          "check": "closingLast",
+          "msg": "The closing part sums up or asks — it never introduces a new fact."
+        }
+      ],
+      "title": "Build the plan",
+      "howto": "Put the blocks into the four parts of the text. The checker knows the logic of the genre: some blocks cannot stand where you put them."
+    },
+    {
+      "id": "t9",
+      "step": 6,
+      "type": "guided-write",
+      "items": [
+        {
+          "id": "gw0",
+          "q": "Greet your friend.",
+          "hint": "One or two sentences. A phrase you can use: Thanks for your letter."
+        },
+        {
+          "id": "gw1",
+          "q": "Thank them for the letter.",
+          "hint": "One or two sentences. A phrase you can use: It was great to hear from you."
+        },
+        {
+          "id": "gw2",
+          "q": "React to their news.",
+          "hint": "One or two sentences. A phrase you can use: I am really glad that …"
+        },
+        {
+          "id": "gw3",
+          "q": "Give your own news.",
+          "hint": "One or two sentences. A phrase you can use: I was sorry to hear about …"
+        },
+        {
+          "id": "gw4",
+          "q": "Add a second piece of news.",
+          "hint": "One or two sentences. A phrase you can use: As for me, I …"
+        },
+        {
+          "id": "gw5",
+          "q": "Ask two questions.",
+          "hint": "One or two sentences. A phrase you can use: Guess what — I …"
+        },
+        {
+          "id": "gw6",
+          "q": "Close warmly.",
+          "hint": "One or two sentences. A phrase you can use: Write soon!"
+        }
+      ],
+      "title": "Write it step by step",
+      "howto": "Answer one question at a time, in English, one or two sentences. At the end your answers become a draft in the Writing Pad. The hints are questions, not ready sentences: the text stays yours."
+    },
+    {
+      "id": "t10",
+      "step": 6,
+      "type": "free-write",
+      "target": [
+        60,
+        90
+      ],
+      "minutes": 20,
+      "prompt": "Answer a letter from your friend (60–90 words): thank them, react to their news, tell two pieces of your own news, ask two questions and close warmly.",
+      "title": "Your own text",
+      "howto": "Now the whole text, on your own. The Writing Pad gives you the checklist, the phrase bank, the linking words and your plan. The timer is optional."
+    },
+    {
+      "id": "t11",
+      "step": 6,
+      "type": "overall",
+      "items": [
+        {
+          "id": "task",
+          "label": "Task achieved",
+          "hint": "Did you cover every point of the task and keep to the genre?"
+        },
+        {
+          "id": "organisation",
+          "label": "Organisation",
+          "hint": "One paragraph, one idea, and linking words between the sentences."
+        },
+        {
+          "id": "vocabulary",
+          "label": "Vocabulary",
+          "hint": "Topic words and precise adjectives instead of good, bad and nice."
+        },
+        {
+          "id": "grammar",
+          "label": "Grammar",
+          "hint": "Past forms, articles, prepositions and subject-verb agreement."
+        }
+      ],
+      "title": "Overall",
+      "howto": "This is the site's own summary of the genre. It counts the exercises you have finished, how accurate you were, and the scores of the text you submitted, and turns all of that into one band. Nothing here is a school grade — it only shows what to work on next."
+    }
+  ]
+}
