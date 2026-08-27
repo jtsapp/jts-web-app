@@ -41,6 +41,19 @@ describe('NoCopyGuard — выделение и копирование', () => {
     expect(event.defaultPrevented).toBe(false)
   })
 
+  /* Chrome шлёт selectstart на ТЕКСТОВОМ узле, если нажатие пришлось на саму
+     букву (на пустое место в абзаце — на элементе). У текстового узла нет
+     closest(), и проверка молча уходила в preventDefault: выделение начиналось
+     с пробела и не начиналось с буквы — жалоба «выделяется буквально на
+     рандом». Тест дежурит именно на текстовом узле. */
+  it('в тексте урока выделение начинается и с самой буквы (target — текстовый узел)', () => {
+    const container = mount('<div data-selectable=""><p id="text">Answer them all</p></div>')
+
+    const event = fire(container.querySelector('#text').firstChild, 'selectstart')
+
+    expect(event.defaultPrevented).toBe(false)
+  })
+
   it('вне урока выделение по-прежнему запрещено', () => {
     const container = mount('<p id="text">Обычный текст интерфейса</p>')
 
