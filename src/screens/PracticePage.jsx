@@ -23,6 +23,7 @@ import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone, markWorkbookLevelDone } from '../practice/workbooks/workbooksProgress.js'
+import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
@@ -766,35 +767,20 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </section>
           )}
 
-          {/* Воркбуки A0–B2 — статичные HTML-курсы, оверлей как у Speaking Practice */}
+          {/* Воркбуки A0–B2 — карточки как у грамматики (gr-gcard), оверлей iframe */}
           {show('workbooks') && (
           <section id="sec-workbooks" className="pp-sec">
             <SectionHead title={t('practice.chip.workbooks')} onAll={() => setFilter('workbooks')} />
-            <Rail grid={grid}>
-              {WORKBOOK_LEVELS.map((l) => (
-                <button
+            <div className="pp-rail">
+              {WORKBOOK_LEVELS.map((l, i) => (
+                <WorkbookCard
                   key={l.code}
-                  type="button"
-                  className="pp-scard"
-                  onClick={() => openWorkbookLevel(l.code)}
-                >
-                  <div
-                    className="pp-thumb pp-thumb--workbook"
-                    style={{ '--wb-accent': l.accent }}
-                    aria-hidden="true"
-                  >
-                    <span className="pp-workbook-mark">{l.label}</span>
-                    <span className="pp-play"><PlayIcon size={22} /></span>
-                  </div>
-                  <div className="pp-scard__title">
-                    Workbook · {l.label} {l.desc}
-                  </div>
-                  <div className="pp-scard__meta">
-                    {l.units} {t('practice.workbooks.units')} · {l.lessons} {t('practice.workbooks.lessons')}
-                  </div>
-                </button>
+                  level={l}
+                  index={i}
+                  onOpen={openWorkbookLevel}
+                />
               ))}
-            </Rail>
+            </div>
           </section>
           )}
 
