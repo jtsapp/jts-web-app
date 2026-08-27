@@ -52,7 +52,7 @@ function WordOrderItem({ task, item, idx, ctl }) {
             <button
               key={pos}
               type="button"
-              className="wr-chip"
+              className="wr-chip wr-chip--task"
               onClick={() => {
                 if (!closed) setPlaced(placed.filter((_, p) => p !== pos))
               }}
@@ -67,7 +67,7 @@ function WordOrderItem({ task, item, idx, ctl }) {
           <button
             key={i}
             type="button"
-            className={'wr-chip' + (placed.includes(i) ? ' is-used' : '')}
+            className={'wr-chip wr-chip--task' + (placed.includes(i) ? ' is-used' : '')}
             disabled={closed || placed.includes(i)}
             onClick={() => takeChip(i)}
           >
@@ -127,7 +127,7 @@ export function ConnectorsTask({ genre, task, onFirstTry }) {
           <button
             key={w}
             type="button"
-            className={'wr-chip' + (used[w] ? ' is-used' : '') + (sel === w ? ' is-sel' : '')}
+            className={'wr-chip wr-chip--task' + (used[w] ? ' is-used' : '') + (sel === w ? ' is-sel' : '')}
             disabled={!!used[w]}
             onClick={() => setSel(sel === w ? null : w)}
           >
