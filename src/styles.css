@@ -5899,10 +5899,20 @@ textarea {
    (читалка, рилсы) при открытии и смене режима; .pp-sec — секции при
    переключении чипов-фильтров; .rl__video — смену ролика; .bk-pop — попап
    перевода. При prefers-reduced-motion всё отключается. */
-.scr-in,
 .bk,
 .rl {
   animation: scr-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+/* Обёртке смены экранов нельзя удерживать transform после анимации: fill-mode
+   both оставляет на элементе вычисленную identity-матрицу, а любой transform
+   (даже единичный) делает предка containing block'ом для position:fixed
+   потомков. Итог ловили на живой странице: рилсы и модалки, открытые после
+   прокрутки, уезжали вверх ровно на scrollY (та же грабля описана у sticky в
+   lessonWorkspace.css, а OnboardingTour из-за неё порталится в body).
+   backwards отпускает transform по завершении; с нулевой задержкой картинка
+   входа та же самая. */
+.scr-in {
+  animation: scr-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
 }
 @keyframes scr-in {
   from { opacity: 0; transform: translateY(10px); }

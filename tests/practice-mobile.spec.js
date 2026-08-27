@@ -68,7 +68,9 @@ test.describe('Практика — мобильная адаптация', () =
   test('Словарь идёт после лент контента, кнопки слов — тач-размера', async ({ page }) => {
     await openPractice(page)
 
-    const banner = await page.locator('.pp-listen__card').boundingBox()
+    // Баннер «Письмо» переиспользует классы .pp-listen — селекторы прижаты
+    // к секции аудирования, иначе strict mode ловит два баннера.
+    const banner = await page.locator('#sec-listening .pp-listen__card').boundingBox()
     const side = await page.locator('.pp__side').boundingBox()
     expect(side.y).toBeGreaterThan(banner.y + banner.height)
 
@@ -80,15 +82,17 @@ test.describe('Практика — мобильная адаптация', () =
   test('баннер аудирования: CTA на всю ширину, печать уровня ниже текста', async ({ page }) => {
     await openPractice(page)
 
-    const card = await page.locator('.pp-listen__card').boundingBox()
-    const cta = await page.locator('.pp-listen__cta').boundingBox()
-    const aside = await page.locator('.pp-listen__aside').boundingBox()
+    // Те же классы теперь и у баннера «Письмо» — берём именно аудирование.
+    const listen = page.locator('#sec-listening')
+    const card = await listen.locator('.pp-listen__card').boundingBox()
+    const cta = await listen.locator('.pp-listen__cta').boundingBox()
+    const aside = await listen.locator('.pp-listen__aside').boundingBox()
 
     // CTA растянута почти на всю карточку (карточка минус паддинги).
     expect(cta.width).toBeGreaterThan(card.width * 0.8)
     // Строка с печатью уровня — под кнопкой, а не поверх текста.
     expect(aside.y).toBeGreaterThan(cta.y + cta.height)
-    await expect(page.locator('.pp-listen__level')).toHaveText('A2')
+    await expect(listen.locator('.pp-listen__level')).toHaveText('A2')
   })
 
   test('рилсы: полноэкранная TikTok-лента со snap-скроллом, без стрелок', async ({ page }) => {
@@ -135,6 +139,50 @@ test.describe('Практика — мобильная адаптация', () =
     // «Назад» плавает поверх ленты и закрывает просмотр.
     await page.locator('.vd__back').click()
     await expect(page.locator('.rl')).toHaveCount(0)
+  })
+})
+
+test.describe('Письмо — мобильная адаптация', () => {
+  test.skip(({ viewport }) => (viewport?.width ?? 0) > 760, 'только узкий вьюпорт')
+
+  // Раздел гостевой (без токена и моков): каталог, тренажёр и Блокнот живут
+  // на статических JSON из public/practice/writing.
+  const noOverflow = async (page) => {
+    const overflow = await page.evaluate(
+      () => document.scrollingElement.scrollWidth - window.innerWidth,
+    )
+    expect(overflow).toBeLessThanOrEqual(1)
+  }
+
+  const openWriting = async (page) => {
+    await page.goto('/?screen=writing')
+    await expect(page.locator('.wr-hero h1')).toHaveText(
+      'Учимся писать по-английски — по шагам',
+      { timeout: 15000 },
+    )
+  }
+
+  test('каталог уровней не шире экрана', async ({ page }) => {
+    await openWriting(page)
+    await expect(page.locator('.wr-lvcard')).toHaveCount(6)
+    await noOverflow(page)
+  })
+
+  test('шаг 4 тренажёра (6 упражнений) не шире экрана', async ({ page }) => {
+    await openWriting(page)
+    await page.locator('.wr-lvcard').first().click()
+    await expect(page.locator('.wr-gncard')).toHaveCount(30, { timeout: 15000 })
+    await page.locator('.wr-gncard', { hasText: 'About me: a form' }).click()
+    await page.locator('.wr-stepchip', { hasText: 'Уровень предложения' }).click()
+    await expect(page.locator('#task-t1')).toBeVisible()
+    await noOverflow(page)
+  })
+
+  test('Блокнот не шире экрана', async ({ page }) => {
+    await openWriting(page)
+    await page.getByRole('button', { name: 'Открыть Блокнот' }).click()
+    await expect(page.locator('.wr-editor')).toBeVisible()
+    await noOverflow(page)
   })
 })
 
