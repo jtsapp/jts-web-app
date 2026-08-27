@@ -8,22 +8,31 @@ test.describe('practiceSyncCore — сериализация и применен
     expect(serializeForPush('listening', ['a1_001'])).toEqual({ done: ['a1_001'] })
   })
 
-  test('serializeForPush: vocab отдаёт объект как есть', () => {
+  test('serializeForPush: vocab и writing отдают объект как есть', () => {
     const s = { level: 'B1', srs: {} }
     expect(serializeForPush('vocab', s)).toBe(s)
+    // writing — тоже модуль-объект: {tasks, seen} уходит без обёртки {done}
+    const w = { tasks: { 'g1:t1': { done: true, correct: 3 } }, seen: { 'g1:s1': 1 } }
+    expect(serializeForPush('writing', w)).toBe(w)
   })
 
   test('applyHydratedState: пишет ключи и будит каталоги', () => {
     const writes = {}
     const events = []
     applyHydratedState(
-      { vocab: { level: 'A2' }, grammar: { done: ['a1:3', 'a1:3'] }, listening: { done: ['a1_002'] } },
+      {
+        vocab: { level: 'A2' },
+        grammar: { done: ['a1:3', 'a1:3'] },
+        listening: { done: ['a1_002'] },
+        writing: { tasks: { 'g1:t1': { done: true, correct: 2, total: 4 } }, seen: {} },
+      },
       { setItem: (k, v) => (writes[k] = v), dispatch: (e) => events.push(e) },
     )
     expect(JSON.parse(writes.jts_vocab2)).toEqual({ level: 'A2' })
     expect(JSON.parse(writes.jts_grammar_done)).toEqual(['a1:3']) // массив, без дублей
     expect(JSON.parse(writes.jts_listening_done)).toEqual(['a1_002'])
-    expect(events).toEqual(['grammar-progress', 'listening-progress'])
+    expect(JSON.parse(writes.jts_writing_done)).toEqual({ tasks: { 'g1:t1': { done: true, correct: 2, total: 4 } }, seen: {} })
+    expect(events).toEqual(['grammar-progress', 'listening-progress', 'writing-progress'])
   })
 
   test('applyHydratedState: мусорный вход игнорируется', () => {

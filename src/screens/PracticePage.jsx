@@ -165,6 +165,47 @@ function ListeningBanner({ userLevel = 'A1', onAll, onStart }) {
   )
 }
 
+// Баннер «Письмо»: вход в тренажёр Writing (180 жанров + Блокнот). Переиспользует
+// каркас баннера аудирования (.pp-listen), а перекраска — модификатором .pp-write
+// в writing.css. Своего арта у раздела пока нет, поэтому карточка текстовая.
+function WritingBanner({ userLevel = 'A1', onAll, onStart }) {
+  const { t } = useI18n()
+  const level = String(userLevel || 'A1').toUpperCase()
+  const noop = () => {}
+  const [headTop, headRest] = t('practice.writing.heading').split('\n')
+  return (
+    <section id="sec-writing" className="pp-sec pp-listen pp-write">
+      <SectionHead title={t('practice.writing.title')} onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            {headTop}
+            {headRest && (
+              <>
+                <br />
+                {headRest}
+              </>
+            )}
+          </h3>
+          <p className="pp-listen__desc">{t('practice.writing.desc')}</p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            {t('practice.writing.cta')}
+          </button>
+        </div>
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">{t('practice.writing.hint')}</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level">{level}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Проговаривание слова браузером (бэкенд не отдаёт аудио для словаря)
 function speak(word) {
   try {
@@ -363,6 +404,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const chips = [
     { key: null, label: t('practice.chip.all') },
     { key: 'grammar', label: t('practice.chip.grammar') },
+    { key: 'writing', label: t('practice.chip.writing') },
     { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
     { key: 'workbooks', label: t('practice.chip.workbooks') },
@@ -547,6 +589,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               userLevel={userLevel}
               onAll={() => onNav?.('listening')}
               onStart={() => onNav?.('listening')}
+            />
+          )}
+
+          {/* Письмо — вход в тренажёр Writing. У чипа «Письмо» своей сетки нет:
+              баннер и есть весь раздел, каталог уровней живёт на своём экране. */}
+          {show('writing') && (
+            <WritingBanner
+              userLevel={userLevel}
+              onAll={() => onNav?.('writing')}
+              onStart={() => onNav?.('writing')}
             />
           )}
 
