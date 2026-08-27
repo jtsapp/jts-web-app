@@ -1,0 +1,1115 @@
+{
+  "id": "b1-complaint",
+  "title": "A letter of complaint",
+  "subtitle": "How to demand a solution politely",
+  "goal": "You can write a 120–150 word letter that describes a problem with a product or a service calmly and demands a specific solution: a refund, a replacement or a repair.",
+  "why": "An order arrives broken, an airline loses your luggage, a course starts three weeks late. Companies answer letters, and a calm letter with a clear demand is answered faster than an angry message in a chat.",
+  "example": "Timur bought a phone from a British online shop. It died after three days. His 140-word letter got him a new phone and an apology in a week.",
+  "targetWords": [
+    120,
+    150
+  ],
+  "register": "semi-formal",
+  "timerMinutes": 25,
+  "writeTask": "Write a letter of complaint (120–150 words) about wireless headphones you bought online: one earphone does not charge, delivery was ten days late, and support has not answered for a week. Say what you bought and when, describe two problems, say what you have already done, demand a solution and give a deadline.",
+  "level": "b1",
+  "outline": [
+    {
+      "label": "Greeting",
+      "job": "Open the letter formally"
+    },
+    {
+      "label": "Reason for writing",
+      "job": "Say why you are writing in the first sentence"
+    },
+    {
+      "label": "Background",
+      "job": "Give the fair background"
+    },
+    {
+      "label": "The problem",
+      "job": "Describe the problem with facts"
+    },
+    {
+      "label": "What I have done",
+      "job": "Say what you have already tried"
+    },
+    {
+      "label": "Request",
+      "job": "Demand a specific solution"
+    },
+    {
+      "label": "Evidence",
+      "job": "Mention your evidence"
+    },
+    {
+      "label": "Closing",
+      "job": "Set a deadline and sign off"
+    }
+  ],
+  "phrases": [
+    {
+      "fn": "Opening",
+      "items": [
+        {
+          "t": "I am writing to complain about …",
+          "lv": "B1",
+          "ru": "Я пишу, чтобы пожаловаться на …",
+          "kk": "… туралы шағым жазып отырмын."
+        },
+        {
+          "t": "I am writing with regard to the order I placed on …",
+          "lv": "B1",
+          "ru": "Пишу по поводу заказа от …",
+          "kk": "… күнгі тапсырысыма байланысты жазып отырмын."
+        }
+      ]
+    },
+    {
+      "fn": "Explaining",
+      "items": [
+        {
+          "t": "Unfortunately, the product does not work properly.",
+          "lv": "B1",
+          "ru": "К сожалению, товар работает неправильно.",
+          "kk": "Өкінішке қарай, тауар дұрыс жұмыс істемейді."
+        },
+        {
+          "t": "Despite my two emails, nobody has replied.",
+          "lv": "B1",
+          "ru": "Несмотря на два письма, никто не ответил.",
+          "kk": "Екі хатыма қарамастан, ешкім жауап берген жоқ."
+        }
+      ]
+    },
+    {
+      "fn": "Requesting",
+      "items": [
+        {
+          "t": "I would be grateful if you could refund my money.",
+          "lv": "B1",
+          "ru": "Буду признателен, если вы вернёте деньги.",
+          "kk": "Ақшамды қайтарсаңыз, ризашылығымды білдірер едім."
+        },
+        {
+          "t": "I would like to request a full refund.",
+          "lv": "B1",
+          "ru": "Я хотел бы запросить полный возврат.",
+          "kk": "Толық қайтарым сұрағым келеді."
+        }
+      ]
+    },
+    {
+      "fn": "Closing",
+      "items": [
+        {
+          "t": "I look forward to hearing from you.",
+          "lv": "B1",
+          "ru": "Жду вашего ответа.",
+          "kk": "Жауабыңызды күтемін."
+        },
+        {
+          "t": "Yours faithfully,",
+          "lv": "B1",
+          "ru": "С уважением,",
+          "kk": "Ізгі ниетпен,"
+        }
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "fn": "Adding",
+      "items": [
+        "in addition",
+        "moreover",
+        "what is more"
+      ],
+      "hint": "You add a second argument of the same weight."
+    },
+    {
+      "fn": "Contrast",
+      "items": [
+        "however",
+        "although",
+        "despite this"
+      ],
+      "hint": "You show that two facts pull in different directions."
+    },
+    {
+      "fn": "Reason",
+      "items": [
+        "because of",
+        "due to",
+        "since"
+      ],
+      "hint": "You explain what caused the situation."
+    },
+    {
+      "fn": "Result",
+      "items": [
+        "therefore",
+        "as a result",
+        "consequently"
+      ],
+      "hint": "You draw a conclusion from the facts."
+    },
+    {
+      "fn": "Sequence",
+      "items": [
+        "firstly",
+        "after that",
+        "finally"
+      ],
+      "hint": "You put arguments or events in order."
+    }
+  ],
+  "wordlist": [
+    "refund",
+    "faulty",
+    "delay",
+    "unacceptable",
+    "replacement",
+    "receipt",
+    "inconvenience",
+    "compensation"
+  ],
+  "gloss": [
+    [
+      "refund",
+      "возврат денег",
+      "ақшаны қайтару"
+    ],
+    [
+      "faulty",
+      "неисправный",
+      "ақаулы"
+    ],
+    [
+      "delay",
+      "задержка",
+      "кешігу"
+    ],
+    [
+      "unacceptable",
+      "неприемлемый",
+      "қолайсыз"
+    ],
+    [
+      "replacement",
+      "замена",
+      "ауыстыру"
+    ],
+    [
+      "receipt",
+      "чек",
+      "түбіртек"
+    ],
+    [
+      "inconvenience",
+      "неудобство",
+      "қолайсыздық"
+    ],
+    [
+      "compensation",
+      "компенсация",
+      "өтемақы"
+    ]
+  ],
+  "checklist": [
+    {
+      "text": "I used a phrase for opening",
+      "auto": [
+        "i am writing",
+        "i am writing"
+      ]
+    },
+    {
+      "text": "I used a phrase for explaining",
+      "auto": [
+        "unfortunately, the product",
+        "despite my two"
+      ]
+    },
+    {
+      "text": "I used a phrase for requesting",
+      "auto": [
+        "i would be",
+        "i would like"
+      ]
+    },
+    {
+      "text": "I used a phrase for closing",
+      "auto": [
+        "i look forward",
+        "yours faithfully,"
+      ]
+    },
+    {
+      "text": "I used at least two linking words",
+      "auto": [
+        "however",
+        "therefore",
+        "in addition",
+        "although",
+        "as a result",
+        "moreover"
+      ]
+    },
+    {
+      "text": "I used the topic words of this genre",
+      "auto": [
+        "refund",
+        "faulty",
+        "delay",
+        "unacceptable",
+        "replacement",
+        "receipt",
+        "inconvenience",
+        "compensation"
+      ]
+    },
+    {
+      "text": "I wrote in paragraphs, not one block",
+      "manual": true
+    },
+    {
+      "text": "I checked my verb tenses",
+      "manual": true
+    },
+    {
+      "text": "I checked articles a / an / the",
+      "manual": true
+    },
+    {
+      "text": "I read the text out loud before sending",
+      "manual": true
+    }
+  ],
+  "rubricHints": {
+    "task": "Is every point of the task covered, and does the text do what the genre is for?",
+    "organisation": "Three or four paragraphs: purpose → facts → request or conclusion.",
+    "vocabulary": "Genre vocabulary and precision instead of good, bad and very.",
+    "grammar": "Tenses, articles, passive forms and polite structures with would and could."
+  },
+  "tasks": [
+    {
+      "id": "t1",
+      "step": 4,
+      "type": "word-order",
+      "items": [
+        {
+          "id": "wo0",
+          "words": [
+            "I",
+            "am",
+            "writing",
+            "to",
+            "complain",
+            "about",
+            "a",
+            "faulty",
+            "laptop."
+          ],
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "wo1",
+          "words": [
+            "I",
+            "have",
+            "attached",
+            "a",
+            "copy",
+            "of",
+            "the",
+            "receipt."
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "wo2",
+          "words": [
+            "The",
+            "charger",
+            "which",
+            "came",
+            "with",
+            "the",
+            "phone",
+            "became",
+            "very",
+            "hot."
+          ],
+          "why": "Use who for people and that/which for things: the parcel that arrived late."
+        },
+        {
+          "id": "wo3",
+          "words": [
+            "I",
+            "have",
+            "already",
+            "contacted",
+            "your",
+            "support",
+            "team."
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "wo4",
+          "words": [
+            "This",
+            "situation",
+            "is",
+            "completely",
+            "unacceptable",
+            "for",
+            "a",
+            "new",
+            "product."
+          ],
+          "why": "A singular countable noun needs an article: a phone, an email, the receipt."
+        },
+        {
+          "id": "wo5",
+          "words": [
+            "Unfortunately,",
+            "the",
+            "screen",
+            "stopped",
+            "working",
+            "after",
+            "three",
+            "days."
+          ],
+          "why": "A linking word at the start of a sentence takes a comma: However, the parcel was late."
+        },
+        {
+          "id": "wo6",
+          "words": [
+            "I",
+            "look",
+            "forward",
+            "to",
+            "hearing",
+            "from",
+            "you",
+            "soon."
+          ],
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "wo7",
+          "words": [
+            "I",
+            "would",
+            "be",
+            "grateful",
+            "if",
+            "you",
+            "could",
+            "refund",
+            "my",
+            "money."
+          ],
+          "why": "After can, should, must and will the verb has no 'to': I can send, you should write."
+        }
+      ],
+      "title": "Build the sentence",
+      "howto": "Tap the words in the right order — they move into the line. Tap a word in the line to send it back. English word order is fixed, so the order itself carries the meaning."
+    },
+    {
+      "id": "t2",
+      "step": 4,
+      "type": "transform",
+      "items": [
+        {
+          "id": "tr0",
+          "cue": "Make it more formal",
+          "src": "Thanks a lot!",
+          "answers": [
+            "Thank you in advance for your help.",
+            "Thank you for your assistance."
+          ],
+          "must": [
+            "thank you"
+          ],
+          "avoid": [
+            "thanks a lot"
+          ],
+          "why": "Thanks is spoken; a written request takes the full form."
+        },
+        {
+          "id": "tr1",
+          "cue": "Use a relative clause",
+          "src": "I bought a laptop. It stopped working after a week.",
+          "answers": [
+            "The laptop that I bought stopped working after a week."
+          ],
+          "must": [
+            "that i bought"
+          ],
+          "why": "A relative clause packs two sentences into one."
+        },
+        {
+          "id": "tr2",
+          "cue": "Make it a polite request",
+          "src": "Send me a new phone.",
+          "answers": [
+            "Could you please send me a new phone?"
+          ],
+          "must": [
+            "could you"
+          ],
+          "why": "An imperative to a company reads as rude; Could you…? does not."
+        },
+        {
+          "id": "tr3",
+          "cue": "Make the opinion clearer",
+          "src": "The film is good in some ways.",
+          "answers": [
+            "The film is worth watching for its acting, though the plot is weak."
+          ],
+          "must": [
+            "worth watching"
+          ],
+          "why": "A review has to commit: say what is good and what is not."
+        },
+        {
+          "id": "tr4",
+          "cue": "Join with therefore",
+          "src": "The phone is faulty. I want a refund.",
+          "answers": [
+            "The phone is faulty; therefore, I would like a refund."
+          ],
+          "must": [
+            "therefore"
+          ],
+          "why": "Therefore is the bridge between evidence and demand."
+        },
+        {
+          "id": "tr5",
+          "cue": "Join with although",
+          "src": "The delivery was fast. The phone was broken.",
+          "answers": [
+            "Although the delivery was fast, the phone was broken."
+          ],
+          "must": [
+            "although"
+          ],
+          "why": "You admit the good point, then move to the problem."
+        },
+        {
+          "id": "tr6",
+          "cue": "Make it more formal",
+          "src": "I want my money back.",
+          "answers": [
+            "I would like a full refund.",
+            "I would like to request a full refund."
+          ],
+          "must": [
+            "would like"
+          ],
+          "avoid": [
+            "want"
+          ],
+          "why": "I want sounds like a demand; I would like is neutral and still firm."
+        },
+        {
+          "id": "tr7",
+          "cue": "Start with I am writing",
+          "src": "I have a problem with my order.",
+          "answers": [
+            "I am writing about a problem with my order."
+          ],
+          "must": [
+            "am writing"
+          ],
+          "why": "The first sentence has to announce the purpose of the text."
+        }
+      ],
+      "title": "Rewrite it",
+      "howto": "Read the sentence and the instruction next to it. Write your own version: same meaning, different form. The model answer appears after you check."
+    },
+    {
+      "id": "t3",
+      "step": 4,
+      "type": "connectors",
+      "bank": [
+        "Although",
+        "As a result",
+        "In addition",
+        "However",
+        "Therefore",
+        "because of",
+        "although",
+        "Moreover"
+      ],
+      "items": [
+        {
+          "id": "cn0",
+          "before": "",
+          "gap": true,
+          "after": "I paid extra for fast delivery, the parcel was late.",
+          "answer": "Although",
+          "why": "Although opens a concession inside one sentence."
+        },
+        {
+          "id": "cn1",
+          "before": "Prices went up in January.",
+          "gap": true,
+          "after": ", fewer students joined the club.",
+          "answer": "As a result",
+          "why": "Cause first, consequence second."
+        },
+        {
+          "id": "cn2",
+          "before": "The screen is broken.",
+          "gap": true,
+          "after": ", the charger does not work.",
+          "answer": "In addition",
+          "why": "A second problem of the same kind is added with in addition."
+        },
+        {
+          "id": "cn3",
+          "before": "I ordered the jacket on 2 May.",
+          "gap": true,
+          "after": ", it arrived only on 30 May.",
+          "answer": "However",
+          "why": "The contrast between promise and reality is exactly what however marks."
+        },
+        {
+          "id": "cn4",
+          "before": "The item was damaged.",
+          "gap": true,
+          "after": ", I would like a replacement.",
+          "answer": "Therefore",
+          "why": "Therefore turns a fact into your conclusion."
+        },
+        {
+          "id": "cn5",
+          "before": "The library closes at six.",
+          "gap": true,
+          "after": ", students cannot work there after lessons.",
+          "answer": "Therefore",
+          "why": "Therefore states what follows logically from the fact."
+        },
+        {
+          "id": "cn6",
+          "before": "I could not work for two weeks",
+          "gap": true,
+          "after": "this delay.",
+          "answer": "because of",
+          "why": "Because of takes a noun; because takes a verb."
+        },
+        {
+          "id": "cn7",
+          "before": "The hotel is far from the centre",
+          "gap": true,
+          "after": "the bus stop is right outside.",
+          "answer": "although",
+          "why": "Although marks the fact that softens the problem."
+        }
+      ],
+      "title": "Add the linking word",
+      "howto": "The linking words are in the bank at the top. Tap a linking word, then tap the gap — or drag it with the mouse. Each word is used once."
+    },
+    {
+      "id": "t4",
+      "step": 4,
+      "type": "punctuation",
+      "items": [
+        {
+          "id": "pu0",
+          "raw": "i am writing to complain about a faulty laptop",
+          "answer": "I am writing to complain about a faulty laptop.",
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "pu1",
+          "raw": "the staff in your shop were extremely rude",
+          "answer": "The staff in your shop were extremely rude.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu2",
+          "raw": "unfortunately the screen stopped working after three days",
+          "answer": "Unfortunately, the screen stopped working after three days.",
+          "why": "A linking word at the start of a sentence takes a comma: However, the parcel was late."
+        },
+        {
+          "id": "pu3",
+          "raw": "i would be grateful if you could refund my money",
+          "answer": "I would be grateful if you could refund my money.",
+          "why": "After can, should, must and will the verb has no 'to': I can send, you should write."
+        },
+        {
+          "id": "pu4",
+          "raw": "i have attached a copy of the receipt",
+          "answer": "I have attached a copy of the receipt.",
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "pu5",
+          "raw": "the delivery was two weeks late",
+          "answer": "The delivery was two weeks late.",
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "pu6",
+          "raw": "this situation is completely unacceptable for a new product",
+          "answer": "This situation is completely unacceptable for a new product.",
+          "why": "A singular countable noun needs an article: a phone, an email, the receipt."
+        },
+        {
+          "id": "pu7",
+          "raw": "i have already contacted your support team",
+          "answer": "I have already contacted your support team.",
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        }
+      ],
+      "title": "Capitals and punctuation",
+      "howto": "Rewrite the sentence with capital letters and punctuation. Do not change the words themselves."
+    },
+    {
+      "id": "t5",
+      "step": 4,
+      "type": "expand",
+      "items": [
+        {
+          "id": "ex0",
+          "cue": "i / writing / complain / about / faulty / laptop",
+          "answers": [
+            "I am writing to complain about a faulty laptop."
+          ],
+          "must": [
+            "writing",
+            "complain"
+          ],
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "ex1",
+          "cue": "i / look / forward / hearing / you / soon",
+          "answers": [
+            "I look forward to hearing from you soon."
+          ],
+          "must": [
+            "look",
+            "forward"
+          ],
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "ex2",
+          "cue": "i / already / contacted / support / team",
+          "answers": [
+            "I have already contacted your support team."
+          ],
+          "must": [
+            "already",
+            "contacted"
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "ex3",
+          "cue": "i / attached / copy / receipt",
+          "answers": [
+            "I have attached a copy of the receipt."
+          ],
+          "must": [
+            "attached",
+            "copy"
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "ex4",
+          "cue": "delivery / two / weeks / late",
+          "answers": [
+            "The delivery was two weeks late."
+          ],
+          "must": [
+            "delivery",
+            "weeks"
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "ex5",
+          "cue": "unfortunately / screen / stopped / working / after / three",
+          "answers": [
+            "Unfortunately, the screen stopped working after three days."
+          ],
+          "must": [
+            "unfortunately",
+            "screen"
+          ],
+          "why": "A linking word at the start of a sentence takes a comma: However, the parcel was late."
+        },
+        {
+          "id": "ex6",
+          "cue": "i / grateful / if / you / refund / money",
+          "answers": [
+            "I would be grateful if you could refund my money."
+          ],
+          "must": [
+            "grateful",
+            "refund"
+          ],
+          "why": "After can, should, must and will the verb has no 'to': I can send, you should write."
+        },
+        {
+          "id": "ex7",
+          "cue": "situation / completely / unacceptable / new / product",
+          "answers": [
+            "This situation is completely unacceptable for a new product."
+          ],
+          "must": [
+            "situation",
+            "completely"
+          ],
+          "why": "A singular countable noun needs an article: a phone, an email, the receipt."
+        }
+      ],
+      "title": "Notes into sentences",
+      "howto": "Turn the notes into a full sentence: add articles, prepositions and the right verb form. Keep the meaning."
+    },
+    {
+      "id": "t6",
+      "step": 4,
+      "type": "register",
+      "items": [
+        {
+          "id": "rg0",
+          "ctx": "A letter to a company",
+          "a": "I am writing to complain about a faulty phone.",
+          "b": "Hi guys, your phone is rubbish.",
+          "answer": "a",
+          "why": "Companies answer facts, not insults."
+        },
+        {
+          "id": "rg1",
+          "ctx": "A message to a friend",
+          "a": "I would be grateful if you could call me back.",
+          "b": "Can you call me back?",
+          "answer": "b",
+          "why": "Formal formulas between friends sound sarcastic."
+        },
+        {
+          "id": "rg2",
+          "ctx": "A semi-formal letter",
+          "a": "I look forward to hearing from you.",
+          "b": "Write back soon!",
+          "answer": "a",
+          "why": "The standard closing line signals that you know the genre."
+        },
+        {
+          "id": "rg3",
+          "ctx": "A formal email",
+          "a": "The item has not arrived yet.",
+          "b": "The item hasn't arrived yet.",
+          "answer": "a",
+          "why": "Formal writing avoids contractions."
+        },
+        {
+          "id": "rg4",
+          "ctx": "A letter to a company",
+          "a": "I would like to request a full refund.",
+          "b": "I want my money back right now!!!",
+          "answer": "a",
+          "why": "A calm demand is harder to refuse than a shouted one."
+        },
+        {
+          "id": "rg5",
+          "ctx": "An article for a magazine",
+          "a": "Many students face the same problem every autumn.",
+          "b": "Loads of students have this problem lol",
+          "answer": "a",
+          "why": "An article speaks to strangers and keeps neutral vocabulary."
+        },
+        {
+          "id": "rg6",
+          "ctx": "A letter of complaint",
+          "a": "I have been a customer for three years.",
+          "b": "I've been your customer for like 3 years.",
+          "answer": "a",
+          "why": "Like as a filler and contractions weaken a complaint."
+        },
+        {
+          "id": "rg7",
+          "ctx": "A review on a website",
+          "a": "The staff were attentive and well trained.",
+          "b": "The staff were sooo nice omg",
+          "answer": "a",
+          "why": "Reviews are read by strangers who need information, not emotion."
+        }
+      ],
+      "title": "Who are you writing to?",
+      "howto": "The same idea, two versions. Choose the one that fits the reader. Register is not about being polite — it is about distance."
+    },
+    {
+      "id": "t7",
+      "step": 5,
+      "type": "idea-bank",
+      "columns": [
+        {
+          "id": "in",
+          "label": "Goes into my text"
+        },
+        {
+          "id": "out",
+          "label": "Leave it out"
+        }
+      ],
+      "items": [
+        {
+          "id": "ib0",
+          "text": "The order number and date",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib1",
+          "text": "The exact defect",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib2",
+          "text": "The demand with a deadline",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib3",
+          "text": "What I have already tried",
+          "side": "in",
+          "strong": false,
+          "why": "A fact the reader needs in order to act."
+        },
+        {
+          "id": "ib4",
+          "text": "How I felt when I opened the parcel",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ib5",
+          "text": "A story about another shop",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ibx0",
+          "text": "What my friends said about the product",
+          "side": "out",
+          "strong": false,
+          "why": "Second-hand opinions carry no weight in a complaint."
+        },
+        {
+          "id": "ibx1",
+          "text": "How I felt when I opened the parcel",
+          "side": "out",
+          "strong": false,
+          "why": "Feelings are not evidence: they cannot be checked or acted on."
+        },
+        {
+          "id": "ibx2",
+          "text": "How difficult English is for me",
+          "side": "out",
+          "strong": false,
+          "why": "Never apologise for your English inside the text itself."
+        },
+        {
+          "id": "ibx3",
+          "text": "The name of the courier",
+          "side": "out",
+          "strong": false,
+          "why": "A detail that changes nothing for the decision."
+        }
+      ],
+      "pickCount": 3,
+      "title": "Idea bank",
+      "howto": "Sort the ideas into two columns: what goes into your text and what only waters it down. Then choose the three strongest ideas."
+    },
+    {
+      "id": "t8",
+      "step": 5,
+      "type": "outline-builder",
+      "slots": [
+        {
+          "id": "intro",
+          "label": "1. Opening"
+        },
+        {
+          "id": "body1",
+          "label": "2. Main part"
+        },
+        {
+          "id": "body2",
+          "label": "3. Details"
+        },
+        {
+          "id": "conc",
+          "label": "4. Closing"
+        }
+      ],
+      "items": [
+        {
+          "id": "ob0",
+          "text": "Open the letter formally",
+          "slot": "intro",
+          "why": "“Open the letter formally” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob1",
+          "text": "Say why you are writing in the first sentence",
+          "slot": "intro",
+          "why": "“Say why you are writing in the first sentence” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob2",
+          "text": "Give the fair background",
+          "slot": "body1",
+          "why": "“Give the fair background” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob3",
+          "text": "Describe the problem with facts",
+          "slot": "body1",
+          "why": "“Describe the problem with facts” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob4",
+          "text": "Say what you have already tried",
+          "slot": "body2",
+          "why": "“Say what you have already tried” is the job of the details in this genre."
+        },
+        {
+          "id": "ob5",
+          "text": "Demand a specific solution",
+          "slot": "body2",
+          "why": "“Demand a specific solution” is the job of the details in this genre."
+        },
+        {
+          "id": "ob6",
+          "text": "Mention your evidence",
+          "slot": "conc",
+          "why": "“Mention your evidence” is the job of the closing in this genre."
+        },
+        {
+          "id": "ob7",
+          "text": "Set a deadline and sign off",
+          "slot": "conc",
+          "why": "“Set a deadline and sign off” is the job of the closing in this genre."
+        }
+      ],
+      "rules": [
+        {
+          "check": "requestNotIntro",
+          "msg": "A demand in the first paragraph reads as an ultimatum: facts first, request after them."
+        },
+        {
+          "check": "noNewFactsInConclusion",
+          "msg": "A new fact in the closing breaks the structure — all the evidence lives in the middle."
+        }
+      ],
+      "title": "Build the plan",
+      "howto": "Put the blocks into the four parts of the text. The checker knows the logic of the genre: some blocks cannot stand where you put them."
+    },
+    {
+      "id": "t9",
+      "step": 6,
+      "type": "guided-write",
+      "items": [
+        {
+          "id": "gw0",
+          "q": "Open the letter formally.",
+          "hint": "One or two sentences. A phrase you can use: I am writing to complain about …"
+        },
+        {
+          "id": "gw1",
+          "q": "Say why you are writing in the first sentence.",
+          "hint": "One or two sentences. A phrase you can use: I am writing with regard to the order I placed on …"
+        },
+        {
+          "id": "gw2",
+          "q": "Give the fair background.",
+          "hint": "One or two sentences. A phrase you can use: Unfortunately, the product does not work properly."
+        },
+        {
+          "id": "gw3",
+          "q": "Describe the problem with facts.",
+          "hint": "One or two sentences. A phrase you can use: Despite my two emails, nobody has replied."
+        },
+        {
+          "id": "gw4",
+          "q": "Say what you have already tried.",
+          "hint": "One or two sentences. A phrase you can use: I would be grateful if you could refund my money."
+        },
+        {
+          "id": "gw5",
+          "q": "Demand a specific solution.",
+          "hint": "One or two sentences. A phrase you can use: I would like to request a full refund."
+        },
+        {
+          "id": "gw6",
+          "q": "Mention your evidence.",
+          "hint": "One or two sentences. A phrase you can use: I look forward to hearing from you."
+        }
+      ],
+      "title": "Write it step by step",
+      "howto": "Answer one question at a time, in English, one or two sentences. At the end your answers become a draft in the Writing Pad. The hints are questions, not ready sentences: the text stays yours."
+    },
+    {
+      "id": "t10",
+      "step": 6,
+      "type": "free-write",
+      "target": [
+        120,
+        150
+      ],
+      "minutes": 25,
+      "prompt": "Write a letter of complaint (120–150 words) about wireless headphones you bought online: one earphone does not charge, delivery was ten days late, and support has not answered for a week. Say what you bought and when, describe two problems, say what you have already done, demand a solution and give a deadline.",
+      "title": "Your own text",
+      "howto": "Now the whole text, on your own. The Writing Pad gives you the checklist, the phrase bank, the linking words and your plan. The timer is optional."
+    },
+    {
+      "id": "t11",
+      "step": 6,
+      "type": "overall",
+      "items": [
+        {
+          "id": "task",
+          "label": "Task achieved",
+          "hint": "Is every point of the task covered, and does the text do what the genre is for?"
+        },
+        {
+          "id": "organisation",
+          "label": "Organisation",
+          "hint": "Three or four paragraphs: purpose → facts → request or conclusion."
+        },
+        {
+          "id": "vocabulary",
+          "label": "Vocabulary",
+          "hint": "Genre vocabulary and precision instead of good, bad and very."
+        },
+        {
+          "id": "grammar",
+          "label": "Grammar",
+          "hint": "Tenses, articles, passive forms and polite structures with would and could."
+        }
+      ],
+      "title": "Overall",
+      "howto": "This is the site's own summary of the genre. It counts the exercises you have finished, how accurate you were, and the scores of the text you submitted, and turns all of that into one band. Nothing here is a school grade — it only shows what to work on next."
+    }
+  ]
+}

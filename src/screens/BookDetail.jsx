@@ -1,15 +1,21 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
-import { saveWord } from '../api.js'
+import { saveWord, getAudiobook } from '../api.js'
 import { useI18n } from '../i18n.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { cleanWord, translateWord } from '../lib/wordTranslate.js'
 
 // ── Контент книг ────────────────────────────────────────────────────────────
-// Полные тексты глав и словари переводов извлечены из hosted-библиотеки
-// «Книжек» (scripts/extract-books.js → public/practice/books/). Каталог там
-// свой, без общих id с бэкендом, поэтому связываем по нормализованному
-// названию. Книга не из библиотеки читается как раньше (track.text/демо).
+// У читалки два источника глав, в порядке приоритета:
+//   1) статика public/practice/books/<id>.json — тексты и словари переводов,
+//      извлечённые из hosted-библиотеки «Книжек» (scripts/extract-books.js).
+//      Каталог там свой, без общих id с бэкендом, поэтому связываем по
+//      нормализованному названию;
+//   2) бэкенд, GET /mobile/audio-lessons/{id} — текст глав, заведённый в
+//      админке (tracks[].text). Так книга добавляется без правок фронта:
+//      завели в админке — она читается. Словаря у такой книги нет, тап-перевод
+//      уходит в сетевой фолбэк (как у книг, дотянутых из Gutenberg).
+// Ни того, ни другого — читаем как раньше (голые треки → заглушка главы).
 let _bookIndexPromise = null
 const _bookContentCache = {}
 
@@ -20,7 +26,20 @@ export function normTitle(s) {
     .trim()
 }
 
-async function loadBookContent(title) {
+/** Треки книги с бэкенда → главы читалки. null, если текста нет ни у одной
+ *  главы: тогда вызывающая сторона оставляет прежнюю ветку с треками, а не
+ *  подменяет их пустышками. */
+export function chaptersFromTracks(tracks) {
+  const list = Array.isArray(tracks) ? tracks : []
+  if (!list.some((t) => String(t?.text || '').trim())) return null
+  return list.map((t, i) => ({
+    num: String(t?.trackIndex ?? i + 1),
+    title: t?.title || '',
+    text: String(t?.text || '').trim(),
+  }))
+}
+
+async function loadStaticContent(title) {
   if (!_bookIndexPromise) {
     _bookIndexPromise = fetch('/practice/books/index.json').then((r) => (r.ok ? r.json() : []))
   }
@@ -33,11 +52,41 @@ async function loadBookContent(title) {
     index.find((b) => normTitle(b.title).includes(want) || want.includes(normTitle(b.title)))
   if (!hit) return null
   if (!_bookContentCache[hit.id]) {
+    // Промах не кэшируем: единственный сбой сети (офлайн, 404 в момент
+    // деплоя) навсегда оставил бы книгу «без текста» до перезагрузки страницы.
     _bookContentCache[hit.id] = fetch(`/practice/books/${hit.id}.json`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
+      .then((res) => {
+        if (!res) delete _bookContentCache[hit.id]
+        return res
+      })
   }
   return _bookContentCache[hit.id]
+}
+
+async function loadBookContent(book, token) {
+  const fromStatic = await loadStaticContent(book?.title)
+  if (fromStatic?.chapters?.length) return fromStatic
+  const id = book?.id
+  if (id == null) return fromStatic
+  const key = `api:${id}`
+  if (!_bookContentCache[key]) {
+    // Тот же принцип: null (сбой сети, просроченный токен, книга без текста
+    // глав) не замораживаем — иначе повторное открытие книги не ходило бы в
+    // сеть до перезагрузки страницы.
+    _bookContentCache[key] = getAudiobook(token, id)
+      .then((full) => {
+        const chapters = chaptersFromTracks(full?.tracks)
+        return chapters ? { book: full, chapters, dict: {} } : null
+      })
+      .catch(() => null)
+      .then((res) => {
+        if (!res) delete _bookContentCache[key]
+        return res
+      })
+  }
+  return _bookContentCache[key]
 }
 
 // Абзацы: тексты из библиотеки — одна строка без переводов строк, поэтому
@@ -85,11 +134,11 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
 
   useEffect(() => {
     let alive = true
-    loadBookContent(book.title).then((c) => alive && setContent(c))
+    loadBookContent(book, token).then((c) => alive && setContent(c))
     return () => {
       alive = false
     }
-  }, [book])
+  }, [book, token])
 
   const tracks = useMemo(() => {
     const t = book.tracks?.length

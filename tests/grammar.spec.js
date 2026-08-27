@@ -106,10 +106,12 @@ async function advanceTo(page, acts, target) {
 test.describe('Грамматика — каталог', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 760, 'каталог проверяем на десктопе')
 
-  test('уровни A1–C2, секции с диапазоном юнитов и карточки', async ({ page }) => {
+  test('уровни A0–C1, секции с диапазоном юнитов и карточки', async ({ page }) => {
     await openCatalog(page)
 
+    // Ровно уровни с курсом: A0 добавлен с обновлением выгрузки, C2 убран.
     await expect(page.locator('.gr-levelchip')).toHaveCount(6)
+    await expect(page.locator('.gr-levelchip', { hasText: 'Уровень C2' })).toHaveCount(0)
     await expect(page.locator('.gr-levelchip.on')).toHaveText('Уровень A1')
 
     // Первая секция курса A1 — Present, юниты 1-9 (данные источника).
@@ -143,10 +145,21 @@ test.describe('Грамматика — каталог', () => {
     await expect(page.locator('.gr-catalog .pp-sec h2').first()).toContainText('Present tenses')
   })
 
-  test('C2 в дизайне есть, но курса в источнике нет — показываем «скоро»', async ({ page }) => {
+  // A0 приехал с обновлением выгрузки курса: до него самый младший уровень был
+  // A1, и новичку показывали курс не своего уровня.
+  test('A0 открывается своим курсом, а не заглушкой «скоро»', async ({ page }) => {
     await openCatalog(page)
-    await page.locator('.gr-levelchip', { hasText: 'Уровень C2' }).click()
-    await expect(page.locator('.gr-empty')).toContainText('скоро')
+    await page.locator('.gr-levelchip', { hasText: 'Уровень A0' }).click()
+    await expect(page.locator('.gr-levelchip.on')).toHaveText('Уровень A0')
+
+    await expect(page.locator('.gr-empty')).toHaveCount(0)
+    await expect(page.locator('.gr-catalog .gr-gcard').first()).toBeVisible()
+
+    // Урок A0 открывается и играет так же, как на остальных уровнях.
+    await page.locator('.gr-catalog .gr-gcard').first().click()
+    await expect(page.locator('.gr-block').first()).toBeVisible()
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
   })
 
   test('рейл «Грамматика» в общем виде ведёт в каталог', async ({ page }) => {
@@ -247,7 +260,7 @@ test.describe('Грамматика — движок упражнений', () =
     await expect(page.locator('.gr-reward')).toContainText('+10')
   })
 
-  test('gap: неверный ответ показывает правильный, альтернативная форма засчитывается', async ({
+  test('gap: ошибка оставляет ответ студента и называет верный, альтернативная форма засчитывается', async ({
     page,
   }) => {
     await openUnit1(page)
@@ -260,12 +273,14 @@ test.describe('Грамматика — движок упражнений', () =
 
     await advanceTo(page, acts, target)
 
-    // Неверный ответ: поле краснеет и показывает правильный вариант.
+    // Неверный ответ: поле краснеет, но остаётся с текстом студента — иначе он
+    // не понимает, что именно написал. Верный вариант называет разбор.
     await page.locator('.gr-gap-input').fill('zzzz')
     await page.locator('.gr-check').click()
     await expect(page.locator('.gr-gap-input')).toHaveClass(/wrong/)
-    await expect(page.locator('.gr-gap-input')).toHaveValue(acts[target].answer)
+    await expect(page.locator('.gr-gap-input')).toHaveValue('zzzz')
     await expect(page.locator('.gr-fb')).toHaveClass(/no/)
+    await expect(page.locator('.gr-fb__why')).toContainText(acts[target].answer)
 
     // Альтернативная форма из данных источника принимается как верная.
     const alt = acts.findIndex(

@@ -180,13 +180,46 @@ describe('классрум — разметка урока каталога', ()
     expect(body).toMatch(/--cyan-lt:\s*var\(--lw-track\)/)
   })
 
+  /** Правила секции как пары [селектор, тело]; комментарии из селектора убраны. */
+  const rules = () =>
+    [...section.matchAll(/([^{}]+)\{([^}]*)\}/g)].map((m) => [
+      m[1].replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/\s+/g, ' '),
+      m[2],
+    ])
+  // Рамка — это border / border-<сторона> / border-color|width|style с непустым
+  // значением. `border: 0` (снятие рамки с <button> из файла урока) и
+  // border-radius рамкой не являются. Разбираем объявления, а не ищем регуляркой
+  // по телу: на `border: 0;` она откатывалась через пробел и давала ложный плюс.
+  const hasBorder = (body) =>
+    body
+      .split(';')
+      .map((d) => d.split(':'))
+      .some(([prop = '', value = '']) => {
+        const p = prop.trim()
+        if (!/^border(-(top|right|bottom|left|color|width|style))?$/.test(p)) return false
+        return value.trim() !== '0'
+      })
+
   it('таблица разделяется фоном, а не рамками (правило §0.3)', () => {
     expect(rule('.lw-info__body th')).toMatch(/background:\s*var\(--lw-tint-3\)/)
     expect(section).toMatch(/\.lw-info__body tbody tr:nth-child\(even\) td\s*{[^}]*background:/)
-    // Ни одной рамки во всей секции — разделение только фоном и отступами.
-    // `border: 0` — снятие рамки с <button>, оно правилу не противоречит.
-    expect(section).not.toMatch(/border:(?!\s*0;)/)
-    expect(section).not.toMatch(/border-(top|right|bottom|left):/)
+
+    const table = rules().filter(([sel]) => /\b(table|thead|tbody|tr|th|td)\b/.test(sel))
+    expect(table.length).toBeGreaterThan(0)
+    for (const [sel, body] of table) expect(hasBorder(body), sel.trim()).toBe(false)
+  })
+
+  // Раньше здесь стоял запрет рамок на всю секцию, и он падал, как только в
+  // разметку урока приехал интерактив: поле для вписывания слова и чипы без
+  // рамки просто не видно, а правило §0.3 — про разделение таблицы. Оставляем
+  // запрет для всего остального: список ниже — ровно те элементы, где рамка
+  // осмысленна, и новая рамка на чём-то ещё снова зажжёт тест.
+  it('рамка есть только у полей ввода, чипов и карточек урока', () => {
+    const allowed = /input\.gap|\.wchip|\.wbank|\.bw\b|\.msg\b/
+    const unexpected = rules()
+      .filter(([sel, body]) => hasBorder(body) && !allowed.test(sel))
+      .map(([sel]) => sel.trim().replace(/\s+/g, ' '))
+    expect(unexpected).toEqual([])
   })
 
   // §0.6: элемента, который выглядит рабочим и не работает, на экране нет.

@@ -20,6 +20,16 @@ const REWARD = 10
 // модуль (src/lib/answer-match.js), где стяжения и полные формы равны.
 const norm = normAnswer
 
+// Первая строка разбора для текстового задания, в котором студент ошибся:
+// «Правильный ответ: <b>…</b>». Точку ставим только если ответ не заканчивает
+// себя сам — иначе выходит «isn't from Brazil..». Разбор рендерится как HTML
+// (тот же <Html>, что и why), а ответы курса — обычный текст без разметки.
+function answerHint(lang, answer) {
+  const t = String(answer || '').trim()
+  if (!t) return ''
+  return `${uiStr(lang, 'gap_answer')}<b>${/[.!?…]$/.test(t) ? t : `${t}.`}</b> `
+}
+
 function shuffle(arr) {
   const a = arr.slice()
   for (let i = a.length - 1; i > 0; i--) {
@@ -278,11 +288,13 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
     if (answered || !value.trim()) return
     const good = [a.answer, ...(a.alts || [])].map(norm)
     const ok = good.includes(norm(value))
-    // Раньше здесь ответ студента подменялся правильным — человек видел в своём
-    // поле чужой текст, покрашенный красным, и не понимал, что именно он
-    // написал. Правильный вариант и так объясняется в разборе (a.why).
+    // Ответ студента в поле не подменяем: человек видел в своём поле чужой
+    // текст, покрашенный красным, и не понимал, что именно он написал.
+    // Но верный вариант ему нужен, а разбор (a.why) называет его не всегда —
+    // у 434 из 1956 текстовых заданий там только правило. Поэтому при ошибке
+    // ставим ответ первой строкой разбора, как это делает Matching.
     if (!ok) setWrong(true)
-    finish(ok, a.why)
+    finish(ok, ok ? a.why : answerHint(lang, a.answer) + (a.why || ''))
   }
   bind(check)
 
