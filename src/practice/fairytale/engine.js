@@ -2546,11 +2546,14 @@ function award(kind,label){ let head;
   else if(kind==="memory") head=UI.achMemory; else if(kind==="scenememories") head=UI.memScene; else if(kind==="allmemories") head=UI.memAll;
   else head=UI.narrator;
   toast(t(head), label); sfx(kind==="memory"||kind==="scenememories"||kind==="allmemories"?"sparkle":"chime"); }
-function toast(head,label){ const el=document.createElement("div"); el.className="toast";
+function toast(head,label){ const box=$("#toasts");
+  const el=document.createElement("div"); el.className="toast";
   const ic=head===t(UI.relicsHead)?"🌟":head===t(UI.achDiscover)?"🗺":head===t(UI.achMet)?"🤝":head===t(UI.achPuzzle)?"❄":head===t(UI.achChapter)?"📖"
     :head===t(UI.achMemory)?"💠":head===t(UI.memScene)?"❄":head===t(UI.memAll)?"👑":"✦";
   el.innerHTML='<div class="ic">'+ic+'</div><div class="tx"><b>'+head+'</b><span>'+label+'</span></div>';
-  $("#toasts").appendChild(el); requestAnimationFrame(()=>el.classList.add("show"));
+  // #toasts может отсутствовать в оверлее — не роняем «Добавить в словарь».
+  const host=box||document.getElementById("vocabPop")||document.body;
+  host.appendChild(el); requestAnimationFrame(()=>el.classList.add("show"));
   setTimeout(()=>{ el.classList.remove("show"); setTimeout(()=>el.remove(),600); },3000); }
 
 /* ================= MENU SHEET ================= */
@@ -7262,10 +7265,18 @@ function vwAddCurrent(){
   if(!vwCurrent) return;
   const dict=vwLoadDict();
   if(dict.some(x=>x.w===vwCurrent.w)){ toast(vwT("My Dictionary","Мой словарь","Менің сөздігім"), vwT("Already saved","Уже сохранено","Бұрын сақталған")); vwReflectSaved(); return; }
-  dict.unshift({ w:vwCurrent.w, def:vwCurrent.def||"", kk:vwCurrent.kk||"", ru:vwCurrent.ru||"", ts:vwStamp() });
+  const entry={ w:vwCurrent.w, def:vwCurrent.def||"", kk:vwCurrent.kk||"", ru:vwCurrent.ru||"", ts:vwStamp() };
+  dict.unshift(entry);
   vwSaveDict(dict);
   vwReflectSaved(); vwRefreshBadge();
   toast(vwT("Added to dictionary","Добавлено в словарь","Сөздікке қосылды"), vwCurrent.w);
+  // Хук приложения: сохранить в «Мой словарь» бэкенда (см. taleWorld.js).
+  try{
+    const bridge=typeof window!=="undefined" && window.__jtsFairytaleSaveVocab;
+    if(typeof bridge==="function"){
+      Promise.resolve(bridge(entry)).catch(function(){});
+    }
+  }catch(e){}
 }
 let __vwSeq=0; function vwStamp(){ return (__vwSeq++); }  // Date.now avoided (unavailable in some contexts); order is enough
 
@@ -7300,7 +7311,7 @@ function vwInit(){
   .vw{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:4px;transition:background .12s,box-shadow .12s;}
   @media (hover:hover){ .vw:hover{background:rgba(139,92,246,.22);box-shadow:0 0 0 2px rgba(139,92,246,.18);} }
   .vw:active{background:rgba(229,57,155,.30);}
-  .vpop{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center;
+  .vpop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;
     background:rgba(6,10,23,.55);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s ease;
     padding:0 12px calc(14px + env(safe-area-inset-bottom));}
   .vpop.show{opacity:1;pointer-events:auto;}

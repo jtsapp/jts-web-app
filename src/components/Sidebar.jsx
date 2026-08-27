@@ -12,7 +12,6 @@ import {
   TutorIcon,
   LessonsIcon,
   HomeworkIcon,
-  IeltsIcon,
   VocabIcon,
   ChevronRightIcon,
   CloseIcon,
@@ -25,7 +24,7 @@ const NAV_FULL = [
   { key: 'tutor', label: 'nav.tutor', Icon: TutorIcon },
   { key: 'lessons', label: 'nav.lessons', Icon: LessonsIcon },
   { key: 'homework', label: 'nav.homework', Icon: HomeworkIcon },
-  { key: 'ielts', label: 'nav.ielts', Icon: IeltsIcon },
+  // IELTS временно скрыт из меню (экран остаётся по диплинку ?screen=ielts).
   { key: 'vocab', label: 'nav.vocab', Icon: VocabIcon },
 ]
 // Тьютор-онли (прод, main): в сайдбаре остаются только разделы из

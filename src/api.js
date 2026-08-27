@@ -737,6 +737,32 @@ export function getSavedWords(token, onFresh) {
   return cachedAuthGet('/mobile/saved-words', token, onFresh)
 }
 
+export function saveStudentVocab(token, body) {
+  return authPost('/mobile/lesson-vocab', token, body).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
+    return data
+  })
+}
+
+export function deleteStudentVocabWord(token, id) {
+  return authDelete(`/mobile/lesson-vocab/words/${encodeURIComponent(id)}`, token).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
+    return data
+  })
+}
+
+export function getVocabCatalog(token) {
+  return authGet('/mobile/vocab-catalog', token)
+}
+
+export function getVocabScope(token, id) {
+  return authGet(`/mobile/vocab-catalog/scopes/${encodeURIComponent(id)}`, token)
+}
+
 export function listLessonVocab(token, onFresh) {
   return cachedAuthGet('/mobile/lesson-vocab', token, onFresh)
 }

@@ -12,6 +12,8 @@
 import { createTaleWorld } from './engine.js'
 import { MARKUP } from './markup.js'
 import { CSS_BASE, CSS_SHELL } from './styles.js'
+import { saveStudentVocab } from '../../api.js'
+import { loadToken } from '../../lib/session.js'
 
 const FONT_HREF =
   'https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800;900&display=swap'
@@ -20,6 +22,35 @@ let world = null
 let host = null
 let styleEls = []
 let onExitCb = null
+let bridgeReady = false
+
+function ensureFairytaleVocabBridge() {
+  if (bridgeReady || typeof window === 'undefined') return
+  bridgeReady = true
+  window.__jtsFairytaleSaveVocab = async (entry) => {
+    if (!entry?.w) return false
+    const token = loadToken()
+    if (!token) return false
+    const hintRu = entry.ru || ''
+    const hintKk = entry.kk || ''
+    const body = {
+      word: String(entry.w).trim(),
+      source: 'fairytale',
+    }
+    if (hintRu) body.translationRu = hintRu
+    if (hintKk) body.translationKz = hintKk
+    if (!body.translationRu && !body.translationKz && entry.def) {
+      body.translationRu = entry.def
+    }
+    try {
+      await saveStudentVocab(token, body)
+      return true
+    } catch (err) {
+      console.warn('[fairytale] vocab save failed', err)
+      return false
+    }
+  }
+}
 
 function ensureFont() {
   if (document.querySelector('link[data-taleworld-font]')) return
@@ -63,6 +94,7 @@ function closeOverlay() {
 
 function ensureWorld() {
   if (world) return world
+  ensureFairytaleVocabBridge()
   host = document.createElement('div')
   host.id = 'taleworld'
   // собственный stacking context поверх любых слоёв приложения; фон — как у
