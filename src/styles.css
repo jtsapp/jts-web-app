@@ -3474,6 +3474,29 @@ textarea {
 .pp-thumb__ph { width: 100%; height: 100%; }
 .pp-thumb--portrait { aspect-ratio: 3 / 4; }
 .pp-thumb--situation { aspect-ratio: 3 / 4; }
+
+.pp-thumb--workbook {
+  aspect-ratio: 3 / 4;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(120% 80% at 20% 10%, color-mix(in srgb, var(--wb-accent, #874BF8) 55%, #fff) 0%, transparent 55%),
+    linear-gradient(160deg, color-mix(in srgb, var(--wb-accent, #874BF8) 88%, #1a1230) 0%, #2a2150 100%);
+  color: #fff;
+}
+.pp-workbook-mark {
+  font-family: Nunito, system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 42px;
+  letter-spacing: -1px;
+  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+.pp-scard__meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--g2, #898787);
+  font-weight: 600;
+}
 .pp-play {
   position: absolute;
   inset: 0;
@@ -5899,10 +5922,20 @@ textarea {
    (читалка, рилсы) при открытии и смене режима; .pp-sec — секции при
    переключении чипов-фильтров; .rl__video — смену ролика; .bk-pop — попап
    перевода. При prefers-reduced-motion всё отключается. */
-.scr-in,
 .bk,
 .rl {
   animation: scr-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+/* Обёртке смены экранов нельзя удерживать transform после анимации: fill-mode
+   both оставляет на элементе вычисленную identity-матрицу, а любой transform
+   (даже единичный) делает предка containing block'ом для position:fixed
+   потомков. Итог ловили на живой странице: рилсы и модалки, открытые после
+   прокрутки, уезжали вверх ровно на scrollY (та же грабля описана у sticky в
+   lessonWorkspace.css, а OnboardingTour из-за неё порталится в body).
+   backwards отпускает transform по завершении; с нулевой задержкой картинка
+   входа та же самая. */
+.scr-in {
+  animation: scr-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
 }
 @keyframes scr-in {
   from { opacity: 0; transform: translateY(10px); }

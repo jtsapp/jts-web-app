@@ -69,7 +69,7 @@ let voiceWarned = false
 let speakTimer = null
 
 // onNoVoice — колбэк для тоста «нет английского голоса» (в прототипе toast()).
-export function speak(text, { accent = 'us', onStart, onEnd, onNoVoice } = {}) {
+export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } = {}) {
   if (typeof window === 'undefined' || !window.speechSynthesis) return
   try {
     window.speechSynthesis.cancel()
@@ -82,7 +82,7 @@ export function speak(text, { accent = 'us', onStart, onEnd, onNoVoice } = {}) {
     // Chrome отдаёт список голосов асинхронно — одна повторная попытка
     speakTimer = setTimeout(() => {
       chooseVoices()
-      if (voices.length) speak(text, { accent, onStart, onEnd, onNoVoice })
+      if (voices.length) speak(text, { accent, rate, onStart, onEnd, onNoVoice })
       else if (!voiceWarned) {
         voiceWarned = true
         onNoVoice && onNoVoice()
@@ -107,7 +107,7 @@ export function speak(text, { accent = 'us', onStart, onEnd, onNoVoice } = {}) {
   )
   u.lang = gb ? 'en-GB' : 'en-US'
   u.voice = v
-  u.rate = 0.96
+  u.rate = typeof rate === 'number' ? rate : 0.96
   u.pitch = 1.0
   u.volume = 1.0
   if (onStart) u.onstart = onStart

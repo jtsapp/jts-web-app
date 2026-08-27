@@ -6,7 +6,10 @@ import { test, expect } from '@playwright/test'
 const openPractice = async (page, lang) => {
   if (lang) await page.addInitScript((l) => localStorage.setItem('lang', l), lang)
   await page.goto('/?screen=practice')
-  await expect(page.locator('.pp__title')).toBeVisible()
+  // Ждём саму страницу, а не заголовок: на мобильном вьюпорте .pp__title
+  // спрятан макетом «Адаптивка» (display:none), но текст в DOM остаётся —
+  // toHaveText ниже работает на обоих проектах.
+  await expect(page.locator('.pp')).toBeVisible({ timeout: 15000 })
 }
 
 test.describe('Практика — локализация', () => {
@@ -14,13 +17,17 @@ test.describe('Практика — локализация', () => {
     await openPractice(page, 'kk')
     await expect(page.locator('.pp__title')).toHaveText('Тәжірибе')
     await expect(page.locator('.pp-chip').first()).toHaveText('Барлығы')
-    for (const chip of ['Грамматика', 'Жағдаяттар', 'Ертегілер', 'Мемдер мен рилстер', 'Кітаптар']) {
+    for (const chip of ['Грамматика', 'Жағдаяттар', 'Ертегілер', 'Мемдер мен рилстер', 'Кітаптар', 'Жазылым']) {
       await expect(page.locator('.pp-chip', { hasText: chip })).toBeVisible()
     }
     const banner = page.locator('#sec-listening')
     await expect(banner.locator('h2')).toHaveText('Тыңдалым')
     await expect(banner.locator('.pp-listen__cta')).toHaveText('Жаттығуға өту')
     await expect(banner.locator('.pp-all')).toContainText('Барлығын көру')
+    const writing = page.locator('#sec-writing')
+    await expect(writing.locator('h2')).toHaveText('Жазылым')
+    await expect(writing.locator('.pp-listen__title')).toContainText('Ағылшынша жазуды')
+    await expect(writing.locator('.pp-listen__cta')).toHaveText('Жазуға кірісу')
     await expect(page.locator('.pp-voc__title')).toHaveText('Сөздік')
     await expect(page.locator('.pp-voc__count')).toContainText('Сақталған')
   })
@@ -33,6 +40,10 @@ test.describe('Практика — локализация', () => {
     await expect(banner.locator('h2')).toHaveText('Listening')
     await expect(banner.locator('.pp-all')).toContainText('See all')
     await expect(page.locator('.pp-voc__title')).toHaveText('Vocabulary')
+    await expect(page.locator('.pp-chip', { hasText: 'Writing' })).toBeVisible()
+    const writing = page.locator('#sec-writing')
+    await expect(writing.locator('h2')).toHaveText('Writing')
+    await expect(writing.locator('.pp-listen__title')).toContainText('Write in English')
   })
 
   test('русский по умолчанию: тексты не изменились', async ({ page }) => {
@@ -40,6 +51,11 @@ test.describe('Практика — локализация', () => {
     await expect(page.locator('.pp__title')).toHaveText('Практика')
     await expect(page.locator('#sec-listening .pp-listen__cta')).toHaveText('Перейти к тренировке')
     await expect(page.locator('.pp-voc__title')).toHaveText('Словарь')
+    await expect(page.locator('.pp-chip', { hasText: 'Письмо' })).toBeVisible()
+    const writing = page.locator('#sec-writing')
+    await expect(writing.locator('h2')).toHaveText('Письмо')
+    await expect(writing.locator('.pp-listen__title')).toContainText('Учись писать по-английски')
+    await expect(writing.locator('.pp-listen__cta')).toHaveText('Перейти к тренировке')
   })
 
   test('аудирование: интро и шапка тренажёра на казахском', async ({ page }) => {

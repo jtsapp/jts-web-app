@@ -1,0 +1,1285 @@
+/* ============================================================
+   Письмо (Writing trainer) — нативный раздел Практики.
+   Классы с префиксом .wr-. Палитра сайта (styles.css: --purple, --ink),
+   локальные акценты — по образцу listening (.lt): раздел должен выглядеть
+   роднёй соседних тренажёров, а не переносить палитру прототипа.
+   ============================================================ */
+.wr {
+  /* Палитра прототипа (data/jtswriting.html): пользователь сравнил порт с
+     оригиналом и попросил его вид — ошибки оранжевые, подсказки голубые,
+     успех зелёный, никаких серых рамок. Меняя тон раздела — меняй здесь. */
+  --wr-purple: #874bf8;
+  --wr-cyan: #0aafff;
+  --wr-sky: #e6f6ff;
+  --wr-sky-ink: #00537f;
+  --wr-green: #03832c;
+  --wr-green-ink: #03601f;
+  --wr-green-bg: #e6fbec;
+  --wr-red: #c43d00;
+  --wr-red-ink: #9e3200;
+  --wr-red-bg: #fff0e9;
+  --wr-orange: #ff631e;
+  --wr-gold: #7a5200;
+  --wr-gold-bg: #fff6e0;
+  --wr-line: #edeaf5;
+  --wr-soft: #f4f1fc;
+  --wr-field: #fbfafe; /* фон полей/слотов прототипа */
+  --wr-ink-2: #4a4458;
+  --wr-ink-3: #8a849a;
+  /* Центрированная колонка как .wrap прототипа: без max-width контент
+     размазывался на всю ширину и прижимался к сайдбару. */
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 32px 48px;
+}
+
+/* верхняя навигация: Назад + хлебная крошка (паттерн .lt-top) */
+.wr-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.wr-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: var(--wr-purple);
+  color: #fff;
+  border-radius: 999px;
+  padding: 9px 16px 9px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wr-back:hover { filter: brightness(1.05); }
+.wr-crumb { display: flex; flex-direction: column; line-height: 1.2; }
+.wr-crumb b { color: var(--wr-purple); font-size: 15px; font-weight: 800; }
+.wr-crumb span { color: #9a99a6; font-size: 12px; }
+
+.wr-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; }
+.wr-note--err { background: var(--wr-red-bg); color: var(--wr-red); }
+
+/* ── кнопки ── */
+.wr-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: var(--wr-purple);
+  color: #fff;
+  border-radius: 14px;
+  padding: 12px 22px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(135, 75, 248, 0.32); /* тень прототипа .btn-primary */
+  transition: filter 0.15s ease, opacity 0.15s ease, transform 0.12s ease;
+}
+.wr-primary:active { transform: translateY(1px); }
+.wr-primary:hover:not(:disabled) { filter: brightness(1.06); }
+.wr-primary:disabled { background: #e7defb; color: #b9a8ef; cursor: not-allowed; box-shadow: none; }
+.wr-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: #fff;
+  color: var(--ink, #16121f);
+  border-radius: 14px;
+  padding: 11px 20px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05); /* .btn-ghost прототипа: карточка, не рамка */
+}
+.wr-ghost:hover { color: var(--wr-purple); }
+.wr-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── карточки и пилюли ── */
+.wr-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+  padding: 20px;
+}
+.wr-card + .wr-card { margin-top: 14px; }
+.wr-sec-title { font-size: 20px; font-weight: 800; margin: 0 0 4px; }
+.wr-sec-sub { color: #9a99a6; font-size: 14px; margin: 0 0 14px; }
+.wr-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--wr-soft);
+  color: var(--wr-purple);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.wr-pill--score { background: var(--wr-gold-bg); color: var(--wr-gold); }
+
+/* ── каталог: герой + уровни ── */
+.wr-hero { padding: 6px 4px 16px; }
+.wr-hero h1 { font-size: 30px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.02em; }
+.wr-hero p { color: #6f6d7e; max-width: 560px; margin: 0; font-size: 14.5px; line-height: 1.5; }
+.wr-lvgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.wr-lvcard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fff;
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+  padding: 16px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.wr-lvcard:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(31, 18, 63, 0.1); }
+.wr-lvcard__tag {
+  background: var(--wr-purple);
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.wr-lvcard__title { font-size: 15px; font-weight: 800; color: var(--ink, #26243b); }
+.wr-lvcard__sub { font-size: 12.5px; color: #9a99a6; line-height: 1.35; }
+.wr-lvcard__bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wr-soft);
+  overflow: hidden;
+}
+.wr-lvcard__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  /* прогресс как .bar прототипа — фиолетово-голубой градиент */
+  background: linear-gradient(90deg, var(--wr-purple), var(--wr-cyan));
+}
+.wr-lvcard__stats { font-size: 12px; color: #9a99a6; }
+
+/* промо Блокнота на экране уровней */
+.wr-padpromo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  background: linear-gradient(135deg, rgba(144, 71, 255, 0.1), rgba(43, 108, 176, 0.08));
+  border-radius: 20px;
+  padding: 18px 20px;
+}
+.wr-padpromo__body h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
+.wr-padpromo__body p { margin: 0; font-size: 13.5px; color: #6f6d7e; max-width: 480px; }
+
+/* ── каталог: жанры уровня ── */
+.wr-gngrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.wr-gncard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fff;
+  border: 0;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+  padding: 16px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.wr-gncard:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(31, 18, 63, 0.1); }
+.wr-gncard__title { font-size: 15px; font-weight: 800; color: var(--ink, #26243b); }
+.wr-gncard__sub { font-size: 12.5px; color: #9a99a6; line-height: 1.35; }
+.wr-gncard__meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.wr-gncard__bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wr-soft);
+  overflow: hidden;
+}
+.wr-gncard__bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--wr-purple), var(--wr-cyan)); }
+.wr-gncard--done { outline: 2px solid var(--wr-green); outline-offset: -2px; }
+
+/* Баннер «Письмо» на хабе Практики: тот же каркас .pp-listen, своя заливка,
+   чтобы два баннера не сливались в один раздел. */
+.pp-write .pp-listen__card {
+  background: linear-gradient(115deg, #2b6cb0 0%, #9047ff 100%);
+}
+
+/* ── мобайл: конвенции хаба (см. styles.css @760) ── */
+@media (max-width: 760px) {
+  .wr { padding: 4px 16px 32px; }
+  .wr-hero h1 { font-size: 22px; }
+  .wr-lvgrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .wr-gngrid { grid-template-columns: 1fr; gap: 10px; }
+}
+
+/* ============================================================
+   Письмо — тренажёр из 6 шагов (WritingTrainer + tasks/*).
+   Part-файл: вливается в src/writing.css после мержа волны.
+   Только .wr-классы; палитра — локальные переменные контейнера .wr.
+   ============================================================ */
+
+/* ── шапка задания/тренажёра ── */
+.wr-taskhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.wr-taskhead .wr-sec-title { margin: 0; }
+.wr-taskhead--top { margin-bottom: 4px; }
+.wr-pill--coins { background: var(--wr-gold-bg); color: var(--wr-gold); }
+.wr-pill--coins img { width: 15px; height: 15px; }
+
+/* ── чипы шагов ── */
+.wr-steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+/* Прототипный .stepchip: белая карточка с тенью, активный — заливка
+   фиолетовым, у пройденного квадратик с галкой зелёный. */
+.wr-stepchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+  border-radius: 12px;
+  padding: 8px 13px;
+  min-height: 38px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--wr-ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wr-stepchip i {
+  font-style: normal;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  background: var(--wr-soft);
+  color: var(--wr-purple);
+  font-size: 12px;
+  font-weight: 800;
+  flex: none;
+}
+.wr-stepchip.is-on { background: var(--wr-purple); color: #fff; }
+.wr-stepchip.is-on i { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.wr-stepchip.is-done i { background: #00d441; color: #06340f; }
+
+/* ── строка прогресса шага ── */
+.wr-progressline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 12px;
+  font-size: 13px;
+  color: #6f6d7e;
+}
+.wr-progressline .wr-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--wr-soft);
+  overflow: hidden;
+}
+.wr-progressline .wr-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--wr-green);
+}
+
+/* ── футер назад/дальше ── */
+.wr-footnav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ── поздравление за жанр ── */
+.wr-done-card {
+  background: var(--wr-green-bg);
+  outline: 2px solid var(--wr-green);
+  outline-offset: -2px;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 14px;
+}
+.wr-done-card h3 { margin: 0 0 6px; font-size: 17px; }
+.wr-done-card p { margin: 4px 0; font-size: 14px; }
+
+/* ── пункт задания и отзыв ── */
+/* Прототипный .item: разделитель сверху вместо рамки-коробки — коробки
+   и дали ту «серость», на которую жаловались при сравнении с оригиналом. */
+.wr-item {
+  border: 0;
+  border-top: 1px solid var(--wr-line);
+  border-radius: 0;
+  padding: 14px 0;
+  margin-top: 0;
+}
+.wr-item:first-of-type { border-top: 0; padding-top: 4px; }
+.wr-item-n {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--wr-ink-3);
+  margin-bottom: 6px;
+}
+.wr-fb {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.wr-fb--ok { background: var(--wr-green-bg); color: var(--wr-green-ink); }
+.wr-fb--no { background: var(--wr-red-bg); color: var(--wr-red-ink); }
+.wr-fb--tip { background: var(--wr-sky); color: var(--wr-sky-ink); }
+
+.wr-howto {
+  background: var(--wr-soft);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--wr-ink-2);
+  margin: 8px 0 14px;
+}
+.wr-howto b { color: var(--wr-purple); }
+.wr-src {
+  background: var(--wr-field);
+  border: 0;
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 6px 0 9px;
+}
+.wr-pre { white-space: pre-line; }
+.wr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.wr-hintline { font-size: 12px; color: #9a99a6; margin: 2px 0 8px; }
+.wr-btn-sm { padding: 8px 16px; font-size: 13.5px; }
+
+/* ── фишки и строка сборки (word-order, connectors, сортировки) ── */
+.wr-chipbank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+/* Прототипный .chip: мягкая заливка, выбранный — фиолетовый с тенью. */
+.wr-chip {
+  border: 0;
+  background: var(--wr-soft);
+  color: var(--ink, #16121f);
+  border-radius: 13px;
+  padding: 9px 14px;
+  min-height: 40px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.wr-chip:active { transform: scale(0.95); }
+.wr-chip.is-used { opacity: 0.32; cursor: default; pointer-events: none; }
+.wr-chip.is-sel {
+  background: var(--wr-purple);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(135, 75, 248, 0.3);
+}
+.wr-slotline {
+  min-height: 56px;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 16px;
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.wr-ph { color: var(--wr-ink-3); font-size: 14px; padding: 6px 4px; }
+
+/* пропуск в предложении (connectors) — прототипный .gap */
+.wr-gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  color: var(--wr-ink-3);
+  border-radius: 11px;
+  padding: 4px 12px;
+  min-width: 96px;
+  min-height: 34px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.wr-gap.is-filled { color: var(--ink, #16121f); background: var(--wr-soft); box-shadow: inset 0 0 0 1.5px var(--wr-purple); }
+.wr-gap.is-ok { background: var(--wr-green-bg); box-shadow: inset 0 0 0 1.5px var(--wr-green); color: var(--wr-green); }
+.wr-gap.is-no { background: var(--wr-red-bg); box-shadow: inset 0 0 0 1.5px var(--wr-orange); color: var(--wr-red); }
+
+/* ── ввод (transform/punctuation/expand/guided) ── */
+/* Прототипный .inp: заливка поля + inset-обводка вместо серой рамки. */
+.wr-inp {
+  width: 100%;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  margin-top: 8px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.wr-inp:focus { outline: none; box-shadow: inset 0 0 0 2px var(--wr-purple); }
+.wr-inp.is-ok { box-shadow: inset 0 0 0 2px var(--wr-green); background: #f4fdf6; }
+.wr-inp.is-no { box-shadow: inset 0 0 0 2px var(--wr-orange); background: #fff8f5; }
+
+/* ── вариант ответа (register, выбор идей) ── */
+/* Прототипный .opt */
+.wr-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  color: var(--ink, #16121f);
+  border-radius: 12px;
+  padding: 12px 14px;
+  min-height: 44px;
+  margin-top: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.wr-opt:active { transform: scale(0.99); }
+.wr-opt.is-ok { box-shadow: inset 0 0 0 2px var(--wr-green); background: #f0fcf3; }
+.wr-opt.is-no { box-shadow: inset 0 0 0 2px var(--wr-orange); background: #fff6f2; }
+.wr-opt.is-sel { box-shadow: inset 0 0 0 2px var(--wr-purple); background: var(--wr-soft); }
+
+/* ── колонки сортировок (idea-bank, outline) ── */
+.wr-cols2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.wr-dropcol {
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 16px;
+  padding: 10px;
+  min-height: 110px;
+  cursor: pointer;
+}
+.wr-dropcol h5 { margin: 0 0 8px; font-size: 13px; font-weight: 800; }
+.wr-dropcol--in h5 { color: var(--wr-green); }
+.wr-dropcol--out h5 { color: var(--wr-red); }
+.wr-tile {
+  border: 1px solid var(--wr-line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.wr-tile b { display: block; }
+.wr-tile small { display: block; color: #6f6d7e; margin-top: 2px; }
+.wr-tile.is-ok { border-color: var(--wr-green); background: var(--wr-green-bg); }
+.wr-tile.is-no { border-color: var(--wr-red); background: var(--wr-red-bg); }
+.wr-tag-g {
+  display: inline-block;
+  margin-top: 4px;
+  background: var(--wr-gold-bg);
+  color: var(--wr-gold);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.wr-fnhead { font-weight: 800; font-size: 14px; margin: 14px 0 6px; }
+.wr-fnhead small { display: block; font-weight: 400; color: #6f6d7e; margin-top: 2px; }
+
+/* ── банк фраз (шаг 2) ── */
+.wr-phrase {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+  align-items: flex-start;
+  text-align: left;
+  border: 1px solid var(--wr-line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 6px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.wr-phrase:hover { border-color: var(--wr-purple); }
+.wr-phrase__lv {
+  background: var(--wr-soft);
+  color: var(--wr-purple);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex: none;
+}
+.wr-phrase b { display: block; font-size: 14px; color: var(--ink, #26243b); }
+.wr-phrase small { display: block; color: #9a99a6; font-size: 12px; margin-top: 2px; }
+.wr-copytoast {
+  display: inline-block;
+  background: var(--ink, #26243b);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  margin-bottom: 8px;
+}
+
+/* ── таблица связок (шаг 3): широкая, катается в своём контейнере ── */
+.wr-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  margin: 8px 0;
+}
+.wr-tbl {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+  font-size: 13.5px;
+}
+.wr-tbl th,
+.wr-tbl td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--wr-line);
+  text-align: left;
+  vertical-align: top;
+}
+.wr-tbl th { font-size: 12px; color: var(--wr-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+/* первый столбец (функция связки) фиолетовый, как в прототипе .tbl */
+.wr-tbl td:first-child { font-weight: 700; white-space: nowrap; color: var(--wr-purple); }
+.wr-tbl .wr-chip { margin: 2px 4px 2px 0; }
+
+/* ── карточка разбора (checkCard / taskCheckCard) ── */
+.wr-checkcard {
+  border: 1px solid var(--wr-line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  background: #fff;
+}
+.wr-checkcard h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6f6d7e;
+}
+.wr-fixline { font-size: 14px; margin-top: 8px; line-height: 1.5; }
+.wr-fixline s { color: var(--wr-red); }
+.wr-fixline b { color: var(--wr-green); }
+.wr-times { color: #9a99a6; font-size: 12px; }
+.wr-whyline { font-size: 12.5px; color: #6f6d7e; margin-top: 2px; line-height: 1.45; }
+.wr-fixedtext {
+  margin-top: 10px;
+  background: var(--wr-soft);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+.wr-lb {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #9a99a6;
+  margin-bottom: 4px;
+}
+.wr-errblock {
+  border-top: 1px dashed var(--wr-line);
+  margin-top: 10px;
+  padding-top: 8px;
+}
+
+/* в”Ђв”Ђ guided-write в”Ђв”Ђ */
+.wr-guided-q { margin: 0 0 6px; font-size: 15px; }
+
+/* ── free-write баннер ── */
+.wr-banner-task {
+  background: linear-gradient(135deg, rgba(144, 71, 255, 0.08), rgba(43, 108, 176, 0.07));
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 8px 0;
+}
+.wr-banner-task h4 { margin: 0 0 6px; font-size: 14px; }
+.wr-banner-task p { margin: 0; font-size: 14px; line-height: 1.5; }
+
+/* ── overall: кольца ── */
+.wr-rings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 6px 0 12px;
+}
+.wr-ringwrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6f6d7e;
+  max-width: 110px;
+  text-align: center;
+}
+.wr-ring { position: relative; display: grid; place-items: center; }
+.wr-ring svg { transform: rotate(-90deg); display: block; }
+.wr-ring b { position: absolute; font-size: 13px; }
+.wr-cefrbig {
+  display: inline-block;
+  background: var(--wr-soft);
+  color: var(--wr-purple);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+/* ── мобайл: конвенции шелла (брейкпоинт 760, без бокового скролла на 390) ── */
+@media (max-width: 760px) {
+  .wr-stepchip { padding: 7px 9px; }
+  .wr-stepchip span { display: none; } /* остаются кружки с номерами */
+  .wr-cols2 { grid-template-columns: 1fr; }
+  .wr-rings { gap: 12px; justify-content: space-between; }
+  .wr-footnav .wr-primary,
+  .wr-footnav .wr-ghost { padding-left: 16px; padding-right: 16px; }
+}
+
+/* ── Блокнот (Writing Pad) — вливается в writing.css ─────────────────────
+   Раскладка: слева редактор, справа панели-вкладки. Все классы .wr-,
+   палитра — локальные переменные .wr (см. шапку writing.css). */
+
+.wr-pad {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 14px;
+  align-items: start;
+}
+.wr-pad__main { min-width: 0; }
+.wr-pad__side { min-width: 0; padding: 14px; }
+
+/* Режим без отвлечений: остаются редактор, метрики и «Проверить».
+   Класс живёт на корне Блокнота, а не на body — соседние экраны SPA
+   не должны наследовать состояние этого. */
+.wr-pad--zen { grid-template-columns: minmax(0, 1fr); }
+.wr-pad--zen .wr-pad__side,
+.wr-pad--zen .wr-padtask,
+.wr-pad--zen .wr-padbar__extras { display: none; }
+
+/* шапка редактора */
+.wr-padhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.wr-padhead .wr-sec-title { margin: 0; flex: 1; min-width: 140px; }
+.wr-padtimer {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 700;
+  color: #9a99a6;
+  background: var(--wr-soft);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+.wr-padtimer--low { color: var(--wr-red); background: var(--wr-red-bg); }
+
+/* баннер задания */
+.wr-padtask {
+  background: var(--wr-soft);
+  border-left: 4px solid var(--wr-purple);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.wr-padtask h4 { margin: 0 0 4px; font-size: 13px; font-weight: 800; color: var(--wr-purple); }
+.wr-padtask p { margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
+.wr-padtask__meta { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* тулбар */
+.wr-padtools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.wr-ghost--sm { padding: 7px 13px; font-size: 13px; }
+.wr-padtools__zen { margin-left: auto; }
+
+/* редактор: неконтролируемый contenteditable */
+.wr-editor {
+  min-height: 340px;
+  border: 0;
+  background: #fffefc; /* тёплый лист прототипа .editor */
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  outline: none;
+  overflow-wrap: anywhere; /* сверхдлинное «слово» не должно распирать страницу */
+}
+.wr-editor:focus { box-shadow: inset 0 0 0 2px var(--wr-purple); }
+.wr-editor:empty::before {
+  content: attr(data-ph);
+  color: #b6b4c2;
+  pointer-events: none;
+}
+.wr-editor p { margin: 0 0 10px; }
+.wr-editor ul { margin: 0 0 10px; padding-left: 22px; }
+/* золотая подсветка «моих слов» (ставится на blur, см. usePadEditor) */
+.wr-wgold {
+  background: var(--wr-gold-bg);
+  box-shadow: inset 0 0 0 1.5px var(--wr-gold);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+/* метрики */
+.wr-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.wr-metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  background: var(--wr-soft);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  color: #6f6d7e;
+}
+.wr-metric b { color: var(--ink, #26243b); }
+.wr-metric i { font-style: normal; opacity: 0.6; }
+.wr-metric--ok { background: var(--wr-green-bg); color: var(--wr-green); }
+.wr-metric--ok b { color: var(--wr-green); }
+.wr-metric--warn { background: var(--wr-red-bg); color: var(--wr-red); }
+.wr-metric--warn b { color: var(--wr-red); }
+.wr-metric--gold { background: var(--wr-gold-bg); color: var(--wr-gold); }
+.wr-metric--gold b { color: var(--wr-gold); }
+
+.wr-savedline { margin-top: 8px; font-size: 12.5px; color: #9a99a6; }
+
+/* панель действий */
+.wr-padbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.wr-padbar__extras { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+.wr-spin {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: wr-spin 0.8s linear infinite;
+}
+@keyframes wr-spin { to { transform: rotate(360deg); } }
+
+/* вкладки правой панели */
+.wr-padtabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+.wr-padtab {
+  border: 0;
+  background: var(--wr-soft);
+  color: #6f6d7e;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wr-padtab--on { background: var(--wr-purple); color: #fff; }
+.wr-pane { display: flex; flex-direction: column; gap: 8px; }
+.wr-pane .wr-note { font-size: 13px; }
+.wr-note--ok { background: var(--wr-green-bg); color: var(--wr-green); }
+
+/* чек-лист и строки плана */
+.wr-chk {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1.5px solid var(--wr-line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wr-chk i {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--wr-line);
+  font-style: normal;
+  font-size: 12px;
+  line-height: 17px;
+  text-align: center;
+  color: #fff;
+}
+.wr-chk--on { border-color: var(--wr-green); }
+.wr-chk--on i { background: var(--wr-green); border-color: var(--wr-green); }
+.wr-chk--auto { background: var(--wr-green-bg); }
+.wr-chk span { display: block; min-width: 0; }
+.wr-chk b { display: block; font-size: 13px; line-height: 1.35; color: var(--ink, #26243b); }
+.wr-chk small { display: block; font-size: 11.5px; color: #9a99a6; margin-top: 2px; }
+.wr-strike { text-decoration: line-through; color: #9a99a6; }
+
+/* заголовки групп в панелях */
+.wr-fnhead {
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9a99a6;
+  margin: 6px 0 2px;
+}
+
+/* фразы */
+.wr-phrase {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1.5px solid var(--wr-line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.wr-phrase:hover { border-color: var(--wr-purple); }
+.wr-phrase__lv {
+  flex: none;
+  background: var(--wr-sky);
+  color: var(--wr-sky-ink);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.wr-phrase b { display: block; font-size: 13px; color: var(--ink, #26243b); }
+.wr-phrase small { display: block; font-size: 11.5px; color: #9a99a6; margin-top: 1px; }
+
+/* чипы связок и слов */
+.wr-chipbank { display: flex; gap: 6px; flex-wrap: wrap; }
+.wr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1.5px solid var(--wr-line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink, #26243b);
+  cursor: pointer;
+}
+.wr-chip:hover { border-color: var(--wr-purple); color: var(--wr-purple); }
+/* составной чип «слово + крестик» — сам чип не кнопка, кнопки внутри */
+.wr-chip--word { padding: 0; cursor: default; }
+.wr-chip--word > button {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  padding: 5px 4px 5px 12px;
+  cursor: pointer;
+  border-radius: 999px 0 0 999px;
+}
+.wr-chip--word > button:only-child { padding-right: 12px; border-radius: 999px; }
+.wr-chip--hit { background: var(--wr-gold-bg); border-color: var(--wr-gold); color: var(--wr-gold); }
+.wr-chip__x {
+  border: 0;
+  background: none;
+  color: #9a99a6;
+  font-size: 14px;
+  line-height: 1;
+  padding: 5px 10px 5px 2px;
+  cursor: pointer;
+}
+.wr-chip__x:hover { color: var(--wr-red); }
+
+.wr-inp {
+  width: 100%;
+  border: 1.5px solid var(--wr-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  outline: none;
+}
+.wr-inp:focus { border-color: var(--wr-purple); }
+
+/* модалки «Мои работы» / «История версий» */
+.wr-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 18, 63, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 60;
+}
+.wr-modal__card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  width: min(520px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.wr-modal__card h3 { margin: 0 0 4px; font-size: 17px; font-weight: 800; }
+.wr-modal__card > .wr-ghost { margin-top: 12px; }
+.wr-worklist { display: flex; flex-direction: column; gap: 8px; }
+.wr-workrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1.5px solid var(--wr-line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wr-workrow:hover { border-color: var(--wr-purple); }
+.wr-workrow b { display: block; font-size: 13.5px; color: var(--ink, #26243b); }
+.wr-workrow small { display: block; font-size: 11.5px; color: #9a99a6; margin-top: 2px; }
+
+/* тост */
+.wr-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  background: var(--ink, #26243b);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  z-index: 70;
+  box-shadow: 0 8px 24px rgba(31, 18, 63, 0.25);
+}
+
+/* ── мобайл: одна колонка, редактор первым, панели ниже; бар прилипает к
+   низу, «Проверить» всегда под рукой. На 390px страница не скроллится вбок:
+   всё широкое переносится (chipbank/metrics — flex-wrap). ── */
+@media (max-width: 760px) {
+  .wr-pad { grid-template-columns: 1fr; }
+  .wr-editor { min-height: 45vh; }
+  .wr-padtools__zen { margin-left: 0; }
+  .wr-padbar {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 10px 0;
+    box-shadow: 0 -8px 16px rgba(255, 255, 255, 0.9);
+  }
+  .wr-padbar__check { flex: 1; }
+}
+
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+   Письмо: экран разбора (WritingResult), модалка (WritingModal)
+   и карточка перевода выделения (useSelectionTranslate).
+   Часть-файл: вливается в writing.css при сборке волны.
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+
+/* заголовок карточки разбора: название + пилюля режима проверки */
+.wr-res-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.wr-res-head .wr-sec-title { margin: 0; }
+
+/* кольца оценок — порт .rings/.ringwrap/.ring прототипа */
+.wr-res-rings { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.wr-res-ringwrap { text-align: center; font-size: 12.5px; color: #9a99a6; font-weight: 700; }
+.wr-res-ring { position: relative; flex: none; margin: 0 auto 2px; }
+.wr-res-ring svg { display: block; transform: rotate(-90deg); }
+.wr-res-ring b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink, #26243b);
+}
+
+.wr-res-lvl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.wr-res-cefr {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--wr-purple), var(--wr-sky-ink));
+  color: #fff;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 15px;
+}
+.wr-res-summary { margin: 12px 0 0; font-size: 14.5px; line-height: 1.55; color: var(--ink, #26243b); }
+
+/* подсказка-легенда (порт .howto) */
+.wr-res-howto {
+  background: var(--wr-soft);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5d5b6e;
+}
+
+/* текст ученика с пометками (порт .usertext/.hl); переносы строк отдаём
+   pre-wrap'у — сегменты подсветки по \n не режем */
+.wr-res-text {
+  white-space: pre-wrap;
+  font-size: 16px;
+  line-height: 1.75;
+  background: #fffefc;
+  border-radius: 14px;
+  padding: 15px;
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+}
+.wr-hl { border-radius: 5px; padding: 0 3px; cursor: pointer; box-shadow: inset 0 -2px 0 currentColor; }
+.wr-hl--err { background: var(--wr-red-bg); color: var(--wr-red); }
+.wr-hl--imp { background: var(--wr-sky); color: var(--wr-sky-ink); }
+.wr-hl--good { background: var(--wr-green-bg); color: var(--wr-green); }
+
+/* списки правок и удач (порт .fnhead/.item/.was/.fb) */
+.wr-res-fnhead {
+  font-size: 13px;
+  font-weight: 800;
+  color: #9a99a6;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 14px 0 7px;
+}
+.wr-res-item { border-top: 1px solid var(--wr-line); padding: 12px 0 2px; }
+.wr-res-item:first-of-type { border-top: 0; padding-top: 2px; }
+.wr-res-was { font-size: 14px; margin: 8px 0; }
+.wr-res-was s { color: var(--wr-red); text-decoration-thickness: 2px; }
+.wr-res-was b { color: var(--wr-green); }
+.wr-res-fb { border-radius: 12px; padding: 10px 13px; margin-top: 9px; font-size: 14px; line-height: 1.45; }
+.wr-res-fb--ok { background: var(--wr-green-bg); color: var(--wr-green); }
+.wr-res-fb--err { background: var(--wr-red-bg); color: var(--wr-red); }
+.wr-res-fb--tip { background: var(--wr-sky); color: var(--wr-sky-ink); }
+.wr-res-quote {
+  background: #fbfafe;
+  border-radius: 12px;
+  padding: 11px 13px;
+  margin-bottom: 9px;
+  font-size: 15px;
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+}
+
+/* «три шага» (порт .stepslist) */
+.wr-res-steps { counter-reset: s; margin: 0; padding: 0; list-style: none; }
+.wr-res-steps li {
+  counter-increment: s;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: var(--wr-soft);
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.wr-res-steps li::before {
+  content: counter(s);
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--wr-purple);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* дифф переписанного текста: зелёное добавлено, красное убрано */
+.wr-res-diff ins { background: var(--wr-green-bg); color: var(--wr-green); text-decoration: none; border-radius: 4px; padding: 0 2px; }
+.wr-res-diff del { background: var(--wr-red-bg); color: var(--wr-red); border-radius: 4px; padding: 0 2px; }
+
+.wr-res-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.wr-res-nav { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.wr-res-got { margin-top: 12px; }
+
+/* ── модалка (порт #modal прототипа): на мобиле шторкой снизу, с 640px —
+   по центру; карточка скроллится сама, страница под ней не едет ── */
+.wr-modal { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: center; }
+.wr-modal__bg { position: absolute; inset: 0; background: rgba(22, 18, 31, 0.42); }
+.wr-modal__card {
+  position: relative;
+  background: #fff;
+  width: 100%;
+  max-width: 560px;
+  border-radius: 20px 20px 0 0;
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 18px 50px rgba(31, 18, 63, 0.25);
+  max-height: 86vh;
+  overflow: auto;
+}
+@media (min-width: 640px) {
+  .wr-modal { align-items: center; }
+  .wr-modal__card { border-radius: 20px; }
+}
+.wr-modal__title { font-size: 19px; font-weight: 800; margin: 0 28px 8px 0; }
+.wr-modal__x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--wr-soft);
+  color: #5d5b6e;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.wr-modal__x:hover { color: var(--wr-purple); }
+
+/* ── карточка перевода выделения (порт .tpop). ВАЖНО: div живёт в
+   document.body, вне .wr — локальные --wr-переменные сюда не доезжают,
+   поэтому цвета захардкожены теми же значениями, что в блоке .wr ── */
+.wr-tpop {
+  position: absolute;
+  z-index: 95;
+  width: min(300px, calc(100vw - 16px));
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(31, 18, 63, 0.22);
+  padding: 12px 14px;
+  display: none;
+  font-size: 14px;
+  color: #26243b;
+}
+.wr-tpop.on { display: block; }
+.wr-tpop__en { font-weight: 800; font-size: 14.5px; margin-bottom: 8px; color: #9047ff; word-break: break-word; }
+.wr-tpop__line { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; line-height: 1.4; }
+.wr-tpop__lang {
+  font-style: normal;
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f6f4fb;
+  color: #9047ff;
+  margin-top: 2px;
+}
+.wr-tpop__foot {
+  font-size: 11.5px;
+  color: #9a99a6;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wr-tpop__add {
+  border: 0;
+  background: #f6f4fb;
+  color: #9047ff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.wr-tpop__add:hover { filter: brightness(0.97); }
+.wr-tpop__add:disabled { cursor: default; color: #37a15f; }
+
+/* ── мобайл: кольца ужимаются, чтобы четвёрка влезала в 390px без скролла ── */
+@media (max-width: 760px) {
+  .wr-res-rings { gap: 8px; }
+  .wr-res-text { font-size: 15px; padding: 12px; }
+}

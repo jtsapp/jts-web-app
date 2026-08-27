@@ -1,0 +1,1102 @@
+{
+  "id": "b2-fortagainst",
+  "title": "A for-and-against essay",
+  "subtitle": "Both sides, then a judgement",
+  "goal": "You can write a balanced essay: present the strongest arguments on both sides with evidence and reach a conclusion that follows from them.",
+  "why": "A for-and-against essay fails when one side is a straw man. The examiner is reading for whether you can argue against yourself.",
+  "example": "Aigerim's essay on remote learning gave the opposing side its best argument first. The examiner's comment: 'genuinely balanced'.",
+  "targetWords": [
+    220,
+    260
+  ],
+  "register": "formal",
+  "timerMinutes": 40,
+  "writeTask": "Write a for-and-against essay (220–260 words) on whether university lectures should move online: an introduction that frames the question, two arguments for, two against, and a conclusion that follows from the evidence.",
+  "level": "b2",
+  "outline": [
+    {
+      "label": "Introduction",
+      "job": "Frame the question without answering it"
+    },
+    {
+      "label": "Argument for 1",
+      "job": "Give the first argument for"
+    },
+    {
+      "label": "Argument for 2",
+      "job": "Give the second argument for"
+    },
+    {
+      "label": "Argument against 1",
+      "job": "Give the first argument against"
+    },
+    {
+      "label": "Argument against 2",
+      "job": "Give the second argument against"
+    },
+    {
+      "label": "Weighing",
+      "job": "Weigh the two sides"
+    },
+    {
+      "label": "Conclusion",
+      "job": "Conclude in line with the evidence"
+    },
+    {
+      "label": "Final line",
+      "job": "Close the argument"
+    }
+  ],
+  "phrases": [
+    {
+      "fn": "Opening",
+      "items": [
+        {
+          "t": "The debate has moved from whether … to whether …",
+          "lv": "B2",
+          "ru": "Спор сместился с того, возможно ли …, к тому, лучше ли …",
+          "kk": "Талқы … мүмкіндігінен … артықшылығына ауысты."
+        },
+        {
+          "t": "Since 2020, most … have …",
+          "lv": "B2",
+          "ru": "С 2020 года большинство … …",
+          "kk": "2020 жылдан бері көпшілігі …"
+        }
+      ]
+    },
+    {
+      "fn": "Giving opinion",
+      "items": [
+        {
+          "t": "The clearest advantage is …",
+          "lv": "B2",
+          "ru": "Очевиднейшее преимущество — …",
+          "kk": "Ең айқын артықшылық — …"
+        },
+        {
+          "t": "Furthermore, …",
+          "lv": "B2",
+          "ru": "Более того, …",
+          "kk": "Оның үстіне, …"
+        }
+      ]
+    },
+    {
+      "fn": "Contrasting",
+      "items": [
+        {
+          "t": "On the other hand, several studies report …",
+          "lv": "B2",
+          "ru": "С другой стороны, ряд исследований отмечает …",
+          "kk": "Екінші жағынан, бірқатар зерттеу … хабарлайды."
+        },
+        {
+          "t": "In addition, … removes …",
+          "lv": "B2",
+          "ru": "Кроме того, … устраняет …",
+          "kk": "Сонымен қатар, … жояды."
+        }
+      ]
+    },
+    {
+      "fn": "Closing",
+      "items": [
+        {
+          "t": "On balance, …",
+          "lv": "B2",
+          "ru": "В итоге, …",
+          "kk": "Түптеп келгенде, …"
+        },
+        {
+          "t": "The question is not … but …",
+          "lv": "B2",
+          "ru": "Вопрос не в …, а в …",
+          "kk": "Мәселе … емес, … туралы."
+        }
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "fn": "Adding",
+      "items": [
+        "furthermore",
+        "moreover",
+        "in addition to this"
+      ],
+      "hint": "You build the argument one step higher."
+    },
+    {
+      "fn": "Contrast",
+      "items": [
+        "nevertheless",
+        "whereas",
+        "in contrast"
+      ],
+      "hint": "You set two positions against each other."
+    },
+    {
+      "fn": "Concession",
+      "items": [
+        "admittedly",
+        "even though",
+        "while it is true that"
+      ],
+      "hint": "You give the other side its due before answering it."
+    },
+    {
+      "fn": "Result",
+      "items": [
+        "consequently",
+        "as a consequence",
+        "this means that"
+      ],
+      "hint": "You show what follows from the evidence."
+    },
+    {
+      "fn": "Examples",
+      "items": [
+        "for instance",
+        "in particular",
+        "a case in point is"
+      ],
+      "hint": "You anchor a general claim in one concrete case."
+    }
+  ],
+  "wordlist": [
+    "access",
+    "participation",
+    "interaction",
+    "seminar",
+    "proportion",
+    "structural",
+    "provided that",
+    "symmetrical"
+  ],
+  "gloss": [
+    [
+      "access",
+      "доступ",
+      "қолжетімділік"
+    ],
+    [
+      "participation",
+      "участие",
+      "қатысу"
+    ],
+    [
+      "interaction",
+      "взаимодействие",
+      "өзара әрекет"
+    ],
+    [
+      "seminar",
+      "семинар",
+      "семинар"
+    ],
+    [
+      "proportion",
+      "доля",
+      "үлес"
+    ],
+    [
+      "structural",
+      "структурный",
+      "құрылымдық"
+    ],
+    [
+      "provided that",
+      "при условии что",
+      "шартымен"
+    ],
+    [
+      "symmetrical",
+      "симметричный",
+      "симметриялы"
+    ]
+  ],
+  "checklist": [
+    {
+      "text": "I used a phrase for opening",
+      "auto": [
+        "the debate has",
+        "since 2020, most"
+      ]
+    },
+    {
+      "text": "I used a phrase for giving opinion",
+      "auto": [
+        "the clearest advantage",
+        "furthermore, "
+      ]
+    },
+    {
+      "text": "I used a phrase for contrasting",
+      "auto": [
+        "on the other",
+        "in addition, …"
+      ]
+    },
+    {
+      "text": "I used a phrase for closing",
+      "auto": [
+        "on balance, ",
+        "the question is"
+      ]
+    },
+    {
+      "text": "I used at least two linking words",
+      "auto": [
+        "nevertheless",
+        "furthermore",
+        "consequently",
+        "whereas",
+        "in contrast",
+        "admittedly"
+      ]
+    },
+    {
+      "text": "I used the topic words of this genre",
+      "auto": [
+        "access",
+        "participation",
+        "interaction",
+        "seminar",
+        "proportion",
+        "structural",
+        "provided that",
+        "symmetrical"
+      ]
+    },
+    {
+      "text": "I wrote in paragraphs, not one block",
+      "manual": true
+    },
+    {
+      "text": "I checked my verb tenses",
+      "manual": true
+    },
+    {
+      "text": "I checked articles a / an / the",
+      "manual": true
+    },
+    {
+      "text": "I read the text out loud before sending",
+      "manual": true
+    }
+  ],
+  "rubricHints": {
+    "task": "Does the text answer the exact question asked, with a position held from start to finish?",
+    "organisation": "Four paragraphs with a visible logic: claim, evidence, counter-argument, conclusion.",
+    "vocabulary": "Precise, register-consistent language: collocations, not synonyms picked at random.",
+    "grammar": "Complex sentences, hedging, passive and nominalisation used deliberately."
+  },
+  "tasks": [
+    {
+      "id": "t1",
+      "step": 4,
+      "type": "word-order",
+      "items": [
+        {
+          "id": "wo0",
+          "words": [
+            "The",
+            "two",
+            "sets",
+            "of",
+            "arguments",
+            "are",
+            "not",
+            "symmetrical."
+          ],
+          "why": "One negative is enough, and it needs an auxiliary: I do not have any time."
+        },
+        {
+          "id": "wo1",
+          "words": [
+            "The",
+            "seminar",
+            "depends",
+            "on",
+            "people",
+            "looking",
+            "at",
+            "each",
+            "other."
+          ],
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "wo2",
+          "words": [
+            "Recorded",
+            "lectures",
+            "allow",
+            "students",
+            "to",
+            "re-watch",
+            "difficult",
+            "parts."
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "wo3",
+          "words": [
+            "Several",
+            "studies",
+            "report",
+            "a",
+            "fall",
+            "in",
+            "participation."
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "wo4",
+          "words": [
+            "The",
+            "clearest",
+            "advantage",
+            "is",
+            "access."
+          ],
+          "why": "One comparative at a time: better, not more better; cheaper, not more cheaper."
+        },
+        {
+          "id": "wo5",
+          "words": [
+            "Online",
+            "teaching",
+            "removes",
+            "the",
+            "corridor",
+            "conversation."
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "wo6",
+          "words": [
+            "Access",
+            "is",
+            "a",
+            "structural",
+            "gain."
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "wo7",
+          "words": [
+            "The",
+            "proportion",
+            "asking",
+            "questions",
+            "dropped",
+            "from",
+            "34",
+            "to",
+            "9",
+            "per",
+            "cent."
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        }
+      ],
+      "title": "Build the sentence",
+      "howto": "Tap the words in the right order — they move into the line. Tap a word in the line to send it back. English word order is fixed, so the order itself carries the meaning."
+    },
+    {
+      "id": "t2",
+      "step": 4,
+      "type": "transform",
+      "items": [
+        {
+          "id": "tr0",
+          "cue": "Combine into one complex sentence",
+          "src": "The survey covered 400 students. It was carried out online. The results were clear.",
+          "answers": [
+            "The online survey of 400 students produced clear results."
+          ],
+          "must": [
+            "400"
+          ],
+          "why": "Three thin sentences make one strong one."
+        },
+        {
+          "id": "tr1",
+          "cue": "Make it academic",
+          "src": "Lots of people think exams are bad.",
+          "answers": [
+            "It is widely believed that examinations are harmful."
+          ],
+          "must": [
+            "widely believed"
+          ],
+          "avoid": [
+            "lots of"
+          ],
+          "why": "Academic writing avoids 'lots of' and prefers impersonal openings."
+        },
+        {
+          "id": "tr2",
+          "cue": "Use a concession with while",
+          "src": "Cars pollute the air. They are still necessary in rural areas.",
+          "answers": [
+            "While cars pollute the air, they remain necessary in rural areas."
+          ],
+          "must": [
+            "while"
+          ],
+          "why": "While packs a concession and a claim into one sentence."
+        },
+        {
+          "id": "tr3",
+          "cue": "Use a formal linking phrase",
+          "src": "So the plan did not work.",
+          "answers": [
+            "Consequently, the plan failed to achieve its aim."
+          ],
+          "must": [
+            "consequently"
+          ],
+          "why": "So belongs to speech; consequently belongs to a report."
+        },
+        {
+          "id": "tr4",
+          "cue": "Turn it into a recommendation",
+          "src": "The library is closed at weekends and students complain.",
+          "answers": [
+            "The library should open at weekends."
+          ],
+          "must": [
+            "should"
+          ],
+          "why": "A report ends in recommendations, not in complaints."
+        },
+        {
+          "id": "tr5",
+          "cue": "Nominalise the verb",
+          "src": "The government decided to close the plant. This caused protests.",
+          "answers": [
+            "The government's decision to close the plant caused protests."
+          ],
+          "must": [
+            "decision"
+          ],
+          "why": "Turning a verb into a noun tightens academic prose."
+        },
+        {
+          "id": "tr6",
+          "cue": "Use the passive to keep it impersonal",
+          "src": "We collected the data in March.",
+          "answers": [
+            "The data was collected in March.",
+            "The data were collected in March."
+          ],
+          "must": [
+            "collected in march"
+          ],
+          "avoid": [
+            "we"
+          ],
+          "why": "Reports keep the researcher out of the sentence."
+        },
+        {
+          "id": "tr7",
+          "cue": "Use despite + noun",
+          "src": "The team trained hard. They lost the final.",
+          "answers": [
+            "Despite their hard training, the team lost the final."
+          ],
+          "must": [
+            "despite"
+          ],
+          "why": "Despite takes a noun phrase; although takes a clause."
+        }
+      ],
+      "title": "Rewrite it",
+      "howto": "Read the sentence and the instruction next to it. Write your own version: same meaning, different form. The model answer appears after you check."
+    },
+    {
+      "id": "t3",
+      "step": 4,
+      "type": "connectors",
+      "bank": [
+        "Admittedly",
+        "In contrast",
+        "Nevertheless",
+        "Consequently",
+        "whereas",
+        "Furthermore"
+      ],
+      "items": [
+        {
+          "id": "cn0",
+          "before": "",
+          "gap": true,
+          "after": "the policy has clear benefits, its cost has never been calculated.",
+          "answer": "Admittedly",
+          "why": "Admittedly opens a concession you are about to answer."
+        },
+        {
+          "id": "cn1",
+          "before": "Remote work saves commuting time.",
+          "gap": true,
+          "after": ", it blurs the line between work and home.",
+          "answer": "In contrast",
+          "why": "In contrast introduces the opposite side of the same issue."
+        },
+        {
+          "id": "cn2",
+          "before": "The company cut its prices twice.",
+          "gap": true,
+          "after": ", its market share continued to fall.",
+          "answer": "Nevertheless",
+          "why": "Nevertheless signals that the expected result did not follow."
+        },
+        {
+          "id": "cn3",
+          "before": "The scheme reduced traffic in the centre.",
+          "gap": true,
+          "after": ", it pushed the problem into the suburbs.",
+          "answer": "Consequently",
+          "why": "Consequently states the result that follows from the fact."
+        },
+        {
+          "id": "cn4",
+          "before": "The proposal is ambitious and well argued.",
+          "gap": true,
+          "after": ", it depends on funding that does not yet exist.",
+          "answer": "Nevertheless",
+          "why": "A balanced judgement gives both halves."
+        },
+        {
+          "id": "cn5",
+          "before": "Working from home suits experienced staff.",
+          "gap": true,
+          "after": ", it isolates those who have just joined.",
+          "answer": "In contrast",
+          "why": "In contrast separates two groups with opposite outcomes."
+        },
+        {
+          "id": "cn6",
+          "before": "The new timetable reduced the number of lessons.",
+          "gap": true,
+          "after": ", the workload per lesson doubled.",
+          "answer": "Consequently",
+          "why": "Cause and consequence are the backbone of a report."
+        },
+        {
+          "id": "cn7",
+          "before": "Older employees value stability",
+          "gap": true,
+          "after": "younger ones look for flexibility.",
+          "answer": "whereas",
+          "why": "Whereas balances two groups inside one sentence."
+        }
+      ],
+      "title": "Add the linking word",
+      "howto": "The linking words are in the bank at the top. Tap a linking word, then tap the gap — or drag it with the mouse. Each word is used once."
+    },
+    {
+      "id": "t4",
+      "step": 4,
+      "type": "punctuation",
+      "items": [
+        {
+          "id": "pu0",
+          "raw": "recorded lectures allow students to re-watch difficult parts",
+          "answer": "Recorded lectures allow students to re-watch difficult parts.",
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "pu1",
+          "raw": "the seminar depends on people looking at each other",
+          "answer": "The seminar depends on people looking at each other.",
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "pu2",
+          "raw": "the proportion asking questions dropped from 34 to 9 per cent",
+          "answer": "The proportion asking questions dropped from 34 to 9 per cent.",
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        },
+        {
+          "id": "pu3",
+          "raw": "access is a structural gain",
+          "answer": "Access is a structural gain.",
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "pu4",
+          "raw": "lectures can move online provided that seminars stay in the room",
+          "answer": "Lectures can move online provided that seminars stay in the room.",
+          "why": "In an if-clause English uses the present, not will: If it rains, I will stay at home."
+        },
+        {
+          "id": "pu5",
+          "raw": "several studies report a fall in participation",
+          "answer": "Several studies report a fall in participation.",
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "pu6",
+          "raw": "online teaching removes the corridor conversation",
+          "answer": "Online teaching removes the corridor conversation.",
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "pu7",
+          "raw": "the clearest advantage is access",
+          "answer": "The clearest advantage is access.",
+          "why": "One comparative at a time: better, not more better; cheaper, not more cheaper."
+        }
+      ],
+      "title": "Capitals and punctuation",
+      "howto": "Rewrite the sentence with capital letters and punctuation. Do not change the words themselves."
+    },
+    {
+      "id": "t5",
+      "step": 4,
+      "type": "expand",
+      "items": [
+        {
+          "id": "ex0",
+          "cue": "clearest / advantage / access",
+          "answers": [
+            "The clearest advantage is access."
+          ],
+          "must": [
+            "clearest",
+            "advantage"
+          ],
+          "why": "One comparative at a time: better, not more better; cheaper, not more cheaper."
+        },
+        {
+          "id": "ex1",
+          "cue": "seminar / depends / people / looking / each / other",
+          "answers": [
+            "The seminar depends on people looking at each other."
+          ],
+          "must": [
+            "seminar",
+            "depends"
+          ],
+          "why": "After a preposition the verb takes -ing: look forward to hearing, instead of paying."
+        },
+        {
+          "id": "ex2",
+          "cue": "most / universities / kept / part / teaching / online",
+          "answers": [
+            "Most universities have kept part of their teaching online."
+          ],
+          "must": [
+            "most",
+            "universities"
+          ],
+          "why": "Present Perfect links the past to now: I have sent, she has arrived."
+        },
+        {
+          "id": "ex3",
+          "cue": "online / teaching / removes / corridor / conversation",
+          "answers": [
+            "Online teaching removes the corridor conversation."
+          ],
+          "must": [
+            "online",
+            "teaching"
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "ex4",
+          "cue": "lectures / move / online / provided / seminars / stay",
+          "answers": [
+            "Lectures can move online provided that seminars stay in the room."
+          ],
+          "must": [
+            "lectures",
+            "move"
+          ],
+          "why": "In an if-clause English uses the present, not will: If it rains, I will stay at home."
+        },
+        {
+          "id": "ex5",
+          "cue": "several / studies / report / fall / participation",
+          "answers": [
+            "Several studies report a fall in participation."
+          ],
+          "must": [
+            "several",
+            "studies"
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "ex6",
+          "cue": "recorded / lectures / allow / students / re-watch / difficult",
+          "answers": [
+            "Recorded lectures allow students to re-watch difficult parts."
+          ],
+          "must": [
+            "recorded",
+            "lectures"
+          ],
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "ex7",
+          "cue": "proportion / asking / questions / dropped / 34 / 9",
+          "answers": [
+            "The proportion asking questions dropped from 34 to 9 per cent."
+          ],
+          "must": [
+            "proportion",
+            "asking"
+          ],
+          "why": "A finished past action needs a past form: I bought, we went, she sent."
+        }
+      ],
+      "title": "Notes into sentences",
+      "howto": "Turn the notes into a full sentence: add articles, prepositions and the right verb form. Keep the meaning."
+    },
+    {
+      "id": "t6",
+      "step": 4,
+      "type": "register",
+      "items": [
+        {
+          "id": "rg0",
+          "ctx": "An essay conclusion",
+          "a": "On balance, the benefits outweigh the drawbacks.",
+          "b": "So all in all it's a good thing I guess.",
+          "answer": "a",
+          "why": "A conclusion must sound decided, not hesitant."
+        },
+        {
+          "id": "rg1",
+          "ctx": "A comment in a study group chat",
+          "a": "I would like to draw your attention to the deadline.",
+          "b": "Reminder: the deadline is Friday.",
+          "answer": "b",
+          "why": "In a chat, a plain reminder is more useful than a formula."
+        },
+        {
+          "id": "rg2",
+          "ctx": "A formal report",
+          "a": "The findings suggest that demand has fallen.",
+          "b": "It looks like nobody wants it any more.",
+          "answer": "a",
+          "why": "Reports report; they do not guess out loud."
+        },
+        {
+          "id": "rg3",
+          "ctx": "A formal complaint",
+          "a": "The service fell short of the standard advertised.",
+          "b": "The service was nowhere near what you promised.",
+          "answer": "a",
+          "why": "Understatement is stronger than exaggeration in formal writing."
+        },
+        {
+          "id": "rg4",
+          "ctx": "A formal letter",
+          "a": "I am writing with regard to your advertisement of 4 March.",
+          "b": "I saw your ad and I'm interested.",
+          "answer": "a",
+          "why": "A formal letter opens with the reference, not with your feelings."
+        },
+        {
+          "id": "rg5",
+          "ctx": "An opinion essay",
+          "a": "There are two arguments against this position.",
+          "b": "I've got two things against this.",
+          "answer": "a",
+          "why": "Essays use impersonal structures, not chatty verbs."
+        },
+        {
+          "id": "rg6",
+          "ctx": "A proposal to management",
+          "a": "This measure would reduce costs by 15 per cent.",
+          "b": "This would save us a ton of money.",
+          "answer": "a",
+          "why": "A proposal needs a figure, not an impression."
+        },
+        {
+          "id": "rg7",
+          "ctx": "A report for the school council",
+          "a": "Three quarters of respondents supported the change.",
+          "b": "Almost everybody was fine with it.",
+          "answer": "a",
+          "why": "A report gives the proportion, not an impression of it."
+        }
+      ],
+      "title": "Who are you writing to?",
+      "howto": "The same idea, two versions. Choose the one that fits the reader. Register is not about being polite — it is about distance."
+    },
+    {
+      "id": "t7",
+      "step": 5,
+      "type": "idea-bank",
+      "columns": [
+        {
+          "id": "in",
+          "label": "Goes into my text"
+        },
+        {
+          "id": "out",
+          "label": "Leave it out"
+        }
+      ],
+      "items": [
+        {
+          "id": "ib0",
+          "text": "The strongest argument on each side",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib1",
+          "text": "Evidence with figures",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib2",
+          "text": "A conclusion that follows from the evidence",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib3",
+          "text": "A reason why the sides are not equal",
+          "side": "in",
+          "strong": false,
+          "why": "A fact the reader needs in order to act."
+        },
+        {
+          "id": "ib4",
+          "text": "A personal anecdote about my own lessons",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ib5",
+          "text": "A general statement that technology is the future",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ibx0",
+          "text": "A point that repeats your introduction",
+          "side": "out",
+          "strong": false,
+          "why": "Repetition costs marks for organisation."
+        },
+        {
+          "id": "ibx1",
+          "text": "An opinion with no example behind it",
+          "side": "out",
+          "strong": false,
+          "why": "An unsupported opinion is the first thing an examiner discounts."
+        },
+        {
+          "id": "ibx2",
+          "text": "A general statement that the topic is important",
+          "side": "out",
+          "strong": false,
+          "why": "It fills space and commits you to nothing."
+        },
+        {
+          "id": "ibx3",
+          "text": "A long summary of somebody else's article",
+          "side": "out",
+          "strong": false,
+          "why": "Summary is not analysis and eats your word limit."
+        }
+      ],
+      "pickCount": 3,
+      "title": "Idea bank",
+      "howto": "Sort the ideas into two columns: what goes into your text and what only waters it down. Then choose the three strongest ideas."
+    },
+    {
+      "id": "t8",
+      "step": 5,
+      "type": "outline-builder",
+      "slots": [
+        {
+          "id": "intro",
+          "label": "1. Opening"
+        },
+        {
+          "id": "body1",
+          "label": "2. Main part"
+        },
+        {
+          "id": "body2",
+          "label": "3. Details"
+        },
+        {
+          "id": "conc",
+          "label": "4. Closing"
+        }
+      ],
+      "items": [
+        {
+          "id": "ob0",
+          "text": "Frame the question without answering it",
+          "slot": "intro",
+          "why": "“Frame the question without answering it” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob1",
+          "text": "Give the first argument for",
+          "slot": "intro",
+          "why": "“Give the first argument for” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob2",
+          "text": "Give the second argument for",
+          "slot": "body1",
+          "why": "“Give the second argument for” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob3",
+          "text": "Give the first argument against",
+          "slot": "body1",
+          "why": "“Give the first argument against” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob4",
+          "text": "Give the second argument against",
+          "slot": "body2",
+          "why": "“Give the second argument against” is the job of the details in this genre."
+        },
+        {
+          "id": "ob5",
+          "text": "Weigh the two sides",
+          "slot": "body2",
+          "why": "“Weigh the two sides” is the job of the details in this genre."
+        },
+        {
+          "id": "ob6",
+          "text": "Conclude in line with the evidence",
+          "slot": "conc",
+          "why": "“Conclude in line with the evidence” is the job of the closing in this genre."
+        },
+        {
+          "id": "ob7",
+          "text": "Close the argument",
+          "slot": "conc",
+          "why": "“Close the argument” is the job of the closing in this genre."
+        }
+      ],
+      "rules": [
+        {
+          "check": "requestNotIntro",
+          "msg": "The recommendation belongs at the end: an argument that starts with its conclusion has nowhere to go."
+        },
+        {
+          "check": "noNewFactsInConclusion",
+          "msg": "New evidence in the conclusion tells the examiner that your plan failed."
+        }
+      ],
+      "title": "Build the plan",
+      "howto": "Put the blocks into the four parts of the text. The checker knows the logic of the genre: some blocks cannot stand where you put them."
+    },
+    {
+      "id": "t9",
+      "step": 6,
+      "type": "guided-write",
+      "items": [
+        {
+          "id": "gw0",
+          "q": "Frame the question without answering it.",
+          "hint": "One or two sentences. A phrase you can use: The debate has moved from whether … to whether …"
+        },
+        {
+          "id": "gw1",
+          "q": "Give the first argument for.",
+          "hint": "One or two sentences. A phrase you can use: Since 2020, most … have …"
+        },
+        {
+          "id": "gw2",
+          "q": "Give the second argument for.",
+          "hint": "One or two sentences. A phrase you can use: The clearest advantage is …"
+        },
+        {
+          "id": "gw3",
+          "q": "Give the first argument against.",
+          "hint": "One or two sentences. A phrase you can use: Furthermore, …"
+        },
+        {
+          "id": "gw4",
+          "q": "Give the second argument against.",
+          "hint": "One or two sentences. A phrase you can use: On the other hand, several studies report …"
+        },
+        {
+          "id": "gw5",
+          "q": "Weigh the two sides.",
+          "hint": "One or two sentences. A phrase you can use: In addition, … removes …"
+        },
+        {
+          "id": "gw6",
+          "q": "Conclude in line with the evidence.",
+          "hint": "One or two sentences. A phrase you can use: On balance, …"
+        }
+      ],
+      "title": "Write it step by step",
+      "howto": "Answer one question at a time, in English, one or two sentences. At the end your answers become a draft in the Writing Pad. The hints are questions, not ready sentences: the text stays yours."
+    },
+    {
+      "id": "t10",
+      "step": 6,
+      "type": "free-write",
+      "target": [
+        220,
+        260
+      ],
+      "minutes": 40,
+      "prompt": "Write a for-and-against essay (220–260 words) on whether university lectures should move online: an introduction that frames the question, two arguments for, two against, and a conclusion that follows from the evidence.",
+      "title": "Your own text",
+      "howto": "Now the whole text, on your own. The Writing Pad gives you the checklist, the phrase bank, the linking words and your plan. The timer is optional."
+    },
+    {
+      "id": "t11",
+      "step": 6,
+      "type": "overall",
+      "items": [
+        {
+          "id": "task",
+          "label": "Task achieved",
+          "hint": "Does the text answer the exact question asked, with a position held from start to finish?"
+        },
+        {
+          "id": "organisation",
+          "label": "Organisation",
+          "hint": "Four paragraphs with a visible logic: claim, evidence, counter-argument, conclusion."
+        },
+        {
+          "id": "vocabulary",
+          "label": "Vocabulary",
+          "hint": "Precise, register-consistent language: collocations, not synonyms picked at random."
+        },
+        {
+          "id": "grammar",
+          "label": "Grammar",
+          "hint": "Complex sentences, hedging, passive and nominalisation used deliberately."
+        }
+      ],
+      "title": "Overall",
+      "howto": "This is the site's own summary of the genre. It counts the exercises you have finished, how accurate you were, and the scores of the text you submitted, and turns all of that into one band. Nothing here is a school grade — it only shows what to work on next."
+    }
+  ]
+}
