@@ -1,0 +1,1959 @@
+{
+  "generated": "2026-08-21",
+  "engine": "sherpa-onnx/piper",
+  "sampleRate": 22050,
+  "words": [
+    {
+      "id": "w01",
+      "file": "a0/w01.mp3",
+      "text": "thirteen",
+      "voice": "F_GB",
+      "construct": "decoding_minimal_pair",
+      "durationSec": 1.09,
+      "playsAllowed": 2,
+      "options": [
+        "thirteen",
+        "third",
+        "thirty",
+        "thirsty"
+      ],
+      "correct": 0
+    },
+    {
+      "id": "w02",
+      "file": "a0/w02.mp3",
+      "text": "fifteen",
+      "voice": "M_GB",
+      "construct": "decoding_minimal_pair",
+      "durationSec": 1.27,
+      "playsAllowed": 2,
+      "options": [
+        "field",
+        "fifteen",
+        "fifty",
+        "fifth"
+      ],
+      "correct": 1
+    },
+    {
+      "id": "w03",
+      "file": "a0/w03.mp3",
+      "text": "ship",
+      "voice": "F_GB",
+      "construct": "decoding_vowel_length",
+      "durationSec": 0.83,
+      "playsAllowed": 2,
+      "options": [
+        "sheep",
+        "chip",
+        "ship",
+        "shop"
+      ],
+      "correct": 2
+    },
+    {
+      "id": "w04",
+      "file": "a0/w04.mp3",
+      "text": "kitchen",
+      "voice": "M_GB",
+      "construct": "decoding_minimal_pair",
+      "durationSec": 1.11,
+      "playsAllowed": 2,
+      "options": [
+        "kitchen",
+        "curtain",
+        "chicken",
+        "children"
+      ],
+      "correct": 0
+    },
+    {
+      "id": "w05",
+      "file": "a0/w05.mp3",
+      "text": "Thursday",
+      "voice": "F_GB",
+      "construct": "decoding_th",
+      "durationSec": 1.08,
+      "playsAllowed": 2,
+      "options": [
+        "Tuesday",
+        "thirsty",
+        "Thursday",
+        "Saturday"
+      ],
+      "correct": 2
+    },
+    {
+      "id": "w06",
+      "file": "a0/w06.mp3",
+      "text": "brother",
+      "voice": "M_GB",
+      "construct": "decoding_th",
+      "durationSec": 0.99,
+      "playsAllowed": 2,
+      "options": [
+        "bother",
+        "brother",
+        "border",
+        "butter"
+      ],
+      "correct": 1
+    },
+    {
+      "id": "w07",
+      "file": "a0/w07.mp3",
+      "text": "white",
+      "voice": "F_GB",
+      "construct": "decoding_w_v",
+      "durationSec": 1.0,
+      "playsAllowed": 2,
+      "options": [
+        "wide",
+        "quite",
+        "wait",
+        "white"
+      ],
+      "correct": 3
+    },
+    {
+      "id": "w08",
+      "file": "a0/w08.mp3",
+      "text": "water",
+      "voice": "M_GB",
+      "construct": "decoding_w_v",
+      "durationSec": 1.04,
+      "playsAllowed": 2,
+      "options": [
+        "waiter",
+        "water",
+        "winter",
+        "wonder"
+      ],
+      "correct": 1
+    },
+    {
+      "id": "w09",
+      "file": "a0/w09.mp3",
+      "text": "book",
+      "voice": "F_GB",
+      "construct": "dictation_word",
+      "durationSec": 0.86,
+      "playsAllowed": 2
+    },
+    {
+      "id": "w10",
+      "file": "a0/w10.mp3",
+      "text": "seven",
+      "voice": "F_GB",
+      "construct": "dictation_word",
+      "durationSec": 1.06,
+      "playsAllowed": 2
+    },
+    {
+      "id": "w11",
+      "file": "a0/w11.mp3",
+      "text": "green",
+      "voice": "F_GB",
+      "construct": "dictation_word",
+      "durationSec": 0.92,
+      "playsAllowed": 2
+    },
+    {
+      "id": "w12",
+      "file": "a0/w12.mp3",
+      "text": "school",
+      "voice": "M_GB",
+      "construct": "dictation_word",
+      "durationSec": 1.01,
+      "playsAllowed": 2
+    },
+    {
+      "id": "w13",
+      "file": "a0/w13.mp3",
+      "text": "window",
+      "voice": "M_GB",
+      "construct": "dictation_word",
+      "durationSec": 1.17,
+      "playsAllowed": 2
+    },
+    {
+      "id": "w14",
+      "file": "a0/w14.mp3",
+      "text": "eight",
+      "voice": "F_GB",
+      "construct": "dictation_word",
+      "durationSec": 0.91,
+      "playsAllowed": 2
+    },
+    {
+      "id": "w15",
+      "file": "a0/w15.mp3",
+      "text": "It's a quarter past seven.",
+      "voice": "F_GB",
+      "construct": "number_time",
+      "durationSec": 2.72,
+      "playsAllowed": 2,
+      "options": [
+        "7:15",
+        "6:15",
+        "7:45",
+        "7:30"
+      ],
+      "correct": 0
+    },
+    {
+      "id": "w16",
+      "file": "a0/w16.mp3",
+      "text": "It's twenty to nine.",
+      "voice": "M_GB",
+      "construct": "number_time",
+      "durationSec": 2.49,
+      "playsAllowed": 2,
+      "options": [
+        "9:20",
+        "9:40",
+        "8:20",
+        "8:40"
+      ],
+      "correct": 3
+    }
+  ],
+  "phrases": [
+    {
+      "id": "p01",
+      "file": "a0/p01.mp3",
+      "text": "She is drinking coffee.",
+      "voice": "F_GB",
+      "construct": "audio_to_picture",
+      "durationSec": 2.38,
+      "playsAllowed": 2,
+      "picture": {
+        "target": "woman drinking coffee",
+        "distractors": [
+          "man drinking coffee",
+          "woman eating a sandwich",
+          "woman drinking tea"
+        ]
+      }
+    },
+    {
+      "id": "p02",
+      "file": "a0/p02.mp3",
+      "text": "The book is on the table.",
+      "voice": "M_GB",
+      "construct": "preposition_place",
+      "durationSec": 2.66,
+      "playsAllowed": 2,
+      "picture": {
+        "target": "book on a table",
+        "distractors": [
+          "book under a table",
+          "book on a chair",
+          "bag on a table"
+        ]
+      }
+    },
+    {
+      "id": "p03",
+      "file": "a0/p03.mp3",
+      "text": "He hasn't got a car.",
+      "voice": "F_GB",
+      "construct": "negation",
+      "durationSec": 2.22,
+      "playsAllowed": 2,
+      "picture": {
+        "target": "man standing, no car",
+        "distractors": [
+          "man with a car",
+          "woman with a car",
+          "man with a bicycle"
+        ]
+      }
+    },
+    {
+      "id": "p04",
+      "file": "a0/p04.mp3",
+      "text": "I have got two brothers.",
+      "voice": "M_GB",
+      "construct": "repeat_after_audio",
+      "durationSec": 3.13,
+      "playsAllowed": 2
+    },
+    {
+      "id": "p05",
+      "file": "a0/p05.mp3",
+      "text": "She isn't at home today.",
+      "voice": "F_GB",
+      "construct": "repeat_after_audio",
+      "durationSec": 2.65,
+      "playsAllowed": 2
+    },
+    {
+      "id": "p06",
+      "file": "a0/p06.mp3",
+      "text": "This is my sister's red car.",
+      "voice": "M_GB",
+      "construct": "repeat_after_audio",
+      "durationSec": 3.57,
+      "playsAllowed": 2
+    }
+  ],
+  "sources": [
+    {
+      "id": "src-l-a1-01",
+      "level": "A1",
+      "topic": "work routine",
+      "file": "a1/src-l-a1-01.mp3",
+      "voices": [
+        "M_GB"
+      ],
+      "durationSec": 18.6,
+      "wordCount": 36,
+      "wpm": 127,
+      "targetWpm": 128,
+      "ttsSpeed": 0.718,
+      "playsAllowed": 2,
+      "distractorInfo": null,
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "M_GB",
+          "text": "Hi, I'm Marco. I work in a small hotel near the station.",
+          "start": 0.25,
+          "end": 6.13
+        },
+        {
+          "i": 1,
+          "speaker": "M_GB",
+          "text": "I start at seven in the morning and I finish at three.",
+          "start": 6.51,
+          "end": 10.95
+        },
+        {
+          "i": 2,
+          "speaker": "M_GB",
+          "text": "I don't work on Sundays. On Sunday I usually visit my grandmother.",
+          "start": 11.33,
+          "end": 17.97
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a1-01a",
+          "construct": "detail_spoken",
+          "q": "What time does Marco finish work?",
+          "options": [
+            "At nine",
+            "At three",
+            "At five",
+            "At seven"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Не звучало",
+            null,
+            "Не звучало",
+            "Путает начало и конец смены"
+          ]
+        },
+        {
+          "id": "l-a1-01b",
+          "construct": "detail_spoken",
+          "q": "What does Marco do on Sundays?",
+          "options": [
+            "He works at the hotel",
+            "He starts at seven",
+            "He visits his grandmother",
+            "He goes to the station"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Не удержал отрицание don't work",
+            "Подхватил число",
+            null,
+            "Подхватил слово station"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a1-02",
+      "level": "A1",
+      "topic": "home",
+      "file": "a1/src-l-a1-02.mp3",
+      "voices": [
+        "F_GB"
+      ],
+      "durationSec": 15.28,
+      "wordCount": 36,
+      "wpm": 163,
+      "targetWpm": 128,
+      "ttsSpeed": 0.62,
+      "playsAllowed": 2,
+      "distractorInfo": null,
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "My flat is very small.",
+          "start": 0.25,
+          "end": 2.52
+        },
+        {
+          "i": 1,
+          "speaker": "F_GB",
+          "text": "There is one bedroom, a kitchen and a bathroom.",
+          "start": 2.9,
+          "end": 6.99
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "There isn't a garden, but there is a big window in the living room.",
+          "start": 7.37,
+          "end": 11.84
+        },
+        {
+          "i": 3,
+          "speaker": "F_GB",
+          "text": "I like it because it's near the park.",
+          "start": 12.22,
+          "end": 14.65
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a1-02a",
+          "construct": "detail_spoken",
+          "q": "What does the flat NOT have?",
+          "options": [
+            "A garden",
+            "A bathroom",
+            "A kitchen",
+            "A window"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Пропустил isn't",
+            "Пропустил isn't",
+            "Спутал window и garden"
+          ]
+        },
+        {
+          "id": "l-a1-02b",
+          "construct": "gist",
+          "q": "Why does she like her flat?",
+          "options": [
+            "It has a garden",
+            "It is near the park",
+            "It is very big",
+            "It has two bedrooms"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Не удержал isn't",
+            null,
+            "Не удержал small",
+            "Не удержал one"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a1-03",
+      "level": "A1",
+      "topic": "shopping",
+      "file": "a1/src-l-a1-03.mp3",
+      "voices": [
+        "F_GB",
+        "M_GB"
+      ],
+      "durationSec": 15.61,
+      "wordCount": 28,
+      "wpm": 127,
+      "targetWpm": 128,
+      "ttsSpeed": 0.806,
+      "playsAllowed": 2,
+      "distractorInfo": null,
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "Excuse me, how much is this blue jacket?",
+          "start": 0.25,
+          "end": 3.37
+        },
+        {
+          "i": 1,
+          "speaker": "M_GB",
+          "text": "It's twenty-five pounds.",
+          "start": 3.75,
+          "end": 5.93
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "And the black one?",
+          "start": 6.31,
+          "end": 7.34
+        },
+        {
+          "i": 3,
+          "speaker": "M_GB",
+          "text": "That one is cheaper. Nineteen pounds.",
+          "start": 7.72,
+          "end": 11.38
+        },
+        {
+          "i": 4,
+          "speaker": "F_GB",
+          "text": "OK. I'll take the black one, please.",
+          "start": 11.76,
+          "end": 14.98
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a1-03a",
+          "construct": "detail_spoken",
+          "q": "Which jacket does the woman buy?",
+          "options": [
+            "The black one",
+            "Both jackets",
+            "No jacket",
+            "The blue one"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Не отследил выбор",
+            "Не понял I'll take",
+            "Взял первый упомянутый цвет"
+          ]
+        },
+        {
+          "id": "l-a1-03b",
+          "construct": "detail_spoken",
+          "q": "How much does she pay?",
+          "options": [
+            "29 pounds",
+            "25 pounds",
+            "19 pounds",
+            "44 pounds"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Спутал nineteen и twenty-nine",
+            "Взял цену первой куртки",
+            null,
+            "Сложил обе цены"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a1-04",
+      "level": "A1",
+      "topic": "plans and weather",
+      "file": "a1/src-l-a1-04.mp3",
+      "voices": [
+        "F_US"
+      ],
+      "durationSec": 15.57,
+      "wordCount": 29,
+      "wpm": 128,
+      "targetWpm": 128,
+      "ttsSpeed": 0.631,
+      "playsAllowed": 2,
+      "distractorInfo": null,
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_US",
+          "text": "It's very cold today and it's raining.",
+          "start": 0.25,
+          "end": 4.14
+        },
+        {
+          "i": 1,
+          "speaker": "F_US",
+          "text": "I can't go to the park with the children.",
+          "start": 4.52,
+          "end": 8.1
+        },
+        {
+          "i": 2,
+          "speaker": "F_US",
+          "text": "So we are staying at home.",
+          "start": 8.48,
+          "end": 10.94
+        },
+        {
+          "i": 3,
+          "speaker": "F_US",
+          "text": "We're watching a film and making pizza.",
+          "start": 11.32,
+          "end": 14.94
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a1-04a",
+          "construct": "gist",
+          "q": "Where are they today?",
+          "options": [
+            "At school",
+            "At home",
+            "At a restaurant",
+            "At the park"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Не звучало",
+            null,
+            "Подхватил pizza",
+            "Подхватил park, не удержал can't"
+          ]
+        },
+        {
+          "id": "l-a1-04b",
+          "construct": "detail_spoken",
+          "q": "What is the weather like?",
+          "options": [
+            "Warm and windy",
+            "Cold and sunny",
+            "Cold and rainy",
+            "Hot and sunny"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Не звучало",
+            "Услышал только cold",
+            null,
+            "Обратное значение"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a1-05",
+      "level": "A1",
+      "topic": "directions",
+      "file": "a1/src-l-a1-05.mp3",
+      "voices": [
+        "M_US",
+        "F_GB"
+      ],
+      "durationSec": 16.61,
+      "wordCount": 31,
+      "wpm": 127,
+      "targetWpm": 128,
+      "ttsSpeed": 0.639,
+      "playsAllowed": 2,
+      "distractorInfo": null,
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "M_US",
+          "text": "Excuse me, is there a bank near here?",
+          "start": 0.25,
+          "end": 4.81
+        },
+        {
+          "i": 1,
+          "speaker": "F_GB",
+          "text": "Yes. Go straight and then turn right at the hospital.",
+          "start": 5.19,
+          "end": 9.69
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "The bank is next to a small coffee shop.",
+          "start": 10.07,
+          "end": 13.55
+        },
+        {
+          "i": 3,
+          "speaker": "M_US",
+          "text": "Thank you very much.",
+          "start": 13.93,
+          "end": 15.98
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a1-05a",
+          "construct": "detail_spoken",
+          "q": "Where must the man turn?",
+          "options": [
+            "Right at the hospital",
+            "Right at the bank",
+            "Left at the coffee shop",
+            "Left at the bank"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Взял цель вместо ориентира",
+            "Взял последний упомянутый объект",
+            "Перепутал направление и ориентир"
+          ]
+        },
+        {
+          "id": "l-a1-05b",
+          "construct": "detail_spoken",
+          "q": "What is next to the bank?",
+          "options": [
+            "A hospital",
+            "A school",
+            "A station",
+            "A coffee shop"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Взял ориентир поворота",
+            "Не звучало",
+            "Не звучало",
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a1-06",
+      "level": "A1",
+      "topic": "family",
+      "file": "a1/src-l-a1-06.mp3",
+      "voices": [
+        "F_GB"
+      ],
+      "durationSec": 16.51,
+      "wordCount": 37,
+      "wpm": 153,
+      "targetWpm": 128,
+      "ttsSpeed": 0.62,
+      "playsAllowed": 2,
+      "distractorInfo": null,
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "This is a photo of my family.",
+          "start": 0.25,
+          "end": 2.99
+        },
+        {
+          "i": 1,
+          "speaker": "F_GB",
+          "text": "My mother is a teacher and my father works in a shop.",
+          "start": 3.37,
+          "end": 7.74
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "I have got one sister. She is eleven.",
+          "start": 8.12,
+          "end": 11.61
+        },
+        {
+          "i": 3,
+          "speaker": "F_GB",
+          "text": "We have got a big dog. His name is Rocky.",
+          "start": 11.99,
+          "end": 15.88
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a1-06a",
+          "construct": "detail_spoken",
+          "q": "What is her mother's job?",
+          "options": [
+            "She works at school with animals",
+            "She is a teacher",
+            "She is a doctor",
+            "She works in a shop"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Смешал два факта",
+            null,
+            "Не звучало",
+            "Взял работу отца"
+          ]
+        },
+        {
+          "id": "l-a1-06b",
+          "construct": "detail_spoken",
+          "q": "How many sisters has she got?",
+          "options": [
+            "Two",
+            "None",
+            "Eleven",
+            "One"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Не звучало",
+            "Не удержал have got",
+            "Взял возраст вместо количества",
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a2-01",
+      "level": "A2",
+      "topic": "station announcement",
+      "file": "a2/src-l-a2-01.mp3",
+      "voices": [
+        "F_GB"
+      ],
+      "durationSec": 16.89,
+      "wordCount": 37,
+      "wpm": 144,
+      "targetWpm": 142,
+      "ttsSpeed": 0.752,
+      "playsAllowed": 2,
+      "distractorInfo": "Платформа 2 звучит, но отменена. Опоздание не связано с погодой.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "Attention passengers. The four fifteen service to Leeds will now leave from platform six, not platform two.",
+          "start": 0.25,
+          "end": 8.02
+        },
+        {
+          "i": 1,
+          "speaker": "F_GB",
+          "text": "The train is running about ten minutes late because of engineering work.",
+          "start": 8.34,
+          "end": 12.62
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "Passengers travelling to Manchester should change at Leeds.",
+          "start": 12.94,
+          "end": 16.32
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a2-01a",
+          "construct": "detail_spoken",
+          "q": "Which platform will the train leave from?",
+          "options": [
+            "Platform two",
+            "Platform four",
+            "Platform six",
+            "Platform ten"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Взял отменённую платформу",
+            "Взял часть времени 4:15",
+            null,
+            "Взял минуты опоздания"
+          ]
+        },
+        {
+          "id": "l-a2-01b",
+          "construct": "detail_spoken",
+          "q": "Why is the train late?",
+          "options": [
+            "Bad weather",
+            "A change of platform",
+            "Too many passengers",
+            "Engineering work"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Типовое ожидание, в аудио не звучит",
+            "Спутал причину и следствие",
+            "Не звучало",
+            null
+          ]
+        },
+        {
+          "id": "l-a2-01c",
+          "construct": "selective_listening",
+          "q": "What should passengers for Manchester do?",
+          "options": [
+            "Take a different train from platform two",
+            "Wait ten more minutes",
+            "Change trains at Leeds",
+            "Go to the ticket office"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Собрал из отменённой информации",
+            "Взял число из другой части",
+            null,
+            "Не звучало"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a2-02",
+      "level": "A2",
+      "topic": "past holiday",
+      "file": "a2/src-l-a2-02.mp3",
+      "voices": [
+        "M_GB"
+      ],
+      "durationSec": 20.61,
+      "wordCount": 45,
+      "wpm": 143,
+      "targetWpm": 142,
+      "ttsSpeed": 0.745,
+      "playsAllowed": 2,
+      "distractorInfo": "Негативная информация звучит первой и подробнее позитивной.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "M_GB",
+          "text": "Last summer we went camping in the mountains.",
+          "start": 0.25,
+          "end": 4.08
+        },
+        {
+          "i": 1,
+          "speaker": "M_GB",
+          "text": "The first two days were terrible. It rained all the time and we couldn't cook outside.",
+          "start": 4.4,
+          "end": 11.1
+        },
+        {
+          "i": 2,
+          "speaker": "M_GB",
+          "text": "But then the weather changed and the last three days were really beautiful.",
+          "start": 11.42,
+          "end": 16.45
+        },
+        {
+          "i": 3,
+          "speaker": "M_GB",
+          "text": "I definitely want to go back next year.",
+          "start": 16.77,
+          "end": 20.04
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a2-02a",
+          "construct": "speaker_attitude",
+          "q": "How does the speaker feel about the holiday overall?",
+          "options": [
+            "He will never go camping",
+            "He regrets going",
+            "He would go again",
+            "He was bored"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Не расслышал but и want to go back",
+            "Удержал только первую половину",
+            null,
+            "Не звучало"
+          ]
+        },
+        {
+          "id": "l-a2-02b",
+          "construct": "detail_spoken",
+          "q": "What was the problem at the beginning?",
+          "options": [
+            "The food was expensive",
+            "They lost their tent",
+            "It was too hot",
+            "It rained constantly"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Не звучало",
+            "Не звучало",
+            "Обратное значение",
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a2-03",
+      "level": "A2",
+      "topic": "voicemail",
+      "file": "a2/src-l-a2-03.mp3",
+      "voices": [
+        "F_US"
+      ],
+      "durationSec": 18.25,
+      "wordCount": 41,
+      "wpm": 149,
+      "targetWpm": 142,
+      "ttsSpeed": 0.936,
+      "playsAllowed": 2,
+      "distractorInfo": "Среда звучит, но встреча перенесена. Сэм упомянут, но не придёт.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_US",
+          "text": "Hi Daniel, it's Karen from the office.",
+          "start": 0.25,
+          "end": 3.09
+        },
+        {
+          "i": 1,
+          "speaker": "F_US",
+          "text": "The meeting on Wednesday has moved to Thursday, same time, same room.",
+          "start": 3.41,
+          "end": 9.01
+        },
+        {
+          "i": 2,
+          "speaker": "F_US",
+          "text": "Could you bring the printed reports? Sam won't be there, so we'll need your numbers.",
+          "start": 9.33,
+          "end": 15.22
+        },
+        {
+          "i": 3,
+          "speaker": "F_US",
+          "text": "Call me back if that's a problem.",
+          "start": 15.54,
+          "end": 17.68
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a2-03a",
+          "construct": "detail_spoken",
+          "q": "When is the meeting now?",
+          "options": [
+            "Thursday",
+            "Wednesday",
+            "It is cancelled",
+            "The same day as before"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Взял исходный день",
+            "Переинтерпретировал перенос",
+            "Не расслышал has moved"
+          ]
+        },
+        {
+          "id": "l-a2-03b",
+          "construct": "selective_listening",
+          "q": "What does Karen ask Daniel to do?",
+          "options": [
+            "Call Sam",
+            "Change the time",
+            "Bring the printed reports",
+            "Book a different room"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Подхватил имя Sam",
+            "Подхватил same time",
+            null,
+            "Подхватил слово room"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a2-04",
+      "level": "A2",
+      "topic": "arrangements",
+      "file": "a2/src-l-a2-04.mp3",
+      "voices": [
+        "F_GB",
+        "M_US"
+      ],
+      "durationSec": 18.0,
+      "wordCount": 39,
+      "wpm": 147,
+      "targetWpm": 142,
+      "ttsSpeed": 0.909,
+      "playsAllowed": 2,
+      "distractorInfo": "Суббота предложена и отклонена. 10:00 звучит, но встреча в 11:00.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "Are you free on Saturday afternoon?",
+          "start": 0.25,
+          "end": 2.1
+        },
+        {
+          "i": 1,
+          "speaker": "M_US",
+          "text": "Saturday's difficult. I'm helping my brother move house.",
+          "start": 2.42,
+          "end": 6.73
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "Sunday then? There's a new exhibition at the gallery.",
+          "start": 7.05,
+          "end": 10.03
+        },
+        {
+          "i": 3,
+          "speaker": "M_US",
+          "text": "Sunday works. What time does it open?",
+          "start": 10.35,
+          "end": 13.58
+        },
+        {
+          "i": 4,
+          "speaker": "F_GB",
+          "text": "Ten, but let's meet at eleven. It's quieter later.",
+          "start": 13.9,
+          "end": 17.43
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a2-04a",
+          "construct": "detail_spoken",
+          "q": "When will they meet?",
+          "options": [
+            "Saturday at eleven",
+            "Sunday at ten",
+            "Saturday afternoon",
+            "Sunday at eleven"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Смешал два дня",
+            "Взял время открытия",
+            "Взял отклонённый вариант",
+            null
+          ]
+        },
+        {
+          "id": "l-a2-04b",
+          "construct": "detail_spoken",
+          "q": "Why can't the man meet on Saturday?",
+          "options": [
+            "The gallery is closed",
+            "He is helping his brother",
+            "He prefers quiet places",
+            "He is working at the gallery"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Не звучало",
+            null,
+            "Подхватил quieter",
+            "Смешал два фрагмента"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a2-05",
+      "level": "A2",
+      "topic": "describing a job",
+      "file": "a2/src-l-a2-05.mp3",
+      "voices": [
+        "M_GB"
+      ],
+      "durationSec": 18.13,
+      "wordCount": 39,
+      "wpm": 143,
+      "targetWpm": 142,
+      "ttsSpeed": 0.781,
+      "playsAllowed": 2,
+      "distractorInfo": "Студия упомянута с отрицанием.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "M_GB",
+          "text": "My sister is a photographer, but she doesn't work in a studio.",
+          "start": 0.25,
+          "end": 5.19
+        },
+        {
+          "i": 1,
+          "speaker": "M_GB",
+          "text": "She travels to different cities and takes pictures of buildings.",
+          "start": 5.51,
+          "end": 10.33
+        },
+        {
+          "i": 2,
+          "speaker": "M_GB",
+          "text": "It's hard work because she's away from home a lot.",
+          "start": 10.65,
+          "end": 14.69
+        },
+        {
+          "i": 3,
+          "speaker": "M_GB",
+          "text": "But she says she wouldn't change it.",
+          "start": 15.01,
+          "end": 17.56
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a2-05a",
+          "construct": "detail_spoken",
+          "q": "What does his sister photograph?",
+          "options": [
+            "Buildings in different cities",
+            "Her family at home",
+            "Cars and trains",
+            "People in a studio"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Подхватил home",
+            "Не звучало",
+            "Не удержал doesn't"
+          ]
+        },
+        {
+          "id": "l-a2-05b",
+          "construct": "speaker_attitude",
+          "q": "How does his sister feel about her job?",
+          "options": [
+            "She is happy with it",
+            "She finds it easy",
+            "She wants to change it",
+            "She wants to work in a studio"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Обратное значение hard work",
+            "Не расслышал wouldn't",
+            "Не удержал отрицание"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-a2-06",
+      "level": "A2",
+      "topic": "comparing options",
+      "file": "a2/src-l-a2-06.mp3",
+      "voices": [
+        "F_US",
+        "M_GB"
+      ],
+      "durationSec": 20.43,
+      "wordCount": 43,
+      "wpm": 141,
+      "targetWpm": 142,
+      "ttsSpeed": 0.74,
+      "playsAllowed": 2,
+      "distractorInfo": "Автобус описан подробнее, но выбран поезд.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_US",
+          "text": "Should we take the bus or the train to the airport?",
+          "start": 0.25,
+          "end": 3.8
+        },
+        {
+          "i": 1,
+          "speaker": "M_GB",
+          "text": "The bus is cheaper, about half the price.",
+          "start": 4.12,
+          "end": 7.82
+        },
+        {
+          "i": 2,
+          "speaker": "F_US",
+          "text": "But how long does it take?",
+          "start": 8.14,
+          "end": 10.37
+        },
+        {
+          "i": 3,
+          "speaker": "M_GB",
+          "text": "Nearly two hours. The train's only forty minutes.",
+          "start": 10.69,
+          "end": 15.47
+        },
+        {
+          "i": 4,
+          "speaker": "F_US",
+          "text": "Let's pay more. I don't want to miss the flight.",
+          "start": 15.79,
+          "end": 19.86
+        }
+      ],
+      "items": [
+        {
+          "id": "l-a2-06a",
+          "construct": "gist",
+          "q": "What do they decide?",
+          "options": [
+            "To leave earlier",
+            "To take the train",
+            "To take the bus",
+            "To take a taxi"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Подхватил тему опоздания",
+            null,
+            "Взял первый и более обсуждаемый вариант",
+            "Не звучало"
+          ]
+        },
+        {
+          "id": "l-a2-06b",
+          "construct": "detail_spoken",
+          "q": "Why do they choose that option?",
+          "options": [
+            "It is more comfortable",
+            "It is faster",
+            "It costs less",
+            "It leaves more often"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Не звучало",
+            null,
+            "Свойство отклонённого варианта",
+            "Не звучало"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-b1-01",
+      "level": "B1",
+      "topic": "new job",
+      "file": "b1/src-l-b1-01.mp3",
+      "voices": [
+        "F_GB",
+        "M_GB"
+      ],
+      "durationSec": 26.56,
+      "wordCount": 64,
+      "wpm": 160,
+      "targetWpm": 158,
+      "ttsSpeed": 0.854,
+      "playsAllowed": 2,
+      "distractorInfo": "Переезд рассматривается и отвергается. Сама работа названа нормальной.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "So how's the new job going?",
+          "start": 0.25,
+          "end": 1.7
+        },
+        {
+          "i": 1,
+          "speaker": "M_GB",
+          "text": "Yeah, good. Better than I expected, actually. The work itself is fine.",
+          "start": 1.96,
+          "end": 7.83
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "But?",
+          "start": 8.09,
+          "end": 8.51
+        },
+        {
+          "i": 3,
+          "speaker": "M_GB",
+          "text": "Well, the commute. It's an hour and a half each way.",
+          "start": 8.77,
+          "end": 12.57
+        },
+        {
+          "i": 4,
+          "speaker": "F_GB",
+          "text": "Could you move closer?",
+          "start": 12.83,
+          "end": 13.86
+        },
+        {
+          "i": 5,
+          "speaker": "M_GB",
+          "text": "I did look into it, but the rents round there are ridiculous. So I asked about working from home two days a week.",
+          "start": 14.12,
+          "end": 22.51
+        },
+        {
+          "i": 6,
+          "speaker": "F_GB",
+          "text": "And they agreed?",
+          "start": 22.77,
+          "end": 23.73
+        },
+        {
+          "i": 7,
+          "speaker": "M_GB",
+          "text": "Starting next month, yeah.",
+          "start": 23.99,
+          "end": 26.05
+        }
+      ],
+      "items": [
+        {
+          "id": "l-b1-01a",
+          "construct": "detail_spoken",
+          "q": "What is the man's main problem with the job?",
+          "options": [
+            "The work is too difficult",
+            "The salary is too low",
+            "His colleagues are unfriendly",
+            "The journey takes too long"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Не удержал the work itself is fine",
+            "Не звучало",
+            "Не звучало",
+            null
+          ]
+        },
+        {
+          "id": "l-b1-01b",
+          "construct": "inference_spoken",
+          "q": "Why did he decide against moving?",
+          "options": [
+            "His family did not want to move",
+            "He likes his current flat",
+            "The company refused to help",
+            "Housing costs were too high"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Не звучало",
+            "Не звучало",
+            "Спутал с просьбой о работе из дома",
+            null
+          ]
+        },
+        {
+          "id": "l-b1-01c",
+          "construct": "detail_spoken",
+          "q": "What has he arranged?",
+          "options": [
+            "To work from home part of the week",
+            "To move house next month",
+            "To reduce his hours",
+            "To change departments"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Взял отвергнутый вариант плюс дату",
+            "Спутал дни дома с сокращением часов",
+            "Не звучало"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-b1-02",
+      "level": "B1",
+      "topic": "gym membership",
+      "file": "b1/src-l-b1-02.mp3",
+      "voices": [
+        "M_US",
+        "F_US"
+      ],
+      "durationSec": 22.49,
+      "wordCount": 56,
+      "wpm": 164,
+      "targetWpm": 158,
+      "ttsSpeed": 0.913,
+      "playsAllowed": 2,
+      "distractorInfo": "Критика относится к вечернему времени, а не к залу как таковому.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "M_US",
+          "text": "I'm thinking of joining the gym on Mill Street.",
+          "start": 0.25,
+          "end": 3.63
+        },
+        {
+          "i": 1,
+          "speaker": "F_US",
+          "text": "The one with the pool? I went there for about six months.",
+          "start": 3.89,
+          "end": 7.45
+        },
+        {
+          "i": 2,
+          "speaker": "M_US",
+          "text": "Was it any good?",
+          "start": 7.71,
+          "end": 8.9
+        },
+        {
+          "i": 3,
+          "speaker": "F_US",
+          "text": "The equipment's excellent. But it gets really crowded after five, and that's the only time I could go.",
+          "start": 9.16,
+          "end": 16.06
+        },
+        {
+          "i": 4,
+          "speaker": "M_US",
+          "text": "I'd be going in the mornings, though.",
+          "start": 16.32,
+          "end": 18.98
+        },
+        {
+          "i": 5,
+          "speaker": "F_US",
+          "text": "Then honestly, you'd probably love it.",
+          "start": 19.24,
+          "end": 21.98
+        }
+      ],
+      "items": [
+        {
+          "id": "l-b1-02a",
+          "construct": "speaker_attitude",
+          "q": "What does the woman think of the gym?",
+          "options": [
+            "It is good, but busy at certain times",
+            "It is better than the other gyms",
+            "The equipment needs replacing",
+            "It is poor value overall"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Сравнение не звучало",
+            "Обратное значение",
+            "Обобщил частную критику"
+          ]
+        },
+        {
+          "id": "l-b1-02b",
+          "construct": "inference_spoken",
+          "q": "Why does she think it will suit him?",
+          "options": [
+            "He will go at a quieter time",
+            "He lives closer to Mill Street",
+            "He only wants to use the pool",
+            "He is more experienced than her"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Не звучало",
+            "Подхватил упоминание бассейна",
+            "Не звучало"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-b1-03",
+      "level": "B1",
+      "topic": "course booking",
+      "file": "b1/src-l-b1-03.mp3",
+      "voices": [
+        "F_GB",
+        "M_US"
+      ],
+      "durationSec": 23.3,
+      "wordCount": 57,
+      "wpm": 161,
+      "targetWpm": 158,
+      "ttsSpeed": 0.867,
+      "playsAllowed": 2,
+      "distractorInfo": "Скидка существует, но недоступна для марта. Март упомянут первым.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "Hi, I'd like to book the photography course starting in March.",
+          "start": 0.25,
+          "end": 3.61
+        },
+        {
+          "i": 1,
+          "speaker": "M_US",
+          "text": "Certainly. The full course is two hundred and forty pounds.",
+          "start": 3.87,
+          "end": 8.49
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "Is there a student discount?",
+          "start": 8.75,
+          "end": 10.19
+        },
+        {
+          "i": 3,
+          "speaker": "M_US",
+          "text": "There is, but it's already closed for March. It'll be available again for the April course.",
+          "start": 10.45,
+          "end": 17.85
+        },
+        {
+          "i": 4,
+          "speaker": "F_GB",
+          "text": "Then I'll wait for April. Can you hold a place?",
+          "start": 18.11,
+          "end": 20.78
+        },
+        {
+          "i": 5,
+          "speaker": "M_US",
+          "text": "I can, for a week.",
+          "start": 21.04,
+          "end": 22.79
+        }
+      ],
+      "items": [
+        {
+          "id": "l-b1-03a",
+          "construct": "detail_spoken",
+          "q": "Which course will the woman take?",
+          "options": [
+            "The April course",
+            "The March course with a discount",
+            "The March course at full price",
+            "She decides not to book"
+          ],
+          "correct": 0,
+          "misconceptions": [
+            null,
+            "Совместил недоступные условия",
+            "Взял первый упомянутый месяц",
+            "Не расслышал hold a place"
+          ]
+        },
+        {
+          "id": "l-b1-03b",
+          "construct": "inference_spoken",
+          "q": "Why does she change her plan?",
+          "options": [
+            "The March course is full",
+            "She wants to pay less",
+            "She needs more time to decide",
+            "The dates do not suit her"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Не звучало",
+            null,
+            "Подхватил hold for a week",
+            "Не звучало"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-b1-04",
+      "level": "B1",
+      "topic": "lost luggage",
+      "file": "b1/src-l-b1-04.mp3",
+      "voices": [
+        "M_GB",
+        "F_US"
+      ],
+      "durationSec": 28.0,
+      "wordCount": 69,
+      "wpm": 160,
+      "targetWpm": 158,
+      "ttsSpeed": 0.891,
+      "playsAllowed": 2,
+      "distractorInfo": "Дублинский чемодан предложен и исключён.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "M_GB",
+          "text": "Excuse me, my suitcase didn't come through with the others.",
+          "start": 0.25,
+          "end": 4.04
+        },
+        {
+          "i": 1,
+          "speaker": "F_US",
+          "text": "I'm sorry about that. Could you describe it?",
+          "start": 4.3,
+          "end": 7.25
+        },
+        {
+          "i": 2,
+          "speaker": "M_GB",
+          "text": "Medium size, dark green, with a red label on the handle.",
+          "start": 7.51,
+          "end": 11.95
+        },
+        {
+          "i": 3,
+          "speaker": "F_US",
+          "text": "Right. We had a bag arrive on the wrong flight this morning. Was yours coming from Dublin?",
+          "start": 12.21,
+          "end": 18.49
+        },
+        {
+          "i": 4,
+          "speaker": "M_GB",
+          "text": "No, Edinburgh.",
+          "start": 18.75,
+          "end": 20.12
+        },
+        {
+          "i": 5,
+          "speaker": "F_US",
+          "text": "Then that's not it, I'm afraid. Let me take your details and we'll deliver it as soon as it turns up.",
+          "start": 20.38,
+          "end": 27.49
+        }
+      ],
+      "items": [
+        {
+          "id": "l-b1-04a",
+          "construct": "detail_spoken",
+          "q": "What happens to the bag found this morning?",
+          "options": [
+            "It is sent back to Dublin",
+            "It is opened and checked",
+            "It turns out not to be his",
+            "It is returned to the man"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Домыслил из упоминания Дублина",
+            "Не звучало",
+            null,
+            "Не отследил No, Edinburgh"
+          ]
+        },
+        {
+          "id": "l-b1-04b",
+          "construct": "detail_spoken",
+          "q": "What will the airline do next?",
+          "options": [
+            "Search the Dublin flight again",
+            "Take his details and deliver the case later",
+            "Ask him to return tomorrow",
+            "Give him money immediately"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Подхватил отвергнутую линию",
+            null,
+            "Не звучало",
+            "Не звучало"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-b1-05",
+      "level": "B1",
+      "topic": "film recommendation",
+      "file": "b1/src-l-b1-05.mp3",
+      "voices": [
+        "F_US",
+        "M_GB"
+      ],
+      "durationSec": 23.44,
+      "wordCount": 55,
+      "wpm": 154,
+      "targetWpm": 158,
+      "ttsSpeed": 1.034,
+      "playsAllowed": 2,
+      "distractorInfo": "Похвала и критика соседствуют; рекомендация условная.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_US",
+          "text": "Have you seen that documentary everyone's talking about?",
+          "start": 0.25,
+          "end": 3.64
+        },
+        {
+          "i": 1,
+          "speaker": "M_GB",
+          "text": "I watched it last weekend. It's beautifully filmed, I'll give it that.",
+          "start": 3.9,
+          "end": 8.53
+        },
+        {
+          "i": 2,
+          "speaker": "F_US",
+          "text": "You don't sound convinced.",
+          "start": 8.79,
+          "end": 10.54
+        },
+        {
+          "i": 3,
+          "speaker": "M_GB",
+          "text": "It's just very long. Two and a half hours, and the middle section drags badly.",
+          "start": 10.8,
+          "end": 15.95
+        },
+        {
+          "i": 4,
+          "speaker": "F_US",
+          "text": "So would you recommend it?",
+          "start": 16.21,
+          "end": 17.84
+        },
+        {
+          "i": 5,
+          "speaker": "M_GB",
+          "text": "If you're interested in the subject, definitely. If not, probably not.",
+          "start": 18.1,
+          "end": 22.93
+        }
+      ],
+      "items": [
+        {
+          "id": "l-b1-05a",
+          "construct": "speaker_attitude",
+          "q": "What is the man's opinion of the documentary?",
+          "options": [
+            "He disliked everything about it",
+            "He thought it was too short",
+            "He has not finished watching it",
+            "He admired parts of it but found it slow"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Игнорировал похвалу",
+            "Обратное значение",
+            "Не расслышал watched it last weekend",
+            null
+          ]
+        },
+        {
+          "id": "l-b1-05b",
+          "construct": "inference_spoken",
+          "q": "Who does he think should watch it?",
+          "options": [
+            "Anyone who enjoys long films",
+            "Only people who study film",
+            "People already interested in the topic",
+            "Nobody, in his view"
+          ],
+          "correct": 2,
+          "misconceptions": [
+            "Не удержал условие",
+            "Домыслил",
+            null,
+            "Проигнорировал definitely"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "src-l-b1-06",
+      "level": "B1",
+      "topic": "hotel complaint",
+      "file": "b1/src-l-b1-06.mp3",
+      "voices": [
+        "F_GB",
+        "M_US"
+      ],
+      "durationSec": 24.08,
+      "wordCount": 60,
+      "wpm": 162,
+      "targetWpm": 158,
+      "ttsSpeed": 0.814,
+      "playsAllowed": 2,
+      "distractorInfo": "Предложены два варианта, выбран второй.",
+      "lines": [
+        {
+          "i": 0,
+          "speaker": "F_GB",
+          "text": "I booked a room with a balcony, but the one I've been given doesn't have one.",
+          "start": 0.25,
+          "end": 3.94
+        },
+        {
+          "i": 1,
+          "speaker": "M_US",
+          "text": "Let me check. Ah, I see. The balcony rooms are all occupied tonight.",
+          "start": 4.2,
+          "end": 10.71
+        },
+        {
+          "i": 2,
+          "speaker": "F_GB",
+          "text": "That's not really my problem, is it?",
+          "start": 10.97,
+          "end": 13.04
+        },
+        {
+          "i": 3,
+          "speaker": "M_US",
+          "text": "No, you're right. I can move you tomorrow morning, or refund the difference now.",
+          "start": 13.3,
+          "end": 19.81
+        },
+        {
+          "i": 4,
+          "speaker": "F_GB",
+          "text": "I'd rather not pack everything again. Let's do the refund.",
+          "start": 20.07,
+          "end": 23.57
+        }
+      ],
+      "items": [
+        {
+          "id": "l-b1-06a",
+          "construct": "detail_spoken",
+          "q": "What does the guest choose?",
+          "options": [
+            "To change rooms tomorrow",
+            "To leave the hotel",
+            "To wait for a room tonight",
+            "To receive money back"
+          ],
+          "correct": 3,
+          "misconceptions": [
+            "Взял первый предложенный вариант",
+            "Не звучало",
+            "Не расслышал all occupied",
+            null
+          ]
+        },
+        {
+          "id": "l-b1-06b",
+          "construct": "inference_spoken",
+          "q": "Why does she reject the other option?",
+          "options": [
+            "It costs more",
+            "She does not want to move her things",
+            "She is leaving early",
+            "The new room is smaller"
+          ],
+          "correct": 1,
+          "misconceptions": [
+            "Не звучало",
+            null,
+            "Не звучало",
+            "Не звучало"
+          ]
+        }
+      ]
+    }
+  ]
+}

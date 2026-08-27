@@ -10,7 +10,10 @@ import { resolveProfileId } from '@/lib/auth-server.js'
 
 export const runtime = 'nodejs'
 
-const VALID_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+// A0 добавлен вместе с новым тестом (public/practice/placement/): он ветвится
+// на A0 отдельно от θ, и без этого уровня результат новичка молча отбраковывался
+// четырёхсоткой — на бэкенде enum LanguageLevel A0 знает давно.
+const VALID_LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 export async function POST(request) {
   if (!isDbConfigured()) {
