@@ -1,619 +1,665 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
-import TrainerResult from '../components/TrainerResult.jsx'
 import { useI18n } from '../i18n.jsx'
-import { tx, LEVELS, FIELD_CATS, TIMES } from '../practice/vocab/strings.js'
-import { loadScope, loadVocabIndex, tr as trW, altTr as altTrW, exampleHtml } from '../practice/vocab/vocabData.js'
-import { useVocabState } from '../practice/vocab/state.js'
-import { collectCount, pickCollectWords } from '../practice/vocab/engine.js'
-import { initVoices, speak as ttsSpeak, sfx as playSfx, ac, buzz } from '../practice/vocab/audio.js'
-import { Illus, SpeakBtn } from '../practice/vocab/tasks/shared.jsx'
-import Session from '../practice/vocab/Session.jsx'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
-import { listLessonVocab, openLessonVocab } from '../api.js'
-import LessonVocabHome from './vocab/LessonVocabHome.jsx'
-import LessonVocabSession from './vocab/LessonVocabSession.jsx'
+import { initVoices, speak as ttsSpeak } from '../practice/vocab/audio.js'
+import {
+  getVocabCatalog,
+  getVocabScope,
+  openLessonVocab,
+  saveStudentVocab,
+  deleteStudentVocabWord,
+} from '../api.js'
+import VocabPractice from './vocab/VocabPractice.jsx'
+import { topVocabMisses } from './vocab/vocabMisses.js'
+import { learnedCount } from './vocab/vocabLearned.js'
+import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
 
-// Словарь — нативный экран (раньше прототип public/vocab/index.html в iframe).
-// Слова и строки собираются scripts/extract-vocab.js; вёрстка и логика
-// перенесены 1-в-1, но живут внутри LearningLayout и языка сайта.
-// Экраны: setup → (fields) → overview → collect → session → results;
-// словарь уроков — отдельный раздел с кнопки на setup.
-
-// Прототип знает только ru/kk; для английского интерфейса сайта берём ru.
 const vocabLang = (lang) => (lang === 'kk' ? 'kk' : 'ru')
+
+function lessonOf(scope, no) {
+  if (!scope?.lessons) return null
+  return scope.lessons[String(no)] || scope.lessons[no] || null
+}
+
+function cardsOf(lesson) {
+  return Array.isArray(lesson?.cards) ? lesson.cards : []
+}
+
+function exampleHtml(card) {
+  const raw = card.example || card.ex || ''
+  if (!raw) return ''
+  const word = card.en || ''
+  return String(raw)
+    .replace(/\{\{(.+?)\}\}/g, '<mark>$1</mark>')
+    .replace(/___+/g, word ? `<mark>${word}</mark>` : '___')
+}
+
+function trOf(card, lang) {
+  if (!card) return ''
+  if (lang === 'kk') {
+    return card.kk || card.translationKz || card.ru || card.translationRu || ''
+  }
+  return card.ru || card.translationRu || card.kk || card.translationKz || ''
+}
+
+const CAT_ORDER = ['tech', 'biz', 'health', 'science']
 
 export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
   const { lang, t } = useI18n()
   const vlang = vocabLang(lang)
-  const T = tx(vlang)
-  const { S, set, setQuiet } = useVocabState()
-
-  const [screen, setScreen] = useState('setup')
-  const [scope, setScope] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [screen, setScreen] = useState('home')
   const [index, setIndex] = useState(null)
-  const [collected, setCollected] = useState(null)
-  const [results, setResults] = useState(null)
-  const [toastMsg, setToastMsg] = useState('')
-  const [lessons, setLessons] = useState([])
-  const [lessonsLoading, setLessonsLoading] = useState(!!token)
-  const [lessonsError, setLessonsError] = useState(false)
-  const [lessonSession, setLessonSession] = useState(null)
+  const [indexError, setIndexError] = useState(false)
+  const [indexLoading, setIndexLoading] = useState(!!token)
+  const [scope, setScope] = useState(null)
+  const [scopeMeta, setScopeMeta] = useState(null)
+  const [activeLevel, setActiveLevel] = useState(null)
+  const [lesson, setLesson] = useState(null)
+  const [mine, setMine] = useState(null)
+  const [practiceCards, setPracticeCards] = useState(null)
+  const [practiceTitle, setPracticeTitle] = useState('')
+  const [practiceBack, setPracticeBack] = useState('lesson')
+  const [practiceScopeId, setPracticeScopeId] = useState(null)
+  const [toast, setToast] = useState('')
+  const [topMiss, setTopMiss] = useState([])
+  const [learnedTick, setLearnedTick] = useState(0)
 
-  const toast = useCallback((m) => {
-    setToastMsg(m)
-    setTimeout(() => setToastMsg(''), 2200)
+  const refreshTopMiss = useCallback(() => {
+    setTopMiss(topVocabMisses(token, 3))
+  }, [token])
+
+  useEffect(() => {
+    refreshTopMiss()
+  }, [refreshTopMiss, screen])
+
+  const flash = useCallback((msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 2200)
   }, [])
+
+  const speak = useCallback(
+    (text) => {
+      initVoices()
+      ttsSpeak(text, { onNoVoice: () => flash(t('vocab.lesson.noVoice')) })
+    },
+    [flash, t],
+  )
 
   useEffect(() => {
     initVoices()
-    loadVocabIndex().then(setIndex)
   }, [])
 
   useEffect(() => {
     if (!token) {
-      setLessonsLoading(false)
+      setIndexLoading(false)
       return
     }
     let alive = true
-    setLessonsLoading(true)
-    setLessonsError(false)
-    listLessonVocab(token, (fresh) => alive && setLessons(fresh || []))
+    setIndexLoading(true)
+    getVocabCatalog(token)
       .then((data) => {
         if (!alive) return
-        setLessons(data || [])
-        setLessonsLoading(false)
+        setIndex(data)
+        setIndexError(false)
+        setIndexLoading(false)
       })
       .catch(() => {
         if (!alive) return
-        setLessonsError(true)
-        setLessonsLoading(false)
+        setIndex(null)
+        setIndexError(true)
+        setIndexLoading(false)
       })
     return () => {
       alive = false
     }
   }, [token])
 
-  const reloadLessons = useCallback(() => {
+  useEffect(() => {
     if (!token) return
-    listLessonVocab(token, (fresh) => setLessons(fresh || []))
-      .then((data) => setLessons(data || []))
+    openLessonVocab('saved', token)
+      .then(setMine)
       .catch(() => {})
   }, [token])
 
-  // Смена экрана: мотаем страницу наверх — иначе после клика по кнопке внизу
-  // настроек следующий экран открывался уже прокрученным.
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [screen])
 
-  // Выборка слов под текущие настройки (уровень или проф. сфера).
-  useEffect(() => {
-    let alive = true
-    setLoading(true)
-    loadScope({ mode: S.mode, level: S.level, field: S.field }).then((ws) => {
-      if (!alive) return
-      setScope(ws)
-      setLoading(false)
-    })
-    return () => {
-      alive = false
-    }
-  }, [S.mode, S.level, S.field])
-
-  const speak = useCallback(
-    (text, opts) => ttsSpeak(text, { accent: S.accent, onNoVoice: () => toast(T.noVoice), ...opts }),
-    [S.accent, T, toast],
-  )
-  const sfx = useCallback((k) => playSfx(k, S.sound), [S.sound])
-  const tr = useCallback((w) => trW(w, vlang), [vlang])
-
-  const startCollect = () => {
-    ac()
-    if (!scope.length) return toast(T.noWords)
-    const list = pickCollectWords(scope, S.srs, collectCount(S.goalMin)).map((w) => ({ w, known: null }))
-    setCollected(list)
-    setScreen('collect')
+  const loadScope = (id, meta, levelId) => {
+    if (!token) return
+    getVocabScope(token, id)
+      .then((data) => {
+        setScope(data)
+        setScopeMeta(meta || { id })
+        setActiveLevel(levelId || meta?.id || null)
+        setScreen(meta?.kind === 'field' ? 'field-lessons' : 'levels')
+      })
+      .catch(() => flash(t('vocab.home.empty')))
   }
 
+  const openMine = () => {
+    if (!token) return
+    openLessonVocab('saved', token)
+      .then((data) => {
+        setMine(data)
+        setScreen('mine')
+      })
+      .catch(() => flash(t('vocab.lesson.error')))
+  }
+
+  const startPractice = (cards, title, backScreen = 'lesson', scopeId = null) => {
+    setPracticeCards(cards)
+    setPracticeTitle(title || t('vocab.practiceTitle'))
+    setPracticeBack(backScreen)
+    setPracticeScopeId(scopeId)
+    setScreen('practice')
+  }
+
+  const entitlement = usePracticeEntitlement('vocab', token)
   const shell = (children) => (
     <LearningLayout userName={userName} userLevel={userLevel} active="vocab" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="vc">
+      <div className="vp">
         {children}
-        <div className={`v-toast${toastMsg ? ' v-show' : ''}`}><span>{toastMsg}</span></div>
+        {toast ? <div className="v-toast v-show"><span>{toast}</span></div> : null}
       </div>
     </LearningLayout>
   )
 
-  const ctx = { T, lang: vlang, speak, sfx, tr, S }
-
-  const openLesson = (lesson) => {
-    if (!token || lesson?.locked) return
-    ac()
-    openLessonVocab(lesson.lessonId ?? 'saved', token)
-      .then((data) => {
-        setLessonSession(data)
-        setScreen('lesson-session')
-      })
-      .catch(() => toast(t('vocab.lesson.error')))
-  }
-
-  const entitlement = usePracticeEntitlement('vocab', token)
   if (!entitlement.loading && !entitlement.allowed) {
     return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} />)
   }
 
-  if (screen === 'session') {
+  if (screen === 'practice' && practiceCards) {
     return shell(
-      <Session
-        collected={collected}
-        scope={scope}
-        S={S}
-        set={set}
-        setQuiet={setQuiet}
-        T={T}
+      <VocabPractice
+        cards={practiceCards}
         lang={vlang}
-        toast={toast}
-        onExit={() => setScreen('setup')}
-        onFinish={(r) => {
-          setResults(r)
-          playSfx('win', S.sound)
-          setScreen('results')
+        title={practiceTitle}
+        token={token}
+        scopeId={practiceScopeId}
+        onExit={() => {
+          refreshTopMiss()
+          setLearnedTick((n) => n + 1)
+          setScreen(practiceBack)
+        }}
+        speak={speak}
+      />,
+    )
+  }
+
+  if (screen === 'lesson' && lesson) {
+    return shell(
+      <LessonWords
+        t={t}
+        lang={vlang}
+        lesson={lesson}
+        meta={scopeMeta}
+        speak={speak}
+        onBack={() => setScreen(scopeMeta?.kind === 'field' ? 'field-lessons' : 'levels')}
+        onPractice={() => startPractice(cardsOf(lesson), lesson.title, 'lesson', scopeMeta?.id || activeLevel || null)}
+      />,
+    )
+  }
+
+  if (screen === 'mine') {
+    return shell(
+      <MineScreen
+        t={t}
+        lang={vlang}
+        session={mine}
+        token={token}
+        speak={speak}
+        flash={flash}
+        onBack={() => setScreen('home')}
+        onChanged={setMine}
+        onPractice={() => {
+          const cards = (mine?.words || []).map((w) => ({
+            id: w.id,
+            en: w.word,
+            ru: w.translationRu,
+            kk: w.translationKz,
+            ipa: w.ipa,
+            example: '',
+          }))
+          startPractice(cards, t('vocab.home.mine'), 'mine')
         }}
       />,
     )
   }
 
-  if (screen === 'collect') {
+  if ((screen === 'levels' || screen === 'field-lessons') && scope) {
     return shell(
-      <Collect list={collected} ctx={ctx} onDone={() => setScreen('session')} onExit={() => setScreen('setup')} />,
-    )
-  }
-
-  // Итоги — общий с аудированием экран (lt-res). Рендерим вне обёртки .vc:
-  // её сбросы для button (.vc button { background:none; color:inherit })
-  // перебивали бы стили lt-кнопок, а экран должен быть 1-в-1 как в listening.
-  if (screen === 'results') {
-    return (
-      <LearningLayout userName={userName} userLevel={userLevel} active="vocab" token={token} onNav={onNav} onProfile={onProfile}>
-        <div className="lt">
-          <TrainerResult
-            correct={results ? results.correct : 0}
-            wrong={results ? results.mistakes : 0}
-            onAgain={startCollect}
-            onHome={() => setScreen('setup')}
-          />
-        </div>
-      </LearningLayout>
+      <BrowseLessons
+        t={t}
+        lang={vlang}
+        index={index}
+        scope={scope}
+        meta={scopeMeta}
+        activeLevel={activeLevel}
+        onBack={() => setScreen(scopeMeta?.kind === 'field' ? 'fields' : 'home')}
+        onLevel={(lv) => {
+          if (scopeMeta?.kind === 'field') {
+            setActiveLevel(lv)
+            return
+          }
+          loadScope(lv, { id: lv, name: lv, kind: 'level' }, lv)
+        }}
+        onOpen={(item) => {
+          setLesson(item)
+          setScreen('lesson')
+        }}
+      />,
     )
   }
 
   if (screen === 'fields') {
     return shell(
-      <Fields
-        T={T}
-        index={index}
-        current={S.field}
-        onPick={(key) => {
-          set({ field: key })
-          setScreen('setup')
-        }}
-        onBack={() => setScreen('setup')}
-      />,
-    )
-  }
-
-  if (screen === 'overview') {
-    return shell(
-      <Overview T={T} lang={vlang} scope={scope} S={S} tr={tr} speak={speak} onStart={startCollect} onBack={() => setScreen('setup')} />,
-    )
-  }
-
-  if (screen === 'lesson-session' && lessonSession) {
-    return shell(
-      <LessonVocabSession
-        session={lessonSession}
-        token={token}
+      <FieldsScreen
+        t={t}
         lang={vlang}
-        onExit={() => {
-          setLessonSession(null)
-          setScreen('lessons')
-          reloadLessons()
-        }}
-        onFinished={reloadLessons}
+        index={index}
+        onBack={() => setScreen('home')}
+        onPick={(f) => loadScope(f.id || f.key, { ...f, kind: 'field' })}
       />,
     )
   }
 
-  if (screen === 'lessons') {
-    return shell(
-      <LessonVocabHome
-        lessons={lessons}
-        loading={lessonsLoading}
-        error={lessonsError}
-        onOpen={openLesson}
-        onBack={() => {
-          ac()
-          setScreen('setup')
-        }}
-      />,
-    )
-  }
+  const levels = index?.levels || []
+  const fields = index?.fields || []
+  const mineWords = mine?.words || []
 
   return shell(
-    <Setup
-      T={T}
-      S={S}
-      set={set}
-      sfx={sfx}
-      speak={speak}
-      loading={loading}
-      count={scope.length}
-      onLessons={() => {
-        ac()
-        setScreen('lessons')
-        reloadLessons()
-      }}
-      lessonsLabel={t('vocab.lesson.open')}
-      onFields={() => {
-        ac()
-        setScreen('fields')
-      }}
-      onNext={() => {
-        ac()
-        if (!scope.length) return toast(T.noWords)
-        setScreen('overview')
-      }}
-    />,
+    <section className="vp-pad">
+      <h1>{t('vocab.home.title')}</h1>
+      <p className="vp-lead">{t('vocab.home.pickWay')}</p>
+      {indexLoading && <p className="vp-state">…</p>}
+      {indexError && !levels.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
+
+      <div className="vp-sec">
+        <div className="vp-sec-hd">
+          <div>
+            <h2>{t('vocab.home.core')}</h2>
+            <p>{t('vocab.home.coreByLevel')}</p>
+          </div>
+          <button type="button" className="vp-sec-arrow" onClick={() => levels[0] && loadScope(levels[0].id, { ...levels[0], kind: 'level' })} aria-label="more">→</button>
+        </div>
+        <div className="vp-row">
+          {levels.map((lv) => {
+            const n = learnedCount(token, lv.id)
+            return (
+            <button
+              type="button"
+              key={lv.id}
+              className="vp-lvl-card"
+              data-lv={lv.id}
+              onClick={() => loadScope(lv.id, { ...lv, kind: 'level' })}
+            >
+              <div className="code">{lv.id}</div>
+              <div className="nm">{lv.name}</div>
+              <div className={`meta${n === 0 ? ' is-zero' : ''}`}>{t('vocab.learned', { n })}</div>
+            </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="vp-sec">
+        <div className="vp-sec-hd">
+          <div>
+            <h2>{t('vocab.home.field')}</h2>
+            <p>{t('vocab.home.fieldByJob')}</p>
+          </div>
+          <button type="button" className="vp-sec-arrow" onClick={() => setScreen('fields')} aria-label="more">→</button>
+        </div>
+        <div className="vp-row">
+          {fields.slice(0, 8).map((f) => (
+            <button type="button" key={f.id || f.key} className="vp-fld-card" onClick={() => loadScope(f.id || f.key, { ...f, kind: 'field' })}>
+              <span className="ic">{f.ic || '◆'}</span>
+              <b>{(vlang === 'kk' ? f.kk : f.ru) || f.en || f.key}</b>
+              <span className="meta">{t('vocab.home.words', { n: f.cards || f.words || 0 })}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="vp-sec">
+        <div className="vp-sec-hd">
+          <div>
+            <h2>{t('vocab.home.mine')}</h2>
+            <p>{t('vocab.home.mineSaved')}</p>
+          </div>
+          <button type="button" className="vp-sec-arrow" onClick={openMine} aria-label="more">→</button>
+        </div>
+        <div className="vp-row">
+          {mineWords.length === 0 && <p className="vp-state">{t('vocab.lesson.empty')}</p>}
+          {mineWords.slice(0, 8).map((w) => (
+            <button type="button" key={w.id || w.word} className="vp-mine-chip" onClick={openMine}>
+              <b>{w.word}</b>
+              <span className="tr">{trOf(w, vlang)}</span>
+              <span
+                className="vp-spk"
+                role="presentation"
+                onClick={(e) => { e.stopPropagation(); speak(w.word) }}
+              ><IconSpeaker /></span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {topMiss.length > 0 && (
+        <div className="vp-sec">
+          <div className="vp-sec-hd">
+            <div>
+              <h2>{t('vocab.home.top3')}</h2>
+              <p>{t('vocab.home.top3Lead')}</p>
+            </div>
+          </div>
+          <div className="vp-top3">
+            <div className="vp-top3-hd">
+              <span aria-hidden="true"><IconRefresh /></span>
+              {t('vocab.prac.review')}
+            </div>
+            {topMiss.map((w) => (
+              <div className="vp-top3-row" key={w.word}>
+                <button type="button" className="vp-spk" onClick={() => speak(w.word)} aria-label={t('vocab.lesson.listen')}>
+                  <IconSpeaker />
+                </button>
+                <b>{w.word}</b>
+                <span>{vlang === 'kk' ? (w.kk || w.ru) : (w.ru || w.kk)}</span>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="vp-btn wide"
+              style={{ marginTop: 14 }}
+              onClick={() => {
+                const cards = topMiss.map((w) => ({
+                  id: w.word,
+                  en: w.word,
+                  ru: w.ru,
+                  kk: w.kk,
+                }))
+                startPractice(cards, t('vocab.home.top3'), 'home')
+              }}
+            >
+              <span className="vp-play" aria-hidden="true"><IconPlay /></span>
+              {t('vocab.startPractice')}
+            </button>
+          </div>
+        </div>
+      )}
+    </section>,
   )
 }
 
-/* ─────────────── Настройка сессии ─────────────── */
-function Setup({ T, S, set, sfx, speak, loading, count, onFields, onNext, onLessons, lessonsLabel }) {
-  const personal = S.mode === 'personalized'
+function FieldsScreen({ t, lang, index, onBack, onPick }) {
+  const fields = index?.fields || []
+  const groups = useMemo(() => {
+    const map = {}
+    for (const f of fields) {
+      const cat = f.cat || 'other'
+      if (!map[cat]) map[cat] = []
+      map[cat].push(f)
+    }
+    const keys = [...CAT_ORDER.filter((c) => map[c]), ...Object.keys(map).filter((c) => !CAT_ORDER.includes(c))]
+    return keys.map((k) => ({ cat: k, items: map[k] }))
+  }, [fields])
+  const nameOf = (f) => (lang === 'kk' ? f.kk : f.ru) || f.en || f.key
+
   return (
-    <section className="v-screen v-show">
-      <div className="v-scroll v-pad">
-        <h1 className="v-setup-title">{T.setupTitle}</h1>
-        <p className="v-setup-lead">{T.setupLead}</p>
-        {onLessons && (
-          <button type="button" className="v-btn v-ghost v-lessons-link" onClick={onLessons}>
-            {lessonsLabel}
-          </button>
-        )}
-
-        <div className="v-setup-sec">
-          <div className="v-lbl">{T.s_level_h}</div>
-          {personal ? (
-            <button className="v-setup-note" onClick={onFields}>
-              <span className="v-e">🧭</span>
-              <span>{T.fldLead}</span>
-            </button>
-          ) : (
-            <div className="v-lvl-grid">
-              {LEVELS.map((l) => (
-                <button
-                  key={l}
-                  className={`v-lvl-cell${S.level === l ? ' v-sel' : ''}`}
-                  onClick={() => set({ level: l })}
-                >
-                  <b>{l}</b>
-                  <span>{(T.lvl_d && T.lvl_d[l]) || ''}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="v-setup-sec">
-          <div className="v-lbl">{T.s_mode_h}</div>
-          {[
-            ['essential', T.essential, T.essential_d, '⚡'],
-            ['personalized', T.personalized, T.personalized_d, '🎯'],
-          ].map(([m, tt, dd, ic]) => (
-            <button
-              key={m}
-              className={`v-opt${S.mode === m ? ' v-sel' : ''}`}
-              onClick={() => set({ mode: m })}
-            >
-              <span className="v-ic">{ic}</span>
-              <span className="v-tx"><b>{tt}</b><span>{dd}</span></span>
-              <span className="v-tick">✓</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="v-setup-sec">
-          <div className="v-lbl">{T.s_accent_h}</div>
-          {[
-            ['us', '🇺🇸', T.american, T.american_d],
-            ['gb', '🇬🇧', T.british, T.british_d],
-          ].map(([a, fl, tt, dd]) => (
-            <button
-              key={a}
-              className={`v-opt${S.accent === a ? ' v-sel' : ''}`}
-              onClick={() => {
-                set({ accent: a })
-                ac()
-                setTimeout(() => speak("Hello! Let's study."), 60)
-              }}
-            >
-              <span className="v-ic">{fl}</span>
-              <span className="v-tx"><b>{tt}</b><span>{dd}</span></span>
-              <span className="v-tick">✓</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="v-setup-sec">
-          <div className="v-lbl">{T.s_goal_h}</div>
-          <div className="v-time-row">
-            {TIMES.map((m) => (
-              <button
-                key={m}
-                className={`v-time-cell${S.goalMin === m ? ' v-sel' : ''}`}
-                onClick={() => set({ goalMin: m })}
-              >
-                <b>{m}</b>
-                <span>{T.min}</span>
-                <span className="v-tc-words">{collectCount(m)} {T.tcWords}</span>
+    <section className="vp-pad">
+      <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
+      <h1>{t('vocab.pickField')}</h1>
+      <p className="vp-lead">{t('vocab.pickFieldLead')}</p>
+      {groups.map((g) => (
+        <div className="vp-unit" key={g.cat}>
+          <h3>{t(`vocab.cat.${g.cat}`) === `vocab.cat.${g.cat}` ? g.cat : t(`vocab.cat.${g.cat}`)}</h3>
+          <div className="vp-fld-grid">
+            {g.items.map((f) => (
+              <button type="button" key={f.id || f.key} className="vp-fld-card" onClick={() => onPick(f)}>
+                <span className="ic">{f.ic || '◆'}</span>
+                <b>{nameOf(f)}</b>
+                <span className="meta">{t('vocab.home.words', { n: f.cards || f.words || 0 })}</span>
               </button>
             ))}
           </div>
         </div>
-      </div>
-      <div className="v-ob-foot">
-        <button className="v-btn" onClick={onNext} disabled={loading}>
-          {loading ? '…' : T.startLesson}
-          {!loading && count ? ` · ${count}` : ''}
-        </button>
-      </div>
+      ))}
     </section>
   )
 }
 
-/* ─────────────── Выбор профессиональной сферы ─────────────── */
-function Fields({ T, index, current, onPick, onBack }) {
-  const [cat, setCat] = useState('all')
-  const [q, setQ] = useState('')
-  const fields = (index && index.fields) || []
-  const name = useCallback((key) => (T.field_names && T.field_names[key]) || key, [T])
-
-  const list = useMemo(() => {
-    const query = q.trim().toLowerCase()
-    return fields
-      .filter((f) => cat === 'all' || f.cat === cat)
-      .filter((f) => !query || (name(f.key) + ' ' + f.key).toLowerCase().includes(query))
-  }, [fields, cat, q, name])
+function BrowseLessons({ t, lang, index, scope, meta, activeLevel, onBack, onLevel, onOpen }) {
+  const isField = meta?.kind === 'field'
+  const levels = index?.levels || []
+  const title = isField
+    ? ((lang === 'kk' ? meta.kk : meta.ru) || meta.en || meta.id)
+    : t('vocab.pickLevel')
+  const lead = isField ? t('vocab.fieldLessonsLead') : t('vocab.pickLevelLead')
+  const units = scope.units || []
 
   return (
-    <section className="v-screen v-show">
-      <div className="v-fld-hd">
-        <button className="v-sess-x" onClick={onBack} aria-label="back">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-        <div className="v-fld-tt">{T.fldTitle}</div>
+    <section className="vp-pad">
+      <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
+      <div className="vp-page-hd">
+        <div>
+          <h1>{title}</h1>
+          <p className="vp-lead">{lead}</p>
+        </div>
       </div>
-      <div className="v-fld-lead">{T.fldLead}</div>
-      <div className="v-fld-search">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={T.fldSearch} />
-      </div>
-      <div className="v-fld-cats">
-        {FIELD_CATS.map((c) => (
-          <button key={c} className={`v-fld-cat${c === cat ? ' v-on' : ''}`} onClick={() => setCat(c)}>
-            {(T.cat_names && T.cat_names[c]) || c}
+      <div className="vp-tabs">
+        {levels.map((lv) => (
+          <button
+            type="button"
+            key={lv.id}
+            className={`vp-tab${(activeLevel || meta?.id) === lv.id ? ' on' : ''}`}
+            onClick={() => onLevel(lv.id)}
+          >
+            {lv.id}
+            <span className="n">{lv.cards || 0}</span>
           </button>
         ))}
       </div>
-      <div className="v-fld-grid">
-        {list.length ? (
-          list.map((f) => (
-            <button key={f.key} className={`v-fld-card${current === f.key ? ' v-sel' : ''}`} onClick={() => onPick(f.key)}>
-              <span className="v-fic">{f.ic}</span>
-              <span className="v-fnm">{name(f.key)}</span>
-              <span className="v-fcnt">{T.fldWords(f.count)}</span>
-            </button>
-          ))
-        ) : (
-          <div className="v-ovw-empty" style={{ gridColumn: '1/-1' }}>{T.fldEmpty}</div>
-        )}
-      </div>
+      {isField && activeLevel && <h3 style={{ margin: '0 0 14px' }}>{t('vocab.levelOf', { id: activeLevel })}</h3>}
+      {units.map((unit) => {
+        const items = (unit.lessons || []).map((no) => lessonOf(scope, no)).filter(Boolean)
+        return (
+          <div className="vp-unit" key={unit.no || unit.title}>
+            <h3>{unit.title}</h3>
+            <div className="vp-lessons">
+              {items.map((item) => (
+                <button type="button" key={item.no} className="vp-lesson" onClick={() => onOpen(item)}>
+                  <div className="body">
+                    <div className="kicker">{t('vocab.lessonTag', { n: item.no })}</div>
+                    <b>{item.title}</b>
+                    <span className="cnt">{t('vocab.home.words', { n: cardsOf(item).length })}</span>
+                  </div>
+                  <span className="ring">0</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </section>
   )
 }
 
-/* ─────────────── Обзор выборки ─────────────── */
-// Список уровня — это ~900 слов: рисуем их порциями, иначе экран превращается
-// в бесконечную простыню (57 000 px), а кнопка старта уезжает в самый низ.
-const OV_PAGE = 24
-// Строки «Показать ещё» нет в strings.js: тот файл генерируется
-// scripts/extract-vocab.js из прототипа и правки руками затрутся.
-const MORE = { ru: 'Показать ещё', kk: 'Тағы көрсету' }
-function Overview({ T, lang, scope, S, tr, speak, onStart, onBack }) {
-  const [q, setQ] = useState('')
-  const [limit, setLimit] = useState(OV_PAGE)
-  const personal = S.mode === 'personalized'
-  const full = useMemo(() => {
-    const query = q.trim().toLowerCase()
-    if (!query) return scope
-    return scope.filter((w) => (w.en + ' ' + w.ru + ' ' + w.kk).toLowerCase().includes(query))
-  }, [scope, q])
-  const shown = full.slice(0, limit)
-  const fieldName = (T.field_names && T.field_names[S.field]) || S.field
+function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }) {
+  const cards = cardsOf(lesson)
+  const source = meta?.kind === 'field'
+    ? ((lang === 'kk' ? meta.kk : meta.ru) || meta.en || meta.id)
+    : t('vocab.home.core')
+  const level = meta?.id || meta?.key || ''
 
   return (
-    <section className="v-screen v-show">
-      <div className="v-ovw-hd">
-        <button className="v-sess-x" onClick={onBack} aria-label="back">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-        <div className="v-ovw-tt">{T.ovTitle}</div>
-      </div>
-      <div className="v-ovw-cards">
-        <div className="v-ovw-stat v-lvl">
-          <div className="v-badge">📚</div>
-          <div className="v-k">{personal ? T.ovFieldAvail : T.ovAvail}</div>
-          <div className="v-v">{scope.length}</div>
-          <div className="v-s">{personal ? T.ovFieldLine(fieldName) : T.ovLevelLine(S.level)}</div>
+    <section className="vp-pad">
+      <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
+      <div className="vp-page-hd">
+        <div>
+          <div className="kicker" style={{ color: 'var(--vp-violet)', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+            {t('vocab.lessonTag', { n: lesson.no })}
+          </div>
+          <h1>{lesson.title}</h1>
         </div>
-        <div className="v-ovw-stat v-ses">
-          <div className="v-badge">🎯</div>
-          <div className="v-k">{T.ovSession(S.goalMin)}</div>
-          <div className="v-v">{collectCount(S.goalMin)}</div>
-          <div className="v-s">{T.ovSessionWords}</div>
-        </div>
-      </div>
-      {/* Главное действие — сразу под карточками: до списка слов, чтобы к
-          старту не приходилось прокручивать всю лексику уровня. */}
-      <div className="v-ovw-cta">
-        <button className="v-btn" onClick={onStart}>{T.ovStart}</button>
-      </div>
-      <div className="v-ovw-listlbl">
-        <div className="v-lbl">{personal ? T.ovListField || T.ovListLabel : T.ovListLabel}</div>
-        <div className="v-cnt">
-          {full.length > shown.length ? T.ovShown(shown.length, full.length) : String(full.length)}
-        </div>
-      </div>
-      <div className="v-ovw-search">
-        <input
-          value={q}
-          onChange={(e) => {
-            setQ(e.target.value)
-            setLimit(OV_PAGE)
-          }}
-          placeholder={T.ovSearch}
-        />
-      </div>
-      <div className="v-ovw-list">
-        {shown.length ? (
-          shown.map((w) => (
-            <div key={w.id} className="v-ovw-row">
-              <span className="v-em">{w.emo}</span>
-              <span className="v-tx">
-                <b>{w.en}</b>
-                <span>{tr(w)} · <span className="v-ipa2">{w.ipa}</span></span>
-              </span>
-              <button className="v-say" onClick={() => speak(w.en)} aria-label={T.listen}>🔊</button>
-            </div>
-          ))
-        ) : (
-          <div className="v-ovw-empty">{T.fldEmpty}</div>
-        )}
-        {full.length > shown.length && (
-          <button className="v-ovw-more" onClick={() => setLimit((n) => n + OV_PAGE)}>
-            {MORE[lang] || MORE.ru} · {full.length - shown.length}
+        <div className="actions">
+          <button type="button" className="vp-btn vp-practice-desk" onClick={onPractice} disabled={!cards.length}>
+            <span className="vp-play" aria-hidden="true"><IconPlay /></span>
+            {t('vocab.startPractice')}
           </button>
-        )}
+        </div>
       </div>
+      <div className="vp-words">
+        {cards.map((card) => (
+          <div className="vp-wcard" key={card.id || card.en}>
+            <div className="top">
+              <b>{card.en}</b>
+              <button type="button" className="vp-spk" onClick={() => speak(card.en)} aria-label="speak"><IconSpeaker /></button>
+            </div>
+            <div className="tr">{trOf(card, lang)}</div>
+            {exampleHtml(card) ? (
+              <div className="ex" dangerouslySetInnerHTML={{ __html: exampleHtml(card) }} />
+            ) : card.def ? (
+              <div className="ex">{card.def}</div>
+            ) : null}
+            <div className="foot">{source} · {level} · {t('vocab.lesson.lesson')} {lesson.no}</div>
+          </div>
+        ))}
+      </div>
+      {cards.length > 0 && (
+        <div className="vp-sticky-cta">
+          <button type="button" className="vp-btn" onClick={onPractice}>
+            <span className="vp-play" aria-hidden="true"><IconPlay /></span>
+            {t('vocab.startPractice')}
+          </button>
+        </div>
+      )}
     </section>
   )
 }
 
-/* ─────────────── Этап 1: карточки «знаю / не знаю» ─────────────── */
-function Collect({ list, ctx, onDone, onExit }) {
-  const [idx, setIdx] = useState(0)
-  const [flipped, setFlipped] = useState(false)
-  const { T } = ctx
-  const item = list[idx]
+function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, onPractice }) {
+  const [openAdd, setOpenAdd] = useState(false)
+  const [detail, setDetail] = useState(null)
+  const [word, setWord] = useState('')
+  const [tr, setTr] = useState('')
+  const words = session?.words || []
 
-  useEffect(() => {
-    if (!item) return
-    setFlipped(false)
-    const id = setTimeout(() => ctx.speak(item.w.en), 150)
-    return () => clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx])
+  const add = () => {
+    if (!word.trim() || !tr.trim()) return
+    const body = { word: word.trim(), source: 'manual' }
+    if (lang === 'kk') body.translationKz = tr.trim()
+    else body.translationRu = tr.trim()
+    saveStudentVocab(token, body)
+      .then(() => openLessonVocab('saved', token))
+      .then((next) => {
+        onChanged(next)
+        setWord('')
+        setTr('')
+        setOpenAdd(false)
+        flash(t('vocab.addOk'))
+      })
+      .catch(() => flash(t('vocab.addFail')))
+  }
 
-  useEffect(() => {
-    if (!item) onDone()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item])
-
-  if (!item) return null
-  const w = item.w
-
-  const choose = (known) => {
-    item.known = known
-    if (known) ctx.sfx('reveal')
-    buzz(known ? 15 : 25)
-    setIdx((i) => i + 1)
+  const remove = (id) => {
+    deleteStudentVocabWord(token, id)
+      .then(() => openLessonVocab('saved', token))
+      .then((next) => {
+        onChanged(next)
+        setDetail(null)
+      })
+      .catch(() => flash(t('vocab.delFail')))
   }
 
   return (
-    <section className="v-screen v-show">
-      <div className="v-sess-top">
-        <button className="v-sess-x" onClick={onExit} aria-label="exit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-        <div className="v-prog"><i style={{ width: (idx / list.length) * 100 + '%' }} /></div>
-        <div className="v-sess-timer">{idx + 1} / {list.length}</div>
+    <section className="vp-pad">
+      <button type="button" className="vp-back" onClick={onBack}>← {t('vocab.back')}</button>
+      <div className="vp-page-hd">
+        <div>
+          <h1>{t('vocab.home.mine')}</h1>
+          <p className="vp-lead">{t('vocab.mineLead')}</p>
+        </div>
+        <div className="actions">
+          <button type="button" className="vp-btn vp-practice-desk" onClick={onPractice} disabled={!words.length}>
+            <span className="vp-play" aria-hidden="true"><IconPlay /></span>
+            {t('vocab.startPractice')}
+          </button>
+        </div>
       </div>
-      <div className="v-sess-sub"><div className="v-round-name"><span className="v-e">🃏</span>{T.collectTitle}</div></div>
-
-      <div className="v-stage v-enter">
-        <div
-          className={`v-flip${flipped ? ' v-flipped' : ''}`}
-          onClick={(e) => {
-            if (e.target.closest('.v-spk')) return
-            setFlipped((f) => {
-              if (!f) ctx.speak(w.en)
-              return !f
-            })
-          }}
-        >
-          <div className="v-flip-inner">
-            <div className="v-flip-face v-flip-front">
-              <div className="v-ff-chips">
-                <span className="v-chip">{w.pos}</span>
-                <span className="v-chip v-cyan">{w.lvl}</span>
-              </div>
-              <div className="v-ff-word">{w.en}</div>
-              <div className="v-ff-ipa">{w.ipa}</div>
-              <SpeakBtn text={w.en} ctx={ctx} className="v-spk v-lg" />
-              <div className="v-ff-hint">{T.tapReveal}</div>
+      <div className="vp-mine-tools">
+        <button type="button" className="vp-btn ghost" onClick={() => setOpenAdd(true)}>{t('vocab.add')}</button>
+      </div>
+      {!words.length && <p className="vp-state">{t('vocab.lesson.empty')}</p>}
+      <div className="vp-words">
+        {words.map((w) => (
+          <button type="button" className="vp-wcard" key={w.id || w.word} onClick={() => setDetail(w)}>
+            <div className="top">
+              <b>{w.word}</b>
+              <span
+                className="vp-spk"
+                role="presentation"
+                onClick={(e) => { e.stopPropagation(); speak(w.word) }}
+              ><IconSpeaker /></span>
             </div>
-            <div className="v-flip-face v-flip-back">
-              <Illus w={w} />
-              <div className="v-fb-body">
-                <div className="v-fb-word2">{w.en}<SpeakBtn text={w.en} ctx={ctx} className="v-spk v-smk" /></div>
-                <div className="v-fb-tr2">{ctx.tr(w)}<span className="v-alt">{altTrW(w, ctx.lang)}</span></div>
-                <div className="v-fb-def2">{w.def}</div>
-                <div className="v-fb-ex2">
-                  <span className="v-lab">{T.example}</span>
-                  <span dangerouslySetInnerHTML={{ __html: exampleHtml(w.ex) }} />
-                  {w.ph && (
-                    <div style={{ marginTop: 8, color: 'var(--ink-30)', fontSize: 13 }}>
-                      <b style={{ color: 'var(--violet)' }}>{T.phrase}:</b> {w.ph}
-                    </div>
-                  )}
-                </div>
-                {(w.syn || w.ant) && (
-                  <div className="v-fb-sa">
-                    {w.syn && <span className="v-sa v-syn">≈ {w.syn}</span>}
-                    {w.ant && <span className="v-sa v-ant">≠ {w.ant}</span>}
-                  </div>
-                )}
-              </div>
+            <div className="tr">{trOf(w, lang)}</div>
+            <div className="foot">{w.source || t('vocab.home.mine')}</div>
+          </button>
+        ))}
+      </div>
+      {words.length > 0 && (
+        <div className="vp-sticky-cta">
+          <button type="button" className="vp-btn" onClick={onPractice}>
+            <span className="vp-play" aria-hidden="true"><IconPlay /></span>
+            {t('vocab.startPractice')}
+          </button>
+        </div>
+      )}
+
+      {detail && (
+        <div className="vp-modal" onClick={() => setDetail(null)}>
+          <div className="box" onClick={(e) => e.stopPropagation()}>
+            <div className="mhd">
+              <b>{detail.word}</b>
+              {detail.id != null && (
+                <button type="button" className="icon-btn danger" onClick={() => remove(detail.id)} aria-label="delete"><IconTrash /></button>
+              )}
+              <button type="button" className="icon-btn" onClick={() => setDetail(null)} aria-label="close"><IconX /></button>
+            </div>
+            <div className="mlbl">{t('vocab.translation')}</div>
+            <div className="mval">{trOf(detail, lang)}</div>
+            {(detail.example || detail.ex) && (
+              <>
+                <div className="mlbl">{t('vocab.example')}</div>
+                <div className="mval">{detail.example || detail.ex}</div>
+              </>
+            )}
+            <div className="macts">
+              <button type="button" className="vp-btn ghost" onClick={() => speak(detail.word)}>
+                <IconSpeaker /> {t('vocab.listenWord')}
+              </button>
+              <button type="button" className="vp-btn" onClick={() => speak(trOf(detail, lang))}>
+                <IconSpeaker /> {t('vocab.listenTr')}
+              </button>
             </div>
           </div>
         </div>
-        <div className="v-col-actions">
-          <button className="v-btn v-dont" onClick={() => choose(false)}>{T.dont}</button>
-          <button className="v-btn v-green" onClick={() => choose(true)}>{T.know}</button>
+      )}
+
+      {openAdd && (
+        <div className="vp-modal" onClick={() => setOpenAdd(false)}>
+          <div className="box" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 22 }}>{t('vocab.add')}</h2>
+            <label>{t('vocab.addWord')}</label>
+            <input value={word} onChange={(e) => setWord(e.target.value)} />
+            <label>{t('vocab.addTr')}</label>
+            <input value={tr} onChange={(e) => setTr(e.target.value)} />
+            <button type="button" className="vp-btn wide" style={{ marginTop: 16 }} onClick={add}>{t('vocab.save')}</button>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   )
 }
-
