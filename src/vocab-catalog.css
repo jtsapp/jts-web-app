@@ -408,6 +408,12 @@
 }
 .vp-fb.ok { background: var(--vp-green-lt); color: #15803d; }
 .vp-fb.no { background: var(--vp-red-lt); color: var(--vp-red); }
+.vp-right-answer {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+}
 
 .vp-foot { margin-top: 8px; }
 .vp-listen-big {

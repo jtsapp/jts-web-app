@@ -424,6 +424,9 @@ function DictationUI({ word, t, speak, onDone }) {
           <span className={`vp-fb ${checked ? 'ok' : 'no'}`}>
             {checked ? <><IconCheck /> {t('vocab.prac.correct')}</> : <><IconX /> {t('vocab.prac.incorrect')}</>}
           </span>
+          {!checked && (
+            <p className="vp-right-answer">{t('vocab.prac.rightAnswer', { word: word.word })}</p>
+          )}
         </div>
       )}
       <div className="vp-foot">
