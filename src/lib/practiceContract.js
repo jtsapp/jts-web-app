@@ -6,12 +6,21 @@
 // (public/practice/situations/), не путать с ситуативками из Java-бэкенда: те
 // адресуются по id и ограничиваются через ContentType.SITUATIVKA. Здесь
 // единица прохождения — уровень (их 5), других событий у статики нет.
-export const PRACTICE_MODULES = ['vocab', 'grammar', 'listening', 'shadowing', 'situations']
+// 'workbooks' — воркбуки A0–B2 (public/practice/workbooks/), та же модель:
+// единица = открытый CEFR-уровень.
+export const PRACTICE_MODULES = [
+  'vocab',
+  'grammar',
+  'listening',
+  'shadowing',
+  'situations',
+  'workbooks',
+]
 
 // Модули, чей state — это растущее множество пройденных id: прохождение нельзя
 // терять при синхронизации двух устройств, поэтому их POST объединяет, а не
 // заменяет.
-const DONE_MODULES = ['grammar', 'listening', 'shadowing', 'situations']
+const DONE_MODULES = ['grammar', 'listening', 'shadowing', 'situations', 'workbooks']
 
 export function isValidModule(m) {
   return PRACTICE_MODULES.includes(m)

@@ -22,6 +22,8 @@ const CONTENT_TYPE_BY_MODULE = {
   // Статические уровни «Speaking Practice A1–C1»; единица счёта — открытый
   // уровень (из 5), см. ContentType.PRACTICE_SITUATIONS на бэкенде.
   situations: 'PRACTICE_SITUATIONS',
+  // Воркбуки A0–B2 (public/practice/workbooks/); единица — открытый уровень.
+  workbooks: 'PRACTICE_WORKBOOKS',
 }
 
 function completedCountFor(moduleName, state) {

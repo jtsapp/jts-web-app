@@ -21,6 +21,8 @@ import {
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
+import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
+import { readWorkbooksDone, markWorkbookLevelDone } from '../practice/workbooks/workbooksProgress.js'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
@@ -218,6 +220,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [openSituation, setOpenSituation] = useState(null)
   // Студент упёрся в квоту статических уровней — показываем экран лимита.
   const [situationsBlocked, setSituationsBlocked] = useState(false)
+  const [workbooksBlocked, setWorkbooksBlocked] = useState(false)
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
@@ -229,6 +232,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Ситуативки из бэкенда ограничиваются отдельно, флагом locked на карточке —
   // в этой же секции лежат оба источника, внешне неразличимые.
   const situationsEntitlement = usePracticeEntitlement('situations', token)
+  const workbooksEntitlement = usePracticeEntitlement('workbooks', token)
 
   // Нативный оверлей «Speaking A1–C1» — статический бандл (iframe на HTML-
   // страницу), внутри него точечных locked-флагов нет: показываем/прячем
@@ -296,6 +300,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     const load = () => {
       import('../practice/fairytale/taleWorld.js').catch(() => {})
       import('../practice/situations/situationsOverlay.js').catch(() => {})
+      import('../practice/workbooks/workbooksOverlay.js').catch(() => {})
     }
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(load, { timeout: 4000 })
@@ -360,6 +365,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     { key: 'grammar', label: t('practice.chip.grammar') },
     { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
+    { key: 'workbooks', label: t('practice.chip.workbooks') },
     { key: 'tales', label: t('practice.chip.tales') },
     { key: 'memes', label: t('practice.chip.memes') },
     { key: 'books', label: t('practice.chip.books') },
@@ -432,11 +438,37 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     }
   }
 
+  // Воркбуки A0–B2: тот же оверлейный паттерн, что у Speaking Practice.
+  const openWorkbookLevel = async (level) => {
+    if (taleLoadingRef.current) return
+    const seen = readWorkbooksDone()
+    if (!seen.includes(level) && !workbooksEntitlement.allowed) {
+      setWorkbooksBlocked(true)
+      return
+    }
+    taleLoadingRef.current = true
+    try {
+      const mod = await import('../practice/workbooks/workbooksOverlay.js')
+      mod.openWorkbooks(level)
+      if (!seen.includes(level)) markWorkbookLevelDone(level)
+    } finally {
+      taleLoadingRef.current = false
+    }
+  }
+
   // Лимит на разговорную практику — тот же takeover, что у грамматики.
   if (situationsBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
         <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} />
+      </LearningLayout>
+    )
+  }
+
+  if (workbooksBlocked) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <PracticeLimitScreen limit={workbooksEntitlement.limit} onBack={() => setWorkbooksBlocked(false)} isDemoAccount={isDemoAccount} />
       </LearningLayout>
     )
   }
@@ -731,6 +763,38 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                 ? <Empty loading={state.loading} skeleton="portrait" />
                 : <Rail grid={grid}>{cards}</Rail>
             })()}
+          </section>
+          )}
+
+          {/* Воркбуки A0–B2 — статичные HTML-курсы, оверлей как у Speaking Practice */}
+          {show('workbooks') && (
+          <section id="sec-workbooks" className="pp-sec">
+            <SectionHead title={t('practice.chip.workbooks')} onAll={() => setFilter('workbooks')} />
+            <Rail grid={grid}>
+              {WORKBOOK_LEVELS.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  className="pp-scard"
+                  onClick={() => openWorkbookLevel(l.code)}
+                >
+                  <div
+                    className="pp-thumb pp-thumb--workbook"
+                    style={{ '--wb-accent': l.accent }}
+                    aria-hidden="true"
+                  >
+                    <span className="pp-workbook-mark">{l.label}</span>
+                    <span className="pp-play"><PlayIcon size={22} /></span>
+                  </div>
+                  <div className="pp-scard__title">
+                    Workbook · {l.label} {l.desc}
+                  </div>
+                  <div className="pp-scard__meta">
+                    {l.units} {t('practice.workbooks.units')} · {l.lessons} {t('practice.workbooks.lessons')}
+                  </div>
+                </button>
+              ))}
+            </Rail>
           </section>
           )}
 
