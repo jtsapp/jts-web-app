@@ -1,6 +1,9 @@
 // Строки движка «Грамматики» — взяты 1-в-1 из грамматика_практика.html
 // (I18N — подписи UI урока/упражнений, TLAB — переводы ярлыков заданий).
 // Генерируется вручную из источника; при обновлении курса пере-сверить.
+//
+// Исключение — «gap_answer»: в источнике его нет, он наш. Текстовые задания
+// показывают им правильный ответ в разборе (см. TextInput в ActivityPlayer).
 
 export const UI = {
   "ru": {
@@ -59,6 +62,7 @@ export const UI = {
     "cat_no": "Некоторые слова не в той группе — зелёные верны, красные стоят не там.",
     "match_ok": "Все пары верны! ",
     "match_no": "Некоторые пары были неверны — показан правильный ответ. ",
+    "gap_answer": "Правильный ответ: ",
     "tf_ok": "Идеально — вы нашли их все!",
     "tf_no": "Правильные ответы отмечены. Обратите внимание, какие предложения нарушили правило.",
     "dlg_ok": "Безупречный диалог! Вы использовали грамматику естественно. 🗣️",
@@ -130,6 +134,7 @@ export const UI = {
     "cat_no": "Some words are in the wrong group — green = right, red = wrong spot.",
     "match_ok": "Every match is correct! ",
     "match_no": "Some pairs were wrong — the correct answer is shown. ",
+    "gap_answer": "Correct answer: ",
     "tf_ok": "Perfect — you spotted them all!",
     "tf_no": "The correct answers are marked. Notice which sentences broke the rule.",
     "dlg_ok": "Flawless conversation! You used the grammar naturally. 🗣️",
@@ -201,6 +206,7 @@ export const UI = {
     "cat_no": "Кейбір сөздер қате топта — жасылы дұрыс, қызылы қате орында.",
     "match_ok": "Барлық жұп дұрыс! ",
     "match_no": "Кейбір жұптар қате болды — дұрыс жауап көрсетілді. ",
+    "gap_answer": "Дұрыс жауап: ",
     "tf_ok": "Тамаша — бәрін таптыңыз!",
     "tf_no": "Дұрыс жауаптар белгіленген. Қай сөйлемдер ережені бұзғанына назар аударыңыз.",
     "dlg_ok": "Мінсіз әңгіме! Грамматиканы табиғи қолдандыңыз. 🗣️",

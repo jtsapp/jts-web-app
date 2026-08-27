@@ -260,7 +260,7 @@ test.describe('Грамматика — движок упражнений', () =
     await expect(page.locator('.gr-reward')).toContainText('+10')
   })
 
-  test('gap: неверный ответ показывает правильный, альтернативная форма засчитывается', async ({
+  test('gap: ошибка оставляет ответ студента и называет верный, альтернативная форма засчитывается', async ({
     page,
   }) => {
     await openUnit1(page)
@@ -273,12 +273,14 @@ test.describe('Грамматика — движок упражнений', () =
 
     await advanceTo(page, acts, target)
 
-    // Неверный ответ: поле краснеет и показывает правильный вариант.
+    // Неверный ответ: поле краснеет, но остаётся с текстом студента — иначе он
+    // не понимает, что именно написал. Верный вариант называет разбор.
     await page.locator('.gr-gap-input').fill('zzzz')
     await page.locator('.gr-check').click()
     await expect(page.locator('.gr-gap-input')).toHaveClass(/wrong/)
-    await expect(page.locator('.gr-gap-input')).toHaveValue(acts[target].answer)
+    await expect(page.locator('.gr-gap-input')).toHaveValue('zzzz')
     await expect(page.locator('.gr-fb')).toHaveClass(/no/)
+    await expect(page.locator('.gr-fb__why')).toContainText(acts[target].answer)
 
     // Альтернативная форма из данных источника принимается как верная.
     const alt = acts.findIndex(
