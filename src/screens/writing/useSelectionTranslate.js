@@ -3,6 +3,7 @@ import { useI18n } from '../../i18n.jsx'
 import { buildGloss, glossLookup, wordByWord } from '../../practice/writing/gloss.js'
 import { wordsOf } from '../../practice/writing/engine.js'
 import { addMyWord, cachedTranslation, rememberTranslation } from '../../practice/writing/writingStore.js'
+import { translateWord } from '../../lib/wordTranslate.js'
 
 // Максимум выделения — как в прототипе и на сервере (/api/writing/translate):
 // переводим фразу из урока, а не главу; больше — сигнал скрипта.
@@ -149,18 +150,37 @@ export default function useSelectionTranslate({ levelData, token, enabled }) {
         render({ ru: cached.ru, kk: cached.kk, src: 'cache' })
         return
       }
-      if (!tok) {
-        // Анониму сеть недоступна (роут требует Bearer) — сразу подстрочник;
-        // wordByWord вернёт null, если не узнал ни слова, render покажет
-        // заметку «перевода нет».
-        render(wordByWord(g, text))
-        return
-      }
 
       const pending = document.createElement('div')
       pending.className = 'wr-tpop__line'
       pending.textContent = tt('writing.tip.translating')
       body.appendChild(pending)
+
+      // Фолбэк «как в Книгах»: переводчик читалки (lib/wordTranslate.js, gtx +
+      // общий кэш jts_word_tr_v2) двумя вызовами — ru и kk. Это путь анонима
+      // (роут Haiku требует Bearer) и страховка на 429/сбой Haiku: тултип
+      // обязан переводить всегда, как это уже делает раздел книг.
+      function tryGtx(my) {
+        Promise.all([translateWord(text, 'ru'), translateWord(text, 'kk')])
+          .then(([ru, kk]) => {
+            if (my !== seq) return
+            if (ru?.tr && kk?.tr) {
+              rememberTranslation(text, ru.tr, kk.tr)
+              render({ ru: ru.tr, kk: kk.tr, src: 'live' })
+            } else {
+              render(wordByWord(g, text))
+            }
+          })
+          .catch(() => {
+            if (my !== seq) return
+            render(wordByWord(g, text))
+          })
+      }
+
+      if (!tok) {
+        tryGtx(my)
+        return
+      }
 
       // 12 сек — таймаут прототипа (translateRemote, 10215); AbortController
       // вместо флага done: hide() и новое show() ещё и рвут сам запрос.
@@ -184,13 +204,13 @@ export default function useSelectionTranslate({ levelData, token, enabled }) {
             rememberTranslation(text, data.ru, data.kk)
             render({ ru: data.ru, kk: data.kk, src: 'live' })
           } else {
-            render(wordByWord(g, text))
+            tryGtx(my)
           }
         })
         .catch(() => {
           clearTimeout(timer)
           if (my !== seq) return
-          render(wordByWord(g, text))
+          tryGtx(my)
         })
     }
 

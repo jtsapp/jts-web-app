@@ -291,7 +291,12 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-      <div className="wr">
+      {/* data-selectable снимает глобальный запрет выделения (styles.css:39):
+          весь раздел — «поверхность перевода», выделение слова открывает
+          тултип ru+kk. Кнопки внутри всё равно не выделяются (правило
+          [data-selectable] button), а копирование по-прежнему глушит
+          NoCopyGuard — выделить и перевести можно, унести текст нельзя. */}
+      <div className="wr" data-selectable="">
         <div className="wr-top">
           <button type="button" className="wr-back" onClick={goBack}>
             ← {backLabel}
