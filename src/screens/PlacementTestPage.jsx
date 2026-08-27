@@ -406,7 +406,7 @@ function WithAudio({ item, draft, setDraft, order, lang }) {
         disabled={plays >= max}
         onClick={() => { setPlays((p) => p + 1); ref.current?.play().catch(() => {}) }}
       >
-        ▶ {T(lang, 'play')} <span className="plc-plays">{max - plays}</span>
+        {T(lang, 'play')} <span className="plc-plays">{max - plays}</span>
       </button>
       <div className="plc-list">
         {order?.map((oi) => (
@@ -441,7 +441,7 @@ function MinPair({ item, draft, setDraft, lang }) {
   return (
     <>
       <p className="plc-stem">{T(lang, 'introMinpair')}</p>
-      <button className="plc-audio" onClick={say}>▶ {T(lang, 'play')}</button>
+      <button className="plc-audio" onClick={say}>{T(lang, 'play')}</button>
       <div className="plc-list">
         {opts.map((w, i) => (
           <button key={w} type="button" className={`plc-opt ${draft.optIndex === i ? 'on' : ''}`}
