@@ -1,0 +1,1063 @@
+{
+  "id": "a1-form",
+  "title": "About me: a form",
+  "subtitle": "Name, age, city, hobbies — the first form you fill in",
+  "goal": "You can fill in a simple form about yourself: name, age, city, school, hobby, and one sentence about what you like.",
+  "why": "Every language school, hostel, competition and online course starts with a form. If you can fill it in without help, nobody has to translate for you.",
+  "example": "Aigerim filled in a form for a free online course. Eight lines, no mistakes — and she was accepted the same evening.",
+  "targetWords": [
+    30,
+    50
+  ],
+  "register": "neutral",
+  "timerMinutes": 15,
+  "writeTask": "Fill in a form about yourself (30–50 words): your name, age, city, school, one hobby and one sentence about your plans.",
+  "level": "a1",
+  "outline": [
+    {
+      "label": "Name",
+      "job": "Give your full name"
+    },
+    {
+      "label": "Age",
+      "job": "Say how old you are"
+    },
+    {
+      "label": "Home",
+      "job": "Say where you live"
+    },
+    {
+      "label": "School",
+      "job": "Say where you study"
+    },
+    {
+      "label": "Family",
+      "job": "Say who lives with you"
+    },
+    {
+      "label": "Hobby",
+      "job": "Name one hobby"
+    },
+    {
+      "label": "Plans",
+      "job": "Say what you want to do"
+    }
+  ],
+  "phrases": [
+    {
+      "fn": "Opening",
+      "items": [
+        {
+          "t": "My name is …",
+          "lv": "A1",
+          "ru": "Меня зовут …",
+          "kk": "Менің атым …"
+        },
+        {
+          "t": "I am … years old.",
+          "lv": "A1",
+          "ru": "Мне … лет.",
+          "kk": "Мен … жастамын."
+        }
+      ]
+    },
+    {
+      "fn": "Giving facts",
+      "items": [
+        {
+          "t": "I live in …",
+          "lv": "A1",
+          "ru": "Я живу в …",
+          "kk": "Мен … тұрамын."
+        },
+        {
+          "t": "I study at …",
+          "lv": "A1",
+          "ru": "Я учусь в …",
+          "kk": "Мен … оқимын."
+        }
+      ]
+    },
+    {
+      "fn": "Describing",
+      "items": [
+        {
+          "t": "My hobby is …",
+          "lv": "A1",
+          "ru": "Моё хобби — …",
+          "kk": "Менің хоббиім — …"
+        },
+        {
+          "t": "I like … very much.",
+          "lv": "A1",
+          "ru": "Мне очень нравится …",
+          "kk": "Маған … қатты ұнайды."
+        }
+      ]
+    },
+    {
+      "fn": "Closing",
+      "items": [
+        {
+          "t": "I want to be …",
+          "lv": "A1",
+          "ru": "Я хочу стать …",
+          "kk": "Мен … болғым келеді."
+        },
+        {
+          "t": "Thank you.",
+          "lv": "A1",
+          "ru": "Спасибо.",
+          "kk": "Рақмет."
+        }
+      ]
+    }
+  ],
+  "connectors": [
+    {
+      "fn": "Adding",
+      "items": [
+        "and",
+        "also",
+        "too"
+      ],
+      "hint": "You put one more fact next to the first one."
+    },
+    {
+      "fn": "Contrast",
+      "items": [
+        "but",
+        "however"
+      ],
+      "hint": "The second part is a surprise after the first."
+    },
+    {
+      "fn": "Reason",
+      "items": [
+        "because",
+        "so"
+      ],
+      "hint": "You say why something happens."
+    },
+    {
+      "fn": "Time",
+      "items": [
+        "then",
+        "after that",
+        "first"
+      ],
+      "hint": "You put the events in order."
+    }
+  ],
+  "wordlist": [
+    "form",
+    "surname",
+    "address",
+    "hobby",
+    "age",
+    "city",
+    "school",
+    "future"
+  ],
+  "gloss": [
+    [
+      "form",
+      "анкета",
+      "сауалнама"
+    ],
+    [
+      "surname",
+      "фамилия",
+      "тегі"
+    ],
+    [
+      "address",
+      "адрес",
+      "мекенжай"
+    ],
+    [
+      "hobby",
+      "хобби",
+      "хобби"
+    ],
+    [
+      "age",
+      "возраст",
+      "жасы"
+    ],
+    [
+      "city",
+      "город",
+      "қала"
+    ],
+    [
+      "school",
+      "школа",
+      "мектеп"
+    ],
+    [
+      "future",
+      "будущее",
+      "болашақ"
+    ]
+  ],
+  "checklist": [
+    {
+      "text": "I used a phrase for opening",
+      "auto": [
+        "my name is",
+        "i am …"
+      ]
+    },
+    {
+      "text": "I used a phrase for giving facts",
+      "auto": [
+        "i live in",
+        "i study at"
+      ]
+    },
+    {
+      "text": "I used a phrase for describing",
+      "auto": [
+        "my hobby is",
+        "i like …"
+      ]
+    },
+    {
+      "text": "I used a phrase for closing",
+      "auto": [
+        "i want to",
+        "thank you"
+      ]
+    },
+    {
+      "text": "I used at least two linking words",
+      "auto": [
+        "and",
+        "but",
+        "because",
+        "so",
+        "also",
+        "then"
+      ]
+    },
+    {
+      "text": "I used the topic words of this genre",
+      "auto": [
+        "form",
+        "surname",
+        "address",
+        "hobby",
+        "age",
+        "city",
+        "school",
+        "future"
+      ]
+    },
+    {
+      "text": "I wrote in paragraphs, not one block",
+      "manual": true
+    },
+    {
+      "text": "I checked my verb tenses",
+      "manual": true
+    },
+    {
+      "text": "I checked articles a / an / the",
+      "manual": true
+    },
+    {
+      "text": "I read the text out loud before sending",
+      "manual": true
+    }
+  ],
+  "rubricHints": {
+    "task": "Did you answer every part of the task? At A1 that means: all the facts the task asks for.",
+    "organisation": "Are the sentences in a logical order, with and, but, because between them?",
+    "vocabulary": "Did you use the topic words, or only 'good', 'bad' and 'nice'?",
+    "grammar": "Word order, the verb to be, articles a/an and -s with he, she, it."
+  },
+  "tasks": [
+    {
+      "id": "t1",
+      "step": 4,
+      "type": "word-order",
+      "items": [
+        {
+          "id": "wo0",
+          "words": [
+            "I",
+            "study",
+            "at",
+            "school",
+            "number",
+            "25."
+          ],
+          "why": "Prepositions are fixed by phrase, not by logic: on Monday, in May, at 6 p.m."
+        },
+        {
+          "id": "wo1",
+          "words": [
+            "I",
+            "am",
+            "fifteen",
+            "years",
+            "old."
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "wo2",
+          "words": [
+            "My",
+            "favourite",
+            "subject",
+            "is",
+            "English."
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "wo3",
+          "words": [
+            "My",
+            "name",
+            "is",
+            "Aigerim",
+            "Serikova."
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "wo4",
+          "words": [
+            "I",
+            "want",
+            "to",
+            "be",
+            "a",
+            "designer."
+          ],
+          "why": "English word order is fixed: subject → verb → object. Time and place go at the end."
+        },
+        {
+          "id": "wo5",
+          "words": [
+            "I",
+            "live",
+            "in",
+            "Almaty",
+            "with",
+            "my",
+            "family."
+          ],
+          "why": "Prepositions are fixed by phrase, not by logic: on Monday, in May, at 6 p.m."
+        },
+        {
+          "id": "wo6",
+          "words": [
+            "I",
+            "have",
+            "two",
+            "brothers",
+            "and",
+            "one",
+            "sister."
+          ],
+          "why": "After a number or 'many', a countable noun stays plural: two emails, many people."
+        },
+        {
+          "id": "wo7",
+          "words": [
+            "My",
+            "address",
+            "is",
+            "Abay",
+            "Street",
+            "14."
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        }
+      ],
+      "title": "Build the sentence",
+      "howto": "Tap the words in the right order — they move into the line. Tap a word in the line to send it back. English word order is fixed, so the order itself carries the meaning."
+    },
+    {
+      "id": "t2",
+      "step": 4,
+      "type": "transform",
+      "items": [
+        {
+          "id": "tr0",
+          "cue": "Add the missing preposition",
+          "src": "I go school every day.",
+          "answers": [
+            "I go to school every day."
+          ],
+          "must": [
+            "to school"
+          ],
+          "why": "Go takes to before a place: go to school, go to work."
+        },
+        {
+          "id": "tr1",
+          "cue": "Put it in the past",
+          "src": "I go to the park.",
+          "answers": [
+            "I went to the park."
+          ],
+          "must": [
+            "went"
+          ],
+          "why": "Go is irregular: the past form is went."
+        },
+        {
+          "id": "tr2",
+          "cue": "Add the missing verb",
+          "src": "I from Kazakhstan.",
+          "answers": [
+            "I am from Kazakhstan."
+          ],
+          "must": [
+            "am from"
+          ],
+          "why": "English always needs the verb to be: I AM from Kazakhstan."
+        },
+        {
+          "id": "tr3",
+          "cue": "Make it negative",
+          "src": "I like fish.",
+          "answers": [
+            "I do not like fish.",
+            "I don't like fish."
+          ],
+          "must": [
+            "not like"
+          ],
+          "why": "A negative sentence needs do not or don't before the verb."
+        },
+        {
+          "id": "tr4",
+          "cue": "Make it a question",
+          "src": "You live in Astana.",
+          "answers": [
+            "Do you live in Astana?"
+          ],
+          "must": [
+            "do you live"
+          ],
+          "why": "A question with a normal verb starts with do or does."
+        },
+        {
+          "id": "tr5",
+          "cue": "Use can",
+          "src": "I swim very well.",
+          "answers": [
+            "I can swim very well."
+          ],
+          "must": [
+            "can swim"
+          ],
+          "why": "Can shows ability, and after it the verb has no to."
+        },
+        {
+          "id": "tr6",
+          "cue": "Add an article",
+          "src": "I have dog.",
+          "answers": [
+            "I have a dog."
+          ],
+          "must": [
+            "a dog"
+          ],
+          "why": "A singular countable noun needs a or an."
+        },
+        {
+          "id": "tr7",
+          "cue": "Make it polite",
+          "src": "Give me your phone number.",
+          "answers": [
+            "Can you give me your phone number, please?"
+          ],
+          "must": [
+            "can you"
+          ],
+          "why": "An order becomes a request with Can you…, please?"
+        }
+      ],
+      "title": "Rewrite it",
+      "howto": "Read the sentence and the instruction next to it. Write your own version: same meaning, different form. The model answer appears after you check."
+    },
+    {
+      "id": "t3",
+      "step": 4,
+      "type": "connectors",
+      "bank": [
+        "because",
+        "Then",
+        "so",
+        "and",
+        "but",
+        "Also"
+      ],
+      "items": [
+        {
+          "id": "cn0",
+          "before": "I am tired",
+          "gap": true,
+          "after": "I worked all day.",
+          "answer": "because",
+          "why": "Because explains how you feel."
+        },
+        {
+          "id": "cn1",
+          "before": "First I do my homework.",
+          "gap": true,
+          "after": ", I watch a film.",
+          "answer": "Then",
+          "why": "Then puts the second action after the first in time."
+        },
+        {
+          "id": "cn2",
+          "before": "It is my birthday",
+          "gap": true,
+          "after": "I invite my friends.",
+          "answer": "so",
+          "why": "So shows what you do as a result."
+        },
+        {
+          "id": "cn3",
+          "before": "My sister is ten",
+          "gap": true,
+          "after": "she goes to school.",
+          "answer": "and",
+          "why": "And joins two facts about the same person."
+        },
+        {
+          "id": "cn4",
+          "before": "I want to come",
+          "gap": true,
+          "after": "I am ill today.",
+          "answer": "but",
+          "why": "But introduces the problem after the wish."
+        },
+        {
+          "id": "cn5",
+          "before": "I am learning English",
+          "gap": true,
+          "after": "I want to travel.",
+          "answer": "because",
+          "why": "Because answers the question 'why?'."
+        },
+        {
+          "id": "cn6",
+          "before": "The film was long",
+          "gap": true,
+          "after": "it was very good.",
+          "answer": "but",
+          "why": "But joins a small problem to a positive opinion."
+        },
+        {
+          "id": "cn7",
+          "before": "I have a cat",
+          "gap": true,
+          "after": "a small dog.",
+          "answer": "and",
+          "why": "And joins two things in one list."
+        }
+      ],
+      "title": "Add the linking word",
+      "howto": "The linking words are in the bank at the top. Tap a linking word, then tap the gap — or drag it with the mouse. Each word is used once."
+    },
+    {
+      "id": "t4",
+      "step": 4,
+      "type": "punctuation",
+      "items": [
+        {
+          "id": "pu0",
+          "raw": "my name is aigerim serikova",
+          "answer": "My name is Aigerim Serikova.",
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "pu1",
+          "raw": "i have two brothers and one sister",
+          "answer": "I have two brothers and one sister.",
+          "why": "After a number or 'many', a countable noun stays plural: two emails, many people."
+        },
+        {
+          "id": "pu2",
+          "raw": "i study at school number 25",
+          "answer": "I study at school number 25.",
+          "why": "Prepositions are fixed by phrase, not by logic: on Monday, in May, at 6 p.m."
+        },
+        {
+          "id": "pu3",
+          "raw": "my favourite subject is english",
+          "answer": "My favourite subject is English.",
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "pu4",
+          "raw": "i am fifteen years old",
+          "answer": "I am fifteen years old.",
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "pu5",
+          "raw": "my father works in a bank",
+          "answer": "My father works in a bank.",
+          "why": "He, she, it and any singular subject take -s: the shop opens, my sister works."
+        },
+        {
+          "id": "pu6",
+          "raw": "i want to be a designer",
+          "answer": "I want to be a designer.",
+          "why": "English word order is fixed: subject → verb → object. Time and place go at the end."
+        },
+        {
+          "id": "pu7",
+          "raw": "i can speak kazakh russian and english",
+          "answer": "I can speak Kazakh, Russian and English.",
+          "why": "After can, should, must and will the verb has no 'to': I can send, you should write."
+        }
+      ],
+      "title": "Capitals and punctuation",
+      "howto": "Rewrite the sentence with capital letters and punctuation. Do not change the words themselves."
+    },
+    {
+      "id": "t5",
+      "step": 4,
+      "type": "expand",
+      "items": [
+        {
+          "id": "ex0",
+          "cue": "favourite / subject / english",
+          "answers": [
+            "My favourite subject is English."
+          ],
+          "must": [
+            "favourite",
+            "subject"
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "ex1",
+          "cue": "name / aigerim / serikova",
+          "answers": [
+            "My name is Aigerim Serikova."
+          ],
+          "must": [
+            "name",
+            "aigerim"
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        },
+        {
+          "id": "ex2",
+          "cue": "i / two / brothers / one / sister",
+          "answers": [
+            "I have two brothers and one sister."
+          ],
+          "must": [
+            "brothers",
+            "sister"
+          ],
+          "why": "After a number or 'many', a countable noun stays plural: two emails, many people."
+        },
+        {
+          "id": "ex3",
+          "cue": "i / live / almaty / family",
+          "answers": [
+            "I live in Almaty with my family."
+          ],
+          "must": [
+            "live",
+            "almaty"
+          ],
+          "why": "Prepositions are fixed by phrase, not by logic: on Monday, in May, at 6 p.m."
+        },
+        {
+          "id": "ex4",
+          "cue": "i / study / school / number / 25",
+          "answers": [
+            "I study at school number 25."
+          ],
+          "must": [
+            "study",
+            "school"
+          ],
+          "why": "Prepositions are fixed by phrase, not by logic: on Monday, in May, at 6 p.m."
+        },
+        {
+          "id": "ex5",
+          "cue": "i / want / designer",
+          "answers": [
+            "I want to be a designer."
+          ],
+          "must": [
+            "want",
+            "designer"
+          ],
+          "why": "English word order is fixed: subject → verb → object. Time and place go at the end."
+        },
+        {
+          "id": "ex6",
+          "cue": "i / speak / kazakh / russian / english",
+          "answers": [
+            "I can speak Kazakh, Russian and English."
+          ],
+          "must": [
+            "speak",
+            "kazakh"
+          ],
+          "why": "After can, should, must and will the verb has no 'to': I can send, you should write."
+        },
+        {
+          "id": "ex7",
+          "cue": "address / abay / street / 14",
+          "answers": [
+            "My address is Abay Street 14."
+          ],
+          "must": [
+            "address",
+            "abay"
+          ],
+          "why": "English never drops the linking verb: the parcel IS late, I AM happy."
+        }
+      ],
+      "title": "Notes into sentences",
+      "howto": "Turn the notes into a full sentence: add articles, prepositions and the right verb form. Keep the meaning."
+    },
+    {
+      "id": "t6",
+      "step": 4,
+      "type": "register",
+      "items": [
+        {
+          "id": "rg0",
+          "ctx": "A message to your friend",
+          "a": "I would like to invite you.",
+          "b": "Come to my party!",
+          "answer": "b",
+          "why": "An invitation to a friend is a direct, happy sentence."
+        },
+        {
+          "id": "rg1",
+          "ctx": "A note for your neighbour",
+          "a": "Sorry, I was not at home.",
+          "b": "wasnt home lol",
+          "answer": "a",
+          "why": "Even a short note keeps capital letters and full words."
+        },
+        {
+          "id": "rg2",
+          "ctx": "A form for a language course",
+          "a": "My level is elementary.",
+          "b": "My English is so bad haha",
+          "answer": "a",
+          "why": "A form asks for facts, not jokes about yourself."
+        },
+        {
+          "id": "rg3",
+          "ctx": "A message to your friend",
+          "a": "Please confirm your attendance.",
+          "b": "Are you coming?",
+          "answer": "b",
+          "why": "A friend answers a simple question faster than an official one."
+        },
+        {
+          "id": "rg4",
+          "ctx": "A message to your friend",
+          "a": "I am unable to attend.",
+          "b": "I can't come today.",
+          "answer": "b",
+          "why": "With a friend you use short everyday words."
+        },
+        {
+          "id": "rg5",
+          "ctx": "A birthday card for your grandmother",
+          "a": "I wish you good health and happiness.",
+          "b": "Happy bday granny!!",
+          "answer": "a",
+          "why": "For older family members English keeps full words."
+        },
+        {
+          "id": "rg6",
+          "ctx": "A form for a hotel",
+          "a": "I need a room for two nights.",
+          "b": "Gimme a room for 2 nights.",
+          "answer": "a",
+          "why": "Gimme is spoken slang and never goes in writing."
+        },
+        {
+          "id": "rg7",
+          "ctx": "A note for your teacher",
+          "a": "I am sorry, I was ill yesterday.",
+          "b": "Hi! I was sick, no lesson for me :)",
+          "answer": "a",
+          "why": "A teacher gets a full sentence and no emoji."
+        }
+      ],
+      "title": "Who are you writing to?",
+      "howto": "The same idea, two versions. Choose the one that fits the reader. Register is not about being polite — it is about distance."
+    },
+    {
+      "id": "t7",
+      "step": 5,
+      "type": "idea-bank",
+      "columns": [
+        {
+          "id": "in",
+          "label": "Goes into my text"
+        },
+        {
+          "id": "out",
+          "label": "Leave it out"
+        }
+      ],
+      "items": [
+        {
+          "id": "ib0",
+          "text": "Full name and age",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib1",
+          "text": "City and school",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib2",
+          "text": "One hobby with a detail",
+          "side": "in",
+          "strong": true,
+          "why": "One of the three ideas that carry the whole text."
+        },
+        {
+          "id": "ib3",
+          "text": "What I want to be",
+          "side": "in",
+          "strong": false,
+          "why": "A fact the reader needs in order to act."
+        },
+        {
+          "id": "ib4",
+          "text": "The colour of my phone case",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ib5",
+          "text": "What my friend did yesterday",
+          "side": "out",
+          "strong": false,
+          "why": "Off the point: it tells the reader nothing about your case."
+        },
+        {
+          "id": "ibx0",
+          "text": "What I ate for breakfast today",
+          "side": "out",
+          "strong": false,
+          "why": "The reader learns nothing about your topic from your breakfast."
+        },
+        {
+          "id": "ibx1",
+          "text": "The name of my first teacher",
+          "side": "out",
+          "strong": false,
+          "why": "A private detail with no job in this text."
+        },
+        {
+          "id": "ibx2",
+          "text": "My plans for next summer",
+          "side": "out",
+          "strong": false,
+          "why": "Future plans belong to another text."
+        },
+        {
+          "id": "ibx3",
+          "text": "How tired I am today",
+          "side": "out",
+          "strong": false,
+          "why": "Your mood right now does not help the reader."
+        }
+      ],
+      "pickCount": 3,
+      "title": "Idea bank",
+      "howto": "Sort the ideas into two columns: what goes into your text and what only waters it down. Then choose the three strongest ideas."
+    },
+    {
+      "id": "t8",
+      "step": 5,
+      "type": "outline-builder",
+      "slots": [
+        {
+          "id": "intro",
+          "label": "1. Opening"
+        },
+        {
+          "id": "body1",
+          "label": "2. Main part"
+        },
+        {
+          "id": "body2",
+          "label": "3. Details"
+        },
+        {
+          "id": "conc",
+          "label": "4. Closing"
+        }
+      ],
+      "items": [
+        {
+          "id": "ob0",
+          "text": "Give your full name",
+          "slot": "intro",
+          "why": "“Give your full name” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob1",
+          "text": "Say how old you are",
+          "slot": "intro",
+          "why": "“Say how old you are” is the job of the opening in this genre."
+        },
+        {
+          "id": "ob2",
+          "text": "Say where you live",
+          "slot": "body1",
+          "why": "“Say where you live” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob3",
+          "text": "Say where you study",
+          "slot": "body1",
+          "why": "“Say where you study” is the job of the main part in this genre."
+        },
+        {
+          "id": "ob4",
+          "text": "Say who lives with you",
+          "slot": "body2",
+          "why": "“Say who lives with you” is the job of the details in this genre."
+        },
+        {
+          "id": "ob5",
+          "text": "Name one hobby",
+          "slot": "conc",
+          "why": "“Name one hobby” is the job of the closing in this genre."
+        },
+        {
+          "id": "ob6",
+          "text": "Say what you want to do",
+          "slot": "conc",
+          "why": "“Say what you want to do” is the job of the closing in this genre."
+        }
+      ],
+      "rules": [
+        {
+          "check": "openingFirst",
+          "msg": "The greeting and the reason always come first: the reader must know at once what the text is."
+        },
+        {
+          "check": "closingLast",
+          "msg": "New facts cannot stand in the closing — the last lines only finish the text."
+        }
+      ],
+      "title": "Build the plan",
+      "howto": "Put the blocks into the four parts of the text. The checker knows the logic of the genre: some blocks cannot stand where you put them."
+    },
+    {
+      "id": "t9",
+      "step": 6,
+      "type": "guided-write",
+      "items": [
+        {
+          "id": "gw0",
+          "q": "Give your full name.",
+          "hint": "One or two sentences. A phrase you can use: My name is …"
+        },
+        {
+          "id": "gw1",
+          "q": "Say how old you are.",
+          "hint": "One or two sentences. A phrase you can use: I am … years old."
+        },
+        {
+          "id": "gw2",
+          "q": "Say where you live.",
+          "hint": "One or two sentences. A phrase you can use: I live in …"
+        },
+        {
+          "id": "gw3",
+          "q": "Say where you study.",
+          "hint": "One or two sentences. A phrase you can use: I study at …"
+        },
+        {
+          "id": "gw4",
+          "q": "Say who lives with you.",
+          "hint": "One or two sentences. A phrase you can use: My hobby is …"
+        },
+        {
+          "id": "gw5",
+          "q": "Name one hobby.",
+          "hint": "One or two sentences. A phrase you can use: I like … very much."
+        },
+        {
+          "id": "gw6",
+          "q": "Say what you want to do.",
+          "hint": "One or two sentences. A phrase you can use: I want to be …"
+        }
+      ],
+      "title": "Write it step by step",
+      "howto": "Answer one question at a time, in English, one or two sentences. At the end your answers become a draft in the Writing Pad. The hints are questions, not ready sentences: the text stays yours."
+    },
+    {
+      "id": "t10",
+      "step": 6,
+      "type": "free-write",
+      "target": [
+        30,
+        50
+      ],
+      "minutes": 15,
+      "prompt": "Fill in a form about yourself (30–50 words): your name, age, city, school, one hobby and one sentence about your plans.",
+      "title": "Your own text",
+      "howto": "Now the whole text, on your own. The Writing Pad gives you the checklist, the phrase bank, the linking words and your plan. The timer is optional."
+    },
+    {
+      "id": "t11",
+      "step": 6,
+      "type": "overall",
+      "items": [
+        {
+          "id": "task",
+          "label": "Task achieved",
+          "hint": "Did you answer every part of the task? At A1 that means: all the facts the task asks for."
+        },
+        {
+          "id": "organisation",
+          "label": "Organisation",
+          "hint": "Are the sentences in a logical order, with and, but, because between them?"
+        },
+        {
+          "id": "vocabulary",
+          "label": "Vocabulary",
+          "hint": "Did you use the topic words, or only 'good', 'bad' and 'nice'?"
+        },
+        {
+          "id": "grammar",
+          "label": "Grammar",
+          "hint": "Word order, the verb to be, articles a/an and -s with he, she, it."
+        }
+      ],
+      "title": "Overall",
+      "howto": "This is the site's own summary of the genre. It counts the exercises you have finished, how accurate you were, and the scores of the text you submitted, and turns all of that into one band. Nothing here is a school grade — it only shows what to work on next."
+    }
+  ]
+}

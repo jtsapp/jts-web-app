@@ -22,10 +22,18 @@ const CONTENT_TYPE_BY_MODULE = {
   // Статические уровни «Speaking Practice A1–C1»; единица счёта — открытый
   // уровень (из 5), см. ContentType.PRACTICE_SITUATIONS на бэкенде.
   situations: 'PRACTICE_SITUATIONS',
+  // Воркбуки A0–B2 (public/practice/workbooks/); единица — открытый уровень.
+  workbooks: 'PRACTICE_WORKBOOKS',
+  // Тренажёр письма; ContentType на Java-бэкенде пока не заведён — квота
+  // вернётся null, и гейт остаётся fail-open (осознанно, см. usePracticeEntitlement).
+  writing: 'PRACTICE_WRITING',
 }
 
 function completedCountFor(moduleName, state) {
   if (moduleName === 'vocab') return state.vocab?.seenCount ?? 0
+  // У writing state — объект {tasks, seen}, а не done-массив: единица счёта —
+  // закрытое задание жанра.
+  if (moduleName === 'writing') return Object.keys(state.writing?.tasks ?? {}).length
   return state[moduleName]?.done?.length ?? 0
 }
 

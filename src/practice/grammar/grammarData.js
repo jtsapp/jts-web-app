@@ -6,22 +6,23 @@
 // уровня — при первом открытии любого его урока. Паттерн — как у fetchCoversIndex
 // в PracticePage.
 
-// Уровни витрины. Файл-источник содержит только A1–C1; C2 показываем как
-// «скоро» (нет данных) — см. отчёт о расхождениях с дизайном.
+// Уровни витрины — ровно те, что есть в выгрузке курса (A0–C1). C2 отсюда
+// убран: чип показывал заглушку «скоро», курса под ним нет и не планируется.
 export const GRAMMAR_LEVELS = [
+  { code: 'a0', label: 'A0' },
   { code: 'a1', label: 'A1' },
   { code: 'a2', label: 'A2' },
   { code: 'b1', label: 'B1' },
   { code: 'b2', label: 'B2' },
   { code: 'c1', label: 'C1' },
-  { code: 'c2', label: 'C2', empty: true },
 ]
 
-// Уровень пользователя (напр. 'B1') → код курса. За пределами A1–C1 (в т.ч. C2)
+// Уровень пользователя (напр. 'B1') → код курса. За пределами A0–C1 (в т.ч. C2)
 // откатываемся на ближайший доступный, чтобы рейл всегда что-то показывал.
+// A0 — собственный курс с 2026-08-27; до него новички попадали сразу в A1.
 export function levelToCourse(userLevel) {
   const c = String(userLevel || '').toLowerCase()
-  if (['a1', 'a2', 'b1', 'b2', 'c1'].includes(c)) return c
+  if (['a0', 'a1', 'a2', 'b1', 'b2', 'c1'].includes(c)) return c
   if (c.startsWith('c')) return 'c1'
   if (c.startsWith('b')) return 'b1'
   return 'a1'
@@ -48,9 +49,16 @@ export function loadGrammarIndex() {
 const _levelPromises = {}
 export function loadGrammarLevel(code) {
   if (!_levelPromises[code]) {
+    // Промах НЕ кэшируем — по той же причине, что и в loadGrammarIndex выше:
+    // один сбой сети при первом уроке уровня делал все его уроки «пустыми»
+    // до перезагрузки страницы.
     _levelPromises[code] = fetch(`/practice/grammar/${code}.json`)
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
+      .then((data) => {
+        if (!data) delete _levelPromises[code]
+        return data
+      })
   }
   return _levelPromises[code]
 }

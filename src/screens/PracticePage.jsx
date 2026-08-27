@@ -21,6 +21,9 @@ import {
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
+import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
+import { readWorkbooksDone, markWorkbookLevelDone } from '../practice/workbooks/workbooksProgress.js'
+import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
@@ -163,6 +166,47 @@ function ListeningBanner({ userLevel = 'A1', onAll, onStart }) {
   )
 }
 
+// Баннер «Письмо»: вход в тренажёр Writing (180 жанров + Блокнот). Переиспользует
+// каркас баннера аудирования (.pp-listen), а перекраска — модификатором .pp-write
+// в writing.css. Своего арта у раздела пока нет, поэтому карточка текстовая.
+function WritingBanner({ userLevel = 'A1', onAll, onStart }) {
+  const { t } = useI18n()
+  const level = String(userLevel || 'A1').toUpperCase()
+  const noop = () => {}
+  const [headTop, headRest] = t('practice.writing.heading').split('\n')
+  return (
+    <section id="sec-writing" className="pp-sec pp-listen pp-write">
+      <SectionHead title={t('practice.writing.title')} onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            {headTop}
+            {headRest && (
+              <>
+                <br />
+                {headRest}
+              </>
+            )}
+          </h3>
+          <p className="pp-listen__desc">{t('practice.writing.desc')}</p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            {t('practice.writing.cta')}
+          </button>
+        </div>
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">{t('practice.writing.hint')}</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level">{level}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Проговаривание слова браузером (бэкенд не отдаёт аудио для словаря)
 function speak(word) {
   try {
@@ -218,6 +262,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const [openSituation, setOpenSituation] = useState(null)
   // Студент упёрся в квоту статических уровней — показываем экран лимита.
   const [situationsBlocked, setSituationsBlocked] = useState(false)
+  const [workbooksBlocked, setWorkbooksBlocked] = useState(false)
   const [books, setBooks] = useState([])
   const [words, setWords] = useState([])
   // Фактический Bearer для действий внутри Практики (у гостя — демо-токен).
@@ -229,6 +274,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Ситуативки из бэкенда ограничиваются отдельно, флагом locked на карточке —
   // в этой же секции лежат оба источника, внешне неразличимые.
   const situationsEntitlement = usePracticeEntitlement('situations', token)
+  const workbooksEntitlement = usePracticeEntitlement('workbooks', token)
 
   // Нативный оверлей «Speaking A1–C1» — статический бандл (iframe на HTML-
   // страницу), внутри него точечных locked-флагов нет: показываем/прячем
@@ -296,6 +342,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     const load = () => {
       import('../practice/fairytale/taleWorld.js').catch(() => {})
       import('../practice/situations/situationsOverlay.js').catch(() => {})
+      import('../practice/workbooks/workbooksOverlay.js').catch(() => {})
     }
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(load, { timeout: 4000 })
@@ -358,8 +405,10 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   const chips = [
     { key: null, label: t('practice.chip.all') },
     { key: 'grammar', label: t('practice.chip.grammar') },
+    { key: 'writing', label: t('practice.chip.writing') },
     { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
+    { key: 'workbooks', label: t('practice.chip.workbooks') },
     { key: 'tales', label: t('practice.chip.tales') },
     { key: 'memes', label: t('practice.chip.memes') },
     { key: 'books', label: t('practice.chip.books') },
@@ -432,11 +481,37 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     }
   }
 
+  // Воркбуки A0–B2: тот же оверлейный паттерн, что у Speaking Practice.
+  const openWorkbookLevel = async (level) => {
+    if (taleLoadingRef.current) return
+    const seen = readWorkbooksDone()
+    if (!seen.includes(level) && !workbooksEntitlement.allowed) {
+      setWorkbooksBlocked(true)
+      return
+    }
+    taleLoadingRef.current = true
+    try {
+      const mod = await import('../practice/workbooks/workbooksOverlay.js')
+      mod.openWorkbooks(level)
+      if (!seen.includes(level)) markWorkbookLevelDone(level)
+    } finally {
+      taleLoadingRef.current = false
+    }
+  }
+
   // Лимит на разговорную практику — тот же takeover, что у грамматики.
   if (situationsBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
         <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} />
+      </LearningLayout>
+    )
+  }
+
+  if (workbooksBlocked) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <PracticeLimitScreen limit={workbooksEntitlement.limit} onBack={() => setWorkbooksBlocked(false)} isDemoAccount={isDemoAccount} />
       </LearningLayout>
     )
   }
@@ -515,6 +590,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
               userLevel={userLevel}
               onAll={() => onNav?.('listening')}
               onStart={() => onNav?.('listening')}
+            />
+          )}
+
+          {/* Письмо — вход в тренажёр Writing. У чипа «Письмо» своей сетки нет:
+              баннер и есть весь раздел, каталог уровней живёт на своём экране. */}
+          {show('writing') && (
+            <WritingBanner
+              userLevel={userLevel}
+              onAll={() => onNav?.('writing')}
+              onStart={() => onNav?.('writing')}
             />
           )}
 
@@ -731,6 +816,23 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                 ? <Empty loading={state.loading} skeleton="portrait" />
                 : <Rail grid={grid}>{cards}</Rail>
             })()}
+          </section>
+          )}
+
+          {/* Воркбуки A0–B2 — карточки как у грамматики (gr-gcard), оверлей iframe */}
+          {show('workbooks') && (
+          <section id="sec-workbooks" className="pp-sec">
+            <SectionHead title={t('practice.chip.workbooks')} onAll={() => setFilter('workbooks')} />
+            <div className="pp-rail">
+              {WORKBOOK_LEVELS.map((l, i) => (
+                <WorkbookCard
+                  key={l.code}
+                  level={l}
+                  index={i}
+                  onOpen={openWorkbookLevel}
+                />
+              ))}
+            </div>
           </section>
           )}
 

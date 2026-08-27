@@ -18,9 +18,19 @@ import {
 
 test.describe('practiceContract — валидация и merge', () => {
   test('модули: белый список', () => {
-    expect(PRACTICE_MODULES).toEqual(['vocab', 'grammar', 'listening', 'shadowing', 'situations'])
+    expect(PRACTICE_MODULES).toEqual([
+      'vocab',
+      'grammar',
+      'listening',
+      'shadowing',
+      'situations',
+      'workbooks',
+      'writing',
+    ])
     expect(isValidModule('grammar')).toBe(true)
     expect(isValidModule('situations')).toBe(true)
+    expect(isValidModule('workbooks')).toBe(true)
+    expect(isValidModule('writing')).toBe(true)
     expect(isValidModule('tutor')).toBe(false)
     expect(isValidModule(undefined)).toBe(false)
   })
@@ -30,11 +40,13 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(normalizeDone('nope')).toEqual([])
   })
 
-  test('emptyState: done-модули пустой массив, vocab — объект', () => {
+  test('emptyState: done-модули пустой массив, vocab/writing — объект', () => {
     expect(emptyState('grammar')).toEqual({ done: [] })
     expect(emptyState('listening')).toEqual({ done: [] })
     expect(emptyState('situations')).toEqual({ done: [] })
+    expect(emptyState('workbooks')).toEqual({ done: [] })
     expect(emptyState('vocab')).toEqual({})
+    expect(emptyState('writing')).toEqual({})
   })
 
   test('mergeModuleState: situations объединяет открытые уровни', () => {
@@ -42,6 +54,11 @@ test.describe('practiceContract — валидация и merge', () => {
     // иначе вход с другого устройства обнулял бы потраченную квоту.
     expect(mergeModuleState('situations', { done: ['a1'] }, { done: ['a2', 'a1'] }))
       .toEqual({ done: ['a1', 'a2'] })
+  })
+
+  test('mergeModuleState: workbooks объединяет открытые уровни', () => {
+    expect(mergeModuleState('workbooks', { done: ['a0'] }, { done: ['a1', 'a0'] }))
+      .toEqual({ done: ['a0', 'a1'] })
   })
 
   test('mergeModuleState: grammar/listening объединяют done', () => {
@@ -56,6 +73,14 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(mergeModuleState('vocab', { level: 'A1' }, incoming)).toEqual(incoming)
     // мусорный incoming не затирает прежнее
     expect(mergeModuleState('vocab', { level: 'A1' }, null)).toEqual({ level: 'A1' })
+  })
+
+  test('mergeModuleState: writing заменяет объект {tasks, seen} целиком', () => {
+    // replace, как у vocab: гонка двух устройств может потерять результат
+    // одного — осознанный компромисс (см. комментарий в practiceContract.js).
+    const incoming = { tasks: { 'g1:t2': { done: true, correct: 4 } }, seen: {} }
+    expect(mergeModuleState('writing', { tasks: { 'g1:t1': { done: true } }, seen: {} }, incoming)).toEqual(incoming)
+    expect(mergeModuleState('writing', { tasks: {}, seen: {} }, null)).toEqual({ tasks: {}, seen: {} })
   })
 
   test('unauthorizedIfNoBearer: нет токена → 401, есть → null', async () => {

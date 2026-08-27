@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
@@ -11,11 +11,12 @@ import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
-import LevelTestPage from './screens/LevelTestPage.jsx'
+import PlacementTestPage from './screens/PlacementTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
+import WritingPage from './screens/WritingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -82,12 +83,12 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'kingdom', 'practice', 'listening', 'homework', 'lessons',
+  'kingdom', 'practice', 'listening', 'writing', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
 export default function App() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
   // ?screen=… переопределяет начальный экран — так экраны тьютора остаются
   // достижимы для отладки/диплинков.
@@ -302,6 +303,7 @@ export default function App() {
   // L*.html + клиентское извлечение). Определяет, чем workspace грузит контент.
   const [workspaceSource, setWorkspaceSource] = useState('live')
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
+  const [writingTarget, setWritingTarget] = useState(null) // { level?, genreId? } — прыжок из Практики сразу в уровень/жанр Writing
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -544,19 +546,29 @@ export default function App() {
   // открываем королевство. Уровень пишем в оба стора: backend — источник правды
   // при входе, Neon-профиль — то, что читает голосовой тьютор; без второй
   // записи они расходились.
-  async function handleTestDone(res) {
+  // Сохранение уровня отделено от перехода: тест отдаёт уровень дважды —
+  // сразу по подсчёту и по кнопке «Let's go», — и записать его надо на первом
+  // же событии, а увести с экрана только по кнопке. Повтор того же уровня в
+  // сеть не шлём: второй вызов приходит через секунды с тем же значением.
+  const lastSavedTestLevel = useRef(null)
+  async function saveTestLevel(level) {
+    if (!level || lastSavedTestLevel.current === level) return
+    lastSavedTestLevel.current = level
     setNeedsLevelTest(false)
-    if (res?.level) setUserLevel(res.level)
-    if (res?.level) {
-      savePlacementLevel(token, res.level) // best-effort, не блокируем переход
-      if (token) {
-        try {
-          await saveLanguageLevel(token, res.level)
-        } catch (e) {
-          console.warn('Не удалось сохранить уровень:', e)
-        }
+    setUserLevel(level)
+    savePlacementLevel(token, level) // best-effort, не блокируем переход
+    if (token) {
+      try {
+        await saveLanguageLevel(token, level)
+      } catch (e) {
+        console.warn('Не удалось сохранить уровень:', e)
       }
     }
+  }
+
+  async function handleTestDone(res) {
+    setNeedsLevelTest(false)
+    await saveTestLevel(res?.level)
     setScreen(TUTOR_ONLY ? tutorHome : 'kingdom')
   }
 
@@ -652,6 +664,7 @@ export default function App() {
     else if (key === 'listening') setScreen('listening')
     // Shadowing открывается с карточки Практики — payload несёт id урока.
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
+    else if (key === 'writing') { if (payload) setWritingTarget(payload); setScreen('writing') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -672,6 +685,7 @@ export default function App() {
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
     else if (key === 'shadowing') setScreen('shadowing')
+    else if (key === 'writing') setScreen('writing')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -843,10 +857,16 @@ export default function App() {
         />
       )
     case 'test':
+      // Тест на определение уровня: движок школы, перенесённый в проект
+      // (src/practice/placement/), экран — в оформлении приложения. Он же
+      // определяет A0, которого прежний адаптивный тест выдать не мог.
+      // Уровень сохраняем сразу по подсчёту, не дожидаясь кнопки: иначе
+      // пройденный тест пропадёт, если закрыть вкладку на экране результата.
       return (
-        <LevelTestPage
-          onClose={() => setScreen('test-intro')}
-          onDone={handleTestDone}
+        <PlacementTestPage
+          lang={lang}
+          onLevel={(level) => saveTestLevel(level)}
+          onDone={(level) => handleTestDone({ level })}
         />
       )
     case 'kingdom':
@@ -905,6 +925,18 @@ export default function App() {
           userName={name}
           token={token}
           lessonId={shadowingLesson}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
+        />
+      )
+    case 'writing':
+      return (
+        <WritingPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={writingTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}

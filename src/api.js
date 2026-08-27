@@ -493,6 +493,16 @@ export function getAudiobooks(token) {
   return cachedAuthGet('/mobile/audio-lessons', token)
 }
 
+// Одна книга целиком (GET /mobile/audio-lessons/{id}). В отличие от списка выше
+// detail-эндпоинт отдаёт tracks[].text — полный текст главы, заведённый в
+// админке (список его вырезает как тяжёлый, см. AudioLessonMapperService).
+// Отсюда читалка берёт главы книг, которых нет в статике public/practice/books.
+// Без localStorage-кэша: текст книги — сотни килобайт, квота кончится на первой
+// же книге; повторные открытия закрывает модульный кэш в BookDetail.
+export function getAudiobook(token, id) {
+  return authGet(`/mobile/audio-lessons/${id}`, token)
+}
+
 // Баланс: монеты и стрик (для HUD). SWR-кэш: сайдбар перемонтируется на каждом
 // переходе между экранами (key={screen} в App.jsx), кэш убирает и повторный
 // запрос в блокирующем пути, и «мигание» нулей; свежее значение — через onFresh.
@@ -735,6 +745,32 @@ export async function completeSituativka(token, id) {
 // SWR-кэш: слова добавляются из читалки — свежий список приходит через onFresh.
 export function getSavedWords(token, onFresh) {
   return cachedAuthGet('/mobile/saved-words', token, onFresh)
+}
+
+export function saveStudentVocab(token, body) {
+  return authPost('/mobile/lesson-vocab', token, body).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
+    return data
+  })
+}
+
+export function deleteStudentVocabWord(token, id) {
+  return authDelete(`/mobile/lesson-vocab/words/${encodeURIComponent(id)}`, token).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
+    return data
+  })
+}
+
+export function getVocabCatalog(token) {
+  return authGet('/mobile/vocab-catalog', token)
+}
+
+export function getVocabScope(token, id) {
+  return authGet(`/mobile/vocab-catalog/scopes/${encodeURIComponent(id)}`, token)
 }
 
 export function listLessonVocab(token, onFresh) {

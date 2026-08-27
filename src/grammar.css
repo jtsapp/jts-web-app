@@ -213,6 +213,35 @@
   letter-spacing: -0.025em;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
+/* Постер-обложка (воркбуки и др.): фото под градиентным скрабом */
+.gr-cov-img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+.gr-cover--poster::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 72%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(18, 14, 32, 0.72) 0%, rgba(18, 14, 32, 0.28) 48%, transparent 100%);
+}
+.gr-cover--poster .gr-cov-tex { opacity: 0.22; }
+.gr-cover--poster .gr-cov-orb,
+.gr-cover--poster .gr-cov-arc { opacity: 0.4; }
+.gr-cover--poster .gr-cov-no {
+  color: rgba(255, 255, 255, 0.18);
+  font-size: 64px;
+  right: 10px;
+}
+
 .gr-cov-tag {
   position: absolute;
   z-index: 3;

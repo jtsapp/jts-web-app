@@ -1,0 +1,1119 @@
+{
+  "ui": {
+    "Writing": [
+      "Письмо",
+      "Жазу"
+    ],
+    "My work": [
+      "Мои работы",
+      "Менің жұмыстарым"
+    ],
+    "Close": [
+      "Закрыть",
+      "Жабу"
+    ],
+    "Got it": [
+      "Понятно",
+      "Түсінікті"
+    ],
+    "Save": [
+      "Сохранить",
+      "Сақтау"
+    ],
+    "Settings": [
+      "Настройки",
+      "Параметрлер"
+    ],
+    "Check": [
+      "Проверить",
+      "Тексеру"
+    ],
+    "Done": [
+      "Готово",
+      "Дайын"
+    ],
+    "Start again": [
+      "Пройти заново",
+      "Қайта бастау"
+    ],
+    "restore": [
+      "восстановить",
+      "қалпына келтіру"
+    ],
+    "open": [
+      "открыть",
+      "ашу"
+    ],
+    "Levels": [
+      "Уровни",
+      "Деңгейлер"
+    ],
+    "← Levels": [
+      "← Уровни",
+      "← Деңгейлер"
+    ],
+    "← Back": [
+      "← Назад",
+      "← Артқа"
+    ],
+    "Next →": [
+      "Дальше →",
+      "Әрі қарай →"
+    ],
+    "Open the Writing Pad →": [
+      "К Блокноту →",
+      "Блокнотқа →"
+    ],
+    "← Back to the exercises": [
+      "← К заданиям",
+      "← Тапсырмаларға"
+    ],
+    "← Back to the Pad": [
+      "← В Блокнот",
+      "← Блокнотқа"
+    ],
+    "Back to the exercises": [
+      "К заданиям",
+      "Тапсырмаларға"
+    ],
+    "Write in English, step by step": [
+      "Учимся писать по-английски — по шагам",
+      "Ағылшынша жазуды қадаммен үйренеміз"
+    ],
+    "Six levels, thirty genres in each. Every genre is a six-step trainer that ends with your own text, checked and marked up. Select any word or sentence to see it in Russian and Kazakh.": [
+      "Шесть уровней, по тридцать жанров в каждом. Каждый жанр — тренажёр из шести шагов, который заканчивается твоим собственным текстом с разбором. Выдели любое слово или предложение, чтобы увидеть перевод на русский и казахский.",
+      "Алты деңгей, әрқайсысында отыз жанр. Әр жанр — алты қадамнан тұратын тренажёр, ол сенің өз мәтініңмен және оның талдауымен аяқталады. Кез келген сөзді немесе сөйлемді белгілесең, оның орысша және қазақша аудармасы шығады."
+    ],
+    "The Writing Pad is always open": [
+      "Блокнот всегда под рукой",
+      "Блокнот әрдайым қолжетімді"
+    ],
+    "You can write without a task: the checklist, the phrase bank, the linking words and the checker all work on their own.": [
+      "Можно писать и без задания: чек-лист, банк фраз, связки и проверка работают сами по себе.",
+      "Тапсырмасыз да жазуға болады: тізім, тіркестер банкі, байланыстырғыштар мен тексеру өз бетінше жұмыс істейді."
+    ],
+    "Open the Writing Pad": [
+      "Открыть Блокнот",
+      "Блокнотты ашу"
+    ],
+    "genres": [
+      "жанров",
+      "жанр"
+    ],
+    "exercises": [
+      "упражнений",
+      "жаттығу"
+    ],
+    "words": [
+      "слов",
+      "сөз"
+    ],
+    "Why this matters": [
+      "Зачем это нужно",
+      "Бұл не үшін керек"
+    ],
+    "Words and phrases": [
+      "Лексика и фразы",
+      "Сөздер мен тіркестер"
+    ],
+    "Linking words": [
+      "Связки",
+      "Байланыстырғыштар"
+    ],
+    "Sentence practice": [
+      "Уровень предложения",
+      "Сөйлем деңгейі"
+    ],
+    "Planning": [
+      "План",
+      "Жоспар"
+    ],
+    "Your own text": [
+      "Свой текст",
+      "Өз мәтінің"
+    ],
+    "Why this genre is worth an hour": [
+      "Зачем тебе этот жанр",
+      "Бұл жанр не үшін керек"
+    ],
+    "One minute of reading, then straight into practice.": [
+      "Минута на чтение — дальше сразу практика.",
+      "Бір минут оқу — сосын бірден жаттығу."
+    ],
+    "What you will be able to do": [
+      "Что ты сможешь после этого блока",
+      "Осы блоктан кейін не істей аласың"
+    ],
+    "Tip: select any word or sentence on this page and you will see it in Russian and Kazakh.": [
+      "Подсказка: выдели любое слово или предложение на этой странице — увидишь перевод на русский и казахский.",
+      "Кеңес: бұл беттегі кез келген сөзді немесе сөйлемді белгіле — орысша және қазақша аудармасын көресің."
+    ],
+    "Your task": [
+      "Твоя задача",
+      "Сенің тапсырмаң"
+    ],
+    "These phrases come back in almost every text of this genre. Tap a phrase to copy it — inside the Writing Pad it goes straight into your text.": [
+      "Эти обороты повторяются почти в каждом тексте этого жанра. Нажми на фразу — она скопируется, а в Блокноте вставится прямо в текст.",
+      "Бұл тіркестер осы жанрдағы кез келген мәтінде кездеседі. Тіркесті бассаң, ол көшіріледі, ал Блокнотта мәтінге бірден қойылады."
+    ],
+    "A linking word tells the reader what the next sentence is doing: adding, contradicting, explaining or concluding. Two or three of them in a text is normal; ten is a different problem.": [
+      "Связка показывает читателю, что делает следующее предложение: добавляет, спорит, объясняет или подводит итог. Две-три связки на текст — норма, десять — уже другая проблема.",
+      "Байланыстырғыш оқырманға келесі сөйлем не істейтінін көрсетеді: қосады, қарсы қояды, түсіндіреді немесе қорытады. Мәтінде екі-үшеуі — қалыпты, ондауы — басқа мәселе."
+    ],
+    "Comma rule: however, therefore and in addition take a comma when they open a sentence. Although takes none, but it marks off its own clause: Although it was cheap, it broke.": [
+      "Правило запятой: however, therefore и in addition в начале предложения требуют запятой. Although запятой не требует, но отделяет свою часть: Although it was cheap, it broke.",
+      "Үтір ережесі: сөйлем басындағы however, therefore және in addition үтірді қажет етеді. Although үтір қоймайды, бірақ өз бөлігін бөліп тұрады: Although it was cheap, it broke."
+    ],
+    "Meaning": [
+      "Смысл",
+      "Мағынасы"
+    ],
+    "When to use it": [
+      "Когда ставить",
+      "Қашан қолданылады"
+    ],
+    "No exercises on this step yet.": [
+      "На этом шаге пока нет заданий.",
+      "Бұл қадамда әзірге тапсырма жоқ."
+    ],
+    "Correct. ": [
+      "Верно. ",
+      "Дұрыс. "
+    ],
+    "Not quite. ": [
+      "Не совсем. ",
+      "Толық емес. "
+    ],
+    "Tap the words — they appear here": [
+      "Нажимай на слова — они встанут сюда",
+      "Сөздерді бас — олар осында тұрады"
+    ],
+    "Your version in English": [
+      "Твой вариант по-английски",
+      "Ағылшынша нұсқаң"
+    ],
+    "Rewrite with capital letters and punctuation": [
+      "Перепиши с заглавными буквами и знаками",
+      "Бас әріптермен және тыныс белгілерімен қайта жаз"
+    ],
+    "Full sentence": [
+      "Полное предложение",
+      "Толық сөйлем"
+    ],
+    "Shorter version": [
+      "Короткая версия",
+      "Қысқа нұсқа"
+    ],
+    "Correct it": [
+      "Исправить",
+      "Түзету"
+    ],
+    "Check the order": [
+      "Проверить порядок",
+      "Ретін тексеру"
+    ],
+    "Check the plan": [
+      "Проверить план",
+      "Жоспарды тексеру"
+    ],
+    "Choose a linking word above, then tap the gap": [
+      "Выбери связку сверху, потом нажми на пропуск",
+      "Жоғарыдан байланыстырғышты таңдап, бос орынды бас"
+    ],
+    "Choose a label above, then tap the line": [
+      "Выбери ярлык сверху, потом нажми на строку",
+      "Жоғарыдан белгіні таңдап, жолды бас"
+    ],
+    "Choose a phrase above, then tap the gap": [
+      "Выбери фразу сверху, потом нажми на пропуск",
+      "Жоғарыдан тіркесті таңдап, бос орынды бас"
+    ],
+    "Choose an idea above, then tap a column": [
+      "Выбери идею сверху, потом нажми на колонку",
+      "Жоғарыдан идеяны таңдап, бағанды бас"
+    ],
+    "Choose a block above, then tap a part of the plan": [
+      "Выбери блок сверху, потом нажми на часть плана",
+      "Жоғарыдан блокты таңдап, жоспар бөлігін бас"
+    ],
+    "one of the strong ones": [
+      "сильный аргумент",
+      "күшті дәлел"
+    ],
+    "Goes into my text": [
+      "В мой текст",
+      "Мәтініме кіреді"
+    ],
+    "Leave it out": [
+      "Мимо",
+      "Қажет емес"
+    ],
+    "Write in English": [
+      "Пиши по-английски",
+      "Ағылшынша жаз"
+    ],
+    "Write at least one sentence": [
+      "Напиши хотя бы одно предложение",
+      "Кемінде бір сөйлем жаз"
+    ],
+    "Open in the Writing Pad": [
+      "Открыть в Блокноте",
+      "Блокнотта ашу"
+    ],
+    "Write in the Pad": [
+      "Писать в Блокноте",
+      "Блокнотта жазу"
+    ],
+    "The task": [
+      "Задание",
+      "Тапсырма"
+    ],
+    "Your text": [
+      "Твой текст",
+      "Сенің мәтінің"
+    ],
+    "Plan saved — you will see it in the Writing Pad": [
+      "План сохранён — он появится в Блокноте",
+      "Жоспар сақталды — ол Блокнотта көрінеді"
+    ],
+    "Inserted into your text": [
+      "Вставлено в текст",
+      "Мәтінге қойылды"
+    ],
+    "Inserted": [
+      "Вставлено",
+      "Қойылды"
+    ],
+    "Writing Pad": [
+      "Блокнот",
+      "Блокнот"
+    ],
+    "Free writing": [
+      "Свободное письмо",
+      "Еркін жазу"
+    ],
+    "Distraction-free mode": [
+      "Отвлекающий режим выкл.",
+      "Алаңдатпайтын режим"
+    ],
+    "Bring the panels back": [
+      "Вернуть панели",
+      "Панельдерді қайтару"
+    ],
+    "Save draft": [
+      "Сохранить черновик",
+      "Жобаны сақтау"
+    ],
+    "Version history": [
+      "История версий",
+      "Нұсқалар тарихы"
+    ],
+    "Start the timer": [
+      "Включить таймер",
+      "Таймерді қосу"
+    ],
+    "Stop the timer": [
+      "Выключить таймер",
+      "Таймерді өшіру"
+    ],
+    "Download .txt": [
+      "Скачать .txt",
+      ".txt жүктеу"
+    ],
+    "Copy": [
+      "Копировать",
+      "Көшіру"
+    ],
+    "Checklist": [
+      "Чек-лист",
+      "Тізім"
+    ],
+    "Phrase bank": [
+      "Банк фраз",
+      "Тіркестер банкі"
+    ],
+    "Plan": [
+      "План",
+      "Жоспар"
+    ],
+    "My words": [
+      "Мои слова",
+      "Менің сөздерім"
+    ],
+    "no timer": [
+      "без таймера",
+      "таймерсіз"
+    ],
+    "Write here. Your draft is saved automatically every three seconds.": [
+      "Пиши здесь. Черновик сохраняется сам каждые три секунды.",
+      "Осында жаз. Жоба әр үш сайын өзі сақталады."
+    ],
+    "Add your own word, then press Enter": [
+      "Добавь своё слово и нажми Enter",
+      "Өз сөзіңді қосып, Enter бас"
+    ],
+    "The checklist is built for a genre. Open the Pad from an exercise and the points for that genre appear here.": [
+      "Чек-лист собирается под жанр. Открой Блокнот из задания — и здесь появятся пункты этого жанра.",
+      "Тізім жанрға қарай жиналады. Блокнотты тапсырмадан ашсаң, осы жанрдың тармақтары шығады."
+    ],
+    "Your plan appears here once you build it on step 7.": [
+      "План появится здесь, когда ты соберёшь его на шаге 7.",
+      "Жоспар 7-қадамда жинағаннан кейін осында шығады."
+    ],
+    "Words from your lessons and from this genre. Use one in your text and it is highlighted in gold and gives you +3 XP, once per piece of writing.": [
+      "Слова из твоих уроков и из этого жанра. Используешь слово в тексте — оно подсвечивается золотым и даёт +3 XP, по разу за работу.",
+      "Сабақтарыңнан және осы жанрдан алынған сөздер. Мәтінде қолдансаң, ол алтын түспен ерекшеленіп, +3 XP береді."
+    ],
+    "you tick this one yourself": [
+      "отмечаешь сам",
+      "өзің белгілейсің"
+    ],
+    "found in your text automatically": [
+      "найдено в тексте автоматически",
+      "мәтіннен автоматты табылды"
+    ],
+    "not in your text yet": [
+      "в тексте пока нет",
+      "мәтінде әзірге жоқ"
+    ],
+    "The last ten snapshots of this draft. Roll back in one click.": [
+      "Последние десять снимков черновика. Откат в один клик.",
+      "Жобаның соңғы он сақталымы. Бір басумен қайтарылады."
+    ],
+    "No snapshots yet — write a couple of sentences.": [
+      "Снимков пока нет — напиши пару предложений.",
+      "Сақталым жоқ — бірнеше сөйлем жаз."
+    ],
+    "Every text with its date, genre, level and assessment.": [
+      "Все тексты с датой, жанром, уровнем и оценкой.",
+      "Барлық мәтін күні, жанры, деңгейі және бағасымен."
+    ],
+    "Nothing here yet. Write your first text in the Writing Pad.": [
+      "Работ пока нет. Напиши первый текст в Блокноте.",
+      "Әзірге жұмыс жоқ. Блокнотта алғашқы мәтінді жаз."
+    ],
+    "Draft saved": [
+      "Черновик сохранён",
+      "Жоба сақталды"
+    ],
+    "Version restored": [
+      "Версия восстановлена",
+      "Нұсқа қалпына келтірілді"
+    ],
+    "Copied": [
+      "Скопировано",
+      "Көшірілді"
+    ],
+    "There is nothing to copy yet": [
+      "Копировать пока нечего",
+      "Көшіретін ештеңе жоқ"
+    ],
+    "There is nothing to download yet": [
+      "Скачивать пока нечего",
+      "Жүктейтін ештеңе жоқ"
+    ],
+    "Time is up. In an exam this is where you stop — but your text stays, so finish it.": [
+      "Время вышло. На экзамене здесь бы всё закончилось — но текст остался, дописывай.",
+      "Уақыт бітті. Емтиханда бәрі осында аяқталар еді — бірақ мәтін қалды, жаза бер."
+    ],
+    "An empty text cannot be checked — write a few sentences first": [
+      "Пустой текст проверить нельзя — напиши несколько предложений",
+      "Бос мәтінді тексеруге болмайды — алдымен бірнеше сөйлем жаз"
+    ],
+    "Checking…": [
+      "Проверяю…",
+      "Тексеріп жатырмын…"
+    ],
+    "/ Your feedback": [
+      "/ Разбор работы",
+      "/ Жұмыс талдауы"
+    ],
+    "Your text, marked up": [
+      "Разбор твоей работы",
+      "Жұмысыңның талдауы"
+    ],
+    "AI check": [
+      "проверка ИИ",
+      "ЖИ тексеруі"
+    ],
+    "offline rule-based check": [
+      "офлайн-проверка по правилам",
+      "ережелер бойынша офлайн тексеру"
+    ],
+    "Your text with marks": [
+      "Твой текст с пометками",
+      "Белгіленген мәтінің"
+    ],
+    "Orange is a mistake. Cyan is something that could be stronger. Green is a move that works. Tap any highlight for before / after / why.": [
+      "Оранжевый — ошибка. Циан — можно усилить. Зелёный — удачный приём. Нажми на подсветку: было / стало / почему.",
+      "Қызғылт сары — қате. Көгілдір — күшейтуге болады. Жасыл — сәтті тәсіл. Белгіні бас: бұрын / кейін / неге."
+    ],
+    "Corrections, most important first": [
+      "Правки по порядку важности",
+      "Түзетулер маңыздылығы бойынша"
+    ],
+    "No serious mistakes found — from here the work is precision, not accuracy.": [
+      "Грубых ошибок нет — дальше работаем над точностью слов.",
+      "Өрескел қате жоқ — енді сөз дәлдігімен жұмыс істейміз."
+    ],
+    "What worked": [
+      "Что получилось",
+      "Не сәтті шықты"
+    ],
+    "This works": [
+      "Удачный приём",
+      "Сәтті тәсіл"
+    ],
+    "Worth fixing": [
+      "Что поправить",
+      "Нені түзету керек"
+    ],
+    "Three steps to the next level": [
+      "Три шага к следующему уровню",
+      "Келесі деңгейге үш қадам"
+    ],
+    "Your text, half a level up": [
+      "Твой текст на полступени выше",
+      "Мәтінің жарты деңгей жоғары"
+    ],
+    "This is not somebody else's model: it is your ideas and your length, with the wording tightened. Green is added, red is removed.": [
+      "Это не чужой эталон: твои мысли и твой объём, только формулировки подтянуты. Зелёное добавлено, красное убрано.",
+      "Бұл — бөтен үлгі емес: сенің ойларың мен көлемің, тек тұжырымдары жинақталған. Жасыл — қосылған, қызыл — алынған."
+    ],
+    "Hide the differences": [
+      "Скрыть дифф",
+      "Айырманы жасыру"
+    ],
+    "Show the differences": [
+      "Показать дифф",
+      "Айырманы көрсету"
+    ],
+    "Experience": [
+      "Опыт",
+      "Тәжірибе"
+    ],
+    "No badges yet — finish one piece of writing": [
+      "Бейджей пока нет — доведи первую работу до конца",
+      "Әзірге белгі жоқ — бір жұмысты аяғына дейін жеткіз"
+    ],
+    "Work on the text": [
+      "Доработать текст",
+      "Мәтінді пысықтау"
+    ],
+    "Level of this text: ": [
+      "Уровень текста: ",
+      "Мәтін деңгейі: "
+    ],
+    "before: ": [
+      "было: ",
+      "бұрын: "
+    ],
+    "after: ": [
+      "стало: ",
+      "кейін: "
+    ],
+    "Where the AI checker and the translator live. If the server is unavailable, the built-in offline checker and dictionary take over.": [
+      "Адреса ИИ-проверки и переводчика. Если сервер недоступен, работают встроенная проверка и словарь.",
+      "ЖИ тексеру мен аудармашының мекенжайы. Сервер қолжетімсіз болса, ішкі тексеру мен сөздік жұмыс істейді."
+    ],
+    "Checker endpoint": [
+      "Адрес проверки",
+      "Тексеру мекенжайы"
+    ],
+    "Translator endpoint": [
+      "Адрес переводчика",
+      "Аудармашы мекенжайы"
+    ],
+    "Reset progress": [
+      "Сбросить прогресс",
+      "Барысты тазалау"
+    ],
+    "Reset everything? Tap again": [
+      "Точно сбросить? Нажми ещё раз",
+      "Шынымен тазалау керек пе? Тағы бас"
+    ],
+    "Saved": [
+      "Сохранено",
+      "Сақталды"
+    ],
+    "Overall": [
+      "Итог",
+      "Қорытынды"
+    ],
+    "Show my overall result": [
+      "Показать мой итог",
+      "Қорытындымды көрсету"
+    ],
+    "Exercises completed": [
+      "Упражнений пройдено",
+      "Орындалған жаттығу"
+    ],
+    "Accuracy in the exercises": [
+      "Точность в упражнениях",
+      "Жаттығудағы дәлдік"
+    ],
+    "Overall for this genre": [
+      "Итог по жанру",
+      "Жанр бойынша қорытынды"
+    ],
+    "Not checked yet": [
+      "Ещё не проверен",
+      "Әлі тексерілмеген"
+    ],
+    "Write your text in the Writing Pad and press Check — then this page can give you an overall result.": [
+      "Напиши текст в Блокноте и нажми «Проверить» — тогда здесь появится итог.",
+      "Блокнотта мәтін жазып, «Тексеру» дегенді бас — сонда мұнда қорытынды шығады."
+    ],
+    "Well done.": [
+      "Молодец.",
+      "Жарайсың."
+    ],
+    "You can now write this genre on your own:": [
+      "Теперь ты умеешь писать этот жанр сам:",
+      "Енді бұл жанрды өзің жаза аласың:"
+    ],
+    "Keep going — finish the exercises and submit your text to close this genre.": [
+      "Продолжай: доделай упражнения и сдай текст, чтобы закрыть жанр.",
+      "Жалғастыр: жаттығуларды бітіріп, мәтінді тапсыр — сонда жанр жабылады."
+    ],
+    "excellent": [
+      "отлично",
+      "өте жақсы"
+    ],
+    "good": [
+      "хорошо",
+      "жақсы"
+    ],
+    "keep working": [
+      "есть над чем работать",
+      "жұмыс істейтін тұс бар"
+    ]
+  },
+  "uiExtra": {
+    "Interface language": [
+      "Язык интерфейса",
+      "Интерфейс тілі"
+    ],
+    "Try again — the answer is not shown. The rule above tells you what to change.": [
+      "Попробуй ещё раз — ответа здесь нет. Правило выше говорит, что нужно поменять.",
+      "Тағы бір көр — мұнда жауап жоқ. Жоғарыдағы ереже нені өзгерту керегін айтады."
+    ],
+    "This one stays unsolved for now. Open the exercise again later and try it once more.": [
+      "Этот пункт пока не решён. Открой упражнение позже и попробуй снова.",
+      "Бұл тармақ әзірге шешілмеді. Жаттығуды кейінірек ашып, қайта көр."
+    ],
+    "WHY IT IS WRONG": [
+      "ПОЧЕМУ НЕВЕРНО",
+      "НЕЛІКТЕН ҚАТЕ"
+    ],
+    "Below is each one: what you wrote and why it is wrong. The correct answer is not printed — open the exercise again and try it once more.": [
+      "Ниже каждая: что ты написал и почему это неверно. Правильный ответ не печатается — открой упражнение и попробуй ещё раз.",
+      "Төменде әрқайсысы: не жаздың және неге қате. Дұрыс жауап жазылмайды — жаттығуды ашып, тағы бір көр."
+    ],
+    "That sentence does belong here. ": [
+      "Это предложение здесь на своём месте. ",
+      "Бұл сөйлем осында өз орнында тұр. "
+    ],
+    "Each line of the model does one job — decide from what the line says, not from its position alone.": [
+      "Каждая строка образца делает одну работу — решай по тому, что в строке сказано, а не только по её месту.",
+      "Үлгінің әр жолы бір ғана жұмыс істейді — жолдың орнына емес, не айтылғанына қарап шеш."
+    ],
+    "Your answer to the question": [
+      "Твой ответ на вопрос",
+      "Сұраққа жауабың"
+    ],
+    "Check of what you wrote": [
+      "Проверка написанного",
+      "Жазғаныңды тексеру"
+    ],
+    "No language mistakes found. ": [
+      "Языковых ошибок не найдено. ",
+      "Тілдік қате табылмады. "
+    ],
+    "Capital letters, articles, verb forms and punctuation are all in order here.": [
+      "Заглавные буквы, артикли, формы глагола и знаки препинания здесь в порядке.",
+      "Бас әріптер, артикльдер, етістік формалары мен тыныс белгілері бұл жерде орнында."
+    ],
+    "Each one is shown with what it should be and why.": [
+      "Для каждой показано, как должно быть и почему.",
+      "Әрқайсысы үшін қалай болу керегі және неге екені көрсетілген."
+    ],
+    "WITHOUT THE MISTAKES": [
+      "БЕЗ ОШИБОК",
+      "ҚАТЕСІЗ НҰСҚА"
+    ],
+    "Check of this exercise": [
+      "Проверка этого упражнения",
+      "Осы жаттығуды тексеру"
+    ],
+    "No mistakes in this exercise. ": [
+      "В этом упражнении ошибок нет. ",
+      "Бұл жаттығуда қате жоқ. "
+    ],
+    "Every answer you gave here was right — this rule is working for you.": [
+      "Все ответы здесь верные — это правило у тебя работает.",
+      "Мұндағы жауаптардың бәрі дұрыс — бұл ереже сенде жұмыс істеп тұр."
+    ],
+    "YOU WROTE": [
+      "ТЫ НАПИСАЛ",
+      "СЕН ЖАЗДЫҢ"
+    ],
+    "The pronoun I is always a capital letter in English, anywhere in the sentence.": [
+      "Местоимение I в английском всегда пишется с большой буквы, в любом месте предложения.",
+      "Ағылшын тіліндегі I есімдігі сөйлемнің кез келген жерінде бас әріппен жазылады."
+    ],
+    "In English there is no space before a comma or a full stop — the space goes after it.": [
+      "В английском перед запятой и точкой пробел не ставится — он идёт после.",
+      "Ағылшын тілінде үтір мен нүктенің алдында бос орын қойылмайды — ол кейін тұрады."
+    ],
+    "Two spaces in a row are a typing slip: one space between words is enough.": [
+      "Два пробела подряд — опечатка: между словами хватает одного.",
+      "Қатарынан екі бос орын — қате: сөздер арасында біреуі жетеді."
+    ],
+    "The same word is written twice in a row.": [
+      "Одно и то же слово написано дважды подряд.",
+      "Бір сөз қатарынан екі рет жазылған."
+    ],
+    "Before a vowel sound the article is an: an email, an hour, an answer.": [
+      "Перед гласным звуком артикль an: an email, an hour, an answer.",
+      "Дауысты дыбыстың алдында артикль an: an email, an hour, an answer."
+    ],
+    "Before a consonant sound the article is a: a letter, a phone, a reason.": [
+      "Перед согласным звуком артикль a: a letter, a phone, a reason.",
+      "Дауыссыз дыбыстың алдында артикль a: a letter, a phone, a reason."
+    ],
+    "Every sentence starts with a capital letter — that is how the reader sees where it begins.": [
+      "Каждое предложение начинается с заглавной буквы — по ней читатель видит, где оно начинается.",
+      "Әр сөйлем бас әріптен басталады — оқырман сөйлемнің қайдан басталғанын содан көреді."
+    ],
+    "A sentence needs a full stop at the end — without it the reader does not know where it stops.": [
+      "В конце предложения нужна точка — без неё читатель не понимает, где оно кончается.",
+      "Сөйлемнің соңында нүкте керек — онсыз оқырман оның қайда бітетінін білмейді."
+    ],
+    "Mistakes found": [
+      "Найдено ошибок",
+      "Табылған қателер"
+    ],
+    "Task": [
+      "Задача",
+      "Тапсырма"
+    ],
+    "Organisation": [
+      "Структура",
+      "Құрылым"
+    ],
+    "Vocabulary": [
+      "Лексика",
+      "Лексика"
+    ],
+    "Grammar": [
+      "Грамматика",
+      "Грамматика"
+    ],
+    "Task achieved": [
+      "Задача решена",
+      "Тапсырма орындалды"
+    ],
+    "Agree is a verb: I agree. The 'am' comes from a direct translation.": [
+      "Agree — это глагол: I agree. «Am» здесь от дословного перевода.",
+      "Agree — етістік: I agree. «Am» сөзбе-сөз аудармадан келген."
+    ],
+    "Very does not strengthen a verb: really like, or like … very much.": [
+      "Very не усиливает глагол: really like или like … very much.",
+      "Very етістікті күшейтпейді: really like немесе like … very much."
+    ],
+    "Information is uncountable and has no plural.": [
+      "Information — неисчисляемое, множественного числа не бывает.",
+      "Information — саналмайтын сөз, көпше түрі жоқ."
+    ],
+    "Advice is uncountable: a piece of advice, never advices.": [
+      "Advice — неисчисляемое: a piece of advice, но не advices.",
+      "Advice — саналмайтын: a piece of advice, бірақ advices емес."
+    ],
+    "People is already plural.": [
+      "People — уже множественное число.",
+      "People — өзі көпше түрде тұр."
+    ],
+    "After did the verb goes back to its base form.": [
+      "После did глагол возвращается в начальную форму.",
+      "Did-тен кейін етістік бастапқы түріне оралады."
+    ],
+    "One comparative at a time: better, not more better.": [
+      "Одна степень сравнения за раз: better, а не more better.",
+      "Бір мезгілде бір шырай: better, more better емес."
+    ],
+    "English does not use double negatives.": [
+      "В английском не бывает двойного отрицания.",
+      "Ағылшын тілінде қос болымсыздық қолданылмайды."
+    ],
+    "After want and would like English uses to + verb, not that.": [
+      "После want и would like английский использует to + глагол, а не that.",
+      "Want пен would like-тан кейін ағылшын тілі that емес, to + етістік қолданады."
+    ],
+    "The literal translation sounds abrupt in a letter.": [
+      "Дословный перевод звучит в письме резко.",
+      "Сөзбе-сөз аударма хатта дөрекі естіледі."
+    ],
+    "A calque: English says recently.": [
+      "Калька: по-английски говорят recently.",
+      "Калька: ағылшынша recently дейді."
+    ],
+    "Feel takes no reflexive pronoun in English.": [
+      "Feel в английском не требует возвратного местоимения.",
+      "Feel ағылшын тілінде өздік есімдікті қажет етпейді."
+    ],
+    "After a modal verb there is no to.": [
+      "После модального глагола to не ставится.",
+      "Модаль етістіктен кейін to қойылмайды."
+    ],
+    "In formal writing a precise adjective carries more weight than very + bad.": [
+      "В формальном письме точное прилагательное весомее, чем very + bad.",
+      "Ресми жазуда дәл сын есім very + bad тіркесінен салмақты."
+    ],
+    "Very good is the palest praise available.": [
+      "Very good — самая бледная похвала из возможных.",
+      "Very good — мүмкін болатын ең әлсіз мақтау."
+    ],
+    "Write takes to before the person in British usage.": [
+      "В британском варианте перед человеком после write ставится to.",
+      "Британдық қолданыста write-тан кейін адам алдында to тұрады."
+    ],
+    "The preposition to is needed: writing to you.": [
+      "Нужен предлог to: writing to you.",
+      "To көмекші сөзі керек: writing to you."
+    ],
+    "Spoken thanks in a formal letter reads as careless.": [
+      "Разговорное thanks в формальном письме читается как небрежность.",
+      "Ресми хаттағы ауызекі thanks ұқыпсыздық болып көрінеді."
+    ],
+    "An organisation is not addressed in spoken English.": [
+      "К организации не обращаются разговорным языком.",
+      "Ұйымға ауызекі тілмен жүгінбейді."
+    ],
+    "Two ways of saying now, one after the other.": [
+      "Два способа сказать «сейчас» подряд.",
+      "«Қазір» дегенді екі рет қатар айтқан."
+    ],
+    "Exactly the formula this genre expects at this point.": [
+      "Ровно та формула, которой этот жанр ждёт в этом месте.",
+      "Дәл осы жерде бұл жанр күтетін формула."
+    ],
+    "Split the text into at least three paragraphs: purpose → facts → what you want.": [
+      "Раздели текст хотя бы на три абзаца: цель → факты → чего ты хочешь.",
+      "Мәтінді кем дегенде үш абзацқа бөл: мақсат → фактілер → нені қалайсың."
+    ],
+    "Use at least two linking words — one 'however' and one 'therefore', in different paragraphs.": [
+      "Используй хотя бы две связки — одно however и одно therefore, в разных абзацах.",
+      "Кем дегенде екі байланыстырғыш қолдан — бір however және бір therefore, әртүрлі абзацта."
+    ],
+    "Check the list on the right: at least one required point of the task is not in your text.": [
+      "Проверь список справа: хотя бы один обязательный пункт задания в текст не попал.",
+      "Оң жақтағы тізімді тексер: тапсырманың кемінде бір міндетті тармағы мәтінге кірмей қалған."
+    ],
+    "Replace the two palest words in the text with exact ones: good → reliable, bad → faulty.": [
+      "Замени два самых бледных слова в тексте на точные: good → reliable, bad → faulty.",
+      "Мәтіндегі ең әлсіз екі сөзді дәлірегіне ауыстыр: good → reliable, bad → faulty."
+    ],
+    "The main thing holding it back is the serious grammar mistakes listed below.": [
+      "Главное, что тянет текст вниз, — серьёзные грамматические ошибки ниже.",
+      "Мәтінді тежеп тұрған басты нәрсе — төмендегі елеулі грамматикалық қателер."
+    ],
+    "There are no serious grammar mistakes — the work now is precision of vocabulary and structure.": [
+      "Серьёзных грамматических ошибок нет — дальше работа над точностью лексики и структурой.",
+      "Елеулі грамматикалық қате жоқ — енді жұмыс лексиканың дәлдігі мен құрылым туралы."
+    ],
+    "characters": [
+      "знаков",
+      "таңба"
+    ],
+    "sentences": [
+      "предложений",
+      "сөйлем"
+    ],
+    "words per sentence": [
+      "слов в предложении",
+      "сөйлемдегі сөз"
+    ],
+    "long sentences — split them": [
+      "длинные предложения — раздели их",
+      "сөйлемдер ұзын — бөліп жаз"
+    ],
+    "Your sentences are long — split them": [
+      "Твои предложения длинные — раздели их",
+      "Сөйлемдерің ұзын — оларды бөліп жаз"
+    ],
+    "A comfortable range is 8–24": [
+      "Комфортный диапазон — 8–24",
+      "Ыңғайлы аралық — 8–24"
+    ],
+    "Bold": [
+      "Полужирный",
+      "Қалың"
+    ],
+    "List": [
+      "Список",
+      "Тізім"
+    ],
+    "Paragraph": [
+      "Абзац",
+      "Абзац"
+    ],
+    "• List": [
+      "• Список",
+      "• Тізім"
+    ],
+    "¶ Paragraph": [
+      "¶ Абзац",
+      "¶ Абзац"
+    ],
+    "Open the Writing Pad to insert a phrase": [
+      "Открой Блокнот, чтобы вставить фразу",
+      "Тіркесті кірістіру үшін Блокнотты аш"
+    ],
+    "Words and short sentences": [
+      "Слова и короткие предложения",
+      "Сөздер мен қысқа сөйлемдер"
+    ],
+    "One clear paragraph": [
+      "Один понятный абзац",
+      "Бір түсінікті абзац"
+    ],
+    "Two or three paragraphs that hold together": [
+      "Два-три связанных между собой абзаца",
+      "Бір-бірімен байланысқан екі-үш абзац"
+    ],
+    "A planned text with linking words": [
+      "Спланированный текст со связками",
+      "Байланыстырғыштары бар жоспарланған мәтін"
+    ],
+    "Argument and structure": [
+      "Аргументация и структура",
+      "Дәйектеме мен құрылым"
+    ],
+    "Nuance, register, criticism": [
+      "Оттенки, регистр, критика",
+      "Реңк, стиль, сын"
+    ],
+    "Choose a genre: each one gives you the phrases it lives on, eleven exercises and your own piece of writing at the end.": [
+      "Выбери жанр: в каждом есть фразы, на которых он держится, одиннадцать упражнений и твой собственный текст в конце.",
+      "Жанрды таңда: әрқайсысында оның негізіндегі тіркестер, он бір жаттығу және соңында өз мәтінің бар."
+    ],
+    "Back to the Writing home screen": [
+      "На главную секции Writing",
+      "Writing бөлімінің басты бетіне"
+    ],
+    "Experience points": [
+      "Опыт",
+      "Тәжірибе"
+    ],
+    "Open the Writing Pad": [
+      "Открыть Блокнот",
+      "Блокнотты ашу"
+    ],
+    "Write at least a short full sentence first — a few words are not an answer yet.": [
+      "Сначала напиши хотя бы короткое полное предложение — пары слов недостаточно.",
+      "Алдымен кем дегенде қысқа толық сөйлем жаз — бірер сөз әлі жауап емес."
+    ],
+    "You found the information the question was asking for.": [
+      "В тексте найдено именно то, о чём спрашивали.",
+      "Сұралған ақпаратты мәтіннен дәл таптың."
+    ],
+    "Your checked text": [
+      "Проверенный текст",
+      "Тексерілген мәтін"
+    ],
+    "Refresh my overall result": [
+      "Обновить итог",
+      "Қорытындыны жаңарту"
+    ],
+    "Your text has not been checked yet. Write it in the Writing Pad and press Check — then the last two rings fill in as well.": [
+      "Твой текст ещё не проверен. Напиши его в Блокноте и нажми «Проверить» — тогда заполнятся и два последних круга.",
+      "Мәтінің әлі тексерілмеген. Оны Блокнотта жазып, «Тексеру» батырмасын бас — сонда соңғы екі шеңбер де толады."
+    ],
+    "This one holds up.": [
+      "Здесь всё в порядке.",
+      "Мұнда бәрі орнында."
+    ],
+    "Strong. This genre is under control — the shape, the phrases and the grammar all hold.": [
+      "Сильно. Жанр под контролем: и структура, и фразы, и грамматика держатся.",
+      "Мықты. Жанр толық меңгерілген: құрылым да, тіркестер де, грамматика да орнында."
+    ],
+    "Solid. The text works; the gaps are in detail, not in the shape of the genre.": [
+      "Уверенно. Текст работает, слабые места — в деталях, а не в структуре жанра.",
+      "Сенімді. Мәтін жұмыс істейді, кемшіліктер жанр құрылымында емес, ұсақ-түйекте."
+    ],
+    "Getting there. The plan is right, the language still slips in places.": [
+      "Уже близко. План верный, но язык местами подводит.",
+      "Жақындап қалдың. Жоспар дұрыс, бірақ тіл кей жерде ақсайды."
+    ],
+    "Early days. Go back through the exercises you have not finished — they are what moves this number.": [
+      "Пока начало. Вернись к невыполненным упражнениям — именно они двигают этот результат.",
+      "Әзірге бастамасың. Аяқталмаған жаттығуларға оралт — бұл нәтижені солар жылжытады."
+    ],
+    "Nothing counted yet. Do the exercises and submit a text, and this fills in by itself.": [
+      "Пока считать нечего. Сделай упражнения и отправь текст на проверку — итог появится сам.",
+      "Әзірге санайтын ештеңе жоқ. Жаттығуларды орында да мәтінді тексеруге жібер — қорытынды өзі шығады."
+    ]
+  },
+  "rulesRu": {
+    "svo": "Порядок слов в английском жёсткий: подлежащее → сказуемое → дополнение. Время и место — в конце.",
+    "be": "Английский никогда не опускает глагол-связку: посылка IS опоздала, я AM рад.",
+    "present3": "He, she, it и любое единственное число требуют -s: the shop opens, my sister works.",
+    "past": "Законченное действие в прошлом требует прошедшей формы: I bought, we went, she sent.",
+    "perfect": "Present Perfect связывает прошлое с настоящим: I have sent, she has arrived.",
+    "future": "Планы и обещания — will или going to плюс начальная форма глагола.",
+    "article": "Исчисляемому существительному в единственном числе нужен артикль: a phone, an email, the receipt.",
+    "plural": "После числа или many существительное остаётся во множественном: two emails, many people.",
+    "prep": "Предлоги закреплены за выражением, а не за логикой: on Monday, in May, at 6 p.m.",
+    "modal": "После can, should, must и will глагол идёт без to: I can send, you should write.",
+    "adv": "Наречие описывает действие и обычно оканчивается на -ly: he answered quickly.",
+    "question": "Вопрос меняет порядок слов: Could you…? Do you…? Have you…?",
+    "negative": "Одного отрицания достаточно, и ему нужен вспомогательный глагол: I do not have any time.",
+    "linker": "Связка в начале предложения требует запятой: However, the parcel was late.",
+    "relative": "Who — о людях, that/which — о вещах: the parcel that arrived late.",
+    "gerund": "После предлога глагол принимает -ing: look forward to hearing, instead of paying.",
+    "conditional": "В придаточном с if английский использует настоящее время, а не will: If it rains, I will stay at home.",
+    "passive": "Пассив — это be плюс третья форма: the box was damaged, the report is written.",
+    "compare": "Одна степень сравнения за раз: better, а не more better; cheaper, а не more cheaper.",
+    "quantifier": "Many — с исчисляемыми, much — с неисчисляемыми: many emails, much information."
+  },
+  "rulesKk": {
+    "svo": "Ағылшын тілінде сөз реті қатаң: бастауыш → баяндауыш → толықтауыш. Мезгіл мен мекен — соңында.",
+    "be": "Ағылшын тілі байланыстырушы етістікті түсірмейді: сәлемдеме кешікті — parcel IS late.",
+    "present3": "He, she, it және жекеше бастауыш -s жалғауын талап етеді: the shop opens.",
+    "past": "Аяқталған өткен әрекет өткен шақ формасын қажет етеді: I bought, we went.",
+    "perfect": "Present Perfect өткенді осы шақпен байланыстырады: I have sent, she has arrived.",
+    "future": "Жоспар мен уәде — will немесе going to және етістіктің бастапқы түрі.",
+    "article": "Жекеше саналатын зат есімге артикль керек: a phone, an email, the receipt.",
+    "plural": "Саннан немесе many сөзінен кейін зат есім көпше күйінде қалады: two emails.",
+    "prep": "Көмекші сөздер тіркеске бекітілген, логикаға емес: on Monday, in May, at 6 p.m.",
+    "modal": "Can, should, must, will сөздерінен кейін етістік to-сыз тұрады: I can send.",
+    "adv": "Үстеу әрекетті сипаттайды және көбіне -ly жалғауын алады: he answered quickly.",
+    "question": "Сұрақта сөз реті ауысады: Could you…? Do you…? Have you…?",
+    "negative": "Бір болымсыздық жеткілікті, оған көмекші етістік керек: I do not have any time.",
+    "linker": "Сөйлем басындағы байланыстырғыштан кейін үтір қойылады: However, the parcel was late.",
+    "relative": "Who — адам туралы, that/which — зат туралы: the parcel that arrived late.",
+    "gerund": "Көмекші сөзден кейін етістік -ing жалғауын алады: look forward to hearing.",
+    "conditional": "If бағыныңқысында ағылшын осы шақты қолданады, will емес: If it rains, I will stay.",
+    "passive": "Ырықсыз етіс — be және етістіктің үшінші түрі: the box was damaged.",
+    "compare": "Бір мезгілде бір ғана шырай: better, more better емес.",
+    "quantifier": "Many — саналатынмен, much — саналмайтынмен: many emails, much information."
+  },
+  "titles": {
+    "word-order": "Build the sentence",
+    "transform": "Rewrite it",
+    "connectors": "Add the linking word",
+    "punctuation": "Capitals and punctuation",
+    "expand": "Notes into sentences",
+    "register": "Who are you writing to?",
+    "idea-bank": "Idea bank",
+    "outline-builder": "Build the plan",
+    "guided-write": "Write it step by step",
+    "free-write": "Your own text",
+    "overall": "Overall"
+  },
+  "titlesRu": {
+    "idea-bank": "Банк идей",
+    "word-order": "Собери предложение",
+    "transform": "Перепиши по подсказке",
+    "connectors": "Вставь связку",
+    "punctuation": "Заглавные буквы и знаки",
+    "expand": "Разверни заметки",
+    "register": "Кому ты это пишешь?",
+    "outline-builder": "Собери план",
+    "guided-write": "Пишем по шагам",
+    "free-write": "Свой текст",
+    "overall": "Итог по жанру"
+  },
+  "titlesKk": {
+    "idea-bank": "Идеялар банкі",
+    "word-order": "Сөйлемді құрастыр",
+    "transform": "Нұсқау бойынша қайта жаз",
+    "connectors": "Байланыстырғышты қой",
+    "punctuation": "Бас әріптер мен тыныс белгілері",
+    "expand": "Жазбаны толық сөйлемге айналдыр",
+    "register": "Кімге жазып тұрсың?",
+    "outline-builder": "Жоспар құр",
+    "guided-write": "Қадаммен жазамыз",
+    "free-write": "Өз мәтінің",
+    "overall": "Жанр бойынша қорытынды"
+  },
+  "typeLabel": {
+    "word-order": "word order",
+    "transform": "transformation",
+    "connectors": "linking words",
+    "punctuation": "punctuation",
+    "expand": "expansion",
+    "register": "register",
+    "idea-bank": "idea bank",
+    "outline-builder": "outline",
+    "guided-write": "guided writing",
+    "free-write": "free writing",
+    "overall": "overall result"
+  },
+  "typeLabelRu": {
+    "idea-bank": "банк идей",
+    "outline-builder": "план",
+    "word-order": "порядок слов",
+    "transform": "трансформация",
+    "connectors": "связки",
+    "punctuation": "пунктуация",
+    "expand": "развернуть",
+    "register": "регистр",
+    "guided-write": "письмо по шагам",
+    "free-write": "свой текст",
+    "overall": "итог"
+  },
+  "typeLabelKk": {
+    "idea-bank": "идеялар банкі",
+    "outline-builder": "жоспар",
+    "word-order": "сөз реті",
+    "transform": "түрлендіру",
+    "connectors": "байланыстырғыш",
+    "punctuation": "тыныс белгілері",
+    "expand": "толықтыру",
+    "register": "стиль",
+    "guided-write": "қадаммен жазу",
+    "free-write": "өз мәтінің",
+    "overall": "қорытынды"
+  },
+  "howto": {
+    "word-order": "Tap the words in the right order — they move into the line. Tap a word in the line to send it back. English word order is fixed, so the order itself carries the meaning.",
+    "transform": "Read the sentence and the instruction next to it. Write your own version: same meaning, different form. The model answer appears after you check.",
+    "connectors": "The linking words are in the bank at the top. Tap a linking word, then tap the gap — or drag it with the mouse. Each word is used once.",
+    "punctuation": "Rewrite the sentence with capital letters and punctuation. Do not change the words themselves.",
+    "expand": "Turn the notes into a full sentence: add articles, prepositions and the right verb form. Keep the meaning.",
+    "register": "The same idea, two versions. Choose the one that fits the reader. Register is not about being polite — it is about distance.",
+    "idea-bank": "Sort the ideas into two columns: what goes into your text and what only waters it down. Then choose the three strongest ideas.",
+    "outline-builder": "Put the blocks into the four parts of the text. The checker knows the logic of the genre: some blocks cannot stand where you put them.",
+    "guided-write": "Answer one question at a time, in English, one or two sentences. At the end your answers become a draft in the Writing Pad. The hints are questions, not ready sentences: the text stays yours.",
+    "free-write": "Now the whole text, on your own. The Writing Pad gives you the checklist, the phrase bank, the linking words and your plan. The timer is optional.",
+    "overall": "This is the site's own summary of the genre. It counts the exercises you have finished, how accurate you were, and the scores of the text you submitted, and turns all of that into one band. Nothing here is a school grade — it only shows what to work on next."
+  },
+  "howtoRu": {
+    "word-order": "Нажимай на слова в правильном порядке — они встанут в строку. Нажми на слово в строке, чтобы вернуть его. Порядок слов в английском жёсткий: он и передаёт смысл.",
+    "transform": "Прочитай предложение и подсказку рядом. Напиши свой вариант: смысл тот же, форма другая. Образец появится после проверки.",
+    "connectors": "Связки — в банке сверху. Нажми на связку, потом на пропуск, или перетащи мышкой. Каждая связка используется один раз.",
+    "punctuation": "Перепиши предложение с заглавными буквами и знаками. Сами слова не меняй.",
+    "expand": "Преврати заметки в полное предложение: добавь артикли, предлоги и нужную форму глагола. Смысл сохрани.",
+    "register": "Одна мысль, два варианта. Выбери тот, который подходит адресату. Регистр — это не про вежливость, а про дистанцию.",
+    "idea-bank": "Разложи идеи по двум колонкам: что войдёт в текст, а что только разбавит его. Потом выбери три самые сильные идеи.",
+    "outline-builder": "Разложи блоки по четырём частям текста. Проверка знает логику жанра: некоторые блоки не могут стоять там, куда ты их поставил.",
+    "guided-write": "Отвечай на один вопрос за раз, по-английски, одним-двумя предложениями. В конце ответы станут черновиком в Блокноте. Подсказки — это вопросы, а не готовые фразы: текст остаётся твоим.",
+    "free-write": "Теперь целый текст самостоятельно. В Блокноте есть чек-лист, банк фраз, связки и твой план. Таймер — по желанию.",
+    "overall": "Это итог, который сайт считает сам. Он берёт выполненные упражнения, точность ответов и оценки проверенного текста и сводит их в один результат. Это не школьная отметка, а подсказка, над чем работать дальше."
+  },
+  "howtoKk": {
+    "word-order": "Сөздерді дұрыс ретпен бас — олар жолға тұрады. Жолдағы сөзді қайтару үшін оны бас. Ағылшын тілінде сөз реті қатаң: мағынаны сол рет береді.",
+    "transform": "Сөйлемді және қасындағы нұсқауды оқы. Өз нұсқаңды жаз: мағынасы сол, түрі басқа. Үлгі тексергеннен кейін шығады.",
+    "connectors": "Байланыстырғыш сөздер жоғарыдағы банкте. Байланыстырғышты бас, сосын бос орынды бас немесе тінтуірмен сүйре. Әр сөз бір рет қолданылады.",
+    "punctuation": "Сөйлемді бас әріптермен және тыныс белгілерімен қайта жаз. Сөздердің өзін өзгертпе.",
+    "expand": "Жазбаларды толық сөйлемге айналдыр: артикль, көмекші сөз және етістіктің дұрыс түрін қос. Мағынасын сақта.",
+    "register": "Бір ой, екі нұсқа. Оқырманға сай келетінін таңда. Стиль — сыпайылық емес, ара қашықтық туралы.",
+    "idea-bank": "Идеяларды екі бағанға бөл: мәтінге кіретіні және оны тек сұйылтатыны. Сосын үш ең күшті идеяны таңда.",
+    "outline-builder": "Блоктарды мәтіннің төрт бөлігіне орналастыр. Тексеру жанр логикасын біледі: кейбір блок сен қойған жерде тұра алмайды.",
+    "guided-write": "Бір сұраққа бір рет жауап бер, ағылшынша, бір-екі сөйлеммен. Соңында жауаптарың Блокнотта жоба мәтін болады. Кеңестер — дайын сөйлем емес, сұрақтар: мәтін сенікі болып қалады.",
+    "free-write": "Енді бүкіл мәтінді өзің жаз. Блокнотта тізім, тіркестер банкі, байланыстырғыштар және жоспарың бар. Таймер — қалауың бойынша.",
+    "overall": "Бұл — сайттың өзі шығаратын қорытынды. Ол орындалған жаттығуларды, жауаптардың дәлдігін және тексерілген мәтіннің бағаларын біріктіреді. Бұл мектеп бағасы емес, келесі қадамға арналған нұсқау."
+  }
+}
