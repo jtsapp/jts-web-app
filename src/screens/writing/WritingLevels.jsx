@@ -21,7 +21,10 @@ function levelDonePct(level, tasks) {
 
 export default function WritingLevels({ progressTick, onOpenLevel, onOpenPad }) {
   const { t } = useI18n()
-  // progressTick в зависимостях — пересчёт на каждую отметку/гидратацию.
+  // progressTick в зависимостях — пересчёт на каждую отметку/гидратацию:
+  // readState() читает localStorage, и без тика eslint прав, что зависимость
+  // «лишняя», но тогда прогресс замирал бы до перемонтирования.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const tasks = useMemo(() => readState().tasks || {}, [progressTick])
 
   return (

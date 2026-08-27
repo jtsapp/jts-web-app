@@ -36,6 +36,11 @@ function fetchLevel(level) {
   }
   return levelCache.get(level)
 }
+// Кэш собранных жанров — модульный, а не ref: движок детерминирован (seeded),
+// поэтому пережившая перемонтирование сборка не может устареть, а ref в
+// getGenre ловил бы react-hooks/refs на каждом чтении в рендере.
+const genreCache = new Map() // `${level}:${genreId}` -> жанр
+
 let metaPromise = null
 function fetchMeta() {
   if (!metaPromise) {
@@ -61,7 +66,6 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
   const [meta, setMeta] = useState(null)
   const [levels, setLevels] = useState({}) // level -> {seeds, bank}
   const [error, setError] = useState('')
-  const genreCacheRef = useRef(new Map()) // `${level}:${genreId}` -> собранный жанр
 
   // Тик прогресса: и локальные отметки, и гидратация с сервера шлют одно
   // событие — карточки каталога и чипы шагов пересчитываются сами.
@@ -105,13 +109,12 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
     (level, genreId) => {
       if (!meta || !levels[level]) return null
       const key = level + ':' + genreId
-      const cache = genreCacheRef.current
-      if (!cache.has(key)) {
+      if (!genreCache.has(key)) {
         const seed = levels[level].seeds.find((s) => s.id === genreId)
         if (!seed) return null
-        cache.set(key, buildGenre(seed, levels[level].bank, meta))
+        genreCache.set(key, buildGenre(seed, levels[level].bank, meta))
       }
-      return cache.get(key)
+      return genreCache.get(key)
     },
     [meta, levels],
   )

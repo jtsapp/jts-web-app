@@ -8,9 +8,11 @@ import { genreDoneCount } from '../../practice/writing/writingProgress.js'
 export default function WritingGenres({ level, levelData, progressTick, onOpen }) {
   const { t } = useI18n()
   const seeds = levelData?.seeds || []
-  // progressTick в зависимостях — пересчёт прогресса карточек после отметок.
+  // progressTick в зависимостях — пересчёт прогресса карточек после отметок:
+  // genreDoneCount читает localStorage, без тика прогресс замирал бы.
   const progress = useMemo(
     () => Object.fromEntries(seeds.map((s) => [s.id, genreDoneCount(s.id)])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [seeds, progressTick],
   )
 
