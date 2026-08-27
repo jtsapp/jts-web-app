@@ -7914,6 +7914,65 @@ textarea {
 .plc-tile.used { opacity: 0.35; cursor: default; }
 .plc-reset { margin-top: 12px; }
 
+/* Текст для чтения — сворачиваемый, как в бандле: на маленьком экране студент
+   прячет его, чтобы видеть вопрос. */
+.plc-rtext {
+  margin: 0 0 20px; border: 1.5px solid var(--line, #e6e8ef); border-radius: 16px;
+  background: #f4f5f7; overflow: hidden;
+}
+.plc-rtext summary {
+  padding: 14px 20px; font-size: 14px; font-weight: 700; color: var(--muted);
+  cursor: pointer; list-style: none; user-select: none;
+}
+.plc-rtext summary::-webkit-details-marker { display: none; }
+.plc-rtext[open] summary { border-bottom: 1px solid var(--line, #e6e8ef); }
+.plc-rtext__body { padding: 16px 20px 18px; font-size: 16px; line-height: 1.65; color: var(--ink); white-space: pre-line; }
+
+/* Вопросы одной записи на одном экране: разделяются линией, а не карточками. */
+.plc-q { padding: 22px 0 4px; border-top: 1px solid #f0f0f4; margin-top: 18px; }
+.plc-q:first-of-type { border-top: 0; margin-top: 8px; padding-top: 0; }
+
+/* Верно / Неверно / Не сказано */
+.plc-tf {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid #f0f0f4;
+}
+.plc-tf:last-child { border-bottom: 0; }
+.plc-tf__text { flex: 1; font-size: 15px; line-height: 1.5; color: var(--ink); }
+.plc-tf__btns { display: flex; gap: 6px; flex-shrink: 0; }
+.plc-tf__btn {
+  padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--line, #e6e8ef);
+  background: #fff; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink); cursor: pointer;
+}
+.plc-tf__btn.on { background: var(--purple); border-color: var(--purple); color: #fff; }
+
+/* Номер в собранной последовательности / соединённой паре */
+.plc-seqn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; margin-right: 8px; padding: 0 6px;
+  border-radius: 999px; background: var(--purple); color: #fff; font-size: 12.5px;
+}
+.plc-opt.on .plc-seqn { background: #fff; color: var(--purple); }
+.plc-opt.sel { border-color: var(--purple); box-shadow: 0 0 0 3px #efe6ff; }
+
+/* Заполнение пропусков: текст с кликабельными пропусками */
+.plc-bftext { margin: 0 0 18px; font-size: 17px; line-height: 2.1; color: var(--ink); }
+.plc-gap {
+  display: inline-block; min-width: 64px; margin: 0 3px; padding: 4px 12px;
+  border: 1.5px dashed var(--line, #d5d0e2); border-radius: 999px;
+  background: #f4f5f7; font: inherit; font-size: 15px; color: var(--muted);
+  cursor: pointer; text-align: center; vertical-align: baseline;
+}
+.plc-gap.on { border-style: solid; border-color: var(--purple); background: #f6f1ff; color: var(--ink); font-weight: 600; }
+
+/* Соединение пар: две колонки, на телефоне — одна */
+.plc-match { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.plc-match__col { display: flex; flex-direction: column; gap: 10px; }
+
+.plc-slots__empty { color: var(--muted); font-size: 15px; padding: 8px 2px; }
+
+.plc-video { display: block; width: 100%; max-height: 360px; border-radius: 16px; background: #14131c; margin-bottom: 14px; }
+
 .plc-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 30px; }
 .plc-primary {
   padding: 15px 34px; border: 0; border-radius: 999px; background: var(--purple);
@@ -7946,4 +8005,6 @@ textarea {
   .plc-opt { padding: 14px 16px; font-size: 15px; }
   .plc-primary, .plc-ghost { padding: 13px 24px; font-size: 15px; }
   .plc-level { font-size: 50px; }
+  .plc-match { grid-template-columns: 1fr; }
+  .plc-tf { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
