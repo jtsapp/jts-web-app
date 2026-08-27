@@ -7,18 +7,18 @@ import { readFileSync, existsSync } from 'node:fs'
 import { GRAMMAR_LEVELS, levelToCourse } from './grammarData.js'
 
 const DATA = new URL('../../../public/practice/grammar/', import.meta.url).pathname
-const withData = GRAMMAR_LEVELS.filter((l) => !l.empty)
+const withData = GRAMMAR_LEVELS
 
 describe('GRAMMAR_LEVELS', () => {
-  it('витрина идёт от A0 до C1, C2 — заглушка «скоро»', () => {
-    expect(GRAMMAR_LEVELS.map((l) => l.code)).toEqual(['a0', 'a1', 'a2', 'b1', 'b2', 'c1', 'c2'])
-    expect(GRAMMAR_LEVELS.find((l) => l.code === 'c2').empty).toBe(true)
-    expect(withData.every((l) => !l.empty)).toBe(true)
+  // В витрине только уровни с курсом: C2 убран вместе с заглушкой «скоро».
+  it('витрина идёт от A0 до C1 и ничем не заглушена', () => {
+    expect(GRAMMAR_LEVELS.map((l) => l.code)).toEqual(['a0', 'a1', 'a2', 'b1', 'b2', 'c1'])
+    expect(GRAMMAR_LEVELS.some((l) => l.empty)).toBe(false)
   })
 
   // Чип уровня без файла — это пустой экран «скоро» вместо курса, причём
   // молча: загрузчик глотает 404 и отдаёт null.
-  it('у каждого непустого уровня есть файл контента и раздел в каталоге', () => {
+  it('у каждого уровня витрины есть файл контента и раздел в каталоге', () => {
     const index = JSON.parse(readFileSync(`${DATA}index.json`, 'utf8'))
     for (const { code } of withData) {
       expect(existsSync(`${DATA}${code}.json`), `нет ${code}.json`).toBe(true)
@@ -65,8 +65,8 @@ describe('levelToCourse', () => {
     expect(levelToCourse('C1')).toBe('c1')
   })
 
-  // C2 в витрине помечен «скоро»: студента с ним нельзя оставить на пустом
-  // экране, поэтому откатываемся на ближайший курс с данными.
+  // C2 из витрины убран, но студент с таким уровнем в базе остаётся: его
+  // нельзя оставить на пустом экране, поэтому откатываем на ближайший курс.
   it('уровни без курса откатываются на ближайший', () => {
     expect(levelToCourse('C2')).toBe('c1')
     expect(levelToCourse('B3')).toBe('b1')

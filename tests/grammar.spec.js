@@ -106,11 +106,12 @@ async function advanceTo(page, acts, target) {
 test.describe('Грамматика — каталог', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 760, 'каталог проверяем на десктопе')
 
-  test('уровни A0–C2, секции с диапазоном юнитов и карточки', async ({ page }) => {
+  test('уровни A0–C1, секции с диапазоном юнитов и карточки', async ({ page }) => {
     await openCatalog(page)
 
-    // A0 добавлен вместе с обновлением курса; C2 остаётся заглушкой «скоро».
-    await expect(page.locator('.gr-levelchip')).toHaveCount(7)
+    // Ровно уровни с курсом: A0 добавлен с обновлением выгрузки, C2 убран.
+    await expect(page.locator('.gr-levelchip')).toHaveCount(6)
+    await expect(page.locator('.gr-levelchip', { hasText: 'Уровень C2' })).toHaveCount(0)
     await expect(page.locator('.gr-levelchip.on')).toHaveText('Уровень A1')
 
     // Первая секция курса A1 — Present, юниты 1-9 (данные источника).
@@ -159,12 +160,6 @@ test.describe('Грамматика — каталог', () => {
     await expect(page.locator('.gr-block').first()).toBeVisible()
     await page.locator('.gr-tab', { hasText: 'Практика' }).click()
     await expect(page.locator('.gr-act')).toBeVisible()
-  })
-
-  test('C2 в дизайне есть, но курса в источнике нет — показываем «скоро»', async ({ page }) => {
-    await openCatalog(page)
-    await page.locator('.gr-levelchip', { hasText: 'Уровень C2' }).click()
-    await expect(page.locator('.gr-empty')).toContainText('скоро')
   })
 
   test('рейл «Грамматика» в общем виде ведёт в каталог', async ({ page }) => {
