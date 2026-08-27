@@ -16,6 +16,7 @@ import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
+import WritingPage from './screens/WritingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -82,7 +83,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'kingdom', 'practice', 'listening', 'homework', 'lessons',
+  'kingdom', 'practice', 'listening', 'writing', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -302,6 +303,7 @@ export default function App() {
   // L*.html + клиентское извлечение). Определяет, чем workspace грузит контент.
   const [workspaceSource, setWorkspaceSource] = useState('live')
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
+  const [writingTarget, setWritingTarget] = useState(null) // { level?, genreId? } — прыжок из Практики сразу в уровень/жанр Writing
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -652,6 +654,7 @@ export default function App() {
     else if (key === 'listening') setScreen('listening')
     // Shadowing открывается с карточки Практики — payload несёт id урока.
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
+    else if (key === 'writing') { if (payload) setWritingTarget(payload); setScreen('writing') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -672,6 +675,7 @@ export default function App() {
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
     else if (key === 'shadowing') setScreen('shadowing')
+    else if (key === 'writing') setScreen('writing')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -905,6 +909,18 @@ export default function App() {
           userName={name}
           token={token}
           lessonId={shadowingLesson}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
+        />
+      )
+    case 'writing':
+      return (
+        <WritingPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={writingTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}
