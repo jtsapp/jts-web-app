@@ -199,6 +199,17 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
     return t('writing.hero.crumb')
   }, [view, getGenre, t])
 
+  // Подпись кнопки «назад» называет, КУДА она ведёт: жалоба пользователя —
+  // «нет механики выйти из задания»; безликое «Назад» из глубины тренажёра
+  // читалось как «шаг назад», а не выход.
+  const backLabel = useMemo(() => {
+    if (view.name === 'genres') return t('writing.back.levels')
+    if (view.name === 'trainer') return LEVEL_TITLES[view.level] ? LEVEL_TITLES[view.level][0] : t('writing.back.levels')
+    if (view.name === 'pad') return view.genreId ? t('writing.back.tasks') : t('writing.back.levels')
+    if (view.name === 'result') return t('writing.back.pad')
+    return t('writing.back.practice')
+  }, [view, t])
+
   const body = () => {
     if (!entitlement.loading && !entitlement.allowed) {
       return (
@@ -283,7 +294,7 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
       <div className="wr">
         <div className="wr-top">
           <button type="button" className="wr-back" onClick={goBack}>
-            ← {t('writing.back')}
+            ← {backLabel}
           </button>
           <div className="wr-crumb">
             <b>{t('practice.writing.title')}</b>

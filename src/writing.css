@@ -1,25 +1,39 @@
-﻿/* ============================================================
-   РџРёСЃСЊРјРѕ (Writing trainer) вЂ” РЅР°С‚РёРІРЅС‹Р№ СЂР°Р·РґРµР» РџСЂР°РєС‚РёРєРё.
-   РљР»Р°СЃСЃС‹ СЃ РїСЂРµС„РёРєСЃРѕРј .wr-. РџР°Р»РёС‚СЂР° СЃР°Р№С‚Р° (styles.css: --purple, --ink),
-   Р»РѕРєР°Р»СЊРЅС‹Рµ Р°РєС†РµРЅС‚С‹ вЂ” РїРѕ РѕР±СЂР°Р·С†Сѓ listening (.lt): СЂР°Р·РґРµР» РґРѕР»Р¶РµРЅ РІС‹РіР»СЏРґРµС‚СЊ
-   СЂРѕРґРЅС‘Р№ СЃРѕСЃРµРґРЅРёС… С‚СЂРµРЅР°Р¶С‘СЂРѕРІ, Р° РЅРµ РїРµСЂРµРЅРѕСЃРёС‚СЊ РїР°Р»РёС‚СЂСѓ РїСЂРѕС‚РѕС‚РёРїР°.
+/* ============================================================
+   Письмо (Writing trainer) — нативный раздел Практики.
+   Классы с префиксом .wr-. Палитра сайта (styles.css: --purple, --ink),
+   локальные акценты — по образцу listening (.lt): раздел должен выглядеть
+   роднёй соседних тренажёров, а не переносить палитру прототипа.
    ============================================================ */
 .wr {
-  --wr-purple: var(--purple, #9047ff);
-  --wr-sky: #d6ecff;
-  --wr-sky-ink: #2b6cb0;
-  --wr-green: #37a15f;
-  --wr-green-bg: #e6f6ec;
-  --wr-red: #e0574f;
-  --wr-red-bg: #fdeceb;
-  --wr-gold: #b9860b;
+  /* Палитра прототипа (data/jtswriting.html): пользователь сравнил порт с
+     оригиналом и попросил его вид — ошибки оранжевые, подсказки голубые,
+     успех зелёный, никаких серых рамок. Меняя тон раздела — меняй здесь. */
+  --wr-purple: #874bf8;
+  --wr-cyan: #0aafff;
+  --wr-sky: #e6f6ff;
+  --wr-sky-ink: #00537f;
+  --wr-green: #03832c;
+  --wr-green-ink: #03601f;
+  --wr-green-bg: #e6fbec;
+  --wr-red: #c43d00;
+  --wr-red-ink: #9e3200;
+  --wr-red-bg: #fff0e9;
+  --wr-orange: #ff631e;
+  --wr-gold: #7a5200;
   --wr-gold-bg: #fff6e0;
-  --wr-line: #ecebf2;
-  --wr-soft: #f6f4fb;
-  padding: 8px 24px 40px;
+  --wr-line: #edeaf5;
+  --wr-soft: #f4f1fc;
+  --wr-field: #fbfafe; /* фон полей/слотов прототипа */
+  --wr-ink-2: #4a4458;
+  --wr-ink-3: #8a849a;
+  /* Центрированная колонка как .wrap прототипа: без max-width контент
+     размазывался на всю ширину и прижимался к сайдбару. */
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 32px 48px;
 }
 
-/* РІРµСЂС…РЅСЏСЏ РЅР°РІРёРіР°С†РёСЏ: РќР°Р·Р°Рґ + С…Р»РµР±РЅР°СЏ РєСЂРѕС€РєР° (РїР°С‚С‚РµСЂРЅ .lt-top) */
+/* верхняя навигация: Назад + хлебная крошка (паттерн .lt-top) */
 .wr-top {
   display: flex;
   align-items: center;
@@ -48,7 +62,7 @@
 .wr-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; }
 .wr-note--err { background: var(--wr-red-bg); color: var(--wr-red); }
 
-/* в”Ђв”Ђ РєРЅРѕРїРєРё в”Ђв”Ђ */
+/* ── кнопки ── */
 .wr-primary {
   display: inline-flex;
   align-items: center;
@@ -57,35 +71,38 @@
   border: 0;
   background: var(--wr-purple);
   color: #fff;
-  border-radius: 999px;
+  border-radius: 14px;
   padding: 12px 22px;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: filter 0.15s ease, opacity 0.15s ease;
+  box-shadow: 0 6px 18px rgba(135, 75, 248, 0.32); /* тень прототипа .btn-primary */
+  transition: filter 0.15s ease, opacity 0.15s ease, transform 0.12s ease;
 }
+.wr-primary:active { transform: translateY(1px); }
 .wr-primary:hover:not(:disabled) { filter: brightness(1.06); }
-.wr-primary:disabled { background: #e7defb; color: #b9a8ef; cursor: not-allowed; }
+.wr-primary:disabled { background: #e7defb; color: #b9a8ef; cursor: not-allowed; box-shadow: none; }
 .wr-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1.5px solid var(--wr-line);
+  border: 0;
   background: #fff;
-  color: var(--ink, #26243b);
-  border-radius: 999px;
+  color: var(--ink, #16121f);
+  border-radius: 14px;
   padding: 11px 20px;
   font-family: inherit;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05); /* .btn-ghost прототипа: карточка, не рамка */
 }
-.wr-ghost:hover { border-color: var(--wr-purple); color: var(--wr-purple); }
+.wr-ghost:hover { color: var(--wr-purple); }
 .wr-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* в”Ђв”Ђ РєР°СЂС‚РѕС‡РєРё Рё РїРёР»СЋР»Рё в”Ђв”Ђ */
+/* ── карточки и пилюли ── */
 .wr-card {
   background: #fff;
   border-radius: 20px;
@@ -109,9 +126,9 @@
 }
 .wr-pill--score { background: var(--wr-gold-bg); color: var(--wr-gold); }
 
-/* в”Ђв”Ђ РєР°С‚Р°Р»РѕРі: РіРµСЂРѕР№ + СѓСЂРѕРІРЅРё в”Ђв”Ђ */
+/* ── каталог: герой + уровни ── */
 .wr-hero { padding: 6px 4px 16px; }
-.wr-hero h1 { font-size: 28px; font-weight: 800; margin: 0 0 8px; }
+.wr-hero h1 { font-size: 30px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.02em; }
 .wr-hero p { color: #6f6d7e; max-width: 560px; margin: 0; font-size: 14.5px; line-height: 1.5; }
 .wr-lvgrid {
   display: grid;
@@ -155,11 +172,12 @@
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--wr-green);
+  /* прогресс как .bar прототипа — фиолетово-голубой градиент */
+  background: linear-gradient(90deg, var(--wr-purple), var(--wr-cyan));
 }
 .wr-lvcard__stats { font-size: 12px; color: #9a99a6; }
 
-/* РїСЂРѕРјРѕ Р‘Р»РѕРєРЅРѕС‚Р° РЅР° СЌРєСЂР°РЅРµ СѓСЂРѕРІРЅРµР№ */
+/* промо Блокнота на экране уровней */
 .wr-padpromo {
   display: flex;
   align-items: center;
@@ -174,7 +192,7 @@
 .wr-padpromo__body h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
 .wr-padpromo__body p { margin: 0; font-size: 13.5px; color: #6f6d7e; max-width: 480px; }
 
-/* в”Ђв”Ђ РєР°С‚Р°Р»РѕРі: Р¶Р°РЅСЂС‹ СѓСЂРѕРІРЅСЏ в”Ђв”Ђ */
+/* ── каталог: жанры уровня ── */
 .wr-gngrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -206,16 +224,16 @@
   background: var(--wr-soft);
   overflow: hidden;
 }
-.wr-gncard__bar i { display: block; height: 100%; border-radius: 999px; background: var(--wr-green); }
+.wr-gncard__bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--wr-purple), var(--wr-cyan)); }
 .wr-gncard--done { outline: 2px solid var(--wr-green); outline-offset: -2px; }
 
-/* Р‘Р°РЅРЅРµСЂ В«РџРёСЃСЊРјРѕВ» РЅР° С…Р°Р±Рµ РџСЂР°РєС‚РёРєРё: С‚РѕС‚ Р¶Рµ РєР°СЂРєР°СЃ .pp-listen, СЃРІРѕСЏ Р·Р°Р»РёРІРєР°,
-   С‡С‚РѕР±С‹ РґРІР° Р±Р°РЅРЅРµСЂР° РЅРµ СЃР»РёРІР°Р»РёСЃСЊ РІ РѕРґРёРЅ СЂР°Р·РґРµР». */
+/* Баннер «Письмо» на хабе Практики: тот же каркас .pp-listen, своя заливка,
+   чтобы два баннера не сливались в один раздел. */
 .pp-write .pp-listen__card {
   background: linear-gradient(115deg, #2b6cb0 0%, #9047ff 100%);
 }
 
-/* в”Ђв”Ђ РјРѕР±Р°Р№Р»: РєРѕРЅРІРµРЅС†РёРё С…Р°Р±Р° (СЃРј. styles.css @760) в”Ђв”Ђ */
+/* ── мобайл: конвенции хаба (см. styles.css @760) ── */
 @media (max-width: 760px) {
   .wr { padding: 4px 16px 32px; }
   .wr-hero h1 { font-size: 22px; }
@@ -224,12 +242,12 @@
 }
 
 /* ============================================================
-   РџРёСЃСЊРјРѕ вЂ” С‚СЂРµРЅР°Р¶С‘СЂ РёР· 6 С€Р°РіРѕРІ (WritingTrainer + tasks/*).
-   Part-С„Р°Р№Р»: РІР»РёРІР°РµС‚СЃСЏ РІ src/writing.css РїРѕСЃР»Рµ РјРµСЂР¶Р° РІРѕР»РЅС‹.
-   РўРѕР»СЊРєРѕ .wr-РєР»Р°СЃСЃС‹; РїР°Р»РёС‚СЂР° вЂ” Р»РѕРєР°Р»СЊРЅС‹Рµ РїРµСЂРµРјРµРЅРЅС‹Рµ РєРѕРЅС‚РµР№РЅРµСЂР° .wr.
+   Письмо — тренажёр из 6 шагов (WritingTrainer + tasks/*).
+   Part-файл: вливается в src/writing.css после мержа волны.
+   Только .wr-классы; палитра — локальные переменные контейнера .wr.
    ============================================================ */
 
-/* в”Ђв”Ђ С€Р°РїРєР° Р·Р°РґР°РЅРёСЏ/С‚СЂРµРЅР°Р¶С‘СЂР° в”Ђв”Ђ */
+/* ── шапка задания/тренажёра ── */
 .wr-taskhead {
   display: flex;
   align-items: center;
@@ -242,43 +260,50 @@
 .wr-pill--coins { background: var(--wr-gold-bg); color: var(--wr-gold); }
 .wr-pill--coins img { width: 15px; height: 15px; }
 
-/* в”Ђв”Ђ С‡РёРїС‹ С€Р°РіРѕРІ в”Ђв”Ђ */
+/* ── чипы шагов ── */
 .wr-steps {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin: 14px 0;
 }
+/* Прототипный .stepchip: белая карточка с тенью, активный — заливка
+   фиолетовым, у пройденного квадратик с галкой зелёный. */
 .wr-stepchip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  border: 1.5px solid var(--wr-line);
+  gap: 7px;
+  border: 0;
   background: #fff;
-  border-radius: 999px;
-  padding: 7px 12px;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+  border-radius: 12px;
+  padding: 8px 13px;
+  min-height: 38px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #55536a;
+  color: var(--wr-ink-2);
   cursor: pointer;
+  white-space: nowrap;
 }
 .wr-stepchip i {
   font-style: normal;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
   background: var(--wr-soft);
   color: var(--wr-purple);
   font-size: 12px;
+  font-weight: 800;
   flex: none;
 }
-.wr-stepchip.is-on { border-color: var(--wr-purple); color: var(--wr-purple); }
-.wr-stepchip.is-done i { background: var(--wr-green-bg); color: var(--wr-green); }
+.wr-stepchip.is-on { background: var(--wr-purple); color: #fff; }
+.wr-stepchip.is-on i { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.wr-stepchip.is-done i { background: #00d441; color: #06340f; }
 
-/* в”Ђв”Ђ СЃС‚СЂРѕРєР° РїСЂРѕРіСЂРµСЃСЃР° С€Р°РіР° в”Ђв”Ђ */
+/* ── строка прогресса шага ── */
 .wr-progressline {
   display: flex;
   align-items: center;
@@ -301,7 +326,7 @@
   background: var(--wr-green);
 }
 
-/* в”Ђв”Ђ С„СѓС‚РµСЂ РЅР°Р·Р°Рґ/РґР°Р»СЊС€Рµ в”Ђв”Ђ */
+/* ── футер назад/дальше ── */
 .wr-footnav {
   display: flex;
   justify-content: space-between;
@@ -309,7 +334,7 @@
   margin-top: 16px;
 }
 
-/* в”Ђв”Ђ РїРѕР·РґСЂР°РІР»РµРЅРёРµ Р·Р° Р¶Р°РЅСЂ в”Ђв”Ђ */
+/* ── поздравление за жанр ── */
 .wr-done-card {
   background: var(--wr-green-bg);
   outline: 2px solid var(--wr-green);
@@ -321,19 +346,23 @@
 .wr-done-card h3 { margin: 0 0 6px; font-size: 17px; }
 .wr-done-card p { margin: 4px 0; font-size: 14px; }
 
-/* в”Ђв”Ђ РїСѓРЅРєС‚ Р·Р°РґР°РЅРёСЏ Рё РѕС‚Р·С‹РІ в”Ђв”Ђ */
+/* ── пункт задания и отзыв ── */
+/* Прототипный .item: разделитель сверху вместо рамки-коробки — коробки
+   и дали ту «серость», на которую жаловались при сравнении с оригиналом. */
 .wr-item {
-  border: 1px solid var(--wr-line);
-  border-radius: 14px;
-  padding: 12px 14px;
-  margin-top: 10px;
+  border: 0;
+  border-top: 1px solid var(--wr-line);
+  border-radius: 0;
+  padding: 14px 0;
+  margin-top: 0;
 }
+.wr-item:first-of-type { border-top: 0; padding-top: 4px; }
 .wr-item-n {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #9a99a6;
-  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+  color: var(--wr-ink-3);
+  margin-bottom: 6px;
 }
 .wr-fb {
   margin-top: 10px;
@@ -342,26 +371,29 @@
   font-size: 13.5px;
   line-height: 1.45;
 }
-.wr-fb--ok { background: var(--wr-green-bg); color: var(--wr-green); }
-.wr-fb--no { background: var(--wr-red-bg); color: var(--wr-red); }
+.wr-fb--ok { background: var(--wr-green-bg); color: var(--wr-green-ink); }
+.wr-fb--no { background: var(--wr-red-bg); color: var(--wr-red-ink); }
 .wr-fb--tip { background: var(--wr-sky); color: var(--wr-sky-ink); }
 
 .wr-howto {
   background: var(--wr-soft);
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: #55536a;
-  margin: 8px 0 12px;
-}
-.wr-src {
-  border: 1px dashed var(--wr-line);
-  border-radius: 10px;
-  padding: 8px 10px;
+  border-radius: 16px;
+  padding: 12px 14px;
   font-size: 14px;
+  line-height: 1.5;
+  color: var(--wr-ink-2);
+  margin: 8px 0 14px;
+}
+.wr-howto b { color: var(--wr-purple); }
+.wr-src {
+  background: var(--wr-field);
+  border: 0;
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 15px;
   line-height: 1.6;
-  margin: 6px 0;
+  margin: 6px 0 9px;
 }
 .wr-pre { white-space: pre-line; }
 .wr-row {
@@ -374,99 +406,115 @@
 .wr-hintline { font-size: 12px; color: #9a99a6; margin: 2px 0 8px; }
 .wr-btn-sm { padding: 8px 16px; font-size: 13.5px; }
 
-/* в”Ђв”Ђ С„РёС€РєРё Рё СЃС‚СЂРѕРєР° СЃР±РѕСЂРєРё (word-order, connectors, СЃРѕСЂС‚РёСЂРѕРІРєРё) в”Ђв”Ђ */
+/* ── фишки и строка сборки (word-order, connectors, сортировки) ── */
 .wr-chipbank {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin: 8px 0;
 }
+/* Прототипный .chip: мягкая заливка, выбранный — фиолетовый с тенью. */
 .wr-chip {
-  border: 1.5px solid var(--wr-line);
-  background: #fff;
-  color: var(--ink, #26243b);
-  border-radius: 999px;
-  padding: 7px 12px;
-  min-height: 36px;
+  border: 0;
+  background: var(--wr-soft);
+  color: var(--ink, #16121f);
+  border-radius: 13px;
+  padding: 9px 14px;
+  min-height: 40px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
-.wr-chip:hover:not(:disabled) { border-color: var(--wr-purple); }
-.wr-chip.is-used { opacity: 0.35; cursor: default; }
+.wr-chip:active { transform: scale(0.95); }
+.wr-chip.is-used { opacity: 0.32; cursor: default; pointer-events: none; }
 .wr-chip.is-sel {
-  border-color: var(--wr-purple);
-  color: var(--wr-purple);
-  background: var(--wr-soft);
+  background: var(--wr-purple);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(135, 75, 248, 0.3);
 }
 .wr-slotline {
-  min-height: 46px;
-  border: 1.5px dashed var(--wr-line);
-  border-radius: 12px;
-  padding: 6px 8px;
+  min-height: 56px;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 16px;
+  padding: 8px 10px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
-.wr-ph { color: #9a99a6; font-size: 13px; }
+.wr-ph { color: var(--wr-ink-3); font-size: 14px; padding: 6px 4px; }
 
-/* РїСЂРѕРїСѓСЃРє РІ РїСЂРµРґР»РѕР¶РµРЅРёРё (connectors) */
+/* пропуск в предложении (connectors) — прототипный .gap */
 .wr-gap {
-  border: 1.5px dashed var(--wr-purple);
-  background: var(--wr-soft);
-  color: var(--wr-purple);
-  border-radius: 8px;
-  padding: 2px 10px;
-  min-width: 44px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.wr-gap.is-filled { border-style: solid; }
-.wr-gap.is-ok { border-color: var(--wr-green); background: var(--wr-green-bg); color: var(--wr-green); }
-.wr-gap.is-no { border-color: var(--wr-red); background: var(--wr-red-bg); color: var(--wr-red); }
-
-/* в”Ђв”Ђ РІРІРѕРґ (transform/punctuation/expand/guided) в”Ђв”Ђ */
-.wr-inp {
-  width: 100%;
-  border: 1.5px solid var(--wr-line);
-  border-radius: 12px;
-  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  color: var(--wr-ink-3);
+  border-radius: 11px;
+  padding: 4px 12px;
+  min-width: 96px;
+  min-height: 34px;
   font-family: inherit;
   font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.wr-gap.is-filled { color: var(--ink, #16121f); background: var(--wr-soft); box-shadow: inset 0 0 0 1.5px var(--wr-purple); }
+.wr-gap.is-ok { background: var(--wr-green-bg); box-shadow: inset 0 0 0 1.5px var(--wr-green); color: var(--wr-green); }
+.wr-gap.is-no { background: var(--wr-red-bg); box-shadow: inset 0 0 0 1.5px var(--wr-orange); color: var(--wr-red); }
+
+/* ── ввод (transform/punctuation/expand/guided) ── */
+/* Прототипный .inp: заливка поля + inset-обводка вместо серой рамки. */
+.wr-inp {
+  width: 100%;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-family: inherit;
+  font-size: 15px;
   margin-top: 8px;
   resize: vertical;
   box-sizing: border-box;
 }
-.wr-inp:focus { outline: none; border-color: var(--wr-purple); }
-.wr-inp.is-ok { border-color: var(--wr-green); }
-.wr-inp.is-no { border-color: var(--wr-red); }
+.wr-inp:focus { outline: none; box-shadow: inset 0 0 0 2px var(--wr-purple); }
+.wr-inp.is-ok { box-shadow: inset 0 0 0 2px var(--wr-green); background: #f4fdf6; }
+.wr-inp.is-no { box-shadow: inset 0 0 0 2px var(--wr-orange); background: #fff8f5; }
 
-/* в”Ђв”Ђ РІР°СЂРёР°РЅС‚ РѕС‚РІРµС‚Р° (register, РІС‹Р±РѕСЂ РёРґРµР№) в”Ђв”Ђ */
+/* ── вариант ответа (register, выбор идей) ── */
+/* Прототипный .opt */
 .wr-opt {
   display: block;
   width: 100%;
   text-align: left;
-  border: 1.5px solid var(--wr-line);
-  background: #fff;
-  color: var(--ink, #26243b);
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  color: var(--ink, #16121f);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
+  min-height: 44px;
   margin-top: 8px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
 }
-.wr-opt:hover:not(:disabled) { border-color: var(--wr-purple); }
-.wr-opt.is-ok { border-color: var(--wr-green); background: var(--wr-green-bg); }
-.wr-opt.is-no { border-color: var(--wr-red); background: var(--wr-red-bg); }
-.wr-opt.is-sel { border-color: var(--wr-purple); background: var(--wr-soft); }
+.wr-opt:active { transform: scale(0.99); }
+.wr-opt.is-ok { box-shadow: inset 0 0 0 2px var(--wr-green); background: #f0fcf3; }
+.wr-opt.is-no { box-shadow: inset 0 0 0 2px var(--wr-orange); background: #fff6f2; }
+.wr-opt.is-sel { box-shadow: inset 0 0 0 2px var(--wr-purple); background: var(--wr-soft); }
 
-/* в”Ђв”Ђ РєРѕР»РѕРЅРєРё СЃРѕСЂС‚РёСЂРѕРІРѕРє (idea-bank, outline) в”Ђв”Ђ */
+/* ── колонки сортировок (idea-bank, outline) ── */
 .wr-cols2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -474,10 +522,12 @@
   margin-top: 10px;
 }
 .wr-dropcol {
-  border: 1.5px dashed var(--wr-line);
-  border-radius: 14px;
+  border: 0;
+  background: var(--wr-field);
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 16px;
   padding: 10px;
-  min-height: 90px;
+  min-height: 110px;
   cursor: pointer;
 }
 .wr-dropcol h5 { margin: 0 0 8px; font-size: 13px; font-weight: 800; }
@@ -509,7 +559,7 @@
 .wr-fnhead { font-weight: 800; font-size: 14px; margin: 14px 0 6px; }
 .wr-fnhead small { display: block; font-weight: 400; color: #6f6d7e; margin-top: 2px; }
 
-/* в”Ђв”Ђ Р±Р°РЅРє С„СЂР°Р· (С€Р°Рі 2) в”Ђв”Ђ */
+/* ── банк фраз (шаг 2) ── */
 .wr-phrase {
   display: flex;
   width: 100%;
@@ -546,7 +596,7 @@
   margin-bottom: 8px;
 }
 
-/* в”Ђв”Ђ С‚Р°Р±Р»РёС†Р° СЃРІСЏР·РѕРє (С€Р°Рі 3): С€РёСЂРѕРєР°СЏ, РєР°С‚Р°РµС‚СЃСЏ РІ СЃРІРѕС‘Рј РєРѕРЅС‚РµР№РЅРµСЂРµ в”Ђв”Ђ */
+/* ── таблица связок (шаг 3): широкая, катается в своём контейнере ── */
 .wr-scroll-x {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -566,10 +616,12 @@
   text-align: left;
   vertical-align: top;
 }
-.wr-tbl th { font-size: 12px; color: #9a99a6; }
+.wr-tbl th { font-size: 12px; color: var(--wr-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+/* первый столбец (функция связки) фиолетовый, как в прототипе .tbl */
+.wr-tbl td:first-child { font-weight: 700; white-space: nowrap; color: var(--wr-purple); }
 .wr-tbl .wr-chip { margin: 2px 4px 2px 0; }
 
-/* в”Ђв”Ђ РєР°СЂС‚РѕС‡РєР° СЂР°Р·Р±РѕСЂР° (checkCard / taskCheckCard) в”Ђв”Ђ */
+/* ── карточка разбора (checkCard / taskCheckCard) ── */
 .wr-checkcard {
   border: 1px solid var(--wr-line);
   border-radius: 14px;
@@ -616,7 +668,7 @@
 /* в”Ђв”Ђ guided-write в”Ђв”Ђ */
 .wr-guided-q { margin: 0 0 6px; font-size: 15px; }
 
-/* в”Ђв”Ђ free-write Р±Р°РЅРЅРµСЂ в”Ђв”Ђ */
+/* ── free-write баннер ── */
 .wr-banner-task {
   background: linear-gradient(135deg, rgba(144, 71, 255, 0.08), rgba(43, 108, 176, 0.07));
   border-radius: 14px;
@@ -626,7 +678,7 @@
 .wr-banner-task h4 { margin: 0 0 6px; font-size: 14px; }
 .wr-banner-task p { margin: 0; font-size: 14px; line-height: 1.5; }
 
-/* в”Ђв”Ђ overall: РєРѕР»СЊС†Р° в”Ђв”Ђ */
+/* ── overall: кольца ── */
 .wr-rings {
   display: flex;
   flex-wrap: wrap;
@@ -656,19 +708,19 @@
   font-size: 14px;
 }
 
-/* в”Ђв”Ђ РјРѕР±Р°Р№Р»: РєРѕРЅРІРµРЅС†РёРё С€РµР»Р»Р° (Р±СЂРµР№РєРїРѕРёРЅС‚ 760, Р±РµР· Р±РѕРєРѕРІРѕРіРѕ СЃРєСЂРѕР»Р»Р° РЅР° 390) в”Ђв”Ђ */
+/* ── мобайл: конвенции шелла (брейкпоинт 760, без бокового скролла на 390) ── */
 @media (max-width: 760px) {
   .wr-stepchip { padding: 7px 9px; }
-  .wr-stepchip span { display: none; } /* РѕСЃС‚Р°СЋС‚СЃСЏ РєСЂСѓР¶РєРё СЃ РЅРѕРјРµСЂР°РјРё */
+  .wr-stepchip span { display: none; } /* остаются кружки с номерами */
   .wr-cols2 { grid-template-columns: 1fr; }
   .wr-rings { gap: 12px; justify-content: space-between; }
   .wr-footnav .wr-primary,
   .wr-footnav .wr-ghost { padding-left: 16px; padding-right: 16px; }
 }
 
-/* в”Ђв”Ђ Р‘Р»РѕРєРЅРѕС‚ (Writing Pad) вЂ” РІР»РёРІР°РµС‚СЃСЏ РІ writing.css в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
-   Р Р°СЃРєР»Р°РґРєР°: СЃР»РµРІР° СЂРµРґР°РєС‚РѕСЂ, СЃРїСЂР°РІР° РїР°РЅРµР»Рё-РІРєР»Р°РґРєРё. Р’СЃРµ РєР»Р°СЃСЃС‹ .wr-,
-   РїР°Р»РёС‚СЂР° вЂ” Р»РѕРєР°Р»СЊРЅС‹Рµ РїРµСЂРµРјРµРЅРЅС‹Рµ .wr (СЃРј. С€Р°РїРєСѓ writing.css). */
+/* ── Блокнот (Writing Pad) — вливается в writing.css ─────────────────────
+   Раскладка: слева редактор, справа панели-вкладки. Все классы .wr-,
+   палитра — локальные переменные .wr (см. шапку writing.css). */
 
 .wr-pad {
   display: grid;
@@ -679,15 +731,15 @@
 .wr-pad__main { min-width: 0; }
 .wr-pad__side { min-width: 0; padding: 14px; }
 
-/* Р РµР¶РёРј Р±РµР· РѕС‚РІР»РµС‡РµРЅРёР№: РѕСЃС‚Р°СЋС‚СЃСЏ СЂРµРґР°РєС‚РѕСЂ, РјРµС‚СЂРёРєРё Рё В«РџСЂРѕРІРµСЂРёС‚СЊВ».
-   РљР»Р°СЃСЃ Р¶РёРІС‘С‚ РЅР° РєРѕСЂРЅРµ Р‘Р»РѕРєРЅРѕС‚Р°, Р° РЅРµ РЅР° body вЂ” СЃРѕСЃРµРґРЅРёРµ СЌРєСЂР°РЅС‹ SPA
-   РЅРµ РґРѕР»Р¶РЅС‹ РЅР°СЃР»РµРґРѕРІР°С‚СЊ СЃРѕСЃС‚РѕСЏРЅРёРµ СЌС‚РѕРіРѕ. */
+/* Режим без отвлечений: остаются редактор, метрики и «Проверить».
+   Класс живёт на корне Блокнота, а не на body — соседние экраны SPA
+   не должны наследовать состояние этого. */
 .wr-pad--zen { grid-template-columns: minmax(0, 1fr); }
 .wr-pad--zen .wr-pad__side,
 .wr-pad--zen .wr-padtask,
 .wr-pad--zen .wr-padbar__extras { display: none; }
 
-/* С€Р°РїРєР° СЂРµРґР°РєС‚РѕСЂР° */
+/* шапка редактора */
 .wr-padhead {
   display: flex;
   align-items: center;
@@ -708,7 +760,7 @@
 }
 .wr-padtimer--low { color: var(--wr-red); background: var(--wr-red-bg); }
 
-/* Р±Р°РЅРЅРµСЂ Р·Р°РґР°РЅРёСЏ */
+/* баннер задания */
 .wr-padtask {
   background: var(--wr-soft);
   border-left: 4px solid var(--wr-purple);
@@ -720,23 +772,25 @@
 .wr-padtask p { margin: 0 0 8px; font-size: 14px; line-height: 1.45; }
 .wr-padtask__meta { display: flex; gap: 6px; flex-wrap: wrap; }
 
-/* С‚СѓР»Р±Р°СЂ */
+/* тулбар */
 .wr-padtools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .wr-ghost--sm { padding: 7px 13px; font-size: 13px; }
 .wr-padtools__zen { margin-left: auto; }
 
-/* СЂРµРґР°РєС‚РѕСЂ: РЅРµРєРѕРЅС‚СЂРѕР»РёСЂСѓРµРјС‹Р№ contenteditable */
+/* редактор: неконтролируемый contenteditable */
 .wr-editor {
-  min-height: 320px;
-  border: 1.5px solid var(--wr-line);
-  border-radius: 14px;
-  padding: 14px 16px;
-  font-size: 15px;
-  line-height: 1.6;
+  min-height: 340px;
+  border: 0;
+  background: #fffefc; /* тёплый лист прототипа .editor */
+  box-shadow: inset 0 0 0 1.5px var(--wr-line);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 16.5px;
+  line-height: 1.65;
   outline: none;
-  overflow-wrap: anywhere; /* СЃРІРµСЂС…РґР»РёРЅРЅРѕРµ В«СЃР»РѕРІРѕВ» РЅРµ РґРѕР»Р¶РЅРѕ СЂР°СЃРїРёСЂР°С‚СЊ СЃС‚СЂР°РЅРёС†Сѓ */
+  overflow-wrap: anywhere; /* сверхдлинное «слово» не должно распирать страницу */
 }
-.wr-editor:focus { border-color: var(--wr-purple); }
+.wr-editor:focus { box-shadow: inset 0 0 0 2px var(--wr-purple); }
 .wr-editor:empty::before {
   content: attr(data-ph);
   color: #b6b4c2;
@@ -744,7 +798,7 @@
 }
 .wr-editor p { margin: 0 0 10px; }
 .wr-editor ul { margin: 0 0 10px; padding-left: 22px; }
-/* Р·РѕР»РѕС‚Р°СЏ РїРѕРґСЃРІРµС‚РєР° В«РјРѕРёС… СЃР»РѕРІВ» (СЃС‚Р°РІРёС‚СЃСЏ РЅР° blur, СЃРј. usePadEditor) */
+/* золотая подсветка «моих слов» (ставится на blur, см. usePadEditor) */
 .wr-wgold {
   background: var(--wr-gold-bg);
   box-shadow: inset 0 0 0 1.5px var(--wr-gold);
@@ -752,7 +806,7 @@
   padding: 0 2px;
 }
 
-/* РјРµС‚СЂРёРєРё */
+/* метрики */
 .wr-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .wr-metric {
   display: inline-flex;
@@ -775,7 +829,7 @@
 
 .wr-savedline { margin-top: 8px; font-size: 12.5px; color: #9a99a6; }
 
-/* РїР°РЅРµР»СЊ РґРµР№СЃС‚РІРёР№ */
+/* панель действий */
 .wr-padbar {
   display: flex;
   align-items: center;
@@ -794,7 +848,7 @@
 }
 @keyframes wr-spin { to { transform: rotate(360deg); } }
 
-/* РІРєР»Р°РґРєРё РїСЂР°РІРѕР№ РїР°РЅРµР»Рё */
+/* вкладки правой панели */
 .wr-padtabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
 .wr-padtab {
   border: 0;
@@ -812,7 +866,7 @@
 .wr-pane .wr-note { font-size: 13px; }
 .wr-note--ok { background: var(--wr-green-bg); color: var(--wr-green); }
 
-/* С‡РµРє-Р»РёСЃС‚ Рё СЃС‚СЂРѕРєРё РїР»Р°РЅР° */
+/* чек-лист и строки плана */
 .wr-chk {
   display: flex;
   align-items: flex-start;
@@ -845,7 +899,7 @@
 .wr-chk small { display: block; font-size: 11.5px; color: #9a99a6; margin-top: 2px; }
 .wr-strike { text-decoration: line-through; color: #9a99a6; }
 
-/* Р·Р°РіРѕР»РѕРІРєРё РіСЂСѓРїРї РІ РїР°РЅРµР»СЏС… */
+/* заголовки групп в панелях */
 .wr-fnhead {
   font-size: 11.5px;
   font-weight: 800;
@@ -855,7 +909,7 @@
   margin: 6px 0 2px;
 }
 
-/* С„СЂР°Р·С‹ */
+/* фразы */
 .wr-phrase {
   display: flex;
   align-items: flex-start;
@@ -882,7 +936,7 @@
 .wr-phrase b { display: block; font-size: 13px; color: var(--ink, #26243b); }
 .wr-phrase small { display: block; font-size: 11.5px; color: #9a99a6; margin-top: 1px; }
 
-/* С‡РёРїС‹ СЃРІСЏР·РѕРє Рё СЃР»РѕРІ */
+/* чипы связок и слов */
 .wr-chipbank { display: flex; gap: 6px; flex-wrap: wrap; }
 .wr-chip {
   display: inline-flex;
@@ -899,7 +953,7 @@
   cursor: pointer;
 }
 .wr-chip:hover { border-color: var(--wr-purple); color: var(--wr-purple); }
-/* СЃРѕСЃС‚Р°РІРЅРѕР№ С‡РёРї В«СЃР»РѕРІРѕ + РєСЂРµСЃС‚РёРєВ» вЂ” СЃР°Рј С‡РёРї РЅРµ РєРЅРѕРїРєР°, РєРЅРѕРїРєРё РІРЅСѓС‚СЂРё */
+/* составной чип «слово + крестик» — сам чип не кнопка, кнопки внутри */
 .wr-chip--word { padding: 0; cursor: default; }
 .wr-chip--word > button {
   border: 0;
@@ -934,7 +988,7 @@
 }
 .wr-inp:focus { border-color: var(--wr-purple); }
 
-/* РјРѕРґР°Р»РєРё В«РњРѕРё СЂР°Р±РѕС‚С‹В» / В«РСЃС‚РѕСЂРёСЏ РІРµСЂСЃРёР№В» */
+/* модалки «Мои работы» / «История версий» */
 .wr-modal {
   position: fixed;
   inset: 0;
@@ -973,7 +1027,7 @@
 .wr-workrow b { display: block; font-size: 13.5px; color: var(--ink, #26243b); }
 .wr-workrow small { display: block; font-size: 11.5px; color: #9a99a6; margin-top: 2px; }
 
-/* С‚РѕСЃС‚ */
+/* тост */
 .wr-toast {
   position: fixed;
   left: 50%;
@@ -989,9 +1043,9 @@
   box-shadow: 0 8px 24px rgba(31, 18, 63, 0.25);
 }
 
-/* в”Ђв”Ђ РјРѕР±Р°Р№Р»: РѕРґРЅР° РєРѕР»РѕРЅРєР°, СЂРµРґР°РєС‚РѕСЂ РїРµСЂРІС‹Рј, РїР°РЅРµР»Рё РЅРёР¶Рµ; Р±Р°СЂ РїСЂРёР»РёРїР°РµС‚ Рє
-   РЅРёР·Сѓ, В«РџСЂРѕРІРµСЂРёС‚СЊВ» РІСЃРµРіРґР° РїРѕРґ СЂСѓРєРѕР№. РќР° 390px СЃС‚СЂР°РЅРёС†Р° РЅРµ СЃРєСЂРѕР»Р»РёС‚СЃСЏ РІР±РѕРє:
-   РІСЃС‘ С€РёСЂРѕРєРѕРµ РїРµСЂРµРЅРѕСЃРёС‚СЃСЏ (chipbank/metrics вЂ” flex-wrap). в”Ђв”Ђ */
+/* ── мобайл: одна колонка, редактор первым, панели ниже; бар прилипает к
+   низу, «Проверить» всегда под рукой. На 390px страница не скроллится вбок:
+   всё широкое переносится (chipbank/metrics — flex-wrap). ── */
 @media (max-width: 760px) {
   .wr-pad { grid-template-columns: 1fr; }
   .wr-editor { min-height: 45vh; }
@@ -1007,16 +1061,16 @@
 }
 
 /* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
-   РџРёСЃСЊРјРѕ: СЌРєСЂР°РЅ СЂР°Р·Р±РѕСЂР° (WritingResult), РјРѕРґР°Р»РєР° (WritingModal)
-   Рё РєР°СЂС‚РѕС‡РєР° РїРµСЂРµРІРѕРґР° РІС‹РґРµР»РµРЅРёСЏ (useSelectionTranslate).
-   Р§Р°СЃС‚СЊ-С„Р°Р№Р»: РІР»РёРІР°РµС‚СЃСЏ РІ writing.css РїСЂРё СЃР±РѕСЂРєРµ РІРѕР»РЅС‹.
+   Письмо: экран разбора (WritingResult), модалка (WritingModal)
+   и карточка перевода выделения (useSelectionTranslate).
+   Часть-файл: вливается в writing.css при сборке волны.
    в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 
-/* Р·Р°РіРѕР»РѕРІРѕРє РєР°СЂС‚РѕС‡РєРё СЂР°Р·Р±РѕСЂР°: РЅР°Р·РІР°РЅРёРµ + РїРёР»СЋР»СЏ СЂРµР¶РёРјР° РїСЂРѕРІРµСЂРєРё */
+/* заголовок карточки разбора: название + пилюля режима проверки */
 .wr-res-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .wr-res-head .wr-sec-title { margin: 0; }
 
-/* РєРѕР»СЊС†Р° РѕС†РµРЅРѕРє вЂ” РїРѕСЂС‚ .rings/.ringwrap/.ring РїСЂРѕС‚РѕС‚РёРїР° */
+/* кольца оценок — порт .rings/.ringwrap/.ring прототипа */
 .wr-res-rings { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
 .wr-res-ringwrap { text-align: center; font-size: 12.5px; color: #9a99a6; font-weight: 700; }
 .wr-res-ring { position: relative; flex: none; margin: 0 auto 2px; }
@@ -1044,7 +1098,7 @@
 }
 .wr-res-summary { margin: 12px 0 0; font-size: 14.5px; line-height: 1.55; color: var(--ink, #26243b); }
 
-/* РїРѕРґСЃРєР°Р·РєР°-Р»РµРіРµРЅРґР° (РїРѕСЂС‚ .howto) */
+/* подсказка-легенда (порт .howto) */
 .wr-res-howto {
   background: var(--wr-soft);
   border-radius: 14px;
@@ -1055,8 +1109,8 @@
   color: #5d5b6e;
 }
 
-/* С‚РµРєСЃС‚ СѓС‡РµРЅРёРєР° СЃ РїРѕРјРµС‚РєР°РјРё (РїРѕСЂС‚ .usertext/.hl); РїРµСЂРµРЅРѕСЃС‹ СЃС‚СЂРѕРє РѕС‚РґР°С‘Рј
-   pre-wrap'Сѓ вЂ” СЃРµРіРјРµРЅС‚С‹ РїРѕРґСЃРІРµС‚РєРё РїРѕ \n РЅРµ СЂРµР¶РµРј */
+/* текст ученика с пометками (порт .usertext/.hl); переносы строк отдаём
+   pre-wrap'у — сегменты подсветки по \n не режем */
 .wr-res-text {
   white-space: pre-wrap;
   font-size: 16px;
@@ -1071,7 +1125,7 @@
 .wr-hl--imp { background: var(--wr-sky); color: var(--wr-sky-ink); }
 .wr-hl--good { background: var(--wr-green-bg); color: var(--wr-green); }
 
-/* СЃРїРёСЃРєРё РїСЂР°РІРѕРє Рё СѓРґР°С‡ (РїРѕСЂС‚ .fnhead/.item/.was/.fb) */
+/* списки правок и удач (порт .fnhead/.item/.was/.fb) */
 .wr-res-fnhead {
   font-size: 13px;
   font-weight: 800;
@@ -1098,7 +1152,7 @@
   box-shadow: inset 0 0 0 1.5px var(--wr-line);
 }
 
-/* В«С‚СЂРё С€Р°РіР°В» (РїРѕСЂС‚ .stepslist) */
+/* «три шага» (порт .stepslist) */
 .wr-res-steps { counter-reset: s; margin: 0; padding: 0; list-style: none; }
 .wr-res-steps li {
   counter-increment: s;
@@ -1126,7 +1180,7 @@
   font-weight: 800;
 }
 
-/* РґРёС„С„ РїРµСЂРµРїРёСЃР°РЅРЅРѕРіРѕ С‚РµРєСЃС‚Р°: Р·РµР»С‘РЅРѕРµ РґРѕР±Р°РІР»РµРЅРѕ, РєСЂР°СЃРЅРѕРµ СѓР±СЂР°РЅРѕ */
+/* дифф переписанного текста: зелёное добавлено, красное убрано */
 .wr-res-diff ins { background: var(--wr-green-bg); color: var(--wr-green); text-decoration: none; border-radius: 4px; padding: 0 2px; }
 .wr-res-diff del { background: var(--wr-red-bg); color: var(--wr-red); border-radius: 4px; padding: 0 2px; }
 
@@ -1134,8 +1188,8 @@
 .wr-res-nav { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 .wr-res-got { margin-top: 12px; }
 
-/* в”Ђв”Ђ РјРѕРґР°Р»РєР° (РїРѕСЂС‚ #modal РїСЂРѕС‚РѕС‚РёРїР°): РЅР° РјРѕР±РёР»Рµ С€С‚РѕСЂРєРѕР№ СЃРЅРёР·Сѓ, СЃ 640px вЂ”
-   РїРѕ С†РµРЅС‚СЂСѓ; РєР°СЂС‚РѕС‡РєР° СЃРєСЂРѕР»Р»РёС‚СЃСЏ СЃР°РјР°, СЃС‚СЂР°РЅРёС†Р° РїРѕРґ РЅРµР№ РЅРµ РµРґРµС‚ в”Ђв”Ђ */
+/* ── модалка (порт #modal прототипа): на мобиле шторкой снизу, с 640px —
+   по центру; карточка скроллится сама, страница под ней не едет ── */
 .wr-modal { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: center; }
 .wr-modal__bg { position: absolute; inset: 0; background: rgba(22, 18, 31, 0.42); }
 .wr-modal__card {
@@ -1172,9 +1226,9 @@
 }
 .wr-modal__x:hover { color: var(--wr-purple); }
 
-/* в”Ђв”Ђ РєР°СЂС‚РѕС‡РєР° РїРµСЂРµРІРѕРґР° РІС‹РґРµР»РµРЅРёСЏ (РїРѕСЂС‚ .tpop). Р’РђР–РќРћ: div Р¶РёРІС‘С‚ РІ
-   document.body, РІРЅРµ .wr вЂ” Р»РѕРєР°Р»СЊРЅС‹Рµ --wr-РїРµСЂРµРјРµРЅРЅС‹Рµ СЃСЋРґР° РЅРµ РґРѕРµР·Р¶Р°СЋС‚,
-   РїРѕСЌС‚РѕРјСѓ С†РІРµС‚Р° Р·Р°С…Р°СЂРґРєРѕР¶РµРЅС‹ С‚РµРјРё Р¶Рµ Р·РЅР°С‡РµРЅРёСЏРјРё, С‡С‚Рѕ РІ Р±Р»РѕРєРµ .wr в”Ђв”Ђ */
+/* ── карточка перевода выделения (порт .tpop). ВАЖНО: div живёт в
+   document.body, вне .wr — локальные --wr-переменные сюда не доезжают,
+   поэтому цвета захардкожены теми же значениями, что в блоке .wr ── */
 .wr-tpop {
   position: absolute;
   z-index: 95;
@@ -1224,7 +1278,7 @@
 .wr-tpop__add:hover { filter: brightness(0.97); }
 .wr-tpop__add:disabled { cursor: default; color: #37a15f; }
 
-/* в”Ђв”Ђ РјРѕР±Р°Р№Р»: РєРѕР»СЊС†Р° СѓР¶РёРјР°СЋС‚СЃСЏ, С‡С‚РѕР±С‹ С‡РµС‚РІС‘СЂРєР° РІР»РµР·Р°Р»Р° РІ 390px Р±РµР· СЃРєСЂРѕР»Р»Р° в”Ђв”Ђ */
+/* ── мобайл: кольца ужимаются, чтобы четвёрка влезала в 390px без скролла ── */
 @media (max-width: 760px) {
   .wr-res-rings { gap: 8px; }
   .wr-res-text { font-size: 15px; padding: 12px; }
