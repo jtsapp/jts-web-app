@@ -106,10 +106,11 @@ async function advanceTo(page, acts, target) {
 test.describe('Грамматика — каталог', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 760, 'каталог проверяем на десктопе')
 
-  test('уровни A1–C2, секции с диапазоном юнитов и карточки', async ({ page }) => {
+  test('уровни A0–C2, секции с диапазоном юнитов и карточки', async ({ page }) => {
     await openCatalog(page)
 
-    await expect(page.locator('.gr-levelchip')).toHaveCount(6)
+    // A0 добавлен вместе с обновлением курса; C2 остаётся заглушкой «скоро».
+    await expect(page.locator('.gr-levelchip')).toHaveCount(7)
     await expect(page.locator('.gr-levelchip.on')).toHaveText('Уровень A1')
 
     // Первая секция курса A1 — Present, юниты 1-9 (данные источника).
@@ -141,6 +142,23 @@ test.describe('Грамматика — каталог', () => {
     await page.locator('.gr-levelchip', { hasText: 'Уровень A2' }).click()
     await expect(page.locator('.gr-levelchip.on')).toHaveText('Уровень A2')
     await expect(page.locator('.gr-catalog .pp-sec h2').first()).toContainText('Present tenses')
+  })
+
+  // A0 приехал с обновлением выгрузки курса: до него самый младший уровень был
+  // A1, и новичку показывали курс не своего уровня.
+  test('A0 открывается своим курсом, а не заглушкой «скоро»', async ({ page }) => {
+    await openCatalog(page)
+    await page.locator('.gr-levelchip', { hasText: 'Уровень A0' }).click()
+    await expect(page.locator('.gr-levelchip.on')).toHaveText('Уровень A0')
+
+    await expect(page.locator('.gr-empty')).toHaveCount(0)
+    await expect(page.locator('.gr-catalog .gr-gcard').first()).toBeVisible()
+
+    // Урок A0 открывается и играет так же, как на остальных уровнях.
+    await page.locator('.gr-catalog .gr-gcard').first().click()
+    await expect(page.locator('.gr-block').first()).toBeVisible()
+    await page.locator('.gr-tab', { hasText: 'Практика' }).click()
+    await expect(page.locator('.gr-act')).toBeVisible()
   })
 
   test('C2 в дизайне есть, но курса в источнике нет — показываем «скоро»', async ({ page }) => {
