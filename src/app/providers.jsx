@@ -30,9 +30,16 @@ function NoCopyGuard() {
     // символов), а тапом переводится только одно слово. Копирование при этом
     // по-прежнему закрыто — `copy`/`cut`/`contextmenu`/`dragstart` гасятся везде,
     // так что выделить, чтобы перевести, можно, а унести текст — нет.
+    // Целью selectstart Chrome ставит ТЕКСТОВЫЙ узел, если нажатие пришлось на
+    // саму букву (на пустое место в абзаце — уже элемент). У текстового узла нет
+    // closest(), поэтому `?.` молча проваливал проверку в preventDefault: с
+    // пробела выделение начиналось, с буквы — нет. Отсюда жалоба «выделяется
+    // буквально на рандом» (и невозможность выделить в contenteditable —
+    // Блокнот Письма). Нормализуем узел до элемента ДО обеих проверок.
     const blockSelect = (e) => {
-      if (inEditable(e.target)) return
-      if (e.target?.closest?.('[data-selectable]')) return
+      const el = e.target && e.target.nodeType === 3 ? e.target.parentElement : e.target
+      if (inEditable(el)) return
+      if (el?.closest?.('[data-selectable]')) return
       e.preventDefault()
     }
 
