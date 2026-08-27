@@ -261,20 +261,35 @@ export default function useSelectionTranslate({ levelData, token, enabled }) {
     // Латиница с апострофами и дефисами: «don't», «e-mail» — одно слово.
     const WORD_CHAR = /[A-Za-z'’-]/
 
-    function selectWordAt(x, y) {
+    // Диапазон слова под точкой — общий и для наведения (подсветка + курсор),
+    // и для тапа (программное выделение).
+    function wordRangeAt(x, y) {
       const pos = caretNodeAt(x, y)
-      if (!pos || !pos.node || pos.node.nodeType !== 3) return false
+      if (!pos || !pos.node || pos.node.nodeType !== 3) return null
       const text = pos.node.textContent || ''
       let start = Math.min(pos.offset, text.length)
       let end = start
       while (start > 0 && WORD_CHAR.test(text[start - 1])) start--
       while (end < text.length && WORD_CHAR.test(text[end])) end++
       const word = text.slice(start, end)
-      if (!word || !/[A-Za-z]/.test(word)) return false
+      if (!word || !/[A-Za-z]/.test(word)) return null
       try {
         const range = document.createRange()
         range.setStart(pos.node, start)
         range.setEnd(pos.node, end)
+        // Курсор между словами (в пробеле) даёт схлопнутый диапазон — это не
+        // слово, подсвечивать и переводить нечего.
+        if (range.collapsed) return null
+        return range
+      } catch {
+        return null
+      }
+    }
+
+    function selectWordAt(x, y) {
+      const range = wordRangeAt(x, y)
+      if (!range) return false
+      try {
         const sel = window.getSelection()
         sel.removeAllRanges()
         sel.addRange(range)
@@ -292,6 +307,78 @@ export default function useSelectionTranslate({ levelData, token, enabled }) {
     // показывала слово из перерисованной разметки.
     const INTERACTIVE =
       'button, [role="button"], a, input, textarea, select, label, .wr-editor, .wr-tile, .wr-dropcol'
+
+    // ── Наведение: слово под курсором подсвечивается, курсор становится рукой.
+    // Без этого о переводе по тапу нельзя догадаться: в «Книжках» каждое слово
+    // обёрнуто в свой span с :hover (.bk-w), а здесь текст рисует React и
+    // оборачивать нечего. Подсветку даёт CSS Custom Highlight API — он рисует
+    // по Range, не трогая DOM, поэтому React-дерево остаётся нетронутым.
+    // Где API нет (Safari <17.2), просто не подсвечиваем: рука и сам перевод
+    // работают всё равно.
+    const HL_NAME = 'wr-word'
+    const canHighlight =
+      typeof window !== 'undefined' &&
+      typeof window.Highlight === 'function' &&
+      window.CSS &&
+      CSS.highlights
+
+    let hoverOn = false
+    function clearHover() {
+      if (canHighlight) {
+        try {
+          CSS.highlights.delete(HL_NAME)
+        } catch {
+          /* highlight-реестр недоступен — молча живём без подсветки */
+        }
+      }
+      if (hoverOn) {
+        hoverOn = false
+        document.querySelectorAll('.wr--wordhover').forEach((n) => n.classList.remove('wr--wordhover'))
+      }
+    }
+
+    function setHover(range, root) {
+      if (canHighlight) {
+        try {
+          CSS.highlights.set(HL_NAME, new window.Highlight(range))
+        } catch {
+          /* не поддержано — остаётся только курсор-рука */
+        }
+      }
+      if (!hoverOn) {
+        hoverOn = true
+        // Класс вешаем на корень раздела: cursor наследуется, и не нужно
+        // трогать каждый абзац отдельно.
+        root.classList.add('wr--wordhover')
+      }
+    }
+
+    // Наведение считаем не чаще кадра: caretRangeFromPoint — хит-тест, на
+    // каждый mousemove это заметно.
+    let moveRaf = 0
+    let lastMove = null
+    function onMove(e) {
+      lastMove = { x: e.clientX, y: e.clientY, target: e.target }
+      if (moveRaf) return
+      moveRaf = requestAnimationFrame(() => {
+        moveRaf = 0
+        const m = lastMove
+        if (!m || !m.target || !m.target.closest) return clearHover()
+        // Пока тянут выделение, подсветка слова только мешает.
+        let sel
+        try {
+          sel = window.getSelection()
+        } catch {
+          sel = null
+        }
+        if (sel && !sel.isCollapsed) return clearHover()
+        const root = m.target.closest('[data-selectable]')
+        if (!root || m.target.closest(INTERACTIVE)) return clearHover()
+        const range = wordRangeAt(m.x, m.y)
+        if (!range) return clearHover()
+        setHover(range, root)
+      })
+    }
 
     // Те же элементы для стража клика ниже: всё, у чего клик — действие, а не
     // просто текст. Модалку (.wr-modal) сюда не берём намеренно — её фон
@@ -451,6 +538,10 @@ export default function useSelectionTranslate({ levelData, token, enabled }) {
     document.addEventListener('touchstart', onTouchStart, { passive: true })
     document.addEventListener('mousedown', onDown)
     document.addEventListener('click', onClickCapture, true)
+    document.addEventListener('mousemove', onMove, { passive: true })
+    // Прокрутка сдвигает текст под неподвижным курсором — подсветка осталась бы
+    // на слове, которого там уже нет.
+    document.addEventListener('scroll', clearHover, true)
 
     return () => {
       document.removeEventListener('mouseup', onSelect)
@@ -458,6 +549,10 @@ export default function useSelectionTranslate({ levelData, token, enabled }) {
       document.removeEventListener('touchstart', onTouchStart)
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('click', onClickCapture, true)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('scroll', clearHover, true)
+      if (moveRaf) cancelAnimationFrame(moveRaf)
+      clearHover()
       if (hideTimer) clearTimeout(hideTimer)
       if (abortCtl) abortCtl.abort()
       tip.remove()
