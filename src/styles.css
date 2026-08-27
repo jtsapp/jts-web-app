@@ -7861,3 +7861,188 @@ textarea {
     line-height: 1.1;
   }
 }
+
+/* ── Тест на определение уровня ─────────────────────────────────────────────
+   Экран собран из тех же деталей, что и остальные экраны продукта: карточка на
+   светлой подложке, фиолетовая кнопка действия, Manrope. Разделы и типы
+   заданий приходят из движка (src/practice/placement/). */
+/* width: 100% обязателен: .plc — flex-элемент внутри .reg-body и без него
+   сжимается по контенту, а карточка считает min(880px, 100%) от этой ширины —
+   выходило ~440px на любом экране. */
+.plc { width: 100%; padding: 36px 20px 56px; display: flex; justify-content: center; }
+.plc-card {
+  width: min(880px, 100%);
+  background: #fff;
+  border-radius: var(--card-radius);
+  padding: 40px 44px 36px;
+  box-shadow: 0 8px 30px rgba(20, 19, 28, 0.06);
+}
+.plc-card--center { text-align: center; }
+.plc-h1 { margin: 0 0 8px; font-size: 27px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); }
+.plc-hint { margin: 0 0 26px; font-size: 16px; line-height: 1.6; color: var(--muted); }
+.plc-step { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.plc-count { font-size: 13px; font-weight: 700; color: var(--muted); }
+.plc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+
+/* Полоса прогресса раздела — единственный индикатор: обратного отсчёта в тесте
+   нет намеренно, студент идёт в своём темпе. */
+.plc-bar { height: 8px; border-radius: 8px; background: #efeaff; overflow: hidden; margin-bottom: 30px; }
+.plc-bar__fill { height: 100%; background: var(--purple); border-radius: 6px; transition: width 0.3s ease; }
+
+.plc-passage {
+  margin: 0 0 20px; padding: 20px 24px; border-radius: 16px; background: #f4f5f7;
+  font-size: 16px; line-height: 1.65; color: var(--ink);
+}
+.plc-stem { margin: 0 0 24px; font-size: 21px; line-height: 1.45; font-weight: 600; color: var(--ink); }
+
+.plc-list { display: flex; flex-direction: column; gap: 12px; }
+.plc-opt {
+  width: 100%; text-align: left; padding: 17px 22px; border-radius: 16px;
+  border: 1.5px solid var(--line, #e6e8ef); background: #fff;
+  font: inherit; font-size: 16px; color: var(--ink); cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.plc-opt:hover { border-color: #cfc4ea; }
+.plc-opt.on { border-color: var(--purple); background: #f6f1ff; font-weight: 600; }
+.plc-opt:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.plc-opt--wide { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.plc-opt__main { display: flex; flex-direction: column; gap: 5px; }
+.plc-opt__sub { font-size: 14px; font-weight: 400; line-height: 1.5; color: var(--muted); }
+.plc-opt__time { font-size: 14px; font-weight: 700; color: var(--purple); white-space: nowrap; }
+
+.plc-input, .plc-textarea {
+  width: 100%; padding: 15px 18px; border-radius: 16px;
+  border: 1.5px solid var(--line, #e6e8ef); background: #fff;
+  font: inherit; font-size: 17px; color: var(--ink);
+}
+.plc-input:focus, .plc-textarea:focus { outline: 2px solid var(--purple); outline-offset: 1px; border-color: var(--purple); }
+.plc-textarea { resize: vertical; line-height: 1.55; }
+
+.plc-audio {
+  display: inline-flex; align-items: center; gap: 10px; margin-bottom: 22px;
+  padding: 14px 24px; border: 0; border-radius: 999px;
+  background: #f0ebff; color: var(--purple); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.plc-audio:disabled { opacity: 0.5; cursor: default; }
+/* Счётчик оставшихся прослушиваний: их число ограничено, и это надо видеть
+   до нажатия, а не после. */
+.plc-plays { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: #fff; font-size: 13px; }
+
+/* Словарь: спрашиваемое слово крупно, «Не знаю» приглушённой кнопкой —
+   честный пропуск без штрафа лучше угадывания (vocabScore его учитывает). */
+.plc-stem--word { font-size: 30px; letter-spacing: -0.01em; }
+.plc-opt--idk { color: var(--muted); }
+.plc-opt--idk.on { color: var(--ink); }
+
+.plc-slots { display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; margin-bottom: 12px; }
+.plc-bank { display: flex; flex-wrap: wrap; gap: 8px; }
+.plc-tile {
+  padding: 12px 18px; border-radius: 999px; border: 1.5px solid var(--line, #e6e8ef);
+  background: #fff; font: inherit; font-size: 16px; color: var(--ink); cursor: pointer;
+}
+.plc-tile.on { background: var(--purple); border-color: var(--purple); color: #fff; }
+.plc-tile.used { opacity: 0.35; cursor: default; }
+.plc-reset { margin-top: 12px; }
+
+/* Текст для чтения — сворачиваемый, как в бандле: на маленьком экране студент
+   прячет его, чтобы видеть вопрос. */
+.plc-rtext {
+  margin: 0 0 20px; border: 1.5px solid var(--line, #e6e8ef); border-radius: 16px;
+  background: #f4f5f7; overflow: hidden;
+}
+.plc-rtext summary {
+  padding: 14px 20px; font-size: 14px; font-weight: 700; color: var(--muted);
+  cursor: pointer; list-style: none; user-select: none;
+}
+.plc-rtext summary::-webkit-details-marker { display: none; }
+.plc-rtext[open] summary { border-bottom: 1px solid var(--line, #e6e8ef); }
+.plc-rtext__body { padding: 16px 20px 18px; font-size: 16px; line-height: 1.65; color: var(--ink); white-space: pre-line; }
+
+/* Вопросы одной записи на одном экране: разделяются линией, а не карточками. */
+.plc-q { padding: 22px 0 4px; border-top: 1px solid #f0f0f4; margin-top: 18px; }
+.plc-q:first-of-type { border-top: 0; margin-top: 8px; padding-top: 0; }
+
+/* Верно / Неверно / Не сказано */
+.plc-tf {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid #f0f0f4;
+}
+.plc-tf:last-child { border-bottom: 0; }
+.plc-tf__text { flex: 1; font-size: 15px; line-height: 1.5; color: var(--ink); }
+.plc-tf__btns { display: flex; gap: 6px; flex-shrink: 0; }
+.plc-tf__btn {
+  padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--line, #e6e8ef);
+  background: #fff; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink); cursor: pointer;
+}
+.plc-tf__btn.on { background: var(--purple); border-color: var(--purple); color: #fff; }
+
+/* Номер в собранной последовательности / соединённой паре */
+.plc-seqn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; margin-right: 8px; padding: 0 6px;
+  border-radius: 999px; background: var(--purple); color: #fff; font-size: 12.5px;
+}
+.plc-opt.on .plc-seqn { background: #fff; color: var(--purple); }
+.plc-opt.sel { border-color: var(--purple); box-shadow: 0 0 0 3px #efe6ff; }
+
+/* Заполнение пропусков: текст с кликабельными пропусками */
+.plc-bftext { margin: 0 0 18px; font-size: 17px; line-height: 2.1; color: var(--ink); }
+.plc-gap {
+  display: inline-block; min-width: 64px; margin: 0 3px; padding: 4px 12px;
+  border: 1.5px dashed var(--line, #d5d0e2); border-radius: 999px;
+  background: #f4f5f7; font: inherit; font-size: 15px; color: var(--muted);
+  cursor: pointer; text-align: center; vertical-align: baseline;
+}
+.plc-gap.on { border-style: solid; border-color: var(--purple); background: #f6f1ff; color: var(--ink); font-weight: 600; }
+
+/* Соединение пар: две колонки, на телефоне — одна */
+.plc-match { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.plc-match__col { display: flex; flex-direction: column; gap: 10px; }
+
+.plc-slots__empty { color: var(--muted); font-size: 15px; padding: 8px 2px; }
+
+.plc-video { display: block; width: 100%; max-height: 360px; border-radius: 16px; background: #14131c; margin-bottom: 14px; }
+
+/* Говорение: индикатор записи и подтверждение */
+.plc-foot--center { justify-content: center; }
+.plc-rec { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 18px 0 22px; font-size: 17px; }
+.plc-rec__light { color: #d1344a; font-weight: 700; animation: plc-blink 1.2s ease-in-out infinite; }
+.plc-rec__ok { margin: 14px 0 22px; font-size: 17px; font-weight: 700; color: #12923f; }
+@keyframes plc-blink { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .plc-rec__light { animation: none; } }
+
+.plc-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 30px; }
+.plc-primary {
+  padding: 15px 34px; border: 0; border-radius: 999px; background: var(--purple);
+  color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.plc-primary:disabled { opacity: 0.45; cursor: default; }
+.plc-ghost {
+  padding: 15px 28px; border: 0; border-radius: 999px; background: #f0ebff;
+  color: var(--purple); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.plc-ghost:disabled { opacity: 0.4; cursor: default; }
+
+.plc-level { font-size: 72px; font-weight: 800; color: var(--purple); line-height: 1.1; margin: 10px 0 26px; }
+/* Полоса уверенности: закрашен интервал θ±SE, а не одна точка — оценка всегда
+   с погрешностью, и прятать её от преподавателя не стоит. */
+.plc-band { position: relative; height: 12px; border-radius: 8px; background: #efeaff; margin-bottom: 34px; }
+.plc-band__fill { position: absolute; top: 0; height: 100%; border-radius: 8px; background: var(--purple); }
+.plc-band__ticks { position: absolute; top: 18px; left: 0; right: 0; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.plc-rows { text-align: left; margin: 32px 0 26px; }
+.plc-row { display: flex; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid #f0f0f4; font-size: 16px; }
+.plc-row:last-child { border-bottom: 0; }
+.plc-row b { color: var(--ink); }
+
+@media (max-width: 640px) {
+  .plc { padding: 12px 10px 32px; }
+  .plc-card { padding: 22px 18px 20px; border-radius: 18px; }
+  .plc-h1 { font-size: 21px; }
+  .plc-hint { font-size: 15px; margin-bottom: 18px; }
+  .plc-stem { font-size: 17px; margin-bottom: 18px; }
+  .plc-opt { padding: 14px 16px; font-size: 15px; }
+  .plc-primary, .plc-ghost { padding: 13px 24px; font-size: 15px; }
+  .plc-level { font-size: 50px; }
+  .plc-match { grid-template-columns: 1fr; }
+  .plc-tf { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

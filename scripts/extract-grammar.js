@@ -1,8 +1,8 @@
-// Вытаскивает из standalone «грамматика_практика.html» (оболочка с 5 вложенными
-// уровневыми курсами A1–C1) данные для нативного раздела «Грамматика» Практики:
+// Вытаскивает из standalone-выгрузки курса (оболочка с вложенными уровневыми
+// курсами A0–C1) данные для нативного раздела «Грамматика» Практики:
 //   public/practice/grammar/index.json   — лёгкий каталог всех уровней
-//     { levels:[{code,label}], a1:{sections:[{k,name,theme}], themes:[{a,b}],
-//       units:[{id,secKey,secName,theme,title,desc,exA,exB,diff,min}]}, a2:{…}, … }
+//     { levels:[{code,label}], a0:{sections:[{k,name,theme}], themes:[{a,b}],
+//       units:[{id,secKey,secName,theme,title,desc,exA,exB,diff,min}]}, a1:{…}, … }
 //   public/practice/grammar/<level>.json  — тяжёлый контент уроков уровня
 //     { units:{ "1":{learn:[{ic,bg,title,html}], learnTr:[{ru,kk}|null],
 //       activities:[…journeyFor]}, … } }
@@ -12,7 +12,10 @@
 // упражнения — ровно то, что отдаёт journeyFor(u) (PRACTICE_V2 → иначе
 // buildJourney). Никакой ручной правки контента.
 //
-// Запуск: node scripts/extract-grammar.js [путь-к-грамматика_практика.html]
+// Уровни берутся из LEVELS ниже: курса, которого нет в файле, скрипт не
+// простит — упадёт с явной ошибкой, а не соберёт каталог с дырой.
+//
+// Запуск: node scripts/extract-grammar.js [путь-к-выгрузке.html]
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -23,6 +26,7 @@ const SRC = process.argv[2] || '/Users/mirasnurlanov/Desktop/грамматик�
 const OUT = path.join(ROOT, 'public/practice/grammar')
 
 const LEVELS = [
+  { code: 'a0', label: 'A0' },
   { code: 'a1', label: 'A1' },
   { code: 'a2', label: 'A2' },
   { code: 'b1', label: 'B1' },

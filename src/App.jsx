@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import WelcomePage from './screens/WelcomePage.jsx'
 import RegistrationPage from './screens/RegistrationPage.jsx'
 import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
@@ -11,7 +11,7 @@ import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
-import LevelTestPage from './screens/LevelTestPage.jsx'
+import PlacementTestPage from './screens/PlacementTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
@@ -88,7 +88,7 @@ const PERSISTABLE_SCREENS = new Set([
 ])
 
 export default function App() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
   // ?screen=… переопределяет начальный экран — так экраны тьютора остаются
   // достижимы для отладки/диплинков.
@@ -546,19 +546,29 @@ export default function App() {
   // открываем королевство. Уровень пишем в оба стора: backend — источник правды
   // при входе, Neon-профиль — то, что читает голосовой тьютор; без второй
   // записи они расходились.
-  async function handleTestDone(res) {
+  // Сохранение уровня отделено от перехода: тест отдаёт уровень дважды —
+  // сразу по подсчёту и по кнопке «Let's go», — и записать его надо на первом
+  // же событии, а увести с экрана только по кнопке. Повтор того же уровня в
+  // сеть не шлём: второй вызов приходит через секунды с тем же значением.
+  const lastSavedTestLevel = useRef(null)
+  async function saveTestLevel(level) {
+    if (!level || lastSavedTestLevel.current === level) return
+    lastSavedTestLevel.current = level
     setNeedsLevelTest(false)
-    if (res?.level) setUserLevel(res.level)
-    if (res?.level) {
-      savePlacementLevel(token, res.level) // best-effort, не блокируем переход
-      if (token) {
-        try {
-          await saveLanguageLevel(token, res.level)
-        } catch (e) {
-          console.warn('Не удалось сохранить уровень:', e)
-        }
+    setUserLevel(level)
+    savePlacementLevel(token, level) // best-effort, не блокируем переход
+    if (token) {
+      try {
+        await saveLanguageLevel(token, level)
+      } catch (e) {
+        console.warn('Не удалось сохранить уровень:', e)
       }
     }
+  }
+
+  async function handleTestDone(res) {
+    setNeedsLevelTest(false)
+    await saveTestLevel(res?.level)
     setScreen(TUTOR_ONLY ? tutorHome : 'kingdom')
   }
 
@@ -847,10 +857,16 @@ export default function App() {
         />
       )
     case 'test':
+      // Тест на определение уровня: движок школы, перенесённый в проект
+      // (src/practice/placement/), экран — в оформлении приложения. Он же
+      // определяет A0, которого прежний адаптивный тест выдать не мог.
+      // Уровень сохраняем сразу по подсчёту, не дожидаясь кнопки: иначе
+      // пройденный тест пропадёт, если закрыть вкладку на экране результата.
       return (
-        <LevelTestPage
-          onClose={() => setScreen('test-intro')}
-          onDone={handleTestDone}
+        <PlacementTestPage
+          lang={lang}
+          onLevel={(level) => saveTestLevel(level)}
+          onDone={(level) => handleTestDone({ level })}
         />
       )
     case 'kingdom':

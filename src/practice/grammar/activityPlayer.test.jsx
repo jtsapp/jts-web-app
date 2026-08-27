@@ -56,4 +56,33 @@ describe('Свободный ввод — ответ студента остаё
     expect(field.value).toBe('likes')
     expect(field.className).toMatch(/wrong/)
   })
+
+  // Поле правильный ответ больше не подставляет (и правильно — студент не
+  // понимал, чей текст видит), но узнать верный вариант ему всё равно нужно:
+  // у 434 из 1956 текстовых заданий разбор сам по себе ответа не содержит,
+  // и без этой строки правильный вариант не показывался нигде. Остальные типы
+  // его раскрывают: MC помечает ✓, Order подставляет, Matching пишет прямо.
+  it('разбор показывает правильный ответ, даже когда объяснение его не называет', () => {
+    const { container } = play({
+      type: 'transform',
+      instruction: 'Сделайте отрицание',
+      prompt: 'She is from Brazil.',
+      answer: "She isn't from Brazil.",
+      why: "is + not = isn't.",
+    })
+    fireEvent.change(container.querySelector('.gr-gap-input'), { target: { value: 'She not from Brazil.' } })
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+
+    const why = container.querySelector('.gr-fb__why')
+    expect(why.textContent).toContain("She isn't from Brazil.")
+    expect(why.textContent).toContain("is + not = isn't.")
+  })
+
+  it('верный ответ не дублируется подсказкой — разбор остаётся как есть', () => {
+    const { container } = play(activity)
+    fireEvent.change(container.querySelector('.gr-gap-input'), { target: { value: 'like' } })
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+
+    expect(container.querySelector('.gr-fb__why').textContent.trim()).toBe('Present Simple')
+  })
 })

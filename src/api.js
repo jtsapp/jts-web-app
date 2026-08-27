@@ -493,6 +493,16 @@ export function getAudiobooks(token) {
   return cachedAuthGet('/mobile/audio-lessons', token)
 }
 
+// Одна книга целиком (GET /mobile/audio-lessons/{id}). В отличие от списка выше
+// detail-эндпоинт отдаёт tracks[].text — полный текст главы, заведённый в
+// админке (список его вырезает как тяжёлый, см. AudioLessonMapperService).
+// Отсюда читалка берёт главы книг, которых нет в статике public/practice/books.
+// Без localStorage-кэша: текст книги — сотни килобайт, квота кончится на первой
+// же книге; повторные открытия закрывает модульный кэш в BookDetail.
+export function getAudiobook(token, id) {
+  return authGet(`/mobile/audio-lessons/${id}`, token)
+}
+
 // Баланс: монеты и стрик (для HUD). SWR-кэш: сайдбар перемонтируется на каждом
 // переходе между экранами (key={screen} в App.jsx), кэш убирает и повторный
 // запрос в блокирующем пути, и «мигание» нулей; свежее значение — через onFresh.
