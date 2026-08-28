@@ -16,12 +16,17 @@
 
 // Характер — по ключу С УЧЁТОМ НРАВА (jarvis / jarvis-harsh). Голос при этом
 // один на оба: 18+ меняет подачу, а не тембр.
+//
+// «Кто говорит» важнее любых слов о характере: пока в спокойной подаче стояло
+// "English butler", модель тянула казахский к английской фонетике — диктор с
+// британским ртом читал қазақша. Родной казахский голос описан прямым текстом.
 export const OPENAI_PERSONA_STYLE = {
   jarvis:
-    'You are an impeccably trained English butler serving a person you genuinely respect. ' +
-    'Unhurried, warm, quietly amused. Courtesy is not stiffness: there is real affection under ' +
-    'the formality, and it shows in small softenings at the ends of phrases. Dry wit lands flat ' +
-    'and confident, never winking. Never theatrical, never servile.',
+    'You are a native Kazakh speaker from Almaty. Kazakh is your mother tongue, not a language ' +
+    'you learned: nothing in your mouth is foreign to it. Calm, warm, unhurried but never slow. ' +
+    'You are on the phone with someone you know and respect — friendly, low-key, quietly amused. ' +
+    'Talk the way a person talks, not the way a newsreader reads. No English accent, no Russian ' +
+    'accent, no theatricality, no servility.',
   'jarvis-harsh':
     'You are the same English butler, but the mask is off and you are done pretending. The ' +
     'courtesy is still there and that is what makes it cut: every polite phrase is loaded. ' +
@@ -43,17 +48,22 @@ export const OPENAI_LIVENESS =
   'Let small reactions colour the first word of a reply. Never sing-song, never drawn-out ' +
   'vowels, never breathy.'
 
-// Произношение — по языку. Казахский блок здесь не про Джарвиса (он
-// русскоязычный): он готов для Спарка, если тот поедет на OpenAI. Модель
+// Произношение — по языку. Казахский блок работает на себя (KZ-стенд говорит
+// по-казахски всегда) и готов для Спарка, если тот поедет на OpenAI. Модель
 // казахский официально не знает и по умолчанию читает его как русский, поэтому
-// специфичные буквы приходится задавать в IPA поимённо.
+// мало назвать буквы в IPA: перечислены ещё и признаки русского акцента —
+// редукция гласных, смягчение перед е/і, силовое ударение.
 export const OPENAI_PRONUNCIATION = {
   kz:
     'PRONUNCIATION: the text is KAZAKH (qazaq tili), not Russian. Use Kazakh phonology: ә as an ' +
     'open front [æ], ө as [ø], ү as [y], ұ as [ʊ], і as a short [ɪ], қ as a deep uvular [q], ғ ' +
-    'as [ʁ], ң as [ŋ], һ as [h]. Respect Kazakh vowel harmony and put word stress on the LAST ' +
-    'syllable. English words inside a Kazakh sentence keep their English pronunciation — do not ' +
-    'read them letter by letter.',
+    'as [ʁ], ң as [ŋ], һ as [h]. Do NOT read it with a Russian accent: vowels are never ' +
+    'reduced — an unstressed о stays [o] and an unstressed а stays [ɑ]; consonants are never ' +
+    'palatalised before е and і; и is the diphthong [ɪj] and у is [ʊw], not the plain Russian ' +
+    'vowels; word-initial е is [je]. Respect Kazakh vowel harmony — back words stay back, front ' +
+    'words stay front. Word stress falls on the LAST syllable, and the phrase flows evenly ' +
+    'instead of hammering the strong stress peaks of Russian. English words inside a Kazakh ' +
+    'sentence keep their English pronunciation — do not read them letter by letter.',
   ru:
     'PRONUNCIATION: the text is RUSSIAN. Native Russian phonology, no English accent, no hard ' +
     'American r. Unstressed о reduces to [ɐ]. «сэр» is [sɛr], a Russian word, not the English ' +
@@ -63,7 +73,9 @@ export const OPENAI_PRONUNCIATION = {
 
 // Темп — отдельный параметр API (0.25–4.0), а не просьба внутри instructions:
 // параметр честнее, текстовую просьбу «говори быстрее» модель то слышит, то нет.
-export const OPENAI_SPEED = { jarvis: 1.0, 'jarvis-harsh': 1.08 }
+// Спокойный чуть медленнее единицы: на казахском қ, ғ, ң и долгие гласные на
+// 1.0 смазываются в русское «кх/г/н». Зеркало OPENAI_TTS_SPEED в agent.py.
+export const OPENAI_SPEED = { jarvis: 0.97, 'jarvis-harsh': 1.08 }
 export const DEFAULT_OPENAI_SPEED = 1.0
 
 // "kk" (ISO языка) и "kz" (код языка приложения) — один и тот же казахский.

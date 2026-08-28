@@ -88,9 +88,10 @@ assert _tts_speech_lang("gentle", "en") == "en"
 # при английском интерфейсе казахский не включает.
 assert tutor_session_lang("hype", "en") == "en"
 
-# ГЕЙТ ПРОДА. Агент один на дев и прод, поэтому словарь включается по
-# ПРОВАЙДЕРУ, а не по тьютору: подмены подобраны под голос OpenAI, и живой Спарк
-# на Soniox их получать не должен, пока их на нём не прогнали.
+# ГЕЙТ ПРОДА. Агент один на дев и прод, поэтому живой Спарк словарь не получает,
+# пока подмены на нём не прогнали, — даже сидя на том же Soniox, что и стенд.
+# А стенд получает при ЛЮБОМ провайдере: он dev-only, и переезд на Soniox не
+# должен был молча выключить ему казахские числительные.
 assert _pronunciation_lang(LearnerProfile(tutor="jarvis", lang="ru")) == "kz"
 assert _pronunciation_lang(LearnerProfile(tutor="jarvis", lang="ru", temper="harsh")) == "kz"
 assert _pronunciation_lang(LearnerProfile(tutor="hype", lang="ru")) == ""
