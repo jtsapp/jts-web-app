@@ -546,6 +546,12 @@ KZ_TUTOR_PERSONA = "hype"  # Спарк
 # ПРОИЗНОШЕНИЯ у обоих казахский, и он не зависит от языка интерфейса.
 KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis"})
 
+# KZ-стенд («KZ тест» на карточке, ключ прежний). Dev-only: на проде карточки
+# нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где прод-тьюторов
+# бережём, стенду можно. Именованная константа, а не литерал по коду: мест, где
+# «это тот самый стенд, ему можно», уже больше одного.
+KZ_DEV_STAND_PERSONA = "jarvis"
+
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
     "speaks or asks in Kazakh, do NOT answer in Kazakh and do NOT fake it. Say plainly, "
@@ -627,14 +633,19 @@ def _tts_speech_lang(tutor: str, lang: str) -> str:
 def _pronunciation_lang(profile: LearnerProfile) -> str:
     """Язык словаря произношения для tts_node — или пусто, если чинить нечего.
 
-    Гейт по ПРОВАЙДЕРУ, а не по тьютору, и это про безопасность прода: агент
-    ОДИН на дев и прод, а подмены подобраны под голос OpenAI. Спарк живёт на
-    Soniox, тот читает казахский нативно и в «I E L T S» не нуждается; а
-    развернуть ему цифры в казахские числительные посреди английской фразы
-    («I have үш apples») — это регрессия у живого тьютора, а не улучшение.
-    Включим Спарку, когда прогоним на нём отдельно.
+    Гейт про безопасность ПРОДА: агент ОДИН на дев и прод. Спарк — живой
+    тьютор, и развернуть ему цифры в казахские числительные посреди английской
+    фразы («I have үш apples») это регрессия, а не улучшение. Включим Спарку,
+    когда прогоним на нём отдельно.
+
+    Условий два, и второе появилось, когда KZ-стенд переехал с OpenAI на Soniox
+    (TUTOR_TTS_PROVIDER). Раньше гейт стоял ТОЛЬКО по провайдеру openai — под
+    него подмены и подбирались, — и переезд молча выключил бы словарь целиком.
+    Стенд dev-only, прода за ним нет, а речь у него казахская всегда, поэтому он
+    в гейте назван прямо: провайдер ему больше не указ.
     """
-    if _tts_provider_for(profile) != "openai":
+    tutor = (profile.tutor or "").strip().lower()
+    if _tts_provider_for(profile) != "openai" and tutor != KZ_DEV_STAND_PERSONA:
         return ""
     return _tts_speech_lang(profile.tutor, profile.lang or "en")
 
@@ -3560,9 +3571,26 @@ SONIOX_TTS_VOICE = {
     "bro": "Noah",     # Dexter — younger, looser male; не путать с Owen Спарка
     "gentle": "Grace", # Luna   — calm female
     "coach": "Emma",   # Sarah  — warm female (в UI её нет, но агент знает)
+    # KZ-стенд. Daniel выбран на слух из перебора мужских голосов на казахской
+    # фразе; Owen намеренно НЕ взят — это тембр Спарка, а стенд должен звучать
+    # отдельным человеком, а не его двойником.
+    "jarvis": "Daniel",
 }
 DEFAULT_SONIOX_TTS_VOICE = "Owen"
 DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
+# Темп. У Soniox это единственная ручка подачи (диапазон [0.7–1.3]) — ни стиля,
+# ни эмоций, ни instructions провайдер не умеет. Зеркало SONIOX_SPEED в
+# src/app/api/tutor-tts/route.js и TUNING в scripts/make-tutor-voice-samples.js.
+#
+# Спарка здесь СОЗНАТЕЛЬНО нет: живьём он всегда шёл на дефолтной единице
+# (speed сюда просто не передавался), а его визитка озвучена на 0.85 — то есть
+# карточка и живой голос разошлись ещё до этой правки. Чинить прод-тьютора
+# заодно с dev-стендом значит менять темп живому Спарку без замера, поэтому
+# оставлено как есть и вынесено в комментарий.
+SONIOX_TTS_SPEED = {
+    "jarvis": 0.95,
+}
+DEFAULT_SONIOX_TTS_SPEED = 1.0
 # App language ("kz"/"ru"/"en") -> Soniox TTS language code. Only Kazakh differs:
 # the app carries the country code "kz", Soniox expects ISO 639-1 "kk". en/ru are
 # identical, so they need no entry (the .get() fallback returns them unchanged).
@@ -3722,6 +3750,24 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     )
 
 
+def _soniox_speed_for(tutor: str) -> float:
+    """Темп персоны: env SONIOX_TTS_SPEED_<PERSONA> важнее таблицы — перебрать
+    на живом стенде можно без редеплоя (зеркало _openai_speed_for).
+
+    Ключ БАЗОВЫЙ (p.tutor), а не persona_key: у Soniox нет ни instructions, ни
+    стиля, так что «подачи», которую 18+ мог бы менять, здесь не существует
+    вовсе — остаётся один тембр на оба нрава.
+    """
+    tutor = (tutor or "").strip().lower()
+    env = (os.getenv(f"SONIOX_TTS_SPEED_{tutor.upper()}") or "").strip() if tutor else ""
+    if env:
+        try:
+            return float(env)
+        except ValueError:
+            logger.warning("SONIOX_TTS_SPEED_%s=%r is not a number — ignored", tutor.upper(), env)
+    return SONIOX_TTS_SPEED.get(tutor, DEFAULT_SONIOX_TTS_SPEED)
+
+
 def _cascade_tts_soniox(profile: LearnerProfile):
     """Soniox TTS (tts-rt-v1). One voice holds its timbre across all 60+ languages,
     so a persona sounds the same in en/ru/kz with no Azure-style swap to a native
@@ -3736,6 +3782,7 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     voice = SONIOX_TTS_VOICE.get(profile.tutor, DEFAULT_SONIOX_TTS_VOICE)
     voice = os.getenv("SONIOX_TTS_VOICE_OVERRIDE", voice)
     model = os.getenv("SONIOX_TTS_MODEL", DEFAULT_SONIOX_TTS_MODEL)
+    speed = _soniox_speed_for(profile.tutor)
     # `language` only biases pronunciation of the input text; the voice itself is
     # language-agnostic. The tutor speaks mostly English even in a ru/kz session,
     # but the session language is the best single hint.
@@ -3751,10 +3798,12 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     app_lang = tutor_session_lang(profile.tutor, profile.lang or "en")
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
-        "Cascade TTS: Soniox (%s, voice=%s, lang=%s), tutor=%s",
-        model, voice, language, profile.tutor or "<none>",
+        "Cascade TTS: Soniox (%s, voice=%s, speed=%.2f, lang=%s), tutor=%s",
+        model, voice, speed, language, profile.tutor or "<none>",
     )
-    return soniox.TTS(api_key=key, model=model, voice=voice, language=language)
+    return soniox.TTS(
+        api_key=key, model=model, voice=voice, language=language, speed=speed
+    )
 
 
 # Fish Audio: голос задаётся reference_id клонированной модели, а не именем из
@@ -3850,13 +3899,19 @@ DEFAULT_OPENAI_TTS_MODEL = "gpt-4o-mini-tts"
 # id, а подача — это и есть ТОН, поэтому она по persona_key. Злой Джарвис обязан
 # звучать злым тем же голосом; иначе кнопка 18+ меняла бы только слова, а
 # интонация оставалась бы дворецкой.
+#
+# «Кто говорит» здесь важнее любых красивых слов о характере. Пока в спокойной
+# подаче стояло "English butler", модель тянула казахский к английской фонетике —
+# диктор с британским ртом читал қазақша. Родной казахский голос описан прямым
+# текстом, и это половина естественности; вторая половина — блок kz ниже.
 OPENAI_TTS_PERSONA_STYLE = {
     "jarvis": (
-        "You are an impeccably trained English butler serving a person you "
-        "genuinely respect. Unhurried, warm, quietly amused. Courtesy is not "
-        "stiffness: there is real affection under the formality, and it shows "
-        "in small softenings at the ends of phrases. Dry wit lands flat and "
-        "confident, never winking. Never theatrical, never servile."
+        "You are a native Kazakh speaker from Almaty. Kazakh is your mother "
+        "tongue, not a language you learned: nothing in your mouth is foreign "
+        "to it. Calm, warm, unhurried but never slow. You are on the phone "
+        "with someone you know and respect — friendly, low-key, quietly "
+        "amused. Talk the way a person talks, not the way a newsreader reads. "
+        "No English accent, no Russian accent, no theatricality, no servility."
     ),
     "jarvis_harsh": (
         "You are the same English butler, but the mask is off and you are done "
@@ -3881,17 +3936,26 @@ OPENAI_TTS_LIVENESS = (
     "reactions colour the first word of a reply. Never sing-song, never "
     "drawn-out vowels, never breathy."
 )
-# Произношение — по языку сессии. Казахский блок здесь не про Джарвиса (он
-# русскоязычный): он готов для Спарка, если тот поедет на OpenAI. Модель
-# казахский официально не поддерживает и по умолчанию читает его как русский,
-# поэтому специфичные буквы приходится проговаривать в IPA поимённо.
+# Произношение — по языку сессии. Казахский блок работает на СЕБЯ (KZ-стенд
+# ходит сюда всегда, см. KZ_SPEAKING_TUTORS) и готов для Спарка, если тот
+# поедет на OpenAI. Модель казахский официально не поддерживает и по умолчанию
+# читает его как русский, поэтому мало назвать буквы в IPA: перечислены ещё и
+# признаки, по которым русский акцент слышно, — редукция гласных, смягчение
+# перед е/і и силовое ударение. Это те самые «звучит по-русски», которые
+# инструкцией лечатся, а словарём произношения — нет.
 OPENAI_TTS_PRONUNCIATION = {
     "kz": (
         "PRONUNCIATION: the text is KAZAKH (qazaq tili), not Russian. Use "
         "Kazakh phonology: ә as an open front [æ], ө as [ø], ү as [y], ұ as "
         "[ʊ], і as a short [ɪ], қ as a deep uvular [q], ғ as [ʁ], ң as [ŋ], һ "
-        "as [h]. Respect Kazakh vowel harmony and put word stress on the LAST "
-        "syllable. English words inside a Kazakh sentence keep their English "
+        "as [h]. Do NOT read it with a Russian accent: vowels are never "
+        "reduced — an unstressed о stays [o] and an unstressed а stays [ɑ]; "
+        "consonants are never palatalised before е and і; и is the diphthong "
+        "[ɪj] and у is [ʊw], not the plain Russian vowels; word-initial е is "
+        "[je]. Respect Kazakh vowel harmony — back words stay back, front "
+        "words stay front. Word stress falls on the LAST syllable, and the "
+        "phrase flows evenly instead of hammering the strong stress peaks of "
+        "Russian. English words inside a Kazakh sentence keep their English "
         "pronunciation — do not read them letter by letter."
     ),
     "ru": (
@@ -3903,10 +3967,13 @@ OPENAI_TTS_PRONUNCIATION = {
     "en": "",
 }
 # Темп. У OpenAI это отдельный параметр, а не текст (диапазон 0.25–4.0), и он
-# честнее просьбы «говори быстрее» в instructions. По persona_key: злой Джарвис
-# частит, спокойный держит ровный темп дворецкого.
+# честнее просьбы «говори быстрее» в instructions. По persona_key: злой частит,
+# спокойный идёт чуть медленнее единицы — на казахском это слышно сразу, потому
+# что қ, ғ, ң и долгие гласные на скорости 1.0 смазываются в русское «кх/г/н».
+# 0.95 — заметно медленно, 1.0 — глотает согласные; 0.97 попадает между.
+# Перебирать на живом стенде можно env-переменной OPENAI_TTS_SPEED_JARVIS.
 OPENAI_TTS_SPEED = {
-    "jarvis": 1.0,
+    "jarvis": 0.97,
     "jarvis_harsh": 1.08,
 }
 DEFAULT_OPENAI_TTS_SPEED = 1.0
@@ -4038,10 +4105,17 @@ TUTOR_TTS_PROVIDER = {
     "bro": "eleven",     # Декстер — клиентский голос выбран в ElevenLabs
     "gentle": "gemini",  # Луна    — лучшее качество на en/ru, один голос на оба
     "hype": "soniox",    # Спарк   — один тембр на всех 60+ языках, включая kk
-    # Джарвис — dev-стенд, здесь и перебираем голоса. ВРЕМЕННО на OpenAI (ash)
-    # вместо клона Fish; путь "fish" рабочий и на месте, вернуть — этой строкой
-    # (или TTS_PROVIDER_JARVIS=fish, без редеплоя).
-    "jarvis": "openai",
+    # KZ-стенд — dev-only, здесь и перебираем голоса. Сейчас Soniox (Daniel):
+    # он единственный реально произносит казахский, и на слух выиграл у OpenAI.
+    # Пути "openai" (ash + instructions) и "fish" (клон) рабочие и на месте —
+    # вернуть можно этой строкой или TTS_PROVIDER_JARVIS=openai, без редеплоя.
+    #
+    # ЧТО ТЕРЯЕТСЯ НА SONIOX, если возвращаться: у провайдера нет instructions,
+    # поэтому OPENAI_TTS_PERSONA_STYLE / _LIVENESS / _PRONUNCIATION для стенда
+    # больше не звучат — характер задаёт только промпт персоны, а фонетику
+    # провайдер знает сам. Плюс отключается словарь произношения: гейт в
+    # _pronunciation_lang стоит по провайдеру openai.
+    "jarvis": "soniox",
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
