@@ -21,7 +21,9 @@ const { readCourse } = require('./jts-self/read-course')
 const { collectLesson } = require('./jts-self/collect-lesson')
 const { buildLessonNodes, buildReviewNode, lessonType } = require('./jts-self/build-nodes')
 const { vocabCardsTask, imageSlug } = require('./jts-self/vocab-cards')
-const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
+// Привязка записей вынесена в отдельный модуль: её гоняют и без исходного
+// html уровня — см. scripts/link-lesson-audio.js.
+const { attachNarration } = require('./jts-self/attach-audio')
 
 const OUT = path.join(__dirname, '..', 'public/learning')
 
@@ -33,7 +35,6 @@ const OUT = path.join(__dirname, '..', 'public/learning')
 // серверах, и словарь весь этот срок был текстовым. Ссылка на чужой хост
 // ничего не давала и по весу: свои файлы раздаются с кэш-заголовками сайта.
 const IMG_DIR = path.join(OUT, 'img')
-const AUDIO_DIR = path.join(OUT, 'audio')
 const IMG_URL_BASE = '/learning/img'
 
 // Карточка словаря — 160×215 CSS-пикселей (.cp-word в course.css), то есть
@@ -61,42 +62,6 @@ async function writeImages(lesson, level) {
     urls[word] = `${IMG_URL_BASE}/${level}/${file}`
   }
   return urls
-}
-
-// Записи, сгенерированные scripts/make-lesson-audio.js для текстов, которые
-// исходный курс читал браузерным синтезом. Привязка по хэшу самого текста:
-// экстрактор гоняют заново после каждой правки курса, и любая привязка по
-// номеру урока разъехалась бы на первой вставке нового задания. Записи нет —
-// задание просто остаётся текстовым, как и было.
-function attachNarration(tasks, level) {
-  const audioFor = (text) => {
-    const word = String(text || '').trim()
-    if (!word) return null
-    return fs.existsSync(path.join(AUDIO_DIR, level, sayAudioFile(word))) ? sayAudioUrl(level, word) : null
-  }
-
-  for (const task of tasks) {
-    // Связный кусок материала: экран слушания.
-    if (task.type === 'info' && task.say) {
-      const url = audioFor(task.say)
-      if (url) task.track = url
-      continue
-    }
-    // Слово на слух («Listen. Choose the word you hear.») и слова карточек
-    // словаря — один и тот же файл на одно и то же слово. Иначе задание
-    // проверяло бы не память, а способность узнать другой голос.
-    if (task.type === 'choice' && task.say) {
-      const url = audioFor(task.say)
-      if (url) task.sayTrack = url
-      continue
-    }
-    if (task.type === 'cards') {
-      for (const word of task.words || []) {
-        const url = audioFor(word.en)
-        if (url) word.audio = url
-      }
-    }
-  }
 }
 
 async function extractCourse(filePath) {

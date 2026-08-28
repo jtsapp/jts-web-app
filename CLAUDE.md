@@ -83,12 +83,27 @@ run lint` + `npm test` + ручной прогон затронутого экр
 - C1 — остался на старом `LessonPlayer` (свои типы chips/watch, под шаги не
   переводили).
 
-`KingdomInteriorPage` сам выбирает источник: есть `public/course/<level>/` —
-берёт его, иначе `public/learning/<level>.json`. Старый экстрактор
+`KingdomInteriorPage` выбирает источник в ДВА шага, и это не одно и то же.
+Тропа: есть `public/course/<level>/` — берёт её, иначе `public/learning/`.
+Содержимое урока: у A0/A1 (`STEP_LEVELS` в `nativeSteps.js`) — всегда
+`public/learning/<level>.json` через `nativeLessonSteps`, каталог курса даёт им
+только тропу и тесты юнитов (`steps-T<u>.json`); у A2/B1/B2 — `steps-<n>.json`.
+Различать обязательно: правка, сделанная только в `steps-<n>.json` уровня A0/A1,
+до экрана урока не доедет вообще (так 452 слова A1 три дня читал браузерный
+синтез — записи легли в курс-шаги, а урок берёт нативный json). Старый экстрактор
 `scripts/extract-kingdom-lessons.js` (hosted-Speakout с админки) остался
 только под C1 — его прогон чистит весь `public/learning`, поэтому не
 возвращай в его LEVELS ни A0/A1 (у них свой источник), ни A2/B1/B2 (они в
 `public/course/`): он тихо положит Speakout поверх нового курса.
+
+Озвучка словаря и связного материала генерируется отдельно
+(`scripts/make-lesson-audio.js`, слова — Soniox, связные куски — Gemini или
+`--narration soniox`, если service account Cloud TTS недоступен). Файлы лежат в
+`public/learning/audio/<level>/`, имя — хэш самого текста. Привязка к заданиям
+идёт в ОБА источника: нативный json — `scripts/link-lesson-audio.js` (скрипт
+генерации зовёт его сам), курс-шаги — `scripts/build-course-steps.js`. Забыть
+привязку теперь не выйдет тихо: `src/learning/nativeAudio.test.js` падает, если
+mp3 на диске есть, а задание про него не знает.
 
 Разметка курса держит три режима (self / 1-to-1 / group) в одном html и прячет
 чужие правилом `[data-only]{display:none}`. Сайт играет только self, поэтому
