@@ -7,6 +7,7 @@ import PhoneLoginPage from './screens/PhoneLoginPage.jsx'
 import OtpPage from './screens/OtpPage.jsx'
 import RegisterPhonePage from './screens/RegisterPhonePage.jsx'
 import RegisterEmailPage from './screens/RegisterEmailPage.jsx'
+import RegisterBirthDatePage from './screens/RegisterBirthDatePage.jsx'
 import SetPasswordPage from './screens/SetPasswordPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
@@ -57,7 +58,7 @@ import { getTutor, temperFor } from './tutor/tutors.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
@@ -198,6 +199,8 @@ export default function App() {
   // оба идентификатора собираются ДО запроса кода (см. handleRegEmailSubmit).
   // Для входа не используется — там всё ещё один идентификатор в `phone`.
   const [email, setEmail] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [birthDateGate, setBirthDateGate] = useState(false)
   const [mode, setMode] = useState('register') // 'register' | 'login' — что ответил бэкенд
   const [token, setToken] = useState(null)
   const [tutorKey, setTutorKey] = useState('spark') // выбранный тьютор
@@ -336,15 +339,28 @@ export default function App() {
     setScreen('reg-email')
   }
 
-  // Шаг 2 регистрации: почта собрана — оба идентификатора известны, теперь
-  // запрашиваем код. Бэкенд шлёт его на почту (RegistrationService
-  // предпочитает email каналом OTP, когда есть оба поля).
-  async function handleRegEmailSubmit(emailValue) {
+  // Шаг 2 регистрации: почта собрана — дальше дата рождения, потом OTP.
+  function handleRegEmailSubmit(emailValue) {
+    setError('')
+    setEmail(emailValue)
+    setScreen('reg-birth')
+  }
+
+  // Шаг 3 регистрации: дата рождения — оба идентификатора и birthDate известны,
+  // теперь запрашиваем код на почту.
+  async function handleRegBirthSubmit(birthDateValue) {
     setError('')
     setLoading(true)
     try {
-      const m = await sendRegistrationOtp(name, phone, emailValue)
-      setEmail(emailValue)
+      if (birthDateGate) {
+        await updateUser(token, { name: name || 'User', birthDate: birthDateValue })
+        setBirthDate(birthDateValue)
+        setBirthDateGate(false)
+        await finishGoogleSession(token)
+        return
+      }
+      setBirthDate(birthDateValue)
+      const m = await sendRegistrationOtp(name, phone, email, birthDateValue)
       setMode(m)
       setScreen('otp')
     } catch (e) {
@@ -367,7 +383,7 @@ export default function App() {
       // угадыванием кода, как раньше, больше нельзя.
       const data =
         mode === 'register'
-          ? await verifyRegistrationOtp(name, phone, email, code)
+          ? await verifyRegistrationOtp(name, phone, email, code, birthDate)
           : await verifyLoginOtp(phone, code)
       const tok = data?.accessToken || null
       setToken(tok || null)
@@ -493,6 +509,33 @@ export default function App() {
     }
   }
 
+  async function finishGoogleSession(tok) {
+    try {
+      const lvl = await getLanguageLevel(tok)
+      if (lvl) setUserLevel(lvl)
+      setNeedsLevelTest(!lvl)
+    } catch (e) {
+      console.warn('Не удалось получить уровень из профиля:', e)
+    }
+    getIsDemoAccount(tok).then(setIsDemoAccount)
+    mergeAnonymousProgress(tok)
+      .then(() => loadTutorProfile(tok))
+      .then((profile) => {
+        if (!profile) return
+        if (profile.tutor) {
+          setTutorKey(profile.tutor)
+          setTemper(temperFor(profile.tutor, profile.tutorTemper))
+          setTutorOnboarded(true)
+        }
+        setInterestIds(enToInterestIds(profile.interests))
+        setProfileId(profile.deviceId || null)
+        if (profile.profession) setProfession(profile.profession)
+      })
+    clearLocalPractice()
+    hydratePractice(tok)
+    setScreen('success')
+  }
+
   // Вход через Google: GIS уже отдал проверяемый id_token, бэкенд его
   // верифицирует и находит/создаёт пользователя. Дальше — тот же пост-логин,
   // что и после OTP: токен, уровень из профиля, перенос анонимного прогресса.
@@ -503,38 +546,16 @@ export default function App() {
       const data = await loginWithGoogle(idToken)
       const tok = data?.accessToken || null
       if (!tok) throw new Error(t('err.otp'))
-      // Имя из Google-профиля надёжнее введённого в чате, но чат — фолбэк.
       setName(data?.name || chatName || '')
       setToken(tok)
       saveToken(tok)
-      try {
-        const lvl = await getLanguageLevel(tok)
-        if (lvl) setUserLevel(lvl)
-        // Уровня в профиле нет — Google-аккаунт свежесозданный (или тест
-        // пропускали), после success ведём на CEFR-тест.
-        setNeedsLevelTest(!lvl)
-      } catch (e) {
-        console.warn('Не удалось получить уровень из профиля:', e)
+      const me = await getCurrentUser(tok).catch(() => null)
+      if (!me?.birthDate) {
+        setBirthDateGate(true)
+        setScreen('reg-birth')
+        return
       }
-      getIsDemoAccount(tok).then(setIsDemoAccount)
-      // Как и после OTP: перенос анонимного прогресса, затем тьютор-профиль
-      // аккаунта (тьютор/интересы/профессия с прошлых сессий).
-      mergeAnonymousProgress(tok)
-        .then(() => loadTutorProfile(tok))
-        .then((profile) => {
-          if (!profile) return
-          if (profile.tutor) {
-            setTutorKey(profile.tutor)
-            setTemper(temperFor(profile.tutor, profile.tutorTemper))
-            setTutorOnboarded(true)
-          }
-          setInterestIds(enToInterestIds(profile.interests))
-          setProfileId(profile.deviceId || null)
-          if (profile.profession) setProfession(profile.profession)
-        })
-      clearLocalPractice()
-      hydratePractice(tok)
-      setScreen('success')
+      await finishGoogleSession(tok)
     } catch (e) {
       setError(e.message || t('err.otp'))
     } finally {
@@ -708,7 +729,7 @@ export default function App() {
     setError('')
     try {
       if (mode === 'register') {
-        await sendRegistrationOtp(name, phone, email)
+        await sendRegistrationOtp(name, phone, email, birthDate)
       } else {
         const m = await requestLoginOtp(phone)
         setMode(m)
@@ -798,11 +819,28 @@ export default function App() {
           error={error}
         />
       )
+    case 'reg-birth':
+      return (
+        <RegisterBirthDatePage
+          googleGate={birthDateGate}
+          onBack={
+            birthDateGate
+              ? undefined
+              : () => {
+                  setError('')
+                  setScreen('reg-email')
+                }
+          }
+          onSubmit={handleRegBirthSubmit}
+          loading={loading}
+          error={error}
+        />
+      )
     case 'otp':
       return (
         <OtpPage
           phone={mode === 'register' ? email : phone}
-          onBack={() => { setError(''); setScreen(mode === 'register' ? 'reg-email' : 'phone') }}
+          onBack={() => { setError(''); setScreen(mode === 'register' ? 'reg-birth' : 'phone') }}
           onSubmit={handleOtpSubmit}
           onResend={handleResend}
           loading={loading}

@@ -581,9 +581,14 @@ async function post(path, body) {
 // предпочтительнее телефона как канал OTP при обоих полях) — таков порядок
 // веб-формы: номер → почта → код на почту → пароль. Если телефон или почта
 // уже заняты — не уводим молча в вход, а помечаем ошибку кодом USER_EXISTS.
-export async function sendRegistrationOtp(name, phone, email) {
+export async function sendRegistrationOtp(name, phone, email, birthDate) {
   try {
-    await post('/registration/initiate', { name: name || 'Гость', phone: normalizePhone(phone), email })
+    await post('/registration/initiate', {
+      name: name || 'Гость',
+      phone: normalizePhone(phone),
+      email,
+      birthDate,
+    })
     return 'register'
   } catch (e) {
     if ((e.message || '').toLowerCase().includes('exist')) {
@@ -597,8 +602,19 @@ export async function sendRegistrationOtp(name, phone, email) {
 // обоими идентификаторами и возвращает accessToken/refreshToken (см.
 // RegistrationVerifyResponse на бэкенде) — отдельного входа после регистрации
 // больше не требуется.
-export async function verifyRegistrationOtp(name, phone, email, code) {
-  return post('/registration/verify', { name: name || 'Гость', phone: normalizePhone(phone), email, otp: code })
+export async function verifyRegistrationOtp(name, phone, email, code, birthDate) {
+  return post('/registration/verify', {
+    name: name || 'Гость',
+    phone: normalizePhone(phone),
+    email,
+    birthDate,
+    otp: code,
+  })
+}
+
+export async function getCurrentUser(token) {
+  if (!token) return null
+  return authGet('/user/me', token)
 }
 
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
