@@ -44,10 +44,12 @@ function LessonRow({ level, n, meta, progress, onOpen, review }) {
   return (
     <button type="button" className={'wb-lrow' + (full ? ' is-done' : '')} onClick={() => onOpen(n)}>
       {/* Итог юнита — звёздочкой, как в оригинале: номер 101 читался как
-          «сто первый урок», хотя это разбор пройденного за юнит. Признак
-          берём из структуры каталога (юнит указывает на него полем rev), а не
-          из поля урока: public/ отдаётся с часовым кэшем, и у клиента может
-          лежать index.json, собранный до появления этого поля. */}
+          «сто первый урок», хотя это челлендж по пройденному. Признак считает
+          экстрактор по правилу самого прототипа: у A0 это урок, на который
+          указывает юнит, у A2–B2 — номер больше сотни, а у A1 отдельных
+          итоговых уроков нет вовсе и челленджами работают обычные 12/24/32.
+          Отсюда откат на u.rev: public/ отдаётся с часовым кэшем, и у клиента
+          может лежать index.json, собранный до появления поля. */}
       <span className={'wb-lrow__n' + (review ? ' wb-lrow__n--star' : '')}>{review ? '★' : n}</span>
       <span className="wb-lrow__b">
         <b>{meta.title}</b>
@@ -144,7 +146,7 @@ export default function WorkbookUnits({ level, index, progress, onOpenLesson, on
                     meta={index.lessons[n]}
                     progress={progress}
                     onOpen={onOpenLesson}
-                    review={n === u.rev || !!index.lessons[n].test}
+                    review={index.lessons[n].review || n === u.rev || !!index.lessons[n].test}
                   />
                 ))}
               </div>
