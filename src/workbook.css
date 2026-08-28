@@ -411,3 +411,38 @@
 @media (prefers-reduced-motion: reduce) {
   .wb-primary, .wb-tok, .wb-opt { transition: none; }
 }
+
+/* ── перетаскивание ──────────────────────────────────────────────────────
+   Порт слоя DND прототипа (.grab/.dragghost/.dz-*): оригинал остаётся на
+   месте и гаснет, за пальцем едет копия, подходящие цели обведены пунктиром,
+   а та, что под пальцем, — сплошной рамкой. touch-action:none обязателен,
+   иначе на телефоне жест уводит страницу вместо слова. */
+.wb-grab { touch-action: none; cursor: grab; }
+.wb-grab:active { cursor: grabbing; }
+.wb-tok.wb-lift { opacity: 0.45; box-shadow: none; }
+.wb-blank.wb-lift { opacity: 0.45; }
+body.wb-dragging { cursor: grabbing; user-select: none; }
+/* Имя с суффиксом -drag: .wb-ghost уже занят второстепенной кнопкой, и общий
+   селектор увёл бы её в position:fixed поверх экрана. */
+.wb-dragghost {
+  position: fixed; z-index: 140; margin: 0; pointer-events: none; box-sizing: border-box;
+  background: var(--wb-purple, #874bf8); color: #fff; font-weight: 700;
+  border-radius: 10px; padding: 8px 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 12px 26px rgba(31, 18, 63, 0.28); opacity: 0.97;
+}
+.wb-dz-open { outline: 2px dashed #cdbcf7; outline-offset: 3px; }
+.wb-dz-hot { outline: 2.5px solid var(--wb-purple); outline-offset: 3px; background: var(--wb-purple-soft); }
+.wb-blank.wb-dz-hot { border-bottom-color: var(--wb-purple); }
+.wb-tok.wb-bounce { animation: wb-bounce 0.32s ease; }
+@keyframes wb-bounce {
+  0% { transform: scale(1.14); }
+  60% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-tok.wb-bounce { animation: none; }
+}
+
+/* Итог юнита в каталоге — звёздочка вместо номера (в данных это урок 101). */
+.wb-lrow__n--star { background: var(--wb-gold-bg); color: var(--wb-gold); font-size: 15px; }

@@ -73,6 +73,42 @@ test.describe('Воркбук — каталог и экран задания', 
     await expect(page.locator('.wb-mistakes')).toHaveCount(0)
   })
 
+  test('итог юнита помечен звёздочкой, а не номером', async ({ page }) => {
+    await openCatalog(page)
+    const unit = index.units[0]
+    const rows = page.locator('.wb-unit').first().locator('.wb-lrow')
+    // Последняя строка юнита — разбор пройденного (в данных это урок 101).
+    await expect(rows).toHaveCount(unit.ls.length + 1)
+    await expect(rows.last().locator('.wb-lrow__n')).toHaveText('★')
+    await expect(rows.first().locator('.wb-lrow__n')).toHaveText(String(unit.ls[0]))
+  })
+
+  test('слово можно перетащить в пропуск, а не только тапнуть', async ({ page }) => {
+    await openScreen(page, 1, 0)
+    const right = MATCH.items[0].r
+    const tok = page.locator('.wb-tok', { hasText: right })
+    const gap = page.locator('.wb-blank').first()
+    const from = await tok.boundingBox()
+    const to = await gap.boundingBox()
+
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+    await page.mouse.down()
+    // Порог подъёма — 7px, поэтому ведём с запасом и несколькими шагами:
+    // одно скачкообразное перемещение прототип бы не отличил от тапа.
+    await page.mouse.move(from.x + from.width / 2 + 20, from.y + from.height / 2 + 20, { steps: 5 })
+    // Пока слово в воздухе, подходящие цели подсвечены.
+    await expect(page.locator('.wb-dz-open').first()).toBeVisible()
+    await expect(page.locator('.wb-dragghost')).toBeVisible()
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 })
+    await page.mouse.up()
+
+    await expect(gap).toHaveClass(/is-ok/)
+    await expect(page.locator('.wb-tally__n')).toHaveText('1 / 8')
+    // Призрак убран, подсветка снята.
+    await expect(page.locator('.wb-dragghost')).toHaveCount(0)
+    await expect(page.locator('.wb-dz-open')).toHaveCount(0)
+  })
+
   test('верное слово встаёт в пропуск, неверное возвращается в банк', async ({ page }) => {
     await openScreen(page, 1, 0)
     await expect(page.locator('.wb-tok')).toHaveCount(MATCH_BANK.length)

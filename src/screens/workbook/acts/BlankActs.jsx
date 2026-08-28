@@ -4,17 +4,19 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { bankWords, tableCells } from '../../../practice/workbook/engine.js'
 import { Note, Pic, Qnum } from '../ActShell.jsx'
+import { justDragged, useGrab, useZone } from '../dnd.js'
 import { loc } from '../loc.js'
 
 // Пропуски со словобанком: bank / match / table / chat. Порт makeBank +
-// liveBlank (data/jtsworkbook-a0.html:5563, :5594) без drag-and-drop —
-// остаётся «тапнул слово, тапнул пропуск», как и в чипах «Письма».
+// liveBlank (data/jtsworkbook-a0.html:5563, :5594). Слово можно перетащить в
+// пропуск или поставить двумя тапами — судья один и тот же.
 //
 // Ключевое поведение прототипа, которое легко потерять: неверное слово НЕ
 // проглатывается. Оно на секунду остаётся в пропуске красным (чтобы студент
 // прочитал, что именно он поставил), после чего возвращается в банк.
 
 const WRONG_MS = 1100
+const WORD_KIND = 'wb-word'
 
 function useBank(words) {
   const [active, setActive] = useState(null)
@@ -37,26 +39,37 @@ function useBank(words) {
   }
 }
 
+function BankTok({ bank, w, i }) {
+  const used = bank.isUsed(i)
+  const ref = useGrab(WORD_KIND, i, used)
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={'wb-tok' + (used ? ' is-used' : '') + (bank.active === i ? ' is-act' : '')}
+      disabled={used}
+      onClick={() => {
+        if (justDragged()) return
+        bank.toggle(i)
+      }}
+    >
+      {w}
+    </button>
+  )
+}
+
 function Bank({ bank, label }) {
   return (
     <div className="wb-bank">
       <div className="wb-bank__hint">{label}</div>
       {bank.words.map((w, i) => (
-        <button
-          key={i}
-          type="button"
-          className={'wb-tok' + (bank.isUsed(i) ? ' is-used' : '') + (bank.active === i ? ' is-act' : '')}
-          disabled={bank.isUsed(i)}
-          onClick={() => bank.toggle(i)}
-        >
-          {w}
-        </button>
+        <BankTok key={i} bank={bank} w={w} i={i} />
       ))}
     </div>
   )
 }
 
-/** Один пропуск: судит себя сам в момент заполнения. */
+/** Один пропуск: судит себя сам в момент заполнения — тапом или броском. */
 function Blank({ ans, idx, ctl, bank }) {
   const { t } = useI18n()
   const [clean, setClean] = useState(true)
@@ -73,27 +86,9 @@ function Blank({ ans, idx, ctl, bank }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealed])
 
-  // shown выставляется только когда слово поставил студент, поэтому он же и
-  // отличает «решил сам» от «ответ раскрыли».
-  const own = closed && !!shown && !bad
-  if (own) {
-    return (
-      <span className="wb-blank is-ok" aria-label={shown}>
-        {shown}
-      </span>
-    )
-  }
-  if (closed || revealed) {
-    return (
-      <span className="wb-blank is-rev" aria-label={ans}>
-        {ans}
-      </span>
-    )
-  }
-
-  const put = () => {
-    const i = bank.active
-    if (i == null) return
+  /* ОДИН судья, две дороги: тап-тап и перетаскивание. */
+  const place = (i) => {
+    if (i == null || closed) return
     const w = bank.words[i]
     if (w === ans) {
       clearTimeout(timer.current)
@@ -115,12 +110,36 @@ function Blank({ ans, idx, ctl, bank }) {
     }, WRONG_MS)
   }
 
+  const zoneRef = useZone(WORD_KIND, (i) => place(i), closed || revealed)
+
+  // shown выставляется только когда слово поставил студент, поэтому он же и
+  // отличает «решил сам» от «ответ раскрыли».
+  const own = closed && !!shown && !bad
+  if (own) {
+    return (
+      <span className="wb-blank is-ok" aria-label={shown}>
+        {shown}
+      </span>
+    )
+  }
+  if (closed || revealed) {
+    return (
+      <span className="wb-blank is-rev" aria-label={ans}>
+        {ans}
+      </span>
+    )
+  }
+
   return (
     <button
+      ref={zoneRef}
       type="button"
       className={'wb-blank' + (bad ? ' is-no' : '')}
       aria-label={shown || t('workbook.gap')}
-      onClick={put}
+      onClick={() => {
+        if (justDragged()) return
+        place(bank.active)
+      }}
     >
       {shown || ''}
     </button>
