@@ -5,6 +5,7 @@ import { I18nProvider } from '../i18n.jsx'
 import RegisterPhonePage from './RegisterPhonePage.jsx'
 import RegisterEmailPage from './RegisterEmailPage.jsx'
 import RegisterBirthDatePage, { isValidBirthDate } from './RegisterBirthDatePage.jsx'
+import { MIN_AGE } from '../lib/birthDate.js'
 
 function renderStep(Page, props = {}) {
   return render(
@@ -61,5 +62,29 @@ describe('дата рождения — сабмит', () => {
     fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '1998-03-21' } })
     fireEvent.submit(container.querySelector('form'))
     expect(onSubmit).toHaveBeenCalledWith('1998-03-21')
+  })
+
+  // Нативный пикер ограничен атрибутом max, но значение можно подставить и
+  // мимо него (автозаполнение, тесты, мобильные клавиатуры) — форма обязана
+  // отбить дату сама.
+  it('не пускает дату младше порога', () => {
+    const onSubmit = vi.fn()
+    const { container } = renderStep(RegisterBirthDatePage, { onSubmit })
+    const tooYoung = new Date()
+    tooYoung.setFullYear(tooYoung.getFullYear() - (MIN_AGE - 1))
+    fireEvent.change(container.querySelector('input[type="date"]'), {
+      target: { value: tooYoung.toISOString().slice(0, 10) },
+    })
+    fireEvent.submit(container.querySelector('form'))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(container.querySelector('.form-error')).not.toBeNull()
+  })
+
+  it('не пускает опечатку в веке', () => {
+    const onSubmit = vi.fn()
+    const { container } = renderStep(RegisterBirthDatePage, { onSubmit })
+    fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '1899-05-05' } })
+    fireEvent.submit(container.querySelector('form'))
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })
