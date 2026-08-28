@@ -29,8 +29,27 @@ const I18N_SOURCE = path.join(__dirname, 'workbook-i18n-source.json')
 
 // Ожидаемые счётчики: расходятся — значит прототип перевыпустили с другим
 // содержимым, и молча пересобирать данные под новый объём нельзя.
+//
+// Уровни устроены по-разному, и это НЕ ошибка данных: у A1 юнит-ревью нет
+// вовсе, у A2/B1 ревью-урок есть у каждого юнита (101…112) и он же зачётный
+// тест, у B2 тест один на три юнита (201…204). Ждём ровно то, что лежит
+// в прототипе, иначе «проверка» выродится в пересчёт самой себя.
 const EXPECT = {
-  a0: { units: 7, lessons: 31, reviews: [101, 102, 103, 104, 105, 106, 107] },
+  a0: { units: 7, lessons: 31, reviews: [101, 102, 103, 104, 105, 106, 107], tests: [] },
+  a1: { units: 8, lessons: 32, reviews: [], tests: [] },
+  a2: {
+    units: 12,
+    lessons: 48,
+    reviews: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
+    tests: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
+  },
+  b1: {
+    units: 12,
+    lessons: 48,
+    reviews: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
+    tests: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
+  },
+  b2: { units: 12, lessons: 52, reviews: [201, 202, 203, 204], tests: [201, 202, 203, 204] },
 }
 
 // Типы заданий, которые умеет рисовать порт. Новый тип из прототипа обязан
@@ -38,10 +57,29 @@ const EXPECT = {
 const TOP_TYPES = [
   'listen', 'read', 'respond', 'chat', 'write', 'speak', 'order', 'fix', 'choose',
   'drop', 'bank', 'odd', 'type', 'table', 'sort', 'match', 'label', 'memo',
+  // A1 и старше: трансформация предложения плитками.
+  'trans',
+  // B1 и старше: набранная трансформация, словообразование, разбор образца,
+  // модельный текст.
+  'ttrans', 'wform', 'worked', 'model',
+  // B2: правило с примерами, цепочка из двух перезаписей, поиск ошибок в
+  // абзаце, сплошной текст с банком слов, зачётная викторина, видео-репортаж.
+  'rule', 'chain', 'epara', 'cloze', 'quiz', 'video',
 ]
 const NESTED_TYPES = ['tf', 'choose', 'seq', 'match', 'type', 'bank', 'sort', 'odd', 'label']
-// Типы, которые «Разбор ошибок» умеет резать до одних промахов (порт SUBSETTABLE).
-const SUBSETTABLE = ['type', 'choose', 'tf', 'odd', 'label', 'respond', 'bank', 'match', 'order', 'fix']
+// Типы-обёртки: сами ничего не судят, под ними лежит обычное задание (task).
+const WRAPPER_TYPES = ['listen', 'read', 'rule', 'model', 'worked', 'video']
+// Типы, которые «Разбор ошибок» умеет резать до одних промахов (порт
+// SUBSETTABLE). Список СВОЙ у каждого уровня: A1/A2 не режут trans, а B1/B2 не
+// режут order/label — так в прототипах, и расхождение здесь меняет то, какие
+// задания студент проходит в разборе целиком.
+const SUBSETTABLE = {
+  a0: ['type', 'choose', 'tf', 'odd', 'label', 'respond', 'bank', 'match', 'order', 'fix'],
+  a1: ['type', 'choose', 'tf', 'odd', 'label', 'respond', 'bank', 'match', 'order', 'fix'],
+  a2: ['type', 'choose', 'tf', 'odd', 'label', 'respond', 'bank', 'match', 'order', 'fix'],
+  b1: ['type', 'wform', 'choose', 'tf', 'odd', 'respond', 'bank', 'match', 'fix', 'trans', 'ttrans'],
+  b2: ['type', 'wform', 'choose', 'tf', 'odd', 'respond', 'bank', 'match', 'fix', 'trans', 'ttrans', 'chain'],
+}
 
 function fail(msg) {
   throw new Error('[extract-workbook] ' + msg)
@@ -104,11 +142,36 @@ function evalPrototype(html) {
   vm.runInContext(data, sandbox, { timeout: 10000, filename: 'jtsworkbook-data.js' })
   vm.runInContext(engine, sandbox, { timeout: 10000, filename: 'jtsworkbook-engine.js' })
 
-  const wanted = ['UI', 'INS', 'UNITS', 'WB', 'CLASS', 'CLH', 'TIP', 'GR', 'CAN', 'shuffle', 'optOrder', 'numericLadder', 'nrm']
+  // Обязательный минимум — то, без чего данных нет вовсе. Фразы «на уроке»
+  // (CLASS/CLH) и подсказки TIP есть только у A0: с A1 автор их не выпускает,
+  // и требовать их — значит уронить сборку на живом прототипе.
+  const wanted = ['UI', 'INS', 'UNITS', 'WB', 'GR', 'CAN', 'shuffle', 'optOrder', 'numericLadder', 'nrm']
   for (const name of wanted) {
     if (sandbox[name] === undefined) fail('в песочнице не оказалось ' + name + ' — прототип переименовал переменную')
   }
   return sandbox
+}
+
+/**
+ * Судья набранного ответа ЭТОГО прототипа. У каждого уровня он свой, и разница
+ * не косметическая: A1 прощает пропущенный апостроф вторым проходом, A2 —
+ * по списку британских/американских пар, B1/B2 раскрывают сокращения в полные
+ * формы. Берём ту функцию, которая реально лежит в файле, а не «свою общую».
+ */
+function matcherOf(sb) {
+  if (typeof sb.typedOk === 'function') return (input, keys) => sb.typedOk(input, keys)
+  if (typeof sb.answerMatches === 'function') return (input, keys) => sb.answerMatches(sb.nrm(input), keys)
+  if (typeof sb.loose === 'function') {
+    return (input, keys) => {
+      const v = sb.nrm(input)
+      const vl = sb.loose(input)
+      return !!v && keys.some((k) => sb.nrm(k) === v || sb.loose(k) === vl)
+    }
+  }
+  return (input, keys) => {
+    const v = sb.nrm(input)
+    return !!v && keys.some((k) => sb.nrm(k) === v)
+  }
 }
 
 // ── Валидации (fail, не warn: тихо испорченные данные хуже упавшего скрипта) ─
@@ -222,13 +285,113 @@ function checkAct(a, where, insTable, nested) {
       break
     case 'listen':
       if (!a.task) fail(where + ': listen без вложенного задания')
-      if (a.track && !/^\d\d_\d\d$/.test(a.track)) fail(where + ': кривой id трека «' + a.track + '»')
+      // Учебник пишет id трека и через подчёркивание («01_08» у A0–A2), и
+      // через точку («10.7» у B1/B2) — обе формы легальны, ловим только мусор.
+      if (a.track && !/^\d+[._]\d+$/.test(a.track)) fail(where + ': кривой id трека «' + a.track + '»')
       checkAct(a.task, where + '>task', insTable, true)
       break
     case 'read':
       if (!a.task) fail(where + ': read без вложенного задания')
       if (!Array.isArray(a.text) || !a.text.length) fail(where + ': read без текста')
       checkAct(a.task, where + '>task', insTable, true)
+      break
+    case 'video':
+      if (!a.task) fail(where + ': video без вложенного задания')
+      // Ролика в прототипе нет, есть расшифровка: без неё экран немой.
+      if (!Array.isArray(a.tts) || !a.tts.length) fail(where + ': video без расшифровки')
+      checkAct(a.task, where + '>task', insTable, true)
+      break
+    case 'model':
+      if (!a.task) fail(where + ': model без вложенного задания')
+      if (!Array.isArray(a.text) || !a.text.length) fail(where + ': model без текста образца')
+      checkAct(a.task, where + '>task', insTable, true)
+      break
+    case 'worked':
+      if (!a.task) fail(where + ': worked без вложенного задания')
+      if (!Array.isArray(a.steps) || !a.steps.length) fail(where + ': worked без шагов разбора')
+      a.steps.forEach((s, k) => {
+        if (!Array.isArray(s) || !s[0]) fail(where + '/' + k + ': шаг разбора без строки')
+      })
+      checkAct(a.task, where + '>task', insTable, true)
+      break
+    case 'rule':
+      if (!a.task) fail(where + ': rule без вложенного задания')
+      if ((!Array.isArray(a.rule) || !a.rule.length) && (!Array.isArray(a.points) || !a.points.length)) {
+        fail(where + ': rule без объяснения')
+      }
+      ;(a.points || []).forEach((p, k) => {
+        if (!Array.isArray(p) || !p[0] || !p[1]) fail(where + '/' + k + ': пункт правила без названия или пояснения')
+      })
+      ;(a.eg || []).forEach((e, k) => {
+        if (!Array.isArray(e) || !e[0]) fail(where + '/eg' + k + ': пример без предложения')
+      })
+      checkAct(a.task, where + '>task', insTable, true)
+      break
+    case 'trans':
+      if (!items.length) fail(where + ': пустые items')
+      items.forEach((it, k) => {
+        if (!it.from) fail(where + '/' + k + ': trans без исходного предложения')
+        if (!it.cue) fail(where + '/' + k + ': trans без задания на переделку')
+        if (!Array.isArray(it.w) || !it.w.length) fail(where + '/' + k + ': trans без слов')
+        if (typeof it.a !== 'string' || !it.a) fail(where + '/' + k + ': trans без эталона')
+        const got = it.w.slice().sort().join(' ')
+        const want = it.a.split(' ').slice().sort().join(' ')
+        if (got !== want) fail(where + '/' + k + ': слова не складываются в эталон «' + it.a + '»')
+      })
+      break
+    case 'ttrans':
+      if (!items.length) fail(where + ': пустые items')
+      items.forEach((it, k) => {
+        if (!it.cue) fail(where + '/' + k + ': ttrans без задания на переделку')
+        if (typeof it.a !== 'string' || !it.a) fail(where + '/' + k + ': ttrans без ключа')
+        if (it.alt && !Array.isArray(it.alt)) fail(where + '/' + k + ': alt не массив')
+      })
+      break
+    case 'wform':
+      if (!items.length) fail(where + ': пустые items')
+      items.forEach((it, k) => {
+        if (typeof it.q !== 'string' || it.q.indexOf('___') < 0) fail(where + '/' + k + ': wform без пропуска')
+        if (!it.root) fail(where + '/' + k + ': wform без исходного слова')
+        if (typeof it.a !== 'string' || !it.a) fail(where + '/' + k + ': wform без ключа')
+      })
+      break
+    case 'chain':
+      if (!items.length) fail(where + ': пустые items')
+      items.forEach((it, k) => {
+        if (!it.from) fail(where + '/' + k + ': chain без исходного предложения')
+        if (!Array.isArray(it.steps) || it.steps.length < 2) fail(where + '/' + k + ': chain меньше двух шагов')
+        it.steps.forEach((st, j) => {
+          if (!st.cue) fail(where + '/' + k + '.' + j + ': шаг цепочки без задания')
+          if (typeof st.a !== 'string' || !st.a) fail(where + '/' + k + '.' + j + ': шаг цепочки без ключа')
+        })
+      })
+      break
+    case 'epara':
+      if (!Array.isArray(a.words) || !a.words.length) fail(where + ': epara без текста')
+      if (!Array.isArray(a.bad) || !a.bad.length) fail(where + ': epara без ошибок')
+      a.bad.forEach((b, k) => {
+        if (typeof b.i !== 'number' || !a.words[b.i]) fail(where + '/' + k + ': индекс ошибки не указывает на слово')
+        if (!b.fix) fail(where + '/' + k + ': ошибка без правки')
+      })
+      break
+    case 'cloze': {
+      if (!Array.isArray(a.text) || !a.text.length) fail(where + ': cloze без текста')
+      if (!Array.isArray(a.bank) || !a.bank.length) fail(where + ': cloze без банка слов')
+      if (!Array.isArray(a.gaps) || !a.gaps.length) fail(where + ': cloze без ключей')
+      const gaps = a.text.reduce((n, line) => n + String(line).split('___').length - 1, 0)
+      if (gaps !== a.gaps.length) fail(where + ': пропусков ' + gaps + ', ключей ' + a.gaps.length)
+      a.gaps.forEach((g, k) => {
+        if (!a.bank.includes(g)) fail(where + '/' + k + ': ключа «' + g + '» нет в банке слов')
+      })
+      break
+    }
+    case 'quiz':
+      if (!items.length) fail(where + ': пустые items')
+      items.forEach((it, k) => {
+        if (!it.q) fail(where + '/' + k + ': вопрос без текста')
+        if (!Array.isArray(it.o) || it.o.length < 2) fail(where + '/' + k + ': меньше двух вариантов')
+        if (typeof it.a !== 'number' || it.a < 0 || it.a >= it.o.length) fail(where + '/' + k + ': ключ не индекс в вариантах')
+      })
       break
     default:
       fail(where + ': тип «' + a.t + '» не описан в валидаторе')
@@ -250,19 +413,26 @@ function validate(sandbox, level) {
   const nums = lessonNumbers(WB)
   if (nums.length !== expect.lessons) fail('уроков ' + nums.length + ', ждали ' + expect.lessons)
 
-  const revs = UNITS.map((u) => u.rev).sort((a, b) => a - b)
+  // Ревью привязано к юниту полем rev, и у части уровней его нет вовсе (A1)
+  // или оно есть у каждого третьего юнита (B2) — считаем только настоящие.
+  const revs = UNITS.map((u) => u.rev).filter((n) => n != null).sort((a, b) => a - b)
   if (revs.join(',') !== expect.reviews.join(',')) {
     fail('ревью ' + revs.join(',') + ', ждали ' + expect.reviews.join(','))
   }
+  const tests = nums.filter((n) => WB[n].test).sort((a, b) => a - b)
+  if (tests.join(',') !== expect.tests.join(',')) {
+    fail('зачётных уроков ' + tests.join(',') + ', ждали ' + expect.tests.join(','))
+  }
+  tests.forEach((n) => { if (!revs.includes(n)) fail('зачётный урок ' + n + ' не привязан ни к одному юниту') })
   UNITS.forEach((u) => {
-    if (!WB[u.rev]) fail('юнит ' + u.n + ': ревью ' + u.rev + ' не существует')
+    if (u.rev != null && !WB[u.rev]) fail('юнит ' + u.n + ': ревью ' + u.rev + ' не существует')
     u.ls.forEach((n) => { if (!WB[n]) fail('юнит ' + u.n + ': урок ' + n + ' не существует') })
   })
 
   // Каждый урок обязан лежать ровно в одном юните — иначе он недостижим с карты.
   const seen = new Set()
   UNITS.forEach((u) => {
-    u.ls.concat([u.rev]).forEach((n) => {
+    u.ls.concat(u.rev == null ? [] : [u.rev]).forEach((n) => {
       if (seen.has(n)) fail('урок ' + n + ' попал в два юнита')
       seen.add(n)
     })
@@ -270,6 +440,7 @@ function validate(sandbox, level) {
   nums.forEach((n) => { if (!seen.has(n)) fail('урок ' + n + ' не привязан ни к одному юниту') })
 
   let acts = 0
+  let vocShape = ''
   nums.forEach((n) => {
     const W = WB[n]
     if (typeof W.title !== 'string' || !W.title) fail('урок ' + n + ': нет заголовка')
@@ -278,6 +449,12 @@ function validate(sandbox, level) {
     W.voc.forEach((v, k) => {
       if (!Array.isArray(v) || v.length < 3 || v.length > 4) fail('урок ' + n + ', слово ' + k + ': не тройка [en,ru,kk]')
       if (v.slice(0, 3).some((s) => typeof s !== 'string' || !s)) fail('урок ' + n + ', слово ' + k + ': пустая часть перевода')
+      // Форма словаря — часть контракта с плеером: [en,ru,kk,emoji] у A0–B1 и
+      // [en,английское определение,emoji] у B2. Перепутать их — значит выдать
+      // казахскому студенту эмодзи вместо перевода, и молча.
+      const shape = v.length === 4 ? 'ru-kk' : 'def'
+      if (vocShape && vocShape !== shape) fail('урок ' + n + ', слово ' + k + ': словарь уровня смешал формы')
+      vocShape = shape
     })
     W.acts.forEach((a, i) => {
       // turn обязан быть разложен пост-обработкой прототипа: в рантайм он не едет.
@@ -287,7 +464,7 @@ function validate(sandbox, level) {
     })
   })
 
-  return { lessons: nums.length, acts }
+  return { lessons: nums.length, acts, vocShape: vocShape || 'ru-kk' }
 }
 
 // ── Оракул: считает САМ прототип, не наш порт ────────────────────────────
@@ -307,16 +484,28 @@ function mutations(answer) {
   ]
 }
 
-function oracleAct(sb, a, where) {
-  const { shuffle, optOrder, nrm } = sb
+function oracleAct(sb, a, where, matcher) {
+  const { shuffle, optOrder } = sb
+  const judge = matcher || matcherOf(sb)
   const o = { where, t: a.t }
   const idx = (n) => Array.from({ length: n }, (_, k) => k)
+
+  /** Вердикты грейдера на ключе и околопромахах — тем судьёй, что у уровня. */
+  const gradeRows = (key, alt) => {
+    const keys = [key].concat(alt || [])
+    let inputs = mutations(key)
+    keys.slice(1).forEach((k) => { inputs = inputs.concat(mutations(k)) })
+    return inputs.map((input) => ({ in: input, ok: judge(input, keys) }))
+  }
 
   switch (a.t) {
     case 'choose':
     case 'odd':
     case 'label':
     case 'respond':
+    // Викторина B2 показывает вопросы по одному, но порядок вариантов считает
+    // тем же optOrder — иначе «правильная» кнопка уехала бы.
+    case 'quiz':
       o.orders = a.items.map((it, i) => optOrder(a, it, i))
       o.right = o.orders.map((ord, i) => ord.indexOf(a.items[i].a))
       break
@@ -346,6 +535,14 @@ function oracleAct(sb, a, where) {
     case 'order':
       o.tiles = a.items.map((it, i) => shuffle(it.w, (i + 1) * 13 + (a.seed || 5)))
       break
+    // Трансформация плитками: у неё СВОЙ сид (31 против 5 у order) и своя
+    // формула — перепутать их значит выдать другой порядок слов в лотке.
+    case 'trans':
+      o.tiles = a.items.map((it, i) => shuffle(idx(it.w.length), (a.seed || 31) + i * 13).map((k) => it.w[k]))
+      break
+    case 'cloze':
+      o.bank = shuffle(a.bank, a.seed || 3)
+      break
     case 'sort':
       o.order = shuffle(idx(a.items.length), a.seed || 17)
       break
@@ -368,18 +565,20 @@ function oracleAct(sb, a, where) {
       break
     }
     case 'type':
-      o.grade = a.items.map((it) => {
-        const keys = [it.a].concat(it.alt || []).map(nrm)
-        const rows = []
-        let inputs = mutations(it.a)
-        ;(it.alt || []).forEach((alt) => { inputs = inputs.concat(mutations(alt)) })
-        inputs.forEach((input) => { rows.push({ in: input, ok: keys.includes(nrm(input)) }) })
-        return rows
-      })
+    case 'ttrans':
+    case 'wform':
+      o.grade = a.items.map((it) => gradeRows(it.a, it.alt))
+      break
+    case 'chain':
+      o.grade = a.items.map((it) => it.steps.map((st) => gradeRows(st.a, st.alt)))
       break
     case 'listen':
     case 'read':
-      o.task = oracleAct(sb, a.task, where + '>task')
+    case 'rule':
+    case 'model':
+    case 'worked':
+    case 'video':
+      o.task = oracleAct(sb, a.task, where + '>task', judge)
       break
     default:
       break
@@ -402,16 +601,21 @@ function run(level, srcPath) {
   const { UNITS, WB, INS, CLH } = sb
   const nums = lessonNumbers(WB)
 
-  // Итоговые уроки юнита каталог помечает звёздочкой, а не номером. У A0 флага
-  // `test` в данных нет (он появляется только с A2), поэтому «ревью» узнаём по
-  // тому, что юнит указывает на этот урок полем rev.
-  const reviews = new Set(UNITS.map((u) => u.rev))
+  // Итоговые уроки юнита каталог помечает звёздочкой, а не номером. Флага
+  // `test` у A0/A1 в данных нет вовсе, поэтому «ревью» узнаём по тому, что
+  // юнит указывает на этот урок полем rev, — а не по флагу.
+  const reviews = new Set(UNITS.map((u) => u.rev).filter((n) => n != null))
+  // Номер юнита нужен уроку, а не только каталогу: по нему воркбук B2 находит
+  // видео-репортаж в аудио-визуальном материале курса (public/course/b2/video).
+  const unitOf = {}
+  UNITS.forEach((u) => u.ls.concat(u.rev == null ? [] : [u.rev]).forEach((n) => { unitOf[n] = u.n }))
 
   const lessons = {}
   nums.forEach((n) => {
     const W = WB[n]
     lessons[n] = {
       title: W.title,
+      unit: unitOf[n],
       fn: W.fn || null,
       gr: W.gr || null,
       test: !!W.test,
@@ -423,11 +627,16 @@ function run(level, srcPath) {
     }
     writeJson(path.join(outDir, 'lesson-' + n + '.json'), {
       n,
+      unit: unitOf[n],
       title: W.title,
       fn: W.fn || null,
       gr: W.gr || null,
       can: W.can || null,
       tip: W.tip || null,
+      // «Полезный язык» (A1+) и «что повторяем» (B1+) — свои поля урока, а не
+      // разновидность tip: они показываются в разных местах карточки.
+      useful: W.useful || null,
+      rc: W.rc || null,
       test: !!W.test,
       voc: W.voc,
       acts: W.acts,
@@ -436,7 +645,7 @@ function run(level, srcPath) {
 
   writeJson(path.join(outDir, 'index.json'), {
     level,
-    units: UNITS.map((u) => ({ n: u.n, title: u.title, ls: u.ls, rev: u.rev })),
+    units: UNITS.map((u) => ({ n: u.n, title: u.title, ls: u.ls, rev: u.rev == null ? null : u.rev })),
     lessons,
   })
 
@@ -445,15 +654,26 @@ function run(level, srcPath) {
   writeJson(path.join(outDir, 'meta.json'), {
     level,
     ins: INS,
-    classroom: CLH,
-    subsettable: SUBSETTABLE,
+    classroom: CLH || null,
+    subsettable: SUBSETTABLE[level],
+    // Форма словаря уровня: ru-kk — [en,ru,kk,emoji], def — [en,английское
+    // определение,emoji]. Плееру нужно ЗНАТЬ её, иначе он покажет казаху
+    // эмодзи вместо перевода (у B2 перевода в источнике нет вовсе).
+    voc: stats.vocShape,
   })
 
-  writeJson(I18N_SOURCE, { level, ui: sb.UI }, true)
+  // Словарь интерфейса прототипа — одноразовый источник для ручного порта
+  // ключей в src/i18n.jsx. Копим по уровням в один файл: у B1/B2 половина
+  // строк только английские, и видеть их рядом с уже переведёнными полезно.
+  const i18nAll = fs.existsSync(I18N_SOURCE) ? JSON.parse(fs.readFileSync(I18N_SOURCE, 'utf8')) : {}
+  const i18nLevels = i18nAll.levels && typeof i18nAll.levels === 'object' ? i18nAll.levels : {}
+  i18nLevels[level] = sb.UI
+  writeJson(I18N_SOURCE, { levels: i18nLevels }, true)
 
   const oracle = { level, acts: [] }
+  const matcher = matcherOf(sb)
   nums.forEach((n) => {
-    WB[n].acts.forEach((a, i) => oracle.acts.push(oracleAct(sb, a, n + '.' + i)))
+    WB[n].acts.forEach((a, i) => oracle.acts.push(oracleAct(sb, a, n + '.' + i, matcher)))
   })
   writeJson(path.join(FIXTURES_DIR, 'oracle-' + level + '.json'), oracle, true)
 
@@ -463,7 +683,10 @@ function run(level, srcPath) {
   )
 }
 
-module.exports = { slicePrototype, evalPrototype, validate, oracleAct, EXPECT, TOP_TYPES, NESTED_TYPES, SUBSETTABLE }
+module.exports = {
+  slicePrototype, evalPrototype, validate, oracleAct, matcherOf,
+  EXPECT, TOP_TYPES, NESTED_TYPES, WRAPPER_TYPES, SUBSETTABLE,
+}
 
 if (require.main === module) {
   const argv = process.argv

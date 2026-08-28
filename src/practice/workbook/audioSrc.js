@@ -34,3 +34,14 @@ export function trackSources(level, track) {
   if (course) out.push(course)
   return out
 }
+
+/**
+ * Видео-репортаж юнита. Только у B2: его воркбук ссылается на тот же ролик,
+ * что и курс — юнит N ↔ public/course/b2/video/vN.mp4 (сверено по урокам
+ * 4→v1, 8→v2, 12→v3, 48→v12). Прототип ролика не возил вовсе и читал
+ * расшифровку синтезом; здесь файл есть, синтез остаётся запасным путём.
+ */
+export function videoSource(level, unit) {
+  if (level !== 'b2' || !unit) return null
+  return '/course/b2/video/v' + Number(unit) + '.mp4'
+}
