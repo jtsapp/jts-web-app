@@ -24,6 +24,7 @@ import { readSituationsDone, markSituationLevelDone } from '../practice/situatio
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone, markWorkbookLevelDone } from '../practice/workbooks/workbooksProgress.js'
 import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
+import { NATIVE_WORKBOOK_LEVELS } from '../practice/workbook/nativeLevels.js'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
@@ -481,12 +482,18 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     }
   }
 
-  // Воркбуки A0–B2: тот же оверлейный паттерн, что у Speaking Practice.
+  // Воркбуки. A0 переведён на нативный экран (?screen=workbook) — у него свой
+  // плеер, прогресс по заданиям и разбор ошибок. Остальные уровни пока живут
+  // прежним оверлеем с iframe; их порт идёт следом, и тогда оверлей уйдёт.
   const openWorkbookLevel = async (level) => {
     if (taleLoadingRef.current) return
     const seen = readWorkbooksDone()
     if (!seen.includes(level) && !workbooksEntitlement.allowed) {
       setWorkbooksBlocked(true)
+      return
+    }
+    if (NATIVE_WORKBOOK_LEVELS.includes(level)) {
+      onNav?.('workbook', { level })
       return
     }
     taleLoadingRef.current = true
@@ -819,7 +826,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
           </section>
           )}
 
-          {/* Воркбуки A0–B2 — карточки как у грамматики (gr-gcard), оверлей iframe */}
+          {/* Воркбуки A0–B2 — карточки как у грамматики (gr-gcard) */}
           {show('workbooks') && (
           <section id="sec-workbooks" className="pp-sec">
             <SectionHead title={t('practice.chip.workbooks')} onAll={() => setFilter('workbooks')} />
