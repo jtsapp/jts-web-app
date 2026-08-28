@@ -3,6 +3,12 @@
 // как у «Speaking Practice» (situations). Оболочка с табами уровней + iframe
 // на каждый уровень, ленивая подгрузка при первом открытии.
 import { WORKBOOK_LEVELS } from './levels.js'
+import { NATIVE_WORKBOOK_LEVELS } from '../workbook/nativeLevels.js'
+
+// Уровни, оставшиеся на этом оверлее. A0 уехал на нативный экран
+// (?screen=workbook) вместе со своим html — держать для него пустой iframe
+// нельзя: файла в public больше нет.
+const OVERLAY_LEVELS = WORKBOOK_LEVELS.filter((l) => !NATIVE_WORKBOOK_LEVELS.includes(l.code))
 
 const ACCENTS = {
   a0: '#5B8DEF',
@@ -155,7 +161,7 @@ function frameFor(code) {
 }
 
 function activate(code) {
-  const meta = WORKBOOK_LEVELS.find((l) => l.code === code) || WORKBOOK_LEVELS[0]
+  const meta = OVERLAY_LEVELS.find((l) => l.code === code) || OVERLAY_LEVELS[0]
   code = meta.code
   if (current && current !== code) pauseMedia(frameFor(current))
   host.querySelectorAll('.sw-lvl').forEach((t) => {
@@ -179,7 +185,7 @@ function activate(code) {
 }
 
 function close() {
-  WORKBOOK_LEVELS.forEach((l) => pauseMedia(frameFor(l.code)))
+  OVERLAY_LEVELS.forEach((l) => pauseMedia(frameFor(l.code)))
   host.style.display = 'none'
   const cb = onExitCb
   onExitCb = null
@@ -202,7 +208,7 @@ function ensureHost() {
         <span class="sw-logo" aria-hidden="true">${LOGO_SVG}</span>
         <div class="sw-brand-text">
           <span class="sw-wordmark">Just&nbsp;<span class="to">To</span>&nbsp;Study<span class="reg"></span></span>
-          <span class="sw-slogan">Workbook · A0 → B2</span>
+          <span class="sw-slogan">Workbook · A1 → B2</span>
         </div>
       </div>
       <div class="sw-right">
@@ -212,7 +218,7 @@ function ensureHost() {
     </div>
     <nav class="sw-levelbar" aria-label="Proficiency level">
       <div class="sw-levelbar-row" role="tablist">
-        ${WORKBOOK_LEVELS.map(
+        ${OVERLAY_LEVELS.map(
           (l) =>
             `<button type="button" class="sw-lvl" role="tab" aria-selected="false" data-level="${l.code}" style="--accent:${ACCENTS[l.code] || '#874BF8'}"><span class="dot"></span><span class="sw-lvl-code">${l.label}</span><span class="sw-lvl-desc">${l.desc}</span></button>`
         ).join('')}
@@ -220,7 +226,7 @@ function ensureHost() {
     </nav>
   </header>
   <main class="sw-stage">
-    ${WORKBOOK_LEVELS.map(
+    ${OVERLAY_LEVELS.map(
       (l) =>
         `<iframe class="sw-frame" data-level="${l.code}" title="Just To Study — ${l.label} Workbook" allow="microphone; autoplay" hidden></iframe>`
     ).join('')}
@@ -240,7 +246,7 @@ function ensureHost() {
   // стрелки по табам, как в оригинальной оболочке
   host.querySelector('.sw-levelbar-row').addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
-    const order = WORKBOOK_LEVELS.map((l) => l.code)
+    const order = OVERLAY_LEVELS.map((l) => l.code)
     let idx = Math.max(0, order.indexOf(current))
     idx = e.key === 'ArrowRight' ? Math.min(order.length - 1, idx + 1) : Math.max(0, idx - 1)
     activate(order[idx])
@@ -255,5 +261,5 @@ export function openWorkbooks(level, { onExit } = {}) {
   ensureFont()
   ensureHost()
   host.style.display = ''
-  activate(String(level || 'a0').toLowerCase())
+  activate(String(level || OVERLAY_LEVELS[0].code).toLowerCase())
 }
