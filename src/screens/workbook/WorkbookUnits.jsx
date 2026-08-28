@@ -36,7 +36,7 @@ export function Ring({ percent, size = 64, label }) {
   )
 }
 
-function LessonRow({ level, n, meta, progress, onOpen }) {
+function LessonRow({ level, n, meta, progress, onOpen, review }) {
   const { t, lang } = useI18n()
   const done = lessonDone(level, n, meta.acts, progress)
   const pct = meta.acts ? Math.round((done / meta.acts) * 100) : 0
@@ -44,10 +44,11 @@ function LessonRow({ level, n, meta, progress, onOpen }) {
   return (
     <button type="button" className={'wb-lrow' + (full ? ' is-done' : '')} onClick={() => onOpen(n)}>
       {/* Итог юнита — звёздочкой, как в оригинале: номер 101 читался как
-          «сто первый урок», хотя это разбор пройденного за юнит. */}
-      <span className={'wb-lrow__n' + (meta.test || meta.review ? ' wb-lrow__n--star' : '')}>
-        {meta.test || meta.review ? '★' : n}
-      </span>
+          «сто первый урок», хотя это разбор пройденного за юнит. Признак
+          берём из структуры каталога (юнит указывает на него полем rev), а не
+          из поля урока: public/ отдаётся с часовым кэшем, и у клиента может
+          лежать index.json, собранный до появления этого поля. */}
+      <span className={'wb-lrow__n' + (review ? ' wb-lrow__n--star' : '')}>{review ? '★' : n}</span>
       <span className="wb-lrow__b">
         <b>{meta.title}</b>
         <span className="wb-lrow__fn">{loc(meta.fn, lang) || meta.gr || ''}</span>
@@ -141,6 +142,7 @@ export default function WorkbookUnits({ level, index, progress, onOpenLesson, on
                     meta={index.lessons[n]}
                     progress={progress}
                     onOpen={onOpenLesson}
+                    review={n === u.rev || !!index.lessons[n].test}
                   />
                 ))}
               </div>
