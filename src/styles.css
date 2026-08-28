@@ -831,6 +831,35 @@ textarea {
   color: #b7b6c1;
   font-weight: 500;
 }
+.date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.date-field__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2, #5c5868);
+}
+.date-field__input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: #f6f6f8;
+  border: 1.5px solid #ececf1;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.date-field__input:focus {
+  border-color: #b79cf5;
+}
 /* Формы пароля (вход и «придумайте пароль») — два поля подряд и чекбокс
    «показать»; у .email-field своих отступов нет, задаём их здесь. */
 .email-field + .email-field {

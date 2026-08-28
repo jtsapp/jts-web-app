@@ -64,12 +64,12 @@ const TUNING = {
   // Спарк (Soniox). Кроме темпа крутить нечего — эмоций провайдер не умеет.
   // Диапазон [0.7–1.3], берём заметно медленнее середины.
   spark: { speed: 0.85 },
-  // Джарвис (ВРЕМЕННО OpenAI TTS вместо клона Fish Audio). У gpt-4o-mini-tts
-  // ручек стиля нет вовсе: голос — пресет из каталога, характер задаётся только
-  // текстом instructions (см. src/tutor/openaiTtsStyle.js, общий с живым
-  // превью), как prompt у Луны. latency остался для пути Fish — визитка
-  // озвучивается офлайн, спешить некуда.
-  jarvis: { latency: 'balanced' },
+  // KZ-стенд (Soniox, голос Daniel). Здесь тоже крутится только темп: 0.95 —
+  // разговорнее спарковских 0.85, но ещё не тараторка.
+  // latency остался для пути Fish (клон), instructions — для пути OpenAI
+  // (src/tutor/openaiTtsStyle.js); оба пути живые, переключаются
+  // TTS_PROVIDER_JARVIS, и визитка озвучивается офлайн, спешить некуда.
+  jarvis: { speed: 0.95, latency: 'balanced' },
 }
 
 // Тексты живут в src/tutor/tutors.js и берутся оттуда, а не дублируются здесь:
@@ -212,20 +212,25 @@ async function ttsEleven(text) {
   return Buffer.from(await res.arrayBuffer())
 }
 
-async function ttsSoniox(text, lang) {
-  const key = process.env.SONIOX_API_KEY
-  if (!key) throw new Error('SONIOX_API_KEY не задан')
+// Голоса Soniox по ключу визитки — зеркало SONIOX_VOICE в tutor-tts/route.js.
+// Спарк и KZ-стенд разведены по тембрам намеренно: Owen — Спарк, Daniel — стенд.
+const SONIOX_VOICE = { spark: 'Owen', 'spark-harsh': 'Owen', jarvis: 'Daniel', 'jarvis-harsh': 'Daniel' }
+
+async function ttsSoniox(text, lang, key) {
+  const apiKey = process.env.SONIOX_API_KEY
+  if (!apiKey) throw new Error('SONIOX_API_KEY не задан')
+  const base = String(key || 'spark').replace(/-harsh$/, '')
   // Хост именно tts-rt (realtime), как в app/api/tutor-tts/route.js —
   // api.soniox.com отдаёт на этот путь 404.
   const res = await fetch('https://tts-rt.soniox.com/tts', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: process.env.SONIOX_TTS_MODEL || 'tts-rt-v1',
-      voice: 'Owen',
+      voice: SONIOX_VOICE[key] || 'Owen',
       language: lang,
       text,
-      speed: TUNING.spark.speed,
+      speed: TUNING[base]?.speed ?? 1.0,
       audio_format: 'mp3',
     }),
   })
@@ -288,17 +293,20 @@ async function ttsOpenai(text, lang, key) {
 
 // Ключи с суффиксом -harsh — визитки жёсткого нрава (кнопка 18+ на карточке).
 // Провайдер и тембр у них те же: нрав меняет характер, а не голос.
+const SAMPLE_PROVIDER_JARVIS =
+  { fish: ttsFish, openai: ttsOpenai }[process.env.TTS_PROVIDER_JARVIS] || ttsSoniox
+
 const PROVIDER = {
   luna: ttsGemini,
   dexter: ttsEleven,
   spark: ttsSoniox,
-  // TTS_PROVIDER_JARVIS=fish — то же имя переменной, что у агента
-  // (_tts_provider_for): вернуть клон Fish можно без правки кода, и путь
-  // ttsFish остаётся живым, а не мёртвой функцией под удаление.
-  jarvis: process.env.TTS_PROVIDER_JARVIS === 'fish' ? ttsFish : ttsOpenai,
+  // TTS_PROVIDER_JARVIS=fish|openai — то же имя переменной, что у агента
+  // (_tts_provider_for): вернуть клон Fish или пресет OpenAI можно без правки
+  // кода, и оба пути остаются живыми, а не мёртвыми функциями под удаление.
+  jarvis: SAMPLE_PROVIDER_JARVIS,
   'dexter-harsh': ttsEleven,
   'spark-harsh': ttsSoniox,
-  'jarvis-harsh': ttsOpenai,
+  'jarvis-harsh': SAMPLE_PROVIDER_JARVIS,
 }
 
 // ---- main ------------------------------------------------------------------
