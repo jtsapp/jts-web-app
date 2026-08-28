@@ -19,6 +19,10 @@
   --wb-orange: #ff631e;
   --wb-gold: #7a5200;
   --wb-gold-bg: #fff6e0;
+  /* Челлендж в оригинале — чёрная строка с золотым подзаголовком
+     (.lrow.chal), это самый заметный блок каталога. Токены оттуда. */
+  --wb-ink: #16131f;
+  --wb-gold-hi: #ffad00;
   --wb-line: #edeaf5;
   --wb-field: #fbfafe;
   --wb-ink-2: #4a4458;
@@ -101,31 +105,54 @@
   padding: 16px 20px; font-family: inherit; text-align: left; cursor: pointer;
 }
 .wb-unit__n {
-  flex: none; width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center;
-  background: var(--wb-purple-soft); color: var(--wb-purple); font-weight: 800; font-size: 15px;
+  flex: none; width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center;
+  background: var(--wb-purple-soft); color: var(--wb-purple); font-weight: 800; font-size: 16px;
 }
-.wb-unit__t b { display: block; font-size: 15px; font-weight: 800; }
+.wb-unit__t b { display: block; font-size: 17px; font-weight: 800; line-height: 1.2; }
 .wb-unit__t em { font-style: normal; font-size: 12px; color: var(--wb-ink-3); }
 .wb-unit__chev { margin-left: auto; color: var(--wb-ink-3); }
-.wb-unit__body { padding: 0 12px 12px; }
+/* Подложка списка — светлее страницы, но темнее строки: белая карточка урока
+   на белом юните не читалась бы ни рамкой, ни тенью. */
+.wb-unit__body { background: #f7f5fd; border-top: 1px solid var(--wb-line); padding: 12px; }
+.wb-unit__body .wb-lrow:first-child { margin-top: 0; }
 
+/* Строка урока — карточка, а не полоска фона: в оригинале (.lrow) у неё своя
+   рамка, тень и подъём на наведении, и именно это делает список читаемым.
+   Заливка светлым по светлому, которая была здесь раньше, сливалась с юнитом. */
 .wb-lrow {
-  display: flex; align-items: center; gap: 14px; width: 100%; border: 0; background: var(--wb-field);
-  border-radius: 14px; padding: 12px 16px; margin-top: 8px; font-family: inherit; text-align: left; cursor: pointer;
+  display: flex; align-items: center; gap: 14px; width: 100%; background: #fff;
+  border: 1px solid var(--wb-line); border-radius: 14px; padding: 13px 15px; margin-top: 8px;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05); font-family: inherit; text-align: left; cursor: pointer;
+  transition: border-color 0.14s ease, transform 0.14s ease, box-shadow 0.14s ease;
 }
-.wb-lrow:hover { background: var(--wb-purple-soft); }
-.wb-lrow.is-done { background: var(--wb-green-bg); }
+.wb-lrow:hover { border-color: var(--wb-purple); transform: translateX(2px); box-shadow: 0 8px 20px rgba(135, 75, 248, 0.14); }
+.wb-lrow.is-done { border-color: #bfefd2; background: #fbfffc; }
 .wb-lrow__n {
-  flex: none; width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center;
-  background: #fff; color: var(--wb-ink-2); font-weight: 800; font-size: 13px;
+  flex: none; width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--wb-purple-soft); color: var(--wb-purple); font-weight: 800; font-size: 14px;
 }
+.wb-lrow.is-done .wb-lrow__n { background: var(--wb-green-bg); color: var(--wb-green-ink); }
 .wb-lrow__b { flex: 1; min-width: 0; }
-.wb-lrow__b b { display: block; font-size: 14px; font-weight: 700; }
-.wb-lrow__fn { display: block; font-size: 12px; color: var(--wb-ink-3); margin-bottom: 6px; }
-.wb-lrow__bar { display: block; height: 5px; border-radius: 999px; background: #eae6f6; overflow: hidden; }
+.wb-lrow__b b { display: block; font-size: 15px; font-weight: 700; line-height: 1.25; }
+.wb-lrow__fn { display: block; font-size: 12px; color: var(--wb-ink-3); margin-bottom: 7px; }
+.wb-lrow__bar { display: block; height: 6px; border-radius: 999px; background: #eae6f6; overflow: hidden; }
 .wb-lrow__bar i { display: block; height: 100%; background: var(--wb-purple); border-radius: 999px; }
-.wb-lrow__c { flex: none; font-size: 12px; font-weight: 700; color: var(--wb-ink-2); text-align: right; }
-.wb-lrow__c em { display: block; font-style: normal; font-weight: 500; color: var(--wb-ink-3); }
+.wb-lrow__c { flex: none; font-size: 13px; font-weight: 800; color: var(--wb-ink-2); text-align: right; }
+.wb-lrow__c em { display: block; font-style: normal; font-size: 12px; font-weight: 500; color: var(--wb-ink-3); }
+
+/* Челлендж — чёрная строка с золотом, как в оригинале: итог юнита обязан
+   выделяться из списка уроков, а не отличаться одной звёздочкой. */
+.wb-lrow--chal { background: var(--wb-ink); border-color: var(--wb-ink); }
+.wb-lrow--chal:hover { border-color: var(--wb-gold-hi); box-shadow: 0 8px 20px rgba(22, 19, 31, 0.28); }
+.wb-lrow--chal .wb-lrow__b b { color: #fff; }
+.wb-lrow--chal .wb-lrow__fn { color: var(--wb-gold-hi); }
+.wb-lrow--chal .wb-lrow__c { color: #fff; }
+.wb-lrow--chal .wb-lrow__c em { color: rgba(255, 255, 255, 0.62); }
+.wb-lrow--chal .wb-lrow__bar { background: rgba(255, 255, 255, 0.18); }
+.wb-lrow--chal .wb-lrow__bar i { background: var(--wb-gold-hi); }
+.wb-lrow--chal .wb-lrow__n,
+.wb-lrow--chal.is-done .wb-lrow__n { background: rgba(255, 173, 0, 0.18); color: var(--wb-gold-hi); }
+.wb-lrow--chal.is-done { background: var(--wb-ink); border-color: #bfefd2; }
 
 /* ── экран задания ── */
 .wb-rail { margin-bottom: 14px; }
