@@ -118,7 +118,9 @@ export default function WorkbookAct({
   }, [index, lesson.n])
 
   const next = () => {
-    markAct(level, lesson.n, index, ctl.state.missed)
+    // У зачётного урока кроме факта прохождения запоминается счёт: итоговый
+    // экран показывает отметку из тридцати с порогом в 70 %.
+    markAct(level, lesson.n, index, ctl.state.missed, lesson.test ? ctl.state.first : null)
     // Рейтинг навыка — по первой попытке, как в «Письме»: перебор вариантов
     // не должен накручивать точность. Шкала берётся из стадии экрана, поэтому
     // аудирование не попадает в грамматику.
@@ -147,6 +149,7 @@ export default function WorkbookAct({
             act={act}
             ctl={ctl}
             level={level}
+            unit={lesson.unit}
             slow={slow}
             onSlow={onSlow}
             draft={draft}

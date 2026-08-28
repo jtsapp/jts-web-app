@@ -22,9 +22,8 @@ import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
-import { readWorkbooksDone, markWorkbookLevelDone } from '../practice/workbooks/workbooksProgress.js'
+import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
 import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
-import { NATIVE_WORKBOOK_LEVELS } from '../practice/workbook/nativeLevels.js'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
@@ -343,7 +342,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     const load = () => {
       import('../practice/fairytale/taleWorld.js').catch(() => {})
       import('../practice/situations/situationsOverlay.js').catch(() => {})
-      import('../practice/workbooks/workbooksOverlay.js').catch(() => {})
     }
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(load, { timeout: 4000 })
@@ -482,28 +480,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     }
   }
 
-  // Воркбуки. A0 переведён на нативный экран (?screen=workbook) — у него свой
-  // плеер, прогресс по заданиям и разбор ошибок. Остальные уровни пока живут
-  // прежним оверлеем с iframe; их порт идёт следом, и тогда оверлей уйдёт.
-  const openWorkbookLevel = async (level) => {
-    if (taleLoadingRef.current) return
+  // Воркбуки. Все уровни A0–B2 живут на нативном экране (?screen=workbook):
+  // свой плеер, прогресс по заданиям и разбор ошибок. Оверлея с iframe больше
+  // нет — вместе с ним ушли и standalone-html из public.
+  const openWorkbookLevel = (level) => {
     const seen = readWorkbooksDone()
     if (!seen.includes(level) && !workbooksEntitlement.allowed) {
       setWorkbooksBlocked(true)
       return
     }
-    if (NATIVE_WORKBOOK_LEVELS.includes(level)) {
-      onNav?.('workbook', { level })
-      return
-    }
-    taleLoadingRef.current = true
-    try {
-      const mod = await import('../practice/workbooks/workbooksOverlay.js')
-      mod.openWorkbooks(level)
-      if (!seen.includes(level)) markWorkbookLevelDone(level)
-    } finally {
-      taleLoadingRef.current = false
-    }
+    onNav?.('workbook', { level })
   }
 
   // Лимит на разговорную практику — тот же takeover, что у грамматики.

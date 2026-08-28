@@ -140,6 +140,10 @@ export default function App() {
       const want = levelParam.toUpperCase()
       const k = KINGDOMS.find((x) => x.level === want)
       if (k) setKingdom(k)
+      // Тот же параметр открывает нужный уровень воркбука
+      // (?screen=workbook&level=b2). Без него любой диплинк вёл на A0, и
+      // проверить экран B2 можно было только кликами из каталога Практики.
+      if (deepLink === 'workbook') setWorkbookTarget({ level: levelParam.toLowerCase() })
     }
     // ?unlock=1 — открыть все королевства и все уроки тропы для просмотра
     // контента. Только в дев-сборке: в проде это обошло бы гейтинг по уровню,

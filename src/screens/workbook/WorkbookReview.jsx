@@ -19,7 +19,9 @@ export default function WorkbookReview({ level, lesson, index, missed, meta, slo
   const base = lesson.acts[index]
   // Пересобираем задание только при смене экрана: иначе useAct получал бы
   // новый объект на каждый рендер и сбрасывал счётчик.
-  const act = useMemo(() => subsetAct(base, missed), [base, missed])
+  // Что можно сузить — решает УРОВЕНЬ (meta.subsettable): B1/B2 режут trans и
+  // ttrans, A0–A2 — order и label, и списки не совпадают.
+  const act = useMemo(() => subsetAct(base, missed, meta?.subsettable), [base, missed, meta])
   const ctl = useAct(act)
   const narrowed = act !== base
 
@@ -62,7 +64,16 @@ export default function WorkbookReview({ level, lesson, index, missed, meta, slo
 
       <div className="wb-card">
         <div className="wb-items" key={ctl.gen}>
-          <ActBody act={act} ctl={ctl} level={level} slow={slow} onSlow={onSlow} draft="" onDraft={() => {}} />
+          <ActBody
+            act={act}
+            ctl={ctl}
+            level={level}
+            unit={lesson.unit}
+            slow={slow}
+            onSlow={onSlow}
+            draft=""
+            onDraft={() => {}}
+          />
         </div>
       </div>
 

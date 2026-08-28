@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
-import { trackSources } from '../../../practice/workbook/audioSrc.js'
+import { trackSources, videoSource } from '../../../practice/workbook/audioSrc.js'
 import { playTrack, speak, stopAudio } from '../../../practice/workbook/voice.js'
 
 // Источник материала: аудио или текст, а под ним — обычное задание.
@@ -78,6 +78,154 @@ export function ReadAct({ act, slow, children }) {
         onClick={() => {
           stopAudio()
           speak(act.text, { slow })
+        }}
+      >
+        🔊 {t('workbook.listenRead')}
+      </button>
+      {children}
+    </>
+  )
+}
+
+/* ── Материал без задания сверху: правило, разбор, образец, видео ──────── */
+/* Порт R.rule/R.worked/R.model/R.video (data/jtsworkbook-b1.html:10398,
+   data/jtsworkbook-b2.html:13257). Все четыре — обёртки: судится то, что под
+   ними, а сам блок только объясняет. */
+
+/** Правило с пунктами и примерами (B2). */
+export function RuleAct({ act, children }) {
+  const { t } = useI18n()
+  return (
+    <>
+      <div className="wb-rule">
+        <div className="wb-rule__k">{act.title || t('workbook.howItWorks')}</div>
+        {(act.rule || []).map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+        {act.points && act.points.length ? (
+          <ul className="wb-rule__points">
+            {act.points.map((p, i) => (
+              <li key={i}>
+                <b>{p[0]}</b> — {p[1]}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {act.eg && act.eg.length ? (
+          <div className="wb-egbank">
+            {act.eg.map((e, i) => (
+              <div key={i}>
+                {e[0]}
+                {e[1] ? <em>{e[1]}</em> : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {act.careful ? <div className="wb-warnnote">⚠️ {act.careful}</div> : null}
+      </div>
+      {children}
+    </>
+  )
+}
+
+/** Один пример, разобранный по шагам, перед тем как делать самому (B1+). */
+export function WorkedAct({ act, children }) {
+  const { t } = useI18n()
+  return (
+    <>
+      <div className="wb-worked">
+        <div className="wb-worked__k">{act.title || t('workbook.type.worked')}</div>
+        {act.steps.map((st, i) => (
+          <div className="wb-wstep" key={i}>
+            <span className="wb-wstep__n" aria-hidden="true">
+              {i + 1}
+            </span>
+            <span>
+              <b>{st[0]}</b>
+              {st[1] ? <em>{st[1]}</em> : null}
+            </span>
+          </div>
+        ))}
+      </div>
+      {children}
+    </>
+  )
+}
+
+/** Модельный текст жанра, который студент будет писать сам (B1+). */
+export function ModelAct({ act, slow, children }) {
+  const { t } = useI18n()
+  useEffect(() => () => stopAudio(), [])
+  return (
+    <>
+      <div className="wb-src">
+        {act.genre ? <div className="wb-src__genre">{act.genre}</div> : null}
+        <div className="wb-src__k">{act.title || t('workbook.type.model')}</div>
+        <div className="wb-src__body">
+          {act.text.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
+        </div>
+        {act.parts && act.parts.length ? (
+          <div className="wb-parts">
+            {act.parts.map((x, i) => (
+              <span key={i}>{x}</span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        className="wb-ghost wb-ghost--gap"
+        onClick={() => {
+          stopAudio()
+          speak(act.text, { slow })
+        }}
+      >
+        🔊 {t('workbook.listenRead')}
+      </button>
+      {children}
+    </>
+  )
+}
+
+/**
+ * Видео-репортаж юнита (B2). Прототип ролика не возил и читал расшифровку
+ * синтезом; у нас файл лежит в материалах курса, поэтому играем его, а синтез
+ * оставляем запасным путём — на случай, если ролика для юнита нет.
+ */
+export function VideoAct({ act, level, unit, slow, children }) {
+  const { t } = useI18n()
+  const src = videoSource(level, unit)
+  const [broken, setBroken] = useState(false)
+  useEffect(() => () => stopAudio(), [])
+  return (
+    <>
+      <div className="wb-vid">
+        {src && !broken ? (
+          <video className="wb-vid__pl" controls preload="metadata" onError={() => setBroken(true)}>
+            <source src={src} type="video/mp4" />
+          </video>
+        ) : (
+          <div className="wb-vid__ph">
+            <span className="wb-vid__big" aria-hidden="true">
+              🎬
+            </span>
+            <b>{act.title || t('workbook.type.video')}</b>
+            <span>{t('workbook.videoHint')}</span>
+          </div>
+        )}
+      </div>
+      <div className="wb-vid__meta">
+        <b>{act.title || t('workbook.type.video')}</b>
+        <span>{t('workbook.videoHint')}</span>
+      </div>
+      <button
+        type="button"
+        className="wb-ghost wb-ghost--gap"
+        onClick={() => {
+          stopAudio()
+          speak(act.tts || [], { slow })
         }}
       >
         🔊 {t('workbook.listenRead')}

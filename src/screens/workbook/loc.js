@@ -24,7 +24,20 @@ export function subText(act, meta, lang) {
   return loc(typeof key === 'string' ? meta?.ins?.[key] : key, lang)
 }
 
-/** Перевод слова из словаря урока: [en, ru, kk, emoji?]. */
-export function vocMeaning(v, lang) {
+/**
+ * Значение слова из словаря урока. Форм две, и путать их нельзя:
+ *   ru-kk (A0–B1) — [en, ru, kk, emoji]
+ *   def   (B2)    — [en, английское определение, emoji]
+ * У B2 перевода в источнике нет вовсе (как и в курсе B2), поэтому на любом
+ * языке интерфейса показываем определение — эмодзи вместо смысла было бы
+ * молчаливой потерей содержания.
+ */
+export function vocMeaning(v, lang, shape) {
+  if (shape === 'def') return v[1] || ''
   return (lang === 'kk' && v[2]) || v[1] || ''
+}
+
+/** Эмодзи слова: у формы def он третьим, у ru-kk — четвёртым. */
+export function vocEmoji(v, shape) {
+  return (shape === 'def' ? v[2] : v[3]) || '🔤'
 }

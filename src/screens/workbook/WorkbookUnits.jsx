@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { ICON } from '../../practice/workbook/engine.js'
 import { lessonDone, missCount, nextLesson } from '../../practice/workbook/workbookProgress.js'
-import { loc } from './loc.js'
+import { loc, vocEmoji, vocMeaning } from './loc.js'
 
 // Каталог уровня: юниты-аккордеоны с уроками. Порт renderHome
 // (data/jtsworkbook-a0.html:6189) — раскрытие юнита не прыгает наверх
@@ -76,7 +76,9 @@ export default function WorkbookUnits({ level, index, progress, onOpenLesson, on
 
   // Первый незакрытый юнит раскрыт сразу: студент попадает туда, где он есть.
   const [open, setOpen] = useState(() => {
-    const u = index.units.find((x) => x.ls.concat([x.rev]).includes(cont))
+    // У A1 ревью-уроков нет вовсе, а у B2 они есть только у каждого третьего
+    // юнита — rev может быть null, и приклеивать его вслепую нельзя.
+    const u = index.units.find((x) => x.ls.concat(x.rev == null ? [] : [x.rev]).includes(cont))
     return u ? { [u.n]: true } : {}
   })
 
@@ -109,7 +111,7 @@ export default function WorkbookUnits({ level, index, progress, onOpenLesson, on
       ) : null}
 
       {index.units.map((u) => {
-        const ls = u.ls.concat(u.rev ? [u.rev] : [])
+        const ls = u.ls.concat(u.rev == null ? [] : [u.rev])
         const uDone = ls.reduce((s, n) => s + lessonDone(level, n, counts[n], progress), 0)
         const uTotal = ls.reduce((s, n) => s + counts[n], 0)
         const isOpen = !!open[u.n]
@@ -158,12 +160,17 @@ export default function WorkbookUnits({ level, index, progress, onOpenLesson, on
 export function LessonSheet({ level, lesson, progress, meta, onPick, onClose }) {
   const { t, lang } = useI18n()
   const [tab, setTab] = useState('steps')
+  // Третья вкладка зависит от уровня: у A0 это фразы «на уроке» (CLASS), с A1
+  // автор их не выпускает, зато у урока появляется «полезный язык». Пустую
+  // вкладку не показываем — она читалась бы как потерянные данные.
+  const help = (meta.classroom || []).length ? 'help' : lesson.useful?.length ? 'useful' : null
+  const tabs = ['steps', 'words'].concat(help ? [help] : [])
   return (
     <div className="wb-sheetwrap" role="dialog" aria-modal="true">
       <div className="wb-scrim" onClick={onClose} />
       <div className="wb-sheet">
         <div className="wb-sheet__tabs">
-          {['steps', 'words', 'help'].map((k) => (
+          {tabs.map((k) => (
             <button
               key={k}
               type="button"
@@ -198,9 +205,20 @@ export function LessonSheet({ level, lesson, progress, meta, onPick, onClose }) 
             <div className="wb-words">
               {lesson.voc.map((v, i) => (
                 <div className="wb-word" key={i}>
-                  <span aria-hidden="true">{v[3] || '🔤'}</span>
+                  <span aria-hidden="true">{vocEmoji(v, meta.voc)}</span>
                   <b>{v[0]}</b>
-                  <em>{lang === 'kk' && v[2] ? v[2] : v[1]}</em>
+                  <em>{vocMeaning(v, lang, meta.voc)}</em>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {tab === 'useful' ? (
+            <div className="wb-words">
+              <p className="wb-help__hint">{t('workbook.usefulHint')}</p>
+              {(lesson.useful || []).map((p, i) => (
+                <div className="wb-word" key={i}>
+                  <span aria-hidden="true">💬</span>
+                  <b>{p}</b>
                 </div>
               ))}
             </div>

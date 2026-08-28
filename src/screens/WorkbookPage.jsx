@@ -253,6 +253,10 @@ export default function WorkbookPage({
           nextTitle={after ? index.lessons[after]?.title : null}
           onNext={() => openLesson(after ?? nextLesson(level, nums, counts, progress))}
           onTick={() => setProgress(readState())}
+          /* Пересдача зачёта: прогресс урока уже стёрт, начинаем с первого
+             экрана — иначе openLesson вернул бы на «первый непройденный»
+             ещё по старому состоянию. */
+          onRetake={() => setView({ name: 'act', n: view.n, i: 0 })}
         />
       )
     }

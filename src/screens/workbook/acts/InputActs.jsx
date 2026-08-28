@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { typeOk, dropLines, memoDeck } from '../../../practice/workbook/engine.js'
 import { Note, Pic, Qnum, useSlot } from '../ActShell.jsx'
-import { loc, vocMeaning } from '../loc.js'
+import { loc, vocEmoji, vocMeaning } from '../loc.js'
 
 // Ввод и выбор внутри текста: type / drop / memo. Порт R.type (:5946),
 // R.drop (:6041) и R.memo (:5890) из data/jtsworkbook-a0.html.
 
 /* ── Набери ответ ──────────────────────────────────────────────────────── */
-function TypeItem({ it, i, ctl }) {
+function TypeItem({ it, i, ctl, level }) {
   const { t, lang } = useI18n()
   const slot = useSlot(ctl, i)
   const [value, setValue] = useState('')
@@ -24,7 +24,7 @@ function TypeItem({ it, i, ctl }) {
 
   const judge = () => {
     if (closed || !value.trim()) return
-    if (typeOk(it, value)) {
+    if (typeOk(it, value, level)) {
       setValue(it.a)
       setBad(false)
       slot.right()
@@ -98,11 +98,11 @@ function TypeItem({ it, i, ctl }) {
   )
 }
 
-export function TypeAct({ act, ctl }) {
+export function TypeAct({ act, ctl, level }) {
   return (
     <>
       {act.items.map((it, i) => (
-        <TypeItem key={i} it={it} i={i} ctl={ctl} />
+        <TypeItem key={i} it={it} i={i} ctl={ctl} level={level} />
       ))}
     </>
   )
@@ -186,7 +186,10 @@ export function MemoAct({ act, ctl }) {
 
   const face = (c) => {
     const p = act.pairs[c.pair]
-    return c.side === 'word' ? p[0] : ((p[3] || '') + ' ' + vocMeaning(p, lang)).trim()
+    // Игра в пары есть только у A0–A2, и там словарь всегда с переводом; форму
+    // всё равно спрашиваем у loc, чтобы карточка не зависела от длины массива.
+    const shape = p.length === 3 ? 'def' : 'ru-kk'
+    return c.side === 'word' ? p[0] : ((vocEmoji(p, shape) || '') + ' ' + vocMeaning(p, lang, shape)).trim()
   }
 
   const flip = (k) => {

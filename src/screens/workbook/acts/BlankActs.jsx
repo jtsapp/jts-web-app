@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
-import { bankWords, tableCells } from '../../../practice/workbook/engine.js'
+import { bankWords, clozeBank, tableCells } from '../../../practice/workbook/engine.js'
 import { Note, Pic, Qnum } from '../ActShell.jsx'
 import { justDragged, useGrab, useZone } from '../dnd.js'
 import { loc } from '../loc.js'
@@ -266,6 +266,54 @@ export function ChatAct({ act, ctl, onSpeak }) {
           🔊 {t('workbook.hearIt')}
         </button>
       ) : null}
+    </>
+  )
+}
+
+/* ── Сплошной текст с банком слов (B2) ─────────────────────────────────── */
+/* Порт R.cloze (data/jtsworkbook-b2.html:13391). Отличие от bank не в разметке,
+   а в задаче: пропуски идут подряд по связному тексту, а в банке лежат лишние
+   слова-ловушки — студент выбирает сочетаемость, а не переводит по одному. */
+export function ClozeAct({ act, ctl }) {
+  const { t } = useI18n()
+  const bank = useBank(clozeBank(act))
+  const next = counter()
+  return (
+    <>
+      <Bank bank={bank} label={t('workbook.wordBank')} />
+      <Note kind="tell" icon="👆">
+        {t('workbook.tapWord')}
+      </Note>
+      <div className="wb-src">
+        {act.title ? <div className="wb-src__k">{act.title}</div> : null}
+        <div className="wb-src__body">
+          {act.text.map((line, li) => (
+            <p key={li}>
+              <GapLineSeq text={line} gaps={act.gaps} ctl={ctl} bank={bank} nextIdx={next} />
+            </p>
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* У cloze ключ свой у каждого пропуска, а не общий на строку, поэтому строку
+   режет отдельный компонент: он берёт ответ по сквозному номеру места. */
+function GapLineSeq({ text, gaps, ctl, bank, nextIdx }) {
+  const parts = String(text).split('___')
+  return (
+    <>
+      {parts.map((p, k) => {
+        if (k === parts.length - 1) return <span key={k}>{p}</span>
+        const idx = nextIdx()
+        return (
+          <span key={k}>
+            {p ? <span>{p}</span> : null}
+            <Blank ans={gaps[idx]} idx={idx} ctl={ctl} bank={bank} />
+          </span>
+        )
+      })}
     </>
   )
 }
