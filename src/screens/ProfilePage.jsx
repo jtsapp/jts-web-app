@@ -12,7 +12,8 @@ import {
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
 import { getBalance, getLearningPath, countProgress, updateUser, getCurrentUser } from '../api.js'
-import { birthDateProblem, maxBirthDate, minBirthDate } from '../lib/birthDate.js'
+import { birthDateProblem } from '../lib/birthDate.js'
+import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 
 // Ключи localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
@@ -445,17 +446,13 @@ export default function ProfilePage({
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             />
           </label>
-          <label className="pf-field">
+          <div className="pf-field">
             <span>{t('profile.editBirthDate')}</span>
-            <input
-              className="pf-input"
-              type="date"
-              max={maxBirthDate()}
-              min={minBirthDate()}
+            <BirthDateInput
               value={form.birthDate}
-              onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))}
+              onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
             />
-          </label>
+          </div>
           <label className="pf-field">
             <span>{t('profile.editCity')}</span>
             <input
