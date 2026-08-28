@@ -27,7 +27,12 @@ function fetchJson(url) {
   if (!cache.has(url)) {
     cache.set(
       url,
-      fetch(url)
+      // cache:'no-cache' — не «без кэша», а «сверься перед выдачей»: файл
+      // отдаётся из public с часовым max-age, и после пересборки данных
+      // студент до часа видел бы старый каталог (так пропала звёздочка
+      // челленджа у A1). Ответ 304 стоит одного условного запроса, а тело
+      // по-прежнему берётся из браузерного кэша.
+      fetch(url, { cache: 'no-cache' })
         .then((r) => {
           if (!r.ok) throw new Error('bad status ' + r.status)
           return r.json()
