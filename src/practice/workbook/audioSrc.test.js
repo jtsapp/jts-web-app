@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { trackSources, ownSource, courseSource } from './audioSrc.js'
+import { trackSources, ownSource, courseSource, videoSource } from './audioSrc.js'
 
 describe('audioSrc', () => {
   it('свой файл раздела идёт первым', () => {
@@ -21,6 +21,14 @@ describe('audioSrc', () => {
   it('без трека кандидатов нет — задание читает синтез', () => {
     expect(trackSources('a0', null)).toEqual([])
     expect(trackSources('a0', '')).toEqual([])
+  })
+
+  it('видео-репортаж юнита есть только у B2', () => {
+    // Юнит N воркбука — тот же ролик, что и у курса (уроки 4→v1, 48→v12).
+    expect(videoSource('b2', 1)).toBe('/course/b2/video/v1.mp4')
+    expect(videoSource('b2', 12)).toBe('/course/b2/video/v12.mp4')
+    expect(videoSource('b1', 1)).toBe(null)
+    expect(videoSource('b2', null)).toBe(null)
   })
 
   it('непонятный id не превращается в мусорный путь', () => {

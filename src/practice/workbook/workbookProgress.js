@@ -57,13 +57,53 @@ function writeState(state) {
  * Экран закрыт. Порт award(): «пройден» — это факт, а не балл, поэтому в prog
  * кладётся единица. Промахи перезаписываются целиком: пересдача экрана без
  * ошибок обязана убрать его из разбора, а не оставить старый список.
+ *
+ * Исключение — зачётный урок юнита (A2/B1/B2): у него есть отметка, значит
+ * кроме факта надо помнить, сколько пунктов взято с первой попытки. Тогда в
+ * prog ложится {d:1, c:<верных>}. Обычные экраны остаются единицей: за ними
+ * баллов нет и заводить их не надо.
  */
-export function markAct(level, n, i, missed) {
+export function markAct(level, n, i, missed, score) {
   const state = readState()
   const k = actKey(level, n, i)
-  state.prog[k] = 1
+  state.prog[k] = score == null ? 1 : { d: 1, c: Math.max(0, score) }
   if (missed && missed.length) state.miss[k] = missed.slice()
   else delete state.miss[k]
+  writeState(state)
+}
+
+/** Верных с первой попытки на экране; у обычных экранов счёта нет. */
+export function actRight(level, n, i, state) {
+  const v = (state || readState()).prog[actKey(level, n, i)]
+  return v && typeof v === 'object' ? Number(v.c) || 0 : 0
+}
+
+/**
+ * Отметка за зачётный урок. Порт renderTestResult (:13847): счёт — сумма
+ * верных по экранам, максимум — сумма пунктов, порог 70 %. Экраны без items
+ * (объяснение, образец) в максимум не идут — их не за что оценивать.
+ */
+export function testScore(lesson, level, state) {
+  const st = state || readState()
+  let got = 0
+  let total = 0
+  lesson.acts.forEach((a, i) => {
+    got += actRight(level, lesson.n, i, st)
+    const task = a.task || a
+    total += (task.items || []).length
+  })
+  const need = Math.ceil(total * 0.7)
+  return { got, total, need, pass: total > 0 && got >= need }
+}
+
+/** Пересдача зачёта: урок очищается целиком — и отметки, и разбор ошибок. */
+export function clearLesson(level, n, total) {
+  const state = readState()
+  for (let i = 0; i < total; i++) {
+    const k = actKey(level, n, i)
+    delete state.prog[k]
+    delete state.miss[k]
+  }
   writeState(state)
 }
 

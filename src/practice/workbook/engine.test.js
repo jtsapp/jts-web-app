@@ -1,27 +1,40 @@
 // Оракул: порядок элементов и вердикты грейдера сверяются с эталоном, который
-// посчитал САМ прототип (scripts/extract-workbook.js → __fixtures__/oracle-a0.json).
+// посчитал САМ прототип (scripts/extract-workbook.js → __fixtures__/oracle-<level>.json).
 // Красный тест здесь = порт разъехался с исходником, и студент видит не тот
 // воркбук, что автор курса. Чинить порт, а не эталон.
+//
+// Сверяются ВСЕ пять уровней: они не «одно и то же с другими словами» —
+// у каждого свой набор типов и свой судья набранного ответа, и разъехаться
+// они могут поодиночке.
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  shuffle, numericLadder, optOrder, nrm, typeOk, orderOk,
+  shuffle, numericLadder, optOrder, typeOk, orderOk,
   bankWords, tableAnswers, tableCells, orderTiles, sortOrder, seqOrder, memoDeck,
   dropPicks, slotCount, taskOf, isFree, stageOf, gapsIn, memoOrder,
+  transTiles, clozeBank, subsetAct,
 } from './engine.js'
+import { nrmFor, matcherFor } from './match.js'
 import { createActState, hit, slip, actDone, actScore, revealRest } from './actCtl.js'
 
 const ROOT = process.cwd()
-const DATA = path.join(ROOT, 'public', 'practice', 'workbook', 'a0')
-const oracle = JSON.parse(fs.readFileSync(path.join(__dirname, '__fixtures__', 'oracle-a0.json'), 'utf8'))
-const index = JSON.parse(fs.readFileSync(path.join(DATA, 'index.json'), 'utf8'))
+const LEVELS = ['a0', 'a1', 'a2', 'b1', 'b2']
 
-const lessonNums = Object.keys(index.lessons).map(Number).sort((a, b) => a - b)
-const lessons = new Map(
-  lessonNums.map((n) => [n, JSON.parse(fs.readFileSync(path.join(DATA, 'lesson-' + n + '.json'), 'utf8'))])
-)
-const allActs = lessonNums.flatMap((n) => lessons.get(n).acts.map((a, i) => ({ n, i, a })))
+function loadLevel(level) {
+  const dir = path.join(ROOT, 'public', 'practice', 'workbook', level)
+  const oracle = JSON.parse(fs.readFileSync(path.join(__dirname, '__fixtures__', 'oracle-' + level + '.json'), 'utf8'))
+  const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'))
+  const meta = JSON.parse(fs.readFileSync(path.join(dir, 'meta.json'), 'utf8'))
+  const nums = Object.keys(index.lessons).map(Number).sort((a, b) => a - b)
+  const lessons = new Map(
+    nums.map((n) => [n, JSON.parse(fs.readFileSync(path.join(dir, 'lesson-' + n + '.json'), 'utf8'))])
+  )
+  const allActs = nums.flatMap((n) => lessons.get(n).acts.map((a, i) => ({ n, i, a })))
+  return { oracle, index, meta, nums, lessons, allActs }
+}
+
+const DATA = Object.fromEntries(LEVELS.map((l) => [l, loadLevel(l)]))
 
 /** Тот же вывод, что кладёт в эталон экстрактор, но посчитанный ПОРТОМ. */
 function portOracle(a, where) {
@@ -31,6 +44,7 @@ function portOracle(a, where) {
     case 'odd':
     case 'label':
     case 'respond':
+    case 'quiz':
       o.orders = a.items.map((it, i) => optOrder(a, it, i))
       o.right = o.orders.map((ord, i) => ord.indexOf(a.items[i].a))
       break
@@ -43,12 +57,18 @@ function portOracle(a, where) {
     case 'chat':
       o.bank = bankWords(a)
       break
+    case 'cloze':
+      o.bank = clozeBank(a)
+      break
     case 'table':
       o.answers = tableAnswers(a)
       o.bank = bankWords(a)
       break
     case 'order':
       o.tiles = a.items.map((_, i) => orderTiles(a, i))
+      break
+    case 'trans':
+      o.tiles = a.items.map((_, i) => transTiles(a, i))
       break
     case 'sort':
       o.order = sortOrder(a)
@@ -63,10 +83,17 @@ function portOracle(a, where) {
       o.picks = dropPicks(a).map((p) => ({ li: p.li, pi: p.pi, order: p.order }))
       break
     case 'type':
+    case 'ttrans':
+    case 'wform':
+    case 'chain':
       o.grade = null // вердикты сверяются отдельно, ниже
       break
     case 'listen':
     case 'read':
+    case 'rule':
+    case 'model':
+    case 'worked':
+    case 'video':
       o.task = portOracle(a.task, where + '>task')
       break
     default:
@@ -75,7 +102,9 @@ function portOracle(a, where) {
   return o
 }
 
-describe('движок воркбука — сверка с прототипом', () => {
+describe.each(LEVELS)('движок воркбука — сверка с прототипом (%s)', (level) => {
+  const { oracle, allActs } = DATA[level]
+
   it('эталон покрывает все экраны уровня', () => {
     expect(oracle.acts.length).toBe(allActs.length)
     expect(oracle.acts.map((o) => o.where)).toEqual(allActs.map(({ n, i }) => n + '.' + i))
@@ -99,8 +128,20 @@ describe('движок воркбука — сверка с прототипом
       if (!grade) return
       const task = taskOf(a)
       grade.forEach((itemRows, ii) => {
+        const where = 'экран ' + n + '.' + i + ' пункт ' + ii
+        // У цепочки на пункт приходится по строке на каждый шаг, у остальных —
+        // просто список вводов.
+        if (task.t === 'chain') {
+          itemRows.forEach((stepRows, si) => {
+            stepRows.forEach((row) => {
+              expect(typeOk(task.items[ii].steps[si], row.in, level), where + '.' + si + ': «' + row.in + '»').toBe(row.ok)
+              rows++
+            })
+          })
+          return
+        }
         itemRows.forEach((row) => {
-          expect(typeOk(task.items[ii], row.in), 'экран ' + n + '.' + i + ' пункт ' + ii + ': «' + row.in + '»').toBe(row.ok)
+          expect(typeOk(task.items[ii], row.in, level), where + ': «' + row.in + '»').toBe(row.ok)
           rows++
         })
       })
@@ -110,21 +151,23 @@ describe('движок воркбука — сверка с прототипом
   })
 })
 
-describe('инварианты уровня A0', () => {
+describe.each(LEVELS)('инварианты уровня (%s)', (level) => {
+  const { allActs, meta, index } = DATA[level]
+
   it('каждый экран судим или свободен, и знает свою стадию', () => {
     allActs.forEach(({ n, i, a }) => {
-      const where = 'экран ' + n + '.' + i
+      const where = 'экран ' + n + '.' + i + ' (' + a.t + ')'
       if (isFree(a)) expect(slotCount(a), where).toBe(0)
       else expect(slotCount(a), where).toBeGreaterThan(0)
       expect(stageOf(a), where).toBeTruthy()
     })
   })
 
-  it('order собирается из своих же плиток', () => {
+  it('сборка предложения складывается из своих же плиток', () => {
     allActs.forEach(({ n, i, a }) => {
-      if (a.t !== 'order') return
+      if (a.t !== 'order' && a.t !== 'trans') return
       a.items.forEach((it, k) => {
-        const tiles = orderTiles(a, k)
+        const tiles = a.t === 'order' ? orderTiles(a, k) : transTiles(a, k)
         expect(orderOk(it, it.a.split(' ')), 'экран ' + n + '.' + i + '/' + k).toBe(true)
         expect(tiles.slice().sort()).toEqual(it.w.slice().sort())
       })
@@ -134,8 +177,12 @@ describe('инварианты уровня A0', () => {
   it('в банке хватает слов на все пропуски', () => {
     allActs.forEach(({ n, i, a }) => {
       const task = taskOf(a)
-      if (!['bank', 'match', 'table', 'chat'].includes(task.t)) return
-      expect(bankWords(task).length, 'экран ' + n + '.' + i).toBeGreaterThanOrEqual(slotCount(a))
+      if (['bank', 'match', 'table', 'chat'].includes(task.t)) {
+        expect(bankWords(task).length, 'экран ' + n + '.' + i).toBeGreaterThanOrEqual(slotCount(a))
+      }
+      if (task.t === 'cloze') {
+        expect(clozeBank(task).length, 'экран ' + n + '.' + i).toBeGreaterThanOrEqual(slotCount(a))
+      }
     })
   })
 
@@ -151,6 +198,31 @@ describe('инварианты уровня A0', () => {
     allActs.forEach(({ n, i, a }) => {
       expect(JSON.stringify(portOracle(a, n + '.' + i))).toBe(JSON.stringify(portOracle(a, n + '.' + i)))
     })
+  })
+
+  it('разбор ошибок сужает только то, что уровень разрешает сузить', () => {
+    expect(Array.isArray(meta.subsettable), 'meta.subsettable').toBe(true)
+    allActs.forEach(({ a }) => {
+      const cut = subsetAct(a, [0], meta.subsettable)
+      if (!meta.subsettable.includes(a.t) || !a.items) {
+        expect(cut).toBe(a)
+        return
+      }
+      expect(cut.items.length).toBe(1)
+      expect(cut.items[0]).toEqual(a.items[0])
+    })
+  })
+
+  it('каталог знает каждый урок ровно одного юнита', () => {
+    const seen = new Set()
+    index.units.forEach((u) => {
+      u.ls.concat(u.rev == null ? [] : [u.rev]).forEach((n) => {
+        expect(index.lessons[n], 'урок ' + n).toBeTruthy()
+        expect(seen.has(n), 'урок ' + n + ' в двух юнитах').toBe(false)
+        seen.add(n)
+      })
+    })
+    expect(seen.size).toBe(Object.keys(index.lessons).length)
   })
 })
 
@@ -174,16 +246,42 @@ describe('примитивы', () => {
   })
 
   it('nrm прощает набор, но не слово', () => {
+    const nrm = nrmFor('a0')
     expect(nrm('  Don’t   GO. ')).toBe("don't go")
     expect(nrm('well-known')).toBe('well known')
     expect(nrm('«quote»')).toBe('quote')
     expect(nrm('cat')).not.toBe(nrm('cats'))
   })
 
+  it('судья уровня прощает ровно то, что прощал его прототип', () => {
+    // A0 знает только про набор: полная форма — это уже другой ответ.
+    expect(matcherFor('a0')("I haven't seen him", ["I haven't seen him"])).toBe(true)
+    expect(matcherFor('a0')('I have not seen him', ["I haven't seen him"])).toBe(false)
+    // A1 прощает потерянный апостроф и британское написание.
+    expect(matcherFor('a1')('dont go', ["don't go"])).toBe(true)
+    expect(matcherFor('a1')('practice', ['practise'])).toBe(true)
+    // A2 — по списку пар, но не там, где без апострофа выходит другое слово.
+    expect(matcherFor('a2')('color', ['colour'])).toBe(true)
+    expect(matcherFor('a2')('were', ["we're"])).toBe(false)
+    // B1/B2 раскрывают сокращения, и «he is got» остаётся ошибкой.
+    expect(matcherFor('b1')('I have not seen him', ["I haven't seen him"])).toBe(true)
+    expect(matcherFor('b1')('he is got a car', ["he's got a car"])).toBe(false)
+    expect(matcherFor('b2')('we will be there', ["we'll be there"])).toBe(true)
+    // Пустой ввод не верен никогда и ни на одном уровне.
+    LEVELS.forEach((l) => expect(matcherFor(l)('   ', ['x']), l).toBe(false))
+  })
+
   it('gapsIn считает пропуски', () => {
     expect(gapsIn('I ___ coffee')).toBe(1)
     expect(gapsIn('___ and ___')).toBe(2)
     expect(gapsIn('no gaps')).toBe(0)
+  })
+
+  it('memoDeck раскладывает по две карточки на пару', () => {
+    const act = { t: 'memo', seed: 5, pairs: [['a', 'аа', 'аа'], ['b', 'бб', 'бб']] }
+    const deck = memoDeck(act)
+    expect(deck.length).toBe(4)
+    expect(deck.filter((c) => c.side === 'word').length).toBe(2)
   })
 })
 
@@ -223,5 +321,16 @@ describe('счётчик экрана', () => {
     expect(actDone(s)).toBe(true)
     expect(s.missed).toEqual([1])
     expect(actScore(s)).toBe(50)
+  })
+
+  it('цепочка считает шаги, а не пункты', () => {
+    const chain = {
+      t: 'chain',
+      items: [
+        { from: 'x', steps: [{ cue: '1', a: 'a' }, { cue: '2', a: 'b' }] },
+        { from: 'y', steps: [{ cue: '1', a: 'c' }, { cue: '2', a: 'd' }] },
+      ],
+    }
+    expect(createActState(chain).total).toBe(4)
   })
 })

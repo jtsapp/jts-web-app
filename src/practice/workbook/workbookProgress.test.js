@@ -9,6 +9,7 @@ import { pushModule } from '../practiceSync.js'
 import {
   readState, markAct, actPassed, lessonDone, firstOpen, nextLesson, levelProgress,
   missKeys, missCount, missFor, resolveMiss, selfCheck, toggleSelfCheck, actKey,
+  actRight, testScore, clearLesson,
 } from './workbookProgress.js'
 import { WORKBOOK_KEY, WORKBOOK_PROGRESS_EVENT } from '../practiceKeys.js'
 
@@ -85,6 +86,38 @@ describe('workbookProgress', () => {
     expect(readState()).toEqual({ prog: {}, miss: {}, sc: {} })
     localStorage.setItem(WORKBOOK_KEY, '["массив вместо объекта"]')
     expect(readState()).toEqual({ prog: {}, miss: {}, sc: {} })
+  })
+
+  it('зачётный урок помнит счёт, обычный экран — только факт', () => {
+    // Урок из двух экранов по три пункта: на первом два верных, на втором три.
+    const lesson = {
+      n: 101,
+      acts: [
+        { t: 'choose', items: [1, 2, 3] },
+        { t: 'listen', task: { t: 'type', items: [1, 2, 3] } },
+      ],
+    }
+    markAct('a2', 101, 0, [2], 2)
+    markAct('a2', 101, 1, [], 3)
+    expect(actRight('a2', 101, 0)).toBe(2)
+    const score = testScore(lesson, 'a2')
+    expect(score).toEqual({ got: 5, total: 6, need: 5, pass: true })
+
+    // Обычный экран счёта не заводит: в prog у него единица.
+    markAct('a2', 1, 0, [])
+    expect(actRight('a2', 1, 0)).toBe(0)
+  })
+
+  it('порог зачёта — 70 %, и пересдача стирает урок целиком', () => {
+    const lesson = { n: 101, acts: [{ t: 'choose', items: [1, 2, 3, 4, 5] }] }
+    markAct('a2', 101, 0, [0, 1], 3)
+    expect(testScore(lesson, 'a2')).toEqual({ got: 3, total: 5, need: 4, pass: false })
+
+    clearLesson('a2', 101, 1)
+    const after = readState()
+    expect(after.prog['a2:101.0']).toBeUndefined()
+    expect(after.miss['a2:101.0']).toBeUndefined()
+    expect(testScore(lesson, 'a2')).toEqual({ got: 0, total: 5, need: 4, pass: false })
   })
 
   it('будит каталог событием', () => {

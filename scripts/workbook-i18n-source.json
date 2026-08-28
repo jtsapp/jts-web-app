@@ -1,485 +1,2073 @@
 {
-  "level": "a0",
-  "ui": {
-    "h1": {
-      "en": "Your English workbook",
-      "ru": "Твоя рабочая тетрадь",
-      "kk": "Сенің жұмыс дәптерің"
-    },
-    "unit": {
-      "en": "Unit",
-      "ru": "Раздел",
-      "kk": "Бөлім"
-    },
-    "lesson": {
-      "en": "Lesson",
-      "ru": "Урок",
-      "kk": "Сабақ"
-    },
-    "of": {
-      "en": "of",
-      "ru": "из",
-      "kk": "/"
-    },
-    "complete": {
-      "en": "Complete",
-      "ru": "Готово",
-      "kk": "Дайын"
-    },
-    "continue": {
-      "en": "Continue",
-      "ru": "Продолжить",
-      "kk": "Жалғастыру"
-    },
-    "start": {
-      "en": "Start",
-      "ru": "Начать",
-      "kk": "Бастау"
-    },
-    "check": {
-      "en": "Check answers",
-      "ru": "Проверить",
-      "kk": "Тексеру"
-    },
-    "next": {
-      "en": "Next",
-      "ru": "Дальше",
-      "kk": "Келесі"
-    },
-    "finish": {
-      "en": "Finish",
-      "ru": "Завершить",
-      "kk": "Аяқтау"
-    },
-    "correct": {
-      "en": "correct",
-      "ru": "верно",
-      "kk": "дұрыс"
-    },
-    "done": {
-      "en": "Done",
-      "ru": "Готово",
-      "kk": "Дайын"
-    },
-    "wrapt": {
-      "en": "Workbook lesson complete",
-      "ru": "Урок тетради пройден",
-      "kk": "Дәптер сабағы аяқталды"
-    },
-    "home": {
-      "en": "Workbook",
-      "ru": "К тетради",
-      "kk": "Дәптерге"
-    },
-    "nextlesson": {
-      "en": "Next lesson",
-      "ru": "Следующий урок",
-      "kk": "Келесі сабақ"
-    },
-    "clhs": {
-      "en": "Use these any time.",
-      "ru": "Используй их в любой момент.",
-      "kk": "Кез келген уақытта қолдан."
-    },
-    "wordlist": {
-      "en": "Word list",
-      "ru": "Словарь урока",
-      "kk": "Сабақ сөздігі"
-    },
-    "true": {
-      "en": "True",
-      "ru": "Верно",
-      "kk": "Дұрыс"
-    },
-    "false": {
-      "en": "False",
-      "ru": "Неверно",
-      "kk": "Бұрыс"
-    },
-    "audio": {
-      "en": "Audio",
-      "ru": "Аудио",
-      "kk": "Аудио"
-    },
-    "audiohint": {
-      "en": "Listen as many times as you need.",
-      "ru": "Слушай столько раз, сколько нужно.",
-      "kk": "Қажет болса, бірнеше рет тыңда."
-    },
-    "slow": {
-      "en": "Slow",
-      "ru": "Медленно",
-      "kk": "Баяу"
-    },
-    "listenread": {
-      "en": "Listen to the text",
-      "ru": "Прослушать текст",
-      "kk": "Мәтінді тыңдау"
-    },
-    "writing": {
-      "en": "Writing",
-      "ru": "Письмо",
-      "kk": "Жазылым"
-    },
-    "speaking": {
-      "en": "Speaking",
-      "ru": "Говорение",
-      "kk": "Сөйлеу"
-    },
-    "model": {
-      "en": "Example answer",
-      "ru": "Пример ответа",
-      "kk": "Жауап үлгісі"
-    },
-    "record": {
-      "en": "Record",
-      "ru": "Записать",
-      "kk": "Жазу"
-    },
-    "stop": {
-      "en": "Stop",
-      "ru": "Стоп",
-      "kk": "Тоқтату"
-    },
-    "again": {
-      "en": "Record again",
-      "ru": "Записать снова",
-      "kk": "Қайта жазу"
-    },
-    "eyebrow": {
-      "en": "Just to Study · Beginner",
-      "ru": "Just to Study · Начальный",
-      "kk": "Just to Study · Бастауыш"
-    },
-    "hsub": {
-      "en": "Extra practice for every A0 lesson. One step per screen — check, fix, move on.",
-      "ru": "Дополнительная практика к каждому уроку A0. Один шаг на экран — проверь, исправь, иди дальше.",
-      "kk": "A0 деңгейінің әр сабағына қосымша жаттығу. Бір экранда бір қадам — тексер, түзет, әрі қарай."
-    },
-    "challenge": {
-      "en": "Challenge",
-      "ru": "Челлендж",
-      "kk": "Челлендж"
-    },
-    "whatsay": {
-      "en": "What do you say?",
-      "ru": "Что ты скажешь?",
-      "kk": "Не айтасың?"
-    },
-    "hearit": {
-      "en": "Hear the conversation",
-      "ru": "Послушать диалог",
-      "kk": "Диалогты тыңдау"
-    },
-    "pairs": {
-      "en": "Pairs",
-      "ru": "Пары",
-      "kk": "Жұп"
-    },
-    "tries": {
-      "en": "Turns",
-      "ru": "Ходы",
-      "kk": "Жүріс"
-    },
-    "k_choose": {
-      "en": "Choose",
-      "ru": "Выбор",
-      "kk": "Таңдау"
-    },
-    "k_odd": {
-      "en": "Odd one out",
-      "ru": "Лишнее слово",
-      "kk": "Артық сөз"
-    },
-    "k_label": {
-      "en": "Picture",
-      "ru": "Картинка",
-      "kk": "Сурет"
-    },
-    "k_tf": {
-      "en": "True or false",
-      "ru": "Верно или нет",
-      "kk": "Дұрыс па"
-    },
-    "k_bank": {
-      "en": "Fill the gaps",
-      "ru": "Заполни пропуски",
-      "kk": "Бос орын"
-    },
-    "k_match": {
-      "en": "Match",
-      "ru": "Соедини",
-      "kk": "Сәйкестендір"
-    },
-    "k_order": {
-      "en": "Build a sentence",
-      "ru": "Собери предложение",
-      "kk": "Сөйлем құра"
-    },
-    "k_fix": {
-      "en": "Find the mistake",
-      "ru": "Найди ошибку",
-      "kk": "Қатені тап"
-    },
-    "k_sort": {
-      "en": "Sort",
-      "ru": "Разложи",
-      "kk": "Топта"
-    },
-    "k_table": {
-      "en": "Grammar table",
-      "ru": "Таблица",
-      "kk": "Кесте"
-    },
-    "k_listen": {
-      "en": "Listening",
-      "ru": "Аудирование",
-      "kk": "Тыңдалым"
-    },
-    "k_read": {
-      "en": "Reading",
-      "ru": "Чтение",
-      "kk": "Оқылым"
-    },
-    "k_respond": {
-      "en": "Real situation",
-      "ru": "Ситуация",
-      "kk": "Нақты жағдай"
-    },
-    "k_chat": {
-      "en": "Conversation",
-      "ru": "Диалог",
-      "kk": "Диалог"
-    },
-    "k_memo": {
-      "en": "Word pairs",
-      "ru": "Пары слов",
-      "kk": "Сөз жұбы"
-    },
-    "k_turn": {
-      "en": "Your turn",
-      "ru": "Твой ход",
-      "kk": "Сенің кезегің"
-    },
-    "steps": {
-      "en": "steps",
-      "ru": "шагов",
-      "kk": "қадам"
-    },
-    "step": {
-      "en": "Step",
-      "ru": "Шаг",
-      "kk": "Қадам"
-    },
-    "st_words": {
-      "en": "Words",
-      "ru": "Слова",
-      "kk": "Сөздер"
-    },
-    "st_lang": {
-      "en": "Grammar practice",
-      "ru": "Грамматика",
-      "kk": "Грамматика"
-    },
-    "st_read": {
-      "en": "Reading",
-      "ru": "Чтение",
-      "kk": "Оқылым"
-    },
-    "st_listen": {
-      "en": "Listening",
-      "ru": "Аудирование",
-      "kk": "Тыңдалым"
-    },
-    "st_real": {
-      "en": "Real English",
-      "ru": "Живой английский",
-      "kk": "Нақты ағылшын"
-    },
-    "st_turn": {
-      "en": "Speaking & writing",
-      "ru": "Говорение и письмо",
-      "kk": "Сөйлеу және жазу"
-    },
-    "sc_title": {
-      "en": "Can you do this now?",
-      "ru": "Проверь себя",
-      "kk": "Өзіңді тексер"
-    },
-    "sc_use": {
-      "en": "I can use",
-      "ru": "Я использую",
-      "kk": "Мен қолдана аламын —"
-    },
-    "sc_words": {
-      "en": "I know the {n} words of this lesson.",
-      "ru": "Я знаю {n} слов этого урока.",
-      "kk": "Осы сабақтың {n} сөзін білемін."
-    },
-    "back": {
-      "en": "Back",
-      "ru": "Назад",
-      "kk": "Артқа"
-    },
-    "steps_t": {
-      "en": "Steps",
-      "ru": "Шаги",
-      "kk": "Қадамдар"
-    },
-    "words_t": {
-      "en": "Words",
-      "ru": "Слова",
-      "kk": "Сөздер"
-    },
-    "help_t": {
-      "en": "Help",
-      "ru": "Помощь",
-      "kk": "Көмек"
-    },
-    "lesson_menu": {
-      "en": "Lesson",
-      "ru": "Урок",
-      "kk": "Сабақ"
-    },
-    "m_continue": {
-      "en": "Continue",
-      "ru": "Продолжить",
-      "kk": "Жалғастыру"
-    },
-    "m_start": {
-      "en": "Start practising",
-      "ru": "Начать практику",
-      "kk": "Жаттығуды бастау"
-    },
-    "reviewt": {
-      "en": "Fix your mistakes",
-      "ru": "Разбор ошибок",
-      "kk": "Қателермен жұмыс"
-    },
-    "review_ins": {
-      "en": "These are the items you got wrong. Get them right and they leave the list.",
-      "ru": "Здесь пункты, где ты ошибся. Ответь верно — и они уйдут из списка.",
-      "kk": "Мұнда қате жіберген тармақтар. Дұрыс жауап бер — олар тізімнен кетеді."
-    },
-    "review_done": {
-      "en": "Nothing left to fix",
-      "ru": "Исправлять больше нечего",
-      "kk": "Түзетері қалмады"
-    },
-    "review_done_s": {
-      "en": "Everything you missed is now correct. New mistakes will show up here.",
-      "ru": "Всё, где ты ошибался, теперь верно. Новые ошибки появятся здесь.",
-      "kk": "Қателескеннің бәрі енді дұрыс. Жаңа қателер осында шығады."
-    },
-    "showone": {
-      "en": "Show the answer",
-      "ru": "Показать ответ",
-      "kk": "Жауапты көрсету"
-    },
-    "nx_screen": {
-      "en": "Next",
-      "ru": "Дальше",
-      "kk": "Келесі"
-    },
-    "nx_finish": {
-      "en": "Finish lesson",
-      "ru": "Завершить урок",
-      "kk": "Сабақты аяқтау"
-    },
-    "right_first": {
-      "en": "right first time",
-      "ru": "верно с первого раза",
-      "kk": "бірден дұрыс"
-    },
-    "tap_word": {
-      "en": "Drag a word into a gap — or tap the word, then tap the gap.",
-      "ru": "Перетащи слово в пропуск — или нажми слово, потом пропуск.",
-      "kk": "Сөзді бос орынға сүйре — немесе сөзді бас, сосын бос орынды бас."
-    },
-    "tap_word_c": {
-      "en": "Drag a word into a group — or tap the word, then tap the group.",
-      "ru": "Перетащи слово в группу — или нажми слово, потом группу.",
-      "kk": "Сөзді топқа сүйре — немесе сөзді бас, сосын топты бас."
-    },
-    "again_t": {
-      "en": "Do it again",
-      "ru": "Пройти заново",
-      "kk": "Қайтадан өту"
-    },
-    "drag_order": {
-      "en": "Drag the words into the line — or tap them. Tap a word in the line to take it back.",
-      "ru": "Перетащи слова в строку — или нажми на них. Нажми слово в строке, чтобы вернуть его.",
-      "kk": "Сөздерді жолға сүйре — немесе бас. Қайтару үшін жолдағы сөзді бас."
-    },
-    "wordbank": {
-      "en": "Word box",
-      "ru": "Слова",
-      "kk": "Сөздер"
-    },
-    "gap": {
-      "en": "Gap — tap to fill it",
-      "ru": "Пропуск — нажми, чтобы заполнить",
-      "kk": "Бос орын — толтыру үшін бас"
-    },
-    "gotit": {
-      "en": "Correct.",
-      "ru": "Верно.",
-      "kk": "Дұрыс."
-    },
-    "answer_is": {
-      "en": "Answer:",
-      "ru": "Ответ:",
-      "kk": "Жауап:"
-    },
-    "no_mic": {
-      "en": "Microphone not available",
-      "ru": "Микрофон недоступен",
-      "kk": "Микрофон қолжетімсіз"
-    },
-    "mistakes_n": {
-      "en": "{n} to fix",
-      "ru": "{n} на разбор",
-      "kk": "{n} түзетуге"
-    },
-    "k_type": {
-      "en": "Write it",
-      "ru": "Напиши",
-      "kk": "Жаз"
-    },
-    "k_seq": {
-      "en": "In order",
-      "ru": "По порядку",
-      "kk": "Ретімен"
-    },
-    "k_drop": {
-      "en": "In the text",
-      "ru": "В тексте",
-      "kk": "Мәтінде"
-    },
-    "choose_l": {
-      "en": "Choose",
-      "ru": "Выбери",
-      "kk": "Таңда"
-    },
-    "st_form": {
-      "en": "How it works",
-      "ru": "Как это устроено",
-      "kk": "Қалай жұмыс істейді"
-    },
-    "st_back": {
-      "en": "Come back",
-      "ru": "Возвращаемся",
-      "kk": "Қайта оралу"
-    },
-    "k_write": {
-      "en": "Write",
-      "ru": "Письмо",
-      "kk": "Жазылым"
-    },
-    "k_speak": {
-      "en": "Speak",
-      "ru": "Говорение",
-      "kk": "Сөйлеу"
+  "levels": {
+    "a0": {
+      "h1": {
+        "en": "Your English workbook",
+        "ru": "Твоя рабочая тетрадь",
+        "kk": "Сенің жұмыс дәптерің"
+      },
+      "unit": {
+        "en": "Unit",
+        "ru": "Раздел",
+        "kk": "Бөлім"
+      },
+      "lesson": {
+        "en": "Lesson",
+        "ru": "Урок",
+        "kk": "Сабақ"
+      },
+      "of": {
+        "en": "of",
+        "ru": "из",
+        "kk": "/"
+      },
+      "complete": {
+        "en": "Complete",
+        "ru": "Готово",
+        "kk": "Дайын"
+      },
+      "continue": {
+        "en": "Continue",
+        "ru": "Продолжить",
+        "kk": "Жалғастыру"
+      },
+      "start": {
+        "en": "Start",
+        "ru": "Начать",
+        "kk": "Бастау"
+      },
+      "check": {
+        "en": "Check answers",
+        "ru": "Проверить",
+        "kk": "Тексеру"
+      },
+      "next": {
+        "en": "Next",
+        "ru": "Дальше",
+        "kk": "Келесі"
+      },
+      "finish": {
+        "en": "Finish",
+        "ru": "Завершить",
+        "kk": "Аяқтау"
+      },
+      "correct": {
+        "en": "correct",
+        "ru": "верно",
+        "kk": "дұрыс"
+      },
+      "done": {
+        "en": "Done",
+        "ru": "Готово",
+        "kk": "Дайын"
+      },
+      "wrapt": {
+        "en": "Workbook lesson complete",
+        "ru": "Урок тетради пройден",
+        "kk": "Дәптер сабағы аяқталды"
+      },
+      "home": {
+        "en": "Workbook",
+        "ru": "К тетради",
+        "kk": "Дәптерге"
+      },
+      "nextlesson": {
+        "en": "Next lesson",
+        "ru": "Следующий урок",
+        "kk": "Келесі сабақ"
+      },
+      "clhs": {
+        "en": "Use these any time.",
+        "ru": "Используй их в любой момент.",
+        "kk": "Кез келген уақытта қолдан."
+      },
+      "wordlist": {
+        "en": "Word list",
+        "ru": "Словарь урока",
+        "kk": "Сабақ сөздігі"
+      },
+      "true": {
+        "en": "True",
+        "ru": "Верно",
+        "kk": "Дұрыс"
+      },
+      "false": {
+        "en": "False",
+        "ru": "Неверно",
+        "kk": "Бұрыс"
+      },
+      "audio": {
+        "en": "Audio",
+        "ru": "Аудио",
+        "kk": "Аудио"
+      },
+      "audiohint": {
+        "en": "Listen as many times as you need.",
+        "ru": "Слушай столько раз, сколько нужно.",
+        "kk": "Қажет болса, бірнеше рет тыңда."
+      },
+      "slow": {
+        "en": "Slow",
+        "ru": "Медленно",
+        "kk": "Баяу"
+      },
+      "listenread": {
+        "en": "Listen to the text",
+        "ru": "Прослушать текст",
+        "kk": "Мәтінді тыңдау"
+      },
+      "writing": {
+        "en": "Writing",
+        "ru": "Письмо",
+        "kk": "Жазылым"
+      },
+      "speaking": {
+        "en": "Speaking",
+        "ru": "Говорение",
+        "kk": "Сөйлеу"
+      },
+      "model": {
+        "en": "Example answer",
+        "ru": "Пример ответа",
+        "kk": "Жауап үлгісі"
+      },
+      "record": {
+        "en": "Record",
+        "ru": "Записать",
+        "kk": "Жазу"
+      },
+      "stop": {
+        "en": "Stop",
+        "ru": "Стоп",
+        "kk": "Тоқтату"
+      },
+      "again": {
+        "en": "Record again",
+        "ru": "Записать снова",
+        "kk": "Қайта жазу"
+      },
+      "eyebrow": {
+        "en": "Just to Study · Beginner",
+        "ru": "Just to Study · Начальный",
+        "kk": "Just to Study · Бастауыш"
+      },
+      "hsub": {
+        "en": "Extra practice for every A0 lesson. One step per screen — check, fix, move on.",
+        "ru": "Дополнительная практика к каждому уроку A0. Один шаг на экран — проверь, исправь, иди дальше.",
+        "kk": "A0 деңгейінің әр сабағына қосымша жаттығу. Бір экранда бір қадам — тексер, түзет, әрі қарай."
+      },
+      "challenge": {
+        "en": "Challenge",
+        "ru": "Челлендж",
+        "kk": "Челлендж"
+      },
+      "whatsay": {
+        "en": "What do you say?",
+        "ru": "Что ты скажешь?",
+        "kk": "Не айтасың?"
+      },
+      "hearit": {
+        "en": "Hear the conversation",
+        "ru": "Послушать диалог",
+        "kk": "Диалогты тыңдау"
+      },
+      "pairs": {
+        "en": "Pairs",
+        "ru": "Пары",
+        "kk": "Жұп"
+      },
+      "tries": {
+        "en": "Turns",
+        "ru": "Ходы",
+        "kk": "Жүріс"
+      },
+      "k_choose": {
+        "en": "Choose",
+        "ru": "Выбор",
+        "kk": "Таңдау"
+      },
+      "k_odd": {
+        "en": "Odd one out",
+        "ru": "Лишнее слово",
+        "kk": "Артық сөз"
+      },
+      "k_label": {
+        "en": "Picture",
+        "ru": "Картинка",
+        "kk": "Сурет"
+      },
+      "k_tf": {
+        "en": "True or false",
+        "ru": "Верно или нет",
+        "kk": "Дұрыс па"
+      },
+      "k_bank": {
+        "en": "Fill the gaps",
+        "ru": "Заполни пропуски",
+        "kk": "Бос орын"
+      },
+      "k_match": {
+        "en": "Match",
+        "ru": "Соедини",
+        "kk": "Сәйкестендір"
+      },
+      "k_order": {
+        "en": "Build a sentence",
+        "ru": "Собери предложение",
+        "kk": "Сөйлем құра"
+      },
+      "k_fix": {
+        "en": "Find the mistake",
+        "ru": "Найди ошибку",
+        "kk": "Қатені тап"
+      },
+      "k_sort": {
+        "en": "Sort",
+        "ru": "Разложи",
+        "kk": "Топта"
+      },
+      "k_table": {
+        "en": "Grammar table",
+        "ru": "Таблица",
+        "kk": "Кесте"
+      },
+      "k_listen": {
+        "en": "Listening",
+        "ru": "Аудирование",
+        "kk": "Тыңдалым"
+      },
+      "k_read": {
+        "en": "Reading",
+        "ru": "Чтение",
+        "kk": "Оқылым"
+      },
+      "k_respond": {
+        "en": "Real situation",
+        "ru": "Ситуация",
+        "kk": "Нақты жағдай"
+      },
+      "k_chat": {
+        "en": "Conversation",
+        "ru": "Диалог",
+        "kk": "Диалог"
+      },
+      "k_memo": {
+        "en": "Word pairs",
+        "ru": "Пары слов",
+        "kk": "Сөз жұбы"
+      },
+      "k_turn": {
+        "en": "Your turn",
+        "ru": "Твой ход",
+        "kk": "Сенің кезегің"
+      },
+      "steps": {
+        "en": "steps",
+        "ru": "шагов",
+        "kk": "қадам"
+      },
+      "step": {
+        "en": "Step",
+        "ru": "Шаг",
+        "kk": "Қадам"
+      },
+      "st_words": {
+        "en": "Words",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "st_lang": {
+        "en": "Grammar practice",
+        "ru": "Грамматика",
+        "kk": "Грамматика"
+      },
+      "st_read": {
+        "en": "Reading",
+        "ru": "Чтение",
+        "kk": "Оқылым"
+      },
+      "st_listen": {
+        "en": "Listening",
+        "ru": "Аудирование",
+        "kk": "Тыңдалым"
+      },
+      "st_real": {
+        "en": "Real English",
+        "ru": "Живой английский",
+        "kk": "Нақты ағылшын"
+      },
+      "st_turn": {
+        "en": "Speaking & writing",
+        "ru": "Говорение и письмо",
+        "kk": "Сөйлеу және жазу"
+      },
+      "sc_title": {
+        "en": "Can you do this now?",
+        "ru": "Проверь себя",
+        "kk": "Өзіңді тексер"
+      },
+      "sc_use": {
+        "en": "I can use",
+        "ru": "Я использую",
+        "kk": "Мен қолдана аламын —"
+      },
+      "sc_words": {
+        "en": "I know the {n} words of this lesson.",
+        "ru": "Я знаю {n} слов этого урока.",
+        "kk": "Осы сабақтың {n} сөзін білемін."
+      },
+      "back": {
+        "en": "Back",
+        "ru": "Назад",
+        "kk": "Артқа"
+      },
+      "steps_t": {
+        "en": "Steps",
+        "ru": "Шаги",
+        "kk": "Қадамдар"
+      },
+      "words_t": {
+        "en": "Words",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "help_t": {
+        "en": "Help",
+        "ru": "Помощь",
+        "kk": "Көмек"
+      },
+      "lesson_menu": {
+        "en": "Lesson",
+        "ru": "Урок",
+        "kk": "Сабақ"
+      },
+      "m_continue": {
+        "en": "Continue",
+        "ru": "Продолжить",
+        "kk": "Жалғастыру"
+      },
+      "m_start": {
+        "en": "Start practising",
+        "ru": "Начать практику",
+        "kk": "Жаттығуды бастау"
+      },
+      "reviewt": {
+        "en": "Fix your mistakes",
+        "ru": "Разбор ошибок",
+        "kk": "Қателермен жұмыс"
+      },
+      "review_ins": {
+        "en": "These are the items you got wrong. Get them right and they leave the list.",
+        "ru": "Здесь пункты, где ты ошибся. Ответь верно — и они уйдут из списка.",
+        "kk": "Мұнда қате жіберген тармақтар. Дұрыс жауап бер — олар тізімнен кетеді."
+      },
+      "review_done": {
+        "en": "Nothing left to fix",
+        "ru": "Исправлять больше нечего",
+        "kk": "Түзетері қалмады"
+      },
+      "review_done_s": {
+        "en": "Everything you missed is now correct. New mistakes will show up here.",
+        "ru": "Всё, где ты ошибался, теперь верно. Новые ошибки появятся здесь.",
+        "kk": "Қателескеннің бәрі енді дұрыс. Жаңа қателер осында шығады."
+      },
+      "showone": {
+        "en": "Show the answer",
+        "ru": "Показать ответ",
+        "kk": "Жауапты көрсету"
+      },
+      "nx_screen": {
+        "en": "Next",
+        "ru": "Дальше",
+        "kk": "Келесі"
+      },
+      "nx_finish": {
+        "en": "Finish lesson",
+        "ru": "Завершить урок",
+        "kk": "Сабақты аяқтау"
+      },
+      "right_first": {
+        "en": "right first time",
+        "ru": "верно с первого раза",
+        "kk": "бірден дұрыс"
+      },
+      "tap_word": {
+        "en": "Drag a word into a gap — or tap the word, then tap the gap.",
+        "ru": "Перетащи слово в пропуск — или нажми слово, потом пропуск.",
+        "kk": "Сөзді бос орынға сүйре — немесе сөзді бас, сосын бос орынды бас."
+      },
+      "tap_word_c": {
+        "en": "Drag a word into a group — or tap the word, then tap the group.",
+        "ru": "Перетащи слово в группу — или нажми слово, потом группу.",
+        "kk": "Сөзді топқа сүйре — немесе сөзді бас, сосын топты бас."
+      },
+      "again_t": {
+        "en": "Do it again",
+        "ru": "Пройти заново",
+        "kk": "Қайтадан өту"
+      },
+      "drag_order": {
+        "en": "Drag the words into the line — or tap them. Tap a word in the line to take it back.",
+        "ru": "Перетащи слова в строку — или нажми на них. Нажми слово в строке, чтобы вернуть его.",
+        "kk": "Сөздерді жолға сүйре — немесе бас. Қайтару үшін жолдағы сөзді бас."
+      },
+      "wordbank": {
+        "en": "Word box",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "gap": {
+        "en": "Gap — tap to fill it",
+        "ru": "Пропуск — нажми, чтобы заполнить",
+        "kk": "Бос орын — толтыру үшін бас"
+      },
+      "gotit": {
+        "en": "Correct.",
+        "ru": "Верно.",
+        "kk": "Дұрыс."
+      },
+      "answer_is": {
+        "en": "Answer:",
+        "ru": "Ответ:",
+        "kk": "Жауап:"
+      },
+      "no_mic": {
+        "en": "Microphone not available",
+        "ru": "Микрофон недоступен",
+        "kk": "Микрофон қолжетімсіз"
+      },
+      "mistakes_n": {
+        "en": "{n} to fix",
+        "ru": "{n} на разбор",
+        "kk": "{n} түзетуге"
+      },
+      "k_type": {
+        "en": "Write it",
+        "ru": "Напиши",
+        "kk": "Жаз"
+      },
+      "k_seq": {
+        "en": "In order",
+        "ru": "По порядку",
+        "kk": "Ретімен"
+      },
+      "k_drop": {
+        "en": "In the text",
+        "ru": "В тексте",
+        "kk": "Мәтінде"
+      },
+      "choose_l": {
+        "en": "Choose",
+        "ru": "Выбери",
+        "kk": "Таңда"
+      },
+      "st_form": {
+        "en": "How it works",
+        "ru": "Как это устроено",
+        "kk": "Қалай жұмыс істейді"
+      },
+      "st_back": {
+        "en": "Come back",
+        "ru": "Возвращаемся",
+        "kk": "Қайта оралу"
+      },
+      "k_write": {
+        "en": "Write",
+        "ru": "Письмо",
+        "kk": "Жазылым"
+      },
+      "k_speak": {
+        "en": "Speak",
+        "ru": "Говорение",
+        "kk": "Сөйлеу"
+      }
+    },
+    "a1": {
+      "h1": {
+        "en": "Your English workbook",
+        "ru": "Твоя рабочая тетрадь",
+        "kk": "Сенің жұмыс дәптерің"
+      },
+      "unit": {
+        "en": "Unit",
+        "ru": "Раздел",
+        "kk": "Бөлім"
+      },
+      "lesson": {
+        "en": "Lesson",
+        "ru": "Урок",
+        "kk": "Сабақ"
+      },
+      "of": {
+        "en": "of",
+        "ru": "из",
+        "kk": "/"
+      },
+      "complete": {
+        "en": "Complete",
+        "ru": "Готово",
+        "kk": "Дайын"
+      },
+      "continue": {
+        "en": "Continue",
+        "ru": "Продолжить",
+        "kk": "Жалғастыру"
+      },
+      "start": {
+        "en": "Start",
+        "ru": "Начать",
+        "kk": "Бастау"
+      },
+      "check": {
+        "en": "Check answers",
+        "ru": "Проверить",
+        "kk": "Тексеру"
+      },
+      "next": {
+        "en": "Next",
+        "ru": "Дальше",
+        "kk": "Келесі"
+      },
+      "finish": {
+        "en": "Finish",
+        "ru": "Завершить",
+        "kk": "Аяқтау"
+      },
+      "correct": {
+        "en": "correct",
+        "ru": "верно",
+        "kk": "дұрыс"
+      },
+      "done": {
+        "en": "Done",
+        "ru": "Готово",
+        "kk": "Дайын"
+      },
+      "wrapt": {
+        "en": "Workbook lesson complete",
+        "ru": "Урок тетради пройден",
+        "kk": "Дәптер сабағы аяқталды"
+      },
+      "home": {
+        "en": "Workbook",
+        "ru": "К тетради",
+        "kk": "Дәптерге"
+      },
+      "nextlesson": {
+        "en": "Next lesson",
+        "ru": "Следующий урок",
+        "kk": "Келесі сабақ"
+      },
+      "clhs": {
+        "en": "Use these any time.",
+        "ru": "Используй их в любой момент.",
+        "kk": "Кез келген уақытта қолдан."
+      },
+      "wordlist": {
+        "en": "Word list",
+        "ru": "Словарь урока",
+        "kk": "Сабақ сөздігі"
+      },
+      "true": {
+        "en": "True",
+        "ru": "Верно",
+        "kk": "Дұрыс"
+      },
+      "false": {
+        "en": "False",
+        "ru": "Неверно",
+        "kk": "Бұрыс"
+      },
+      "audio": {
+        "en": "Audio",
+        "ru": "Аудио",
+        "kk": "Аудио"
+      },
+      "audiohint": {
+        "en": "Listen as many times as you need.",
+        "ru": "Слушай столько раз, сколько нужно.",
+        "kk": "Қажет болса, бірнеше рет тыңда."
+      },
+      "slow": {
+        "en": "Slow",
+        "ru": "Медленно",
+        "kk": "Баяу"
+      },
+      "listenread": {
+        "en": "Listen to the text",
+        "ru": "Прослушать текст",
+        "kk": "Мәтінді тыңдау"
+      },
+      "writing": {
+        "en": "Writing",
+        "ru": "Письмо",
+        "kk": "Жазылым"
+      },
+      "speaking": {
+        "en": "Speaking",
+        "ru": "Говорение",
+        "kk": "Сөйлеу"
+      },
+      "model": {
+        "en": "Example answer",
+        "ru": "Пример ответа",
+        "kk": "Жауап үлгісі"
+      },
+      "record": {
+        "en": "Record",
+        "ru": "Записать",
+        "kk": "Жазу"
+      },
+      "stop": {
+        "en": "Stop",
+        "ru": "Стоп",
+        "kk": "Тоқтату"
+      },
+      "again": {
+        "en": "Record again",
+        "ru": "Записать снова",
+        "kk": "Қайта жазу"
+      },
+      "eyebrow": {
+        "en": "Just to Study · Elementary"
+      },
+      "hsub": {
+        "en": "Practice for every Elementary lesson. One step per screen — check, fix, move on."
+      },
+      "challenge": {
+        "en": "Challenge",
+        "ru": "Челлендж",
+        "kk": "Челлендж"
+      },
+      "whatsay": {
+        "en": "What do you say?",
+        "ru": "Что ты скажешь?",
+        "kk": "Не айтасың?"
+      },
+      "hearit": {
+        "en": "Hear the conversation",
+        "ru": "Послушать диалог",
+        "kk": "Диалогты тыңдау"
+      },
+      "pairs": {
+        "en": "Pairs",
+        "ru": "Пары",
+        "kk": "Жұп"
+      },
+      "tries": {
+        "en": "Turns",
+        "ru": "Ходы",
+        "kk": "Жүріс"
+      },
+      "k_choose": {
+        "en": "Choose",
+        "ru": "Выбор",
+        "kk": "Таңдау"
+      },
+      "k_odd": {
+        "en": "Odd one out",
+        "ru": "Лишнее слово",
+        "kk": "Артық сөз"
+      },
+      "k_label": {
+        "en": "Picture",
+        "ru": "Картинка",
+        "kk": "Сурет"
+      },
+      "k_tf": {
+        "en": "True or false",
+        "ru": "Верно или нет",
+        "kk": "Дұрыс па"
+      },
+      "k_bank": {
+        "en": "Fill the gaps",
+        "ru": "Заполни пропуски",
+        "kk": "Бос орын"
+      },
+      "k_match": {
+        "en": "Match",
+        "ru": "Соедини",
+        "kk": "Сәйкестендір"
+      },
+      "k_order": {
+        "en": "Build a sentence",
+        "ru": "Собери предложение",
+        "kk": "Сөйлем құра"
+      },
+      "k_fix": {
+        "en": "Find the mistake",
+        "ru": "Найди ошибку",
+        "kk": "Қатені тап"
+      },
+      "k_sort": {
+        "en": "Sort",
+        "ru": "Разложи",
+        "kk": "Топта"
+      },
+      "k_table": {
+        "en": "Grammar table",
+        "ru": "Таблица",
+        "kk": "Кесте"
+      },
+      "k_listen": {
+        "en": "Listening",
+        "ru": "Аудирование",
+        "kk": "Тыңдалым"
+      },
+      "k_read": {
+        "en": "Reading",
+        "ru": "Чтение",
+        "kk": "Оқылым"
+      },
+      "k_respond": {
+        "en": "Real situation",
+        "ru": "Ситуация",
+        "kk": "Нақты жағдай"
+      },
+      "k_chat": {
+        "en": "Conversation",
+        "ru": "Диалог",
+        "kk": "Диалог"
+      },
+      "k_memo": {
+        "en": "Word pairs",
+        "ru": "Пары слов",
+        "kk": "Сөз жұбы"
+      },
+      "k_turn": {
+        "en": "Your turn",
+        "ru": "Твой ход",
+        "kk": "Сенің кезегің"
+      },
+      "steps": {
+        "en": "steps",
+        "ru": "шагов",
+        "kk": "қадам"
+      },
+      "step": {
+        "en": "Step",
+        "ru": "Шаг",
+        "kk": "Қадам"
+      },
+      "st_words": {
+        "en": "Words",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "st_lang": {
+        "en": "Grammar practice",
+        "ru": "Грамматика",
+        "kk": "Грамматика"
+      },
+      "st_read": {
+        "en": "Reading",
+        "ru": "Чтение",
+        "kk": "Оқылым"
+      },
+      "st_listen": {
+        "en": "Listening",
+        "ru": "Аудирование",
+        "kk": "Тыңдалым"
+      },
+      "st_real": {
+        "en": "Real English",
+        "ru": "Живой английский",
+        "kk": "Нақты ағылшын"
+      },
+      "st_turn": {
+        "en": "Speaking & writing",
+        "ru": "Говорение и письмо",
+        "kk": "Сөйлеу және жазу"
+      },
+      "sc_title": {
+        "en": "Can you do this now?",
+        "ru": "Проверь себя",
+        "kk": "Өзіңді тексер"
+      },
+      "sc_use": {
+        "en": "I can use",
+        "ru": "Я использую",
+        "kk": "Мен қолдана аламын —"
+      },
+      "sc_words": {
+        "en": "I know the {n} words of this lesson.",
+        "ru": "Я знаю {n} слов этого урока.",
+        "kk": "Осы сабақтың {n} сөзін білемін."
+      },
+      "back": {
+        "en": "Back",
+        "ru": "Назад",
+        "kk": "Артқа"
+      },
+      "steps_t": {
+        "en": "Steps",
+        "ru": "Шаги",
+        "kk": "Қадамдар"
+      },
+      "words_t": {
+        "en": "Words",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "help_t": {
+        "en": "Help",
+        "ru": "Помощь",
+        "kk": "Көмек"
+      },
+      "lesson_menu": {
+        "en": "Lesson",
+        "ru": "Урок",
+        "kk": "Сабақ"
+      },
+      "m_continue": {
+        "en": "Continue",
+        "ru": "Продолжить",
+        "kk": "Жалғастыру"
+      },
+      "m_start": {
+        "en": "Start practising",
+        "ru": "Начать практику",
+        "kk": "Жаттығуды бастау"
+      },
+      "reviewt": {
+        "en": "Fix your mistakes",
+        "ru": "Разбор ошибок",
+        "kk": "Қателермен жұмыс"
+      },
+      "review_ins": {
+        "en": "These are the items you got wrong. Get them right and they leave the list.",
+        "ru": "Здесь пункты, где ты ошибся. Ответь верно — и они уйдут из списка.",
+        "kk": "Мұнда қате жіберген тармақтар. Дұрыс жауап бер — олар тізімнен кетеді."
+      },
+      "review_done": {
+        "en": "Nothing left to fix",
+        "ru": "Исправлять больше нечего",
+        "kk": "Түзетері қалмады"
+      },
+      "review_done_s": {
+        "en": "Everything you missed is now correct. New mistakes will show up here.",
+        "ru": "Всё, где ты ошибался, теперь верно. Новые ошибки появятся здесь.",
+        "kk": "Қателескеннің бәрі енді дұрыс. Жаңа қателер осында шығады."
+      },
+      "showone": {
+        "en": "Show the answer",
+        "ru": "Показать ответ",
+        "kk": "Жауапты көрсету"
+      },
+      "nx_screen": {
+        "en": "Next",
+        "ru": "Дальше",
+        "kk": "Келесі"
+      },
+      "nx_finish": {
+        "en": "Finish lesson",
+        "ru": "Завершить урок",
+        "kk": "Сабақты аяқтау"
+      },
+      "right_first": {
+        "en": "right first time",
+        "ru": "верно с первого раза",
+        "kk": "бірден дұрыс"
+      },
+      "tap_word": {
+        "en": "Tap a word, then tap a gap.",
+        "ru": "Нажми слово, потом — пропуск.",
+        "kk": "Сөзді бас, содан кейін бос орынды бас."
+      },
+      "tap_word_c": {
+        "en": "Tap a word, then tap a column.",
+        "ru": "Нажми слово, потом — колонку.",
+        "kk": "Сөзді бас, содан кейін бағанды бас."
+      },
+      "wordbank": {
+        "en": "Word box",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "gap": {
+        "en": "Gap — tap to fill it"
+      },
+      "showtr": {
+        "en": "Show translations"
+      },
+      "uselang": {
+        "en": "Useful language"
+      },
+      "uselang_s": {
+        "en": "The phrases this lesson needs. Use them in the task."
+      },
+      "gotit": {
+        "en": "Correct.",
+        "ru": "Верно.",
+        "kk": "Дұрыс."
+      },
+      "answer_is": {
+        "en": "Answer:",
+        "ru": "Ответ:",
+        "kk": "Жауап:"
+      },
+      "no_mic": {
+        "en": "Microphone not available",
+        "ru": "Микрофон недоступен",
+        "kk": "Микрофон қолжетімсіз"
+      },
+      "mistakes_n": {
+        "en": "{n} to fix",
+        "ru": "{n} на разбор",
+        "kk": "{n} түзетуге"
+      },
+      "k_type": {
+        "en": "Write it",
+        "ru": "Напиши",
+        "kk": "Жаз"
+      },
+      "k_seq": {
+        "en": "In order",
+        "ru": "По порядку",
+        "kk": "Ретімен"
+      },
+      "k_drop": {
+        "en": "In the text",
+        "ru": "В тексте",
+        "kk": "Мәтінде"
+      },
+      "choose_l": {
+        "en": "Choose",
+        "ru": "Выбери",
+        "kk": "Таңда"
+      },
+      "st_form": {
+        "en": "How it works",
+        "ru": "Как это устроено",
+        "kk": "Қалай жұмыс істейді"
+      },
+      "st_back": {
+        "en": "Come back",
+        "ru": "Возвращаемся",
+        "kk": "Қайта оралу"
+      },
+      "k_write": {
+        "en": "Write"
+      },
+      "k_trans": {
+        "en": "Change the sentence"
+      },
+      "k_speak": {
+        "en": "Speak",
+        "ru": "Говорение",
+        "kk": "Сөйлеу"
+      }
+    },
+    "a2": {
+      "h1": {
+        "en": "Your English workbook",
+        "ru": "Твоя рабочая тетрадь",
+        "kk": "Сенің жұмыс дәптерің"
+      },
+      "unit": {
+        "en": "Unit",
+        "ru": "Раздел",
+        "kk": "Бөлім"
+      },
+      "lesson": {
+        "en": "Lesson",
+        "ru": "Урок",
+        "kk": "Сабақ"
+      },
+      "of": {
+        "en": "of",
+        "ru": "из",
+        "kk": "/"
+      },
+      "complete": {
+        "en": "Complete",
+        "ru": "Готово",
+        "kk": "Дайын"
+      },
+      "continue": {
+        "en": "Continue",
+        "ru": "Продолжить",
+        "kk": "Жалғастыру"
+      },
+      "start": {
+        "en": "Start",
+        "ru": "Начать",
+        "kk": "Бастау"
+      },
+      "check": {
+        "en": "Check answers",
+        "ru": "Проверить",
+        "kk": "Тексеру"
+      },
+      "next": {
+        "en": "Next",
+        "ru": "Дальше",
+        "kk": "Келесі"
+      },
+      "finish": {
+        "en": "Finish",
+        "ru": "Завершить",
+        "kk": "Аяқтау"
+      },
+      "correct": {
+        "en": "correct",
+        "ru": "верно",
+        "kk": "дұрыс"
+      },
+      "done": {
+        "en": "Done",
+        "ru": "Готово",
+        "kk": "Дайын"
+      },
+      "wrapt": {
+        "en": "Workbook lesson complete",
+        "ru": "Урок тетради пройден",
+        "kk": "Дәптер сабағы аяқталды"
+      },
+      "home": {
+        "en": "Workbook",
+        "ru": "К тетради",
+        "kk": "Дәптерге"
+      },
+      "nextlesson": {
+        "en": "Next lesson",
+        "ru": "Следующий урок",
+        "kk": "Келесі сабақ"
+      },
+      "clhs": {
+        "en": "Use these any time.",
+        "ru": "Используй их в любой момент.",
+        "kk": "Кез келген уақытта қолдан."
+      },
+      "wordlist": {
+        "en": "Word list",
+        "ru": "Словарь урока",
+        "kk": "Сабақ сөздігі"
+      },
+      "true": {
+        "en": "True",
+        "ru": "Верно",
+        "kk": "Дұрыс"
+      },
+      "false": {
+        "en": "False",
+        "ru": "Неверно",
+        "kk": "Бұрыс"
+      },
+      "audio": {
+        "en": "Audio",
+        "ru": "Аудио",
+        "kk": "Аудио"
+      },
+      "audiohint": {
+        "en": "Listen as many times as you need.",
+        "ru": "Слушай столько раз, сколько нужно.",
+        "kk": "Қажет болса, бірнеше рет тыңда."
+      },
+      "slow": {
+        "en": "Slow",
+        "ru": "Медленно",
+        "kk": "Баяу"
+      },
+      "listenread": {
+        "en": "Listen to the text",
+        "ru": "Прослушать текст",
+        "kk": "Мәтінді тыңдау"
+      },
+      "writing": {
+        "en": "Writing",
+        "ru": "Письмо",
+        "kk": "Жазылым"
+      },
+      "speaking": {
+        "en": "Speaking",
+        "ru": "Говорение",
+        "kk": "Сөйлеу"
+      },
+      "model": {
+        "en": "Example answer",
+        "ru": "Пример ответа",
+        "kk": "Жауап үлгісі"
+      },
+      "record": {
+        "en": "Record",
+        "ru": "Записать",
+        "kk": "Жазу"
+      },
+      "stop": {
+        "en": "Stop",
+        "ru": "Стоп",
+        "kk": "Тоқтату"
+      },
+      "again": {
+        "en": "Record again",
+        "ru": "Записать снова",
+        "kk": "Қайта жазу"
+      },
+      "eyebrow": {
+        "en": "Just to Study · Pre-Intermediate"
+      },
+      "hsub": {
+        "en": "Practice for every Pre-Intermediate lesson. One step per screen — check, fix, move on."
+      },
+      "challenge": {
+        "en": "Challenge",
+        "ru": "Челлендж",
+        "kk": "Челлендж"
+      },
+      "whatsay": {
+        "en": "What do you say?",
+        "ru": "Что ты скажешь?",
+        "kk": "Не айтасың?"
+      },
+      "hearit": {
+        "en": "Hear the conversation",
+        "ru": "Послушать диалог",
+        "kk": "Диалогты тыңдау"
+      },
+      "pairs": {
+        "en": "Pairs",
+        "ru": "Пары",
+        "kk": "Жұп"
+      },
+      "tries": {
+        "en": "Turns",
+        "ru": "Ходы",
+        "kk": "Жүріс"
+      },
+      "k_choose": {
+        "en": "Choose",
+        "ru": "Выбор",
+        "kk": "Таңдау"
+      },
+      "k_odd": {
+        "en": "Odd one out",
+        "ru": "Лишнее слово",
+        "kk": "Артық сөз"
+      },
+      "k_label": {
+        "en": "Picture",
+        "ru": "Картинка",
+        "kk": "Сурет"
+      },
+      "k_tf": {
+        "en": "True or false",
+        "ru": "Верно или нет",
+        "kk": "Дұрыс па"
+      },
+      "k_bank": {
+        "en": "Fill the gaps",
+        "ru": "Заполни пропуски",
+        "kk": "Бос орын"
+      },
+      "k_match": {
+        "en": "Match",
+        "ru": "Соедини",
+        "kk": "Сәйкестендір"
+      },
+      "k_order": {
+        "en": "Build a sentence",
+        "ru": "Собери предложение",
+        "kk": "Сөйлем құра"
+      },
+      "k_fix": {
+        "en": "Find the mistake",
+        "ru": "Найди ошибку",
+        "kk": "Қатені тап"
+      },
+      "k_sort": {
+        "en": "Sort",
+        "ru": "Разложи",
+        "kk": "Топта"
+      },
+      "k_table": {
+        "en": "Grammar table",
+        "ru": "Таблица",
+        "kk": "Кесте"
+      },
+      "k_listen": {
+        "en": "Listening",
+        "ru": "Аудирование",
+        "kk": "Тыңдалым"
+      },
+      "k_read": {
+        "en": "Reading",
+        "ru": "Чтение",
+        "kk": "Оқылым"
+      },
+      "k_respond": {
+        "en": "Real situation",
+        "ru": "Ситуация",
+        "kk": "Нақты жағдай"
+      },
+      "k_chat": {
+        "en": "Conversation",
+        "ru": "Диалог",
+        "kk": "Диалог"
+      },
+      "k_memo": {
+        "en": "Word pairs",
+        "ru": "Пары слов",
+        "kk": "Сөз жұбы"
+      },
+      "k_turn": {
+        "en": "Your turn",
+        "ru": "Твой ход",
+        "kk": "Сенің кезегің"
+      },
+      "steps": {
+        "en": "steps",
+        "ru": "шагов",
+        "kk": "қадам"
+      },
+      "step": {
+        "en": "Step",
+        "ru": "Шаг",
+        "kk": "Қадам"
+      },
+      "st_words": {
+        "en": "Words",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "st_lang": {
+        "en": "Grammar practice",
+        "ru": "Грамматика",
+        "kk": "Грамматика"
+      },
+      "st_read": {
+        "en": "Reading",
+        "ru": "Чтение",
+        "kk": "Оқылым"
+      },
+      "st_listen": {
+        "en": "Listening",
+        "ru": "Аудирование",
+        "kk": "Тыңдалым"
+      },
+      "st_real": {
+        "en": "Real English",
+        "ru": "Живой английский",
+        "kk": "Нақты ағылшын"
+      },
+      "st_turn": {
+        "en": "Speaking & writing",
+        "ru": "Говорение и письмо",
+        "kk": "Сөйлеу және жазу"
+      },
+      "sc_title": {
+        "en": "Can you do this now?",
+        "ru": "Проверь себя",
+        "kk": "Өзіңді тексер"
+      },
+      "sc_use": {
+        "en": "I can use",
+        "ru": "Я использую",
+        "kk": "Мен қолдана аламын —"
+      },
+      "sc_words": {
+        "en": "I know the {n} words of this lesson.",
+        "ru": "Я знаю {n} слов этого урока.",
+        "kk": "Осы сабақтың {n} сөзін білемін."
+      },
+      "back": {
+        "en": "Back",
+        "ru": "Назад",
+        "kk": "Артқа"
+      },
+      "steps_t": {
+        "en": "Steps",
+        "ru": "Шаги",
+        "kk": "Қадамдар"
+      },
+      "words_t": {
+        "en": "Words",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "help_t": {
+        "en": "Help",
+        "ru": "Помощь",
+        "kk": "Көмек"
+      },
+      "lesson_menu": {
+        "en": "Lesson",
+        "ru": "Урок",
+        "kk": "Сабақ"
+      },
+      "m_continue": {
+        "en": "Continue",
+        "ru": "Продолжить",
+        "kk": "Жалғастыру"
+      },
+      "m_start": {
+        "en": "Start practising",
+        "ru": "Начать практику",
+        "kk": "Жаттығуды бастау"
+      },
+      "reviewt": {
+        "en": "Fix your mistakes",
+        "ru": "Разбор ошибок",
+        "kk": "Қателермен жұмыс"
+      },
+      "review_ins": {
+        "en": "These are the items you got wrong. Get them right and they leave the list.",
+        "ru": "Здесь пункты, где ты ошибся. Ответь верно — и они уйдут из списка.",
+        "kk": "Мұнда қате жіберген тармақтар. Дұрыс жауап бер — олар тізімнен кетеді."
+      },
+      "review_done": {
+        "en": "Nothing left to fix",
+        "ru": "Исправлять больше нечего",
+        "kk": "Түзетері қалмады"
+      },
+      "review_done_s": {
+        "en": "Everything you missed is now correct. New mistakes will show up here.",
+        "ru": "Всё, где ты ошибался, теперь верно. Новые ошибки появятся здесь.",
+        "kk": "Қателескеннің бәрі енді дұрыс. Жаңа қателер осында шығады."
+      },
+      "showone": {
+        "en": "Show the answer",
+        "ru": "Показать ответ",
+        "kk": "Жауапты көрсету"
+      },
+      "nx_screen": {
+        "en": "Next",
+        "ru": "Дальше",
+        "kk": "Келесі"
+      },
+      "nx_finish": {
+        "en": "Finish lesson",
+        "ru": "Завершить урок",
+        "kk": "Сабақты аяқтау"
+      },
+      "right_first": {
+        "en": "right first time",
+        "ru": "верно с первого раза",
+        "kk": "бірден дұрыс"
+      },
+      "tap_word": {
+        "en": "Tap a word then tap a gap — or just drag the word into the gap.",
+        "ru": "Нажми слово, потом пропуск — или просто перетащи слово в пропуск.",
+        "kk": "Сөзді бас, содан кейін бос орынды бас — немесе сөзді сүйреп апар."
+      },
+      "tap_word_c": {
+        "en": "Tap a word then tap a column — or drag the word into the column.",
+        "ru": "Нажми слово, потом колонку — или перетащи слово в колонку.",
+        "kk": "Сөзді бас, содан кейін бағанды бас — немесе сүйреп апар."
+      },
+      "wordbank": {
+        "en": "Word box",
+        "ru": "Слова",
+        "kk": "Сөздер"
+      },
+      "gap": {
+        "en": "Gap — tap a word, or drag one here",
+        "ru": "Пропуск — нажми слово или перетащи его сюда",
+        "kk": "Бос орын — сөзді бас немесе сүйреп әкел"
+      },
+      "showtr": {
+        "en": "Show translations"
+      },
+      "uselang": {
+        "en": "Useful language"
+      },
+      "uselang_s": {
+        "en": "The phrases this lesson needs. Use them in the task."
+      },
+      "gotit": {
+        "en": "Correct.",
+        "ru": "Верно.",
+        "kk": "Дұрыс."
+      },
+      "answer_is": {
+        "en": "Answer:",
+        "ru": "Ответ:",
+        "kk": "Жауап:"
+      },
+      "no_mic": {
+        "en": "Microphone not available",
+        "ru": "Микрофон недоступен",
+        "kk": "Микрофон қолжетімсіз"
+      },
+      "mistakes_n": {
+        "en": "{n} to fix",
+        "ru": "{n} на разбор",
+        "kk": "{n} түзетуге"
+      },
+      "build_hint": {
+        "en": "Tap a word to add it, tap it again to take it back — or drag to reorder.",
+        "ru": "Нажми слово, чтобы добавить, нажми ещё раз, чтобы убрать — или перетащи, чтобы поменять порядок.",
+        "kk": "Сөзді қосу үшін бас, қайтару үшін тағы бас — немесе ретін өзгерту үшін сүйре."
+      },
+      "yourline": {
+        "en": "Your sentence",
+        "ru": "Твоё предложение",
+        "kk": "Сенің сөйлемің"
+      },
+      "fix_good": {
+        "en": "Yes — that is the word that is wrong.",
+        "ru": "Да — именно это слово неверно.",
+        "kk": "Иә — дәл осы сөз қате."
+      },
+      "again_task": {
+        "en": "Start over",
+        "ru": "Заново",
+        "kk": "Қайтадан"
+      },
+      "k_type": {
+        "en": "Write it",
+        "ru": "Напиши",
+        "kk": "Жаз"
+      },
+      "k_seq": {
+        "en": "In order",
+        "ru": "По порядку",
+        "kk": "Ретімен"
+      },
+      "k_drop": {
+        "en": "In the text",
+        "ru": "В тексте",
+        "kk": "Мәтінде"
+      },
+      "choose_l": {
+        "en": "Choose",
+        "ru": "Выбери",
+        "kk": "Таңда"
+      },
+      "st_form": {
+        "en": "How it works",
+        "ru": "Как это устроено",
+        "kk": "Қалай жұмыс істейді"
+      },
+      "st_back": {
+        "en": "Come back",
+        "ru": "Возвращаемся",
+        "kk": "Қайта оралу"
+      },
+      "k_write": {
+        "en": "Write"
+      },
+      "k_trans": {
+        "en": "Change the sentence"
+      },
+      "k_speak": {
+        "en": "Speak",
+        "ru": "Говорение",
+        "kk": "Сөйлеу"
+      },
+      "test_kick": {
+        "en": "Review test"
+      },
+      "test_intro": {
+        "en": "This test covers one unit: its grammar, its vocabulary and its function. 30 items. You need 21 to pass — and you can take it as many times as you like."
+      },
+      "test_pass": {
+        "en": "Passed"
+      },
+      "test_fail": {
+        "en": "Not yet — 21 out of 30 to pass"
+      },
+      "test_again": {
+        "en": "Try again"
+      },
+      "test_score": {
+        "en": "Your score"
+      }
+    },
+    "b1": {
+      "eyebrow": {
+        "en": "Just to Study · Intermediate"
+      },
+      "h1": {
+        "en": "Your English workbook"
+      },
+      "hsub": {
+        "en": "Practice for every Intermediate lesson. One step per screen — check, fix, move on."
+      },
+      "unit": {
+        "en": "Unit"
+      },
+      "lesson": {
+        "en": "Lesson"
+      },
+      "of": {
+        "en": "of"
+      },
+      "step": {
+        "en": "Step"
+      },
+      "steps": {
+        "en": "steps"
+      },
+      "back": {
+        "en": "Back"
+      },
+      "home": {
+        "en": "Workbook"
+      },
+      "challenge": {
+        "en": "Review test"
+      },
+      "check": {
+        "en": "Check"
+      },
+      "gotit": {
+        "en": "Right this time."
+      },
+      "answer_is": {
+        "en": "Answer:"
+      },
+      "wordbank": {
+        "en": "Word box"
+      },
+      "gap": {
+        "en": "Gap — tap to fill it"
+      },
+      "tap_word": {
+        "en": "Tap a word, then tap a gap."
+      },
+      "tap_word_c": {
+        "en": "Tap a word, then tap a column."
+      },
+      "choose_l": {
+        "en": "Choose"
+      },
+      "true": {
+        "en": "True"
+      },
+      "false": {
+        "en": "False"
+      },
+      "audio": {
+        "en": "Audio"
+      },
+      "audiohint": {
+        "en": "Listen as many times as you need."
+      },
+      "slow": {
+        "en": "Slow"
+      },
+      "listenread": {
+        "en": "Listen to the text"
+      },
+      "hearit": {
+        "en": "Hear the conversation"
+      },
+      "whatsay": {
+        "en": "What do you say?"
+      },
+      "model": {
+        "en": "Example answer"
+      },
+      "record": {
+        "en": "Record"
+      },
+      "stop": {
+        "en": "Stop"
+      },
+      "again": {
+        "en": "Record again"
+      },
+      "no_mic": {
+        "en": "No microphone"
+      },
+      "uselang": {
+        "en": "Useful language"
+      },
+      "uselang_s": {
+        "en": "The phrases this lesson is built on. Use them out loud."
+      },
+      "sayit": {
+        "en": "Now say your answers out loud before you move on."
+      },
+      "steps_t": {
+        "en": "Steps"
+      },
+      "words_t": {
+        "en": "Words"
+      },
+      "help_t": {
+        "en": "Help"
+      },
+      "lesson_menu": {
+        "en": "Lesson"
+      },
+      "showtr": {
+        "en": "Show translation"
+      },
+      "m_continue": {
+        "en": "Continue"
+      },
+      "m_start": {
+        "en": "Start practising"
+      },
+      "m_review": {
+        "en": "Fix it"
+      },
+      "m_review_s": {
+        "en": "they are waiting in Fix your mistakes"
+      },
+      "mistakes_n": {
+        "en": "{n} to fix"
+      },
+      "reviewt": {
+        "en": "Fix your mistakes"
+      },
+      "review_ins": {
+        "en": "These are the items you got wrong. Get them right and they leave the list."
+      },
+      "review_done": {
+        "en": "Nothing left to fix"
+      },
+      "review_done_s": {
+        "en": "Everything you missed is now correct. New mistakes will show up here."
+      },
+      "showone": {
+        "en": "Show the answer"
+      },
+      "nx_screen": {
+        "en": "Next"
+      },
+      "nx_finish": {
+        "en": "Finish lesson"
+      },
+      "right_first": {
+        "en": "right first time"
+      },
+      "wrapt": {
+        "en": "Workbook lesson complete"
+      },
+      "nextlesson": {
+        "en": "Next lesson"
+      },
+      "sc_title": {
+        "en": "Can you do this now?"
+      },
+      "sc_use": {
+        "en": "I can use"
+      },
+      "sc_words": {
+        "en": "I know the {n} words of this lesson."
+      },
+      "sc_rec": {
+        "en": "I can still use"
+      },
+      "test_kick": {
+        "en": "Unit review test"
+      },
+      "test_score": {
+        "en": "Your score"
+      },
+      "test_pass": {
+        "en": "Pass — 21 / 30 or more."
+      },
+      "test_fail": {
+        "en": "Not yet — the pass mark is 21 / 30. Take it again as many times as you like."
+      },
+      "test_again": {
+        "en": "Try again"
+      },
+      "k_choose": {
+        "en": "Choose"
+      },
+      "k_odd": {
+        "en": "Odd one out"
+      },
+      "k_tf": {
+        "en": "True or false"
+      },
+      "k_bank": {
+        "en": "Fill the gaps"
+      },
+      "k_match": {
+        "en": "Match"
+      },
+      "k_fix": {
+        "en": "Correct the mistake"
+      },
+      "k_sort": {
+        "en": "Sort"
+      },
+      "k_table": {
+        "en": "Grammar table"
+      },
+      "k_listen": {
+        "en": "Listening"
+      },
+      "k_read": {
+        "en": "Reading"
+      },
+      "k_respond": {
+        "en": "Real situation"
+      },
+      "k_chat": {
+        "en": "Conversation"
+      },
+      "k_turn": {
+        "en": "Your turn"
+      },
+      "k_type": {
+        "en": "Write the word"
+      },
+      "k_trans": {
+        "en": "Transform"
+      },
+      "k_ttrans": {
+        "en": "Rewrite it"
+      },
+      "k_wform": {
+        "en": "Word building"
+      },
+      "k_drop": {
+        "en": "In context"
+      },
+      "k_seq": {
+        "en": "Order"
+      },
+      "k_worked": {
+        "en": "Worked example"
+      },
+      "k_write": {
+        "en": "Writing"
+      },
+      "k_speak": {
+        "en": "Speaking"
+      },
+      "k_model": {
+        "en": "Model text"
+      },
+      "st_words": {
+        "en": "Words"
+      },
+      "st_lang": {
+        "en": "Grammar"
+      },
+      "st_read": {
+        "en": "Reading"
+      },
+      "st_listen": {
+        "en": "Listening"
+      },
+      "st_real": {
+        "en": "Real English"
+      },
+      "st_turn": {
+        "en": "Speaking & writing"
+      },
+      "st_back": {
+        "en": "Review"
+      }
+    },
+    "b2": {
+      "eyebrow": {
+        "en": "Just to Study · Upper-Intermediate"
+      },
+      "h1": {
+        "en": "Your English workbook"
+      },
+      "hsub": {
+        "en": "Practice for every B2 lesson. One step per screen — check, fix, move on."
+      },
+      "unit": {
+        "en": "Unit"
+      },
+      "lesson": {
+        "en": "Lesson"
+      },
+      "of": {
+        "en": "of"
+      },
+      "step": {
+        "en": "Step"
+      },
+      "steps": {
+        "en": "steps"
+      },
+      "back": {
+        "en": "Back"
+      },
+      "home": {
+        "en": "Workbook"
+      },
+      "challenge": {
+        "en": "Block test"
+      },
+      "check": {
+        "en": "Check"
+      },
+      "gotit": {
+        "en": "Right this time."
+      },
+      "answer_is": {
+        "en": "Answer:"
+      },
+      "wordbank": {
+        "en": "Word box"
+      },
+      "gap": {
+        "en": "Gap — tap to fill it"
+      },
+      "tap_word": {
+        "en": "Drag a word into a gap — or tap the word, then tap the gap."
+      },
+      "tap_word_c": {
+        "en": "Drag a word into a group — or tap the word, then tap the group."
+      },
+      "drag_order": {
+        "en": "Drag the words into the line — or tap them. Tap a word in the line to take it back."
+      },
+      "again_t": {
+        "en": "Do it again"
+      },
+      "tap_err": {
+        "en": "Tap the words you think are wrong."
+      },
+      "found_n": {
+        "en": "found"
+      },
+      "choose_l": {
+        "en": "Choose"
+      },
+      "true": {
+        "en": "True"
+      },
+      "false": {
+        "en": "False"
+      },
+      "audio": {
+        "en": "Audio"
+      },
+      "audiohint": {
+        "en": "Listen as many times as you need."
+      },
+      "slow": {
+        "en": "Slow"
+      },
+      "listenread": {
+        "en": "Listen to the text"
+      },
+      "video": {
+        "en": "Video"
+      },
+      "videohint": {
+        "en": "Watch it once for the idea, then again for the detail."
+      },
+      "hearit": {
+        "en": "Hear the conversation"
+      },
+      "whatsay": {
+        "en": "What do you say?"
+      },
+      "model": {
+        "en": "Example answer"
+      },
+      "uselang": {
+        "en": "Useful language"
+      },
+      "uselang_s": {
+        "en": "The phrases this lesson is built on."
+      },
+      "steps_t": {
+        "en": "Steps"
+      },
+      "words_t": {
+        "en": "Words"
+      },
+      "help_t": {
+        "en": "Help"
+      },
+      "lesson_menu": {
+        "en": "Lesson"
+      },
+      "m_continue": {
+        "en": "Continue"
+      },
+      "m_start": {
+        "en": "Start practising"
+      },
+      "m_review": {
+        "en": "Fix it"
+      },
+      "m_review_s": {
+        "en": "they are waiting in Fix your mistakes"
+      },
+      "mistakes_n": {
+        "en": "{n} to fix"
+      },
+      "reviewt": {
+        "en": "Fix your mistakes"
+      },
+      "review_ins": {
+        "en": "These are the items you got wrong. Get them right and they leave the list."
+      },
+      "review_done": {
+        "en": "Nothing left to fix"
+      },
+      "review_done_s": {
+        "en": "Everything you missed is now correct. New mistakes will show up here."
+      },
+      "showone": {
+        "en": "Show the answer"
+      },
+      "nx_screen": {
+        "en": "Next"
+      },
+      "nx_finish": {
+        "en": "Finish lesson"
+      },
+      "right_first": {
+        "en": "right first time"
+      },
+      "wrapt": {
+        "en": "Workbook lesson complete"
+      },
+      "nextlesson": {
+        "en": "Next lesson"
+      },
+      "sc_title": {
+        "en": "You can now…"
+      },
+      "level_done": {
+        "en": "You can now — the whole of B2"
+      },
+      "sc_use": {
+        "en": "I can use"
+      },
+      "sc_rec": {
+        "en": "I can still use"
+      },
+      "sc_words": {
+        "en": "I know the {n} words of this lesson."
+      },
+      "ai_note": {
+        "en": "Practise this out loud with your AI conversation partner on the platform."
+      },
+      "quiz_kick": {
+        "en": "Lesson quiz"
+      },
+      "quiz_of": {
+        "en": "Question {a} of {b}"
+      },
+      "quiz_score": {
+        "en": "Your score"
+      },
+      "quiz_again": {
+        "en": "Try again"
+      },
+      "test_kick": {
+        "en": "Block test"
+      },
+      "test_score": {
+        "en": "Your score"
+      },
+      "test_pass": {
+        "en": "Pass. You needed {need} out of {total}."
+      },
+      "test_fail": {
+        "en": "Not yet. The pass mark is {need} out of {total} — seventy per cent. Take it again as often as you like."
+      },
+      "test_again": {
+        "en": "Try again"
+      },
+      "k_choose": {
+        "en": "Choose"
+      },
+      "k_odd": {
+        "en": "Odd one out"
+      },
+      "k_tf": {
+        "en": "True or false"
+      },
+      "k_bank": {
+        "en": "Fill the gaps"
+      },
+      "k_cloze": {
+        "en": "Complete the text"
+      },
+      "k_match": {
+        "en": "Match"
+      },
+      "k_fix": {
+        "en": "Correct the mistake"
+      },
+      "k_epara": {
+        "en": "Find the mistakes"
+      },
+      "k_sort": {
+        "en": "Sort"
+      },
+      "k_table": {
+        "en": "Grammar table"
+      },
+      "k_listen": {
+        "en": "Listening"
+      },
+      "k_read": {
+        "en": "Reading"
+      },
+      "k_video": {
+        "en": "Video"
+      },
+      "k_respond": {
+        "en": "Real situation"
+      },
+      "k_chat": {
+        "en": "Conversation"
+      },
+      "k_type": {
+        "en": "Write the word"
+      },
+      "k_trans": {
+        "en": "Transform"
+      },
+      "k_ttrans": {
+        "en": "Rewrite it"
+      },
+      "k_chain": {
+        "en": "Two steps"
+      },
+      "k_wform": {
+        "en": "Word building"
+      },
+      "k_drop": {
+        "en": "In context"
+      },
+      "k_seq": {
+        "en": "Order"
+      },
+      "k_worked": {
+        "en": "Worked example"
+      },
+      "k_rule": {
+        "en": "How it works"
+      },
+      "k_model": {
+        "en": "Model text"
+      },
+      "k_write": {
+        "en": "Writing"
+      },
+      "k_quiz": {
+        "en": "Lesson quiz"
+      },
+      "st_words": {
+        "en": "Vocabulary"
+      },
+      "st_in": {
+        "en": "Reading & listening"
+      },
+      "st_lang": {
+        "en": "Grammar"
+      },
+      "st_turn": {
+        "en": "Writing"
+      },
+      "st_quiz": {
+        "en": "Lesson quiz"
+      },
+      "st_back": {
+        "en": "Review"
+      }
     }
   }
 }

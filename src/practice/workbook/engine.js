@@ -1,10 +1,19 @@
-// Движок воркбука — порт из data/jtsworkbook-a0.html (ENGINE v3).
+// Движок воркбука — порт из data/jtsworkbook-<level>.html (ENGINE v3).
+//
+// Уровни A0…B2 — пять отдельных прототипов, а не один с разными данными:
+// у A1 появилась трансформация плитками, у B1 — набранная трансформация и
+// словообразование, у B2 — правило, цепочка, поиск ошибок в абзаце, сплошной
+// текст с банком и зачётная викторина. Общая арифметика (перемешивание,
+// порядки, счёт мест) живёт здесь; судья набранного ответа у каждого уровня
+// свой и лежит в match.js.
 //
 // НЕ «чистить»: shuffle — это LCG прототипа (9301/49297/233280), а сиды
 // собираются из индексов и длин строк. Любая косметика здесь меняет порядок
 // вариантов и слов, а он сверяется с оракулом (__fixtures__/oracle-a0.json),
 // который считает САМ прототип. Дрейф = красный engine.test.js и разъехавшиеся
 // с исходником уроки у студента.
+
+import { matcherFor } from './match.js'
 
 /* ── Перемешивание ─────────────────────────────────────────────────────── */
 /* Порядок зависит только от длины массива и сида, поэтому перемешать индексы
@@ -41,20 +50,6 @@ export function optOrder(a, it, i) {
   )
 }
 
-/* ── Нормализация набранного ответа ────────────────────────────────────── */
-/* Снисходительно к набору, строго к слову: регистр, пробелы, кривые кавычки,
-   знаки конца предложения и дефис-или-пробел сводятся к одному виду —
-   и ничего сверх того, поэтому реально неверное слово остаётся неверным. */
-export function nrm(s) {
-  return String(s)
-    .toLowerCase()
-    .replace(/[‘’ʼ´`]/g, "'")
-    .replace(/[“”«»"]/g, '')
-    .replace(/[.,!?;:…£€₸$]/g, '')
-    .replace(/[‐-―_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 /* ── Производные порядки по типам заданий ──────────────────────────────── */
 /* Сиды-умолчания (3/11/23/19/17/13/37/9/5) — из прототипа. Менять нельзя:
@@ -100,6 +95,21 @@ export function tableCells(a) {
 /** Плитки для сборки предложения — свой порядок у каждого пункта. */
 export function orderTiles(a, i) {
   return shuffle(a.items[i].w, (i + 1) * 13 + (a.seed || 5))
+}
+
+/* У трансформации (trans) лоток свой: сид по умолчанию 31, а не 5, и номер
+   пункта входит слагаемым, а не множителем. Это ДРУГАЯ формула, чем у order, —
+   свести их к одной значит перетасовать слова во всех заданиях A1–B2. */
+export function transTiles(a, i) {
+  return shuffle(
+    a.items[i].w.map((_, k) => k),
+    (a.seed || 31) + i * 13
+  ).map((k) => a.items[i].w[k])
+}
+
+/** Банк слов сплошного текста (cloze): в нём есть лишние слова-ловушки. */
+export function clozeBank(a) {
+  return shuffle(a.bank, a.seed || 3)
 }
 
 /** Порядок чипов в лотке sort (индексы items). */
@@ -155,11 +165,13 @@ export function dropPicks(a) {
 }
 
 /* ── Судейство ─────────────────────────────────────────────────────────── */
-/** Набранный ответ: ключ плюс alt, сверка после нормализации. */
-export function typeOk(it, input) {
-  const v = nrm(input)
-  if (!v) return false
-  return [it.a].concat(it.alt || []).some((k) => nrm(k) === v)
+/**
+ * Набранный ответ: ключ плюс alt, сверка судьёй УРОВНЯ. Уровень обязателен по
+ * смыслу: один и тот же ввод «I have not seen him» верен на B1 и неверен на
+ * A0, потому что прототипы судят по-разному (см. match.js).
+ */
+export function typeOk(it, input, level) {
+  return matcherFor(level)(input, [it.a].concat(it.alt || []))
 }
 
 /** Собранное предложение сверяется строкой целиком, как в прототипе. */
@@ -171,15 +183,26 @@ export function orderOk(it, tiles) {
 /* Стадия задания — «маршрут» урока: слова → язык → чтение → аудио → речь. */
 export const STAGE = {
   match: 'words', memo: 'words', sort: 'words', odd: 'words', label: 'words', type: 'words',
+  wform: 'words',
   bank: 'lang', order: 'lang', fix: 'lang', table: 'lang', choose: 'lang', tf: 'lang',
-  drop: 'lang', seq: 'lang',
-  read: 'read', listen: 'listen', respond: 'real', chat: 'real', write: 'turn', speak: 'turn',
+  drop: 'lang', seq: 'lang', trans: 'lang', ttrans: 'lang', chain: 'lang', worked: 'lang',
+  rule: 'lang', cloze: 'lang', epara: 'lang',
+  read: 'read', model: 'read', listen: 'listen', video: 'listen',
+  respond: 'real', chat: 'real', write: 'turn', speak: 'turn', quiz: 'quiz',
 }
-export const STAGE_ICON = { words: '🔤', lang: '🧩', read: '📖', listen: '🎧', real: '💬', turn: '✍️', back: '🔁' }
+// Викторина и видео у B2 в прототипе проваливались в «разбор языка» — в его
+// таблице их просто нет. У нас они свои: иначе зачёт уходит в грамматику, а
+// видео не попадает в аудирование, и рейтинг навыков врёт.
+export const STAGE_ICON = {
+  words: '🔤', lang: '🧩', read: '📖', listen: '🎧', real: '💬', turn: '✍️',
+  quiz: '🎓', back: '🔁',
+}
 export const ICON = {
   listen: '🎧', read: '📖', respond: '💬', chat: '🗨', memo: '🃏', write: '✍️', speak: '🗣️',
   table: '🧩', sort: '🗂', order: '🔤', fix: '🔍', match: '🔗', bank: '✏️', choose: '✅',
   tf: '⚖️', odd: '🎯', label: '🖼', type: '⌨️', seq: '🔢', drop: '▾',
+  trans: '🔄', ttrans: '📝', wform: '🧱', worked: '🪜', model: '📄', rule: '📐',
+  chain: '⛓', epara: '🔎', cloze: '📃', quiz: '🎓', video: '🎬',
 }
 
 export function stageOf(a) {
@@ -191,7 +214,7 @@ export function stageOf(a) {
    тексты — reading, аудио — listening, реплики — speaking, письмо — writing. */
 export const STAGE_SKILL = {
   words: 'vocab', lang: 'grammar', read: 'reading',
-  listen: 'listening', real: 'speaking', turn: 'writing',
+  listen: 'listening', real: 'speaking', turn: 'writing', quiz: 'grammar',
 }
 
 export function skillOf(a) {
@@ -212,7 +235,10 @@ export function isFree(a) {
 /* ── Разбор ошибок ─────────────────────────────────────────────────────── */
 /* Типы, которые можно показать «одними промахами». Остальные (sort, seq,
    memo, table, chat, drop) устроены как целое поле и в подмножество не режутся —
-   их в разборе проходят заново целиком. Порт SUBSETTABLE (:6471). */
+   их в разборе проходят заново целиком. Порт SUBSETTABLE (:6471).
+   Список СВОЙ у каждого уровня и приезжает в meta.json: B1/B2 режут trans и
+   ttrans, но не режут order/label, а A0–A2 наоборот. Здесь — только запасной
+   вариант на случай старого meta без поля. */
 export const SUBSETTABLE = ['type', 'choose', 'tf', 'odd', 'label', 'respond', 'bank', 'match', 'order', 'fix']
 
 /**
@@ -220,8 +246,9 @@ export const SUBSETTABLE = ['type', 'choose', 'tf', 'odd', 'label', 'respond', '
  * сузить нельзя или сужать нечего — возвращаем исходное задание, чтобы разбор
  * никогда не показал пустой экран.
  */
-export function subsetAct(a, idxs) {
-  if (!SUBSETTABLE.includes(a.t) || !a.items) return a
+export function subsetAct(a, idxs, subsettable) {
+  const list = subsettable && subsettable.length ? subsettable : SUBSETTABLE
+  if (!list.includes(a.t) || !a.items) return a
   const items = (idxs || []).filter((i) => a.items[i]).map((i) => a.items[i])
   if (!items.length) return a
   const out = { ...a, items }
@@ -252,6 +279,10 @@ export function slotCount(a) {
     case 'sort':
     case 'seq':
     case 'type':
+    case 'trans':
+    case 'ttrans':
+    case 'wform':
+    case 'quiz':
       return (task.items || []).length
     case 'bank':
       return (task.items || []).reduce((n, it) => n + gapsIn(it.s), 0)
@@ -263,6 +294,16 @@ export function slotCount(a) {
       return (task.pairs || []).length
     case 'drop':
       return dropPicks(task).length
+    // У цепочки судится каждый шаг, а не пункт: два переписывания одного
+    // предложения — это два места, иначе экран закрывается на половине.
+    case 'chain':
+      return (task.items || []).reduce((n, it) => n + (it.steps || []).length, 0)
+    // В абзаце с ошибками мест ровно столько, сколько ошибок: слово «верное»
+    // тапать можно сколько угодно, это промах, а не место.
+    case 'epara':
+      return (task.bad || []).length
+    case 'cloze':
+      return (task.gaps || []).length
     default:
       return 0
   }
