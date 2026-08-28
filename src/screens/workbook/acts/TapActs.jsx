@@ -4,13 +4,35 @@ import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { orderTiles, sortOrder, seqOrder, orderOk } from '../../../practice/workbook/engine.js'
 import { Note, Pic, Qnum, useSlot } from '../ActShell.jsx'
+import { slotIndexAt, useGrab, useZone, justDragged } from '../dnd.js'
 import { loc } from '../loc.js'
 
-// Задания «в тапах»: сборка предложения, поиск ошибки, разбор по группам и
-// порядок событий. Порт R.order/R.fix/R.sort/R.seq (data/jtsworkbook-a0.html
-// :5715, :5786, :5831, :5999) без drag-and-drop — только тап.
+// Сборка предложения, поиск ошибки, разбор по группам и порядок событий.
+// Порт R.order/R.fix/R.sort/R.seq (data/jtsworkbook-a0.html :5715, :5786,
+// :5831, :5999). Слово можно и перетащить, и поставить двумя тапами — обе
+// дороги ведут в один и тот же судья, как в прототипе.
 
 /* ── Собери предложение ────────────────────────────────────────────────── */
+/* Плитка. У каждого предложения свой kind, поэтому слово из одной строки
+   нельзя уронить в соседнюю. */
+function Tile({ w, kind, payload, disabled, onTap }) {
+  const ref = useGrab(kind, payload, disabled)
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={'wb-tok' + (disabled ? ' is-used' : '')}
+      disabled={disabled}
+      onClick={() => {
+        if (justDragged()) return
+        onTap()
+      }}
+    >
+      {w}
+    </button>
+  )
+}
+
 function OrderItem({ act, it, i, ctl }) {
   const slot = useSlot(ctl, i)
   const tiles = orderTiles(act, i)
@@ -21,6 +43,8 @@ function OrderItem({ act, it, i, ctl }) {
 
   const closed = slot.closed
   const revealed = ctl.revealed && !slot.own
+  const KIND_TRAY = 'wb-order-' + i // из лотка в строку
+  const KIND_LINE = 'wb-line-' + i // из строки обратно в лоток
 
   const check = (next) => {
     if (next.length < it.w.length) return
@@ -39,9 +63,12 @@ function OrderItem({ act, it, i, ctl }) {
     }, 820)
   }
 
-  const push = (k) => {
+  /* at — куда вставить: слово падает туда, где его отпустили, а не в конец. */
+  const push = (k, at) => {
     if (closed || built.includes(k)) return
-    const next = built.concat([k])
+    const next = built.slice()
+    if (at == null || at >= next.length) next.push(k)
+    else next.splice(at, 0, k)
     setBuilt(next)
     check(next)
   }
@@ -51,6 +78,9 @@ function OrderItem({ act, it, i, ctl }) {
     setBuilt((b) => b.filter((x) => x !== k))
   }
 
+  const lineRef = useZone(KIND_TRAY, (k, x, y, node) => push(k, slotIndexAt(node, x, y)), closed || revealed)
+  const trayRef = useZone(KIND_LINE, (k) => pull(k), closed || revealed)
+
   return (
     <div className={'wb-item' + (closed || revealed ? ' is-solved' : '')}>
       <div className="wb-qline">
@@ -58,29 +88,36 @@ function OrderItem({ act, it, i, ctl }) {
         <Pic p={it.pic} />
         <span className="wb-ph">{it.hint || ''}</span>
       </div>
-      <div className={'wb-built' + (bad ? ' is-no' : '') + (slot.own ? ' is-ok' : '') + (revealed ? ' is-rev' : '')}>
+      <div
+        ref={lineRef}
+        className={'wb-built' + (bad ? ' is-no' : '') + (slot.own ? ' is-ok' : '') + (revealed ? ' is-rev' : '')}
+      >
         {revealed ? (
           <span className="wb-corr">{it.a}</span>
         ) : (
           built.map((k) => (
-            <button key={k} type="button" className="wb-tok" disabled={closed} onClick={() => pull(k)}>
-              {tiles[k]}
-            </button>
+            <Tile
+              key={k}
+              w={tiles[k]}
+              kind={KIND_LINE}
+              payload={k}
+              disabled={closed}
+              onTap={() => pull(k)}
+            />
           ))
         )}
       </div>
       {closed || revealed ? null : (
-        <div className="wb-tiles">
+        <div ref={trayRef} className="wb-tiles">
           {tiles.map((w, k) => (
-            <button
+            <Tile
               key={k}
-              type="button"
-              className={'wb-tok' + (built.includes(k) ? ' is-used' : '')}
+              w={w}
+              kind={KIND_TRAY}
+              payload={k}
               disabled={built.includes(k)}
-              onClick={() => push(k)}
-            >
-              {w}
-            </button>
+              onTap={() => push(k)}
+            />
           ))}
         </div>
       )}
@@ -165,6 +202,44 @@ export function FixAct({ act, ctl }) {
 }
 
 /* ── Разложи по группам ────────────────────────────────────────────────── */
+const CHIP_KIND = 'wb-chip'
+
+function SortCol({ title, armed, onPlace, children }) {
+  const ref = useZone(CHIP_KIND, (slotIdx) => onPlace(slotIdx))
+  return (
+    <div
+      ref={ref}
+      className={'wb-col' + (armed ? ' is-armed' : '')}
+      onClick={() => {
+        if (justDragged()) return
+        onPlace(null)
+      }}
+    >
+      <h4>{title}</h4>
+      <div className="wb-drop">{children}</div>
+    </div>
+  )
+}
+
+function Chip({ item, slotIdx, active, bad, onTap }) {
+  const ref = useGrab(CHIP_KIND, slotIdx)
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={'wb-tok' + (active ? ' is-act' : '') + (bad ? ' is-no' : '')}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (justDragged()) return
+        onTap()
+      }}
+    >
+      <Pic p={item.pic} />
+      {item.x}
+    </button>
+  )
+}
+
 export function SortAct({ act, ctl }) {
   const { t, lang } = useI18n()
   // Порядок чипов — из движка; место в счётчике нумеруется по нему же, как в
@@ -178,14 +253,15 @@ export function SortAct({ act, ctl }) {
   useEffect(() => () => clearTimeout(timer.current), [])
 
   const place = (slotIdx, col) => {
+    if (slotIdx == null || placed[slotIdx] !== undefined) return
     const it = act.items[order[slotIdx]]
-    if (placed[slotIdx] !== undefined) return
     setActive(null)
     if (it.c === col) {
       setPlaced((p) => ({ ...p, [slotIdx]: col }))
       ctl.judge(slotIdx, clean[slotIdx] !== false)
       return
     }
+    // Чужая группа: слово остаётся в лотке красным и ждёт новой попытки.
     setClean((c) => ({ ...c, [slotIdx]: false }))
     setBad(slotIdx)
     ctl.miss()
@@ -204,26 +280,25 @@ export function SortAct({ act, ctl }) {
     <>
       <div className={'wb-cols' + (act.cols.length > 2 ? ' wb-cols--3' : '')}>
         {act.cols.map((c, k) => (
-          <div
+          <SortCol
             key={k}
-            className={'wb-col' + (active != null ? ' is-armed' : '')}
-            onClick={() => active != null && place(active, k)}
+            title={loc(c, lang)}
+            armed={active != null}
+            // null приходит от тапа по колонке — тогда кладём выбранный чип.
+            onPlace={(slotIdx) => place(slotIdx == null ? active : slotIdx, k)}
           >
-            <h4>{loc(c, lang)}</h4>
-            <div className="wb-drop">
-              {order.map((oi, slotIdx) =>
-                chipCol(slotIdx) === k ? (
-                  <span
-                    key={slotIdx}
-                    className={'wb-tok is-' + (placed[slotIdx] !== undefined ? 'ok' : 'rev')}
-                  >
-                    <Pic p={act.items[oi].pic} />
-                    {act.items[oi].x}
-                  </span>
-                ) : null
-              )}
-            </div>
-          </div>
+            {order.map((oi, slotIdx) =>
+              chipCol(slotIdx) === k ? (
+                <span
+                  key={slotIdx}
+                  className={'wb-tok is-' + (placed[slotIdx] !== undefined ? 'ok' : 'rev')}
+                >
+                  <Pic p={act.items[oi].pic} />
+                  {act.items[oi].x}
+                </span>
+              ) : null
+            )}
+          </SortCol>
         ))}
       </div>
       <Note kind="tell" icon="👆">
@@ -232,20 +307,14 @@ export function SortAct({ act, ctl }) {
       <div className="wb-tiles">
         {order.map((oi, slotIdx) =>
           chipCol(slotIdx) === null ? (
-            <button
+            <Chip
               key={slotIdx}
-              type="button"
-              className={
-                'wb-tok' + (active === slotIdx ? ' is-act' : '') + (bad === slotIdx ? ' is-no' : '')
-              }
-              onClick={(e) => {
-                e.stopPropagation()
-                setActive((a) => (a === slotIdx ? null : slotIdx))
-              }}
-            >
-              <Pic p={act.items[oi].pic} />
-              {act.items[oi].x}
-            </button>
+              item={act.items[oi]}
+              slotIdx={slotIdx}
+              active={active === slotIdx}
+              bad={bad === slotIdx}
+              onTap={() => setActive((a) => (a === slotIdx ? null : slotIdx))}
+            />
           ) : null
         )}
       </div>

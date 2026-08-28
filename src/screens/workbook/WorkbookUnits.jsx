@@ -43,7 +43,11 @@ function LessonRow({ level, n, meta, progress, onOpen }) {
   const full = done >= meta.acts
   return (
     <button type="button" className={'wb-lrow' + (full ? ' is-done' : '')} onClick={() => onOpen(n)}>
-      <span className="wb-lrow__n">{meta.test ? '★' : n}</span>
+      {/* Итог юнита — звёздочкой, как в оригинале: номер 101 читался как
+          «сто первый урок», хотя это разбор пройденного за юнит. */}
+      <span className={'wb-lrow__n' + (meta.test || meta.review ? ' wb-lrow__n--star' : '')}>
+        {meta.test || meta.review ? '★' : n}
+      </span>
       <span className="wb-lrow__b">
         <b>{meta.title}</b>
         <span className="wb-lrow__fn">{loc(meta.fn, lang) || meta.gr || ''}</span>

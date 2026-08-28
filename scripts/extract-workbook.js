@@ -402,6 +402,11 @@ function run(level, srcPath) {
   const { UNITS, WB, INS, CLH } = sb
   const nums = lessonNumbers(WB)
 
+  // Итоговые уроки юнита каталог помечает звёздочкой, а не номером. У A0 флага
+  // `test` в данных нет (он появляется только с A2), поэтому «ревью» узнаём по
+  // тому, что юнит указывает на этот урок полем rev.
+  const reviews = new Set(UNITS.map((u) => u.rev))
+
   const lessons = {}
   nums.forEach((n) => {
     const W = WB[n]
@@ -410,6 +415,7 @@ function run(level, srcPath) {
       fn: W.fn || null,
       gr: W.gr || null,
       test: !!W.test,
+      review: reviews.has(n),
       acts: W.acts.length,
       voc: W.voc.length,
       // Типы заданий — из них плеер рисует «маршрут» урока на карточке.
