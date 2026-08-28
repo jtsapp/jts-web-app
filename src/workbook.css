@@ -1,0 +1,413 @@
+/* ============================================================
+   Воркбук (Workbook) — нативный раздел Практики.
+   Классы с префиксом .wb-. Токены те же, что у «Письма» (.wr в writing.css):
+   разделы стоят рядом в Практике и обязаны выглядеть одним разделом, а не
+   двумя портами разных прототипов. Никакого PT Root UI и Nunito из
+   standalone-html — шрифт сайта.
+   ============================================================ */
+.wb {
+  --wb-purple: #874bf8;
+  --wb-purple-soft: #f4f1fc;
+  --wb-cyan: #0aafff;
+  --wb-sky: #e6f6ff;
+  --wb-sky-ink: #00537f;
+  --wb-green: #03832c;
+  --wb-green-ink: #03601f;
+  --wb-green-bg: #e6fbec;
+  --wb-red: #c43d00;
+  --wb-red-bg: #fff0e9;
+  --wb-orange: #ff631e;
+  --wb-gold: #7a5200;
+  --wb-gold-bg: #fff6e0;
+  --wb-line: #edeaf5;
+  --wb-field: #fbfafe;
+  --wb-ink-2: #4a4458;
+  --wb-ink-3: #8a849a;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 32px 120px; /* снизу место под липкую панель действий */
+}
+
+/* ── верхняя навигация ── */
+.wb-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.wb-backbtn {
+  display: inline-flex; align-items: center; gap: 4px; border: 0;
+  background: var(--wb-purple); color: #fff; border-radius: 999px;
+  padding: 9px 16px 9px 12px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.wb-backbtn:hover { filter: brightness(1.05); }
+.wb-crumb { display: flex; flex-direction: column; line-height: 1.2; }
+.wb-crumb b { color: var(--wb-purple); font-size: 15px; font-weight: 800; }
+.wb-crumb span { color: #9a99a6; font-size: 12px; }
+
+.wb-loading { color: var(--wb-ink-3); font-size: 15px; padding: 24px 0; }
+.wb-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; display: flex; gap: 9px; align-items: flex-start; }
+.wb-note--err { background: var(--wb-red-bg); color: var(--wb-red); }
+.wb-note--tell { background: var(--wb-sky); color: var(--wb-sky-ink); }
+.wb-note--good { background: var(--wb-green-bg); color: var(--wb-green-ink); }
+.wb-note--warn { background: var(--wb-gold-bg); color: var(--wb-gold); }
+.wb-note__ic { flex: none; }
+
+/* ── кнопки ── */
+.wb-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0;
+  background: var(--wb-purple); color: #fff; border-radius: 14px; padding: 12px 22px;
+  font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 6px 18px rgba(135, 75, 248, 0.32);
+  transition: filter 0.15s ease, transform 0.12s ease;
+}
+.wb-primary:active { transform: translateY(1px); }
+.wb-primary:hover:not(:disabled) { filter: brightness(1.06); }
+.wb-primary:disabled { background: #e7defb; color: #b9a8ef; cursor: not-allowed; box-shadow: none; }
+.wb-primary--grow { flex: 1; }
+.wb-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0;
+  background: #fff; color: var(--ink, #16121f); border-radius: 14px; padding: 11px 20px;
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+}
+.wb-ghost:hover { color: var(--wb-purple); }
+.wb-ghost--gap { margin-bottom: 14px; }
+
+/* ── каталог ── */
+.wb-hero {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  background: #fff; border-radius: 20px; padding: 24px; margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+}
+.wb-hero h1 { margin: 0 0 4px; font-size: 24px; font-weight: 800; }
+.wb-hero p { margin: 0 0 16px; color: var(--wb-ink-3); font-size: 14px; }
+.wb-ring { position: relative; display: grid; place-items: center; flex: none; }
+.wb-ring svg { transform: rotate(-90deg); }
+.wb-ring b { position: absolute; font-size: 14px; font-weight: 800; color: var(--wb-purple); }
+
+.wb-mistakes {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; border: 0;
+  background: var(--wb-gold-bg); color: var(--wb-gold); border-radius: 18px;
+  padding: 16px 20px; margin-bottom: 16px; font-family: inherit; cursor: pointer;
+}
+.wb-mistakes:hover { filter: brightness(0.98); }
+.wb-mistakes--inline { margin: 16px 0 0; }
+.wb-mistakes__ic { font-size: 22px; }
+.wb-mistakes span b { display: block; font-size: 15px; font-weight: 800; }
+.wb-mistakes span em { font-style: normal; font-size: 13px; opacity: 0.8; }
+.wb-mistakes__go { margin-left: auto; font-size: 20px; }
+
+.wb-unit { background: #fff; border-radius: 18px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05); overflow: hidden; }
+.wb-unit__head {
+  display: flex; align-items: center; gap: 14px; width: 100%; border: 0; background: none;
+  padding: 16px 20px; font-family: inherit; text-align: left; cursor: pointer;
+}
+.wb-unit__n {
+  flex: none; width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--wb-purple-soft); color: var(--wb-purple); font-weight: 800; font-size: 15px;
+}
+.wb-unit__t b { display: block; font-size: 15px; font-weight: 800; }
+.wb-unit__t em { font-style: normal; font-size: 12px; color: var(--wb-ink-3); }
+.wb-unit__chev { margin-left: auto; color: var(--wb-ink-3); }
+.wb-unit__body { padding: 0 12px 12px; }
+
+.wb-lrow {
+  display: flex; align-items: center; gap: 14px; width: 100%; border: 0; background: var(--wb-field);
+  border-radius: 14px; padding: 12px 16px; margin-top: 8px; font-family: inherit; text-align: left; cursor: pointer;
+}
+.wb-lrow:hover { background: var(--wb-purple-soft); }
+.wb-lrow.is-done { background: var(--wb-green-bg); }
+.wb-lrow__n {
+  flex: none; width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center;
+  background: #fff; color: var(--wb-ink-2); font-weight: 800; font-size: 13px;
+}
+.wb-lrow__b { flex: 1; min-width: 0; }
+.wb-lrow__b b { display: block; font-size: 14px; font-weight: 700; }
+.wb-lrow__fn { display: block; font-size: 12px; color: var(--wb-ink-3); margin-bottom: 6px; }
+.wb-lrow__bar { display: block; height: 5px; border-radius: 999px; background: #eae6f6; overflow: hidden; }
+.wb-lrow__bar i { display: block; height: 100%; background: var(--wb-purple); border-radius: 999px; }
+.wb-lrow__c { flex: none; font-size: 12px; font-weight: 700; color: var(--wb-ink-2); text-align: right; }
+.wb-lrow__c em { display: block; font-style: normal; font-weight: 500; color: var(--wb-ink-3); }
+
+/* ── экран задания ── */
+.wb-rail { margin-bottom: 14px; }
+.wb-seg { display: flex; gap: 3px; margin-bottom: 12px; }
+.wb-seg i { flex: 1; height: 5px; border-radius: 999px; background: #eae6f6; }
+.wb-seg i.is-on { background: var(--wb-green); }
+.wb-seg i.is-cur { background: var(--wb-purple); }
+.wb-railmeta { display: flex; align-items: center; gap: 12px; }
+.wb-back, .wb-open {
+  border: 0; background: #fff; border-radius: 12px; padding: 9px 14px; font-family: inherit;
+  font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05);
+}
+.wb-back { color: var(--wb-purple); }
+.wb-open { margin-left: auto; color: var(--wb-ink-2); }
+.wb-railmeta__t { min-width: 0; }
+.wb-railmeta__t b { display: block; font-size: 15px; font-weight: 800; }
+.wb-railmeta__t span { font-size: 12px; color: var(--wb-ink-3); }
+
+.wb-brief { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.wb-tag {
+  display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px;
+  font-size: 12px; font-weight: 800; background: var(--wb-purple-soft); color: var(--wb-purple); white-space: nowrap;
+}
+.wb-tag--listen, .wb-tag--read { background: var(--wb-sky); color: var(--wb-sky-ink); }
+.wb-tag--real, .wb-tag--turn { background: var(--wb-gold-bg); color: var(--wb-gold); }
+.wb-tag--words { background: var(--wb-green-bg); color: var(--wb-green-ink); }
+.wb-brief__tx { font-size: 15px; color: var(--wb-ink-2); line-height: 1.45; }
+.wb-brief__tx em { display: block; font-style: normal; font-size: 13px; color: var(--wb-ink-3); margin-top: 2px; }
+
+.wb-card { background: #fff; border-radius: 20px; box-shadow: 0 2px 10px rgba(31, 18, 63, 0.05); padding: 20px; }
+.wb-items { display: flex; flex-direction: column; gap: 14px; }
+
+.wb-item { border-radius: 16px; background: var(--wb-field); padding: 14px 16px; }
+.wb-item.is-solved { background: var(--wb-green-bg); }
+.wb-qline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; line-height: 1.6; }
+.wb-qn {
+  flex: none; width: 22px; height: 22px; border-radius: 8px; display: inline-grid; place-items: center;
+  background: #fff; color: var(--wb-ink-3); font-style: normal; font-size: 12px; font-weight: 800;
+}
+.wb-pic { font-size: 20px; }
+.wb-ph { color: var(--wb-ink-3); font-size: 14px; }
+
+.wb-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.wb-opt {
+  border: 0; background: #fff; border-radius: 12px; padding: 10px 16px; font-family: inherit;
+  font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 4px rgba(31, 18, 63, 0.06);
+}
+.wb-opt:hover:not(:disabled) { color: var(--wb-purple); }
+.wb-opt.is-ok { background: var(--wb-green); color: #fff; }
+.wb-opt.is-rev { background: var(--wb-sky); color: var(--wb-sky-ink); }
+.wb-opt.is-no { background: var(--wb-red-bg); color: var(--wb-red); text-decoration: line-through; }
+.wb-opt:disabled { cursor: default; }
+
+.wb-sit { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; }
+.wb-sit__em { font-size: 28px; grid-row: span 2; }
+.wb-sit__s { font-size: 16px; font-weight: 600; }
+.wb-sit__ask { font-size: 13px; color: var(--wb-ink-3); }
+
+/* ── словобанк и пропуски ── */
+.wb-bank { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px; background: var(--wb-purple-soft); border-radius: 16px; }
+.wb-bank__hint { width: 100%; font-size: 12px; font-weight: 700; color: var(--wb-ink-3); }
+.wb-tok {
+  border: 0; background: #fff; border-radius: 10px; padding: 8px 14px; font-family: inherit;
+  font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 4px rgba(31, 18, 63, 0.06);
+}
+.wb-tok.is-act { background: var(--wb-purple); color: #fff; }
+.wb-tok.is-used { opacity: 0.32; cursor: default; }
+.wb-tok.is-ok { background: var(--wb-green); color: #fff; }
+.wb-tok.is-rev { background: var(--wb-sky); color: var(--wb-sky-ink); }
+.wb-tok.is-no { background: var(--wb-red-bg); color: var(--wb-red); }
+
+.wb-blank {
+  display: inline-block; min-width: 84px; border: 0; border-bottom: 2px dashed var(--wb-purple);
+  background: #fff; border-radius: 8px 8px 0 0; padding: 4px 10px; margin: 0 3px;
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; vertical-align: baseline;
+}
+.wb-blank.is-ok { background: var(--wb-green); color: #fff; border-bottom-color: var(--wb-green); cursor: default; }
+.wb-blank.is-rev { background: var(--wb-sky); color: var(--wb-sky-ink); border-bottom-color: var(--wb-cyan); cursor: default; }
+.wb-blank.is-no { background: var(--wb-red-bg); color: var(--wb-red); border-bottom-color: var(--wb-orange); }
+
+.wb-mrow { display: flex; align-items: center; gap: 12px; background: var(--wb-field); border-radius: 14px; padding: 10px 14px; }
+.wb-mrow__side { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-size: 15px; }
+
+.wb-tablewrap { overflow-x: auto; }
+.wb-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.wb-table th { text-align: left; font-size: 12px; font-weight: 800; color: var(--wb-ink-3); padding: 8px 10px; }
+.wb-table td { padding: 8px 10px; border-top: 1px solid var(--wb-line); }
+
+.wb-chat { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.wb-bub { max-width: 80%; border-radius: 16px; padding: 10px 14px; font-size: 15px; line-height: 1.6; }
+.wb-bub--a { background: var(--wb-purple-soft); align-self: flex-start; }
+.wb-bub--b { background: var(--wb-sky); align-self: flex-end; }
+
+/* ── сборка предложения / поиск ошибки ── */
+.wb-built {
+  display: flex; flex-wrap: wrap; gap: 6px; min-height: 46px; align-items: center;
+  background: #fff; border: 2px dashed var(--wb-line); border-radius: 14px; padding: 8px; margin: 10px 0;
+}
+.wb-built.is-ok { border-color: var(--wb-green); background: var(--wb-green-bg); }
+.wb-built.is-no { border-color: var(--wb-orange); background: var(--wb-red-bg); }
+.wb-tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+.wb-corr { color: var(--wb-green-ink); font-weight: 700; }
+.wb-fixw {
+  border: 0; background: #fff; border-radius: 8px; padding: 5px 9px; font-family: inherit;
+  font-size: 15px; cursor: pointer;
+}
+.wb-fixw.is-ok { background: var(--wb-green); color: #fff; }
+.wb-fixw.is-rev { background: var(--wb-sky); color: var(--wb-sky-ink); }
+.wb-fixw.is-no { background: var(--wb-red-bg); color: var(--wb-red); text-decoration: line-through; }
+
+/* ── группы и порядок ── */
+.wb-cols { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+.wb-cols--3 { grid-template-columns: repeat(3, 1fr); }
+.wb-col { background: var(--wb-field); border: 2px solid transparent; border-radius: 16px; padding: 12px; min-height: 110px; }
+.wb-col.is-armed { border-color: var(--wb-purple); }
+.wb-col h4 { margin: 0 0 8px; font-size: 13px; font-weight: 800; color: var(--wb-ink-2); }
+.wb-drop { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.wb-seq { display: flex; flex-direction: column; gap: 8px; }
+.wb-seqrow {
+  display: flex; align-items: center; gap: 10px; border: 0; background: var(--wb-field);
+  border-radius: 14px; padding: 12px 14px; font-family: inherit; font-size: 15px; text-align: left; cursor: pointer;
+}
+.wb-seqrow.is-ok { background: var(--wb-green-bg); }
+.wb-seqrow.is-rev { background: var(--wb-sky); }
+.wb-seqrow.is-no { background: var(--wb-red-bg); }
+.wb-seqrow__n {
+  flex: none; width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center;
+  background: #fff; font-size: 12px; font-weight: 800; color: var(--wb-ink-2);
+}
+.wb-seqrow__x { flex: 1; }
+
+/* ── ввод и выбор в тексте ── */
+.wb-trow { display: flex; gap: 8px; margin-top: 10px; }
+.wb-tin {
+  flex: 1; border: 2px solid var(--wb-line); background: #fff; border-radius: 12px;
+  padding: 10px 14px; font-family: inherit; font-size: 15px;
+}
+.wb-tin:focus { outline: none; border-color: var(--wb-purple); }
+.wb-tin.is-ok { border-color: var(--wb-green); background: var(--wb-green-bg); }
+.wb-tin.is-rev { border-color: var(--wb-cyan); background: var(--wb-sky); }
+.wb-tin.is-no { border-color: var(--wb-orange); background: var(--wb-red-bg); }
+.wb-tgo {
+  border: 0; background: var(--wb-purple); color: #fff; border-radius: 12px; padding: 0 18px;
+  font-size: 18px; font-weight: 700; cursor: pointer;
+}
+.wb-tgo:disabled { background: #e7defb; color: #b9a8ef; cursor: not-allowed; }
+
+.wb-dropbox { font-size: 16px; line-height: 2.1; }
+.wb-dl { margin: 0 0 8px; }
+.wb-dsel {
+  border: 2px solid var(--wb-line); border-radius: 10px; background: #fff; padding: 4px 8px;
+  font-family: inherit; font-size: 15px; margin: 0 2px;
+}
+.wb-dsel.is-ok { border-color: var(--wb-green); background: var(--wb-green-bg); }
+.wb-dsel.is-rev { border-color: var(--wb-cyan); background: var(--wb-sky); }
+.wb-dsel.is-no { border-color: var(--wb-orange); background: var(--wb-red-bg); }
+
+/* ── пары слов ── */
+.wb-memo-st { display: flex; justify-content: space-between; font-size: 13px; color: var(--wb-ink-2); margin-bottom: 10px; }
+.wb-memo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.wb-mcard {
+  aspect-ratio: 1 / 1; border: 0; border-radius: 14px; background: var(--wb-purple-soft);
+  display: grid; place-items: center; padding: 6px; font-family: inherit; font-size: 13px;
+  font-weight: 700; cursor: pointer; text-align: center;
+}
+.wb-mcard.is-up { background: #fff; box-shadow: 0 2px 10px rgba(31, 18, 63, 0.08); }
+.wb-mcard.is-got { background: var(--wb-green-bg); color: var(--wb-green-ink); cursor: default; }
+.wb-mcard.is-rev { background: var(--wb-sky); color: var(--wb-sky-ink); }
+.wb-mcard__back { font-size: 22px; opacity: 0.5; }
+
+/* ── источник материала ── */
+.wb-src { background: var(--wb-purple-soft); border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+.wb-player { display: flex; align-items: center; gap: 12px; }
+.wb-play {
+  flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%; background: var(--wb-purple);
+  color: #fff; font-size: 17px; cursor: pointer;
+}
+.wb-play.is-on { background: var(--wb-orange); }
+.wb-player__label { flex: 1; min-width: 0; }
+.wb-player__label b { display: block; font-size: 14px; font-weight: 800; }
+.wb-player__label span { font-size: 12px; color: var(--wb-ink-3); }
+.wb-slow {
+  border: 0; background: #fff; border-radius: 999px; padding: 7px 14px; font-family: inherit;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.wb-slow.is-on { background: var(--wb-purple); color: #fff; }
+.wb-src__k { font-size: 12px; font-weight: 800; color: var(--wb-ink-3); margin-bottom: 6px; }
+.wb-src__body { font-size: 16px; line-height: 1.7; }
+.wb-src__body p { margin: 0 0 6px; }
+
+.wb-ta {
+  width: 100%; min-height: 140px; border: 2px solid var(--wb-line); border-radius: 14px;
+  padding: 12px 14px; font-family: inherit; font-size: 15px; line-height: 1.6; resize: vertical;
+}
+.wb-ta:focus { outline: none; border-color: var(--wb-purple); }
+.wb-modelrow { display: flex; gap: 8px; margin-top: 11px; }
+.wb-model { margin-top: 10px; background: var(--wb-gold-bg); color: var(--wb-gold); border-radius: 14px; padding: 12px 16px; font-size: 15px; line-height: 1.6; }
+.wb-model b { display: block; font-size: 12px; margin-bottom: 4px; }
+.wb-rec { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.wb-recbtn {
+  border: 0; background: var(--wb-purple); color: #fff; border-radius: 999px; padding: 11px 20px;
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.wb-recbtn.is-on { background: var(--wb-orange); }
+.wb-rec__audio { max-width: 100%; }
+.wb-rec__no { font-size: 13px; color: var(--wb-red); }
+
+/* ── нижняя панель ── */
+.wb-actionbar {
+  position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
+  background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(8px);
+  border-radius: 18px; padding: 12px; margin-top: 14px; box-shadow: 0 -2px 18px rgba(31, 18, 63, 0.07);
+}
+.wb-tally { display: flex; align-items: center; gap: 4px; flex: none; }
+.wb-tally--free { font-size: 13px; color: var(--wb-ink-3); }
+.wb-dot { width: 8px; height: 8px; border-radius: 50%; background: #eae6f6; }
+.wb-dot.is-on { background: var(--wb-green); }
+.wb-dot.is-bad { background: var(--wb-orange); }
+.wb-tally__n { margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--wb-ink-3); }
+.wb-tally__done { color: var(--wb-green-ink); font-size: 13px; }
+
+/* ── итог урока ── */
+.wb-done { text-align: center; padding: 12px 0 4px; }
+.wb-done__big {
+  width: 62px; height: 62px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--wb-green-bg); color: var(--wb-green); font-size: 28px;
+}
+.wb-done h2 { margin: 0 0 4px; font-size: 22px; font-weight: 800; }
+.wb-done p { margin: 0; color: var(--wb-ink-3); font-size: 14px; }
+.wb-sect { margin-top: 20px; }
+.wb-sect h3 { font-size: 16px; font-weight: 800; margin: 0 0 10px; }
+.wb-scrow {
+  display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: var(--wb-field);
+  border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; font-family: inherit;
+  font-size: 15px; text-align: left; cursor: pointer;
+}
+.wb-scrow.is-on { background: var(--wb-green-bg); color: var(--wb-green-ink); }
+.wb-scrow__box {
+  flex: none; width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center;
+  background: #fff; color: transparent; font-size: 13px; font-weight: 800;
+}
+.wb-scrow.is-on .wb-scrow__box { background: var(--wb-green); color: #fff; }
+
+/* ── оглавление урока ── */
+.wb-sheetwrap { position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.wb-scrim { position: absolute; inset: 0; background: rgba(22, 18, 31, 0.42); }
+.wb-sheet {
+  position: relative; width: min(720px, 100%); max-height: 78vh; display: flex; flex-direction: column;
+  background: #fff; border-radius: 24px 24px 0 0; padding: 16px;
+}
+.wb-sheet__tabs { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.wb-sheet__tab {
+  border: 0; background: var(--wb-field); border-radius: 999px; padding: 8px 16px; font-family: inherit;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.wb-sheet__tab.is-on { background: var(--wb-purple); color: #fff; }
+.wb-sheet__x { margin-left: auto; border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--wb-ink-3); }
+.wb-sheet__body { overflow-y: auto; }
+.wb-steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.wb-step {
+  display: flex; align-items: center; gap: 8px; border: 0; background: var(--wb-field); border-radius: 12px;
+  padding: 10px 12px; font-family: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.wb-step.is-done { background: var(--wb-green-bg); }
+.wb-step b { flex: 1; font-weight: 700; }
+.wb-step em { font-style: normal; color: var(--wb-ink-3); }
+.wb-words { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.wb-word { display: flex; align-items: center; gap: 10px; background: var(--wb-field); border-radius: 12px; padding: 10px 12px; }
+.wb-word b { font-size: 14px; font-weight: 700; }
+.wb-word em { font-style: normal; font-size: 13px; color: var(--wb-ink-3); margin-left: auto; text-align: right; }
+.wb-help__hint { font-size: 13px; color: var(--wb-ink-3); margin: 0 0 10px; }
+
+/* ── мобилка ── */
+@media (max-width: 720px) {
+  .wb { padding: 8px 16px 120px; }
+  .wb-hero { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .wb-memo { grid-template-columns: repeat(3, 1fr); }
+  .wb-cols, .wb-cols--3 { grid-template-columns: 1fr; }
+  .wb-bub { max-width: 92%; }
+  .wb-open span { display: none; }
+  .wb-lrow__c em { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-primary, .wb-tok, .wb-opt { transition: none; }
+}
