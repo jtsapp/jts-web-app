@@ -42,7 +42,11 @@ function LessonRow({ level, n, meta, progress, onOpen, review }) {
   const pct = meta.acts ? Math.round((done / meta.acts) * 100) : 0
   const full = done >= meta.acts
   return (
-    <button type="button" className={'wb-lrow' + (full ? ' is-done' : '')} onClick={() => onOpen(n)}>
+    <button
+      type="button"
+      className={'wb-lrow' + (full ? ' is-done' : '') + (review ? ' wb-lrow--chal' : '')}
+      onClick={() => onOpen(n)}
+    >
       {/* Итог юнита — звёздочкой, как в оригинале: номер 101 читался как
           «сто первый урок», хотя это челлендж по пройденному. Признак считает
           экстрактор по правилу самого прототипа: у A0 это урок, на который
