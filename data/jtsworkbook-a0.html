@@ -6186,10 +6186,7 @@ function btn(cls,label,fn,grow){
 }
 
 /* ---------- HOME ---------- */
-function renderHome(opts){
-  /* keepScroll: при раскрытии unit не прыгать наверх — остаёмся где смотрели */
-  var keep=opts&&opts.keepScroll===true;
-  var y=keep?(window.pageYOffset||document.documentElement.scrollTop||0):0;
+function renderHome(){
   stopAudio();S.view='home';closeSheet();
   var app=$('app');app.innerHTML='';
   var hero=el('div','hero tail');
@@ -6216,7 +6213,7 @@ function renderHome(opts){
     head.innerHTML='<div class="unit-no" aria-hidden="true">'+u.n+'</div>'+
       '<div class="t"><div class="k">'+esc(t('unit'))+' '+u.n+'</div><h2>'+esc(u.title)+'</h2></div>'+
       '<div class="caret" aria-hidden="true">›</div>';
-    head.onclick=function(){S.open[u.n]=!isOpen;renderHome({keepScroll:true})};
+    head.onclick=function(){S.open[u.n]=!isOpen;renderHome()};
     box.appendChild(head);
 
     if(isOpen){
@@ -6238,7 +6235,7 @@ function renderHome(opts){
   });
 
   actionBar([btn('btn-go',(started?t('m_continue'):t('m_start'))+' →',function(){openAct(nx,firstOpen(nx))},true)]);
-  setBar();window.scrollTo(0,keep?y:0);
+  setBar();window.scrollTo(0,0);
 }
 
 /* ---------- ACTIVITY SCREEN ---------- */
