@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
-import { orderTiles, sortOrder, seqOrder, orderOk } from '../../../practice/workbook/engine.js'
+import { orderTiles, transTiles, sortOrder, seqOrder, orderOk } from '../../../practice/workbook/engine.js'
 import { Note, Pic, Qnum, useSlot } from '../ActShell.jsx'
 import { slotIndexAt, useGrab, useZone, justDragged } from '../dnd.js'
 import { loc } from '../loc.js'
@@ -33,9 +33,11 @@ function Tile({ w, kind, payload, disabled, onTap }) {
   )
 }
 
-function OrderItem({ act, it, i, ctl }) {
+/* Сборка предложения из плиток. Одна и та же механика у order и у trans —
+   различаются только шапка пункта и ПОРЯДОК плиток: у трансформации свой сид
+   (см. transTiles), и подменять его нельзя. */
+function BuildItem({ it, i, ctl, tiles, head }) {
   const slot = useSlot(ctl, i)
-  const tiles = orderTiles(act, i)
   const [built, setBuilt] = useState([]) // индексы плиток в собранной строке
   const [bad, setBad] = useState(false)
   const timer = useRef(null)
@@ -83,11 +85,7 @@ function OrderItem({ act, it, i, ctl }) {
 
   return (
     <div className={'wb-item' + (closed || revealed ? ' is-solved' : '')}>
-      <div className="wb-qline">
-        <Qnum n={i} />
-        <Pic p={it.pic} />
-        <span className="wb-ph">{it.hint || ''}</span>
-      </div>
+      {head}
       <div
         ref={lineRef}
         className={'wb-built' + (bad ? ' is-no' : '') + (slot.own ? ' is-ok' : '') + (revealed ? ' is-rev' : '')}
@@ -133,7 +131,57 @@ export function OrderAct({ act, ctl }) {
         {t('workbook.tapOrder')}
       </Note>
       {act.items.map((it, i) => (
-        <OrderItem key={i} act={act} it={it} i={i} ctl={ctl} />
+        <BuildItem
+          key={i}
+          it={it}
+          i={i}
+          ctl={ctl}
+          tiles={orderTiles(act, i)}
+          head={
+            <div className="wb-qline">
+              <Qnum n={i} />
+              <Pic p={it.pic} />
+              <span className="wb-ph">{it.hint || ''}</span>
+            </div>
+          }
+        />
+      ))}
+    </>
+  )
+}
+
+/* ── Переделай предложение (A1+) ───────────────────────────────────────── */
+/* Тот же конструктор, но сверху видно ИСХОДНОЕ предложение и что с ним надо
+   сделать: студент не сочиняет фразу с нуля, а меняет форму. */
+export function TransAct({ act, ctl }) {
+  const { t } = useI18n()
+  return (
+    <>
+      <Note kind="tell" icon="👆">
+        {t('workbook.tapOrder')}
+      </Note>
+      {act.items.map((it, i) => (
+        <BuildItem
+          key={i}
+          it={it}
+          i={i}
+          ctl={ctl}
+          tiles={transTiles(act, i)}
+          head={
+            <>
+              <div className="wb-qline">
+                <Qnum n={i} />
+                <span className="wb-srcline">{it.from}</span>
+              </div>
+              <div className="wb-cue">
+                <span className="wb-cue__ar" aria-hidden="true">
+                  ↓
+                </span>
+                <span>{it.cue}</span>
+              </div>
+            </>
+          }
+        />
       ))}
     </>
   )
@@ -371,5 +419,68 @@ export function SeqAct({ act, ctl }) {
         )
       })}
     </div>
+  )
+}
+
+/* ── Найди ошибки в абзаце (B2) ────────────────────────────────────────── */
+/* Порт R.epara (data/jtsworkbook-b2.html:13335). Мест столько, сколько ошибок;
+   тап по верному слову — это промах, а не место. «С первой попытки» здесь
+   считается по-своему: ошибка засчитана чистой, если между прошлой находкой и
+   этой студент не ткнул ни в одно верное слово. */
+export function EparaAct({ act, ctl }) {
+  const { t } = useI18n()
+  const badBy = new Map(act.bad.map((b, k) => [b.i, { ...b, slot: k }]))
+  const [found, setFound] = useState({})
+  const [missed, setMissed] = useState({})
+  const [sinceLastFind, setSince] = useState(true)
+
+  const revealed = ctl.revealed
+  const total = act.bad.length
+  const foundCount = Object.keys(found).length
+
+  return (
+    <>
+      <div className="wb-epara">
+        {act.words.map((w, k) => {
+          if (/^[.,;:!?]$/.test(w)) return <span key={k}>{w} </span>
+          const b = badBy.get(k)
+          const isFound = !!found[k]
+          const isShown = b && (isFound || revealed)
+          return (
+            <span key={k}>
+              <button
+                type="button"
+                className={
+                  'wb-ew' + (isFound ? ' is-ok' : revealed && b ? ' is-rev' : missed[k] ? ' is-no' : '')
+                }
+                disabled={isFound || !!missed[k] || revealed}
+                onClick={() => {
+                  if (b) {
+                    setFound((f) => ({ ...f, [k]: true }))
+                    ctl.judge(b.slot, sinceLastFind)
+                    setSince(true)
+                    return
+                  }
+                  // Верное слово: тапнули — значит промахнулись, и следующая
+                  // находка уже не «с первой попытки».
+                  setSince(false)
+                  setMissed((m) => ({ ...m, [k]: true }))
+                  ctl.miss()
+                }}
+              >
+                {w}
+              </button>
+              {isShown ? <span className="wb-epfix">{b.fix}</span> : null}{' '}
+            </span>
+          )
+        })}
+      </div>
+      <div className="wb-found">
+        🔎{' '}
+        <span>
+          {foundCount} / {total} {t('workbook.foundN')}
+        </span>
+      </div>
+    </>
   )
 }
