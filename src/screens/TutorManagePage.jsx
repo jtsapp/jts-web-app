@@ -17,6 +17,8 @@ export default function TutorManagePage({
   // и после онбординга — не гонять же ученика заново через экран выбора.
   temper = null,
   onToggleTemper,
+  // Ученику нет 18 — жёсткий нрав не включить (см. TemperToggle).
+  adultLocked = false,
   // Ответы опросника и уровень. Опросник проходится один раз при первом
   // онбординге (смена тьютора его больше не гоняет), поэтому правка интересов,
   // статуса и пересдача теста живут здесь — иначе их негде поменять.
@@ -76,7 +78,12 @@ export default function TutorManagePage({
           {tutor.tempers && (
             <div className="t-manage__temper">
               <span>{t('tutor.temper')}</span>
-              <TemperToggle tutor={tutor} temper={temper} onToggle={onToggleTemper} />
+              <TemperToggle
+                tutor={tutor}
+                temper={temper}
+                onToggle={onToggleTemper}
+                locked={adultLocked}
+              />
             </div>
           )}
 

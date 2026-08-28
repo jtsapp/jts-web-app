@@ -860,6 +860,88 @@ textarea {
 .date-field__input:focus {
   border-color: #b79cf5;
 }
+
+/* Дата рождения тремя полями: день, месяц, год набираются руками, кнопка
+   справа открывает системный календарь. Внешне — та же «коробка», что у
+   .date-field__input, поэтому рамка и фон живут на контейнере, а сами
+   инпуты внутри прозрачные. */
+.dob-field {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  width: 100%;
+  background: #f6f6f8;
+  border: 1.5px solid #ececf1;
+  border-radius: 14px;
+  padding: 12px 12px 12px 16px;
+  transition: border-color 0.15s ease;
+}
+.dob-field:focus-within {
+  border-color: #b79cf5;
+}
+.dob-field__part {
+  background: none;
+  border: 0;
+  outline: none;
+  padding: 2px 0;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+.dob-field__part::placeholder {
+  color: #b7b6c1;
+  font-weight: 500;
+}
+/* Ширины по числу цифр, а не по контенту: поля не должны прыгать по мере
+   набора. ch у Manrope шире цифры, поэтому запас небольшой. */
+.dob-field__part--day,
+.dob-field__part--month {
+  width: 2.4ch;
+}
+.dob-field__part--year {
+  width: 4.4ch;
+}
+/* Разделитель едет вместе со своим полем — так поля не разъезжаются, когда
+   год шире дня. */
+.dob-field__cell {
+  display: inline-flex;
+  align-items: center;
+}
+.dob-field__sep {
+  color: #b7b6c1;
+  font-weight: 600;
+  user-select: none;
+}
+.dob-field__picker {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #8d8a99;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.dob-field__picker:hover {
+  background: #ececf1;
+  color: var(--ink);
+}
+/* Носитель системного календаря. Не display:none и не hidden: у скрытого
+   поля showPicker() бросает, и кнопка переставала работать. */
+.dob-field__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
 /* Формы пароля (вход и «придумайте пароль») — два поля подряд и чекбокс
    «показать»; у .email-field своих отступов нет, задаём их здесь. */
 .email-field + .email-field {

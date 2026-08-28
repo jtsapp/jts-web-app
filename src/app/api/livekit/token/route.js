@@ -23,6 +23,7 @@ import {
   MONTH_LIMIT_SEC,
 } from '@/lib/usage.js'
 import { resolveProfileId, bearerFromRequest, fetchTutorLimitOverride } from '@/lib/auth-server.js'
+import { isMinor } from '@/lib/birthDate.js'
 import { loadProfile } from '@/lib/db/profile.js'
 import { SCENARIOS, getScenario } from '@/tutor/scenarios.js'
 import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
@@ -188,7 +189,13 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   return JSON.stringify(meta)
 }
 
-async function issue(p, profileId, userName, limitOverride) {
+async function issue(p, profileId, userName, limitOverride, birthDate = null) {
+  // Жёсткий нрав (ось 18+) несовершеннолетнему не выдаём, даже если запрос
+  // пришёл с temper:'harsh' в теле: кнопку в UI мы заперли, но токен просят
+  // из браузера, и тело — не доверенный источник. Возраст берём из
+  // проверенного /user/me (resolveProfileId), не из запроса. Звонок при этом
+  // не рвём — просто спокойный характер того же тьютора.
+  if (p.temper === 'harsh' && isMinor(birthDate)) p = { ...p, temper: 'calm' }
   const apiKey = process.env.LIVEKIT_API_KEY
   const apiSecret = process.env.LIVEKIT_API_SECRET
   const wsUrl = process.env.LIVEKIT_URL
@@ -313,7 +320,7 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, body.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(body, resolved.id, resolved.name, limitOverride)
+  return issue(body, resolved.id, resolved.name, limitOverride, resolved.birthDate)
 }
 
 export async function GET(request) {
@@ -322,5 +329,5 @@ export async function GET(request) {
   const resolved = await resolveProfileId(request, p.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(p, resolved.id, resolved.name, limitOverride)
+  return issue(p, resolved.id, resolved.name, limitOverride, resolved.birthDate)
 }
