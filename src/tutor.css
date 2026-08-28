@@ -526,6 +526,14 @@
   background: #d5d5dd;
   color: #6b6b78;
 }
+
+/* Заперта возрастом: ученику нет 18. Не серая-выключенная, а именно
+   недоступная — курсор и прозрачность говорят, что жать бесполезно. */
+.t-adult--locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .t-adult:focus-visible {
   outline: 2px solid #2b2b33;
   outline-offset: 2px;

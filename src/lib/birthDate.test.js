@@ -5,8 +5,10 @@ import {
   isValidBirthDate,
   maxBirthDate,
   minBirthDate,
+  isMinor,
   MIN_AGE,
   MAX_AGE,
+  ADULT_AGE,
 } from './birthDate.js'
 
 // Фиксированное «сегодня» — иначе тест про границу возраста протухнет.
@@ -60,5 +62,27 @@ describe('границы для <input type="date">', () => {
   it('min не отрезает валидные даты у верхней границы', () => {
     expect(minBirthDate(TODAY) < `${TODAY.getFullYear() - MAX_AGE}-08-28`).toBe(true)
     expect(isValidBirthDate(maxBirthDate(TODAY), TODAY)).toBe(true)
+  })
+})
+
+describe('isMinor — гейт жёсткого нрава тьютора (18+)', () => {
+  it('семнадцать — да', () => {
+    expect(isMinor(`${TODAY.getFullYear() - 17}-08-28`, TODAY)).toBe(true)
+  })
+  it('ровно восемнадцать в день рождения — уже нет', () => {
+    expect(isMinor(`${TODAY.getFullYear() - ADULT_AGE}-08-28`, TODAY)).toBe(false)
+  })
+  it('день до совершеннолетия — ещё да', () => {
+    expect(isMinor(`${TODAY.getFullYear() - ADULT_AGE}-08-29`, TODAY)).toBe(true)
+  })
+  // Аноним и аккаунты, заведённые до обязательного поля: даты нет вовсе.
+  // Запирать их по незнанию нельзя — сломали бы то, что работало.
+  it('неизвестная дата минором не считается', () => {
+    expect(isMinor('', TODAY)).toBe(false)
+    expect(isMinor(null, TODAY)).toBe(false)
+    expect(isMinor('не дата', TODAY)).toBe(false)
+  })
+  it('будущая дата тоже не запирает', () => {
+    expect(isMinor('2030-01-01', TODAY)).toBe(false)
   })
 })

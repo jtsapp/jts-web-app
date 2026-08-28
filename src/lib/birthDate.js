@@ -9,6 +9,11 @@
 export const MIN_AGE = 6
 export const MAX_AGE = 100
 
+// Порог «взрослого» режима тьютора (кнопка 18+ — жёсткий нрав с матом). Держим
+// рядом с остальными правилами возраста: гейт нужен и на клиенте (кнопка), и
+// на сервере (/api/profile, выдача LiveKit-токена).
+export const ADULT_AGE = 18
+
 // Разбор 'yyyy-mm-dd' по частям, а не через new Date(строка): такую строку
 // браузер читает как UTC, и в поясе +05 получается предыдущий день — на
 // границе дня рождения это ошибка ровно в год.
@@ -41,6 +46,15 @@ export function birthDateProblem(value, today = new Date()) {
   if (age < MIN_AGE) return 'tooYoung'
   if (age > MAX_AGE) return 'tooOld'
   return null
+}
+
+// Несовершеннолетний? Только когда дата ИЗВЕСТНА и меньше порога. Пустая или
+// неразобранная дата — не «минор»: у анонимов и аккаунтов, заведённых до
+// обязательного поля, её нет вовсе, и запирать им взрослый режим по незнанию
+// значит ломать то, что работало. Гейт срабатывает на явно указанном возрасте.
+export function isMinor(value, today = new Date()) {
+  const age = ageOn(value, today)
+  return age !== null && age >= 0 && age < ADULT_AGE
 }
 
 export function isValidBirthDate(value, today = new Date()) {

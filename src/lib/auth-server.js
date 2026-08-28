@@ -88,6 +88,10 @@ export async function verifyToken(token) {
       // Для восстановления сессии на клиенте: /api/auth/me отдаёт это в App,
       // чтобы уровень не сбрасывался на A1 после перезагрузки.
       languageLevel: user.languageLevel ?? null,
+      // Возраст решает доступ к жёсткому нраву тьютора (кнопка 18+). Берём из
+      // того же /user/me, что уже запрошен для проверки токена: гейт на
+      // сервере не должен верить телу запроса, иначе он обходится curl'ом.
+      birthDate: user.birthDate ?? null,
     }
   } catch (err) {
     console.error(
@@ -173,7 +177,7 @@ export async function fetchContentQuota(token, contentType) {
  * - With no token → the anonymous deviceId, UNLESS it intrudes on the reserved
  *   `user-*` namespace (then 401: that data requires authentication).
  *
- * Returns { id, name } on success, or { error: Response } the caller should
+ * Returns { id, name, birthDate } on success, or { error: Response } the caller should
  * return. `name` is the backend's display name for an authenticated learner and
  * null for everyone else — verifyToken already fetches it, so callers that want
  * it (the LiveKit token route, for the voice scenarios) cost no extra request.
@@ -193,7 +197,11 @@ export async function resolveProfileId(request, clientDeviceId) {
         ),
       }
     }
-    return { id: profileIdForUser(user.userId), name: user.name ?? null }
+    return {
+      id: profileIdForUser(user.userId),
+      name: user.name ?? null,
+      birthDate: user.birthDate ?? null,
+    }
   }
 
   if (!isValidDeviceId(clientDeviceId)) {
@@ -204,7 +212,7 @@ export async function resolveProfileId(request, clientDeviceId) {
   if (RESERVED_ID_RE.test(clientDeviceId)) {
     // Единственное исключение: наш же голосовой агент с сервисным ключом. Он
     // пишет память ученика от его имени, своего токена не имея.
-    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null }
+    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null, birthDate: null }
     return {
       error: Response.json(
         { configured: true, error: 'This profile requires authentication.' },
@@ -212,5 +220,5 @@ export async function resolveProfileId(request, clientDeviceId) {
       ),
     }
   }
-  return { id: clientDeviceId, name: null }
+  return { id: clientDeviceId, name: null, birthDate: null }
 }
