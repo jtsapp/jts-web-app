@@ -42,10 +42,12 @@
 
 .wb-loading { color: var(--wb-ink-3); font-size: 15px; padding: 24px 0; }
 .wb-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; display: flex; gap: 9px; align-items: flex-start; }
-.wb-note--err { background: var(--wb-red-bg); color: var(--wb-red); }
-.wb-note--tell { background: var(--wb-sky); color: var(--wb-sky-ink); }
-.wb-note--good { background: var(--wb-green-bg); color: var(--wb-green-ink); }
-.wb-note--warn { background: var(--wb-gold-bg); color: var(--wb-gold); }
+/* Цвета заметок — из оригинала (.note.tell/.good/.warn): подсказка там
+   фиолетовая с рамкой, а не голубая. Голубой в прототипе занят другим. */
+.wb-note--err { background: var(--wb-red-bg); border: 1px solid #f3c9b6; color: var(--wb-red); }
+.wb-note--tell { background: #f2ecff; border: 1px solid #e5daff; color: #6633d6; }
+.wb-note--good { background: #e1faea; border: 1px solid #bfefd2; color: #068a36; }
+.wb-note--warn { background: #fff5de; border: 1px solid #f0dca9; color: #8a6100; }
 .wb-note__ic { flex: none; }
 
 /* ── кнопки ── */
