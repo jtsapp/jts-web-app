@@ -34,22 +34,28 @@ const I18N_SOURCE = path.join(__dirname, 'workbook-i18n-source.json')
 // вовсе, у A2/B1 ревью-урок есть у каждого юнита (101…112) и он же зачётный
 // тест, у B2 тест один на три юнита (201…204). Ждём ровно то, что лежит
 // в прототипе, иначе «проверка» выродится в пересчёт самой себя.
+const UNIT_REVIEWS = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112]
 const EXPECT = {
-  a0: { units: 7, lessons: 31, reviews: [101, 102, 103, 104, 105, 106, 107], tests: [] },
-  a1: { units: 8, lessons: 32, reviews: [], tests: [] },
+  a0: {
+    units: 7, lessons: 31, tests: [],
+    reviews: [101, 102, 103, 104, 105, 106, 107],
+    challenges: [101, 102, 103, 104, 105, 106, 107],
+  },
+  // У A1 итоговых уроков-«сто первых» нет: челленджем работают обычные уроки
+  // 12, 24 и 32 — последние в своих юнитах.
+  a1: { units: 8, lessons: 32, reviews: [], tests: [], challenges: [12, 24, 32] },
   a2: {
-    units: 12,
-    lessons: 48,
-    reviews: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
-    tests: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
+    units: 12, lessons: 48, reviews: UNIT_REVIEWS, tests: UNIT_REVIEWS,
+    challenges: UNIT_REVIEWS,
   },
   b1: {
-    units: 12,
-    lessons: 48,
-    reviews: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
-    tests: [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112],
+    units: 12, lessons: 48, reviews: UNIT_REVIEWS, tests: UNIT_REVIEWS,
+    challenges: UNIT_REVIEWS,
   },
-  b2: { units: 12, lessons: 52, reviews: [201, 202, 203, 204], tests: [201, 202, 203, 204] },
+  b2: {
+    units: 12, lessons: 52, reviews: [201, 202, 203, 204], tests: [201, 202, 203, 204],
+    challenges: [201, 202, 203, 204],
+  },
 }
 
 // Типы заданий, которые умеет рисовать порт. Новый тип из прототипа обязан
@@ -125,6 +131,29 @@ function slicePrototype(html) {
   ].join('\n')
 
   return { data, engine }
+}
+
+/**
+ * Как прототип узнаёт «челлендж» — урок, который каталог помечает звёздочкой
+ * вместо номера. Правило у каждого уровня своё и живёт В РЕНДЕРЕ (`var isRev=`),
+ * а не в данных: A0 смотрит на поле юнита, A2–B2 на номер урока, а A1 держит
+ * жёсткий список — у него нет отдельных итоговых уроков, челленджем работают
+ * последние уроки юнитов. Читаем правило из самого прототипа: свой список тут
+ * молча разъехался бы с исходником на первой же его правке.
+ */
+function challengeRule(html) {
+  const m = html.match(/var isRev\s*=\s*([^;]+);/)
+  if (!m) fail('не найдено правило челленджа (var isRev=…) — каталог прототипа изменился')
+  const expr = m[1].replace(/\s+/g, '')
+  if (expr === 'u.rev===n') return (n, revs) => revs.has(n)
+  const gt = expr.match(/^n>(\d+)$/)
+  if (gt) return (n) => n > Number(gt[1])
+  const list = expr.match(/^\[([\d,]+)\]\.indexOf\(n\)>-1$/)
+  if (list) {
+    const ns = new Set(list[1].split(',').map(Number))
+    return (n) => ns.has(n)
+  }
+  fail('незнакомое правило челленджа «' + expr + '» — порт его не повторит')
 }
 
 function cut(html, from, to, what) {
@@ -404,7 +433,7 @@ function checkAct(a, where, insTable, nested) {
   }
 }
 
-function validate(sandbox, level) {
+function validate(sandbox, level, isChallenge) {
   const { UNITS, WB, INS } = sandbox
   const expect = EXPECT[level]
   if (!expect) fail('нет ожидаемых счётчиков для уровня ' + level)
@@ -418,6 +447,10 @@ function validate(sandbox, level) {
   const revs = UNITS.map((u) => u.rev).filter((n) => n != null).sort((a, b) => a - b)
   if (revs.join(',') !== expect.reviews.join(',')) {
     fail('ревью ' + revs.join(',') + ', ждали ' + expect.reviews.join(','))
+  }
+  const challenges = nums.filter((n) => isChallenge(n, new Set(revs))).sort((a, b) => a - b)
+  if (challenges.join(',') !== expect.challenges.join(',')) {
+    fail('челленджей ' + challenges.join(',') + ', ждали ' + expect.challenges.join(','))
   }
   const tests = nums.filter((n) => WB[n].test).sort((a, b) => a - b)
   if (tests.join(',') !== expect.tests.join(',')) {
@@ -595,16 +628,17 @@ function writeJson(file, obj, pretty) {
 function run(level, srcPath) {
   const html = fs.readFileSync(srcPath, 'utf8')
   const sb = evalPrototype(html)
-  const stats = validate(sb, level)
+  const isChallenge = challengeRule(html)
+  const stats = validate(sb, level, isChallenge)
   const outDir = path.join(OUT_ROOT, level)
 
   const { UNITS, WB, INS, CLH } = sb
   const nums = lessonNumbers(WB)
 
-  // Итоговые уроки юнита каталог помечает звёздочкой, а не номером. Флага
-  // `test` у A0/A1 в данных нет вовсе, поэтому «ревью» узнаём по тому, что
-  // юнит указывает на этот урок полем rev, — а не по флагу.
-  const reviews = new Set(UNITS.map((u) => u.rev).filter((n) => n != null))
+  // Итоговые уроки каталог помечает звёздочкой, а не номером, и признак этот
+  // НЕ равен «у юнита есть rev»: у A1 rev нет вовсе, а челленджами работают
+  // обычные уроки 12/24/32. Правило берём из самого прототипа (challengeRule).
+  const revs = new Set(UNITS.map((u) => u.rev).filter((n) => n != null))
   // Номер юнита нужен уроку, а не только каталогу: по нему воркбук B2 находит
   // видео-репортаж в аудио-визуальном материале курса (public/course/b2/video).
   const unitOf = {}
@@ -619,7 +653,7 @@ function run(level, srcPath) {
       fn: W.fn || null,
       gr: W.gr || null,
       test: !!W.test,
-      review: reviews.has(n),
+      review: isChallenge(n, revs),
       acts: W.acts.length,
       voc: W.voc.length,
       // Типы заданий — из них плеер рисует «маршрут» урока на карточке.

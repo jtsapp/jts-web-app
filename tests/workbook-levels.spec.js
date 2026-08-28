@@ -83,11 +83,22 @@ test.describe('Воркбук — каталоги уровней', () => {
     })
   }
 
-  test('A1: юнит-ревью нет — все строки с номерами', async ({ page }) => {
+  test('A1: отдельных итоговых уроков нет, но челлендж помечен звёздочкой', async ({ page }) => {
+    const index = INDEX.a1
     await openCatalog(page, 'a1')
-    const rows = page.locator('.wb-unit').first().locator('.wb-lrow')
-    await expect(rows).toHaveCount(INDEX.a1.units[0].ls.length)
-    await expect(page.locator('.wb-lrow__n--star')).toHaveCount(0)
+    // Первый юнит — четыре обычных урока: ни ревью, ни челленджа.
+    const first = page.locator('.wb-unit').first().locator('.wb-lrow')
+    await expect(first).toHaveCount(index.units[0].ls.length)
+    await expect(first.locator('.wb-lrow__n--star')).toHaveCount(0)
+
+    // Челлендж A1 — обычный урок 12, последний в третьем юните: в прототипе он
+    // помечен «★ Челлендж», а не номером.
+    expect(index.lessons[12].review).toBe(true)
+    const head = page.locator('.wb-unit__head', { hasText: index.units[2].title })
+    if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click()
+    const rows = page.locator('.wb-unit').nth(2).locator('.wb-lrow')
+    await expect(rows.last().locator('.wb-lrow__n')).toHaveText('★')
+    await expect(rows.first().locator('.wb-lrow__n')).toHaveText(String(index.units[2].ls[0]))
   })
 
   test('B2: зачёт стоит у каждого третьего юнита и помечен звёздочкой', async ({ page }) => {
