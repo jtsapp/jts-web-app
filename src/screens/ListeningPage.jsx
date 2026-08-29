@@ -301,6 +301,12 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
 
   const current = queue[0] || null
 
+  const entitlement = usePracticeEntitlement('listening', token)
+  // Блокируем не раздел, а старт задания: интро (маскот, описание, уровень)
+  // остаётся видимым всегда, замок появляется только при попытке начать
+  // тренировку — как юнит в грамматике (см. PracticePage.jsx, openUnit).
+  const [blocked, setBlocked] = useState(false)
+
   const loadContent = useCallback(async () => {
     if (content) return content
     setLoading(true)
@@ -320,6 +326,13 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   }, [content, level, t])
 
   const startSession = useCallback(async () => {
+    // Лимит демо-доступа проверяем в момент старта задания, а не при заходе
+    // на экран: интро остаётся видимым всегда, замок — только на попытке
+    // начать тренировку (та же граница, что у «открыть юнит» в грамматике).
+    if (!entitlement.loading && !entitlement.allowed) {
+      setBlocked(true)
+      return
+    }
     const data = content || (await loadContent())
     if (!data) return
     const session = buildSession(data, SESSION_SIZE)
@@ -340,7 +353,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     setStepsTotal(session.length)
     setExitOpen(false)
     setPhase('task')
-  }, [content, loadContent, t])
+  }, [content, loadContent, t, entitlement.loading, entitlement.allowed])
 
   const submit = useCallback(() => {
     if (!current || answered) return
@@ -387,11 +400,10 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   // выход из НЕзавершённой тренировки требует подтверждения
   const requestBack = () => (phase === 'task' ? setExitOpen(true) : back())
 
-  const entitlement = usePracticeEntitlement('listening', token)
-  if (!entitlement.loading && !entitlement.allowed) {
+  if (blocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+        <PracticeLimitScreen limit={entitlement.limit} onBack={() => setBlocked(false)} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
       </LearningLayout>
     )
   }

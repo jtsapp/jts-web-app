@@ -616,13 +616,13 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const mastery = lessonMastery(scores, total) // { mastered, pct } — локально
 
   const entitlement = usePracticeEntitlement('shadowing', token)
-  if (!entitlement.loading && !entitlement.allowed) {
-    return (
-      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
-      </LearningLayout>
-    )
-  }
+  // Список уроков (табы) остаётся видимым всегда — это каталог раздела,
+  // студент видит, какие спикеры вообще есть. Замок ставится только на сам
+  // урок (видео/скрипт/запись) — как в грамматике: юниты видны, открытие
+  // конкретного юнита под замком. Сюда попадают уже с конкретным уроком
+  // (клик по карточке в Практике), отдельного «до открытия» состояния у
+  // этого экрана нет, поэтому замок считаем прямо от квоты, без лишнего стейта.
+  const blocked = !entitlement.loading && !entitlement.allowed
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
@@ -652,6 +652,10 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
           ))}
         </div>
 
+        {blocked ? (
+          <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+        ) : (
+        <>
         {error && (
           <div className="sh-note sh-note--err">
             {error}{' '}
@@ -961,6 +965,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
             rows={segments}
             setActive={setActive}
           />
+        )}
+        </>
         )}
       </div>
     </LearningLayout>
