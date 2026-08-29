@@ -85,6 +85,10 @@ export async function verifyToken(token) {
       phone: user.phone ?? null,
       email: user.email ?? null,
       role: user.role ?? null,
+      // Демо-статус приезжает тем же запросом, которым проверяется токен:
+      // отдельный поход на бэкенд ради одного флага стоил бы каждому запросу
+      // книги лишний round-trip (см. /api/books/[id]).
+      isDemoAccount: !!user.isDemoAccount,
       // Для восстановления сессии на клиенте: /api/auth/me отдаёт это в App,
       // чтобы уровень не сбрасывался на A1 после перезагрузки.
       languageLevel: user.languageLevel ?? null,

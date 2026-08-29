@@ -915,3 +915,53 @@ export async function saveLanguageLevel(token, level) {
   if (!res.ok) throw new Error(`Не удалось сохранить уровень (${res.status})`)
   return res.json().catch(() => ({}))
 }
+
+// ── Пробный урок ────────────────────────────────────────────────────────────
+// Ученик на пробном уроке ещё не заведён в системе, поэтому ключ доступа —
+// секрет из ссылки (`/trial/<token>`), а не Bearer. Бэкенд открывает эти четыре
+// эндпоинта без авторизации и сам проверяет срок жизни ссылки
+// (см. TrialLinkController).
+
+/** Проверка ссылки: статус урока, имя ученика и преподавателя. 404 — ссылки
+ *  нет, 403 — протухла; и то и другое экран показывает одним сообщением, чтобы
+ *  подбор токенов не отличался по ответу от опечатки. */
+export async function openTrialLink(token) {
+  let res
+  try {
+    res = await fetch(`${BASE}/trial/link/${encodeURIComponent(token)}`, { cache: 'no-store' })
+  } catch (e) {
+    throw new Error('Нет связи с сервером. Проверьте интернет и попробуйте снова.')
+  }
+  if (!res.ok) {
+    // Статус нужен экрану: «ссылка не работает» и «сервер прилёг» — разные
+    // сообщения, и во втором случае имеет смысл предложить повтор.
+    const err = new Error(
+      res.status === 404 || res.status === 403
+        ? 'Ссылка на пробный урок недействительна или истекла.'
+        : `Ошибка сервера (${res.status})`,
+    )
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
+/** Отметка «урок начали». Ошибку глотаем у вызывающего: это телеметрия для
+ *  преподавателя, а не условие начала урока. */
+export function startTrialLesson(token) {
+  return post(`/trial/link/${encodeURIComponent(token)}/start`, {})
+}
+
+/** Итог диагностики. `raw` — полный лог сессии: он нужен, чтобы пересчитать
+ *  уровень после калибровки банка, не гоняя ученика по тесту заново. */
+export function saveTrialResult(token, payload) {
+  return post(`/trial/link/${encodeURIComponent(token)}/result`, payload)
+}
+
+/** Заявка с финального экрана. */
+export function saveTrialLead(token, name, phone) {
+  return post(`/trial/link/${encodeURIComponent(token)}/lead`, { name, phone: normalizePhone(phone) })
+}
+
+// Преподавательская часть — создание ссылок и результаты диагностики — живёт в
+// web-admin: преподаватель работает там, а на сайт приходит вести сам урок.

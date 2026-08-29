@@ -1,5 +1,5 @@
-// Связка каталога книг с текстом глав: сопоставление по названию (статика
-// public/practice/books) и главы из треков админки (detail-эндпоинт бэкенда).
+// Связка каталога книг с текстом глав: сопоставление по названию (каталог
+// сайта, GET /api/books) и главы из треков админки (detail-эндпоинт бэкенда).
 import { describe, it, expect } from 'vitest'
 import { normTitle, chaptersFromTracks } from './BookDetail.jsx'
 
@@ -22,9 +22,22 @@ describe('chaptersFromTracks', () => {
       { trackIndex: 2, title: 'Chapter Two', text: 'Winston walked on.' },
     ])
     expect(chapters).toEqual([
-      { num: '1', title: 'Chapter One', text: 'It was a bright cold day.' },
-      { num: '2', title: 'Chapter Two', text: 'Winston walked on.' },
+      { num: '1', title: 'Chapter One', text: 'It was a bright cold day.', locked: false },
+      { num: '2', title: 'Chapter Two', text: 'Winston walked on.', locked: false },
     ])
+  })
+
+  // Демо-превью книг админки режет бэкенд (BookPreviewService): за пределами
+  // превью текста в ответе нет вовсе, есть только пометка. Читалка обязана
+  // донести её до оглавления, иначе глава выглядит просто пустой.
+  it('переносит пометку закрытой главы из ответа бэкенда', () => {
+    const chapters = chaptersFromTracks([
+      { trackIndex: 1, title: 'One', text: 'Открытая глава' },
+      { trackIndex: 2, title: 'Two', text: null, locked: true },
+    ])
+    expect(chapters[0].locked).toBe(false)
+    expect(chapters[1].locked).toBe(true)
+    expect(chapters[1].text).toBe('')
   })
 
   it('нумерует по порядку, когда trackIndex не заведён', () => {
