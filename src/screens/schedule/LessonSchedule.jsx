@@ -39,12 +39,23 @@ export default function LessonSchedule({ token, onOpenLesson }) {
   // без ручного F5 (тот же класс проблемы, что и опрос статуса внутри самого
   // живого урока в LiveLessonPage). Тихий фон, без «loading»/мигания списка:
   // ошибку одного тика тоже молчим — при следующем тике само поправится.
+  // Скрытая вкладка не опрашиваем — экономим батарею/трафик и не копит
+  // очередь запросов; при возврате сразу один тик.
   useEffect(() => {
     if (!token) return undefined
-    const id = setInterval(() => {
+    const tick = () => {
+      if (typeof document !== 'undefined' && document.hidden) return
       getMyLessonOccurrences(token).then((o) => setOcc(Array.isArray(o) ? o : [])).catch(() => {})
-    }, 20000)
-    return () => clearInterval(id)
+    }
+    const id = setInterval(tick, 20000)
+    const onVis = () => {
+      if (!document.hidden) tick()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVis)
+    }
   }, [token])
 
   const occByDay = useMemo(() => occurrencesByDayKey(occ), [occ])

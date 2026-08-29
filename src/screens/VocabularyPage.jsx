@@ -98,7 +98,12 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     }
     let alive = true
     setIndexLoading(true)
-    getVocabCatalog(token)
+    getVocabCatalog(token, (data) => {
+      if (!alive) return
+      setIndex(data)
+      setIndexError(false)
+      setIndexLoading(false)
+    })
       .then((data) => {
         if (!alive) return
         setIndex(data)
@@ -118,9 +123,17 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 
   useEffect(() => {
     if (!token) return
-    openLessonVocab('saved', token)
-      .then(setMine)
+    let alive = true
+    openLessonVocab('saved', token, (data) => {
+      if (alive) setMine(data)
+    })
+      .then((data) => {
+        if (alive) setMine(data)
+      })
       .catch(() => {})
+    return () => {
+      alive = false
+    }
   }, [token])
 
   useEffect(() => {
@@ -129,23 +142,25 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 
   const loadScope = (id, meta, levelId) => {
     if (!token) return
-    getVocabScope(token, id)
-      .then((data) => {
-        setScope(data)
-        setScopeMeta(meta || { id })
-        setActiveLevel(levelId || meta?.id || null)
-        setScreen(meta?.kind === 'field' ? 'field-lessons' : 'levels')
-      })
+    const apply = (data) => {
+      setScope(data)
+      setScopeMeta(meta || { id })
+      setActiveLevel(levelId || meta?.id || null)
+      setScreen(meta?.kind === 'field' ? 'field-lessons' : 'levels')
+    }
+    getVocabScope(token, id, apply)
+      .then(apply)
       .catch(() => flash(t('vocab.home.empty')))
   }
 
   const openMine = () => {
     if (!token) return
-    openLessonVocab('saved', token)
-      .then((data) => {
-        setMine(data)
-        setScreen('mine')
-      })
+    const apply = (data) => {
+      setMine(data)
+      setScreen('mine')
+    }
+    openLessonVocab('saved', token, apply)
+      .then(apply)
       .catch(() => flash(t('vocab.lesson.error')))
   }
 
