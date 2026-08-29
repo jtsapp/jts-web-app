@@ -6569,7 +6569,11 @@ textarea {
 /* Вид занятия — первой строкой карточки дня, как в макете: групповое оранжевое,
    индивидуальное фиолетовое. Цвет здесь несёт смысл, поэтому дублируется
    словом — по одному цвету тип занятия не прочитать. */
-.sch-row__kind { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; margin-bottom: 4px; }
+.sch-row__kind { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+/* Отступ только в карточке дня: там чип — отдельная строка над именем. В ряду
+   «Мой график» контейнер флексовый с align-items:center, и нижний margin
+   поднимал бы чип на 2px относительно соседей. */
+.sch-row__main .sch-row__kind { margin-bottom: 4px; }
 .sch-row__kind--group { background: #fdecd2; color: #a15c07; }
 .sch-row__kind--solo { background: #efe6ff; color: #5b34d6; }
 .sch-row__teacher { font-weight: 700; font-size: 15px; color: var(--ink); overflow-wrap: anywhere; }

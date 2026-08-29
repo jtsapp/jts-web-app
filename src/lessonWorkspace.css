@@ -3041,6 +3041,10 @@
   .lw-focus-btn {
     transition: none;
   }
+  /* Метка вызова появляется рывком — при «уменьшить движение» просто есть. */
+  .lv-flag--call {
+    animation: none;
+  }
 }
 
 /* Тап-перевод (см. useTapTranslate.js) — та же карточка, что в читалке книг
@@ -3486,7 +3490,10 @@ button.lw-tap-pop__save.is-on:disabled {
   margin-top: auto;
   padding-top: 12px;
 }
-.lv-modal .lw-chat__input {
+/* Внутри .lv лежит и сам лист, поэтому селектор с ним: равноспецифичное
+   `.lv .lw-chat__input` объявлено ниже по файлу и иначе выигрывает — так и
+   вышло, когда блок листа переехал из медиазапроса вверх. */
+.lv .lv-modal .lw-chat__input {
   background: var(--lv-elev, #1b1b1f);
   border-color: #2a2a31;
   color: #fff;
@@ -3595,8 +3602,10 @@ button.lw-tap-pop__save.is-on:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+/* Светлее акцента: #9047ff на плитке #26262c даёт 3.2:1 — ниже AA для 12px,
+   и активная вкладка читалась хуже приглушённой соседней. */
 .lv-side__tab.is-active .lv-side__count {
-  color: var(--lw-primary);
+  color: #c4a4ff;
 }
 
 /* Тело вкладки прокручивается само — карточка ограничена по высоте, чтобы под
@@ -3993,32 +4002,43 @@ button.lw-tap-pop__save.is-on:disabled {
 }
 
 /* Две метки макета: вызвали (оранжевая рамка) и смотрят экран (синяя).
-   Рамкой, а не только плашкой: ученик смотрит в задание, а не в угол полотна,
+   Рамкой, а не только плашкой: ученик смотрит в задание, а не в угол экрана,
    и подсветить надо то самое место, где он сейчас работает. Цвет дублируется
-   словом — по одной рамке не прочитать, вызвали тебя или открыли твой экран. */
-.lv-sheet.is-called {
-  box-shadow: 0 0 0 2px var(--lw-warn-line, #f5a623);
+   словом — по одной рамке не прочитать, вызвали тебя или открыли твой экран.
+
+   Тень ВНУТРЕННЯЯ. Внешнюю обрезала колонка: у `.lv .lw-live-main` стоят
+   overflow-x: hidden и overflow-y: auto, паддинга у неё нет, а полотно тянется
+   на всю её ширину — кольцо ложилось ровно за краем padding-box и не рисовалось
+   ни по бокам, ни сверху. Проверять такое на временной странице бесполезно:
+   там полотно лежит вне колонки, и кольцо видно. */
+.lv-sheet.is-called,
+.lw-material-frame.is-called {
+  box-shadow: inset 0 0 0 2px var(--lw-warn-line, #f5a623);
 }
 
-.lv-sheet.is-watched {
-  box-shadow: 0 0 0 2px var(--lw-info-line, #2f80ed);
+.lv-sheet.is-watched,
+.lw-material-frame.is-watched {
+  box-shadow: inset 0 0 0 2px var(--lw-info-line, #2f80ed);
 }
 
-/* Обе сразу — вызвали, пока смотрели: внешним кольцом идёт вызов, он срочнее. */
-.lv-sheet.is-called.is-watched {
-  box-shadow: 0 0 0 2px var(--lw-info-line, #2f80ed), 0 0 0 5px var(--lw-warn-line, #f5a623);
+/* Обе сразу — вызвали, пока смотрели: по самому краю идёт вызов, он срочнее,
+   просмотр рисуется кольцом под ним. */
+.lv-sheet.is-called.is-watched,
+.lw-material-frame.is-called.is-watched {
+  box-shadow: inset 0 0 0 2px var(--lw-warn-line, #f5a623), inset 0 0 0 5px var(--lw-info-line, #2f80ed);
 }
 
-.lv-sheet__flags {
+/* Строка меток стоит над материалом, а не внутри полотна: полотно с заданиями
+   есть только у урока, разобранного шагами, а вызвать ученика преподаватель
+   может на любом материале (см. LiveLessonPage). */
+.lv-flags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  /* Метка стоит над шапкой полотна и не растягивает его отступы: gap полотна
-     28px, а здесь нужна плотная строка. */
-  margin-bottom: -20px;
+  margin-bottom: 12px;
 }
 
-.lv-sheet__flag {
+.lv-flag {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -4028,19 +4048,19 @@ button.lw-tap-pop__save.is-on:disabled {
   font-weight: 700;
 }
 
-.lv-sheet__flag--call {
+.lv-flag--call {
   background: #fdecd2;
   color: #a15c07;
   animation: lv-flag-in .35s ease-out;
 }
 
-.lv-sheet__flag--watch {
+.lv-flag--watch {
   padding-right: 12px;
   background: #e2edfd;
   color: #1b5fbd;
 }
 
-.lv-sheet__flag-close {
+.lv-flag__close {
   display: grid;
   place-items: center;
   width: 20px;
@@ -4053,11 +4073,11 @@ button.lw-tap-pop__save.is-on:disabled {
   cursor: pointer;
 }
 
-.lv-sheet__flag-close:hover {
+.lv-flag__close:hover {
   background: #f7dcb4;
 }
 
-.lv-sheet__flag-close:focus-visible {
+.lv-flag__close:focus-visible {
   outline: 2px solid var(--lw-primary);
   outline-offset: 1px;
 }
