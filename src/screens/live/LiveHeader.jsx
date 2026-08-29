@@ -12,8 +12,8 @@ import { VocabIcon } from '../../components/icons.jsx'
 // минуте, видит остаток, а не «00:00» от загрузки страницы.
 export default function LiveHeader({
   status,
-  teacherName,
-  lessonKind,
+  lessonTitle,
+  group,
   meetingUrl,
   connected,
   teacherOnline,
@@ -25,14 +25,6 @@ export default function LiveHeader({
   onExit,
 }) {
   const { t } = useI18n()
-  // Инициалы в кружке — две буквы, как в макете («АА»): по имени и фамилии,
-  // а если пришло одно слово, то первая буква.
-  const initial = (teacherName || '·')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('')
 
   return (
     <header className="lv-top">
@@ -45,44 +37,45 @@ export default function LiveHeader({
         ) : (
           <LiveStatusBadge status={status} />
         )}
-        <span className="lv-top__teacher">
-          {/* На связи преподаватель или нет — точкой на аватаре. Это показывал
-              ростер «В классе» под шапкой; в макете его нет, а знать ученику
-              надо: пустой класс и молчащий преподаватель выглядят одинаково. */}
-          <span className="lv-top__avatar" aria-hidden="true">
-            {initial}
-            {teacherOnline != null && <span className={`lv-top__dot${teacherOnline ? ' is-on' : ''}`} />}
+        {/* Слева в макете стоит сам урок — «Группа IELTS» и вид занятия, а не
+            преподаватель: имя преподавателя переехало во вкладку «Группа»
+            правой колонки, где оно стоит рядом с остальными участниками. */}
+        <span className="lv-top__lesson">
+          <span className="lv-top__icon" aria-hidden="true">
+            {group ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="9" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M3.5 19a5.5 5.5 0 0 1 11 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M16 6.2a3 3 0 0 1 0 5.6M17.5 19a5.6 5.6 0 0 0-2-4.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            )}
           </span>
-          <span className="lv-top__teacher-body">
-            <span className="lv-top__teacher-name">{teacherName || t('lesson.ws.teacher')}</span>
-            <span className="lv-top__teacher-role">
-              {lessonKind || t('live.yourTeacher')}
-              {teacherOnline != null && (
-                <span className="lv-top__presence">
-                  {' · '}
-                  {t(teacherOnline ? 'live.teacherOnline' : 'live.teacherOffline')}
-                </span>
-              )}
-            </span>
+          <span className="lv-top__lesson-body">
+            <span className="lv-top__lesson-name">{lessonTitle || t('live.title')}</span>
+            <span className="lv-top__lesson-kind">{t(group ? 'live.kindGroup' : 'live.kindSolo')}</span>
           </span>
         </span>
-        {/* Связь показываем только когда её нет: зелёная надпись «На связи» в
-            шапке — шум, который висит весь урок, а обрыв надо заметить. */}
+        {/* Присутствие преподавателя и связь показываем только когда их нет:
+            зелёная надпись «На связи» висела бы весь урок шумом, а вот пропажу
+            надо заметить — пустой класс и молчащий преподаватель без этого
+            выглядят для ученика одинаково. */}
+        {teacherOnline === false && <span className="lv-top__offline">{t('live.teacherAway')}</span>}
         {connected === false && <span className="lv-top__offline">{t('live.disconnected')}</span>}
       </div>
 
       {/* Словарь — по центру шапки, отдельной зоной: его открывают походя, и
-          рядом с «Выйти из урока» он спорил с ней за внимание. */}
+          рядом с «Выйти из урока» он спорил с ней за внимание. Подпись у
+          кнопки, как в макете: значок словаря сам по себе не читается. */}
       <div className="lv-top__center">
         {onVocab && (
-          <button
-            type="button"
-            className="lv-top__icon-btn"
-            onClick={onVocab}
-            title={t('live.yourVocab')}
-            aria-label={t('live.yourVocab')}
-          >
-            <VocabIcon size={20} />
+          <button type="button" className="lv-top__btn lv-top__btn--vocab" onClick={onVocab}>
+            <VocabIcon size={18} />
+            {t('live.yourVocab')}
           </button>
         )}
       </div>

@@ -14,12 +14,10 @@ import { setAudioReporter, playBroadcastAudio, stopBroadcastAudio } from './live
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import LiveHeader from './live/LiveHeader.jsx'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
-import PresenceRoster from './live/PresenceRoster.jsx'
-import StudentReviewPicker from './live/StudentReviewPicker.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
-import LessonTopics from './live/LessonTopics.jsx'
+import LessonSidePanel from './live/LessonSidePanel.jsx'
 import LessonContent, { practiceCardStats } from './workspace/LessonContent.jsx'
 import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
@@ -65,7 +63,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // остальные уроки. Раньше «Назад» уводила молча, посреди занятия.
   const [confirmExit, setConfirmExit] = useState(false)
   // «Темы урока» и «Чат урока» на телефоне — два отдельных экрана поверх урока
-  // (макет). null — закрыт, 'topics' | 'chat' — какой открыт.
+  // (макет). null — закрыт, 'topics' | 'chat' | 'vocab' — какой открыт.
   const [sheet, setSheet] = useState(null)
 
   // Esc закрывает лист тем/чата — он объявлен модальным, и без этого с
@@ -124,7 +122,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Групповой урок — несколько студентов шлют прогресс одновременно. Карта по
   // studentId, а не одно значение на всё занятие: иначе просмотр одного
   // ученика стирал бы то, что уже прислал другой, пока на него не смотрели
-  // (см. onStepProgress ниже и StudentReviewPicker).
+  // (см. onStepProgress ниже и вкладку «Группа» правой колонки).
   const [studentLiveState, setStudentLiveState] = useState({})
   const [reloadToken, setReloadToken] = useState(0)
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
@@ -156,7 +154,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [activeMaterialId, setActiveMaterialId] = useState(null)
   const activeMaterial = sectionMaterials.find((m) => m.materialId === activeMaterialId) || sectionMaterials[0] || null
   // Кого из участников смотрит преподаватель — выбирается через
-  // StudentReviewPicker (несколько студентов в групповом уроке), по умолчанию
+  // вкладкой «Группа» (несколько студентов в групповом уроке), по умолчанию
   // первый участник занятия, как и раньше (loadLesson()/selectStudent() в
   // web-admin делают то же самое по умолчанию).
   const [reviewStudentId, setReviewStudentId] = useState(null)
@@ -819,14 +817,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return () => clearTimeout(handle)
   }, [isStaff, followMode, activeMaterial?.materialId, reloadToken])
 
-  function nameFor(userId) {
-    if (userId === selfUserId) return t('live.roster.you')
-    if (lesson?.teacherId === userId) return lesson.teacherName || `#${userId}`
-    const p = lesson?.participants?.find((x) => x.studentId === userId)
-    if (p) return p.studentName || `#${userId}`
-    return `#${userId}`
-  }
-
   function load() {
     return getLessonById(token, lessonId)
       .then((data) => {
@@ -889,16 +879,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
     // а всё, что из него было нужно (словарь, выход), переехало в шапку урока.
     <div className="lv">
+      {/* Словарь открывается листом поверх урока, а не переходом в раздел
+          «Словарь»: onNav увёл бы ученика с урока, ради которого он это слово и
+          смотрел, а вернуться в урок было бы нечем. */}
       <LiveHeader
         status={status}
-        teacherName={lesson?.teacherName}
+        lessonTitle={lesson?.title || catalogLesson?.title}
         meetingUrl={lesson?.meetingUrl}
         connected={connected}
         teacherOnline={isStaff ? null : (lesson?.teacherId != null ? onlineUserIds.has(lesson.teacherId) : null)}
         timerLeft={timerLeft}
         timerExpired={timerExpired}
-        lessonKind={t((lesson?.participants?.length || 0) > 1 ? 'live.kindGroup' : 'live.kindSolo')}
-        onVocab={onNav ? () => onNav('vocab') : undefined}
+        group={(lesson?.participants?.length || 0) > 1}
+        onVocab={() => setSheet('vocab')}
         onTopics={() => setSheet('topics')}
         onChat={() => setSheet('chat')}
         onExit={() => setConfirmExit(true)}
@@ -919,12 +912,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
         {state === 'ready' && lesson && (
           <>
-            {/* Кто в классе — только преподавателю: ученик видит своего
-                преподавателя в шапке урока, и вторая строка с тем же именем
-                макету не нужна. Преподавателю же важно, кто из учеников на
-                связи. */}
-            {isStaff && <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />}
-
+            {/* Состав класса переехал во вкладку «Группа» правой колонки: и
+                строка «В классе» над уроком, и ряд плиток выбора ученика
+                показывали одно и то же двумя разными способами, а ученику не
+                показывали вовсе. */}
             {!isStaff && status === 'SCHEDULED' && <p className="live__status-msg">{t('live.waiting')}</p>}
 
             {isStaff && (
@@ -935,15 +926,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 onPause={() => act((tk, id) => pauseLiveLesson(tk, id, PAUSE_MINUTES))}
                 onResume={() => act(resumeLiveLesson)}
                 onComplete={() => act(completeLiveLesson)}
-              />
-            )}
-
-            {isStaff && (
-              <StudentReviewPicker
-                participants={lesson.participants}
-                reviewStudentId={reviewStudentId}
-                onSelect={setReviewStudentId}
-                onlineUserIds={onlineUserIds}
               />
             )}
 
@@ -1131,22 +1113,32 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
                     <div className="lw-live-aside">
                       {/* Маршрут урока и «Топики урока» были двумя списками в
-                          двух колонках — в макете это один список справа. */}
+                          двух колонках — в макете это один список справа, и
+                          рядом с ним вкладка с составом класса.
+
+                          teacherStepId: где преподаватель — это показывал
+                          бегунок «Т» на треке маршрута; маршрута больше нет,
+                          метка живёт в списке тем. */}
                       {sections.length === 0 ? (
                         <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
                           {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
                         </p>
                       ) : (
-                        <LessonTopics
+                        <LessonSidePanel
                           steps={routeSteps}
                           activeStepId={routeActiveId}
                           statusById={onLessonSteps ? stepStatusById : sectionStatusById}
                           onSelect={selectRouteStep}
                           hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
-                          // Где преподаватель — это показывал бегунок «Т» на
-                          // треке маршрута; маршрута больше нет, метка живёт в
-                          // списке тем.
                           teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
+                          teacherId={lesson.teacherId}
+                          teacherName={lesson.teacherName}
+                          participants={lesson.participants}
+                          onlineUserIds={onlineUserIds}
+                          selfUserId={selfUserId}
+                          isStaff={isStaff}
+                          reviewStudentId={reviewStudentId}
+                          onWatch={setReviewStudentId}
                         />
                       )}
                       {/* Урок кончился — звонка на его месте быть не должно:
@@ -1211,9 +1203,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         sending={chatSending}
                         title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
                       />
-                      {/* Словарь школы, чтобы посмотреть слово из задания и не
-                          уходить из урока в раздел «Словарь». */}
-                      <LessonDictionary token={token} />
                     </div>
                   </div>
                 )}
@@ -1248,7 +1237,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             </svg>
           </button>
           {sheet === 'topics' ? (
-            <LessonTopics
+            <LessonSidePanel
               steps={routeSteps}
               activeStepId={routeActiveId}
               statusById={onLessonSteps ? stepStatusById : sectionStatusById}
@@ -1258,7 +1247,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               }}
               hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
               teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
+              teacherId={lesson?.teacherId}
+              teacherName={lesson?.teacherName}
+              participants={lesson?.participants}
+              onlineUserIds={onlineUserIds}
+              selfUserId={selfUserId}
+              isStaff={isStaff}
+              reviewStudentId={reviewStudentId}
+              onWatch={setReviewStudentId}
             />
+          ) : sheet === 'vocab' ? (
+            <LessonDictionary token={token} />
           ) : (
             <TeacherChat
               messages={chatMessages}
