@@ -136,32 +136,30 @@ export async function fetchTutorLimitOverride(token) {
 }
 
 /**
- * Effective completion-quota cap for the current student for one content type
- * (see backend's ContentQuotaService/GET /mobile/content-quota) - `null` means
- * no cap. This app owns its own completion count for these areas (grammar/
- * vocab/listening/shadowing done-arrays, IELTS attempt rows) - the backend is
- * only the policy source, so callers fetch the number here and compare it
- * themselves. Same fail-open contract as fetchTutorLimitOverride: any error
- * (network, non-2xx, malformed body) returns null, i.e. "no cap", rather than
- * blocking the caller over a backend hiccup. Anonymous (no token) callers
- * never have a cap - quotas are keyed by the backend's own User id.
+ * Effective completion-quota for the current student for one content type.
+ * Returns `{ limit, source, sourceName }` — `limit: null` means no cap.
+ * Fail-open: any error returns `{ limit: null, source: 'NONE' }`.
  */
 export async function fetchContentQuota(token, contentType) {
-  if (!token) return null
+  if (!token) return { limit: null, source: 'NONE', sourceName: null }
   try {
     const res = await fetch(
       `${BACKEND_URL}/mobile/content-quota?contentType=${encodeURIComponent(contentType)}&contentId=0`,
       { method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, cache: 'no-store' },
     )
-    if (!res.ok) return null
+    if (!res.ok) return { limit: null, source: 'NONE', sourceName: null }
     const data = await res.json()
-    return data?.limit ?? null
+    return {
+      limit: data?.limit ?? null,
+      source: data?.source || 'NONE',
+      sourceName: data?.sourceName || null,
+    }
   } catch (err) {
     console.error(
       '[auth] content-quota fetch failed:',
       err?.cause?.code || err?.cause?.message || err?.message || err,
     )
-    return null
+    return { limit: null, source: 'NONE', sourceName: null }
   }
 }
 

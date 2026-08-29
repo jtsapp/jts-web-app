@@ -73,8 +73,25 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   // целиком и упирался в отказ только на сдаче (а Reading/Listening вообще
   // молча не сохраняли результат).
   const { t } = useI18n()
-  const { allowed, limit, used, loading } = useIeltsEntitlement(token)
+  const { allowed, limit, used, loading, source, sourceName } = useIeltsEntitlement(token)
   const outOfAttempts = !loading && !allowed
+
+  const limitMessage = (() => {
+    const params = { used: String(used), limit: String(limit ?? 0), name: sourceName || '' }
+    if (source === 'PLAN') return t('ielts.limitReachedPlan', params)
+    if (source === 'SUBSCRIPTION') return t('ielts.limitReachedSub', params)
+    if (source === 'DEMO' || isDemoAccount) {
+      return (
+        <>
+          {t('ielts.limitReachedDemo', params)}{' '}
+          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+            {t('demo.cta')}
+          </a>
+        </>
+      )
+    }
+    return t('ielts.limitReached', params)
+  })()
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="ielts" token={token} onNav={onNav} onProfile={onProfile}>
@@ -91,17 +108,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
 
         {outOfAttempts && (
           <div className="ie-limit" role="status">
-            🔒{' '}
-            {isDemoAccount ? (
-              <>
-                {t('ielts.limitReachedDemo', { used: String(used), limit: String(limit ?? 0) })}{' '}
-                <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                  {t('demo.cta')}
-                </a>
-              </>
-            ) : (
-              t('ielts.limitReached', { used: String(used), limit: String(limit ?? 0) })
-            )}
+            🔒 {limitMessage}
           </div>
         )}
 

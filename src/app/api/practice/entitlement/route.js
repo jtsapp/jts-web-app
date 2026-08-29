@@ -53,12 +53,15 @@ export async function GET(request) {
   // No DB → no progress ever recorded → nothing to cap against yet.
   const state = isDbConfigured() ? await loadPracticeState(resolved.id) : { vocab: {}, grammar: { done: [] }, listening: { done: [] } }
   const completed = completedCountFor(moduleName, state)
-  const limit = await fetchContentQuota(bearerFromRequest(request), CONTENT_TYPE_BY_MODULE[moduleName])
+  const quota = await fetchContentQuota(bearerFromRequest(request), CONTENT_TYPE_BY_MODULE[moduleName])
+  const limit = quota?.limit ?? null
 
   return Response.json({
     configured: true,
     allowed: limit == null || completed < limit,
     limit,
     completed,
+    source: quota?.source || 'NONE',
+    sourceName: quota?.sourceName || null,
   })
 }
