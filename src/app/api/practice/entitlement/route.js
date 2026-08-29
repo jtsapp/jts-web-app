@@ -9,11 +9,12 @@
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { loadPracticeState } from '@/lib/db/practice.js'
 import { resolveProfileId, bearerFromRequest, fetchContentQuota } from '@/lib/auth-server.js'
-import { isValidModule, unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
+import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 
 export const runtime = 'nodejs'
 
-// Same module keys as practiceContract.js, mapped to the backend's ContentType.
+// Module keys → backend ContentType. books/memes/tales не в PRACTICE_MODULES
+// (нет practice-state для них) — только entitlement/quota.
 const CONTENT_TYPE_BY_MODULE = {
   grammar: 'PRACTICE_GRAMMAR',
   vocab: 'PRACTICE_VOCAB',
@@ -24,9 +25,17 @@ const CONTENT_TYPE_BY_MODULE = {
   situations: 'PRACTICE_SITUATIONS',
   // Воркбуки A0–B2 (public/practice/workbooks/); единица — открытый уровень.
   workbooks: 'PRACTICE_WORKBOOKS',
-  // Тренажёр письма; ContentType на Java-бэкенде пока не заведён — квота
-  // вернётся null, и гейт остаётся fail-open (осознанно, см. usePracticeEntitlement).
   writing: 'PRACTICE_WRITING',
+  // Whole-area: прогресс не в practice DB. completed=0 → лимит 0 закрывает
+  // раздел; положительный лимит для книг досчитывается на клиенте по
+  // audiobooks.completed. Мемы/сказки — по сути on/off (0 или без лимита).
+  books: 'PRACTICE_BOOKS',
+  memes: 'PRACTICE_MEMES',
+  tales: 'PRACTICE_TALES',
+}
+
+function isEntitlementModule(moduleName) {
+  return Object.prototype.hasOwnProperty.call(CONTENT_TYPE_BY_MODULE, moduleName)
 }
 
 function completedCountFor(moduleName, state) {
@@ -34,6 +43,8 @@ function completedCountFor(moduleName, state) {
   // У writing state — объект {tasks, seen}, а не done-массив: единица счёта —
   // закрытое задание жанра.
   if (moduleName === 'writing') return Object.keys(state.writing?.tasks ?? {}).length
+  // books/memes/tales — нет done в practice state (см. CONTENT_TYPE_BY_MODULE).
+  if (moduleName === 'books' || moduleName === 'memes' || moduleName === 'tales') return 0
   return state[moduleName]?.done?.length ?? 0
 }
 
@@ -43,7 +54,7 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url)
   const moduleName = searchParams.get('module')
-  if (!isValidModule(moduleName)) {
+  if (!isEntitlementModule(moduleName)) {
     return Response.json({ configured: true, error: 'Unknown module.' }, { status: 400 })
   }
 
