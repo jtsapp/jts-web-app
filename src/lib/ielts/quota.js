@@ -15,15 +15,13 @@
 
 import { resolveProfileId, bearerFromRequest, fetchContentQuota } from '../auth-server.js'
 import { countIeltsAttemptsSince } from '../db/ielts.js'
+// Список платных секций живёт в paidSections.js, а не здесь - это клиентски
+// безопасный модуль без auth-server.js/db за спиной, и его же импортирует
+// экран IeltsPage.jsx, чтобы решать, какие модули запирать при исчерпанной
+// квоте. Дублировать список значений section в двух файлах нельзя: разъедутся.
+import { PAID_IELTS_SECTIONS, sectionConsumesQuota } from './paidSections.js'
 
-// Реальные значения section, которыми оперируют submit-роуты и БД (см.
-// record-section/route.js и db/ielts.js): 'writing' | 'speaking' - платные,
-// 'reading' | 'listening' - бесплатные (локальный грейдер).
-const PAID_SECTIONS = new Set(['speaking', 'writing'])
-
-export function sectionConsumesQuota(section) {
-  return PAID_SECTIONS.has(String(section || '').toLowerCase())
-}
+export { sectionConsumesQuota }
 
 // section передают submit-роуты, которые точно знают, что сдаёт студент.
 // Entitlement-роут спрашивает не про конкретную секцию, а про лимит в целом,
@@ -47,7 +45,7 @@ export async function checkIeltsQuota(request, deviceId, section) {
   // Считаем попытки только по платным секциям - иначе Reading/Listening,
   // которые сами никогда не блокируются (см. выше), всё равно раздували бы
   // "used" и молча съедали квоту Speaking/Writing при следующей проверке.
-  const used = await countIeltsAttemptsSince(resolved.id, startOfMonth, [...PAID_SECTIONS])
+  const used = await countIeltsAttemptsSince(resolved.id, startOfMonth, [...PAID_IELTS_SECTIONS])
   return {
     resolved,
     blocked: used >= limit,
