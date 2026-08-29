@@ -108,6 +108,16 @@ describe('LessonSidePanel — вкладки правой колонки', () =>
     expect(screen.queryByRole('button', { name: 'Вызвать' })).toBeNull()
   })
 
+  // Пока урок не загрузился, преподавателя нет: строка-заглушка «Учитель» без
+  // имени сообщала бы, что он в классе, а счётчик расходился бы со списком.
+  it('преподаватель неизвестен — ни строки, ни единицы в счётчике', () => {
+    const { container } = renderPanel({ teacherId: null, teacherName: null })
+    expect(screen.getByRole('tab', { name: /Группа/ }).textContent).toBe('Группа2')
+    fireEvent.click(screen.getByRole('tab', { name: /Группа/ }))
+    expect(container.querySelectorAll('.lv-people__row')).toHaveLength(2)
+    expect(screen.queryByText('Учителя')).toBeNull()
+  })
+
   it('урок один на один — во вкладке учитель и ученик', () => {
     renderPanel({ participants: [{ studentId: 10, studentName: 'Данияр Серіков' }] })
     expect(screen.getByRole('tab', { name: /Группа/ }).textContent).toBe('Группа2')

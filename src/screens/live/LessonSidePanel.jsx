@@ -30,8 +30,11 @@ export default function LessonSidePanel({
   const { t } = useI18n()
   const [tab, setTab] = useState('topics')
   const topicsCount = (steps || []).length
-  // Преподаватель считается вместе с учениками: во вкладке он такой же строкой.
-  const peopleCount = (participants || []).length + 1
+  // Преподаватель считается вместе с учениками — но только когда он вообще
+  // известен: пока урок не загрузился, строки с ним нет, и «+1» разошёлся бы
+  // со списком, по которому ученик и судит о размере группы.
+  const hasTeacher = teacherId != null || Boolean(teacherName)
+  const peopleCount = (participants || []).length + (hasTeacher ? 1 : 0)
 
   const TABS = [
     { key: 'topics', label: t('live.topicsTab'), count: topicsCount },

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import { wsBase } from '../../lib/wsUrl.js'
 
@@ -18,6 +18,10 @@ import { wsBase } from '../../lib/wsUrl.js'
 // он их не станет, но данные были бы уже на устройстве).
 export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, isStaff = false } = {}) {
   const clientRef = useRef(null)
+  // Соединение нужно знать снаружи: publish до CONNECT молча теряется, и
+  // вызывающему приходится ждать связи, чтобы отправить состояние (см.
+  // «преподаватель смотрит экран» в LiveLessonPage).
+  const [connected, setConnected] = useState(false)
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
   const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch })
@@ -29,7 +33,12 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
       brokerURL: wsBase(),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 3000,
+      // Обрыв и ошибку STOMP отмечаем так же, как в useLessonPresence: клиент
+      // переподключится сам, но до этого публиковать некуда.
+      onWebSocketClose: () => setConnected(false),
+      onStompError: () => setConnected(false),
       onConnect: () => {
+        setConnected(true)
         client.subscribe(`/topic/lesson/${lessonId}/focus`, (m) => {
           const evt = parse(m.body)
           if (!evt || evt.senderUserId === selfUserId) return
@@ -102,7 +111,7 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
     })
     client.activate()
     clientRef.current = client
-    return () => { client.deactivate(); clientRef.current = null }
+    return () => { client.deactivate(); clientRef.current = null; setConnected(false) }
   }, [lessonId, token, selfUserId, isStaff])
 
   const publish = useCallback((action, body) => {
@@ -141,7 +150,7 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   // у того, от кого преподаватель уже ушёл.
   const sendWatch = useCallback((studentId, watching) => publish('watch', { studentId, watching }), [publish])
 
-  return { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio, sendCall, sendWatch }
+  return { connected, sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio, sendCall, sendWatch }
 }
 
 function parse(body) {

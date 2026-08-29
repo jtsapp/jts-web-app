@@ -14,11 +14,13 @@ import { useI18n } from '../../i18n.jsx'
  * в задании прямо сейчас.
  *
  * Свёрнут по умолчанию: в колонке уже стоят звонок, темы и чат, и четвёртая
- * раскрытая карточка вытолкнула бы чат за пределы экрана.
+ * раскрытая карточка вытолкнула бы чат за пределы экрана. Листом поверх урока
+ * (`defaultOpen`) — наоборот, раскрыт: там кроме словаря ничего нет, и лишний
+ * клик по заголовку означал бы пустой экран в ответ на «Ваш словарь».
  */
-export default function LessonDictionary({ token }) {
+export default function LessonDictionary({ token, defaultOpen = false }) {
   const { t } = useI18n()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [query, setQuery] = useState('')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)

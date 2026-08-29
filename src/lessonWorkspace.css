@@ -3430,6 +3430,117 @@ button.lw-tap-pop__save.is-on:disabled {
   color: var(--lv-muted);
 }
 
+/* --- лист поверх урока ------------------------------------------------ */
+
+/* «Темы урока», «Чат урока» и словарь — самостоятельные экраны поверх урока,
+   как в макете: тёмный фон, крестик в правом верхнем углу, внутри тот же
+   список тем, чат или словарь, но во всю высоту.
+
+   Правила были объявлены внутри @media (max-width: 760px), и этого хватало,
+   пока лист открывали только кнопки мобильного ряда. Кнопка «Ваш словарь»
+   видна и на десктопе — там лист выходил блоком вовсе без стилей и схлопывался
+   внутри .lv (height: 100dvh; overflow: hidden), то есть кнопка выглядела
+   сломанной. Поэтому база общая, а телефонное «во весь экран» и десктопный
+   диалог — два уточнения ниже. */
+.lv-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px var(--safe-bottom);
+  background: var(--lv-bg, #0f0f12);
+}
+.lv-modal > .lw-card {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  background: none;
+  border: none;
+  padding: 0;
+}
+/* Список тем и лента чата прокручиваются внутри листа, а не тянут его вниз. */
+.lv-modal .lv-side__body,
+.lv-modal .lv-people,
+.lv-modal .lv-topics__list,
+.lv-modal .lw-chat__list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+/* Вкладки не заезжают под крестик листа. */
+.lv-modal .lv-side__tabs {
+  padding-right: 44px;
+}
+/* Чат в листе: лента тянется, поле ввода прижато к низу — как в макете.
+   Без этого композер уезжал за пределы карточки и написать было нечем. */
+.lv-modal .lw-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.lv-modal .lw-chat__composer {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.lv-modal .lw-chat__input {
+  background: var(--lv-elev, #1b1b1f);
+  border-color: #2a2a31;
+  color: #fff;
+}
+
+.lv-modal__close {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--lv-elev, #1b1b1f);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* На десктопе лист — диалог по центру, а не экран во всю ширину: урок под ним
+   остаётся виден, и понятно, что словарь открыт поверх занятия, а не вместо
+   него. */
+@media (min-width: 761px) {
+  .lv-modal {
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    background: rgba(9, 9, 12, .72);
+  }
+
+  /* Крестик — первый ребёнок листа, панель — всё остальное. */
+  .lv-modal > :not(.lv-modal__close) {
+    width: min(560px, calc(100vw - 48px));
+    max-height: min(640px, calc(100vh - 96px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--lv-panel);
+    border-radius: var(--lw-r-card);
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  /* Крестик уходит в угол затемнения: считать его от края панели пришлось бы
+     повторением всех её calc-ов, и любой из них разъехался бы при следующей
+     правке ширины. */
+  .lv-modal__close {
+    top: 24px;
+    right: 24px;
+  }
+}
+
 /* --- правая колонка: «Темы» и «Группа» одной карточкой ---------------- */
 
 /* Заголовков у списков нет — их роль играют вкладки со счётчиком («Темы 5»,
@@ -4365,75 +4476,6 @@ button.lw-tap-pop__save.is-on:disabled {
   /* Значки в макете фиолетовые на тёмной плитке; на красной кнопке — белый. */
   .lv-top__act {
     color: #9047ff;
-  }
-  /* Листы «Темы урока» и «Чат урока» — самостоятельные экраны поверх урока,
-     как в макете: тёмный фон, крестик в правом верхнем углу, внутри тот же
-     список тем или чат, но во всю высоту. */
-  .lv-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    display: flex;
-    flex-direction: column;
-    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px var(--safe-bottom);
-    background: var(--lv-bg, #0f0f12);
-  }
-  .lv-modal > .lw-card {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-    margin: 0;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  /* Список тем и лента чата прокручиваются внутри листа, а не тянут его вниз. */
-  .lv-modal .lv-side__body,
-  .lv-modal .lv-people,
-  .lv-modal .lv-topics__list,
-  .lv-modal .lw-chat__list {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-    overflow-y: auto;
-  }
-
-  /* Вкладки не заезжают под крестик листа. */
-  .lv-modal .lv-side__tabs {
-    padding-right: 44px;
-  }
-  /* Чат в листе: лента тянется, поле ввода прижато к низу — как в макете.
-     Без этого композер уезжал за пределы карточки и написать было нечем. */
-  .lv-modal .lw-chat {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .lv-modal .lw-chat__composer {
-    margin-top: auto;
-    padding-top: 12px;
-  }
-  .lv-modal .lw-chat__input {
-    background: var(--lv-elev, #1b1b1f);
-    border-color: #2a2a31;
-    color: #fff;
-  }
-
-  .lv-modal__close {
-    position: absolute;
-    top: calc(16px + env(safe-area-inset-top, 0px));
-    right: 16px;
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 50%;
-    background: var(--lv-elev, #1b1b1f);
-    color: #fff;
-    cursor: pointer;
   }
 
   .lv-top__sep {

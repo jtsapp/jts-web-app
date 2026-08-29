@@ -48,17 +48,24 @@ export default function LessonPeople({
   const { t } = useI18n()
   const students = participants || []
   const isOnline = (id) => Boolean(onlineUserIds?.has(id))
+  // Пока урок не загрузился, преподавателя нет вовсе — строка-заглушка «Учитель»
+  // без имени сообщала бы, что он в классе, хотя это просто пустой ответ.
+  const hasTeacher = teacherId != null || Boolean(teacherName)
 
   return (
     <div className="lv-people">
-      <p className="lv-people__label">{t('live.peopleTeachers')}</p>
-      <ul className="lv-people__list">
-        <PersonRow
-          name={teacherName || t('lesson.ws.teacher')}
-          online={isOnline(teacherId)}
-          self={isStaff && teacherId != null && teacherId === selfUserId}
-        />
-      </ul>
+      {hasTeacher && (
+        <>
+          <p className="lv-people__label">{t('live.peopleTeachers')}</p>
+          <ul className="lv-people__list">
+            <PersonRow
+              name={teacherName || t('lesson.ws.teacher')}
+              online={isOnline(teacherId)}
+              self={isStaff && teacherId != null && teacherId === selfUserId}
+            />
+          </ul>
+        </>
+      )}
 
       {students.length > 0 && (
         <ul className="lv-people__list">

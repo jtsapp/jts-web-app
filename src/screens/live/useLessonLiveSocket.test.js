@@ -302,6 +302,13 @@ describe('useLessonLiveSocket', () => {
     expect(onWatch).toHaveBeenLastCalledWith({ senderName: 'Адильжан', watching: false })
   })
 
+  // Состояние связи нужно снаружи: publish до CONNECT молча теряется, а метку
+  // «учитель смотрит ваш экран» отправляют сразу, как только выбран ученик.
+  it('сообщает о том, что связь установлена', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, {}))
+    await waitFor(() => expect(result.current.connected).toBe(true))
+  })
+
   it('sendCall/sendWatch publish to the right destinations', async () => {
     const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
     await waitFor(() => expect(lastClient.connected).toBe(true))

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getLessonById, getLessonSections } from '../../api.js'
 import { lessonTopicFromSections } from './lessonFormat.js'
+import { isGroupLesson } from '../../lib/lessonKind.js'
 
 // Ссылка на видеозвонок и тема урока живут в карточке урока, а не в списке
 // occurrences: /admin/lessons/occurrences отдаёт только время, преподавателя и
@@ -18,9 +19,10 @@ import { lessonTopicFromSections } from './lessonFormat.js'
  * что уже загружено.
  *
  * `group` — групповое занятие или индивидуальное: /admin/lessons/occurrences
- * такого поля не отдаёт, а карточка дня в макете разводит их цветом. Считаем
- * по числу участников урока — запрос за ним всё равно уже делается ради ссылки
- * на звонок, второго похода в сеть тут нет.
+ * такого поля не отдаёт, а карточка дня в макете разводит их цветом. Берём
+ * lessonType самого урока (см. lessonKind.js) — запрос за ним всё равно уже
+ * делается ради ссылки на звонок, второго похода в сеть тут нет. null означает
+ * «тип неизвестен», и тогда чипа не будет вовсе.
  */
 export function useLessonCards(token, lessonIds) {
   const cacheRef = useRef(new Map())
@@ -41,7 +43,7 @@ export function useLessonCards(token, lessonIds) {
         getLessonById(token, id)
           .then((lesson) => [id, {
             meetingUrl: lesson?.meetingUrl || null,
-            group: (lesson?.participants?.length || 0) > 1,
+            group: isGroupLesson(lesson),
           }])
           // Урок не отдался — карточка покажется без ссылки и без типа, но
           // покажется: догрузка здесь украшение, а не условие показа.
