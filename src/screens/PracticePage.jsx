@@ -229,7 +229,9 @@ function speak(word) {
 let _coversIndexPromise = null
 function fetchCoversIndex() {
   if (!_coversIndexPromise) {
-    _coversIndexPromise = fetch('/practice/books/index.json')
+    // Каталог уехал из public за роут /api/books вместе с текстами книг:
+    // обложки берутся из того же индекса, что и раньше, но новым адресом.
+    _coversIndexPromise = fetch('/api/books')
       .then((r) => (r.ok ? r.json() : []))
       .catch(() => []) // нет индекса — карточки останутся с градиентами
   }
@@ -263,7 +265,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Студент упёрся в квоту статических уровней — показываем экран лимита.
   const [situationsBlocked, setSituationsBlocked] = useState(false)
   const [workbooksBlocked, setWorkbooksBlocked] = useState(false)
-  const [booksBlocked, setBooksBlocked] = useState(false)
   const [memesBlocked, setMemesBlocked] = useState(false)
   const [talesBlocked, setTalesBlocked] = useState(false)
   const [books, setBooks] = useState([])
@@ -278,7 +279,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // в этой же секции лежат оба источника, внешне неразличимые.
   const situationsEntitlement = usePracticeEntitlement('situations', token)
   const workbooksEntitlement = usePracticeEntitlement('workbooks', token)
-  const booksEntitlement = usePracticeEntitlement('books', token)
   const memesEntitlement = usePracticeEntitlement('memes', token)
   const talesEntitlement = usePracticeEntitlement('tales', token)
 
@@ -473,23 +473,12 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     setOpenReel(index)
   }
 
-  // Книги: лимит 0 закрывает раздел (серверный allowed). Положительный лимит —
-  // считаем пройденные аудиокниги на клиенте (флаг completed с бэкенда).
-  const tryOpenBook = (book) => {
-    if (!booksEntitlement.loading && !booksEntitlement.allowed) {
-      setBooksBlocked(true)
-      return
-    }
-    const limit = booksEntitlement.limit
-    if (limit != null && !book.completed) {
-      const done = books.filter((b) => b.completed).length
-      if (done >= limit) {
-        setBooksBlocked(true)
-        return
-      }
-    }
-    setOpenBook(book)
-  }
+  // Книги ограничивает сервер, а не этот экран: квота PRACTICE_BOOKS означает
+  // «сколько глав открыто к чтению», и превью выдаёт бэкенд (BookPreviewService
+  // и роут /api/books). Клиентский счётчик пройденных книг здесь стоял бы
+  // вторым, невидимым смыслом у того же числа — и обходился бы, как и любая
+  // проверка на клиенте.
+  const tryOpenBook = (book) => setOpenBook(book)
 
   // Разговорная практика (Speaking A1–C1): оверлей с уровневыми страницами
   // (src/practice/situations/), открывается на выбранном уровне.
@@ -545,13 +534,6 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     )
   }
 
-  if (booksBlocked) {
-    return (
-      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={booksEntitlement.limit} onBack={() => setBooksBlocked(false)} isDemoAccount={isDemoAccount} source={booksEntitlement.source} sourceName={booksEntitlement.sourceName} />
-      </LearningLayout>
-    )
-  }
 
   if (memesBlocked) {
     return (
