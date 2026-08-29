@@ -49,4 +49,50 @@ test.describe('Демо-лимит: замок на контенте, не на 
     await expect(page.locator('.pl-limit')).toBeVisible()
     await expect(page.locator('.sh-video')).toHaveCount(0)
   })
+
+  test('аудирование: лимит, пришедший ПОСЛЕ старта сессии, всё равно подменяет контент замком', async ({ page }) => {
+    // Регрессия на одноразовую защёлку: кнопка «Начать» кликабельна сразу
+    // после монтирования, а usePracticeEntitlement до ответа сервера работает
+    // fail-open (allowed:true). Если клик попал в это окно — сессия стартует
+    // до того, как пришёл allowed:false. Блокировка обязана быть вычисляемым
+    // значением (пересчитывается на каждом рендере), а не setState-защёлкой,
+    // которую выставили один раз в момент клика и больше никогда не трогали.
+    await page.route('**/api/practice/entitlement**', async (r) => {
+      // Задержка имитирует именно этот порядок: клик — раньше ответа сервера.
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await r.fulfill(json({ configured: true, allowed: false, limit: 8, completed: 8 }))
+    })
+    await page.route('**/practice/listening/content/*.json', (r) =>
+      r.fulfill(
+        json([
+          {
+            id: 'a1_x',
+            type: 'listen_choice',
+            audio: 'x.mp3',
+            prompt: 'Where is Li now?',
+            options: ['In Shanghai', 'In Beijing', 'In Tokyo'],
+            answer: 'In Shanghai',
+            explanation: '',
+          },
+        ]),
+      ),
+    )
+
+    await page.goto('/?screen=listening')
+    await expect(page.locator('.lt-intro')).toBeVisible()
+
+    // Клик сразу, пока entitlement ещё грузится (fail-open, allowed:true) —
+    // ровно то окно, в которое должен попасть клик ученика с лимитом.
+    await page.locator('.lt-intro .lt-primary').click()
+
+    // Сессия успела начаться: контент задания уже на экране, замка ещё нет.
+    await expect(page.locator('.lt-heading')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.pl-limit')).toHaveCount(0)
+
+    // Ответ allowed:false пришёл ПОЗЖЕ старта — экран обязан подмениться
+    // замком. На защёлке (blocked как useState, выставленный только в
+    // startSession) это не происходит: контент остаётся до конца сессии.
+    await expect(page.locator('.pl-limit')).toBeVisible({ timeout: 5000 })
+    await expect(page.locator('.lt-heading')).toHaveCount(0)
+  })
 })

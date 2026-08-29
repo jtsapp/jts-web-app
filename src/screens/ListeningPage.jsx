@@ -305,7 +305,20 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   // Блокируем не раздел, а старт задания: интро (маскот, описание, уровень)
   // остаётся видимым всегда, замок появляется только при попытке начать
   // тренировку — как юнит в грамматике (см. PracticePage.jsx, openUnit).
-  const [blocked, setBlocked] = useState(false)
+  //
+  // attemptedStart — это флаг «пользователь нажал “Начать”», НЕ статус
+  // блокировки: раньше blocked был useState, который выставляли в true один
+  // раз внутри startSession и больше никогда не пересчитывали. Кнопка
+  // кликабельна сразу после монтирования, а usePracticeEntitlement до ответа
+  // сервера работает fail-open (allowed:true) — если клик попадал в это окно,
+  // сессия стартовала, а когда чуть позже приходил allowed:false, blocked так
+  // и оставался false до конца сессии. Сам blocked теперь ВЫЧИСЛЯЕТСЯ на
+  // каждом рендере из entitlement (тот же приём, что в ShadowingPage.jsx и
+  // в гейте грамматики PracticePage.jsx), поэтому и в разгар уже начатой
+  // сессии, стоит entitlement обновиться на allowed:false — на следующем же
+  // рендере контент подменится экраном лимита.
+  const [attemptedStart, setAttemptedStart] = useState(false)
+  const blocked = attemptedStart && !entitlement.loading && !entitlement.allowed
 
   const loadContent = useCallback(async () => {
     if (content) return content
@@ -329,10 +342,12 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     // Лимит демо-доступа проверяем в момент старта задания, а не при заходе
     // на экран: интро остаётся видимым всегда, замок — только на попытке
     // начать тренировку (та же граница, что у «открыть юнит» в грамматике).
-    if (!entitlement.loading && !entitlement.allowed) {
-      setBlocked(true)
-      return
-    }
+    // Флаг ставим ДО проверки — это и делает blocked (см. выше) вычисляемым:
+    // даже если сейчас entitlement.loading===true и сессия успеет начаться
+    // (fail-open), attemptedStart уже true, и как только загрузка entitlement
+    // завершится значением allowed:false, blocked пересчитается сам.
+    setAttemptedStart(true)
+    if (!entitlement.loading && !entitlement.allowed) return
     const data = content || (await loadContent())
     if (!data) return
     const session = buildSession(data, SESSION_SIZE)
@@ -400,10 +415,21 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   // выход из НЕзавершённой тренировки требует подтверждения
   const requestBack = () => (phase === 'task' ? setExitOpen(true) : back())
 
+  // Из экрана лимита — назад к интро. Сбрасываем и attemptedStart (чтобы
+  // повторный заход не показывал замок раньше следующего клика «Начать»), и
+  // phase: если лимит подменил экран уже В РАЗГАР сессии (гонка — сессия
+  // успела стартовать до ответа сервера), phase к этому моменту 'task' с
+  // недопройденной очередью — без сброса «Назад» вернул бы в ту же прерванную
+  // сессию вместо интро.
+  const backToIntro = () => {
+    setAttemptedStart(false)
+    setPhase('intro')
+  }
+
   if (blocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={() => setBlocked(false)} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+        <PracticeLimitScreen limit={entitlement.limit} onBack={backToIntro} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
       </LearningLayout>
     )
   }
