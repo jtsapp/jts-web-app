@@ -14,6 +14,11 @@ export const WORKBOOKS_KEY = 'jts_workbooks_done'
 // Прогресс «Письма»: не множество id, а объект {tasks, seen} — семантика replace,
 // как у vocab (см. practiceContract.js). Ключ назван *_done для единообразия.
 export const WRITING_KEY = 'jts_writing_done'
+// Прогресс воркбука: объект {prog, miss, sc} — пройденные экраны, промахи и
+// самопроверка. Живёт РЯДОМ с WORKBOOKS_KEY, а не вместо него: на множестве
+// открытых уровней висит квота PRACTICE_WORKBOOKS, и менять её единицу учёта
+// нельзя. Семантика replace, как у vocab.
+export const WORKBOOK_KEY = 'jts_workbook_state'
 
 export const GRAMMAR_PROGRESS_EVENT = 'grammar-progress'
 export const LISTENING_PROGRESS_EVENT = 'listening-progress'
@@ -21,3 +26,4 @@ export const SHADOWING_PROGRESS_EVENT = 'shadowing-progress'
 export const SITUATIONS_PROGRESS_EVENT = 'situations-progress'
 export const WORKBOOKS_PROGRESS_EVENT = 'workbooks-progress'
 export const WRITING_PROGRESS_EVENT = 'writing-progress'
+export const WORKBOOK_PROGRESS_EVENT = 'workbook-progress'

@@ -18,6 +18,7 @@ import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
 import WritingPage from './screens/WritingPage.jsx'
+import WorkbookPage from './screens/WorkbookPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -55,6 +56,7 @@ import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, temperFor } from './tutor/tutors.js'
+import { isMinor } from './lib/birthDate.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
@@ -84,7 +86,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'kingdom', 'practice', 'listening', 'writing', 'homework', 'lessons',
+  'kingdom', 'practice', 'listening', 'writing', 'workbook', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -139,6 +141,10 @@ export default function App() {
       const want = levelParam.toUpperCase()
       const k = KINGDOMS.find((x) => x.level === want)
       if (k) setKingdom(k)
+      // Тот же параметр открывает нужный уровень воркбука
+      // (?screen=workbook&level=b2). Без него любой диплинк вёл на A0, и
+      // проверить экран B2 можно было только кликами из каталога Практики.
+      if (deepLink === 'workbook') setWorkbookTarget({ level: levelParam.toLowerCase() })
     }
     // ?unlock=1 — открыть все королевства и все уроки тропы для просмотра
     // контента. Только в дев-сборке: в проде это обошло бы гейтинг по уровню,
@@ -158,6 +164,8 @@ export default function App() {
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
           if (session.languageLevel) setUserLevel(session.languageLevel)
+          // Возраст решает, открыт ли жёсткий нрав тьютора (кнопка 18+).
+          if (session.birthDate) setBirthDate(String(session.birthDate).slice(0, 10))
           getIsDemoAccount(session.token).then((v) => { if (!cancelled) setIsDemoAccount(v) })
         }
         // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
@@ -307,10 +315,17 @@ export default function App() {
   const [workspaceSource, setWorkspaceSource] = useState('live')
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   const [writingTarget, setWritingTarget] = useState(null) // { level?, genreId? } — прыжок из Практики сразу в уровень/жанр Writing
+  const [workbookTarget, setWorkbookTarget] = useState(null) // { level } — какой воркбук открыть из Практики
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
+  // Жёсткий нрав тьютора (кнопка 18+) запираем, когда в профиле стоит возраст
+  // меньше 18. Неизвестная дата не запирает — у анонима и у аккаунтов, заведённых
+  // до обязательного поля, её нет вовсе (см. isMinor). Сервер держит тот же
+  // запрет отдельно: /api/profile не сохранит harsh, а токен LiveKit выдаётся с
+  // calm — клиентская проверка здесь ради понятной кнопки, а не как защита.
+  const adultLocked = isMinor(birthDate)
 
   // Экран 'phone' — только вход по коду (фолбэк для аккаунтов без пароля,
   // см. onOtpLogin в PasswordLoginPage). Регистрация через него больше не
@@ -402,6 +417,15 @@ export default function App() {
       }
       if (lvl) setUserLevel(lvl)
       if (tok) getIsDemoAccount(tok).then(setIsDemoAccount)
+      // При входе (в отличие от регистрации) даты рождения в стейте нет, а от
+      // неё зависит доступ к жёсткому нраву тьютора — подтягиваем из профиля.
+      if (tok && mode !== 'register') {
+        getCurrentUser(tok)
+          .then((me) => {
+            if (me?.birthDate) setBirthDate(String(me.birthDate).slice(0, 10))
+          })
+          .catch(() => {})
+      }
       // При сетевой осечке уровень неизвестен — тестом не пристаём, кроме
       // свежей регистрации: у неё уровня заведомо ещё нет.
       setNeedsLevelTest(lvlKnown ? !lvl : mode !== 'login')
@@ -484,6 +508,12 @@ export default function App() {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
       getIsDemoAccount(tok).then(setIsDemoAccount)
+      // Возраст решает доступ к жёсткому нраву тьютора — тянем из профиля.
+      getCurrentUser(tok)
+        .then((me) => {
+          if (me?.birthDate) setBirthDate(String(me.birthDate).slice(0, 10))
+        })
+        .catch(() => {})
       mergeAnonymousProgress(tok)
         .then(() => loadTutorProfile(tok))
         .then((profile) => {
@@ -555,6 +585,7 @@ export default function App() {
         setScreen('reg-birth')
         return
       }
+      setBirthDate(String(me.birthDate).slice(0, 10))
       await finishGoogleSession(tok)
     } catch (e) {
       setError(e.message || t('err.otp'))
@@ -686,6 +717,7 @@ export default function App() {
     // Shadowing открывается с карточки Практики — payload несёт id урока.
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'writing') { if (payload) setWritingTarget(payload); setScreen('writing') }
+    else if (key === 'workbook') { if (payload) setWorkbookTarget(payload); setScreen('workbook') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -707,6 +739,7 @@ export default function App() {
     else if (key === 'listening') setScreen('listening')
     else if (key === 'shadowing') setScreen('shadowing')
     else if (key === 'writing') setScreen('writing')
+    else if (key === 'workbook') setScreen('workbook')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -980,6 +1013,18 @@ export default function App() {
           isDemoAccount={isDemoAccount}
         />
       )
+    case 'workbook':
+      return (
+        <WorkbookPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={workbookTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
+        />
+      )
     case 'lessons':
       return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
     case 'homework':
@@ -1069,14 +1114,18 @@ export default function App() {
           onBack={() => goAfterTutorEdit('tutor-lang')}
           tutorKey={tutorKey}
           temper={temper}
+          adultLocked={adultLocked}
           onChoose={(key, chosenTemper = null) => {
             setTutorKey(key)
-            setTemper(chosenTemper)
+            // Страховка от рассинхрона: экран запертую кнопку не включает, но
+            // характер приезжает сюда параметром — жёсткий у школьника режем.
+            const safeTemper = chosenTemper === 'harsh' && adultLocked ? 'calm' : chosenTemper
+            setTemper(safeTemper)
             // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
             setTutorOnboarded(true)
             // Тьютор и нрав пишутся ОДНИМ патчем: разними их — и при осечке сети
             // в профиле останется тьютор с чужим характером.
-            saveTutorPrefs(token, { tutor: key, tutorTemper: chosenTemper })
+            saveTutorPrefs(token, { tutor: key, tutorTemper: safeTemper })
             setScreen('tutor-loading')
           }}
           // Образец голоса — готовый файл, а не живой синтез: фраза одна и та
@@ -1349,8 +1398,12 @@ export default function App() {
             setScreen('tutor-voice-intro')
           }}
           temper={temper}
+          adultLocked={adultLocked}
           onToggleTemper={() => {
             const next = temper === 'harsh' ? 'calm' : 'harsh'
+            // Запертую кнопку экран не нажимает, но обработчик — вход в общий
+            // стейт: включить 18+ школьнику нельзя и отсюда.
+            if (next === 'harsh' && adultLocked) return
             setTemper(next)
             saveTutorPrefs(token, { tutorTemper: next })
           }}

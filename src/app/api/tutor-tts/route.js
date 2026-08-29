@@ -38,9 +38,23 @@ const GEMINI_HOST = process.env.GEMINI_TTS_HOST || 'https://texttospeech.googlea
 // Ключи с суффиксом -harsh — жёсткий нрав тьютора (ось 18+): тот же голос, тот
 // же провайдер. Алиасы нужны потому, что кнопка «послушать» и генератор визиток
 // зовут тьютора именно суффиксным ключом.
-const SONIOX_VOICE = { spark: 'Owen', dexter: 'Noah', luna: 'Grace', 'spark-harsh': 'Owen' }
+// KZ-стенд (jarvis) сидит на Daniel, а не на Owen: Owen — тембр Спарка, и стенд
+// не должен звучать его двойником.
+const SONIOX_VOICE = {
+  spark: 'Owen',
+  dexter: 'Noah',
+  luna: 'Grace',
+  'spark-harsh': 'Owen',
+  jarvis: 'Daniel',
+  'jarvis-harsh': 'Daniel',
+}
 const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
+// Темп — единственная ручка подачи у Soniox (диапазон [0.7–1.3]), зеркало
+// SONIOX_TTS_SPEED в agent.py. Спарка тут нет намеренно: живьём он идёт на
+// дефолтной единице, и трогать прод-тьютора заодно со стендом нельзя.
+const SONIOX_SPEED = { jarvis: 0.95, 'jarvis-harsh': 0.95 }
+const DEFAULT_SONIOX_SPEED = 1.0
 
 // Провайдер по тьютору — mirror agent TUTOR_TTS_PROVIDER. От языка не зависит:
 // тьютор озвучивается своим голосом всегда.
@@ -48,10 +62,10 @@ const TUTOR_PROVIDER = {
   luna: 'gemini',
   dexter: 'eleven',
   spark: 'soniox',
-  jarvis: 'openai', // ВРЕМЕННО вместо 'fish' — перебираем голоса на dev-тьюторе
+  jarvis: 'soniox', // KZ-стенд: Soniox реально произносит казахский, ash — нет
   'dexter-harsh': 'eleven',
   'spark-harsh': 'soniox',
-  'jarvis-harsh': 'openai',
+  'jarvis-harsh': 'soniox',
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'
@@ -240,14 +254,14 @@ async function elevenTts(text, tutor) {
   return { audio, contentType: 'audio/mpeg' }
 }
 
-async function sonioxTts(text, voice, lang) {
+async function sonioxTts(text, voice, lang, speed) {
   const key = process.env.SONIOX_API_KEY
   if (!key) return { status: 503 }
   const language = SONIOX_LANG[lang] || lang || 'en'
   const upstream = await fetch('https://tts-rt.soniox.com/tts', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-    body: JSON.stringify({ model: SONIOX_MODEL, voice, language, text, audio_format: 'mp3' }),
+    body: JSON.stringify({ model: SONIOX_MODEL, voice, language, text, speed, audio_format: 'mp3' }),
   })
   if (!upstream.ok) {
     const detail = await upstream.text().catch(() => '')
@@ -328,7 +342,14 @@ async function openaiTts(text, tutor, lang) {
 }
 
 function synth(provider, text, tutor, lang) {
-  if (provider === 'soniox') return sonioxTts(text, SONIOX_VOICE[tutor] || 'Owen', lang)
+  if (provider === 'soniox') {
+    return sonioxTts(
+      text,
+      SONIOX_VOICE[tutor] || 'Owen',
+      lang,
+      SONIOX_SPEED[tutor] ?? DEFAULT_SONIOX_SPEED,
+    )
+  }
   if (provider === 'eleven') return elevenTts(text, tutor)
   if (provider === 'fish') return fishTts(text, FISH_VOICE[tutor] || FISH_VOICE.jarvis)
   if (provider === 'openai') return openaiTts(text, tutor, lang)

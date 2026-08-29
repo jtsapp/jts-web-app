@@ -5,6 +5,15 @@ import { I18nProvider } from '../i18n.jsx'
 import RegisterPhonePage from './RegisterPhonePage.jsx'
 import RegisterEmailPage from './RegisterEmailPage.jsx'
 import RegisterBirthDatePage, { isValidBirthDate } from './RegisterBirthDatePage.jsx'
+import { MIN_AGE } from '../lib/birthDate.js'
+
+// Дата набирается тремя полями (день/месяц/год) — см. BirthDateInput.
+function typeBirthDate(container, day, month, year) {
+  const [d, m, y] = container.querySelectorAll('.dob-field__part')
+  fireEvent.change(d, { target: { value: day } })
+  fireEvent.change(m, { target: { value: month } })
+  fireEvent.change(y, { target: { value: year } })
+}
 
 function renderStep(Page, props = {}) {
   return render(
@@ -58,8 +67,31 @@ describe('дата рождения — сабмит', () => {
   it('отправляет валидную дату', () => {
     const onSubmit = vi.fn()
     const { container } = renderStep(RegisterBirthDatePage, { onSubmit })
-    fireEvent.change(container.querySelector('input[type="date"]'), { target: { value: '1998-03-21' } })
+    typeBirthDate(container, '21', '03', '1998')
     fireEvent.submit(container.querySelector('form'))
     expect(onSubmit).toHaveBeenCalledWith('1998-03-21')
+  })
+
+  // Нативный пикер ограничен атрибутом max, но значение можно подставить и
+  // мимо него (автозаполнение, тесты, мобильные клавиатуры) — форма обязана
+  // отбить дату сама.
+  it('не пускает дату младше порога', () => {
+    const onSubmit = vi.fn()
+    const { container } = renderStep(RegisterBirthDatePage, { onSubmit })
+    const tooYoung = new Date()
+    tooYoung.setFullYear(tooYoung.getFullYear() - (MIN_AGE - 1))
+    const iso = tooYoung.toISOString().slice(0, 10)
+    typeBirthDate(container, iso.slice(8, 10), iso.slice(5, 7), iso.slice(0, 4))
+    fireEvent.submit(container.querySelector('form'))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(container.querySelector('.form-error')).not.toBeNull()
+  })
+
+  it('не пускает опечатку в веке', () => {
+    const onSubmit = vi.fn()
+    const { container } = renderStep(RegisterBirthDatePage, { onSubmit })
+    typeBirthDate(container, '05', '05', '1899')
+    fireEvent.submit(container.querySelector('form'))
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })
