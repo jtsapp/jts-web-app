@@ -5,13 +5,37 @@
 // Anonymous/invalid identity is NOT gated here (matches this app's existing
 // tolerance for anonymous IELTS attempts) - only a resolved user can even
 // have a quota, since it's keyed by the backend's own User id.
+//
+// Квота одна на все четыре секции IELTS, а стоят они по-разному: Speaking
+// (Azure-распознавание + разбор моделью) и Writing (оценка моделью) - именно
+// то дорогое и внешнее, ради чего демо вообще существует. Reading и
+// Listening проверяются локально по ключам ответов (key-grading.js), ни в
+// один платный API не ходят и ничего не демонстрируют - списывать за них
+// единственную демо-попытку значит сжигать её впустую.
 
 import { resolveProfileId, bearerFromRequest, fetchContentQuota } from '../auth-server.js'
 import { countIeltsAttemptsSince } from '../db/ielts.js'
 
-export async function checkIeltsQuota(request, deviceId) {
+// Реальные значения section, которыми оперируют submit-роуты и БД (см.
+// record-section/route.js и db/ielts.js): 'writing' | 'speaking' - платные,
+// 'reading' | 'listening' - бесплатные (локальный грейдер).
+const PAID_SECTIONS = new Set(['speaking', 'writing'])
+
+export function sectionConsumesQuota(section) {
+  return PAID_SECTIONS.has(String(section || '').toLowerCase())
+}
+
+// section передают submit-роуты, которые точно знают, что сдаёт студент.
+// Entitlement-роут спрашивает не про конкретную секцию, а про лимит в целом,
+// ДО того как студент выбрал раздел - section там undefined, и в этом случае
+// мы обязаны посчитать реальную квоту, а не молча ответить "разрешено".
+export async function checkIeltsQuota(request, deviceId, section) {
   const resolved = await resolveProfileId(request, deviceId ?? null)
   if ('error' in resolved) return { resolved, blocked: false }
+
+  if (section !== undefined && !sectionConsumesQuota(section)) {
+    return { resolved, blocked: false, limit: null, used: 0, source: 'NONE', sourceName: null }
+  }
 
   const quota = await fetchContentQuota(bearerFromRequest(request), 'IELTS')
   const limit = quota?.limit ?? null
@@ -20,7 +44,10 @@ export async function checkIeltsQuota(request, deviceId) {
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
-  const used = await countIeltsAttemptsSince(resolved.id, startOfMonth)
+  // Считаем попытки только по платным секциям - иначе Reading/Listening,
+  // которые сами никогда не блокируются (см. выше), всё равно раздували бы
+  // "used" и молча съедали квоту Speaking/Writing при следующей проверке.
+  const used = await countIeltsAttemptsSince(resolved.id, startOfMonth, [...PAID_SECTIONS])
   return {
     resolved,
     blocked: used >= limit,
