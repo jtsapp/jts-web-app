@@ -217,6 +217,8 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
           limit={entitlement.limit}
           onBack={() => onNav?.('practice')}
           isDemoAccount={isDemoAccount}
+          source={entitlement.source}
+          sourceName={entitlement.sourceName}
         />
       )
     }

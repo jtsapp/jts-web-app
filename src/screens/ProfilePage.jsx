@@ -10,7 +10,9 @@ import {
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
-import { getBalance, getLearningPath, countProgress, updateUser } from '../api.js'
+import { getBalance, getLearningPath, countProgress, updateUser, getCurrentUser } from '../api.js'
+import { birthDateProblem } from '../lib/birthDate.js'
+import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 
 // Ключи localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
@@ -90,7 +92,7 @@ export default function ProfilePage({
   const [customOpen, setCustomOpen] = useState(false)
 
   // Форма редактирования профиля
-  const [form, setForm] = useState({ name: '', email: '', city: '', gender: '' })
+  const [form, setForm] = useState({ name: '', email: '', city: '', gender: '', birthDate: '' })
   const [saving, setSaving] = useState(false)
   const [editErr, setEditErr] = useState('')
 
@@ -201,14 +203,32 @@ export default function ProfilePage({
 
   function openEdit() {
     setEditErr('')
-    setForm({ name: name || '', email: '', city: '', gender: '' })
+    setForm({ name: name || '', email: '', city: '', gender: '', birthDate: '' })
     setEditOpen(true)
+    // Дату рождения подтягиваем из профиля: она обязательна при регистрации,
+    // и пустое поле читалось бы как «не указана», хотя она уже есть. Осечка
+    // сети не мешает править остальное — просто останется пустым.
+    if (token) {
+      getCurrentUser(token)
+        .then((me) => {
+          if (me?.birthDate) setForm((f) => ({ ...f, birthDate: String(me.birthDate).slice(0, 10) }))
+        })
+        .catch(() => {})
+    }
   }
 
   async function saveProfile() {
     const trimmed = form.name.trim()
     if (!trimmed) {
       setEditErr(t('profile.editNameRequired'))
+      return
+    }
+    // Пустую дату пропускаем: у аккаунтов, заведённых до обязательного поля,
+    // её нет, и правка имени не должна упираться в чужой пробел. Заполненная
+    // проходит те же границы, что и на регистрации.
+    const dobProblem = form.birthDate ? birthDateProblem(form.birthDate) : null
+    if (dobProblem) {
+      setEditErr(t(`regbirth.${dobProblem}`))
       return
     }
     setSaving(true)
@@ -219,6 +239,7 @@ export default function ProfilePage({
         email: form.email.trim(),
         city: form.city.trim(),
         gender: form.gender,
+        birthDate: form.birthDate,
       })
       setName(trimmed)
       onUpdateName?.(trimmed)
@@ -418,6 +439,13 @@ export default function ProfilePage({
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             />
           </label>
+          <div className="pf-field">
+            <span>{t('profile.editBirthDate')}</span>
+            <BirthDateInput
+              value={form.birthDate}
+              onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
+            />
+          </div>
           <label className="pf-field">
             <span>{t('profile.editCity')}</span>
             <input

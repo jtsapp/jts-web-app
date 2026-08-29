@@ -56,6 +56,7 @@ import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, temperFor } from './tutor/tutors.js'
+import { isMinor } from './lib/birthDate.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
@@ -163,6 +164,8 @@ export default function App() {
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
           if (session.languageLevel) setUserLevel(session.languageLevel)
+          // Возраст решает, открыт ли жёсткий нрав тьютора (кнопка 18+).
+          if (session.birthDate) setBirthDate(String(session.birthDate).slice(0, 10))
           getIsDemoAccount(session.token).then((v) => { if (!cancelled) setIsDemoAccount(v) })
         }
         // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
@@ -317,6 +320,12 @@ export default function App() {
   const [error, setError] = useState('')
 
   const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
+  // Жёсткий нрав тьютора (кнопка 18+) запираем, когда в профиле стоит возраст
+  // меньше 18. Неизвестная дата не запирает — у анонима и у аккаунтов, заведённых
+  // до обязательного поля, её нет вовсе (см. isMinor). Сервер держит тот же
+  // запрет отдельно: /api/profile не сохранит harsh, а токен LiveKit выдаётся с
+  // calm — клиентская проверка здесь ради понятной кнопки, а не как защита.
+  const adultLocked = isMinor(birthDate)
 
   // Экран 'phone' — только вход по коду (фолбэк для аккаунтов без пароля,
   // см. onOtpLogin в PasswordLoginPage). Регистрация через него больше не
@@ -408,6 +417,15 @@ export default function App() {
       }
       if (lvl) setUserLevel(lvl)
       if (tok) getIsDemoAccount(tok).then(setIsDemoAccount)
+      // При входе (в отличие от регистрации) даты рождения в стейте нет, а от
+      // неё зависит доступ к жёсткому нраву тьютора — подтягиваем из профиля.
+      if (tok && mode !== 'register') {
+        getCurrentUser(tok)
+          .then((me) => {
+            if (me?.birthDate) setBirthDate(String(me.birthDate).slice(0, 10))
+          })
+          .catch(() => {})
+      }
       // При сетевой осечке уровень неизвестен — тестом не пристаём, кроме
       // свежей регистрации: у неё уровня заведомо ещё нет.
       setNeedsLevelTest(lvlKnown ? !lvl : mode !== 'login')
@@ -490,6 +508,12 @@ export default function App() {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
       getIsDemoAccount(tok).then(setIsDemoAccount)
+      // Возраст решает доступ к жёсткому нраву тьютора — тянем из профиля.
+      getCurrentUser(tok)
+        .then((me) => {
+          if (me?.birthDate) setBirthDate(String(me.birthDate).slice(0, 10))
+        })
+        .catch(() => {})
       mergeAnonymousProgress(tok)
         .then(() => loadTutorProfile(tok))
         .then((profile) => {
@@ -561,6 +585,7 @@ export default function App() {
         setScreen('reg-birth')
         return
       }
+      setBirthDate(String(me.birthDate).slice(0, 10))
       await finishGoogleSession(tok)
     } catch (e) {
       setError(e.message || t('err.otp'))
@@ -1089,14 +1114,18 @@ export default function App() {
           onBack={() => goAfterTutorEdit('tutor-lang')}
           tutorKey={tutorKey}
           temper={temper}
+          adultLocked={adultLocked}
           onChoose={(key, chosenTemper = null) => {
             setTutorKey(key)
-            setTemper(chosenTemper)
+            // Страховка от рассинхрона: экран запертую кнопку не включает, но
+            // характер приезжает сюда параметром — жёсткий у школьника режем.
+            const safeTemper = chosenTemper === 'harsh' && adultLocked ? 'calm' : chosenTemper
+            setTemper(safeTemper)
             // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
             setTutorOnboarded(true)
             // Тьютор и нрав пишутся ОДНИМ патчем: разними их — и при осечке сети
             // в профиле останется тьютор с чужим характером.
-            saveTutorPrefs(token, { tutor: key, tutorTemper: chosenTemper })
+            saveTutorPrefs(token, { tutor: key, tutorTemper: safeTemper })
             setScreen('tutor-loading')
           }}
           // Образец голоса — готовый файл, а не живой синтез: фраза одна и та
@@ -1369,8 +1398,12 @@ export default function App() {
             setScreen('tutor-voice-intro')
           }}
           temper={temper}
+          adultLocked={adultLocked}
           onToggleTemper={() => {
             const next = temper === 'harsh' ? 'calm' : 'harsh'
+            // Запертую кнопку экран не нажимает, но обработчик — вход в общий
+            // стейт: включить 18+ школьнику нельзя и отсюда.
+            if (next === 'harsh' && adultLocked) return
             setTemper(next)
             saveTutorPrefs(token, { tutorTemper: next })
           }}

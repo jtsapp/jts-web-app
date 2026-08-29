@@ -132,10 +132,16 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         const mid = mod ? mod.id : null
         setModuleId(mid)
         setModuleLocked(!!mod?.locked)
-        setModuleQuota(mid != null ? await getContentQuota(authToken, 'LESSON_MODULE', mid) : null)
         setLessons(trail)
-        const d = await loadDone(level, authToken, mid)
+        // Квота и прогресс независимы — параллельно; A0/A1 греем тяжёлый
+        // <level>.json, чтобы первый клик по уроку не ждал ~700KB.
+        if (isStepLevel(level)) loadLevel(level).catch(() => null)
+        const [quota, d] = await Promise.all([
+          mid != null ? getContentQuota(authToken, 'LESSON_MODULE', mid) : Promise.resolve(null),
+          loadDone(level, authToken, mid),
+        ])
         if (!alive) return
+        setModuleQuota(quota)
         setDone(new Set(d))
         setState({ loading: false, error: trail.length ? null : 'empty' })
       } catch (e) {

@@ -13,7 +13,13 @@ const SLOT = 186 // расстояние центр-к-центру соседн
 
 // tempers/onToggleTemper приходят пропами и своего состояния тут нет намеренно:
 // карусель и десктопная сетка — два вида одного выбора (см. TutorChoosePage).
-export default function TutorCarousel({ onChoose, onListen, tempers = {}, onToggleTemper }) {
+export default function TutorCarousel({
+  onChoose,
+  onListen,
+  tempers = {},
+  onToggleTemper,
+  adultLocked = false,
+}) {
   const { t } = useLang()
   const n = TUTORS.length
   const slides = [...TUTORS, ...TUTORS, ...TUTORS] // 3 копии для бесшовной прокрутки
@@ -98,7 +104,12 @@ export default function TutorCarousel({ onChoose, onListen, tempers = {}, onTogg
       <div className="t-car__info" key={cur.key}>
         <div className="t-car__name">
           {cur.name}
-          <TemperToggle tutor={cur} temper={tempers[cur.key]} onToggle={onToggleTemper} />
+          <TemperToggle
+            tutor={cur}
+            temper={tempers[cur.key]}
+            onToggle={onToggleTemper}
+            locked={adultLocked}
+          />
         </div>
         <div className="t-car__chips">
           {cur.traitColors.map((c, i) => (

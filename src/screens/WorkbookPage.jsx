@@ -185,6 +185,8 @@ export default function WorkbookPage({
           limit={entitlement.limit}
           onBack={() => onNav?.('practice')}
           isDemoAccount={isDemoAccount}
+          source={entitlement.source}
+          sourceName={entitlement.sourceName}
         />
       )
     }

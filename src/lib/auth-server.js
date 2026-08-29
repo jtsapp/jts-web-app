@@ -88,6 +88,10 @@ export async function verifyToken(token) {
       // Для восстановления сессии на клиенте: /api/auth/me отдаёт это в App,
       // чтобы уровень не сбрасывался на A1 после перезагрузки.
       languageLevel: user.languageLevel ?? null,
+      // Возраст решает доступ к жёсткому нраву тьютора (кнопка 18+). Берём из
+      // того же /user/me, что уже запрошен для проверки токена: гейт на
+      // сервере не должен верить телу запроса, иначе он обходится curl'ом.
+      birthDate: user.birthDate ?? null,
     }
   } catch (err) {
     console.error(
@@ -136,32 +140,30 @@ export async function fetchTutorLimitOverride(token) {
 }
 
 /**
- * Effective completion-quota cap for the current student for one content type
- * (see backend's ContentQuotaService/GET /mobile/content-quota) - `null` means
- * no cap. This app owns its own completion count for these areas (grammar/
- * vocab/listening/shadowing done-arrays, IELTS attempt rows) - the backend is
- * only the policy source, so callers fetch the number here and compare it
- * themselves. Same fail-open contract as fetchTutorLimitOverride: any error
- * (network, non-2xx, malformed body) returns null, i.e. "no cap", rather than
- * blocking the caller over a backend hiccup. Anonymous (no token) callers
- * never have a cap - quotas are keyed by the backend's own User id.
+ * Effective completion-quota for the current student for one content type.
+ * Returns `{ limit, source, sourceName }` — `limit: null` means no cap.
+ * Fail-open: any error returns `{ limit: null, source: 'NONE' }`.
  */
 export async function fetchContentQuota(token, contentType) {
-  if (!token) return null
+  if (!token) return { limit: null, source: 'NONE', sourceName: null }
   try {
     const res = await fetch(
       `${BACKEND_URL}/mobile/content-quota?contentType=${encodeURIComponent(contentType)}&contentId=0`,
       { method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, cache: 'no-store' },
     )
-    if (!res.ok) return null
+    if (!res.ok) return { limit: null, source: 'NONE', sourceName: null }
     const data = await res.json()
-    return data?.limit ?? null
+    return {
+      limit: data?.limit ?? null,
+      source: data?.source || 'NONE',
+      sourceName: data?.sourceName || null,
+    }
   } catch (err) {
     console.error(
       '[auth] content-quota fetch failed:',
       err?.cause?.code || err?.cause?.message || err?.message || err,
     )
-    return null
+    return { limit: null, source: 'NONE', sourceName: null }
   }
 }
 
@@ -173,7 +175,7 @@ export async function fetchContentQuota(token, contentType) {
  * - With no token → the anonymous deviceId, UNLESS it intrudes on the reserved
  *   `user-*` namespace (then 401: that data requires authentication).
  *
- * Returns { id, name } on success, or { error: Response } the caller should
+ * Returns { id, name, birthDate } on success, or { error: Response } the caller should
  * return. `name` is the backend's display name for an authenticated learner and
  * null for everyone else — verifyToken already fetches it, so callers that want
  * it (the LiveKit token route, for the voice scenarios) cost no extra request.
@@ -193,7 +195,11 @@ export async function resolveProfileId(request, clientDeviceId) {
         ),
       }
     }
-    return { id: profileIdForUser(user.userId), name: user.name ?? null }
+    return {
+      id: profileIdForUser(user.userId),
+      name: user.name ?? null,
+      birthDate: user.birthDate ?? null,
+    }
   }
 
   if (!isValidDeviceId(clientDeviceId)) {
@@ -204,7 +210,7 @@ export async function resolveProfileId(request, clientDeviceId) {
   if (RESERVED_ID_RE.test(clientDeviceId)) {
     // Единственное исключение: наш же голосовой агент с сервисным ключом. Он
     // пишет память ученика от его имени, своего токена не имея.
-    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null }
+    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null, birthDate: null }
     return {
       error: Response.json(
         { configured: true, error: 'This profile requires authentication.' },
@@ -212,5 +218,5 @@ export async function resolveProfileId(request, clientDeviceId) {
       ),
     }
   }
-  return { id: clientDeviceId, name: null }
+  return { id: clientDeviceId, name: null, birthDate: null }
 }
