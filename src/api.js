@@ -222,6 +222,11 @@ export function returnHomeworkForRevision(token, id, comment) {
 // ждёт сеть, как раньше.
 const CATALOG_CACHE_VER = 'v1' // поднять при несовместимой смене формы ответа
 
+// RAM-кэш на сессию вкладки: тяжёлые ответы (scopes словаря) часто не
+// помещаются в localStorage — без Map повторный заход в том же табе снова
+// ждал бы сеть. localStorage остаётся для переживания перезагрузки.
+const memoryCatalogCache = new Map()
+
 // Пользовательская часть ключа: sub из JWT (стабилен между сессиями). Ключ
 // разделяет пользователей — у ситуативок есть per-user флаг completed — и
 // окружения (BASE).
@@ -245,19 +250,22 @@ function catalogCacheKey(path, token) {
 async function cachedAuthGet(path, token, onFresh) {
   if (typeof window === 'undefined') return authGet(path, token) // SSR — без кэша
   const key = catalogCacheKey(path, token)
-  let cached = null
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (raw) cached = JSON.parse(raw)
-  } catch {
-    /* битый кэш → обычный сетевой запрос */
+  let cached = memoryCatalogCache.has(key) ? memoryCatalogCache.get(key) : null
+  if (cached === null) {
+    try {
+      const raw = window.localStorage.getItem(key)
+      if (raw) cached = JSON.parse(raw)
+    } catch {
+      /* битый кэш → обычный сетевой запрос */
+    }
   }
   const refresh = () =>
     authGet(path, token).then((data) => {
+      memoryCatalogCache.set(key, data)
       try {
         window.localStorage.setItem(key, JSON.stringify(data))
       } catch {
-        /* квота localStorage исчерпана — работаем без кэша */
+        /* квота localStorage исчерпана — RAM-кэш всё равно держит ответ */
       }
       return data
     })
@@ -272,8 +280,10 @@ async function cachedAuthGet(path, token, onFresh) {
 
 function dropCachedAuthGet(path, token) {
   if (typeof window === 'undefined') return
+  const key = catalogCacheKey(path, token)
+  memoryCatalogCache.delete(key)
   try {
-    window.localStorage.removeItem(catalogCacheKey(path, token))
+    window.localStorage.removeItem(key)
   } catch {
     /* кэш мог быть недоступен */
   }
@@ -332,8 +342,10 @@ export function getCourseCatalogLesson(id, token) {
 
 // Структура урока, разобранная один раз при регистрации уровня и сохранённая на
 // бэкенде. content === null — структуры нет, урок открывается как файл (fileUrl).
-export function getCourseCatalogLessonContent(id, token) {
-  return authGet(`/mobile/course-catalog/lessons/${id}/content`, token)
+// SWR-кэш: повторное открытие того же урока в сессии не ждёт сеть (RAM;
+// localStorage часто не тянет размер content_json).
+export function getCourseCatalogLessonContent(id, token, onFresh) {
+  return cachedAuthGet(`/mobile/course-catalog/lessons/${id}/content`, token, onFresh)
 }
 
 // Расписание вошедшего пользователя. Бэкенд скоупит /admin/lessons* под личность
@@ -581,9 +593,14 @@ async function post(path, body) {
 // предпочтительнее телефона как канал OTP при обоих полях) — таков порядок
 // веб-формы: номер → почта → код на почту → пароль. Если телефон или почта
 // уже заняты — не уводим молча в вход, а помечаем ошибку кодом USER_EXISTS.
-export async function sendRegistrationOtp(name, phone, email) {
+export async function sendRegistrationOtp(name, phone, email, birthDate) {
   try {
-    await post('/registration/initiate', { name: name || 'Гость', phone: normalizePhone(phone), email })
+    await post('/registration/initiate', {
+      name: name || 'Гость',
+      phone: normalizePhone(phone),
+      email,
+      birthDate,
+    })
     return 'register'
   } catch (e) {
     if ((e.message || '').toLowerCase().includes('exist')) {
@@ -597,8 +614,19 @@ export async function sendRegistrationOtp(name, phone, email) {
 // обоими идентификаторами и возвращает accessToken/refreshToken (см.
 // RegistrationVerifyResponse на бэкенде) — отдельного входа после регистрации
 // больше не требуется.
-export async function verifyRegistrationOtp(name, phone, email, code) {
-  return post('/registration/verify', { name: name || 'Гость', phone: normalizePhone(phone), email, otp: code })
+export async function verifyRegistrationOtp(name, phone, email, code, birthDate) {
+  return post('/registration/verify', {
+    name: name || 'Гость',
+    phone: normalizePhone(phone),
+    email,
+    birthDate,
+    otp: code,
+  })
+}
+
+export async function getCurrentUser(token) {
+  if (!token) return null
+  return authGet('/user/me', token)
 }
 
 // Вход: запрашиваем код сразу, без /registration/initiate — иначе незнакомый
@@ -765,12 +793,18 @@ export function deleteStudentVocabWord(token, id) {
   })
 }
 
-export function getVocabCatalog(token) {
-  return authGet('/mobile/vocab-catalog', token)
+// SWR-кэш: индекс словаря почти не меняется между визитами — без кэша каждый
+// заход снова тянет JSON из MinIO через бэкенд (секунды…минуты при холодном диске).
+export function getVocabCatalog(token, onFresh) {
+  return cachedAuthGet('/mobile/vocab-catalog', token, onFresh)
 }
 
-export function getVocabScope(token, id) {
-  return authGet(`/mobile/vocab-catalog/scopes/${encodeURIComponent(id)}`, token)
+export function getVocabScope(token, id, onFresh) {
+  return cachedAuthGet(
+    `/mobile/vocab-catalog/scopes/${encodeURIComponent(id)}`,
+    token,
+    onFresh,
+  )
 }
 
 export function listLessonVocab(token, onFresh) {
@@ -781,11 +815,11 @@ function isSavedVocabRef(lessonId) {
   return lessonId == null || lessonId === '' || lessonId === 'saved' || lessonId === 'SAVED'
 }
 
-export function openLessonVocab(lessonId, token) {
+export function openLessonVocab(lessonId, token, onFresh) {
   const path = isSavedVocabRef(lessonId)
     ? '/mobile/lesson-vocab/saved'
     : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}`
-  return authGet(path, token)
+  return cachedAuthGet(path, token, onFresh)
 }
 
 export function completeLessonVocabCycle(lessonId, cycle, results, token) {

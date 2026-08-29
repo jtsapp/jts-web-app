@@ -6,6 +6,7 @@
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { loadProfile, upsertProfile } from '@/lib/db/profile.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
+import { isMinor } from '@/lib/birthDate.js'
 
 export const runtime = 'nodejs'
 
@@ -102,6 +103,16 @@ export async function POST(request) {
     patch.tutorTemper = body.tutorTemper === 'calm' || body.tutorTemper === 'harsh'
       ? body.tutorTemper
       : null
+    // Взрослый нрав (18+) несовершеннолетнему не сохраняем: кнопка в UI заперта,
+    // но POST сюда шлёт браузер, и запрет должен держаться на сервере. Возраст
+    // — из проверенного токена, а не из тела. Возраст неизвестен (аноним или
+    // аккаунт до обязательного поля) — прежнее поведение, не запираем.
+    if (patch.tutorTemper === 'harsh' && isMinor(resolved.birthDate)) {
+      return Response.json(
+        { configured: true, error: 'Harsh tutor mode is 18+.', code: 'ADULT_ONLY' },
+        { status: 403 },
+      )
+    }
   }
   if ('profession' in body) {
     const p = typeof body.profession === 'string' ? body.profession.trim() : ''

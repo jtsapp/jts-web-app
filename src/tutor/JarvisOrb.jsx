@@ -19,7 +19,7 @@ export default function JarvisOrb({
   inputLevel = 0,
   audioTrack = null,
   className = 't-voice__face',
-  label = 'Джарвис',
+  label = 'KZ тест',
 }) {
   const boxRef = useRef(null)
   const canvasRef = useRef(null)

@@ -10,19 +10,21 @@ import {
   SHADOWING_KEY,
   SITUATIONS_KEY,
   WORKBOOKS_KEY,
+  WORKBOOK_KEY,
   WRITING_KEY,
   GRAMMAR_PROGRESS_EVENT,
   LISTENING_PROGRESS_EVENT,
   SHADOWING_PROGRESS_EVENT,
   SITUATIONS_PROGRESS_EVENT,
   WORKBOOKS_PROGRESS_EVENT,
+  WORKBOOK_PROGRESS_EVENT,
   WRITING_PROGRESS_EVENT,
 } from './practiceKeys.js'
 
 // Модули-объекты: их стейт уходит на сервер как есть (replace), а не как
 // множество done-id. Дублирует смысл DONE_MODULES из practiceContract.js «с
 // другой стороны» — при добавлении модуля сверяй оба списка.
-const OBJECT_MODULES = ['vocab', 'writing']
+const OBJECT_MODULES = ['vocab', 'writing', 'workbook']
 
 // raw: для vocab/writing — объект стейта; для grammar/listening — Set или массив id.
 export function serializeForPush(module, raw) {
@@ -63,5 +65,9 @@ export function applyHydratedState(serverState, { setItem, dispatch }) {
   if (serverState.writing && typeof serverState.writing === 'object') {
     setItem(WRITING_KEY, JSON.stringify(serverState.writing))
     dispatch(WRITING_PROGRESS_EVENT)
+  }
+  if (serverState.workbook && typeof serverState.workbook === 'object') {
+    setItem(WORKBOOK_KEY, JSON.stringify(serverState.workbook))
+    dispatch(WORKBOOK_PROGRESS_EVENT)
   }
 }

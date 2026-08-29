@@ -57,6 +57,7 @@ export const DICT = {
     'tutor.adult': '18+',
     'tutor.adultHint': 'Жёсткий характер включён: мат и наезды. Нажми, чтобы выключить',
     'tutor.adultHintOff': 'Включить жёсткий характер: мат и наезды',
+    'tutor.adultLocked': 'Жёсткий характер доступен с 18 лет',
     'tutor.temper': 'Характер',
     'tutor.spark.trait1': 'Казахскоязычный',
     'tutor.spark.trait2': 'Энергичный',
@@ -67,20 +68,23 @@ export const DICT = {
       'Тот же Спарк, только злой. Матерится по-казахски, орёт за халтуру и за отговорки, добрых слов не жди. По-русски всё так же не говорит — ругается тоже на казахском.',
     'tutor.spark.listen': 'Послушать голос Спарка',
     'tutor.spark.choose': 'Выбрать Спарка',
-    // Джарвис — dev-only тьютор (JARVIS_ENABLED в src/config.js). Ключи лежат
+    // KZ тест — dev-only тьютор (JARVIS_ENABLED в src/config.js). Ключи лежат
     // во всех трёх языках: на проде карточки нет, но словарь общий, и «дырка»
     // в kz/en вылезла бы сырым ключом, если флаг включат.
+    // Ключ остался jarvis, имя на карточке — «KZ тест»: см. комментарий у
+    // JARVIS в src/tutor/tutors.js.
     'tutor.jarvis.trait1': 'Ассистент',
     'tutor.jarvis.trait2': 'Тестируется',
-    'tutor.jarvis.trait3': 'Это же Джарвис!',
+    'tutor.jarvis.trait3': 'Живой қазақша',
     'tutor.jarvis.desc':
-      'Ассистент, а не тьютор: урок по методичке не ведёт, отвечает на то, что спрашиваешь. Говорит по-казахски и по-английски, обращается «мырза» на «сіз», держит себя как вышколенный дворецкий — спокойно, коротко и по делу. Доступен только на тестовом стенде.',
-    // Жёсткий нрав у Джарвиса — не мат вместо манер: выучка на месте, «сіз» и
-    // «мырза» никуда не делись, и именно поэтому его презрение режет.
+      'Стенд казахского голоса. Ассистент, а не тьютор: урок по методичке не ведёт, отвечает на то, что спрашиваешь. Говорит по-казахски и по-английски, обращается на «сіз», держится спокойно и коротко — обычной живой речью, без книжных оборотов. Доступен только на тестовом стенде.',
+    // Жёсткий нрав остался прежним дворецким и переписку спокойного не
+    // проходил: выучка на месте, «сіз» и «мырза» никуда не делись, и именно
+    // поэтому его презрение режет.
     'tutor.jarvis.desc18':
-      'Тот же Джарвис, которому надоело. Всё так же на «сіз» и всё так же «мырза» — только вежливость теперь работает как оружие: холодно, коротко, с матом там, где вы его заслужили. Плану вашему он скажет, что о нём думает. Отвечает при этом ровно так же точно.',
-    'tutor.jarvis.listen': 'Послушать голос Джарвиса',
-    'tutor.jarvis.choose': 'Выбрать Джарвиса',
+      'Тот же голос, но дворецкий, которому надоело. Всё так же на «сіз» и всё так же «мырза» — только вежливость теперь работает как оружие: холодно, коротко, с матом там, где вы его заслужили. Плану вашему он скажет, что о нём думает. Отвечает при этом ровно так же точно.',
+    'tutor.jarvis.listen': 'Послушать KZ тест',
+    'tutor.jarvis.choose': 'Выбрать KZ тест',
 
     // Загрузка
     'loading.heading': '{name} собирает\nтебе обучение...',
@@ -449,6 +453,7 @@ export const DICT = {
     'tutor.adult': '18+',
     'tutor.adultHint': 'Қатал мінез қосулы: боқтық пен айқай. Өшіру үшін бас',
     'tutor.adultHintOff': 'Қатал мінезді қосу: боқтық пен айқай',
+    'tutor.adultLocked': 'Қатал мінез 18 жастан бастап қолжетімді',
     'tutor.temper': 'Мінез',
     'tutor.spark.trait1': 'Қазақша',
     'tutor.spark.trait2': 'Жігерлі',
@@ -461,13 +466,13 @@ export const DICT = {
     'tutor.spark.choose': 'Спарк таңдау',
     'tutor.jarvis.trait1': 'Ассистент',
     'tutor.jarvis.trait2': 'Сынақтан өтуде',
-    'tutor.jarvis.trait3': 'Бұл Джарвис қой!',
+    'tutor.jarvis.trait3': 'Тірі қазақша',
     'tutor.jarvis.desc':
-      'Ассистент, тьютор емес: әдістеме бойынша сабақ өткізбейді, сұрағаныңа жауап береді. Қазақша және ағылшынша сөйлейді, «мырза» деп, «сіз» деп қаратады, тәрбиелі дворецкий іспетті — байсалды, қысқа әрі нақты. Тек сынақ стендінде қолжетімді.',
+      'Қазақ дауысының сынақ стенді. Тьютор емес, ассистент: әдістеме бойынша сабақ өткізбейді, сұрағаныңа жауап береді. Қазақша және ағылшынша сөйлейді, «сіз» деп қаратады, байсалды әрі қысқа сөйлейді — кітаби емес, тірі тілмен. Тек сынақ стендінде қолжетімді.',
     'tutor.jarvis.desc18':
-      'Сол Джарвис, бірақ шыдамы таусылған. Бәрібір «сіз» деп, «мырза» деп қаратады — тек сыпайылығы енді қару: суық, қысқа, лайық жерінде боқтап та жібереді. Жоспарыңыз туралы ойын тура айтады. Жауабының дәлдігі сол күйі қалады.',
-    'tutor.jarvis.listen': 'Джарвис дауысын тыңдау',
-    'tutor.jarvis.choose': 'Джарвис таңдау',
+      'Сол дауыс, бірақ шыдамы таусылған дворецкий. Бәрібір «сіз» деп, «мырза» деп қаратады — тек сыпайылығы енді қару: суық, қысқа, лайық жерінде боқтап та жібереді. Жоспарыңыз туралы ойын тура айтады. Жауабының дәлдігі сол күйі қалады.',
+    'tutor.jarvis.listen': 'KZ тестті тыңдау',
+    'tutor.jarvis.choose': 'KZ тестті таңдау',
 
     'loading.heading': '{name} саған оқу\nжинап жатыр...',
 
@@ -817,6 +822,7 @@ export const DICT = {
     'tutor.adult': '18+',
     'tutor.adultHint': 'Harsh mode on: swearing and shouting. Tap to turn it off',
     'tutor.adultHintOff': 'Turn on harsh mode: swearing and shouting',
+    'tutor.adultLocked': 'Harsh mode is available from 18',
     'tutor.temper': 'Character',
     'tutor.spark.trait1': 'Kazakh-speaking',
     'tutor.spark.trait2': 'Energetic',
@@ -829,13 +835,13 @@ export const DICT = {
     'tutor.spark.choose': 'Choose Spark',
     'tutor.jarvis.trait1': 'Assistant',
     'tutor.jarvis.trait2': 'In testing',
-    'tutor.jarvis.trait3': "It's Jarvis!",
+    'tutor.jarvis.trait3': 'Living Kazakh',
     'tutor.jarvis.desc':
-      'An assistant rather than a tutor: he does not run a lesson from the syllabus, he answers what you ask. Speaks Kazakh and English, calls you "мырза", carries himself like a well-trained butler — composed, brief, to the point. Available on the test build only.',
+      'A Kazakh voice test bench. An assistant rather than a tutor: he does not run a lesson from the syllabus, he answers what you ask. Speaks Kazakh and English, keeps to the polite "сіз", stays calm and brief — everyday spoken Kazakh, not the language of textbooks. Available on the test build only.',
     'tutor.jarvis.desc18':
-      'The same Jarvis, out of patience. Still formal, still "мырза" — only now the courtesy is the weapon: cold, clipped, and swearing exactly where you have earned it. He will tell you what he thinks of your plan. The answers stay just as accurate.',
-    'tutor.jarvis.listen': "Listen to Jarvis's voice",
-    'tutor.jarvis.choose': 'Choose Jarvis',
+      'The same voice, but a butler out of patience. Still formal, still "мырза" — only now the courtesy is the weapon: cold, clipped, and swearing exactly where you have earned it. He will tell you what he thinks of your plan. The answers stay just as accurate.',
+    'tutor.jarvis.listen': 'Listen to KZ test',
+    'tutor.jarvis.choose': 'Choose KZ test',
 
     'loading.heading': '{name} is putting\nyour lessons together...',
 

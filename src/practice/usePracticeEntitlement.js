@@ -9,11 +9,13 @@ import { useEffect, useState } from 'react'
  *  строкам сданных секций, поэтому у него свой роут (/api/ielts/entitlement).
  *  Тот же fail-open: пока грузим или если запрос не удался — allowed:true. */
 export function useIeltsEntitlement(token) {
-  const [state, setState] = useState({ loading: true, allowed: true, limit: null, used: 0 })
+  const [state, setState] = useState({
+    loading: true, allowed: true, limit: null, used: 0, source: 'NONE', sourceName: null,
+  })
 
   useEffect(() => {
     if (!token) {
-      setState({ loading: false, allowed: true, limit: null, used: 0 })
+      setState({ loading: false, allowed: true, limit: null, used: 0, source: 'NONE', sourceName: null })
       return undefined
     }
     let alive = true
@@ -27,10 +29,12 @@ export function useIeltsEntitlement(token) {
           allowed: data ? data.allowed !== false : true,
           limit: data?.limit ?? null,
           used: data?.used ?? 0,
+          source: data?.source || 'NONE',
+          sourceName: data?.sourceName || null,
         })
       })
       .catch(() => {
-        if (alive) setState({ loading: false, allowed: true, limit: null, used: 0 })
+        if (alive) setState({ loading: false, allowed: true, limit: null, used: 0, source: 'NONE', sourceName: null })
       })
     return () => { alive = false }
   }, [token])
@@ -39,11 +43,13 @@ export function useIeltsEntitlement(token) {
 }
 
 export function usePracticeEntitlement(moduleName, token) {
-  const [state, setState] = useState({ loading: true, allowed: true, limit: null, completed: 0 })
+  const [state, setState] = useState({
+    loading: true, allowed: true, limit: null, completed: 0, source: 'NONE', sourceName: null,
+  })
 
   useEffect(() => {
     if (!token) {
-      setState({ loading: false, allowed: true, limit: null, completed: 0 })
+      setState({ loading: false, allowed: true, limit: null, completed: 0, source: 'NONE', sourceName: null })
       return undefined
     }
     let alive = true
@@ -59,10 +65,12 @@ export function usePracticeEntitlement(moduleName, token) {
           allowed: data ? data.allowed !== false : true,
           limit: data?.limit ?? null,
           completed: data?.completed ?? 0,
+          source: data?.source || 'NONE',
+          sourceName: data?.sourceName || null,
         })
       })
       .catch(() => {
-        if (alive) setState({ loading: false, allowed: true, limit: null, completed: 0 })
+        if (alive) setState({ loading: false, allowed: true, limit: null, completed: 0, source: 'NONE', sourceName: null })
       })
     return () => { alive = false }
   }, [moduleName, token])

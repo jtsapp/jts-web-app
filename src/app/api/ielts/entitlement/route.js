@@ -28,5 +28,7 @@ export async function GET(request) {
     allowed: !quota.blocked,
     limit: quota.limit ?? null,
     used: quota.used ?? 0,
+    source: quota.source || 'NONE',
+    sourceName: quota.sourceName || null,
   })
 }

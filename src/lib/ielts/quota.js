@@ -13,12 +13,20 @@ export async function checkIeltsQuota(request, deviceId) {
   const resolved = await resolveProfileId(request, deviceId ?? null)
   if ('error' in resolved) return { resolved, blocked: false }
 
-  const limit = await fetchContentQuota(bearerFromRequest(request), 'IELTS')
-  if (limit == null) return { resolved, blocked: false }
+  const quota = await fetchContentQuota(bearerFromRequest(request), 'IELTS')
+  const limit = quota?.limit ?? null
+  if (limit == null) return { resolved, blocked: false, source: quota?.source || 'NONE', sourceName: null }
 
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
   const used = await countIeltsAttemptsSince(resolved.id, startOfMonth)
-  return { resolved, blocked: used >= limit, limit, used }
+  return {
+    resolved,
+    blocked: used >= limit,
+    limit,
+    used,
+    source: quota?.source || 'NONE',
+    sourceName: quota?.sourceName || null,
+  }
 }

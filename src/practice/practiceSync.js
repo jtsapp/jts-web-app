@@ -7,7 +7,7 @@
 
 import { loadToken } from '../lib/session.js'
 import { applyHydratedState, serializeForPush } from './practiceSyncCore.js'
-import { VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WRITING_KEY } from './practiceKeys.js'
+import { VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY } from './practiceKeys.js'
 import { WRITING_ARTIFACT_KEYS } from './writing/writingStore.js'
 
 export function isSyncEnabled() {
@@ -61,7 +61,7 @@ export function clearLocalPractice() {
   // Артефакты письма (черновики, журнал, свои слова) не синкаются, но чистятся
   // вместе с прогрессом: на общей машине черновики — это тексты ученика, и они
   // не должны достаться следующему аккаунту.
-  for (const k of [VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WRITING_KEY, ...WRITING_ARTIFACT_KEYS]) {
+  for (const k of [VOCAB_KEY, GRAMMAR_KEY, LISTENING_KEY, SHADOWING_KEY, SITUATIONS_KEY, WORKBOOKS_KEY, WORKBOOK_KEY, WRITING_KEY, ...WRITING_ARTIFACT_KEYS]) {
     try { localStorage.removeItem(k) } catch {}
   }
 }

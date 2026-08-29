@@ -15,8 +15,15 @@ import VocabPractice from './vocab/VocabPractice.jsx'
 import { topVocabMisses } from './vocab/vocabMisses.js'
 import { learnedCount } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
+import { levelIndex } from '../kingdoms.js'
 
 const vocabLang = (lang) => (lang === 'kk' ? 'kk' : 'ru')
+
+/** CEFR level is open if ≤ student level (A1 always open, same as kingdoms). */
+function isVocabLevelOpen(levelId, userLevel) {
+  const effIdx = Math.max(levelIndex(userLevel), levelIndex('A1'))
+  return levelIndex(levelId) <= effIdx
+}
 
 function lessonOf(scope, no) {
   if (!scope?.lessons) return null
@@ -98,7 +105,12 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     }
     let alive = true
     setIndexLoading(true)
-    getVocabCatalog(token)
+    getVocabCatalog(token, (data) => {
+      if (!alive) return
+      setIndex(data)
+      setIndexError(false)
+      setIndexLoading(false)
+    })
       .then((data) => {
         if (!alive) return
         setIndex(data)
@@ -118,9 +130,17 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 
   useEffect(() => {
     if (!token) return
-    openLessonVocab('saved', token)
-      .then(setMine)
+    let alive = true
+    openLessonVocab('saved', token, (data) => {
+      if (alive) setMine(data)
+    })
+      .then((data) => {
+        if (alive) setMine(data)
+      })
       .catch(() => {})
+    return () => {
+      alive = false
+    }
   }, [token])
 
   useEffect(() => {
@@ -129,23 +149,37 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
 
   const loadScope = (id, meta, levelId) => {
     if (!token) return
-    getVocabScope(token, id)
-      .then((data) => {
-        setScope(data)
-        setScopeMeta(meta || { id })
-        setActiveLevel(levelId || meta?.id || null)
-        setScreen(meta?.kind === 'field' ? 'field-lessons' : 'levels')
-      })
+    // Core CEFR scopes: block levels above the student's profile level.
+    const cefrId = levelId || (meta?.kind === 'level' ? meta?.id || id : null)
+    if (meta?.kind !== 'field' && cefrId && !isVocabLevelOpen(cefrId, userLevel)) {
+      flash(t('learn.locked', { label: String(cefrId).toUpperCase() }))
+      return
+    }
+    const apply = (data) => {
+      setScope(data)
+      setScopeMeta(meta || { id })
+      let nextLevel = levelId || null
+      if (!nextLevel && meta?.kind === 'level') nextLevel = meta.id || id
+      if (!nextLevel && meta?.kind === 'field') {
+        const ul = String(userLevel || 'A1').toUpperCase()
+        nextLevel = isVocabLevelOpen(ul, userLevel) ? ul : 'A1'
+      }
+      setActiveLevel(nextLevel)
+      setScreen(meta?.kind === 'field' ? 'field-lessons' : 'levels')
+    }
+    getVocabScope(token, id, apply)
+      .then(apply)
       .catch(() => flash(t('vocab.home.empty')))
   }
 
   const openMine = () => {
     if (!token) return
-    openLessonVocab('saved', token)
-      .then((data) => {
-        setMine(data)
-        setScreen('mine')
-      })
+    const apply = (data) => {
+      setMine(data)
+      setScreen('mine')
+    }
+    openLessonVocab('saved', token, apply)
+      .then(apply)
       .catch(() => flash(t('vocab.lesson.error')))
   }
 
@@ -168,7 +202,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   )
 
   if (!entitlement.loading && !entitlement.allowed) {
-    return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} />)
+    return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />)
   }
 
   if (screen === 'practice' && practiceCards) {
@@ -238,8 +272,13 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         scope={scope}
         meta={scopeMeta}
         activeLevel={activeLevel}
+        userLevel={userLevel}
         onBack={() => setScreen(scopeMeta?.kind === 'field' ? 'fields' : 'home')}
         onLevel={(lv) => {
+          if (!isVocabLevelOpen(lv, userLevel)) {
+            flash(t('learn.locked', { label: String(lv).toUpperCase() }))
+            return
+          }
           if (scopeMeta?.kind === 'field') {
             setActiveLevel(lv)
             return
@@ -283,22 +322,36 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
             <h2>{t('vocab.home.core')}</h2>
             <p>{t('vocab.home.coreByLevel')}</p>
           </div>
-          <button type="button" className="vp-sec-arrow" onClick={() => levels[0] && loadScope(levels[0].id, { ...levels[0], kind: 'level' })} aria-label="more">→</button>
+          <button
+            type="button"
+            className="vp-sec-arrow"
+            onClick={() => {
+              const firstOpen = levels.find((lv) => isVocabLevelOpen(lv.id, userLevel))
+              if (firstOpen) loadScope(firstOpen.id, { ...firstOpen, kind: 'level' })
+            }}
+            aria-label="more"
+          >→</button>
         </div>
         <div className="vp-row">
           {levels.map((lv) => {
             const n = learnedCount(token, lv.id)
+            const locked = !isVocabLevelOpen(lv.id, userLevel)
             return (
             <button
               type="button"
               key={lv.id}
-              className="vp-lvl-card"
+              className={`vp-lvl-card${locked ? ' is-locked' : ''}`}
               data-lv={lv.id}
-              onClick={() => loadScope(lv.id, { ...lv, kind: 'level' })}
+              disabled={locked}
+              aria-disabled={locked}
+              title={locked ? t('learn.locked', { label: lv.id }) : undefined}
+              onClick={() => !locked && loadScope(lv.id, { ...lv, kind: 'level' })}
             >
               <div className="code">{lv.id}</div>
               <div className="nm">{lv.name}</div>
-              <div className={`meta${n === 0 ? ' is-zero' : ''}`}>{t('vocab.learned', { n })}</div>
+              <div className={`meta${n === 0 ? ' is-zero' : ''}`}>
+                {locked ? t('learn.locked', { label: lv.id }) : t('vocab.learned', { n })}
+              </div>
             </button>
             )
           })}
@@ -431,7 +484,7 @@ function FieldsScreen({ t, lang, index, onBack, onPick }) {
   )
 }
 
-function BrowseLessons({ t, lang, index, scope, meta, activeLevel, onBack, onLevel, onOpen }) {
+function BrowseLessons({ t, lang, index, scope, meta, activeLevel, userLevel, onBack, onLevel, onOpen }) {
   const isField = meta?.kind === 'field'
   const levels = index?.levels || []
   const title = isField
@@ -450,17 +503,23 @@ function BrowseLessons({ t, lang, index, scope, meta, activeLevel, onBack, onLev
         </div>
       </div>
       <div className="vp-tabs">
-        {levels.map((lv) => (
+        {levels.map((lv) => {
+          const locked = !isVocabLevelOpen(lv.id, userLevel)
+          return (
           <button
             type="button"
             key={lv.id}
-            className={`vp-tab${(activeLevel || meta?.id) === lv.id ? ' on' : ''}`}
-            onClick={() => onLevel(lv.id)}
+            className={`vp-tab${(activeLevel || meta?.id) === lv.id ? ' on' : ''}${locked ? ' is-locked' : ''}`}
+            disabled={locked}
+            aria-disabled={locked}
+            title={locked ? t('learn.locked', { label: lv.id }) : undefined}
+            onClick={() => !locked && onLevel(lv.id)}
           >
             {lv.id}
             <span className="n">{lv.cards || 0}</span>
           </button>
-        ))}
+          )
+        })}
       </div>
       {isField && activeLevel && <h3 style={{ margin: '0 0 14px' }}>{t('vocab.levelOf', { id: activeLevel })}</h3>}
       {units.map((unit) => {

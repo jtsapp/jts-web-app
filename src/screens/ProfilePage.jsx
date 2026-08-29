@@ -7,11 +7,12 @@ import {
   computeKingdoms,
   roleForLevel,
   LEVEL_ORDER,
-  HERO_LEVELS,
   levelIndex,
   ROLE_BY_LEVEL,
 } from '../kingdoms.js'
-import { getBalance, getLearningPath, countProgress, updateUser } from '../api.js'
+import { getBalance, getLearningPath, countProgress, updateUser, getCurrentUser } from '../api.js'
+import { birthDateProblem } from '../lib/birthDate.js'
+import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 
 // Ключи localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
@@ -47,19 +48,6 @@ const HERO_GRADIENT = {
 
 function heroGradientFor(level) {
   return HERO_GRADIENT[roleForLevel(level).key] || HERO_GRADIENT.merchant
-}
-
-// Фон шапки: арт (если он есть для уровня) поверх градиента роли. Арт лежит в
-// WebP — те же кадры в PNG весили по 1.7–2.3 МБ на полосу высотой 190px, и на
-// 4G шапка приезжала последней.
-//
-// Пустой уровень трактуем как A0 — ровно так же, как roleForLevel под
-// градиентом. Раньше здесь стоял свой дефолт 'a1', и у пользователя без уровня
-// арт A1 накладывался на градиент A0.
-function heroBackgroundFor(level) {
-  const gradient = heroGradientFor(level)
-  const key = (level || 'A0').toLowerCase()
-  return HERO_LEVELS.has(key) ? `url(/assets/world/hero/${key}.webp), ${gradient}` : gradient
 }
 
 // Роль для следующего по порядку CEFR-уровня (для правой «монеты» прогресса).
@@ -104,7 +92,7 @@ export default function ProfilePage({
   const [customOpen, setCustomOpen] = useState(false)
 
   // Форма редактирования профиля
-  const [form, setForm] = useState({ name: '', email: '', city: '', gender: '' })
+  const [form, setForm] = useState({ name: '', email: '', city: '', gender: '', birthDate: '' })
   const [saving, setSaving] = useState(false)
   const [editErr, setEditErr] = useState('')
 
@@ -215,14 +203,32 @@ export default function ProfilePage({
 
   function openEdit() {
     setEditErr('')
-    setForm({ name: name || '', email: '', city: '', gender: '' })
+    setForm({ name: name || '', email: '', city: '', gender: '', birthDate: '' })
     setEditOpen(true)
+    // Дату рождения подтягиваем из профиля: она обязательна при регистрации,
+    // и пустое поле читалось бы как «не указана», хотя она уже есть. Осечка
+    // сети не мешает править остальное — просто останется пустым.
+    if (token) {
+      getCurrentUser(token)
+        .then((me) => {
+          if (me?.birthDate) setForm((f) => ({ ...f, birthDate: String(me.birthDate).slice(0, 10) }))
+        })
+        .catch(() => {})
+    }
   }
 
   async function saveProfile() {
     const trimmed = form.name.trim()
     if (!trimmed) {
       setEditErr(t('profile.editNameRequired'))
+      return
+    }
+    // Пустую дату пропускаем: у аккаунтов, заведённых до обязательного поля,
+    // её нет, и правка имени не должна упираться в чужой пробел. Заполненная
+    // проходит те же границы, что и на регистрации.
+    const dobProblem = form.birthDate ? birthDateProblem(form.birthDate) : null
+    if (dobProblem) {
+      setEditErr(t(`regbirth.${dobProblem}`))
       return
     }
     setSaving(true)
@@ -233,6 +239,7 @@ export default function ProfilePage({
         email: form.email.trim(),
         city: form.city.trim(),
         gender: form.gender,
+        birthDate: form.birthDate,
       })
       setName(trimmed)
       onUpdateName?.(trimmed)
@@ -284,7 +291,14 @@ export default function ProfilePage({
       <div className="pf">
         {/* ── Hero ── */}
         <section className="pf-hero">
-          <div className="pf-hero__scene" style={{ backgroundImage: heroBackgroundFor(userLevel) }} />
+          <div
+            className="pf-hero__scene"
+            style={{
+              // PNG-шапка (если есть) ложится поверх градиента; при её отсутствии
+              // виден только градиент — экран самодостаточен.
+              backgroundImage: `url(/assets/world/hero/${(userLevel || 'a1').toLowerCase()}.png), ${heroGradientFor(userLevel)}`,
+            }}
+          />
           <div className="pf-hero__sheet">
             <div className="pf-avatar">
               {avatar ? (
@@ -425,6 +439,13 @@ export default function ProfilePage({
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             />
           </label>
+          <div className="pf-field">
+            <span>{t('profile.editBirthDate')}</span>
+            <BirthDateInput
+              value={form.birthDate}
+              onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
+            />
+          </div>
           <label className="pf-field">
             <span>{t('profile.editCity')}</span>
             <input

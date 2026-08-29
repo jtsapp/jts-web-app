@@ -107,9 +107,12 @@ assert build_standalone_instructions(jarvis_harsh) != build_standalone_instructi
 # Голос (пресет) при этом у обоих один — проверено выше через OPENAI_TTS_VOICE.
 assert _openai_instructions_for("jarvis_harsh", "ru") != _openai_instructions_for("jarvis", "ru")
 assert _openai_speed_for("jarvis_harsh") > _openai_speed_for("jarvis")
-# Произношение цепляется по языку сессии, а не по персоне.
-assert "Kazakh" in _openai_instructions_for("hype", "kz")
-assert "Kazakh" not in _openai_instructions_for("jarvis", "ru")
+# Произношение цепляется по языку сессии, а не по персоне. Проверяем по строке
+# ИЗ САМОГО блока, а не по слову «Kazakh»: спокойная персона теперь и сама
+# описана как носитель казахского («native Kazakh speaker»), поэтому слово
+# встречается в подаче при любом языке — и проверка на него бы врала.
+assert "vowel harmony" in _openai_instructions_for("hype", "kz")
+assert "vowel harmony" not in _openai_instructions_for("jarvis", "ru")
 # Блок живости достаётся всем — он и лечит «дикторское» чтение.
 for persona, lang in (("jarvis", "ru"), ("jarvis_harsh", "ru"), ("hype", "kz")):
     assert "not a narrator reading" in _openai_instructions_for(persona, lang)

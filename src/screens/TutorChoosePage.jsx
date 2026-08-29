@@ -26,6 +26,9 @@ export default function TutorChoosePage({
   // каком ученик её оставил, а не в дефолтном.
   tutorKey = '',
   temper = null,
+  // Ученику нет 18 — кнопка жёсткого нрава заперта во всех трёх местах, где
+  // она встречается (сетка, карусель, «Управление тьютором»).
+  adultLocked = false,
 }) {
   const { lang, t } = useLang()
   // Состояние кнопок 18+ живёт ЗДЕСЬ, а не в карточке и не в карусели: сетка и
@@ -75,6 +78,7 @@ export default function TutorChoosePage({
           onListen={onListen}
           tempers={tempers}
           onToggleTemper={toggleTemper}
+          adultLocked={adultLocked}
         />
 
         <div className="t-choose__pills">
@@ -94,7 +98,12 @@ export default function TutorChoosePage({
               <TutorThumb tutor={tt} className="t-tcard__avatar" />
               <div className="t-tcard__name">
                 {tt.name}
-                <TemperToggle tutor={tt} temper={tempers[tt.key]} onToggle={toggleTemper} />
+                <TemperToggle
+                  tutor={tt}
+                  temper={tempers[tt.key]}
+                  onToggle={toggleTemper}
+                  locked={adultLocked}
+                />
               </div>
               <div className="t-tcard__chips">
                 {tt.traitColors.map((color, i) => {
