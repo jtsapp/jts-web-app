@@ -2040,18 +2040,22 @@ textarea {
 }
 .nbell__badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 999px;
   background: #e11d48;
   color: #fff;
   font-size: 10px;
   font-weight: 800;
-  line-height: 16px;
+  line-height: 18px;
   text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 .nbell__panel {
   position: absolute;
