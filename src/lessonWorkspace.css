@@ -3586,8 +3586,14 @@ button.lw-tap-pop__save.is-on:disabled {
    Только по наведению его показывать нельзя (с клавиатуры и с тача до него не
    добраться), поэтому оно же проявляется по фокусу, у выбранного ученика и там,
    где наведения нет вовсе — см. медиазапрос ниже. */
-.lv-people__watch {
+.lv-people__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: auto;
+}
+
+.lv-people__act {
   padding: 4px 10px;
   border: 0;
   border-radius: var(--lw-r-pill);
@@ -3602,24 +3608,28 @@ button.lw-tap-pop__save.is-on:disabled {
   transition: opacity .15s, background .15s;
 }
 
-.lv-people__row:hover .lv-people__watch,
-.lv-people__watch:focus-visible,
-.lv-people__watch.is-active {
+.lv-people__act:hover {
+  background: var(--lv-bg);
+}
+
+.lv-people__row:hover .lv-people__act,
+.lv-people__act:focus-visible,
+.lv-people__act.is-active {
   opacity: 1;
 }
 
-.lv-people__watch:focus-visible {
+.lv-people__act:focus-visible {
   outline: 2px solid var(--lw-primary);
   outline-offset: 2px;
 }
 
-.lv-people__watch.is-active {
+.lv-people__act.is-active {
   background: var(--lw-primary);
   color: #fff;
 }
 
 @media (hover: none) {
-  .lv-people__watch {
+  .lv-people__act {
     opacity: 1;
   }
 }
@@ -3869,6 +3879,83 @@ button.lw-tap-pop__save.is-on:disabled {
   min-width: 0;
   box-sizing: border-box;
   overflow-x: hidden;
+}
+
+/* Две метки макета: вызвали (оранжевая рамка) и смотрят экран (синяя).
+   Рамкой, а не только плашкой: ученик смотрит в задание, а не в угол полотна,
+   и подсветить надо то самое место, где он сейчас работает. Цвет дублируется
+   словом — по одной рамке не прочитать, вызвали тебя или открыли твой экран. */
+.lv-sheet.is-called {
+  box-shadow: 0 0 0 2px var(--lw-warn-line, #f5a623);
+}
+
+.lv-sheet.is-watched {
+  box-shadow: 0 0 0 2px var(--lw-info-line, #2f80ed);
+}
+
+/* Обе сразу — вызвали, пока смотрели: внешним кольцом идёт вызов, он срочнее. */
+.lv-sheet.is-called.is-watched {
+  box-shadow: 0 0 0 2px var(--lw-info-line, #2f80ed), 0 0 0 5px var(--lw-warn-line, #f5a623);
+}
+
+.lv-sheet__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  /* Метка стоит над шапкой полотна и не растягивает его отступы: gap полотна
+     28px, а здесь нужна плотная строка. */
+  margin-bottom: -20px;
+}
+
+.lv-sheet__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 12px;
+  border-radius: var(--lw-r-pill);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.lv-sheet__flag--call {
+  background: #fdecd2;
+  color: #a15c07;
+  animation: lv-flag-in .35s ease-out;
+}
+
+.lv-sheet__flag--watch {
+  padding-right: 12px;
+  background: #e2edfd;
+  color: #1b5fbd;
+}
+
+.lv-sheet__flag-close {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lv-sheet__flag-close:hover {
+  background: #f7dcb4;
+}
+
+.lv-sheet__flag-close:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 1px;
+}
+
+/* Повторный вызов должен быть заметен, когда метка уже висит: она появляется
+   заново (key={callNonce} в LiveLessonPage) и проигрывает это же движение. */
+@keyframes lv-flag-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
 }
 
 .lv-sheet__head {

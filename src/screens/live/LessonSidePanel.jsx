@@ -25,6 +25,7 @@ export default function LessonSidePanel({
   isStaff,
   reviewStudentId,
   onWatch,
+  onCall,
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('topics')
@@ -82,6 +83,7 @@ export default function LessonSidePanel({
             isStaff={isStaff}
             reviewStudentId={reviewStudentId}
             onWatch={onWatch}
+            onCall={onCall}
           />
         )}
       </div>

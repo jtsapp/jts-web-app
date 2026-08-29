@@ -43,6 +43,7 @@ export default function LessonPeople({
   isStaff,
   reviewStudentId,
   onWatch,
+  onCall,
 }) {
   const { t } = useI18n()
   const students = participants || []
@@ -70,16 +71,29 @@ export default function LessonPeople({
                 online={isOnline(p.studentId)}
                 self={self}
                 action={
-                  // Смотреть чужую работу может только преподаватель: у ученика
-                  // такого права нет ни на бэкенде, ни по смыслу урока.
-                  isStaff && !self && onWatch ? (
-                    <button
-                      type="button"
-                      className={`lv-people__watch${p.studentId === reviewStudentId ? ' is-active' : ''}`}
-                      onClick={() => onWatch(p.studentId)}
-                    >
-                      {t('live.watchScreen')}
-                    </button>
+                  // Вызвать и смотреть чужую работу может только преподаватель:
+                  // у ученика такого права нет ни на бэкенде, ни по смыслу урока.
+                  isStaff && !self ? (
+                    <span className="lv-people__actions">
+                      {onCall && (
+                        <button
+                          type="button"
+                          className="lv-people__act"
+                          onClick={() => onCall(p.studentId)}
+                        >
+                          {t('live.callStudent')}
+                        </button>
+                      )}
+                      {onWatch && (
+                        <button
+                          type="button"
+                          className={`lv-people__act${p.studentId === reviewStudentId ? ' is-active' : ''}`}
+                          onClick={() => onWatch(p.studentId)}
+                        >
+                          {t('live.watchScreen')}
+                        </button>
+                      )}
+                    </span>
                   ) : null
                 }
               />

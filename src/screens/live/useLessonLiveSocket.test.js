@@ -265,6 +265,58 @@ describe('useLessonLiveSocket', () => {
     })
   })
 
+  // --- вызов ученика и просмотр его экрана ---------------------------------
+
+  // Персональные каналы, как поправка и сброс: в групповом занятии сосед не должен
+  // знать, кого вызвали и чей экран сейчас читают.
+  it('на вызов и просмотр подписан только сам ученик', () => {
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, {}))
+    expect(Object.keys(lastClient.subs)).toEqual(expect.arrayContaining([
+      '/topic/lesson/7/call/9',
+      '/topic/lesson/7/watch/9',
+    ]))
+
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/call/1')
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/watch/1')
+  })
+
+  it('доставляет вызов и оба состояния просмотра', () => {
+    const onCall = vi.fn()
+    const onWatch = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 9, { onCall, onWatch }))
+
+    const call = { senderUserId: 140, senderName: 'Адильжан' }
+    act(() => { lastClient.subs['/topic/lesson/7/call/9']({ body: JSON.stringify(call) }) })
+    expect(onCall).toHaveBeenCalledWith(call)
+
+    act(() => {
+      lastClient.subs['/topic/lesson/7/watch/9']({ body: JSON.stringify({ senderName: 'Адильжан', watching: true }) })
+    })
+    expect(onWatch).toHaveBeenCalledWith({ senderName: 'Адильжан', watching: true })
+
+    // Преподаватель ушёл к другому ученику — метку надо снять, а не оставить висеть.
+    act(() => {
+      lastClient.subs['/topic/lesson/7/watch/9']({ body: JSON.stringify({ senderName: 'Адильжан', watching: false }) })
+    })
+    expect(onWatch).toHaveBeenLastCalledWith({ senderName: 'Адильжан', watching: false })
+  })
+
+  it('sendCall/sendWatch publish to the right destinations', async () => {
+    const { result } = renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { isStaff: true }))
+    await waitFor(() => expect(lastClient.connected).toBe(true))
+
+    act(() => { result.current.sendCall(141) })
+    act(() => { result.current.sendWatch(141, true) })
+
+    expect(lastClient.published.map((f) => f.destination)).toEqual([
+      '/app/lesson/7/call',
+      '/app/lesson/7/watch',
+    ])
+    expect(JSON.parse(lastClient.published[0].body)).toEqual({ studentId: 141 })
+    expect(JSON.parse(lastClient.published[1].body)).toEqual({ studentId: 141, watching: true })
+  })
+
   // Трансляция преподавателя ("Транслировать классу") — лесson-wide /topic/lesson/7/audio,
   // тот же канал, что несёт позицию учителя в step-progress. Своё эхо глушится тем же
   // приёмом, что у focus/present.

@@ -16,12 +16,12 @@ import { wsBase } from '../../lib/wsUrl.js'
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
-  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer })
-  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer } })
+  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch })
+  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -87,6 +87,16 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
             const evt = parse(m.body)
             if (evt) handlersRef.current.onAnswerReset?.(evt)
           })
+          // Меня вызвали и мой экран смотрят — тоже персональные каналы: в групповом
+          // занятии сосед не должен знать, кого сейчас спрашивают и чью работу читают.
+          client.subscribe(`/topic/lesson/${lessonId}/call/${selfUserId}`, (m) => {
+            const evt = parse(m.body)
+            if (evt) handlersRef.current.onCall?.(evt)
+          })
+          client.subscribe(`/topic/lesson/${lessonId}/watch/${selfUserId}`, (m) => {
+            const evt = parse(m.body)
+            if (evt) handlersRef.current.onWatch?.(evt)
+          })
         }
       },
     })
@@ -124,8 +134,14 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   // (см. LessonAudioMessage на бэкенде). Односторонний канал: студент не подписан
   // на свой же /audio/staff, поэтому здесь только отправка.
   const sendAudio = useCallback((payload) => publish('audio', payload), [publish])
+  // Учитель: вызвать одного ученика («Вас вызвали» у него на экране).
+  const sendCall = useCallback((studentId) => publish('call', { studentId }), [publish])
+  // Учитель: начал или закончил смотреть экран одного ученика. `watching: false`
+  // обязателен при переключении — иначе метка «за вами смотрят» останется висеть
+  // у того, от кого преподаватель уже ушёл.
+  const sendWatch = useCallback((studentId, watching) => publish('watch', { studentId, watching }), [publish])
 
-  return { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio }
+  return { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAnswerCorrection, sendAnswerReset, sendAudio, sendCall, sendWatch }
 }
 
 function parse(body) {

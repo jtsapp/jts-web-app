@@ -158,6 +158,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // первый участник занятия, как и раньше (loadLesson()/selectStudent() в
   // web-admin делают то же самое по умолчанию).
   const [reviewStudentId, setReviewStudentId] = useState(null)
+  // Ученик: «Вас вызвали» и «Учитель смотрит ваш экран» (макет живого урока).
+  // Имя преподавателя, а не флаг: в вызове ученик видит, кто его зовёт. Счётчик
+  // нужен, чтобы повторный вызов был заметен — метка уже висит, и без него
+  // второе нажатие преподавателя не меняло бы на экране ничего.
+  const [calledBy, setCalledBy] = useState(null)
+  const [callNonce, setCallNonce] = useState(0)
+  const [watchedBy, setWatchedBy] = useState(null)
   useEffect(() => {
     if (reviewStudentId == null && lesson?.participants?.length) {
       setReviewStudentId(lesson.participants[0].studentId)
@@ -467,7 +474,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // когда время видят обе стороны.
   const { remaining: timerLeft, expired: timerExpired, onTimer } = useLessonTimer()
 
-  const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio } = useLessonLiveSocket(lessonId, token, selfUserId, {
+  const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onTimer,
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
@@ -601,12 +608,55 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       setCheckedSteps(nextChecked)
       persistProgress({ answers: nextAnswers, checkedSteps: nextChecked, stepId: activeStepId })
     },
+    // Преподаватель вызвал меня. Метку гасит сам ученик крестиком: вызов — это
+    // обращение к человеку, и снимать его должен человек, а не таймер.
+    onCall: (evt) => {
+      if (isStaff) return
+      setCalledBy(evt.senderName || null)
+      setCallNonce((n) => n + 1)
+    },
+    // Преподаватель открыл (или закрыл) мой экран. До этого зеркало шло ученику
+    // за спину: работу читали, а он об этом не знал.
+    onWatch: (evt) => {
+      if (isStaff) return
+      setWatchedBy(evt.watching ? (evt.senderName || '') : null)
+    },
   })
+
+  // Преподаватель открыл экран ученика. Предыдущему уходит watching:false —
+  // без него метка «за вами смотрят» осталась бы висеть у того, от кого
+  // преподаватель уже ушёл. Отдельное состояние от reviewStudentId: тот
+  // выставляется сам на первого участника при загрузке урока, а это — кому мы
+  // об этом действительно сказали.
+  const [watchingId, setWatchingId] = useState(null)
+
+  function watchStudent(studentId) {
+    setReviewStudentId(studentId)
+    if (watchingId === studentId) return
+    if (watchingId != null) sendWatch(watchingId, false)
+    sendWatch(studentId, true)
+    setWatchingId(studentId)
+  }
+
+  function leaveLesson() {
+    // Уходим с урока — снимаем метку у того, чей экран смотрели: сокет закроется
+    // молча, и ученик остался бы с ней до конца занятия.
+    if (watchingId != null) sendWatch(watchingId, false)
+    onBack?.()
+  }
 
   // Ученик проскроллил/перешёл к вопросу, но ещё не обязательно ответил —
   // отдельное от handleAnswer событие (см. onStepProgress выше: value там нет
   // нарочно, чтобы не затирать уже данный ответ). useActiveQuestionTracker сам
   // не шлёт повторно один и тот же questionId, здесь дедуп не нужен.
+  // Преподаватель отключился — «за вами смотрят» перестало быть правдой, а
+  // сообщить об этом ему уже нечем: сокет закрылся.
+  useEffect(() => {
+    if (isStaff || watchedBy == null) return
+    const teacherId = lesson?.teacherId
+    if (teacherId != null && !onlineUserIds.has(teacherId)) setWatchedBy(null)
+  }, [isStaff, watchedBy, lesson?.teacherId, onlineUserIds])
+
   function handleQuestionView(questionId) {
     sendStepProgress({
       stepId: activeStepId,
@@ -1017,7 +1067,33 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           {/* Белое полотно урока: в макете центр — одна
                               карточка с шапкой, лентой заданий и кнопками
                               перехода, а не стопка отдельных плашек. */}
-                          <div className="lv-sheet">
+                          <div className={`lv-sheet${calledBy != null ? ' is-called' : ''}${watchedBy != null ? ' is-watched' : ''}`}>
+                            {/* Две метки макета. Вызов ученик снимает сам —
+                                это обращение к нему, и гасить его должен
+                                человек, а не таймер; просмотр снимает
+                                преподаватель, закрыв чужой экран. */}
+                            {(calledBy != null || watchedBy != null) && (
+                              <div className="lv-sheet__flags">
+                                {calledBy != null && (
+                                  <span className="lv-sheet__flag lv-sheet__flag--call" key={callNonce}>
+                                    {t('live.calledOnYou')}
+                                    <button
+                                      type="button"
+                                      className="lv-sheet__flag-close"
+                                      onClick={() => setCalledBy(null)}
+                                      aria-label={t('common.close')}
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                      </svg>
+                                    </button>
+                                  </span>
+                                )}
+                                {watchedBy != null && (
+                                  <span className="lv-sheet__flag lv-sheet__flag--watch">{t('live.watchedByTeacher')}</span>
+                                )}
+                              </div>
+                            )}
                             <div className="lv-sheet__head">
                               <div className="lv-sheet__titles">
                                 {catalogLesson?.level && (
@@ -1138,7 +1214,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           selfUserId={selfUserId}
                           isStaff={isStaff}
                           reviewStudentId={reviewStudentId}
-                          onWatch={setReviewStudentId}
+                          onWatch={watchStudent}
+                          onCall={sendCall}
                         />
                       )}
                       {/* Урок кончился — звонка на его месте быть не должно:
@@ -1254,7 +1331,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               selfUserId={selfUserId}
               isStaff={isStaff}
               reviewStudentId={reviewStudentId}
-              onWatch={setReviewStudentId}
+              onWatch={watchStudent}
+              onCall={sendCall}
             />
           ) : sheet === 'vocab' ? (
             <LessonDictionary token={token} />
@@ -1269,7 +1347,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         </div>
       )}
 
-      {confirmExit && <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={onBack} />}
+      {confirmExit && <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={leaveLesson} />}
     </div>
   )
 }
