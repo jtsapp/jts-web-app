@@ -179,12 +179,17 @@ export async function fetchContentQuota(token, contentType) {
  * - With no token → the anonymous deviceId, UNLESS it intrudes on the reserved
  *   `user-*` namespace (then 401: that data requires authentication).
  *
- * Returns { id, name, birthDate } on success, or { error: Response } the caller should
- * return. `name` is the backend's display name for an authenticated learner and
- * null for everyone else — verifyToken already fetches it, so callers that want
- * it (the LiveKit token route, for the voice scenarios) cost no extra request.
- * It is derived from the token, never from the client body: a caller cannot
- * claim someone else's name.
+ * Returns { id, name, birthDate, isDemoAccount } on success, or { error: Response }
+ * the caller should return. `name` is the backend's display name for an
+ * authenticated learner and null for everyone else — verifyToken already fetches
+ * it, so callers that want it (the LiveKit token route, for the voice scenarios)
+ * cost no extra request. It is derived from the token, never from the client
+ * body: a caller cannot claim someone else's name.
+ *
+ * `isDemoAccount` едет тем же ответом /user/me — недельные бюджеты платных
+ * вызовов (writingBudget/shadowingBudget) режутся по нему, и отдельный поход на
+ * бэкенд ради одного флага стоил бы каждой проверке письма лишний round-trip.
+ * Аноним демо-аккаунтом быть не может: у него вообще нет аккаунта.
  */
 export async function resolveProfileId(request, clientDeviceId) {
   const token = bearerFromRequest(request)
@@ -203,6 +208,7 @@ export async function resolveProfileId(request, clientDeviceId) {
       id: profileIdForUser(user.userId),
       name: user.name ?? null,
       birthDate: user.birthDate ?? null,
+      isDemoAccount: user.isDemoAccount,
     }
   }
 
@@ -214,7 +220,7 @@ export async function resolveProfileId(request, clientDeviceId) {
   if (RESERVED_ID_RE.test(clientDeviceId)) {
     // Единственное исключение: наш же голосовой агент с сервисным ключом. Он
     // пишет память ученика от его имени, своего токена не имея.
-    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null, birthDate: null }
+    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null, birthDate: null, isDemoAccount: false }
     return {
       error: Response.json(
         { configured: true, error: 'This profile requires authentication.' },
@@ -222,5 +228,5 @@ export async function resolveProfileId(request, clientDeviceId) {
       ),
     }
   }
-  return { id: clientDeviceId, name: null, birthDate: null }
+  return { id: clientDeviceId, name: null, birthDate: null, isDemoAccount: false }
 }
