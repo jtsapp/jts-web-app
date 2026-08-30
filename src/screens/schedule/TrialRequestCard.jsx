@@ -63,7 +63,11 @@ export default function TrialRequestCard({ token, state, onRequested }) {
           {t(sending ? 'trial.sending' : 'trial.cta')}
         </button>
       )}
-      {failed && <p className="sch-trial__error">{t('trial.failed')}</p>}
+      {/* role="alert" на самом абзаце, а не на области выше: живая область
+          объявляет изменения ВНУТРИ себя, а при неудаче внутри неё не меняется
+          ни символа — абзац появляется её соседом, и диктор промолчал бы. Так же
+          сделано у соседей (TutorCallReportPage, GapQuestion, SituativkaOverlay). */}
+      {failed && <p className="sch-trial__error" role="alert">{t('trial.failed')}</p>}
     </div>
   )
 }

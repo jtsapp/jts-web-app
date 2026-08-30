@@ -18,10 +18,25 @@ vi.mock('../../api.js', () => ({
 
 import LessonSchedule from './LessonSchedule.jsx'
 
-function renderSchedule() {
+// Роль читается из самого токена (roleFromToken), поэтому строка-заглушка вроде
+// 'TOK' здесь больше не годится: она даёт роль null, и экран повёл бы себя как
+// у не-ученика. Собираем разбираемый JWT — тем же способом, что SidebarRole.test.
+function tokenFor(role) {
+  const b64 = (value) =>
+    btoa(unescape(encodeURIComponent(JSON.stringify(value))))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+  return `${b64({ alg: 'HS256' })}.${b64({ role, userId: 1 })}.sig`
+}
+
+const STUDENT = tokenFor('STUDENT')
+const TEACHER = tokenFor('TEACHER')
+
+function renderSchedule(token = STUDENT) {
   return render(
     <I18nProvider>
-      <LessonSchedule token="TOK" onOpenLesson={() => {}} />
+      <LessonSchedule token={token} onOpenLesson={() => {}} />
     </I18nProvider>
   )
 }
@@ -77,7 +92,7 @@ describe('LessonSchedule container', () => {
     const opened = []
     render(
       <I18nProvider>
-        <LessonSchedule token="TOK" onOpenLesson={(id) => opened.push(id)} />
+        <LessonSchedule token={STUDENT} onOpenLesson={(id) => opened.push(id)} />
       </I18nProvider>
     )
 
@@ -99,7 +114,7 @@ describe('LessonSchedule container', () => {
     await waitFor(() => expect(container.querySelector('.lesson-card .meet-link')).not.toBeNull())
     expect(container.querySelector('.lesson-card .meet-link').getAttribute('href'))
       .toBe('https://meet.google.com/abc-defg-hij')
-    expect(api.getLessonById).toHaveBeenCalledWith('TOK', '49')
+    expect(api.getLessonById).toHaveBeenCalledWith(STUDENT, '49')
   })
 
   it('тема урока из прикреплённого материала попадает в карточку', async () => {
@@ -125,16 +140,26 @@ describe('LessonSchedule — заявка на пробный урок', () => {
     requested: false, requestedAt: null, teacherAssigned: false, managerAssigned: false, ...over,
   })
 
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    // Адресат карточки — человек без расписания. Дефолтный мок файла отдаёт
+    // одно занятие, а карточка теперь требует пустого календаря: занятие,
+    // о котором ученик иначе не узнает, дороже предложения записаться.
+    const api = await import('../../api.js')
+    api.getMyLessonOccurrences.mockResolvedValue([])
+  })
 
   // Ключевой случай регрессии: календарь бывает пустым и у ученика с
   // преподавателем, поэтому решает признак бэкенда, а не пустота расписания.
   it('у ученика с преподавателем экран остаётся расписанием', async () => {
     const api = await import('../../api.js')
+    api.getMyLessonOccurrences.mockResolvedValue([
+      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
+    ])
     const { container } = renderSchedule()
 
     await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    expect(api.getTrialRequestState).toHaveBeenCalledWith('TOK')
+    expect(api.getTrialRequestState).toHaveBeenCalledWith(STUDENT)
     expect(container.querySelector('.sch-trial')).toBeNull()
     expect(container.querySelectorAll('.sch-tile')).toHaveLength(4)
   })
@@ -158,7 +183,7 @@ describe('LessonSchedule — заявка на пробный урок', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Записаться на пробный урок' }))
 
     expect(await screen.findByText('Заявка принята')).toBeTruthy()
-    expect(api.requestTrialLesson).toHaveBeenCalledWith('TOK')
+    expect(api.requestTrialLesson).toHaveBeenCalledWith(STUDENT)
     expect(screen.queryByRole('button', { name: 'Записаться на пробный урок' })).toBeNull()
   })
 
@@ -199,12 +224,45 @@ describe('LessonSchedule — заявка на пробный урок', () => {
   it('упавший запрос состояния не ломает экран — остаётся расписание', async () => {
     const api = await import('../../api.js')
     api.getTrialRequestState.mockRejectedValueOnce(new Error('boom'))
+    api.getMyLessonOccurrences.mockResolvedValue([
+      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
+    ])
     const { container } = renderSchedule()
 
     await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    expect(api.getTrialRequestState).toHaveBeenCalledWith('TOK')
+    expect(api.getTrialRequestState).toHaveBeenCalledWith(STUDENT)
     expect(container.querySelector('.sch-trial')).toBeNull()
     expect(container.querySelector('.sch__status--error')).toBeNull()
+  })
+
+  // Признак teacherAssigned бэкенд считает по группе ученика, а у преподавателя
+  // группы нет вовсе — он получал false и терял ВЕСЬ экран «Уроки» вместе с
+  // единственной кнопкой «Войти в класс», без выхода: F5 возвращал то же самое.
+  it('преподавателю карточка не показывается — у него своё расписание', async () => {
+    const api = await import('../../api.js')
+    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
+    api.getMyLessonOccurrences.mockResolvedValue([
+      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
+    ])
+    const { container } = renderSchedule(TEACHER)
+
+    await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
+    expect(container.querySelector('.sch-trial')).toBeNull()
+  })
+
+  // teacherAssigned бывает false и при непустом расписании: у группы
+  // преподаватель необязателен, а после его смены остаётся история занятий.
+  // Спрятать занятие дороже, чем не показать предложение записаться.
+  it('непустое расписание карточка не прячет, даже когда преподавателя нет', async () => {
+    const api = await import('../../api.js')
+    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
+    api.getMyLessonOccurrences.mockResolvedValue([
+      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
+    ])
+    const { container } = renderSchedule()
+
+    await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
+    expect(container.querySelector('.sch-trial')).toBeNull()
   })
 
   it('упавшая заявка объясняет ошибку и оставляет кнопку рабочей', async () => {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { getMyLessonOccurrences, getLessonsSummary, getTrialRequestState } from '../../api.js'
 import { occurrencesByDayKey, monthShift, dayKey, dateFromKey } from './lessonFormat.js'
+import { roleFromToken } from '../../lib/jwt.js'
 import { pickFeaturedOccurrence } from './liveNow.js'
 import { useMeetingUrls, useLessonTopic } from './useLessonDetails.js'
 import ScheduleSummary from './ScheduleSummary.jsx'
@@ -48,11 +49,30 @@ export default function LessonSchedule({ token, onOpenLesson }) {
     return () => { cancelled = true }
   }, [token])
 
-  // Показать карточку заявки вместо расписания решает ТОЛЬКО признак бэкенда:
-  // календарь бывает пустым и у ученика с преподавателем (каникулы, конец
-  // оплаченного пакета), а ему обещать звонок менеджера незачем — он уже в
-  // обучении.
-  const showTrialCard = state === 'ready' && trial != null && !trial.teacherAssigned
+  // Карточка заявки — только ученику и только при пустом календаре. Три условия,
+  // и каждое стоит здесь из-за конкретного способа потерять расписание:
+  //
+  // 1. Роль. Признак teacherAssigned бэкенд считает как «есть ли у пользователя
+  //    группа с преподавателем», а группы нет ни у преподавателя, ни у
+  //    менеджера, ни у админа (User.group — «Null for non-student roles»).
+  //    Значит все они получают false, и без проверки роли карточка съедала весь
+  //    экран «Уроки» вместе с единственной кнопкой «Войти в класс», причём
+  //    навсегда: F5 возвращал то же самое. Именно роль, а не !isTeacher —
+  //    менеджер и куратор ломались бы ровно так же.
+  // 2. Пустой календарь. teacherAssigned бывает false и при непустом
+  //    расписании: у группы преподаватель необязателен (GroupService.createGroup
+  //    ставит его только если передан, LessonService не назначает его групповым
+  //    урокам), а после смены преподавателя остаётся история занятий. Скрыть
+  //    занятия, о которых человек не узнает иначе, дороже, чем не показать ему
+  //    предложение записаться.
+  // 3. Сам признак. Обратное — календарь бывает пустым и у ученика с
+  //    преподавателем (каникулы, конец оплаченного пакета), и обещать ему
+  //    звонок менеджера незачем: он уже в обучении.
+  const showTrialCard = state === 'ready'
+    && trial != null
+    && !trial.teacherAssigned
+    && String(roleFromToken(token) ?? '').toUpperCase() === 'STUDENT'
+    && occ.length === 0
 
   // Учитель нажал «Начать урок», пока ученик сидел на расписании — occurrences
   // грузились только один раз при монтировании, и «Идёт сейчас» не появлялся
