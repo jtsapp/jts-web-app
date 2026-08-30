@@ -17,7 +17,7 @@ const BRIDGE_HOST = 'jts-bridge-host'
 // через onPresentEvent). Обратно в iframe шлём { source: 'jts-bridge-host',
 // type: 'present', events } — реплей потока учителя у догоняющего студента.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
-  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent },
+  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, className = '' },
   ref
 ) {
   const { t } = useI18n()
@@ -107,7 +107,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   if (material.materialType !== 'INTERACTIVE_HTML' && !isCatalogHtml) {
     return (
-      <div className="lw-material-frame">
+      <div className={`lw-material-frame${className}`}>
         <iframe
           key={`${material.id}-plain`}
           src={material.fileUrl}
@@ -126,7 +126,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   })
 
   return (
-    <div className="lw-material-frame">
+    <div className={`lw-material-frame${className}`}>
       <iframe
         ref={iframeRef}
         key={`${material.id}-${reloadToken || 0}`}
