@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { getMyLessonOccurrences, getLessonsSummary } from '../../api.js'
+import { getMyLessonOccurrences, getLessonsSummary, getTrialRequestState } from '../../api.js'
 import { occurrencesByDayKey, monthShift, dayKey, dateFromKey } from './lessonFormat.js'
 import { pickFeaturedOccurrence } from './liveNow.js'
 import { useMeetingUrls, useLessonTopic } from './useLessonDetails.js'
@@ -8,11 +8,17 @@ import ScheduleSummary from './ScheduleSummary.jsx'
 import MonthCalendar from './MonthCalendar.jsx'
 import DayPanel from './DayPanel.jsx'
 import NextLessonCard from './NextLessonCard.jsx'
+import TrialRequestCard from './TrialRequestCard.jsx'
 
 export default function LessonSchedule({ token, onOpenLesson }) {
   const { t } = useI18n()
   const [occ, setOcc] = useState([])
   const [summary, setSummary] = useState(null)
+  // Заявка на пробный урок: null — состояния нет (не загрузилось или запрос
+  // упал). Тогда экран остаётся расписанием, каким был, — это безопасный отказ:
+  // пустой календарь хуже карточки, но обещать звонок, не зная, есть ли у
+  // человека преподаватель, нельзя.
+  const [trial, setTrial] = useState(null)
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
 
   const now = new Date()
@@ -23,16 +29,30 @@ export default function LessonSchedule({ token, onOpenLesson }) {
     if (!token) return
     let cancelled = false
     setState('loading')
-    Promise.all([getMyLessonOccurrences(token), getLessonsSummary(token)])
-      .then(([o, s]) => {
+    Promise.all([
+      getMyLessonOccurrences(token),
+      getLessonsSummary(token),
+      // Тем же заходом, чтобы не мигать: сначала календарём, а через полсекунды
+      // карточкой вместо него. Своё падение эта ручка держит при себе —
+      // расписание из-за неё ронять не за что.
+      getTrialRequestState(token).catch(() => null),
+    ])
+      .then(([o, s, tr]) => {
         if (cancelled) return
         setOcc(Array.isArray(o) ? o : [])
         setSummary(s || null)
+        setTrial(tr)
         setState('ready')
       })
       .catch(() => { if (!cancelled) setState('error') })
     return () => { cancelled = true }
   }, [token])
+
+  // Показать карточку заявки вместо расписания решает ТОЛЬКО признак бэкенда:
+  // календарь бывает пустым и у ученика с преподавателем (каникулы, конец
+  // оплаченного пакета), а ему обещать звонок менеджера незачем — он уже в
+  // обучении.
+  const showTrialCard = state === 'ready' && trial != null && !trial.teacherAssigned
 
   // Учитель нажал «Начать урок», пока ученик сидел на расписании — occurrences
   // грузились только один раз при монтировании, и «Идёт сейчас» не появлялся
@@ -41,8 +61,10 @@ export default function LessonSchedule({ token, onOpenLesson }) {
   // ошибку одного тика тоже молчим — при следующем тике само поправится.
   // Скрытая вкладка не опрашиваем — экономим батарею/трафик и не копит
   // очередь запросов; при возврате сразу один тик.
+  // Под карточкой заявки расписания на экране нет — обновлять нечего, и опрос
+  // раз в 20 секунд был бы запросом в никуда.
   useEffect(() => {
-    if (!token) return undefined
+    if (!token || showTrialCard) return undefined
     const tick = () => {
       if (typeof document !== 'undefined' && document.hidden) return
       getMyLessonOccurrences(token).then((o) => setOcc(Array.isArray(o) ? o : [])).catch(() => {})
@@ -56,7 +78,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
       clearInterval(id)
       document.removeEventListener('visibilitychange', onVis)
     }
-  }, [token])
+  }, [token, showTrialCard])
 
   const occByDay = useMemo(() => occurrencesByDayKey(occ), [occ])
   const featured = useMemo(() => pickFeaturedOccurrence(occ), [occ])
@@ -71,6 +93,18 @@ export default function LessonSchedule({ token, onOpenLesson }) {
   // возврат null, и вкладка «Онлайн-уроки» открывалась пустым белым полем без
   // единого слова — тот же случай, что и вечная загрузка домашки.
   if (!token) return <p className="sch__status">{t('schedule.needAuth')}</p>
+
+  // Человек, зарегистрировавшийся на сайте сам, приходит без преподавателя и
+  // без расписания, и завести его сам не может: заявка урока не создаёт. Пустой
+  // календарь ему ничего не объясняет — вместо всего расписания, вместе с его
+  // заголовками, показываем карточку заявки.
+  if (showTrialCard) {
+    return (
+      <section className="sch">
+        <TrialRequestCard token={token} state={trial} onRequested={setTrial} />
+      </section>
+    )
+  }
 
   return (
     <section className="sch">

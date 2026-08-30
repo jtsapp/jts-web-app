@@ -358,6 +358,36 @@ export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
 }
 
+// Заявка на пробный урок — состояние экрана «Уроки» у человека, пришедшего с
+// сайта самостоятельно: назначен ли ему преподаватель, оставлял ли он заявку,
+// взял ли его менеджер (TrialRequestController на бэкенде). Не путать с блоком
+// «Пробный урок» в конце файла: там урок по секретной ссылке для ещё не
+// заведённого ученика, здесь — заявка залогиненного на себя, ученик берётся из
+// токена, тела у запроса нет вовсе.
+//
+// GET и POST отвечают ОДНИМ И ТЕМ ЖЕ DTO, поэтому ответ на заявку — это уже
+// свежее состояние экрана: перечитывать GET после POST не нужно и нельзя (два
+// источника правды разъедутся при гонке).
+function trialRequestState(data) {
+  return {
+    requested: !!data?.requested,
+    requestedAt: data?.requestedAt || null,
+    teacherAssigned: !!data?.teacherAssigned,
+    managerAssigned: !!data?.managerAssigned,
+  }
+}
+
+export async function getTrialRequestState(token) {
+  return trialRequestState(await authGet('/mobile/trial-request', token))
+}
+
+// Идемпотентно на бэкенде: повторный вызов не двигает время первой заявки и не
+// падает. Клиент всё равно не даёт нажать дважды (см. TrialRequestCard) —
+// идемпотентность страхует гонку вкладок, а не заменяет гард.
+export async function requestTrialLesson(token) {
+  return trialRequestState(await authPost('/mobile/trial-request', token))
+}
+
 // Живой урок: загрузка одного урока и управление жизненным циклом (учитель/админ).
 // Бэкенд скоупит /admin/lessons/{id} под личность токена.
 export function getLessonById(token, id) {

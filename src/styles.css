@@ -6658,12 +6658,61 @@ textarea {
 .meet-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 .meet-link__icon { flex: none; }
 
+/* Карточка «Скоро с вами свяжется менеджер» — стоит вместо всего расписания у
+   человека без преподавателя. Форма та же, что у карточки урока (белый блок с
+   радиусом 20 и фиолетовой кнопкой-пилюлей), чтобы она читалась как часть
+   экрана «Уроки», а не как вставка из другого продукта.
+
+   Имя класса — из семьи расписания (.sch-row/.sch-tile), а НЕ .trial-card: тот
+   давно занят экраном пробного урока по ссылке (trial.css), стили обоих файлов
+   глобальные, и общее имя перекроило бы чужой экран (там .trial-card — блок с
+   рамкой и max-width, а не флекс-колонка по центру).
+
+   Иллюстрации нет намеренно: единственная картинка раздела — «страница в
+   разработке» у Клубов, и здесь она сказала бы неправду. */
+.sch-trial {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.sch-trial__body { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.sch-trial__title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--ink); }
+.sch-trial__title--done { color: #2c8a45; }
+/* Ширина текста ограничена, чтобы на широком экране строка не растягивалась на
+   всю страницу и оставалась читаемой. */
+.sch-trial__text { max-width: 460px; font-size: 15px; line-height: 1.45; color: var(--muted); }
+.sch-trial__cta {
+  flex: none;
+  background: var(--purple);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sch-trial__cta:hover:enabled { background: #7d34f5; }
+.sch-trial__cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.sch-trial__cta:disabled { background: #ece9f5; color: #8b8a97; cursor: default; }
+.sch-trial__error { margin: 0; color: #c0392b; font-size: 14px; }
+
 @media (max-width: 900px) {
   .sch__top { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
   .lesson-card__foot { align-items: stretch; }
   .lesson-card__join { width: 100%; justify-content: center; }
+  /* На узком экране кнопка во всю ширину карточки: подпись длинная и в пилюлю
+     по контенту переносится в две строки. */
+  .sch-trial { padding: 28px 16px; }
+  .sch-trial__cta { width: 100%; }
 }
 
 /* Lessons calendar */
