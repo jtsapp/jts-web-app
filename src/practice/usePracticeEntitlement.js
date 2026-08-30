@@ -43,9 +43,13 @@ export function useIeltsEntitlement(token) {
   return state
 }
 
-// Ответ сервера → состояние хука. fetched отличает «сервер сказал: потолка нет»
-// от «спросить не удалось»: limit === null в обоих случаях (fail-open), но
-// перепроверять перед стартом сессии стоит только второй — см. check().
+// Ответ сервера → состояние хука. capKnown отличает «сервер сказал: потолка
+// нет» от «спросить не удалось»: limit === null в обоих случаях (fail-open),
+// но срезать будущие проверки можно только по первому — см. check().
+// Различить по самому ответу нечем: роут отдаёт 200 и когда его собственный
+// поход за квотой на бэкенд провалился, поэтому «квоту знаем» он сообщает
+// отдельным полем quotaKnown (см. /api/practice/entitlement). Ответа поля нет
+// (старый стенд) — считаем, что знаем: это прежнее поведение.
 function fromResponse(data) {
   return {
     loading: false,
@@ -54,7 +58,7 @@ function fromResponse(data) {
     completed: data?.completed ?? 0,
     source: data?.source || 'NONE',
     sourceName: data?.sourceName || null,
-    fetched: !!data,
+    capKnown: !!data && data.quotaKnown !== false,
   }
 }
 
@@ -124,8 +128,12 @@ export function usePracticeEntitlement(moduleName, token) {
   const check = useCallback(async () => {
     // Гость: квоты его не касаются — ни одного лишнего запроса.
     if (!token) return latest.current
-    // Ученик без потолка: сервер уже ответил «лимита нет», пересчитывать нечего.
-    if (latest.current.fetched && latest.current.limit == null) return latest.current
+    // Ученик без потолка: сервер ДЕЙСТВИТЕЛЬНО ответил «лимита нет»,
+    // пересчитывать нечего. Срезать по одному limit == null нельзя: тот же
+    // null приходит, когда бэкенд про квоту не ответил (capKnown:false), и
+    // один 5xx в момент монтирования открывал бы демо-квоту раздела до
+    // размонтирования экрана — спрашиваем снова.
+    if (latest.current.capKnown && latest.current.limit == null) return latest.current
     // Прогресс прошлой сессии обязан долететь до БД РАНЬШЕ, чем сервер посчитает
     // completed: отметки копятся с debounce в 600 мс (pushModule), и без flush
     // свежий ответ вернул бы прежнее число — лимит не удержал бы ровно ту

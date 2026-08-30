@@ -145,29 +145,38 @@ export async function fetchTutorLimitOverride(token) {
 
 /**
  * Effective completion-quota for the current student for one content type.
- * Returns `{ limit, source, sourceName }` — `limit: null` means no cap.
- * Fail-open: any error returns `{ limit: null, source: 'NONE' }`.
+ * Returns `{ limit, source, sourceName, known }` — `limit: null` means no cap.
+ * Fail-open: any error returns `{ limit: null, source: 'NONE' }` as well.
+ *
+ * `known: false` — «спросить не удалось», а не «потолка нет». Различать
+ * обязательно: при сбое limit тот же null, и вызывающий не мог отличить одно от
+ * другого — гейт практики принимал первый же 5xx/таймаут /mobile/content-quota
+ * за «ученик без лимита» и переставал спрашивать сервер до размонтирования
+ * экрана (см. usePracticeEntitlement.check). Само решение остаётся fail-open,
+ * различается только повод: по «не удалось» кэшировать вердикт нельзя.
  */
 export async function fetchContentQuota(token, contentType) {
-  if (!token) return { limit: null, source: 'NONE', sourceName: null }
+  // Гость — не сбой, а определённый ответ: квоты его не касаются.
+  if (!token) return { limit: null, source: 'NONE', sourceName: null, known: true }
   try {
     const res = await fetch(
       `${BACKEND_URL}/mobile/content-quota?contentType=${encodeURIComponent(contentType)}&contentId=0`,
       { method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, cache: 'no-store' },
     )
-    if (!res.ok) return { limit: null, source: 'NONE', sourceName: null }
+    if (!res.ok) return { limit: null, source: 'NONE', sourceName: null, known: false }
     const data = await res.json()
     return {
       limit: data?.limit ?? null,
       source: data?.source || 'NONE',
       sourceName: data?.sourceName || null,
+      known: true,
     }
   } catch (err) {
     console.error(
       '[auth] content-quota fetch failed:',
       err?.cause?.code || err?.cause?.message || err?.message || err,
     )
-    return { limit: null, source: 'NONE', sourceName: null }
+    return { limit: null, source: 'NONE', sourceName: null, known: false }
   }
 }
 

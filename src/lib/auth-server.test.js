@@ -12,7 +12,7 @@
 // проверкой оказывается и разбор ответа, где флаг и мог потеряться.
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { resolveProfileId } from './auth-server.js'
+import { resolveProfileId, fetchContentQuota } from './auth-server.js'
 
 const bearer = (token) => new Request('https://app.test/api/x', { headers: { Authorization: `Bearer ${token}` } })
 const anonymous = () => new Request('https://app.test/api/x')
@@ -71,5 +71,60 @@ describe('resolveProfileId: демо-флаг', () => {
     expect(resolved.id).toBe('device-abc123')
     expect(resolved.isDemoAccount).toBe(false)
     expect(fetchMock).not.toHaveBeenCalled() // без токена бэкенд не спрашиваем
+  })
+})
+
+// Квота отвечает limit: null и когда потолка правда нет, и когда её не удалось
+// спросить (fail-open). Вызывающему нужно различать: по второму кэшировать
+// вердикт нельзя — см. usePracticeEntitlement.check.
+describe('fetchContentQuota: «потолка нет» ≠ «спросить не удалось»', () => {
+  function stubQuota(impl) {
+    const fetchMock = vi.fn(impl)
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('ответ бэкенда — квота известна', async () => {
+    stubQuota(async () => ({ ok: true, json: async () => ({ limit: 8, source: 'DEMO', sourceName: null }) }))
+
+    expect(await fetchContentQuota('TOK', 'PRACTICE_LISTENING')).toEqual({
+      limit: 8, source: 'DEMO', sourceName: null, known: true,
+    })
+  })
+
+  it('«потолка нет» от живого бэкенда — тоже известна', async () => {
+    stubQuota(async () => ({ ok: true, json: async () => ({ limit: null, source: 'NONE' }) }))
+
+    const quota = await fetchContentQuota('TOK', 'PRACTICE_LISTENING')
+
+    expect(quota.limit).toBeNull()
+    expect(quota.known).toBe(true)
+  })
+
+  it('5xx — limit тот же null, но квота НЕизвестна', async () => {
+    stubQuota(async () => ({ ok: false, status: 503, json: async () => ({}) }))
+
+    const quota = await fetchContentQuota('TOK', 'PRACTICE_LISTENING')
+
+    expect(quota.limit).toBeNull() // fail-open: сбой не запирает ученика
+    expect(quota.known).toBe(false)
+  })
+
+  it('бэкенд недоступен — квота НЕизвестна', async () => {
+    stubQuota(async () => { throw new Error('ECONNREFUSED') })
+
+    const quota = await fetchContentQuota('TOK', 'PRACTICE_LISTENING')
+
+    expect(quota.limit).toBeNull()
+    expect(quota.known).toBe(false)
+  })
+
+  it('гость — определённый ответ «квоты не касаются», а не сбой', async () => {
+    const fetchMock = stubQuota(async () => { throw new Error('не должно вызываться') })
+
+    const quota = await fetchContentQuota(null, 'PRACTICE_LISTENING')
+
+    expect(quota.known).toBe(true)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
