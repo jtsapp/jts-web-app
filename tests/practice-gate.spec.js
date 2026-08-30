@@ -50,18 +50,29 @@ test.describe('Демо-лимит: замок на контенте, не на 
     await expect(page.locator('.sh-video')).toHaveCount(0)
   })
 
-  test('аудирование: лимит, пришедший ПОСЛЕ старта сессии, всё равно подменяет контент замком', async ({ page }) => {
-    // Регрессия на одноразовую защёлку: кнопка «Начать» кликабельна сразу
-    // после монтирования, а usePracticeEntitlement до ответа сервера работает
-    // fail-open (allowed:true). Если клик попал в это окно — сессия стартует
-    // до того, как пришёл allowed:false. Блокировка обязана быть вычисляемым
-    // значением (пересчитывается на каждом рендере), а не setState-защёлкой,
-    // которую выставили один раз в момент клика и больше никогда не трогали.
+  test('аудирование: старт ждёт вердикта, а пропавшее право подменяет открытый экран замком', async ({ page }) => {
+    // Сторожит ту же регрессию, что и раньше: blocked обязан ВЫЧИСЛЯТЬСЯ из
+    // entitlement на каждом рендере, а не быть useState-защёлкой, выставленной
+    // один раз внутри startSession. Граница с тех пор сместилась — 96159d17
+    // запретил стартовать сессию до свежего вердикта, поэтому прежней гонки
+    // «клик раньше ответа сервера» больше нет, и тест водит два перехода,
+    // которые защёлка не переживает:
+    //   1) право пропало между сессиями — уже открытый тренажёр подменяется
+    //      замком (защёлка это ещё изобразит: setBlocked в том же startSession);
+    //   2) «Назад» с замка возвращает на интро того же экрана — а вот это
+    //      защёлке недоступно: blocked остался бы true навсегда, и раздел
+    //      завис бы на замке до перезагрузки страницы.
+    // Плюс сама новая граница: в окне между кликом и вердиктом задание не
+    // показывается — сессия «в кредит» больше не стартует.
+    let allowed = true
     await page.route('**/api/practice/entitlement**', async (r) => {
-      // Задержка имитирует именно этот порядок: клик — раньше ответа сервера.
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      await r.fulfill(json({ configured: true, allowed: false, limit: 8, completed: 8 }))
+      // Ответ намеренно медленный: в этом окне и проверяем, что экран ждёт.
+      await new Promise((resolve) => setTimeout(resolve, 900))
+      await r.fulfill(json({ configured: true, allowed, limit: 8, completed: allowed ? 7 : 8 }))
     })
+    // Отметку о прохождении startSession досылает перед вопросом о праве
+    // (flushModule) — БД на стенде нет, отвечаем за неё.
+    await page.route('**/api/practice/state', (r) => r.fulfill(json({ configured: true, ok: true })))
     await page.route('**/practice/listening/content/*.json', (r) =>
       r.fulfill(
         json([
@@ -80,19 +91,37 @@ test.describe('Демо-лимит: замок на контенте, не на 
 
     await page.goto('/?screen=listening')
     await expect(page.locator('.lt-intro')).toBeVisible()
-
-    // Клик сразу, пока entitlement ещё грузится (fail-open, allowed:true) —
-    // ровно то окно, в которое должен попасть клик ученика с лимитом.
     await page.locator('.lt-intro .lt-primary').click()
 
-    // Сессия успела начаться: контент задания уже на экране, замка ещё нет.
+    // Вердикт ещё в пути: экран остался на интро, задания нет.
+    await page.waitForTimeout(400)
+    await expect(page.locator('.lt-intro')).toBeVisible()
+    await expect(page.locator('.lt-heading')).toHaveCount(0)
+
+    // Пришёл allowed:true — сессия пошла, замка нет.
     await expect(page.locator('.lt-heading')).toBeVisible({ timeout: 10000 })
     await expect(page.locator('.pl-limit')).toHaveCount(0)
 
-    // Ответ allowed:false пришёл ПОЗЖЕ старта — экран обязан подмениться
-    // замком. На защёлке (blocked как useState, выставленный только в
-    // startSession) это не происходит: контент остаётся до конца сессии.
-    await expect(page.locator('.pl-limit')).toBeVisible({ timeout: 5000 })
+    // Право пропадает, пока экран уже в сессии. Проходим задание до экрана
+    // результата — он про лимит ещё ничего не знает, и это правильно: право
+    // спрашивается на старте сессии, а не на каждом рендере.
+    allowed = false
+    await page.getByText('In Shanghai').click()
+    await page.getByText('Проверить').click()
+    await page.getByText('Продолжить').click()
+    await expect(page.getByText('Попробовать ещё раз')).toBeVisible()
+    await expect(page.locator('.pl-limit')).toHaveCount(0)
+
+    // «Ещё раз» — тот же startSession: право спрошено заново, ответ allowed:false
+    // подменяет уже открытый тренажёр замком.
+    await page.getByText('Попробовать ещё раз').click()
+    await expect(page.locator('.pl-limit')).toBeVisible({ timeout: 10000 })
     await expect(page.locator('.lt-heading')).toHaveCount(0)
+
+    // Замок — не защёлка: «Назад» снимает его и возвращает на интро раздела
+    // (backToIntro сбрасывает и attemptedStart, и phase).
+    await page.locator('.pl-limit__back').click()
+    await expect(page.locator('.lt-intro')).toBeVisible()
+    await expect(page.locator('.pl-limit')).toHaveCount(0)
   })
 })
