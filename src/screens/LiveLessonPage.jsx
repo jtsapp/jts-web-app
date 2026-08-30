@@ -7,19 +7,19 @@ import {
 } from '../api.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
+import { isGroupLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
 import { setAudioReporter, playBroadcastAudio, stopBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
+import { useWatchAnnounce } from './live/useWatchAnnounce.js'
 import LiveHeader from './live/LiveHeader.jsx'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
-import PresenceRoster from './live/PresenceRoster.jsx'
-import StudentReviewPicker from './live/StudentReviewPicker.jsx'
 import TeacherControls from './live/TeacherControls.jsx'
 import LiveBoard from './live/LiveBoard.jsx'
 import SectionMaterialFrame from './live/SectionMaterialFrame.jsx'
-import LessonTopics from './live/LessonTopics.jsx'
+import LessonSidePanel from './live/LessonSidePanel.jsx'
 import LessonContent, { practiceCardStats } from './workspace/LessonContent.jsx'
 import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
@@ -65,7 +65,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // остальные уроки. Раньше «Назад» уводила молча, посреди занятия.
   const [confirmExit, setConfirmExit] = useState(false)
   // «Темы урока» и «Чат урока» на телефоне — два отдельных экрана поверх урока
-  // (макет). null — закрыт, 'topics' | 'chat' — какой открыт.
+  // (макет). null — закрыт, 'topics' | 'chat' | 'vocab' — какой открыт.
   const [sheet, setSheet] = useState(null)
 
   // Esc закрывает лист тем/чата — он объявлен модальным, и без этого с
@@ -124,7 +124,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Групповой урок — несколько студентов шлют прогресс одновременно. Карта по
   // studentId, а не одно значение на всё занятие: иначе просмотр одного
   // ученика стирал бы то, что уже прислал другой, пока на него не смотрели
-  // (см. onStepProgress ниже и StudentReviewPicker).
+  // (см. onStepProgress ниже и вкладку «Группа» правой колонки).
   const [studentLiveState, setStudentLiveState] = useState({})
   const [reloadToken, setReloadToken] = useState(0)
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
@@ -156,16 +156,30 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [activeMaterialId, setActiveMaterialId] = useState(null)
   const activeMaterial = sectionMaterials.find((m) => m.materialId === activeMaterialId) || sectionMaterials[0] || null
   // Кого из участников смотрит преподаватель — выбирается через
-  // StudentReviewPicker (несколько студентов в групповом уроке), по умолчанию
+  // вкладкой «Группа» (несколько студентов в групповом уроке), по умолчанию
   // первый участник занятия, как и раньше (loadLesson()/selectStudent() в
   // web-admin делают то же самое по умолчанию).
   const [reviewStudentId, setReviewStudentId] = useState(null)
+  // Состав класса — только те, кто не отменил занятие: без фильтра ушедший
+  // ученик стоял бы в списке «Группа» неотличимо от того, кто просто ещё не
+  // подключился, а преподавателю предлагали бы его вызвать (см. lessonKind.js).
+  const activeParticipants = useMemo(() => activeOf(lesson?.participants), [lesson?.participants])
+  // Тип занятия известен не всегда (урок ещё грузится) — тогда единственное, чем
+  // можно ответить, это число участников, как было раньше.
+  const groupLesson = isGroupLesson(lesson) ?? activeParticipants.length > 1
+  // Ученик: «Вас вызвали» и «Учитель смотрит ваш экран» (макет живого урока).
+  // Имя преподавателя, а не флаг: в вызове ученик видит, кто его зовёт. Счётчик
+  // нужен, чтобы повторный вызов был заметен — метка уже висит, и без него
+  // второе нажатие преподавателя не меняло бы на экране ничего.
+  const [calledBy, setCalledBy] = useState(null)
+  const [callNonce, setCallNonce] = useState(0)
+  const [watchedBy, setWatchedBy] = useState(null)
   useEffect(() => {
-    if (reviewStudentId == null && lesson?.participants?.length) {
-      setReviewStudentId(lesson.participants[0].studentId)
+    if (reviewStudentId == null && activeParticipants.length) {
+      setReviewStudentId(activeParticipants[0].studentId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lesson?.participants])
+  }, [activeParticipants])
   // Срез studentLiveState именно для того, кого сейчас смотрит преподаватель —
   // остальные студенты продолжают накапливаться в фоне (см. onStepProgress).
   const reviewState = reviewStudentId != null ? studentLiveState[reviewStudentId] : null
@@ -469,7 +483,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // когда время видят обе стороны.
   const { remaining: timerLeft, expired: timerExpired, onTimer } = useLessonTimer()
 
-  const { sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio } = useLessonLiveSocket(lessonId, token, selfUserId, {
+  const { connected: liveConnected, sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onTimer,
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
@@ -603,12 +617,34 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       setCheckedSteps(nextChecked)
       persistProgress({ answers: nextAnswers, checkedSteps: nextChecked, stepId: activeStepId })
     },
+    // Преподаватель вызвал меня. Метку гасит сам ученик крестиком: вызов — это
+    // обращение к человеку, и снимать его должен человек, а не таймер.
+    onCall: (evt) => {
+      if (isStaff) return
+      setCalledBy(evt.senderName || null)
+      setCallNonce((n) => n + 1)
+    },
+    // Преподаватель открыл (или закрыл) мой экран. До этого зеркало шло ученику
+    // за спину: работу читали, а он об этом не знал.
+    onWatch: (evt) => {
+      if (isStaff) return
+      setWatchedBy(evt.watching ? (evt.senderName || '') : null)
+    },
   })
+
 
   // Ученик проскроллил/перешёл к вопросу, но ещё не обязательно ответил —
   // отдельное от handleAnswer событие (см. onStepProgress выше: value там нет
   // нарочно, чтобы не затирать уже данный ответ). useActiveQuestionTracker сам
   // не шлёт повторно один и тот же questionId, здесь дедуп не нужен.
+  // Преподаватель отключился — «за вами смотрят» перестало быть правдой, а
+  // сообщить об этом ему уже нечем: сокет закрылся.
+  useEffect(() => {
+    if (isStaff || watchedBy == null) return
+    const teacherId = lesson?.teacherId
+    if (teacherId != null && !onlineUserIds.has(teacherId)) setWatchedBy(null)
+  }, [isStaff, watchedBy, lesson?.teacherId, onlineUserIds])
+
   function handleQuestionView(questionId) {
     sendStepProgress({
       stepId: activeStepId,
@@ -819,14 +855,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return () => clearTimeout(handle)
   }, [isStaff, followMode, activeMaterial?.materialId, reloadToken])
 
-  function nameFor(userId) {
-    if (userId === selfUserId) return t('live.roster.you')
-    if (lesson?.teacherId === userId) return lesson.teacherName || `#${userId}`
-    const p = lesson?.participants?.find((x) => x.studentId === userId)
-    if (p) return p.studentName || `#${userId}`
-    return `#${userId}`
-  }
-
   function load() {
     return getLessonById(token, lessonId)
       .then((data) => {
@@ -876,6 +904,40 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const lessonOpen = status === 'IN_PROGRESS' || status === 'PAUSED' || status === 'COMPLETED' || followMode
   // Смотрящий не отвечает; на паузе и после урока — тоже, чтобы работа не
   // терялась и не дописывалась задним числом (спека §3.3, §3.4).
+  // Чей экран преподаватель читает прямо сейчас — и, значит, кому должна гореть
+  // метка «Учитель смотрит ваш экран».
+  //
+  // Не просто reviewStudentId: работу ученика видно, только пока преподаватель
+  // на вкладке урока и урок открыт — на «Доске» он не читает ничего, и метка
+  // там висела бы неправдой. И не «кому мы нажали кнопку»: первый участник
+  // выставляется в reviewStudentId сам при загрузке, его ответы сразу видны в
+  // центре экрана, а кнопку «Смотреть экран» в уроке один на один нажимать не
+  // на кого — метка не появлялась бы вообще в самом частом случае.
+  const watchTarget = isStaff && lessonOpen && tab === 'lesson' ? reviewStudentId : null
+  // Объявление повторяется, когда ученик вернулся в класс: событие живёт одно
+  // мгновение, и после его F5 подписка создаётся уже после публикации.
+  const watchTargetRef = useWatchAnnounce({
+    studentId: watchTarget,
+    connected: liveConnected,
+    online: watchTarget != null && onlineUserIds.has(watchTarget),
+    sendWatch,
+  })
+
+  function watchStudent(studentId) {
+    setReviewStudentId(studentId)
+  }
+
+  function leaveLesson() {
+    // На размонтировании страницы клинап хука уже не успевает: сокет закрывается
+    // раньше него, поэтому выход шлёт то же самое явно.
+    if (watchTargetRef.current != null) sendWatch(watchTargetRef.current, false)
+    onBack?.()
+  }
+
+  // Подсветка «вас вызвали» / «за вами смотрят» вешается и на полотно с
+  // заданиями, и на рамку файлового материала — что из них на экране, зависит
+  // от вида урока, а состояние одно.
+  const stageFlags = `${calledBy != null ? ' is-called' : ''}${watchedBy != null ? ' is-watched' : ''}`
   const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
   // Шапка урока считает задания открытой темы теми же карточками, что лента их
@@ -889,16 +951,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
     // а всё, что из него было нужно (словарь, выход), переехало в шапку урока.
     <div className="lv">
+      {/* Словарь открывается листом поверх урока, а не переходом в раздел
+          «Словарь»: onNav увёл бы ученика с урока, ради которого он это слово и
+          смотрел, а вернуться в урок было бы нечем. */}
       <LiveHeader
         status={status}
-        teacherName={lesson?.teacherName}
+        lessonTitle={lesson?.groupName || lesson?.topic}
         meetingUrl={lesson?.meetingUrl}
         connected={connected}
         teacherOnline={isStaff ? null : (lesson?.teacherId != null ? onlineUserIds.has(lesson.teacherId) : null)}
         timerLeft={timerLeft}
         timerExpired={timerExpired}
-        lessonKind={t((lesson?.participants?.length || 0) > 1 ? 'live.kindGroup' : 'live.kindSolo')}
-        onVocab={onNav ? () => onNav('vocab') : undefined}
+        group={groupLesson}
+        onVocab={() => setSheet('vocab')}
         onTopics={() => setSheet('topics')}
         onChat={() => setSheet('chat')}
         onExit={() => setConfirmExit(true)}
@@ -919,12 +984,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
         {state === 'ready' && lesson && (
           <>
-            {/* Кто в классе — только преподавателю: ученик видит своего
-                преподавателя в шапке урока, и вторая строка с тем же именем
-                макету не нужна. Преподавателю же важно, кто из учеников на
-                связи. */}
-            {isStaff && <PresenceRoster roster={roster} connected={connected} nameFor={nameFor} />}
-
+            {/* Состав класса переехал во вкладку «Группа» правой колонки: и
+                строка «В классе» над уроком, и ряд плиток выбора ученика
+                показывали одно и то же двумя разными способами, а ученику не
+                показывали вовсе. */}
             {!isStaff && status === 'SCHEDULED' && <p className="live__status-msg">{t('live.waiting')}</p>}
 
             {isStaff && (
@@ -935,15 +998,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                 onPause={() => act((tk, id) => pauseLiveLesson(tk, id, PAUSE_MINUTES))}
                 onResume={() => act(resumeLiveLesson)}
                 onComplete={() => act(completeLiveLesson)}
-              />
-            )}
-
-            {isStaff && (
-              <StudentReviewPicker
-                participants={lesson.participants}
-                reviewStudentId={reviewStudentId}
-                onSelect={setReviewStudentId}
-                onlineUserIds={onlineUserIds}
               />
             )}
 
@@ -1014,6 +1068,38 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           ))}
                         </div>
                       )}
+                      {/* Две метки макета живут НАД материалом, а не внутри
+                          полотна с заданиями: полотно рисуется только у урока,
+                          разобранного шагами, а вызвать ученика и открыть его
+                          экран преподаватель может на любом материале — и
+                          зеркало экрана работает как раз на файловом.
+
+                          Вызов ученик снимает сам: это обращение к нему, и
+                          гасить его должен человек, а не таймер. Метку
+                          просмотра снимает преподаватель, закрыв чужой экран. */}
+                      {(calledBy != null || watchedBy != null) && (
+                        <div className="lv-flags" role="status">
+                          {calledBy != null && (
+                            <span className="lv-flag lv-flag--call" key={callNonce}>
+                              {t('live.calledOnYou')}
+                              <button
+                                type="button"
+                                className="lv-flag__close"
+                                onClick={() => setCalledBy(null)}
+                                aria-label={t('common.close')}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                  <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                                </svg>
+                              </button>
+                            </span>
+                          )}
+                          {watchedBy != null && (
+                            <span className="lv-flag lv-flag--watch">{t('live.watchedByTeacher')}</span>
+                          )}
+                        </div>
+                      )}
+
                       {view === 'steps' ? (
                         <>
                           {/* Ученик ушёл на другой шаг — преподаватель об этом
@@ -1035,7 +1121,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           {/* Белое полотно урока: в макете центр — одна
                               карточка с шапкой, лентой заданий и кнопками
                               перехода, а не стопка отдельных плашек. */}
-                          <div className="lv-sheet">
+                          <div className={`lv-sheet${stageFlags}`}>
                             <div className="lv-sheet__head">
                               <div className="lv-sheet__titles">
                                 {catalogLesson?.level && (
@@ -1102,6 +1188,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <p className="live__status-msg">{t('live.allStepsHidden')}</p>
                       ) : (
                         <SectionMaterialFrame
+                          className={stageFlags}
                           ref={materialFrameRef}
                           lessonId={lessonId}
                           token={token}
@@ -1131,22 +1218,33 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
                     <div className="lw-live-aside">
                       {/* Маршрут урока и «Топики урока» были двумя списками в
-                          двух колонках — в макете это один список справа. */}
+                          двух колонках — в макете это один список справа, и
+                          рядом с ним вкладка с составом класса.
+
+                          teacherStepId: где преподаватель — это показывал
+                          бегунок «Т» на треке маршрута; маршрута больше нет,
+                          метка живёт в списке тем. */}
                       {sections.length === 0 ? (
                         <p className={`live__status-msg ${sectionsFailed ? 'live__status-msg--error' : ''}`}>
                           {t(sectionsFailed ? 'lesson.ws.sectionsFailed' : 'lesson.ws.noSections')}
                         </p>
                       ) : (
-                        <LessonTopics
+                        <LessonSidePanel
                           steps={routeSteps}
                           activeStepId={routeActiveId}
                           statusById={onLessonSteps ? stepStatusById : sectionStatusById}
                           onSelect={selectRouteStep}
                           hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
-                          // Где преподаватель — это показывал бегунок «Т» на
-                          // треке маршрута; маршрута больше нет, метка живёт в
-                          // списке тем.
                           teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
+                          teacherId={lesson.teacherId}
+                          teacherName={lesson.teacherName}
+                          participants={activeParticipants}
+                          onlineUserIds={onlineUserIds}
+                          selfUserId={selfUserId}
+                          isStaff={isStaff}
+                          reviewStudentId={reviewStudentId}
+                          onWatch={watchStudent}
+                          onCall={sendCall}
                         />
                       )}
                       {/* Урок кончился — звонка на его месте быть не должно:
@@ -1211,9 +1309,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         sending={chatSending}
                         title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
                       />
-                      {/* Словарь школы, чтобы посмотреть слово из задания и не
-                          уходить из урока в раздел «Словарь». */}
-                      <LessonDictionary token={token} />
                     </div>
                   </div>
                 )}
@@ -1248,7 +1343,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             </svg>
           </button>
           {sheet === 'topics' ? (
-            <LessonTopics
+            <LessonSidePanel
               steps={routeSteps}
               activeStepId={routeActiveId}
               statusById={onLessonSteps ? stepStatusById : sectionStatusById}
@@ -1258,7 +1353,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               }}
               hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
               teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
+              teacherId={lesson?.teacherId}
+              teacherName={lesson?.teacherName}
+              participants={activeParticipants}
+              onlineUserIds={onlineUserIds}
+              selfUserId={selfUserId}
+              isStaff={isStaff}
+              reviewStudentId={reviewStudentId}
+              onWatch={watchStudent}
+              onCall={sendCall}
             />
+          ) : sheet === 'vocab' ? (
+            <LessonDictionary token={token} defaultOpen />
           ) : (
             <TeacherChat
               messages={chatMessages}
@@ -1270,7 +1376,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         </div>
       )}
 
-      {confirmExit && <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={onBack} />}
+      {confirmExit && <LessonExitConfirm onStay={() => setConfirmExit(false)} onLeave={leaveLesson} />}
     </div>
   )
 }

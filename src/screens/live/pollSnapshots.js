@@ -17,8 +17,18 @@ export function sameLessonSnapshot(prev, next) {
   if (prev.teacherName !== next.teacherName) return false
   if (prev.title !== next.title) return false
   if (prev.durationMinutes !== next.durationMinutes) return false
+  // Поля, которые рисуют шапку урока и вкладку «Группа». Без них поллинг
+  // отбрасывал свежий ответ: преподаватель прикреплял материал, а у ученика
+  // шапка до конца урока показывала запасное «Живой урок».
+  if ((prev.topic || null) !== (next.topic || null)) return false
+  if ((prev.groupName || null) !== (next.groupName || null)) return false
+  if (prev.lessonType !== next.lessonType) return false
   const a = prev.participants || []
   const b = next.participants || []
   if (a.length !== b.length) return false
-  return a.every((p, i) => p.studentId === b[i].studentId && p.studentName === b[i].studentName)
+  // Статус участника решает, показывать ли его в составе класса: отменившийся
+  // ученик иначе остаётся в списке до перезагрузки страницы.
+  return a.every((p, i) => p.studentId === b[i].studentId
+    && p.studentName === b[i].studentName
+    && p.status === b[i].status)
 }

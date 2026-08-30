@@ -23,17 +23,12 @@ function renderTopics(props = {}) {
 }
 
 describe('LessonTopics — единый список тем живого урока', () => {
-  // Макет «Онлайн-уроки»: счётчик показывает место активной темы, а не число
-  // пройденных — «2 из 5» стоит рядом с третьей строкой только тогда, когда
-  // ученик действительно на ней.
-  it('счётчик считает по месту активной темы', () => {
-    renderTopics()
-    expect(screen.getByText('3 из 5')).toBeTruthy()
-  })
-
-  it('активной темы нет в списке — счётчик показывает ноль, а не первую тему', () => {
-    renderTopics({ activeStepId: 99 })
-    expect(screen.getByText('0 из 5')).toBeTruthy()
+  // Заголовок и счётчик списка ушли во вкладку колонки (см. LessonSidePanel):
+  // в макете список начинается сразу строками тем.
+  it('список рисуется без собственного заголовка', () => {
+    const { container } = renderTopics()
+    expect(container.querySelector('.lv-topics__head')).toBeNull()
+    expect(container.firstChild.className).toBe('lv-topics__list')
   })
 
   it('три состояния строки: пройдено, текущая, впереди', () => {

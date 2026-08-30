@@ -34,4 +34,19 @@ describe('sameLessonSnapshot', () => {
     expect(sameLessonSnapshot(lesson, { ...lesson, status: 'PAUSED' })).toBe(false)
     expect(sameLessonSnapshot(lesson, { ...lesson, participants: [] })).toBe(false)
   })
+
+  // Шапку живого урока рисует groupName/topic, вкладку «Группа» — тип занятия и
+  // статусы участников. Пока эти поля не сравнивались, поллинг отбрасывал
+  // свежий ответ: преподаватель прикреплял материал, а у ученика шапка до конца
+  // урока показывала запасное «Живой урок».
+  it('замечает поля, которыми живёт шапка урока', () => {
+    expect(sameLessonSnapshot(lesson, { ...lesson, topic: 'Present Perfect' })).toBe(false)
+    expect(sameLessonSnapshot(lesson, { ...lesson, groupName: 'Группа IELTS' })).toBe(false)
+    expect(sameLessonSnapshot(lesson, { ...lesson, lessonType: 'GROUP' })).toBe(false)
+  })
+
+  it('замечает отмену участника, а не только его уход из списка', () => {
+    const cancelled = { ...lesson, participants: [{ studentId: 1, studentName: 'Sam', status: 'CANCELLED_FREE' }] }
+    expect(sameLessonSnapshot(lesson, cancelled)).toBe(false)
+  })
 })
