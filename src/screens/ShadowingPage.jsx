@@ -354,6 +354,17 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   )
 
   // ── запись ──────────────────────────────────────────────────────────────
+  const entitlement = usePracticeEntitlement('shadowing', token)
+  const checkEntitlement = entitlement.check
+  // Список уроков (табы) остаётся видимым всегда — это каталог раздела,
+  // студент видит, какие спикеры вообще есть. Замок ставится только на сам
+  // урок (видео/скрипт/запись) — как в грамматике: юниты видны, открытие
+  // конкретного юнита под замком. Сюда попадают уже с конкретным уроком
+  // (клик по карточке в Практике), отдельного «до открытия» состояния у
+  // этого экрана нет, поэтому замок считаем прямо от квоты, без лишнего стейта.
+  // Хук стоит здесь, а не у рендера: его check() зовёт startRec ниже.
+  const blocked = !entitlement.loading && !entitlement.allowed
+
   async function getStream() {
     if (streamRef.current && streamRef.current.active) return streamRef.current
     streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -366,6 +377,15 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   }
 
   async function startRec(target, onDone) {
+    // Право на запись проверяем СВЕЖИМ ответом сервера в момент старта — для
+    // шэдоуинга запись и есть «сессия»: пройденной считается записанная фраза
+    // (markSegmentDone в segRecord). Ответ, снятый при монтировании, про фразы
+    // этого же захода не знает, и демо-лимит мерил бы только те, что были
+    // засчитаны до открытия урока. Отказ — не только «не пишем»: blocked выше
+    // пересчитается из того же обновлённого entitlement и подменит урок
+    // экраном лимита.
+    const fresh = await checkEntitlement()
+    if (!fresh.allowed) return false
     if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
       setDenied(true)
       return false
@@ -614,15 +634,6 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
 
   const progressPct = total ? Math.round((doneCount / total) * 100) : 0
   const mastery = lessonMastery(scores, total) // { mastered, pct } — локально
-
-  const entitlement = usePracticeEntitlement('shadowing', token)
-  // Список уроков (табы) остаётся видимым всегда — это каталог раздела,
-  // студент видит, какие спикеры вообще есть. Замок ставится только на сам
-  // урок (видео/скрипт/запись) — как в грамматике: юниты видны, открытие
-  // конкретного юнита под замком. Сюда попадают уже с конкретным уроком
-  // (клик по карточке в Практике), отдельного «до открытия» состояния у
-  // этого экрана нет, поэтому замок считаем прямо от квоты, без лишнего стейта.
-  const blocked = !entitlement.loading && !entitlement.allowed
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>

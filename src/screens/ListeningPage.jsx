@@ -302,6 +302,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   const current = queue[0] || null
 
   const entitlement = usePracticeEntitlement('listening', token)
+  const checkEntitlement = entitlement.check
   // Блокируем не раздел, а старт задания: интро (маскот, описание, уровень)
   // остаётся видимым всегда, замок появляется только при попытке начать
   // тренировку — как юнит в грамматике (см. PracticePage.jsx, openUnit).
@@ -347,7 +348,14 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     // (fail-open), attemptedStart уже true, и как только загрузка entitlement
     // завершится значением allowed:false, blocked пересчитается сам.
     setAttemptedStart(true)
-    if (!entitlement.loading && !entitlement.allowed) return
+    // Решаем по СВЕЖЕМУ ответу сервера (check досылает прогресс прошлой сессии
+    // и перезапрашивает право), а не по entitlement из состояния: этот же
+    // startSession висит на «Ещё раз» в TrainerResult, а состояние осталось бы
+    // с числом, снятым при монтировании, — демо-лимит мерил бы только первую
+    // сессию. Читать состояние тут тоже нельзя: оно обновится лишь к
+    // следующему рендеру, когда решение уже принято.
+    const fresh = await checkEntitlement()
+    if (!fresh.allowed) return
     const data = content || (await loadContent())
     if (!data) return
     const session = buildSession(data, SESSION_SIZE)
@@ -368,7 +376,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     setStepsTotal(session.length)
     setExitOpen(false)
     setPhase('task')
-  }, [content, loadContent, t, entitlement.loading, entitlement.allowed])
+  }, [content, loadContent, t, checkEntitlement])
 
   const submit = useCallback(() => {
     if (!current || answered) return
