@@ -9,6 +9,7 @@ import RegisterPhonePage from './screens/RegisterPhonePage.jsx'
 import RegisterEmailPage from './screens/RegisterEmailPage.jsx'
 import RegisterBirthDatePage from './screens/RegisterBirthDatePage.jsx'
 import SetPasswordPage from './screens/SetPasswordPage.jsx'
+import CompleteRegistrationPage from './screens/CompleteRegistrationPage.jsx'
 import PasswordLoginPage from './screens/PasswordLoginPage.jsx'
 import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
@@ -110,6 +111,9 @@ export default function App() {
     let cancelled = false
     const searchParams = new URLSearchParams(window.location.search)
     const deepLink = searchParams.get('screen')
+    const inviteMatch = window.location.pathname.match(/^\/complete-registration\/([^/]+)/)
+    const inviteToken = inviteMatch?.[1] || searchParams.get('invite')
+    if (inviteToken) setInviteToken(inviteToken)
     // ?lesson=<id> — id живого урока для lesson-workspace (диплинк
     // ?screen=lesson-workspace&lesson=<id>). Не завязано на deepLink, чтобы
     // работать и когда screen меняется навигацией уже после первого рендера.
@@ -184,8 +188,9 @@ export default function App() {
           setProfileId(profile.deviceId || null)
           if (profile.profession) setProfession(profile.profession)
         }
-        // Диплинк важнее восстановления: им открывают конкретный экран для отладки.
-        if (deepLink) setScreen(deepLink)
+        // Ссылка из админки важнее сессии: студент должен задать пароль.
+        if (inviteToken) setScreen('complete-registration')
+        else if (deepLink) setScreen(deepLink)
         // Преподаватель приходит сюда работать, а не учиться: карта уровней с
         // запертыми королевствами — ученический экран, и открывать его первым
         // ему бессмысленно (сайдбар ему всё остальное и так не показывает).
@@ -202,6 +207,7 @@ export default function App() {
   }, [])
 
   const [name, setName] = useState('')
+  const [inviteToken, setInviteToken] = useState('')
   const [phone, setPhone] = useState('')
   // Почта студента при регистрации: номер → почта → код (на почту) → пароль,
   // оба идентификатора собираются ДО запроса кода (см. handleRegEmailSubmit).
@@ -889,6 +895,18 @@ export default function App() {
           onOtpLogin={() => { setError(''); setScreen('phone') }}
           loading={loading}
           error={error}
+        />
+      )
+    case 'complete-registration':
+      return (
+        <CompleteRegistrationPage
+          token={inviteToken}
+          onDone={() => {
+            setInviteToken('')
+            setError('')
+            if (typeof window !== 'undefined') window.history.replaceState({}, '', '/')
+            setScreen('login-password')
+          }}
         />
       )
     case 'set-password':

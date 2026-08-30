@@ -6570,6 +6570,16 @@ textarea {
 .sch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; background: #f6f6f8; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
 .sch-row:last-child { margin-bottom: 0; }
 .sch-row__main { flex: 1 1 160px; min-width: 0; }
+/* Вид занятия — первой строкой карточки дня, как в макете: групповое оранжевое,
+   индивидуальное фиолетовое. Цвет здесь несёт смысл, поэтому дублируется
+   словом — по одному цвету тип занятия не прочитать. */
+.sch-row__kind { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
+/* Отступ только в карточке дня: там чип — отдельная строка над именем. В ряду
+   «Мой график» контейнер флексовый с align-items:center, и нижний margin
+   поднимал бы чип на 2px относительно соседей. */
+.sch-row__main .sch-row__kind { margin-bottom: 4px; }
+.sch-row__kind--group { background: #fdecd2; color: #a15c07; }
+.sch-row__kind--solo { background: #efe6ff; color: #5b34d6; }
 .sch-row__teacher { font-weight: 700; font-size: 15px; color: var(--ink); overflow-wrap: anywhere; }
 .sch-row__time { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .sch-row__meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-top: 8px; }
@@ -6861,92 +6871,11 @@ textarea {
 .live__status-msg--error { color: #c0392b; }
 .live__section { background: #fff; border: 1px solid #eceef1; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 .live__section-h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #6b7280; margin: 0 0 10px; }
-.live-roster { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.live-roster__item { display: flex; align-items: center; gap: 6px; }
-.live-roster__avatar { width: 34px; height: 34px; border-radius: 50%; background: #7a4dff; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; position: relative; }
-.live-roster__dot { width: 9px; height: 9px; border-radius: 50%; background: #2c8a45; position: absolute; right: -1px; bottom: -1px; border: 2px solid #fff; }
-
-/* Присутствие в шапке урока. Было карточкой во всю ширину — заголовок,
-   аватары 34px, отступы, — и она занимала верх экрана ради строки текста.
-   Материал урока из-за неё начинался ниже первого экрана. */
-.live-presence {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-  min-width: 0;
-}
-.live-presence__people { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
-.live-presence__item { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.live-presence__avatar {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex: none;
-  border-radius: 999px;
-  background: #7a4dff;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
-.live-presence__name {
-  font-size: 13px;
-  color: #5b6478;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.live-presence__empty { font-size: 13px; color: #9aa0a6; }
-
-/* На узком экране имена прячем — остаются аватары и состояние связи. */
-@media (max-width: 700px) {
-  .live-presence { width: 100%; margin-left: 0; }
-  .live-presence__name { display: none; }
-}
-.live-roster__name { font-size: 13px; }
-.live-conn { font-size: 12px; margin-left: auto; }
-.live-conn--on { color: #2c8a45; }
-.live-conn--off { color: #9aa0a6; }
 .live-controls { display: flex; gap: 8px; flex-wrap: wrap; }
 .live-controls button { border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
 .live-controls .btn-start, .live-controls .btn-resume { background: #7a4dff; color: #fff; }
 .live-controls .btn-pause { background: #f0e9ff; color: #5b34d6; }
 .live-controls .btn-complete { background: #eceef1; color: #333; }
-
-/* Групповой урок — кого из участников сейчас смотрит преподаватель. Тот же
-   визуальный язык, что у .live-presence (аватар-кружок + точка присутствия),
-   но кликабельно и с активным состоянием — см. StudentReviewPicker. */
-.live-review-picker { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-.live-review-picker__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  border-radius: 999px;
-  padding: 4px 10px 4px 4px;
-  cursor: pointer;
-  font: inherit;
-}
-.live-review-picker__item.is-active { border-color: #7a4dff; background: #f0e9ff; }
-.live-review-picker__item.is-offline { opacity: .55; }
-.live-review-picker__avatar {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  flex: none;
-  border-radius: 999px;
-  background: #7a4dff;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
-.live-review-picker__name { font-size: 13px; color: #333; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.live-review-picker__dot { width: 8px; height: 8px; border-radius: 50%; background: #c7cbd1; flex: none; }
-.live-review-picker__dot.is-online { background: #2c8a45; }
 
 /* Live whiteboard (sub-project #3) */
 /* Тот же формат колонки, что у .lw-material-frame (материал урока) - иначе

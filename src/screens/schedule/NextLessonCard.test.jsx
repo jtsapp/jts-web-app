@@ -71,12 +71,34 @@ describe('NextLessonCard', () => {
 
     rerender(
       <I18nProvider>
-        <NextLessonCard occ={lesson()} meetingUrl="https://meet.google.com/abc-defg-hij" onOpenLesson={() => {}} />
+        <NextLessonCard occ={lesson()} card={{ meetingUrl: 'https://meet.google.com/abc-defg-hij' }} onOpenLesson={() => {}} />
       </I18nProvider>
     )
     const link = container.querySelector('.meet-link')
     expect(link.getAttribute('href')).toBe('https://meet.google.com/abc-defg-hij')
     expect(link.getAttribute('target')).toBe('_blank')
+  })
+
+  // Групповое и индивидуальное — для ученика это разный урок, и в макете вид
+  // занятия стоит прямо в карточке. Тип приезжает догрузкой, поэтому до неё
+  // чипа быть не должно: пустая плашка читалась бы как поломка.
+  it('вид занятия показывается чипом и только когда он известен', () => {
+    const { container, rerender } = renderCard()
+    expect(container.querySelector('.sch-row__kind')).toBeNull()
+
+    rerender(
+      <I18nProvider>
+        <NextLessonCard occ={lesson()} card={{ group: true }} onOpenLesson={() => {}} />
+      </I18nProvider>
+    )
+    expect(container.querySelector('.sch-row__kind--group').textContent).toBe('Группа')
+
+    rerender(
+      <I18nProvider>
+        <NextLessonCard occ={lesson()} card={{ group: false }} onOpenLesson={() => {}} />
+      </I18nProvider>
+    )
+    expect(container.querySelector('.sch-row__kind--solo').textContent).toBe('Индивидуальный')
   })
 
   it('без ближайшего урока — пустое состояние вместо карточки', () => {

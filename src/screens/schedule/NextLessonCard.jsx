@@ -19,9 +19,11 @@ function initials(name) {
  * поэтому оно здесь, а не в клетке календаря: урок может идти в день, который
  * ученик сейчас не открыл, и найти его там он бы не смог.
  */
-export default function NextLessonCard({ occ, topic, meetingUrl, onOpenLesson }) {
+export default function NextLessonCard({ occ, topic, card, onOpenLesson }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
+  const meetingUrl = card?.meetingUrl
+  const group = card?.group
 
   if (!occ) {
     return (
@@ -55,6 +57,13 @@ export default function NextLessonCard({ occ, topic, meetingUrl, onOpenLesson })
         <div className="lesson-card__info">
           <div className="lesson-card__topic">{topic || when}</div>
           <div className="lesson-card__meta">
+            {/* Вид занятия — в макете он стоит рядом с состоянием урока: для
+                ученика групповое и индивидуальное — это разный урок. */}
+            {group != null && (
+              <span className={`sch-row__kind sch-row__kind--${group ? 'group' : 'solo'}`}>
+                {t(group ? 'schedule.kindGroup' : 'schedule.kindSolo')}
+              </span>
+            )}
             <span className={`lesson-card__state ${live ? 'lesson-card__state--live' : ''}`}>
               <span className="lesson-card__dot" aria-hidden="true" />
               {live ? t('schedule.lessonStarted') : t('schedule.notStarted')}
