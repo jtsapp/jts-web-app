@@ -3,10 +3,10 @@
 //
 // Резать надо на сервере: пока книги лежали в public, ограничение на клиенте
 // обходилось открытием файла напрямую. Сколько глав открыто, решает демо-квота
-// BOOK на бэкенде (её меняет менеджер на экране «Демо-квоты»), а не константа
+// PRACTICE_BOOKS на бэкенде (её меняет менеджер на экране «Демо-квоты»), а не константа
 // здесь.
 
-import { readBookContent, applyPreview, isValidBookId, chapterLimitOf } from '@/lib/books.js'
+import { readBookContent, applyPreview, isValidBookId, chapterLimitOf, BOOKS_CONTENT_TYPE } from '@/lib/books.js'
 import { bearerFromRequest, verifyToken, fetchContentQuota } from '@/lib/auth-server.js'
 
 export const runtime = 'nodejs'
@@ -22,10 +22,13 @@ export const runtime = 'nodejs'
 async function chapterLimitFor(request) {
   const token = bearerFromRequest(request)
   const user = token ? await verifyToken(token) : null
+  // Именно `.limit`, а не весь ответ: chapterLimitOf ждёт число глав, и
+  // переданный целиком объект квоты запирал книгу для всех залогиненных.
+  const quota = user ? await fetchContentQuota(token, BOOKS_CONTENT_TYPE) : null
   return chapterLimitOf({
     authenticated: !!user,
     isDemoAccount: !!user?.isDemoAccount,
-    quota: user ? await fetchContentQuota(token, 'BOOK') : null,
+    quota: quota?.limit ?? null,
   })
 }
 

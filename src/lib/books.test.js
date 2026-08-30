@@ -4,7 +4,13 @@
 // глава — это розданный платный текст, и увидеть её на экране нельзя, книга
 // выглядит одинаково.
 import { describe, it, expect } from 'vitest'
-import { applyPreview, isValidBookId, chapterLimitOf, FALLBACK_PREVIEW_CHAPTERS } from './books.js'
+import {
+  applyPreview,
+  isValidBookId,
+  chapterLimitOf,
+  FALLBACK_PREVIEW_CHAPTERS,
+  BOOKS_CONTENT_TYPE,
+} from './books.js'
 
 const book = {
   book: { title: 'Alice' },
@@ -101,6 +107,42 @@ describe('сколько глав открыто запросу', () => {
       .toBe(FALLBACK_PREVIEW_CHAPTERS)
     expect(chapterLimitOf({ authenticated: false, isDemoAccount: false, quota: 99 }))
       .toBe(FALLBACK_PREVIEW_CHAPTERS)
+  })
+
+  // Регрессия: роут книг однажды передал сюда весь ответ бэкенда о квоте вместо
+  // числа глав. Прежняя проверка `quota != null` возвращала объект, applyPreview
+  // сравнивал `i < {объект}` — ложь для любой главы, — и книга приходила целиком
+  // запертой КАЖДОМУ залогиненному, включая платящего.
+  it('нечисловая квота не запирает книгу: платящий читает целиком', () => {
+    expect(chapterLimitOf({
+      authenticated: true,
+      isDemoAccount: false,
+      quota: { limit: 2, source: 'DEMO' },
+    })).toBeNull()
+  })
+
+  it('нечисловая квота у демо даёт превью, а не пустую книгу', () => {
+    expect(chapterLimitOf({
+      authenticated: true,
+      isDemoAccount: true,
+      quota: { limit: 2, source: 'DEMO' },
+    })).toBe(FALLBACK_PREVIEW_CHAPTERS)
+  })
+
+  it('мусор вместо числа тоже приравнен к «лимит неизвестен»', () => {
+    for (const quota of ['2', NaN, 1.5, -1, [], true]) {
+      expect(chapterLimitOf({ authenticated: true, isDemoAccount: false, quota })).toBeNull()
+      expect(chapterLimitOf({ authenticated: true, isDemoAccount: true, quota }))
+        .toBe(FALLBACK_PREVIEW_CHAPTERS)
+    }
+  })
+
+  // Тип переименован миграцией V204 (BOOK → PRACTICE_BOOKS). Старое имя
+  // эндпоинт квот не разбирает и отвечает ошибкой, а сбой запроса квоты
+  // неотличим от «квота не настроена» — то есть промах читался бы как
+  // «лимита нет», и демо-аккаунт получал бы книги целиком.
+  it('спрашивает у бэкенда тот тип контента, который там есть', () => {
+    expect(BOOKS_CONTENT_TYPE).toBe('PRACTICE_BOOKS')
   })
 })
 
