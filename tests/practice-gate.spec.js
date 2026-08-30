@@ -50,6 +50,33 @@ test.describe('Демо-лимит: замок на контенте, не на 
     await expect(page.locator('.sh-video')).toHaveCount(0)
   })
 
+  test('шэдоуинг: запись фразы упирается в лимит, пришедший после открытия урока', async ({ page }) => {
+    // Для шэдоуинга «сессия» — это запись фразы: пройденной её считает
+    // markSegmentDone в segRecord. Поэтому право спрашивается в startRec, и
+    // спрашивается ПЕРВОЙ строкой — до navigator.mediaDevices, getStream и
+    // new MediaRecorder. Тест водит именно этот порядок: до записи мокать
+    // микрофон и YouTube не нужно, исполнение до них не доходит.
+    let allowed = true
+    await page.route('**/api/practice/entitlement**', (r) =>
+      r.fulfill(json({ configured: true, allowed, limit: 12, completed: allowed ? 0 : 12 })))
+
+    await page.goto('/?screen=shadowing')
+    // Урок открыт: право есть, замка нет.
+    await expect(page.locator('.sh-video')).toBeVisible()
+    const record = page.getByRole('button', { name: 'Записать фразу' }).first()
+    await expect(record).toBeVisible()
+
+    // Демо-квота раздела добита где-то ещё (другая вкладка, соседний урок) —
+    // ответ на СЛЕДУЮЩИЙ вопрос о праве уже отрицательный.
+    allowed = false
+    await record.click()
+
+    // Записи не случилось, а урок подменился замком: blocked считается из того
+    // же обновлённого entitlement.
+    await expect(page.locator('.pl-limit')).toBeVisible()
+    await expect(page.locator('.sh-video')).toHaveCount(0)
+  })
+
   test('аудирование: старт ждёт вердикта, а пропавшее право подменяет открытый экран замком', async ({ page }) => {
     // Сторожит ту же регрессию, что и раньше: blocked обязан ВЫЧИСЛЯТЬСЯ из
     // entitlement на каждом рендере, а не быть useState-защёлкой, выставленной
