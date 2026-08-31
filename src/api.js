@@ -768,6 +768,29 @@ export function getMediaClips(token, onFresh) {
   return cachedAuthGet('/mobile/media-clips', token, onFresh)
 }
 
+// Каталог комиксов (GET /mobile/comics) →
+// [{id,slug,title,author,level,coverUrl,pageCount,adultOnly,description:{ru,en,kk}}].
+// Меняется редко и правится только из админки — поэтому через тот же
+// stale-while-revalidate кэш, что и остальные каталоги Практики.
+export function getComics(token, onFresh) {
+  return cachedAuthGet('/mobile/comics', token, onFresh)
+}
+
+// Один комикс со страницами и репликами (GET /mobile/comics/{id}) →
+// {…, pages:[{n,url,w,h,blocks:[{kind,en,ru,kk}]}]}. Отдаётся целиком одним
+// ответом: запрос на страницу означал бы 214 запросов за одно чтение книги.
+// Мимо кэша каталогов — ответ на пару сотен килобайт в localStorage не кладём.
+export function getComic(token, ref) {
+  return authGet(`/mobile/comics/${encodeURIComponent(ref)}`, token)
+}
+
+// Поиск по комиксам (GET /mobile/comics/search?q=) — та же форма ответа, что и
+// у каталога. Мимо кэша каталогов: запрос меняется на каждую букву, класть его
+// в localStorage бессмысленно.
+export function searchComics(token, q) {
+  return authGet(`/mobile/comics/search?q=${encodeURIComponent(q)}`, token)
+}
+
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
 export function getSituativki(token, level, onFresh) {
   const q = level ? `?level=${encodeURIComponent(level)}` : ''

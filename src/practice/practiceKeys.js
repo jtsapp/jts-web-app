@@ -9,6 +9,9 @@ export const SHADOWING_KEY = 'jts_shadowing_done'
 // Открытые уровни статического «Speaking Practice A1–C1» — единица прохождения
 // для квоты PRACTICE_SITUATIONS (см. practiceContract.js).
 export const SITUATIONS_KEY = 'jts_situations_done'
+// Комиксы — не «пройдено», а закладка: { <comicId>: номер страницы }. Читалка
+// открывает комикс с неё, карточка каталога показывает «стр. 12 / 214».
+export const COMICS_POS_KEY = 'jts_comics_pos'
 // Открытые уровни воркбуков A0–B2 — единица для квоты PRACTICE_WORKBOOKS.
 export const WORKBOOKS_KEY = 'jts_workbooks_done'
 // Прогресс «Письма»: не множество id, а объект {tasks, seen} — семантика replace,
