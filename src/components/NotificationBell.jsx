@@ -6,6 +6,7 @@ import { loadToken } from '../lib/session.js'
 import { userIdFromToken } from '../lib/jwt.js'
 import { wsBase } from '../lib/wsUrl.js'
 import { notificationTarget } from '../lib/studentDeepLink.js'
+import { playCue, isSoundEnabled, setSoundEnabled } from '../lib/notifySound.js'
 import {
   listNotifications,
   getUnreadNotificationCount,
@@ -63,6 +64,10 @@ export function NotificationProvider({ token, onNavigate, children }) {
       reconnectDelay: 5000,
       onConnect: () => {
         client.subscribe(`/topic/notifications/${userId}`, () => {
+          // Звук здесь покрывает всё, о чём сервер шлёт уведомление, — в том
+          // числе выданную домашнюю работу: заводить под неё отдельный канал
+          // значило бы дублировать то, что уже приходит.
+          playCue('notification')
           refreshUnread()
           refreshList()
         })
@@ -117,6 +122,19 @@ export function NotificationBell({ className = '' }) {
   const ctx = useContext(NotificationCtx)
   const { t, lang } = useI18n()
   const rootRef = useRef(null)
+  // Звук у сообщений, домашних заданий и таймера выключается здесь: сигнал,
+  // который нельзя погасить, раздражает сильнее, чем помогает. Читаем один раз
+  // при монтировании — localStorage в рендере опрашивать незачем.
+  const [soundOn, setSoundOn] = useState(true)
+  useEffect(() => setSoundOn(isSoundEnabled()), [])
+
+  const toggleSound = () => {
+    const next = !soundOn
+    setSoundOn(next)
+    setSoundEnabled(next)
+    // Проигрываем сразу после включения — иначе непонятно, что именно включили.
+    if (next) playCue('notification')
+  }
 
   useEffect(() => {
     if (!ctx?.open) return undefined
@@ -151,6 +169,14 @@ export function NotificationBell({ className = '' }) {
           <div className="nbell__head">
             <b>{t('notif.title')}</b>
             <div className="nbell__head-actions">
+              <button
+                type="button"
+                className="nbell__textbtn"
+                onClick={toggleSound}
+                aria-pressed={soundOn}
+              >
+                {soundOn ? t('notif.soundOn') : t('notif.soundOff')}
+              </button>
               <button type="button" className="nbell__textbtn" disabled={unread === 0} onClick={markAll}>
                 {t('notif.markAll')}
               </button>

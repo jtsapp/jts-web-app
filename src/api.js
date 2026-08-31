@@ -866,7 +866,11 @@ export function completeLessonVocabCycle(lessonId, cycle, results, token) {
  */
 export async function searchDictionary(token, q = '', size = 30) {
   const query = String(q || '').trim()
-  const path = `/dictionary/search?q=${encodeURIComponent(query)}&page=0&size=${size}`
+  // `/dictionaries` во множественном — так называется ручка на сервере
+  // (DictionaryController). С единственным числом запрос отвечал 404, список
+  // всегда приходил пустой, и словарь в уроке показывал «Ничего не найдено»
+  // на любое слово. У преподавателя путь был правильный, поэтому у него искалось.
+  const path = `/dictionaries/search?q=${encodeURIComponent(query)}&page=0&size=${size}`
   const page = await authGet(path, token)
   return page?.content ?? []
 }

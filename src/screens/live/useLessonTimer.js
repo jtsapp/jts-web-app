@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { playCue } from '../../lib/notifySound.js'
+
 /**
  * Таймер урока на стороне ученика.
  *
@@ -29,6 +31,9 @@ export function useLessonTimer() {
     if (evt?.action === 'start' && evt.durationSeconds > 0) {
       endsAtRef.current = Date.now() + evt.durationSeconds * 1000
       setRemaining(evt.durationSeconds)
+      // Отсчёт пошёл. Сигнал именно на старте: ученик мог смотреть в задание, а
+      // не в правый верхний угол, и «две минуты» начинались бы для него позже.
+      playCue('timerStart')
       return
     }
     endsAtRef.current = 0
@@ -47,7 +52,22 @@ export function useLessonTimer() {
     return () => clearInterval(id)
   }, [ticking])
 
-  return { remaining, expired: remaining === 0, onTimer }
+  // Время вышло. Отдельным эффектом на ПЕРЕХОД в ноль, а не внутри тика: тик
+  // идёт четыре раза в секунду и на нуле сыграл бы очередью. `expired` держится,
+  // пока преподаватель не снимет таймер, поэтому запоминаем, что уже звучали.
+  const expired = remaining === 0
+  const rangRef = useRef(false)
+  useEffect(() => {
+    if (!expired) {
+      rangRef.current = false
+      return
+    }
+    if (rangRef.current) return
+    rangRef.current = true
+    playCue('timerEnd')
+  }, [expired])
+
+  return { remaining, expired, onTimer }
 }
 
 /** `95` → `01:35`. */

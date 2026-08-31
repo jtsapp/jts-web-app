@@ -430,6 +430,13 @@
 
 /* ==================== ЦЕНТР — ЛЕНТА ШАГОВ ======================== */
 
+/* Куда подъезжает указка преподавателя «Внимание на упражнение»
+   (LessonContent.jsx, block: 'start'). Отступ — чтобы карточка не прилипала к
+   верхней кромке: прижатая к краю формулировка читается как обрезанная. */
+[data-question-id] {
+  scroll-margin-top: 12px;
+}
+
 .lw-content {
   display: flex;
   flex-direction: column;
@@ -4562,4 +4569,32 @@ button.lw-tap-pop__save.is-on:disabled {
   .lv-top__actions {
     display: none;
   }
+}
+
+/* Вкладки словаря в уроке: «Мои слова» / «Словарь школы». Личный открыт первым —
+   панель называется «Ваш словарь», и первое, что ученик там ищет, это то, что
+   ему положил преподаватель. */
+.lw-dict__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.lw-dict__tab {
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, .06);
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  opacity: .7;
+  cursor: pointer;
+}
+
+.lw-dict__tab.is-on {
+  background: rgba(144, 71, 255, .28);
+  opacity: 1;
 }

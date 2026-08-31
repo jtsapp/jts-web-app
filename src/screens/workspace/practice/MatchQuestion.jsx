@@ -38,6 +38,10 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
   const pairs = question?.pairs || []
   const map = answer && typeof answer === 'object' ? answer : {}
   const attempted = hasAttempt(question, map)
+  // Пары, которые ученик не сопоставил или сопоставил неверно. Ключ к ответу
+  // ниже показываем и на пропущенном вопросе: цветом тут ничего не скажешь —
+  // неразложенной фишки просто нет ни в одной колонке.
+  const missed = pairs.filter((pair) => map[pair.left] !== pair.right)
 
   // Перемешиваем один раз на вопрос, а не на каждый рендер — иначе правый
   // столбец «прыгал» бы при каждом клике.
@@ -136,6 +140,11 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
             ))}
           </div>
         </div>
+        {checked && missed.length > 0 && (
+          <p className="lw-q__answer" aria-live="polite">
+            {t('lesson.answerWas')}: {missed.map((pair) => `${pair.left} — ${pair.right}`).join('; ')}
+          </p>
+        )}
       </div>
     )
   }
@@ -196,6 +205,11 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
           })}
         </div>
       </div>
+      {checked && missed.length > 0 && (
+        <p className="lw-q__answer" aria-live="polite">
+          {t('lesson.answerWas')}: {missed.map((pair) => `${pair.left} — ${pair.right}`).join('; ')}
+        </p>
+      )}
     </div>
   )
 }
