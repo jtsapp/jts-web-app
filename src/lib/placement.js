@@ -37,6 +37,17 @@ export function placementSummary(result) {
   }
 }
 
+/**
+ * Уровень, который уезжает в профиль. A0 в приложениях значит «тест не
+ * пройден»: мобильный клиент по нему держит карту королевств под замком и
+ * снова просит пройти тест, поэтому измеренный A0 в профиль не уходит —
+ * туда едет первый уровень курса, A1. Сама измеренная полоса не теряется:
+ * она остаётся в снимке прохождения и на экране результата.
+ */
+export function profileLevel(measured) {
+  return measured === 'A0' ? 'A1' : measured
+}
+
 /** Максимум флагов, которые имеет смысл хранить (их всего четыре вида). */
 const MAX_FLAGS = 12
 
@@ -60,6 +71,11 @@ export function sanitizePlacementRecord(level, summary, at) {
     flags,
     variant: typeof src.variant === 'string' ? src.variant.slice(0, 20) : null,
     answered: num(src.answered),
+    // Что прислал клиент, когда его уровень разошёлся с пересчётом сервера:
+    // расхождение само по себе сигнал (баг клиента или попытка подделки).
+    clientLevel: typeof src.clientLevel === 'string' && src.clientLevel !== level
+      ? src.clientLevel.slice(0, 10)
+      : null,
     at: typeof at === 'string' ? at : null,
   }
 }

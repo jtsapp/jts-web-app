@@ -7,7 +7,8 @@
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { upsertProfile } from '@/lib/db/profile.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
-import { sanitizePlacementRecord } from '@/lib/placement.js'
+import { profileLevel, sanitizePlacementRecord } from '@/lib/placement.js'
+import { scorePlacementSession } from '@/lib/placementScore.js'
 
 export const runtime = 'nodejs'
 
@@ -17,10 +18,6 @@ export const runtime = 'nodejs'
 const VALID_LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 
 export async function POST(request) {
-  if (!isDbConfigured()) {
-    return Response.json({ configured: false, error: 'DATABASE_URL is not set.' }, { status: 503 })
-  }
-
   let body = {}
   try {
     const parsed = await request.json()
@@ -29,24 +26,48 @@ export async function POST(request) {
     /* пустое тело — ниже отдадим 400 */
   }
 
+  const claimed = typeof body.level === 'string' && VALID_LEVELS.includes(body.level) ? body.level : null
+  if (!claimed) {
+    return Response.json({ configured: isDbConfigured(), error: 'Invalid or missing level.' }, { status: 400 })
+  }
+
+  // Уровень считает сервер по журналу прохождения (сырые ответы), а не клиент:
+  // раньше он приезжал готовым числом и был утверждением, а не измерением.
+  // Журнала нет — верим клиенту (голосовой placement и старые сборки).
+  const scored = body.session && typeof body.session === 'object'
+    ? scorePlacementSession(body.session)
+    : null
+  const measured = scored && VALID_LEVELS.includes(scored.level) ? scored.level : claimed
+  const level = profileLevel(measured)
+  if (scored && measured !== claimed) {
+    console.warn('[placement.complete] client level %s != server %s', claimed, measured)
+  }
+
+  if (!isDbConfigured()) {
+    // Сохранить некуда, но уровень посчитан — клиенту он нужен, чтобы не
+    // показывать и не записывать свой.
+    return Response.json({ configured: false, level, measured, error: 'DATABASE_URL is not set.' }, { status: 200 })
+  }
+
   const resolved = await resolveProfileId(request, body.deviceId)
   if ('error' in resolved) return resolved.error
-
-  const level = typeof body.level === 'string' && VALID_LEVELS.includes(body.level) ? body.level : null
-  if (!level) {
-    return Response.json({ configured: true, error: 'Invalid or missing level.' }, { status: 400 })
-  }
 
   // Вместе с уровнем принимаем снимок прохождения: θ, её погрешность и флаги
   // качества (`unresolved` — движок сам не уверен в уровне, `a0_branch` и др.).
   // Без него спорный результат неотличим от уверенного, а банк, который живёт
   // без калибровки, нечем калибровать. Снимок необязателен: голосовой
   // placement и старые клиенты присылают только уровень.
-  const placement = body.summary ? sanitizePlacementRecord(level, body.summary, new Date().toISOString()) : undefined
+  const snapshot = body.summary || scored
+    ? sanitizePlacementRecord(
+        measured,
+        { ...(body.summary || {}), ...(scored || {}), clientLevel: claimed },
+        new Date().toISOString(),
+      )
+    : undefined
 
   try {
-    await upsertProfile(resolved.id, placement ? { level, placement } : { level })
-    return Response.json({ configured: true, ok: true })
+    await upsertProfile(resolved.id, snapshot ? { level, placement: snapshot } : { level })
+    return Response.json({ configured: true, ok: true, level, measured })
   } catch (err) {
     console.error('[placement.complete] failed', err)
     return Response.json({ configured: true, error: 'Placement persist failed.' }, { status: 500 })

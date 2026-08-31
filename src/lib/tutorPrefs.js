@@ -34,17 +34,26 @@ export async function loadTutorProfile(token) {
  * backend'ом (/user/language-level), иначе сторы расходятся. Источник правды
  * при входе — backend; эта запись best-effort и осечка не фатальна.
  */
-export function savePlacementLevel(token, level, summary) {
+export function savePlacementLevel(token, level, summary, session) {
   return fetch('/api/placement/complete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
-    // summary — снимок прохождения (θ, SE, флаги качества). Необязателен:
-    // голосовой placement присылает только уровень.
-    body: JSON.stringify({ deviceId: getDeviceId(), level, summary: summary ?? undefined }),
-  }).catch((e) => {
-    console.warn('[tutorPrefs] уровень не сохранился в Neon-профиль:', e)
-    return null
+    // summary — снимок прохождения (θ, SE, флаги качества), session — журнал
+    // сырых ответов, по которому сервер сам пересчитывает уровень. Оба
+    // необязательны: голосовой placement присылает только уровень.
+    body: JSON.stringify({
+      deviceId: getDeviceId(),
+      level,
+      summary: summary ?? undefined,
+      session: session ?? undefined,
+    }),
   })
+    // Ответ нужен целиком: сервер возвращает свой, пересчитанный уровень.
+    .then((res) => res.json().catch(() => null))
+    .catch((e) => {
+      console.warn('[tutorPrefs] уровень не сохранился в Neon-профиль:', e)
+      return null
+    })
 }
 
 /**

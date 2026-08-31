@@ -194,7 +194,11 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
     if (item.type === 'order') return s.answerGraded(item, scoreOrderWords(orderWordsOf(item), d.arr || []), { built: (d.arr || []).join(' ') })
     if (item.type === 'bankfill') return s.answerGraded(item, scoreBankfill(item, d.gaps || []), { gaps: (d.gaps || []).slice() })
     if (item.type === 'match') return s.answerGraded(item, scoreMatch(item, d.map || []), { map: (d.map || []).slice() })
-    if (d.fraction != null) return s.answerGraded(item, d.fraction, { playsUsed: d.plays || 1 })
+    if (d.fraction != null) {
+      return s.answerGraded(item, d.fraction, {
+        word: d.word ?? null, optIndex: d.optIndex ?? null, playsUsed: d.plays || 1,
+      })
+    }
     return s.answer(item, {
       optIndex: d.optIndex ?? null,
       text: d.text || '',
@@ -265,8 +269,10 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
     }
     // Уровень проверяем перед тем, как отдать наружу: это единственное поле,
     // которое уезжает в профиль студента и определяет весь его контент.
+    // Вместе с ним отдаём журнал прохождения — по нему сервер пересчитает
+    // уровень сам, не полагаясь на клиентский подсчёт.
     const level = placementLevel(r)
-    if (level) onLevel?.(level, r)
+    if (level) onLevel?.(level, r, sess.current.exportJson())
   }
 
   // ─── служебные экраны ───────────────────────────────────────────────────
@@ -886,7 +892,9 @@ function MinPair({ item, draft, setDraft, lang }) {
             key={w}
             type="button"
             className={`plc-opt ${draft.optIndex === i ? 'on' : ''}`}
-            onClick={() => setDraft({ optIndex: i, fraction: w === item.word ? 1 : 0 })}
+            // Пишем и само слово: варианты перемешаны на клиенте, по индексу
+            // сервер ответ не перепроверит.
+            onClick={() => setDraft({ optIndex: i, word: w, fraction: w === item.word ? 1 : 0 })}
           >
             {w}
           </button>
@@ -1104,6 +1112,9 @@ export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave,
           {result.flags?.includes('unresolved') && (
             <p className="plc-note plc-note--warn">{appT('placement.unresolved')}</p>
           )}
+          {/* A0 — измеренная полоса, но в профиль уезжает A1: в приложениях A0
+              значит «тест не пройден» и запирает карту. */}
+          {result.level === 'A0' && <p className="plc-note">{appT('placement.startsAtA1')}</p>}
 
           {rows.length > 0 && (
             <div className="plc-rows">

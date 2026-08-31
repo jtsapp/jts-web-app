@@ -20,6 +20,20 @@ describe('savePlacementLevel', () => {
     expect(bodyOf()).toMatchObject({ level: 'B1', summary })
   })
 
+  it('журнал прохождения кладётся в тело запроса', async () => {
+    const session = { log: [{ id: 'rt-a2-01', optIndex: 1 }], theta0: -1.2 }
+
+    await savePlacementLevel('TOK', 'B1', undefined, session)
+
+    expect(bodyOf()).toMatchObject({ session })
+  })
+
+  it('возвращает разобранный ответ сервера — в нём его вердикт', async () => {
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, level: 'A1', measured: 'A0' }) })
+
+    await expect(savePlacementLevel('TOK', 'A0')).resolves.toMatchObject({ level: 'A1' })
+  })
+
   it('без снимка отправляет только уровень', async () => {
     await savePlacementLevel('TOK', 'A2')
 

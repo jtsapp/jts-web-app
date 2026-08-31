@@ -3,7 +3,8 @@
 // мусор, и что A0 — полноценный уровень, а не «почти A1».
 import { describe, it, expect } from 'vitest'
 import {
-  placementLevel, placementFlags, placementSummary, sanitizePlacementRecord, PLACEMENT_LEVELS,
+  placementLevel, placementFlags, placementSummary, sanitizePlacementRecord, profileLevel,
+  PLACEMENT_LEVELS,
 } from './placement.js'
 
 describe('placementLevel', () => {
@@ -70,7 +71,7 @@ describe('sanitizePlacementRecord', () => {
 
     expect(rec).toEqual({
       level: 'B1', theta: -0.23, se: 0.61, flags: ['unresolved'],
-      variant: 'express', answered: 14, at,
+      variant: 'express', answered: 14, clientLevel: null, at,
     })
   })
 
@@ -93,12 +94,37 @@ describe('sanitizePlacementRecord', () => {
 
   it('лишние поля из тела запроса в профиль не уезжают', () => {
     const rec = sanitizePlacementRecord('A1', { theta: 0, evil: 'drop table', session: {} }, at)
-    expect(Object.keys(rec).sort()).toEqual(['answered', 'at', 'flags', 'level', 'se', 'theta', 'variant'])
+    expect(Object.keys(rec).sort())
+      .toEqual(['answered', 'at', 'clientLevel', 'flags', 'level', 'se', 'theta', 'variant'])
   })
 
   it('пустой снимок не роняет запись', () => {
     expect(sanitizePlacementRecord('A0', undefined, at)).toEqual({
-      level: 'A0', theta: null, se: null, flags: [], variant: null, answered: null, at,
+      level: 'A0', theta: null, se: null, flags: [], variant: null, answered: null,
+      clientLevel: null, at,
     })
+  })
+
+  it('запоминает клиентский уровень, когда он разошёлся с пересчётом', () => {
+    // Расхождение — сигнал: баг клиента или попытка подделки.
+    const rec = sanitizePlacementRecord('A0', { clientLevel: 'C2' }, at)
+    expect(rec.clientLevel).toBe('C2')
+
+    const same = sanitizePlacementRecord('B1', { clientLevel: 'B1' }, at)
+    expect(same.clientLevel).toBeNull()
+  })
+})
+
+// A0 в приложениях значит «тест не пройден»: мобильный клиент по нему держит
+// карту под замком и снова просит пройти тест. Поэтому в профиль он не уезжает.
+describe('profileLevel', () => {
+  it('A0 превращается в A1 — первый уровень курса', () => {
+    expect(profileLevel('A0')).toBe('A1')
+  })
+
+  it('остальные уровни не трогает', () => {
+    for (const level of ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) {
+      expect(profileLevel(level)).toBe(level)
+    }
   })
 })

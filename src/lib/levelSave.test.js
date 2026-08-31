@@ -20,7 +20,7 @@ describe('persistPlacementLevel', () => {
   beforeEach(() => {
     saveLanguageLevel.mockReset().mockResolvedValue({})
     getLanguageLevel.mockReset().mockResolvedValue('B1')
-    savePlacementLevel.mockReset()
+    savePlacementLevel.mockReset().mockResolvedValue(null)
   })
 
   it('пишет уровень и подтверждает его чтением с бэкенда', async () => {
@@ -30,7 +30,35 @@ describe('persistPlacementLevel', () => {
     expect(saveLanguageLevel).toHaveBeenCalledWith('TOK', 'B1')
     // 2xx сам по себе ничего не доказывает — уровень перечитывается.
     expect(getLanguageLevel).toHaveBeenCalledWith('TOK')
-    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined)
+    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, undefined)
+  })
+
+  it('уровень берётся от сервера, а не от клиента', async () => {
+    // Сервер пересчитал журнал и вернул свой вердикт — записываем его.
+    savePlacementLevel.mockResolvedValue({ level: 'A1', measured: 'A0' })
+    getLanguageLevel.mockResolvedValue('A1')
+
+    const res = await persistPlacementLevel('TOK', 'C2', { ...noSleep, session: { log: [] } })
+
+    expect(res).toMatchObject({ ok: true, level: 'A1' })
+    expect(saveLanguageLevel).toHaveBeenCalledWith('TOK', 'A1')
+  })
+
+  it('журнал прохождения уезжает на сервер', async () => {
+    const session = { log: [{ id: 'rt-a2-01', optIndex: 1 }] }
+
+    await persistPlacementLevel('TOK', 'B1', { ...noSleep, session })
+
+    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, session)
+  })
+
+  it('сервер молчит о уровне — остаётся клиентский', async () => {
+    savePlacementLevel.mockResolvedValue(null) // 503: DATABASE_URL не задан
+
+    const res = await persistPlacementLevel('TOK', 'B1', noSleep)
+
+    expect(res.level).toBe('B1')
+    expect(saveLanguageLevel).toHaveBeenCalledWith('TOK', 'B1')
   })
 
   it('повторяет попытку, когда запись сорвалась', async () => {
@@ -76,8 +104,8 @@ describe('persistPlacementLevel', () => {
   it('анонимный прогон: пишем только в Neon-профиль и не считаем это ошибкой', async () => {
     const res = await persistPlacementLevel(null, 'A2', noSleep)
 
-    expect(res).toEqual({ ok: true, anonymous: true })
-    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2', undefined)
+    expect(res).toEqual({ ok: true, anonymous: true, level: 'A2' })
+    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2', undefined, undefined)
     expect(saveLanguageLevel).not.toHaveBeenCalled()
   })
 })

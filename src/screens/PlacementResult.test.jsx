@@ -36,11 +36,18 @@ describe('PlacementResult — честность оценки', () => {
     expect(screen.getByText(/не хватило для уверенной оценки/)).toBeTruthy()
   })
 
+  it('на A0 объясняет, что учиться начнём с A1', () => {
+    renderResult({ result: { ...result, level: 'A0' } })
+
+    expect(screen.getByText(/Начнём с A1/)).toBeTruthy()
+  })
+
   it('на уверенном результате по калиброванной шкале молчит', () => {
     renderResult()
 
     expect(screen.queryByText(/калибруется/)).toBeNull()
     expect(screen.queryByText(/уверенной оценки/)).toBeNull()
+    expect(screen.queryByText(/Начнём с A1/)).toBeNull()
   })
 })
 
