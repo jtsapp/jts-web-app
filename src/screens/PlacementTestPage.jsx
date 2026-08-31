@@ -7,14 +7,7 @@ import {
   createPlacementSession,
   audioUrl,
 } from '../practice/placement/engine.js'
-import {
-  vocabDraw,
-  seededShuffle,
-  scoreTfns,
-  scoreOrderWords,
-  scoreBankfill,
-  scoreMatch,
-} from '../practice/placement/engine.generated.js'
+import { vocabDraw, seededShuffle } from '../practice/placement/engine.generated.js'
 import { T } from '../practice/placement/strings.js'
 import { placementText } from '../practice/placement/uiOverrides.js'
 import { IDK_DRAFT, isItemAnswered } from '../practice/placement/answers.js'
@@ -40,6 +33,9 @@ const draftKey = (screen) => (screen.kind === 'vocab' ? `vocab:${screen.idx}` : 
 
 export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveState = 'idle', onRetrySave }) {
   const t = useCallback((k) => placementText(lang, k), [lang])
+  // Строки самого теста сняты из бандла (strings.js), а сообщения приложения —
+  // из его словаря.
+  const { t: appT } = useI18n()
   const [phase, setPhase] = useState('loading') // loading | error | variant | cando | intro | items | speaking | result
   const [data, setData] = useState(null)
   const [plan, setPlan] = useState([])
@@ -51,6 +47,8 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
   // A0-мост: после провала разминки идут два задания-«моста» вне плана секций.
   const [bridgeMode, setBridgeMode] = useState(false)
   const [result, setResult] = useState(null)
+  const [grading, setGrading] = useState(false)
+  const [sectionError, setSectionError] = useState('')
   const sess = useRef(null)
   const startedAt = useRef(0)
 
@@ -186,26 +184,43 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
   const screenAnswered = (sc) =>
     sc.kind === 'group' ? sc.items.every((it) => isAnswered(sc, it)) : isAnswered(sc, sc.item)
 
-  // Сдача ответа в движок — теми же score-функциями, что и бандл.
-  const submitItem = (s, item) => {
+  // Ответ студента в том виде, в каком его проверяет сервер. Он же уходит в
+  // журнал: по нему уровень пересчитывается заново на /api/placement/complete.
+  const answerPayload = (item) => {
     const d = drafts[item.id] || {}
-    if (item.type === 'tfns') return s.answerGraded(item, scoreTfns(item, d.answers || []), { answers: d.answers || [], playsUsed: d.plays || 1 })
-    if (item.type === 'order' && item.steps) return s.answerGraded(item, scoreOrderWords(item.steps, d.seq || []), { seq: d.seq || [], playsUsed: d.plays || 1 })
-    if (item.type === 'order') return s.answerGraded(item, scoreOrderWords(orderWordsOf(item), d.arr || []), { built: (d.arr || []).join(' ') })
-    if (item.type === 'bankfill') return s.answerGraded(item, scoreBankfill(item, d.gaps || []), { gaps: (d.gaps || []).slice() })
-    if (item.type === 'match') return s.answerGraded(item, scoreMatch(item, d.map || []), { map: (d.map || []).slice() })
-    if (d.fraction != null) {
-      return s.answerGraded(item, d.fraction, {
-        word: d.word ?? null, optIndex: d.optIndex ?? null, playsUsed: d.plays || 1,
-      })
-    }
-    return s.answer(item, {
-      optIndex: d.optIndex ?? null,
-      text: d.text || '',
-      tMs: d.tMs || 0,
-      shownOrder: d.shownOrder || null,
-      playsUsed: d.plays || null,
+    const payload = { id: item.id, tMs: d.tMs || 0 }
+    if (d.optIndex != null) payload.optIndex = d.optIndex
+    if (d.text) payload.text = d.text
+    if (d.word != null) payload.word = d.word
+    if (d.answers) payload.answers = d.answers
+    if (d.seq) payload.seq = d.seq
+    if (d.arr) payload.built = d.arr.join(' ')
+    if (d.gaps) payload.gaps = d.gaps.slice()
+    if (d.map) payload.map = d.map.slice()
+    if (d.shownOrder) payload.shownOrder = d.shownOrder
+    if (d.plays) payload.playsUsed = d.plays
+    if (d.idk) payload.idk = true
+    return payload
+  }
+
+  // Проверка ответов — на сервере: ключей в публичном банке больше нет.
+  const gradeItems = async (items) => {
+    const res = await fetch('/api/placement/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: items.map(answerPayload) }),
     })
+    if (!res.ok) throw new Error(`grade ${res.status}`)
+    const data = await res.json()
+    return new Map((data.scores || []).map((x) => [x.id, x.correct]))
+  }
+
+  /** Кладёт проверенные ответы в движок: доля от сервера + сырой ответ в журнал. */
+  const submitGraded = (s, items, scores) => {
+    for (const item of items) {
+      const payload = answerPayload(item)
+      s.answerGraded(item, scores.get(item.id) ?? 0, payload)
+    }
   }
 
   const advance = () => {
@@ -215,32 +230,42 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
     setPhase('intro')
   }
 
-  const finishSection = () => {
+  const finishSection = async () => {
     const s = sess.current
     const sec = plan[secIdx]
 
-    if (bridgeMode) {
-      for (const sc of screens) submitItem(s, sc.item)
-      setBridgeMode(false)
-      // Мост не пройден — ранний выход с A0; пройден — движок сам сбросил
-      // приор на A1, и тест продолжается со следующего раздела.
-      if (!s.bridgeVerdict()) return finish()
-      return advance()
-    }
-
-    if (sec?.key === 'vocab') {
+    // Словарь и письмо считаются на клиенте: у LexTALE «ключ» — сам словарь
+    // (он публичный по природе), а письмо оценивается эвристикой без ключа.
+    if (!bridgeMode && sec?.key === 'vocab') {
       s.finishVocab(screens.map((sc) => drafts[draftKey(sc)]?.optIndex ?? null))
       return advance()
     }
-    if (sec?.key === 'writing') {
+    if (!bridgeMode && sec?.key === 'writing') {
       const item = screens[0]?.item
       if (item) s.answerWriting(item, drafts[item.id]?.text || '')
       return advance()
     }
 
-    for (const sc of screens) {
-      const list = sc.kind === 'group' ? sc.items : [sc.item]
-      for (const item of list) submitItem(s, item)
+    const items = screens.flatMap((sc) => (sc.kind === 'group' ? sc.items : [sc.item]))
+    setGrading(true)
+    setSectionError('')
+    try {
+      const scores = await gradeItems(items)
+      submitGraded(s, items, scores)
+    } catch (e) {
+      // Ответы остаются на экране: раздел не засчитан, можно повторить.
+      setSectionError(appT('placement.gradeFailed'))
+      return
+    } finally {
+      setGrading(false)
+    }
+
+    if (bridgeMode) {
+      setBridgeMode(false)
+      // Мост не пройден — ранний выход с A0; пройден — движок сам сбросил
+      // приор на A1, и тест продолжается со следующего раздела.
+      if (!s.bridgeVerdict()) return finish()
+      return advance()
     }
 
     // Провал разминки (4+ ошибок из 6) уводит на A0-мост, как в бандле.
@@ -459,11 +484,12 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
                 {t('next')}
               </button>
             ) : (
-              <button className="plc-primary" disabled={!answered} onClick={finishSection}>
+              <button className="plc-primary" disabled={!answered || grading} onClick={finishSection}>
                 {t('finishSection')}
               </button>
             )}
           </div>
+          {sectionError && <p className="form-error plc-note">{sectionError}</p>}
         </div>
       </div>
     </Shell>
