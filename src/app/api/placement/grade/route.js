@@ -1,17 +1,24 @@
 // Проверка ответов раздела теста на определение уровня.
 //
-// Ключи больше не уезжают в браузер вместе с банком (bankSplit.js), поэтому
+// Ключи не уезжают в браузер вместе с банком (bankSplit.js), поэтому
 // правильность ответа знает только сервер: клиент присылает, что выбрал
 // студент, и получает долю верного (0..1) — по ней движок на клиенте ведёт
-// адаптацию. Итоговый уровень всё равно пересчитывается заново из журнала
-// (/api/placement/complete): здешние доли — для хода теста, а не для оценки.
+// адаптацию.
 //
-// Чего роут не закрывает: он отвечает на любой ответ, поэтому ключ можно
-// подобрать перебором (четыре запроса на задание). Следующий шаг — привязать
-// проверку к серверной сессии прогона и не давать проверять одно задание
-// дважды; сейчас важнее было убрать ключи из открытого файла.
+// Проверка привязана к прогону (`sessionToken`): задание в его рамках
+// проверяется один раз, повтор возвращает уже вынесенный вердикт, число
+// заданий ограничено, а закрытый прогон ответов не принимает. Без этого роут
+// был бы оракулом — четыре запроса на задание, и ключ известен. Сами же
+// проверенные ответы остаются на сервере: по ним, а не по журналу клиента,
+// считается итоговый уровень (/api/placement/complete).
+//
+// Без базы (dev, preview) прогонов нет: проверка работает без привязки.
 
 import { gradeAnswers } from '@/lib/placementScore.js'
+import { mergeGradedAnswers } from '@/lib/placementSessionLogic.js'
+import {
+  loadPlacementSession, appendPlacementAnswers, MAX_GRADED_PER_SESSION,
+} from '@/lib/db/placementSession.js'
 
 export const runtime = 'nodejs'
 
@@ -36,7 +43,27 @@ export async function POST(request) {
   }
 
   try {
-    return Response.json({ scores: gradeAnswers(body.answers) })
+    const session = await loadPlacementSession(body.sessionToken)
+
+    // Прогона нет (нет базы или токен незнакомый) — проверяем без привязки.
+    if (!session) {
+      return Response.json({ scores: gradeAnswers(body.answers), session: false })
+    }
+    if (session.finished) {
+      return Response.json({ error: 'Placement session is finished.' }, { status: 409 })
+    }
+
+    const fresh = gradeAnswers(body.answers)
+    const merged = mergeGradedAnswers(session.answers, fresh, {
+      max: MAX_GRADED_PER_SESSION,
+      at: new Date().toISOString(),
+    })
+    if (merged.overflow) {
+      return Response.json({ error: 'Too many answers in this session.' }, { status: 409 })
+    }
+    if (merged.added > 0) await appendPlacementAnswers(session.token, merged.answers)
+
+    return Response.json({ scores: merged.scores, session: true })
   } catch (err) {
     console.error('[placement.grade] failed', err)
     return Response.json({ error: 'Grading failed.' }, { status: 500 })

@@ -619,13 +619,13 @@ export default function App() {
   const [levelSaveState, setLevelSaveState] = useState('idle') // idle | saving | saved | error
   const pendingTestLevel = useRef(null)
 
-  async function saveTestLevel(level, summary, session) {
+  async function saveTestLevel(level, summary, session, sessionToken) {
     if (!level || lastSavedTestLevel.current === level) return
-    pendingTestLevel.current = { level, summary, session }
+    pendingTestLevel.current = { level, summary, session, sessionToken }
     // Уровень показываем сразу: экраны читают его из стейта, ждать сети незачем.
     setUserLevel(level)
     setLevelSaveState('saving')
-    const res = await persistPlacementLevel(token, level, { summary, session })
+    const res = await persistPlacementLevel(token, level, { summary, session, sessionToken })
     // Итоговый уровень считает сервер по журналу ответов; его вердикт может
     // отличаться от клиентского (в том числе полом A1 вместо A0).
     if (res.level && res.level !== level) setUserLevel(res.level)
@@ -644,7 +644,9 @@ export default function App() {
 
   function retrySaveTestLevel() {
     const pending = pendingTestLevel.current
-    if (pending?.level) saveTestLevel(pending.level, pending.summary, pending.session)
+    if (pending?.level) {
+      saveTestLevel(pending.level, pending.summary, pending.session, pending.sessionToken)
+    }
   }
 
   async function handleTestDone(res) {
@@ -979,8 +981,8 @@ export default function App() {
           onRetrySave={retrySaveTestLevel}
           // Вместе с уровнем сохраняем снимок прохождения: θ, SE и флаги
           // качества, по которым видно, насколько оценке можно верить.
-          onLevel={(level, result, session) =>
-            saveTestLevel(level, placementSummary(result), session)}
+          onLevel={(level, result, session, sessionToken) =>
+            saveTestLevel(level, placementSummary(result), session, sessionToken)}
           onDone={(level) => handleTestDone({ level })}
         />
       )

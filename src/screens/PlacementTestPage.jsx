@@ -50,6 +50,10 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
   const [grading, setGrading] = useState(false)
   const [sectionError, setSectionError] = useState('')
   const sess = useRef(null)
+  // Токен серверного прогона: к нему привязана проверка ответов и по его
+  // записи считается итоговый уровень. null — база не настроена (dev), тогда
+  // проверка работает без привязки.
+  const runToken = useRef(null)
   const startedAt = useRef(0)
 
   useEffect(() => {
@@ -89,11 +93,28 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
     return out
   }
 
+  const openRun = async (variant) => {
+    try {
+      const res = await fetch('/api/placement/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ variant }),
+      })
+      const data = await res.json().catch(() => null)
+      runToken.current = data?.token || null
+    } catch {
+      runToken.current = null // без прогона тест всё равно проходится
+    }
+  }
+
   const startVariant = (v) => {
     const s = createPlacementSession(data, v)
     sess.current = s
     setPlan(buildPlan(s))
     setPhase('cando')
+    // Прогон открываем фоном: пока студент оценивает свой английский, токен
+    // успевает приехать, а если не приедет — проверка пойдёт без привязки.
+    openRun(v)
   }
 
   const pickCando = (idx) => {
@@ -208,7 +229,7 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
     const res = await fetch('/api/placement/grade', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers: items.map(answerPayload) }),
+      body: JSON.stringify({ sessionToken: runToken.current, answers: items.map(answerPayload) }),
     })
     if (!res.ok) throw new Error(`grade ${res.status}`)
     const data = await res.json()
@@ -297,7 +318,7 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
     // Вместе с ним отдаём журнал прохождения — по нему сервер пересчитает
     // уровень сам, не полагаясь на клиентский подсчёт.
     const level = placementLevel(r)
-    if (level) onLevel?.(level, r, sess.current.exportJson())
+    if (level) onLevel?.(level, r, sess.current.exportJson(), runToken.current)
   }
 
   // ─── служебные экраны ───────────────────────────────────────────────────

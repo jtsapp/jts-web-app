@@ -24,14 +24,17 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
  *   писать в профиль просто некуда).
  */
 export async function persistPlacementLevel(token, level, options = {}) {
-  const { attempts = DEFAULT_ATTEMPTS, sleep = wait, delay = (n) => 400 * n, summary, session } = options
+  const {
+    attempts = DEFAULT_ATTEMPTS, sleep = wait, delay = (n) => 400 * n,
+    summary, session, sessionToken,
+  } = options
   if (!level) return { ok: false, error: new Error('Нет уровня для сохранения.') }
 
   // Neon-профиль читает голосовой тьютор; он и у анонима свой, по deviceId.
   // Туда же уезжает снимок прохождения (θ, SE, флаги качества) и журнал
   // ответов, по которому сервер пересчитывает уровень сам. Его вердикт и есть
   // итоговый: клиентский уровень — утверждение, серверный — измерение.
-  const verdict = await savePlacementLevel(token, level, summary, session).catch(() => null)
+  const verdict = await savePlacementLevel(token, level, summary, session, sessionToken).catch(() => null)
   const finalLevel = typeof verdict?.level === 'string' && verdict.level ? verdict.level : level
 
   // Без токена профиля на бэкенде нет: сохранять нечего и подтверждать нечем.

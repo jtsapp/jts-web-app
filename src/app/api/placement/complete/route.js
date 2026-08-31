@@ -8,7 +8,8 @@ import { isDbConfigured } from '@/lib/db/sql.js'
 import { upsertProfile } from '@/lib/db/profile.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { profileLevel, sanitizePlacementRecord } from '@/lib/placement.js'
-import { scorePlacementSession } from '@/lib/placementScore.js'
+import { scoreGradedAnswers, scorePlacementSession } from '@/lib/placementScore.js'
+import { loadPlacementSession, finishPlacementSession } from '@/lib/db/placementSession.js'
 
 export const runtime = 'nodejs'
 
@@ -31,16 +32,27 @@ export async function POST(request) {
     return Response.json({ configured: isDbConfigured(), error: 'Invalid or missing level.' }, { status: 400 })
   }
 
-  // Уровень считает сервер по журналу прохождения (сырые ответы), а не клиент:
-  // раньше он приезжал готовым числом и был утверждением, а не измерением.
-  // Журнала нет — верим клиенту (голосовой placement и старые сборки).
-  const scored = body.session && typeof body.session === 'object'
-    ? scorePlacementSession(body.session)
-    : null
+  // Уровень считает сервер, а не клиент: раньше он приезжал готовым числом и
+  // был утверждением, а не измерением. Источник по убыванию доверия:
+  //   1) запись прогона на сервере — он сам проверял эти ответы;
+  //   2) журнал от клиента (сырые ответы) — перепроверяется по ключам;
+  //   3) заявленный уровень — голосовой placement и старые сборки.
+  const run = await loadPlacementSession(body.sessionToken).catch(() => null)
+  let scored = null
+  if (run && run.answers.length > 0) {
+    scored = scoreGradedAnswers(run.answers, body.session?.theta0)
+  } else if (body.session && typeof body.session === 'object') {
+    scored = scorePlacementSession(body.session)
+  }
   const measured = scored && VALID_LEVELS.includes(scored.level) ? scored.level : claimed
   const level = profileLevel(measured)
   if (scored && measured !== claimed) {
     console.warn('[placement.complete] client level %s != server %s', claimed, measured)
+  }
+
+  if (run && !run.finished) {
+    // Прогон закрыт: повторно отправить его ответы или дописать новые нельзя.
+    await finishPlacementSession(run.token, scored?.level ?? claimed).catch(() => {})
   }
 
   if (!isDbConfigured()) {

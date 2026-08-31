@@ -34,7 +34,7 @@ export async function loadTutorProfile(token) {
  * backend'ом (/user/language-level), иначе сторы расходятся. Источник правды
  * при входе — backend; эта запись best-effort и осечка не фатальна.
  */
-export function savePlacementLevel(token, level, summary, session) {
+export function savePlacementLevel(token, level, summary, session, sessionToken) {
   return fetch('/api/placement/complete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
@@ -46,6 +46,9 @@ export function savePlacementLevel(token, level, summary, session) {
       level,
       summary: summary ?? undefined,
       session: session ?? undefined,
+      // Токен серверного прогона: по его записи ответов сервер и считает
+      // итоговый уровень, журнал ниже — лишь запасной источник.
+      sessionToken: sessionToken ?? undefined,
     }),
   })
     // Ответ нужен целиком: сервер возвращает свой, пересчитанный уровень.

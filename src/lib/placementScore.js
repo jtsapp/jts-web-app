@@ -110,24 +110,53 @@ export function gradeAnswers(answers, source = loadFullBank()) {
 }
 
 /**
+ * Считает уровень по уже проверенным ответам: [{id, correct}] в порядке
+ * прохождения. Это то, что помнит сервер о прогоне, — журнал клиента здесь не
+ * участвует.
+ * @returns {{level, theta, se, answered, correct, verified, unverified, flags}}
+ */
+export function scoreGradedAnswers(records, theta0, source = loadFullBank()) {
+  const items = indexOf(source.bank)
+  const graded = []
+  for (const r of records || []) {
+    const item = items.get(r?.id)
+    if (!item || typeof r.correct !== 'number') continue
+    graded.push({ item, correct: r.correct, block: item.block })
+  }
+  return summarise(graded, theta0, (records || []).length)
+}
+
+/**
  * Пересчитывает уровень по журналу прохождения.
  * @returns {{level, theta, se, answered, correct, verified, unverified, flags}}
  */
 export function scorePlacementSession(session, source = loadFullBank()) {
   const log = Array.isArray(session?.log) ? session.log : []
   const items = indexOf(source.bank)
-  const flags = []
+  const preFlags = []
 
   const graded = []
   for (const entry of log) {
     const item = entry?.id ? items.get(entry.id) : null
     const correct = gradeAnswer(item, source.keys[entry?.id], entry)
     if (correct == null) {
-      if (item && item.affectsLevel !== false && item.block !== 'speaking') flags.push('unverified')
+      if (item && item.affectsLevel !== false && item.block !== 'speaking') preFlags.push('unverified')
       continue
     }
     graded.push({ item, correct, block: item.block })
   }
+  return summarise(graded, thetaPrior(session?.theta0), log.length, preFlags)
+}
+
+/** Приор: самооценка клиента, но только из допустимого набора. */
+function thetaPrior(declared) {
+  const value = Number(declared)
+  return THETA0_BY_CANDO.includes(value) ? value : 0
+}
+
+/** Общий подсчёт: A0-ветка, θ по EAP, полоса и флаги. */
+function summarise(graded, declaredTheta0, answered, preFlags = []) {
+  const flags = [...preFlags]
 
   // A0-ветка: разминка провалена (4+ ошибок из 6) и мост не пройден.
   const routing = graded.filter((g) => g.block === 'routing')
@@ -136,10 +165,8 @@ export function scorePlacementSession(session, source = loadFullBank()) {
   const branched = wrongRouting >= 4
   const bridgePassed = branched && bridge.length >= 2 && bridge.every((g) => g.correct === 1)
 
-  // Приор: самооценка клиента, но только из допустимого набора; после
-  // пройденного моста движок возвращает ученика на A1 и забывает разминку.
-  const declared = Number(session?.theta0)
-  let theta0 = THETA0_BY_CANDO.includes(declared) ? declared : 0
+  // После пройденного моста движок возвращает ученика на A1 и забывает разминку.
+  let theta0 = thetaPrior(declaredTheta0)
   let responses = graded
   if (bridgePassed) {
     theta0 = THETA0_A1
@@ -156,10 +183,10 @@ export function scorePlacementSession(session, source = loadFullBank()) {
     level,
     theta: Math.round(est.theta * 100) / 100,
     se: Math.round(est.se * 100) / 100,
-    answered: log.length,
+    answered,
     correct: graded.filter((g) => g.correct >= 0.99).length,
     verified: graded.length,
-    unverified: log.length - graded.length,
+    unverified: answered - graded.length,
     flags: [...new Set(flags)],
   }
 }

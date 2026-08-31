@@ -30,7 +30,7 @@ describe('persistPlacementLevel', () => {
     expect(saveLanguageLevel).toHaveBeenCalledWith('TOK', 'B1')
     // 2xx сам по себе ничего не доказывает — уровень перечитывается.
     expect(getLanguageLevel).toHaveBeenCalledWith('TOK')
-    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, undefined)
+    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, undefined, undefined)
   })
 
   it('уровень берётся от сервера, а не от клиента', async () => {
@@ -49,7 +49,14 @@ describe('persistPlacementLevel', () => {
 
     await persistPlacementLevel('TOK', 'B1', { ...noSleep, session })
 
-    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, session)
+    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, session, undefined)
+  })
+
+  it('токен прогона уезжает вместе с уровнем', async () => {
+    // По записи прогона сервер и считает итог: журнал клиента — запасной путь.
+    await persistPlacementLevel('TOK', 'B1', { ...noSleep, sessionToken: 'run-1' })
+
+    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined, undefined, 'run-1')
   })
 
   it('сервер молчит о уровне — остаётся клиентский', async () => {
@@ -105,7 +112,7 @@ describe('persistPlacementLevel', () => {
     const res = await persistPlacementLevel(null, 'A2', noSleep)
 
     expect(res).toEqual({ ok: true, anonymous: true, level: 'A2' })
-    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2', undefined, undefined)
+    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2', undefined, undefined, undefined)
     expect(saveLanguageLevel).not.toHaveBeenCalled()
   })
 })

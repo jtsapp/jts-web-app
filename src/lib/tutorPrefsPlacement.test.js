@@ -28,6 +28,12 @@ describe('savePlacementLevel', () => {
     expect(bodyOf()).toMatchObject({ session })
   })
 
+  it('токен прогона кладётся в тело запроса', async () => {
+    await savePlacementLevel('TOK', 'B1', undefined, undefined, 'run-1')
+
+    expect(bodyOf()).toMatchObject({ sessionToken: 'run-1' })
+  })
+
   it('возвращает разобранный ответ сервера — в нём его вердикт', async () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => ({ ok: true, level: 'A1', measured: 'A0' }) })
 
