@@ -46,7 +46,10 @@ export function normalizeComic(raw) {
     slug: slug ? String(slug) : undefined,
     title: pick(raw, ['title', 'name']) || '',
     author: pick(raw, ['author']) || '',
+    // Уровня у бэкенда нет — вместо него методист заполняет подзаголовок
+    // («Graphic memoir · 327 pages»). Карточка показывает то, что пришло.
     level: pick(raw, ['level', 'cefr']) || '',
+    subtitle: pick(raw, ['subtitle']) || '',
     coverUrl: pick(raw, ['coverUrl', 'coverImageUrl', 'cover', 'thumbnailUrl']) || '',
     // pageCount по спеке; pages числом — если бэкенд назвал поле как у нас в
     // манифесте. Массив страниц сюда попасть не должен, поэтому только число.
@@ -79,12 +82,15 @@ function normalizeBlock(raw) {
 
 function normalizePage(raw, index) {
   if (!raw || typeof raw !== 'object') return null
-  const url = pick(raw, ['url', 'imageUrl', 'image', 'src'])
+  // pngUrl — запасной вариант той же страницы: у бэкенда рядом с webp лежит png.
+  const url = pick(raw, ['url', 'imageUrl', 'image', 'src', 'pngUrl'])
   if (!url) return null
   const blocks = pick(raw, ['blocks', 'lines', 'texts'])
   return {
-    n: num(pick(raw, ['n', 'number', 'pageNumber', 'orderIndex'])) ?? index + 1,
+    n: num(pick(raw, ['n', 'number', 'pageNumber', 'pageIndex', 'orderIndex'])) ?? index + 1,
     url: String(url),
+    // Размеров бэкенд не отдаёт — читалка тогда резервирует место сама,
+    // иначе страница «прыгает», пока картинка не скачается.
     w: num(pick(raw, ['w', 'width'])),
     h: num(pick(raw, ['h', 'height'])),
     blocks: (Array.isArray(blocks) ? blocks : []).map(normalizeBlock).filter(Boolean),
@@ -99,6 +105,13 @@ export function normalizeComicDoc(raw) {
   // Порядок страниц — наш: читалка листает по индексу массива и сама не
   // сортирует, а на сортировку сервера полагаться не стоит.
   normalized.sort((a, b) => a.n - b.n)
+  // Поле называется pageIndex и вполне может считать с нуля. Тогда счётчик
+  // показал бы «0 / 214», а закладка на первой странице не сохранилась бы
+  // (её отсекает проверка n >= 1). Сдвигаем всю нумерацию разом, а не
+  // подправляем каждую страницу: важен порядок, а не абсолютное значение.
+  if (normalized.length && normalized[0].n === 0) {
+    for (const p of normalized) p.n += 1
+  }
   return { ...base, pageCount: base.pageCount || normalized.length, pages: normalized }
 }
 

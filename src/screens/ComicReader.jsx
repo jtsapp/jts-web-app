@@ -14,11 +14,14 @@ import { comicKey } from '../practice/comics/comicsShape.js'
 // попадает в экран (у комикса композиция страничная, разрезать её скроллом
 // значит потерять развороты).
 //
-// Рядом со страницей — панель реплик в порядке чтения: слово тапается и даёт
-// перевод (тот же gtx, что в «Книжках»), перевод реплики целиком приходит
-// готовым из API. Кликабельных зон поверх самой картинки нет намеренно:
-// координаты баллонов, снятые зрением модели, врут — до половины рамок
-// ложится на пустой рисунок, и тап попадал бы мимо.
+// Если страница пришла с репликами — рядом появляется панель: текст в порядке
+// чтения, слово тапается и переводится (тот же gtx, что в «Книжках»), перевод
+// фразы приходит готовым. Бэкенд реплики сейчас НЕ отдаёт, поэтому панели
+// просто нет — пустой блок «на этой странице нет реплик» на каждой странице
+// был бы мёртвым интерфейсом. Появятся данные — панель включится сама.
+//
+// Кликабельных зон поверх самой картинки нет намеренно: координаты баллонов,
+// снятые зрением модели, врут — до половины рамок ложится на пустой рисунок.
 //
 // Комикс приходит одним ответом (`/mobile/comics/{id}`), но картинки грузим
 // лениво и держим в DOM только соседей текущей страницы: 214 живых <img>
@@ -188,7 +191,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     <div className="cr" onClick={() => setPop(null)}>
       {bar}
 
-      <div className="cr__body">
+      <div className={blocks.length ? 'cr__body' : 'cr__body cr__body--wide'}>
         <div className="cr__stage" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           <button
             type="button"
@@ -205,8 +208,12 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
               <img
                 key={p.n}
                 src={p.url}
+                // Размеры бэкенд не всегда отдаёт. Без них резервируем место
+                // пропорцией страницы книги, иначе на загрузке страница
+                // «прыгает» и сбивает чтение.
                 width={p.w}
                 height={p.h}
+                style={p.w && p.h ? undefined : { aspectRatio: '1249 / 1920' }}
                 alt={t('comics.pageAlt', { n: p.n, total })}
                 className={p.n === page.n ? 'cr__img' : 'cr__img cr__img--off'}
                 draggable={false}
@@ -230,11 +237,10 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
           </button>
         </div>
 
+        {blocks.length > 0 && (
         <aside className="cr__text" onClick={(e) => e.stopPropagation()}>
           <h2 className="cr__textTitle">{t('comics.textTitle')}</h2>
-          {blocks.length === 0 ? (
-            <p className="cr__textNote">{t('comics.noText')}</p>
-          ) : (
+          {(
             <ol className="cr__lines">
               {blocks.map((b, k) => (
                 <li key={k} className={`cr__line ${QUIET.has(b.kind) ? 'cr__line--quiet' : ''}`}>
@@ -266,6 +272,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
             </ol>
           )}
         </aside>
+        )}
       </div>
 
       <div className="cr__progress" aria-hidden="true">

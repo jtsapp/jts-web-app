@@ -30,6 +30,7 @@ describe('comicsShape — каталог', () => {
       title: 'Yellow',
       author: 'Jay Martin',
       level: 'B1',
+      subtitle: '',
       coverUrl: 'https://files/cover.webp',
       pageCount: 214,
       adultOnly: true,
@@ -40,6 +41,12 @@ describe('comicsShape — каталог', () => {
   it('обложка берётся и под другими именами поля', () => {
     expect(normalizeComic({ id: 1, cover: 'a.webp' }).coverUrl).toBe('a.webp')
     expect(normalizeComic({ id: 1, coverImageUrl: 'b.webp' }).coverUrl).toBe('b.webp')
+  })
+
+  it('подзаголовок читается — уровня у бэкенда нет', () => {
+    const c = normalizeComic({ id: 1, subtitle: 'Graphic memoir · 327 pages' })
+    expect(c.subtitle).toBe('Graphic memoir · 327 pages')
+    expect(c.level).toBe('')
   })
 
   it('описание берётся и плоскими полями', () => {
@@ -115,6 +122,43 @@ describe('comicsShape — страницы и реплики', () => {
       pages: [{ n: 1, url: 'a', blocks: [{ kind: 'thought', en: 'Hm' }, { ru: 'без английского' }] }],
     })
     expect(doc.pages[0].blocks).toEqual([{ kind: 'balloon', en: 'Hm', ru: '', kk: '' }])
+  })
+
+  // Форма, которую реально отдаёт бэкенд (см. ComicPage в админке): pageIndex,
+  // imageUrl, pngUrl, без размеров и без реплик.
+  it('страницы бэкенда с pageIndex и imageUrl разбираются', () => {
+    const doc = normalizeComicDoc({
+      id: 1,
+      slug: 'yellow',
+      coverImageUrl: 'cover.webp',
+      pages: [
+        { id: 10, pageIndex: 0, imageUrl: 'p0.webp', pngUrl: 'p0.png' },
+        { id: 11, pageIndex: 1, imageUrl: 'p1.webp' },
+      ],
+    })
+    expect(doc.coverUrl).toBe('cover.webp')
+    expect(doc.pages.map((p) => [p.n, p.url])).toEqual([
+      [1, 'p0.webp'],
+      [2, 'p1.webp'],
+    ])
+  })
+
+  it('нумерация с нуля сдвигается: иначе счётчик покажет «0 / N», а закладка не сохранится', () => {
+    const zero = normalizeComicDoc({ id: 1, pages: [{ pageIndex: 0, imageUrl: 'a' }, { pageIndex: 1, imageUrl: 'b' }] })
+    expect(zero.pages.map((p) => p.n)).toEqual([1, 2])
+    // Нумерация с единицы не трогается.
+    const one = normalizeComicDoc({ id: 1, pages: [{ n: 1, url: 'a' }, { n: 2, url: 'b' }] })
+    expect(one.pages.map((p) => p.n)).toEqual([1, 2])
+  })
+
+  it('страница без webp берётся png-запаской', () => {
+    const doc = normalizeComicDoc({ id: 1, pages: [{ pageIndex: 0, pngUrl: 'only.png' }] })
+    expect(doc.pages[0].url).toBe('only.png')
+  })
+
+  it('страницы без размеров и реплик не ломают разбор', () => {
+    const doc = normalizeComicDoc({ id: 1, pages: [{ pageIndex: 0, imageUrl: 'a.webp' }] })
+    expect(doc.pages[0]).toMatchObject({ w: undefined, h: undefined, blocks: [] })
   })
 
   it('число страниц берётся из списка, если сервер его не прислал', () => {
