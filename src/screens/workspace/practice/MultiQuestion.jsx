@@ -1,6 +1,5 @@
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
-import { hasAttempt } from '../practiceGrading.js'
 
 // «Отметь всё, что услышал»: несколько вариантов верны одновременно.
 // `answer` — массив отмеченных строк; засчитывается только полный набор
@@ -8,7 +7,6 @@ import { hasAttempt } from '../practiceGrading.js'
 // пропущенные верные варианты — иначе на ошибке не видно, чего не хватило.
 export default function MultiQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const picked = Array.isArray(answer) ? answer : []
-  const attempted = hasAttempt(question, picked)
 
   function toggle(opt) {
     if (checked || readOnly) return
@@ -25,8 +23,11 @@ export default function MultiQuestion({ question, answer, checked, onAnswer, rea
         {(question?.options || []).map((opt) => {
           const selected = picked.includes(opt)
           const isAnswer = (question.answers || []).includes(opt)
-          const isOk = checked && attempted && isAnswer
-          const isNo = checked && attempted && selected && !isAnswer
+          // Все верные варианты — после «Проверить», даже если ученик не отметил
+          // ничего: иначе на пропущенном вопросе не видно, что вообще требовалось.
+          const isOk = checked && isAnswer
+          // Крест — только на своём выборе.
+          const isNo = checked && selected && !isAnswer
 
           let cls = 'lw-opt'
           if (isOk) cls += ' is-ok'

@@ -228,9 +228,13 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
     const t = setTimeout(() => {
       // instant, не smooth: smooth scrollIntoView внутри скроллящегося предка
       // ненадёжен (проверено живьём — анимация иногда просто не запускается).
+      //
+      // 'start', а не 'center': высокая карточка (с картинкой — почти любая)
+      // встаёт серединой в центр кадра, и формулировка задания уезжает за
+      // верхний край. Отступ даёт `scroll-margin-top` в styles.css.
       document
         .querySelector(`[data-question-id="${CSS.escape(String(liveQuestionId))}"]`)
-        ?.scrollIntoView({ behavior: 'instant', block: 'center' })
+        ?.scrollIntoView({ behavior: 'instant', block: 'start' })
     }, 60)
     return () => clearTimeout(t)
   }, [liveQuestionId, liveFocusNonce, step?.id])
