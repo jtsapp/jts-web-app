@@ -27,6 +27,15 @@ describe('LiveHeader — урок в шапке', () => {
     expect(screen.getByText('Индивидуальный урок')).toBeTruthy()
   })
 
+  // Пробный урок тоже один на один, и без отдельной ветки он подписывался бы
+  // «Индивидуальным» — ученик читал бы это как занятие курса, за которое уже
+  // заплачено.
+  it('пробное занятие названо пробным, а не индивидуальным', () => {
+    renderHeader({ group: false, trial: true })
+    expect(screen.getByText('Пробный урок')).toBeTruthy()
+    expect(screen.queryByText('Индивидуальный урок')).toBeNull()
+  })
+
   it('названия урока ещё нет — шапка не остаётся пустой', () => {
     renderHeader({ lessonTitle: null })
     expect(screen.getByText('Живой урок')).toBeTruthy()

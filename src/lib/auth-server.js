@@ -133,6 +133,11 @@ export async function fetchTutorLimitOverride(token) {
     return {
       dailyLimitSeconds: data?.dailyLimitSeconds ?? null,
       monthlyLimitSeconds: data?.monthlyLimitSeconds ?? null,
+      // Пул минут на весь тариф («AI-тьютор 300 минут», Self Study 500–2000) и
+      // дата, с которой его считать: начало абонемента или подписки. Без даты
+      // (персональная правка админом) пул считается за всё время.
+      totalLimitSeconds: data?.totalLimitSeconds ?? null,
+      totalSince: data?.totalSince ?? null,
     }
   } catch (err) {
     console.error(

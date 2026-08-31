@@ -137,7 +137,9 @@ export async function closeStaleSessions(deviceId) {
 }
 
 /**
- * Seconds used today (local UTC day) and across the current calendar month.
+ * Seconds used today (local UTC day), across the current calendar month, и за
+ * срок действующего тарифа (`totalSince`).
+ *
  * Включает идущие прямо сейчас сессии — иначе параллельные вкладки/режимы
  * получали каждый свой полный бюджет.
  *
@@ -148,9 +150,20 @@ export async function closeStaleSessions(deviceId) {
  * всего, двумя заходами по пять. Ограничение по времени жизни делает
  * «за всё время» безопасным: копиться дольше срока демо здесь нечему.
  */
-export async function getUsage(deviceId, isDemoAccount = false) {
+export async function getUsage(deviceId, { totalSince = null, isDemoAccount = false } = {}) {
   const db = getSql();
-  if (!db) return { todaySeconds: 0, monthSeconds: 0 };
+  if (!db) return { todaySeconds: 0, monthSeconds: 0, totalSeconds: 0 };
+  // Два разных окна в одном ответе, и путать их нельзя:
+  //   month — месячный лимит бесплатных минут (у демо-аккаунта окна нет, см. ниже);
+  //   total — пул купленного тарифа, считается от начала его действия.
+  // Аргументы передаются объектом, а не по порядку: обе стороны независимо
+  // добавили сюда второй параметр — дату у одной, булев флаг у другой, — и
+  // позиционный вызов молча принял бы одно за другое.
+  //
+  // `totalSince` — начало действующего тарифа. Минуты прошлой покупки в новый
+  // пул не переносятся; без даты (персональный лимит от админа) берём всё
+  // время — окна у ручной правки нет.
+  const since = totalSince ? String(totalSince).slice(0, 10) : null;
   // Два явных запроса вместо одного с булевым параметром внутри FILTER: тип
   // такого параметра выводит уже сервер, и ошибка вида «argument of OR must be
   // type boolean» вылезла бы только в проде, на пути, который считает платные
@@ -159,7 +172,10 @@ export async function getUsage(deviceId, isDemoAccount = false) {
     ? await db`
         SELECT
           COALESCE(SUM(seconds) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today,
-          COALESCE(SUM(seconds), 0)::int AS month
+          COALESCE(SUM(seconds), 0)::int AS month,
+          COALESCE(SUM(seconds) FILTER (
+            WHERE ${since}::date IS NULL OR day >= ${since}::date
+          ), 0)::int AS total
         FROM voice_usage
         WHERE device_id = ${deviceId}
       `
@@ -168,15 +184,19 @@ export async function getUsage(deviceId, isDemoAccount = false) {
           COALESCE(SUM(seconds) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today,
           COALESCE(SUM(seconds) FILTER (
             WHERE day >= date_trunc('month', CURRENT_DATE)
-          ), 0)::int AS month
+          ), 0)::int AS month,
+          COALESCE(SUM(seconds) FILTER (
+            WHERE ${since}::date IS NULL OR day >= ${since}::date
+          ), 0)::int AS total
         FROM voice_usage
         WHERE device_id = ${deviceId}
       `;
-  const r = rows[0] || { today: 0, month: 0 };
+  const r = rows[0] || { today: 0, month: 0, total: 0 };
   const active = await activeSeconds(db, deviceId);
   return {
     todaySeconds: (r.today || 0) + active,
     monthSeconds: (r.month || 0) + active,
+    totalSeconds: (r.total || 0) + active,
   };
 }
 

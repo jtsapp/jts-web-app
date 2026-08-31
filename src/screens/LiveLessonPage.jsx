@@ -7,7 +7,7 @@ import {
 } from '../api.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
-import { isGroupLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
+import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
@@ -25,7 +25,7 @@ import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
-import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
+import { catalogLessonIdFor, isStandaloneLessonUrl } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
@@ -249,7 +249,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    Promise.resolve(url ? catalogLessonIdFor(url, token) : null)
+    // Пробный урок в каталоге не ищем: его там нет по определению, а поход за
+    // деревом задерживал бы показ файла на старте занятия.
+    Promise.resolve(url && !isStandaloneLessonUrl(url) ? catalogLessonIdFor(url, token) : null)
       .then((id) =>
         id == null
           ? Promise.resolve({ id: null, loaded: null })
@@ -972,6 +974,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const taskCards = practiceCardStats(activeStep, isStaff ? reviewCheckedSteps : checkedSteps)
   // Урок разобран, но все его упражнения скрыты от этого ученика поштучно.
   const allStepsHidden = (catalogLesson?.steps?.length || 0) > 0 && lessonSteps.length === 0
+  // Кнопки «Темы» нет, когда тем нет: у самодостаточного урока шагов не бывает,
+  // и лист открывался бы пустым. LiveHeader сам прячет кнопку без обработчика.
+  const openTopics = routeSteps.length ? () => setSheet('topics') : undefined
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved, allStepsHidden })
 
   return (
@@ -990,8 +995,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         timerLeft={timerLeft}
         timerExpired={timerExpired}
         group={groupLesson}
+        trial={isTrialLesson(lesson)}
         onVocab={() => setSheet('vocab')}
-        onTopics={() => setSheet('topics')}
+        onTopics={openTopics}
         onChat={() => setSheet('chat')}
         onExit={() => setConfirmExit(true)}
       />

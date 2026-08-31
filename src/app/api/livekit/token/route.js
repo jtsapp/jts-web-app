@@ -221,6 +221,11 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
   // global default.
   const dailyLimitSec = limitOverride?.dailyLimitSeconds ?? DAILY_LIMIT_SEC
   const monthLimitSec = limitOverride?.monthlyLimitSeconds ?? MONTH_LIMIT_SEC
+  // Пул минут на весь тариф: «AI-тьютор 300 минут» на абонемент, 500–2000 у
+  // Self Study. Глобального значения по умолчанию у него НЕТ — пул есть только
+  // там, где его продали, поэтому null означает «без пула», а не «ноль минут».
+  const totalLimitSec = limitOverride?.totalLimitSeconds ?? null
+  const totalSince = limitOverride?.totalSince ?? null
 
   // Потолок одной сессии = дневной лимит (раньше здесь стояло 600 числом, и при
   // подъёме лимита до 20 мин разговор всё равно рвался бы на 10-й минуте).
@@ -237,7 +242,18 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
       // Сначала дозакрываем зависшие комнаты этого ученика (потерянный
       // room_finished), иначе их минуты не спишутся никогда и лимит поедет.
       await closeStaleSessions(profileId)
-      const { todaySeconds, monthSeconds } = await getUsage(profileId, isDemoAccount)
+      const { todaySeconds, monthSeconds, totalSeconds } = await getUsage(profileId, {
+        totalSince,
+        isDemoAccount,
+      })
+      // Пул проверяем ПЕРВЫМ: он про купленный тариф, и когда он исчерпан, дневной
+      // остаток значения уже не имеет — сказать «приходите завтра» было бы неправдой.
+      if (totalLimitSec != null && totalSeconds >= totalLimitSec) {
+        return Response.json(
+          { configured: true, limited: true, error: 'total_limit' },
+          { status: 403 },
+        )
+      }
       if (monthSeconds >= monthLimitSec || todaySeconds >= dailyLimitSec) {
         return Response.json(
           {
@@ -249,6 +265,11 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
         )
       }
       ttl = Math.max(60, Math.min(dailyLimitSec, dailyLimitSec - todaySeconds))
+      // Длина сессии не должна превышать остаток пула: иначе последний разговор
+      // ушёл бы в минус и списал больше, чем ученик купил.
+      if (totalLimitSec != null) {
+        ttl = Math.max(60, Math.min(ttl, totalLimitSec - totalSeconds))
+      }
     } catch (err) {
       console.error('[livekit.token] usage check failed', err)
     }
