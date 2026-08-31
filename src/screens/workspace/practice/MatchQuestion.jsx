@@ -15,6 +15,11 @@ function shuffled(arr) {
   return a
 }
 
+function matchedLabel(pair, chosen) {
+  if (pair?.full && chosen === pair.right) return pair.full
+  return chosen ?? '—'
+}
+
 // Контролируемый match-вопрос (live-уроки): слева — question.pairs[].left,
 // справа — перемешанные pairs[].right. UX: клик по левому слову выделяет
 // его, следующий клик по правому — сопоставляет; повторный клик по тому же
@@ -156,12 +161,12 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
                 type="button"
                 className={cls}
                 aria-pressed={activeLeft === pair.left}
-                aria-label={chosen != null ? `${pair.left}: ${chosen}` : pair.left}
+                aria-label={chosen != null ? `${pair.left}: ${matchedLabel(pair, chosen)}` : pair.left}
                 disabled={checked || readOnly}
                 onClick={() => pickLeft(pair.left)}
               >
                 <span className="lw-match__left-label">{pair.left}</span>
-                <span className="lw-match__chosen">{chosen ?? '—'}</span>
+                <span className="lw-match__chosen">{matchedLabel(pair, chosen)}</span>
                 {isCorrect && <CheckIcon size={14} />}
                 {isWrong && (
                   <span className="lw-match__mark" aria-hidden="true">

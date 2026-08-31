@@ -65,6 +65,24 @@ describe('MatchQuestion — обычный словарный матчинг (1:
     fireEvent.click(container.querySelector('.lw-match__right'))
     expect(onAnswer).toHaveBeenCalledWith('q1', expect.objectContaining({ 'get on (well with someone)': expect.any(String) }))
   })
+
+  it('word partners: после сопоставления показывает целую фразу из full', () => {
+    const question = {
+      id: 'q-partners',
+      type: 'match',
+      pairs: [
+        { left: 'media', right: 'social …', full: 'social media' },
+        { left: 'trust', right: '… someone with a secret', full: 'trust someone with a secret' },
+      ],
+    }
+    const { container } = renderMatch(question, {
+      answer: { media: 'social …', trust: '… someone with a secret' },
+    })
+    const labels = [...container.querySelectorAll('.lw-match__chosen')].map((el) => el.textContent)
+    expect(labels).toContain('social media')
+    expect(labels).toContain('trust someone with a secret')
+    expect(labels).not.toContain('social …')
+  })
 })
 
 describe('MatchQuestion — «разложи по категориям» (повторяющийся right)', () => {
