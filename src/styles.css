@@ -8364,3 +8364,57 @@ textarea {
   .cr__body { grid-template-columns: minmax(0, 1fr); }
   .cr__text { max-height: none; }
 }
+
+/* ── Читалка комикса: полный экран ── */
+/* Страницу зажимает не ширина, а высота: сверху шапка, слева сайдбар, снизу
+   подвал — на ноутбуке от листа остаётся полоска. Кнопка уводит корень читалки
+   в fullscreen, и вся высота экрана достаётся странице. Высоту тут считаем не
+   вычитанием пикселей (сколько займёт заголовок — вопрос длины названия), а
+   раскладкой: колонка на 100%, тело — единственная растяжимая строка, картинка
+   упирается в неё. */
+.cr__full {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cr__full:hover { color: var(--purple); border-color: #d9d2f7; }
+.cr--full {
+  height: 100%;
+  padding: 14px 18px;
+  background: #fff;
+  overflow: hidden;
+}
+@media (min-width: 1001px) {
+  .cr--full .cr__body {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .cr--full .cr__stage { height: 100%; min-height: 0; }
+  .cr--full .cr__page { height: 100%; align-items: center; }
+  .cr--full .cr__img { max-height: 100%; }
+  .cr--full .cr__text { max-height: 100%; }
+}
+@media (max-width: 1000px) {
+  /* Узкий экран: текст уходит под страницу, поэтому режим прокручиваемый, а
+     картинка держится за высоту экрана — иначе её сожмёт колонка реплик. */
+  .cr--full { overflow: auto; }
+  .cr--full .cr__img { max-height: calc(100vh - 180px); }
+}
+@media (max-width: 760px) {
+  /* Ярлык кнопки съедает строку с названием — оставляем иконку. */
+  .cr__fullLabel { display: none; }
+  .cr__full { padding: 7px 9px; }
+}
