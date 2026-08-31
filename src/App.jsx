@@ -457,6 +457,11 @@ export default function App() {
           .then(() => loadTutorProfile(tok))
           .then((profile) => {
             if (!profile) return
+            // Тест, пройденный до регистрации, переносится на аккаунт вместе с
+            // профилем — но бэкенд о его уровне не знает (аноним туда не
+            // писал). Дописываем: иначе аккаунт снова попросят пройти тест, а
+            // пройти его уже нельзя — он проходится один раз.
+            if (profile.level && !lvl) saveTestLevel(profile.level)
             if (profile.tutor) {
               setTutorKey(profile.tutor)
               setTemper(temperFor(profile.tutor, profile.tutorTemper))

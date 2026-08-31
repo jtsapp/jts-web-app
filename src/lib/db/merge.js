@@ -43,7 +43,11 @@ export async function isAccountEmpty(accountId) {
       (select count(*) from topic_log       where device_id = ${accountId}) +
       (select count(*) from lesson_progress where device_id = ${accountId}) +
       (select count(*) from ielts_score     where device_id = ${accountId}) +
-      (select count(*) from call_log        where device_id = ${accountId})
+      (select count(*) from call_log        where device_id = ${accountId}) +
+      -- Пройденный тест уровня — тоже прогресс: аккаунт с ним не должен
+      -- втягивать содержимое чужого браузера.
+      (select count(*) from placement_session
+        where profile_id = ${accountId} and finished)
       as n
   `
   return Number(rows[0].n) === 0
@@ -99,10 +103,20 @@ export async function mergeDeviceIntoAccount(deviceId, accountId) {
         minutes_per_day = coalesce(a.minutes_per_day, d.minutes_per_day),
         skills          = coalesce(a.skills, d.skills),
         writing         = coalesce(a.writing, d.writing),
+        -- Снимок теста уровня (θ, SE, флаги) — вместе с самим уровнем выше:
+        -- иначе результат теста, пройденного до регистрации, терялся.
+        placement       = coalesce(a.placement, d.placement),
         safety_alert    = a.safety_alert or coalesce(d.safety_alert, false),
         updated_at      = now()
       from learner d
       where a.device_id = ${accountId} and d.device_id = ${deviceId}
+    `
+    // Прогон теста уровня перевешиваем на аккаунт: тест проходится один раз,
+    // и пройденный до регистрации не должен давать вторую попытку после неё —
+    // а его ответы нужны для будущей калибровки банка.
+    await tx`
+      update placement_session set profile_id = ${accountId}
+      where profile_id = ${deviceId}
     `
     // Простой rekey тех таблиц, где по device_id нет уникальных ключей. Имя
     // таблицы из хардкод-списка REKEY_TABLES; tx(t) экранирует идентификатор
