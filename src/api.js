@@ -46,9 +46,22 @@ async function get(path) {
   return res.json()
 }
 
-// CEFR-тест: банк вопросов (публичный эндпоинт, адаптивная логика — на клиенте)
-export function getAdaptiveQuestions() {
-  return get('/adaptive-test/questions')
+// CEFR-тест. Проверка ответов и оценка уровня живут на сервере: банк вопросов
+// публичный, поэтому вместе с вопросами уезжал и ключ, а посчитанный на клиенте
+// уровень был не измерением, а утверждением клиента. Теперь сервер выдаёт по
+// одному вопросу за раз и сам считает θ.
+//
+// Токен необязателен: сайт тестирует посетителя до регистрации. Если он есть —
+// прогон привязывается к аккаунту и уровень сохраняется в профиль.
+export function startAdaptiveSession(token) {
+  return authPost('/adaptive-test/sessions', token, {})
+}
+
+export function submitAdaptiveAnswer({ sessionToken, questionId, optionId, token }) {
+  return authPost(`/adaptive-test/sessions/${encodeURIComponent(sessionToken)}/answers`, token, {
+    questionId,
+    optionId,
+  })
 }
 
 // Ролевые сценарии для голосового тьютора — публичный эндпоинт (INK AI tutor,
