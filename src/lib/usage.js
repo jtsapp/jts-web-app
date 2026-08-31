@@ -137,27 +137,37 @@ export async function closeStaleSessions(deviceId) {
 }
 
 /**
- * Seconds used today (local UTC day) and across the current calendar month.
+ * Seconds used today (local UTC day), across the current calendar month, и за
+ * срок действующего тарифа (`totalSince`).
+ *
  * Включает идущие прямо сейчас сессии — иначе параллельные вкладки/режимы
  * получали каждый свой полный бюджет.
  */
-export async function getUsage(deviceId) {
+export async function getUsage(deviceId, totalSince = null) {
   const db = getSql();
-  if (!db) return { todaySeconds: 0, monthSeconds: 0 };
+  if (!db) return { todaySeconds: 0, monthSeconds: 0, totalSeconds: 0 };
+  // `totalSince` — начало действующего тарифа. Минуты прошлой покупки в новый пул
+  // не переносятся, поэтому окно считается от этой даты; без неё (персональный
+  // лимит от админа) берём всё время — окна у ручной правки нет.
+  const since = totalSince ? String(totalSince).slice(0, 10) : null;
   const rows = await db`
     SELECT
       COALESCE(SUM(seconds) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today,
       COALESCE(SUM(seconds) FILTER (
         WHERE day >= date_trunc('month', CURRENT_DATE)
-      ), 0)::int AS month
+      ), 0)::int AS month,
+      COALESCE(SUM(seconds) FILTER (
+        WHERE ${since}::date IS NULL OR day >= ${since}::date
+      ), 0)::int AS total
     FROM voice_usage
     WHERE device_id = ${deviceId}
   `;
-  const r = rows[0] || { today: 0, month: 0 };
+  const r = rows[0] || { today: 0, month: 0, total: 0 };
   const active = await activeSeconds(db, deviceId);
   return {
     todaySeconds: (r.today || 0) + active,
     monthSeconds: (r.month || 0) + active,
+    totalSeconds: (r.total || 0) + active,
   };
 }
 
