@@ -82,6 +82,12 @@ function renderPage() {
   )
 }
 
+// Отказ демо-ученику (source: 'DEMO') с этого экрана — плашка про подписку
+// (DemoSubscriptionModal), а не прежняя заглушка «Лимит достигнут»: она
+// осталась за абонементом и подпиской. Тесты ниже про повторную проверку
+// права, поэтому сверяют сам факт отказа — по его нынешнему заголовку.
+const REFUSED = /Данная функция доступна по подписке/
+
 // Проходит единственное задание сессии до экрана результата.
 async function playSession() {
   fireEvent.click(await screen.findByText('Начать тренировку'))
@@ -109,7 +115,7 @@ describe('ListeningPage: лимит меряется на КАЖДОМ стар�
 
     fireEvent.click(await playSession())
 
-    expect(await screen.findByText(/Лимит достигнут/)).toBeTruthy()
+    expect(await screen.findByText(REFUSED)).toBeTruthy()
     expect(screen.queryByText('In Shanghai')).toBeNull() // вторая сессия не началась
   })
 
@@ -119,7 +125,7 @@ describe('ListeningPage: лимит меряется на КАЖДОМ стар�
     renderPage()
 
     fireEvent.click(await playSession())
-    await screen.findByText(/Лимит достигнут/)
+    await screen.findByText(REFUSED)
 
     const push = fetchMock.calls.indexOf('POST /api/practice/state')
     const entitlementCalls = fetchMock.calls
@@ -138,7 +144,7 @@ describe('ListeningPage: лимит меряется на КАЖДОМ стар�
     fireEvent.click(await screen.findByText('Начать тренировку'))
 
     expect(await screen.findByText('In Shanghai')).toBeTruthy()
-    expect(screen.queryByText(/Лимит достигнут/)).toBeNull()
+    expect(screen.queryByText(REFUSED)).toBeNull()
   })
 
   it('ученику без лимита лишних запросов о праве не шлём', async () => {

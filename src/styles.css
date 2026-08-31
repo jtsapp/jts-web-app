@@ -4637,6 +4637,116 @@ textarea {
   outline-offset: 2px;
 }
 
+/* Плашка «доступно по подписке» для демо-ученика (DemoSubscriptionModal).
+   Кроет область контента, как .le-over/.lx-over, — сайдбар и навигация
+   остаются. z-index выше итогов урока (.le-over, 6): на тропе «Обучение»
+   плашка приходит поверх уже показанного экрана итогов.
+   Центрирование автополями по той же причине, что у .lx-over: в альбомной
+   ориентации карточка выше окна, и флекс-центрирование отрезало бы ей верх. */
+.ds-over {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  background: rgba(23, 19, 38, 0.45);
+  display: flex;
+  padding: 24px;
+  overflow: auto;
+}
+.ds-card {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 480px;
+  max-width: 100%;
+  padding: 28px;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
+}
+.ds-art {
+  width: 132px;
+  height: 152px;
+  object-fit: contain;
+  flex: none;
+}
+.ds-title {
+  margin: 16px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #171326;
+}
+.ds-body {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #6b6976;
+}
+.ds-acts {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+/* Имена классов — по действию: `ds-back` возвращает на экран, с которого
+   пришли, `ds-buy` уводит покупать. Покупка — основная кнопка, поэтому она
+   залита акцентом и стоит второй. */
+.ds-back,
+.ds-buy {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 56px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+/* Доли не равные: «Приобрести подписку» вдвое длиннее подписью, и на равных
+   половинах она переносилась в две строки внутри кнопки. Второстепенная жмётся
+   по своему тексту, основная забирает остаток ряда. */
+.ds-back {
+  flex: 0 1 auto;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e6e4ee;
+  color: #171326;
+}
+.ds-back:hover {
+  background: #f7f6fb;
+}
+.ds-buy {
+  flex: 1 1 auto;
+  background: var(--purple);
+  color: #fff;
+}
+.ds-buy:hover {
+  background: #7a2fe6;
+}
+.ds-back:focus-visible,
+.ds-buy:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+/* На узком экране кнопки в один ряд не помещаются подписями: «Приобрести
+   подписку» переносится и ломает высоту. Ставим их столбиком, покупка сверху. */
+@media (max-width: 480px) {
+  .ds-card {
+    padding: 24px 20px;
+  }
+  .ds-acts {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+}
+
 
 /* Телефон: диалог узкий, и боковые поля в 28px съедают заметную долю ширины.
    Блок стоит после базовых правил .lx-* намеренно: медиазапрос специфичности не

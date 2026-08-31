@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n.jsx'
-import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import DemoSubscriptionModal from './DemoSubscriptionModal.jsx'
 
 // Показывается вместо раздела практики, когда квота на него исчерпана
 // (см. usePracticeEntitlement). Своя вёрстка, а не общий .soon: тот рассчитан
@@ -8,6 +8,7 @@ import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 //
 // source (STUDENT / PLAN / SUBSCRIPTION / DEMO / NONE) задаёт текст: лимит
 // абонемента/подписки отличается от демо и от точечного override куратора.
+// DEMO — не заглушка вовсе, а модалка про подписку (см. ниже).
 export default function PracticeLimitScreen({
   limit,
   onBack,
@@ -23,17 +24,16 @@ export default function PracticeLimitScreen({
     : (isDemoAccount ? 'DEMO' : 'STUDENT')
   const name = sourceName || ''
 
+  // Демо-лимит — это момент продажи, а не сообщение об ошибке: показываем
+  // модалку «доступно по подписке» поверх раздела, а не заглушку вместо него.
+  // Закрытие модалки (кнопка, Esc, клик по подложке) ведёт туда же, куда вела
+  // «Назад» этой заглушки, — onBack у всех вызывающих экранов один и тот же.
+  // Остальные источники лимита остались прежним текстом: у абонемента и
+  // подписки причина отказа другая, и покупать подписку им незачем.
+  if (resolvedSource === 'DEMO') return <DemoSubscriptionModal onClose={onBack} />
+
   let body
-  if (resolvedSource === 'DEMO') {
-    body = (
-      <>
-        {none ? t('practice.limit.demoBodyNone') : t('practice.limit.demoBody', { n: String(n) })}{' '}
-        <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-          {t('demo.cta')}
-        </a>
-      </>
-    )
-  } else if (resolvedSource === 'PLAN') {
+  if (resolvedSource === 'PLAN') {
     body = none
       ? t('practice.limit.planBodyNone', { name })
       : t('practice.limit.planBody', { n: String(n), name })

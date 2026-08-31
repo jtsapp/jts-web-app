@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
+import DemoSubscriptionModal from '../components/DemoSubscriptionModal.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -9,7 +10,6 @@ import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
-import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
 import { isStepLevel, tasksToSteps, stripStageTail, nativeLessonSteps } from '../learning/nativeSteps.js'
@@ -565,19 +565,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                     «следующий урок» — он всё равно упрётся в тот же отказ. */}
                 {restricted ? (
                   <div className="le-acts">
-                    <div className="le-restricted" role="status">
-                      🔒{' '}
-                      {isDemoAccount ? (
-                        <>
-                          {t('learn.quotaReachedDemo')}{' '}
-                          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                            {t('demo.cta')}
-                          </a>
-                        </>
-                      ) : (
-                        t('learn.quotaReached')
-                      )}
-                    </div>
+                    {/* У демо-ученика тот же отказ живёт в модалке про подписку
+                        (DemoSubscriptionModal ниже), и дублировать его строкой
+                        под ней незачем: строка всё равно закрыта подложкой, а
+                        текст повторял бы сказанное в окне. Здесь остаётся
+                        только «Назад» — то же действие, что и «Вернуться» в
+                        модалке. Лимит от админа (не демо) виден как раньше. */}
+                    {!isDemoAccount && (
+                      <div className="le-restricted" role="status">
+                        🔒 {t('learn.quotaReached')}
+                      </div>
+                    )}
                     <button className="le-btn" onClick={exitLesson}>
                       {t('common.back')}
                     </button>
@@ -621,6 +619,18 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
             </div>
           </div>
         </div>
+      )}
+
+      {/* Демо-ученик упёрся в свой лимит: урок решён, но не засчитан, и дальше
+          по тропе его не пускают. Это момент продажи, поэтому вместо строки под
+          итогами — плашка про подписку поверх экрана итогов. Закрытие ведёт
+          туда же, куда «Назад» с этого экрана (handleBack при open && end), —
+          exitLesson.
+          Условие повторяет условие самих итогов, а не сводится к restricted:
+          exitLesson гасит end и open, но не флаг отказа, и плашка на одном
+          restricted оставалась висеть поверх тропы, никуда не закрываясь. */}
+      {end && end.outcome === 'success' && restricted && isDemoAccount && (
+        <DemoSubscriptionModal onClose={exitLesson} />
       )}
 
       {/* Подтверждение выхода из незаконченного урока — общий диалог всех

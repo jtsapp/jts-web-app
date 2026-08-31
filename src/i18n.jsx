@@ -24,6 +24,14 @@ const dict = {
     // Общий CTA для демо-ограничений (лимит контента/уроков/IELTS/ситуативок) —
     // ведёт на WhatsApp поддержки, см. src/lib/support.js.
     'demo.cta': 'нажмите сюда',
+    // Плашка демо-лимита (DemoSubscriptionModal) — общая для тропы «Обучение» и
+    // разделов Практики. «Приобрести подписку» ведёт в WhatsApp поддержки:
+    // покупки внутри приложения нет, см. комментарий в компоненте.
+    'demo.paywall.title': 'Данная функция доступна по подписке',
+    'demo.paywall.body':
+      'Сейчас вы используете демо-аккаунт. Приобретите подписку, чтобы получить доступ к этому разделу и другим возможностям сервиса.',
+    'demo.paywall.back': 'Вернуться',
+    'demo.paywall.buy': 'Приобрести подписку',
     'footer.privacy': 'Политика конфиденциальности',
     'footer.rights': '© Все права защищены',
     'reg.title': 'Регистрация',
@@ -588,7 +596,6 @@ const dict = {
     'learn.locked': 'Вы ещё не дошли до уровня {label}',
     'learn.moduleLocked': 'Доступ к этому модулю закрыт вашим преподавателем',
     'learn.quotaReached': 'Урок не засчитан: вы исчерпали лимит уроков в этом модуле. Обратитесь к преподавателю.',
-    'learn.quotaReachedDemo': 'Урок не засчитан: у вас демо-аккаунт с ограниченным доступом. Чтобы открыть весь курс,',
     // Профиль (порт мобильного экрана профиля)
     'profile.rankPrefix': 'Текущий уровень: ',
     'profile.noName': 'Без имени',
@@ -777,8 +784,6 @@ const dict = {
     'practice.limit.title': 'Лимит достигнут',
     'practice.limit.body': 'Доступно до {n} — свяжитесь с куратором, чтобы открыть больше.',
     'practice.limit.bodyNone': 'Этот раздел закрыт для вашего аккаунта — свяжитесь с куратором, чтобы открыть доступ.',
-    'practice.limit.demoBody': 'У вас демо-аккаунт — доступно до {n}. Чтобы открыть полный доступ,',
-    'practice.limit.demoBodyNone': 'У вас демо-аккаунт, и этот раздел пока закрыт. Чтобы открыть полный доступ,',
     'practice.limit.planBody': 'Лимит абонемента «{name}»: доступно до {n}. Чтобы расширить доступ, обновите абонемент или обратитесь к куратору.',
     'practice.limit.planBodyNone': 'Раздел закрыт условиями абонемента «{name}». Чтобы открыть доступ, обновите абонемент или обратитесь к куратору.',
     'practice.limit.subBody': 'Лимит подписки «{name}»: доступно до {n}. Чтобы расширить доступ, обновите подписку или обратитесь к куратору.',
@@ -1206,6 +1211,11 @@ const dict = {
     'common.back': 'Back',
     'common.close': 'Close',
     'demo.cta': 'click here',
+    'demo.paywall.title': 'This feature is available with a subscription',
+    'demo.paywall.body':
+      'You are using a demo account. Get a subscription to unlock this section and the rest of the service.',
+    'demo.paywall.back': 'Go back',
+    'demo.paywall.buy': 'Get a subscription',
     'footer.privacy': 'Privacy Policy',
     'footer.rights': '© All rights reserved',
     'reg.title': 'Registration',
@@ -1764,7 +1774,6 @@ const dict = {
     'learn.locked': 'You haven’t reached level {label} yet',
     'learn.moduleLocked': 'Your teacher has closed access to this module',
     'learn.quotaReached': 'Lesson not counted: you have reached your lesson limit for this module. Please contact your teacher.',
-    'learn.quotaReachedDemo': 'Lesson not counted: you have a demo account with limited access. To unlock the full course,',
     'profile.rankPrefix': 'Current rank: ',
     'profile.noName': 'No name',
     'profile.keepLearning': 'Keep learning',
@@ -1949,8 +1958,6 @@ const dict = {
     'practice.limit.title': 'Limit reached',
     'practice.limit.body': 'You can access up to {n} — contact your curator to unlock more.',
     'practice.limit.bodyNone': 'This section is closed for your account — contact your curator to get access.',
-    'practice.limit.demoBody': 'You have a demo account — up to {n} available. To unlock full access,',
-    'practice.limit.demoBodyNone': 'You have a demo account, and this section is closed for now. To unlock full access,',
     'practice.limit.planBody': 'Abonement “{name}” limit: up to {n}. Upgrade your abonement or contact your curator to unlock more.',
     'practice.limit.planBodyNone': 'This section is closed by abonement “{name}”. Upgrade your abonement or contact your curator.',
     'practice.limit.subBody': 'Subscription “{name}” limit: up to {n}. Upgrade your subscription or contact your curator to unlock more.',
@@ -2378,6 +2385,11 @@ const dict = {
     'common.back': 'Артқа',
     'common.close': 'Жабу',
     'demo.cta': 'осында басыңыз',
+    'demo.paywall.title': 'Бұл мүмкіндік жазылым бойынша қолжетімді',
+    'demo.paywall.body':
+      'Қазір сіз демо-аккаунтты пайдаланып отырсыз. Осы бөлімге және сервистің басқа мүмкіндіктеріне қол жеткізу үшін жазылым сатып алыңыз.',
+    'demo.paywall.back': 'Артқа қайту',
+    'demo.paywall.buy': 'Жазылым сатып алу',
     'footer.privacy': 'Құпиялылық саясаты',
     'footer.rights': '© Барлық құқықтар қорғалған',
     'reg.title': 'Тіркелу',
@@ -2929,7 +2941,6 @@ const dict = {
     'learn.locked': '{label} деңгейіне әлі жеткен жоқсыз',
     'learn.moduleLocked': 'Бұл модульге қолжетімділікті оқытушыңыз жапқан',
     'learn.quotaReached': 'Сабақ есептелмеді: осы модуль бойынша сабақ лимитін тауыстыңыз. Оқытушыға хабарласыңыз.',
-    'learn.quotaReachedDemo': 'Сабақ есептелмеді: сізде шектеулі демо-аккаунт бар. Толық курсты ашу үшін,',
     'profile.rankPrefix': 'Ағымдағы атақ: ',
     'profile.noName': 'Аты жоқ',
     'profile.keepLearning': 'Оқуды жалғастырыңыз',
@@ -3115,8 +3126,6 @@ const dict = {
     'practice.limit.title': 'Лимитке жетті',
     'practice.limit.body': '{n} дейін қолжетімді — көбірек ашу үшін кураторға хабарласыңыз.',
     'practice.limit.bodyNone': 'Бұл бөлім аккаунтыңыз үшін жабық — қолжетімділік алу үшін кураторға хабарласыңыз.',
-    'practice.limit.demoBody': 'Сізде демо-аккаунт бар — {n} дейін қолжетімді. Толық қолжетімділік ашу үшін,',
-    'practice.limit.demoBodyNone': 'Сізде демо-аккаунт бар, бұл бөлім әзірге жабық. Толық қолжетімділік ашу үшін,',
     'practice.limit.planBody': '«{name}» абонементінің лимиті: {n} дейін. Қолжетімділікті кеңейту үшін абонементті жаңартыңыз немесе кураторға хабарласыңыз.',
     'practice.limit.planBodyNone': 'Бөлім «{name}» абонементінің шарттарымен жабық. Абонементті жаңартыңыз немесе кураторға хабарласыңыз.',
     'practice.limit.subBody': '«{name}» жазылымының лимиті: {n} дейін. Қолжетімділікті кеңейту үшін жазылымды жаңартыңыз немесе кураторға хабарласыңыз.',
