@@ -907,10 +907,17 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                     <Thumb src={c.coverUrl} alt={c.title} className="pp-ccard__cover" />
                     <div className="pp-ccard__title">{c.title}</div>
                     {c.author && <div className="pp-ccard__author">{c.author}</div>}
-                    <div className="pp-ccard__meta">
-                      <Dots level={c.level} />
-                      {c.level && <span className="pp-ccard__cefr">{c.level}</span>}
-                    </div>
+                    {/* Уровень бэкенд не хранит: у комикса вместо CEFR свободный
+                        подзаголовок от методиста. Точки сложности без уровня
+                        рисовать нельзя — они всегда показывали бы «легко». */}
+                    {c.level ? (
+                      <div className="pp-ccard__meta">
+                        <Dots level={c.level} />
+                        <span className="pp-ccard__cefr">{c.level}</span>
+                      </div>
+                    ) : (
+                      c.subtitle && <div className="pp-ccard__author">{c.subtitle}</div>
+                    )}
                     <div className="pp-ccard__pages">
                       {st.started
                         ? t('comics.continue', { n: st.page, total: st.total })

@@ -8355,6 +8355,10 @@ textarea {
   color: #a6a5b2;
   cursor: pointer;
 }
+/* Реплик у страницы нет — колонку под них не резервируем, страница занимает
+   всю ширину. */
+.cr__body--wide { grid-template-columns: minmax(0, 1fr); }
+
 @media (max-width: 1000px) {
   /* Текст уходит под страницу: в одну колонку картинка становится нечитаемой. */
   .cr__body { grid-template-columns: minmax(0, 1fr); }
