@@ -8,6 +8,22 @@
 // прогонов, и по их пустым журналам.
 
 /**
+ * Что делать с запросом на новый прогон, если у профиля уже есть прогоны.
+ * Уровень определяется один раз — при регистрации: законченный прогон закрывает
+ * тему, незаконченный продолжается (закрыл вкладку на середине — вернулся и
+ * дошёл), а если прогонов нет, заводится новый. Без этого правила «один прогон
+ * на попытку» позволяло бы и переигрывать результат, и подбирать ключи, открывая
+ * прогон за прогоном.
+ * @param {{finished: boolean, token: string, level: string|null}|null} existing
+ * @returns {{action: 'blocked'|'resume'|'create', token?: string, level?: string|null}}
+ */
+export function decideRun(existing) {
+  if (!existing) return { action: 'create' }
+  if (existing.finished) return { action: 'blocked', level: existing.level ?? null }
+  return { action: 'resume', token: existing.token }
+}
+
+/**
  * Смешивает новые ответы с уже записанными в прогоне.
  * @param {Array<{id: string, correct: number, at?: string}>} existing
  * @param {Array<{id: string, correct: number|null}>} fresh — свежепроверенные

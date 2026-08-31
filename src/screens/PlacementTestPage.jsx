@@ -12,6 +12,7 @@ import { T } from '../practice/placement/strings.js'
 import { placementText } from '../practice/placement/uiOverrides.js'
 import { IDK_DRAFT, isItemAnswered } from '../practice/placement/answers.js'
 import { useI18n } from '../i18n.jsx'
+import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { placementLevel, placementSummary } from '../lib/placement.js'
 
 // Тест на определение уровня. Расчёты — перенесённый движок школы
@@ -31,12 +32,17 @@ const CANDO_KEYS = ['cando0', 'cando1', 'cando2', 'cando3', 'cando4']
 // позицию; у остальных заданий id уникален в банке.
 const draftKey = (screen) => (screen.kind === 'vocab' ? `vocab:${screen.idx}` : screen.item.id)
 
-export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveState = 'idle', onRetrySave }) {
+export default function PlacementTestPage({
+  lang = 'ru', token = null, onLevel, onDone, saveState = 'idle', onRetrySave,
+}) {
   const t = useCallback((k) => placementText(lang, k), [lang])
   // Строки самого теста сняты из бандла (strings.js), а сообщения приложения —
   // из его словаря.
   const { t: appT } = useI18n()
-  const [phase, setPhase] = useState('loading') // loading | error | variant | cando | intro | items | speaking | result
+  const [phase, setPhase] = useState('loading') // loading | error | blocked | variant | cando | intro | items | speaking | result
+  // Уровень определяется один раз: если профиль уже проходил тест, показываем
+  // его результат вместо нового прогона.
+  const [doneLevel, setDoneLevel] = useState(null)
   const [data, setData] = useState(null)
   const [plan, setPlan] = useState([])
   const [secIdx, setSecIdx] = useState(0)
@@ -58,10 +64,25 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
 
   useEffect(() => {
     let alive = true
-    loadPlacementBank().then((d) => {
+    // Проверяем без побочных эффектов, определял ли профиль уровень раньше:
+    // прогон при этом не заводится.
+    // Прогон принадлежит профилю: залогиненному — по токену, анониму — по
+    // deviceId. Без этого «один раз» не работало бы: каждый прогон был бы ничей.
+    const alreadyDone = fetch(
+      `/api/placement/session?deviceId=${encodeURIComponent(getDeviceId())}`,
+      { headers: authHeaders(token) },
+    )
+      .then((r) => r.json())
+      .catch(() => null)
+
+    Promise.all([loadPlacementBank(), alreadyDone]).then(([d, done]) => {
       if (!alive) return
       if (!d) return setPhase('error')
       setData(d)
+      if (done?.completed) {
+        setDoneLevel(done.level || null)
+        return setPhase('blocked')
+      }
       setPhase('variant')
     })
     return () => {
@@ -97,10 +118,16 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
     try {
       const res = await fetch('/api/placement/session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ variant }),
+        headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+        body: JSON.stringify({ variant, deviceId: getDeviceId() }),
       })
       const data = await res.json().catch(() => null)
+      if (res.status === 409 && data?.error === 'already_completed') {
+        // Гонка: прогон закончили в другой вкладке, пока выбирали вариант.
+        setDoneLevel(data.level || null)
+        setPhase('blocked')
+        return
+      }
       runToken.current = data?.token || null
     } catch {
       runToken.current = null // без прогона тест всё равно проходится
@@ -410,6 +437,23 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
         lang={lang}
         onDone={finish}
       />
+    )
+  }
+
+  if (phase === 'blocked') {
+    return (
+      <Shell>
+        <div className="plc">
+          <div className="plc-card plc-card--center">
+            <h1 className="plc-h1">{appT('placement.alreadyTitle')}</h1>
+            {doneLevel && <div className="plc-level">{doneLevel}</div>}
+            <p className="plc-hint">{appT('placement.alreadyHint')}</p>
+            <button className="plc-primary" onClick={() => onDone?.(doneLevel)}>
+              {appT('placement.alreadyContinue')}
+            </button>
+          </div>
+        </div>
+      </Shell>
     )
   }
 

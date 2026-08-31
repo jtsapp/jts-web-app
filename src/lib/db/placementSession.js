@@ -11,20 +11,45 @@
 
 import { randomUUID } from 'node:crypto'
 import { getSql } from './sql.js'
+import { decideRun } from '../placementSessionLogic.js'
 
 /** Больше заданий один прогон не проверяет (полный вариант — около сорока). */
 export const MAX_GRADED_PER_SESSION = 60
 
-/** Заводит прогон. Возвращает токен или null, если базы нет. */
-export async function createPlacementSession({ profileId = null, variant = null } = {}) {
+/** Последний прогон профиля (законченный важнее — по нему решается доступ). */
+export async function latestPlacementSession(profileId) {
   const sql = getSql()
-  if (!sql) return null
+  if (!sql || !profileId) return null
+  const rows = await sql`
+    select token, finished, level
+    from placement_session
+    where profile_id = ${profileId}
+    order by finished desc, created_at desc
+    limit 1
+  `
+  if (rows.length === 0) return null
+  return { token: rows[0].token, finished: Boolean(rows[0].finished), level: rows[0].level }
+}
+
+/**
+ * Открывает прогон для профиля. Уровень определяется один раз (при
+ * регистрации), поэтому законченный прогон новый не заводит.
+ * @returns {{token: string|null, blocked?: boolean, level?: string|null, resumed?: boolean}}
+ */
+export async function openPlacementSession({ profileId = null, variant = null } = {}) {
+  const sql = getSql()
+  if (!sql) return { token: null }
+
+  const decision = decideRun(await latestPlacementSession(profileId))
+  if (decision.action === 'blocked') return { token: null, blocked: true, level: decision.level }
+  if (decision.action === 'resume') return { token: decision.token, resumed: true }
+
   const token = randomUUID()
   await sql`
     insert into placement_session (token, profile_id, variant)
     values (${token}, ${profileId}, ${variant})
   `
-  return token
+  return { token }
 }
 
 /** Прогон по токену или null (нет базы / неизвестный токен). */

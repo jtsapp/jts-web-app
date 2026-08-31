@@ -977,6 +977,7 @@ export default function App() {
       return (
         <PlacementTestPage
           lang={lang}
+          token={token}
           saveState={levelSaveState}
           onRetrySave={retrySaveTestLevel}
           // Вместе с уровнем сохраняем снимок прохождения: θ, SE и флаги

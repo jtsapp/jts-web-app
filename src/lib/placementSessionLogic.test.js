@@ -1,8 +1,26 @@
 import { describe, it, expect } from 'vitest'
-import { mergeGradedAnswers } from './placementSessionLogic.js'
+import { decideRun, mergeGradedAnswers } from './placementSessionLogic.js'
 
 const at = '2026-08-31T12:00:00.000Z'
 const merge = (existing, fresh, max = 5) => mergeGradedAnswers(existing, fresh, { max, at })
+
+describe('decideRun', () => {
+  it('прогонов нет — заводим новый', () => {
+    expect(decideRun(null)).toEqual({ action: 'create' })
+  })
+
+  it('незаконченный прогон продолжается, а не начинается заново', () => {
+    // Закрыл вкладку на середине — вернулся и дошёл; иначе «один раз» означало
+    // бы «одна попытка открыть страницу».
+    expect(decideRun({ token: 'run-1', finished: false, level: null }))
+      .toEqual({ action: 'resume', token: 'run-1' })
+  })
+
+  it('законченный прогон закрывает тему: уровень определяется один раз', () => {
+    expect(decideRun({ token: 'run-1', finished: true, level: 'A2' }))
+      .toEqual({ action: 'blocked', level: 'A2' })
+  })
+})
 
 describe('mergeGradedAnswers', () => {
   it('записывает новые ответы и возвращает их вердикты', () => {
