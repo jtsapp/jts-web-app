@@ -8044,6 +8044,11 @@ textarea {
 }
 .plc-ghost:disabled { opacity: 0.4; cursor: default; }
 
+/* Уровень определён, но не сохранился: результат теста нельзя терять молча —
+   показываем это на самом экране результата и даём повторить. */
+.plc-save-error { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 22px; }
+.plc-save-error .form-error { margin: 0; text-align: center; }
+
 .plc-level { font-size: 72px; font-weight: 800; color: var(--purple); line-height: 1.1; margin: 10px 0 26px; }
 /* Полоса уверенности: закрашен интервал θ±SE, а не одна точка — оценка всегда
    с погрешностью, и прятать её от преподавателя не стоит. */

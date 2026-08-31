@@ -61,12 +61,13 @@ import { isMinor } from './lib/birthDate.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
-import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
+import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
+import { persistPlacementLevel } from './lib/levelSave.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -507,6 +508,9 @@ export default function App() {
       setToken(tok)
       saveToken(tok)
       try {
+        // null = уровня в профиле нет (тест не пройден или его результат не
+        // сохранился) — предлагаем тест снова. Исключение = «не знаю»: тестом
+        // не пристаём, чтобы сетевая осечка не гоняла студента по кругу.
         const lvl = await getLanguageLevel(tok)
         if (lvl) setUserLevel(lvl)
         setNeedsLevelTest(!lvl)
@@ -608,24 +612,38 @@ export default function App() {
   // сразу по подсчёту и по кнопке «Let's go», — и записать его надо на первом
   // же событии, а увести с экрана только по кнопке. Повтор того же уровня в
   // сеть не шлём: второй вызов приходит через секунды с тем же значением.
+  // Запомнить успешную запись, чтобы повтор того же уровня не гонял сеть
+  // второй раз; неудачную — не запоминаем, иначе «Повторить» ничего не сделает.
   const lastSavedTestLevel = useRef(null)
+  const [levelSaveState, setLevelSaveState] = useState('idle') // idle | saving | saved | error
+  const pendingTestLevel = useRef(null)
+
   async function saveTestLevel(level) {
     if (!level || lastSavedTestLevel.current === level) return
-    lastSavedTestLevel.current = level
-    setNeedsLevelTest(false)
+    pendingTestLevel.current = level
+    // Уровень показываем сразу: экраны читают его из стейта, ждать сети незачем.
     setUserLevel(level)
-    savePlacementLevel(token, level) // best-effort, не блокируем переход
-    if (token) {
-      try {
-        await saveLanguageLevel(token, level)
-      } catch (e) {
-        console.warn('Не удалось сохранить уровень:', e)
-      }
+    setLevelSaveState('saving')
+    const res = await persistPlacementLevel(token, level)
+    if (res.ok) {
+      lastSavedTestLevel.current = level
+      // Снимаем «нужен тест» только когда уровень действительно лёг в профиль:
+      // иначе следующий вход должен предложить тест снова, а не считать его
+      // пройденным по несохранённому результату.
+      setNeedsLevelTest(false)
+      setLevelSaveState('saved')
+    } else {
+      console.warn('Не удалось сохранить уровень:', res.error)
+      setLevelSaveState('error')
     }
   }
 
+  function retrySaveTestLevel() {
+    const level = pendingTestLevel.current
+    if (level) saveTestLevel(level)
+  }
+
   async function handleTestDone(res) {
-    setNeedsLevelTest(false)
     await saveTestLevel(res?.level)
     setScreen(TUTOR_ONLY ? tutorHome : 'kingdom')
   }
@@ -633,15 +651,14 @@ export default function App() {
   // Завершение голосового placement-теста: сохраняем определённый Sonnet уровень
   // в профиль и показываем экран результата (кружок с уровнем).
   async function handlePlacementDone(level, assessment) {
-    setNeedsLevelTest(false)
     setPlacementResult(assessment || null)
     if (level) setUserLevel(level)
-    if (token && level) {
-      try {
-        await saveLanguageLevel(token, level)
-      } catch (e) {
-        console.warn('Не удалось сохранить уровень:', e)
-      }
+    if (level) {
+      // Тот же путь, что у письменного теста: запись с повтором и проверкой
+      // чтением. «Тест не нужен» снимаем только по подтверждённой записи.
+      const res = await persistPlacementLevel(token, level)
+      if (res.ok) setNeedsLevelTest(false)
+      else console.warn('Не удалось сохранить уровень:', res.error)
     }
     setScreen('tutor-level-result')
   }
@@ -954,6 +971,8 @@ export default function App() {
       return (
         <PlacementTestPage
           lang={lang}
+          saveState={levelSaveState}
+          onRetrySave={retrySaveTestLevel}
           onLevel={(level) => saveTestLevel(level)}
           onDone={(level) => handleTestDone({ level })}
         />

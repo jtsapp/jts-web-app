@@ -16,6 +16,7 @@ import {
   scoreMatch,
 } from '../practice/placement/engine.generated.js'
 import { T } from '../practice/placement/strings.js'
+import { useI18n } from '../i18n.jsx'
 import { placementLevel, placementSummary } from '../lib/placement.js'
 
 // Тест на определение уровня. Расчёты — перенесённый движок школы
@@ -35,7 +36,7 @@ const CANDO_KEYS = ['cando0', 'cando1', 'cando2', 'cando3', 'cando4']
 // позицию; у остальных заданий id уникален в банке.
 const draftKey = (screen) => (screen.kind === 'vocab' ? `vocab:${screen.idx}` : screen.item.id)
 
-export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
+export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveState = 'idle', onRetrySave }) {
   const t = useCallback((k) => T(lang, k), [lang])
   const [phase, setPhase] = useState('loading') // loading | error | variant | cando | intro | items | speaking | result
   const [data, setData] = useState(null)
@@ -363,7 +364,15 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
   }
 
   if (phase === 'result' && result) {
-    return <PlacementResult result={result} lang={lang} onDone={() => onDone?.(placementLevel(result), result)} />
+    return (
+      <PlacementResult
+        result={result}
+        lang={lang}
+        saveState={saveState}
+        onRetrySave={onRetrySave}
+        onDone={() => onDone?.(placementLevel(result), result)}
+      />
+    )
   }
 
   // ─── экраны раздела ─────────────────────────────────────────────────────
@@ -1031,8 +1040,14 @@ function SpeakingSection({ session, items, lang, onDone }) {
 }
 
 // ─── результат ────────────────────────────────────────────────────────────
-function PlacementResult({ result, lang, onDone }) {
+// Экспортируется ради теста на баннер «уровень не сохранился»: дойти до этого
+// экрана через полный прогон теста в тесте — 30 заданий и сеть.
+export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave, onDone }) {
   const t = (k) => T(lang, k)
+  // Строки самого теста сняты из бандла школы (strings.js правится только
+  // прогоном скрипта), поэтому сообщение о сохранении берём из словаря
+  // приложения.
+  const { t: appT } = useI18n()
   const LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
   const pos = (x) => Math.max(0, Math.min(100, ((x + 3.5) / 6) * 100))
   const lo = pos(result.theta - result.se)
@@ -1082,6 +1097,16 @@ function PlacementResult({ result, lang, onDone }) {
               )}
             </div>
           )}
+
+          {saveState === 'error' && (
+            <div className="plc-save-error">
+              <p className="form-error">{appT('level.saveFailed')}</p>
+              <button className="plc-ghost" type="button" onClick={onRetrySave}>
+                {appT('level.saveRetry')}
+              </button>
+            </div>
+          )}
+          {saveState === 'saving' && <p className="plc-hint">{appT('level.saving')}</p>}
 
           <button className="plc-primary" onClick={onDone}>Let&apos;s go 🚀</button>
         </div>
