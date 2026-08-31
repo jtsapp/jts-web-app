@@ -34,11 +34,12 @@ function renderPanel(props = {}) {
 }
 
 describe('LessonSidePanel — вкладки правой колонки', () => {
-  // Заголовки блоков заменены вкладками со счётчиком: «Темы 3», «Группа 3».
-  it('счётчики: тем — сколько в уроке, в группе — участники вместе с учителем', () => {
+  // Числа рядом с названиями читались как нумерация вкладок, а не как размер
+  // списка: «Темы 1», «Группа 2» выглядели пунктами 1 и 2.
+  it('на вкладках только названия, без чисел', () => {
     renderPanel()
-    expect(screen.getByRole('tab', { name: /Темы/ }).textContent).toBe('Темы3')
-    expect(screen.getByRole('tab', { name: /Группа/ }).textContent).toBe('Группа3')
+    expect(screen.getByRole('tab', { name: /Темы/ }).textContent).toBe('Темы')
+    expect(screen.getByRole('tab', { name: /Группа/ }).textContent).toBe('Группа')
   })
 
   it('по умолчанию открыты темы', () => {
@@ -109,17 +110,17 @@ describe('LessonSidePanel — вкладки правой колонки', () =>
   })
 
   // Пока урок не загрузился, преподавателя нет: строка-заглушка «Учитель» без
-  // имени сообщала бы, что он в классе, а счётчик расходился бы со списком.
-  it('преподаватель неизвестен — ни строки, ни единицы в счётчике', () => {
+  // имени сообщала бы, что он в классе.
+  it('преподаватель неизвестен — строки о нём нет', () => {
     const { container } = renderPanel({ teacherId: null, teacherName: null })
-    expect(screen.getByRole('tab', { name: /Группа/ }).textContent).toBe('Группа2')
     fireEvent.click(screen.getByRole('tab', { name: /Группа/ }))
     expect(container.querySelectorAll('.lv-people__row')).toHaveLength(2)
     expect(screen.queryByText('Учителя')).toBeNull()
   })
 
   it('урок один на один — во вкладке учитель и ученик', () => {
-    renderPanel({ participants: [{ studentId: 10, studentName: 'Данияр Серіков' }] })
-    expect(screen.getByRole('tab', { name: /Группа/ }).textContent).toBe('Группа2')
+    const { container } = renderPanel({ participants: [{ studentId: 10, studentName: 'Данияр Серіков' }] })
+    fireEvent.click(screen.getByRole('tab', { name: /Группа/ }))
+    expect(container.querySelectorAll('.lv-people__row')).toHaveLength(2)
   })
 })
