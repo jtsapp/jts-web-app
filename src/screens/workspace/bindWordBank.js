@@ -57,17 +57,28 @@ function sizeGap(el) {
   el.style.width = `${ch}ch`
 }
 
-function prepareGaps(root) {
+function prepareGaps(root, clickPlace) {
   root.querySelectorAll(GAP).forEach((el) => {
-    el.setAttribute('readonly', '')
-    el.setAttribute('autocomplete', 'off')
-    el.style.pointerEvents = 'auto'
-    el.style.cursor = 'pointer'
-    sizeGap(el)
+    if (clickPlace) {
+      el.setAttribute('readonly', '')
+      el.setAttribute('autocomplete', 'off')
+      el.style.pointerEvents = 'auto'
+      el.style.cursor = 'pointer'
+      sizeGap(el)
+    } else {
+      el.removeAttribute('readonly')
+      el.style.cursor = ''
+    }
   })
   root.querySelectorAll(CHIP).forEach((el) => {
     if (el.tagName === 'BUTTON') el.setAttribute('type', 'button')
   })
+}
+
+function cardHasWordBank(root) {
+  const from = root.querySelector(GAP) || root.querySelector(BANK) || root
+  const scope = from?.closest?.(STEP) || from?.closest?.(CARD) || root
+  return !!scope?.querySelector?.(BANK)
 }
 
 function liveCard(el) {
@@ -76,12 +87,18 @@ function liveCard(el) {
 
 function liveScope(root) {
   const from = root.querySelector(GAP) || root
-  return liveCard(from) || cardOf(from) || root
+  const live = liveCard(from)
+  if (live) return live
+  const card = cardOf(from)
+  if (card?.matches?.(GAP)) return root
+  return card || root
 }
 
 function stepScope(root) {
   const from = root.querySelector(GAP) || root
-  return from?.closest?.(STEP) || liveScope(root)
+  const scoped = from?.closest?.(STEP) || liveScope(root)
+  if (scoped?.matches?.(GAP)) return root
+  return scoped || root
 }
 
 function cardPrefix(root, prefix) {
@@ -179,7 +196,8 @@ export function bindWordBank(root, options = {}) {
   if (!root) return () => {}
 
   const opts = options
-  prepareGaps(root)
+  const clickPlace = cardHasWordBank(root)
+  prepareGaps(root, clickPlace)
   tagWordBankGaps(root, opts.prefix)
 
   const onClick = (e) => {
@@ -205,6 +223,8 @@ export function bindWordBank(root, options = {}) {
 
     const id = gap.getAttribute('data-question-id') || gap.getAttribute('data-qid')
     opts.onFocus?.(id)
+    if (!clickPlace) return
+
     try {
       gap.focus({ preventScroll: true })
     } catch {
@@ -232,10 +252,20 @@ export function bindWordBank(root, options = {}) {
     opts.onChange?.(id, word)
   }
 
+  const onInput = (e) => {
+    if (clickPlace) return
+    const gap = e.target?.closest?.(GAP)
+    if (!gap || !root.contains(gap)) return
+    const id = gap.getAttribute('data-question-id') || gap.getAttribute('data-qid')
+    opts.onChange?.(id, gap.value)
+  }
+
   // capture: tap-translate on the same root must not eat the gap click first
   root.addEventListener('click', onClick, true)
+  root.addEventListener('input', onInput, true)
   return () => {
     root.removeEventListener('click', onClick, true)
+    root.removeEventListener('input', onInput, true)
     if (held && root.contains(held)) held = null
   }
 }

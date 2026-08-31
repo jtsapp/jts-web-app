@@ -3,7 +3,7 @@ import { speak } from '../../../practice/vocab/audio.js'
 import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
-import { tidyLessonText } from '../tidyLessonText.js'
+import { inlineBold } from '../inlineBold.jsx'
 
 // Контролируемый выбор одного варианта из ряда кнопок. `answer` — текущая
 // выбранная строка (или null); `onAnswer(question.id, value)` репортит выбор
@@ -39,7 +39,12 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
       <div className="lw-opts">
         {(question.options || []).map((opt) => {
           const selected = answer === opt
-          const isOk = !open && checked && chosen && ((selected && correct) || opt === question.answer)
+          // Верный вариант подсвечиваем после «Проверить» даже если ученик не
+          // выбрал ничего: пропущенный вопрос — повод узнать ответ, а не
+          // остаться с рядом одинаковых кнопок.
+          const isOk = !open && checked && opt === question.answer
+          // А вот КРЕСТ ставим только на своём ответе: на пустом вопросе
+          // отмечать нечего, и красить его красным было бы враньём.
           const isNo = !open && checked && chosen && selected && !correct
 
           let cls = 'lw-opt'
@@ -67,8 +72,10 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
           )
         })}
       </div>
-      {checked && chosen && !correct && question.why && (
-        <p className="lw-q__why">{tidyLessonText(question.why)}</p>
+      {/* Разбор — и на ошибке, и на пропуске. У открытых вопросов эталона нет,
+          поэтому там его по-прежнему не показываем. */}
+      {checked && !open && !correct && question.why && (
+        <p className="lw-q__why">{inlineBold(question.why)}</p>
       )}
     </div>
   )

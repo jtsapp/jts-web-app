@@ -430,6 +430,13 @@
 
 /* ==================== ЦЕНТР — ЛЕНТА ШАГОВ ======================== */
 
+/* Куда подъезжает указка преподавателя «Внимание на упражнение»
+   (LessonContent.jsx, block: 'start'). Отступ — чтобы карточка не прилипала к
+   верхней кромке: прижатая к краю формулировка читается как обрезанная. */
+[data-question-id] {
+  scroll-margin-top: 12px;
+}
+
 .lw-content {
   display: flex;
   flex-direction: column;
@@ -3041,6 +3048,10 @@
   .lw-focus-btn {
     transition: none;
   }
+  /* Метка вызова появляется рывком — при «уменьшить движение» просто есть. */
+  .lv-flag--call {
+    animation: none;
+  }
 }
 
 /* Тап-перевод (см. useTapTranslate.js) — та же карточка, что в читалке книг
@@ -3308,55 +3319,34 @@ button.lw-tap-pop__save.is-on:disabled {
   justify-content: flex-end;
 }
 
-.lv-top__teacher {
+/* Слева в шапке — сам урок: название группы и вид занятия. Преподаватель
+   отсюда ушёл во вкладку «Группа» правой колонки, где он стоит рядом с
+   остальными участниками, а не дублирует их. */
+.lv-top__lesson {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
-/* Точка присутствия на аватаре преподавателя: серая — не в классе, зелёная —
-   на связи. Раньше это же сообщал ростер «В классе» строкой под шапкой. */
-.lv-top__dot {
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--lv-muted);
-  box-shadow: 0 0 0 2px var(--lv-panel);
-}
-
-.lv-top__dot.is-on {
-  background: var(--lw-online);
-}
-
-.lv-top__presence {
-  font-weight: 600;
-}
-
-.lv-top__avatar {
-  position: relative;
+.lv-top__icon {
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 10px;
   background: var(--lw-primary);
   color: #fff;
-  font-weight: 800;
-  font-size: 14px;
   flex: none;
 }
 
-.lv-top__teacher-body {
+.lv-top__lesson-body {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.lv-top__teacher-name {
+.lv-top__lesson-name {
   color: var(--lv-ink);
   font-weight: 700;
   font-size: 14px;
@@ -3365,7 +3355,7 @@ button.lw-tap-pop__save.is-on:disabled {
   white-space: nowrap;
 }
 
-.lv-top__teacher-role {
+.lv-top__lesson-kind {
   color: var(--lv-muted);
   font-size: 12px;
 }
@@ -3400,30 +3390,6 @@ button.lw-tap-pop__save.is-on:disabled {
   background: #32323a;
 }
 
-/* Значок в шапке (словарь): квадрат 40×40 той же заливки, что и кнопки —
-   подписи у него нет, она уходит в title/aria-label. */
-.lv-top__icon-btn {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: 12px;
-  background: var(--lv-panel-2);
-  color: var(--lv-ink);
-  cursor: pointer;
-  transition: background .15s;
-}
-
-.lv-top__icon-btn:hover {
-  background: #32323a;
-}
-
-.lv-top__icon-btn:focus-visible {
-  outline: 2px solid var(--lw-primary);
-  outline-offset: 2px;
-}
 
 .lv-top__exit {
   padding: 9px 18px;
@@ -3475,9 +3441,125 @@ button.lw-tap-pop__save.is-on:disabled {
   color: var(--lv-muted);
 }
 
-/* --- «Темы урока» ---------------------------------------------------- */
+/* --- лист поверх урока ------------------------------------------------ */
 
-.lv-topics {
+/* «Темы урока», «Чат урока» и словарь — самостоятельные экраны поверх урока,
+   как в макете: тёмный фон, крестик в правом верхнем углу, внутри тот же
+   список тем, чат или словарь, но во всю высоту.
+
+   Правила были объявлены внутри @media (max-width: 760px), и этого хватало,
+   пока лист открывали только кнопки мобильного ряда. Кнопка «Ваш словарь»
+   видна и на десктопе — там лист выходил блоком вовсе без стилей и схлопывался
+   внутри .lv (height: 100dvh; overflow: hidden), то есть кнопка выглядела
+   сломанной. Поэтому база общая, а телефонное «во весь экран» и десктопный
+   диалог — два уточнения ниже. */
+.lv-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px var(--safe-bottom);
+  background: var(--lv-bg, #0f0f12);
+}
+.lv-modal > .lw-card {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  background: none;
+  border: none;
+  padding: 0;
+}
+/* Список тем и лента чата прокручиваются внутри листа, а не тянут его вниз. */
+.lv-modal .lv-side__body,
+.lv-modal .lv-people,
+.lv-modal .lv-topics__list,
+.lv-modal .lw-chat__list {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+/* Вкладки не заезжают под крестик листа. */
+.lv-modal .lv-side__tabs {
+  padding-right: 44px;
+}
+/* Чат в листе: лента тянется, поле ввода прижато к низу — как в макете.
+   Без этого композер уезжал за пределы карточки и написать было нечем. */
+.lv-modal .lw-chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.lv-modal .lw-chat__composer {
+  margin-top: auto;
+  padding-top: 12px;
+}
+/* Внутри .lv лежит и сам лист, поэтому селектор с ним: равноспецифичное
+   `.lv .lw-chat__input` объявлено ниже по файлу и иначе выигрывает — так и
+   вышло, когда блок листа переехал из медиазапроса вверх. */
+.lv .lv-modal .lw-chat__input {
+  background: var(--lv-elev, #1b1b1f);
+  border-color: #2a2a31;
+  color: #fff;
+}
+
+.lv-modal__close {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: var(--lv-elev, #1b1b1f);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* На десктопе лист — диалог по центру, а не экран во всю ширину: урок под ним
+   остаётся виден, и понятно, что словарь открыт поверх занятия, а не вместо
+   него. */
+@media (min-width: 761px) {
+  .lv-modal {
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    background: rgba(9, 9, 12, .72);
+  }
+
+  /* Крестик — первый ребёнок листа, панель — всё остальное. */
+  .lv-modal > :not(.lv-modal__close) {
+    width: min(560px, calc(100vw - 48px));
+    max-height: min(640px, calc(100vh - 96px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--lv-panel);
+    border-radius: var(--lw-r-card);
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  /* Крестик уходит в угол затемнения: считать его от края панели пришлось бы
+     повторением всех её calc-ов, и любой из них разъехался бы при следующей
+     правке ширины. */
+  .lv-modal__close {
+    top: 24px;
+    right: 24px;
+  }
+}
+
+/* --- правая колонка: «Темы» и «Группа» одной карточкой ---------------- */
+
+/* Заголовков у списков нет — их роль играют вкладки со счётчиком («Темы 5»,
+   «Группа 6»), как в макете. */
+.lv-side {
   background: var(--lv-panel);
   padding: 16px;
   display: flex;
@@ -3485,25 +3567,201 @@ button.lw-tap-pop__save.is-on:disabled {
   gap: 12px;
 }
 
-.lv-topics__head {
+.lv-side__tabs {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
 }
 
-.lv-topics__title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
+.lv-side__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: transparent;
+  color: var(--lv-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.lv-side__tab:hover {
   color: var(--lv-ink);
 }
 
-.lv-topics__count {
-  font-size: 12.5px;
+.lv-side__tab.is-active {
+  background: var(--lv-panel-2);
+  color: var(--lv-ink);
+}
+
+.lv-side__tab:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lv-side__count {
+  color: var(--lv-muted);
+  font-size: 12px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Светлее акцента: #9047ff на плитке #26262c даёт 3.2:1 — ниже AA для 12px,
+   и активная вкладка читалась хуже приглушённой соседней. */
+.lv-side__tab.is-active .lv-side__count {
+  color: #c4a4ff;
+}
+
+/* Тело вкладки прокручивается само — карточка ограничена по высоте, чтобы под
+   ней остался чат (см. адаптив ниже). */
+.lv-side__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* --- вкладка «Группа» ------------------------------------------------- */
+
+.lv-people {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.lv-people__label {
+  margin: 0;
+  color: var(--lv-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.lv-people__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lv-people__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.lv-people__row:hover,
+.lv-people__row:focus-within {
+  background: var(--lv-panel-2);
+}
+
+.lv-people__avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--lw-primary);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  flex: none;
+}
+
+.lv-people__dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lv-muted);
+  box-shadow: 0 0 0 2px var(--lv-panel);
+}
+
+.lv-people__dot.is-on {
+  background: var(--lw-online);
+}
+
+.lv-people__name {
+  color: var(--lv-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lv-people__row.is-self .lv-people__name {
   color: var(--lv-muted);
 }
+
+/* «Смотреть экран» — действие строки: в макете оно появляется по наведению.
+   Только по наведению его показывать нельзя (с клавиатуры и с тача до него не
+   добраться), поэтому оно же проявляется по фокусу, у выбранного ученика и там,
+   где наведения нет вовсе — см. медиазапрос ниже. */
+.lv-people__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.lv-people__act {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lv-panel);
+  color: var(--lv-ink);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s, background .15s;
+}
+
+.lv-people__act:hover {
+  background: var(--lv-bg);
+}
+
+.lv-people__row:hover .lv-people__act,
+.lv-people__act:focus-visible,
+.lv-people__act.is-active {
+  opacity: 1;
+}
+
+.lv-people__act:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lv-people__act.is-active {
+  background: var(--lw-primary);
+  color: #fff;
+}
+
+@media (hover: none) {
+  .lv-people__act {
+    opacity: 1;
+  }
+}
+
+/* --- «Темы урока» ---------------------------------------------------- */
 
 .lv-topics__list {
   list-style: none;
@@ -3748,6 +4006,94 @@ button.lw-tap-pop__save.is-on:disabled {
   min-width: 0;
   box-sizing: border-box;
   overflow-x: hidden;
+}
+
+/* Две метки макета: вызвали (оранжевая рамка) и смотрят экран (синяя).
+   Рамкой, а не только плашкой: ученик смотрит в задание, а не в угол экрана,
+   и подсветить надо то самое место, где он сейчас работает. Цвет дублируется
+   словом — по одной рамке не прочитать, вызвали тебя или открыли твой экран.
+
+   Тень ВНУТРЕННЯЯ. Внешнюю обрезала колонка: у `.lv .lw-live-main` стоят
+   overflow-x: hidden и overflow-y: auto, паддинга у неё нет, а полотно тянется
+   на всю её ширину — кольцо ложилось ровно за краем padding-box и не рисовалось
+   ни по бокам, ни сверху. Проверять такое на временной странице бесполезно:
+   там полотно лежит вне колонки, и кольцо видно. */
+.lv-sheet.is-called,
+.lw-material-frame.is-called {
+  box-shadow: inset 0 0 0 2px var(--lw-warn-line, #f5a623);
+}
+
+.lv-sheet.is-watched,
+.lw-material-frame.is-watched {
+  box-shadow: inset 0 0 0 2px var(--lw-info-line, #2f80ed);
+}
+
+/* Обе сразу — вызвали, пока смотрели: по самому краю идёт вызов, он срочнее,
+   просмотр рисуется кольцом под ним. */
+.lv-sheet.is-called.is-watched,
+.lw-material-frame.is-called.is-watched {
+  box-shadow: inset 0 0 0 2px var(--lw-warn-line, #f5a623), inset 0 0 0 5px var(--lw-info-line, #2f80ed);
+}
+
+/* Строка меток стоит над материалом, а не внутри полотна: полотно с заданиями
+   есть только у урока, разобранного шагами, а вызвать ученика преподаватель
+   может на любом материале (см. LiveLessonPage). */
+.lv-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lv-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 12px;
+  border-radius: var(--lw-r-pill);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.lv-flag--call {
+  background: #fdecd2;
+  color: #a15c07;
+  animation: lv-flag-in .35s ease-out;
+}
+
+.lv-flag--watch {
+  padding-right: 12px;
+  background: #e2edfd;
+  color: #1b5fbd;
+}
+
+.lv-flag__close {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.lv-flag__close:hover {
+  background: #f7dcb4;
+}
+
+.lv-flag__close:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 1px;
+}
+
+/* Повторный вызов должен быть заметен, когда метка уже висит: она появляется
+   заново (key={callNonce} в LiveLessonPage) и проигрывает это же движение. */
+@keyframes lv-flag-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
 }
 
 .lv-sheet__head {
@@ -4038,12 +4384,13 @@ button.lw-tap-pop__save.is-on:disabled {
   /* Список тем не должен съедать колонку: на восьми темах чат уезжал за нижний
      край, и написать преподавателю было нечем. px/vh, не % — процент от
      auto-высоты родителя браузер игнорирует. */
-  .lv .lv-topics {
+  .lv .lv-side {
     flex: 0 1 auto;
     min-height: 0;
-    max-height: min(300px, 38vh);
+    max-height: min(320px, 40vh);
   }
 
+  .lv .lv-side__body,
   .lv .lv-topics__list {
     flex: 1 1 auto;
     min-height: 0;
@@ -4111,21 +4458,21 @@ button.lw-tap-pop__save.is-on:disabled {
     order: 2;
     margin-left: auto;
   }
-  /* Имя сжимается многоточием, а не выталкивает соседей за экран. */
-  .lv-top__teacher {
+  /* Название урока сжимается многоточием, а не выталкивает соседей за экран. */
+  .lv-top__lesson {
     min-width: 0;
   }
-  .lv-top__teacher-body {
+  .lv-top__lesson-body {
     min-width: 0;
   }
-  .lv-top__teacher-name,
-  .lv-top__teacher-role {
+  .lv-top__lesson-name,
+  .lv-top__lesson-kind {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  /* Кнопки с подписями и одиночный значок словаря — их заменяет ряд значков. */
+  /* Кнопки с подписями — на телефоне их заменяет ряд значков. */
   .lv-top__center,
   .lv-top__right {
     display: none;
@@ -4156,68 +4503,6 @@ button.lw-tap-pop__save.is-on:disabled {
   /* Значки в макете фиолетовые на тёмной плитке; на красной кнопке — белый. */
   .lv-top__act {
     color: #9047ff;
-  }
-  /* Листы «Темы урока» и «Чат урока» — самостоятельные экраны поверх урока,
-     как в макете: тёмный фон, крестик в правом верхнем углу, внутри тот же
-     список тем или чат, но во всю высоту. */
-  .lv-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    display: flex;
-    flex-direction: column;
-    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px var(--safe-bottom);
-    background: var(--lv-bg, #0f0f12);
-  }
-  .lv-modal > .lw-card {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-    margin: 0;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  /* Список тем и лента чата прокручиваются внутри листа, а не тянут его вниз. */
-  .lv-modal .lv-topics__list,
-  .lv-modal .lw-chat__list {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-    overflow-y: auto;
-  }
-  /* Чат в листе: лента тянется, поле ввода прижато к низу — как в макете.
-     Без этого композер уезжал за пределы карточки и написать было нечем. */
-  .lv-modal .lw-chat {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .lv-modal .lw-chat__composer {
-    margin-top: auto;
-    padding-top: 12px;
-  }
-  .lv-modal .lw-chat__input {
-    background: var(--lv-elev, #1b1b1f);
-    border-color: #2a2a31;
-    color: #fff;
-  }
-
-  .lv-modal__close {
-    position: absolute;
-    top: calc(16px + env(safe-area-inset-top, 0px));
-    right: 16px;
-    z-index: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 50%;
-    background: var(--lv-elev, #1b1b1f);
-    color: #fff;
-    cursor: pointer;
   }
 
   .lv-top__sep {
@@ -4284,4 +4569,32 @@ button.lw-tap-pop__save.is-on:disabled {
   .lv-top__actions {
     display: none;
   }
+}
+
+/* Вкладки словаря в уроке: «Мои слова» / «Словарь школы». Личный открыт первым —
+   панель называется «Ваш словарь», и первое, что ученик там ищет, это то, что
+   ему положил преподаватель. */
+.lw-dict__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.lw-dict__tab {
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, .06);
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  opacity: .7;
+  cursor: pointer;
+}
+
+.lw-dict__tab.is-on {
+  background: rgba(144, 71, 255, .28);
+  opacity: 1;
 }

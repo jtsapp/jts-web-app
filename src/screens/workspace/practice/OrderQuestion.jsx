@@ -93,7 +93,9 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
         })}
       </div>
 
-      {checked && attempted && !correct && (
+      {/* И на ошибке, и на пропуске: собранного предложения нет — тем более
+          нужно показать, каким оно должно было получиться. */}
+      {checked && !correct && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answer || []).join(' ')}
         </p>

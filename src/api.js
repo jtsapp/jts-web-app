@@ -720,6 +720,29 @@ export async function setPassword(token, password) {
   return true
 }
 
+/** One-time admin-created student invite: GET name, POST password. */
+export async function getActivationInfo(activationToken) {
+  let res
+  try {
+    res = await fetch(`${BASE}/registration/activation/${encodeURIComponent(activationToken)}`)
+  } catch {
+    throw new Error('Нет связи с сервером. Проверьте интернет и попробуйте снова.')
+  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    throw new Error(
+      (Array.isArray(data?.messages) && data.messages[0]) ||
+        data?.message ||
+        `Ошибка сервера (${res.status})`
+    )
+  }
+  return data
+}
+
+export async function completeActivation(activationToken, password) {
+  return post(`/registration/activation/${encodeURIComponent(activationToken)}`, { password })
+}
+
 // Демо-доступ для витрины «Практика», когда пользователь ещё не залогинен
 // (флоу Skip). Кэшируем промис, чтобы не логиниться повторно.
 const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
@@ -873,7 +896,11 @@ export function completeLessonVocabCycle(lessonId, cycle, results, token) {
  */
 export async function searchDictionary(token, q = '', size = 30) {
   const query = String(q || '').trim()
-  const path = `/dictionary/search?q=${encodeURIComponent(query)}&page=0&size=${size}`
+  // `/dictionaries` во множественном — так называется ручка на сервере
+  // (DictionaryController). С единственным числом запрос отвечал 404, список
+  // всегда приходил пустой, и словарь в уроке показывал «Ничего не найдено»
+  // на любое слово. У преподавателя путь был правильный, поэтому у него искалось.
+  const path = `/dictionaries/search?q=${encodeURIComponent(query)}&page=0&size=${size}`
   const page = await authGet(path, token)
   return page?.content ?? []
 }

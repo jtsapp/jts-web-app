@@ -4,7 +4,7 @@ import { getMyLessonOccurrences, getLessonsSummary, getTrialRequestState } from 
 import { occurrencesByDayKey, monthShift, dayKey, dateFromKey } from './lessonFormat.js'
 import { roleFromToken } from '../../lib/jwt.js'
 import { pickFeaturedOccurrence } from './liveNow.js'
-import { useMeetingUrls, useLessonTopic } from './useLessonDetails.js'
+import { useLessonCards, useLessonTopic } from './useLessonDetails.js'
 import ScheduleSummary from './ScheduleSummary.jsx'
 import MonthCalendar from './MonthCalendar.jsx'
 import DayPanel from './DayPanel.jsx'
@@ -106,7 +106,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
 
   // Ссылки на видеозвонок нужны и карточке сверху, и строкам открытого дня —
   // грузим их одним списком, чтобы общий урок не запрашивался дважды.
-  const meetingUrls = useMeetingUrls(token, [featured?.lessonId, ...dayItems.map((o) => o.lessonId)])
+  const cards = useLessonCards(token, [featured?.lessonId, ...dayItems.map((o) => o.lessonId)])
   const featuredTopic = useLessonTopic(token, featured?.lessonId ?? null)
 
   // Гость расписания не имеет: уроки висят на аккаунте. Раньше здесь стоял
@@ -137,7 +137,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
             <NextLessonCard
               occ={featured}
               topic={featuredTopic}
-              meetingUrl={featured ? meetingUrls.get(String(featured.lessonId)) : null}
+              card={featured ? cards.get(String(featured.lessonId)) : null}
               onOpenLesson={onOpenLesson}
             />
             <ScheduleSummary summary={summary} />
@@ -157,7 +157,7 @@ export default function LessonSchedule({ token, onOpenLesson }) {
             <DayPanel
               dayDate={dateFromKey(selectedDayKey)}
               items={dayItems}
-              meetingUrls={meetingUrls}
+              cards={cards}
               onOpenLesson={onOpenLesson}
             />
           </div>

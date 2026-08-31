@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getLessonById, getLessonSections } from '../../api.js'
 import { lessonTopicFromSections } from './lessonFormat.js'
+import { isGroupLesson } from '../../lib/lessonKind.js'
 
 // Ссылка на видеозвонок и тема урока живут в карточке урока, а не в списке
 // occurrences: /admin/lessons/occurrences отдаёт только время, преподавателя и
@@ -13,13 +14,19 @@ import { lessonTopicFromSections } from './lessonFormat.js'
 // сеть заново.
 
 /**
- * Map<lessonId(строкой) → meetingUrl|null> для переданных уроков.
+ * Map<lessonId(строкой) → { meetingUrl, group }> для переданных уроков.
  * Кэш живёт весь показ экрана: перелистывание дней не перезапрашивает то,
  * что уже загружено.
+ *
+ * `group` — групповое занятие или индивидуальное: /admin/lessons/occurrences
+ * такого поля не отдаёт, а карточка дня в макете разводит их цветом. Берём
+ * lessonType самого урока (см. lessonKind.js) — запрос за ним всё равно уже
+ * делается ради ссылки на звонок, второго похода в сеть тут нет. null означает
+ * «тип неизвестен», и тогда чипа не будет вовсе.
  */
-export function useMeetingUrls(token, lessonIds) {
+export function useLessonCards(token, lessonIds) {
   const cacheRef = useRef(new Map())
-  const [urls, setUrls] = useState(() => new Map())
+  const [cards, setCards] = useState(() => new Map())
 
   // Ключ строкой, а не массивом: массив пересоздаётся на каждом рендере и
   // эффект уходил бы в цикл.
@@ -34,19 +41,24 @@ export function useMeetingUrls(token, lessonIds) {
     Promise.all(
       missing.map((id) =>
         getLessonById(token, id)
-          .then((lesson) => [id, lesson?.meetingUrl || null])
-          .catch(() => [id, null])
+          .then((lesson) => [id, {
+            meetingUrl: lesson?.meetingUrl || null,
+            group: isGroupLesson(lesson),
+          }])
+          // Урок не отдался — карточка покажется без ссылки и без типа, но
+          // покажется: догрузка здесь украшение, а не условие показа.
+          .catch(() => [id, { meetingUrl: null, group: null }])
       )
     ).then((pairs) => {
       if (cancelled) return
-      for (const [id, url] of pairs) cacheRef.current.set(id, url)
-      setUrls(new Map(cacheRef.current))
+      for (const [id, card] of pairs) cacheRef.current.set(id, card)
+      setCards(new Map(cacheRef.current))
     })
 
     return () => { cancelled = true }
   }, [token, key])
 
-  return urls
+  return cards
 }
 
 /** Тема одного урока (см. lessonTopicFromSections) или null, пока её нет. */

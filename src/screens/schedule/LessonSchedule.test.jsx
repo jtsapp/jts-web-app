@@ -117,6 +117,25 @@ describe('LessonSchedule container', () => {
     expect(api.getLessonById).toHaveBeenCalledWith(STUDENT, '49')
   })
 
+  // Тип занятия приезжает той же догрузкой и берётся из lessonType, а не из
+  // числа записавшихся: в группе может остаться один ученик, и чип
+  // «Индивидуальный» на групповом занятии был бы неправдой.
+  it('тип занятия берётся из lessonType, а не из числа участников', async () => {
+    const api = await import('../../api.js')
+    api.getMyLessonOccurrences.mockResolvedValueOnce([
+      { lessonId: 49, participantId: 49, scheduledAt: '2026-08-10T23:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'SCHEDULED', format: 'ONLINE' },
+    ])
+    api.getLessonById.mockResolvedValueOnce({
+      id: 49,
+      lessonType: 'GROUP',
+      participants: [{ studentId: 1, status: 'SCHEDULED' }],
+    })
+    const { container } = renderSchedule()
+
+    await waitFor(() => expect(container.querySelector('.sch-row__kind')).not.toBeNull())
+    expect(container.querySelector('.sch-row__kind--group').textContent).toBe('Группа')
+  })
+
   it('тема урока из прикреплённого материала попадает в карточку', async () => {
     const api = await import('../../api.js')
     api.getMyLessonOccurrences.mockResolvedValueOnce([
