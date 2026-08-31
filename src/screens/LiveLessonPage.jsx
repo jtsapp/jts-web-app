@@ -31,6 +31,7 @@ import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
 import { useLessonTimer } from './live/useLessonTimer.js'
 import LessonDictionary from './live/LessonDictionary.jsx'
+import { playCue } from '../lib/notifySound.js'
 import { knowsFocusTarget } from './live/followFocus.js'
 import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js'
 
@@ -433,9 +434,26 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     }
   })
 
+  /**
+   * Пришло ли новое сообщение НЕ от меня — и надо ли звучать.
+   *
+   * `null` до первого ответа сервера: первая загрузка приносит всю переписку, и
+   * без этой отметки урок начинался бы со звонка о сообщении недельной давности.
+   * Свои сообщения не считаем — в том числе оптимистичные с `local-…` id.
+   */
+  const lastIncomingRef = useRef(null)
+  function noteIncomingMessages(list) {
+    const fromOthers = (Array.isArray(list) ? list : []).filter((m) => m.senderUserId !== selfUserId)
+    const lastId = fromOthers.length ? fromOthers[fromOthers.length - 1].id : 0
+    const seen = lastIncomingRef.current
+    lastIncomingRef.current = lastId
+    if (seen !== null && lastId !== seen) playCue('message')
+  }
+
   function refreshMessages() {
     getLessonMessages(token, lessonId)
       .then((list) => {
+        noteIncomingMessages(list)
         setMessages((prev) => (sameMessageSnapshot(prev, list) ? prev : list))
       })
       .catch(() => {})
@@ -452,7 +470,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     ])
     setChatSending(true)
     sendLessonMessage(token, lessonId, trimmed)
-      .then((list) => setMessages(list))
+      .then((list) => {
+        // Ответ на свою отправку приносит и то, что учитель успел написать
+        // параллельно, — сигнал тут по тому же правилу, а не «раз я отправил, то молчим».
+        noteIncomingMessages(list)
+        setMessages(list)
+      })
       .catch(() => refreshMessages())
       .finally(() => setChatSending(false))
   }
@@ -485,6 +508,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   const { connected: liveConnected, sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onTimer,
+    // Учитель положил слово в мой словарь: тихий пинг, чтобы это не прошло мимо
+    // посреди задания. Список словаря на экране не трогаем — он подтянется,
+    // когда ученик его откроет.
+    onVocabSaved: () => playCue('word'),
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
     onAudioBroadcast: (evt) => playBroadcastAudio(evt),

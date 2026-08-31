@@ -53,6 +53,24 @@ describe('bindWordBank', () => {
     root.remove()
   })
 
+  it('allows typing in free-text gaps when there is no word bank', () => {
+    const root = document.createElement('div')
+    root.innerHTML = `
+      <div class="row"><span class="body">
+        The shop has <input class="gap gap-lg" data-answer="few">
+      </span></div>`
+    document.body.appendChild(root)
+    const onChange = vi.fn()
+    const unbind = bindWordBank(root, { onChange })
+    const gap = root.querySelector('input.gap')
+    expect(gap.readOnly).toBe(false)
+    gap.value = 'few'
+    gap.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(onChange).toHaveBeenCalledWith('wbank-gap-0', 'few')
+    unbind()
+    root.remove()
+  })
+
   it('places a chip from a sibling info block into a gap in this one', () => {
     const card = document.createElement('div')
     card.className = 'lw-card lw-info'

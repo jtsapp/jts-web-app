@@ -106,6 +106,12 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
             const evt = parse(m.body)
             if (evt) handlersRef.current.onWatch?.(evt)
           })
+          // Учитель положил слово в мой словарь. Тоже персональный канал: в группе
+          // сосед не должен слышать, кому что записали.
+          client.subscribe(`/topic/lesson/${lessonId}/vocab/${selfUserId}`, (m) => {
+            const evt = parse(m.body)
+            if (evt) handlersRef.current.onVocabSaved?.(evt)
+          })
         }
       },
     })

@@ -1,9 +1,18 @@
 // Тап-перевод слова — общая логика для читалки книг (BookDetail.jsx) и живого
-// урока (workspace/useTapTranslate.js). Как в мобильной читалке: сначала
-// словарь книги (если он есть у вызывающей стороны), иначе gtx (dt=t —
-// основной перевод, dt=bd — словарные альтернативы). Кэш в localStorage
-// (ключи «tl:слово»), чтобы повторные тапы не ходили в сеть; v2 — смена
-// формата ключей после добавления казахского.
+// урока (workspace/useTapTranslate.js). Кэш в localStorage (ключи «tl:слово»),
+// чтобы повторные тапы не ходили в сеть; v2 — смена формата ключей после
+// добавления казахского.
+//
+// ПЕРЕВОД ИДЁТ ЧЕРЕЗ НАШ СЕРВЕР (`GET /translate`), а не напрямую в gtx.
+// Раньше браузер дёргал `translate.googleapis.com` сам: ключа у той ручки нет,
+// и Google режет её по IP — у одного перевод работал, у другого в тот же момент
+// нет, а через минуту наоборот. Это и была жалоба «перевод то работает, то не
+// работает и у учителя, и у студента». На сервере стоит общий кэш: слово,
+// переведённое хоть кем-то, дальше отдаётся из памяти.
+
+import { loadToken } from './session.js'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
 // Разбивает текст на слова, чтобы навесить тап-перевод. Знаки препинания
 // остаются частью «токена», но для поиска перевода чистим их.
@@ -110,31 +119,16 @@ export async function translateWord(word, tl = 'ru') {
   const key = `${tl}:${word.toLowerCase()}`
   const cache = trCache()
   if (cache[key]) return cache[key]
-  const url =
-    `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${tl}&dt=t&dt=bd&q=` +
-    encodeURIComponent(word)
-  const res = await fetch(url)
+
+  const token = loadToken()
+  const url = `${API_BASE}/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(word)}`
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
   if (!res.ok) throw new Error(`translate ${res.status}`)
   const data = await res.json()
-  // Для текста из двух предложений gtx отдаёт НЕСКОЛЬКО сегментов в data[0];
-  // раньше брался только первый ([0][0][0]) и хвост выделения терялся —
-  // склеиваем все (у одного слова сегмент один, поведение то же).
-  const primary = (Array.isArray(data?.[0]) ? data[0] : [])
-    .map((seg) => String(seg?.[0] || ''))
-    .join('')
-    .trim()
-  const alternates = []
-  if (Array.isArray(data?.[1])) {
-    for (const pos of data[1]) {
-      for (const m of pos?.[1] || []) {
-        const s = String(m).trim()
-        if (s && s.toLowerCase() !== primary.toLowerCase() && !alternates.includes(s)) {
-          alternates.push(s)
-        }
-      }
-    }
-  }
-  const out = { tr: primary, alternates: alternates.slice(0, 4) }
+
+  const primary = String(data?.tr || '').trim()
+  const alternates = Array.isArray(data?.alternates) ? data.alternates.slice(0, 4) : []
+  const out = { tr: primary, alternates }
   if (primary) {
     cache[key] = out
     try {
