@@ -1,13 +1,20 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons.jsx'
+import { ChevronLeftIcon, ChevronRightIcon, ExpandIcon, CollapseIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { saveWord } from '../api.js'
 import { translateWord, cleanWord } from '../lib/wordTranslate.js'
 import { loadComic, getComicPage, setComicPage } from '../practice/comics/comicsData.js'
 import { comicKey } from '../practice/comics/comicsShape.js'
+import {
+  isElementFullscreenSupported,
+  requestElementFullscreen,
+  exitFullscreen,
+  getFullscreenElement,
+  onFullscreenChange,
+} from '../lib/elementFullscreen.js'
 
 // Читалка комикса: одна страница на экран, вперёд-назад стрелками, свайпом и
 // клавишами. Пролистывание, а не вертикальная лента — так страница целиком
@@ -32,6 +39,10 @@ const PRELOAD = 2
 // картинки. Показываем, но приглушённо.
 const QUIET = new Set(['sfx', 'sign'])
 
+// Поддержка полного экрана за время жизни экрана не меняется — подписка пустая.
+const NO_SUBSCRIBE = () => () => {}
+const NO_FULLSCREEN_ON_SERVER = () => false
+
 export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const { t, lang } = useI18n()
   const tl = lang === 'kk' ? 'kk' : 'ru'
@@ -46,6 +57,47 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const [pop, setPop] = useState(null)
   // Отсекает ответы перевода/сохранения от уже закрытой карточки.
   const seqRef = useRef(0)
+
+  // Полный экран. Читалка живёт внутри оболочки «Обучения»: сверху шапка, слева
+  // сайдбар, снизу подвал — на ноутбуке от страницы комикса остаётся полоска, а
+  // упирается она именно в высоту. По кнопке уводим в полный экран корень
+  // читалки, а не всю страницу: тогда сайдбар с шапкой выпадают из раскладки.
+  const rootRef = useRef(null)
+  // Держим сам узел, а не флаг: он же служит целью портала для карточки
+  // перевода (см. ниже).
+  const [fsNode, setFsNode] = useState(null)
+  const full = fsNode !== null
+  // Кнопку показываем только там, где API есть (на iOS Safari его нет вовсе).
+  // Через useSyncExternalStore, а не эффектом: на сервере снимок всегда false,
+  // разметка гидратации совпадает, кнопка появляется уже на клиенте.
+  const canFull = useSyncExternalStore(
+    NO_SUBSCRIBE,
+    isElementFullscreenSupported,
+    NO_FULLSCREEN_ON_SERVER,
+  )
+
+  useEffect(
+    () =>
+      onFullscreenChange(() =>
+        setFsNode(getFullscreenElement() === rootRef.current ? rootRef.current : null),
+      ),
+    [],
+  )
+
+  // Уходя с экрана (кнопка «Назад», размонтирование) полный экран отпускаем —
+  // иначе браузер остаётся в нём уже поверх каталога.
+  useEffect(
+    () => () => {
+      if (getFullscreenElement() === rootRef.current) exitFullscreen()
+    },
+    [],
+  )
+
+  const toggleFull = () => {
+    if (!rootRef.current) return
+    if (getFullscreenElement() === rootRef.current) exitFullscreen()
+    else requestElementFullscreen(rootRef.current)
+  }
 
   useEffect(() => {
     let alive = true
@@ -84,13 +136,15 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       if (e.key === 'ArrowRight' || e.key === 'PageDown') go(1)
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(-1)
       else if (e.key === 'Escape') {
+        // В полном экране Esc забирает браузер — из читалки по нему не выходим,
+        // иначе один Esc и свернул бы экран, и закрыл комикс.
         if (pop) setPop(null)
-        else onBack?.()
+        else if (!full) onBack?.()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [go, onBack, pop])
+  }, [go, onBack, pop, full])
 
   // Свайп. Порог 40 px и проверка на вертикаль — чтобы обычная прокрутка
   // страницы не листала комикс.
@@ -149,6 +203,20 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
         <ChevronLeftIcon size={18} />
         {t('common.back')}
       </button>
+      {/* Кнопка слева, а не в конце строки: в правом верхнем углу зоны контента
+          висит переключатель языка, и справа она оказывалась под ним. */}
+      {canFull && (
+        <button
+          type="button"
+          className="cr__full"
+          onClick={toggleFull}
+          aria-pressed={full}
+          title={full ? t('comics.exitFull') : t('comics.full')}
+        >
+          {full ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
+          <span className="cr__fullLabel">{full ? t('comics.exitFull') : t('comics.full')}</span>
+        </button>
+      )}
       {doc && (
         <>
           <div className="cr__title">
@@ -165,7 +233,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
   if (failed) {
     return (
-      <div className="cr">
+      <div className="cr" ref={rootRef}>
         {bar}
         <div className="cr__empty">{t('comics.failed')}</div>
       </div>
@@ -174,7 +242,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
   if (!doc) {
     return (
-      <div className="cr">
+      <div className="cr" ref={rootRef}>
         {bar}
         <div className="cr__empty">{t('practice.loading')}</div>
       </div>
@@ -188,7 +256,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const blocks = page.blocks || []
 
   return (
-    <div className="cr" onClick={() => setPop(null)}>
+    <div className={full ? 'cr cr--full' : 'cr'} ref={rootRef} onClick={() => setPop(null)}>
       {bar}
 
       <div className={blocks.length ? 'cr__body' : 'cr__body cr__body--wide'}>
@@ -282,7 +350,10 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
       {/* Карточку перевода уводим в body: у обёртки экрана (.scr-in) есть
           transform анимации входа, а он делает её containing block для
-          position:fixed — иначе карточка обрезается нижней кромкой экрана. */}
+          position:fixed — иначе карточка обрезается нижней кромкой экрана.
+          В полном экране цель другая — корень читалки: пока элемент в top
+          layer, браузер рисует только его поддерево, и карточка из body была бы
+          не видна. Сам корень не трансформирован, fixed там честный. */}
       {pop &&
         createPortal(
           <div className="cr-pop" onClick={(e) => e.stopPropagation()}>
@@ -318,7 +389,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
               ×
             </button>
           </div>,
-          document.body,
+          fsNode || document.body,
         )}
     </div>
   )
