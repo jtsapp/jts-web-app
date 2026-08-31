@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
+import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
@@ -95,6 +96,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // бэкенде) — null значит без лимита. В отличие от moduleLocked (весь модуль
   // разом), это блокирует уроки НАЧИНАЯ с индекса moduleQuota, а не в конце.
   const [moduleQuota, setModuleQuota] = useState(null)
+  // Список модулей не загрузился (сеть/бэкенд), а не «модуля для уровня нет».
+  // Разница принципиальна: moduleId=null по обеим причинам выглядит одинаково,
+  // но во втором случае завершение урока уходит мимо серверной проверки квоты —
+  // одна осечка снимала бы главный демо-лимит на весь визит.
+  const [modulesUnavailable, setModulesUnavailable] = useState(false)
+  // Токен, под которым читались модули (practice-токен, если он выдался):
+  // повторный запрос обязан идти под тем же, иначе бэкенд ответит иначе.
+  const authTokenRef = useRef(token)
   // Квота «N из M» исчерпана: бэкенд отдал 403 на завершении урока. Урок
   // не засчитан, показываем это на экране итогов вместо тихой синхронизации.
   const [restricted, setRestricted] = useState(false)
@@ -117,18 +126,23 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         } catch {
           /* без practice-токена читаем прогресс под обычным token */
         }
+        authTokenRef.current = authToken
+        // Отказ списка модулей не роняет экран (тропа читается из статики), но
+        // и не притворяется пустым списком — см. modulesUnavailable.
+        let modsFailed = false
         const [mods, oldTrail, courseIndex] = await Promise.all([
-          getLessonModules(authToken).catch(() => []),
+          getLessonModules(authToken).catch(() => {
+            modsFailed = true
+            return []
+          }),
           getLevelLessons(level).catch(() => []),
           getCourseIndex(level),
         ])
         if (!alive) return
+        setModulesUnavailable(modsFailed)
         const trail = courseIndex ? courseTrail(courseIndex) : oldTrail
         setCourse(courseIndex)
-        const want = String(level).toUpperCase()
-        const mod = (Array.isArray(mods) ? mods : [])
-          .filter((m) => String(m.level || '').toUpperCase() === want)
-          .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))[0]
+        const mod = pickLevelModule(mods, level)
         const mid = mod ? mod.id : null
         setModuleId(mid)
         setModuleLocked(!!mod?.locked)
@@ -286,9 +300,24 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
       // найден (moduleId=null), падаем на модульный complete, чтобы награда не
       // пропала; двойного начисления нет — ветки взаимоисключающие.
+      // Модуля нет по одной из двух причин, и они требуют разного: его правда
+      // нет для этого уровня — или список не загрузился при входе. Во втором
+      // случае переспрашиваем ЗДЕСЬ, иначе урок засчитается мимо серверной
+      // проверки квоты, а прогресс не уйдёт на бэкенд вовсе: одна сетевая
+      // осечка при входе снимала главный демо-лимит на весь визит.
+      const resolved = await resolveModuleId({
+        moduleId,
+        modulesUnavailable,
+        level,
+        fetchModules: () => getLessonModules(authTokenRef.current),
+      })
+      const mid = resolved.moduleId
+      if (mid !== moduleId) setModuleId(mid)
+      if (resolved.modulesUnavailable !== modulesUnavailable) setModulesUnavailable(resolved.modulesUnavailable)
+
       let next
       try {
-        next = await markDone(level, token, moduleId, open.code, stats.points)
+        next = await markDone(level, token, mid, open.code, stats.points)
       } catch (e) {
         // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
         // исключение просто гасилось внутри markDone, урок падал в localStorage
@@ -300,11 +329,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         throw e
       }
       setDone(new Set(next))
-      if (moduleId == null && token && stats.points > 0) {
+      if (mid == null && token && stats.points > 0) {
         completeLessonModule(token, stats.points).catch(() => {})
       }
     },
-    [open, level, token, moduleId],
+    [open, level, token, moduleId, modulesUnavailable],
   )
 
   // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
