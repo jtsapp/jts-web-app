@@ -8067,3 +8067,296 @@ textarea {
   .plc-match { grid-template-columns: 1fr; }
   .plc-tf { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
+
+/* ── Практика: карточки Комиксов ── */
+/* Обложка портретная и «как книжная»: тот же ритм, что у .pp-bcard, но без
+   градиентного фолбэка — у комикса обложка всегда есть (первая страница). */
+.pp-ccard {
+  flex: 0 0 150px;
+  width: 150px;
+  text-align: left;
+  border: 0;
+  padding: 0;
+  background: none;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.pp-ccard__cover {
+  aspect-ratio: 2 / 3;
+  box-shadow: 0 6px 16px rgba(23, 19, 38, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pp-ccard:hover .pp-ccard__cover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(23, 19, 38, 0.26);
+}
+.pp-ccard__title {
+  margin-top: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.pp-ccard__author {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #a6a5b2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pp-ccard__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.pp-ccard__cefr {
+  font-size: 11px;
+  font-weight: 800;
+  color: #9047ff;
+}
+.pp-ccard__pages {
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #8b8a97;
+}
+.pp-rail--grid:has(.pp-ccard) {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+/* ── Читалка комикса ── */
+/* Страница вписывается по высоте, а не по ширине: у комикса важна вся
+   композиция листа, обрезать её скроллом нельзя. Фон светлый — у страниц
+   свои белые поля между кадрами, на тёмном они читались бы как рамка. */
+.cr {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cr__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cr__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 14px 7px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cr__back:hover { color: var(--purple); border-color: #d9d2f7; }
+.cr__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cr__author {
+  margin-left: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #a6a5b2;
+}
+.cr__count {
+  font-size: 13px;
+  font-weight: 800;
+  color: #6c6b78;
+  font-variant-numeric: tabular-nums;
+}
+.cr__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #f5f4f9;
+  border-radius: 18px;
+  padding: 14px;
+  min-height: 320px;
+}
+.cr__page {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+.cr__img {
+  max-width: 100%;
+  /* Высота экрана минус шапка Практики, полоса читалки и подсказка. */
+  max-height: calc(100vh - 260px);
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(23, 19, 38, 0.16);
+  cursor: pointer;
+  user-select: none;
+}
+/* Соседние страницы остаются в DOM, чтобы браузер их скачал заранее. */
+.cr__img--off {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.cr__nav {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cr__nav:hover:not(:disabled) { color: var(--purple); border-color: #d9d2f7; }
+.cr__nav:disabled { opacity: 0.35; cursor: default; }
+.cr__progress {
+  height: 4px;
+  border-radius: 999px;
+  background: #ececf3;
+  overflow: hidden;
+}
+.cr__progress i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--purple);
+  transition: width 0.2s ease;
+}
+.cr__hint {
+  font-size: 12px;
+  color: #a6a5b2;
+  text-align: center;
+}
+.cr__empty {
+  padding: 48px 0;
+  text-align: center;
+  color: #8b8a97;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  /* На телефоне стрелки мешают странице — листаем свайпом и тапом. */
+  .cr__nav { display: none; }
+  .cr__stage { padding: 8px; border-radius: 14px; }
+  .cr__img { max-height: calc(100vh - 230px); }
+  .cr__hint { display: none; }
+}
+
+/* ── Читалка комикса: панель текста и перевод по тапу ── */
+/* Страница и текст рядом: реплики идут в порядке чтения, поэтому студент
+   ведёт глазами по картинке, а непонятное добирает из колонки. Кликабельных
+   зон поверх самой страницы нет — координаты баллонов от модели врут. */
+.cr__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+.cr__text {
+  background: #fff;
+  border: 1px solid #ececf3;
+  border-radius: 18px;
+  padding: 16px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+.cr__textTitle {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #a6a5b2;
+  margin-bottom: 12px;
+}
+.cr__textNote { font-size: 13px; color: #8b8a97; }
+.cr__lines { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.cr__line { border-left: 3px solid #ececf3; padding-left: 10px; }
+.cr__line--quiet { opacity: 0.62; }
+.cr__en { font-size: 14px; line-height: 1.45; color: var(--ink); }
+.cr__w { cursor: pointer; border-radius: 4px; transition: background 0.12s ease; }
+.cr__w:hover { background: #efe8ff; color: var(--purple); }
+.cr__ru { margin-top: 5px; font-size: 13px; line-height: 1.4; color: #6c6b78; }
+.cr__show {
+  margin-top: 5px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--purple);
+  cursor: pointer;
+}
+.cr__show:hover { text-decoration: underline; }
+
+/* Карточка перевода слова. Держим по центру внизу экрана, а не у слова:
+   колонка текста узкая и прокручивается, и привязанная карточка на скролле
+   уезжала бы от своего слова. */
+.cr-pop {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 40;
+  min-width: 220px;
+  max-width: min(420px, calc(100vw - 32px));
+  background: #fff;
+  border: 1px solid #ececf3;
+  border-radius: 16px;
+  box-shadow: 0 14px 40px rgba(23, 19, 38, 0.22);
+  padding: 14px 40px 14px 16px;
+}
+.cr-pop__word { font-size: 15px; font-weight: 800; color: var(--ink); }
+.cr-pop__tr { margin-top: 3px; font-size: 14px; color: #4a4857; }
+.cr-pop__tr--wait { color: #a6a5b2; }
+.cr-pop__alt { margin-top: 3px; font-size: 12.5px; color: #a6a5b2; }
+.cr-pop__save {
+  margin-top: 9px;
+  border: 1px solid #d9d2f7;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--purple);
+  cursor: pointer;
+}
+.cr-pop__save:disabled { opacity: 0.55; cursor: default; }
+.cr-pop__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #a6a5b2;
+  cursor: pointer;
+}
+@media (max-width: 1000px) {
+  /* Текст уходит под страницу: в одну колонку картинка становится нечитаемой. */
+  .cr__body { grid-template-columns: minmax(0, 1fr); }
+  .cr__text { max-height: none; }
+}
