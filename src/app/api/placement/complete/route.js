@@ -7,6 +7,7 @@
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { upsertProfile } from '@/lib/db/profile.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
+import { sanitizePlacementRecord } from '@/lib/placement.js'
 
 export const runtime = 'nodejs'
 
@@ -36,8 +37,15 @@ export async function POST(request) {
     return Response.json({ configured: true, error: 'Invalid or missing level.' }, { status: 400 })
   }
 
+  // Вместе с уровнем принимаем снимок прохождения: θ, её погрешность и флаги
+  // качества (`unresolved` — движок сам не уверен в уровне, `a0_branch` и др.).
+  // Без него спорный результат неотличим от уверенного, а банк, который живёт
+  // без калибровки, нечем калибровать. Снимок необязателен: голосовой
+  // placement и старые клиенты присылают только уровень.
+  const placement = body.summary ? sanitizePlacementRecord(level, body.summary, new Date().toISOString()) : undefined
+
   try {
-    await upsertProfile(resolved.id, { level })
+    await upsertProfile(resolved.id, placement ? { level, placement } : { level })
     return Response.json({ configured: true, ok: true })
   } catch (err) {
     console.error('[placement.complete] failed', err)

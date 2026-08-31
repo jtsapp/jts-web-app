@@ -34,11 +34,13 @@ export async function loadTutorProfile(token) {
  * backend'ом (/user/language-level), иначе сторы расходятся. Источник правды
  * при входе — backend; эта запись best-effort и осечка не фатальна.
  */
-export function savePlacementLevel(token, level) {
+export function savePlacementLevel(token, level, summary) {
   return fetch('/api/placement/complete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
-    body: JSON.stringify({ deviceId: getDeviceId(), level }),
+    // summary — снимок прохождения (θ, SE, флаги качества). Необязателен:
+    // голосовой placement присылает только уровень.
+    body: JSON.stringify({ deviceId: getDeviceId(), level, summary: summary ?? undefined }),
   }).catch((e) => {
     console.warn('[tutorPrefs] уровень не сохранился в Neon-профиль:', e)
     return null

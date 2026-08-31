@@ -30,7 +30,7 @@ describe('persistPlacementLevel', () => {
     expect(saveLanguageLevel).toHaveBeenCalledWith('TOK', 'B1')
     // 2xx сам по себе ничего не доказывает — уровень перечитывается.
     expect(getLanguageLevel).toHaveBeenCalledWith('TOK')
-    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1')
+    expect(savePlacementLevel).toHaveBeenCalledWith('TOK', 'B1', undefined)
   })
 
   it('повторяет попытку, когда запись сорвалась', async () => {
@@ -77,7 +77,7 @@ describe('persistPlacementLevel', () => {
     const res = await persistPlacementLevel(null, 'A2', noSleep)
 
     expect(res).toEqual({ ok: true, anonymous: true })
-    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2')
+    expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2', undefined)
     expect(saveLanguageLevel).not.toHaveBeenCalled()
   })
 })

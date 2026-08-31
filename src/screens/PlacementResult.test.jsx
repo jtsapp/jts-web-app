@@ -15,12 +15,34 @@ const result = {
   speaking: [],
 }
 
-const renderResult = (props = {}) =>
+const renderResult = ({ result: r = result, ...props } = {}) =>
   render(
     <I18nProvider>
-      <PlacementResult result={result} lang="ru" onDone={() => {}} {...props} />
+      <PlacementResult result={r} lang="ru" onDone={() => {}} {...props} />
     </I18nProvider>
   )
+
+describe('PlacementResult — честность оценки', () => {
+  it('говорит, что шкала временная, пока банк не откалиброван', () => {
+    renderResult({ result: { ...result, cutsProvisional: true } })
+
+    expect(screen.getByText(/шкала уровней ещё калибруется/)).toBeTruthy()
+  })
+
+  it('предупреждает, когда движок сам не уверен в уровне', () => {
+    // флаг `unresolved` = SE > 0.6
+    renderResult({ result: { ...result, flags: ['unresolved'] } })
+
+    expect(screen.getByText(/не хватило для уверенной оценки/)).toBeTruthy()
+  })
+
+  it('на уверенном результате по калиброванной шкале молчит', () => {
+    renderResult()
+
+    expect(screen.queryByText(/калибруется/)).toBeNull()
+    expect(screen.queryByText(/уверенной оценки/)).toBeNull()
+  })
+})
 
 describe('PlacementResult — сохранение уровня', () => {
   it('молчит, когда уровень сохранён', () => {

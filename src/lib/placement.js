@@ -36,3 +36,30 @@ export function placementSummary(result) {
     flags: placementFlags(result),
   }
 }
+
+/** Максимум флагов, которые имеет смысл хранить (их всего четыре вида). */
+const MAX_FLAGS = 12
+
+/**
+ * Снимок результата для записи в профиль — из недоверенного тела запроса.
+ * Числа приводятся к числам, флаги к короткому списку строк, лишние поля
+ * отбрасываются: в профиль должно уехать ровно то, что описывает прохождение.
+ * [at] — момент прохождения (передаётся вызывающим, чтобы функция осталась
+ * чистой и тестируемой).
+ */
+export function sanitizePlacementRecord(level, summary, at) {
+  const src = summary && typeof summary === 'object' ? summary : {}
+  const num = (v) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Number(v) : null)
+  const flags = Array.isArray(src.flags)
+    ? src.flags.filter((f) => typeof f === 'string' && f).slice(0, MAX_FLAGS).map((f) => f.slice(0, 40))
+    : []
+  return {
+    level,
+    theta: num(src.theta),
+    se: num(src.se),
+    flags,
+    variant: typeof src.variant === 'string' ? src.variant.slice(0, 20) : null,
+    answered: num(src.answered),
+    at: typeof at === 'string' ? at : null,
+  }
+}

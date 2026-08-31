@@ -1094,6 +1094,17 @@ export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave,
             <div className="plc-band__ticks">{LEVELS.map((l) => <span key={l}>{l}</span>)}</div>
           </div>
 
+          {/* Движок сам сообщает, чего стоит его оценка: шкала уровней ещё не
+              откалибрована (у заданий банка нет IRT-параметров), а `unresolved`
+              means SE > 0.6 — уровень не определился уверенно. Молчать об этом
+              на экране, где ученику называют его уровень, нечестно. */}
+          {(result.cutsProvisional || result.pilotMode) && (
+            <p className="plc-note">{appT('placement.provisional')}</p>
+          )}
+          {result.flags?.includes('unresolved') && (
+            <p className="plc-note plc-note--warn">{appT('placement.unresolved')}</p>
+          )}
+
           {rows.length > 0 && (
             <div className="plc-rows">
               {rows.map(([key, v]) => (

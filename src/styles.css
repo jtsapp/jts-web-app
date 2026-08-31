@@ -8055,6 +8055,11 @@ textarea {
   padding: 15px 14px;
 }
 
+/* Честная приписка к уровню: шкала временная / оценка неуверенная. */
+.plc-note { margin: 0 0 16px; font-size: 14px; line-height: 1.45; color: #6b6880; }
+.plc-note + .plc-note { margin-top: -4px; }
+.plc-note--warn { color: #8a5a00; }
+
 /* Уровень определён, но не сохранился: результат теста нельзя терять молча —
    показываем это на самом экране результата и даём повторить. */
 .plc-save-error { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 22px; }

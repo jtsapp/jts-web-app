@@ -76,6 +76,11 @@ export async function upsertProfile(deviceId, patch) {
                           then ${patch.writing ? sql.json(patch.writing) : null}::jsonb
                           else writing
                         end,
+      placement       = case
+                          when ${patch.placement !== undefined}
+                          then ${patch.placement ? sql.json(patch.placement) : null}::jsonb
+                          else placement
+                        end,
       updated_at      = now(),
       last_seen_at    = now()
     where device_id = ${deviceId}
@@ -304,7 +309,7 @@ export async function loadProfile(deviceId) {
   if (!sql) return null
   const baseRows = await sql`
     select level, lang, style, goal, tutor, tutor_temper, interests, profession,
-           minutes_per_day, skills, writing, safety_alert
+           minutes_per_day, skills, writing, safety_alert, placement
     from learner
     where device_id = ${deviceId}
   `
@@ -400,6 +405,9 @@ export async function loadProfile(deviceId) {
     minutesPerDay: base.minutes_per_day,
     skills: base.skills ?? null,
     writing: base.writing ?? null,
+    // Снимок результата теста уровня: θ, SE и флаги качества прохождения —
+    // по ним видно, насколько уверенной была оценка.
+    placement: base.placement ?? null,
     mistakes: activeMistakes,
     // Тот же отсев «пройденных», что у activeMistakes: приложение помечает ошибку
     // освоенной через resolved_log, но review_item отдельная таблица и её строка

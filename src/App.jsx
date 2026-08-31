@@ -68,6 +68,7 @@ import { isTeacher } from './lib/jwt.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel } from './lib/levelSave.js'
+import { placementSummary } from './lib/placement.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 import { KINGDOMS } from './kingdoms.js'
@@ -618,13 +619,13 @@ export default function App() {
   const [levelSaveState, setLevelSaveState] = useState('idle') // idle | saving | saved | error
   const pendingTestLevel = useRef(null)
 
-  async function saveTestLevel(level) {
+  async function saveTestLevel(level, summary) {
     if (!level || lastSavedTestLevel.current === level) return
-    pendingTestLevel.current = level
+    pendingTestLevel.current = { level, summary }
     // Уровень показываем сразу: экраны читают его из стейта, ждать сети незачем.
     setUserLevel(level)
     setLevelSaveState('saving')
-    const res = await persistPlacementLevel(token, level)
+    const res = await persistPlacementLevel(token, level, { summary })
     if (res.ok) {
       lastSavedTestLevel.current = level
       // Снимаем «нужен тест» только когда уровень действительно лёг в профиль:
@@ -639,8 +640,8 @@ export default function App() {
   }
 
   function retrySaveTestLevel() {
-    const level = pendingTestLevel.current
-    if (level) saveTestLevel(level)
+    const pending = pendingTestLevel.current
+    if (pending?.level) saveTestLevel(pending.level, pending.summary)
   }
 
   async function handleTestDone(res) {
@@ -973,7 +974,9 @@ export default function App() {
           lang={lang}
           saveState={levelSaveState}
           onRetrySave={retrySaveTestLevel}
-          onLevel={(level) => saveTestLevel(level)}
+          // Вместе с уровнем сохраняем снимок прохождения: θ, SE и флаги
+          // качества, по которым видно, насколько оценке можно верить.
+          onLevel={(level, result) => saveTestLevel(level, placementSummary(result))}
           onDone={(level) => handleTestDone({ level })}
         />
       )
