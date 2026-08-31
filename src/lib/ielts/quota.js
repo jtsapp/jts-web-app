@@ -21,6 +21,15 @@ import { countIeltsAttemptsSince } from '../db/ielts.js'
 // квоте. Дублировать список значений section в двух файлах нельзя: разъедутся.
 import { PAID_IELTS_SECTIONS, sectionConsumesQuota } from './paidSections.js'
 
+/** Первое число текущего месяца, полночь по локальному времени сервера — окно
+ *  счёта попыток IELTS у обычного ученика. */
+function startOfCurrentMonth() {
+  const d = new Date()
+  d.setDate(1)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
 export { sectionConsumesQuota }
 
 // section передают submit-роуты, которые точно знают, что сдаёт студент.
@@ -39,13 +48,16 @@ export async function checkIeltsQuota(request, deviceId, section) {
   const limit = quota?.limit ?? null
   if (limit == null) return { resolved, blocked: false, source: quota?.source || 'NONE', sourceName: null }
 
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0, 0, 0, 0)
+  // У демо-аккаунта окно не календарное, а «за всё время»: демо живёт 7–14 дней,
+  // и примерно у половины этот срок пересекает границу месяца — счётчик
+  // обнулялся посреди пробного периода и выдавал вторые две платные секции.
+  // По спецификации это две попытки на демо, а не две в месяц. Копиться дольше
+  // срока демо здесь нечему, так что «за всё время» безопасно.
+  const since = resolved.isDemoAccount ? new Date(0) : startOfCurrentMonth()
   // Считаем попытки только по платным секциям - иначе Reading/Listening,
   // которые сами никогда не блокируются (см. выше), всё равно раздували бы
   // "used" и молча съедали квоту Speaking/Writing при следующей проверке.
-  const used = await countIeltsAttemptsSince(resolved.id, startOfMonth, [...PAID_IELTS_SECTIONS])
+  const used = await countIeltsAttemptsSince(resolved.id, since, [...PAID_IELTS_SECTIONS])
   return {
     resolved,
     blocked: used >= limit,

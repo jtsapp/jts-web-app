@@ -140,19 +140,38 @@ export async function closeStaleSessions(deviceId) {
  * Seconds used today (local UTC day) and across the current calendar month.
  * Включает идущие прямо сейчас сессии — иначе параллельные вкладки/режимы
  * получали каждый свой полный бюджет.
+ *
+ * Для демо-аккаунта «месяц» считается за всё время его жизни, а не с первого
+ * числа. Демо живёт 7–14 дней, и примерно у половины это окно пересекает
+ * границу месяца: календарный счётчик обнулялся посреди пробного периода и
+ * выдавал вторые десять минут тьютора. По спецификации демо — это десять минут
+ * всего, двумя заходами по пять. Ограничение по времени жизни делает
+ * «за всё время» безопасным: копиться дольше срока демо здесь нечему.
  */
-export async function getUsage(deviceId) {
+export async function getUsage(deviceId, isDemoAccount = false) {
   const db = getSql();
   if (!db) return { todaySeconds: 0, monthSeconds: 0 };
-  const rows = await db`
-    SELECT
-      COALESCE(SUM(seconds) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today,
-      COALESCE(SUM(seconds) FILTER (
-        WHERE day >= date_trunc('month', CURRENT_DATE)
-      ), 0)::int AS month
-    FROM voice_usage
-    WHERE device_id = ${deviceId}
-  `;
+  // Два явных запроса вместо одного с булевым параметром внутри FILTER: тип
+  // такого параметра выводит уже сервер, и ошибка вида «argument of OR must be
+  // type boolean» вылезла бы только в проде, на пути, который считает платные
+  // минуты. Ветки различаются одной строкой, зато обе — обычный SQL.
+  const rows = isDemoAccount
+    ? await db`
+        SELECT
+          COALESCE(SUM(seconds) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today,
+          COALESCE(SUM(seconds), 0)::int AS month
+        FROM voice_usage
+        WHERE device_id = ${deviceId}
+      `
+    : await db`
+        SELECT
+          COALESCE(SUM(seconds) FILTER (WHERE day = CURRENT_DATE), 0)::int AS today,
+          COALESCE(SUM(seconds) FILTER (
+            WHERE day >= date_trunc('month', CURRENT_DATE)
+          ), 0)::int AS month
+        FROM voice_usage
+        WHERE device_id = ${deviceId}
+      `;
   const r = rows[0] || { today: 0, month: 0 };
   const active = await activeSeconds(db, deviceId);
   return {

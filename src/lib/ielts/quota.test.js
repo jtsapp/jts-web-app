@@ -75,6 +75,25 @@ describe('checkIeltsQuota: реальное списание', () => {
     expect(new Set(paidSections)).toEqual(new Set(['speaking', 'writing']))
   })
 
+  // Демо живёт 7–14 дней, и примерно у половины этот срок пересекает границу
+  // месяца: календарное окно обнулялось посреди пробного периода и выдавало
+  // вторые две платные секции. По спецификации это две попытки на демо, а не
+  // две в месяц.
+  it('демо считается за всё время, обычный ученик — с первого числа', async () => {
+    authServer.resolveProfileId.mockResolvedValue({ id: 'user-1', isDemoAccount: true })
+    await checkIeltsQuota(fakeRequest, null, 'writing')
+    const demoSince = dbIelts.countIeltsAttemptsSince.mock.calls[0][1]
+    expect(demoSince.getTime()).toBe(0)
+
+    dbIelts.countIeltsAttemptsSince.mockClear()
+    authServer.resolveProfileId.mockResolvedValue({ id: 'user-2', isDemoAccount: false })
+    await checkIeltsQuota(fakeRequest, null, 'writing')
+    const paidSince = dbIelts.countIeltsAttemptsSince.mock.calls[0][1]
+    expect(paidSince.getDate()).toBe(1)
+    expect(paidSince.getMonth()).toBe(new Date().getMonth())
+    expect(paidSince.getHours()).toBe(0)
+  })
+
   it('entitlement-проверка без section: считает реальную квоту, а не молча пропускает всё', async () => {
     dbIelts.countIeltsAttemptsSince.mockResolvedValue(1)
     const result = await checkIeltsQuota(fakeRequest, null)
