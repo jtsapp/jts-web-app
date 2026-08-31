@@ -192,7 +192,12 @@
 .cp-choices.is-grid {
   width: 722px;
   display: grid;
-  grid-template-columns: repeat(2, 355px);
+  /* Треки были жёсткие: repeat(2, 355px) = 710px + зазор. max-width: 100% от
+     .cp-choices ужимал саму коробку, а треки оставались прежними и вылезали за
+     неё — на iPad Air под шаг урока 668px, то есть промах на 52px. auto-fit с
+     minmax даёт две колонки, пока есть место, и одну, когда его нет, — без
+     привязки к брейкпоинту (мобильный блок ниже всё равно жёстко ставит одну). */
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 10px;
   justify-content: center;
 }
@@ -842,7 +847,10 @@
   max-width: 100%;
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(2, 370px);
+  /* repeat(2, 370px) = 740px + зазор 10 = 750px не помещались даже в свои же
+     744px, а на планшете коробка ужималась до 668px и треки резались с обеих
+     сторон. Логика та же, что у .cp-choices.is-grid выше. */
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: 10px;
   justify-content: center;
 }
