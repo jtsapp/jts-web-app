@@ -8043,6 +8043,17 @@ textarea {
   color: var(--purple); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
 }
 .plc-ghost:disabled { opacity: 0.4; cursor: default; }
+/* «Не знаю» — не основной путь, поэтому тише «Далее»; выбранное состояние
+   видно, чтобы ученик не гадал, засчиталось ли. Подпись не переносим: в ряду
+   из трёх кнопок на узком экране «Не знаю» иначе ломается пополам. */
+.plc-idk {
+  padding: 15px 6px; white-space: nowrap; background: transparent; box-shadow: none;
+  color: var(--purple); text-decoration: underline; text-underline-offset: 3px; font-weight: 600;
+}
+.plc-idk.on {
+  text-decoration: none; background: #f0ebff; box-shadow: inset 0 0 0 1.5px var(--purple);
+  padding: 15px 14px;
+}
 
 /* Уровень определён, но не сохранился: результат теста нельзя терять молча —
    показываем это на самом экране результата и даём повторить. */
@@ -8068,6 +8079,8 @@ textarea {
   .plc-stem { font-size: 17px; margin-bottom: 18px; }
   .plc-opt { padding: 14px 16px; font-size: 15px; }
   .plc-primary, .plc-ghost { padding: 13px 24px; font-size: 15px; }
+  .plc-idk { padding: 13px 4px; }
+  .plc-idk.on { padding: 13px 12px; }
   .plc-level { font-size: 50px; }
   .plc-match { grid-template-columns: 1fr; }
   .plc-tf { flex-direction: column; align-items: flex-start; gap: 8px; }

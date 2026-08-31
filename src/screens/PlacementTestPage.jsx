@@ -16,6 +16,8 @@ import {
   scoreMatch,
 } from '../practice/placement/engine.generated.js'
 import { T } from '../practice/placement/strings.js'
+import { placementText } from '../practice/placement/uiOverrides.js'
+import { IDK_DRAFT, isItemAnswered } from '../practice/placement/answers.js'
 import { useI18n } from '../i18n.jsx'
 import { placementLevel, placementSummary } from '../lib/placement.js'
 
@@ -37,7 +39,7 @@ const CANDO_KEYS = ['cando0', 'cando1', 'cando2', 'cando3', 'cando4']
 const draftKey = (screen) => (screen.kind === 'vocab' ? `vocab:${screen.idx}` : screen.item.id)
 
 export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveState = 'idle', onRetrySave }) {
-  const t = useCallback((k) => T(lang, k), [lang])
+  const t = useCallback((k) => placementText(lang, k), [lang])
   const [phase, setPhase] = useState('loading') // loading | error | variant | cando | intro | items | speaking | result
   const [data, setData] = useState(null)
   const [plan, setPlan] = useState([])
@@ -174,17 +176,13 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
   }
 
   // Ответил ли студент на задание (для блокировки «Далее»).
-  const isAnswered = (screen, item) => {
-    const d = drafts[screen.kind === 'vocab' ? draftKey(screen) : item.id]
-    if (!d) return false
-    if (screen.kind === 'vocab') return d.optIndex != null // -1 («не знаю») — тоже ответ
-    if (item.type === 'tfns') return item.statements.every((_, k) => d.answers?.[k])
-    if (item.type === 'order' && item.steps) return (d.seq || []).length === item.steps.length
-    if (item.type === 'order') return (d.arr || []).length === orderWordsOf(item).length
-    if (item.type === 'bankfill') return (d.gaps || []).filter(Boolean).length === item.answers.length
-    if (item.type === 'match') return (d.map || []).filter((x) => x != null).length === item.pairs.length
-    return d.optIndex != null || !!(d.text || '').trim() || d.fraction != null
-  }
+  const isAnswered = (screen, item) =>
+    isItemAnswered(
+      item,
+      drafts[screen.kind === 'vocab' ? draftKey(screen) : item.id],
+      screen.kind === 'vocab' ? 'vocab' : 'item',
+      item.type === 'order' && !item.steps ? orderWordsOf(item) : [],
+    )
   const screenAnswered = (sc) =>
     sc.kind === 'group' ? sc.items.every((it) => isAnswered(sc, it)) : isAnswered(sc, sc.item)
 
@@ -382,6 +380,16 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
   const setDraftFor = (key) => (patch) =>
     setDrafts((d) => ({ ...d, [key]: { ...d[key], ...patch, tMs: Date.now() - startedAt.current } }))
   const answered = screen ? screenAnswered(screen) : false
+  // «Не знаю»: помечаем задание (в группе аудирования — все её вопросы) и
+  // разблокируем переход. Ответ уедет в движок пустым, то есть неверным, —
+  // как и должно быть, но ученик больше не заперт на задании, которого не
+  // знает, и не обязан гадать (догадка на 4 вариантах завышает оценку).
+  const idkItems = screen ? (screen.kind === 'group' ? screen.items : [screen.item]) : []
+  const idkChosen = idkItems.length > 0 && idkItems.every((it) => drafts[it.id]?.idk)
+  const markIdk = () => {
+    idkItems.forEach((it) => setDraftFor(it.id)({ ...IDK_DRAFT }))
+    if (pos < screens.length - 1) setPos((p) => p + 1)
+  }
 
   return (
     <Shell>
@@ -429,6 +437,17 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone, saveSt
             <button className="plc-ghost" disabled={pos === 0} onClick={() => setPos((p) => p - 1)}>
               {t('back')}
             </button>
+            {/* «Не знаю» — честный отказ вместо вынужденной догадки. В словарном
+                блоке такой вариант есть прямо в списке, второй раз не нужен. */}
+            {screen && screen.kind !== 'vocab' && (
+              <button
+                type="button"
+                className={`plc-ghost plc-idk ${idkChosen ? 'on' : ''}`}
+                onClick={markIdk}
+              >
+                {t('idk')}
+              </button>
+            )}
             {pos < screens.length - 1 ? (
               <button className="plc-primary" disabled={!answered} onClick={() => setPos((p) => p + 1)}>
                 {t('next')}
