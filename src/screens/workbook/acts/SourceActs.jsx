@@ -323,7 +323,10 @@ export function SpeakAct({ act, slow }) {
       mr.stream = stream
       mr.ondataavailable = (e) => chunks.current.push(e.data)
       mr.onstop = () => {
-        const blob = new Blob(chunks.current, { type: 'audio/webm' })
+        // Тип берём у самого рекордера, а не подписываем свой: контейнер выбрал
+        // браузер. Safari пишет audio/mp4, и <audio> с чужим ярлыком его не
+        // играет. Так же сделано в SpeakingTestPage/IeltsSpeakingPage/ShadowingPage.
+        const blob = new Blob(chunks.current, { type: mr.mimeType || 'audio/webm' })
         setUrl((old) => {
           if (old) URL.revokeObjectURL(old)
           return URL.createObjectURL(blob)
