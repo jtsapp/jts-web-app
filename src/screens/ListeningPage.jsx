@@ -301,6 +301,28 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
 
   const current = queue[0] || null
 
+  const entitlement = usePracticeEntitlement('listening', token)
+  const checkEntitlement = entitlement.check
+  // Блокируем не раздел, а старт задания: интро (маскот, описание, уровень)
+  // остаётся видимым всегда, замок появляется только при попытке начать
+  // тренировку — как юнит в грамматике (см. PracticePage.jsx, openUnit).
+  //
+  // attemptedStart — это флаг «пользователь нажал “Начать”», НЕ статус
+  // блокировки: раньше blocked был useState, который выставляли в true один
+  // раз внутри startSession и больше никогда не пересчитывали (регрессия
+  // dae2740: тогда сессия ещё могла стартовать на fail-open, до ответа
+  // сервера, и пришедший позже allowed:false ничего не менял). Стартовать до
+  // свежего вердикта startSession больше не даёт, но защёлка недопустима и
+  // сейчас: она не умеет ни запереть уже открытый тренажёр, когда право
+  // пропало между сессиями, ни отпереться — с экрана лимита не было бы дороги
+  // назад. Поэтому blocked ВЫЧИСЛЯЕТСЯ на каждом рендере из entitlement (тот
+  // же приём, что в ShadowingPage.jsx и в гейте грамматики PracticePage.jsx):
+  // обновился entitlement на allowed:false — на следующем же рендере контент
+  // подменяется экраном лимита; сбросили attemptedStart — замок снимается.
+  // Оба перехода сторожит tests/practice-gate.spec.js.
+  const [attemptedStart, setAttemptedStart] = useState(false)
+  const blocked = attemptedStart && !entitlement.loading && !entitlement.allowed
+
   const loadContent = useCallback(async () => {
     if (content) return content
     setLoading(true)
@@ -320,6 +342,23 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   }, [content, level, t])
 
   const startSession = useCallback(async () => {
+    // Лимит демо-доступа проверяем в момент старта задания, а не при заходе
+    // на экран: интро остаётся видимым всегда, замок — только на попытке
+    // начать тренировку (та же граница, что у «открыть юнит» в грамматике).
+    // Флаг ставим ДО проверки, а не после отказа: он означает «нажал Начать»,
+    // а решение о замке остаётся за entitlement (см. blocked выше). Поэтому
+    // отрицательный вердикт запирает экран сам, на каком бы шаге его ни
+    // застали, — в том числе «Ещё раз» на экране результата, когда право
+    // пропало уже после старта прошлой сессии.
+    setAttemptedStart(true)
+    // Решаем по СВЕЖЕМУ ответу сервера (check досылает прогресс прошлой сессии
+    // и перезапрашивает право), а не по entitlement из состояния: этот же
+    // startSession висит на «Ещё раз» в TrainerResult, а состояние осталось бы
+    // с числом, снятым при монтировании, — демо-лимит мерил бы только первую
+    // сессию. Читать состояние тут тоже нельзя: оно обновится лишь к
+    // следующему рендеру, когда решение уже принято.
+    const fresh = await checkEntitlement()
+    if (!fresh.allowed) return
     const data = content || (await loadContent())
     if (!data) return
     const session = buildSession(data, SESSION_SIZE)
@@ -340,7 +379,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
     setStepsTotal(session.length)
     setExitOpen(false)
     setPhase('task')
-  }, [content, loadContent, t])
+  }, [content, loadContent, t, checkEntitlement])
 
   const submit = useCallback(() => {
     if (!current || answered) return
@@ -387,11 +426,21 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   // выход из НЕзавершённой тренировки требует подтверждения
   const requestBack = () => (phase === 'task' ? setExitOpen(true) : back())
 
-  const entitlement = usePracticeEntitlement('listening', token)
-  if (!entitlement.loading && !entitlement.allowed) {
+  // Из экрана лимита — назад к интро. Сбрасываем и attemptedStart (чтобы
+  // повторный заход не показывал замок раньше следующего клика «Начать»), и
+  // phase: если лимит подменил экран уже В РАЗГАР сессии (гонка — сессия
+  // успела стартовать до ответа сервера), phase к этому моменту 'task' с
+  // недопройденной очередью — без сброса «Назад» вернул бы в ту же прерванную
+  // сессию вместо интро.
+  const backToIntro = () => {
+    setAttemptedStart(false)
+    setPhase('intro')
+  }
+
+  if (blocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+        <PracticeLimitScreen limit={entitlement.limit} onBack={backToIntro} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
       </LearningLayout>
     )
   }

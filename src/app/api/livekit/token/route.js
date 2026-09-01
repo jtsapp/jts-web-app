@@ -189,7 +189,7 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   return JSON.stringify(meta)
 }
 
-async function issue(p, profileId, userName, limitOverride, birthDate = null) {
+async function issue(p, profileId, userName, limitOverride, birthDate = null, isDemoAccount = false) {
   // Жёсткий нрав (ось 18+) несовершеннолетнему не выдаём, даже если запрос
   // пришёл с temper:'harsh' в теле: кнопку в UI мы заперли, но токен просят
   // из браузера, и тело — не доверенный источник. Возраст берём из
@@ -242,7 +242,10 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null) {
       // Сначала дозакрываем зависшие комнаты этого ученика (потерянный
       // room_finished), иначе их минуты не спишутся никогда и лимит поедет.
       await closeStaleSessions(profileId)
-      const { todaySeconds, monthSeconds, totalSeconds } = await getUsage(profileId, totalSince)
+      const { todaySeconds, monthSeconds, totalSeconds } = await getUsage(profileId, {
+        totalSince,
+        isDemoAccount,
+      })
       // Пул проверяем ПЕРВЫМ: он про купленный тариф, и когда он исчерпан, дневной
       // остаток значения уже не имеет — сказать «приходите завтра» было бы неправдой.
       if (totalLimitSec != null && totalSeconds >= totalLimitSec) {
@@ -338,7 +341,7 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, body.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(body, resolved.id, resolved.name, limitOverride, resolved.birthDate)
+  return issue(body, resolved.id, resolved.name, limitOverride, resolved.birthDate, resolved.isDemoAccount)
 }
 
 export async function GET(request) {
@@ -347,5 +350,5 @@ export async function GET(request) {
   const resolved = await resolveProfileId(request, p.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(p, resolved.id, resolved.name, limitOverride, resolved.birthDate)
+  return issue(p, resolved.id, resolved.name, limitOverride, resolved.birthDate, resolved.isDemoAccount)
 }

@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { saveWord, getAudiobook } from '../api.js'
+import { userIdFromToken } from '../lib/jwt.js'
 import { useI18n } from '../i18n.jsx'
 import { recordSkill } from '../practice/skillStats.js'
 import { cleanWord, translateWord } from '../lib/wordTranslate.js'
 
 // ── Контент книг ────────────────────────────────────────────────────────────
 // У читалки два источника глав, в порядке приоритета:
-//   1) статика public/practice/books/<id>.json — тексты и словари переводов,
+//   1) каталог сайта — GET /api/books/<id> (файлы лежат в data/books, вне
+//      public: демо-аккаунту роут отдаёт только первые главы),
 //      извлечённые из hosted-библиотеки «Книжек» (scripts/extract-books.js).
 //      Каталог там свой, без общих id с бэкендом, поэтому связываем по
 //      нормализованному названию;
@@ -36,12 +38,19 @@ export function chaptersFromTracks(tracks) {
     num: String(t?.trackIndex ?? i + 1),
     title: t?.title || '',
     text: String(t?.text || '').trim(),
+    // Бэкенд помечает главы за пределами демо-превью (BookPreviewService).
+    locked: !!t?.locked,
   }))
 }
 
-async function loadStaticContent(title) {
+/** Владелец кэшированного ответа: id аккаунта из токена, иначе аноним. */
+function cacheOwner(token) {
+  return userIdFromToken(token) ?? 'anon'
+}
+
+async function loadStaticContent(title, token) {
   if (!_bookIndexPromise) {
-    _bookIndexPromise = fetch('/practice/books/index.json').then((r) => (r.ok ? r.json() : []))
+    _bookIndexPromise = fetch('/api/books').then((r) => (r.ok ? r.json() : []))
   }
   const index = await _bookIndexPromise.catch(() => [])
   const want = normTitle(title)
@@ -51,26 +60,40 @@ async function loadStaticContent(title) {
     // «Alice in Wonderland» ↔ «Alice's Adventures in Wonderland» и т.п.
     index.find((b) => normTitle(b.title).includes(want) || want.includes(normTitle(b.title)))
   if (!hit) return null
-  if (!_bookContentCache[hit.id]) {
+  const cacheKey = `${hit.id}:${cacheOwner(token)}`
+  if (!_bookContentCache[cacheKey]) {
     // Промах не кэшируем: единственный сбой сети (офлайн, 404 в момент
     // деплоя) навсегда оставил бы книгу «без текста» до перезагрузки страницы.
-    _bookContentCache[hit.id] = fetch(`/practice/books/${hit.id}.json`)
+    // Ключ несёт id аккаунта, а не «есть токен / нет»: сколько глав вернёт
+    // сервер, зависит от конкретного ученика. На общем компьютере (класс,
+    // ноутбук преподавателя на пробном уроке) после выхода и входа под другим
+    // аккаунтом кэш модуля переживает смену пользователя — и демо-ученик
+    // получил бы полную книгу, оставшуюся от предыдущего, вообще не сходив на
+    // сервер.
+    _bookContentCache[cacheKey] = fetch(`/api/books/${hit.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)
       .then((res) => {
-        if (!res) delete _bookContentCache[hit.id]
+        if (!res) delete _bookContentCache[cacheKey]
         return res
       })
   }
-  return _bookContentCache[hit.id]
+  return _bookContentCache[cacheKey]
 }
 
-async function loadBookContent(book, token) {
-  const fromStatic = await loadStaticContent(book?.title)
+// Экспортируется ради теста кэша (bookCache.test.js): ключ должен различать
+// аккаунты, и проверить это можно только через сам загрузчик.
+export async function loadBookContent(book, token) {
+  const fromStatic = await loadStaticContent(book?.title, token)
   if (fromStatic?.chapters?.length) return fromStatic
   const id = book?.id
   if (id == null) return fromStatic
-  const key = `api:${id}`
+  // Тот же принцип, что и у каталога сайта: превью книг админки режет бэкенд
+  // по демо-статусу ученика, поэтому ответ нельзя переиспользовать между
+  // аккаунтами.
+  const key = `api:${id}:${cacheOwner(token)}`
   if (!_bookContentCache[key]) {
     // Тот же принцип: null (сбой сети, просроченный токен, книга без текста
     // глав) не замораживаем — иначе повторное открытие книги не ходило бы в
@@ -158,6 +181,7 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
         id: `ch-${c.num}`,
         title: c.title,
         text: c.text,
+        locked: !!c.locked,
         durationLabel: sameCount ? tracks[i]?.durationLabel : '',
       }))
     }
@@ -165,8 +189,12 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
   }, [content, tracks])
 
   const total = chapters.length || 1
+  const lockedCount = chapters.filter((c) => c.locked).length
 
   const openChapter = (i, m = 'read') => {
+    // Закрытая глава не открывается: текста в ней всё равно нет — сервер его
+    // не прислал, а пустой экран читалки выглядел бы поломкой.
+    if (chapters[i]?.locked) return
     setCh(i)
     setVisited((s) => {
       const next = new Set(s).add(i)
@@ -236,12 +264,23 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
                 <span className="bk-ov__label">Содержание</span>
                 <span className="bk-ov__count">{total} глав</span>
               </div>
+              {lockedCount > 0 && (
+                <p className="bk-ov__preview">
+                  Ознакомительный доступ: открыто {total - lockedCount} из {total} глав. Остальные откроются с полным
+                  доступом к платформе.
+                </p>
+              )}
               <div className="bk-chapters">
                 {chapters.map((t, i) => (
-                  <button key={t.id || i} className="bk-chapter" onClick={() => openChapter(i, 'read')}>
+                  <button
+                    key={t.id || i}
+                    className={`bk-chapter ${t.locked ? 'bk-chapter--locked' : ''}`}
+                    onClick={() => openChapter(i, 'read')}
+                    disabled={!!t.locked}
+                  >
                     <span className="bk-chapter__idx">{i + 1}</span>
                     <span className="bk-chapter__title">{t.title || `Глава ${i + 1}`}</span>
-                    <span className="bk-chapter__dur">{t.durationLabel || ''}</span>
+                    <span className="bk-chapter__dur">{t.locked ? '🔒' : t.durationLabel || ''}</span>
                   </button>
                 ))}
               </div>

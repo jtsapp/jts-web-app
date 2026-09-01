@@ -23,6 +23,12 @@ async function enterLesson(page, { role, lessonStatus, liveStatus = lessonStatus
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 1, name: 'U', role, languageLevel: 'A1' } })))
   await page.route('**/admin/lessons/occurrences', (r) => r.fulfill(json(OCC(lessonStatus))))
   await page.route('**/admin/lessons/summary', (r) => r.fulfill(json(SUMMARY)))
+  // Экран расписания с недавних пор спрашивает ещё и состояние заявки на пробный
+  // урок, и запрос стоит внутри гейтящего рендер Promise.all. Без стаба обе спеки
+  // этого файла ждут живой round-trip до внешнего бэкенда: сегодня он молча
+  // отказывает по подписи токена, а при недоступной сети даст 30-секундный
+  // таймаут вместо падения по существу.
+  await page.route('**/mobile/trial-request', (r) => r.fulfill(json({ requested: false, requestedAt: null, teacherAssigned: true, managerAssigned: false })))
   await page.route('**/admin/lessons/14', (r) => r.fulfill(json({ id: 14, status: liveStatus, teacherName: 'Test Teacher DEV', participants: [] })))
   await page.goto('/')
 

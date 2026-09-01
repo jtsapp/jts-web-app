@@ -122,8 +122,9 @@ export async function POST(request) {
   const deviceId = typeof form.get('deviceId') === 'string' ? form.get('deviceId') : undefined
 
   // Demo accounts get a monthly cap - checked BEFORE the expensive Azure/Sonnet
-  // calls below, not after.
-  const quota = await checkIeltsQuota(request, deviceId)
+  // calls below, not after. Speaking идёт в Azure + разбор моделью - платная
+  // секция, тратит квоту.
+  const quota = await checkIeltsQuota(request, deviceId, 'speaking')
   if (quota.blocked) {
     return Response.json(
       { error: 'Monthly IELTS submission limit reached for this account.' },

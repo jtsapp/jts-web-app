@@ -16,19 +16,56 @@ export function isSyncEnabled() {
 
 // Debounce на модуль: словарь пишет SRS по ходу задания, грамматика/аудирование —
 // по факту прохождения; частые записи схлопываем в один POST.
+export const PUSH_DELAY_MS = 600
 const timers = {}
+const pending = {} // модуль → сериализованный стейт, который ещё не улетел
+const inFlight = {} // модуль → промис уже улетевшего POST
+
+function send(module, state) {
+  const token = loadToken()
+  if (!token) return Promise.resolve()
+  const p = fetch('/api/practice/state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ module, state }),
+  })
+    .catch((e) => console.warn('[practice.sync] push failed', module, e))
+    .finally(() => {
+      if (inFlight[module] === p) delete inFlight[module]
+    })
+  inFlight[module] = p
+  return p
+}
+
 export function pushModule(module, raw) {
   const token = loadToken()
   if (!token) return
-  const state = serializeForPush(module, raw)
+  pending[module] = serializeForPush(module, raw)
   clearTimeout(timers[module])
   timers[module] = setTimeout(() => {
-    fetch('/api/practice/state', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ module, state }),
-    }).catch((e) => console.warn('[practice.sync] push failed', module, e))
-  }, 600)
+    delete timers[module]
+    const state = pending[module]
+    delete pending[module]
+    send(module, state)
+  }, PUSH_DELAY_MS)
+}
+
+// Досылает отложенную отметку немедленно и ждёт, пока сервер её ПРИМЕТ. Нужен
+// там, где сервер сразу после этого считает тот же прогресс: право на новую
+// сессию (/api/practice/entitlement) меряется по строкам в БД, и с debounce в
+// 600 мс свежая проверка возвращала бы прежнее completed — лимит демо-доступа
+// не удерживал бы ровно ту сессию, которая его добила.
+// Best-effort, как и сам push: сетевую осечку send() уже проглотил, ждать
+// нечего — гейт в этом случае работает fail-open (см. usePracticeEntitlement).
+export async function flushModule(module) {
+  if (timers[module]) {
+    clearTimeout(timers[module])
+    delete timers[module]
+    const state = pending[module]
+    delete pending[module]
+    if (state) send(module, state)
+  }
+  await inFlight[module]
 }
 
 // Прогружает серверный прогресс в локальные ключи. Перезаписываем ТОЛЬКО при

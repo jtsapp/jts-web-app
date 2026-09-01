@@ -14,9 +14,8 @@ import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { validateCheckRequest, validateAssessment } from '@/practice/writing/assessContract.js'
 import {
-  WEEKLY_CHECK_LIMIT,
-  nextWeekResetAt,
   checkBudget,
+  checkBudgetPayload,
   consumeCheck,
   refundCheck,
 } from '@/lib/db/writingBudget.js'
@@ -74,21 +73,12 @@ const CHECK_SCHEMA = {
   required: ['scores', 'cefr', 'summary', 'strengths', 'corrections', 'rewrite', 'nextSteps'],
 }
 
-// Недельный бюджет для ответа клиенту по свежему used из consume. null — без БД.
-function budgetFromUsed(used) {
-  if (used == null) return null
-  return {
-    limit: WEEKLY_CHECK_LIMIT,
-    used,
-    remaining: Math.max(0, WEEKLY_CHECK_LIMIT - used),
-    resetsAt: nextWeekResetAt(new Date()),
-  }
-}
-
 // Бюджет для тела ошибки 429: показать сколько есть, даже если select упал.
-async function safeBudget(profileId) {
+// isDemoAccount — тот же, по которому списывали: клиент должен видеть СВОЙ
+// потолок, «осталось 0 из 10» на демо-аккаунте с лимитом 3 — это баг.
+async function safeBudget(profileId, isDemoAccount) {
   try {
-    return await checkBudget(profileId)
+    return await checkBudget(profileId, isDemoAccount)
   } catch {
     return null
   }
@@ -125,7 +115,7 @@ export async function GET(request) {
   if ('error' in resolved) return resolved.error
   let budget = null
   try {
-    budget = await checkBudget(resolved.id)
+    budget = await checkBudget(resolved.id, resolved.isDemoAccount)
   } catch (e) {
     console.error('[writing.check] budget status failed', e)
   }
@@ -162,6 +152,11 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
   const profileId = resolved.id
+  // Демо-статус приехал тем же /user/me, которым проверялся токен (см.
+  // resolveProfileId) — лишнего похода на бэкенд ради потолка нет. Один и тот
+  // же флаг решает и списание, и цифру в ответе: разъедься они, клиент увидел
+  // бы один потолок, а списание отсекало бы по другому.
+  const isDemo = resolved.isDemoAccount
 
   // Списание ДО платного вызова — гонка двух запросов не пробьёт недельный
   // потолок. Без БД (dev/preview) метрирования нет — мягкая деградация, как в
@@ -170,15 +165,15 @@ export async function POST(request) {
   let budget = null
   if (isDbConfigured()) {
     try {
-      const after = await consumeCheck(profileId)
+      const after = await consumeCheck(profileId, isDemo)
       if (after == null) {
         return Response.json(
-          { error: 'weekly_limit_reached', budget: await safeBudget(profileId) },
+          { error: 'weekly_limit_reached', budget: await safeBudget(profileId, isDemo) },
           { status: 429 },
         )
       }
       charged = true
-      budget = budgetFromUsed(after)
+      budget = checkBudgetPayload(after, isDemo)
     } catch (e) {
       console.error('[writing.check] budget consume failed', e)
     }

@@ -1,8 +1,12 @@
 // Вытаскивает из public/practice/books.html (hosted-библиотека «Книжек», в git
 // не входит — 109 МБ) полные тексты глав и словари переводов в компактные JSON
 // для нативной читалки (src/screens/BookDetail.jsx):
-//   public/practice/books/index.json  — каталог [{id,title,author,level}]
-//   public/practice/books/<id>.json   — {book,chapters:[{num,title,text}],dict}
+//   data/books/index.json  — каталог [{id,title,author,level}]
+//   data/books/<id>.json   — {book,chapters:[{num,title,text}],dict}
+//
+// Лежит вне public намеренно: текст книг платный и отдаётся только через
+// авторизованный роут /api/books (демо-аккаунту — первые главы). Обложки
+// остаются статикой — картинка обложки ничего не раскрывает.
 // Из словаря оставляем только w/ru/kz (ipa/def/ex читалке не нужны — экономит
 // ~80% веса). Запуск: node scripts/extract-books.js [путь-к-books.html]
 const fs = require('fs')
@@ -10,7 +14,7 @@ const path = require('path')
 
 const ROOT = path.join(__dirname, '..')
 const SRC = process.argv[2] || path.join(ROOT, 'public/practice/books.html')
-const OUT = path.join(ROOT, 'public/practice/books')
+const OUT = path.join(ROOT, 'data/books')
 
 const html = fs.readFileSync(SRC, 'utf8')
 
