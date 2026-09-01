@@ -2427,6 +2427,45 @@
   opacity: 0.8;
 }
 
+/* Фотография в ленте: уменьшенная, полный размер — по клику в новой вкладке.
+   Пузырь чата иначе растягивался бы снимком на всю колонку. */
+.lw-chat__photo {
+  display: block;
+  margin: 2px 0 4px;
+  border-radius: 10px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.lw-chat__photo img {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.lw-chat__photo-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lw-ink-2);
+  cursor: pointer;
+}
+
+.lw-chat__photo-btn:hover:not(:disabled) {
+  background: var(--lw-tint-3);
+}
+
+.lw-chat__photo-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 .lw-chat__text {
   display: block;
 }
@@ -4055,6 +4094,14 @@ button.lw-tap-pop__save.is-on:disabled {
   padding-right: 12px;
   background: #e2edfd;
   color: #1b5fbd;
+}
+
+/* Слово в словаре — зелёная, как всякое «получилось», и гаснет сама. */
+.lv-flag--word {
+  padding-right: 12px;
+  background: #dff3e4;
+  color: #14713a;
+  animation: lv-flag-in .35s ease-out;
 }
 
 .lv-flag__close {

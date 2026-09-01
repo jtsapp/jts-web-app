@@ -417,6 +417,78 @@ export function CheckIcon({ size = 18 }) {
   )
 }
 
+// Инструменты доски. Формы те же, что у преподавателя (Material: near_me, edit,
+// check_box_outline_blank, radio_button_unchecked, title) — доска одна на всех, и
+// узнавать инструмент по разной картинке ученику и преподавателю не с руки.
+export function CursorIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 3l14 7-6 2-2 6-6-15z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function PenIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function RectIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="4" y="6" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
+
+export function EllipseIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <ellipse cx="12" cy="12" rx="8" ry="6" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
+
+export function TextToolIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 6h14M12 6v13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function UndoIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 8H15a5 5 0 0 1 0 10h-4M9 8 12 5M9 8l3 3" stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function RedoIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M15 8H9a5 5 0 0 0 0 10h4M15 8 12 5M15 8l-3 3" stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function ImageIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="8.5" cy="10" r="1.5" fill="currentColor" />
+      <path d="m4 17 5-5 4 4 2-2 5 5" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+
 export function ExpandIcon({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">

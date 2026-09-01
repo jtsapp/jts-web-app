@@ -6884,6 +6884,7 @@ textarea {
 .board { margin-top: 16px; width: 100%; max-width: 1160px; margin-left: auto; margin-right: auto; }
 .board__toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px; background: #fff; border: 1px solid #eceef1; border-radius: 12px 12px 0 0; }
 .board__tool { border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; }
+.board__tool--icon { display: grid; place-items: center; width: 36px; height: 34px; padding: 0; color: #374151; }
 .board__tool:hover:not(:disabled) { border-color: #c7b8ff; }
 .board__tool.is-active { background: #7a4dff; border-color: #7a4dff; color: #fff; }
 .board__tool:disabled { opacity: .45; cursor: not-allowed; }

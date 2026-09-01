@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as fabric from 'fabric'
 import { useI18n } from '../../i18n.jsx'
-import { getBoardObjects, getBoardSettings, updateBoardSettings } from '../../api.js'
+import {
+  CursorIcon, PenIcon, RectIcon, EllipseIcon, TextToolIcon, UndoIcon, RedoIcon, TrashIcon, ImageIcon,
+} from '../../components/icons.jsx'
+import { getBoardObjects, getBoardSettings, updateBoardSettings, uploadMedia } from '../../api.js'
 import { useLessonBoard } from './useLessonBoard.js'
 
 // Live collaborative whiteboard for one lesson. Wire-compatible with web-admin's
@@ -13,7 +16,17 @@ import { useLessonBoard } from './useLessonBoard.js'
 // programmatic hydration/remote-apply. `applyingRemote` gates the publish side so
 // remote changes are never re-broadcast, and the hook already drops our echoes.
 
-const TOOLS = ['select', 'pen', 'rect', 'ellipse', 'text']
+// Инструмент — значок с подписью в подсказке, а не слово на кнопке. Словами
+// панель занимала всю ширину доски и переносилась на второй ряд, а у
+// преподавателя на том же уроке стоят значки: «у студентов вместо фигур
+// подписи текстом» — про это.
+const TOOLS = [
+  { key: 'select', Icon: CursorIcon },
+  { key: 'pen', Icon: PenIcon },
+  { key: 'rect', Icon: RectIcon },
+  { key: 'ellipse', Icon: EllipseIcon },
+  { key: 'text', Icon: TextToolIcon },
+]
 const CURSOR_TTL_MS = 4000
 
 function serialize(obj) {
@@ -32,6 +45,8 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
   const lastCursorSentRef = useRef(0)
 
   const [tool, setTool] = useState('pen')
+  const [imageBusy, setImageBusy] = useState(false)
+  const fileInputRef = useRef(null)
   const [hasSelection, setHasSelection] = useState(false)
   const [settings, setSettings] = useState({ drawingDisabled: false, cursorsHidden: false })
   const [cursors, setCursors] = useState({}) // userId -> { name, x, y }
@@ -120,15 +135,36 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     // Размер холста берём от .board__stage, а не от жёстких 1200×680 -
     // иначе доска остаётся мелкой в углу широкой .live--wide вёрстки, пока
     // сам материал урока (.lw-material-frame) занимает всю колонку.
+    //
+    // Нижнего порога в 600×480 здесь больше нет: на планшете и телефоне он
+    // делал холст ШИРЕ экрана, и доска не помещалась целиком — приходилось
+    // возить её вбок. Запасные 600×480 остаются только на случай, когда
+    // измерять ещё нечего (панель скрыта в момент создания).
     const stageRect = stageRef.current?.getBoundingClientRect()
     const canvas = new fabric.Canvas(canvasElRef.current, {
-      width: Math.max(stageRect?.width ?? 0, 600),
-      height: Math.max(stageRect?.height ?? 0, 480),
+      width: Math.round(stageRect?.width || 600),
+      height: Math.round(stageRect?.height || 480),
       backgroundColor: '#ffffff',
       preserveObjectStacking: true,
       selection: true,
     })
     canvasRef.current = canvas
+
+    // Доска подстраивается под экран и потом: поворот планшета, сворачивание
+    // панели, открытие вкладки «Доска» уже после входа в урок. Раньше размер
+    // брался один раз при создании — открытая скрытой, доска оставалась
+    // 600×480 навсегда.
+    let resizeObserver = null
+    if (typeof ResizeObserver !== 'undefined' && stageRef.current) {
+      resizeObserver = new ResizeObserver((entries) => {
+        const box = entries[0]?.contentRect
+        if (!box?.width || !box?.height) return
+        canvas.setDimensions({ width: Math.round(box.width), height: Math.round(box.height) })
+        canvas.requestRenderAll()
+      })
+      resizeObserver.observe(stageRef.current)
+    }
+
     const cursorTimers = cursorTimersRef.current
 
     const publishLocalAdd = (obj) => {
@@ -211,6 +247,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       .catch(() => {})
 
     return () => {
+      resizeObserver?.disconnect()
       cursorTimers.forEach((id) => clearTimeout(id))
       cursorTimers.clear()
       canvas.dispose()
@@ -323,33 +360,89 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     updateBoardSettings(token, lessonId, { [key]: next[key] }).catch(() => setSettings(settings))
   }
 
+  /**
+   * Фото на доску.
+   *
+   * Картинка уезжает в хранилище и ложится на холст объектом со ссылкой: доска
+   * синхронизируется JSON'ом объектов, и все получают ту же ссылку, а не байты
+   * через сокет — снимок с телефона иначе забил бы канал урока.
+   */
+  async function onPickImage(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || drawingBlocked) return
+    if (!file.type.startsWith('image/')) return
+    if (file.size > 20 * 1024 * 1024) return
+    setImageBusy(true)
+    try {
+      const { url } = await uploadMedia(token, file)
+      const canvas = canvasRef.current
+      if (!url || !canvas) return
+      // crossOrigin — иначе холст «пачкается» и перестаёт отдавать снимок доски.
+      const image = await fabric.FabricImage.fromURL(url, { crossOrigin: 'anonymous' })
+      // Вписываем в часть холста: снимок иначе накрывает доску целиком, и то,
+      // что на ней уже нарисовано, становится не найти.
+      const limit = Math.min(canvas.getWidth(), canvas.getHeight()) * 0.6
+      const scale = Math.min(1, limit / Math.max(image.width || 1, image.height || 1))
+      image.set({
+        left: canvas.getWidth() / 2 - ((image.width || 0) * scale) / 2,
+        top: canvas.getHeight() / 2 - ((image.height || 0) * scale) / 2,
+        scaleX: scale,
+        scaleY: scale,
+      })
+      canvas.add(image)
+      canvas.setActiveObject(image)
+      canvas.requestRenderAll()
+    } catch {
+      /* не загрузилось — доска остаётся как была */
+    } finally {
+      setImageBusy(false)
+    }
+  }
+
   return (
     <section className="board" aria-label={t('board.title')}>
       <div className="board__toolbar" role="toolbar" aria-label={t('board.title')}>
-        {TOOLS.map((tl) => (
+        {TOOLS.map(({ key, Icon }) => (
           <button
-            key={tl}
+            key={key}
             type="button"
-            className={`board__tool${tool === tl ? ' is-active' : ''}`}
-            aria-pressed={tool === tl}
-            disabled={drawingBlocked && tl !== 'select'}
-            onClick={() => setTool(tl)}
+            className={`board__tool board__tool--icon${tool === key ? ' is-active' : ''}`}
+            aria-pressed={tool === key}
+            aria-label={t(`board.tool.${key}`)}
+            title={t(`board.tool.${key}`)}
+            disabled={drawingBlocked && key !== 'select'}
+            onClick={() => setTool(key)}
           >
-            {t(`board.tool.${tl}`)}
+            <Icon />
           </button>
         ))}
+        <button
+          type="button"
+          className="board__tool board__tool--icon"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={drawingBlocked || imageBusy}
+          aria-label={t('board.image')}
+          title={t('board.image')}
+        >
+          <ImageIcon />
+        </button>
+        <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={onPickImage} />
         <span className="board__sep" aria-hidden="true" />
         <button
           type="button"
-          className="board__tool"
+          className="board__tool board__tool--icon"
           onClick={deleteSelected}
           disabled={drawingBlocked || !hasSelection}
-          title={hasSelection ? undefined : t('board.deleteHint')}
+          aria-label={t('board.delete')}
+          title={hasSelection ? t('board.delete') : t('board.deleteHint')}
         >
-          {t('board.delete')}
+          <TrashIcon />
         </button>
-        <button type="button" className="board__tool" onClick={undo} disabled={!canUndo}>{t('board.undo')}</button>
-        <button type="button" className="board__tool" onClick={redo} disabled={!canRedo}>{t('board.redo')}</button>
+        <button type="button" className="board__tool board__tool--icon" onClick={undo} disabled={!canUndo}
+                aria-label={t('board.undo')} title={t('board.undo')}><UndoIcon /></button>
+        <button type="button" className="board__tool board__tool--icon" onClick={redo} disabled={!canRedo}
+                aria-label={t('board.redo')} title={t('board.redo')}><RedoIcon /></button>
         {isStaff && <button type="button" className="board__tool board__tool--danger" onClick={clearBoard}>{t('board.clear')}</button>}
         <span className="board__spacer" />
         {isStaff && (

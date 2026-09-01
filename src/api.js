@@ -70,7 +70,7 @@ async function authGet(path, token) {
   return res.json()
 }
 
-async function authPut(path, token, body) {
+async function authPut(path, token, body, { keepalive = false } = {}) {
   let res
   try {
     res = await fetch(BASE + path, {
@@ -80,6 +80,10 @@ async function authPut(path, token, body) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body != null ? JSON.stringify(body) : undefined,
+      // keepalive — для записи, уходящей на закрытии вкладки: обычный fetch
+      // браузер обрывает вместе со страницей, и последний ответ ученика
+      // терялся ровно в тот момент, когда он закончил работу и вышел.
+      ...(keepalive ? { keepalive: true } : {}),
     })
   } catch (e) {
     throw new Error('Нет связи с сервером.')
@@ -406,8 +410,12 @@ export function getLessonMessages(token, lessonId) {
   return authGet(`/admin/lessons/${lessonId}/messages`, token)
 }
 
-export function sendLessonMessage(token, lessonId, body) {
-  return authPost(`/admin/lessons/${lessonId}/messages`, token, { body })
+export function sendLessonMessage(token, lessonId, body, attachment) {
+  return authPost(`/admin/lessons/${lessonId}/messages`, token, {
+    body,
+    attachmentUrl: attachment?.url,
+    attachmentName: attachment?.name,
+  })
 }
 
 // URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление
@@ -442,8 +450,8 @@ export function getLessonMaterialProgress(token, lessonId, materialId, studentId
   return authGet(`/student/lessons/${lessonId}/materials/${materialId}/progress${q}`, token)
 }
 
-export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson) {
-  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson })
+export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson, options) {
+  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson }, options)
 }
 
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
