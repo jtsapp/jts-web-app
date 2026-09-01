@@ -28,10 +28,11 @@ export async function POST(request) {
     return Response.json({ error: 'Unknown section/taskId.' }, { status: 400 })
   }
 
-  // Demo accounts get a monthly cap across all three IELTS submit routes.
-  // Anonymous/invalid identity isn't gated (matches this route's existing
-  // tolerance below) - only a resolved learner can have a quota.
-  const quota = await checkIeltsQuota(request, body.deviceId)
+  // Demo accounts get a monthly cap across all three IELTS submit routes -
+  // но Listening/Reading проверяются локальным грейдером ниже (gradeSection),
+  // ни в один платный API не ходят и квоту не тратят: checkIeltsQuota с этими
+  // section всегда вернёт blocked:false (см. lib/ielts/quota.js).
+  const quota = await checkIeltsQuota(request, body.deviceId, section)
   if (quota.blocked) {
     return Response.json(
       { error: 'Monthly IELTS submission limit reached for this account.' },

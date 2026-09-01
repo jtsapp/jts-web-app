@@ -1,16 +1,16 @@
 // Перевод выделенного в письменном уроке английского фрагмента на ru + kk
 // разом (Haiku, дёшево и быстро). Только залогиненным и с дневным лимитом:
 // вызов копеечный (~$0.001), но роут без гейта — бесплатный переводчик для
-// скриптов, поэтому лимит 100/день на аккаунт (см. writingBudget.js).
+// скриптов, поэтому лимит 100/день на аккаунт — и 20/день демо-аккаунту
+// (см. writingBudget.js).
 
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import { isDbConfigured } from '@/lib/db/sql.js'
 import {
-  DAILY_TRANSLATE_LIMIT,
-  nextDayResetAt,
   translateBudget,
+  translateBudgetPayload,
   consumeTranslate,
   refundTranslate,
 } from '@/lib/db/writingBudget.js'
@@ -27,20 +27,9 @@ const TRANSLATE_SCHEMA = {
   required: ['ru', 'kk'],
 }
 
-// Дневной бюджет для ответа клиенту по свежему used из consume. null — без БД.
-function budgetFromUsed(used) {
-  if (used == null) return null
-  return {
-    limit: DAILY_TRANSLATE_LIMIT,
-    used,
-    remaining: Math.max(0, DAILY_TRANSLATE_LIMIT - used),
-    resetsAt: nextDayResetAt(new Date()),
-  }
-}
-
-async function safeBudget(profileId) {
+async function safeBudget(profileId, isDemoAccount) {
   try {
-    return await translateBudget(profileId)
+    return await translateBudget(profileId, isDemoAccount)
   } catch {
     return null
   }
@@ -77,6 +66,10 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
   const profileId = resolved.id
+  // Демо-аккаунту — свой дневной потолок (см. writingBudget.js): 100 переводов
+  // в день × 14 дней демо стоят $1.40 при целевой себестоимости всего демо
+  // ~$0.57. Флаг приехал тем же /user/me, что и проверка токена.
+  const isDemo = resolved.isDemoAccount
 
   // Списание ДО платного вызова; без БД метрирования нет, сбой БД fail-open —
   // тот же контракт, что у AI-проверки (см. check/route.js).
@@ -84,15 +77,15 @@ export async function POST(request) {
   let budget = null
   if (isDbConfigured()) {
     try {
-      const after = await consumeTranslate(profileId)
+      const after = await consumeTranslate(profileId, isDemo)
       if (after == null) {
         return Response.json(
-          { error: 'daily_limit_reached', budget: await safeBudget(profileId) },
+          { error: 'daily_limit_reached', budget: await safeBudget(profileId, isDemo) },
           { status: 429 },
         )
       }
       charged = true
-      budget = budgetFromUsed(after)
+      budget = translateBudgetPayload(after, isDemo)
     } catch (e) {
       console.error('[writing.translate] budget consume failed', e)
     }

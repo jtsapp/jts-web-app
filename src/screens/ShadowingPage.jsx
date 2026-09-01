@@ -146,6 +146,10 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const recorderRef = useRef(null)
   const chunksRef = useRef([])
   const recTargetRef = useRef(null)
+  // «Старт записи уже идёт»: recTargetRef заполняется только ПОСЛЕ await'ов
+  // (право на запись + микрофон), а тап по кнопке между этими двумя моментами
+  // ничем не отличим от первого — см. startRec.
+  const recStartingRef = useRef(false)
   const autoStopRef = useRef(null)
   const takesRef = useRef({}) // takes[segIndex] = objectURL (в памяти, per lesson)
   const audioRef = useRef(null) // проигрывание своей записи
@@ -354,6 +358,17 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   )
 
   // ── запись ──────────────────────────────────────────────────────────────
+  const entitlement = usePracticeEntitlement('shadowing', token)
+  const checkEntitlement = entitlement.check
+  // Список уроков (табы) остаётся видимым всегда — это каталог раздела,
+  // студент видит, какие спикеры вообще есть. Замок ставится только на сам
+  // урок (видео/скрипт/запись) — как в грамматике: юниты видны, открытие
+  // конкретного юнита под замком. Сюда попадают уже с конкретным уроком
+  // (клик по карточке в Практике), отдельного «до открытия» состояния у
+  // этого экрана нет, поэтому замок считаем прямо от квоты, без лишнего стейта.
+  // Хук стоит здесь, а не у рендера: его check() зовёт startRec ниже.
+  const blocked = !entitlement.loading && !entitlement.allowed
+
   async function getStream() {
     if (streamRef.current && streamRef.current.active) return streamRef.current
     streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -366,30 +381,54 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   }
 
   async function startRec(target, onDone) {
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
-      setDenied(true)
-      return false
-    }
+    // Признак «идёт старт» ставим ДО первого await. Кнопки микрофона не
+    // disabled, а видимого отклика на первый тап нет (setRecSeg выставляется
+    // только после await'ов), поэтому второй тап по той же кнопке — обычное
+    // дело. Гард по recTargetRef у вызывающих его не ловит: ref заполняется
+    // ниже, уже после проверки права и запроса микрофона. Раньше окно было
+    // микротаской (на кэшированном стриме getStream не уходил в сеть), с
+    // проверкой права оно стало сетевым — и второй тап заводил ВТОРОЙ
+    // MediaRecorder на том же стриме: первый оставался писать в никуда до
+    // ухода с экрана, плюс лишний round-trip к /api/practice/entitlement.
+    if (recStartingRef.current) return false
+    recStartingRef.current = true
     try {
-      const st = await getStream()
-      setDenied(false)
-      chunksRef.current = []
-      const mt = pickMime()
-      const rec = mt ? new MediaRecorder(st, { mimeType: mt }) : new MediaRecorder(st)
-      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data) }
-      rec.onstop = () => {
-        clearTimeout(autoStopRef.current)
-        recTargetRef.current = null
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
-        onDone(blob)
+      // Право на запись проверяем СВЕЖИМ ответом сервера в момент старта — для
+      // шэдоуинга запись и есть «сессия»: пройденной считается записанная фраза
+      // (markSegmentDone в segRecord). Ответ, снятый при монтировании, про фразы
+      // этого же захода не знает, и демо-лимит мерил бы только те, что были
+      // засчитаны до открытия урока. Отказ — не только «не пишем»: blocked выше
+      // пересчитается из того же обновлённого entitlement и подменит урок
+      // экраном лимита.
+      const fresh = await checkEntitlement()
+      if (!fresh.allowed) return false
+      if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+        setDenied(true)
+        return false
       }
-      recorderRef.current = rec
-      recTargetRef.current = target
-      rec.start()
-      return true
-    } catch {
-      setDenied(true)
-      return false
+      try {
+        const st = await getStream()
+        setDenied(false)
+        chunksRef.current = []
+        const mt = pickMime()
+        const rec = mt ? new MediaRecorder(st, { mimeType: mt }) : new MediaRecorder(st)
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data) }
+        rec.onstop = () => {
+          clearTimeout(autoStopRef.current)
+          recTargetRef.current = null
+          const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
+          onDone(blob)
+        }
+        recorderRef.current = rec
+        recTargetRef.current = target
+        rec.start()
+        return true
+      } catch {
+        setDenied(true)
+        return false
+      }
+    } finally {
+      recStartingRef.current = false
     }
   }
 
@@ -397,6 +436,10 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   // syncMode: видео играет, микрофон пишет ОДНОВРЕМЕННО (говоришь поверх), стоп
   // ~на конце фразы. Иначе «по очереди»: пауза видео, тихая запись.
   async function segRecord(i) {
+    // Старт уже идёт — второй тап игнорируем: останавливать ещё нечего (запись
+    // не началась), а запускать второй раз нельзя. Гард до pauseVideo, чтобы
+    // тап не дёргал плеер впустую.
+    if (recStartingRef.current) return
     if (recTargetRef.current) { stopRec(); return }
     const sync = syncRef.current
     if (!sync) pauseVideo()
@@ -523,6 +566,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
 
   // Запись всего отрывка (нижний большой микрофон).
   async function wholeRecord() {
+    if (recStartingRef.current) return // см. segRecord
     if (recTargetRef.current) { stopRec(); return }
     const ok = await startRec({ type: 'whole' }, (blob) => {
       setWholeRec(false)
@@ -615,15 +659,6 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const progressPct = total ? Math.round((doneCount / total) * 100) : 0
   const mastery = lessonMastery(scores, total) // { mastered, pct } — локально
 
-  const entitlement = usePracticeEntitlement('shadowing', token)
-  if (!entitlement.loading && !entitlement.allowed) {
-    return (
-      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
-      </LearningLayout>
-    )
-  }
-
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
       <div className={`sh ${blind ? 'sh--blind' : ''}`}>
@@ -652,6 +687,10 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
           ))}
         </div>
 
+        {blocked ? (
+          <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+        ) : (
+        <>
         {error && (
           <div className="sh-note sh-note--err">
             {error}{' '}
@@ -961,6 +1000,8 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
             rows={segments}
             setActive={setActive}
           />
+        )}
+        </>
         )}
       </div>
     </LearningLayout>

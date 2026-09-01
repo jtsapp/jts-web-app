@@ -15,6 +15,10 @@ test('schedule renders in Уроки and an in-progress lesson opens the live sc
   await page.route('**/api/auth/me', (r) => r.fulfill(json({ user: { id: 116, name: 'Сабина', role: 'STUDENT', languageLevel: 'A1' } })))
   await page.route('**/admin/lessons/occurrences', (r) => r.fulfill(json(OCCURRENCES)))
   await page.route('**/admin/lessons/summary', (r) => r.fulfill(json(SUMMARY)))
+  // Экран сначала спрашивает, есть ли у человека преподаватель: без него вместо
+  // расписания рисуется карточка «скоро с вами свяжется менеджер». Здесь ученик
+  // с преподавателем — расписание остаётся расписанием.
+  await page.route('**/mobile/trial-request', (r) => r.fulfill(json({ requested: false, requestedAt: null, teacherAssigned: true, managerAssigned: false })))
   // Карточка урока догружает ссылку на видеозвонок и тему из самого урока —
   // в списке occurrences их нет.
   await page.route('**/admin/lessons/14/sections', (r) => r.fulfill(json([
