@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchDictionary, getSavedWords } from '../../api.js'
+import { translateWord } from '../../lib/wordTranslate.js'
 import { useI18n } from '../../i18n.jsx'
 
 /**
@@ -22,7 +23,7 @@ import { useI18n } from '../../i18n.jsx'
  * клик по заголовку означал бы пустой экран в ответ на «Ваш словарь».
  */
 export default function LessonDictionary({ token, defaultOpen = false }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const [open, setOpen] = useState(defaultOpen)
   const [tab, setTab] = useState('mine')
   const [query, setQuery] = useState('')
@@ -30,6 +31,10 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
   const [mine, setMine] = useState([])
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
+  // Перевод набранного, когда школьного банка не хватило. Банк курируется
+  // админкой и на уроке почти всегда пуст — а ученику в этот момент нужен
+  // перевод, а не сообщение о том, что слова нет.
+  const [fallback, setFallback] = useState(null)
   // Порядковый номер запроса: ответы приходят не в том порядке, в каком уходили,
   // и медленный ответ по старому запросу перетирал бы свежий список.
   const seqRef = useRef(0)
@@ -58,22 +63,37 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
     setFailed(false)
     // Ищем по уже набранному, но не на каждую букву: список длинный, а сервер
     // один на всех участников урока.
+    setFallback(null)
+    const translateIfEmpty = (rows) => {
+      const word = query.trim()
+      if (rows.length || !word) return
+      translateWord(word, lang === 'kk' ? 'kk' : 'ru')
+        .then((t) => {
+          if (seqRef.current !== seq) return
+          const tr = String(t?.tr || '').trim()
+          if (tr) setFallback({ word, translation: tr, alternates: t.alternates || [] })
+        })
+        .catch(() => { /* переводчик недоступен — останется «ничего не найдено» */ })
+    }
     const id = setTimeout(() => {
       searchDictionary(token, query)
         .then((rows) => {
           if (seqRef.current !== seq) return
           setItems(rows)
           setLoading(false)
+          translateIfEmpty(rows)
         })
         .catch(() => {
           if (seqRef.current !== seq) return
           setItems([])
           setLoading(false)
           setFailed(true)
+          // Банк не ответил — перевод всё равно нужен.
+          translateIfEmpty([])
         })
     }, query ? 300 : 0)
     return () => clearTimeout(id)
-  }, [open, query, token, tab])
+  }, [open, query, token, tab, lang])
 
   return (
     <section className={`lw-dict ${open ? 'lw-dict--open' : ''}`}>
@@ -129,19 +149,29 @@ export default function LessonDictionary({ token, defaultOpen = false }) {
             <>
               {loading && <p className="lw-dict__state">{t('schedule.loading')}</p>}
               {!loading && failed && <p className="lw-dict__state">{t('lesson.ws.dictionaryFailed')}</p>}
-              {!loading && !failed && (
-                items.length ? (
-                  <ul className="lw-dict__list">
-                    {items.map((d) => (
-                      <li className="lw-dict__row" key={d.id ?? `${d.word}-${d.translatedWord}`}>
-                        <span className="lw-dict__word">{d.word}</span>
-                        <span className="lw-dict__tr">{d.translatedWord}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="lw-dict__state">{t('lesson.ws.dictionaryEmpty')}</p>
-                )
+              {!loading && !failed && items.length > 0 && (
+                <ul className="lw-dict__list">
+                  {items.map((d) => (
+                    <li className="lw-dict__row" key={d.id ?? `${d.word}-${d.translatedWord}`}>
+                      <span className="lw-dict__word">{d.word}</span>
+                      <span className="lw-dict__tr">{d.translatedWord}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {/* Школьного банка не хватило — показываем перевод, а не сообщение
+                  о том, что слова нет. */}
+              {!loading && fallback && items.length === 0 && (
+                <div className="lw-dict__fallback">
+                  <span className="lw-dict__word">{fallback.word}</span>
+                  <span className="lw-dict__tr">{fallback.translation}</span>
+                  {fallback.alternates.length > 0 && (
+                    <span className="lw-dict__alt">{fallback.alternates.join(' · ')}</span>
+                  )}
+                </div>
+              )}
+              {!loading && !failed && items.length === 0 && !fallback && (
+                <p className="lw-dict__state">{t('lesson.ws.dictionaryEmpty')}</p>
               )}
             </>
           )}

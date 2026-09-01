@@ -254,7 +254,7 @@ async function enrichCovers(list) {
   )
 }
 
-export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
+export default function PracticePage({ userLevel = 'A1', userName, token, openTarget, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
   const [clips, setClips] = useState([])
@@ -453,6 +453,26 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
       alive = false
     }
   }, [])
+
+  /**
+   * Пришли из домашней работы за конкретным юнитом — открываем сразу его.
+   *
+   * Ждём каталог: до него юнита по номеру не найти. Цель отрабатываем один раз
+   * (по её же ключу): иначе выход из юнита кнопкой «Назад» тут же возвращал бы
+   * ученика обратно в него.
+   */
+  const openedTargetRef = useRef(null)
+  useEffect(() => {
+    if (!openTarget?.level || openTarget.unitId == null || !grammarIndex) return
+    const key = `${openTarget.level}:${openTarget.unitId}`
+    if (openedTargetRef.current === key) return
+    const unit = (grammarIndex[openTarget.level]?.units || [])
+      .find((u) => String(u.id) === String(openTarget.unitId))
+    if (!unit) return
+    openedTargetRef.current = key
+    setGrammarLevel(openTarget.level)
+    setOpenUnit({ level: openTarget.level, unit })
+  }, [openTarget, grammarIndex])
   useEffect(() => {
     setGrammarLevel(levelToCourse(userLevel))
   }, [userLevel])

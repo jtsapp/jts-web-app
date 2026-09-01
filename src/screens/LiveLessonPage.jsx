@@ -92,6 +92,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // true пока открытый материал — «догоняющая» копия для follow-me: не
   // восстанавливает свой прогресс и не сохраняет его (см. SectionMaterialFrame).
   const [followMode, setFollowMode] = useState(false)
+  // «Идти за преподавателем»: экран ученика повторяет его переходы по уроку.
+  // Включено по умолчанию — на занятии смотрят туда же, куда и преподаватель, а
+  // выключить это ученик может сам, когда хочет вернуться к своему заданию.
+  const [followTeacher, setFollowTeacher] = useState(true)
   const followModeRef = useRef(false)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
@@ -496,6 +500,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   function applyTeacherPointer(evt) {
+    // Прямое обращение преподавателя («Внимание на упражнение», «Показать
+    // классу») сильнее переключателя: ученик, отошедший к своему заданию,
+    // должен вернуться, когда его зовут.
+    setFollowTeacher(true)
+    // Преподаватель может звать не на материал, а на доску: он рисует там
+    // объяснение, а ученик его не видел, пока сам не переключит вкладку.
+    if (evt.view === 'board') {
+      setTab('board')
+      followModeRef.current = true
+      setFollowMode(true)
+      return
+    }
     setTab('lesson')
     followModeRef.current = true
     setFollowMode(true)
@@ -531,6 +547,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // которым уже следуем за самим учителем (focus/present).
     onAudioBroadcast: (evt) => playBroadcastAudio(evt),
     onFocus: (evt) => {
+      // Зов на доску адреса материала не несёт — раздел там ни при чём.
+      if (evt.view === 'board') {
+        if (!isStaff) applyTeacherPointer(evt)
+        return
+      }
       if (evt.sectionId == null) return
       // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
       setTeacherStepId(evt.stepId ?? evt.sectionId)
@@ -596,7 +617,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         if (evt.questionId != null && evt.value != null) {
           handleAnswer(evt.questionId, parseAnswer(evt.value))
         }
-        if (evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
+        if (followTeacher
+          && evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
           applyTeacherPointer(evt)
         } else if (evt.questionId != null) {
           setFocusTargetId(String(evt.questionId))
@@ -1099,6 +1121,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   <button className={`ls-tab ${tab === 'board' ? 'ls-tab--active' : ''}`} onClick={() => setTab('board')}>
                     {t('lesson.ws.tabBoard')}
                   </button>
+                  {/* Следовать за преподавателем или смотреть своё. Раньше выбора
+                      не было вовсе: экран ученика переносило за преподавателем
+                      всегда, и вернуться к своему заданию было нечем. */}
+                  {!isStaff && (
+                    <button
+                      type="button"
+                      className={`ls-follow ${followTeacher ? 'is-on' : ''}`}
+                      onClick={() => setFollowTeacher((v) => !v)}
+                      title={t(followTeacher ? 'live.followOnHint' : 'live.followOffHint')}
+                    >
+                      <span className="ls-follow__dot" aria-hidden="true" />
+                      {t(followTeacher ? 'live.followOn' : 'live.followOff')}
+                    </button>
+                  )}
                 </div>
 
                 {tab === 'lesson' && (

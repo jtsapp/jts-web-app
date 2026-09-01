@@ -6881,7 +6881,11 @@ textarea {
 /* Тот же формат колонки, что у .lw-material-frame (материал урока) - иначе
    доска на вкладке "Board" остаётся мелкой в углу, пока "Lesson" занимает
    всю широкую колонку .live--wide. */
-.board { margin-top: 16px; width: 100%; max-width: 1160px; margin-left: auto; margin-right: auto; }
+/* Доска занимает экран целиком — как у преподавателя. Прежний потолок 1160px с
+   центрированием оставлял её карточкой посреди тёмного поля, тогда как у
+   преподавателя она во всю ширину: одна и та же доска на двух экранах выглядела
+   как две разные. */
+.board { margin-top: 16px; width: 100%; }
 .board__toolbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px; background: #fff; border: 1px solid #eceef1; border-radius: 12px 12px 0 0; }
 .board__tool { border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; }
 .board__tool--icon { display: grid; place-items: center; width: 36px; height: 34px; padding: 0; color: #374151; }
@@ -6897,7 +6901,10 @@ textarea {
 .board__notice { margin: 0; padding: 8px 12px; background: #fff7ed; color: #9a3412; font-size: 13px; border: 1px solid #eceef1; border-top: 0; }
 /* Высота - тот же clamp, что у .lw-material-frame (материал урока), чтобы
    доска реально выглядела «как сам урок по размеру», а не мельче него. */
-.board__stage { position: relative; overflow: auto; border: 1px solid #eceef1; border-top: 0; border-radius: 0 0 12px 12px; background: #f3f4f6; width: 100%; height: clamp(420px, calc(100vh - 300px), 860px); }
+/* Высота — по остатку экрана, без верхнего потолка: доска и есть содержимое
+   вкладки, и держать её в 860px на большом мониторе значило бы рисовать в
+   верхней трети. */
+.board__stage { position: relative; overflow: auto; border: 1px solid #eceef1; border-top: 0; border-radius: 0 0 12px 12px; background: #f3f4f6; width: 100%; height: clamp(420px, calc(100vh - 210px), 1400px); }
 .board__canvas { display: block; }
 .board__cursor { position: absolute; transform: translate(-2px, -2px); pointer-events: none; z-index: 5; }
 .board__cursor-dot { display: block; width: 10px; height: 10px; border-radius: 50%; background: #7a4dff; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
@@ -8419,3 +8426,23 @@ textarea {
   .cr__fullLabel { display: none; }
   .cr__full { padding: 7px 9px; }
 }
+
+/* Задания из «Практики» в домашней работе: не поле для ответа, а переход в
+   раздел — материал живёт там, и прогресс считает он же. */
+.hw-practice { margin-top: 20px; }
+.hw-practice__title { margin: 0 0 4px; font-size: 15px; font-weight: 800; }
+.hw-practice__hint { margin: 0 0 10px; font-size: 13px; color: #6b7280; }
+.hw-practice__list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.hw-practice__row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  border: 1px solid #eceef1; border-radius: 12px; background: #fff;
+}
+.hw-practice__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.hw-practice__name { font-size: 14px; font-weight: 700; color: #111827; }
+.hw-practice__meta { font-size: 12px; color: #6b7280; }
+.hw-practice__open {
+  flex: none; padding: 8px 16px; border: 0; border-radius: 999px;
+  background: #7a4dff; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.hw-practice__open:hover { background: #6a3ff0; }
+

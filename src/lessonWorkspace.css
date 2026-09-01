@@ -3279,18 +3279,52 @@ button.lw-tap-pop__save.is-on:disabled {
   overflow-y: auto;
 }
 
+/* Слово и перевод — двумя колонками, но перенос разрешён: у словосочетаний
+   («tap a word then tap its picture») перевод длиннее строки, и обрезка
+   многоточием оставляла от него первые три слова. */
 .lw-dict__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: baseline;
-  gap: 8px;
-  padding: 7px 0;
+  gap: 4px 12px;
+  padding: 8px 0;
   border-bottom: 1px solid #f3f1f8;
   font-size: 13.5px;
+  line-height: 1.35;
 }
 .lw-dict__row:last-child { border-bottom: 0; }
 
-.lw-dict__word { font-weight: 700; color: #15131a; }
-.lw-dict__tr { color: #898787; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Узкая карточка (лист поверх урока на телефоне) — перевод уходит под слово:
+   в две колонки там остаётся по два слова на каждую. */
+@media (max-width: 420px) {
+  .lw-dict__row { grid-template-columns: minmax(0, 1fr); }
+}
+
+.lw-dict__word { font-weight: 700; color: #15131a; overflow-wrap: anywhere; }
+.lw-dict__tr { color: #898787; overflow-wrap: anywhere; }
+
+/* Перевод вместо «ничего не найдено»: отличаем от карточек школьного банка
+   рамкой — видно, что это машинный перевод, а не запись словаря. */
+.lw-dict__fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(122, 77, 255, .3);
+  border-radius: 12px;
+  background: rgba(122, 77, 255, .06);
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.lw-dict__fallback .lw-dict__tr { color: #4b3f6b; font-weight: 600; }
+
+.lw-dict__alt {
+  font-size: 12.5px;
+  color: #898787;
+  overflow-wrap: anywhere;
+}
 
 .lw-dict__state {
   margin: 4px 0;
@@ -3938,6 +3972,19 @@ button.lw-tap-pop__save.is-on:disabled {
 
 .lv .lw-dict__row {
   border-bottom-color: var(--lv-line);
+}
+
+.lv .lw-dict__fallback {
+  border-color: rgba(160, 120, 255, .45);
+  background: rgba(122, 77, 255, .14);
+}
+
+.lv .lw-dict__fallback .lw-dict__tr {
+  color: #d8caff;
+}
+
+.lv .lw-dict__alt {
+  color: var(--lv-muted);
 }
 
 /* --- правая колонка: чат на тёмном ----------------------------------- */
@@ -4635,3 +4682,41 @@ button.lw-tap-pop__save.is-on:disabled {
   background: rgba(144, 71, 255, .28);
   opacity: 1;
 }
+
+/* «Иду за преподавателем» — переключатель рядом с вкладками урока. Точка слева
+   горит, пока экран повторяет переходы преподавателя. */
+.ls-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 7px 14px;
+  border: 1px solid var(--lv-line, rgba(255, 255, 255, .14));
+  border-radius: var(--lw-r-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lv-muted, #9a94ad);
+  cursor: pointer;
+}
+
+.ls-follow__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .5;
+}
+
+.ls-follow.is-on {
+  border-color: rgba(122, 77, 255, .5);
+  background: rgba(122, 77, 255, .16);
+  color: #cbb6ff;
+}
+
+.ls-follow.is-on .ls-follow__dot {
+  background: #7a4dff;
+  opacity: 1;
+}
+
