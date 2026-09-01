@@ -343,3 +343,25 @@ describe('useLessonLiveSocket', () => {
     expect(onAudioBroadcast).toHaveBeenCalledWith(fromTeacher)
   })
 })
+
+// Канал слова подписан, но обработчик к нему не доезжал: onVocabSaved не был ни
+// в аргументах хука, ни в объекте ref — ученик не узнавал о слове, которое ему
+// только что положили.
+describe('useLessonLiveSocket — слово в словарь', () => {
+  it('сигнал о слове доходит до обработчика', () => {
+    const onVocabSaved = vi.fn()
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 42, { onVocabSaved }))
+
+    act(() => {
+      lastClient.subs['/topic/lesson/7/vocab/42']({ body: JSON.stringify({ word: 'get up' }) })
+    })
+
+    expect(onVocabSaved).toHaveBeenCalledWith({ word: 'get up' })
+  })
+
+  it('канал персональный — чужого слова здесь не будет', () => {
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 42, { onVocabSaved: vi.fn() }))
+    expect(Object.keys(lastClient.subs)).toContain('/topic/lesson/7/vocab/42')
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/vocab/43')
+  })
+})

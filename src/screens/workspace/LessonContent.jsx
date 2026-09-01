@@ -209,7 +209,7 @@ function InfoWordBankCard({
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys)
   const { lang } = useI18n()
@@ -388,6 +388,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
             <Block
               block={block}
               onWord={openWord}
+              revealed={revealedCards}
               answer={answers?.[block.id || `write-${group.blockIndex}`]}
               onAnswer={onAnswer}
               readOnly={readOnly}

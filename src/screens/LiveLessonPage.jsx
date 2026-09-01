@@ -25,6 +25,7 @@ import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
+import { VOCAB_REVEAL_PREFIX } from './live/vocabReveal.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
 import { catalogLessonIdFor, isStandaloneLessonUrl } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
@@ -96,6 +97,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Включено по умолчанию — на занятии смотрят туда же, куда и преподаватель, а
   // выключить это ученик может сам, когда хочет вернуться к своему заданию.
   const [followTeacher, setFollowTeacher] = useState(true)
+  // Карточки словаря, которые открыл преподаватель. Он нажимает карточку, чтобы
+  // показать классу перевод, — а видел его до этого только сам.
+  const [revealedCards, setRevealedCards] = useState(() => new Set())
   const followModeRef = useRef(false)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
@@ -614,6 +618,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         // here. A remount via applyTeacherPointer would wipe the uncontrolled
         // inputs before this paint, so only follow the teacher when the STEP
         // actually changes; a fill on this cloze just updates the highlight.
+        // Переворот карточки словаря едет тем же каналом, что и правка ответа,
+        // но ответом не является: в answers ему делать нечего.
+        if (typeof evt.questionId === 'string' && evt.questionId.startsWith(VOCAB_REVEAL_PREFIX)) {
+          const word = evt.questionId.slice(VOCAB_REVEAL_PREFIX.length)
+          setRevealedCards((prev) => {
+            const next = new Set(prev)
+            if (evt.value === '1') next.add(word)
+            else next.delete(word)
+            return next
+          })
+          return
+        }
         if (evt.questionId != null && evt.value != null) {
           handleAnswer(evt.questionId, parseAnswer(evt.value))
         }
@@ -1129,10 +1145,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       type="button"
                       className={`ls-follow ${followTeacher ? 'is-on' : ''}`}
                       onClick={() => setFollowTeacher((v) => !v)}
-                      title={t(followTeacher ? 'live.followOnHint' : 'live.followOffHint')}
+                      aria-pressed={followTeacher}
+                      aria-label={t(followTeacher ? 'live.followOnHint' : 'live.followOffHint')}
                     >
                       <span className="ls-follow__dot" aria-hidden="true" />
-                      {t(followTeacher ? 'live.followOn' : 'live.followOff')}
+                      <span className="ls-follow__text">
+                        {t(followTeacher ? 'live.followOn' : 'live.followOff')}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -1285,6 +1304,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               source={catalogLesson?.title || lesson?.title}
                               catalogLessonId={resolvedCatalogLessonId}
                               hiddenBlocks={hiddenBlocks}
+                              revealedCards={revealedCards}
                               hideStepTitle
                             />
                           </div>

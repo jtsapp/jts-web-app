@@ -55,6 +55,11 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
 
   const toolRef = useRef(tool)
   useEffect(() => { toolRef.current = tool }, [tool])
+  // Запрет рисования читается ВНУТРИ обработчиков холста, а они навешиваются
+  // один раз при создании — через состояние они видели бы его значение на
+  // момент подписки. Отсюда и «преподаватель запретил, а студент всё равно
+  // рисует».
+  const drawingBlockedRef = useRef(false)
   // A student may be blocked from drawing by the teacher; staff always draw.
   const drawingBlocked = !isStaff && settings.drawingDisabled
 
@@ -196,6 +201,11 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     let drawing = null
     canvas.on('mouse:down', (opt) => {
       const active = toolRef.current
+      // Рисование запрещено — не создаём НИЧЕГО. Раньше проверки здесь не было
+      // вовсе: перо гасилось (isDrawingMode = false), но клик проваливался в
+      // ветку фигур, и каждое нажатие ставило эллипс — ровно то, что видно на
+      // доске при включённом запрете.
+      if (drawingBlockedRef.current) return
       if (canvas.isDrawingMode || active === 'select') return
       const p = canvas.getScenePoint ? canvas.getScenePoint(opt.e) : canvas.getPointer(opt.e)
       if (active === 'text') {
@@ -283,6 +293,7 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    drawingBlockedRef.current = drawingBlocked
     const penActive = tool === 'pen' && !drawingBlocked
     canvas.isDrawingMode = penActive
     if (penActive) {

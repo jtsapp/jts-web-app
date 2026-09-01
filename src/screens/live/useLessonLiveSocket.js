@@ -16,7 +16,7 @@ import { wsBase } from '../../lib/wsUrl.js'
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, onVocabSaved, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Соединение нужно знать снаружи: publish до CONNECT молча теряется, и
   // вызывающему приходится ждать связи, чтобы отправить состояние (см.
@@ -24,8 +24,11 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onFocus, onMi
   const [connected, setConnected] = useState(false)
   // Колбэки кладём в ref, чтобы не пересоздавать STOMP-соединение при каждом
   // ре-рендере родителя (у него activeSectionId и т.п. меняются часто).
-  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch })
-  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch } })
+  // onVocabSaved здесь не было вовсе: подписка на канал слова вызывала
+  // handlersRef.current.onVocabSaved, которого в объекте не существовало, — и
+  // ученик не узнавал о слове, которое ему только что положили.
+  const handlersRef = useRef({ onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, onVocabSaved })
+  useEffect(() => { handlersRef.current = { onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onTimer, onCall, onWatch, onVocabSaved } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
