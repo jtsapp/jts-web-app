@@ -4167,6 +4167,31 @@ button.lw-tap-pop__save.is-on:disabled {
   color: #1b5fbd;
 }
 
+/* «Включить звук» — единственный элемент ряда, на который нажимают, и это должно
+   быть видно: рядом с «Вас вызвали» без обводки ученик примет её за такую же
+   метку и так и не услышит трансляцию. Кольцом внутрь, а не border: border поднял
+   бы пилюлю над соседями. */
+.lv-flag--sound {
+  padding-right: 12px;
+  border: 0;
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  box-shadow: inset 0 0 0 1.5px var(--lw-primary);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lv-flag--sound:hover {
+  background: var(--lw-tint-2);
+}
+
+.lv-flag--sound:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
 /* Слово в словаре — зелёная, как всякое «получилось», и гаснет сама. */
 .lv-flag--word {
   padding-right: 12px;

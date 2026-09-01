@@ -111,19 +111,92 @@ export function cancelSpeech() {
   stopServerAudio()
 }
 
+// 8 мс тишины, 16-бит моно 8 кГц. Нужен именно валидный источник: play() на
+// элементе без src отклоняется с NotSupportedError и разрешения не даёт.
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRqQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=='
+
+/**
+ * Создать <audio> и разблокировать его прямо в тике пользовательского жеста.
+ *
+ * iOS Safari выдаёт разрешение на воспроизведение не странице, а конкретному
+ * элементу, и только если play() вызван до того, как жест «протух» — то есть до
+ * первого await. Оба серверных голоса сначала идут в сеть (fetch → blob), и
+ * элемент, созданный после этого, на iPad уже молчит, а вызывающий код считает,
+ * что всё сыграло. Разрешение живёт на элементе и переживает подмену src,
+ * поэтому элемент заводим здесь, по нажатию, а blob-URL подставим в него, когда
+ * придёт ответ сервера.
+ *
+ * playTutorSample в этом не нуждается: там файл известен сразу и play() зовётся
+ * без предшествующего await.
+ */
+function createGestureUnlockedAudio() {
+  const audio = new Audio(SILENT_WAV)
+  try {
+    const primed = audio.play()
+    // Заглушку оборвёт подмена src — этот отказ ожидаем и не должен всплыть
+    // необработанным промисом.
+    if (primed && typeof primed.catch === 'function') primed.catch(() => {})
+  } catch {
+    // Разблокировать не вышло (jsdom, старый браузер) — дальше как раньше.
+  }
+  return audio
+}
+
+// Сколько ждём, что синтезатор действительно заговорит, прежде чем считать
+// фолбэк несработавшим. С запасом больше старта локального голоса и холодного
+// старта сетевых голосов Chrome — чтобы не отбирать звук у десктопа, где он есть.
+const SPEECH_START_TIMEOUT_MS = 2000
+
 // Browser SpeechSynthesis fallback, so a learner without ElevenLabs configured
 // still hears the clip.
-function speakBrowser(text, opts) {
+//
+// Успехом считаем onstart, а не «speak() не бросил исключение». speak() — это
+// синхронная постановка в очередь, она ничего не знает о звуке: на iOS вызов
+// без пользовательского жеста (а сюда мы попадаем уже после await fetch, то
+// есть жест потерян) молча не произносит ничего и при этом не бросает.
+// speechSynthesis.speaking там тоже врёт — он про непустую очередь, а не про
+// речь. Вызывающий верил этому «true», и экран Listening залипал в «Играет…»,
+// сжигая прослушивание. Достоверен только onstart; onerror — явный отказ;
+// таймаут закрывает iOS-случай, когда не приходит ни то, ни другое.
+async function speakBrowser(text, opts) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false
   try {
+    const synth = window.speechSynthesis
     const u = new SpeechSynthesisUtterance(text)
     u.lang = 'en-US'
     u.rate = 0.95
     if (opts.volume != null) u.volume = Math.max(0, Math.min(1, opts.volume))
-    u.onend = () => opts.onEnd?.()
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(u)
-    return true
+    let started = false
+    // onEnd — только для речи, которая звучала: наш собственный cancel() по
+    // таймауту часть браузеров присылает как end, и без этой проверки «конец»
+    // прилетел бы на прослушивание, о котором мы уже отчитались как о
+    // несостоявшемся, и снова сдвинул бы состояние экрана.
+    u.onend = () => {
+      if (started) opts.onEnd?.()
+    }
+    synth.cancel()
+    const spoke = await new Promise((resolve) => {
+      let settled = false
+      let timer = null
+      const settle = (ok) => {
+        if (settled) return
+        settled = true
+        started = ok
+        if (timer !== null) clearTimeout(timer)
+        resolve(ok)
+      }
+      // Снимаем очередь, чтобы опоздавшая речь не заговорила поверх экрана,
+      // который мы уже вернули в исходное состояние.
+      timer = setTimeout(() => {
+        synth.cancel()
+        settle(false)
+      }, SPEECH_START_TIMEOUT_MS)
+      u.onstart = () => settle(true)
+      u.onerror = () => settle(false)
+      synth.speak(u)
+    })
+    return spoke
   } catch {
     return false
   }
@@ -134,12 +207,27 @@ function speakBrowser(text, opts) {
  * (/api/listening-audio), falling back to browser TTS so the learner always
  * hears the prompt. Returns which path played, or "none" if nothing did.
  *
+ * "fallback" означает, что браузерный синтез ПОДТВЕРДИЛ начало речи (см.
+ * speakBrowser), а не просто принял её в очередь. На это опирается экран
+ * Listening: он списывает прослушивание только за звук, который зазвучал.
+ *
  * @returns {Promise<"eleven" | "fallback" | "none">}
  */
 export async function speakListeningAudio(text, opts = {}) {
   if (!text.trim()) return 'none'
   try {
+    // Сначала гасим предыдущее — иначе новый элемент попал бы под свой же
+    // stopServerAudio() строкой ниже.
     stopServerAudio()
+    // ДО первого await, пока жив жест, — см. createGestureUnlockedAudio.
+    // Внутри try намеренно: если конструктор Audio недоступен (SSR, чужой
+    // webview), сбой обязан уйти в общий catch и вернуть код возврата, а не
+    // отклонённый промис — вызывающий его не ловит и кнопка залипнет.
+    const audio = createGestureUnlockedAudio()
+    // Под общее владение модуля сразу, а не только когда придёт звук: если
+    // сеть не ответит, элемент с тишиной погасит хвост функции или следующее
+    // нажатие, а не «как-нибудь сам».
+    currentAudio = audio
     const res = await fetch('/api/listening-audio', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -149,7 +237,9 @@ export async function speakListeningAudio(text, opts = {}) {
       const blob = await res.blob()
       if (blob.size > 0) {
         const url = URL.createObjectURL(blob)
-        const audio = new Audio(url)
+        // Играем тем же элементом, что разблокировали при нажатии: подмена src
+        // выданное жестом разрешение не сбрасывает.
+        audio.src = url
         if (opts.volume != null) audio.volume = Math.max(0, Math.min(1, opts.volume))
         currentAudio = audio
         currentObjectUrl = url
@@ -168,7 +258,10 @@ export async function speakListeningAudio(text, opts = {}) {
     console.warn('[listening-audio] ElevenLabs error; falling back:', e)
     stopServerAudio()
   }
-  return speakBrowser(text, opts) ? 'fallback' : 'none'
+  // Ни один серверный путь не сыграл — гасим разблокированную тишину, иначе
+  // она осталась бы висеть в currentAudio до следующего нажатия.
+  stopServerAudio()
+  return (await speakBrowser(text, opts)) ? 'fallback' : 'none'
 }
 
 /**
@@ -245,7 +338,18 @@ export async function playTutorSample(tutor, opts = {}) {
 export async function speakTutorVoice(tutor, text, opts = {}) {
   if (!text.trim()) return 'none'
   try {
+    // Сначала гасим предыдущее — иначе новый элемент попал бы под свой же
+    // stopServerAudio() строкой ниже.
     stopServerAudio()
+    // ДО первого await, пока жив жест, — см. createGestureUnlockedAudio.
+    // Внутри try намеренно: если конструктор Audio недоступен (SSR, чужой
+    // webview), сбой обязан уйти в общий catch и вернуть код возврата, а не
+    // отклонённый промис — вызывающий его не ловит и кнопка залипнет.
+    const audio = createGestureUnlockedAudio()
+    // Под общее владение модуля сразу, а не только когда придёт звук: если
+    // сеть не ответит, элемент с тишиной погасит хвост функции или следующее
+    // нажатие, а не «как-нибудь сам».
+    currentAudio = audio
     const res = await fetch('/api/tutor-tts', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -255,7 +359,9 @@ export async function speakTutorVoice(tutor, text, opts = {}) {
       const blob = await res.blob()
       if (blob.size > 0) {
         const url = URL.createObjectURL(blob)
-        const audio = new Audio(url)
+        // Играем тем же элементом, что разблокировали при нажатии: подмена src
+        // выданное жестом разрешение не сбрасывает.
+        audio.src = url
         if (opts.volume != null) audio.volume = Math.max(0, Math.min(1, opts.volume))
         currentAudio = audio
         currentObjectUrl = url
@@ -274,5 +380,8 @@ export async function speakTutorVoice(tutor, text, opts = {}) {
     console.warn('[tutor-tts] error; falling back:', e)
     stopServerAudio()
   }
-  return speakBrowser(text, opts) ? 'fallback' : 'none'
+  // Ни один серверный путь не сыграл — гасим разблокированную тишину, иначе
+  // она осталась бы висеть в currentAudio до следующего нажатия.
+  stopServerAudio()
+  return (await speakBrowser(text, opts)) ? 'fallback' : 'none'
 }

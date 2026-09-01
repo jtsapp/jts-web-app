@@ -59,6 +59,9 @@ import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, temperFor } from './tutor/tutors.js'
 import { isMinor } from './lib/birthDate.js'
 import { playTutorSample } from './lib/ielts-audio.js'
+// Звук трансляции учителя разрешается ЗАРАНЕЕ, на жесте входа в урок: на iOS
+// сокет-событие такого разрешения уже не получит (см. live/audioReport.js).
+import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser } from './api.js'
@@ -1051,7 +1054,7 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
