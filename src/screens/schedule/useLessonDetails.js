@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getLessonById, getLessonSections } from '../../api.js'
 import { lessonTopicFromSections } from './lessonFormat.js'
-import { isGroupLesson } from '../../lib/lessonKind.js'
+import { isGroupLesson, isTrialLesson } from '../../lib/lessonKind.js'
 
 // Ссылка на видеозвонок и тема урока живут в карточке урока, а не в списке
 // occurrences: /admin/lessons/occurrences отдаёт только время, преподавателя и
@@ -23,6 +23,10 @@ import { isGroupLesson } from '../../lib/lessonKind.js'
  * lessonType самого урока (см. lessonKind.js) — запрос за ним всё равно уже
  * делается ради ссылки на звонок, второго похода в сеть тут нет. null означает
  * «тип неизвестен», и тогда чипа не будет вовсе.
+ *
+ * `trial` — пробное занятие. Оно индивидуальное по составу, и без отдельного
+ * признака чип называл бы его «Индивидуальным», хотя ученик пришёл на пробный
+ * урок, а не на занятие курса.
  */
 export function useLessonCards(token, lessonIds) {
   const cacheRef = useRef(new Map())
@@ -44,10 +48,11 @@ export function useLessonCards(token, lessonIds) {
           .then((lesson) => [id, {
             meetingUrl: lesson?.meetingUrl || null,
             group: isGroupLesson(lesson),
+            trial: isTrialLesson(lesson),
           }])
           // Урок не отдался — карточка покажется без ссылки и без типа, но
           // покажется: догрузка здесь украшение, а не условие показа.
-          .catch(() => [id, { meetingUrl: null, group: null }])
+          .catch(() => [id, { meetingUrl: null, group: null, trial: false }])
       )
     ).then((pairs) => {
       if (cancelled) return

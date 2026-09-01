@@ -113,6 +113,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           src={material.fileUrl}
           title={material.title}
           className="lw-material-iframe"
+          allow="autoplay"
         />
       </div>
     )
@@ -127,12 +128,21 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   return (
     <div className={`lw-material-frame${className}`}>
+      {/* allow="autoplay" — не украшение, а условие работы трансляции.
+          Разрешение на автовоспроизведение выдаётся ДОКУМЕНТУ, а материал живёт
+          в своём iframe: клики ученика по нашей странице этому документу ничего
+          не дают. Преподаватель нажимает «Проиграть» у себя, действие доезжает
+          сюда реплеем — а синтетический клик жестом пользователя не считается, и
+          звук у ученика молчал, пока он сам не ткнёт в материал. Атрибут
+          делегирует разрешение родителя внутрь, и ученику не нужно нажимать
+          ничего. */}
       <iframe
         ref={iframeRef}
         key={`${material.id}-${reloadToken || 0}`}
         src={src}
         title={material.title}
         className="lw-material-iframe"
+        allow="autoplay"
         onLoad={handleLoad}
       />
     </div>

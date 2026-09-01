@@ -7,11 +7,11 @@ import {
 } from '../api.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
-import { isGroupLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
+import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
-import { setAudioReporter, playBroadcastAudio, stopBroadcastAudio } from './live/audioReport.js'
+import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import { useWatchAnnounce } from './live/useWatchAnnounce.js'
 import LiveHeader from './live/LiveHeader.jsx'
@@ -25,7 +25,9 @@ import StepNav from './workspace/StepNav.jsx'
 import SystemBanner from './workspace/SystemBanner.jsx'
 import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
-import { catalogLessonIdFor } from './live/catalogLessonByUrl.js'
+import { VOCAB_REVEAL_PREFIX } from './live/vocabReveal.js'
+import { createProgressSaver } from './workspace/progressSaver.js'
+import { catalogLessonIdFor, isStandaloneLessonUrl } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
@@ -91,6 +93,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // true пока открытый материал — «догоняющая» копия для follow-me: не
   // восстанавливает свой прогресс и не сохраняет его (см. SectionMaterialFrame).
   const [followMode, setFollowMode] = useState(false)
+  // «Идти за преподавателем»: экран ученика повторяет его переходы по уроку.
+  // Включено по умолчанию — на занятии смотрят туда же, куда и преподаватель, а
+  // выключить это ученик может сам, когда хочет вернуться к своему заданию.
+  const [followTeacher, setFollowTeacher] = useState(true)
+  // Карточки словаря, которые открыл преподаватель. Он нажимает карточку, чтобы
+  // показать классу перевод, — а видел его до этого только сам.
+  const [revealedCards, setRevealedCards] = useState(() => new Set())
   const followModeRef = useRef(false)
   // Разобранный урок каталога для активного материала: шаги, темы и задания с
   // ответами. Пока его нет — материал показывается файлом в iframe, как раньше
@@ -175,6 +184,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [calledBy, setCalledBy] = useState(null)
   const [callNonce, setCallNonce] = useState(0)
   const [watchedBy, setWatchedBy] = useState(null)
+  // Слово, которое преподаватель только что положил ученику в словарь.
+  const [savedWord, setSavedWord] = useState(null)
+  const [savedWordNonce, setSavedWordNonce] = useState(0)
   useEffect(() => {
     if (reviewStudentId == null && activeParticipants.length) {
       setReviewStudentId(activeParticipants[0].studentId)
@@ -249,7 +261,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    Promise.resolve(url ? catalogLessonIdFor(url, token) : null)
+    // Пробный урок в каталоге не ищем: его там нет по определению, а поход за
+    // деревом задерживал бы показ файла на старте занятия.
+    Promise.resolve(url && !isStandaloneLessonUrl(url) ? catalogLessonIdFor(url, token) : null)
       .then((id) =>
         id == null
           ? Promise.resolve({ id: null, loaded: null })
@@ -428,6 +442,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // `student` = свой пузырь справа (имя класса из дизайн-спеки)
       from: mine ? 'student' : 'teacher',
       text: m.body,
+      photoUrl: m.attachmentUrl || null,
+      photoName: m.attachmentName || null,
       senderName: mine
         ? undefined
         : (m.senderName || (isTeacherMsg ? undefined : m.senderName)),
@@ -459,17 +475,24 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       .catch(() => {})
   }
 
-  function handleSendMessage(text) {
+  /** `attachment` — {url, name} уже загруженной фотографии; текст к ней необязателен. */
+  function handleSendMessage(text, attachment) {
     const trimmed = String(text || '').trim()
-    if (!trimmed || chatSending) return
+    if ((!trimmed && !attachment) || chatSending) return
     // Оптимистично — чат не должен ждать раунд-трип, чтобы казаться «живым».
     const tempId = `local-${Date.now()}`
     setMessages((prev) => [
       ...prev,
-      { id: tempId, body: trimmed, senderUserId: selfUserId, senderName: null },
+      {
+        id: tempId,
+        body: trimmed,
+        attachmentUrl: attachment?.url || null,
+        senderUserId: selfUserId,
+        senderName: null,
+      },
     ])
     setChatSending(true)
-    sendLessonMessage(token, lessonId, trimmed)
+    sendLessonMessage(token, lessonId, trimmed, attachment)
       .then((list) => {
         // Ответ на свою отправку приносит и то, что учитель успел написать
         // параллельно, — сигнал тут по тому же правилу, а не «раз я отправил, то молчим».
@@ -481,6 +504,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   function applyTeacherPointer(evt) {
+    // Прямое обращение преподавателя («Внимание на упражнение», «Показать
+    // классу») сильнее переключателя: ученик, отошедший к своему заданию,
+    // должен вернуться, когда его зовут.
+    setFollowTeacher(true)
+    // Преподаватель может звать не на материал, а на доску: он рисует там
+    // объяснение, а ученик его не видел, пока сам не переключит вкладку.
+    if (evt.view === 'board') {
+      setTab('board')
+      followModeRef.current = true
+      setFollowMode(true)
+      return
+    }
     setTab('lesson')
     followModeRef.current = true
     setFollowMode(true)
@@ -516,6 +551,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // которым уже следуем за самим учителем (focus/present).
     onAudioBroadcast: (evt) => playBroadcastAudio(evt),
     onFocus: (evt) => {
+      // Зов на доску адреса материала не несёт — раздел там ни при чём.
+      if (evt.view === 'board') {
+        if (!isStaff) applyTeacherPointer(evt)
+        return
+      }
       if (evt.sectionId == null) return
       // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
       setTeacherStepId(evt.stepId ?? evt.sectionId)
@@ -578,10 +618,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         // here. A remount via applyTeacherPointer would wipe the uncontrolled
         // inputs before this paint, so only follow the teacher when the STEP
         // actually changes; a fill on this cloze just updates the highlight.
+        // Переворот карточки словаря едет тем же каналом, что и правка ответа,
+        // но ответом не является: в answers ему делать нечего.
+        if (typeof evt.questionId === 'string' && evt.questionId.startsWith(VOCAB_REVEAL_PREFIX)) {
+          const word = evt.questionId.slice(VOCAB_REVEAL_PREFIX.length)
+          setRevealedCards((prev) => {
+            const next = new Set(prev)
+            if (evt.value === '1') next.add(word)
+            else next.delete(word)
+            return next
+          })
+          return
+        }
         if (evt.questionId != null && evt.value != null) {
           handleAnswer(evt.questionId, parseAnswer(evt.value))
         }
-        if (evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
+        if (followTeacher
+          && evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
           applyTeacherPointer(evt)
         } else if (evt.questionId != null) {
           setFocusTargetId(String(evt.questionId))
@@ -657,7 +710,27 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       if (isStaff) return
       setWatchedBy(evt.watching ? (evt.senderName || '') : null)
     },
+    // Преподаватель положил слово в мой словарь. Канал был, звук был, метки не
+    // было: обработчика тут просто не стояло, и ученик узнавал о слове, только
+    // если сам догадывался открыть «Ваш словарь».
+    onVocabSaved: (evt) => {
+      if (isStaff) return
+      const word = String(evt?.word || '').trim()
+      if (!word) return
+      setSavedWord(word)
+      setSavedWordNonce((n) => n + 1)
+      playCue('word')
+    },
   })
+
+  // Метка о слове гаснет сама, в отличие от вызова к доске: там преподаватель
+  // ждёт ответа, а здесь ученику просто сообщили — держать плашку до клика
+  // значит копить их за урок.
+  useEffect(() => {
+    if (savedWord == null) return undefined
+    const id = setTimeout(() => setSavedWord(null), 7000)
+    return () => clearTimeout(id)
+  }, [savedWord, savedWordNonce])
 
 
   // Ученик проскроллил/перешёл к вопросу, но ещё не обязательно ответил —
@@ -768,8 +841,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // второй вкладкой, ответ пришёл не сюда, запрос не удался), он тут же записал
   // бы поверх сохранённого пустоту. Ответ теряется тем вернее, чем позже его
   // открыли.
-  const saveTimerRef = useRef(null)
-  useEffect(() => () => clearTimeout(saveTimerRef.current), [])
+  // Планировщик записи: дебаунс, но без права потерять последнее сделанное
+  // (см. progressSaver.js). Создаётся один раз на урок.
+  const saverRef = useRef(null)
+  if (!saverRef.current) {
+    saverRef.current = createProgressSaver((materialId, payload, keepalive) =>
+      saveLessonMaterialProgress(token, lessonId, materialId, payload,
+        keepalive ? { keepalive: true } : undefined).catch(() => {}))
+  }
 
   // Живое аудио: пока это не преподаватель, каждый 🔊/аудио-клип уходит
   // собеседнику (см. audioReport.js — карточки словаря, вопросы на слух,
@@ -781,17 +860,24 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return () => setAudioReporter(null)
   }, [isStaff, sendAudio])
   // Ушёл с урока — трансляция учителя, если играла, обрывается вместе с ним.
-  useEffect(() => () => stopBroadcastAudio(), [])
+  useEffect(() => () => releaseBroadcastAudio(), [])
 
   function persistProgress(next) {
     if (isStaff || !stepMaterialId || !progressLoaded) return
-    // Дебаунс: ответ в поле ввода меняется на каждую букву.
-    clearTimeout(saveTimerRef.current)
-    const materialId = stepMaterialId
-    saveTimerRef.current = setTimeout(() => {
-      saveLessonMaterialProgress(token, lessonId, materialId, serializeStepProgress(next)).catch(() => {})
-    }, 800)
+    saverRef.current.schedule(stepMaterialId, serializeStepProgress(next))
   }
+
+  // Выход из урока и закрытие вкладки: дописываем то, что не успело уйти.
+  // `pagehide` вместо `beforeunload` — на телефонах и в Safari вкладку
+  // усыпляют без второго события, и запись бы просто не состоялась.
+  useEffect(() => {
+    const onLeave = () => saverRef.current?.flush(true)
+    window.addEventListener('pagehide', onLeave)
+    return () => {
+      window.removeEventListener('pagehide', onLeave)
+      saverRef.current?.flush(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!progressLoaded || !flushProgressRef.current) return
@@ -972,6 +1058,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const taskCards = practiceCardStats(activeStep, isStaff ? reviewCheckedSteps : checkedSteps)
   // Урок разобран, но все его упражнения скрыты от этого ученика поштучно.
   const allStepsHidden = (catalogLesson?.steps?.length || 0) > 0 && lessonSteps.length === 0
+  // Кнопки «Темы» нет, когда тем нет: у самодостаточного урока шагов не бывает,
+  // и лист открывался бы пустым. LiveHeader сам прячет кнопку без обработчика.
+  const openTopics = routeSteps.length ? () => setSheet('topics') : undefined
   const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved, allStepsHidden })
 
   return (
@@ -990,8 +1079,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         timerLeft={timerLeft}
         timerExpired={timerExpired}
         group={groupLesson}
+        trial={isTrialLesson(lesson)}
         onVocab={() => setSheet('vocab')}
-        onTopics={() => setSheet('topics')}
+        onTopics={openTopics}
         onChat={() => setSheet('chat')}
         onExit={() => setConfirmExit(true)}
       />
@@ -1047,6 +1137,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                   <button className={`ls-tab ${tab === 'board' ? 'ls-tab--active' : ''}`} onClick={() => setTab('board')}>
                     {t('lesson.ws.tabBoard')}
                   </button>
+                  {/* Следовать за преподавателем или смотреть своё. Раньше выбора
+                      не было вовсе: экран ученика переносило за преподавателем
+                      всегда, и вернуться к своему заданию было нечем. */}
+                  {!isStaff && (
+                    <button
+                      type="button"
+                      className={`ls-follow ${followTeacher ? 'is-on' : ''}`}
+                      onClick={() => setFollowTeacher((v) => !v)}
+                      aria-pressed={followTeacher}
+                      aria-label={t(followTeacher ? 'live.followOnHint' : 'live.followOffHint')}
+                    >
+                      <span className="ls-follow__dot" aria-hidden="true" />
+                      <span className="ls-follow__text">
+                        {t(followTeacher ? 'live.followOn' : 'live.followOff')}
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 {tab === 'lesson' && (
@@ -1104,7 +1211,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           Вызов ученик снимает сам: это обращение к нему, и
                           гасить его должен человек, а не таймер. Метку
                           просмотра снимает преподаватель, закрыв чужой экран. */}
-                      {(calledBy != null || watchedBy != null) && (
+                      {(calledBy != null || watchedBy != null || savedWord != null) && (
                         <div className="lv-flags" role="status">
                           {calledBy != null && (
                             <span className="lv-flag lv-flag--call" key={callNonce}>
@@ -1123,6 +1230,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           )}
                           {watchedBy != null && (
                             <span className="lv-flag lv-flag--watch">{t('live.watchedByTeacher')}</span>
+                          )}
+                          {savedWord != null && (
+                            <span className="lv-flag lv-flag--word" key={savedWordNonce}>
+                              {t('live.wordSaved', { word: savedWord })}
+                            </span>
                           )}
                         </div>
                       )}
@@ -1192,6 +1304,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               source={catalogLesson?.title || lesson?.title}
                               catalogLessonId={resolvedCatalogLessonId}
                               hiddenBlocks={hiddenBlocks}
+                              revealedCards={revealedCards}
                               hideStepTitle
                             />
                           </div>
@@ -1333,6 +1446,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       <TeacherChat
                         messages={chatMessages}
                         onSend={handleSendMessage}
+                        token={token}
                         sending={chatSending}
                         title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
                       />
@@ -1396,6 +1510,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             <TeacherChat
               messages={chatMessages}
               onSend={handleSendMessage}
+              token={token}
               sending={chatSending}
               title={t('live.chatSheetTitle')}
             />

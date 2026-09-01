@@ -2427,6 +2427,45 @@
   opacity: 0.8;
 }
 
+/* Фотография в ленте: уменьшенная, полный размер — по клику в новой вкладке.
+   Пузырь чата иначе растягивался бы снимком на всю колонку. */
+.lw-chat__photo {
+  display: block;
+  margin: 2px 0 4px;
+  border-radius: 10px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.lw-chat__photo img {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.lw-chat__photo-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lw-ink-2);
+  cursor: pointer;
+}
+
+.lw-chat__photo-btn:hover:not(:disabled) {
+  background: var(--lw-tint-3);
+}
+
+.lw-chat__photo-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
 .lw-chat__text {
   display: block;
 }
@@ -2834,20 +2873,22 @@
   background: var(--lw-surface);
   border-radius: var(--lw-r-step);
   padding: 8px;
-  height: clamp(420px, calc(100vh - 300px), 860px);
+  /* Высота — как у преподавателя: занять экран, а не стоять фиксированной
+     карточкой. Прежний потолок 860px оставлял снизу пустоту на высоком мониторе. */
+  height: clamp(420px, calc(100vh - 220px), 1400px);
   overflow: hidden;
-  /* Центральная колонка тянется на всю ширину экрана (см. .lw-live-body) —
-     max-width здесь не даёт материалу раздуться до нечитаемой ширины на
-     широком мониторе, margin:auto центрирует карточку вместо пустой полосы
-     у края. width:100% обязателен вместе с margin:auto — это флекс-элемент
-     .lw-live-main (column), а авто-отступы по кросс-оси отключают его
-     обычное растягивание (align-items:stretch), и без явной ширины карточка
-     схлопывается к внутреннему контенту (iframe без width — это его дефолтные
-     300×150, ровно та поломка, что уже однажды была здесь, см. шапку файла). */
+  /* Материал занимает колонку ЦЕЛИКОМ — так же, как у преподавателя
+     (.embed-frame в web-admin). Раньше здесь стоял потолок 1160px с
+     margin:auto: он берёг текстовые материалы от нечитаемо широкой строки,
+     но рядом с экраном преподавателя это читалось как урок, зажатый в узкую
+     колонку с пустыми полями по бокам. Ширину внутри держит сам материал: у
+     уроков каталога своя вёрстка, у самодостаточных — собственный max-width.
+
+     width:100% обязателен и здесь: это флекс-элемент .lw-live-main (column),
+     и без явной ширины карточка схлопывается к внутреннему содержимому —
+     iframe без width это его дефолтные 300×150, ровно та поломка, что уже
+     однажды была на этом месте (см. шапку файла). */
   width: 100%;
-  max-width: 1160px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .lw-material-iframe {
@@ -3238,18 +3279,71 @@ button.lw-tap-pop__save.is-on:disabled {
   overflow-y: auto;
 }
 
+/* Слово и перевод — двумя колонками, но перенос разрешён: у словосочетаний
+   («tap a word then tap its picture») перевод длиннее строки, и обрезка
+   многоточием оставляла от него первые три слова. */
 .lw-dict__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: baseline;
-  gap: 8px;
-  padding: 7px 0;
+  gap: 4px 12px;
+  padding: 8px 0;
   border-bottom: 1px solid #f3f1f8;
   font-size: 13.5px;
+  line-height: 1.35;
 }
 .lw-dict__row:last-child { border-bottom: 0; }
 
-.lw-dict__word { font-weight: 700; color: #15131a; }
-.lw-dict__tr { color: #898787; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Узкая карточка (лист поверх урока на телефоне) — перевод уходит под слово:
+   в две колонки там остаётся по два слова на каждую. */
+@media (max-width: 420px) {
+  .lw-dict__row { grid-template-columns: minmax(0, 1fr); }
+}
+
+.lw-dict__word { font-weight: 700; color: #15131a; overflow-wrap: anywhere; }
+.lw-dict__tr { color: #898787; overflow-wrap: anywhere; }
+
+/* Перевод вместо «ничего не найдено»: отличаем от карточек школьного банка
+   рамкой — видно, что это машинный перевод, а не запись словаря. */
+/* Карточка перевода: без рамки — светлая линия вокруг неё на тёмном читалась
+   как обрезанный элемент. Отделяем подложкой, а не контуром. */
+.lw-dict__fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(122, 77, 255, .10);
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.lw-dict__fallback .lw-dict__tr { color: #3b2f5c; font-weight: 700; font-size: 14px; }
+
+.lw-dict__alt {
+  font-size: 12.5px;
+  color: #6e6880;
+  overflow-wrap: anywhere;
+}
+
+/* Слово в свой словарь прямо отсюда: раньше перевод показывался, а забрать его
+   было нечем — ученик переписывал слово руками. */
+.lw-dict__save {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: #7a4dff;
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lw-dict__save:disabled { opacity: .6; cursor: default; }
 
 .lw-dict__state {
   margin: 4px 0;
@@ -3602,18 +3696,6 @@ button.lw-tap-pop__save.is-on:disabled {
   outline-offset: 2px;
 }
 
-.lv-side__count {
-  color: var(--lv-muted);
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Светлее акцента: #9047ff на плитке #26262c даёт 3.2:1 — ниже AA для 12px,
-   и активная вкладка читалась хуже приглушённой соседней. */
-.lv-side__tab.is-active .lv-side__count {
-  color: #c4a4ff;
-}
 
 /* Тело вкладки прокручивается само — карточка ограничена по высоте, чтобы под
    ней остался чат (см. адаптив ниже). */
@@ -3911,6 +3993,24 @@ button.lw-tap-pop__save.is-on:disabled {
   border-bottom-color: var(--lv-line);
 }
 
+.lv .lw-dict__fallback {
+  background: rgba(122, 77, 255, .16);
+}
+
+.lv .lw-dict__fallback .lw-dict__word {
+  color: #fff;
+}
+
+.lv .lw-dict__fallback .lw-dict__tr {
+  color: #e6dcff;
+}
+
+/* Варианты перевода — светлее приглушённого текста: на тёмной подложке
+   «вместе с · от · несмотря на» было почти не разобрать. */
+.lv .lw-dict__alt {
+  color: #b9b2cc;
+}
+
 /* --- правая колонка: чат на тёмном ----------------------------------- */
 
 .lv .lw-live-aside > .lw-card {
@@ -4065,6 +4165,14 @@ button.lw-tap-pop__save.is-on:disabled {
   padding-right: 12px;
   background: #e2edfd;
   color: #1b5fbd;
+}
+
+/* Слово в словаре — зелёная, как всякое «получилось», и гаснет сама. */
+.lv-flag--word {
+  padding-right: 12px;
+  background: #dff3e4;
+  color: #14713a;
+  animation: lv-flag-in .35s ease-out;
 }
 
 .lv-flag__close {
@@ -4580,6 +4688,9 @@ button.lw-tap-pop__save.is-on:disabled {
   margin-bottom: 8px;
 }
 
+/* Подпись вкладки читается на тёмном: раньше она наследовала цвет и глушилась
+   до .7 прозрачности — «Мои слова» и «Словарь школы» превращались в серое на
+   почти чёрном, и какая вкладка открыта, приходилось угадывать по подложке. */
 .lw-dict__tab {
   flex: 1;
   border: none;
@@ -4590,11 +4701,78 @@ button.lw-tap-pop__save.is-on:disabled {
   font: inherit;
   font-size: 12.5px;
   font-weight: 700;
-  opacity: .7;
   cursor: pointer;
 }
 
 .lw-dict__tab.is-on {
   background: rgba(144, 71, 255, .28);
+}
+
+.lv .lw-dict__tab {
+  background: rgba(255, 255, 255, .07);
+  color: #cfcada;
+}
+
+.lv .lw-dict__tab.is-on {
+  background: rgba(144, 71, 255, .38);
+  color: #fff;
+}
+
+/* «Иду за преподавателем» — переключатель рядом с вкладками урока. Точка слева
+   горит, пока экран повторяет переходы преподавателя. */
+/* Переключатель стоит в одном ряду с вкладками и не вылезает за него: раньше
+   `margin-left:auto` в узком ряду выталкивал кнопку поверх соседней колонки, и
+   нажать её было нечем. Подпись сжимается, кнопка — нет. */
+.ls__tabs {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ls-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  max-width: 100%;
+  padding: 7px 14px;
+  border: 1px solid var(--lv-line, rgba(255, 255, 255, .14));
+  border-radius: var(--lw-r-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lv-muted, #9a94ad);
+  cursor: pointer;
+}
+
+.ls-follow__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .5;
+}
+
+.ls-follow.is-on {
+  border-color: rgba(122, 77, 255, .5);
+  background: rgba(122, 77, 255, .16);
+  color: #cbb6ff;
+}
+
+.ls-follow.is-on .ls-follow__dot {
+  background: #7a4dff;
   opacity: 1;
 }
+
+.ls-follow__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* На узком экране остаётся точка: подпись в две строки ломала бы ряд вкладок. */
+@media (max-width: 560px) {
+  .ls-follow { padding: 7px 10px; }
+  .ls-follow__text { display: none; }
+}
+

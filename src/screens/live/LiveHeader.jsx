@@ -14,6 +14,7 @@ export default function LiveHeader({
   status,
   lessonTitle,
   group,
+  trial,
   meetingUrl,
   connected,
   teacherOnline,
@@ -57,7 +58,7 @@ export default function LiveHeader({
           </span>
           <span className="lv-top__lesson-body">
             <span className="lv-top__lesson-name">{lessonTitle || t('live.title')}</span>
-            <span className="lv-top__lesson-kind">{t(group ? 'live.kindGroup' : 'live.kindSolo')}</span>
+            <span className="lv-top__lesson-kind">{t(trial ? 'live.kindTrial' : group ? 'live.kindGroup' : 'live.kindSolo')}</span>
           </span>
         </span>
         {/* Присутствие преподавателя и связь показываем только когда их нет:

@@ -7,9 +7,12 @@ import LessonPeople from './LessonPeople.jsx'
 // «Группа» (макет «Онлайн-уроки»).
 //
 // До этого колонка показывала только темы, а состав класса был доступен одному
-// преподавателю и жил вне колонки. Вкладки решают сразу две задачи макета:
-// ученик групповой группы видит, с кем он занимается и кто на связи, а счётчик
-// («Темы 5», «Группа 6») заменил собой заголовки блоков.
+// преподавателю и жил вне колонки. Вкладки дают ученику групповой группы
+// увидеть, с кем он занимается и кто на связи.
+//
+// Без счётчиков: числа рядом с названиями («Темы 5», «Группа 6») ученик читал
+// как порядковые номера вкладок, а не как размер списка, — а сам список он и
+// так видит, открыв вкладку.
 export default function LessonSidePanel({
   steps,
   activeStepId,
@@ -29,22 +32,16 @@ export default function LessonSidePanel({
 }) {
   const { t } = useI18n()
   const [tab, setTab] = useState('topics')
-  const topicsCount = (steps || []).length
-  // Преподаватель считается вместе с учениками — но только когда он вообще
-  // известен: пока урок не загрузился, строки с ним нет, и «+1» разошёлся бы
-  // со списком, по которому ученик и судит о размере группы.
-  const hasTeacher = teacherId != null || Boolean(teacherName)
-  const peopleCount = (participants || []).length + (hasTeacher ? 1 : 0)
 
   const TABS = [
-    { key: 'topics', label: t('live.topicsTab'), count: topicsCount },
-    { key: 'people', label: t('live.peopleTab'), count: peopleCount },
+    { key: 'topics', label: t('live.topicsTab') },
+    { key: 'people', label: t('live.peopleTab') },
   ]
 
   return (
     <div className="lw-card lv-side">
       <div className="lv-side__tabs" role="tablist" aria-label={t('lesson.ws.topics')}>
-        {TABS.map(({ key, label, count }) => (
+        {TABS.map(({ key, label }) => (
           <button
             key={key}
             type="button"
@@ -56,7 +53,6 @@ export default function LessonSidePanel({
             onClick={() => setTab(key)}
           >
             {label}
-            <span className="lv-side__count">{count}</span>
           </button>
         ))}
       </div>

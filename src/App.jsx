@@ -320,6 +320,10 @@ export default function App() {
   // L*.html + клиентское извлечение). Определяет, чем workspace грузит контент.
   const [workspaceSource, setWorkspaceSource] = useState('live')
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
+  // Юнит «Практики», который задали на дом: с карточки домашней работы
+  // открываем сразу его, а не общий список — иначе ученик ищет глазами то,
+  // на что уже нажал.
+  const [practiceTarget, setPracticeTarget] = useState(null)
   const [writingTarget, setWritingTarget] = useState(null) // { level?, genreId? } — прыжок из Практики сразу в уровень/жанр Writing
   const [workbookTarget, setWorkbookTarget] = useState(null) // { level } — какой воркбук открыть из Практики
   const [loading, setLoading] = useState(false)
@@ -718,7 +722,9 @@ export default function App() {
   function handleNav(key, payload) {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
-    else if (key === 'practice') setScreen('practice')
+    // Практика открывается и с домашней работы: payload несёт адрес юнита,
+    // который задал преподаватель.
+    else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
     else if (key === 'listening') setScreen('listening')
     // Shadowing открывается с карточки Практики — payload несёт id урока.
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
@@ -991,6 +997,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          openTarget={practiceTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}

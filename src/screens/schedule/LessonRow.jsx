@@ -13,13 +13,14 @@ export default function LessonRow({ occ, card, onOpenLesson }) {
   // приехать вовсе — урок чужой группы). Тогда чипа просто нет: пустая плашка
   // на его месте выглядела бы поломкой.
   const group = card?.group
+  const trial = card?.trial === true
 
   return (
     <div className={`sch-row sch-row--${stateKey}`}>
       <div className="sch-row__main">
         {group != null && (
           <div className={`sch-row__kind sch-row__kind--${group ? 'group' : 'solo'}`}>
-            {t(group ? 'schedule.kindGroup' : 'schedule.kindSolo')}
+            {t(trial ? 'schedule.kindTrial' : group ? 'schedule.kindGroup' : 'schedule.kindSolo')}
           </div>
         )}
         <div className="sch-row__teacher">{occ.teacherName || '—'}</div>

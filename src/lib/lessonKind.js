@@ -18,6 +18,16 @@ const GONE_STATUSES = new Set(['CANCELLED_FREE', 'CANCELLED_BURNED', 'NO_SHOW_BU
  *
  * Парное занятие считается групповым: один на один оно не является.
  */
+/**
+ * Пробное занятие — знакомство со школой.
+ *
+ * Подписывать его «Индивидуальным» неверно: ученик приходит на пробный урок, а
+ * не на первое занятие курса, и по абонементу оно не идёт.
+ */
+export function isTrialLesson(lesson) {
+  return lesson?.lessonType === 'TRIAL'
+}
+
 export function isGroupLesson(lesson) {
   const type = lesson?.lessonType
   if (!type) return null

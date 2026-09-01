@@ -30,9 +30,16 @@ import { getLessonScores } from '../practice/shadowing/recordings.js'
 import { lessonMastery } from '../practice/shadowing/mastery.js'
 import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
+import ComicReader from './ComicReader.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
 import GrammarLesson from './GrammarLesson.jsx'
 import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/grammar/grammarData.js'
+import {
+  loadComicsIndex,
+  searchComicsCatalog,
+  comicStatus,
+  visibleComics,
+} from '../practice/comics/comicsData.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 
@@ -247,7 +254,7 @@ async function enrichCovers(list) {
   )
 }
 
-export default function PracticePage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
+export default function PracticePage({ userLevel = 'A1', userName, token, openTarget, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
   const [clips, setClips] = useState([])
@@ -260,6 +267,19 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Открытая ситуативка — смотрим внутри приложения, чтобы было где отметить
   // прохождение (внешняя вкладка такого события не давала, см. SituativkaOverlay).
   const [openSituation, setOpenSituation] = useState(null)
+  // Каталог комиксов приходит из API (/mobile/comics): материал заводит
+  // контентщик через админку. Пустой массив = раздел просто не показываем,
+  // поэтому до первой заливки его на экране нет.
+  const [comics, setComics] = useState([])
+  const [comicQuery, setComicQuery] = useState('')
+  // Есть ли комиксы в каталоге вообще. Отдельно от `comics`, потому что тот
+  // пустеет и от поиска: иначе неудачный запрос прятал бы раздел вместе с
+  // собственной строкой поиска, и стереть её было бы негде.
+  const [hasComics, setHasComics] = useState(false)
+  // Профиль читателя для гейта 18+. Пока null: бэкенд не отдаёт birthDate
+  // (обещали добавить). Когда начнёт — сюда придёт объект с этим полем, и
+  // взрослые увидят помеченные комиксы без других правок.
+  const profile = null
   // Студент упёрся в квоту статических уровней — показываем экран лимита.
   const [situationsBlocked, setSituationsBlocked] = useState(false)
   const [workbooksBlocked, setWorkbooksBlocked] = useState(false)
@@ -357,6 +377,43 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     return () => clearTimeout(id)
   }, [])
 
+  // Каталог комиксов и поиск по нему. Ждём токен: эндпоинты под авторизацией,
+  // как остальные /mobile-каталоги. Комиксы 18+ отсекает гейт (comicsData.js).
+  //
+  // Поиск серверный, поэтому набор ждёт паузы в 300 мс: иначе запрос уходит на
+  // каждую букву, а ответы возвращаются вперемешку.
+  useEffect(() => {
+    if (!apiToken) return
+    let alive = true
+    const q = comicQuery.trim()
+    const run = () =>
+      (q
+        ? searchComicsCatalog(apiToken, q)
+        : loadComicsIndex(apiToken, (fresh) => {
+            if (!alive) return
+            setHasComics(fresh.length > 0)
+            setComics(visibleComics(fresh, profile))
+          })
+      )
+        .then((list) => {
+          if (!alive) return
+          if (!q) setHasComics(list.length > 0)
+          setComics(visibleComics(list, profile))
+        })
+        .catch(() => {})
+    if (!q) {
+      run()
+      return () => {
+        alive = false
+      }
+    }
+    const id = setTimeout(run, 300)
+    return () => {
+      alive = false
+      clearTimeout(id)
+    }
+  }, [apiToken, comicQuery, profile])
+
   const saved = words
 
   // Удаление сохранённого слова: убираем сразу (оптимистично), при ошибке —
@@ -396,6 +453,26 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
       alive = false
     }
   }, [])
+
+  /**
+   * Пришли из домашней работы за конкретным юнитом — открываем сразу его.
+   *
+   * Ждём каталог: до него юнита по номеру не найти. Цель отрабатываем один раз
+   * (по её же ключу): иначе выход из юнита кнопкой «Назад» тут же возвращал бы
+   * ученика обратно в него.
+   */
+  const openedTargetRef = useRef(null)
+  useEffect(() => {
+    if (!openTarget?.level || openTarget.unitId == null || !grammarIndex) return
+    const key = `${openTarget.level}:${openTarget.unitId}`
+    if (openedTargetRef.current === key) return
+    const unit = (grammarIndex[openTarget.level]?.units || [])
+      .find((u) => String(u.id) === String(openTarget.unitId))
+    if (!unit) return
+    openedTargetRef.current = key
+    setGrammarLevel(openTarget.level)
+    setOpenUnit({ level: openTarget.level, unit })
+  }, [openTarget, grammarIndex])
   useEffect(() => {
     setGrammarLevel(levelToCourse(userLevel))
   }, [userLevel])
@@ -417,6 +494,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     { key: 'tales', label: t('practice.chip.tales') },
     { key: 'memes', label: t('practice.chip.memes') },
     { key: 'books', label: t('practice.chip.books') },
+    // Чип комиксов появляется вместе с контентом: до первой заливки каталог
+    // пуст, и чип вёл бы на пустой экран.
+    ...(hasComics ? [{ key: 'comics', label: t('practice.chip.comics') }] : []),
   ]
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
@@ -445,6 +525,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
   // Открытый рилс (индекс в clips) — вертикальный плеер с прокруткой.
   const [openReel, setOpenReel] = useState(null)
   const [openBook, setOpenBook] = useState(null)
+  const [openComic, setOpenComic] = useState(null)
 
   // Мир сказок: движок Fairytale's World открывается полноэкранным оверлеем
   // поверх Практики (deep-link на конкретную сказку). Модуль ~3 МБ (base64-
@@ -597,6 +678,21 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
         <ReelsViewer clips={clips} startIndex={openReel} onBack={() => setOpenReel(null)} />
+      </LearningLayout>
+    )
+  }
+
+  if (openComic) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <ComicReader
+          comic={openComic}
+          token={apiToken}
+          onBack={() => setOpenComic(null)}
+          onWordSaved={(w) =>
+            w?.word && setWords((ws) => [w, ...ws.filter((x) => x.id !== w.id)])
+          }
+        />
       </LearningLayout>
     )
   }
@@ -783,6 +879,74 @@ export default function PracticePage({ userLevel = 'A1', userName, token, onNav,
                   </button>
                 ))}
               </Rail>
+            )}
+          </section>
+          )}
+
+          {/* Комиксы — каталог из /mobile/comics, материал заводит контентщик
+              через админку. Раздела нет вовсе, пока каталог пуст: пустая
+              лента выглядит поломкой, а комикс — контент штучный. */}
+          {show('comics') && hasComics && (
+          <section id="sec-comics" className="pp-sec">
+            <SectionHead title={t('practice.chip.comics')} onAll={() => setFilter('comics')}>
+              <label className="pp-search">
+                <SearchIcon size={15} />
+                <input
+                  type="search"
+                  value={comicQuery}
+                  onChange={(e) => setComicQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Escape' && setComicQuery('')}
+                  placeholder={t('comics.search')}
+                  aria-label={t('comics.searchAria')}
+                />
+                {comicQuery && (
+                  <button
+                    type="button"
+                    className="pp-search__clear"
+                    onClick={() => setComicQuery('')}
+                    aria-label={t('comics.clear')}
+                  >
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                  </button>
+                )}
+              </label>
+            </SectionHead>
+            {comics.length === 0 ? (
+              <Empty text={t('comics.nothing', { q: comicQuery.trim() })} />
+            ) : (
+            <Rail grid={grid}>
+              {comics.map((c) => {
+                const st = comicStatus(c)
+                return (
+                  <button
+                    key={c.slug || c.id}
+                    type="button"
+                    className="pp-ccard"
+                    onClick={() => setOpenComic(c)}
+                  >
+                    <Thumb src={c.coverUrl} alt={c.title} className="pp-ccard__cover" />
+                    <div className="pp-ccard__title">{c.title}</div>
+                    {c.author && <div className="pp-ccard__author">{c.author}</div>}
+                    {/* Уровень бэкенд не хранит: у комикса вместо CEFR свободный
+                        подзаголовок от методиста. Точки сложности без уровня
+                        рисовать нельзя — они всегда показывали бы «легко». */}
+                    {c.level ? (
+                      <div className="pp-ccard__meta">
+                        <Dots level={c.level} />
+                        <span className="pp-ccard__cefr">{c.level}</span>
+                      </div>
+                    ) : (
+                      c.subtitle && <div className="pp-ccard__author">{c.subtitle}</div>
+                    )}
+                    <div className="pp-ccard__pages">
+                      {st.started
+                        ? t('comics.continue', { n: st.page, total: st.total })
+                        : t('comics.pages', { total: st.total })}
+                    </div>
+                  </button>
+                )
+              })}
+            </Rail>
             )}
           </section>
           )}

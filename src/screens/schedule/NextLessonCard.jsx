@@ -24,6 +24,7 @@ export default function NextLessonCard({ occ, topic, card, onOpenLesson }) {
   const locale = lang || 'ru'
   const meetingUrl = card?.meetingUrl
   const group = card?.group
+  const trial = card?.trial === true
 
   if (!occ) {
     return (
@@ -61,7 +62,7 @@ export default function NextLessonCard({ occ, topic, card, onOpenLesson }) {
                 ученика групповое и индивидуальное — это разный урок. */}
             {group != null && (
               <span className={`sch-row__kind sch-row__kind--${group ? 'group' : 'solo'}`}>
-                {t(group ? 'schedule.kindGroup' : 'schedule.kindSolo')}
+                {t(trial ? 'schedule.kindTrial' : group ? 'schedule.kindGroup' : 'schedule.kindSolo')}
               </span>
             )}
             <span className={`lesson-card__state ${live ? 'lesson-card__state--live' : ''}`}>

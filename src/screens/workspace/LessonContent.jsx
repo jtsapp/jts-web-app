@@ -209,7 +209,7 @@ function InfoWordBankCard({
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys)
   const { lang } = useI18n()
@@ -239,6 +239,23 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
     return () => clearTimeout(t)
   }, [liveQuestionId, liveFocusNonce, step?.id])
 
+  // Разбор выделения — один на мышь и на палец (см. onTouchEnd ниже).
+  function handleSelection(host) {
+    const sel = window.getSelection()
+    const raw = sel?.toString() || ''
+    if (isPhraseSelection(raw) || isOversizedPhrase(raw)) {
+      if (!host?.contains(sel.anchorNode)) return
+      if (!sel.rangeCount) return
+      const rect = sel.getRangeAt(0).getBoundingClientRect()
+      if (!rect.width && !rect.height) return
+      const anchor = { getBoundingClientRect: () => rect }
+      if (isOversizedPhrase(raw)) openLimit(raw, anchor)
+      else openWord(raw, anchor)
+      return
+    }
+    if (raw.trim()) close()
+  }
+
   return (
     <div
       className="lw-content"
@@ -248,20 +265,15 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
         if (isTapSelection(raw) || isOversizedPhrase(raw)) return
         close()
       }}
-      onMouseUp={(e) => {
-        const sel = window.getSelection()
-        const raw = sel?.toString() || ''
-        if (isPhraseSelection(raw) || isOversizedPhrase(raw)) {
-          if (!e.currentTarget.contains(sel.anchorNode)) return
-          if (!sel.rangeCount) return
-          const rect = sel.getRangeAt(0).getBoundingClientRect()
-          if (!rect.width && !rect.height) return
-          const anchor = { getBoundingClientRect: () => rect }
-          if (isOversizedPhrase(raw)) openLimit(raw, anchor)
-          else openWord(raw, anchor)
-          return
-        }
-        if (raw.trim()) close()
+      onMouseUp={(e) => handleSelection(e.currentTarget)}
+      /* Планшет: выделения мышью там не бывает, а `mouseup` после
+         долгого нажатия Safari не шлёт — из-за этого моментальный перевод
+         фразы у ученика (iPad) не появлялся, хотя у преподавателя
+         (мышь, ноутбук) работал. Разбор откладываем: выделение iOS
+         дорисовывает уже ПОСЛЕ touchend, и синхронно тут пусто. */
+      onTouchEnd={(e) => {
+        const host = e.currentTarget
+        setTimeout(() => handleSelection(host), 60)
       }}
     >
       {(() => {
@@ -376,6 +388,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
             <Block
               block={block}
               onWord={openWord}
+              revealed={revealedCards}
               answer={answers?.[block.id || `write-${group.blockIndex}`]}
               onAnswer={onAnswer}
               readOnly={readOnly}

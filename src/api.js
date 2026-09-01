@@ -70,7 +70,7 @@ async function authGet(path, token) {
   return res.json()
 }
 
-async function authPut(path, token, body) {
+async function authPut(path, token, body, { keepalive = false } = {}) {
   let res
   try {
     res = await fetch(BASE + path, {
@@ -80,6 +80,10 @@ async function authPut(path, token, body) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body != null ? JSON.stringify(body) : undefined,
+      // keepalive — для записи, уходящей на закрытии вкладки: обычный fetch
+      // браузер обрывает вместе со страницей, и последний ответ ученика
+      // терялся ровно в тот момент, когда он закончил работу и вышел.
+      ...(keepalive ? { keepalive: true } : {}),
     })
   } catch (e) {
     throw new Error('Нет связи с сервером.')
@@ -406,8 +410,12 @@ export function getLessonMessages(token, lessonId) {
   return authGet(`/admin/lessons/${lessonId}/messages`, token)
 }
 
-export function sendLessonMessage(token, lessonId, body) {
-  return authPost(`/admin/lessons/${lessonId}/messages`, token, { body })
+export function sendLessonMessage(token, lessonId, body, attachment) {
+  return authPost(`/admin/lessons/${lessonId}/messages`, token, {
+    body,
+    attachmentUrl: attachment?.url,
+    attachmentName: attachment?.name,
+  })
 }
 
 // URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление
@@ -442,8 +450,8 @@ export function getLessonMaterialProgress(token, lessonId, materialId, studentId
   return authGet(`/student/lessons/${lessonId}/materials/${materialId}/progress${q}`, token)
 }
 
-export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson) {
-  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson })
+export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson, options) {
+  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson }, options)
 }
 
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
@@ -766,6 +774,29 @@ export function getPracticeToken(token) {
 // Мемы и рилсы (GET /mobile/media-clips) → [{title,mediaUrl,thumbnailUrl,kind,mediaType,durationLabel,views,level}]
 export function getMediaClips(token, onFresh) {
   return cachedAuthGet('/mobile/media-clips', token, onFresh)
+}
+
+// Каталог комиксов (GET /mobile/comics) →
+// [{id,slug,title,author,level,coverUrl,pageCount,adultOnly,description:{ru,en,kk}}].
+// Меняется редко и правится только из админки — поэтому через тот же
+// stale-while-revalidate кэш, что и остальные каталоги Практики.
+export function getComics(token, onFresh) {
+  return cachedAuthGet('/mobile/comics', token, onFresh)
+}
+
+// Один комикс со страницами и репликами (GET /mobile/comics/{id}) →
+// {…, pages:[{n,url,w,h,blocks:[{kind,en,ru,kk}]}]}. Отдаётся целиком одним
+// ответом: запрос на страницу означал бы 214 запросов за одно чтение книги.
+// Мимо кэша каталогов — ответ на пару сотен килобайт в localStorage не кладём.
+export function getComic(token, ref) {
+  return authGet(`/mobile/comics/${encodeURIComponent(ref)}`, token)
+}
+
+// Поиск по комиксам (GET /mobile/comics/search?q=) — та же форма ответа, что и
+// у каталога. Мимо кэша каталогов: запрос меняется на каждую букву, класть его
+// в localStorage бессмысленно.
+export function searchComics(token, q) {
+  return authGet(`/mobile/comics/search?q=${encodeURIComponent(q)}`, token)
 }
 
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
