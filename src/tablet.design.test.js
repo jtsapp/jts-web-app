@@ -80,11 +80,22 @@ describe('планшетная раскладка кабинета', () => {
     expect(sb).toMatch(/position:\s*sticky/)
   })
 
+  it('планшет ничего информативного не прячет — только декор', () => {
+    // Требование заказчика: на iPad остаётся ВЕСЬ функционал, меняется только
+    // раскладка. Поэтому имя, звание и уровень обязаны остаться на экране —
+    // на десктопе они в строку, на планшете столбиком, но не скрыты. Скрывать
+    // разрешено только вордмарк и шеврон: они ничего не сообщают и никуда не
+    // ведут (в кабинет уводит аватар рядом).
+    const hidden = [...stripComments(tablet).matchAll(/([^{}]+)\{[^}]*display:\s*none[^}]*\}/g)]
+      .flatMap((m) => m[1].split(','))
+      .map((sel) => sel.trim())
+      .filter(Boolean)
+    expect(hidden.sort()).toEqual(['.sb .sb__logo', '.sb .sb__profile-chev'])
+  })
+
   it('подписи разделов остаются видимыми — на тач-экране их нечем раскрыть', () => {
     // Ровно то, чем планшетный рейл отличается от десктопного: там подписи
     // спрятаны и достаются наведением, здесь наведения нет.
-    const hidden = rule(tablet, '.sb .sb__logo')
-    expect(hidden).toMatch(/display:\s*none/)
     expect(tablet).not.toMatch(/\.sb\s+\.sb__item\s+span[^{]*\{[^}]*display:\s*none/)
     expect(rule(tablet, '.sb .sb__item span')).toMatch(/font-size/)
   })

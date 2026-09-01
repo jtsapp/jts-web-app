@@ -6888,8 +6888,12 @@ textarea {
     width: 88px;
     height: 100dvh;
     z-index: auto;
-    padding: 22px 6px;
-    gap: 14px;
+    /* Поля и зазоры ужаты против десктопных: с возвращёнными именем, званием и
+       уровнем колонка в ландшафте (высота ~700px) вылезала на 14px и получала
+       собственную полосу прокрутки — прокручиваемое меню из шести пунктов
+       выглядит поломкой, хотя формально работает. */
+    padding: 16px 6px;
+    gap: 12px;
     align-items: center;
     overflow-x: hidden;
     overflow-y: auto;
@@ -6898,27 +6902,61 @@ textarea {
     transition: none;
   }
 
-  /* Логотип и подписи профиля/ранга в колонку 88px не помещаются осмысленно:
-     логотип уводит в кабинет так же, как аватар, а имя и уровень дублируют
-     то, что видно на самом профиле. Подписи разделов, наоборот, остаются —
-     ради них рейл и сделан шире десктопного. */
+  /* Планшет ничего не теряет: имя, ранг и уровень остаются на месте — просто
+     переезжают подписями под иконки, ровно как разделы меню. Скрыты только два
+     чисто декоративных элемента: вордмарк (в колонке 88px он превращается в
+     нечитаемую кашу и никуда не ведёт — в кабинет уводит аватар рядом) и
+     шеврон профиля (стрелка «здесь можно нажать» при видимой подписи лишняя). */
   .sb .sb__logo,
-  .sb .sb__profile-text,
-  .sb .sb__profile-chev,
-  .sb .sb__role-text,
-  .sb .sb__role-lvl {
+  .sb .sb__profile-chev {
     display: none;
   }
 
   .sb .sb__profile {
+    flex-direction: column;
+    gap: 6px;
     padding: 0;
     background: none;
     justify-content: center;
+    text-align: center;
   }
   .sb .sb__avatar {
     width: 44px;
     height: 44px;
     font-size: 16px;
+  }
+  .sb .sb__profile-text {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+  }
+  /* Имя в одну строку с многоточием: длинное «Ученик (ваш)» иначе растянуло бы
+     профиль на три строки и выдавило ранг с монетами за нижний край. */
+  .sb .sb__profile-text b {
+    width: 100%;
+    font-size: 10.5px;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sb .sb__profile-text span {
+    font-size: 9.5px;
+    line-height: 1.15;
+  }
+
+  /* Ранг: иконка, под ней звание, под ним уровень. Всё то же, что на десктопе
+     в строку, только столбиком. */
+  .sb .sb__role-text {
+    flex: none;
+    font-size: 10.5px;
+    line-height: 1.15;
+    text-align: center;
+  }
+  .sb .sb__role-lvl {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
   }
 
   .sb .sb__nav {
@@ -6944,6 +6982,8 @@ textarea {
   }
 
   .sb .sb__role {
+    flex-direction: column;
+    gap: 5px;
     padding: 0;
     background: none;
     justify-content: center;
