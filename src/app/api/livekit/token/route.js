@@ -248,18 +248,24 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
       })
       // Пул проверяем ПЕРВЫМ: он про купленный тариф, и когда он исчерпан, дневной
       // остаток значения уже не имеет — сказать «приходите завтра» было бы неправдой.
+      // limitSec — тот самый лимит, в который упёрлись. Клиент показывает его
+      // человеку («вы использовали бесплатные 20 мин»), и брать это число из
+      // своей константы он не может: у ученика может стоять персональный
+      // override или лимит тарифа, и подпись врала бы.
       if (totalLimitSec != null && totalSeconds >= totalLimitSec) {
         return Response.json(
-          { configured: true, limited: true, error: 'total_limit' },
+          { configured: true, limited: true, error: 'total_limit', limitSec: totalLimitSec },
           { status: 403 },
         )
       }
       if (monthSeconds >= monthLimitSec || todaySeconds >= dailyLimitSec) {
+        const monthly = monthSeconds >= monthLimitSec
         return Response.json(
           {
             configured: true,
             limited: true,
-            error: monthSeconds >= monthLimitSec ? 'monthly_limit' : 'daily_limit',
+            error: monthly ? 'monthly_limit' : 'daily_limit',
+            limitSec: monthly ? monthLimitSec : dailyLimitSec,
           },
           { status: 403 },
         )

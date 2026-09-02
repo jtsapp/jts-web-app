@@ -17,6 +17,8 @@ import PlacementTestPage from './screens/PlacementTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
 import HomePage from './screens/HomePage.jsx'
 import PricingPage from './screens/PricingPage.jsx'
+import MinutesTopUpPage from './screens/MinutesTopUpPage.jsx'
+import PurchaseSuccessModal from './components/PurchaseSuccessModal.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
@@ -72,6 +74,7 @@ import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tuto
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
 import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
+import { trackDemoState, forgetDemoState } from './lib/purchaseCelebration.js'
 import { KINGDOMS } from './kingdoms.js'
 
 // Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
@@ -90,7 +93,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -181,6 +184,7 @@ export default function App() {
         if (cancelled) return
         setIsDemoAccount(demo.isDemo)
         setDemoExpiresAt(demo.expiresAt)
+        if (session && trackDemoState(demo.isDemo)) setCelebrate(true)
         // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
         // device-id) — восстанавливаем, чтобы перезагрузка не гоняла онбординг
         // заново. Ждём здесь же: спиннер и так висит, зато к первому экрану
@@ -264,6 +268,10 @@ export default function App() {
   // До какого момента действует демо: по нему «Главная» рисует обратный отсчёт.
   // null — демо без срока (менеджер выдал доступ руками), таймера тогда нет.
   const [demoExpiresAt, setDemoExpiresAt] = useState(null)
+  // «Поздравляем с покупкой!»: окно показывается один раз, когда аккаунт
+  // перестал быть демо (менеджер открыл полный доступ) — своей оплаты в
+  // приложении нет, см. lib/purchaseCelebration.js.
+  const [celebrate, setCelebrate] = useState(false)
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
@@ -677,6 +685,10 @@ export default function App() {
     setEmail('')
     setIsDemoAccount(false)
     setDemoExpiresAt(null)
+    // Иначе следующий вход под обычным аккаунтом поймал бы чужой переход и
+    // поздравил с покупкой человека, который ничего не покупал.
+    forgetDemoState()
+    setCelebrate(false)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -743,6 +755,7 @@ export default function App() {
     getDemoAccess(tok).then((d) => {
       setIsDemoAccount(d.isDemo)
       setDemoExpiresAt(d.expiresAt)
+      if (trackDemoState(d.isDemo)) setCelebrate(true)
     })
   }
 
@@ -750,6 +763,7 @@ export default function App() {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'home') setScreen('home')
     else if (key === 'pricing') setScreen('pricing')
+    else if (key === 'minutes') setScreen('minutes')
     else if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
@@ -777,6 +791,7 @@ export default function App() {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'home') setScreen('home')
     else if (key === 'pricing') setScreen('pricing')
+    else if (key === 'minutes') setScreen('minutes')
     else if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
@@ -827,10 +842,17 @@ export default function App() {
   // обёртку при каждой смене экрана, и CSS-анимация .scr-in проигрывается
   // заново (fade + лёгкий подъём; отключается при prefers-reduced-motion).
   const page = renderScreen()
-  return page && (
-    <div key={screen} className="scr-in">
-      {page}
-    </div>
+  return (
+    <>
+      {page && (
+        <div key={screen} className="scr-in">
+          {page}
+        </div>
+      )}
+      {/* Поздравление живёт вне обёртки с key={screen}: иначе смена экрана
+          перемонтировала бы его и окно моргало бы анимацией входа. */}
+      {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
+    </>
   )
 
   function renderScreen() {
@@ -1011,6 +1033,12 @@ export default function App() {
           // остальные демо-призывы (src/lib/support.js).
           onOpenTrial={() => window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener')}
         />
+      )
+    case 'minutes':
+      // Витрина пакетов минут. «Назад» — туда, откуда пришли: разговор к этому
+      // моменту уже закрыт лимитом, поэтому возвращаем на домашний экран тьютора.
+      return (
+        <MinutesTopUpPage onBack={() => setScreen(tutorHome)} />
       )
     case 'pricing':
       // Витрина без сайдбара — как в макете: это шаг покупки, и уводить с него
@@ -1270,6 +1298,7 @@ export default function App() {
           // возвращают туда же. Экран результата уровня остался только в
           // placement-цепочке (voice-intro), достижимой диплинком.
           onBack={() => setScreen(tutorOnboarded ? 'tutor-dashboard' : 'tutor-voice-intro')}
+          onTopUpMinutes={() => setScreen('minutes')}
           tutor={tutor}
           temper={temper}
           scenario={scenario}

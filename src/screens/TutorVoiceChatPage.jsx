@@ -27,6 +27,7 @@ import { useCallSession } from '../tutor/callSession.js'
 import CallCaption from '../tutor/CallCaption.jsx'
 import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
+import TutorLimitModal from '../components/TutorLimitModal.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { getEnglishOnly } from '../lib/englishOnly.js'
 
@@ -59,6 +60,8 @@ export default function TutorVoiceChatPage({
   token = null,
   // Бэкенд отверг токен аккаунта (401). Чистит сессию и уводит на вход.
   onSessionExpired,
+  // Ведёт на витрину пакетов минут — кнопка «Докупить минуты» в окне лимита.
+  onTopUpMinutes,
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -89,6 +92,8 @@ export default function TutorVoiceChatPage({
   const [tokenData, setTokenData] = useState(null)
   // null | 'daily' | 'monthly' | 'mic' | 'expired' | 'generic'
   const [error, setError] = useState(null)
+  // Величина лимита, в который упёрлись (сек, с сервера) — для подписи окна.
+  const [limitSec, setLimitSec] = useState(0)
 
   // Разрешение на микрофон спрашиваем один раз: если браузер его уже помнит,
   // экран «дайте разрешение» не показываем — стартуем сразу. getUserMedia при
@@ -161,7 +166,15 @@ export default function TutorVoiceChatPage({
       })
       const data = await res.json().catch(() => ({}))
       if (res.status === 403 && data.limited) {
-        setError(data.error === 'monthly_limit' ? 'monthly' : 'daily')
+        // 'total_limit' раньше попадал в 'daily' и человек читал «приходите
+        // завтра» — а завтра ничего не менялось: кончился пул минут тарифа,
+        // а не суточная норма.
+        const kind =
+          data.error === 'monthly_limit' ? 'monthly' : data.error === 'total_limit' ? 'total' : 'daily'
+        setError(kind)
+        // Величину лимита показываем ту, что прислал сервер: у ученика может
+        // стоять персональный override или лимит тарифа.
+        setLimitSec(Number(data.limitSec) || 0)
         return
       }
       // Токен аккаунта протух: бэкенд отверг его на /user/me. Без этой ветки 401
@@ -183,18 +196,18 @@ export default function TutorVoiceChatPage({
     }
   }
 
+  // Исчерпанный лимит — не ошибка звонка, а момент продажи: у него своё окно с
+  // кнопкой «Докупить минуты» (TutorLimitModal). Строкой в карточке остаются
+  // только настоящие сбои — микрофон, протухшая сессия, недоступный голос.
+  const limited = error === 'daily' || error === 'monthly' || error === 'total'
   const errorText =
-    error === 'daily'
-      ? t('voice.limitDaily')
-      : error === 'monthly'
-        ? t('voice.limitMonthly')
-        : error === 'mic'
-          ? t('voice.micDenied')
-          : error === 'expired'
-            ? t('voice.expired')
-            : error === 'generic'
-              ? t('voice.unavailable')
-              : ''
+    error === 'mic'
+      ? t('voice.micDenied')
+      : error === 'expired'
+        ? t('voice.expired')
+        : error === 'generic'
+          ? t('voice.unavailable')
+          : ''
 
   const connected = Boolean(tokenData?.token && tokenData?.url)
 
@@ -249,7 +262,15 @@ export default function TutorVoiceChatPage({
         ) : error ? (
           <div className="t-voice__card">
             <CallFace face={tutor.face || ''} emotion="idle" agentState="idle" />
-            <div className="t-voice__text">{errorText}</div>
+            {errorText && <div className="t-voice__text">{errorText}</div>}
+            {limited && (
+              <TutorLimitModal
+                kind={error}
+                limitSec={limitSec}
+                onBack={onBack}
+                onBuy={onTopUpMinutes}
+              />
+            )}
           </div>
         ) : connected ? (
           <LiveKitRoom

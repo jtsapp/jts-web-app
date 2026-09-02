@@ -1125,3 +1125,449 @@
   bottom: 12px;
   color: #a5a2b3;
 }
+
+/* ======================= лимит тьютора ======================= */
+
+/* Окно поверх экрана звонка. position: fixed, а не absolute как у .ds-over:
+   разговор занимает всю высоту окна со своей прокруткой, и модалка, привязанная
+   к контейнеру, уезжала бы вместе с ней. */
+.lm-over {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  padding: 24px;
+  overflow: auto;
+  background: rgba(23, 19, 38, 0.45);
+}
+.lm-card {
+  margin: auto;
+  width: 420px;
+  max-width: 100%;
+  padding: 22px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
+  text-align: center;
+}
+/* Красный фон — у иллюстрации, а не у окна: это стоп-сигнал про минуты, а не
+   сообщение об ошибке приложения. */
+.lm-art {
+  display: grid;
+  place-items: center;
+  height: 168px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #d93a3a 0%, #b32626 100%);
+  overflow: hidden;
+}
+.lm-art img {
+  max-height: 84%;
+  max-width: 70%;
+  object-fit: contain;
+}
+.lm-title {
+  margin: 18px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #171326;
+}
+.lm-body {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8b8a97;
+}
+.lm-acts {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.lm-back,
+.lm-buy {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lm-back {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e6e4ee;
+  color: #171326;
+}
+.lm-back:hover {
+  background: #f7f6fb;
+}
+.lm-buy {
+  background: var(--purple);
+  color: #fff;
+}
+.lm-buy:hover {
+  background: #7a2fe6;
+}
+.lm-back:focus-visible,
+.lm-buy:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+@media (max-width: 420px) {
+  .lm-acts {
+    flex-direction: column-reverse;
+  }
+}
+
+/* ======================= поздравление с покупкой ======================= */
+
+.bt-over {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  padding: 24px;
+  overflow: auto;
+  background: rgba(23, 19, 38, 0.45);
+}
+.bt-card {
+  margin: auto;
+  width: 420px;
+  max-width: 100%;
+  padding: 22px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(23, 19, 38, 0.25);
+  text-align: center;
+}
+.bt-art {
+  display: grid;
+  place-items: center;
+  height: 168px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #c9b7ff 0%, #a8dcf0 100%);
+  overflow: hidden;
+}
+.bt-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bt-title {
+  margin: 18px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #171326;
+}
+.bt-body {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8b8a97;
+}
+.bt-ok {
+  width: 100%;
+  height: 48px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 14px;
+  background: var(--purple);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bt-ok:hover {
+  background: #7a2fe6;
+}
+.bt-ok:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+
+/* ======================= докупка минут ======================= */
+
+.tu {
+  min-height: 100vh;
+  padding: 0 0 48px;
+  background: #f4f2f9;
+}
+.tu__top {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: #f4f2f9;
+}
+.tu__back {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  color: #171326;
+  cursor: pointer;
+}
+.tu__back:hover {
+  background: #efedf7;
+}
+.tu__back:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+.tu__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #171326;
+}
+.tu__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.tu__cols {
+  min-width: 0;
+}
+@media (max-width: 1040px) {
+  .tu__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 620px) {
+  .tu__top,
+  .tu__grid {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
+.tu-pick__title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #171326;
+}
+.tu-packs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .tu-packs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.tu-pack {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #e8e5f2;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tu-pack:hover {
+  box-shadow: inset 0 0 0 1px #c9bcf0;
+}
+/* Выбранный пакет: подложка и обводка акцентом, точка радио залита. */
+.tu-pack.is-on {
+  background: #f4efff;
+  box-shadow: inset 0 0 0 2px var(--purple);
+}
+.tu-pack:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+.tu-pack__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tu-pack__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #171326;
+}
+.tu-pack__dot {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.6px #cfcada;
+}
+.tu-pack.is-on .tu-pack__dot {
+  background: radial-gradient(circle, #fff 0 3px, var(--purple) 4px 100%);
+  box-shadow: none;
+}
+.tu-pack__price {
+  display: block;
+  margin-top: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #171326;
+}
+.tu-pack__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+.tu-pack__per {
+  font-size: 11px;
+  color: #8b8a97;
+}
+.tu-pack__off {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e8f9ef;
+  color: #1f8a4c;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tu-how__title {
+  margin: 22px 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #8b8a97;
+}
+.tu-how {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tu-how__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+}
+.tu-how__ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+.tu-how__ic--clock {
+  background: #ece7fb;
+  color: var(--purple);
+}
+.tu-how__ic--check {
+  background: #e8f9ef;
+  color: #1f8a4c;
+}
+.tu-how__body b {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #171326;
+}
+.tu-how__body i {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.45;
+  color: #8b8a97;
+}
+
+.tu-order__inner {
+  position: sticky;
+  top: 64px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #fff;
+}
+@media (max-width: 1040px) {
+  .tu-order__inner {
+    position: static;
+  }
+}
+.tu-order__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: #8b8a97;
+}
+.tu-order__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #3c3850;
+}
+.tu-order__row b {
+  font-weight: 700;
+  color: #171326;
+}
+.tu-order__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e0dced;
+  font-size: 14px;
+  color: #6b6976;
+}
+.tu-order__total b {
+  font-size: 20px;
+  font-weight: 800;
+  color: #171326;
+}
+.tu-order__pay {
+  width: 100%;
+  height: 50px;
+  margin-top: 14px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(100deg, #8d3bff, #a35cff);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tu-order__pay:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}
+.tu-order__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #8b8a97;
+}
+.tu-order__note svg {
+  flex: none;
+  margin-top: 1px;
+}

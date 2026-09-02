@@ -65,6 +65,28 @@ export const INCLUDED = [
   { id: 'selfstudy', icon: 'selfstudy', title: 'pricing.inc.self', sub: 'pricing.inc.selfSub' },
 ]
 
+// Пакеты минут голосового тьютора («Докупить минуты»). Цена за минуту падает с
+// объёмом — скидка не хранится, а считается от базовой цены самого маленького
+// пакета: держать её отдельным полем значит однажды поменять цену и забыть
+// поправить «-10%».
+export const MINUTE_PACKS = [
+  { id: 'min-20', minutes: 20, price: 5000 },
+  { id: 'min-60', minutes: 60, price: 13500 },
+  { id: 'min-120', minutes: 120, price: 24000 },
+]
+
+/** Цена за минуту пакета, округлённая до тенге. */
+export function pricePerMinute(pack) {
+  return Math.round(pack.price / pack.minutes)
+}
+
+/** Насколько пакет выгоднее самого маленького, в процентах (0 — не выгоднее). */
+export function packDiscount(pack, packs = MINUTE_PACKS) {
+  const base = pricePerMinute(packs[0])
+  if (!base) return 0
+  return Math.max(0, Math.round((1 - pricePerMinute(pack) / base) * 100))
+}
+
 // Скидка на повторный пробный урок — плашка в сайдбаре демо-аккаунта.
 export const RETRY_OFFER = { was: 7000, now: 900 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useI18n } from '../i18n.jsx'
+import { useDialogKeys } from '../lib/useDialogKeys.js'
 
 // «Способ оплаты» — последний шаг витрины тарифов.
 //
@@ -20,31 +21,7 @@ export default function PaymentMethodModal({ onClose, onPick }) {
     firstRef.current?.focus()
   }, [])
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') {
-        onClose?.()
-        return
-      }
-      if (e.key !== 'Tab') return
-      const nodes = [...(cardRef.current?.querySelectorAll('a[href], button') || [])]
-      if (!nodes.length) return
-      const i = nodes.indexOf(document.activeElement)
-      const last = nodes.length - 1
-      if (i === -1) {
-        e.preventDefault()
-        nodes[e.shiftKey ? last : 0].focus()
-      } else if (e.shiftKey && i === 0) {
-        e.preventDefault()
-        nodes[last].focus()
-      } else if (!e.shiftKey && i === last) {
-        e.preventDefault()
-        nodes[0].focus()
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  useDialogKeys(cardRef, onClose)
 
   return (
     <div className="pm-over" onClick={onClose}>
