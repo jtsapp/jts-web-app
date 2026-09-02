@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeftIcon, ChevronRightIcon, ExpandIcon, CollapseIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
@@ -9,7 +9,6 @@ import { translateWord, cleanWord } from '../lib/wordTranslate.js'
 import { loadComic, getComicPage, setComicPage } from '../practice/comics/comicsData.js'
 import { comicKey } from '../practice/comics/comicsShape.js'
 import {
-  isElementFullscreenSupported,
   requestElementFullscreen,
   exitFullscreen,
   getFullscreenElement,
@@ -39,9 +38,12 @@ const PRELOAD = 2
 // картинки. Показываем, но приглушённо.
 const QUIET = new Set(['sfx', 'sign'])
 
-// Поддержка полного экрана за время жизни экрана не меняется — подписка пустая.
-const NO_SUBSCRIBE = () => () => {}
-const NO_FULLSCREEN_ON_SERVER = () => false
+// Клавиша переключения полного экрана в обеих раскладках.
+const FULL_KEYS = new Set(['f', 'F', 'а', 'А'])
+
+// Через столько бездействия в полном экране гаснут панель и подсказка: они
+// висят поверх страницы, а читают её, а не их.
+const IDLE_MS = 2600
 
 export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const { t, lang } = useI18n()
@@ -62,25 +64,32 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   // сайдбар, снизу подвал — на ноутбуке от страницы комикса остаётся полоска, а
   // упирается она именно в высоту. По кнопке уводим в полный экран корень
   // читалки, а не всю страницу: тогда сайдбар с шапкой выпадают из раскладки.
+  //
+  // Где Fullscreen API не сработал — на iOS Safari его нет вовсе, во встроенных
+  // вебвью запрос отклоняют политикой — включаем свой оверлей: тот же корень
+  // становится fixed на весь вьюпорт. Адресная строка тогда остаётся, но прятать
+  // режим от всей мобильной половины пользователей из-за этого незачем.
   const rootRef = useRef(null)
-  // Держим сам узел, а не флаг: он же служит целью портала для карточки
-  // перевода (см. ниже).
-  const [fsNode, setFsNode] = useState(null)
-  const full = fsNode !== null
-  // Кнопку показываем только там, где API есть (на iOS Safari его нет вовсе).
-  // Через useSyncExternalStore, а не эффектом: на сервере снимок всегда false,
-  // разметка гидратации совпадает, кнопка появляется уже на клиенте.
-  const canFull = useSyncExternalStore(
-    NO_SUBSCRIBE,
-    isElementFullscreenSupported,
-    NO_FULLSCREEN_ON_SERVER,
-  )
+  // Узел держим ещё и состоянием: в полном экране он служит целью портала для
+  // карточки перевода (см. ниже), а её рисует render.
+  const [rootEl, setRootEl] = useState(null)
+  const setRoot = useCallback((node) => {
+    rootRef.current = node
+    setRootEl(node)
+  }, [])
+  const [nativeFull, setNativeFull] = useState(false)
+  const [overlay, setOverlay] = useState(false)
+  const full = nativeFull || overlay
 
   useEffect(
     () =>
-      onFullscreenChange(() =>
-        setFsNode(getFullscreenElement() === rootRef.current ? rootRef.current : null),
-      ),
+      onFullscreenChange(() => {
+        const isNative = getFullscreenElement() === rootRef.current
+        setNativeFull(isNative)
+        // Настоящий полный экран пришёл позже, чем мы сдались и включили свой
+        // оверлей, — оверлей тогда лишний.
+        if (isNative) setOverlay(false)
+      }),
     [],
   )
 
@@ -93,11 +102,49 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     [],
   )
 
-  const toggleFull = () => {
-    if (!rootRef.current) return
-    if (getFullscreenElement() === rootRef.current) exitFullscreen()
-    else requestElementFullscreen(rootRef.current)
-  }
+  // Свой оверлей закрывает страницу целиком, и прокрутка под ним только мешает:
+  // колесо уводило бы каталог, к которому из-под оверлея уже не вернуться.
+  useEffect(() => {
+    if (!overlay) return undefined
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [overlay])
+
+  // Панель и подсказка гаснут в простое и возвращаются на любое движение:
+  // страница в полном экране занимает всю высоту, а панель висит поверх неё.
+  const [idle, setIdle] = useState(false)
+  useEffect(() => {
+    if (!full) return undefined
+    let t = setTimeout(() => setIdle(true), IDLE_MS)
+    const wake = () => {
+      setIdle(false)
+      clearTimeout(t)
+      t = setTimeout(() => setIdle(true), IDLE_MS)
+    }
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel']
+    events.forEach((e) => window.addEventListener(e, wake, { passive: true }))
+    return () => {
+      clearTimeout(t)
+      events.forEach((e) => window.removeEventListener(e, wake))
+    }
+  }, [full])
+
+  const toggleFull = useCallback(async () => {
+    setIdle(false)
+    if (getFullscreenElement() === rootRef.current) {
+      exitFullscreen()
+      return
+    }
+    if (overlay) {
+      setOverlay(false)
+      return
+    }
+    const ok = await requestElementFullscreen(rootRef.current)
+    if (!ok) setOverlay(true)
+  }, [overlay])
 
   useEffect(() => {
     let alive = true
@@ -135,16 +182,21 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
     const onKey = (e) => {
       if (e.key === 'ArrowRight' || e.key === 'PageDown') go(1)
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(-1)
+      // F — привычный по плеерам и читалкам переключатель полного экрана;
+      // «а» — та же клавиша в русской раскладке.
+      else if (FULL_KEYS.has(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) toggleFull()
       else if (e.key === 'Escape') {
-        // В полном экране Esc забирает браузер — из читалки по нему не выходим,
-        // иначе один Esc и свернул бы экран, и закрыл комикс.
+        // Свой оверлей закрываем сами. В нативном полном экране Esc забирает
+        // браузер — по нему из читалки не выходим, иначе одно нажатие и
+        // свернуло бы экран, и закрыло комикс.
         if (pop) setPop(null)
-        else if (!full) onBack?.()
+        else if (overlay) setOverlay(false)
+        else if (!nativeFull) onBack?.()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [go, onBack, pop, full])
+  }, [go, onBack, pop, overlay, nativeFull, toggleFull])
 
   // Свайп. Порог 40 px и проверка на вертикаль — чтобы обычная прокрутка
   // страницы не листала комикс.
@@ -205,18 +257,16 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
       </button>
       {/* Кнопка слева, а не в конце строки: в правом верхнем углу зоны контента
           висит переключатель языка, и справа она оказывалась под ним. */}
-      {canFull && (
-        <button
-          type="button"
-          className="cr__full"
-          onClick={toggleFull}
-          aria-pressed={full}
-          title={full ? t('comics.exitFull') : t('comics.full')}
-        >
-          {full ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
-          <span className="cr__fullLabel">{full ? t('comics.exitFull') : t('comics.full')}</span>
-        </button>
-      )}
+      <button
+        type="button"
+        className="cr__full"
+        onClick={toggleFull}
+        aria-pressed={full}
+        title={full ? t('comics.exitFull') : t('comics.full')}
+      >
+        {full ? <CollapseIcon size={16} /> : <ExpandIcon size={16} />}
+        <span className="cr__fullLabel">{full ? t('comics.exitFull') : t('comics.full')}</span>
+      </button>
       {doc && (
         <>
           <div className="cr__title">
@@ -233,7 +283,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
   if (failed) {
     return (
-      <div className="cr" ref={rootRef}>
+      <div className="cr" ref={setRoot}>
         {bar}
         <div className="cr__empty">{t('comics.failed')}</div>
       </div>
@@ -242,13 +292,16 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
 
   if (!doc) {
     return (
-      <div className="cr" ref={rootRef}>
+      <div className="cr" ref={setRoot}>
         {bar}
         <div className="cr__empty">{t('practice.loading')}</div>
       </div>
     )
   }
 
+  const rootClass = ['cr', full && 'cr--full', overlay && 'cr--overlay', full && idle && 'cr--idle']
+    .filter(Boolean)
+    .join(' ')
   const page = doc.pages[i]
   // Соседние страницы держим смонтированными и скрытыми — браузер успевает их
   // скачать, и перелистывание не моргает белым.
@@ -256,7 +309,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
   const blocks = page.blocks || []
 
   return (
-    <div className={full ? 'cr cr--full' : 'cr'} ref={rootRef} onClick={() => setPop(null)}>
+    <div className={rootClass} ref={setRoot} onClick={() => setPop(null)}>
       {bar}
 
       <div className={blocks.length ? 'cr__body' : 'cr__body cr__body--wide'}>
@@ -389,7 +442,7 @@ export default function ComicReader({ comic, token, onBack, onWordSaved }) {
               ×
             </button>
           </div>,
-          fsNode || document.body,
+          (full && rootEl) || document.body,
         )}
     </div>
   )
