@@ -19,13 +19,18 @@
 //   watch     { title, sub, video }                            — без оценки (B2)
 //   checklist { title, sub, items:[…] }                        — без оценки
 //
-// Запуск: node scripts/build-course-steps.js [--level a0|a1|a2|b1|b2]
+// Запуск: node scripts/build-course-steps.js [--level b1|b2]
 const fs = require('fs')
 const path = require('path')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
 const ROOT = path.join(__dirname, '..')
-const LEVELS = ['a0', 'a1', 'a2', 'b1', 'b2']
+// A0/A1/A2 ушли на курс нового поколения: их шаги собирает
+// scripts/extract-selfstudy-course.js прямо из файла курса, а разметки уроков
+// (lesson-<n>.json), из которой резал шаги этот скрипт, у них больше нет.
+// Оставить их в списке значит уронить прогон на первом же уровне — или, хуже,
+// переписать новые шаги огрызками старого курса.
+const LEVELS = ['b1', 'b2']
 
 // Запись слова, если она уже сгенерирована (scripts/make-lesson-audio.js).
 // Имя файла — хэш самого слова, поэтому привязка переживает пересборку шагов:

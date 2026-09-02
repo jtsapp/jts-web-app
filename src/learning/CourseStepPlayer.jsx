@@ -40,6 +40,8 @@ export function isGraded(step) {
   if (step.type === 'listen') return !!step.answer && (step.options || []).length > 0
   if (step.type === 'match') return (step.pairs || []).length > 0
   if (step.type === 'group' || step.type === 'rows') return (step.items || []).length > 0
+  if (step.type === 'mistake') return (step.tokens || []).length > 0
+  if (step.type === 'cols') return (step.items || []).length > 0
   return GRADED.has(step.type)
 }
 
@@ -434,6 +436,11 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
     // Соединение засчитывается целиком: это одно упражнение, а не N вопросов,
     // и сердце за него снимается один раз.
     if (step.type === 'match') return (step.pairs || []).every((p, i) => links[i] === p.right)
+    // «Найди ошибку»: засчитывается тап ровно по тому слову, которое неверно.
+    if (step.type === 'mistake') return picked === step.bad
+    // Разбор по колонкам: экран — одно упражнение, верно только если каждая
+    // карточка легла в свою колонку.
+    if (step.type === 'cols') return (step.items || []).every((it, i) => fills[i] === it.col)
     return picked !== null && options[picked] === step.answer
   }
   const isRight = checked && verdict()
@@ -449,7 +456,9 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
         ? seq.length === (step.words || []).length
         : step.type === 'match'
           ? Object.keys(links).length === (step.pairs || []).length
-          : picked !== null
+          : step.type === 'cols'
+            ? (step.items || []).every((_, i) => fills[i] !== undefined)
+            : picked !== null
     : step.type === 'write'
       ? text.trim() !== ''
       : step.type === 'pick'
@@ -548,7 +557,12 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
               </svg>
             )}
           </span>
-          <b>{isRight ? t('lesson.correct') : t('lesson.wrong')}</b>
+          {/* Разбор ответа из самого курса («don't ставится перед like»):
+              без него у ошибки нет объяснения, а оно там написано. */}
+          <b>
+            {isRight ? t('lesson.correct') : t('lesson.wrong')}
+            {step.why && <span className="cp-fb__why">{step.why}</span>}
+          </b>
           {isRight && (
             <span className="cp-fb__coin">
               <img src="/assets/lesson/coin.png" alt="" width="24" height="24" />
@@ -572,15 +586,33 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
     // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
       return (
-        <input
-          className={`cp-field cp-gap__in ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}
-          value={checked && !isRight ? step.answers[0] : text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={checked}
-          autoComplete="off"
-          spellCheck="false"
-          placeholder={t('lesson.typeAnswer')}
-        />
+        <>
+          {/* У A0/A1 к пропуску идёт готовый набор слов: на этом уровне
+              студент выбирает форму, а не печатает её по памяти. */}
+          {step.html && (
+            <div className="cp-note">
+              <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+            </div>
+          )}
+          <input
+            className={`cp-field cp-gap__in ${checked ? (isRight ? 'is-right' : 'is-wrong') : ''}`}
+            value={checked && !isRight ? step.answers[0] : text}
+            onChange={(e) => setText(e.target.value)}
+            disabled={checked}
+            autoComplete="off"
+            spellCheck="false"
+            placeholder={t('lesson.typeAnswer')}
+          />
+          {(step.bank || []).length > 0 && (
+            <div className="cp-gap__bank">
+              {step.bank.map((w, i) => (
+                <button key={i} type="button" className={`cp-chip ${text === w ? 'is-set' : ''}`} disabled={checked} onClick={() => setText(w)}>
+                  {w}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )
 
     // Порядок слов: банк снизу, собранная фраза сверху — слова остаются
@@ -727,6 +759,14 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
               вопросе, ни в вариантах — оно живёт только в поле say, и без
               озвучки экран неразрешим (см. SayButton). */}
           {step.say && <SayButton text={step.say} src={step.sayTrack || null} t={t} />}
+          {/* Текст, к которому задан вопрос (диалог, абзац статьи, примеры
+              правила): задание на него ссылается, и отвечать по памяти
+              студент не должен. */}
+          {step.html && (
+            <div className="cp-note">
+              <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+            </div>
+          )}
           <Choices
             options={options}
             picked={picked}
@@ -772,9 +812,202 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
     case 'checklist':
       return <Checklist items={step.items} />
 
+    // Найди ошибку: предложение разобрано на слова, тап по неверному.
+    case 'mistake':
+      return <MistakeLine step={step} picked={picked} setPicked={setPicked} checked={checked} />
+
+    // Разбор по колонкам: выбрать карточку, затем колонку — как в курсе.
+    case 'cols':
+      return <ColumnsBoard step={step} fills={fills} setFills={setFills} checked={checked} />
+
+    // Фразы урока: строка с кнопкой звука. Задания тут нет — их слушают и
+    // повторяют, поэтому экран идёт без оценки.
+    case 'phrases':
+      return <PhraseList items={step.items} onWord={onWord} />
+
+    case 'record':
+      return <RecordBoard items={step.items} t={t} />
+
     default:
       return null
   }
+}
+
+// Строка с ошибкой. После проверки неверное слово подсвечено всегда — иначе
+// студент, ткнувший наугад, не узнает, где была ошибка.
+function MistakeLine({ step, picked, setPicked, checked }) {
+  return (
+    <div className="cp-mistake">
+      {(step.tokens || []).map((w, i) => {
+        let cls = 'cp-mistake__tok'
+        if (checked) {
+          if (i === step.bad) cls += ' is-bad'
+          else if (i === picked) cls += ' is-wrong'
+        } else if (i === picked) cls += ' is-sel'
+        return (
+          <button key={i} type="button" className={cls} disabled={checked} onClick={() => setPicked(i)}>
+            {w}
+          </button>
+        )
+      })}
+      {checked && step.answer && <p className="cp-mistake__fix">{step.answer}</p>}
+    </div>
+  )
+}
+
+// Карточки по колонкам. Разложенную карточку можно снять обратно тапом:
+// иначе одна ошибка блокирует весь экран.
+function ColumnsBoard({ step, fills, setFills, checked }) {
+  const [active, setActive] = useState(null)
+  const items = step.items || []
+  const place = (col) => {
+    if (checked || active === null) return
+    setFills((s) => ({ ...s, [active]: col }))
+    setActive(null)
+  }
+  return (
+    <div className="cp-cols">
+      <div className="cp-cols__bank">
+        {items.map((it, i) =>
+          fills[i] === undefined ? (
+            <button
+              key={i}
+              type="button"
+              className={`cp-chip ${active === i ? 'is-set' : ''}`}
+              disabled={checked}
+              onClick={() => setActive(active === i ? null : i)}
+            >
+              {it.text}
+            </button>
+          ) : null,
+        )}
+      </div>
+      <div className="cp-cols__grid">
+        {(step.columns || []).map((name, col) => (
+          <div
+            key={col}
+            className={`cp-cols__col ${active !== null ? 'is-open' : ''}`}
+            onClick={() => place(col)}
+            role="presentation"
+          >
+            <h4>{name}</h4>
+            {items.map((it, i) =>
+              fills[i] === col ? (
+                <button
+                  key={i}
+                  type="button"
+                  className={`cp-cols__item ${checked ? (it.col === col ? 'is-right' : 'is-wrong') : ''}`}
+                  disabled={checked}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setFills((s) => {
+                      const next = { ...s }
+                      delete next[i]
+                      return next
+                    })
+                  }}
+                >
+                  {it.text}
+                </button>
+              ) : null,
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Фразы «послушай и повтори»: у части строк есть запись курса, у остальных
+// читает синтез — тот же порядок, что и в исходном движке (say()).
+function PhraseList({ items, onWord }) {
+  useEffect(() => stopSpeaking, [])
+  return (
+    <div className="cp-phrases">
+      {(items || []).map((it, i) => (
+        <button
+          key={i}
+          type="button"
+          className="cp-phrases__row"
+          onClick={() => speakEnglish(it.text, { src: it.src || null })}
+        >
+          <TapText as="span" className="cp-phrases__text" text={it.text} onWord={onWord} />
+          <span className="cp-phrases__spk" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M4 9.5h3.2L12 5.6v12.8L7.2 14.5H4z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              <path d="M15.5 9.2a4 4 0 0 1 0 5.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// Экран говорения: строки читаются вслух, ответ студент записывает на
+// микрофон и слушает себя. Оценки тут нет — сравнивать запись не с чем.
+//
+// Микрофон бывает недоступен (нет разрешения, http-контекст, старый браузер):
+// экран обязан остаться проходимым, поэтому отказ показывается строкой, а
+// кнопка «Продолжить» работает в любом случае.
+function RecordBoard({ items, t }) {
+  const [state, setState] = useState('idle') // idle | live | done | denied
+  const [url, setUrl] = useState('')
+  const recRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      try {
+        recRef.current?.stop()
+      } catch {
+        /* уже остановлен */
+      }
+      stopSpeaking()
+    }
+  }, [])
+
+  const toggle = async () => {
+    if (state === 'live') {
+      recRef.current?.stop()
+      return
+    }
+    const md = typeof navigator === 'undefined' ? null : navigator.mediaDevices
+    if (!md || typeof window === 'undefined' || !window.MediaRecorder) {
+      setState('denied')
+      return
+    }
+    try {
+      const stream = await md.getUserMedia({ audio: true })
+      const rec = new MediaRecorder(stream)
+      const chunks = []
+      rec.ondataavailable = (e) => chunks.push(e.data)
+      rec.onstop = () => {
+        setUrl(URL.createObjectURL(new Blob(chunks, { type: 'audio/webm' })))
+        setState('done')
+        stream.getTracks().forEach((x) => x.stop())
+      }
+      recRef.current = rec
+      rec.start()
+      setState('live')
+    } catch {
+      setState('denied')
+    }
+  }
+
+  return (
+    <div className="cp-rec">
+      {(items || []).map((line, i) => (
+        <button key={i} type="button" className="cp-rec__line" onClick={() => speakEnglish(line)}>
+          {line}
+        </button>
+      ))}
+      <button type="button" className={`cp-rec__btn ${state === 'live' ? 'is-live' : ''}`} onClick={toggle}>
+        {t(state === 'live' ? 'lesson.recordStop' : state === 'done' ? 'lesson.recordAgain' : 'lesson.record')}
+      </button>
+      {state === 'denied' && <p className="cp-rec__note">{t('lesson.recordNoMic')}</p>}
+      {url && <audio className="cp-rec__play" src={url} controls />}
+    </div>
+  )
 }
 
 // Карусель примеров под слайдом правила. Окно на три карточки со стрелками по

@@ -12,7 +12,7 @@ import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonPr
 import LessonPlayer from '../learning/LessonPlayer.jsx'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
-import { isStepLevel, tasksToSteps, stripStageTail, nativeLessonSteps } from '../learning/nativeSteps.js'
+import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -147,9 +147,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         setModuleId(mid)
         setModuleLocked(!!mod?.locked)
         setLessons(trail)
-        // Квота и прогресс независимы — параллельно; A0/A1 греем тяжёлый
-        // <level>.json, чтобы первый клик по уроку не ждал ~700KB.
-        if (isStepLevel(level)) loadLevel(level).catch(() => null)
+        // Квота и прогресс независимы — параллельно; уровень без курса греем
+        // тяжёлым <level>.json, чтобы первый клик по уроку не ждал ~700KB.
+        // С курсом этот файл не нужен вовсе: урок приходит своим steps-<n>.
+        if (!courseIndex && isStepLevel(level)) loadLevel(level).catch(() => null)
         const [quota, d] = await Promise.all([
           mid != null ? getContentQuota(authToken, 'LESSON_MODULE', mid) : Promise.resolve(null),
           loadDone(level, authToken, mid),
@@ -233,19 +234,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         if (course) {
           const m = /^([LTX])([a-z0-9]+)$/i.exec(code)
           if (!m) return
-          const entry = lessons.find((l) => l.code === code)
-          // A0/A1 ведёт курс (24 и 32 урока с юнит-тестами), а содержимое
-          // берётся из нативных данных: там урок разобран подробнее — True/False
-          // одним экраном, соединение пар, вопросы к записи. Разбор курса из
-          // разметки такие задания терял, поэтому уроки выходили короче.
-          if (m[1] === 'L' && isStepLevel(level) && entry) {
-            const levelData = await loadLevel(level).catch(() => null)
-            const steps = levelData ? nativeLessonSteps(levelData, entry.title, lang) : []
-            if (steps.length) {
-              setOpen({ code, attempt: 0, steps: { title: entry.title, blurb: entry.blurb || '', steps } })
-              return
-            }
-          }
+          // Раньше здесь A0/A1 подменяли содержимое урока нативными данными
+          // (public/learning/<level>.json): разбор курса из разметки терял
+          // True/False, соединение пар и вопросы к записи, и уроки выходили
+          // короче. С курсом нового поколения всё наоборот — его файл сам
+          // держит задание на экран, и шаги собираются из него
+          // (scripts/extract-selfstudy-course.js), поэтому подмены больше нет.
+          //
           // Файлы шагов лежат рядом с уроком: steps-<n>, steps-T<u>, steps-X<id>.
           const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : m[1].toUpperCase() + m[2])
           if (data) setOpen({ code, attempt: 0, steps: { ...data, title: stripStageTail(data.title, data.steps) } })
