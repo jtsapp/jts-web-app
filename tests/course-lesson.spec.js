@@ -95,8 +95,8 @@ for (const level of LEVELS) {
       const unit1 = page.locator('.kt-unit').first().locator('.kt-step')
       await expect(unit1.last()).toHaveClass(/is-last/)
       // Название теста приходит из самого курса и у уровней разное:
-      // «Unit Test · Unit 1» у B1, «Unit 1 Review Test» у A2.
-      await expect(unit1.last()).toHaveAttribute('aria-label', /Unit .*Test/i)
+      // «Review test · Unit 1» у B1, «Unit 1 Review Test» у A2.
+      await expect(unit1.last()).toHaveAttribute('aria-label', /(unit.*test|test.*unit)/i)
     })
 
     test('оболочка урока: стадия и прогресс', async ({ page }) => {
@@ -129,8 +129,10 @@ for (const level of LEVELS) {
 
     test('верный ответ даёт монеты, неверный подсвечивается красным', async ({ page }) => {
       await openLesson(page, level)
-      // Доходим до первого оценённого шага.
-      for (let i = 0; i < 6 && !(await page.locator('.cp-choice').count()); i++) {
+      // Доходим до первого оценённого шага. У B1 до него полтора десятка
+      // экранов: сначала разминка, словарь и пропуски, и только потом выбор.
+      test.setTimeout(90000)
+      for (let i = 0; i < 25 && !(await page.locator('.cp-choice').count()); i++) {
         await unlockStep(page)
         await page.locator('.cp-cta:not([disabled])').click()
         await page.waitForTimeout(150)

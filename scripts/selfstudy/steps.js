@@ -17,6 +17,12 @@ const STAGE_NAMES = {
   lisrd: 'Listening',
   freer: 'Speaking',
   wrap: 'Wrap',
+  // B1/B2 называют стадии иначе: input — материал (чтение и аудирование),
+  // prod — говорение и письмо, quiz/test — проверка в конце урока и юнита.
+  input: 'Listening',
+  prod: 'Speaking',
+  quiz: 'Practice',
+  test: 'Practice',
 }
 
 /** Строка курса: либо готовая строка, либо {en,ru,kk}. */
@@ -80,6 +86,10 @@ function hashSeed(str) {
 function flattenGroups(groups, perItem) {
   const screens = []
   for (const g of groups || []) {
+    // Массив заданий у B1/B2 разреженный: между группами в исходнике стоят
+    // лишние запятые, и в дырах лежит undefined. Пропускаем их молча — это
+    // разметка файла, а не потерянное задание.
+    if (!g || !g.t) continue
     const single = perItem[g.t]
     if (single && g.t !== 'cards' && Array.isArray(g.items)) {
       g.items.forEach((it, n) => {
@@ -91,6 +101,8 @@ function flattenGroups(groups, perItem) {
         if (g.lines) sc.lines = g.lines
         if (g.para) sc.para = g.para
         if (g.clip && !sc.clip) sc.clip = g.clip
+        if (g.text && !sc.text) sc.text = g.text
+        if (g.keep && sc.keep == null) sc.keep = g.keep
         if (g.phrase) sc.phrase = true
         screens.push(sc)
       })
@@ -100,6 +112,20 @@ function flattenGroups(groups, perItem) {
   }
   return screens
 }
+
+/**
+ * Принимаемые ответы задания: сам ответ плюс альтернативные записи из alt.
+ * У B1 alt стоит у 114 заданий («We've been friends since 2015.» и «We have
+ * been friends since 2015») — без них верный ответ считался бы ошибкой.
+ */
+function acceptedList(sc) {
+  return [...[].concat(sc.a == null ? [] : sc.a), ...[].concat(sc.alt || [])]
+    .map((x) => String(x).trim())
+    .filter(Boolean)
+}
+
+/** Подпись «начните с…» — на языке инструкции задания. */
+const startLabel = (lang) => (lang === 'kk' ? 'Бастаңыз:' : lang === 'en' ? 'Start with:' : 'Начните так:')
 
 /** Разбивает строку с пропуском на половинки для шага gap. */
 function splitGap(text) {
@@ -119,10 +145,37 @@ function readerHtml(sc) {
   return who + paras.map((p) => `<p>${p}</p>`).join('')
 }
 
+/** Текст урока по ссылке: {t:"mcq", text:"t1"} → абзацы из lesson.texts.t1. */
+function docHtml(doc) {
+  if (!doc) return ''
+  const paras = doc.paras || doc.para || []
+  const title = doc.title ? `<h4>${esc(doc.title)}</h4>` : ''
+  return title + paras.map((p) => `<p>${p}</p>`).join('')
+}
+
+/**
+ * Материал, на который опирается вопрос: сам абзац задания, текст урока по
+ * ссылке `text` или последний прочитанный кусок этой же стадии.
+ *
+ * Движок курса печатает текст НА КАЖДОМ экране («Read the text again. Choose
+ * the correct answer.»), а у нас экран самостоятельный: без этой сборки 109
+ * вопросов B1 к тексту и вопросы к треду постов остались бы без самого текста
+ * — проверялась бы память, а не чтение.
+ */
+function materialHtml(sc, ctx) {
+  const own = readerHtml(sc)
+  if (own) return own
+  if (sc.text && ctx.texts && ctx.texts[sc.text]) return docHtml(ctx.texts[sc.text])
+  return (ctx.carry && ctx.carry.html) || ''
+}
+
 function tableHtml(sc, lang) {
   const head = Array.isArray(sc.head) ? sc.head : sc.head ? line(sc.head, lang) : []
-  const headRow = (Array.isArray(head) ? head : []).map((h) => `<th>${esc(h)}</th>`).join('')
-  const rows = (sc.rows || []).map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')
+  // Ячейка бывает и строкой, и объектом {en,ru,kk}: у B1 многоязычна вся
+  // таблица, у A0 — только её шапка.
+  const cell = (c) => line(c, lang)
+  const headRow = (Array.isArray(head) ? head : []).map((h) => `<th>${esc(plain(h, lang))}</th>`).join('')
+  const rows = (sc.rows || []).map((r) => `<tr>${r.map((c) => `<td>${cell(c)}</td>`).join('')}</tr>`).join('')
   const explain = (sc.explain || []).map((p) => `<p>${line(p, lang)}</p>`).join('')
   const fwd = sc.fwd ? `<p class="cp-note__fwd">${line(sc.fwd, lang)}</p>` : ''
   return `<table class="cp-table">${headRow ? `<tr>${headRow}</tr>` : ''}${rows}</table>${explain}${fwd}`
@@ -140,8 +193,11 @@ function screenToStep(sc, ctx) {
   const title = plain(sc.ins, lang)
   const sub = plain(sc.sub, lang)
   const seed = hashSeed(`${ctx.seedBase || ''}:${sc.t}:${title}:${JSON.stringify(sc.opts || sc.a || sc.w || '')}`)
-  const base = { stage, type: null, title, sub }
   const src = sc.clip ? ctx.clip(sc.clip) : null
+  // Запись кладём в базу шага: клип висит на группе, и её наследуют не только
+  // вопросы, но и соединение пар и разбор по колонкам — у B2 таких экранов
+  // шестнадцать, и без этого они оставались немыми.
+  const base = { stage, type: null, title, sub, ...(src ? { src } : {}) }
 
   switch (sc.t) {
     case 'cover': {
@@ -173,6 +229,15 @@ function screenToStep(sc, ctx) {
     case 'tick':
       return { ...base, type: 'pick', options: (sc.items || []).map((it) => ({ label: it.w })) }
 
+    // Разминка «отметь, что про тебя» у B1/B2 называется pick, а варианты в
+    // ней — строки или многоязычные объекты, без иконок.
+    case 'pick':
+      return {
+        ...base,
+        type: 'pick',
+        options: (sc.items || []).map((it) => ({ label: typeof it === 'string' ? it : plain(it.w || it, lang) })),
+      }
+
     case 'cards':
       return {
         ...base,
@@ -181,6 +246,7 @@ function screenToStep(sc, ctx) {
         sub: sub || 'Нажми на карточку, чтобы увидеть перевод',
         words: (sc.items || []).map((it) => ({
           en: it.w,
+          pos: it.pos || '',
           ru: it.ru || '',
           kk: it.kk || '',
           def: plain(it.def || it.use || '', 'en'),
@@ -191,14 +257,20 @@ function screenToStep(sc, ctx) {
 
     case 'mcq': {
       const prompt = plain(sc.q, lang) || splitGapPrompt(sc.line)
+      // Варианты у B1 многоязычные ({en,ru,kk}), у остальных — строки.
+      const opts = (sc.opts || []).map((o) => plain(o, lang))
       return {
         ...base,
         type: 'choice',
         prompt,
-        options: sc.opts || [],
-        answer: (sc.opts || [])[sc.a],
+        options: opts,
+        // keep в источнике значит «порядок вариантов осмысленный» — шкала,
+        // числа, шаги по времени. Плеер перемешивает варианты всегда, и без
+        // этого флага «About 150 / About 50 / About 20» встаёт вразнобой.
+        keep: !!sc.keep,
+        answer: opts[sc.a],
         why: plain(sc.why, lang) || '',
-        html: readerHtml(sc),
+        html: materialHtml(sc, ctx),
         src,
       }
     }
@@ -214,8 +286,8 @@ function screenToStep(sc, ctx) {
         type: 'choice',
         say: sc.w || '',
         sayTrack: (sc.wordClip && ctx.clip(sc.wordClip)) || ctx.wordAudio(sc.w) || null,
-        options: sc.opts || [],
-        answer: (sc.opts || [])[sc.a],
+        options: (sc.opts || []).map((o) => plain(o, lang)),
+        answer: plain((sc.opts || [])[sc.a], lang),
         why: plain(sc.why, lang) || '',
       }
 
@@ -232,7 +304,7 @@ function screenToStep(sc, ctx) {
         src,
         options: opts,
         answer: opts[sc.a],
-        html: readerHtml(sc),
+        html: materialHtml(sc, ctx),
       }
     }
 
@@ -244,7 +316,7 @@ function screenToStep(sc, ctx) {
         options: ['True', 'False'],
         answer: sc.a ? 'True' : 'False',
         why: plain(sc.why, lang) || '',
-        html: readerHtml(sc),
+        html: materialHtml(sc, ctx),
         src,
       }
 
@@ -253,10 +325,10 @@ function screenToStep(sc, ctx) {
         ...base,
         type: 'choice',
         prompt: plain(sc.q, lang),
-        options: sc.opts || [],
-        answer: (sc.opts || [])[sc.a],
+        options: (sc.opts || []).map((o) => plain(o, lang)),
+        answer: plain((sc.opts || [])[sc.a], lang),
         why: plain(sc.why, lang) || '',
-        html: readerHtml(sc),
+        html: materialHtml(sc, ctx),
         src,
       }
 
@@ -265,8 +337,8 @@ function screenToStep(sc, ctx) {
         ...base,
         type: 'choice',
         prompt: plain(sc.q, lang),
-        options: sc.opts || [],
-        answer: (sc.opts || [])[sc.a],
+        options: (sc.opts || []).map((o) => plain(o, lang)),
+        answer: plain((sc.opts || [])[sc.a], lang),
         why: plain(sc.why, lang) || '',
         html: (sc.examples || []).map((e) => `<p>${e}</p>`).join(''),
       }
@@ -278,10 +350,10 @@ function screenToStep(sc, ctx) {
         type: 'gap',
         before,
         after,
-        answers: [sc.a],
+        answers: acceptedList(sc),
         bank: sc.bank ? shuffle(sc.bank, seed) : [],
         why: plain(sc.why, lang) || '',
-        html: readerHtml(sc),
+        html: materialHtml(sc, ctx),
         src,
       }
     }
@@ -295,26 +367,32 @@ function screenToStep(sc, ctx) {
         type: 'gap',
         before,
         after,
-        answers: [].concat(sc.a).map(String),
+        answers: acceptedList(sc),
         bank: [],
         why: plain(sc.why, lang) || '',
-        html: readerHtml(sc) + (sc.given ? `<p class="cp-given">${sc.given}</p>` : ''),
+        html: materialHtml(sc, ctx) + (sc.given ? `<p class="cp-given">${sc.given}</p>` : ''),
         src,
       }
     }
 
+    // «Перепиши предложение». Исходная фраза лежит в from (A2) или given (B1),
+    // а ответ в данных — ВСЯ новая фраза целиком, вместе с началом из start.
+    // Класть start в левую половину пропуска нельзя: плеер тогда ждёт от
+    // студента только хвост, а сверяет с целой фразой — не совпадёт никогда.
+    // Поэтому поле пустое, а начало и подсказка идут текстом над ним.
     case 'trans':
     case 'transform': {
-      const from = sc.from || sc.s || ''
+      const from = plain(sc.from || sc.given || sc.s || '', lang)
       const task = plain(sc.task || sc.cue || '', lang)
+      const start = sc.start ? String(sc.start) : ''
       return {
         ...base,
         type: 'gap',
         title: title || task,
-        sub: task && title ? task : sub,
-        before: sc.start ? String(sc.start) : '',
+        sub: [task && title ? task : sub, start ? `${startLabel(lang)} ${start}…` : ''].filter(Boolean).join(' '),
+        before: '',
         after: '',
-        answers: [].concat(sc.a).map(String),
+        answers: acceptedList(sc),
         bank: [],
         why: plain(sc.why, lang) || '',
         html: from ? `<p class="cp-given"><b>${esc(from)}</b></p>` : '',
@@ -328,22 +406,25 @@ function screenToStep(sc, ctx) {
 
     // Слова предложения у A0/A2 лежат в tok, у A1 — в words: один и тот же
     // экран, разные поколения файла.
-    case 'mistake':
+    case 'mistake': {
+      // Индекс неверного слова записан по-разному: bad у A0/A2, a у B1.
+      const bad = sc.bad != null ? sc.bad : sc.a
       return {
         ...base,
         type: 'mistake',
         tokens: sc.tok || sc.words || [],
-        bad: sc.bad,
-        answer: sc.fix || '',
+        bad,
+        answer: plain(sc.fix, lang) || '',
         why: plain(sc.why, lang) || '',
       }
+    }
 
     // Колонка задана либо строкой («was» / «were»), либо {icon,t}.
     case 'cols':
       return {
         ...base,
         type: 'cols',
-        columns: (sc.cols || []).map((c) => (typeof c === 'string' ? c : plain(c.t, lang))),
+        columns: (sc.cols || []).map((c) => (typeof c === 'string' ? c : plain(c.t || c, lang))),
         items: shuffle((sc.items || []).map((it) => ({ text: it.w, col: it.c })), seed),
       }
 
@@ -356,8 +437,8 @@ function screenToStep(sc, ctx) {
       const pairs = []
       let translated = false
       for (const p of sc.pairs || []) {
-        const left = p.w || p.l || ''
-        const own = p.t || p.r || p.ru || ''
+        const left = plain(p.w || p.l || '', lang)
+        const own = plain(p.t || p.r || p.ru || '', lang)
         const right = own || (ctx.translate ? ctx.translate(left) : null) || ''
         if (!own && right) translated = true
         if (!left || !right || right === left) return null
@@ -387,7 +468,16 @@ function screenToStep(sc, ctx) {
     case 'table':
       return { ...base, type: 'note', html: tableHtml(sc, lang) }
 
+    // Слайдер примеров. Когда у примеров есть записи (B1), это те же строки
+    // «послушай и повтори», что и chunk, — карусель без звука их бы заглушила.
     case 'slider':
+      if ((sc.items || []).some((it) => it && it.clip)) {
+        return {
+          ...base,
+          type: 'phrases',
+          items: (sc.items || []).map((it) => ({ text: plain(it.s, lang), src: it.clip ? ctx.clip(it.clip) : null })),
+        }
+      }
       return {
         ...base,
         type: 'note',
@@ -396,15 +486,185 @@ function screenToStep(sc, ctx) {
       }
 
     case 'text':
-    case 'read':
+    case 'read': {
+      // Текст для чтения у B1 лежит при уроке, а задание ссылается на него по
+      // имени ({t:"read", text:"t1"}) — без разыменования экран остался бы
+      // пустой инструкцией «Прочитайте текст».
+      const doc = sc.text && ctx.texts ? ctx.texts[sc.text] : null
+      const paras = (doc && (doc.paras || doc.para)) || []
+      const body = (sc.body || []).map((b) => `<p>${line(b, lang)}</p>`).join('')
+      const kicker = sc.kicker ? `<p class="cp-note__meta">${plain(sc.kicker, lang)}</p>` : ''
       return {
         ...base,
         type: 'note',
-        title: plain(sc.title || sc.ins, lang) || (sc.read && plain(sc.read.title, lang)) || title,
+        title: plain((doc && doc.title) || sc.title || sc.ins, lang) || (sc.read && plain(sc.read.title, lang)) || title,
+        sub: sub || plain(doc && doc.kicker, lang),
         html:
+          kicker +
           (sc.meta ? `<p class="cp-note__meta">${esc(sc.meta)}</p>` : '') +
+          body +
+          paras.map((x) => `<p>${x}</p>`).join('') +
           readerHtml(sc) +
           (sc.note ? `<p>${sc.note}</p>` : ''),
+      }
+    }
+
+    // Разбор правила и решённый пример (B1 expl, B2 rule / worked / examples):
+    // всё это объяснение, читается и идёт дальше.
+    case 'expl':
+      return {
+        ...base,
+        type: 'note',
+        title: title || plain(sc.kicker, lang),
+        sub: title ? sub : '',
+        html: (sc.body || []).map((b) => `<p>${line(b, lang)}</p>`).join(''),
+      }
+
+    case 'rule':
+      return {
+        ...base,
+        type: 'note',
+        title: plain(sc.h, lang) || title,
+        html: (sc.blocks || []).map((b) => `<p>${line(b, lang)}</p>`).join(''),
+      }
+
+    case 'worked':
+      return {
+        ...base,
+        type: 'note',
+        title: plain(sc.title, lang) || title,
+        html: `<ol class="cp-steps">${(sc.steps || []).map((x) => `<li>${line(x, lang)}</li>`).join('')}</ol>`,
+      }
+
+    case 'examples':
+      return {
+        ...base,
+        type: 'note',
+        html: (sc.items || [])
+          .map((it) => `<p>${line(it.s, lang)}${it.note ? `<br><span class="cp-note__meta">${line(it.note, lang)}</span>` : ''}</p>`)
+          .join(''),
+      }
+
+    case 'reader':
+      return {
+        ...base,
+        type: 'note',
+        title: plain(sc.title, lang) || title,
+        sub: plain(sc.by, lang) || sub,
+        html: (sc.paras || []).map((x) => `<p>${x}</p>`).join(''),
+      }
+
+    // Лента постов (B1): образец письменной работы — три реплики с автором.
+    case 'posts':
+      return {
+        ...base,
+        type: 'note',
+        title: title || plain(sc.kicker, lang),
+        html: (sc.posts || [])
+          .map(
+            (x) =>
+              `<div class="cp-post"><p class="cp-post__who"><b>${esc(x.name || '')}</b>` +
+              `${x.meta ? ` <span>${esc(x.meta)}</span>` : ''}</p><p>${x.body || ''}</p>` +
+              `${x.tags ? `<p class="cp-note__meta">${esc(x.tags)}</p>` : ''}</div>`,
+          )
+          .join(''),
+      }
+
+    // «Скажи вслух» (B1 say): подсказки к устному ответу, записи нет.
+    case 'say':
+      return {
+        ...base,
+        type: 'record',
+        items: (sc.prompts || sc.lines || []).map((x) => plain(x, lang)),
+      }
+
+    // Соединение пар B2: слева слово, справа его значение.
+    case 'extmatch': {
+      const pairs = (sc.pairs || []).map((x) => ({ left: plain(x.l, lang), right: plain(x.r, lang) })).filter((x) => x.left && x.right)
+      if (!pairs.length) return null
+      return { ...base, type: 'match', pairs, options: shuffle(pairs.map((x) => x.right), seed) }
+    }
+
+    // Текст с пронумерованными пропусками и общим банком слов.
+    case 'cloze': {
+      // Подпись исходника описывает его собственный жест («tap a word, then tap
+      // the gap»), а у нас ответ вписывается в поле. Оставить её значило бы
+      // объяснять студенту управление, которого на экране нет.
+      const ru = typeof sc.sub === 'object' && sc.sub && sc.sub.ru
+      return {
+        ...base,
+        sub: ru ? 'Впишите пропущенное слово в каждый пропуск.' : 'Type the missing word in each gap.',
+        type: 'cloze',
+        html: sc.text || '',
+        bank: shuffle(sc.bank || [], seed),
+        answers: (sc.a || sc.answers || []).map((x) => (Array.isArray(x) ? x.map(String) : [String(x)])),
+      }
+    }
+
+    // Конспект под запись (B2 notes): несколько пропусков на одном экране,
+    // у каждого свой набор принимаемых ответов.
+    case 'notes':
+      return {
+        ...base,
+        type: 'group',
+        src,
+        items: (sc.rows || []).map((r) => {
+          const { before, after } = splitGap(r.line)
+          return {
+            before: r.k ? `${plain(r.k, lang)} — ${before}` : before,
+            after,
+            answers: acceptedList(r),
+          }
+        }),
+      }
+
+    // Цепочка переписываний (B2 chain): каждый шаг — свой ответ, но экран один.
+    case 'chain':
+      return {
+        ...base,
+        type: 'group',
+        html: sc.start ? `<p class="cp-given"><b>${esc(sc.start)}</b></p>` : '',
+        items: (sc.steps || []).map((st) => ({
+          before: plain(st.ins, lang),
+          after: st.hint ? `(${plain(st.hint, lang)}…)` : '',
+          answers: acceptedList(st),
+        })),
+      }
+
+    // «Найди ошибки» B2: неверных слов несколько, и правка у каждого своя.
+    case 'err': {
+      const bad = [].concat(sc.bad == null ? [] : sc.bad).map(Number)
+      if (!bad.length || !(sc.tokens || []).length) return null
+      const fixes = sc.fix || {}
+      return {
+        ...base,
+        type: 'mistake',
+        tokens: sc.tokens,
+        bad,
+        answer: bad.map((i) => `${sc.tokens[i]} → ${fixes[i] != null ? fixes[i] : '?'}`).join(', '),
+        why: plain(sc.why, lang) || '',
+      }
+    }
+
+    // Видео-репортаж юнита: файл лежит рядом с курсом, а не в самом файле.
+    case 'video': {
+      const video = ctx.video ? ctx.video(sc.file) : null
+      if (!video) return null
+      return { ...base, type: 'watch', title: plain(sc.title, lang) || title, sub: sub || plain(sc.note, lang), src: video }
+    }
+
+    // Вопрос теста или квиза — тот же выбор варианта, только с пометкой темы.
+    case 'quizItem':
+    case 'testItem':
+      return {
+        ...base,
+        type: 'choice',
+        title: title || plain(sc.tag, lang) || 'Проверка',
+        prompt: plain(sc.q, lang) || splitGapPrompt(sc.line),
+        options: (sc.opts || []).map((o) => plain(o, lang)),
+        answer: plain((sc.opts || [])[sc.a], lang),
+        why: plain(sc.why, lang) || '',
+        src: sc.clip ? ctx.clip(sc.clip) : null,
       }
 
     case 'model':
@@ -416,6 +676,13 @@ function screenToStep(sc, ctx) {
       }
 
     case 'write': {
+      // plan у B1/B2 — список шагов, у A2 — строка-подсказка: приводим к списку.
+      const planItems = Array.isArray(sc.plan) ? sc.plan : sc.plan ? [sc.plan] : []
+      const plan = planItems.map((x) => `<li>${line(x, lang)}</li>`).join('')
+      const useful = sc.useful && sc.useful.items
+        ? `<p class="cp-note__meta">${esc(plain(sc.useful.title, lang) || 'Useful language')}</p>` +
+          `<ul class="cp-frames">${sc.useful.items.map((x) => `<li>${line(x, lang)}</li>`).join('')}</ul>`
+        : ''
       const frames = (sc.frames || []).map((f) => `<li>${esc(f)}</li>`).join('')
       const bank = (sc.bank || []).map((w) => `<span class="cp-note__chip">${esc(w)}</span>`).join('')
       const checks = (sc.checks || []).map((c) => `<li>${line(c, lang)}</li>`).join('')
@@ -423,7 +690,11 @@ function screenToStep(sc, ctx) {
         ...base,
         type: 'write',
         placeholder: sc.ph || sc.placeholder || '',
-        html: (frames ? `<ul class="cp-frames">${frames}</ul>` : '') + (bank ? `<div class="cp-note__chips">${bank}</div>` : ''),
+        html:
+          (plan ? `<ol class="cp-steps">${plan}</ol>` : '') +
+          (frames ? `<ul class="cp-frames">${frames}</ul>` : '') +
+          useful +
+          (bank ? `<div class="cp-note__chips">${bank}</div>` : ''),
         modelHtml: sc.model
           ? `<p>${sc.model}</p>`
           : checks
@@ -443,7 +714,7 @@ function screenToStep(sc, ctx) {
       return {
         ...base,
         type: 'checklist',
-        title: plain(sc.done, lang) || 'Урок пройден',
+        title: plain(sc.done, lang) || plain(sc.title, lang) || 'Урок пройден',
         sub: plain(sc.progress, lang),
         items: (sc.can || []).map((c) => plain(c.t, lang)),
       }
@@ -470,11 +741,15 @@ function splitGapPrompt(text) {
     .trim()
 }
 
+// Экраны, которые ДАЮТ материал: текст, тред, расшифровка. Вопросы к ним идут
+// следом и своего текста не несут.
+const MATERIAL_TYPES = new Set(['text', 'read', 'reader', 'posts'])
+
 /** Слово → перевод по карточкам урока: нужен упражнению на соединение у A0. */
 function lessonGlossary(groups, lang = 'ru') {
   const map = new Map()
   for (const g of groups || []) {
-    if (g.t !== 'cards') continue
+    if (!g || g.t !== 'cards') continue
     for (const it of g.items || []) {
       const tr = lang === 'kk' ? it.kk : it.ru
       if (it.w && tr) map.set(it.w, tr)
@@ -487,11 +762,33 @@ function lessonGlossary(groups, lang = 'ru') {
 function lessonSteps(lesson, perItem, ctx) {
   const screens = flattenGroups(lesson.groups, perItem)
   const glossary = lessonGlossary(lesson.groups, ctx.lang)
-  const full = { ...ctx, seedBase: `${ctx.level}:${lesson.key}`, translate: (w) => glossary.get(w) || null }
+  const full = {
+    ...ctx,
+    seedBase: `${ctx.level}:${lesson.key}`,
+    translate: (w) => glossary.get(w) || null,
+    texts: lesson.texts || {},
+  }
   const out = []
+  // Последний прочитанный материал этой стадии: тред постов, текст статьи,
+  // расшифровка. Вопросы, которые идут следом, ссылаются на него словами
+  // «прочитайте ещё раз», поэтому он едет с ними.
+  let carry = null
   for (const sc of screens) {
-    const step = screenToStep(sc, full)
-    if (step) out.push(step)
+    if (!sc || !sc.t) continue
+    if (MATERIAL_TYPES.has(sc.t)) carry = null
+    const step = screenToStep(sc, { ...full, carry })
+    if (!step) continue
+    // У карточки-заметки плеер печатает только заголовок и html: подпись он не
+    // рисует вовсе (см. блок шапки в CourseStepPlayer). Поэтому подпись
+    // переносим внутрь карточки — иначе «Subject questions on the left of each
+    // pair» и подобные пояснения исчезали бы вместе с ней.
+    if (step.type === 'note' && step.sub) {
+      step.html = `<p class="cp-note__meta">${step.sub}</p>${step.html || ''}`
+      step.sub = ''
+    }
+    if (MATERIAL_TYPES.has(sc.t) && step.html) carry = { stage: step.stage, html: step.html }
+    else if (carry && step.stage !== carry.stage) carry = null
+    out.push(step)
   }
   return out
 }

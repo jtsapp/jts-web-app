@@ -40,7 +40,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { sayAudioFile } = require('./jts-self/say-audio')
-const { strip } = require('./build-course-steps.js')
+const { strip } = require('./lib/html-text.js')
 // Привязка записей к нативным урокам — тем же шагом, что и генерация: иначе
 // её забывают сделать отдельно (см. комментарий в конце run()).
 const { linkLevel } = require('./link-lesson-audio')
@@ -427,7 +427,7 @@ async function run() {
     const r = linkLevel(level)
     console.log(`  привязано в ${level}.json: слова ${r.words}, choice.say ${r.choice}, info.say ${r.info}${r.changed ? '' : ' (без изменений)'}`)
   }
-  console.log('Дальше: курс-уровни (A2/B1/B2) — build-course-steps.js, он привязывает записи к steps-<n>.json по тому же хэшу.')
+  console.log('Дальше: курс-уровни — scripts/extract-selfstudy-course.js, он привязывает записи к steps-<n>.json по тому же хэшу.')
 }
 
 if (require.main === module) {

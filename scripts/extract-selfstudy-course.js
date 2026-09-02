@@ -105,9 +105,21 @@ function build(file) {
   const imgs = imageIndex(outDir)
   const wordAudio = wordAudioLookup(course.level)
 
+  // Видео B2 в файл курса не вшито — оно ссылается на внешний ролик
+  // (videos/nav_B2_report_unit7_olb.mp4). Те же ролики уже лежат в репозитории
+  // с прошлой выгрузки как video/v<юнит>.mp4, поэтому связываем их по номеру
+  // юнита в имени, а не тащим заново.
+  const videoUrl = (file) => {
+    const m = /unit(\d+)/i.exec(String(file || ''))
+    if (!m) return null
+    const name = `v${m[1]}.mp4`
+    return fs.existsSync(path.join(outDir, 'video', name)) ? `/course/${course.level}/video/${name}` : null
+  }
+
   const makeCtx = (lessonKey) => ({
     lang: 'ru',
     level: course.level,
+    video: videoUrl,
     // Ключ клипа у A0/A2 живёт внутри урока, у A1 — общий на уровень: пробуем
     // сначала «урок:ключ», потом голый ключ.
     clip: (key) => byKey.get(`${lessonKey}:${key}`) || byKey.get(key) || null,
@@ -133,17 +145,58 @@ function build(file) {
     lessons.push({ n: lesson.no, unit: lesson.unit, no: lesson.no, title: lesson.title, blurb })
   }
 
+  const GRADED = ['choice', 'listen', 'gap', 'order', 'match', 'group', 'rows', 'mistake', 'cols', 'cloze']
+  // Порог сдачи курс пишет двумя способами: числом вопросов (B1: 21 из 30) и
+  // процентом (B2: 70). Различаем по величине — процент больше, чем вопросов.
+  const passMark = (raw, items) => {
+    if (!raw) return Math.ceil(items * PASS_RATIO)
+    return raw > items ? Math.ceil((items * raw) / 100) : raw
+  }
+
   const tests = []
   for (const test of course.tests) {
+    const steps = lessonSteps(test, course.perItem, makeCtx(test.key))
+    const graded = steps.filter((s) => GRADED.includes(s.type)).length
+    const declaredPass = test.pass || (test.groups || []).reduce((p, g) => p || (g && g.pass) || 0, 0)
+    const pass = passMark(declaredPass, graded)
+
+    // Большой тест уровня (B2: четыре блочных и финальный) — свой узел тропы
+    // X<id> после юнита, а не тест юнита T<u>.
+    if (test.exam) {
+      const id = test.exam.final ? 'f' : `t${Math.max(1, Math.ceil((test.exam.to || 0) / 4))}`
+      const after = test.exam.after ? Math.ceil(test.exam.after / 4) : course.units.length
+      const name = `steps-X${id}.json`
+      fs.writeFileSync(
+        path.join(outDir, name),
+        `${JSON.stringify({ n: id, title: test.title, blurb: test.blurb || '', passRatio: graded ? pass / graded : null, steps }, null, 0)}\n`,
+      )
+      // passRatio читает плеер (exam = passRatio != null): без него большой
+      // тест нельзя провалить — итог всегда «сдано».
+      kept.add(name)
+      tests.push({
+        id,
+        kind: test.exam.final ? 'Final' : 'Test',
+        title: test.title,
+        blurb: test.blurb || '',
+        after,
+        lo: test.exam.from,
+        hi: test.exam.to,
+        items: graded,
+        pass,
+      })
+      continue
+    }
+
     const unit = test.unit
     if (!unit) continue
-    const steps = lessonSteps(test, course.perItem, makeCtx(test.key))
-    const graded = steps.filter((s) => ['choice', 'listen', 'gap', 'order', 'match', 'group', 'rows', 'mistake', 'cols'].includes(s.type)).length
     const title = test.title || `Тест юнита ${unit}`
     const name = `steps-T${unit}.json`
-    fs.writeFileSync(path.join(outDir, name), `${JSON.stringify({ n: unit, title, blurb: '', steps }, null, 0)}\n`)
+    fs.writeFileSync(
+      path.join(outDir, name),
+      `${JSON.stringify({ n: unit, title, blurb: plain(test.blurb, 'ru'), passRatio: graded ? pass / graded : null, steps }, null, 0)}\n`,
+    )
     kept.add(name)
-    tests.push({ unit, title, items: graded, pass: Math.ceil(graded * PASS_RATIO) })
+    tests.push({ unit, title, items: graded, pass })
   }
 
   // Юниты каталога: имя юнита и заголовки его уроков — как читает courseTrail.
@@ -171,7 +224,9 @@ function build(file) {
         }
         continue
       }
-      if (entry === 'img' || kept.has(entry)) continue
+      // Картинки слов и видео-репортажи в файл курса не вшиты: они лежат в
+      // репозитории с прошлой выгрузки, и пересборка их не восстановит.
+      if (entry === 'img' || entry === 'video' || kept.has(entry)) continue
       fs.rmSync(full, { recursive: true })
       removed++
     }
