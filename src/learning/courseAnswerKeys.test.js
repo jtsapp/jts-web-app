@@ -98,13 +98,26 @@ describe.each(LEVELS)('ключи ответов курса %s', (level) => {
     for (const { file, step } of all) {
       if (step.type === 'mistake') {
         const n = (step.tokens || []).length
-        if (!n || !(step.bad >= 0 && step.bad < n)) bad.push({ file, tokens: step.tokens, bad: step.bad })
+        // Неверных слов бывает и одно (A0/A1), и несколько (B2), поэтому bad
+        // читается списком.
+        const marks = (Array.isArray(step.bad) ? step.bad : [step.bad]).filter((i) => Number.isInteger(i))
+        if (!n || !marks.length || marks.some((i) => i < 0 || i >= n)) bad.push({ file, tokens: step.tokens, bad: step.bad })
       }
       if (step.type === 'cols') {
         const cols = (step.columns || []).length
         const wrong = (step.items || []).filter((it) => !(it.col >= 0 && it.col < cols))
         if (!cols || wrong.length) bad.push({ file, columns: step.columns, wrong })
       }
+    }
+    expect(bad).toEqual([])
+  })
+
+  it('у текста с пропусками ответ есть у каждого пропуска', () => {
+    const bad = []
+    for (const { file, step } of all) {
+      if (step.type !== 'cloze') continue
+      const answers = step.answers || []
+      if (!answers.length || answers.some((a) => !a.length || !String(a[0]).trim())) bad.push({ file, answers })
     }
     expect(bad).toEqual([])
   })

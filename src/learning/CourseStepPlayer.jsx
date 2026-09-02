@@ -42,6 +42,7 @@ export function isGraded(step) {
   if (step.type === 'group' || step.type === 'rows') return (step.items || []).length > 0
   if (step.type === 'mistake') return (step.tokens || []).length > 0
   if (step.type === 'cols') return (step.items || []).length > 0
+  if (step.type === 'cloze') return (step.answers || []).length > 0
   return GRADED.has(step.type)
 }
 
@@ -118,6 +119,9 @@ const PROMPT_FIRST = new Set(['pick', 'write', 'checklist'])
 function gapSentence(step) {
   const before = String(step.before || '').trim()
   const after = String(step.after || '').trim()
+  // Обеих половинок нет — это «перепиши предложение целиком»: сама фраза стоит
+  // над полем карточкой, и рисовать вместо вопроса голый пропуск незачем.
+  if (!before && !after) return ''
   const joined = `${before} ${after}`.replace(/\s+/g, ' ').trim()
   if (/_{2,}/.test(joined)) return joined
   return `${before} ___ ${after}`.replace(/\s+/g, ' ').trim()
@@ -412,8 +416,11 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
   const [text, setText] = useState('')
   const [revealed, setRevealed] = useState(false)
 
+  // Варианты перемешиваются, чтобы верный не стоял всегда первым. Исключение —
+  // шаг с флагом keep: там порядок сам по себе часть задания (шкала, числа,
+  // шаги по времени), и перемешать его значит сломать вопрос.
   const options = useMemo(
-    () => (step.options ? shuffle(step.options, seed * 7919) : []),
+    () => (step.options ? (step.keep ? step.options : shuffle(step.options, seed * 7919)) : []),
     [step, seed],
   )
   // Собранная фраза шага «порядок слов».
@@ -436,8 +443,19 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
     // Соединение засчитывается целиком: это одно упражнение, а не N вопросов,
     // и сердце за него снимается один раз.
     if (step.type === 'match') return (step.pairs || []).every((p, i) => links[i] === p.right)
-    // «Найди ошибку»: засчитывается тап ровно по тому слову, которое неверно.
-    if (step.type === 'mistake') return picked === step.bad
+    // «Найди ошибку»: засчитывается тап ровно по тем словам, которые неверны.
+    // У B2 таких слов в предложении сразу несколько, поэтому bad — список, а
+    // отмечать приходится все: одно слово из четырёх это ещё не разбор.
+    if (step.type === 'mistake') {
+      const bad = mistakeBad(step)
+      const marked = Object.keys(picks).filter((i) => picks[i]).map(Number)
+      return marked.length === bad.length && bad.every((i) => marked.includes(i))
+    }
+    // Текст с пропусками: экран засчитывается целиком, как и «несколько
+    // пропусков» — это одно упражнение, а не N вопросов.
+    if (step.type === 'cloze') {
+      return (step.answers || []).every((answers, i) => answerMatches(fills[i] || '', answers, ''))
+    }
     // Разбор по колонкам: экран — одно упражнение, верно только если каждая
     // карточка легла в свою колонку.
     if (step.type === 'cols') return (step.items || []).every((it, i) => fills[i] === it.col)
@@ -458,7 +476,11 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
           ? Object.keys(links).length === (step.pairs || []).length
           : step.type === 'cols'
             ? (step.items || []).every((_, i) => fills[i] !== undefined)
-            : picked !== null
+            : step.type === 'cloze'
+              ? (step.answers || []).every((_, i) => String(fills[i] || '').trim() !== '')
+              : step.type === 'mistake'
+                ? Object.values(picks).some(Boolean)
+                : picked !== null
     : step.type === 'write'
       ? text.trim() !== ''
       : step.type === 'pick'
@@ -814,7 +836,11 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
 
     // Найди ошибку: предложение разобрано на слова, тап по неверному.
     case 'mistake':
-      return <MistakeLine step={step} picked={picked} setPicked={setPicked} checked={checked} />
+      return <MistakeLine step={step} picks={picks} setPicks={setPicks} checked={checked} />
+
+    // Текст с пропусками: абзац целиком, поля ответа под ним по номерам.
+    case 'cloze':
+      return <ClozeText step={step} fills={fills} setFills={setFills} checked={checked} t={t} onWord={onWord} />
 
     // Разбор по колонкам: выбрать карточку, затем колонку — как в курсе.
     case 'cols':
@@ -833,24 +859,108 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
   }
 }
 
-// Строка с ошибкой. После проверки неверное слово подсвечено всегда — иначе
+// Неверных слов в предложении бывает и одно (A0/A1), и четыре (B2), поэтому
+// bad читается списком независимо от того, как он записан в данных.
+export function mistakeBad(step) {
+  return (Array.isArray(step.bad) ? step.bad : [step.bad]).filter((i) => Number.isInteger(i))
+}
+
+// Строка с ошибкой. После проверки неверные слова подсвечены всегда — иначе
 // студент, ткнувший наугад, не узнает, где была ошибка.
-function MistakeLine({ step, picked, setPicked, checked }) {
+function MistakeLine({ step, picks, setPicks, checked }) {
+  const bad = mistakeBad(step)
   return (
     <div className="cp-mistake">
       {(step.tokens || []).map((w, i) => {
+        // Точку и вопросительный знак в исходном курсе тапнуть нельзя: они не
+        // слова, а лишний тап по ним стоил бы верного ответа — у B2 вердикт
+        // требует ровно то множество слов, что помечено ошибочным.
+        if (/^[.,!?;:—–…"«»]+$/.test(String(w).trim())) {
+          return (
+            <span key={i} className="cp-mistake__punct">
+              {w}
+            </span>
+          )
+        }
         let cls = 'cp-mistake__tok'
         if (checked) {
-          if (i === step.bad) cls += ' is-bad'
-          else if (i === picked) cls += ' is-wrong'
-        } else if (i === picked) cls += ' is-sel'
+          if (bad.includes(i)) cls += ' is-bad'
+          else if (picks[i]) cls += ' is-wrong'
+        } else if (picks[i]) cls += ' is-sel'
         return (
-          <button key={i} type="button" className={cls} disabled={checked} onClick={() => setPicked(i)}>
+          <button
+            key={i}
+            type="button"
+            className={cls}
+            disabled={checked}
+            onClick={() => setPicks((s) => ({ ...s, [i]: !s[i] }))}
+          >
             {w}
           </button>
         )
       })}
       {checked && step.answer && <p className="cp-mistake__fix">{step.answer}</p>}
+    </div>
+  )
+}
+
+// Текст с пропусками. Абзац показываем целиком — в нём и есть задание, — а
+// поля ответа идут под ним по номерам: вставить их внутрь абзаца значило бы
+// разорвать текст на куски и потерять то, ради чего он написан.
+function ClozeText({ step, fills, setFills, checked, t, onWord }) {
+  const answers = step.answers || []
+  return (
+    <div className="cp-cloze">
+      {step.html && (
+        <div className="cp-note">
+          <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+        </div>
+      )}
+      {/* Банк слов кликабельный: тап кладёт слово в первый пустой пропуск —
+          так же, как в исходном курсе, где слово переносят тапом. */}
+      {(step.bank || []).length > 0 && (
+        <div className="cp-cloze__bank">
+          {step.bank.map((w, i) => {
+            const used = Object.values(fills).includes(w)
+            return (
+              <button
+                key={i}
+                type="button"
+                className={`cp-chip ${used ? 'is-set' : ''}`}
+                disabled={checked}
+                onClick={() =>
+                  setFills((s) => {
+                    const at = answers.findIndex((_, j) => !String(s[j] || '').trim())
+                    return at < 0 ? s : { ...s, [at]: w }
+                  })
+                }
+              >
+                {w}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      <div className="cp-group">
+        {answers.map((accepted, i) => {
+          const value = fills[i] || ''
+          const ok = checked && answerMatches(value, accepted, '')
+          return (
+            <div className="cp-group__row" key={i}>
+              <span className="cp-group__q">{i + 1}</span>
+              <input
+                className={`cp-field cp-group__in ${checked ? (ok ? 'is-right' : 'is-wrong') : ''}`}
+                value={checked && !ok ? accepted[0] : value}
+                onChange={(e) => setFills((s) => ({ ...s, [i]: e.target.value }))}
+                disabled={checked}
+                autoComplete="off"
+                spellCheck="false"
+                placeholder={t('lesson.typeAnswer')}
+              />
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
