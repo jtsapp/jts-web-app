@@ -193,6 +193,17 @@ export function GoogleIcon({ size = 18 }) {
 
 // Иконки навигации — точные векторы из Figma-сайдбара (RemixIcon fill),
 // заливка currentColor. Offset пути повторяет позицию вектора в кадре 24×24.
+export function HomeIcon({ size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.2" y="3.2" width="7.2" height="7.2" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <rect x="13.6" y="3.2" width="7.2" height="7.2" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <rect x="3.2" y="13.6" width="7.2" height="7.2" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <rect x="13.6" y="13.6" width="7.2" height="7.2" rx="2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  )
+}
+
 export function LearningIcon({ size = 24 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">

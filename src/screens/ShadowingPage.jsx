@@ -688,7 +688,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
         </div>
 
         {blocked ? (
-          <PracticeLimitScreen limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+          <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={back} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
         ) : (
         <>
         {error && (

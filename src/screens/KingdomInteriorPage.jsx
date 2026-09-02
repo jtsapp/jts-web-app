@@ -630,7 +630,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           exitLesson гасит end и open, но не флаг отказа, и плашка на одном
           restricted оставалась висеть поверх тропы, никуда не закрываясь. */}
       {end && end.outcome === 'success' && restricted && isDemoAccount && (
-        <DemoSubscriptionModal onClose={exitLesson} />
+        <DemoSubscriptionModal onClose={exitLesson} onBuy={() => onNav?.('pricing')} />
       )}
 
       {/* Подтверждение выхода из незаконченного урока — общий диалог всех

@@ -985,13 +985,35 @@ export async function getLanguageLevel(token) {
 // При сетевой осечке считаем аккаунт не демо — это не критично (просто не
 // покажем CTA), а не наоборот.
 export async function getIsDemoAccount(token) {
-  if (!token) return false
-  try {
-    const data = await authGet('/user/me', token)
-    return !!data?.isDemoAccount
-  } catch {
-    return false
-  }
+  return (await getDemoAccess(token)).isDemo
+}
+
+// То же самое, но вместе со сроком демо-доступа: «Главная» рисует по нему
+// обратный отсчёт (см. lib/demoAccess.js). Отдельная функция, а не расширенный
+// getIsDemoAccount: местам, которым нужен только флаг, лишнее поле ни к чему.
+//
+// `expiresAt: null` — демо без срока (менеджер выдал доступ руками), а не
+// «истекло»: это разные вещи, и таймер во втором случае рисовать нельзя.
+// Ответ помним по токену: сайдбар спрашивает демо-статус на каждом экране, а
+// смена экрана его перемонтирует — без памяти это /user/me на каждый переход по
+// меню. Ключ — сам токен, поэтому выход и вход под другим аккаунтом отвечают
+// заново, а не отдают чужой ответ.
+const _demoAccess = new Map()
+
+export async function getDemoAccess(token) {
+  if (!token) return { isDemo: false, expiresAt: null }
+  if (_demoAccess.has(token)) return _demoAccess.get(token)
+  const p = authGet('/user/me', token)
+    .then((data) => ({ isDemo: !!data?.isDemoAccount, expiresAt: data?.demoExpiresAt || null }))
+    .catch(() => {
+      // Сетевая осечка не должна залипать в памяти: следующий экран спросит
+      // заново, а пока считаем аккаунт обычным (не покажем демо-плашку —
+      // это безопаснее, чем показать её платящему).
+      _demoAccess.delete(token)
+      return { isDemo: false, expiresAt: null }
+    })
+  _demoAccess.set(token, p)
+  return p
 }
 
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest

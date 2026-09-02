@@ -15,6 +15,8 @@ import SuccessPage from './screens/SuccessPage.jsx'
 import LevelTestIntroPage from './screens/LevelTestIntroPage.jsx'
 import PlacementTestPage from './screens/PlacementTestPage.jsx'
 import LearningPage from './screens/LearningPage.jsx'
+import HomePage from './screens/HomePage.jsx'
+import PricingPage from './screens/PricingPage.jsx'
 import PracticePage from './screens/PracticePage.jsx'
 import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
@@ -61,7 +63,7 @@ import { isMinor } from './lib/birthDate.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, saveLanguageLevel, getLanguageLevel, getDemoAccess, getCurrentUser, updateUser } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
@@ -69,6 +71,7 @@ import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs, savePlacementLevel } from './lib/tutorPrefs.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
+import { SUPPORT_WHATSAPP_URL } from './lib/support.js'
 import { KINGDOMS } from './kingdoms.js'
 
 // Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
@@ -87,7 +90,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'kingdom', 'practice', 'listening', 'writing', 'workbook', 'homework', 'lessons',
+  'home', 'pricing', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -170,8 +173,14 @@ export default function App() {
           if (session.languageLevel) setUserLevel(session.languageLevel)
           // Возраст решает, открыт ли жёсткий нрав тьютора (кнопка 18+).
           if (session.birthDate) setBirthDate(String(session.birthDate).slice(0, 10))
-          getIsDemoAccount(session.token).then((v) => { if (!cancelled) setIsDemoAccount(v) })
         }
+        // Демо-статус нужен ДО выбора первого экрана (ниже): демо-ученику мы
+        // открываем «Главную» с его сроком и тарифами, а не карту королевств.
+        // Ждём здесь же, где уже ждём профиль тьютора, — лишней паузы нет.
+        const demo = await getDemoAccess(session?.token)
+        if (cancelled) return
+        setIsDemoAccount(demo.isDemo)
+        setDemoExpiresAt(demo.expiresAt)
         // Выбор тьютора/интересов/профессии закреплён за профилем (аккаунт или
         // device-id) — восстанавливаем, чтобы перезагрузка не гоняла онбординг
         // заново. Ждём здесь же: спиннер и так висит, зато к первому экрану
@@ -195,7 +204,12 @@ export default function App() {
         // запертыми королевствами — ученический экран, и открывать его первым
         // ему бессмысленно (сайдбар ему всё остальное и так не показывает).
         else if (session && isTeacher(session.token)) setScreen('lessons')
-        else if (session) setScreen(TUTOR_ONLY ? (profile?.tutor ? 'tutor-dashboard' : 'tutor-welcome') : 'kingdom')
+        else if (session) {
+          // Демо-ученику первым открываем «Главную»: его срок доступа и тарифы
+          // — самое важное, что ему сейчас надо показать.
+          const landing = demo.isDemo ? 'home' : 'kingdom'
+          setScreen(TUTOR_ONLY ? (profile?.tutor ? 'tutor-dashboard' : 'tutor-welcome') : landing)
+        }
       })
       .finally(() => {
         if (!cancelled) setRestoring(false)
@@ -247,6 +261,9 @@ export default function App() {
   // или обычный текст. Саморегистрация всегда демо (см. RegistrationService на
   // бэкенде); менеджер снимает флаг вручную.
   const [isDemoAccount, setIsDemoAccount] = useState(false)
+  // До какого момента действует демо: по нему «Главная» рисует обратный отсчёт.
+  // null — демо без срока (менеджер выдал доступ руками), таймера тогда нет.
+  const [demoExpiresAt, setDemoExpiresAt] = useState(null)
   // В профиле на бэкенде нет уровня (новый аккаунт или тест ещё не пройден) —
   // после success-экрана ведём на CEFR-тест, а не сразу в королевство.
   const [needsLevelTest, setNeedsLevelTest] = useState(false)
@@ -426,7 +443,7 @@ export default function App() {
         }
       }
       if (lvl) setUserLevel(lvl)
-      if (tok) getIsDemoAccount(tok).then(setIsDemoAccount)
+      if (tok) applyDemoAccess(tok)
       // При входе (в отличие от регистрации) даты рождения в стейте нет, а от
       // неё зависит доступ к жёсткому нраву тьютора — подтягиваем из профиля.
       if (tok && mode !== 'register') {
@@ -517,7 +534,7 @@ export default function App() {
       } catch (e) {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
-      getIsDemoAccount(tok).then(setIsDemoAccount)
+      applyDemoAccess(tok)
       // Возраст решает доступ к жёсткому нраву тьютора — тянем из профиля.
       getCurrentUser(tok)
         .then((me) => {
@@ -557,7 +574,7 @@ export default function App() {
     } catch (e) {
       console.warn('Не удалось получить уровень из профиля:', e)
     }
-    getIsDemoAccount(tok).then(setIsDemoAccount)
+    applyDemoAccess(tok)
     mergeAnonymousProgress(tok)
       .then(() => loadTutorProfile(tok))
       .then((profile) => {
@@ -659,6 +676,7 @@ export default function App() {
     setPhone('')
     setEmail('')
     setIsDemoAccount(false)
+    setDemoExpiresAt(null)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -719,9 +737,20 @@ export default function App() {
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
+  // Демо-статус и его срок разом: оба приезжают одним GET /user/me, и разводить
+  // их по разным вызовам значило бы дважды спрашивать одно и то же.
+  function applyDemoAccess(tok) {
+    getDemoAccess(tok).then((d) => {
+      setIsDemoAccount(d.isDemo)
+      setDemoExpiresAt(d.expiresAt)
+    })
+  }
+
   function handleNav(key, payload) {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'learning' || key === 'learn') setScreen('kingdom')
+    if (key === 'home') setScreen('home')
+    else if (key === 'pricing') setScreen('pricing')
+    else if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
     else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
@@ -746,7 +775,9 @@ export default function App() {
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
-    if (key === 'learn' || key === 'learning') setScreen('kingdom')
+    if (key === 'home') setScreen('home')
+    else if (key === 'pricing') setScreen('pricing')
+    else if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
     else if (key === 'listening') setScreen('listening')
     else if (key === 'shadowing') setScreen('shadowing')
@@ -963,6 +994,29 @@ export default function App() {
           onLevel={(level) => saveTestLevel(level)}
           onDone={(level) => handleTestDone({ level })}
         />
+      )
+    case 'home':
+      return (
+        <HomePage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          isDemoAccount={isDemoAccount}
+          demoExpiresAt={demoExpiresAt}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          onOpenPricing={() => setScreen('pricing')}
+          // Записи на пробный урок в приложении нет: слоты подбирает менеджер,
+          // и запись идёт через него же — тем самым WhatsApp, куда ведут все
+          // остальные демо-призывы (src/lib/support.js).
+          onOpenTrial={() => window.open(SUPPORT_WHATSAPP_URL, '_blank', 'noopener')}
+        />
+      )
+    case 'pricing':
+      // Витрина без сайдбара — как в макете: это шаг покупки, и уводить с него
+      // обратно в разделы посреди выбора тарифа не нужно. Возврат — стрелкой.
+      return (
+        <PricingPage onBack={() => setScreen(isDemoAccount ? 'home' : 'kingdom')} />
       )
     case 'kingdom':
       return (

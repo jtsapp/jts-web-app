@@ -182,6 +182,7 @@ export default function WorkbookPage({
     if (!entitlement.loading && !entitlement.allowed) {
       return (
         <PracticeLimitScreen
+          onBuy={() => onNav?.('pricing')}
           limit={entitlement.limit}
           onBack={() => onNav?.('practice')}
           isDemoAccount={isDemoAccount}

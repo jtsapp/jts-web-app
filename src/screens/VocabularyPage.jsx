@@ -202,7 +202,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   )
 
   if (!entitlement.loading && !entitlement.allowed) {
-    return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />)
+    return shell(<PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />)
   }
 
   if (screen === 'practice' && practiceCards) {

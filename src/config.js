@@ -24,7 +24,7 @@ export const TUTOR_ONLY = false
 // поэтому тоже в списке: handleNav гейтится этим же списком, и без записи
 // здесь раздел мёртв на проде.
 // При TUTOR_ONLY = false список не используется.
-export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening', 'shadowing', 'writing']
+export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening', 'shadowing', 'writing', 'home', 'pricing']
 
 // JARVIS_ENABLED — четвёртый тьютор «Джарвис» на экране выбора. Только для
 // разработки и dev-стенда, в прод не идёт.

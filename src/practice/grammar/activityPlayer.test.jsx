@@ -8,6 +8,8 @@ import { I18nProvider } from '../../i18n.jsx'
 vi.mock('../../api.js', () => ({
   completeLessonModule: vi.fn(async () => ({})),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0 })),
+  // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
+  getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
 }))
 
 import ActivityPlayer from './ActivityPlayer.jsx'

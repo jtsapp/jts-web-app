@@ -15,6 +15,9 @@ export default function PracticeLimitScreen({
   isDemoAccount,
   source = 'NONE',
   sourceName = null,
+  // Куда ведёт «Приобрести подписку» — на витрину тарифов. Не передали (экран
+  // не умеет навигировать) — модалка сама уйдёт в WhatsApp поддержки.
+  onBuy,
 }) {
   const { t } = useI18n()
   const n = limit ?? 0
@@ -30,7 +33,7 @@ export default function PracticeLimitScreen({
   // «Назад» этой заглушки, — onBack у всех вызывающих экранов один и тот же.
   // Остальные источники лимита остались прежним текстом: у абонемента и
   // подписки причина отказа другая, и покупать подписку им незачем.
-  if (resolvedSource === 'DEMO') return <DemoSubscriptionModal onClose={onBack} />
+  if (resolvedSource === 'DEMO') return <DemoSubscriptionModal onClose={onBack} onBuy={onBuy} />
 
   let body
   if (resolvedSource === 'PLAN') {

@@ -16,6 +16,8 @@ vi.mock('../api.js', () => ({
   // падает весь экран (см. LessonsPage.test.jsx/HomeworkPage.test.jsx).
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
+  getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getLessonModules: vi.fn(async () => [{ id: 'mod-1', level: 'B1', orderIndex: 0, locked: false }]),
   getPracticeToken: vi.fn(async (token) => token),
   completeLessonModule: vi.fn(async () => ({})),
