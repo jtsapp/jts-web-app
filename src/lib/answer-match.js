@@ -84,8 +84,19 @@ function extendsAnswer(value, list, cue) {
   })
 }
 
+// Ответ без единой буквы: у заданий на артикль верный вариант — прочерк
+// («Most people think — possessions are about money», банк «— / a / the»).
+// Нормализация режет знаки препинания и превращает его в пустую строку, а
+// пустой ответ мы не засчитываем никогда — задание становилось непроходимым.
+// Поэтому такие эталоны сравниваем как есть, без нормализации.
+const bare = (v) => String(v ?? '').trim()
+
 // cue — текст задания вокруг пропуска (до/после), нужен только для «перепиши».
 export function answerMatches(input, accepted, cue = '') {
+  const raw = Array.isArray(accepted) ? accepted : [accepted]
+  const symbolic = raw.flatMap((a) => String(a ?? '').split('|')).filter((a) => bare(a) && !normAnswer(a))
+  if (symbolic.some((a) => bare(a) === bare(input))) return true
+
   const value = normAnswer(input)
   if (!value) return false
   const list = acceptedAnswers(accepted)
