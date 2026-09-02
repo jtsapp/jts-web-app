@@ -24,7 +24,7 @@ import {
 } from '@/lib/usage.js'
 import { resolveProfileId, bearerFromRequest, fetchTutorLimitOverride } from '@/lib/auth-server.js'
 import { isMinor } from '@/lib/birthDate.js'
-import { loadProfile } from '@/lib/db/profile.js'
+import { loadProfile, touchServedReviews } from '@/lib/db/profile.js'
 import { SCENARIOS, getScenario } from '@/tutor/scenarios.js'
 import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
 
@@ -316,6 +316,26 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
       await openSession(room, profileId)
     } catch (err) {
       console.error('[livekit.token] openSession failed', err)
+    }
+    // Всё, что уехало в metadata на повторение, помечаем показанным — иначе
+    // те же строки вернутся в следующий же звонок. Отмечаем именно здесь, а не
+    // по факту разговора: подтверждение от тьютора (log_review) приходит от
+    // силы раз на полсотни показов, и ждать его — значит не двигать расписание
+    // никогда. Цена — ученик, открывший тьютора и сразу вышедший, потеряет
+    // одно повторение; строка не пропадает, просто спросят её в другой раз.
+    //
+    // Берём строки из memory, а не из metadata: в metadata они уже урезаны
+    // trimList по длине, а искать строку в базе надо целиком по item_key.
+    const served = [
+      ...(memory?.dueReviews || []).slice(0, 6),
+      ...(memory?.dueVocab || []).slice(0, 6),
+    ]
+    if (served.length) {
+      try {
+        await touchServedReviews(profileId, served)
+      } catch (err) {
+        console.error('[livekit.token] touchServedReviews failed', err)
+      }
     }
   }
 
