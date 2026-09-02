@@ -8537,10 +8537,10 @@ textarea {
 /* ── Читалка комикса: полный экран ── */
 /* Страницу зажимает не ширина, а высота: сверху шапка, слева сайдбар, снизу
    подвал — на ноутбуке от листа остаётся полоска. Кнопка уводит корень читалки
-   в fullscreen, и вся высота экрана достаётся странице. Высоту тут считаем не
-   вычитанием пикселей (сколько займёт заголовок — вопрос длины названия), а
-   раскладкой: колонка на 100%, тело — единственная растяжимая строка, картинка
-   упирается в неё. */
+   в полный экран (или, если браузер отказал, в свой fixed-оверлей), и вся
+   высота достаётся странице: панель и подсказка ложатся поверх неё, а не
+   отъедают строку. Фон тёмный — в кино и читалках так и делают: рядом с чёрным
+   поля страницы читаются как часть рисунка, а не как серый лист. */
 .cr__full {
   flex: 0 0 auto;
   display: inline-flex;
@@ -8559,33 +8559,147 @@ textarea {
 }
 .cr__full:hover { color: var(--purple); border-color: #d9d2f7; }
 .cr--full {
+  position: relative;
   height: 100%;
-  padding: 14px 18px;
-  background: #fff;
+  padding: 0;
+  gap: 0;
+  background: #0e0c16;
   overflow: hidden;
 }
-@media (min-width: 1001px) {
-  .cr--full .cr__body {
-    flex: 1;
-    min-height: 0;
-    grid-template-rows: minmax(0, 1fr);
-    align-items: stretch;
-  }
-  .cr--full .cr__stage { height: 100%; min-height: 0; }
-  .cr--full .cr__page { height: 100%; align-items: center; }
-  .cr--full .cr__img { max-height: 100%; }
-  .cr--full .cr__text { max-height: 100%; }
+/* Оверлей вместо настоящего fullscreen: iOS Safari API не знает, встроенные
+   вебвью его запрещают. z-index выше сайдбара, шапки и мобильного меню. */
+.cr--overlay {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  z-index: 140;
+  overscroll-behavior: contain;
 }
+.cr--full .cr__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(8, 6, 14, 0.92) 0%, rgba(8, 6, 14, 0.55) 55%, rgba(8, 6, 14, 0) 100%);
+  transition: opacity 0.22s ease;
+}
+.cr--full .cr__back,
+.cr--full .cr__full {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ece9f6;
+}
+.cr--full .cr__back:hover,
+.cr--full .cr__full:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+.cr--full .cr__title { color: #f6f4fb; }
+.cr--full .cr__author { color: rgba(255, 255, 255, 0.45); }
+.cr--full .cr__count { color: rgba(255, 255, 255, 0.68); }
+.cr--full .cr__body {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  gap: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+.cr--full .cr__stage {
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
+  border-radius: 0;
+  background: transparent;
+}
+.cr--full .cr__page { height: 100%; align-items: center; }
+.cr--full .cr__img {
+  max-height: 100%;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.55);
+}
+.cr--full .cr__nav {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ece9f6;
+}
+.cr--full .cr__nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+/* Колонка реплик: панель сверху накрывает её начало, поэтому отступ под панель
+   держим здесь, а не у всего тела — страница остаётся во всю высоту. */
+.cr--full .cr__text {
+  max-height: 100%;
+  margin: 0 10px 0 0;
+  padding-top: 58px;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+}
+.cr--full .cr__line { border-left-color: rgba(255, 255, 255, 0.18); }
+.cr--full .cr__en { color: #f3f1f9; }
+.cr--full .cr__ru { color: rgba(255, 255, 255, 0.62); }
+.cr--full .cr__textNote { color: rgba(255, 255, 255, 0.45); }
+.cr--full .cr__w:hover { background: rgba(144, 71, 255, 0.35); color: #fff; }
+.cr--full .cr__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 22px 0 12px;
+  /* Подсказка лежит поверх рисунка — без затемнения снизу её съедает любая
+     светлая сцена. */
+  background: linear-gradient(0deg, rgba(8, 6, 14, 0.85) 0%, rgba(8, 6, 14, 0) 100%);
+  color: rgba(255, 255, 255, 0.5);
+  transition: opacity 0.22s ease;
+}
+.cr--full .cr__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.14);
+}
+/* Простой: панель и подсказка гаснут, страница остаётся одна. Прячем прозрачностью,
+   а не display — иначе картинка на каждом появлении меняла бы высоту. */
+.cr--idle .cr__bar,
+.cr--idle .cr__hint {
+  opacity: 0;
+  pointer-events: none;
+}
+/* Курсор в простое тоже убираем — он висел бы точкой поверх кадра. Возвращает
+   его то же движение мыши, что и панель. */
+.cr--idle { cursor: none; }
 @media (max-width: 1000px) {
-  /* Узкий экран: текст уходит под страницу, поэтому режим прокручиваемый, а
-     картинка держится за высоту экрана — иначе её сожмёт колонка реплик. */
-  .cr--full { overflow: auto; }
-  .cr--full .cr__img { max-height: calc(100vh - 180px); }
+  /* Узкий экран: реплики уходят под страницу, поэтому режим прокручиваемый, а
+     картинка держится за высоту экрана — иначе её сожмёт колонка реплик.
+     Страница без реплик (cr__body--wide) остаётся ровно во весь экран. */
+  .cr--full .cr__body:not(.cr__body--wide) {
+    height: auto;
+    max-height: 100%;
+    overflow-y: auto;
+    grid-template-rows: none;
+  }
+  .cr--full .cr__body:not(.cr__body--wide) .cr__stage { height: auto; }
+  .cr--full .cr__body:not(.cr__body--wide) .cr__img { max-height: calc(100dvh - 140px); }
+  .cr--full .cr__text { margin: 0 10px 10px; padding-top: 16px; border-radius: 16px; }
 }
 @media (max-width: 760px) {
   /* Ярлык кнопки съедает строку с названием — оставляем иконку. */
   .cr__fullLabel { display: none; }
   .cr__full { padding: 7px 9px; }
+  .cr--full .cr__bar { padding: 10px 12px; }
+  .cr--full .cr__stage { padding: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cr--full .cr__bar,
+  .cr--full .cr__hint { transition: none; }
 }
 
 /* Задания из «Практики» в домашней работе: не поле для ответа, а переход в
