@@ -291,12 +291,15 @@
 }
 
 /* Слова урока: картинка, по клику — перевод */
+/* auto-fit, а не auto-fill: auto-fill оставляет в строке пустые дорожки на всю
+   ширину, и центрировать становится нечего — три карточки прижимались к левому
+   краю широкого экрана. */
 .cp-words {
   width: 100%;
   max-width: 1020px;
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 160px);
+  grid-template-columns: repeat(auto-fit, 160px);
   gap: 12px;
   justify-content: center;
 }
@@ -1185,13 +1188,17 @@
 /* Соединение пар: слева пункты задания, снизу банк вариантов. Две настоящие
    колонки со связями рисовать нечем — на 375 px линии между ними не помещаются,
    поэтому выбранный вариант показывается внутри самого пункта. */
+/* Соединение пар в две колонки, как в исходном курсе: слева слова, справа их
+   переводы. Одной колонкой со списком-банком снизу пары «не читались» —
+   упражнение выглядело как ещё один список вариантов. */
 .cp-match {
   width: 100%;
   max-width: 722px;
   margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
 }
 .cp-match__col {
   display: flex;
@@ -1242,16 +1249,18 @@
   font-weight: 700;
   color: #2a9d2a;
 }
+/* Правая колонка: варианты стоят строками напротив пунктов слева, а не
+   облаком чипов. */
 .cp-match__bank {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
-  justify-content: center;
 }
 .cp-match__bank .cp-chip {
-  min-height: 48px;
-  padding: 10px 18px;
-  font-size: 15px;
+  width: 100%;
+  min-height: 65px;
+  padding: 13px 20px;
+  font-size: 16px;
 }
 
 .cp-chip {

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { unlockStep } from './helpers/course-steps.js'
 
 // Урок уровня A2/B1 в новом пошаговом плеере (макет Figma «Обучение»).
 // Контент готовит scripts/build-course-steps.js из перенесённого курса, поэтому
@@ -49,6 +50,15 @@ async function playThrough(page, answers, maxSteps = 80) {
     } else if (await page.locator('.cp-write').count()) {
       await page.locator('.cp-write').fill('I like coffee')
       await page.locator('.cp-cta:not([disabled])').click()
+    } else if (await page.locator('.cp-cta[disabled]').count()) {
+      // Экран без правильного ответа, но кнопка ждёт действия: разминка
+      // «отметь, что про тебя», разбор по колонкам, соединение пар. Без этой
+      // ветки проход упирался в первый же такой экран и возвращал false —
+      // у B1 это вообще первый экран урока.
+      await unlockStep(page)
+      const cta = page.locator('.cp-cta:not([disabled])')
+      if (!(await cta.count())) return false
+      await cta.click()
     } else {
       const cta = page.locator('.cp-cta:not([disabled])')
       if (!(await cta.count())) return false
@@ -79,7 +89,9 @@ for (const level of LEVELS) {
       // узлов в новом макете нет, название живёт в aria-label.
       const unit1 = page.locator('.kt-unit').first().locator('.kt-step')
       await expect(unit1.last()).toHaveClass(/is-last/)
-      await expect(unit1.last()).toHaveAttribute('aria-label', /Unit Test/)
+      // Название теста приходит из самого курса и у уровней разное:
+      // «Unit Test · Unit 1» у B1, «Unit 1 Review Test» у A2.
+      await expect(unit1.last()).toHaveAttribute('aria-label', /Unit .*Test/i)
     })
 
     test('оболочка урока: стадия и прогресс', async ({ page }) => {
@@ -93,9 +105,12 @@ for (const level of LEVELS) {
     })
 
     test('карточки слов показывают перевод по клику', async ({ page }) => {
+      test.setTimeout(60000)
       await openLesson(page, level)
-      // Шаг со словами — первый или второй в уроке.
+      // Шаг со словами — первый или второй в уроке. Разминка перед ним держит
+      // кнопку, пока не отмечено ни одного варианта, — unlockStep её проходит.
       for (let i = 0; i < 3 && !(await page.locator('.cp-word').count()); i++) {
+        await unlockStep(page)
         await page.locator('.cp-cta:not([disabled])').click()
         await page.waitForTimeout(150)
       }
@@ -110,6 +125,7 @@ for (const level of LEVELS) {
       await openLesson(page, level)
       // Доходим до первого оценённого шага.
       for (let i = 0; i < 6 && !(await page.locator('.cp-choice').count()); i++) {
+        await unlockStep(page)
         await page.locator('.cp-cta:not([disabled])').click()
         await page.waitForTimeout(150)
       }
@@ -134,16 +150,20 @@ for (const level of LEVELS) {
     })
 
     test('аудио шага слушания отдаётся из public/course', async ({ page }) => {
+      // Экранов в уроке под полсотни, и запись стоит не в первом десятке:
+      // на дефолтных 30 секундах проход не успевал дойти до неё.
+      test.setTimeout(180000)
       await openLesson(page, level)
       const answers = await answerKey(page, level)
       let found = false
-      for (let i = 0; i < 40 && !found; i++) {
+      for (let i = 0; i < 80 && !found; i++) {
         if (await page.locator('.cp-audio audio').count()) { found = true; break }
         if (await page.locator('.cp-fb').count()) await page.locator('.cp-cta:not([disabled])').click()
         else if (await page.locator('.cp-choice:not([disabled])').count()) {
           await pickCorrect(page, answers)
           await page.locator('.cp-cta:not([disabled])').click()
         } else {
+          await unlockStep(page)
           const cta = page.locator('.cp-cta:not([disabled])')
           if (!(await cta.count())) break
           await cta.click()
@@ -158,9 +178,10 @@ for (const level of LEVELS) {
     })
 
     test('пройденный урок засчитывается в тропе', async ({ page }) => {
+      test.setTimeout(240000)
       await openLesson(page, level)
       const answers = await answerKey(page, level)
-      expect(await playThrough(page, answers)).toBeTruthy()
+      expect(await playThrough(page, answers, 200)).toBeTruthy()
       await expect(page.locator('.le-over')).toBeVisible({ timeout: 15000 })
       const done = await page.evaluate((lvl) => localStorage.getItem(`jts-${lvl}-done`), level.toLowerCase())
       expect(JSON.parse(done || '[]')).toContain('L1')

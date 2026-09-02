@@ -12,10 +12,41 @@ import { expect } from '@playwright/test'
 const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 export const exactly = (s) => new RegExp(`^\\s*${escapeRe(s)}\\s*$`)
 
-/** Разблокирует «Проверить/Продолжить» на экране без известного ответа. */
+/**
+ * Кладёт выбранную карточку в колонку. Целимся в заголовок колонки, а не в её
+ * центр: по центру уже лежат разложенные карточки, а тап по такой карточке
+ * возвращает её в банк — проход зацикливался на первом же экране с колонками.
+ */
+async function dropIntoColumn(page, col) {
+  const column = page.locator('.cp-cols__col').nth(col)
+  const head = column.locator('h4')
+  await ((await head.count()) ? head : column).click({ position: { x: 8, y: 8 } })
+}
+
+/**
+ * Разблокирует «Проверить/Продолжить» на экране без известного ответа.
+ * Верность тут не важна — важно, что экран проходим.
+ */
 export async function unlockStep(page) {
   if (!(await page.locator('.cp-cta[disabled]').count())) return
-  const tries = ['.cp-pick', '.cp-check__row', '.cp-choice', '.cp-rows__opt', '.cp-chip', '.cp-match__item']
+  // Соединение и колонки требуют разложить ВСЁ: одного клика не хватит.
+  const items = page.locator('.cp-match__item')
+  for (let i = 0, n = await items.count(); i < n; i++) {
+    await items.nth(i).click()
+    const free = page.locator('.cp-match__bank .cp-chip:not([disabled])').first()
+    if (await free.count()) await free.click()
+  }
+  for (let guard = 0; guard < 30 && (await page.locator('.cp-cols__bank .cp-chip').count()); guard++) {
+    await page.locator('.cp-cols__bank .cp-chip').first().click()
+    await dropIntoColumn(page, 0)
+  }
+  // Порядок слов ждёт, пока в строку уйдут ВСЕ слова банка.
+  for (let guard = 0; guard < 30 && (await page.locator('.cp-order__bank .cp-chip:not([disabled])').count()); guard++) {
+    await page.locator('.cp-order__bank .cp-chip:not([disabled])').first().click()
+  }
+  if (!(await page.locator('.cp-cta[disabled]').count())) return
+
+  const tries = ['.cp-pick', '.cp-check__row', '.cp-choice', '.cp-rows__opt', '.cp-mistake__tok', '.cp-chip']
   for (const sel of tries) {
     const el = page.locator(sel).first()
     if (await el.count()) {
@@ -60,10 +91,9 @@ export async function answerStep(page, step) {
       await page.locator('.cp-mistake__tok').nth(step.bad).click()
       break
     case 'cols':
-      for (const [i, item] of (step.items || []).entries()) {
+      for (const item of step.items || []) {
         await page.locator('.cp-cols__bank .cp-chip', { hasText: exactly(item.text) }).first().click()
-        await page.locator('.cp-cols__col').nth(item.col).click()
-        if (i === (step.items || []).length - 1) break
+        await dropIntoColumn(page, item.col)
       }
       break
     default:

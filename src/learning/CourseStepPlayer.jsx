@@ -748,7 +748,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           )}
           {/* На слух варианты в макете лежат в две колонки: слово короткое,
               и колонкой во всю высоту экрана оно смотрелось бы пусто. */}
-          <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid />
+          <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
         </>
       )
 
@@ -773,7 +773,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
             setPicked={setPicked}
             checked={checked}
             answer={step.answer}
-            grid={!!step.say}
+            grid={!!step.say && inTwoColumns(options)}
           />
         </>
       )
@@ -1038,6 +1038,10 @@ function ExampleCarousel({ items, onWord }) {
     </div>
   )
 }
+
+// Сетка в две колонки — только когда вариантов чётное число. У трёх вариантов
+// последний оставался один в ряду: сетка выглядела сломанной, а не короткой.
+const inTwoColumns = (options) => (options || []).length % 2 === 0
 
 function Choices({ options, picked, setPicked, checked, answer, grid = false }) {
   return (
