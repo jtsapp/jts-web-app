@@ -1,8 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import MinutesTopUpPage from './MinutesTopUpPage.jsx'
+
+// Заявка уезжает в amoCRM через бэкенд — в тесте сети нет. `accepted` меняем
+// прямо в объекте: vi.mock поднимается наверх файла, и подменить его внутри it
+// нечем.
+const lead = { accepted: true, calls: [] }
+vi.mock('../api.js', () => ({
+  createLead: vi.fn(async (token, payload) => {
+    lead.calls.push(payload)
+    return { accepted: lead.accepted }
+  }),
+}))
+
 
 function renderPage() {
   const onBack = vi.fn()
@@ -20,6 +32,8 @@ const packByName = (container, name) =>
 
 beforeEach(() => {
   window.open = vi.fn()
+  lead.accepted = true
+  lead.calls.length = 0
 })
 
 describe('Докупить минуты', () => {
@@ -68,17 +82,26 @@ describe('Докупить минуты', () => {
     expect(rows).toEqual(['Сначала тратится суточный лимит', 'Не сгорают'])
   })
 
-  it('оплата открывает выбор способа и уносит заказ менеджеру', () => {
+  it('оплата открывает выбор способа и уносит заказ менеджеру', async () => {
     const { container } = renderPage()
     fireEvent.click(packByName(container, '60 минут'))
     fireEvent.click(container.querySelector('.tu-order__pay'))
     expect(screen.getByText('Способ оплаты')).toBeTruthy()
     fireEvent.click(screen.getByText('Оплатить через Kaspi.kz'))
-    expect(window.open).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
     const url = window.open.mock.calls[0][0]
     expect(url.startsWith('https://wa.me/')).toBe(true)
     expect(decodeURIComponent(url)).toContain('Пакет 60 минут')
     expect(decodeURIComponent(url)).toContain('13 500')
+    expect(lead.calls[0].source).toBe('MINUTES')
+  })
+
+  it('«Связаться со мной» оставляет заявку без ухода из приложения', async () => {
+    const { container } = renderPage()
+    fireEvent.click(container.querySelector('.tu-order__pay'))
+    fireEvent.click(screen.getByText('Связаться со мной'))
+    await waitFor(() => expect(screen.getByText('Заявка принята')).toBeTruthy())
+    expect(window.open).not.toHaveBeenCalled()
   })
 
   it('стрелка возвращает назад', () => {

@@ -392,6 +392,21 @@ export async function requestTrialLesson(token) {
   return trialRequestState(await authPost('/mobile/trial-request', token))
 }
 
+// Заявка менеджеру с коммерческих экранов (тарифы, докупка минут) — уезжает в
+// amoCRM (бэкенд: POST /mobile/leads, modules/crm).
+//
+// ФИО и телефон не отправляем: бэкенд берёт их из токена. Позволить клиенту
+// прислать чужой номер значило бы отдать менеджерам открытую форму спама.
+// `comment` — состав заказа, менеджер видит его в карточке сделки.
+//
+// Возвращает { accepted } — есть ли у аккаунта телефон, по которому вообще
+// можно перезвонить. Повторное нажатие бэкенд схлопывает сам, для клиента это
+// по-прежнему успех.
+export async function createLead(token, { source, comment } = {}) {
+  const data = await authPost('/mobile/leads', token, { source, comment: comment || null })
+  return { accepted: data?.accepted !== false }
+}
+
 // Живой урок: загрузка одного урока и управление жизненным циклом (учитель/админ).
 // Бэкенд скоупит /admin/lessons/{id} под личность токена.
 export function getLessonById(token, id) {

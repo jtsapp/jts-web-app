@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { createLead } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
 import { CURRENCY, MINUTE_PACKS, formatPrice, packDiscount, pricePerMinute } from '../data/pricing.js'
 
@@ -11,26 +12,42 @@ import { CURRENCY, MINUTE_PACKS, formatPrice, packDiscount, pricePerMinute } fro
 // Отличается от «Тарифов» тем, что покупается ровно один пакет: корзины нет,
 // выбор — радиогруппой. Складывать «20 минут + 60 минут» смысла нет — это одна
 // и та же сущность, и человеку проще выбрать пакет побольше.
-export default function MinutesTopUpPage({ onBack, onDone }) {
+export default function MinutesTopUpPage({ token, onBack, onDone }) {
   const { t, lang } = useI18n()
   // Предвыбран самый маленький пакет — как в макете: заказ справа не должен
   // быть пустым, иначе непонятно, что вообще произойдёт по кнопке.
   const [pickedId, setPickedId] = useState(MINUTE_PACKS[0].id)
   const [payOpen, setPayOpen] = useState(false)
+  // Заявка отправлена — на месте кнопки оплаты подтверждение (как на витрине).
+  const [sent, setSent] = useState(false)
 
   const picked = MINUTE_PACKS.find((p) => p.id === pickedId) || MINUTE_PACKS[0]
   const minutesLabel = (n) => plural(t, lang, 'topup.minutes', n)
 
   // Оплаты в приложении нет — как и на витрине тарифов, заказ уезжает менеджеру
   // текстом (см. комментарий в PricingPage).
-  const pay = (method) => {
+  const pay = async (method) => {
     const text = [
       t('topup.title'),
       `• ${t('topup.pack', { minutes: minutesLabel(picked.minutes) })} — ${formatPrice(picked.price)} ${CURRENCY}`,
       `[${method}]`,
     ].join('\n')
-    window.open(`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
+
+    // Как и на витрине тарифов: заявка в CRM при любом способе, чат — для всех,
+    // кроме «свяжитесь со мной», и он же запасной путь, если звонить некуда.
+    let accepted = false
+    try {
+      accepted = (await createLead(token, { source: 'MINUTES', comment: text })).accepted
+    } catch {
+      /* заявка не единственный путь — ниже открывается чат */
+    }
     setPayOpen(false)
+    if (method === 'callback' && accepted) {
+      setSent(true)
+      onDone?.(method)
+      return
+    }
+    window.open(`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
     onDone?.(method)
   }
 
@@ -109,13 +126,22 @@ export default function MinutesTopUpPage({ onBack, onDone }) {
               <span>{t('topup.due')}</span>
               <b>{formatPrice(picked.price)} {CURRENCY}</b>
             </div>
-            <button type="button" className="tu-order__pay" onClick={() => setPayOpen(true)}>
-              {t('topup.pay', { price: formatPrice(picked.price) })}
-            </button>
-            <p className="tu-order__note">
-              <InfoMark />
-              {t('topup.note')}
-            </p>
+            {sent ? (
+              <div className="pr-sent" role="status">
+                <b>{t('pay.sent')}</b>
+                <span>{t('pay.sentSub')}</span>
+              </div>
+            ) : (
+              <>
+                <button type="button" className="tu-order__pay" onClick={() => setPayOpen(true)}>
+                  {t('topup.pay', { price: formatPrice(picked.price) })}
+                </button>
+                <p className="tu-order__note">
+                  <InfoMark />
+                  {t('topup.note')}
+                </p>
+              </>
+            )}
           </div>
         </aside>
       </div>

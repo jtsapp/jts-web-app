@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { createLead } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
 import {
   BONUSES,
@@ -22,11 +23,15 @@ import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib
 // Каталог — статикой в data/pricing.js (там же объяснено почему), корзина —
 // чистыми операциями в lib/cart.js. Здесь остаётся только вёрстка и решение,
 // куда ведёт «Перейти к оплате».
-export default function PricingPage({ onBack, onDone }) {
+export default function PricingPage({ token, onBack, onDone }) {
   const { t, lang } = useI18n()
   const [duration, setDuration] = useState(INDIVIDUAL_DURATIONS[0])
   const [items, setItems] = useState([])
   const [payOpen, setPayOpen] = useState(false)
+  // Заявка отправлена — на месте кнопки оплаты стоит подтверждение. Своего
+  // экрана «спасибо» здесь нет намеренно: человек ещё выбирает тариф, и уводить
+  // его с витрины после «перезвоните мне» незачем.
+  const [sent, setSent] = useState(false)
 
   const individual = useMemo(() => individualPlans(duration), [duration])
   const total = cartTotal(items)
@@ -64,7 +69,7 @@ export default function PricingPage({ onBack, onDone }) {
   // три способа сейчас ведут к менеджеру, но с уже собранным заказом в тексте —
   // человеку не приходится пересказывать, что он выбрал. Когда появится
   // настоящий чекаут, меняется только эта функция.
-  const pay = (method) => {
+  const pay = async (method) => {
     const lines = items.map(
       (x) => `• ${x.title} — ${x.subtitle} × ${x.qty} = ${formatPrice(x.price * x.qty)} ${CURRENCY}`,
     )
@@ -74,8 +79,28 @@ export default function PricingPage({ onBack, onDone }) {
       `${t('pricing.cart.total')}: ${formatPrice(total)} ${CURRENCY}`,
       `[${method}]`,
     ].join('\n')
-    window.open(`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
+
+    // Заявка уходит в CRM при любом способе оплаты: даже если человек сейчас
+    // напишет в WhatsApp, менеджер увидит в amoCRM, что именно тот выбрал, — а
+    // если не напишет, заявка всё равно останется и по ней перезвонят.
+    let accepted = false
+    try {
+      accepted = (await createLead(token, { source: 'PRICING', comment: text })).accepted
+    } catch {
+      // Молча: заявка — не единственный путь, ниже открывается чат.
+    }
     setPayOpen(false)
+
+    // «Связаться со мной» — единственный способ, который не уводит из
+    // приложения: человек попросил перезвонить, значит писать ему некуда.
+    // Но если звонить некуда (в профиле нет телефона), оставлять его ни с чем
+    // нельзя — тогда открываем чат, как и в остальных случаях.
+    if (method === 'callback' && accepted) {
+      setSent(true)
+      onDone?.(method)
+      return
+    }
+    window.open(`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
     onDone?.(method)
   }
 
@@ -258,21 +283,30 @@ export default function PricingPage({ onBack, onDone }) {
               <b>{formatPrice(total)} {CURRENCY}</b>
             </div>
 
-            <button
-              type="button"
-              className="pr-cart__pay"
-              disabled={count === 0}
-              onClick={() => setPayOpen(true)}
-            >
-              {t('pricing.cart.pay')}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <p className="pr-cart__note">
-              <InfoMark />
-              {t('pricing.cart.note')}
-            </p>
+            {sent ? (
+              <div className="pr-sent" role="status">
+                <b>{t('pay.sent')}</b>
+                <span>{t('pay.sentSub')}</span>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="pr-cart__pay"
+                  disabled={count === 0}
+                  onClick={() => setPayOpen(true)}
+                >
+                  {t('pricing.cart.pay')}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <p className="pr-cart__note">
+                  <InfoMark />
+                  {t('pricing.cart.note')}
+                </p>
+              </>
+            )}
           </div>
         </aside>
       </div>

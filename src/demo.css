@@ -1571,3 +1571,28 @@
   flex: none;
   margin-top: 1px;
 }
+
+/* Подтверждение заявки — на месте кнопки оплаты. Не модалка: человек остаётся
+   на витрине и может продолжить выбирать, а ответ ему нужен ровно там, где он
+   только что нажал. */
+.pr-sent {
+  display: block;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #e8f9ef;
+  text-align: center;
+}
+.pr-sent b {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1f8a4c;
+}
+.pr-sent span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #3c7a54;
+}

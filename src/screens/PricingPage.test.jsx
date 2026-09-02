@@ -1,8 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import PricingPage from './PricingPage.jsx'
+
+// Заявка уезжает в amoCRM через бэкенд — в тесте сети нет. `accepted` меняем
+// прямо в объекте: vi.mock поднимается наверх файла, и подменить его внутри it
+// нечем.
+const lead = { accepted: true, calls: [] }
+vi.mock('../api.js', () => ({
+  createLead: vi.fn(async (token, payload) => {
+    lead.calls.push(payload)
+    return { accepted: lead.accepted }
+  }),
+}))
+
 
 function renderPage() {
   const onBack = vi.fn()
@@ -26,6 +38,8 @@ function addTile(container, title) {
 
 beforeEach(() => {
   window.open = vi.fn()
+  lead.accepted = true
+  lead.calls.length = 0
 })
 
 describe('Витрина тарифов', () => {
@@ -88,17 +102,53 @@ describe('Витрина тарифов', () => {
     expect(container.querySelectorAll('.pr-line')).toHaveLength(0)
   })
 
-  it('«Перейти к оплате» открывает выбор способа, а он уносит заказ менеджеру', () => {
+  it('«Перейти к оплате» открывает выбор способа, а он уносит заказ менеджеру', async () => {
     const { container } = renderPage()
     addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
     expect(screen.getByText('Способ оплаты')).toBeTruthy()
     fireEvent.click(screen.getByText('Связаться с менеджером'))
-    expect(window.open).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
     const url = window.open.mock.calls[0][0]
     expect(url.startsWith('https://wa.me/')).toBe(true)
-    // Состав заказа уезжает вместе со ссылкой — человеку не надо пересказывать.
+    // Состав заказа уезжает и в ссылке, и в заявке — менеджер видит его в любом случае.
     expect(decodeURIComponent(url)).toContain('84 000')
+    expect(lead.calls).toHaveLength(1)
+    expect(lead.calls[0].source).toBe('PRICING')
+    expect(lead.calls[0].comment).toContain('84 000')
+  })
+
+  // «Связаться со мной» — единственный способ без ухода из приложения.
+  it('«Связаться со мной» оставляет заявку и показывает подтверждение', async () => {
+    const { container } = renderPage()
+    addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Связаться со мной'))
+    await waitFor(() => expect(screen.getByText('Заявка принята')).toBeTruthy())
+    expect(window.open).not.toHaveBeenCalled()
+    expect(container.querySelector('.pr-cart__pay')).toBeFalsy()
+  })
+
+  // Звонить некуда (в профиле нет телефона) — нельзя оставлять человека ни с чем.
+  it('если перезвонить некуда, открывается чат', async () => {
+    lead.accepted = false
+    const { container } = renderPage()
+    addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Связаться со мной'))
+    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('Заявка принята')).toBeNull()
+  })
+
+  // Упавшая заявка не должна обрывать покупку.
+  it('сбой сети не мешает дойти до менеджера', async () => {
+    const { createLead } = await import('../api.js')
+    createLead.mockRejectedValueOnce(new Error('offline'))
+    const { container } = renderPage()
+    addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Связаться с менеджером'))
+    await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
   })
 
   it('стрелка возвращает назад', () => {

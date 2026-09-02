@@ -1038,13 +1038,13 @@ export default function App() {
       // Витрина пакетов минут. «Назад» — туда, откуда пришли: разговор к этому
       // моменту уже закрыт лимитом, поэтому возвращаем на домашний экран тьютора.
       return (
-        <MinutesTopUpPage onBack={() => setScreen(tutorHome)} />
+        <MinutesTopUpPage token={token} onBack={() => setScreen(tutorHome)} />
       )
     case 'pricing':
       // Витрина без сайдбара — как в макете: это шаг покупки, и уводить с него
       // обратно в разделы посреди выбора тарифа не нужно. Возврат — стрелкой.
       return (
-        <PricingPage onBack={() => setScreen(isDemoAccount ? 'home' : 'kingdom')} />
+        <PricingPage token={token} onBack={() => setScreen(isDemoAccount ? 'home' : 'kingdom')} />
       )
     case 'kingdom':
       return (
