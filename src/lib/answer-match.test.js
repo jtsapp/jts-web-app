@@ -66,6 +66,17 @@ describe('answerMatches', () => {
     expect(answerMatches("don't like Mondays", ["don't"], cue)).toBe(true)
     expect(answerMatches("don't like coffee", ["don't"], cue)).toBe(false)
   })
+
+  // Задание на артикль: верный вариант — прочерк, банк «— / a / the».
+  // Нормализация оставляет от него пустую строку, и без отдельной ветки такой
+  // пропуск не проходился ни одним ответом.
+  it('прочерк как «нулевой артикль» засчитывается', () => {
+    expect(answerMatches('—', ['—'])).toBe(true)
+    expect(answerMatches('a', ['—'])).toBe(false)
+    expect(answerMatches('', ['—'])).toBe(false)
+    // На обычные ответы ветка не влияет.
+    expect(answerMatches('the', ['the', '—'])).toBe(true)
+  })
 })
 
 describe('tasksToSteps — собери предложение', () => {
