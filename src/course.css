@@ -291,12 +291,15 @@
 }
 
 /* Слова урока: картинка, по клику — перевод */
+/* auto-fit, а не auto-fill: auto-fill оставляет в строке пустые дорожки на всю
+   ширину, и центрировать становится нечего — три карточки прижимались к левому
+   краю широкого экрана. */
 .cp-words {
   width: 100%;
   max-width: 1020px;
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 160px);
+  grid-template-columns: repeat(auto-fit, 160px);
   gap: 12px;
   justify-content: center;
 }
@@ -1185,13 +1188,17 @@
 /* Соединение пар: слева пункты задания, снизу банк вариантов. Две настоящие
    колонки со связями рисовать нечем — на 375 px линии между ними не помещаются,
    поэтому выбранный вариант показывается внутри самого пункта. */
+/* Соединение пар в две колонки, как в исходном курсе: слева слова, справа их
+   переводы. Одной колонкой со списком-банком снизу пары «не читались» —
+   упражнение выглядело как ещё один список вариантов. */
 .cp-match {
   width: 100%;
   max-width: 722px;
   margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
 }
 .cp-match__col {
   display: flex;
@@ -1242,16 +1249,18 @@
   font-weight: 700;
   color: #2a9d2a;
 }
+/* Правая колонка: варианты стоят строками напротив пунктов слева, а не
+   облаком чипов. */
 .cp-match__bank {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
-  justify-content: center;
 }
 .cp-match__bank .cp-chip {
-  min-height: 48px;
-  padding: 10px 18px;
-  font-size: 15px;
+  width: 100%;
+  min-height: 65px;
+  padding: 13px 20px;
+  font-size: 16px;
 }
 
 .cp-chip {
@@ -1668,4 +1677,262 @@
   font-weight: 700;
   color: #fff;
   cursor: pointer;
+}
+
+/* ——— Экраны нового self-study курса ———
+   Типы заданий, которых не было у прошлого поколения курса: «найди ошибку»,
+   разбор по колонкам, строки для повтора вслух и запись своего ответа.
+   Палитра та же, что у остальных шагов: выбор #9047ff, верно #31b423,
+   ошибка #ff4646. */
+
+/* Найди ошибку: предложение словами-кнопками. */
+.cp-mistake {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 24px;
+  border-radius: 24px;
+  background: #fff;
+}
+.cp-mistake__tok {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 100px;
+  background: #f3f3f7;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  color: #181818;
+  cursor: pointer;
+}
+.cp-mistake__tok.is-sel {
+  background: #9047ff;
+  color: #fff;
+}
+/* Неверное слово после проверки подсвечено всегда — иначе тот, кто ткнул
+   наугад, так и не узнает, где была ошибка. */
+.cp-mistake__tok.is-bad {
+  background: #31b423;
+  color: #fff;
+}
+.cp-mistake__tok.is-wrong {
+  background: #ff4646;
+  color: #fff;
+}
+.cp-mistake__fix {
+  width: 100%;
+  margin: 4px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #31b423;
+}
+
+/* Разбор по колонкам. */
+.cp-cols {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cp-cols__bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  min-height: 65px;
+}
+.cp-cols__bank .cp-chip {
+  min-height: 52px;
+  padding: 10px 20px;
+}
+.cp-cols__bank .cp-chip.is-set {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-cols__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 12px;
+}
+.cp-cols__col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 140px;
+  padding: 16px;
+  border: 2px dashed transparent;
+  border-radius: 24px;
+  background: #fff;
+}
+/* Пока карточка выбрана, колонки показывают, что в них можно положить. */
+.cp-cols__col.is-open {
+  border-color: #d8c8ff;
+  cursor: pointer;
+}
+.cp-cols__col h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #6b6b76;
+}
+.cp-cols__item {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 16px;
+  background: #f3f3f7;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #181818;
+  cursor: pointer;
+}
+.cp-cols__item.is-right {
+  background: #31b423;
+  color: #fff;
+}
+.cp-cols__item.is-wrong {
+  background: #ff4646;
+  color: #fff;
+}
+
+/* Фразы «послушай и повтори». */
+.cp-phrases {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cp-phrases__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  color: #181818;
+  text-align: left;
+  cursor: pointer;
+}
+.cp-phrases__text {
+  flex: 1;
+}
+.cp-phrases__spk {
+  flex: none;
+  color: #9047ff;
+}
+
+/* Говорение: строки-образцы и запись своего ответа. */
+.cp-rec {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+.cp-rec__line {
+  padding: 16px 20px;
+  border: none;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  color: #181818;
+  text-align: left;
+  cursor: pointer;
+}
+.cp-rec__btn {
+  align-self: center;
+  height: 56px;
+  margin-top: 8px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 80px;
+  background: #9047ff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.cp-rec__btn.is-live {
+  background: #ff4646;
+}
+.cp-rec__note {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  color: #6b6b76;
+}
+.cp-rec__play {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Банк слов под пропуском: тап подставляет слово в поле. */
+.cp-gap__bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.cp-gap__bank .cp-chip {
+  min-height: 52px;
+  padding: 10px 20px;
+}
+.cp-gap__bank .cp-chip.is-set {
+  background: #9047ff;
+  color: #fff;
+}
+
+/* Таблицу правила рисуют общие стили карточки-заметки (.cp-note table): у неё
+   уже есть фиолетовая шапка с белым текстом из макета, и переопределять цвет
+   здесь нельзя — серый текст на фиолетовой заливке не читается.
+   Цели урока и рамки письменного задания приходят той же разметкой. */
+.cp-aims,
+.cp-frames,
+.cp-checks {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+.cp-note__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.cp-note__chip {
+  padding: 8px 14px;
+  border-radius: 100px;
+  background: #f3f3f7;
+  font-size: 15px;
+  font-weight: 700;
+}
+.cp-note__meta,
+.cp-note__fwd {
+  font-size: 14px;
+  color: #6b6b76;
+}
+.cp-given {
+  font-size: 17px;
+  font-weight: 600;
+}
+.cp-who {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9047ff;
+}
+/* Разбор ответа из курса: он объясняет правило, поэтому стоит прямо в плашке
+   результата, а не отдельным экраном. */
+.cp-fb__why {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 500;
 }

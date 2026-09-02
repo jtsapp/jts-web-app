@@ -25,7 +25,10 @@ test.describe('Практика — баннер «Аудирование»', ()
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    const banner = page.locator('.pp-listen')
+    // Класс .pp-listen носит и баннер «Письмо» (pp-sec pp-listen pp-write),
+    // поэтому баннер аудирования ищем по его секции — иначе селектор находит
+    // два элемента и падает на strict mode.
+    const banner = page.locator('#sec-listening')
     await expect(banner).toBeVisible({ timeout: 15000 })
 
     // Заголовок, описание, CTA — контент баннера.
@@ -43,7 +46,10 @@ test.describe('Практика — баннер «Аудирование»', ()
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    const banner = page.locator('.pp-listen')
+    // Класс .pp-listen носит и баннер «Письмо» (pp-sec pp-listen pp-write),
+    // поэтому баннер аудирования ищем по его секции — иначе селектор находит
+    // два элемента и падает на strict mode.
+    const banner = page.locator('#sec-listening')
     await expect(banner).toBeVisible({ timeout: 15000 })
 
     // Переключаемся на фильтр «Грамматика» — баннер должен исчезнуть.
@@ -61,7 +67,7 @@ test.describe('Практика — баннер «Аудирование»', ()
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    const level = page.locator('.pp-listen__level')
+    const level = page.locator('#sec-listening .pp-listen__level')
     await expect(level).toBeVisible({ timeout: 15000 })
     await expect(level).toHaveText('A1')
   })

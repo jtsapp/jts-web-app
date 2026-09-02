@@ -15,7 +15,10 @@ import { fileURLToPath } from 'node:url'
 // проверки — сами значения токенов, а не то, как их применили.
 
 const here = dirname(fileURLToPath(import.meta.url))
-const css = readFileSync(join(here, 'lessonWorkspace.css'), 'utf8')
+// Переводы строк приводим к \n: часть правил ищется по многострочным
+// селекторам, а на Windows файл лежит с CRLF — шаблоны с \n не находили
+// ничего, и тест падал не на дизайне, а на переносе строки.
+const css = readFileSync(join(here, 'lessonWorkspace.css'), 'utf8').replace(/\r\n/g, '\n')
 
 /** Значение переменной из блока токенов. */
 function token(name) {

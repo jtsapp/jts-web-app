@@ -6,8 +6,10 @@ import { readFileSync } from 'node:fs'
 import { Session, mergeBank2 } from '../practice/placement/engine.generated.js'
 import * as sections from './sections.js'
 import { READING, VOCAB_MATCH } from './content.generated.js'
+import { fileURLToPath } from 'node:url'
 
-const BANK_PATH = new URL('../../public/practice/placement/bank.json', import.meta.url).pathname
+// fileURLToPath: на Windows .pathname отдаёт «/C:/…» и путь склеивался в «C:\C:\…».
+const BANK_PATH = fileURLToPath(new URL('../../public/practice/placement/bank.json', import.meta.url))
 
 let data
 

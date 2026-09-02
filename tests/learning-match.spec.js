@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
-import { nativeLessonSteps } from '../src/learning/nativeSteps.js'
+import { playSteps, exactly } from './helpers/course-steps.js'
 
 // Соединение пар уровня A0.
 //
@@ -10,17 +10,12 @@ import { nativeLessonSteps } from '../src/learning/nativeSteps.js'
 // одному на слово, и каждый нёс ВЕСЬ набор переводов: десять подряд вопросов
 // «выбери 1 из 10» вместо соединения, и при трёх сердцах урок валился почти
 // гарантированно. Тест держит собранный экран и его механику.
-const LEVEL_FILE = path.join(process.cwd(), 'public/learning/a0.json')
-// Узел тропы — урок курса целиком: стадии одного урока склеены в одну очередь
-// экранов (см. nativeLessonSteps), поэтому и ожидаемые шаги считаем так же.
-const LESSON_TITLE = 'Coffee — yes. Mondays — no.'
-
-const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-const exactly = (s) => new RegExp(`^\\s*${escapeRe(s)}\\s*$`)
+// Шаги первого урока A0 — то же, что играет плеер
+// (scripts/extract-selfstudy-course.js).
+const STEPS_FILE = path.join(process.cwd(), 'public/course/a0/steps-1.json')
 
 function vocabSteps() {
-  const level = JSON.parse(fs.readFileSync(LEVEL_FILE, 'utf8'))
-  return nativeLessonSteps(level, LESSON_TITLE)
+  return JSON.parse(fs.readFileSync(STEPS_FILE, 'utf8')).steps
 }
 
 async function openVocab(page) {
@@ -42,16 +37,7 @@ async function openVocab(page) {
 async function reachMatch(page, steps) {
   const at = steps.findIndex((s) => s.type === 'match')
   expect(at, 'в узле словаря A0 нет собранного соединения').toBeGreaterThan(-1)
-  for (let i = 0; i < at; i++) {
-    if (steps[i].answer) {
-      await page.locator('.cp-choice', { hasText: exactly(steps[i].answer) }).first().click()
-      await page.locator('.cp-cta:not([disabled])').click()
-    } else if (await page.locator('.cp-cta[disabled]').count()) {
-      // Разминка и чек-лист без правильного ответа, но кнопка ждёт отметки.
-      await page.locator('.cp-pick, .cp-check__row').first().click()
-    }
-    await page.locator('.cp-cta:not([disabled])').click()
-  }
+  await playSteps(page, steps, at)
   return steps[at]
 }
 
