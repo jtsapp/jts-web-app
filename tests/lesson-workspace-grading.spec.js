@@ -5,7 +5,10 @@ import { SAMPLE_LESSON } from '../src/screens/workspace/sampleLesson.js'
 test.describe('practiceGrading', () => {
   test('norm убирает регистр/пунктуацию/пробелы', () => {
     expect(norm('  Does  ')).toBe('does')
-    expect(norm("don't do!")).toBe('dont do')
+    // Стяжения раскрываются: «don't» и «do not» — один ответ (answer-match.js),
+    // иначе студент терял балл за форму, а не за смысл.
+    expect(norm("don't do!")).toBe('do not do')
+    expect(norm('do not do')).toBe('do not do')
   })
   test('choice — верно только при точном совпадении', () => {
     const q = { id: 'q', type: 'choice', options: ['commute', 'commutes', 'is commute'], answer: 'commutes' }

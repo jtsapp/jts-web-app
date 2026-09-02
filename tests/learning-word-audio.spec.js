@@ -1,16 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { test, expect } from '@playwright/test'
-import { nativeLessonSteps } from '../src/learning/nativeSteps.js'
+import { playSteps, unlockStep } from './helpers/course-steps.js'
 
-const escapeRe = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-const exactly = (v) => new RegExp(`^\\s*${escapeRe(v)}\\s*$`)
-
-// Узел тропы — урок целиком: стадии склеены в одну очередь экранов, поэтому и
-// ожидаемые шаги считаем по всему уроку (см. nativeLessonSteps).
+// Ожидаемые шаги берём из того же файла, что играет плеер: урок A0 собран
+// scripts/extract-selfstudy-course.js прямо из файла курса.
 function vocabSteps() {
-  const level = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public/learning/a0.json'), 'utf8'))
-  return nativeLessonSteps(level, 'Coffee — yes. Mondays — no.')
+  return JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public/course/a0/steps-1.json'), 'utf8')).steps
 }
 
 // Озвучка слов A0.
@@ -66,20 +62,6 @@ async function bootVocab(page) {
   await expect(page.locator('.cp-word').first()).toBeVisible({ timeout: 15000 })
 }
 
-/** Разблокирует «Проверить/Продолжить» на экране без известного ответа. */
-async function unlockStep(page) {
-  if (!(await page.locator('.cp-cta[disabled]').count())) return
-  const tries = ['.cp-pick', '.cp-check__row', '.cp-choice', '.cp-rows__opt', '.cp-chip', '.cp-match__item']
-  for (const sel of tries) {
-    const el = page.locator(sel).first()
-    if (await el.count()) {
-      await el.click({ timeout: 2000 }).catch(() => {})
-      if (!(await page.locator('.cp-cta[disabled]').count())) return
-    }
-  }
-  const input = page.locator('.cp-gap__in, .cp-write, .cp-group__in').first()
-  if (await input.count()) await input.fill('test').catch(() => {})
-}
 
 test.describe('A0: слова звучат', () => {
   test('тап по карточке словаря проигрывает запись слова', async ({ page }) => {
@@ -144,6 +126,21 @@ test.describe('A0: слова звучат', () => {
     test.setTimeout(120000)
     await bootVocab(page)
 
+    // Задание «на слух» спрашивает слово из СВОЕЙ стадии словаря, а стадий в
+    // уроке несколько: карточки, на которых мы стоим после bootVocab, могут
+    // быть не теми. Поэтому сначала доходим до последних карточек перед
+    // заданием — с них и снимаем озвучку.
+    const steps = vocabSteps()
+    const target = steps.findIndex((s) => s.type === 'choice' && s.say)
+    expect(target, 'в узле словаря A0 нет задания со словом на слух').toBeGreaterThan(-1)
+    const at = steps.findIndex((s) => s.type === 'cards')
+    const lastCards = steps.slice(0, target).reduce((last, s, i) => (s.type === 'cards' ? i : last), -1)
+    expect(lastCards, 'перед заданием на слух нет стадии словаря').toBeGreaterThan(-1)
+    // bootVocab уже стоит на первых карточках урока — идём с них, отвечая верно
+    // (наугад урок не доживёт до задания, а вслепую жать «Продолжить» нельзя:
+    // на соединении пар кнопка заблокирована, пока не соединены все пары).
+    await playSteps(page, steps.slice(at), lastCards - at)
+
     // Собираем, чем озвучена карточка каждого слова.
     const cards = page.locator('.cp-word')
     const byWord = {}
@@ -154,30 +151,7 @@ test.describe('A0: слова звучат', () => {
       byWord[w] = played[played.length - 1]
     }
 
-    // Доходим до задания «Listen. Choose the word you hear.», отвечая верно:
-    // наугад урок не доживает (три промаха — экран итогов), а вслепую жать
-    // «Продолжить» нельзя — на соединении пар кнопка заблокирована, пока не
-    // соединены все пары.
-    const steps = vocabSteps()
-    const target = steps.findIndex((s) => s.type === 'choice' && s.say)
-    expect(target, 'в узле словаря A0 нет задания со словом на слух').toBeGreaterThan(-1)
-
-    for (let i = 0; i < target; i++) {
-      const step = steps[i]
-      if (step.type === 'match') {
-        for (const [k, pair] of step.pairs.entries()) {
-          await page.locator('.cp-match__item').nth(k).click()
-          await page.locator('.cp-match__bank .cp-chip', { hasText: exactly(pair.right) }).first().click()
-        }
-        await page.locator('.cp-cta:not([disabled])').click()
-      } else if (step.answer) {
-        await page.locator('.cp-choice', { hasText: exactly(step.answer) }).first().click()
-        await page.locator('.cp-cta:not([disabled])').click()
-      } else {
-        await unlockStep(page)
-      }
-      await page.locator('.cp-cta:not([disabled])').click()
-    }
+    await playSteps(page, steps.slice(lastCards), target - lastCards)
 
     await page.evaluate(() => (window.__played = []))
     await page.locator('.cp-step .cp-audio__play').click()

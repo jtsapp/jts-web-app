@@ -27,6 +27,19 @@ describe('CourseStepPlayer — что считается проверяемым 
     expect(isGraded({ type: 'cards' })).toBe(false)
     expect(isGraded({ type: 'checklist' })).toBe(false)
   })
+
+  // Экраны курса нового поколения: «найди ошибку» и разбор по колонкам — это
+  // упражнения с ответом, а строки для повтора вслух и запись своего голоса
+  // сверять не с чем.
+  it('поиск ошибки и колонки проверяются, фразы и запись — нет', () => {
+    expect(isGraded({ type: 'mistake', tokens: ['I', 'no', 'like'], bad: 1 })).toBe(true)
+    expect(isGraded({ type: 'cols', items: [{ text: 'I', col: 0 }] })).toBe(true)
+    // Пустой экран проверять нечем — он не должен запирать урок.
+    expect(isGraded({ type: 'mistake', tokens: [] })).toBe(false)
+    expect(isGraded({ type: 'cols', items: [] })).toBe(false)
+    expect(isGraded({ type: 'phrases' })).toBe(false)
+    expect(isGraded({ type: 'record' })).toBe(false)
+  })
 })
 
 // Вариант «выбери что ближе» рассчитан на слово с эмодзи, но у курса это бывает
