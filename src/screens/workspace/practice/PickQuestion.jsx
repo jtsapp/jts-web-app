@@ -1,5 +1,5 @@
 import { useI18n } from '../../../i18n.jsx'
-import TapText from '../TapText.jsx'
+import QuestionMedia from './QuestionMedia.jsx'
 
 // Опрос про себя («нравится / не нравится», «как часто»): верного ответа нет
 // и оценивать нечего — шаг засчитывается по самому факту выбора
@@ -26,7 +26,7 @@ export default function PickQuestion({ question, answer, checked, onAnswer, read
 
   return (
     <div className="lw-q lw-q--pick">
-      {question?.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
+      <QuestionMedia question={question} onWord={onWord} />
       <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>
       <div className="lw-opts">
         {(question?.options || []).map((opt) => {

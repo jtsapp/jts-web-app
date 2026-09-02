@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { CheckIcon } from '../../../components/icons.jsx'
-import TapText from '../TapText.jsx'
 import { hasAttempt } from '../practiceGrading.js'
+import QuestionMedia from './QuestionMedia.jsx'
 
 // Перемешивает копию массива (Fisher–Yates) — правый столбец не должен идти
 // в том же порядке, что и левый, иначе пары угадываются по позиции.
@@ -77,7 +77,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
   if (isSort) {
     return (
       <div className="lw-q lw-q--match">
-        {question?.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
+        <QuestionMedia question={question} onWord={onWord} />
         {!checked && <p className="lw-match__hint">{t('lesson.ws.sortHint')}</p>}
         <div className="lw-sort" role="group" aria-label={question?.prompt || t('lesson.ws.sortHint')}>
           <div className="lw-sort__bank" onClick={sendToBank}>
@@ -151,7 +151,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
 
   return (
     <div className="lw-q lw-q--match">
-      {question?.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
+      <QuestionMedia question={question} onWord={onWord} />
       {!checked && <p className="lw-match__hint">{t('lesson.ws.matchHint')}</p>}
       <div className="lw-match" role="group" aria-label={question?.prompt || t('lesson.ws.matchHint')}>
         <div className="lw-match__col">
