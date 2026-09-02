@@ -42,6 +42,7 @@ import {
 } from '../practice/comics/comicsData.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
+import { loadModule } from '../lib/lazyModule.js'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -539,8 +540,12 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     }
     taleLoadingRef.current = true
     try {
-      const mod = await import('../practice/fairytale/taleWorld.js')
-      mod.openTaleWorld(tale.id)
+      // loadModule, а не голый import: без catch отказ загрузки уходил в
+      // никуда — нажатие на карточку не делало ровно ничего, ни экрана, ни
+      // ошибки. Чаще всего так ломается вкладка, открытая до выката; она сама
+      // перезагрузится (см. lib/lazyModule.js).
+      const mod = await loadModule(() => import('../practice/fairytale/taleWorld.js'))
+      mod?.openTaleWorld(tale.id)
     } finally {
       taleLoadingRef.current = false
     }
@@ -578,9 +583,13 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     }
     taleLoadingRef.current = true
     try {
-      const mod = await import('../practice/situations/situationsOverlay.js')
-      mod.openSituations(level)
-      if (!seen.includes(level)) markSituationLevelDone(level)
+      const mod = await loadModule(() => import('../practice/situations/situationsOverlay.js'))
+      // Уровень отмечаем пройденным только когда он правда открылся: иначе
+      // сорвавшаяся загрузка списала бы его из квоты впустую.
+      if (mod) {
+        mod.openSituations(level)
+        if (!seen.includes(level)) markSituationLevelDone(level)
+      }
     } finally {
       taleLoadingRef.current = false
     }
