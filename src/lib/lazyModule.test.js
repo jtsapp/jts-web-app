@@ -32,6 +32,20 @@ describe('isStaleBuildError', () => {
     expect(isStaleBuildError(new Error('Importing a module script failed.'))).toBe(true)
   })
 
+  /**
+   * Основной случай на проде: nginx отдаёт index.html вместо пропавшего чанка
+   * (try_files ... /index.html), поэтому браузер жалуется на MIME, а не на
+   * отсутствие файла. Без этих строк проверка проходила бы мимо.
+   */
+  it('узнаёт подмену чанка на index.html', () => {
+    expect(isStaleBuildError(new Error(
+      'Failed to load module script: Expected a JavaScript module script but the server responded ' +
+      'with a MIME type of "text/html".'))).toBe(true)
+    expect(isStaleBuildError(new Error(
+      'Loading module from "https://app/_next/chunk.js" was blocked because of a disallowed MIME type ("text/html").'
+    ))).toBe(true)
+  })
+
   it('обычную ошибку за устаревшую сборку не принимает', () => {
     expect(isStaleBuildError(new Error('openTaleWorld is not a function'))).toBe(false)
     expect(isStaleBuildError(null)).toBe(false)

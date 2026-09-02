@@ -17,6 +17,11 @@
  * Текст ошибки у браузеров разный и не стандартизован, поэтому проверяем все
  * известные формулировки. Ошибиться в эту сторону дёшево: худшее, что делает
  * ложное срабатывание, — одна перезагрузка страницы.
+ *
+ * Про MIME отдельно, и это основной случай, а не запасной: перед приложением
+ * стоит nginx с `try_files ... /index.html`, поэтому пропавший чанк не даёт
+ * 404 — сервер отвечает 200 и отдаёт HTML. Браузер видит не «файла нет», а
+ * «вместо модуля прислали страницу», и говорит об этом другими словами.
  */
 export function isStaleBuildError(error) {
   const message = String(error?.message ?? error ?? '')
@@ -25,7 +30,12 @@ export function isStaleBuildError(error) {
     /Loading chunk \S+ failed/i.test(message) ||
     /Failed to fetch dynamically imported module/i.test(message) ||
     /error loading dynamically imported module/i.test(message) ||
-    /Importing a module script failed/i.test(message)
+    /Importing a module script failed/i.test(message) ||
+    // Chrome при подмене чанка на index.html
+    /Failed to load module script/i.test(message) ||
+    /Expected a JavaScript module script/i.test(message) ||
+    // Firefox про то же самое
+    /disallowed MIME type/i.test(message)
   )
 }
 
