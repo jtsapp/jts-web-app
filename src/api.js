@@ -392,6 +392,29 @@ export async function requestTrialLesson(token) {
   return trialRequestState(await authPost('/mobile/trial-request', token))
 }
 
+// Витрина: что и почём продаётся (GET /catalog/offers, публично).
+//
+// Каталог живёт на бэкенде, а не в этом репозитории, и это не вкусовщина: цену
+// заказа считает сервер по своим же данным, а клиент присылает только коды. Всё
+// остальное — статичный прайс в бандле — означало бы «12 уроков за 1 тенге»
+// правкой в консоли браузера.
+export async function getOffers() {
+  const data = await get('/catalog/offers')
+  return Array.isArray(data) ? data : []
+}
+
+// Заказ и ссылка на оплату (POST /mobile/orders, Bearer).
+//
+// `items` — [{ offerCode, quantity }]. Цены здесь нет намеренно, см. getOffers.
+// `idempotencyKey` обязателен: двойной клик по «Перейти к оплате» с тем же
+// ключом вернёт тот же заказ, а не создаст второй платёж.
+//
+// paymentUrl пуст, когда эквайринг ещё не подключён — тогда экран показывает
+// запасной путь (написать менеджеру), а не пустую страницу оплаты.
+export async function createOrder(token, { items, idempotencyKey, returnUrl } = {}) {
+  return authPost('/mobile/orders', token, { items, idempotencyKey, returnUrl })
+}
+
 // Заявка менеджеру с коммерческих экранов (тарифы, докупка минут) — уезжает в
 // amoCRM (бэкенд: POST /mobile/leads, modules/crm).
 //

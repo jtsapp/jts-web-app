@@ -1596,3 +1596,56 @@
   line-height: 1.45;
   color: #3c7a54;
 }
+
+/* Каталог грузится или не загрузился — на месте всей витрины. */
+.pr-load {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 64px 24px;
+  text-align: center;
+}
+.pr-load__text {
+  font-size: 14px;
+  color: #8b8a97;
+}
+.pr-load__spin {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 3px solid #e0dced;
+  border-top-color: var(--purple);
+  animation: pr-load-spin 0.8s linear infinite;
+}
+@keyframes pr-load-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pr-load__spin {
+    animation: none;
+  }
+}
+.pr-load__retry {
+  height: 42px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 12px;
+  background: var(--purple);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pr-load__retry:hover {
+  background: #7a2fe6;
+}
+.pr-load__retry:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
+}

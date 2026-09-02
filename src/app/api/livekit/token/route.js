@@ -226,6 +226,14 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
   // там, где его продали, поэтому null означает «без пула», а не «ноль минут».
   const totalLimitSec = limitOverride?.totalLimitSeconds ?? null
   const totalSince = limitOverride?.totalSince ?? null
+  // Докупленные минуты: сколько куплено, знает бэкенд, сколько проговорено —
+  // эта база (voice_usage.pool_seconds). Работают поверх лимитов и не сгорают,
+  // поэтому проверяются ПОСЛЕ них: сначала бесплатное, потом оплаченное.
+  const purchasedSec = limitOverride?.purchasedSeconds ?? 0
+  // Разговор идёт за счёт купленных минут. Решается один раз, при выдаче
+  // токена: пересчёт по ходу означал бы, что сессия, начатая в пределах лимита,
+  // посреди фразы начинает съедать оплаченное.
+  let fromPool = false
 
   // Потолок одной сессии = дневной лимит (раньше здесь стояло 600 числом, и при
   // подъёме лимита до 20 мин разговор всё равно рвался бы на 10-й минуте).
@@ -242,39 +250,47 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
       // Сначала дозакрываем зависшие комнаты этого ученика (потерянный
       // room_finished), иначе их минуты не спишутся никогда и лимит поедет.
       await closeStaleSessions(profileId)
-      const { todaySeconds, monthSeconds, totalSeconds } = await getUsage(profileId, {
+      const { todaySeconds, monthSeconds, totalSeconds, poolSeconds } = await getUsage(profileId, {
         totalSince,
         isDemoAccount,
       })
-      // Пул проверяем ПЕРВЫМ: он про купленный тариф, и когда он исчерпан, дневной
-      // остаток значения уже не имеет — сказать «приходите завтра» было бы неправдой.
+      // Остаток докупленных минут: куплено — по бэкенду, проговорено — по этой базе.
+      const poolLeft = Math.max(0, purchasedSec - (poolSeconds || 0))
+
       // limitSec — тот самый лимит, в который упёрлись. Клиент показывает его
-      // человеку («вы использовали бесплатные 20 мин»), и брать это число из
-      // своей константы он не может: у ученика может стоять персональный
-      // override или лимит тарифа, и подпись врала бы.
-      if (totalLimitSec != null && totalSeconds >= totalLimitSec) {
-        return Response.json(
-          { configured: true, limited: true, error: 'total_limit', limitSec: totalLimitSec },
-          { status: 403 },
-        )
-      }
-      if (monthSeconds >= monthLimitSec || todaySeconds >= dailyLimitSec) {
-        const monthly = monthSeconds >= monthLimitSec
-        return Response.json(
-          {
-            configured: true,
-            limited: true,
-            error: monthly ? 'monthly_limit' : 'daily_limit',
-            limitSec: monthly ? monthLimitSec : dailyLimitSec,
-          },
-          { status: 403 },
-        )
-      }
-      ttl = Math.max(60, Math.min(dailyLimitSec, dailyLimitSec - todaySeconds))
-      // Длина сессии не должна превышать остаток пула: иначе последний разговор
-      // ушёл бы в минус и списал больше, чем ученик купил.
-      if (totalLimitSec != null) {
-        ttl = Math.max(60, Math.min(ttl, totalLimitSec - totalSeconds))
+      // человеку («вы использовали бесплатные 20 мин»), и брать это число из своей
+      // константы он не может: у ученика может стоять лимит тарифа.
+      const refuse = (error, limitSec) =>
+        Response.json({ configured: true, limited: true, error, limitSec }, { status: 403 })
+
+      // Пул тарифа смотрим ПЕРВЫМ: он про купленный абонемент, и когда
+      // он исчерпан, дневной остаток значения уже не имеет — «приходите завтра»
+      // было бы неправдой.
+      const overTotal = totalLimitSec != null && totalSeconds >= totalLimitSec
+      const overMonth = monthSeconds >= monthLimitSec
+      const overDay = todaySeconds >= dailyLimitSec
+
+      if (overTotal || overMonth || overDay) {
+        // Бесплатное кончилось — пускаем за счёт докупленного, если оно есть.
+        // Минута порога не случайна: разговор короче минуты бессмыслен, а
+        // остаток меньше минуты честнее показать как «минуты кончились».
+        if (poolLeft >= 60) {
+          fromPool = true
+          ttl = Math.min(dailyLimitSec, poolLeft)
+        } else if (overTotal) {
+          return refuse('total_limit', totalLimitSec)
+        } else if (overMonth) {
+          return refuse('monthly_limit', monthLimitSec)
+        } else {
+          return refuse('daily_limit', dailyLimitSec)
+        }
+      } else {
+        ttl = Math.max(60, Math.min(dailyLimitSec, dailyLimitSec - todaySeconds))
+        // Длина сессии не должна превышать остаток пула тарифа: иначе
+        // последний разговор ушёл бы в минус и списал больше, чем ученик купил.
+        if (totalLimitSec != null) {
+          ttl = Math.max(60, Math.min(ttl, totalLimitSec - totalSeconds))
+        }
       }
     } catch (err) {
       console.error('[livekit.token] usage check failed', err)
@@ -319,7 +335,7 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null, is
 
   if (isDbConfigured() && isValidDeviceId(profileId)) {
     try {
-      await openSession(room, profileId)
+      await openSession(room, profileId, { fromPool })
     } catch (err) {
       console.error('[livekit.token] openSession failed', err)
     }

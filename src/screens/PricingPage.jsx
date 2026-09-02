@@ -1,74 +1,108 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
-import { createLead } from '../api.js'
+import { useOffers } from '../lib/useOffers.js'
+import { createLead, createOrder } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
+import CatalogError from '../components/CatalogError.jsx'
 import {
   BONUSES,
   CURRENCY,
-  GROUP,
   INCLUDED,
-  INDIVIDUAL_DURATIONS,
-  SELF_STUDY,
+  durationsOf,
   formatPrice,
-  individualPlans,
+  pricePerLesson,
+  splitOffers,
 } from '../data/pricing.js'
 import { addItem, cartCount, cartTotal, qtyOf, removeItem, setQty } from '../lib/cart.js'
+
+
+/**
+ * Ключ идемпотентности заказа. Функция модульная, а не внутри компонента:
+ * Date.now/Math.random — нечистые, и внутри они читались бы как вызов во время
+ * рендера (правило react-hooks/purity), хотя зовём мы их только по нажатию.
+ */
+function newOrderKey() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
+  return `ord-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
 
 // Витрина тарифов (макет демо-доступа, экраны 4-5). Сюда ведут все призывы
 // «открыть полный доступ»: плашка демо на «Главной», скидка в сайдбаре и кнопка
 // «Приобрести подписку» в окне демо-лимита.
 //
-// Каталог — статикой в data/pricing.js (там же объяснено почему), корзина —
-// чистыми операциями в lib/cart.js. Здесь остаётся только вёрстка и решение,
-// куда ведёт «Перейти к оплате».
+// Предложения и цены приезжают с бэкенда (GET /catalog/offers): сумму заказа
+// считает сервер, и вторая копия прайса на клиенте означала бы, что человек
+// видит одно, а платит другое. Подписи при этом строятся здесь — сервер владеет
+// ценой и составом, клиент словами, поэтому экран остаётся трёхъязычным.
 export default function PricingPage({ token, onBack, onDone }) {
   const { t, lang } = useI18n()
-  const [duration, setDuration] = useState(INDIVIDUAL_DURATIONS[0])
+  const { offers, failed, reload } = useOffers()
+  const [duration, setDuration] = useState(null)
   const [items, setItems] = useState([])
   const [payOpen, setPayOpen] = useState(false)
-  // Заявка отправлена — на месте кнопки оплаты стоит подтверждение. Своего
-  // экрана «спасибо» здесь нет намеренно: человек ещё выбирает тариф, и уводить
-  // его с витрины после «перезвоните мне» незачем.
   const [sent, setSent] = useState(false)
 
-  const individual = useMemo(() => individualPlans(duration), [duration])
+  const groups = useMemo(() => splitOffers(offers || []), [offers])
+  const durations = useMemo(() => durationsOf(groups.individual), [groups.individual])
+
+  // Первая длительность из каталога — как только он приехал. Держать её в
+  // состоянии, а не выводить каждый раз, надо ради переключателя.
+  useEffect(() => {
+    if (duration === null && durations.length) setDuration(durations[0])
+  }, [duration, durations])
+
+  const individual = groups.individual.filter((o) => o.durationMinutes === duration)
   const total = cartTotal(items)
   const count = cartCount(items)
 
   const lessonsLabel = (n) => plural(t, lang, 'pricing.lessons', n)
 
-  const add = (item) => setItems((prev) => addItem(prev, item))
+  // Название плитки: строим из состава предложения, чтобы оно переводилось.
+  // Серверный title — запасной вариант для видов, которые мы разобрать не умеем
+  // (групповой курс: «12 уроков · 1 курс» одной строкой).
+  const offerLabel = (offer) => {
+    if (offer.kind === 'SELF_STUDY' && offer.levels) {
+      const key = `pricing.self.n${offer.levels}`
+      const label = t(key)
+      if (label !== key) return label
+    }
+    if (offer.kind === 'INDIVIDUAL' && offer.lessons) return lessonsLabel(offer.lessons)
+    return offer.title
+  }
+
+  const add = (offer, kind) => setItems((prev) => addItem(prev, cartLine(offer, kind)))
   const bump = (id, delta) => setItems((prev) => setQty(prev, id, qtyOf(prev, id) + delta))
 
-  const selfItem = (p) => ({
-    id: p.id,
-    kind: 'self',
-    title: t('pricing.self'),
-    subtitle: t(`pricing.self.n${p.levels}`),
-    price: p.price,
-  })
-  const indItem = (p) => ({
-    id: p.id,
-    kind: 'ind',
-    title: t('pricing.cart.ind'),
-    subtitle: t('pricing.cart.indSub', { lessons: lessonsLabel(p.lessons), min: String(p.duration) }),
-    price: p.price,
-  })
-  const groupItem = (p) => ({
-    id: p.id,
-    kind: 'group',
-    title: t('pricing.cart.group'),
-    subtitle: t('pricing.cart.groupSub', { lessons: lessonsLabel(p.lessons) }),
-    price: p.price,
+  const cartLine = (offer, kind) => ({
+    id: offer.code,
+    kind,
+    title:
+      kind === 'ind' ? t('pricing.cart.ind') : kind === 'group' ? t('pricing.cart.group') : t('pricing.self'),
+    subtitle:
+      kind === 'ind'
+        ? t('pricing.cart.indSub', {
+            lessons: lessonsLabel(offer.lessons),
+            min: String(offer.durationMinutes),
+          })
+        : offerLabel(offer),
+    price: offer.price,
   })
 
-  // Оплаты внутри приложения нет: платёжного роута нет в src/app/api, и
-  // абонемент студенту всё равно заводит менеджер руками в админке. Поэтому все
-  // три способа сейчас ведут к менеджеру, но с уже собранным заказом в тексте —
-  // человеку не приходится пересказывать, что он выбрал. Когда появится
-  // настоящий чекаут, меняется только эта функция.
+  // Ключ идемпотентности живёт, пока не изменилась корзина: повторный клик по
+  // «Перейти к оплате» вернёт тот же заказ, а не создаст второй платёж. Меняется
+  // состав — начинается другой заказ, и ключ нужен новый.
+  const orderKeyRef = useRef(null)
+  useEffect(() => {
+    orderKeyRef.current = null
+  }, [items])
+
+  const orderKey = () => {
+    if (!orderKeyRef.current) orderKeyRef.current = newOrderKey()
+    return orderKeyRef.current
+  }
+
   const pay = async (method) => {
     const lines = items.map(
       (x) => `• ${x.title} — ${x.subtitle} × ${x.qty} = ${formatPrice(x.price * x.qty)} ${CURRENCY}`,
@@ -80,21 +114,38 @@ export default function PricingPage({ token, onBack, onDone }) {
       `[${method}]`,
     ].join('\n')
 
-    // Заявка уходит в CRM при любом способе оплаты: даже если человек сейчас
-    // напишет в WhatsApp, менеджер увидит в amoCRM, что именно тот выбрал, — а
-    // если не напишет, заявка всё равно останется и по ней перезвонят.
+    // Заявка в CRM уходит при любом способе: даже если человек сейчас уйдёт
+    // платить или писать в чат, менеджер увидит, что именно тот выбрал.
     let accepted = false
     try {
       accepted = (await createLead(token, { source: 'PRICING', comment: text })).accepted
     } catch {
-      // Молча: заявка — не единственный путь, ниже открывается чат.
+      // Молча: заявка — не единственный путь, ниже есть и оплата, и чат.
     }
-    setPayOpen(false)
 
+    // Настоящая оплата, если эквайринг подключён. Ссылки нет (провайдер не
+    // настроен или не ответил) — идём прежним путём, к менеджеру: пустая
+    // страница оплаты хуже, чем живой человек.
+    try {
+      const order = await createOrder(token, {
+        items: items.map((x) => ({ offerCode: x.id, quantity: x.qty })),
+        idempotencyKey: orderKey(),
+        returnUrl: typeof window === 'undefined' ? undefined : window.location.href,
+      })
+      if (order?.paymentUrl) {
+        setPayOpen(false)
+        onDone?.(method)
+        window.location.assign(order.paymentUrl)
+        return
+      }
+    } catch {
+      /* заказ не создался — остаётся запасной путь ниже */
+    }
+
+    setPayOpen(false)
     // «Связаться со мной» — единственный способ, который не уводит из
-    // приложения: человек попросил перезвонить, значит писать ему некуда.
-    // Но если звонить некуда (в профиле нет телефона), оставлять его ни с чем
-    // нельзя — тогда открываем чат, как и в остальных случаях.
+    // приложения. Но если звонить некуда (в профиле нет телефона), оставлять
+    // человека ни с чем нельзя — тогда открываем чат.
     if (method === 'callback' && accepted) {
       setSent(true)
       onDone?.(method)
@@ -115,201 +166,213 @@ export default function PricingPage({ token, onBack, onDone }) {
         <h1 className="pr__title">{t('pricing.title')}</h1>
       </header>
 
-      <div className="pr__grid">
-        <div className="pr__cols">
-          {/* ——— Self Study ——— */}
-          <section className="pr-sec pr-sec--self">
-            <h2 className="pr-sec__title">
-              <SecIcon kind="self" />
-              {t('pricing.self')}
-            </h2>
-            <div className="pr-tiles pr-tiles--4">
-              {SELF_STUDY.map((p) => (
-                <PlanTile
-                  key={p.id}
-                  title={t(`pricing.self.n${p.levels}`)}
-                  price={p.price}
-                  note={t('pricing.self.minutes', { n: String(p.tutorMinutes) })}
-                  qty={qtyOf(items, p.id)}
-                  onAdd={() => add(selfItem(p))}
-                  onBump={(d) => bump(p.id, d)}
-                  t={t}
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* ——— Индивидуальные ——— */}
-          <section className="pr-sec pr-sec--ind">
-            <div className="pr-sec__head">
-              <h2 className="pr-sec__title">
-                <SecIcon kind="ind" />
-                {t('pricing.ind')}
-              </h2>
-              {/* Переключатель длительности урока: он меняет и цену, и то, что
-                  попадёт в корзину, поэтому стоит в заголовке раздела, а не у
-                  каждой плитки — иначе выбор пришлось бы повторять шесть раз. */}
-              <div className="pr-toggle" role="group" aria-label={t('pricing.ind')}>
-                {INDIVIDUAL_DURATIONS.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={`pr-toggle__btn${d === duration ? ' is-on' : ''}`}
-                    aria-pressed={d === duration}
-                    onClick={() => setDuration(d)}
-                  >
-                    {t('pricing.ind.duration', { n: String(d) })}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="pr-tiles pr-tiles--3">
-              {individual.map((p) => (
-                <PlanTile
-                  key={p.id}
-                  title={lessonsLabel(p.lessons)}
-                  price={p.price}
-                  note={t('pricing.perLesson', { price: formatPrice(p.perLesson) })}
-                  qty={qtyOf(items, p.id)}
-                  onAdd={() => add(indItem(p))}
-                  onBump={(d) => bump(p.id, d)}
-                  t={t}
-                />
-              ))}
-            </div>
-
-            <div className="pr-extras">
-              <ul className="pr-feats">
-                <li><FeatIcon kind="teacher" />{t('pricing.ind.f1')}</li>
-                <li><FeatIcon kind="calendar" />{t('pricing.ind.f2')}</li>
-                <li><FeatIcon kind="mic" />{t('pricing.ind.f3')}</li>
-              </ul>
-              <Bonuses list={BONUSES.individual} t={t} />
-            </div>
-          </section>
-
-          {/* ——— Групповые ——— */}
-          <section className="pr-sec pr-sec--group">
-            <h2 className="pr-sec__title">
-              <SecIcon kind="group" />
-              {t('pricing.group')}
-            </h2>
-            <div className="pr-tiles pr-tiles--3">
-              {GROUP.map((p) => (
-                <PlanTile
-                  key={p.id}
-                  accent
-                  title={`${lessonsLabel(p.lessons)} · ${plural(t, lang, 'pricing.courses', p.courses)}`}
-                  price={p.price}
-                  note={t('pricing.perLesson', { price: formatPrice(p.perLesson) })}
-                  qty={qtyOf(items, p.id)}
-                  onAdd={() => add(groupItem(p))}
-                  onBump={(d) => bump(p.id, d)}
-                  t={t}
-                />
-              ))}
-            </div>
-            <div className="pr-extras">
-              <ul className="pr-feats">
-                <li><FeatIcon kind="mic" />{t('pricing.group.f1')}</li>
-                <li><FeatIcon kind="gift" />{t('pricing.group.f2')}</li>
-              </ul>
-              <Bonuses list={BONUSES.group} t={t} />
-            </div>
-          </section>
-
-          {/* ——— Входит в любой тариф ——— */}
-          <section className="pr-inc">
-            <h2 className="pr-inc__title">
-              <CheckMark />
-              {t('pricing.included')}
-            </h2>
-            <div className="pr-inc__grid">
-              {INCLUDED.map((f) => (
-                <div className="pr-inc__cell" key={f.id}>
-                  <FeatIcon kind={f.icon} />
-                  <span>
-                    <b>{t(f.title)}</b>
-                    <i>{t(f.sub)}</i>
-                  </span>
+      {offers === null || failed ? (
+        <CatalogError loading={offers === null && !failed} onRetry={reload} />
+      ) : (
+        <div className="pr__grid">
+          <div className="pr__cols">
+            {/* ——— Self Study ——— */}
+            {groups.self.length > 0 && (
+              <section className="pr-sec pr-sec--self">
+                <h2 className="pr-sec__title">
+                  <SecIcon kind="self" />
+                  {t('pricing.self')}
+                </h2>
+                <div className="pr-tiles pr-tiles--4">
+                  {groups.self.map((offer) => (
+                    <PlanTile
+                      key={offer.code}
+                      title={offerLabel(offer)}
+                      price={offer.price}
+                      note={offer.tutorMinutes ? t('pricing.self.minutes', { n: String(offer.tutorMinutes) }) : ''}
+                      qty={qtyOf(items, offer.code)}
+                      onAdd={() => add(offer, 'self')}
+                      onBump={(d) => bump(offer.code, d)}
+                      t={t}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
-        </div>
+              </section>
+            )}
 
-        {/* ——— Корзина ——— */}
-        <aside className="pr-cart">
-          <div className="pr-cart__inner">
-            <div className="pr-cart__head">
-              <CartIcon />
-              <b>{t('pricing.cart')}</b>
-              {count > 0 && <span className="pr-cart__count">{count}</span>}
-            </div>
+            {/* ——— Индивидуальные ——— */}
+            {groups.individual.length > 0 && (
+              <section className="pr-sec pr-sec--ind">
+                <div className="pr-sec__head">
+                  <h2 className="pr-sec__title">
+                    <SecIcon kind="ind" />
+                    {t('pricing.ind')}
+                  </h2>
+                  {/* Переключатель длительности меняет и цену, и то, что попадёт
+                      в корзину, поэтому стоит в заголовке раздела, а не у каждой
+                      плитки — иначе выбор пришлось бы повторять шесть раз. */}
+                  {durations.length > 1 && (
+                    <div className="pr-toggle" role="group" aria-label={t('pricing.ind')}>
+                      {durations.map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          className={`pr-toggle__btn${d === duration ? ' is-on' : ''}`}
+                          aria-pressed={d === duration}
+                          onClick={() => setDuration(d)}
+                        >
+                          {t('pricing.ind.duration', { n: String(d) })}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-            {count === 0 ? (
-              <p className="pr-cart__empty">{t('pricing.cart.empty')}</p>
-            ) : (
-              <ul className="pr-cart__list">
-                {items.map((x) => (
-                  <li className="pr-line" key={x.id}>
-                    <span className={`pr-line__ic pr-line__ic--${x.kind}`} aria-hidden="true">
-                      <SecIcon kind={x.kind} />
+                <div className="pr-tiles pr-tiles--3">
+                  {individual.map((offer) => (
+                    <PlanTile
+                      key={offer.code}
+                      title={offerLabel(offer)}
+                      price={offer.price}
+                      note={t('pricing.perLesson', { price: formatPrice(pricePerLesson(offer)) })}
+                      qty={qtyOf(items, offer.code)}
+                      onAdd={() => add(offer, 'ind')}
+                      onBump={(d) => bump(offer.code, d)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+
+                <div className="pr-extras">
+                  <ul className="pr-feats">
+                    <li><FeatIcon kind="teacher" />{t('pricing.ind.f1')}</li>
+                    <li><FeatIcon kind="calendar" />{t('pricing.ind.f2')}</li>
+                    <li><FeatIcon kind="mic" />{t('pricing.ind.f3')}</li>
+                  </ul>
+                  <Bonuses list={BONUSES.individual} t={t} />
+                </div>
+              </section>
+            )}
+
+            {/* ——— Групповые ——— */}
+            {groups.group.length > 0 && (
+              <section className="pr-sec pr-sec--group">
+                <h2 className="pr-sec__title">
+                  <SecIcon kind="group" />
+                  {t('pricing.group')}
+                </h2>
+                <div className="pr-tiles pr-tiles--3">
+                  {groups.group.map((offer) => (
+                    <PlanTile
+                      key={offer.code}
+                      accent
+                      title={offerLabel(offer)}
+                      price={offer.price}
+                      note={t('pricing.perLesson', { price: formatPrice(pricePerLesson(offer)) })}
+                      qty={qtyOf(items, offer.code)}
+                      onAdd={() => add(offer, 'group')}
+                      onBump={(d) => bump(offer.code, d)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+                <div className="pr-extras">
+                  <ul className="pr-feats">
+                    <li><FeatIcon kind="mic" />{t('pricing.group.f1')}</li>
+                    <li><FeatIcon kind="gift" />{t('pricing.group.f2')}</li>
+                  </ul>
+                  <Bonuses list={BONUSES.group} t={t} />
+                </div>
+              </section>
+            )}
+
+            {/* ——— Входит в любой тариф ——— */}
+            <section className="pr-inc">
+              <h2 className="pr-inc__title">
+                <CheckMark />
+                {t('pricing.included')}
+              </h2>
+              <div className="pr-inc__grid">
+                {INCLUDED.map((f) => (
+                  <div className="pr-inc__cell" key={f.id}>
+                    <FeatIcon kind={f.icon} />
+                    <span>
+                      <b>{t(f.title)}</b>
+                      <i>{t(f.sub)}</i>
                     </span>
-                    <span className="pr-line__body">
-                      <b>{x.title}</b>
-                      <i>{x.subtitle}</i>
-                    </span>
-                    <button
-                      type="button"
-                      className="pr-line__del"
-                      onClick={() => setItems((prev) => removeItem(prev, x.id))}
-                      aria-label={t('pricing.cart.remove')}
-                    >
-                      <TrashMark />
-                    </button>
-                    <span className="pr-line__foot">
-                      <Stepper qty={x.qty} onBump={(d) => bump(x.id, d)} t={t} />
-                      <b className="pr-line__price">{formatPrice(x.price * x.qty)} {CURRENCY}</b>
-                    </span>
-                  </li>
+                  </div>
                 ))}
-              </ul>
-            )}
-
-            <div className="pr-cart__total">
-              <span>{t('pricing.cart.total')}</span>
-              <b>{formatPrice(total)} {CURRENCY}</b>
-            </div>
-
-            {sent ? (
-              <div className="pr-sent" role="status">
-                <b>{t('pay.sent')}</b>
-                <span>{t('pay.sentSub')}</span>
               </div>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="pr-cart__pay"
-                  disabled={count === 0}
-                  onClick={() => setPayOpen(true)}
-                >
-                  {t('pricing.cart.pay')}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-                <p className="pr-cart__note">
-                  <InfoMark />
-                  {t('pricing.cart.note')}
-                </p>
-              </>
-            )}
+            </section>
           </div>
-        </aside>
-      </div>
+
+          {/* ——— Корзина ——— */}
+          <aside className="pr-cart">
+            <div className="pr-cart__inner">
+              <div className="pr-cart__head">
+                <CartIcon />
+                <b>{t('pricing.cart')}</b>
+                {count > 0 && <span className="pr-cart__count">{count}</span>}
+              </div>
+
+              {count === 0 ? (
+                <p className="pr-cart__empty">{t('pricing.cart.empty')}</p>
+              ) : (
+                <ul className="pr-cart__list">
+                  {items.map((x) => (
+                    <li className="pr-line" key={x.id}>
+                      <span className={`pr-line__ic pr-line__ic--${x.kind}`} aria-hidden="true">
+                        <SecIcon kind={x.kind} />
+                      </span>
+                      <span className="pr-line__body">
+                        <b>{x.title}</b>
+                        <i>{x.subtitle}</i>
+                      </span>
+                      <button
+                        type="button"
+                        className="pr-line__del"
+                        onClick={() => setItems((prev) => removeItem(prev, x.id))}
+                        aria-label={t('pricing.cart.remove')}
+                      >
+                        <TrashMark />
+                      </button>
+                      <span className="pr-line__foot">
+                        <Stepper qty={x.qty} onBump={(d) => bump(x.id, d)} t={t} />
+                        <b className="pr-line__price">{formatPrice(x.price * x.qty)} {CURRENCY}</b>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="pr-cart__total">
+                <span>{t('pricing.cart.total')}</span>
+                <b>{formatPrice(total)} {CURRENCY}</b>
+              </div>
+
+              {sent ? (
+                <div className="pr-sent" role="status">
+                  <b>{t('pay.sent')}</b>
+                  <span>{t('pay.sentSub')}</span>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="pr-cart__pay"
+                    disabled={count === 0}
+                    onClick={() => setPayOpen(true)}
+                  >
+                    {t('pricing.cart.pay')}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <p className="pr-cart__note">
+                    <InfoMark />
+                    {t('pricing.cart.note')}
+                  </p>
+                </>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {payOpen && <PaymentMethodModal onClose={() => setPayOpen(false)} onPick={pay} />}
     </div>
@@ -335,7 +398,7 @@ function PlanTile({ title, price, note, qty, onAdd, onBump, accent = false, t })
         )}
       </div>
       <div className="pr-tile__price">{formatPrice(price)} {CURRENCY}</div>
-      <div className="pr-tile__note">{note}</div>
+      {note && <div className="pr-tile__note">{note}</div>}
     </div>
   )
 }

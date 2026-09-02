@@ -138,6 +138,9 @@ export async function fetchTutorLimitOverride(token) {
       // (персональная правка админом) пул считается за всё время.
       totalLimitSeconds: data?.totalLimitSeconds ?? null,
       totalSince: data?.totalSince ?? null,
+      // Докупленные минуты («Докупить минуты»). Это ПРАВО — сколько куплено;
+      // сколько из него проговорено, считает эта же база (voice_usage.pool_seconds).
+      purchasedSeconds: data?.purchasedSeconds ?? 0,
     }
   } catch (err) {
     console.error(

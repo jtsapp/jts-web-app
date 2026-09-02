@@ -101,12 +101,12 @@ function billableSql(db) {
  * 0 потраченных и выдавал полные 20 минут заново. Лимит должен быть один на
  * ученика независимо от режима.
  */
-async function activeSeconds(db, deviceId) {
+async function activeSeconds(db, deviceId, fromPool = false) {
   const billable = billableSql(db);
   const rows = await db`
     SELECT COALESCE(SUM(${billable}), 0)::int AS s
     FROM voice_session
-    WHERE device_id = ${deviceId} AND armed_at IS NOT NULL
+    WHERE device_id = ${deviceId} AND armed_at IS NOT NULL AND from_pool = ${fromPool}
   `;
   return rows[0]?.s || 0;
 }
@@ -152,7 +152,7 @@ export async function closeStaleSessions(deviceId) {
  */
 export async function getUsage(deviceId, { totalSince = null, isDemoAccount = false } = {}) {
   const db = getSql();
-  if (!db) return { todaySeconds: 0, monthSeconds: 0, totalSeconds: 0 };
+  if (!db) return { todaySeconds: 0, monthSeconds: 0, totalSeconds: 0, poolSeconds: 0 };
   // Два разных окна в одном ответе, и путать их нельзя:
   //   month — месячный лимит бесплатных минут (у демо-аккаунта окна нет, см. ниже);
   //   total — пул купленного тарифа, считается от начала его действия.
@@ -192,26 +192,43 @@ export async function getUsage(deviceId, { totalSince = null, isDemoAccount = fa
         WHERE device_id = ${deviceId}
       `;
   const r = rows[0] || { today: 0, month: 0, total: 0 };
-  const active = await activeSeconds(db, deviceId);
+  // Идущие сессии считаются отдельно по каждому «кошельку»: разговор за
+  // купленные минуты не должен попадать в счётчики лимитов, иначе он съел бы
+  // пул абонемента, оплаченный отдельно.
+  const active = await activeSeconds(db, deviceId, false);
+  const activePool = await activeSeconds(db, deviceId, true);
+  const pool = await poolSeconds(db, deviceId);
   return {
     todaySeconds: (r.today || 0) + active,
     monthSeconds: (r.month || 0) + active,
     totalSeconds: (r.total || 0) + active,
+    poolSeconds: pool + activePool,
   };
+}
+
+/** Сколько уже проговорено за счёт КУПЛЕННЫХ минут (закрытые сессии). */
+async function poolSeconds(db, deviceId) {
+  const rows = await db`
+    SELECT COALESCE(SUM(pool_seconds), 0)::int AS s
+    FROM voice_usage
+    WHERE device_id = ${deviceId}
+  `;
+  return rows[0]?.s || 0;
 }
 
 /**
  * Завести открытую сессию. Тарификация тут ещё НЕ начинается: строка нужна,
  * чтобы связать комнату с учеником, а отсчёт включит armSession().
  */
-export async function openSession(room, deviceId) {
+export async function openSession(room, deviceId, { fromPool = false } = {}) {
   const db = getSql();
   if (!db) return;
   await db`
-    INSERT INTO voice_session (room, device_id, started_at, armed_at, last_seen_at)
-    VALUES (${room}, ${deviceId}, now(), NULL, NULL)
+    INSERT INTO voice_session (room, device_id, started_at, armed_at, last_seen_at, from_pool)
+    VALUES (${room}, ${deviceId}, now(), NULL, NULL, ${fromPool})
     ON CONFLICT (room) DO UPDATE
-      SET started_at = now(), device_id = ${deviceId}, armed_at = NULL, last_seen_at = NULL
+      SET started_at = now(), device_id = ${deviceId}, armed_at = NULL, last_seen_at = NULL,
+          from_pool = ${fromPool}
   `;
 }
 
@@ -279,6 +296,7 @@ export async function recordSession(room, fallbackSeconds = 0) {
     SELECT device_id,
            COALESCE(armed_at, started_at)::date AS day,
            armed_at,
+           from_pool,
            ${billable} AS billable
     FROM voice_session
     WHERE room = ${room}
@@ -290,11 +308,17 @@ export async function recordSession(room, fallbackSeconds = 0) {
   const raw = s.armed_at ? s.billable || 0 : fallbackSeconds || 0;
   const seconds = Math.min(SESSION_CAP_SEC, Math.max(0, raw));
   if (seconds > 0) {
+    // Разговор за купленные минуты идёт в pool_seconds и НЕ в seconds: seconds —
+    // это расход против лимитов, и списывать туда оплаченное значило бы съедать
+    // пул абонемента, за который человек заплатил отдельно.
+    const toLimits = s.from_pool ? 0 : seconds;
+    const toPool = s.from_pool ? seconds : 0;
     await db`
-      INSERT INTO voice_usage (device_id, day, seconds)
-      VALUES (${s.device_id}, ${s.day}, ${seconds})
+      INSERT INTO voice_usage (device_id, day, seconds, pool_seconds)
+      VALUES (${s.device_id}, ${s.day}, ${toLimits}, ${toPool})
       ON CONFLICT (device_id, day)
-      DO UPDATE SET seconds = voice_usage.seconds + ${seconds}
+      DO UPDATE SET seconds = voice_usage.seconds + ${toLimits},
+                    pool_seconds = voice_usage.pool_seconds + ${toPool}
     `;
   }
   await db`DELETE FROM voice_session WHERE room = ${room}`;
