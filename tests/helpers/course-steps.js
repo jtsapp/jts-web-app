@@ -44,9 +44,17 @@ export async function unlockStep(page) {
   for (let guard = 0; guard < 30 && (await page.locator('.cp-order__bank .cp-chip:not([disabled])').count()); guard++) {
     await page.locator('.cp-order__bank .cp-chip:not([disabled])').first().click()
   }
+  // Список утверждений ждёт ответа в КАЖДОЙ строке, а не одного на экран.
+  const rows = page.locator('.cp-rows__row')
+  for (let i = 0, n = await rows.count(); i < n; i++) {
+    await rows.nth(i).locator('.cp-rows__opt').first().click()
+  }
+  // Несколько пропусков одним экраном — заполняем все поля.
+  const fields = page.locator('.cp-group__in')
+  for (let i = 0, n = await fields.count(); i < n; i++) await fields.nth(i).fill('test')
   if (!(await page.locator('.cp-cta[disabled]').count())) return
 
-  const tries = ['.cp-pick', '.cp-check__row', '.cp-choice', '.cp-rows__opt', '.cp-mistake__tok', '.cp-chip']
+  const tries = ['.cp-pick', '.cp-check__row', '.cp-choice', '.cp-mistake__tok', '.cp-chip']
   for (const sel of tries) {
     const el = page.locator(sel).first()
     if (await el.count()) {

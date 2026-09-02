@@ -718,7 +718,10 @@ function run(level, srcPath) {
 }
 
 module.exports = {
-  slicePrototype, evalPrototype, validate, oracleAct, matcherOf,
+  // challengeRule экспортируется ради тестов: validate требует правило
+  // третьим аргументом, и без него проверка падает на «isChallenge is not a
+  // function» ещё до самих инвариантов.
+  slicePrototype, evalPrototype, validate, oracleAct, matcherOf, challengeRule,
   EXPECT, TOP_TYPES, NESTED_TYPES, WRAPPER_TYPES, SUBSETTABLE,
 }
 

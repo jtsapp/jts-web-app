@@ -70,8 +70,13 @@ async function playThrough(page, answers, maxSteps = 80) {
 }
 
 // Кликает правильный вариант текущего вопроса.
+//
+// Вопрос есть не на каждом экране: у заданий на слух крупной строки нет, там
+// вопрос звучит. Читать его надо с коротким ожиданием — textContent() без
+// таймаута ждёт элемент 30 секунд, и проход урока упирался в них по три раза,
+// выедая весь бюджет теста.
 async function pickCorrect(page, answers) {
-  const prompt = ((await page.locator('.cp-step__prompt').textContent().catch(() => '')) || '').trim()
+  const prompt = ((await page.locator('.cp-step__prompt').textContent({ timeout: 500 }).catch(() => '')) || '').trim()
   const want = answers[prompt]
   const texts = await page.locator('.cp-choice').allTextContents()
   const i = want ? texts.findIndex((t) => t.trim() === want) : -1
@@ -107,9 +112,10 @@ for (const level of LEVELS) {
     test('карточки слов показывают перевод по клику', async ({ page }) => {
       test.setTimeout(60000)
       await openLesson(page, level)
-      // Шаг со словами — первый или второй в уроке. Разминка перед ним держит
-      // кнопку, пока не отмечено ни одного варианта, — unlockStep её проходит.
-      for (let i = 0; i < 3 && !(await page.locator('.cp-word').count()); i++) {
+      // Стадия словаря идёт после разминки: у B1 это второй экран, у A2 —
+      // четвёртый (обложка, разминка, соединение, слова). Экраны с отметкой
+      // держат кнопку, пока ничего не выбрано, — их проходит unlockStep.
+      for (let i = 0; i < 8 && !(await page.locator('.cp-word').count()); i++) {
         await unlockStep(page)
         await page.locator('.cp-cta:not([disabled])').click()
         await page.waitForTimeout(150)
@@ -149,15 +155,24 @@ for (const level of LEVELS) {
       }
     })
 
+    // Запись урока живёт не в разметке: плеер держит её объектом Audio и
+    // подменяет один и тот же на всю стадию (см. getStageAudio). Поэтому
+    // проверяем не тег <audio> на странице, а сам запрос за файлом — он и
+    // должен уходить в public/course/<level>/audio.
     test('аудио шага слушания отдаётся из public/course', async ({ page }) => {
-      // Экранов в уроке под полсотни, и запись стоит не в первом десятке:
-      // на дефолтных 30 секундах проход не успевал дойти до неё.
+      // Экранов в уроке под полсотни, и запись стоит не в первом десятке.
       test.setTimeout(180000)
+      const heard = []
+      page.on('request', (r) => {
+        if (r.url().includes(`/course/${level.toLowerCase()}/audio/`)) heard.push(r.url())
+      })
       await openLesson(page, level)
       const answers = await answerKey(page, level)
+      // У A2 записи стоят в стадии слушания — это девятый десяток экранов,
+      // а каждый оценённый экран съедает два шага цикла (ответ и «дальше»).
       let found = false
-      for (let i = 0; i < 80 && !found; i++) {
-        if (await page.locator('.cp-audio audio').count()) { found = true; break }
+      for (let i = 0; i < 200 && !found; i++) {
+        if (await page.locator('.cp-audio__play').count()) { found = true; break }
         if (await page.locator('.cp-fb').count()) await page.locator('.cp-cta:not([disabled])').click()
         else if (await page.locator('.cp-choice:not([disabled])').count()) {
           await pickCorrect(page, answers)
@@ -170,10 +185,14 @@ for (const level of LEVELS) {
         }
         await page.waitForTimeout(120)
       }
-      expect(found).toBeTruthy()
-      const src = await page.locator('.cp-audio audio').first().getAttribute('src')
-      expect(src).toContain(`/course/${level.toLowerCase()}/audio/`)
-      const status = await page.evaluate((u) => fetch(u, { method: 'HEAD' }).then((r) => r.status), src)
+      expect(found, 'в уроке не нашлось экрана с записью').toBeTruthy()
+
+      // Запрос за файлом уходит уже на создании Audio, до всякого клика,
+      // поэтому слушаем сеть с самого начала, а кнопку жмём только если
+      // записи ещё не просили.
+      if (!heard.length) await page.locator('.cp-audio__play').first().click()
+      await expect.poll(() => heard.length, { timeout: 15000 }).toBeGreaterThan(0)
+      const status = await page.evaluate((u) => fetch(u, { method: 'HEAD' }).then((r) => r.status), heard[0])
       expect(status).toBe(200)
     })
 

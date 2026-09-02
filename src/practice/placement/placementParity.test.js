@@ -13,8 +13,10 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { simulateSession, mergeBank2 } from './engine.generated.js'
 import parity from './__fixtures__/parity.json'
+import { fileURLToPath } from 'node:url'
 
-const BANK_PATH = new URL('../../../public/practice/placement/bank.json', import.meta.url).pathname
+// fileURLToPath: на Windows .pathname отдаёт «/C:/…» и путь склеивался в «C:\C:\…».
+const BANK_PATH = fileURLToPath(new URL('../../../public/practice/placement/bank.json', import.meta.url))
 
 let data
 

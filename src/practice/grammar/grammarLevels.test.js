@@ -5,8 +5,11 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 import { GRAMMAR_LEVELS, levelToCourse } from './grammarData.js'
+import { fileURLToPath } from 'node:url'
 
-const DATA = new URL('../../../public/practice/grammar/', import.meta.url).pathname
+// fileURLToPath, а не .pathname: на Windows pathname отдаёт «/C:/…», и
+// склейка с путём давала «C:\C:\…» — тест падал на ENOENT там, где файл есть.
+const DATA = fileURLToPath(new URL('../../../public/practice/grammar/', import.meta.url))
 const withData = GRAMMAR_LEVELS
 
 describe('GRAMMAR_LEVELS', () => {
