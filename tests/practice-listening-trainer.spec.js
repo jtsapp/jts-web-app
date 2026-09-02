@@ -40,8 +40,8 @@ test.describe('Практика — тренажёр «Аудирование»'
   test('кнопка баннера открывает интро тренажёра', async ({ page }) => {
     await boot(page)
     await page.goto('/?screen=practice')
-    await page.locator('.pp-listen').waitFor({ state: 'visible', timeout: 15000 })
-    await page.locator('.pp-listen__cta').click()
+    await page.locator('#sec-listening').waitFor({ state: 'visible', timeout: 15000 })
+    await page.locator('#sec-listening .pp-listen__cta').click()
     await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10000 })
   })
 

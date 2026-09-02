@@ -12,14 +12,19 @@ function fakeSql(selectRows) {
     return Promise.resolve(calls.length === 1 ? selectRows : [])
   }
   fn.calls = calls
+  // jsonb модуль пишет через sql.json() — у porsager это обёртка параметра,
+  // и без неё в колонку уезжает JSON-строка вместо объекта (см. комментарий в
+  // src/lib/db/practice.js). Фейку она тоже нужна: иначе тест падает на
+  // «sql.json is not a function» ещё до самой проверки мержа.
+  fn.json = (value) => ({ __json: value })
   return fn
 }
 
-// Достаём jsonb-строку, переданную в upsert (JSON.stringify(merged)).
+// Достаём объект, переданный в upsert через sql.json().
 function mergedFrom(calls) {
   const upsertValues = calls[1]
-  const jsonStr = upsertValues.find((v) => typeof v === 'string' && v.includes('"'))
-  return JSON.parse(jsonStr)
+  const wrapped = upsertValues.find((v) => v && typeof v === 'object' && '__json' in v)
+  return wrapped.__json
 }
 
 test.describe('savePracticeState — обвязка read-merge-write', () => {
