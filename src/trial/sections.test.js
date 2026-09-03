@@ -63,14 +63,26 @@ describe('разминка', () => {
 })
 
 describe('A0-мост кликами', () => {
-  it('в вариантах есть правильный ответ и три отвлекающих', () => {
+  // Варианты собирает сервер (lib/placementA0.js): ключей в публичном банке
+  // нет, и клиент их взять неоткуда. Здесь проверяется стыковка — что
+  // пришедшее снаружи доезжает до задания, и что без него мост не ломается.
+  it('варианты от сервера доезжают до заданий моста', () => {
+    const s = session(sections.BEGINNER)
+    const ids = s.bridgeItems().map((it) => it.id)
+    expect(ids.length).toBeGreaterThan(0)
+    const fromServer = Object.fromEntries(ids.map((id) => [id, ['works', 'is', 'can', 'went']]))
+
+    const { items } = sections.buildA0Bridge(s, fromServer)
+    expect(items.length).toBeGreaterThan(0)
+    for (const item of items) expect(item.a0options).toEqual(['works', 'is', 'can', 'went'])
+  })
+
+  it('без вариантов задание остаётся с полем ввода, а не с пустыми кнопками', () => {
+    // Ровно та поломка, ради которой мост переехал на сервер: раньше здесь
+    // получались четыре кнопки, из которых первая undefined.
     const { items } = sections.buildA0Bridge(session(sections.BEGINNER))
     expect(items.length).toBeGreaterThan(0)
-    for (const item of items) {
-      expect(item.a0options).toHaveLength(4)
-      const correct = item.answer.map((a) => a.toLowerCase())
-      expect(item.a0options.filter((w) => correct.includes(w.toLowerCase())).length).toBeGreaterThanOrEqual(1)
-    }
+    for (const item of items) expect(item.a0options).toBeUndefined()
   })
 })
 

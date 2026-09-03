@@ -189,7 +189,24 @@ export default function TrialLessonPage({ token, teacherMode = false }) {
       sc.kind === 'a0' ? !!(drafts[item.id]?.text || '').trim() : isItemAnswered(item, drafts[item.id]),
     )
 
-  const finishSection = () => {
+  // Варианты A0-моста знает только сервер: ключи в браузер не уезжают
+  // (bankSplit.js). Сеть или роут отказали — возвращаем пусто, и мост покажет
+  // обычное поле ввода вместо кнопок (см. buildA0Bridge).
+  const fetchA0Options = async (ids) => {
+    try {
+      const res = await fetch('/api/placement/a0-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+      if (!res.ok) return {}
+      return (await res.json()).options || {}
+    } catch {
+      return {}
+    }
+  }
+
+  const finishSection = async () => {
     const s = sess.current
     for (const sc of screens) {
       for (const item of itemsOfScreen(sc)) submitAnswer(s, item, drafts[item.id])
@@ -197,7 +214,8 @@ export default function TrialLessonPage({ token, teacherMode = false }) {
 
     // Провал разминки уводит на A0-мост — тот же вердикт движка, что в тесте.
     if (section?.key === 'routing' && s.routingVerdict() && s.bridgeItems().length) {
-      return openBuilt(sections.buildA0Bridge(s), { title: 'Начнём с самого простого', hint: 'Выберите слово для пропуска.' })
+      const a0options = await fetchA0Options(s.bridgeItems().map((it) => it.id))
+      return openBuilt(sections.buildA0Bridge(s, a0options), { title: 'Начнём с самого простого', hint: 'Выберите слово для пропуска.' })
     }
     if (section?.key === 'a0_bridge') {
       // Урок продолжается даже при нулевом уровне: словарь, чтение и
