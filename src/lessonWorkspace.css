@@ -93,6 +93,24 @@
      линии трека, и позиция бегунков. */
   --lw-marker-center: 17px;
 
+  /* --- крупный текст -------------------------------------------- */
+  /* Множитель для текста, который ученик читает: формулировки, варианты,
+     пропуски, разбор. Кнопкой «Аа» в шапке урока он становится 1.25.
+     На rem размеры не переписаны намеренно: спека классрума задана в
+     пикселях, и множитель оставляет её значения на виду. */
+  --lw-text-scale: 1;
+
+}
+
+/* Крупный текст. Атрибут ставится на <html> (см. textScale.js), поэтому
+   селектор перебивает объявление выше специфичностью, а не порядком.
+   Растёт только читаемый текст: коробки бейджей и сетка страницы прежние —
+   иначе на телефоне колонка уехала бы за экран. */
+:root[data-text-scale='lg'] .lv,
+:root[data-text-scale='lg'] .lw,
+:root[data-text-scale='lg'] .live,
+:root[data-text-scale='lg'] .hw-exercises {
+  --lw-text-scale: 1.25;
 }
 
 /* Размеры и фон — только у страницы классрума; .live лежит внутри LearningLayout
@@ -183,6 +201,40 @@
 
 .lw-header__timer-sep {
   color: var(--lw-muted);
+}
+
+/* «Аа» — переключатель крупного текста. Стоит рядом с «Выйти из урока» и
+   выглядит так же: одна строка кнопок, разной формы там быть не должно.
+   Включённое состояние закрашено акцентом, а не только рамкой — иначе на
+   телефоне непонятно, нажато или нет. */
+.lw-header__text-scale {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lw-header__text-scale-big {
+  font-size: 17px;
+}
+
+.lw-header__text-scale:hover {
+  background: var(--lw-tint-2);
+}
+
+.lw-header__text-scale.is-on {
+  background: var(--lw-primary);
+  color: #fff;
 }
 
 .lw-header__exit {
@@ -495,14 +547,14 @@
   border-radius: var(--lw-r-pill);
   background: var(--lw-tint-2);
   color: var(--lw-primary-ink);
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
   font-weight: 700;
   line-height: 1.2;
 }
 
 .lw-practice__instruction {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: calc(16px * var(--lw-text-scale, 1));
   font-weight: 600;
   color: var(--lw-ink);
   line-height: 1.4;
@@ -550,12 +602,12 @@
 .lw-speaking__rec {
   margin: 0;
   color: var(--lw-muted, #5b6478);
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
 }
 
 .lw-theory__minutes,
 .lw-practice__hint {
-  font-size: 13px;
+  font-size: calc(13px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
   text-align: right;
 }
@@ -563,7 +615,7 @@
 .lw-theory__title,
 .lw-info__title {
   margin: 0 0 6px;
-  font-size: 21px;
+  font-size: calc(21px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-ink);
 }
@@ -571,7 +623,7 @@
 .lw-theory__text,
 .lw-info__body {
   margin: 0;
-  font-size: 15px;
+  font-size: calc(15px * var(--lw-text-scale, 1));
   line-height: 1.5;
   color: var(--lw-ink-2);
 }
@@ -616,14 +668,14 @@
 /* Нумерованная инструкция («1 · Match each word to its meaning.») — заголовок
    упражнения, а не абзац: в шаге их до семи, и без веса шаг читается сплошняком. */
 .lw-info__body .instruction {
-  font-size: 15.5px;
+  font-size: calc(15.5px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-ink);
 }
 
 .lw-info__body .subline,
 .lw-info__body .ohint {
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
 }
 
@@ -635,7 +687,7 @@
 
 .lw-info__body .vocab .vhead h2 {
   margin: 0 0 10px;
-  font-size: 17px;
+  font-size: calc(17px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-ink);
 }
@@ -653,7 +705,7 @@
   padding: 12px;
   border-radius: var(--lw-r-block);
   background: var(--lw-answer-bg);
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
 }
 
 /* Карточки приходят 480×480: без явной высоты каждая занимала бы экран. */
@@ -673,7 +725,7 @@
 .lw-info__body .tr {
   display: block;
   margin-top: 4px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
 }
 
@@ -704,14 +756,14 @@
 .lw-info__body .player .meta b,
 .lw-practice__html .player .meta b {
   display: block;
-  font-size: 15px;
+  font-size: calc(15px * var(--lw-text-scale, 1));
   font-weight: 800;
   color: var(--lw-ink, #181818);
 }
 
 .lw-info__body .player .meta,
 .lw-practice__html .player .meta {
-  font-size: 13px;
+  font-size: calc(13px * var(--lw-text-scale, 1));
   color: var(--lw-muted, #6b6578);
 }
 
@@ -733,7 +785,7 @@
 .lw-info__body .track b {
   display: block;
   margin-bottom: 6px;
-  font-size: 13px;
+  font-size: calc(13px * var(--lw-text-scale, 1));
   font-weight: 600;
   color: var(--lw-muted);
 }
@@ -743,7 +795,7 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
 }
 
 .lw-info__body th,
@@ -781,7 +833,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
 }
 
@@ -804,7 +856,7 @@
 
 .lw-info__body .reading h3 {
   margin: 0 0 8px;
-  font-size: 17px;
+  font-size: calc(17px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-ink);
 }
@@ -842,7 +894,7 @@
    нативным <details>; работает без скриптов, поэтому оставлен как есть. */
 .lw-info__body .gref summary {
   padding: 8px 0;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-primary-ink);
   cursor: pointer;
@@ -864,7 +916,7 @@
 
 .lw-info__body .blab {
   margin-bottom: 6px;
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--lw-text-scale, 1));
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -898,7 +950,7 @@
   padding: 4px 10px;
   border-radius: var(--lw-r-pill);
   background: var(--lw-tint-1);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-primary-ink);
 }
@@ -936,7 +988,7 @@
   border-radius: var(--lw-r-pill);
   background: var(--lw-tint-3);
   font: inherit;
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
   color: var(--lw-ink-2);
   cursor: default;
   pointer-events: none;
@@ -960,7 +1012,7 @@
   margin-right: 8px;
   border-radius: 6px;
   background: var(--lw-tint-3);
-  font-size: 12px;
+  font-size: calc(12px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-muted);
 }
@@ -1031,7 +1083,7 @@
   border-radius: 8px;
   background: #fff;
   font: inherit;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--lw-text-scale, 1));
   cursor: pointer;
   pointer-events: auto;
 }
@@ -1056,7 +1108,7 @@
   border-radius: 12px;
   background: #f4f1fb;
   color: #5b21b6;
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
   font-weight: 600;
 }
 
@@ -1108,7 +1160,7 @@
   background: #fff;
   color: var(--lw-ink, #181818);
   font: inherit;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--lw-text-scale, 1));
   font-weight: 600;
   cursor: pointer;
 }
@@ -1133,7 +1185,7 @@
 
 .lw-info__body .blabel {
   width: 100%;
-  font-size: 11px;
+  font-size: calc(11px * var(--lw-text-scale, 1));
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1145,12 +1197,12 @@
   border-radius: 999px;
   background: #fff;
   border: 1px solid var(--lw-line, #e6e8ef);
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
 }
 
 .lw-info__body .bnote {
   width: 100%;
-  font-size: 12px;
+  font-size: calc(12px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
 }
 
@@ -1169,7 +1221,7 @@
 .lw-info__body .msg b {
   display: block;
   margin-bottom: 4px;
-  font-size: 12px;
+  font-size: calc(12px * var(--lw-text-scale, 1));
   color: var(--lw-primary-ink);
 }
 
@@ -1360,14 +1412,14 @@
 
 .lw-vocab__title {
   margin: 0 0 6px;
-  font-size: 17px;
+  font-size: calc(17px * var(--lw-text-scale, 1));
   font-weight: 700;
   color: var(--lw-ink);
 }
 
 .lw-vocab__hint {
   margin: 0 0 14px;
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
 }
 
@@ -1666,7 +1718,7 @@
 
 .lw-q__prompt,
 .lw-q__sentence {
-  font-size: 16px;
+  font-size: calc(16px * var(--lw-text-scale, 1));
   line-height: 1.55;
   color: var(--lw-ink);
 }
@@ -1694,7 +1746,7 @@
   background: var(--lw-answer-bg);
   color: var(--lw-ink);
   font: inherit;
-  font-size: 16px;
+  font-size: calc(16px * var(--lw-text-scale, 1));
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
@@ -1755,7 +1807,7 @@
   background: var(--lw-tint-3);
   color: var(--lw-ink);
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--lw-text-scale, 1));
 }
 
 .lw-gap-input:focus-visible {
@@ -1782,7 +1834,7 @@
 
 .lw-q__review {
   margin-top: 8px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
   font-style: italic;
 }
@@ -1808,7 +1860,7 @@
   background: var(--lw-primary);
   color: #ffffff;
   font: inherit;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--lw-text-scale, 1));
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s;
@@ -1887,7 +1939,7 @@
 }
 
 .lw-match__left-label {
-  font-size: 15px;
+  font-size: calc(15px * var(--lw-text-scale, 1));
 }
 
 /* Слот выбранного перевода внутри пары — «вдавленная» пилюля на её фоне. */
@@ -1896,7 +1948,7 @@
   border-radius: var(--lw-r-pill);
   background: var(--lw-surface);
   color: var(--lw-ink-2);
-  font-size: 14px;
+  font-size: calc(14px * var(--lw-text-scale, 1));
 }
 
 .lw-match__left.is-correct .lw-match__chosen,
@@ -1917,7 +1969,7 @@
   background: var(--lw-answer-bg);
   color: var(--lw-ink);
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--lw-text-scale, 1));
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -1938,7 +1990,7 @@
   background: var(--lw-answer-bg);
   color: var(--lw-ink);
   font: inherit;
-  font-size: 15px;
+  font-size: calc(15px * var(--lw-text-scale, 1));
   cursor: pointer;
 }
 
@@ -2021,7 +2073,7 @@
 .lw-order__hint,
 .lw-pick__hint,
 .lw-practice__hint {
-  font-size: 13px;
+  font-size: calc(13px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
 }
 
@@ -2036,7 +2088,7 @@
 .lw-q__answer,
 .lw-q__why {
   margin-top: 8px;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
 }
 
@@ -4616,6 +4668,27 @@ button.lw-tap-pop__save.is-on:disabled {
   /* Значки в макете фиолетовые на тёмной плитке; на красной кнопке — белый. */
   .lv-top__act {
     color: #9047ff;
+  }
+
+  /* «Аа» — крупный текст. Ширина фиксированная, а не flex: иначе шестая кнопка
+     ужала бы весь ряд, и на 360px значки перестали бы попадать под палец. */
+  .lv-top__act--text {
+    flex: 0 0 44px;
+  }
+  .lv-top__act--text.is-on {
+    background: #9047ff;
+    color: #fff;
+  }
+  .lv-top__act-aa {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 1px;
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .lv-top__act-aa span {
+    font-size: 17px;
   }
 
   .lv-top__sep {
