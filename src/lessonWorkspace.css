@@ -1073,10 +1073,15 @@
   color: var(--lw-muted);
 }
 
-/* Банк слов к gap-fill (voc-context) и реплики диалога, если они доехали
-   info-блоком, а не отдельным practice. */
+/* Банк слов к gap-fill (voc-context) и реплики диалога.
+   Банк приезжает двумя путями — отдельным info-блоком или внутри html
+   самого задания, — и второй случай здесь был пропущен: `.lw-practice__html
+   .bank` выше задаёт только подложку, без flex и gap. Слова внутри — инлайновые
+   элементы без пробелов между ними в исходном HTML, так что без gap они
+   слипались в одно слово: «Word bankdamageattentionmanaged…». */
 .lw-info__body .bank,
 .lw-info__body .wbank,
+.lw-practice__html .bank,
 .lw-practice__html .wbank {
   display: flex;
   flex-wrap: wrap;
