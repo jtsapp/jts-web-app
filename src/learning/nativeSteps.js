@@ -211,10 +211,18 @@ const FRAME_KEEP = /^(don['’]?t|doesn['’]?t|do|does|am|is|are|can|will|would
 const FRAME_SUBJECT = /^(I|I['’]m|I['’]ve|You|He|She|It|It['’]s|We|They|There|There['’]s)$/i
 const FRAME_MAX_SENTENCES = 3
 
+// Без lookbehind (`(?<=…)`): Safari до 16.4 такую регулярку не понимает, и это
+// ошибка РАЗБОРА — файл не запускается целиком, а с ним и весь чанк. Границу
+// ставим заменой с меткой (lookahead Safari понимает давно).
+const SENTENCE_BREAK = '\u0000'
+
 function answerFrame(model) {
   const text = String(model || '').trim()
   if (!text) return ''
-  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean)
+  const sentences = text
+    .replace(/([.!?])\s+/g, `$1${SENTENCE_BREAK}`)
+    .split(SENTENCE_BREAK)
+    .filter(Boolean)
   if (!sentences.length || sentences.length > FRAME_MAX_SENTENCES) return ''
   const frames = sentences.map((s) => {
     const end = /[.!?]$/.test(s) ? s.slice(-1) : '.'
