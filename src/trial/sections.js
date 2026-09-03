@@ -73,6 +73,19 @@ export function buildRouting(session, startCando) {
  *  Вариантов не пришло — задание остаётся как есть, и экран покажет обычное
  *  поле ввода (TrialLessonPage ветвится по наличию a0options): мост станет
  *  строже, но пройти его можно. */
+/** Подсказка к мосту зависит от того, доехали ли варианты с сервера: без них
+ *  экран рисует поле ввода (TrialLessonPage ветвится по `a0options`), и звать
+ *  «выберите слово» было бы враньём — под надписью оказывалось бы пустое поле.
+ *  Набор может доехать частично, поэтому три случая, а не два. */
+export function a0BridgeHint(built) {
+  const items = built?.items || []
+  if (!items.length) return ''
+  const withOptions = items.filter((it) => it.a0options).length
+  if (withOptions === items.length) return 'Выберите слово для пропуска.'
+  if (withOptions === 0) return 'Впишите слово в пропуск.'
+  return 'Выберите или впишите слово в пропуск.'
+}
+
 export function buildA0Bridge(session, optionsById = {}) {
   const items = session.bridgeItems().map((it) => {
     if (it.a0options) return it

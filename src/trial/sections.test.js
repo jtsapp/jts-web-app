@@ -77,6 +77,22 @@ describe('A0-мост кликами', () => {
     for (const item of items) expect(item.a0options).toEqual(['works', 'is', 'can', 'went'])
   })
 
+  it('подсказка следует за тем, что реально нарисуется', () => {
+    const s = session(sections.BEGINNER)
+    const ids = s.bridgeItems().map((it) => it.id)
+    const four = ['works', 'is', 'can', 'went']
+
+    const all = sections.buildA0Bridge(s, Object.fromEntries(ids.map((id) => [id, four])))
+    expect(sections.a0BridgeHint(all)).toBe('Выберите слово для пропуска.')
+
+    // Сервер не ответил — на экране поле ввода, и звать «выберите слово» нельзя:
+    // ученик A0 увидел бы пустое поле под инструкцией выбрать.
+    expect(sections.a0BridgeHint(sections.buildA0Bridge(s))).toBe('Впишите слово в пропуск.')
+
+    const half = sections.buildA0Bridge(s, { [ids[0]]: four })
+    expect(sections.a0BridgeHint(half)).toBe('Выберите или впишите слово в пропуск.')
+  })
+
   it('без вариантов задание остаётся с полем ввода, а не с пустыми кнопками', () => {
     // Ровно та поломка, ради которой мост переехал на сервер: раньше здесь
     // получались четыре кнопки, из которых первая undefined.
