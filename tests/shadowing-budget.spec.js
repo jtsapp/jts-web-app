@@ -56,6 +56,9 @@ test.describe('shadowingBudget — константы и стоимость', ()
     expect(SECONDS_PER_CREDIT).toBe(30)
   })
 
+  // Демо-потолок и его влияние на consume/budgetPayload — в юнит-тесте рядом с
+  // кодом (src/lib/db/shadowingBudget.test.js); здесь только базовый контракт.
+
   test('wavSeconds по 16кГц mono 16-bit (data = байты − 44-байт заголовок)', () => {
     expect(wavSeconds(44)).toBe(0)
     expect(wavSeconds(0)).toBe(0) // не уходит в минус
@@ -101,36 +104,36 @@ test.describe('shadowingBudget — ISO-неделя и сброс', () => {
 
 test.describe('shadowingBudget — consume/refund/getUsed', () => {
   test('без БД (sql=null): consume→null, getUsed→0, refund→no-op', async () => {
-    expect(await consume('user-1', '2026-W31', 1, null)).toBeNull()
+    expect(await consume('user-1', '2026-W31', 1, false, null)).toBeNull()
     expect(await getUsed('user-1', '2026-W31', null)).toBe(0)
     await refund('user-1', '2026-W31', 1, null) // не бросает
   })
 
   test('списывает по кредиту и отдаёт новое used', async () => {
     const sql = makeFakeSql()
-    expect(await consume('user-1', '2026-W31', 1, sql)).toBe(1)
-    expect(await consume('user-1', '2026-W31', 1, sql)).toBe(2)
+    expect(await consume('user-1', '2026-W31', 1, false, sql)).toBe(1)
+    expect(await consume('user-1', '2026-W31', 1, false, sql)).toBe(2)
     expect(await getUsed('user-1', '2026-W31', sql)).toBe(2)
   })
 
   test('доводит до лимита и отклоняет сверх него', async () => {
     const sql = makeFakeSql()
-    for (let i = 1; i <= 10; i++) expect(await consume('u', '2026-W31', 1, sql)).toBe(i)
-    expect(await consume('u', '2026-W31', 1, sql)).toBeNull() // 11-я — отказ
+    for (let i = 1; i <= 10; i++) expect(await consume('u', '2026-W31', 1, false, sql)).toBe(i)
+    expect(await consume('u', '2026-W31', 1, false, sql)).toBeNull() // 11-я — отказ
     expect(await getUsed('u', '2026-W31', sql)).toBe(10) // не выросло
   })
 
   test('многокредитная оценка (целиком) не пробивает лимит', async () => {
     const sql = makeFakeSql()
-    expect(await consume('u', '2026-W31', 9, sql)).toBe(9)
-    expect(await consume('u', '2026-W31', 2, sql)).toBeNull() // 9+2=11 > 10 → отказ
+    expect(await consume('u', '2026-W31', 9, false, sql)).toBe(9)
+    expect(await consume('u', '2026-W31', 2, false, sql)).toBeNull() // 9+2=11 > 10 → отказ
     expect(await getUsed('u', '2026-W31', sql)).toBe(9)
-    expect(await consume('u', '2026-W31', 1, sql)).toBe(10) // ровно до лимита можно
+    expect(await consume('u', '2026-W31', 1, false, sql)).toBe(10) // ровно до лимита можно
   })
 
   test('refund возвращает кредиты, не ниже нуля; недели независимы', async () => {
     const sql = makeFakeSql()
-    await consume('u', '2026-W31', 3, sql)
+    await consume('u', '2026-W31', 3, false, sql)
     await refund('u', '2026-W31', 2, sql)
     expect(await getUsed('u', '2026-W31', sql)).toBe(1)
     await refund('u', '2026-W31', 5, sql) // не уходит в минус

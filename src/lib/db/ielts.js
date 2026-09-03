@@ -98,14 +98,18 @@ export function recordIeltsSpeaking({ profileId, taskId, answers, assessment, pr
   })
 }
 
-/** How many IELTS submissions (any section) this learner has made since a given
- *  date - for the monthly demo-quota check (see api/ielts/* routes). */
-export async function countIeltsAttemptsSince(profileId, sinceDate) {
+/** How many IELTS submissions this learner has made since a given date, in
+ *  the given sections - for the monthly demo-quota check (see
+ *  lib/ielts/quota.js). `sections` всегда передаётся вызывающим (список
+ *  платных секций - Speaking/Writing): Reading/Listening проверяются локально
+ *  и не должны попадать в этот счётчик, иначе бесплатные попытки съедали бы
+ *  ту же квоту, что и платные. */
+export async function countIeltsAttemptsSince(profileId, sinceDate, sections) {
   const sql = getSql()
   if (!sql) return 0
   const rows = await sql`
     select count(*)::int as count from ielts_score
-    where device_id = ${profileId} and created_at >= ${sinceDate}
+    where device_id = ${profileId} and created_at >= ${sinceDate} and section in ${sql(sections)}
   `
   return rows[0]?.count ?? 0
 }

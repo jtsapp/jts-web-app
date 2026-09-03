@@ -63,21 +63,26 @@ test('prefixClasses изолирует все классы', () => {
 })
 
 // ——— Интеграция: реальный вывод экстрактора (public/learning) ———
-test.describe('вывод экстрактора a1 корректен', () => {
-  const a1Path = path.join(ROOT, 'public/learning/a1.json')
+//
+// Проверяем C1: это единственный уровень, который до сих пор собирает
+// extract-kingdom-lessons.js. A0/A1 давно приезжают своим курсом, и видео с
+// files-api в их данных нет вовсе — тест на них падал не на экстракторе, а на
+// том, что уровень сменил источник.
+test.describe('вывод экстрактора c1 корректен', () => {
+  const levelPath = path.join(ROOT, 'public/learning/c1.json')
   const idxPath = path.join(ROOT, 'public/learning/index.json')
 
-  test.skip(() => !fs.existsSync(a1Path), 'сначала: node scripts/extract-kingdom-lessons.js')
+  test.skip(() => !fs.existsSync(levelPath), 'сначала: node scripts/extract-kingdom-lessons.js')
 
   test('каталог и данные согласованы, speak отсутствует, media — абсолютные URL', () => {
     const idx = JSON.parse(fs.readFileSync(idxPath, 'utf8'))
-    const a1 = JSON.parse(fs.readFileSync(a1Path, 'utf8'))
-    expect(idx.a1.lessons.length).toBe(Object.keys(a1.lessons).length)
+    const level = JSON.parse(fs.readFileSync(levelPath, 'utf8'))
+    expect(idx.c1.lessons.length).toBe(Object.keys(level.lessons).length)
 
     let speak = 0
     let mediaUrls = 0
-    for (const code of Object.keys(a1.lessons)) {
-      const les = a1.lessons[code]
+    for (const code of Object.keys(level.lessons)) {
+      const les = level.lessons[code]
       expect(les.tasks.length).toBeGreaterThan(0)
       for (const t of les.tasks) {
         if (t.type === 'speak') speak++

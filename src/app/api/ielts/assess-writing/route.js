@@ -227,7 +227,8 @@ export async function POST(request) {
   // Demo accounts get a monthly cap on IELTS submissions - checked BEFORE the
   // expensive grading call, not after. Anonymous/invalid identity is never
   // gated (see checkIeltsQuota) - only a resolved learner can have a quota.
-  const quota = await checkIeltsQuota(request, body.deviceId)
+  // Writing идёт в модель (Sonnet) - это платная секция, тратит квоту.
+  const quota = await checkIeltsQuota(request, body.deviceId, 'writing')
   if (quota.blocked) {
     return Response.json(
       { error: 'Monthly IELTS submission limit reached for this account.' },

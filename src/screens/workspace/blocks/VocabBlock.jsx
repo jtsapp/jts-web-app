@@ -10,7 +10,14 @@ import { speak } from '../../../practice/vocab/audio.js'
  * выкидывал блок — у преподавателя карточки были, у ученика оставались
  * только инструкция «нажми карточку» и matching.
  */
-export default function VocabBlock({ block }) {
+/**
+ * `revealed` — карточки, которые открыл преподаватель.
+ *
+ * Он нажимает карточку, чтобы показать классу перевод, — а видел его до этого
+ * только сам: переворот был чисто местным состоянием на обеих сторонах. Ключ —
+ * само слово: у преподавателя карточки те же, но порядковый номер у него свой.
+ */
+export default function VocabBlock({ block, revealed }) {
   const { t } = useI18n()
   const cards = Array.isArray(block?.cards) ? block.cards.filter((card) => card?.word) : []
   const [flipped, setFlipped] = useState(() => new Set())
@@ -38,7 +45,7 @@ export default function VocabBlock({ block }) {
       <div className="lw-vocab__grid">
         {cards.map((card, i) => {
           const key = `${card.word}-${i}`
-          const isFlipped = flipped.has(key)
+          const isFlipped = flipped.has(key) || !!revealed?.has(String(card.word))
           const hasImg = !!card.imageUrl && !imgFailed.has(key)
           return (
             // Кнопка озвучки — сосед lw-vcard, не потомок: сама карточка уже

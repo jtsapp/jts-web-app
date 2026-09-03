@@ -46,3 +46,7 @@ dev.log
 # Предпросмотр импорта каталога книг (scripts/import-practice-library.js
 # --dry-run) — тела запросов на пару мегабайт, в репо им делать нечего.
 scripts/.import-preview.json
+
+# Материал комиксов: staging и готовый ZIP для заливки через админку
+# (scripts/extract-comics.js). В git не едет — раздел берёт данные из API.
+build/

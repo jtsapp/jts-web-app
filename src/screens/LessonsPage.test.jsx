@@ -10,6 +10,10 @@ vi.mock('../api.js', () => ({
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getMyLessonOccurrences: vi.fn(async () => []),
   getLessonsSummary: vi.fn(async () => ({ conducted: 0, remaining: 0, cancelled: 0, rescheduled: 0 })),
+  // Вкладка «Онлайн» спрашивает, есть ли у человека преподаватель: без этого
+  // она не знает, рисовать расписание или карточку заявки (см. LessonSchedule).
+  getTrialRequestState: vi.fn(async () => ({ requested: false, requestedAt: null, teacherAssigned: true, managerAssigned: false })),
+  requestTrialLesson: vi.fn(async () => ({ requested: true, requestedAt: null, teacherAssigned: false, managerAssigned: false })),
   getLessonById: vi.fn(async () => ({})),
   getLessonSections: vi.fn(async () => []),
   getHomeworkBoard: vi.fn(async () => []),

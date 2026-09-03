@@ -302,9 +302,18 @@ async function dragOver(page, box) {
 // счётчик ловит регрессию glossLookup.
 async function blockGtx(page) {
   const calls = []
+  // Сетевой перевод уходит НЕ в gtx: клиент ходит на наш сервер
+  // (GET <API>/translate — см. src/lib/wordTranslate.js), а прямой запрос в
+  // Google убрали, потому что Google резал его по IP. Ловим оба адреса и
+  // отвечаем сами: тест проверяет, что фраза дошла до перевода, а не то, чей
+  // это переводчик.
   await page.route('**/translate_a/single**', (route) => {
     calls.push(route.request().url())
     return route.abort()
+  })
+  await page.route('**/translate?**', (route) => {
+    calls.push(route.request().url())
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ tr: 'перевод', alternates: [] }) })
   })
   return calls
 }

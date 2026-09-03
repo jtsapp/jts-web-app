@@ -85,6 +85,10 @@ export async function verifyToken(token) {
       phone: user.phone ?? null,
       email: user.email ?? null,
       role: user.role ?? null,
+      // Демо-статус приезжает тем же запросом, которым проверяется токен:
+      // отдельный поход на бэкенд ради одного флага стоил бы каждому запросу
+      // книги лишний round-trip (см. /api/books/[id]).
+      isDemoAccount: !!user.isDemoAccount,
       // Для восстановления сессии на клиенте: /api/auth/me отдаёт это в App,
       // чтобы уровень не сбрасывался на A1 после перезагрузки.
       languageLevel: user.languageLevel ?? null,
@@ -129,6 +133,11 @@ export async function fetchTutorLimitOverride(token) {
     return {
       dailyLimitSeconds: data?.dailyLimitSeconds ?? null,
       monthlyLimitSeconds: data?.monthlyLimitSeconds ?? null,
+      // Пул минут на весь тариф («AI-тьютор 300 минут», Self Study 500–2000) и
+      // дата, с которой его считать: начало абонемента или подписки. Без даты
+      // (персональная правка админом) пул считается за всё время.
+      totalLimitSeconds: data?.totalLimitSeconds ?? null,
+      totalSince: data?.totalSince ?? null,
     }
   } catch (err) {
     console.error(
@@ -141,29 +150,38 @@ export async function fetchTutorLimitOverride(token) {
 
 /**
  * Effective completion-quota for the current student for one content type.
- * Returns `{ limit, source, sourceName }` — `limit: null` means no cap.
- * Fail-open: any error returns `{ limit: null, source: 'NONE' }`.
+ * Returns `{ limit, source, sourceName, known }` — `limit: null` means no cap.
+ * Fail-open: any error returns `{ limit: null, source: 'NONE' }` as well.
+ *
+ * `known: false` — «спросить не удалось», а не «потолка нет». Различать
+ * обязательно: при сбое limit тот же null, и вызывающий не мог отличить одно от
+ * другого — гейт практики принимал первый же 5xx/таймаут /mobile/content-quota
+ * за «ученик без лимита» и переставал спрашивать сервер до размонтирования
+ * экрана (см. usePracticeEntitlement.check). Само решение остаётся fail-open,
+ * различается только повод: по «не удалось» кэшировать вердикт нельзя.
  */
 export async function fetchContentQuota(token, contentType) {
-  if (!token) return { limit: null, source: 'NONE', sourceName: null }
+  // Гость — не сбой, а определённый ответ: квоты его не касаются.
+  if (!token) return { limit: null, source: 'NONE', sourceName: null, known: true }
   try {
     const res = await fetch(
       `${BACKEND_URL}/mobile/content-quota?contentType=${encodeURIComponent(contentType)}&contentId=0`,
       { method: 'GET', headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }, cache: 'no-store' },
     )
-    if (!res.ok) return { limit: null, source: 'NONE', sourceName: null }
+    if (!res.ok) return { limit: null, source: 'NONE', sourceName: null, known: false }
     const data = await res.json()
     return {
       limit: data?.limit ?? null,
       source: data?.source || 'NONE',
       sourceName: data?.sourceName || null,
+      known: true,
     }
   } catch (err) {
     console.error(
       '[auth] content-quota fetch failed:',
       err?.cause?.code || err?.cause?.message || err?.message || err,
     )
-    return { limit: null, source: 'NONE', sourceName: null }
+    return { limit: null, source: 'NONE', sourceName: null, known: false }
   }
 }
 
@@ -175,12 +193,17 @@ export async function fetchContentQuota(token, contentType) {
  * - With no token → the anonymous deviceId, UNLESS it intrudes on the reserved
  *   `user-*` namespace (then 401: that data requires authentication).
  *
- * Returns { id, name, birthDate } on success, or { error: Response } the caller should
- * return. `name` is the backend's display name for an authenticated learner and
- * null for everyone else — verifyToken already fetches it, so callers that want
- * it (the LiveKit token route, for the voice scenarios) cost no extra request.
- * It is derived from the token, never from the client body: a caller cannot
- * claim someone else's name.
+ * Returns { id, name, birthDate, isDemoAccount } on success, or { error: Response }
+ * the caller should return. `name` is the backend's display name for an
+ * authenticated learner and null for everyone else — verifyToken already fetches
+ * it, so callers that want it (the LiveKit token route, for the voice scenarios)
+ * cost no extra request. It is derived from the token, never from the client
+ * body: a caller cannot claim someone else's name.
+ *
+ * `isDemoAccount` едет тем же ответом /user/me — недельные бюджеты платных
+ * вызовов (writingBudget/shadowingBudget) режутся по нему, и отдельный поход на
+ * бэкенд ради одного флага стоил бы каждой проверке письма лишний round-trip.
+ * Аноним демо-аккаунтом быть не может: у него вообще нет аккаунта.
  */
 export async function resolveProfileId(request, clientDeviceId) {
   const token = bearerFromRequest(request)
@@ -199,6 +222,7 @@ export async function resolveProfileId(request, clientDeviceId) {
       id: profileIdForUser(user.userId),
       name: user.name ?? null,
       birthDate: user.birthDate ?? null,
+      isDemoAccount: user.isDemoAccount,
     }
   }
 
@@ -210,7 +234,7 @@ export async function resolveProfileId(request, clientDeviceId) {
   if (RESERVED_ID_RE.test(clientDeviceId)) {
     // Единственное исключение: наш же голосовой агент с сервисным ключом. Он
     // пишет память ученика от его имени, своего токена не имея.
-    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null, birthDate: null }
+    if (isTrustedInternalCaller(request)) return { id: clientDeviceId, name: null, birthDate: null, isDemoAccount: false }
     return {
       error: Response.json(
         { configured: true, error: 'This profile requires authentication.' },
@@ -218,5 +242,5 @@ export async function resolveProfileId(request, clientDeviceId) {
       ),
     }
   }
-  return { id: clientDeviceId, name: null, birthDate: null }
+  return { id: clientDeviceId, name: null, birthDate: null, isDemoAccount: false }
 }

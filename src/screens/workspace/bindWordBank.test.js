@@ -304,3 +304,84 @@ describe('bindWordBank', () => {
     root.remove()
   })
 })
+
+/**
+ * «Упр не работает» / «невозможно вписать».
+ *
+ * В шаге два упражнения: одно с банком слов (чипы расставляют кликом), второе —
+ * обычное «впиши одно слово», где список слов только назван в формулировке.
+ * Режим расстановки определялся по всему шагу, поэтому банк первого упражнения
+ * делал поля второго readonly, а чипов для них не было вовсе — вписать
+ * становилось нечем.
+ */
+describe('два упражнения в одном шаге', () => {
+  function mountStep() {
+    const step = document.createElement('div')
+    step.className = 'lw-content'
+    step.innerHTML = `
+      <div class="lw-card lw-practice" id="with-bank">
+        <div class="task" data-task>
+          <div class="wbank"><button class="wchip" data-w="much">much</button></div>
+          <p>There is <input class="gap" data-answer="much"> money.</p>
+        </div>
+      </div>
+      <div class="lw-card lw-practice" id="typed">
+        <div class="task" data-task>
+          <p>Complete with one word: much, many, few.</p>
+          <p>He has <input class="gap" data-answer="few"> friends.</p>
+        </div>
+      </div>`
+    document.body.appendChild(step)
+    const withBank = step.querySelector('#with-bank')
+    const typed = step.querySelector('#typed')
+    const unbind = [bindWordBank(withBank), bindWordBank(typed)]
+    return { step, withBank, typed, unbind: () => unbind.forEach((f) => f()) }
+  }
+
+  it('в упражнении без банка поле остаётся редактируемым', () => {
+    const { typed, unbind } = mountStep()
+    expect(typed.querySelector('input.gap').hasAttribute('readonly')).toBe(false)
+    unbind()
+  })
+
+  it('в упражнении с банком поле по-прежнему только для расстановки', () => {
+    const { withBank, unbind } = mountStep()
+    expect(withBank.querySelector('input.gap').hasAttribute('readonly')).toBe(true)
+    unbind()
+  })
+
+  it('ввод в поле без банка доходит до onChange', () => {
+    const { typed, unbind } = mountStep()
+    const onChange = vi.fn()
+    const rebind = bindWordBank(typed, { prefix: 'step-1', onChange })
+
+    const gap = typed.querySelector('input.gap')
+    gap.value = 'few'
+    gap.dispatchEvent(new Event('input', { bubbles: true }))
+
+    expect(onChange).toHaveBeenCalledWith(gap.getAttribute('data-question-id'), 'few')
+    rebind()
+    unbind()
+  })
+})
+
+/**
+ * Банк и абзац с пропусками курс отдаёт двумя соседними info-блоками, и
+ * склеиваются они в одну карточку. Расстановка обязана продолжать работать
+ * через эту границу — по одному лишь `.task` банк бы не нашёлся.
+ */
+describe('банк и пропуски разными блоками одной карточки', () => {
+  it('поле остаётся в режиме расстановки', () => {
+    const card = document.createElement('div')
+    card.className = 'lw-card lw-info'
+    card.innerHTML = `
+      <div class="lw-info__body"><div class="wbank"><button class="wchip" data-w="much">much</button></div></div>
+      <div class="lw-info__body"><p>There is <input class="gap" data-answer="much"> money.</p></div>`
+    document.body.appendChild(card)
+    const gapsRoot = card.querySelectorAll('.lw-info__body')[1]
+    const unbind = bindWordBank(gapsRoot)
+
+    expect(gapsRoot.querySelector('input.gap').hasAttribute('readonly')).toBe(true)
+    unbind()
+  })
+})

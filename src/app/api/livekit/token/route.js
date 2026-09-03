@@ -24,7 +24,7 @@ import {
 } from '@/lib/usage.js'
 import { resolveProfileId, bearerFromRequest, fetchTutorLimitOverride } from '@/lib/auth-server.js'
 import { isMinor } from '@/lib/birthDate.js'
-import { loadProfile } from '@/lib/db/profile.js'
+import { loadProfile, touchServedReviews } from '@/lib/db/profile.js'
 import { SCENARIOS, getScenario } from '@/tutor/scenarios.js'
 import { clampTtlForScenario, CLOCK_GRACE_SEC } from '@/tutor/scenarioClock.js'
 
@@ -189,7 +189,7 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   return JSON.stringify(meta)
 }
 
-async function issue(p, profileId, userName, limitOverride, birthDate = null) {
+async function issue(p, profileId, userName, limitOverride, birthDate = null, isDemoAccount = false) {
   // Жёсткий нрав (ось 18+) несовершеннолетнему не выдаём, даже если запрос
   // пришёл с temper:'harsh' в теле: кнопку в UI мы заперли, но токен просят
   // из браузера, и тело — не доверенный источник. Возраст берём из
@@ -221,6 +221,11 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null) {
   // global default.
   const dailyLimitSec = limitOverride?.dailyLimitSeconds ?? DAILY_LIMIT_SEC
   const monthLimitSec = limitOverride?.monthlyLimitSeconds ?? MONTH_LIMIT_SEC
+  // Пул минут на весь тариф: «AI-тьютор 300 минут» на абонемент, 500–2000 у
+  // Self Study. Глобального значения по умолчанию у него НЕТ — пул есть только
+  // там, где его продали, поэтому null означает «без пула», а не «ноль минут».
+  const totalLimitSec = limitOverride?.totalLimitSeconds ?? null
+  const totalSince = limitOverride?.totalSince ?? null
 
   // Потолок одной сессии = дневной лимит (раньше здесь стояло 600 числом, и при
   // подъёме лимита до 20 мин разговор всё равно рвался бы на 10-й минуте).
@@ -237,7 +242,18 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null) {
       // Сначала дозакрываем зависшие комнаты этого ученика (потерянный
       // room_finished), иначе их минуты не спишутся никогда и лимит поедет.
       await closeStaleSessions(profileId)
-      const { todaySeconds, monthSeconds } = await getUsage(profileId)
+      const { todaySeconds, monthSeconds, totalSeconds } = await getUsage(profileId, {
+        totalSince,
+        isDemoAccount,
+      })
+      // Пул проверяем ПЕРВЫМ: он про купленный тариф, и когда он исчерпан, дневной
+      // остаток значения уже не имеет — сказать «приходите завтра» было бы неправдой.
+      if (totalLimitSec != null && totalSeconds >= totalLimitSec) {
+        return Response.json(
+          { configured: true, limited: true, error: 'total_limit' },
+          { status: 403 },
+        )
+      }
       if (monthSeconds >= monthLimitSec || todaySeconds >= dailyLimitSec) {
         return Response.json(
           {
@@ -249,6 +265,11 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null) {
         )
       }
       ttl = Math.max(60, Math.min(dailyLimitSec, dailyLimitSec - todaySeconds))
+      // Длина сессии не должна превышать остаток пула: иначе последний разговор
+      // ушёл бы в минус и списал больше, чем ученик купил.
+      if (totalLimitSec != null) {
+        ttl = Math.max(60, Math.min(ttl, totalLimitSec - totalSeconds))
+      }
     } catch (err) {
       console.error('[livekit.token] usage check failed', err)
     }
@@ -296,6 +317,26 @@ async function issue(p, profileId, userName, limitOverride, birthDate = null) {
     } catch (err) {
       console.error('[livekit.token] openSession failed', err)
     }
+    // Всё, что уехало в metadata на повторение, помечаем показанным — иначе
+    // те же строки вернутся в следующий же звонок. Отмечаем именно здесь, а не
+    // по факту разговора: подтверждение от тьютора (log_review) приходит от
+    // силы раз на полсотни показов, и ждать его — значит не двигать расписание
+    // никогда. Цена — ученик, открывший тьютора и сразу вышедший, потеряет
+    // одно повторение; строка не пропадает, просто спросят её в другой раз.
+    //
+    // Берём строки из memory, а не из metadata: в metadata они уже урезаны
+    // trimList по длине, а искать строку в базе надо целиком по item_key.
+    const served = [
+      ...(memory?.dueReviews || []).slice(0, 6),
+      ...(memory?.dueVocab || []).slice(0, 6),
+    ]
+    if (served.length) {
+      try {
+        await touchServedReviews(profileId, served)
+      } catch (err) {
+        console.error('[livekit.token] touchServedReviews failed', err)
+      }
+    }
   }
 
   return Response.json({
@@ -320,7 +361,7 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, body.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(body, resolved.id, resolved.name, limitOverride, resolved.birthDate)
+  return issue(body, resolved.id, resolved.name, limitOverride, resolved.birthDate, resolved.isDemoAccount)
 }
 
 export async function GET(request) {
@@ -329,5 +370,5 @@ export async function GET(request) {
   const resolved = await resolveProfileId(request, p.deviceId)
   if ('error' in resolved) return resolved.error
   const limitOverride = await fetchTutorLimitOverride(bearerFromRequest(request))
-  return issue(p, resolved.id, resolved.name, limitOverride, resolved.birthDate)
+  return issue(p, resolved.id, resolved.name, limitOverride, resolved.birthDate, resolved.isDemoAccount)
 }

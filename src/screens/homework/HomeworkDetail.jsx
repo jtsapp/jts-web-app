@@ -1,6 +1,7 @@
 import { useI18n } from '../../i18n.jsx'
 import HomeworkFileList from './HomeworkFileList.jsx'
 import HomeworkExercises from './HomeworkExercises.jsx'
+import HomeworkPracticeList from './HomeworkPracticeList.jsx'
 import { ALLOWED_EXTENSIONS, canAttach, canSubmit, homeworkStateKey } from './homeworkFormat.js'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
@@ -17,7 +18,7 @@ function formatDate(value, locale) {
  * (это же правило стоит и на бэкенде), поэтому у COMPLETED тут нет ни загрузки,
  * ни удаления, ни кнопки отправки.
  */
-export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRemoveFile, onSubmit, onSaved, onAnswered, draftAnswered = 0 }) {
+export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRemoveFile, onSubmit, onSaved, onAnswered, onOpenPractice, draftAnswered = 0 }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
 
@@ -61,6 +62,7 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
       {/* Задания, добавленные преподавателем прямо с живого урока. Секции нет,
           когда их нет: домашка бывает и просто файлом. */}
       <HomeworkExercises key={hw.id} hw={hw} token={token} onSaved={onSaved} onAnswered={onAnswered} />
+      <HomeworkPracticeList hw={hw} onOpen={onOpenPractice} />
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.myAnswer')}</h3>

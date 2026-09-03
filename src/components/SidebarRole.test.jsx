@@ -41,11 +41,17 @@ describe('Sidebar — преподаватель', () => {
     expect(container.querySelector('.sb__balance')).toBeNull()
   })
 
-  it('оставляет из разделов только «Уроки»', () => {
+  // «Практика» открыта преподавателю по просьбе самих преподавателей: заданий
+  // там больше, чем в уроках, а выдать их на дом было неоткуда. Остальные
+  // ученические разделы (Тьютор, IELTS, Словарь, Обучение, Домашняя работа)
+  // по-прежнему скрыты — это его собственное обучение, которого у него нет.
+  it('оставляет из разделов «Уроки» и «Практику»', () => {
     const { container } = renderSidebar('TEACHER')
-    const items = container.querySelectorAll('.sb__item')
-    expect(items.length).toBe(1)
-    expect(items[0].textContent).toMatch(/урок/i)
+    const labels = [...container.querySelectorAll('.sb__item')].map((el) => el.textContent)
+    expect(labels).toHaveLength(2)
+    expect(labels.some((l) => /урок/i.test(l))).toBe(true)
+    expect(labels.some((l) => /практик/i.test(l))).toBe(true)
+    expect(labels.some((l) => /словар|тьютор|ielts/i.test(l))).toBe(false)
   })
 
   it('профиль остаётся — он нужен обеим ролям', () => {

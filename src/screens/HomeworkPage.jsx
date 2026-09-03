@@ -197,6 +197,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   onSubmit={handleSubmit}
                   onSaved={replace}
                   onAnswered={setDraft}
+                  onOpenPractice={(target) => onNav?.('practice', target)}
                   draftAnswered={draftAnswered}
                 />
               )}

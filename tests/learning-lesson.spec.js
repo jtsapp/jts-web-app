@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { unlockStep } from './helpers/course-steps.js'
 
 // Тропа и урок уровня A1 (public/learning/a1.json). Бэкенд-вызовы мокаем,
 // чтобы приложение догрузилось до «Обучения» без сервера. A1 играется новым
@@ -109,13 +110,17 @@ test.describe('нативный урок «Обучения»', () => {
     await node.click()
     await expect(page.locator('.cp-step')).toBeVisible({ timeout: 15000 })
 
-    // Прощёлкиваем урок до итогов.
-    for (let i = 0; i < 40; i++) {
+    // Прощёлкиваем урок до итогов. Экранов в уроке курса под полсотни, и часть
+    // держит кнопку до действия (соединение, колонки, разминка) — их
+    // разблокирует unlockStep, иначе проход упирается в первый же такой.
+    test.setTimeout(180000)
+    for (let i = 0; i < 200; i++) {
       if (await page.locator('.le-over').isVisible().catch(() => false)) break
-      const cta = page.locator('.cp-cta, button', { hasText: /Продолжить|Завершить урок|Проверить/ }).first()
+      await unlockStep(page)
+      const cta = page.locator('.cp-cta:not([disabled])').first()
       if (!(await cta.isVisible().catch(() => false))) break
       await cta.click()
-      await page.waitForTimeout(150)
+      await page.waitForTimeout(100)
     }
 
     // Раньше плеер оставался под итогами: страница прокручивалась к живому

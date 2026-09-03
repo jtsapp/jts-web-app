@@ -1,17 +1,18 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
+import DemoSubscriptionModal from '../components/DemoSubscriptionModal.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { ChevronLeftIcon, CastleIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getLessonModules, getPracticeToken, completeLessonModule, getContentQuota } from '../api.js'
+import { pickLevelModule, resolveModuleId } from '../learning/lessonModule.js'
 import { getLevelLessons, loadLesson, loadLevel } from '../learning/lessonData.js'
 import { loadDone, markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
 import LessonPlayer from '../learning/LessonPlayer.jsx'
-import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
-import { isStepLevel, tasksToSteps, stripStageTail, nativeLessonSteps } from '../learning/nativeSteps.js'
+import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
@@ -95,6 +96,14 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // бэкенде) — null значит без лимита. В отличие от moduleLocked (весь модуль
   // разом), это блокирует уроки НАЧИНАЯ с индекса moduleQuota, а не в конце.
   const [moduleQuota, setModuleQuota] = useState(null)
+  // Список модулей не загрузился (сеть/бэкенд), а не «модуля для уровня нет».
+  // Разница принципиальна: moduleId=null по обеим причинам выглядит одинаково,
+  // но во втором случае завершение урока уходит мимо серверной проверки квоты —
+  // одна осечка снимала бы главный демо-лимит на весь визит.
+  const [modulesUnavailable, setModulesUnavailable] = useState(false)
+  // Токен, под которым читались модули (practice-токен, если он выдался):
+  // повторный запрос обязан идти под тем же, иначе бэкенд ответит иначе.
+  const authTokenRef = useRef(token)
   // Квота «N из M» исчерпана: бэкенд отдал 403 на завершении урока. Урок
   // не засчитан, показываем это на экране итогов вместо тихой синхронизации.
   const [restricted, setRestricted] = useState(false)
@@ -117,25 +126,31 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         } catch {
           /* без practice-токена читаем прогресс под обычным token */
         }
+        authTokenRef.current = authToken
+        // Отказ списка модулей не роняет экран (тропа читается из статики), но
+        // и не притворяется пустым списком — см. modulesUnavailable.
+        let modsFailed = false
         const [mods, oldTrail, courseIndex] = await Promise.all([
-          getLessonModules(authToken).catch(() => []),
+          getLessonModules(authToken).catch(() => {
+            modsFailed = true
+            return []
+          }),
           getLevelLessons(level).catch(() => []),
           getCourseIndex(level),
         ])
         if (!alive) return
+        setModulesUnavailable(modsFailed)
         const trail = courseIndex ? courseTrail(courseIndex) : oldTrail
         setCourse(courseIndex)
-        const want = String(level).toUpperCase()
-        const mod = (Array.isArray(mods) ? mods : [])
-          .filter((m) => String(m.level || '').toUpperCase() === want)
-          .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))[0]
+        const mod = pickLevelModule(mods, level)
         const mid = mod ? mod.id : null
         setModuleId(mid)
         setModuleLocked(!!mod?.locked)
         setLessons(trail)
-        // Квота и прогресс независимы — параллельно; A0/A1 греем тяжёлый
-        // <level>.json, чтобы первый клик по уроку не ждал ~700KB.
-        if (isStepLevel(level)) loadLevel(level).catch(() => null)
+        // Квота и прогресс независимы — параллельно; уровень без курса греем
+        // тяжёлым <level>.json, чтобы первый клик по уроку не ждал ~700KB.
+        // С курсом этот файл не нужен вовсе: урок приходит своим steps-<n>.
+        if (!courseIndex && isStepLevel(level)) loadLevel(level).catch(() => null)
         const [quota, d] = await Promise.all([
           mid != null ? getContentQuota(authToken, 'LESSON_MODULE', mid) : Promise.resolve(null),
           loadDone(level, authToken, mid),
@@ -180,13 +195,21 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   // мог их пройти вплоть до конца, просто без начисления награды. Теперь узлы
   // сверх квоты не открываются вовсе, как и просил менеджер.
   //
+  // Индекс за пределами квоты НЕ запирает узел, если урок уже числится в done:
+  // квота на модуль появилась позже прогресса учеников (до неё в базе не было
+  // строк lesson_modules, лимит не запрашивался — тропа была открыта целиком),
+  // и у части студентов на момент выкладки уже пройдено больше узлов, чем
+  // новый лимит. Отнимать пройденное нельзя — студент увидит в этом поломку, а
+  // не ограничение. Квота обязана закрывать только НОВЫЕ, ещё не пройденные
+  // узлы, а не откатывать уже сделанное.
+  //
   // unlockAll (?unlock=1, только dev) снимает последовательность, но НЕ
   // ограничения админа: блокировку модуля и квоту не обходит даже просмотр
   // контента.
   const isUnlocked = useCallback(
     (i) =>
       !moduleLocked &&
-      (moduleQuota == null || i < moduleQuota) &&
+      (moduleQuota == null || i < moduleQuota || (lessons[i] && done.has(lessons[i].code))) &&
       (unlockAll || i === 0 || (lessons[i - 1] && done.has(lessons[i - 1].code))),
     [lessons, done, moduleLocked, moduleQuota, unlockAll],
   )
@@ -211,19 +234,13 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         if (course) {
           const m = /^([LTX])([a-z0-9]+)$/i.exec(code)
           if (!m) return
-          const entry = lessons.find((l) => l.code === code)
-          // A0/A1 ведёт курс (24 и 32 урока с юнит-тестами), а содержимое
-          // берётся из нативных данных: там урок разобран подробнее — True/False
-          // одним экраном, соединение пар, вопросы к записи. Разбор курса из
-          // разметки такие задания терял, поэтому уроки выходили короче.
-          if (m[1] === 'L' && isStepLevel(level) && entry) {
-            const levelData = await loadLevel(level).catch(() => null)
-            const steps = levelData ? nativeLessonSteps(levelData, entry.title, lang) : []
-            if (steps.length) {
-              setOpen({ code, attempt: 0, steps: { title: entry.title, blurb: entry.blurb || '', steps } })
-              return
-            }
-          }
+          // Раньше здесь A0/A1 подменяли содержимое урока нативными данными
+          // (public/learning/<level>.json): разбор курса из разметки терял
+          // True/False, соединение пар и вопросы к записи, и уроки выходили
+          // короче. С курсом нового поколения всё наоборот — его файл сам
+          // держит задание на экран, и шаги собираются из него
+          // (scripts/extract-selfstudy-course.js), поэтому подмены больше нет.
+          //
           // Файлы шагов лежат рядом с уроком: steps-<n>, steps-T<u>, steps-X<id>.
           const data = await loadCourseSteps(level, m[1] === 'L' ? m[2] : m[1].toUpperCase() + m[2])
           if (data) setOpen({ code, attempt: 0, steps: { ...data, title: stripStageTail(data.title, data.steps) } })
@@ -278,9 +295,24 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
       // найден (moduleId=null), падаем на модульный complete, чтобы награда не
       // пропала; двойного начисления нет — ветки взаимоисключающие.
+      // Модуля нет по одной из двух причин, и они требуют разного: его правда
+      // нет для этого уровня — или список не загрузился при входе. Во втором
+      // случае переспрашиваем ЗДЕСЬ, иначе урок засчитается мимо серверной
+      // проверки квоты, а прогресс не уйдёт на бэкенд вовсе: одна сетевая
+      // осечка при входе снимала главный демо-лимит на весь визит.
+      const resolved = await resolveModuleId({
+        moduleId,
+        modulesUnavailable,
+        level,
+        fetchModules: () => getLessonModules(authTokenRef.current),
+      })
+      const mid = resolved.moduleId
+      if (mid !== moduleId) setModuleId(mid)
+      if (resolved.modulesUnavailable !== modulesUnavailable) setModulesUnavailable(resolved.modulesUnavailable)
+
       let next
       try {
-        next = await markDone(level, token, moduleId, open.code, stats.points)
+        next = await markDone(level, token, mid, open.code, stats.points)
       } catch (e) {
         // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
         // исключение просто гасилось внутри markDone, урок падал в localStorage
@@ -292,11 +324,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
         throw e
       }
       setDone(new Set(next))
-      if (moduleId == null && token && stats.points > 0) {
+      if (mid == null && token && stats.points > 0) {
         completeLessonModule(token, stats.points).catch(() => {})
       }
     },
-    [open, level, token, moduleId],
+    [open, level, token, moduleId, modulesUnavailable],
   )
 
   // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
@@ -528,19 +560,17 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                     «следующий урок» — он всё равно упрётся в тот же отказ. */}
                 {restricted ? (
                   <div className="le-acts">
-                    <div className="le-restricted" role="status">
-                      🔒{' '}
-                      {isDemoAccount ? (
-                        <>
-                          {t('learn.quotaReachedDemo')}{' '}
-                          <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                            {t('demo.cta')}
-                          </a>
-                        </>
-                      ) : (
-                        t('learn.quotaReached')
-                      )}
-                    </div>
+                    {/* У демо-ученика тот же отказ живёт в модалке про подписку
+                        (DemoSubscriptionModal ниже), и дублировать его строкой
+                        под ней незачем: строка всё равно закрыта подложкой, а
+                        текст повторял бы сказанное в окне. Здесь остаётся
+                        только «Назад» — то же действие, что и «Вернуться» в
+                        модалке. Лимит от админа (не демо) виден как раньше. */}
+                    {!isDemoAccount && (
+                      <div className="le-restricted" role="status">
+                        🔒 {t('learn.quotaReached')}
+                      </div>
+                    )}
                     <button className="le-btn" onClick={exitLesson}>
                       {t('common.back')}
                     </button>
@@ -584,6 +614,18 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
             </div>
           </div>
         </div>
+      )}
+
+      {/* Демо-ученик упёрся в свой лимит: урок решён, но не засчитан, и дальше
+          по тропе его не пускают. Это момент продажи, поэтому вместо строки под
+          итогами — плашка про подписку поверх экрана итогов. Закрытие ведёт
+          туда же, куда «Назад» с этого экрана (handleBack при open && end), —
+          exitLesson.
+          Условие повторяет условие самих итогов, а не сводится к restricted:
+          exitLesson гасит end и open, но не флаг отказа, и плашка на одном
+          restricted оставалась висеть поверх тропы, никуда не закрываясь. */}
+      {end && end.outcome === 'success' && restricted && isDemoAccount && (
+        <DemoSubscriptionModal onClose={exitLesson} />
       )}
 
       {/* Подтверждение выхода из незаконченного урока — общий диалог всех

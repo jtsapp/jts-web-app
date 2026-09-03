@@ -2,6 +2,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { useIeltsEntitlement } from '../practice/usePracticeEntitlement.js'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
+import { sectionConsumesQuota } from '../lib/ielts/paidSections.js'
 import {
   HeadphonesIcon,
   BookOpenIcon,
@@ -74,7 +75,17 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
   // молча не сохраняли результат).
   const { t } = useI18n()
   const { allowed, limit, used, loading, source, sourceName } = useIeltsEntitlement(token)
+  // outOfAttempts - это "квота на платные секции исчерпана", а не "весь IELTS
+  // закрыт": с бэкенда (src/lib/ielts/quota.js) её тратят только Speaking и
+  // Writing, Reading/Listening проверяются локально и бесплатны. Поэтому
+  // замок на конкретный модуль ставим через sectionConsumesQuota(key) ниже,
+  // а не голым outOfAttempts - иначе демо-ученик терял бы доступ и к
+  // бесплатным секциям тоже.
   const outOfAttempts = !loading && !allowed
+  // CTA ведёт прямо в Writing - секцию, которая тратит квоту, поэтому явно
+  // спрашиваем sectionConsumesQuota, а не полагаемся на то, что 'writing'
+  // всегда останется платной секцией.
+  const writingBlocked = outOfAttempts && sectionConsumesQuota('writing')
 
   const limitMessage = (() => {
     const params = { used: String(used), limit: String(limit ?? 0), name: sourceName || '' }
@@ -128,6 +139,10 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
           {MODULES.map(({ key, Icon, title, desc, meta, color, bg }) => {
             const target = LIVE_TARGETS[key]
             const live = target !== undefined
+            // Замок только на секциях, которые реально тратят демо-квоту
+            // (Speaking/Writing) - Reading/Listening остаются кликабельными
+            // даже при outOfAttempts.
+            const moduleBlocked = outOfAttempts && sectionConsumesQuota(key)
             const inner = (
               <>
                 <span className="ie-mod__ic" style={{ background: bg }}>
@@ -148,7 +163,7 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
               </>
             )
 
-            return live && !outOfAttempts ? (
+            return live && !moduleBlocked ? (
               <button
                 key={key}
                 type="button"
@@ -170,8 +185,8 @@ export default function IeltsPage({ userLevel = 'A1', userName, token, onNav, on
           <button
             type="button"
             className="ie-btn"
-            disabled={outOfAttempts}
-            onClick={() => !outOfAttempts && onGo?.('ielts-writing')}
+            disabled={writingBlocked}
+            onClick={() => !writingBlocked && onGo?.('ielts-writing')}
           >
             Начать Writing
           </button>

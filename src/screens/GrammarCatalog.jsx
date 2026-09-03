@@ -28,7 +28,15 @@ function useDoneUnits(level) {
 // номер, лого JTS, название и секция; в теле — «Unit N», описание и время.
 // Геометрия бликов детерминированно разводится по id, как в источнике, чтобы
 // соседние карточки не выглядели одинаково.
-export function GrammarCard({ unit, done = false, onOpen }) {
+/**
+ * `picked` — юнит отмечен преподавателем для выдачи на дом.
+ *
+ * Отдельной галочки на карточке нет намеренно: карточка сама кнопка, а кнопка
+ * внутри кнопки — невалидная разметка, и на сенсорном экране в неё ещё надо
+ * попасть. Вместо этого в режиме выбора нажатие по карточке отмечает её, а
+ * `aria-pressed` сообщает состояние вслух.
+ */
+export function GrammarCard({ unit, done = false, picked = false, pickMode = false, onOpen }) {
   const { lang } = useI18n()
   const ang = 120 + ((unit.id * 37) % 90)
   const ox = -70 + ((unit.id * 29) % 80)
@@ -37,8 +45,9 @@ export function GrammarCard({ unit, done = false, onOpen }) {
   return (
     <button
       type="button"
-      className={`gr-gcard ${done ? 'is-done' : ''}`}
+      className={`gr-gcard ${done ? 'is-done' : ''} ${picked ? 'is-picked' : ''}`}
       onClick={() => onOpen(unit)}
+      aria-pressed={pickMode ? picked : undefined}
       aria-label={`Unit ${unit.id}: ${stripTags(unit.title)}`}
     >
       <span
@@ -110,7 +119,10 @@ export function GrammarRail({ index, courseCode, levelLabel, onOpen, onSeeAll })
 
 // Полный каталог грамматики: чипы уровней A1–C2, поиск, секции с пилюлей
 // «Unit X-Y» и рейлами карточек.
-export default function GrammarCatalog({ index, activeLevel, onLevel, search, onSearch, onOpen }) {
+export default function GrammarCatalog({
+  index, activeLevel, onLevel, search, onSearch, onOpen,
+  pickMode = false, pickedIds, onTogglePick,
+}) {
   const { t } = useI18n()
   const level = index && index[activeLevel]
   const done = useDoneUnits(activeLevel)
@@ -144,6 +156,10 @@ export default function GrammarCatalog({ index, activeLevel, onLevel, search, on
         />
       </label>
 
+      {/* Режим выбора включает вызывающий (он же знает, преподаватель ли это);
+          подпись стоит рядом с поиском, чтобы не терялась над списком. */}
+      {pickMode && <p className="gr-pickhint">{t('practice.assign.pick')}</p>}
+
       <div className="gr-levels">
         {GRAMMAR_LEVELS.map((l) => (
           <button
@@ -174,7 +190,14 @@ export default function GrammarCatalog({ index, activeLevel, onLevel, search, on
             </div>
             <div className="gr-grid">
               {g.units.map((u) => (
-                <GrammarCard key={u.id} unit={u} done={done.has(u.id)} onOpen={onOpen} />
+                <GrammarCard
+                  key={u.id}
+                  unit={u}
+                  done={done.has(u.id)}
+                  pickMode={pickMode}
+                  picked={!!pickedIds?.has(u.id)}
+                  onOpen={pickMode ? onTogglePick : onOpen}
+                />
               ))}
             </div>
           </section>

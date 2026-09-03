@@ -89,7 +89,7 @@ async function authGet(path, token) {
   return res.json()
 }
 
-async function authPut(path, token, body) {
+async function authPut(path, token, body, { keepalive = false } = {}) {
   let res
   try {
     res = await fetch(BASE + path, {
@@ -99,6 +99,10 @@ async function authPut(path, token, body) {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: body != null ? JSON.stringify(body) : undefined,
+      // keepalive — для записи, уходящей на закрытии вкладки: обычный fetch
+      // браузер обрывает вместе со страницей, и последний ответ ученика
+      // терялся ровно в тот момент, когда он закончил работу и вышел.
+      ...(keepalive ? { keepalive: true } : {}),
     })
   } catch (e) {
     throw new Error('Нет связи с сервером.')
@@ -112,6 +116,24 @@ async function authPost(path, token, body) {
   try {
     res = await fetch(BASE + path, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
+async function authPatch(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -377,6 +399,55 @@ export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
 }
 
+/**
+ * Выдать юниты «Практики» на дом всем участникам урока.
+ *
+ * Уезжает АДРЕС юнита, а не его содержимое: контент «Практики» лежит статикой
+ * здесь же, в кабинете, бэкенд его не хранит (см. AddPracticeUnitsRequest).
+ * Название и раздел идут снимком — чтобы преподаватель в списке заданий видел,
+ * что именно выдал, даже если каталог потом переименуют.
+ *
+ * `batchId` — один на нажатие: повтор с тем же ключом ничего не задваивает,
+ * поэтому двойной клик и ретрай после обрыва безопасны.
+ */
+export function assignPracticeUnits(token, lessonId, { area, units, batchId }) {
+  return authPut(`/admin/homework/lesson/${lessonId}/exercises/from-practice`, token, {
+    area,
+    units,
+    batchId,
+  })
+}
+
+// Заявка на пробный урок — состояние экрана «Уроки» у человека, пришедшего с
+// сайта самостоятельно: назначен ли ему преподаватель, оставлял ли он заявку,
+// взял ли его менеджер (TrialRequestController на бэкенде). Не путать с блоком
+// «Пробный урок» в конце файла: там урок по секретной ссылке для ещё не
+// заведённого ученика, здесь — заявка залогиненного на себя, ученик берётся из
+// токена, тела у запроса нет вовсе.
+//
+// GET и POST отвечают ОДНИМ И ТЕМ ЖЕ DTO, поэтому ответ на заявку — это уже
+// свежее состояние экрана: перечитывать GET после POST не нужно и нельзя (два
+// источника правды разъедутся при гонке).
+function trialRequestState(data) {
+  return {
+    requested: !!data?.requested,
+    requestedAt: data?.requestedAt || null,
+    teacherAssigned: !!data?.teacherAssigned,
+    managerAssigned: !!data?.managerAssigned,
+  }
+}
+
+export async function getTrialRequestState(token) {
+  return trialRequestState(await authGet('/mobile/trial-request', token))
+}
+
+// Идемпотентно на бэкенде: повторный вызов не двигает время первой заявки и не
+// падает. Клиент всё равно не даёт нажать дважды (см. TrialRequestCard) —
+// идемпотентность страхует гонку вкладок, а не заменяет гард.
+export async function requestTrialLesson(token) {
+  return trialRequestState(await authPost('/mobile/trial-request', token))
+}
+
 // Живой урок: загрузка одного урока и управление жизненным циклом (учитель/админ).
 // Бэкенд скоупит /admin/lessons/{id} под личность токена.
 export function getLessonById(token, id) {
@@ -425,8 +496,23 @@ export function getLessonMessages(token, lessonId) {
   return authGet(`/admin/lessons/${lessonId}/messages`, token)
 }
 
-export function sendLessonMessage(token, lessonId, body) {
-  return authPost(`/admin/lessons/${lessonId}/messages`, token, { body })
+export function sendLessonMessage(token, lessonId, body, attachment) {
+  return authPost(`/admin/lessons/${lessonId}/messages`, token, {
+    body,
+    attachmentUrl: attachment?.url,
+    attachmentName: attachment?.name,
+  })
+}
+
+// Правка и удаление в чате урока. Кто что может — решает сервер (`canEdit` /
+// `canDelete` в ответе): своё правит и удаляет автор, чужое удаляет ведущий
+// урок. Оба запроса возвращают переписку целиком, как и отправка.
+export function editLessonMessage(token, lessonId, messageId, body) {
+  return authPatch(`/admin/lessons/${lessonId}/messages/${messageId}`, token, { body })
+}
+
+export function deleteLessonMessage(token, lessonId, messageId) {
+  return authDelete(`/admin/lessons/${lessonId}/messages/${messageId}`, token)
 }
 
 // URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление
@@ -461,8 +547,8 @@ export function getLessonMaterialProgress(token, lessonId, materialId, studentId
   return authGet(`/student/lessons/${lessonId}/materials/${materialId}/progress${q}`, token)
 }
 
-export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson) {
-  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson })
+export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJson, options) {
+  return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson }, options)
 }
 
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
@@ -787,6 +873,29 @@ export function getMediaClips(token, onFresh) {
   return cachedAuthGet('/mobile/media-clips', token, onFresh)
 }
 
+// Каталог комиксов (GET /mobile/comics) →
+// [{id,slug,title,author,level,coverUrl,pageCount,adultOnly,description:{ru,en,kk}}].
+// Меняется редко и правится только из админки — поэтому через тот же
+// stale-while-revalidate кэш, что и остальные каталоги Практики.
+export function getComics(token, onFresh) {
+  return cachedAuthGet('/mobile/comics', token, onFresh)
+}
+
+// Один комикс со страницами и репликами (GET /mobile/comics/{id}) →
+// {…, pages:[{n,url,w,h,blocks:[{kind,en,ru,kk}]}]}. Отдаётся целиком одним
+// ответом: запрос на страницу означал бы 214 запросов за одно чтение книги.
+// Мимо кэша каталогов — ответ на пару сотен килобайт в localStorage не кладём.
+export function getComic(token, ref) {
+  return authGet(`/mobile/comics/${encodeURIComponent(ref)}`, token)
+}
+
+// Поиск по комиксам (GET /mobile/comics/search?q=) — та же форма ответа, что и
+// у каталога. Мимо кэша каталогов: запрос меняется на каждую букву, класть его
+// в localStorage бессмысленно.
+export function searchComics(token, q) {
+  return authGet(`/mobile/comics/search?q=${encodeURIComponent(q)}`, token)
+}
+
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
 export function getSituativki(token, level, onFresh) {
   const q = level ? `?level=${encodeURIComponent(level)}` : ''
@@ -1006,3 +1115,53 @@ export async function saveLanguageLevel(token, level) {
   if (!res.ok) throw new Error(`Не удалось сохранить уровень (${res.status})`)
   return res.json().catch(() => ({}))
 }
+
+// ── Пробный урок ────────────────────────────────────────────────────────────
+// Ученик на пробном уроке ещё не заведён в системе, поэтому ключ доступа —
+// секрет из ссылки (`/trial/<token>`), а не Bearer. Бэкенд открывает эти четыре
+// эндпоинта без авторизации и сам проверяет срок жизни ссылки
+// (см. TrialLinkController).
+
+/** Проверка ссылки: статус урока, имя ученика и преподавателя. 404 — ссылки
+ *  нет, 403 — протухла; и то и другое экран показывает одним сообщением, чтобы
+ *  подбор токенов не отличался по ответу от опечатки. */
+export async function openTrialLink(token) {
+  let res
+  try {
+    res = await fetch(`${BASE}/trial/link/${encodeURIComponent(token)}`, { cache: 'no-store' })
+  } catch (e) {
+    throw new Error('Нет связи с сервером. Проверьте интернет и попробуйте снова.')
+  }
+  if (!res.ok) {
+    // Статус нужен экрану: «ссылка не работает» и «сервер прилёг» — разные
+    // сообщения, и во втором случае имеет смысл предложить повтор.
+    const err = new Error(
+      res.status === 404 || res.status === 403
+        ? 'Ссылка на пробный урок недействительна или истекла.'
+        : `Ошибка сервера (${res.status})`,
+    )
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
+/** Отметка «урок начали». Ошибку глотаем у вызывающего: это телеметрия для
+ *  преподавателя, а не условие начала урока. */
+export function startTrialLesson(token) {
+  return post(`/trial/link/${encodeURIComponent(token)}/start`, {})
+}
+
+/** Итог диагностики. `raw` — полный лог сессии: он нужен, чтобы пересчитать
+ *  уровень после калибровки банка, не гоняя ученика по тесту заново. */
+export function saveTrialResult(token, payload) {
+  return post(`/trial/link/${encodeURIComponent(token)}/result`, payload)
+}
+
+/** Заявка с финального экрана. */
+export function saveTrialLead(token, name, phone) {
+  return post(`/trial/link/${encodeURIComponent(token)}/lead`, { name, phone: normalizePhone(phone) })
+}
+
+// Преподавательская часть — создание ссылок и результаты диагностики — живёт в
+// web-admin: преподаватель работает там, а на сайт приходит вести сам урок.

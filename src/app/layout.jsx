@@ -11,6 +11,7 @@ import '../workbook.css'
 import '../lessonWorkspace.css'
 import '../courseCatalog.css'
 import '../course.css'
+import '../trial.css'
 import Providers from './providers.jsx'
 
 // Тот же дефолт, что в src/api.js (BASE) — держать в синхроне.

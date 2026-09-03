@@ -17,29 +17,18 @@ import { isDbConfigured } from '@/lib/db/sql.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import {
-  WEEKLY_LIMIT,
   wavSeconds,
   creditsForSeconds,
   isoWeekKey,
-  nextWeekResetAt,
+  budgetPayload,
+  exceedsWeeklyBudget,
+  weeklyLimitFor,
   getUsed,
   consume,
   refund,
 } from '@/lib/db/shadowingBudget.js'
 
 export const runtime = 'nodejs'
-
-// Недельный бюджет для ответа/статуса: used/remaining из БД, resetsAt — пн 00:00 UTC.
-// used == null → метрирования нет (БД не настроена), поле budget в ответе = null.
-function budgetPayload(used) {
-  if (used == null) return null
-  return {
-    limit: WEEKLY_LIMIT,
-    used,
-    remaining: Math.max(0, WEEKLY_LIMIT - used),
-    resetsAt: nextWeekResetAt(new Date()),
-  }
-}
 
 // ~15 минут 16кГц mono WAV — самый длинный отрывок в уроках идёт 14.6 минуты.
 // Было 40 МБ, но лимит обязан оставаться НИЖЕ client_max_body_size на nginx
@@ -69,7 +58,9 @@ async function makeTip(score, refText, lang) {
 
 // Статус для клиента: настроена ли оценка и остаток недельного бюджета. Гостю
 // (без Bearer) budget = null — кнопку «Оценить» клиент прячет. Для залогиненного
-// с настроенной БД отдаём used/remaining, чтобы показать «осталось N/10».
+// с настроенной БД отдаём used/remaining, чтобы показать «осталось N/10» — и
+// N/3 демо-аккаунту: показывать общий потолок тому, кого отсекут на своём,
+// значит гарантированно получить его в поддержке.
 export async function GET(request) {
   const base = { configured: isAzureSpeechConfigured() }
   const denied = unauthorizedIfNoBearer(request)
@@ -79,7 +70,7 @@ export async function GET(request) {
   if ('error' in resolved) return resolved.error
   try {
     const used = await getUsed(resolved.id, isoWeekKey(new Date()))
-    return Response.json({ ...base, budget: budgetPayload(used) })
+    return Response.json({ ...base, budget: budgetPayload(used, resolved.isDemoAccount) })
   } catch (e) {
     console.error('[shadowing.assess] budget status failed', e)
     return Response.json({ ...base, budget: null })
@@ -129,6 +120,10 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
   const profileId = resolved.id
+  // Демо-аккаунту — свой недельный потолок (3 кредита, см. shadowingBudget.js).
+  // Флаг приехал тем же /user/me, которым проверялся токен, и решает и отсечку,
+  // и списание, и цифру в ответе — одним значением на весь запрос.
+  const isDemo = resolved.isDemoAccount
 
   const weekKey = isoWeekKey(new Date())
   const credits = creditsForSeconds(wavSeconds(file.size))
@@ -137,22 +132,24 @@ export async function POST(request) {
 
   if (isDbConfigured()) {
     // Запись дороже целого недельного бюджета — оценить нечем, не начинаем.
-    if (credits > WEEKLY_LIMIT) {
-      let used = WEEKLY_LIMIT
+    // На демо-потолке в 3 кредита сюда попадает уже запись длиннее 90 секунд, и
+    // проверка обязательна: путь INSERT в consume() лимит не смотрит.
+    if (exceedsWeeklyBudget(credits, isDemo)) {
+      let used = weeklyLimitFor(isDemo)
       try { used = await getUsed(profileId, weekKey) } catch { /* показать что есть */ }
       return Response.json(
-        { error: 'recording_too_long', budget: budgetPayload(used) },
+        { error: 'recording_too_long', budget: budgetPayload(used, isDemo) },
         { status: 413 },
       )
     }
     try {
-      const after = await consume(profileId, weekKey, credits)
+      const after = await consume(profileId, weekKey, credits, isDemo)
       if (after == null) {
         // Лимит на неделю исчерпан.
-        let used = WEEKLY_LIMIT
+        let used = weeklyLimitFor(isDemo)
         try { used = await getUsed(profileId, weekKey) } catch { /* показать что есть */ }
         return Response.json(
-          { error: 'weekly_limit_reached', budget: budgetPayload(used) },
+          { error: 'weekly_limit_reached', budget: budgetPayload(used, isDemo) },
           { status: 429 },
         )
       }
@@ -203,5 +200,5 @@ export async function POST(request) {
     }
   }
 
-  return Response.json({ ...score, tip, budget: budgetPayload(usedNow) })
+  return Response.json({ ...score, tip, budget: budgetPayload(usedNow, isDemo) })
 }

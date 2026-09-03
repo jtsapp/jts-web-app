@@ -9,6 +9,7 @@ import { getCourseCatalogLessonContent } from '../../api.js'
 import { rewriteMediaUrls } from './extract/rewriteMediaUrls.js'
 import { hoistSelectQuestions } from './hoistSelectQuestions.js'
 import { hoistOrderQuestions } from './hoistOrderQuestions.js'
+import { hoistChoiceOptions } from './hoistChoiceOptions.js'
 import { foldOrphanAudioSteps } from './foldOrphanAudioSteps.js'
 import { hoistStepLeads } from './hoistStepLead.js'
 
@@ -24,8 +25,8 @@ export async function loadCatalogLesson(id, token) {
     // Медиа внутри info-блоков лежит относительно файла урока, а не API.
     // Select / order, оставшиеся сырым HTML в старом content_json, поднимаем в
     // настоящие practice-вопросы — иначе чипы на экране не кликаются.
-    const lesson = hoistOrderQuestions(
-      hoistSelectQuestions(rewriteMediaUrls(stored.content, stored.fileUrl)),
+    const lesson = hoistChoiceOptions(
+      hoistOrderQuestions(hoistSelectQuestions(rewriteMediaUrls(stored.content, stored.fileUrl))),
     )
     if (!lesson.title && stored.title) lesson.title = stored.title
     // Хвостовой «Audio» из старой конвертации — в Practice/Listening, не отдельным шагом.

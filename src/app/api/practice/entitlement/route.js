@@ -74,5 +74,10 @@ export async function GET(request) {
     completed,
     source: quota?.source || 'NONE',
     sourceName: quota?.sourceName || null,
+    // Отвечаем 200 и при сбое похода за квотой (fail-open, см.
+    // fetchContentQuota), поэтому по одному limit: null клиент не отличил бы
+    // «потолка нет» от «спросить не удалось» и кэшировал бы сбой как «лимита
+    // нет» до конца жизни экрана. Признак этого различения — здесь.
+    quotaKnown: quota?.known !== false,
   })
 }

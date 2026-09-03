@@ -4,7 +4,7 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
-import { slicePrototype, evalPrototype, validate, oracleAct, EXPECT, TOP_TYPES } from './extract-workbook.js'
+import { slicePrototype, evalPrototype, validate, oracleAct, challengeRule, EXPECT, TOP_TYPES } from './extract-workbook.js'
 
 const SRC = path.join(process.cwd(), 'data', 'jtsworkbook-a0.html')
 const html = fs.readFileSync(SRC, 'utf8')
@@ -25,7 +25,7 @@ describe('extract-workbook', () => {
 
   it('данные полные: 7 юнитов, 31 урок, 409 экранов, все типы известны', () => {
     const sb = evalPrototype(html)
-    const stats = validate(sb, 'a0')
+    const stats = validate(sb, 'a0', challengeRule(html))
     expect(stats.lessons).toBe(EXPECT.a0.lessons)
     // 378 заданий данных + 31 turn, разложенный на write+speak
     expect(stats.acts).toBe(409)
@@ -69,6 +69,6 @@ describe('extract-workbook', () => {
       if (touched) break
     }
     expect(touched).toBe(true)
-    expect(() => validate(sb, 'a0')).toThrow(/ключ не индекс/)
+    expect(() => validate(sb, 'a0', challengeRule(html))).toThrow(/ключ не индекс/)
   })
 })

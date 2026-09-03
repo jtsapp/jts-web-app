@@ -1,7 +1,9 @@
+import { useEffect, useSyncExternalStore } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { formatTimer } from './useLessonTimer.js'
 import LiveStatusBadge from './LiveStatusBadge.jsx'
 import { VocabIcon } from '../../components/icons.jsx'
+import { applyStoredTextScale, isLargeTextOn, setTextScale, subscribeTextScale } from '../workspace/textScale.js'
 
 // Шапка живого урока (макет «Онлайн-уроки»): тёмная полоса над уроком —
 // преподаватель слева, ссылка на звонок и выход справа.
@@ -14,6 +16,7 @@ export default function LiveHeader({
   status,
   lessonTitle,
   group,
+  trial,
   meetingUrl,
   connected,
   teacherOnline,
@@ -25,6 +28,14 @@ export default function LiveHeader({
   onExit,
 }) {
   const { t } = useI18n()
+
+  // Настройка живёт вне React — в localStorage и атрибуте на <html>, — и на
+  // сервере её нет: серверный снимок всегда «обычный», иначе разметка сервера
+  // и клиента разошлись бы. Эффект ниже только доносит выбор до документа.
+  const largeText = useSyncExternalStore(subscribeTextScale, isLargeTextOn, () => false)
+  useEffect(() => {
+    applyStoredTextScale()
+  }, [])
 
   return (
     <header className="lv-top">
@@ -57,7 +68,7 @@ export default function LiveHeader({
           </span>
           <span className="lv-top__lesson-body">
             <span className="lv-top__lesson-name">{lessonTitle || t('live.title')}</span>
-            <span className="lv-top__lesson-kind">{t(group ? 'live.kindGroup' : 'live.kindSolo')}</span>
+            <span className="lv-top__lesson-kind">{t(trial ? 'live.kindTrial' : group ? 'live.kindGroup' : 'live.kindSolo')}</span>
           </span>
         </span>
         {/* Присутствие преподавателя и связь показываем только когда их нет:
@@ -124,6 +135,21 @@ export default function LiveHeader({
             </a>
           </>
         )}
+        {/* «Крупный текст» — пожилым ученикам с телефона мелко. Размеры урока
+            заданы в пикселях по спеке классрума, и системная настройка шрифта
+            их не двигает: увеличить может только сама страница. */}
+        <button
+          type="button"
+          className={`lv-top__act lv-top__act--text${largeText ? ' is-on' : ''}`}
+          aria-pressed={largeText}
+          aria-label={t('lesson.ws.largeText')}
+          title={t('lesson.ws.largeText')}
+          onClick={() => setTextScale(!largeText)}
+        >
+          <span className="lv-top__act-aa" aria-hidden="true">
+            А<span>А</span>
+          </span>
+        </button>
         <button
           type="button"
           className="lv-top__act lv-top__act--exit"

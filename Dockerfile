@@ -43,6 +43,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # .sql миграции читаются через fs.readdirSync (src/lib/migrate.js), не через
 # import — трассировщик standalone-сборки их не видит и не копирует сам.
 COPY --from=builder --chown=nextjs:nodejs /app/src/lib/migrations ./src/lib/migrations
+# Тексты книг: вне public (их отдаёт авторизованный роут /api/books), поэтому
+# в standalone-сборку сами не попадают — как и миграции строкой выше.
+COPY --from=builder --chown=nextjs:nodejs /app/data/books ./data/books
 
 USER nextjs
 EXPOSE 3000
