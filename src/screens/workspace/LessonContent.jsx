@@ -10,6 +10,7 @@ import SpeakingBlock from './blocks/SpeakingBlock.jsx'
 import TranslatePopover from './TranslatePopover.jsx'
 import TapText from './TapText.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
+import { bindAudioClips } from './audioClip.js'
 import { useI18n } from '../../i18n.jsx'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../../lib/wordTranslate.js'
 import { hiddenBlockKey } from './visibleSteps.js'
@@ -239,6 +240,13 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
     return () => clearTimeout(t)
   }, [liveQuestionId, liveFocusNonce, step?.id])
 
+  /* Отрывки внутри дорожки. Конец медиа-фрагмента (`…mp3#t=3.77,19.74`) браузеры
+     не соблюдают: перематывают на начало и играют до конца файла. Слушатель один
+     на всю ленту — `<audio>` приезжают вместе с HTML курса и пересоздаются при
+     каждой перерисовке, подписываться на каждый пришлось бы заново. */
+  const contentRef = useRef(null)
+  useEffect(() => bindAudioClips(contentRef.current), [])
+
   // Разбор выделения — один на мышь и на палец (см. onTouchEnd ниже).
   function handleSelection(host) {
     const sel = window.getSelection()
@@ -258,6 +266,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
 
   return (
     <div
+      ref={contentRef}
       className="lw-content"
       data-selectable=""
       onClick={(e) => {

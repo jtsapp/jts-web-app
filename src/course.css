@@ -1936,3 +1936,34 @@
   font-size: 14px;
   font-weight: 500;
 }
+
+/* Банк слов текста с пропусками: те же чипы, что и у пропуска, но кладут
+   слово в первый свободный номер. */
+.cp-cloze {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 722px;
+}
+.cp-cloze__bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.cp-cloze__bank .cp-chip {
+  min-height: 52px;
+  padding: 10px 20px;
+}
+.cp-cloze__bank .cp-chip.is-set {
+  opacity: 0.45;
+}
+/* Знаки препинания в «найди ошибку» — не кнопки: тапать их нельзя. */
+.cp-mistake__punct {
+  align-self: center;
+  padding: 0 2px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #6b6b76;
+}

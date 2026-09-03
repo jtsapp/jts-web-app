@@ -154,7 +154,9 @@ export default function TrialPlanScreen({ result, token, onBack }) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               inputMode="tel"
-              placeholder="+7 ___ ___ __ __"
+              /* Пример нейтральный: +7 в подсказке читался как «другие не
+                 принимаем», хотя форма берёт любой международный номер. */
+              placeholder="+7 777 123 45 67 · +49 30 123456"
             />
             {error && <p className="trial-err">{error}</p>}
             {state === 'error' && <p className="trial-err">Не удалось отправить заявку — попробуйте ещё раз.</p>}

@@ -1,5 +1,5 @@
 // Загрузчик курса уровня из public/course/<level>/ (генератор —
-// scripts/extract-course-lessons.js). Всё грузится по требованию и кэшируется
+// scripts/extract-selfstudy-course.js). Всё грузится по требованию и кэшируется
 // в модуле: каталог уровня лёгкий, а урок — сотня килобайт разметки, поэтому
 // тянуть весь уровень разом нельзя.
 //
@@ -39,7 +39,7 @@ export function loadCourseLesson(level, n) {
   return lessonCache.get(key)
 }
 
-// Шаги урока для пошагового плеера (генератор — scripts/build-course-steps.js).
+// Шаги урока для пошагового плеера (генератор — scripts/extract-selfstudy-course.js).
 const stepsCache = new Map()
 export function loadCourseSteps(level, n) {
   const key = `${level}:${n}`
@@ -92,7 +92,15 @@ export function courseTrail(index) {
   // общим банком вопросов, и стоят после юнитов 3, 6, 9 и 12 (поле after,
   // код X<id>). Тропа рисует и те и другие одинаково — узлом в конце юнита.
   const testByUnit = new Map((index.tests || []).filter((t) => !t.id).map((t) => [t.unit, t]))
-  const examByUnit = new Map((index.tests || []).filter((t) => t.id).map((t) => [t.after, t]))
+  // Больших тестов после одного и того же юнита бывает два: у B2 за
+  // двенадцатым идут и блочный тест, и финальный. Ключ по «after» поэтому
+  // хранит список, а не одну запись, — иначе финальный тест исчезал с тропы.
+  const examByUnit = new Map()
+  for (const t of (index.tests || []).filter((x) => x.id)) {
+    const at = examByUnit.get(t.after) || []
+    at.push(t)
+    examByUnit.set(t.after, at)
+  }
   const units = [...byUnit.keys()].sort((a, b) => a - b)
   // type — только «печенька» узла на тропе (иконка и цвет), как у старой
   // тропы: уроки юнита различаются по виду, тест закрывает юнит. Считаем по
@@ -131,8 +139,7 @@ export function courseTrail(index) {
         type: 'final',
       })
     }
-    const e = examByUnit.get(u)
-    if (e) {
+    for (const e of examByUnit.get(u) || []) {
       out.push({
         code: `X${e.id}`,
         kind: 'test',

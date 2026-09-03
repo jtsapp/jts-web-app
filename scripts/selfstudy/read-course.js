@@ -20,7 +20,20 @@ const vm = require('node:vm')
 // Объявления курса, которые нужны конвейеру. `const` на верхнем уровне скрипта
 // не попадает в объект глобалей контекста (это не var), поэтому в конец кода
 // дописывается эпилог, который перекладывает их в __out.
-const EXPORTS = ['MENU', 'LESSONS', 'BLOBS', 'BANKS', 'PER_ITEM', 'STAGES', 'TOTAL_LESSONS']
+const EXPORTS = [
+  'MENU',
+  'MENU_DATA',
+  'LESSONS',
+  'BLOBS',
+  'BANKS',
+  'AUDIO',
+  'PER_ITEM',
+  'STAGES',
+  'TOTAL_LESSONS',
+  'TESTS',
+  // Аудио B1 разложено по банкам юнитов: BANK1…BANK12.
+  ...Array.from({ length: 12 }, (_, i) => `BANK${i + 1}`),
+]
 
 // Заглушка DOM. Любое обращение возвращает такую же заглушку, любой вызов —
 // no-op: движку курса на старте нужны узлы (#stage, #go, …), обработчики и
@@ -93,10 +106,29 @@ function runCourse(html, file) {
       return { play: () => Promise.resolve(), pause: () => {} }
     },
     location: { hash: '', search: '' },
-    navigator: { language: 'en' },
+    navigator: { language: 'en', mediaDevices: { getUserMedia: () => Promise.reject(new Error('no mic')) } },
     setTimeout: () => 0,
     clearTimeout: () => {},
+    setInterval: () => 0,
+    clearInterval: () => {},
     requestAnimationFrame: () => 0,
+    cancelAnimationFrame: () => {},
+    // Движки уровней стартуют по-разному: B2 на первом же экране зовёт
+    // window.scrollTo, кто-то — matchMedia или getComputedStyle. Каждая такая
+    // дырка роняет чтение курса целиком, поэтому браузерные мелочи заглушены
+    // списком, а не «по факту падения».
+    scrollTo: () => {},
+    scrollBy: () => {},
+    matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    getComputedStyle: () => ({ getPropertyValue: () => '' }),
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    alert: () => {},
+    URL: { createObjectURL: () => '', revokeObjectURL: () => {} },
+    MediaRecorder: function MediaRecorder() {
+      return { start: () => {}, stop: () => {}, addEventListener: () => {} }
+    },
+    SpeechSynthesisUtterance: function SpeechSynthesisUtterance() {},
     console: { log() {}, warn() {}, error() {} },
     __out: {},
   }
@@ -114,24 +146,54 @@ function runCourse(html, file) {
   return { out: sandbox.__out, audioTags }
 }
 
-/** Ключ клипа → base64 mp3. Собирает оба способа хранения в один словарь. */
-function collectAudio(out, audioTags) {
+/**
+ * base64 из значения клипа: у разных уровней это data URI или голая строка.
+ * minLen отсекает случайные строки, когда мы перебираем весь банк подряд:
+ * у тега text/plain источник известен, и длина там не важна.
+ */
+function clipBase64(value, minLen = 0) {
+  const raw = String(value == null ? '' : value).trim()
+  const m = /^data:audio\/[a-z0-9.+-]+;base64,(.+)$/s.exec(raw)
+  if (m) return m[1]
+  return /^[A-Za-z0-9+/=\s]+$/.test(raw) && raw.length > minLen ? raw.replace(/\s+/g, '') : null
+}
+
+/**
+ * Ключ клипа → base64. Способов хранения у уровней четыре, и знать о них
+ * должен только этот модуль:
+ *   A0/A2  — const BLOBS (хэш → data URI) + BANKS[урок][ключ] = хэш
+ *   A1     — <script type="text/plain" id="a_<ключ>">base64</script>
+ *   B1     — var BANK1…BANK12 (по банку на юнит), урок несёт ссылку на свой
+ *   B2     — var AUDIO, заполняемый ниже по файлу
+ * Ключ клипа уникален внутри урока, а не на весь уровень, поэтому в словаре
+ * он записывается как «урок:ключ» — иначе клипы разных уроков затирают друг
+ * друга. Голый ключ пишем тоже: у B1/B2 задания ссылаются на общий банк.
+ */
+function collectAudio(out, audioTags, lessons) {
   const audio = {}
-  for (const [id, b64] of Object.entries(audioTags)) {
-    if (id.startsWith('a_')) audio[id.slice(2)] = b64
+  const put = (key, value, minLen = 64) => {
+    const b64 = clipBase64(value, minLen)
+    if (b64) audio[key] = b64
   }
+
+  for (const [id, b64] of Object.entries(audioTags)) {
+    if (id.startsWith('a_')) put(id.slice(2), b64, 0)
+  }
+
   const blobs = out.BLOBS || {}
   for (const [lessonNo, bank] of Object.entries(out.BANKS || {})) {
-    for (const [key, hash] of Object.entries(bank)) {
-      const uri = blobs[hash]
-      if (!uri) continue
-      const m = /^data:audio\/[a-z0-9]+;base64,(.+)$/s.exec(String(uri))
-      if (!m) continue
-      // Ключ клипа уникален внутри урока, а не на весь уровень: в A0 у каждого
-      // урока свой BANK. Полное имя ключа делаем «урок:ключ», иначе клипы
-      // разных уроков затирают друг друга.
-      audio[`${lessonNo}:${key}`] = m[1]
-    }
+    for (const [key, hash] of Object.entries(bank)) put(`${lessonNo}:${key}`, blobs[hash])
+  }
+
+  // Плоские банки уровня: AUDIO (B2) и BANK1…BANK12 (B1, по юниту).
+  for (const [name, value] of Object.entries(out)) {
+    if (!/^(AUDIO|BANK\d+)$/.test(name) || !value || typeof value !== 'object') continue
+    for (const [key, clip] of Object.entries(value)) put(key, clip)
+  }
+
+  // Банк, привязанный к самому уроку (B1 отдаёт его вместе с уроком).
+  for (const lesson of lessons || []) {
+    for (const [key, clip] of Object.entries(lesson.bank || {})) put(`${lesson.key}:${key}`, clip)
   }
   return audio
 }
@@ -147,7 +209,7 @@ function readSelfStudyCourse(file) {
   const raw = out.LESSONS
   if (!raw) throw new Error(`курс ${file}: объявление LESSONS не найдено`)
 
-  const menu = out.MENU || {}
+  const menu = out.MENU || out.MENU_DATA || {}
   const titles = new Map()
   for (const l of menu.lessons || []) titles.set(String(l.n), l.title || (l.t && (l.t.en || l.t)) || '')
   const blurbs = new Map()
@@ -163,24 +225,89 @@ function readSelfStudyCourse(file) {
     test: u.test != null ? String(u.test) : u.review != null ? String(u.review) : null,
   }))
 
+  // Большие тесты уровня объявлены в каталоге отдельным списком: у B2 это
+  // MENU.tests (четыре блочных и финальный, каждый со своим «after»).
+  const exams = new Map()
+  for (const t of menu.tests || []) {
+    exams.set(String(t.n != null ? t.n : t.id), {
+      id: t.id || `t${t.n}`,
+      title: t.title || '',
+      blurb: t.goal || t.lead || '',
+      from: t.from,
+      to: t.to,
+      after: t.after,
+      final: !!t.final,
+    })
+  }
+
   const testKeys = new Set(units.map((u) => u.test).filter(Boolean))
-  const lessons = []
-  const tests = []
-  for (const key of Object.keys(raw)) {
-    const l = raw[key] || {}
+  const entryOf = (key, source) => {
+    const l = source || {}
     const unit = units.find((u) => (testKeys.has(key) ? u.test === key : Number(key) >= u.from && Number(key) <= u.to))
-    const entry = {
+    return {
       key,
       no: l.no != null ? l.no : Number(key),
       unit: unit ? unit.no : null,
       title: l.title || titles.get(key) || '',
       blurb: blurbs.get(key) || '',
       groups: l.groups || [],
-      // Клипы урока: у A0/A2 они лежат в BANK[урок], у A1 — общие на уровень.
-      bankKeys: Object.keys(l.bank || (out.BANKS || {})[key] || {}),
+      // Клипы урока: у A0/A2 они лежат в BANK[урок], у A1 — общие на уровень,
+      // у B1 урок несёт банк своего юнита прямо в объекте.
+      bank: l.bank && typeof l.bank === 'object' ? l.bank : (out.BANKS || {})[key] || {},
+      // Тексты для чтения B1 лежат при уроке и адресуются по имени
+      // ({t:"read", text:"t1"}), поэтому едут вместе с ним.
+      texts: l.texts && typeof l.texts === 'object' ? l.texts : {},
     }
-    if (testKeys.has(key)) tests.push(entry)
-    else lessons.push(entry)
+  }
+
+  const lessons = []
+  const tests = []
+  for (const key of Object.keys(raw)) {
+    const entry = entryOf(key, raw[key])
+    const exam = exams.get(key)
+    if (exam) {
+      // Тест уровня, а не юнита: у него свой узел тропы (X<id>) и свой охват.
+      tests.push({ ...entry, exam, title: entry.title || exam.title, blurb: exam.blurb })
+    } else if (testKeys.has(key)) {
+      tests.push(entry)
+    } else {
+      lessons.push(entry)
+    }
+  }
+
+  // Ревью-тесты юнитов B1 живут не в LESSONS, а в своём объявлении TESTS[юнит]:
+  // {title, lead, body, ins, items, pass}. Экраны теста собираются из items —
+  // тем же движком, что и урок, поэтому дальше по конвейеру они идут как урок.
+  for (const [unitKey, t] of Object.entries(out.TESTS || {})) {
+    if (!t) continue
+    const items = Array.isArray(t.items) ? t.items : []
+    tests.push({
+      key: `T${unitKey}`,
+      no: Number(unitKey),
+      unit: Number(unitKey),
+      title: (t.title && (t.title.en || t.title)) || `Test ${unitKey}`,
+      blurb: (t.lead && (t.lead.en || t.lead)) || '',
+      // Задания теста лежат плоским списком: заворачиваем каждое в группу,
+      // чтобы дальше их разбирал общий flattenGroups. Инструкция у задания
+      // своя далеко не всегда — движок берёт её из общей таблицы теста
+      // (T.ins[тип]), и без этого 156 экранов тестов B1 остались бы без
+      // единой строки задания.
+      groups: items
+        .map((it) =>
+          it && it.t
+            ? {
+                ...it,
+                stage: it.stage || 'test',
+                ins: it.ins || (t.ins && t.ins[it.t]) || null,
+                items: it.items || [it],
+              }
+            : null,
+        )
+        .filter(Boolean),
+      rawItems: items,
+      pass: t.pass || null,
+      bank: {},
+    })
   }
   lessons.sort((a, b) => a.no - b.no)
 
@@ -190,7 +317,7 @@ function readSelfStudyCourse(file) {
     units,
     lessons,
     tests,
-    audio: collectAudio(out, audioTags),
+    audio: collectAudio(out, audioTags, [...lessons, ...tests]),
     perItem: out.PER_ITEM || {},
     stages: out.STAGES || [],
   }

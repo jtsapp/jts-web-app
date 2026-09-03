@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import {
   getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson,
-  getLessonSections, getLessonMessages, sendLessonMessage, setLessonMeetingUrl,
+  getLessonSections, getLessonMessages, sendLessonMessage, editLessonMessage, deleteLessonMessage, setLessonMeetingUrl,
   getLessonMaterialProgress, saveLessonMaterialProgress,
 } from '../api.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
@@ -447,8 +447,25 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       senderName: mine
         ? undefined
         : (m.senderName || (isTeacherMsg ? undefined : m.senderName)),
+      // Права считает сервер: своё правит и удаляет автор, чужое удаляет
+      // ведущий урок. Клиент только не рисует кнопку, которая не сработает.
+      canEdit: !!m.canEdit,
+      canDelete: !!m.canDelete,
+      edited: !!m.editedAt,
     }
   })
+
+  function handleEditMessage(messageId, body) {
+    editLessonMessage(token, lessonId, messageId, body)
+      .then((list) => { if (Array.isArray(list)) setMessages(list) })
+      .catch(() => {})
+  }
+
+  function handleDeleteMessage(messageId) {
+    deleteLessonMessage(token, lessonId, messageId)
+      .then((list) => { if (Array.isArray(list)) setMessages(list) })
+      .catch(() => {})
+  }
 
   /**
    * Пришло ли новое сообщение НЕ от меня — и надо ли звучать.
@@ -1446,6 +1463,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       <TeacherChat
                         messages={chatMessages}
                         onSend={handleSendMessage}
+                        onEdit={handleEditMessage}
+                        onDelete={handleDeleteMessage}
                         token={token}
                         sending={chatSending}
                         title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
@@ -1510,6 +1529,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             <TeacherChat
               messages={chatMessages}
               onSend={handleSendMessage}
+              onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
               token={token}
               sending={chatSending}
               title={t('live.chatSheetTitle')}

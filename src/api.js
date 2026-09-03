@@ -110,6 +110,24 @@ async function authPost(path, token, body) {
   return res.json().catch(() => null)
 }
 
+async function authPatch(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
 async function authDelete(path, token) {
   let res
   try {
@@ -362,6 +380,25 @@ export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
 }
 
+/**
+ * Выдать юниты «Практики» на дом всем участникам урока.
+ *
+ * Уезжает АДРЕС юнита, а не его содержимое: контент «Практики» лежит статикой
+ * здесь же, в кабинете, бэкенд его не хранит (см. AddPracticeUnitsRequest).
+ * Название и раздел идут снимком — чтобы преподаватель в списке заданий видел,
+ * что именно выдал, даже если каталог потом переименуют.
+ *
+ * `batchId` — один на нажатие: повтор с тем же ключом ничего не задваивает,
+ * поэтому двойной клик и ретрай после обрыва безопасны.
+ */
+export function assignPracticeUnits(token, lessonId, { area, units, batchId }) {
+  return authPut(`/admin/homework/lesson/${lessonId}/exercises/from-practice`, token, {
+    area,
+    units,
+    batchId,
+  })
+}
+
 // Заявка на пробный урок — состояние экрана «Уроки» у человека, пришедшего с
 // сайта самостоятельно: назначен ли ему преподаватель, оставлял ли он заявку,
 // взял ли его менеджер (TrialRequestController на бэкенде). Не путать с блоком
@@ -446,6 +483,17 @@ export function sendLessonMessage(token, lessonId, body, attachment) {
     attachmentUrl: attachment?.url,
     attachmentName: attachment?.name,
   })
+}
+
+// Правка и удаление в чате урока. Кто что может — решает сервер (`canEdit` /
+// `canDelete` в ответе): своё правит и удаляет автор, чужое удаляет ведущий
+// урок. Оба запроса возвращают переписку целиком, как и отправка.
+export function editLessonMessage(token, lessonId, messageId, body) {
+  return authPatch(`/admin/lessons/${lessonId}/messages/${messageId}`, token, { body })
+}
+
+export function deleteLessonMessage(token, lessonId, messageId) {
+  return authDelete(`/admin/lessons/${lessonId}/messages/${messageId}`, token)
 }
 
 // URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление
