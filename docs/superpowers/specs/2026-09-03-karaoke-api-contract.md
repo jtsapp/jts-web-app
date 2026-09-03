@@ -14,8 +14,8 @@
 - модуль сделан по образцу уже существующего `comic`: свой сервис хранения в
   MinIO под `karaoke/<slug>/`, `LanguageLevel` для уровня, теги строкой через
   запятую, списки без пагинации, `is_active = false` по умолчанию;
-- разметка (строки с таймкодами) хранится **текстом в строке таблицы**, а не
-  файлом в MinIO и не отдельными строками-записями;
+- разметка (строки с таймкодами) лежит **файлом в MinIO** рядом с фонограммой,
+  в базе только ссылка; отдельными строками-записями её не хранят;
 - веб берёт треки **только из API**, статического фолбэка нет;
 - запись голоса студента на бэкенд не попадает вообще (см. §7).
 
@@ -56,7 +56,7 @@ CREATE TABLE karaoke_tracks (
     cover_image_url  TEXT,
     audio_url        TEXT,
     instrumental_url TEXT,
-    lyrics_json      TEXT,
+    lyrics_url       TEXT,
     description_ru   TEXT,
     description_en   TEXT,
     description_kk   TEXT,
@@ -80,10 +80,12 @@ CREATE INDEX idx_karaoke_active_order ON karaoke_tracks (is_active, order_index,
   MinIO, положенные `KaraokeStorageService` под `karaoke/<slug>/`. Минус
   необязателен; без него веб не показывает выбор фонограммы и не начисляет
   множитель ×1.15.
-- `lyrics_json` — разметка как есть. **Отдельной таблицы строк нет
-  намеренно:** строка караоке не единица редактирования, таймкоды правятся
-  всем блоком после переразметки, и CRUD по строкам никому не нужен. Цена
-  решения: правка одной опечатки = перезаливка всего файла. Это принято.
+- `lyrics_url` — ссылка на разметку в MinIO (`karaoke/<slug>/lyrics.json`).
+  Текста в базе нет: это десятки килобайт на трек, а всё, что нужно каталогу,
+  денормализовано в `line_count` и `duration_sec`. **Отдельной таблицы строк
+  тоже нет:** строка караоке не единица редактирования, таймкоды правятся всем
+  блоком после переразметки, и CRUD по строкам никому не нужен. Цена решения:
+  правка одной опечатки = перезаливка всего файла. Это принято.
 - `line_count` — денормализация ради списка в админке и карточки в каталоге:
   каталог не должен тянуть разметку, чтобы показать «строк: 24». Заполняется
   на заливке разметки.
@@ -167,7 +169,7 @@ CREATE INDEX idx_karaoke_active_order ON karaoke_tracks (is_active, order_index,
 | `POST /admin/karaoke/upload` | всё сразу: метаданные + `audio`, `instrumental`, `cover`, `lyrics` | `karaoke/<slug>/…` |
 | `POST /admin/karaoke/{id}/upload-audio` | поле `audio`, флаг `instrumental` | `karaoke/<slug>/audio.<ext>` или `instrumental.<ext>` |
 | `POST /admin/karaoke/{id}/upload-cover` | поле `cover` | `karaoke/<slug>/cover.<ext>` |
-| `POST /admin/karaoke/{id}/upload-lyrics` | поле `lyrics` | в базу, не в MinIO |
+| `POST /admin/karaoke/{id}/upload-lyrics` | поле `lyrics` | `karaoke/<slug>/lyrics.json` |
 
 Два пути, как у комиксов. **Обычный — `POST /admin/karaoke/upload`**: карточка
 и файлы уезжают одним запросом, и заводить трек можно за один заход.
