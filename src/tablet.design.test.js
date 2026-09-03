@@ -26,7 +26,7 @@ const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 /** Все блоки `@media <cond> { … }` целиком, склеенные. Блоков с одним и тем же
  *  условием в файле несколько (планшетная раскладка и страховка от бокового
  *  выпирания), поэтому вернуть первый попавшийся — значит проверять не то. */
-function mediaBlock(condition) {
+function mediaBlock(condition, css = styles) {
   const needle = `@media ${condition} {`
   // Условие ищется вместе с открывающей скобкой: те же строки встречаются в
   // комментариях («см. @media (max-width: 760px)»), и без скобки находился бы
@@ -34,15 +34,15 @@ function mediaBlock(condition) {
   const blocks = []
   let from = 0
   for (;;) {
-    const start = styles.indexOf(needle, from)
+    const start = css.indexOf(needle, from)
     if (start === -1) break
     let depth = 0
-    for (let i = styles.indexOf('{', start); i < styles.length; i += 1) {
-      if (styles[i] === '{') depth += 1
-      else if (styles[i] === '}') {
+    for (let i = css.indexOf('{', start); i < css.length; i += 1) {
+      if (css[i] === '{') depth += 1
+      else if (css[i] === '}') {
         depth -= 1
         if (depth === 0) {
-          blocks.push(styles.slice(start, i + 1))
+          blocks.push(css.slice(start, i + 1))
           from = i + 1
           break
         }
@@ -212,5 +212,44 @@ describe('планшет: экраны, до которых не доходил�
       }
     }
     expect(offenders).toEqual([])
+  })
+})
+
+// Регрессия «чат с учителем уезжает за правый край в ландшафте iPad».
+//
+// В диапазоне 1000–1420px правая колонка живого урока показывала темы и чат
+// НЕ друг под другом, а бок о бок, и чат обрезался краем экрана. Причина не в
+// направлении флекса, а в переносе: `@media (max-width: 1420px)` ставит
+// `.lw-live-aside { flex-direction: row; flex-wrap: wrap }` — это раскладка
+// старого классрума, где колонка широкая. Экран `.lv` ниже возвращает
+// `flex-direction: column`, но `flex-wrap` не сбрасывает, а колонка с
+// переносом и ограниченной высотой (`.lv { height: 100dvh }`) переносит второй
+// элемент в НОВЫЙ СТОЛБЕЦ справа. Столбец не влезает в 328px колонки, и
+// `overflow: hidden` срезает его по краю.
+//
+// Диапазон ровно совпадает с ландшафтом iPad (1180pt), поэтому на телефоне и
+// на десктопе баг не виден: до 1000px сетка одноколоночная, после 1420px
+// `flex-wrap: wrap` не назначается вовсе.
+describe('живой урок: чат не уезжает за край в ландшафте планшета', () => {
+  // Без снятия комментариев разбор ломает любая `}` в пояснении рядом —
+  // предмет проверки здесь сами правила, а не тексты вокруг них.
+  const clean = stripComments(workspace)
+  const wide = mediaBlock('(max-width: 1420px)', clean)
+  const lvTall = mediaBlock('(min-width: 1000px)', clean)
+
+  it('раскладка старого классрума действительно включает перенос', () => {
+    // Если это когда-нибудь уберут, страховка ниже станет лишней — и тест
+    // должен об этом сказать, а не молча охранять пустоту.
+    const aside = rule(wide, '.lw-live-aside')
+    expect(aside).toBeTruthy()
+    expect(aside).toMatch(/flex-wrap:\s*wrap/)
+  })
+
+  it('живой урок сбрасывает перенос вместе с направлением', () => {
+    const aside = rule(lvTall, '.lv .lw-live-aside')
+    expect(aside).toBeTruthy()
+    expect(aside).toMatch(/flex-direction:\s*column/)
+    // Собственно предмет починки: без nowrap колонка расползается вширь.
+    expect(aside).toMatch(/flex-wrap:\s*nowrap/)
   })
 })
