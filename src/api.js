@@ -110,6 +110,24 @@ async function authPost(path, token, body) {
   return res.json().catch(() => null)
 }
 
+async function authPatch(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
 async function authDelete(path, token) {
   let res
   try {
@@ -446,6 +464,17 @@ export function sendLessonMessage(token, lessonId, body, attachment) {
     attachmentUrl: attachment?.url,
     attachmentName: attachment?.name,
   })
+}
+
+// Правка и удаление в чате урока. Кто что может — решает сервер (`canEdit` /
+// `canDelete` в ответе): своё правит и удаляет автор, чужое удаляет ведущий
+// урок. Оба запроса возвращают переписку целиком, как и отправка.
+export function editLessonMessage(token, lessonId, messageId, body) {
+  return authPatch(`/admin/lessons/${lessonId}/messages/${messageId}`, token, { body })
+}
+
+export function deleteLessonMessage(token, lessonId, messageId) {
+  return authDelete(`/admin/lessons/${lessonId}/messages/${messageId}`, token)
 }
 
 // URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление

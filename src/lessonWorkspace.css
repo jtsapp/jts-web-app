@@ -2527,6 +2527,73 @@
   display: block;
 }
 
+/* Пометка правки: тише текста и на своей строке справа — она сообщает о
+   сообщении, а не продолжает его. */
+.lw-chat__edited {
+  display: block;
+  margin-top: 2px;
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--lw-muted, #898787);
+}
+
+/* Изменить/удалить показываем всегда, а не по наведению: половина учеников
+   сидит с телефона, где наведения нет. */
+.lw-chat__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.lw-chat__actions button {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  font-size: 12px;
+  line-height: 1;
+  opacity: .55;
+  cursor: pointer;
+}
+
+.lw-chat__actions button:hover,
+.lw-chat__actions button:focus-visible {
+  opacity: 1;
+}
+
+.lw-chat__edit-input {
+  width: 100%;
+  margin: 2px 0 6px;
+  padding: 6px 9px;
+  border: 1px solid var(--lw-line, #d5d0e2);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--lw-ink, #181818);
+  font: inherit;
+  font-size: calc(14px * var(--lw-text-scale, 1));
+  outline: none;
+}
+
+.lw-chat__edit-input:focus {
+  border-color: var(--lw-primary, #9047ff);
+}
+
+.lw-chat__edit-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.lw-chat__edit-actions button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: calc(12px * var(--lw-text-scale, 1));
+  font-weight: 700;
+  color: var(--lw-primary-ink, #7a2fe6);
+  cursor: pointer;
+}
+
 .lw-chat__empty {
   margin: 0;
   padding: 18px 8px;
