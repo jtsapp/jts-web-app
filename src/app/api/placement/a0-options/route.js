@@ -5,9 +5,15 @@
 // уходят четыре слова в перемешанном порядке, без пометки, какое верное.
 // Проверка ответа осталась там же, где была, — /api/placement/grade.
 //
-// Почему это не оракул: варианты не зависят от того, что прислал клиент, и
-// повторный запрос отдаёт тот же порядок (сид от id задания). Спрашивать
-// нечего — ответ один и тот же для всех.
+// Почему это не оракул: варианты не зависят от присланных ответов, а только от
+// задания и номера прогона, и повторный запрос той же пары отдаёт то же самое.
+// Спрашивать нечего — ответ на вопрос «что верно» роут не даёт ни при каком
+// запросе.
+//
+// `seed` — номер прогона (`session.seed` у клиента). Он не секрет и не
+// проверяется: его задача не в защите, а в том, чтобы порядок кнопок не был
+// одной и той же константой у всех учеников сразу. Подделав его, ученик лишь
+// получит другую раскладку тех же четырёх слов.
 
 import { buildA0Options } from '@/lib/placementA0.js'
 
@@ -33,8 +39,10 @@ export async function POST(request) {
     return Response.json({ error: `Too many ids (max ${MAX_IDS}).` }, { status: 400 })
   }
 
+  const seed = Number.isFinite(body.seed) ? body.seed : null
+
   try {
-    return Response.json({ options: buildA0Options(body.ids.map(String)) })
+    return Response.json({ options: buildA0Options(body.ids.map(String), seed) })
   } catch (err) {
     console.error('[placement.a0-options] failed', err)
     return Response.json({ error: 'Failed to build options.' }, { status: 500 })

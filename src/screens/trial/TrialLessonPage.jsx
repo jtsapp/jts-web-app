@@ -192,12 +192,14 @@ export default function TrialLessonPage({ token, teacherMode = false }) {
   // Варианты A0-моста знает только сервер: ключи в браузер не уезжают
   // (bankSplit.js). Сеть или роут отказали — возвращаем пусто, и мост покажет
   // обычное поле ввода вместо кнопок (см. buildA0Bridge).
-  const fetchA0Options = async (ids) => {
+  const fetchA0Options = async (ids, runSeed) => {
     try {
       const res = await fetch('/api/placement/a0-options', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids }),
+        // Номер прогона обязателен: без него набор и порядок кнопок вырождаются
+        // в константу, одну на всех учеников сразу.
+        body: JSON.stringify({ ids, seed: runSeed }),
       })
       if (!res.ok) return {}
       return (await res.json()).options || {}
@@ -214,7 +216,7 @@ export default function TrialLessonPage({ token, teacherMode = false }) {
 
     // Провал разминки уводит на A0-мост — тот же вердикт движка, что в тесте.
     if (section?.key === 'routing' && s.routingVerdict() && s.bridgeItems().length) {
-      const a0options = await fetchA0Options(s.bridgeItems().map((it) => it.id))
+      const a0options = await fetchA0Options(s.bridgeItems().map((it) => it.id), s.seed)
       return openBuilt(sections.buildA0Bridge(s, a0options), { title: 'Начнём с самого простого', hint: 'Выберите слово для пропуска.' })
     }
     if (section?.key === 'a0_bridge') {

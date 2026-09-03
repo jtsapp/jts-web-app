@@ -39,9 +39,40 @@ describe('варианты A0-моста', () => {
     }
   })
 
-  it('порядок не меняется между вызовами', () => {
+  it('внутри одного прогона результат стабилен', () => {
     const ids = bridgeIds()
-    expect(buildA0Options(ids)).toEqual(buildA0Options(ids))
+    expect(buildA0Options(ids, 12345)).toEqual(buildA0Options(ids, 12345))
+  })
+
+  it('в разных прогонах отличается не только порядок, но и сам набор слов', () => {
+    // Ради этого сид и включает прогон. Иначе позиция верного ответа —
+    // общеизвестная константа, а мост это ворота: два верных ответа сбрасывают
+    // θ на A1 и возвращают ученика в основной тест.
+    const ids = bridgeIds()
+    const seen = new Set()
+    for (let seed = 0; seed < 40; seed += 1) {
+      const opts = buildA0Options(ids, seed)[ids[0]]
+      seen.add(JSON.stringify([...opts].sort()))
+    }
+    expect(seen.size).toBeGreaterThan(1)
+  })
+
+  it('отвлекающие не сводятся к трём первым словам набора', () => {
+    // Прежний срез `slice(0, 3)` без перемешивания давал `is, are, am` и к
+    // `works`, и к `can`: верным всегда оказывалось единственное слово другого
+    // рода, и мост проходился выбором непохожего, без знания языка.
+    const { keys } = loadFullBank()
+    const ids = bridgeIds()
+    const distractorsSeen = new Set()
+    for (let seed = 0; seed < 40; seed += 1) {
+      for (const [id, opts] of Object.entries(buildA0Options(ids, seed))) {
+        const answers = (keys[id]?.answer || []).map((a) => a.toLowerCase())
+        for (const w of opts) {
+          if (!answers.includes(String(w).toLowerCase())) distractorsSeen.add(String(w).toLowerCase())
+        }
+      }
+    }
+    expect(distractorsSeen.size).toBeGreaterThan(A0_OPTION_COUNT - 1)
   })
 
   it('пустой и мусорный вход ничего не выдаёт', () => {
