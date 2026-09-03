@@ -877,6 +877,27 @@ export function searchComics(token, q) {
   return authGet(`/mobile/comics/search?q=${encodeURIComponent(q)}`, token)
 }
 
+// Каталог караоке (GET /mobile/karaoke) →
+// [{id,slug,title,artist,level,bpm,durationSec,tags,coverUrl,audioUrl,
+//   instrumentalUrl,lyricsUrl,lineCount,description:{ru,en,kk}}].
+// Как и комиксы, материал заводит методист через админку, поэтому кэшируем
+// тем же stale-while-revalidate: каталог меняется раз в неделю, а открывают
+// его каждый заход.
+//
+// Разметку (строки с таймкодами) каталог НЕ содержит — только ссылку на неё;
+// её тянет karaokeData.js уже при открытии трека. Контракт:
+// docs/superpowers/specs/2026-09-03-karaoke-api-contract.md
+export function getKaraokeTracks(token, onFresh) {
+  return cachedAuthGet('/mobile/karaoke', token, onFresh)
+}
+
+// Один караоке-трек (GET /mobile/karaoke/{id}). Нужен на случай диплинка и
+// перезагрузки экрана исполнения: карточка каталога к этому моменту может быть
+// уже не в памяти.
+export function getKaraokeTrack(token, id) {
+  return authGet(`/mobile/karaoke/${encodeURIComponent(id)}`, token)
+}
+
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
 export function getSituativki(token, level, onFresh) {
   const q = level ? `?level=${encodeURIComponent(level)}` : ''
