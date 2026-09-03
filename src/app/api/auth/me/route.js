@@ -4,9 +4,10 @@
 // со своего сервера — браузеру не нужен CORS на dev-server, а мы заодно
 // возвращаем профиль, которым App восстанавливает сессию (имя, уровень, id).
 //
-// Порт felix app/api/auth/me/route.ts.
+// 401 — токен реально отвергнут (клиент может чистить / пробовать refresh).
+// 503 — бэкенд недоступен (клиент НЕ должен разлогинивать).
 
-import { verifyToken } from '@/lib/auth-server.js'
+import { verifyTokenStatus } from '@/lib/auth-server.js'
 
 export const runtime = 'nodejs'
 
@@ -21,9 +22,13 @@ export async function POST(request) {
 
   if (!token) return Response.json({ error: 'Missing access token.' }, { status: 400 })
 
-  const user = await verifyToken(token)
-  // Просрочен или отозван — клиент выкинет токен и покажет welcome.
-  if (!user) return Response.json({ error: 'Token rejected by backend.' }, { status: 401 })
+  const result = await verifyTokenStatus(token)
+  if (result.status === 'unavailable') {
+    return Response.json({ error: 'Backend unavailable.' }, { status: 503 })
+  }
+  if (result.status !== 'ok' || !result.user) {
+    return Response.json({ error: 'Token rejected by backend.' }, { status: 401 })
+  }
 
-  return Response.json({ user })
+  return Response.json({ user: result.user })
 }
