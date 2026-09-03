@@ -61,8 +61,8 @@ import { isMinor } from './lib/birthDate.js'
 import { playTutorSample } from './lib/ielts-audio.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser } from './api.js'
-import { saveToken, clearToken, restoreSession, mergeAnonymousProgress } from './lib/session.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
+import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { isTeacher } from './lib/jwt.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -414,7 +414,16 @@ export default function App() {
           : await verifyLoginOtp(phone, code)
       const tok = data?.accessToken || null
       setToken(tok || null)
-      saveToken(tok || null) // без этого сессия умрёт на первой перезагрузке
+      saveToken(tok || null, data?.refreshToken || null)
+      if (tok && data) {
+        saveUserSnapshot({
+          userId: data.userId,
+          name: data.name || name || null,
+          phone: data.phone || phone || null,
+          email: data.email || email || null,
+          role: data.role || null,
+        })
+      }
       // Уровень берём из профиля на backend. Если его там нет — аккаунт новый
       // (или тест пропускали), и после success покажем CEFR-тест.
       let lvl = null
@@ -512,11 +521,19 @@ export default function App() {
     setError('')
     setLoading(true)
     try {
-      const tok = await loginWithPassword(identifier, password)
+      const data = await loginWithPassword(identifier, password)
+      const tok = data?.accessToken || null
       if (!tok) throw new Error(t('login.failed'))
       setPhone(identifier)
       setToken(tok)
-      saveToken(tok)
+      saveToken(tok, data?.refreshToken || null)
+      saveUserSnapshot({
+        userId: data.userId,
+        name: data.name || null,
+        phone: data.phone || (isEmailIdentifier(identifier) ? null : identifier),
+        email: data.email || (isEmailIdentifier(identifier) ? identifier : null),
+        role: data.role || null,
+      })
       try {
         // null = уровня в профиле нет (тест не пройден или его результат не
         // сохранился) — предлагаем тест снова. Исключение = «не знаю»: тестом
@@ -598,7 +615,14 @@ export default function App() {
       if (!tok) throw new Error(t('err.otp'))
       setName(data?.name || chatName || '')
       setToken(tok)
-      saveToken(tok)
+      saveToken(tok, data?.refreshToken || null)
+      saveUserSnapshot({
+        userId: data.userId,
+        name: data?.name || chatName || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        role: data.role || null,
+      })
       const me = await getCurrentUser(tok).catch(() => null)
       if (!me?.birthDate) {
         setBirthDateGate(true)

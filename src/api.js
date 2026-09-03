@@ -773,8 +773,7 @@ export function loginWithGoogle(idToken) {
 // identifierBody, что у OTP-флоу — раньше уходил только phone, и войти по
 // почте было нельзя, хотя аккаунт с ней заводился.
 export async function loginWithPassword(identifier, password) {
-  const res = await post('/auth/login', { ...identifierBody(identifier), password })
-  return res?.accessToken || null
+  return post('/auth/login', { ...identifierBody(identifier), password })
 }
 
 // Первый пароль для аккаунта, заведённого саморегистрацией по OTP (у него
@@ -850,7 +849,8 @@ export function getPracticeToken(token) {
   }
   if (!_demoTokenPromise) {
     _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD)
-      .then((tok) => {
+      .then((res) => {
+        const tok = res?.accessToken || null
         if (tok) {
           try {
             window.localStorage.setItem(DEMO_TOKEN_KEY, tok)

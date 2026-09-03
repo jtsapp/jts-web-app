@@ -2,18 +2,20 @@
 
 // Сохранение сессии между перезагрузками.
 //
-// Токен лежит в localStorage: SPA ходит в бэкенд напрямую из браузера и цепляет
-// `Authorization: Bearer` клиентским JS, поэтому httpOnly-cookie тут не подошла
-// бы — токен обязан быть читаем из JS. Значит XSS его достанет; защита в том,
-// что он живёт 24ч, а не в хранилище.
+// Access + refresh лежат в localStorage: SPA ходит в бэкенд из браузера с
+// `Authorization: Bearer`, поэтому httpOnly-cookie тут не подходит — токен
+// обязан быть читаем из JS. XSS его достанет; защита — короткий access (24ч)
+// и refresh только для продления сессии.
 //
-// refreshToken намеренно не храним: /auth/refresh на бэкенде отдаёт 500 даже с
-// валидным токеном, поэтому продлить сессию всё равно нечем. Когда его почитят
-// — сюда добавится refresh, и срок жизни сессии вырастет с 24ч до 60 дней.
+// Важно: разлогин только при реальном 401 (токен отвергнут). Сбой сети /
+// 503 бэкенда сессию не сбрасывает — иначе F5 при кратком отвале API
+// выкидывает ученика на welcome.
 
 import { getDeviceId } from './identity.js'
 
 const TOKEN_KEY = 'jts_access_token'
+const REFRESH_KEY = 'jts_refresh_token'
+const USER_KEY = 'jts_user_snapshot'
 
 /**
  * Переносит анонимный прогресс в аккаунт. Зовётся один раз сразу после входа.
@@ -44,50 +46,179 @@ export function loadToken() {
   try {
     return localStorage.getItem(TOKEN_KEY) || null
   } catch {
-    return null // приватный режим / localStorage отключён — работаем как аноним
+    return null
   }
 }
 
-export function saveToken(token) {
+export function loadRefreshToken() {
+  try {
+    return localStorage.getItem(REFRESH_KEY) || null
+  } catch {
+    return null
+  }
+}
+
+function loadUserSnapshot() {
+  try {
+    const raw = localStorage.getItem(USER_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    return data && typeof data === 'object' ? data : null
+  } catch {
+    return null
+  }
+}
+
+export function saveUserSnapshot(user) {
+  try {
+    if (!user) {
+      localStorage.removeItem(USER_KEY)
+      return
+    }
+    localStorage.setItem(
+      USER_KEY,
+      JSON.stringify({
+        userId: user.userId ?? user.id ?? null,
+        name: user.name ?? null,
+        phone: user.phone ?? null,
+        email: user.email ?? null,
+        role: user.role ?? null,
+        languageLevel: user.languageLevel ?? null,
+        birthDate: user.birthDate ?? null,
+        isDemoAccount: !!user.isDemoAccount,
+      }),
+    )
+  } catch {
+    /* ignore */
+  }
+}
+
+/** access обязателен; refresh/user — по возможности с ответа логина. */
+export function saveToken(token, refreshToken) {
   try {
     if (token) localStorage.setItem(TOKEN_KEY, token)
     else localStorage.removeItem(TOKEN_KEY)
+
+    if (refreshToken !== undefined) {
+      if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+      else localStorage.removeItem(REFRESH_KEY)
+    }
   } catch {
     /* не сохранили — сессия просто не переживёт перезагрузку */
   }
 }
 
+export function saveAuthSession({ accessToken, refreshToken, user } = {}) {
+  if (!accessToken) {
+    clearToken()
+    return
+  }
+  saveToken(accessToken, refreshToken ?? null)
+  if (user) saveUserSnapshot(user)
+}
+
 export function clearToken() {
-  saveToken(null)
+  try {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_KEY)
+    localStorage.removeItem(USER_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+async function fetchMe(token) {
+  const res = await fetch('/api/auth/me', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  return res
+}
+
+async function tryRefresh() {
+  const refreshToken = loadRefreshToken()
+  if (!refreshToken) return null
+  try {
+    const res = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    })
+    if (res.status === 401) return null
+    if (!res.ok) return 'unavailable'
+    const data = await res.json().catch(() => null)
+    if (!data?.accessToken) return null
+    saveToken(data.accessToken, data.refreshToken || refreshToken)
+    const prev = loadUserSnapshot() || {}
+    saveUserSnapshot({
+      ...prev,
+      userId: data.userId ?? prev.userId ?? null,
+      name: data.name ?? prev.name ?? null,
+      phone: data.phone ?? prev.phone ?? null,
+      email: data.email ?? prev.email ?? null,
+      role: data.role ?? prev.role ?? null,
+    })
+    return data.accessToken
+  } catch {
+    return 'unavailable'
+  }
+}
+
+function sessionFromSnapshot(token) {
+  const snap = loadUserSnapshot()
+  if (!token) return null
+  // Даже без снимка держим токен: App хотя бы не уйдёт на welcome зря.
+  return { ...(snap || {}), token }
 }
 
 /**
  * Проверяет сохранённый токен через наш сервер (он ходит в бэкенд `/user/me`).
- * Возвращает { userId, name, phone, role, languageLevel } либо null — токена
- * нет, он просрочен или бэкенд недоступен. Битый токен подчищаем сразу.
+ * Возвращает { userId, name, phone, role, languageLevel, token } либо null.
+ * Чистим storage только если бэкенд явно отверг access и refresh.
  */
 export async function restoreSession() {
-  const token = loadToken()
+  let token = loadToken()
   if (!token) return null
 
   let res
   try {
-    res = await fetch('/api/auth/me', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    })
+    res = await fetchMe(token)
   } catch {
-    // Сети нет. Токен не трогаем — он может быть ещё живой, просто оффлайн.
-    return null
+    return sessionFromSnapshot(token)
+  }
+
+  if (res.ok) {
+    const data = await res.json().catch(() => null)
+    if (data?.user) {
+      saveUserSnapshot(data.user)
+      return { ...data.user, token }
+    }
   }
 
   if (res.status === 401) {
-    clearToken() // бэкенд отверг — держать его смысла нет
+    const refreshed = await tryRefresh()
+    if (refreshed === 'unavailable') return sessionFromSnapshot(token)
+    if (typeof refreshed === 'string' && refreshed) {
+      token = refreshed
+      try {
+        res = await fetchMe(token)
+        if (res.ok) {
+          const data = await res.json().catch(() => null)
+          if (data?.user) {
+            saveUserSnapshot(data.user)
+            return { ...data.user, token }
+          }
+        }
+        if (res.status !== 401) return sessionFromSnapshot(token)
+      } catch {
+        return sessionFromSnapshot(token)
+      }
+    }
+    clearToken()
     return null
   }
-  if (!res.ok) return null
 
-  const data = await res.json().catch(() => null)
-  return data?.user ? { ...data.user, token } : null
+  // 503 / 5xx / прочее — токен не трогаем
+  return sessionFromSnapshot(token)
 }
