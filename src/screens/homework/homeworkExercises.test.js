@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { answersKey, dedupeTail, exerciseBatches, exerciseBlock, isAnswered, lessonExercises, loadAnswers, pendingAnswers, readableInstruction, revokedEverything, saveAnswers } from './homeworkExercises.js'
+import { answersKey, dedupeTail, exerciseBatches, exerciseBlock, exerciseGroups, groupBlock, groupKey, isAnswered, lessonExercises, loadAnswers, pendingAnswers, readableInstruction, revokedEverything, saveAnswers } from './homeworkExercises.js'
 
 describe('homeworkExercises', () => {
   beforeEach(() => localStorage.clear())
@@ -256,5 +256,73 @@ describe('отозванная выдача', () => {
   it('отозванные не попадают в список заданий', () => {
     const hw = { exercises: [задание({ id: 1, revoked: true }), задание({ id: 2 })] }
     expect(lessonExercises(hw).map((e) => e.id)).toEqual([2])
+  })
+})
+
+// Задания одного типа — одной карточкой.
+//
+// На настоящей работе преподаватель добавляет с урока весь блок разом: восемь
+// десятков заданий превращались в восемь десятков карточек с одинаковой
+// инструкцией во весь экран и восемью десятками кнопок «Проверить».
+describe('exerciseGroups — задания одной формулировки в одной карточке', () => {
+  const ex = (id, type, instruction) => ({
+    id,
+    instruction,
+    question: { id: `q${id}`, type },
+  })
+
+  it('одинаковый тип и инструкция — одна группа', () => {
+    const groups = exerciseGroups([
+      ex(1, 'gap', 'Build the word.'),
+      ex(2, 'gap', 'Build the word.'),
+      ex(3, 'gap', 'Build the word.'),
+    ])
+    expect(groups).toHaveLength(1)
+    expect(groups[0].exercises.map((e) => e.id)).toEqual([1, 2, 3])
+  })
+
+  it('та же инструкция, но другой тип — разные группы', () => {
+    // У пропуска и у выбора разный разбор: под одну кнопку «Проверить» их
+    // класть нельзя, даже когда формулировка совпала слово в слово.
+    const groups = exerciseGroups([
+      ex(1, 'gap', 'Choose the answer.'),
+      ex(2, 'choice', 'Choose the answer.'),
+    ])
+    expect(groups).toHaveLength(2)
+  })
+
+  it('порядок групп — по первому появлению, не по числу заданий', () => {
+    const groups = exerciseGroups([
+      ex(1, 'choice', 'Pick one.'),
+      ex(2, 'gap', 'Build the word.'),
+      ex(3, 'gap', 'Build the word.'),
+    ])
+    expect(groups.map((g) => g.title)).toEqual(['Pick one.', 'Build the word.'])
+  })
+
+  it('вступление урока вместо инструкции не дробит карточки', () => {
+    // readableInstruction выбрасывает такие тексты, и без общего ключа каждое
+    // задание снова стало бы своей карточкой — ровно то, от чего уходим.
+    const preamble = 'How to study this lesson. About 20–30 minutes. Headphones on.'
+    const groups = exerciseGroups([ex(1, 'gap', preamble), ex(2, 'gap', preamble)])
+    expect(groups).toHaveLength(1)
+    expect(groups[0].title).toBe('')
+  })
+
+  it('карточка группы несёт все вопросы и одну подпись', () => {
+    const block = groupBlock(exerciseGroups([
+      ex(1, 'gap', 'Build the word.'),
+      ex(2, 'gap', 'Build the word.'),
+    ])[0])
+    expect(block.type).toBe('practice')
+    expect(block.title).toBe('Build the word.')
+    expect(block.questions.map((q) => q.id)).toEqual(['q1', 'q2'])
+  })
+
+  it('ключ группы опознаёт её по первому заданию', () => {
+    const groups = exerciseGroups([ex(7, 'gap', 'A'), ex(8, 'gap', 'A'), ex(9, 'gap', 'B')])
+    expect(groupKey(groups[0])).toBe('hw-7')
+    expect(groupKey(groups[1])).toBe('hw-9')
+    expect(groupKey(groups[0])).not.toBe(groupKey(groups[1]))
   })
 })

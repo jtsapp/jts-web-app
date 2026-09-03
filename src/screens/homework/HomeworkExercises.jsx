@@ -3,7 +3,7 @@ import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { saveHomeworkAnswer } from '../../api.js'
-import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { exerciseBatches, exerciseGroups, groupBlock, groupKey, isAnswered, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
 // PracticeBlock, что и на уроке, — здесь только состояние ответов и отправка.
@@ -51,11 +51,26 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   // «Проверить» — момент, когда ответ осмыслен: показываем разбор и отправляем
   // его преподавателю. Не сохранилось — говорим об этом, а не делаем вид, что
   // работа ушла: ученик должен знать, что его ответ преподаватель не увидит.
-  const onCheck = (exercise) => {
-    const key = `hw-${exercise.id}`
+  // Кнопка теперь одна на карточку, а заданий под ней несколько, поэтому
+  // отправляем ТОЛЬКО тронутые: нетронутые ушли бы на сервер пустыми, и
+  // преподаватель увидел бы их неверными, хотя ученик до них не дошёл.
+  const onCheck = (group) => {
+    const key = groupKey(group)
     setChecked((prev) => new Set(prev).add(key))
+    // Отметку «не сохранилось» снимаем один раз на нажатие, а не по каждому
+    // успеху: под одним ключом уезжает несколько ответов, и успех второго
+    // затирал бы отказ первого — ученик решил бы, что всё ушло.
+    setFailed((prev) => {
+      if (!prev.has(key)) return prev
+      const next = new Set(prev)
+      next.delete(key)
+      return next
+    })
     if (!token || hw?.id == null) return
+    for (const exercise of group.exercises) sendAnswer(exercise, key)
+  }
 
+  const sendAnswer = (exercise, key) => {
     const answer = answers[exercise.question.id] ?? null
     // Кнопка «Проверить» на нетронутом задании — просьба показать разбор, а не
     // ответ. Отправлять пустое нельзя: попытка записывалась как состоявшаяся и
@@ -67,11 +82,6 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
     const { correct } = gradeQuestion(exercise.question, answer)
     saveHomeworkAnswer(hw.id, exercise.id, token, answer, correct)
       .then((saved) => {
-        setFailed((prev) => {
-          const next = new Set(prev)
-          next.delete(key)
-          return next
-        })
         // Сервер возвращает работу целиком. Раньше её выбрасывали, и «Отправить
         // на проверку» весь сеанс считала по данным на момент открытия: ученик
         // решал задания, а кнопка оставалась мёртвой, пока он не перезагрузит
@@ -127,16 +137,16 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
             </div>
 
             <div className="hw-exercises">
-              {batch.exercises.map((e) => {
-                const key = `hw-${e.id}`
+              {exerciseGroups(batch.exercises).map((group) => {
+                const key = groupKey(group)
                 return (
-                  <div className="hw-exercise" key={e.id}>
+                  <div className="hw-exercise" key={key}>
                     <PracticeBlock
-                      block={exerciseBlock(e)}
+                      block={groupBlock(group)}
                       answers={answers}
                       checked={checked.has(key)}
                       onAnswer={onAnswer}
-                      onCheck={() => onCheck(e)}
+                      onCheck={() => onCheck(group)}
                     />
                     {failed.has(key) && <p className="hw-exercise__error">{t('homework.answerNotSaved')}</p>}
                   </div>

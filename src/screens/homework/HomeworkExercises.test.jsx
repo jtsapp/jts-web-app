@@ -226,3 +226,59 @@ describe('HomeworkExercises: отправки видны раздельно', ()
     expect(screen.getByText('0 из 2 решено')).toBeTruthy()
   })
 })
+
+// Ради чего всё затевалось: на настоящей работе преподаватель добавляет с урока
+// весь блок разом, и по карточке на задание экран становился нечитаемым —
+// восемь десятков повторов одной инструкции и восемь десятков кнопок.
+describe('HomeworkExercises: задания одной формулировки — одна карточка', () => {
+  const same = (id) => ({
+    id,
+    instruction: 'Build the word. Type the missing form.',
+    question: { id: `q${id}`, type: 'gap', gapBefore: 'I', gapAfter: '.', answers: ['work'] },
+  })
+
+  beforeEach(() => {
+    localStorage.clear()
+    saveHomeworkAnswer.mockClear()
+    saveHomeworkAnswer.mockResolvedValue({})
+  })
+
+  it('три задания одного типа дают одну карточку с одной кнопкой', () => {
+    const { container } = show({ id: 10, exercises: [same(1), same(2), same(3)] })
+
+    expect(container.querySelectorAll('.lw-practice')).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: /Проверить/i })).toHaveLength(1)
+    // Инструкция печатается один раз, а не над каждым заданием.
+    expect(screen.getAllByText('Build the word. Type the missing form.')).toHaveLength(1)
+    // Счётчик считает задания, а не карточки: ученику важно, сколько решать.
+    expect(screen.getByText('0 из 3 решено')).toBeTruthy()
+  })
+
+  it('по кнопке уходят только тронутые задания, нетронутые молчат', async () => {
+    const { container } = show({ id: 11, exercises: [same(1), same(2), same(3)] })
+
+    // Отвечаем в первое поле из трёх и жмём единственную кнопку.
+    const inputs = container.querySelectorAll('input.lw-gap-input')
+    expect(inputs).toHaveLength(3)
+    fireEvent.change(inputs[0], { target: { value: 'work' } })
+    fireEvent.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    await waitFor(() => expect(saveHomeworkAnswer).toHaveBeenCalledTimes(1))
+    // Именно один вызов: нетронутые два ушли бы пустыми, и преподаватель
+    // увидел бы их неверными, хотя ученик до них не дошёл.
+    expect(saveHomeworkAnswer.mock.calls[0][1]).toBe(1)
+  })
+
+  it('разный тип под одной формулировкой не сливается в карточку', () => {
+    const gap = same(1)
+    const choice = {
+      id: 2,
+      instruction: gap.instruction,
+      question: { id: 'q2', type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' },
+    }
+    const { container } = show({ id: 12, exercises: [gap, choice] })
+
+    // У пропуска и у выбора разный разбор — под одну кнопку их класть нельзя.
+    expect(container.querySelectorAll('.lw-practice')).toHaveLength(2)
+  })
+})
