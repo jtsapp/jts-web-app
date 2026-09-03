@@ -32,6 +32,9 @@ import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import ComicReader from './ComicReader.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
+import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
+import { unitToPayload } from './practice/assignPractice.js'
+import { isTeacher } from '../lib/jwt.js'
 import GrammarLesson from './GrammarLesson.jsx'
 import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/grammar/grammarData.js'
 import {
@@ -444,6 +447,39 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
   // — он нужен и рейлу в «Все», и полному каталогу.
   const [grammarIndex, setGrammarIndex] = useState(null)
   const [grammarLevel, setGrammarLevel] = useState(() => levelToCourse(userLevel))
+
+  // Выдача заданий на дом — только преподавателю. Раздел «Практика» до этого был
+  // от него скрыт вовсе (Sidebar, TEACHER_SECTIONS), хотя заданий в нём больше,
+  // чем в самих уроках, — с этого и началась просьба.
+  const teacher = isTeacher(token)
+
+  // Отмеченное хранится ВМЕСТЕ с уровнем, а не рядом с ним. Уровень входит в
+  // адрес юнита, а не только в его показ: «Unit 3» уровня A2 и «Unit 3» уровня
+  // B1 — разные задания, и при смене уровня выбор обязан обнулиться. Сброс
+  // эффектом дал бы кадр, в котором панель ещё показывает чужой выбор, а
+  // нажатие в этот кадр отправило бы номера с прошлого уровня.
+  const [picked, setPicked] = useState({ level: grammarLevel, units: [] })
+  // Через useMemo, а не выражением: иначе список пересоздаётся каждый рендер и
+  // тянет за собой пересчёт множества ниже, а с ним и перерисовку каталога.
+  const pickedUnits = useMemo(
+    () => (picked.level === grammarLevel ? picked.units : []),
+    [picked, grammarLevel],
+  )
+  const pickedIds = useMemo(() => new Set(pickedUnits.map((u) => u.id)), [pickedUnits])
+
+  const togglePickedUnit = (unit) => {
+    setPicked((prev) => {
+      const units = prev.level === grammarLevel ? prev.units : []
+      return {
+        level: grammarLevel,
+        units: units.some((u) => u.id === unit.id)
+          ? units.filter((u) => u.id !== unit.id)
+          : [...units, unit],
+      }
+    })
+  }
+
+  const clearPickedUnits = () => setPicked({ level: grammarLevel, units: [] })
   const [grammarSearch, setGrammarSearch] = useState('')
   const [openUnit, setOpenUnit] = useState(null) // { level, unit }
 
@@ -753,6 +789,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
                 search={grammarSearch}
                 onSearch={setGrammarSearch}
                 onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
+                pickMode={teacher}
+                pickedIds={pickedIds}
+                onTogglePick={togglePickedUnit}
               />
             ) : (
               <div className="gr-loading">{t('practice.loading')}</div>
@@ -1101,6 +1140,19 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
             setSituations((list) => list.map((x) => (x.id === id ? { ...x, completed: true } : x)))
           }
           isDemoAccount={isDemoAccount}
+        />
+      )}
+
+      {/* Панель выдачи стоит поверх страницы, а не в потоке каталога: пока
+          преподаватель листает уровни и разделы, отмеченное и кнопка должны
+          оставаться на месте. */}
+      {teacher && (
+        <AssignPracticeBar
+          token={apiToken}
+          area="grammar"
+          level={grammarLevel}
+          units={pickedUnits.map((u) => unitToPayload(grammarLevel, u))}
+          onClear={clearPickedUnits}
         />
       )}
     </LearningLayout>

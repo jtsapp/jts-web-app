@@ -33,8 +33,13 @@ const NAV_FULL = [
 const NAV = TUTOR_ONLY ? NAV_FULL.filter((i) => TUTOR_ONLY_SECTIONS.includes(i.key)) : NAV_FULL
 
 // Разделы преподавателя. Остальное в списке — его собственное обучение, которого
-// у него нет: Практика, Тьютор, IELTS и Словарь ученические (design-spec §4.2).
-const TEACHER_SECTIONS = ['lessons']
+// у него нет: Тьютор, IELTS и Словарь ученические (design-spec §4.2).
+//
+// «Практика» — исключение, и по просьбе самих преподавателей: заданий там
+// больше, чем в уроках, а выдать их на дом было неоткуда. Прогресс и лимиты у
+// преподавателя при этом свои, пустые, — он раздел не проходит, а выдаёт из
+// него задания (см. AssignPracticeBar).
+const TEACHER_SECTIONS = ['lessons', 'practice']
 
 // 1253 → «1 253» (как в мобильном HUD)
 function groupNum(n) {
