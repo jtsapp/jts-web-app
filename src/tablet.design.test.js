@@ -14,7 +14,13 @@ import { fileURLToPath } from 'node:url'
 // колонки, а не то, как их посчитает jsdom (он медиа-запросы не применяет).
 
 const here = dirname(fileURLToPath(import.meta.url))
-const read = (name) => readFileSync(join(here, name), 'utf8')
+// Переносы приводим к одному виду прямо при чтении. Условия @media ниже
+// записаны в несколько строк и ищутся подстрокой, а рабочая копия на Windows
+// лежит с CRLF: git отдаёт файлы в родном для системы виде, и .gitattributes
+// это не фиксирует. Без нормализации ни один многострочный запрос не находится,
+// и проверки планшетной раскладки падают у всех, кто работает не на Linux, —
+// при том что в CI они зелёные.
+const read = (name) => readFileSync(join(here, name), 'utf8').split('\r\n').join('\n')
 const styles = read('styles.css')
 const tutor = read('tutor.css')
 const course = read('course.css')
