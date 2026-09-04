@@ -546,8 +546,37 @@ function BrowseLessons({ t, lang, index, scope, meta, activeLevel, userLevel, on
   )
 }
 
-function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }) {
+/**
+ * Слова урока — карточками с картинкой, как в самом уроке.
+ *
+ * Картинка приходила с каталогом всё это время: заливка словаря вытаскивает её
+ * из HTML, кладёт в хранилище и проставляет карточке `imageUrl`
+ * (VocabCatalogUploadService на бэкенде). Блок урока её показывает
+ * (workspace/blocks/VocabBlock.jsx), а этот экран — единственное место, где
+ * слово и картинка встречались в одних данных и расходились на рендере.
+ *
+ * Переворот по клику, а не всё сразу: на лицевой стороне картинка и слово,
+ * перевод на обороте. Иначе картинка перестаёт работать — подпись рядом с ней
+ * отвечает на вопрос раньше, чем ученик успевает вспомнить.
+ */
+/* Экспортируется ради теста: экран чисто отрисовочный, и проверять его через
+   весь VocabularyPage значит поднимать каталог, уровни и три клика навигации
+   ради разметки одной карточки. */
+export function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }) {
   const cards = cardsOf(lesson)
+  const [flipped, setFlipped] = useState(() => new Set())
+  // Ссылка есть, а файл не грузится (404, битый объект) — считаем карточку
+  // безкартиночной, иначе на лице останется пустое место в три четверти
+  // карточки. Та же развилка, что и в блоке урока.
+  const [imgFailed, setImgFailed] = useState(() => new Set())
+
+  const toggle = (key) => setFlipped((prev) => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    return next
+  })
+
   const source = meta?.kind === 'field'
     ? ((lang === 'kk' ? meta.kk : meta.ru) || meta.en || meta.id)
     : t('vocab.home.core')
@@ -570,22 +599,67 @@ function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }) {
           </button>
         </div>
       </div>
+      {cards.length > 0 && <p className="vp-words-hint">{t('vocab.flipHint')}</p>}
       <div className="vp-words">
-        {cards.map((card) => (
-          <div className="vp-wcard" key={card.id || card.en}>
-            <div className="top">
-              <b>{card.en}</b>
-              <button type="button" className="vp-spk" onClick={() => speak(card.en)} aria-label="speak"><IconSpeaker /></button>
+        {cards.map((card, i) => {
+          const key = card.id || `${card.en}-${i}`
+          const isFlipped = flipped.has(key)
+          const hasImg = !!card.imageUrl && !imgFailed.has(key)
+          return (
+            // Динамик — сосед карточки, а не её потомок: карточка сама кнопка,
+            // а вложенная кнопка невалидна и ломает переворот — браузер
+            // закрывает внешний тег раньше.
+            <div className="vp-pcard-wrap" key={key}>
+              <button
+                type="button"
+                className={`vp-pcard${isFlipped ? ' is-flipped' : ''}${hasImg ? '' : ' is-noimg'}`}
+                onClick={() => toggle(key)}
+                aria-pressed={isFlipped}
+              >
+                <span className="vp-pcard__inner">
+                  <span className="vp-pcard__face vp-pcard__front">
+                    {hasImg ? (
+                      <img
+                        className="vp-pcard__pic"
+                        src={card.imageUrl}
+                        alt=""
+                        loading="lazy"
+                        onError={() => setImgFailed((prev) => new Set(prev).add(key))}
+                      />
+                    ) : (
+                      // Без картинки карточка не «пустая»: слово в реплике —
+                      // та же фигура, что и в знаке школы.
+                      <span className="vp-pcard__bub"><span>{card.en}</span></span>
+                    )}
+                    <span className="vp-pcard__strip">
+                      <b>{card.en}</b>
+                      {card.ipa && <i>/{String(card.ipa).replace(/^\/|\/$/g, '')}/</i>}
+                    </span>
+                  </span>
+                  <span className="vp-pcard__face vp-pcard__back">
+                    <span className="vp-pcard__bin">
+                      <span className="vp-pcard__tr">{trOf(card, lang)}</span>
+                      {exampleHtml(card) ? (
+                        <span className="vp-pcard__ex" dangerouslySetInnerHTML={{ __html: exampleHtml(card) }} />
+                      ) : card.def ? (
+                        <span className="vp-pcard__ex">{card.def}</span>
+                      ) : null}
+                    </span>
+                    <span className="vp-pcard__foot">{source} · {level} · {t('vocab.lesson.lesson')} {lesson.no}</span>
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="vp-spk vp-pcard-spk"
+                onClick={() => speak(card.en)}
+                aria-label={t('vocab.speak')}
+              >
+                <IconSpeaker />
+              </button>
             </div>
-            <div className="tr">{trOf(card, lang)}</div>
-            {exampleHtml(card) ? (
-              <div className="ex" dangerouslySetInnerHTML={{ __html: exampleHtml(card) }} />
-            ) : card.def ? (
-              <div className="ex">{card.def}</div>
-            ) : null}
-            <div className="foot">{source} · {level} · {t('vocab.lesson.lesson')} {lesson.no}</div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       {cards.length > 0 && (
         <div className="vp-sticky-cta">
