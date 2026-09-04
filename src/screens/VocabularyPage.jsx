@@ -13,7 +13,7 @@ import {
 } from '../api.js'
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { topVocabMisses } from './vocab/vocabMisses.js'
-import { learnedCount, learnedKeys, learnedInCards } from './vocab/vocabLearned.js'
+import { learnedCount, learnedKeys, learnedInCards, vocabKey, recordVocabLearned, forgetVocabLearned } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
 import { levelIndex } from '../kingdoms.js'
 
@@ -228,6 +228,8 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       <LessonWords
         t={t}
         lang={vlang}
+        token={token}
+        scopeId={scopeMeta?.id || activeLevel || null}
         lesson={lesson}
         meta={scopeMeta}
         speak={speak}
@@ -570,9 +572,29 @@ function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLe
 /* Экспортируется ради теста: экран чисто отрисовочный, и проверять его через
    весь VocabularyPage значит поднимать каталог, уровни и три клика навигации
    ради разметки одной карточки. */
-export function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }) {
+export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBack, onPractice }) {
   const cards = cardsOf(lesson)
   const [flipped, setFlipped] = useState(() => new Set())
+  // Отметка «изучено» руками. Прогресс писала только проверка, но слово можно
+  // знать и без неё — а число у урока считается из того же множества, поэтому
+  // отметка сразу двигает и его, и счётчик уровня.
+  const [learned, setLearned] = useState(() => learnedKeys(token, scopeId))
+
+  const toggleLearned = (card) => {
+    const key = vocabKey(card)
+    if (!key || !scopeId) return
+    setLearned((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+        forgetVocabLearned(token, scopeId, [key])
+      } else {
+        next.add(key)
+        recordVocabLearned(token, scopeId, [key])
+      }
+      return next
+    })
+  }
   // Ссылка есть, а файл не грузится (404, битый объект) — считаем карточку
   // безкартиночной, иначе на лице останется пустое место в три четверти
   // карточки. Та же развилка, что и в блоке урока.
@@ -613,6 +635,7 @@ export function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }
           const key = card.id || `${card.en}-${i}`
           const isFlipped = flipped.has(key)
           const hasImg = !!card.imageUrl && !imgFailed.has(key)
+          const isLearned = learned.has(vocabKey(card))
           return (
             // Динамик — сосед карточки, а не её потомок: карточка сама кнопка,
             // а вложенная кнопка невалидна и ломает переворот — браузер
@@ -620,7 +643,7 @@ export function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }
             <div className="vp-pcard-wrap" key={key}>
               <button
                 type="button"
-                className={`vp-pcard${isFlipped ? ' is-flipped' : ''}${hasImg ? '' : ' is-noimg'}`}
+                className={`vp-pcard${isFlipped ? ' is-flipped' : ''}${hasImg ? '' : ' is-noimg'}${isLearned ? ' is-learned' : ''}`}
                 onClick={() => toggle(key)}
                 aria-pressed={isFlipped}
               >
@@ -664,6 +687,20 @@ export function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }
                 aria-label={t('vocab.speak')}
               >
                 <IconSpeaker />
+              </button>
+              {/* Тоже соседом, а не внутри: карточка — кнопка, вложенная в неё
+                  кнопка невалидна и ломает переворот. */}
+              <button
+                type="button"
+                className={`vp-pcard-mark${isLearned ? ' is-on' : ''}`}
+                onClick={() => toggleLearned(card)}
+                aria-pressed={isLearned}
+                aria-label={t(isLearned ? 'vocab.unmarkLearned' : 'vocab.markLearned')}
+                title={t(isLearned ? 'vocab.unmarkLearned' : 'vocab.markLearned')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
           )

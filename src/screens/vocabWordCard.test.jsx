@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 import { LessonWords } from './VocabularyPage.jsx'
+import { learnedCount, recordVocabLearned } from './vocab/vocabLearned.js'
 
 // Карточка урока рисуется без сети: слова и ссылки на картинки приезжают
 // вместе с каталогом (`imageUrl` проставляет VocabCatalogUploadService), а
@@ -13,7 +14,7 @@ function lessonWith(cards) {
   return { no: 1, title: 'Coffee — yes. Mondays — no.', cards }
 }
 
-function draw(cards, speak = () => {}) {
+function draw(cards, speak = () => {}, extra = {}) {
   return render(
     <LessonWords
       t={t}
@@ -23,6 +24,7 @@ function draw(cards, speak = () => {}) {
       speak={speak}
       onBack={() => {}}
       onPractice={() => {}}
+      {...extra}
     />,
   )
 }
@@ -136,5 +138,61 @@ describe('Карточка слова в словаре', () => {
     const { container } = draw([{ ...WITH_PIC, ipa: '/laɪk/' }])
 
     expect(container.querySelector('.vp-pcard__strip i').textContent).toBe('/laɪk/')
+  })
+})
+
+describe('Отметка «изучено»', () => {
+  beforeEach(() => localStorage.clear())
+
+  const withStore = { token: null, scopeId: 'A0' }
+
+  it('нажатие помечает слово и сохраняет прогресс', () => {
+    const { container } = draw([WITH_PIC], () => {}, withStore)
+    const mark = container.querySelector('.vp-pcard-mark')
+
+    expect(mark.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(mark)
+
+    expect(mark.getAttribute('aria-pressed')).toBe('true')
+    expect(container.querySelector('.vp-pcard').className).toContain('is-learned')
+    // Прогресс тот же, из которого считаются счётчики урока и уровня.
+    expect(learnedCount(null, 'A0')).toBe(1)
+  })
+
+  it('повторное нажатие снимает отметку', () => {
+    // Поставить и не суметь убрать — это не отметка, а ловушка.
+    const { container } = draw([WITH_PIC], () => {}, withStore)
+    const mark = container.querySelector('.vp-pcard-mark')
+
+    fireEvent.click(mark)
+    fireEvent.click(mark)
+
+    expect(mark.getAttribute('aria-pressed')).toBe('false')
+    expect(container.querySelector('.vp-pcard').className).not.toContain('is-learned')
+    expect(learnedCount(null, 'A0')).toBe(0)
+  })
+
+  it('уже изученное слово открывается помеченным', () => {
+    recordVocabLearned(null, 'A0', ['c1_like'])
+    const { container } = draw([WITH_PIC], () => {}, withStore)
+
+    expect(container.querySelector('.vp-pcard-mark').getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('отметка не переворачивает карточку', () => {
+    const { container } = draw([WITH_PIC], () => {}, withStore)
+    fireEvent.click(container.querySelector('.vp-pcard-mark'))
+
+    expect(container.querySelector('.vp-pcard').getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('помечается только та карточка, по которой нажали', () => {
+    const { container } = draw([WITH_PIC, NO_PIC], () => {}, withStore)
+    const marks = container.querySelectorAll('.vp-pcard-mark')
+
+    fireEvent.click(marks[0])
+
+    expect(marks[0].getAttribute('aria-pressed')).toBe('true')
+    expect(marks[1].getAttribute('aria-pressed')).toBe('false')
   })
 })
