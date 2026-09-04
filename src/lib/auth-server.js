@@ -64,38 +64,43 @@ export function bearerFromRequest(request) {
 }
 
 export async function verifyToken(token) {
-  if (!token) return null
+  const result = await verifyTokenStatus(token)
+  return result.user
+}
+
+/**
+ * Различаем «токен отвергнут» и «бэкенд недоступен».
+ * Иначе 502/таймаут выглядит как протухшая сессия и клиент чистит localStorage.
+ */
+export async function verifyTokenStatus(token) {
+  if (!token) return { status: 'unauthorized', user: null }
   try {
     const res = await fetch(`${BACKEND_URL}/user/me`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       cache: 'no-store',
     })
+    if (res.status === 401 || res.status === 403) {
+      return { status: 'unauthorized', user: null }
+    }
     if (!res.ok) {
-      // Различаем «бэкенд отверг токен» и «бэкенд недоступен» — иначе любая
-      // проблема конфига/сети выглядит как протухшая сессия и разлогинивает.
-      console.error('[auth] backend rejected token:', res.status, BACKEND_URL)
-      return null
+      console.error('[auth] backend unavailable for /user/me:', res.status, BACKEND_URL)
+      return { status: 'unavailable', user: null }
     }
     const user = await res.json()
-    if (user?.id == null) return null
+    if (user?.id == null) return { status: 'unauthorized', user: null }
     return {
-      userId: Number(user.id),
-      name: user.name ?? null,
-      phone: user.phone ?? null,
-      email: user.email ?? null,
-      role: user.role ?? null,
-      // Демо-статус приезжает тем же запросом, которым проверяется токен:
-      // отдельный поход на бэкенд ради одного флага стоил бы каждому запросу
-      // книги лишний round-trip (см. /api/books/[id]).
-      isDemoAccount: !!user.isDemoAccount,
-      // Для восстановления сессии на клиенте: /api/auth/me отдаёт это в App,
-      // чтобы уровень не сбрасывался на A1 после перезагрузки.
-      languageLevel: user.languageLevel ?? null,
-      // Возраст решает доступ к жёсткому нраву тьютора (кнопка 18+). Берём из
-      // того же /user/me, что уже запрошен для проверки токена: гейт на
-      // сервере не должен верить телу запроса, иначе он обходится curl'ом.
-      birthDate: user.birthDate ?? null,
+      status: 'ok',
+      user: {
+        userId: Number(user.id),
+        name: user.name ?? null,
+        phone: user.phone ?? null,
+        email: user.email ?? null,
+        role: user.role ?? null,
+        isDemoAccount: !!user.isDemoAccount,
+        languageLevel: user.languageLevel ?? null,
+        birthDate: user.birthDate ?? null,
+      },
     }
   } catch (err) {
     console.error(
@@ -103,7 +108,7 @@ export async function verifyToken(token) {
       err?.cause?.code || err?.cause?.message || err?.message || err,
       BACKEND_URL,
     )
-    return null
+    return { status: 'unavailable', user: null }
   }
 }
 

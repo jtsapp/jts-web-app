@@ -8,6 +8,7 @@
 // Порт felix lib/db/profile.ts.
 
 import { getSql } from './sql.js'
+import { matchesReviewItem, splitReviewLists } from './reviewMatch.js'
 
 function trimText(s, max = 240) {
   if (typeof s !== 'string') return null
@@ -76,6 +77,11 @@ export async function upsertProfile(deviceId, patch) {
                           then ${patch.writing ? sql.json(patch.writing) : null}::jsonb
                           else writing
                         end,
+      placement       = case
+                          when ${patch.placement !== undefined}
+                          then ${patch.placement ? sql.json(patch.placement) : null}::jsonb
+                          else placement
+                        end,
       updated_at      = now(),
       last_seen_at    = now()
     where device_id = ${deviceId}
@@ -126,29 +132,79 @@ export async function reviewItem(deviceId, item, correct) {
   const text = trimText(item, 240)
   if (!text) return
   const key = text.toLowerCase()
+  // Кандидатов тянем в JS и сравниваем токенами (matchesReviewItem), а не
+  // подстрокой в SQL: тьютор эхом отдаёт короткий ярлык, а в базе лежит длинная
+  // строка «категория: сказал → правильно (правило)», и LIKE в обе стороны на
+  // живых данных промахивался почти всегда — за всё время в проде log_review
+  // долетел до строки ОДИН раз на 56. Лимит 300 держит выборку маленькой:
+  // у самого нагруженного ученика прода 12 строк.
   const rows = await sql`
-    select id, box from review_item
+    select id, box, item, item_key from review_item
     where device_id = ${deviceId}
-      and (item_key = ${key}
-           or item_key like ${'%' + key + '%'}
-           or ${key} like '%' || item_key || '%')
     order by due_at asc
-    limit 1
+    limit 300
   `
-  if (rows.length === 0) return
-  const box = correct
-    ? Math.min((rows[0].box | 0) + 1, LEITNER_DAYS.length - 1)
-    : 0
+  const hit =
+    rows.find((r) => r.item_key === key) || rows.find((r) => matchesReviewItem(r.item, text))
+  if (!hit) return
+  const box = correct ? Math.min((hit.box | 0) + 1, LEITNER_DAYS.length - 1) : 0
   const days = LEITNER_DAYS[box]
   await sql`
     update review_item set
       box        = ${box},
       reps       = reps + 1,
       lapses     = lapses + ${correct ? 0 : 1},
+      serves     = 0,
       due_at     = now() + make_interval(days => ${days}),
       updated_at = now()
-    where id = ${rows[0].id}
+    where id = ${hit.id}
   `
+}
+
+/**
+ * Отметить, что перечисленные строки уже уехали тьютору в этой сессии, и
+ * отодвинуть их следующий показ.
+ *
+ * Зачем это поверх Leitner. Лестницу двигает только log_review, а модель зовёт
+ * его почти никогда (в проде — один вызов на 56 строк). Без этого «показали»
+ * коробка вечно остаётся нулевой, `due_at` вечно в прошлом, и одни и те же
+ * шесть ошибок влезают в промпт КАЖДОГО звонка — ученик слышит один и тот же
+ * Past Simple из сессии в сессию.
+ *
+ * Поэтому сам показ тоже считается повторением: строка уходит на паузу длиной
+ * в свою коробку, а после UNACKED_SERVES_TO_ADVANCE показов без обратной связи
+ * коробка двигается сама. Ошибка не исчезает — она перестаёт быть ежедневной.
+ */
+const UNACKED_SERVES_TO_ADVANCE = 3
+
+export async function touchServedReviews(deviceId, items) {
+  const sql = getSql()
+  if (!sql) return
+  const texts = (Array.isArray(items) ? items : []).map((x) => trimText(x, 240)).filter(Boolean)
+  if (texts.length === 0) return
+  try {
+    const keys = texts.map((t) => t.toLowerCase())
+    const rows = await sql`
+      select id, box, serves from review_item
+      where device_id = ${deviceId} and item_key = any(${keys}::text[])
+    `
+    for (const r of rows) {
+      const serves = (r.serves | 0) + 1
+      const advance = serves >= UNACKED_SERVES_TO_ADVANCE
+      const box = advance ? Math.min((r.box | 0) + 1, LEITNER_DAYS.length - 1) : r.box | 0
+      await sql`
+        update review_item set
+          box        = ${box},
+          serves     = ${advance ? 0 : serves},
+          due_at     = now() + make_interval(days => ${LEITNER_DAYS[box]}),
+          updated_at = now()
+        where id = ${r.id}
+      `
+    }
+  } catch {
+    // Колонка serves появляется в 0006; на неприехавшей миграции просто
+    // не двигаем расписание — как было до фикса, но без 500 на выдаче токена.
+  }
 }
 
 export async function appendTopics(deviceId, raw, tx = null) {
@@ -304,7 +360,7 @@ export async function loadProfile(deviceId) {
   if (!sql) return null
   const baseRows = await sql`
     select level, lang, style, goal, tutor, tutor_temper, interests, profession,
-           minutes_per_day, skills, writing, safety_alert
+           minutes_per_day, skills, writing, safety_alert, placement
     from learner
     where device_id = ${deviceId}
   `
@@ -313,7 +369,7 @@ export async function loadProfile(deviceId) {
 
   const [
     mistakesRows, topicsRows, factsRows, vocabRows, resolvedRows, lessonRows,
-    dueRows, dueVocabRows,
+    dueRows, dueVocabRows, parkedRows,
   ] = await Promise.all([
       // Берём с запасом (30): после отсева «пройденных» ниже должно остаться
       // полное окно активных ошибок.
@@ -370,20 +426,34 @@ export async function loadProfile(deviceId) {
         order by due_at asc
         limit 6
       `.catch(() => []),
+      // Отложенные повторения: SR их уже показывал и увёл на паузу. Нужны,
+      // чтобы такая ошибка не вернулась в промпт через чёрный ход блоком
+      // «Recent learner mistakes» — текст там тот же, приказ «revisit and quiz»
+      // тоже, и без этого пауза не давала бы ничего.
+      //
+      // Условие `box > 0 or serves > 0` намеренно узкое: свежая ошибка (нулевая
+      // коробка, ни одного показа) в блок ошибок попасть должна — иначе тьютор
+      // забудет её до завтра, и второй звонок за день начнётся с амнезии.
+      sql`
+        select item from review_item
+        where device_id = ${deviceId} and kind = 'mistake'
+          and due_at > now() and (box > 0 or serves > 0)
+        limit 300
+      `.catch(() => []),
     ])
 
   const resolved = resolvedRows.map((r) => r.resolved)
-  const resolvedLower = resolved.map((r) => r.toLowerCase())
-  // Прячем ошибки, которые ученик перерос: если «пройденный» токен входит в
-  // текст ошибки (или наоборот), считаем освоенным и не даём тьютору её долбить.
-  // Подстрочное сравнение — намеренно нестрогое.
-  const activeMistakes = mistakesRows
-    .map((r) => r.mistake)
-    .filter((m) => {
-      const ml = m.toLowerCase()
-      return !resolvedLower.some((r) => r && (ml.includes(r) || r.includes(ml)))
-    })
-    .slice(0, 12)
+  // Отсев «пройденного» и развод двух списков — в splitReviewLists. Сравнение
+  // там по токенам, а НЕ подстрокой, как было: ярлык «Past Simple questions
+  // with did» не является подстрокой текста ошибки, где стоит «question» в
+  // единственном числе и в кавычках, так что отсев не срабатывал ни разу и
+  // тьютор гонял пройденное дальше.
+  const { dueReviews, mistakes: activeMistakes } = splitReviewLists({
+    mistakes: mistakesRows.map((r) => r.mistake),
+    due: dueRows.map((r) => r.item),
+    parked: parkedRows.map((r) => r.item),
+    resolved,
+  })
 
   return {
     deviceId,
@@ -400,16 +470,14 @@ export async function loadProfile(deviceId) {
     minutesPerDay: base.minutes_per_day,
     skills: base.skills ?? null,
     writing: base.writing ?? null,
+    // Снимок результата теста уровня: θ, SE и флаги качества прохождения —
+    // по ним видно, насколько уверенной была оценка.
+    placement: base.placement ?? null,
     mistakes: activeMistakes,
     // Тот же отсев «пройденных», что у activeMistakes: приложение помечает ошибку
     // освоенной через resolved_log, но review_item отдельная таблица и её строка
     // живёт дальше. Без фильтра тьютор долбил бы ошибку, которую ученик перерос.
-    dueReviews: dueRows
-      .map((r) => r.item)
-      .filter((m) => {
-        const ml = m.toLowerCase()
-        return !resolvedLower.some((r) => r && (ml.includes(r) || r.includes(ml)))
-      }),
+    dueReviews,
     dueVocab: dueVocabRows.map((r) => r.item),
     topics: topicsRows.map((r) => r.topic),
     facts: factsRows.map((r) => r.fact),

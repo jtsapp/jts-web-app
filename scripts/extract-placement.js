@@ -1,9 +1,11 @@
 // Вытаскивает из бандла школы (jts-placement.html) данные теста на определение
 // уровня в файлы проекта — сам тест собран нативно (src/practice/placement/),
 // html нужен только как источник:
-//   public/practice/placement/bank.json  — банк заданий: BANK с применёнными
-//     патчами дистракторов + BANK2 (minimal pairs, клипы, аудирование,
-//     интерактивные форматы)
+//   public/practice/placement/bank.json  — банк заданий БЕЗ ответов: BANK с
+//     применёнными патчами дистракторов + BANK2 (minimal pairs, клипы,
+//     аудирование, интерактивные форматы)
+//   src/practice/placement/keys.generated.json — ответы к ним: файл серверный,
+//     в браузер не уезжает (см. src/practice/placement/bankSplit.js)
 //   src/practice/placement/strings.js    — строки интерфейса (ru/kk/en)
 //
 // Аудио и видео (jts-bank/) в репозитории уже лежат и не трогаются.
@@ -15,6 +17,7 @@ const path = require('path')
 const ROOT = path.join(__dirname, '..')
 const SRC = process.argv[2] || path.join(ROOT, '.placement-src/jts-placement.html')
 const OUT_BANK = path.join(ROOT, 'public/practice/placement/bank.json')
+const OUT_KEYS = path.join(ROOT, 'src/practice/placement/keys.generated.json')
 const OUT_STRINGS = path.join(ROOT, 'src/practice/placement/strings.js')
 const OUT_ENGINE = path.join(ROOT, 'src/practice/placement/engine.generated.js')
 
@@ -80,7 +83,7 @@ function applyPatches(bank, patches) {
   return applied
 }
 
-function run() {
+async function run() {
   if (!fs.existsSync(SRC)) throw new Error(`не найден исходник: ${SRC}`)
   const html = fs.readFileSync(SRC, 'utf8')
 
@@ -93,15 +96,28 @@ function run() {
   const patches = new Function(`return ${literalAfter(html, 'const BANK_PATCHES = [')}`)()
   const applied = applyPatches(bank, patches)
 
+  // Движок пишем первым: разделение банка использует его seededShuffle, чтобы
+  // перемешивания совпадали с теми, что делает клиент.
+  writeEngine(html)
+
+  // Ключи в браузер не уезжают: банк раскладывается на публичную часть и
+  // ответы (bankSplit.js), иначе тест можно просто прочитать.
+  const { splitBank } = await import(
+    require('url').pathToFileURL(path.join(ROOT, 'src/practice/placement/bankSplit.js')).href
+  )
+  const full = { bank, bank2, manifest, vocab, appliedPatches: applied }
+  const { public: publicBank, keys } = splitBank(full)
+
   fs.mkdirSync(path.dirname(OUT_BANK), { recursive: true })
-  fs.writeFileSync(OUT_BANK, JSON.stringify({ bank, bank2, manifest, vocab, appliedPatches: applied }))
+  fs.writeFileSync(OUT_BANK, JSON.stringify(publicBank))
+  fs.writeFileSync(OUT_KEYS, JSON.stringify(keys, null, 2))
   const kb = (fs.statSync(OUT_BANK).size / 1024) | 0
+  const kkb = (fs.statSync(OUT_KEYS).size / 1024) | 0
   console.log(
     `bank.json — заданий ${bank.items.length}, патчей ${applied.length},` +
-      ` слов LexTALE ${Object.keys(vocab).length} (${kb} KB)`,
+      ` слов LexTALE ${Object.keys(vocab).length} (${kb} KB, без ответов)`,
   )
-
-  writeEngine(html)
+  console.log(`keys.generated.json — ключей ${Object.keys(keys.items).length} (${kkb} KB, только сервер)`)
 
   // Строки интерфейса: объект I18N с тремя языками.
   const i18n = new Function(`return ${literalAfter(html, 'const STR = ')}`)()
@@ -154,7 +170,10 @@ export {
 
 if (require.main === module) {
   try {
-    run()
+    run().catch((e) => {
+      console.error(String(e.message || e))
+      process.exit(1)
+    })
   } catch (e) {
     console.error(String(e.message || e))
     process.exit(1)

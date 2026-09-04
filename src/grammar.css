@@ -1475,3 +1475,140 @@
     background: none;
   }
 }
+
+/* --- Выдача заданий «Практики» на дом (преподаватель) --------------------- */
+
+/* Отмеченная карточка. Заметно, но без «выбранного» синего поверх обложки:
+   обложка тут — способ узнать юнит, и закрашивать её нельзя. */
+.gr-gcard.is-picked {
+  border-color: var(--purple, #9047ff);
+  box-shadow: 0 0 0 2px rgba(144, 71, 255, 0.35), 0 12px 30px rgba(23, 19, 38, 0.12);
+}
+
+.gr-pickhint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #6b6580;
+}
+
+/* Панель поверх страницы: преподаватель листает уровни и разделы, а отмеченное
+   и кнопка должны оставаться на месте. */
+.pr-assign {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 40;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 12px 10px 18px;
+  border-radius: 999px;
+  background: #1c1830;
+  color: #fff;
+  box-shadow: 0 14px 40px rgba(23, 19, 38, 0.3);
+}
+
+.pr-assign__count { font-size: 14px; font-weight: 700; }
+
+.pr-assign__actions { display: flex; align-items: center; gap: 8px; }
+
+.pr-assign__ghost,
+.pr-assign__go {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pr-assign__ghost { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.pr-assign__go { background: var(--purple, #9047ff); color: #fff; }
+.pr-assign__go:disabled { opacity: 0.6; cursor: default; }
+
+.pr-assign--done { background: #14532d; }
+.pr-assign--done button {
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Лист выбора урока раскрывается ВВЕРХ от панели: вниз ему некуда — она и так
+   у нижнего края экрана. */
+.pr-assign__sheet {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  padding: 14px 16px 12px;
+  border-radius: 18px;
+  background: #fff;
+  color: #181818;
+  box-shadow: 0 18px 50px rgba(23, 19, 38, 0.28);
+}
+
+.pr-assign__sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 14.5px;
+}
+
+.pr-assign__sheet-head button {
+  border: none;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+  color: #6b6580;
+  cursor: pointer;
+}
+
+.pr-assign__lessons { list-style: none; margin: 0; padding: 0; }
+
+.pr-assign__lessons button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 12px;
+  background: #f6f4fb;
+  margin-bottom: 6px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pr-assign__lessons button:hover { background: #ece7f9; }
+.pr-assign__lessons button:disabled { opacity: 0.6; cursor: default; }
+
+.pr-assign__lesson-who { font-size: 14px; font-weight: 600; }
+.pr-assign__lesson-when { font-size: 12.5px; color: #6b6580; white-space: nowrap; }
+
+.pr-assign__hint,
+.pr-assign__note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #6b6580;
+}
+
+.pr-assign__error {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #b91c1c;
+}

@@ -31,7 +31,11 @@ import { lessonMastery } from '../practice/shadowing/mastery.js'
 import SituativkaOverlay from '../components/SituativkaOverlay.jsx'
 import BookDetail, { normTitle } from './BookDetail.jsx'
 import ComicReader from './ComicReader.jsx'
+import KaraokeTrack from './KaraokeTrack.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
+import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
+import { unitToPayload } from './practice/assignPractice.js'
+import { isTeacher } from '../lib/jwt.js'
 import GrammarLesson from './GrammarLesson.jsx'
 import { loadGrammarIndex, levelToCourse, GRAMMAR_LEVELS } from '../practice/grammar/grammarData.js'
 import {
@@ -40,8 +44,10 @@ import {
   comicStatus,
   visibleComics,
 } from '../practice/comics/comicsData.js'
+import { loadKaraokeIndex, trackProgress as karaokeProgress } from '../practice/karaoke/karaokeData.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
+import { loadModule } from '../lib/lazyModule.js'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
 // открывает мир нативно внутри приложения (src/practice/fairytale/).
@@ -278,6 +284,11 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
   // пустеет и от поиска: иначе неудачный запрос прятал бы раздел вместе с
   // собственной строкой поиска, и стереть её было бы негде.
   const [hasComics, setHasComics] = useState(false)
+  // Караоке — тот же принцип, что у комиксов: каталог только из API, пустой
+  // список = раздела на экране нет вовсе. Поиск здесь клиентский (серверного
+  // эндпоинта в контракте нет — библиотека штучная, десятки треков, а не сотни).
+  const [karaoke, setKaraoke] = useState([])
+  const [karaokeQuery, setKaraokeQuery] = useState('')
   // Профиль читателя для гейта 18+. Пока null: бэкенд не отдаёт birthDate
   // (обещали добавить). Когда начнёт — сюда придёт объект с этим полем, и
   // взрослые увидят помеченные комиксы без других правок.
@@ -349,6 +360,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
           // только карточки уровня студента (для этого хватило бы `situations`).
           pull((onFresh) => getSituativki(tok, null, onFresh), setSituativkiAll),
           pull((onFresh) => getAudiobooks(tok, onFresh), setBooks, enrichCovers),
+          pull((onFresh) => loadKaraokeIndex(tok, onFresh), setKaraoke),
           pull((onFresh) => getSavedWords(tok, onFresh), setWords),
         ])
       })
@@ -438,11 +450,54 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     return books.filter((b) => `${b.title || ''} ${b.author || ''}`.toLowerCase().includes(q))
   }, [books, bookQuery])
 
+  // Караоке ищем на клиенте: каталог приходит целиком и он маленький (треки
+  // штучные, размечает их методист руками), серверного поиска в контракте нет.
+  const visibleKaraoke = useMemo(() => {
+    const q = karaokeQuery.trim().toLowerCase()
+    if (!q) return karaoke
+    return karaoke.filter((k) =>
+      `${k.title} ${k.artist} ${k.tags.join(' ')}`.toLowerCase().includes(q),
+    )
+  }, [karaoke, karaokeQuery])
+
   // Грамматика: нативный каталог уроков (данные — public/practice/grammar/,
   // см. scripts/extract-grammar.js). Лёгкий index грузим один раз при монтировании
   // — он нужен и рейлу в «Все», и полному каталогу.
   const [grammarIndex, setGrammarIndex] = useState(null)
   const [grammarLevel, setGrammarLevel] = useState(() => levelToCourse(userLevel))
+
+  // Выдача заданий на дом — только преподавателю. Раздел «Практика» до этого был
+  // от него скрыт вовсе (Sidebar, TEACHER_SECTIONS), хотя заданий в нём больше,
+  // чем в самих уроках, — с этого и началась просьба.
+  const teacher = isTeacher(token)
+
+  // Отмеченное хранится ВМЕСТЕ с уровнем, а не рядом с ним. Уровень входит в
+  // адрес юнита, а не только в его показ: «Unit 3» уровня A2 и «Unit 3» уровня
+  // B1 — разные задания, и при смене уровня выбор обязан обнулиться. Сброс
+  // эффектом дал бы кадр, в котором панель ещё показывает чужой выбор, а
+  // нажатие в этот кадр отправило бы номера с прошлого уровня.
+  const [picked, setPicked] = useState({ level: grammarLevel, units: [] })
+  // Через useMemo, а не выражением: иначе список пересоздаётся каждый рендер и
+  // тянет за собой пересчёт множества ниже, а с ним и перерисовку каталога.
+  const pickedUnits = useMemo(
+    () => (picked.level === grammarLevel ? picked.units : []),
+    [picked, grammarLevel],
+  )
+  const pickedIds = useMemo(() => new Set(pickedUnits.map((u) => u.id)), [pickedUnits])
+
+  const togglePickedUnit = (unit) => {
+    setPicked((prev) => {
+      const units = prev.level === grammarLevel ? prev.units : []
+      return {
+        level: grammarLevel,
+        units: units.some((u) => u.id === unit.id)
+          ? units.filter((u) => u.id !== unit.id)
+          : [...units, unit],
+      }
+    })
+  }
+
+  const clearPickedUnits = () => setPicked({ level: grammarLevel, units: [] })
   const [grammarSearch, setGrammarSearch] = useState('')
   const [openUnit, setOpenUnit] = useState(null) // { level, unit }
 
@@ -497,6 +552,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     // Чип комиксов появляется вместе с контентом: до первой заливки каталог
     // пуст, и чип вёл бы на пустой экран.
     ...(hasComics ? [{ key: 'comics', label: t('practice.chip.comics') }] : []),
+    ...(karaoke.length > 0 ? [{ key: 'karaoke', label: t('practice.chip.karaoke') }] : []),
   ]
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
@@ -526,6 +582,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
   const [openReel, setOpenReel] = useState(null)
   const [openBook, setOpenBook] = useState(null)
   const [openComic, setOpenComic] = useState(null)
+  const [openKaraoke, setOpenKaraoke] = useState(null)
 
   // Мир сказок: движок Fairytale's World открывается полноэкранным оверлеем
   // поверх Практики (deep-link на конкретную сказку). Модуль ~3 МБ (base64-
@@ -539,8 +596,12 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     }
     taleLoadingRef.current = true
     try {
-      const mod = await import('../practice/fairytale/taleWorld.js')
-      mod.openTaleWorld(tale.id)
+      // loadModule, а не голый import: без catch отказ загрузки уходил в
+      // никуда — нажатие на карточку не делало ровно ничего, ни экрана, ни
+      // ошибки. Чаще всего так ломается вкладка, открытая до выката; она сама
+      // перезагрузится (см. lib/lazyModule.js).
+      const mod = await loadModule(() => import('../practice/fairytale/taleWorld.js'))
+      mod?.openTaleWorld(tale.id)
     } finally {
       taleLoadingRef.current = false
     }
@@ -578,9 +639,13 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     }
     taleLoadingRef.current = true
     try {
-      const mod = await import('../practice/situations/situationsOverlay.js')
-      mod.openSituations(level)
-      if (!seen.includes(level)) markSituationLevelDone(level)
+      const mod = await loadModule(() => import('../practice/situations/situationsOverlay.js'))
+      // Уровень отмечаем пройденным только когда он правда открылся: иначе
+      // сорвавшаяся загрузка списала бы его из квоты впустую.
+      if (mod) {
+        mod.openSituations(level)
+        if (!seen.includes(level)) markSituationLevelDone(level)
+      }
     } finally {
       taleLoadingRef.current = false
     }
@@ -660,6 +725,21 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
         <ReelsViewer clips={clips} startIndex={openReel} onBack={() => setOpenReel(null)} />
+      </LearningLayout>
+    )
+  }
+
+  if (openKaraoke) {
+    return (
+      <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+        <KaraokeTrack
+          track={openKaraoke}
+          token={apiToken}
+          onBack={() => setOpenKaraoke(null)}
+          onWordSaved={(w) =>
+            w?.word && setWords((ws) => [w, ...ws.filter((x) => x.id !== w.id)])
+          }
+        />
       </LearningLayout>
     )
   }
@@ -744,6 +824,9 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
                 search={grammarSearch}
                 onSearch={setGrammarSearch}
                 onOpen={(u) => setOpenUnit({ level: grammarLevel, unit: u })}
+                pickMode={teacher}
+                pickedIds={pickedIds}
+                onTogglePick={togglePickedUnit}
               />
             ) : (
               <div className="gr-loading">{t('practice.loading')}</div>
@@ -933,6 +1016,68 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
           </section>
           )}
 
+          {/* Караоке — треки с построчной разметкой; каталог из /mobile/karaoke,
+              разметка отдельным JSON (тянется уже при открытии трека). Раздела
+              нет вовсе, пока в каталоге пусто: собственных треков штучное
+              количество, и пустая лента выглядела бы поломкой. */}
+          {show('karaoke') && karaoke.length > 0 && (
+          <section id="sec-karaoke" className="pp-sec">
+            <SectionHead title={t('practice.chip.karaoke')} onAll={() => setFilter('karaoke')}>
+              <label className="pp-search">
+                <SearchIcon size={15} />
+                <input
+                  type="search"
+                  value={karaokeQuery}
+                  onChange={(e) => setKaraokeQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Escape' && setKaraokeQuery('')}
+                  placeholder={t('karaoke.search')}
+                  aria-label={t('karaoke.searchAria')}
+                />
+                {karaokeQuery && (
+                  <button
+                    type="button"
+                    className="pp-search__clear"
+                    onClick={() => setKaraokeQuery('')}
+                    aria-label={t('karaoke.clear')}
+                  >
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                  </button>
+                )}
+              </label>
+            </SectionHead>
+            {visibleKaraoke.length === 0 ? (
+              <Empty text={t('karaoke.nothing', { q: karaokeQuery.trim() })} />
+            ) : (
+            <Rail grid={grid}>
+              {visibleKaraoke.map((k) => {
+                const st = karaokeProgress(k.slug)
+                return (
+                  <button
+                    key={k.slug || k.id}
+                    type="button"
+                    className="pp-ccard pp-ccard--square"
+                    onClick={() => setOpenKaraoke(k)}
+                  >
+                    <Thumb src={k.coverUrl} alt={k.title} className="pp-ccard__cover" />
+                    <div className="pp-ccard__title">{k.title}</div>
+                    {k.artist && <div className="pp-ccard__author">{k.artist}</div>}
+                    <div className="pp-ccard__meta">
+                      <Dots level={k.level} />
+                      {k.level && <span className="pp-ccard__cefr">{k.level}</span>}
+                    </div>
+                    <div className="pp-ccard__pages">
+                      {st.best.full
+                        ? t('karaoke.best', { n: st.best.full })
+                        : t('karaoke.lines', { n: k.lineCount || 0 })}
+                    </div>
+                  </button>
+                )
+              })}
+            </Rail>
+            )}
+          </section>
+          )}
+
           {/* Сказки — реестр из fairytales.html (title/desc/len/chars + coverGrad) */}
           {show('tales') && (
           <section id="sec-tales" className="pp-sec">
@@ -1092,6 +1237,19 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
             setSituations((list) => list.map((x) => (x.id === id ? { ...x, completed: true } : x)))
           }
           isDemoAccount={isDemoAccount}
+        />
+      )}
+
+      {/* Панель выдачи стоит поверх страницы, а не в потоке каталога: пока
+          преподаватель листает уровни и разделы, отмеченное и кнопка должны
+          оставаться на месте. */}
+      {teacher && (
+        <AssignPracticeBar
+          token={apiToken}
+          area="grammar"
+          level={grammarLevel}
+          units={pickedUnits.map((u) => unitToPayload(grammarLevel, u))}
+          onClear={clearPickedUnits}
         />
       )}
     </LearningLayout>

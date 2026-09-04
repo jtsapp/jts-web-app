@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import {
   getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson,
-  getLessonSections, getLessonMessages, sendLessonMessage, setLessonMeetingUrl,
+  getLessonSections, getLessonMessages, sendLessonMessage, editLessonMessage, deleteLessonMessage, setLessonMeetingUrl,
   getLessonMaterialProgress, saveLessonMaterialProgress,
 } from '../api.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
@@ -11,7 +11,7 @@ import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '..
 import { canControl } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
-import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio } from './live/audioReport.js'
+import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import { useWatchAnnounce } from './live/useWatchAnnounce.js'
 import LiveHeader from './live/LiveHeader.jsx'
@@ -184,6 +184,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const [calledBy, setCalledBy] = useState(null)
   const [callNonce, setCallNonce] = useState(0)
   const [watchedBy, setWatchedBy] = useState(null)
+  // Трансляция преподавателя, которую браузер отказался проиграть без жеста
+  // (iOS: ученик вошёл на урок по F5, мимо кнопки входа, — см. audioReport.js).
+  // Само событие, а не флаг: нажатие «Включить звук» должно доиграть именно то,
+  // что не прозвучало, иначе ученик узнает о запрете и всё равно не услышит.
+  const [blockedAudio, setBlockedAudio] = useState(null)
   // Слово, которое преподаватель только что положил ученику в словарь.
   const [savedWord, setSavedWord] = useState(null)
   const [savedWordNonce, setSavedWordNonce] = useState(0)
@@ -447,8 +452,25 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       senderName: mine
         ? undefined
         : (m.senderName || (isTeacherMsg ? undefined : m.senderName)),
+      // Права считает сервер: своё правит и удаляет автор, чужое удаляет
+      // ведущий урок. Клиент только не рисует кнопку, которая не сработает.
+      canEdit: !!m.canEdit,
+      canDelete: !!m.canDelete,
+      edited: !!m.editedAt,
     }
   })
+
+  function handleEditMessage(messageId, body) {
+    editLessonMessage(token, lessonId, messageId, body)
+      .then((list) => { if (Array.isArray(list)) setMessages(list) })
+      .catch(() => {})
+  }
+
+  function handleDeleteMessage(messageId) {
+    deleteLessonMessage(token, lessonId, messageId)
+      .then((list) => { if (Array.isArray(list)) setMessages(list) })
+      .catch(() => {})
+  }
 
   /**
    * Пришло ли новое сообщение НЕ от меня — и надо ли звучать.
@@ -549,7 +571,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     onVocabSaved: () => playCue('word'),
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
-    onAudioBroadcast: (evt) => playBroadcastAudio(evt),
+    //
+    // Жеста тут нет ни одного, и на iOS браузер вправе отказать. Тогда ученику
+    // нужна кнопка «Включить звук» (blockedAudio выше), а не тишина: раньше
+    // отказ глушился и выглядел как «преподаватель ничего не включал».
+    onAudioBroadcast: (evt) => {
+      // Трансляцию остановили — доигрывать нечего, кнопку убираем.
+      if (evt?.action === 'stop') setBlockedAudio(null)
+      playBroadcastAudio(evt, {
+        onStarted: () => setBlockedAudio(null),
+        onBlocked: () => setBlockedAudio(evt),
+      })
+    },
     onFocus: (evt) => {
       // Зов на доску адреса материала не несёт — раздел там ни при чём.
       if (evt.view === 'board') {
@@ -1211,7 +1244,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           Вызов ученик снимает сам: это обращение к нему, и
                           гасить его должен человек, а не таймер. Метку
                           просмотра снимает преподаватель, закрыв чужой экран. */}
-                      {(calledBy != null || watchedBy != null || savedWord != null) && (
+                      {(calledBy != null || watchedBy != null || savedWord != null || blockedAudio != null) && (
                         <div className="lv-flags" role="status">
                           {calledBy != null && (
                             <span className="lv-flag lv-flag--call" key={callNonce}>
@@ -1235,6 +1268,28 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                             <span className="lv-flag lv-flag--word" key={savedWordNonce}>
                               {t('live.wordSaved', { word: savedWord })}
                             </span>
+                          )}
+                          {/* Браузер отказался играть трансляцию без жеста (iOS: ученик
+                              попал на урок по F5, мимо кнопки входа). Кнопка и снимает
+                              запрет, и доигрывает ровно то событие, которое не прозвучало —
+                              иначе ученик узнал бы о запрете, но так ничего и не услышал. */}
+                          {blockedAudio != null && (
+                            <button
+                              type="button"
+                              className="lv-flag lv-flag--sound"
+                              title={t('live.enableSoundHint')}
+                              onClick={() => {
+                                const evt = blockedAudio
+                                setBlockedAudio(null)
+                                unlockBroadcastAudio()
+                                playBroadcastAudio(evt, {
+                                  onStarted: () => setBlockedAudio(null),
+                                  onBlocked: () => setBlockedAudio(evt),
+                                })
+                              }}
+                            >
+                              {t('live.enableSound')}
+                            </button>
                           )}
                         </div>
                       )}
@@ -1446,6 +1501,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                       <TeacherChat
                         messages={chatMessages}
                         onSend={handleSendMessage}
+                        onEdit={handleEditMessage}
+                        onDelete={handleDeleteMessage}
                         token={token}
                         sending={chatSending}
                         title={isStaff ? t('lesson.ws.chatStaff') : t('lesson.ws.chat')}
@@ -1510,6 +1567,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             <TeacherChat
               messages={chatMessages}
               onSend={handleSendMessage}
+              onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
               token={token}
               sending={chatSending}
               title={t('live.chatSheetTitle')}

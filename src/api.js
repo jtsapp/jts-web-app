@@ -46,9 +46,22 @@ async function get(path) {
   return res.json()
 }
 
-// CEFR-тест: банк вопросов (публичный эндпоинт, адаптивная логика — на клиенте)
-export function getAdaptiveQuestions() {
-  return get('/adaptive-test/questions')
+// CEFR-тест. Проверка ответов и оценка уровня живут на сервере: банк вопросов
+// публичный, поэтому вместе с вопросами уезжал и ключ, а посчитанный на клиенте
+// уровень был не измерением, а утверждением клиента. Теперь сервер выдаёт по
+// одному вопросу за раз и сам считает θ.
+//
+// Токен необязателен: сайт тестирует посетителя до регистрации. Если он есть —
+// прогон привязывается к аккаунту и уровень сохраняется в профиль.
+export function startAdaptiveSession(token) {
+  return authPost('/adaptive-test/sessions', token, {})
+}
+
+export function submitAdaptiveAnswer({ sessionToken, questionId, optionId, token }) {
+  return authPost(`/adaptive-test/sessions/${encodeURIComponent(sessionToken)}/answers`, token, {
+    questionId,
+    optionId,
+  })
 }
 
 // Ролевые сценарии для голосового тьютора — публичный эндпоинт (INK AI tutor,
@@ -66,7 +79,13 @@ async function authGet(path, token) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 404 у профильных полей означает «не заполнено»,
+    // а не поломку — отличать это от сетевой осечки приходится по нему.
+    const err = new Error(`Ошибка сервера (${res.status})`)
+    err.status = res.status
+    throw err
+  }
   return res.json()
 }
 
@@ -97,6 +116,24 @@ async function authPost(path, token, body) {
   try {
     res = await fetch(BASE + path, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body != null ? JSON.stringify(body) : undefined,
+    })
+  } catch (e) {
+    throw new Error('Нет связи с сервером.')
+  }
+  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  return res.json().catch(() => null)
+}
+
+async function authPatch(path, token, body) {
+  let res
+  try {
+    res = await fetch(BASE + path, {
+      method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -362,6 +399,25 @@ export function getLessonsSummary(token) {
   return authGet('/admin/lessons/summary', token)
 }
 
+/**
+ * Выдать юниты «Практики» на дом всем участникам урока.
+ *
+ * Уезжает АДРЕС юнита, а не его содержимое: контент «Практики» лежит статикой
+ * здесь же, в кабинете, бэкенд его не хранит (см. AddPracticeUnitsRequest).
+ * Название и раздел идут снимком — чтобы преподаватель в списке заданий видел,
+ * что именно выдал, даже если каталог потом переименуют.
+ *
+ * `batchId` — один на нажатие: повтор с тем же ключом ничего не задваивает,
+ * поэтому двойной клик и ретрай после обрыва безопасны.
+ */
+export function assignPracticeUnits(token, lessonId, { area, units, batchId }) {
+  return authPut(`/admin/homework/lesson/${lessonId}/exercises/from-practice`, token, {
+    area,
+    units,
+    batchId,
+  })
+}
+
 // Заявка на пробный урок — состояние экрана «Уроки» у человека, пришедшего с
 // сайта самостоятельно: назначен ли ему преподаватель, оставлял ли он заявку,
 // взял ли его менеджер (TrialRequestController на бэкенде). Не путать с блоком
@@ -484,6 +540,17 @@ export function sendLessonMessage(token, lessonId, body, attachment) {
     attachmentUrl: attachment?.url,
     attachmentName: attachment?.name,
   })
+}
+
+// Правка и удаление в чате урока. Кто что может — решает сервер (`canEdit` /
+// `canDelete` в ответе): своё правит и удаляет автор, чужое удаляет ведущий
+// урок. Оба запроса возвращают переписку целиком, как и отправка.
+export function editLessonMessage(token, lessonId, messageId, body) {
+  return authPatch(`/admin/lessons/${lessonId}/messages/${messageId}`, token, { body })
+}
+
+export function deleteLessonMessage(token, lessonId, messageId) {
+  return authDelete(`/admin/lessons/${lessonId}/messages/${messageId}`, token)
 }
 
 // URL интерактивного материала с внедрённым бридж-скриптом (сохранение/восстановление
@@ -744,8 +811,7 @@ export function loginWithGoogle(idToken) {
 // identifierBody, что у OTP-флоу — раньше уходил только phone, и войти по
 // почте было нельзя, хотя аккаунт с ней заводился.
 export async function loginWithPassword(identifier, password) {
-  const res = await post('/auth/login', { ...identifierBody(identifier), password })
-  return res?.accessToken || null
+  return post('/auth/login', { ...identifierBody(identifier), password })
 }
 
 // Первый пароль для аккаунта, заведённого саморегистрацией по OTP (у него
@@ -821,7 +887,8 @@ export function getPracticeToken(token) {
   }
   if (!_demoTokenPromise) {
     _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD)
-      .then((tok) => {
+      .then((res) => {
+        const tok = res?.accessToken || null
         if (tok) {
           try {
             window.localStorage.setItem(DEMO_TOKEN_KEY, tok)
@@ -865,6 +932,27 @@ export function getComic(token, ref) {
 // в localStorage бессмысленно.
 export function searchComics(token, q) {
   return authGet(`/mobile/comics/search?q=${encodeURIComponent(q)}`, token)
+}
+
+// Каталог караоке (GET /mobile/karaoke) →
+// [{id,slug,title,artist,level,bpm,durationSec,tags,coverUrl,audioUrl,
+//   instrumentalUrl,lyricsUrl,lineCount,description:{ru,en,kk}}].
+// Как и комиксы, материал заводит методист через админку, поэтому кэшируем
+// тем же stale-while-revalidate: каталог меняется раз в неделю, а открывают
+// его каждый заход.
+//
+// Разметку (строки с таймкодами) каталог НЕ содержит — только ссылку на неё;
+// её тянет karaokeData.js уже при открытии трека. Контракт:
+// docs/superpowers/specs/2026-09-03-karaoke-api-contract.md
+export function getKaraokeTracks(token, onFresh) {
+  return cachedAuthGet('/mobile/karaoke', token, onFresh)
+}
+
+// Один караоке-трек (GET /mobile/karaoke/{id}). Нужен на случай диплинка и
+// перезагрузки экрана исполнения: карточка каталога к этому моменту может быть
+// уже не в памяти.
+export function getKaraokeTrack(token, id) {
+  return authGet(`/mobile/karaoke/${encodeURIComponent(id)}`, token)
 }
 
 // Ситуации (GET /mobile/situativki?level=) → [{title,coverUrl,videoUrl,level,category,completed}]
@@ -1011,8 +1099,19 @@ export async function deleteSavedWord(token, id) {
 
 // Уровень CEFR из профиля пользователя (GET /user/language-level).
 // Бэкенд отдаёт enum как JSON-строку ("A1"); подстраховываемся и на объект.
+// Уровень из профиля. null = уровня нет (у нового аккаунта бэкенд отвечает
+// 404: своего уровня ещё нет, а вывести из опросника не из чего). Это не
+// ошибка, а «тест не пройден» — раньше 404 летел исключением и молча уходил в
+// catch на входе, поэтому пропустивший тест больше никогда его не видел.
+// Сетевые и прочие ошибки по-прежнему пробрасываются: «не знаю» ≠ «нет».
 export async function getLanguageLevel(token) {
-  const data = await authGet('/user/language-level', token)
+  let data
+  try {
+    data = await authGet('/user/language-level', token)
+  } catch (e) {
+    if (e?.status === 404) return null
+    throw e
+  }
   if (typeof data === 'string') return data
   return data?.languageLevel || data?.level || data?.value || null
 }

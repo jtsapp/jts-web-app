@@ -63,19 +63,37 @@ export function buildRouting(session, startCando) {
 
 /** A0-мост кликами: те же два задания движка, но вместо ввода — выбор слова.
  *  Ответ всё равно уходит текстом, поэтому checkOpenAnswer и вердикт ветки
- *  работают ровно как в тесте. */
-export function buildA0Bridge(session) {
-  const POOL = ['is', 'are', 'am', 'do', 'does', 'can', 'have', 'work', 'works', 'went']
+ *  работают ровно как в тесте.
+ *
+ *  [optionsById] приходит с сервера (/api/placement/a0-options): верное слово
+ *  лежит в ключах, а их в браузере нет. Собирать варианты здесь, как раньше,
+ *  больше нельзя — `it.answer` в публичном банке пуст, и на экране получались
+ *  четыре кнопки без единой верной.
+ *
+ *  Вариантов не пришло — задание остаётся как есть, и экран покажет обычное
+ *  поле ввода (TrialLessonPage ветвится по наличию a0options): мост станет
+ *  строже, но пройти его можно. */
+/** Подсказка к мосту зависит от того, доехали ли варианты с сервера: без них
+ *  экран рисует поле ввода (TrialLessonPage ветвится по `a0options`), и звать
+ *  «выберите слово» было бы враньём — под надписью оказывалось бы пустое поле.
+ *  Набор может доехать частично, поэтому три случая, а не два. */
+export function a0BridgeHint(built) {
+  const items = built?.items || []
+  if (!items.length) return ''
+  const withOptions = items.filter((it) => it.a0options).length
+  if (withOptions === items.length) return 'Выберите слово для пропуска.'
+  if (withOptions === 0) return 'Впишите слово в пропуск.'
+  return 'Выберите или впишите слово в пропуск.'
+}
+
+export function buildA0Bridge(session, optionsById = {}) {
   const items = session.bridgeItems().map((it) => {
     if (it.a0options) return it
-    const answers = it.answer || []
-    const wrong = POOL.filter((w) => !answers.some((a) => norm(a) === norm(w))).slice(0, 3)
-    return { ...it, a0options: seededShuffle([answers[0], ...wrong], session.rnd) }
+    const opts = optionsById?.[it.id]
+    return Array.isArray(opts) && opts.length ? { ...it, a0options: opts } : it
   })
   return { key: 'a0_bridge', items }
 }
-
-const norm = (s) => String(s || '').trim().toLowerCase()
 
 /** Словарь: набор зависит от выбора преподавателя. Beginner — простые слова,
  *  Int–Upper — идиомы, между ними — по текущей оценке движка. */

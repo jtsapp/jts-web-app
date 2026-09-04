@@ -39,8 +39,10 @@ test.describe('A0: карточки словаря', () => {
     expect(await cards.count()).toBeGreaterThan(1)
 
     // Картинка своя, из репозитория: чужой хост все эти месяцы отдавал 404.
+    // Лежит она рядом с курсом — в файле курса картинок слов нет вовсе, и
+    // карточка берёт снимок из прошлой выгрузки (img-index.json уровня).
     const img = cards.first().locator('img')
-    await expect(img).toHaveAttribute('src', /^\/learning\/img\/a0\/.+\.webp$/)
+    await expect(img).toHaveAttribute('src', /^\/course\/a0\/img\/.+\.(webp|jpg)$/)
     // Ленивая загрузка: на стадии их два десятка, и на слабом канале грузить
     // все сразу незачем.
     await expect(img).toHaveAttribute('loading', 'lazy')

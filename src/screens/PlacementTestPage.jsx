@@ -5,12 +5,16 @@ import Shell from '../components/Shell.jsx'
 import { loadPlacementBank, createPlacementSession } from '../practice/placement/engine.js'
 import { vocabDraw } from '../practice/placement/engine.generated.js'
 import { T } from '../practice/placement/strings.js'
-import { isItemAnswered, submitAnswer } from '../practice/placement/answers.js'
+import { placementText } from '../practice/placement/uiOverrides.js'
+import { IDK_DRAFT, isItemAnswered } from '../practice/placement/answers.js'
 import {
+  orderWordsOf,
   VocabQuestion,
   ListeningGroup,
   QuestionBody,
 } from '../practice/placement/questions.jsx'
+import { useI18n } from '../i18n.jsx'
+import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { placementLevel, placementSummary } from '../lib/placement.js'
 
 // Тест на определение уровня. Расчёты — перенесённый движок школы
@@ -30,9 +34,17 @@ const CANDO_KEYS = ['cando0', 'cando1', 'cando2', 'cando3', 'cando4']
 // позицию; у остальных заданий id уникален в банке.
 const draftKey = (screen) => (screen.kind === 'vocab' ? `vocab:${screen.idx}` : screen.item.id)
 
-export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
-  const t = useCallback((k) => T(lang, k), [lang])
-  const [phase, setPhase] = useState('loading') // loading | error | variant | cando | intro | items | speaking | result
+export default function PlacementTestPage({
+  lang = 'ru', token = null, onLevel, onDone, saveState = 'idle', onRetrySave,
+}) {
+  const t = useCallback((k) => placementText(lang, k), [lang])
+  // Строки самого теста сняты из бандла (strings.js), а сообщения приложения —
+  // из его словаря.
+  const { t: appT } = useI18n()
+  const [phase, setPhase] = useState('loading') // loading | error | blocked | variant | cando | intro | items | speaking | result
+  // Уровень определяется один раз: если профиль уже проходил тест, показываем
+  // его результат вместо нового прогона.
+  const [doneLevel, setDoneLevel] = useState(null)
   const [data, setData] = useState(null)
   const [plan, setPlan] = useState([])
   const [secIdx, setSecIdx] = useState(0)
@@ -43,15 +55,36 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
   // A0-мост: после провала разминки идут два задания-«моста» вне плана секций.
   const [bridgeMode, setBridgeMode] = useState(false)
   const [result, setResult] = useState(null)
+  const [grading, setGrading] = useState(false)
+  const [sectionError, setSectionError] = useState('')
   const sess = useRef(null)
+  // Токен серверного прогона: к нему привязана проверка ответов и по его
+  // записи считается итоговый уровень. null — база не настроена (dev), тогда
+  // проверка работает без привязки.
+  const runToken = useRef(null)
   const startedAt = useRef(0)
 
   useEffect(() => {
     let alive = true
-    loadPlacementBank().then((d) => {
+    // Проверяем без побочных эффектов, определял ли профиль уровень раньше:
+    // прогон при этом не заводится.
+    // Прогон принадлежит профилю: залогиненному — по токену, анониму — по
+    // deviceId. Без этого «один раз» не работало бы: каждый прогон был бы ничей.
+    const alreadyDone = fetch(
+      `/api/placement/session?deviceId=${encodeURIComponent(getDeviceId())}`,
+      { headers: authHeaders(token) },
+    )
+      .then((r) => r.json())
+      .catch(() => null)
+
+    Promise.all([loadPlacementBank(), alreadyDone]).then(([d, done]) => {
       if (!alive) return
       if (!d) return setPhase('error')
       setData(d)
+      if (done?.completed) {
+        setDoneLevel(done.level || null)
+        return setPhase('blocked')
+      }
       setPhase('variant')
     })
     return () => {
@@ -83,11 +116,34 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     return out
   }
 
+  const openRun = async (variant) => {
+    try {
+      const res = await fetch('/api/placement/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+        body: JSON.stringify({ variant, deviceId: getDeviceId() }),
+      })
+      const data = await res.json().catch(() => null)
+      if (res.status === 409 && data?.error === 'already_completed') {
+        // Гонка: прогон закончили в другой вкладке, пока выбирали вариант.
+        setDoneLevel(data.level || null)
+        setPhase('blocked')
+        return
+      }
+      runToken.current = data?.token || null
+    } catch {
+      runToken.current = null // без прогона тест всё равно проходится
+    }
+  }
+
   const startVariant = (v) => {
     const s = createPlacementSession(data, v)
     sess.current = s
     setPlan(buildPlan(s))
     setPhase('cando')
+    // Прогон открываем фоном: пока студент оценивает свой английский, токен
+    // успевает приехать, а если не приедет — проверка пойдёт без привязки.
+    openRun(v)
   }
 
   const pickCando = (idx) => {
@@ -167,18 +223,55 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     setPhase('items')
   }
 
-  // Ответил ли студент на задание (для блокировки «Далее»). Словарь — особый
-  // случай: у его заданий нет id, ключ черновика собирается из позиции, а −1
-  // («не знаю») тоже считается ответом.
-  const isAnswered = (screen, item) => {
-    if (screen.kind === 'vocab') return drafts[draftKey(screen)]?.optIndex != null
-    return isItemAnswered(item, drafts[item.id])
-  }
-
+  // Ответил ли студент на задание (для блокировки «Далее»).
+  const isAnswered = (screen, item) =>
+    isItemAnswered(
+      item,
+      drafts[screen.kind === 'vocab' ? draftKey(screen) : item.id],
+      screen.kind === 'vocab' ? 'vocab' : 'item',
+      item.type === 'order' && !item.steps ? orderWordsOf(item) : [],
+    )
   const screenAnswered = (sc) =>
     sc.kind === 'group' ? sc.items.every((it) => isAnswered(sc, it)) : isAnswered(sc, sc.item)
 
-  const submitItem = (s, item) => submitAnswer(s, item, drafts[item.id])
+  // Ответ студента в том виде, в каком его проверяет сервер. Он же уходит в
+  // журнал: по нему уровень пересчитывается заново на /api/placement/complete.
+  const answerPayload = (item) => {
+    const d = drafts[item.id] || {}
+    const payload = { id: item.id, tMs: d.tMs || 0 }
+    if (d.optIndex != null) payload.optIndex = d.optIndex
+    if (d.text) payload.text = d.text
+    if (d.word != null) payload.word = d.word
+    if (d.answers) payload.answers = d.answers
+    if (d.seq) payload.seq = d.seq
+    if (d.arr) payload.built = d.arr.join(' ')
+    if (d.gaps) payload.gaps = d.gaps.slice()
+    if (d.map) payload.map = d.map.slice()
+    if (d.shownOrder) payload.shownOrder = d.shownOrder
+    if (d.plays) payload.playsUsed = d.plays
+    if (d.idk) payload.idk = true
+    return payload
+  }
+
+  // Проверка ответов — на сервере: ключей в публичном банке больше нет.
+  const gradeItems = async (items) => {
+    const res = await fetch('/api/placement/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken: runToken.current, answers: items.map(answerPayload) }),
+    })
+    if (!res.ok) throw new Error(`grade ${res.status}`)
+    const data = await res.json()
+    return new Map((data.scores || []).map((x) => [x.id, x.correct]))
+  }
+
+  /** Кладёт проверенные ответы в движок: доля от сервера + сырой ответ в журнал. */
+  const submitGraded = (s, items, scores) => {
+    for (const item of items) {
+      const payload = answerPayload(item)
+      s.answerGraded(item, scores.get(item.id) ?? 0, payload)
+    }
+  }
 
   const advance = () => {
     const next = secIdx + 1
@@ -187,32 +280,42 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     setPhase('intro')
   }
 
-  const finishSection = () => {
+  const finishSection = async () => {
     const s = sess.current
     const sec = plan[secIdx]
 
-    if (bridgeMode) {
-      for (const sc of screens) submitItem(s, sc.item)
-      setBridgeMode(false)
-      // Мост не пройден — ранний выход с A0; пройден — движок сам сбросил
-      // приор на A1, и тест продолжается со следующего раздела.
-      if (!s.bridgeVerdict()) return finish()
-      return advance()
-    }
-
-    if (sec?.key === 'vocab') {
+    // Словарь и письмо считаются на клиенте: у LexTALE «ключ» — сам словарь
+    // (он публичный по природе), а письмо оценивается эвристикой без ключа.
+    if (!bridgeMode && sec?.key === 'vocab') {
       s.finishVocab(screens.map((sc) => drafts[draftKey(sc)]?.optIndex ?? null))
       return advance()
     }
-    if (sec?.key === 'writing') {
+    if (!bridgeMode && sec?.key === 'writing') {
       const item = screens[0]?.item
       if (item) s.answerWriting(item, drafts[item.id]?.text || '')
       return advance()
     }
 
-    for (const sc of screens) {
-      const list = sc.kind === 'group' ? sc.items : [sc.item]
-      for (const item of list) submitItem(s, item)
+    const items = screens.flatMap((sc) => (sc.kind === 'group' ? sc.items : [sc.item]))
+    setGrading(true)
+    setSectionError('')
+    try {
+      const scores = await gradeItems(items)
+      submitGraded(s, items, scores)
+    } catch (e) {
+      // Ответы остаются на экране: раздел не засчитан, можно повторить.
+      setSectionError(appT('placement.gradeFailed'))
+      return
+    } finally {
+      setGrading(false)
+    }
+
+    if (bridgeMode) {
+      setBridgeMode(false)
+      // Мост не пройден — ранний выход с A0; пройден — движок сам сбросил
+      // приор на A1, и тест продолжается со следующего раздела.
+      if (!s.bridgeVerdict()) return finish()
+      return advance()
     }
 
     // Провал разминки (4+ ошибок из 6) уводит на A0-мост, как в бандле.
@@ -241,8 +344,10 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     }
     // Уровень проверяем перед тем, как отдать наружу: это единственное поле,
     // которое уезжает в профиль студента и определяет весь его контент.
+    // Вместе с ним отдаём журнал прохождения — по нему сервер пересчитает
+    // уровень сам, не полагаясь на клиентский подсчёт.
     const level = placementLevel(r)
-    if (level) onLevel?.(level, r)
+    if (level) onLevel?.(level, r, sess.current.exportJson(), runToken.current)
   }
 
   // ─── служебные экраны ───────────────────────────────────────────────────
@@ -337,8 +442,33 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
     )
   }
 
+  if (phase === 'blocked') {
+    return (
+      <Shell>
+        <div className="plc">
+          <div className="plc-card plc-card--center">
+            <h1 className="plc-h1">{appT('placement.alreadyTitle')}</h1>
+            {doneLevel && <div className="plc-level">{doneLevel}</div>}
+            <p className="plc-hint">{appT('placement.alreadyHint')}</p>
+            <button className="plc-primary" onClick={() => onDone?.(doneLevel)}>
+              {appT('placement.alreadyContinue')}
+            </button>
+          </div>
+        </div>
+      </Shell>
+    )
+  }
+
   if (phase === 'result' && result) {
-    return <PlacementResult result={result} lang={lang} onDone={() => onDone?.(placementLevel(result), result)} />
+    return (
+      <PlacementResult
+        result={result}
+        lang={lang}
+        saveState={saveState}
+        onRetrySave={onRetrySave}
+        onDone={() => onDone?.(placementLevel(result), result)}
+      />
+    )
   }
 
   // ─── экраны раздела ─────────────────────────────────────────────────────
@@ -348,6 +478,16 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
   const setDraftFor = (key) => (patch) =>
     setDrafts((d) => ({ ...d, [key]: { ...d[key], ...patch, tMs: Date.now() - startedAt.current } }))
   const answered = screen ? screenAnswered(screen) : false
+  // «Не знаю»: помечаем задание (в группе аудирования — все её вопросы) и
+  // разблокируем переход. Ответ уедет в движок пустым, то есть неверным, —
+  // как и должно быть, но ученик больше не заперт на задании, которого не
+  // знает, и не обязан гадать (догадка на 4 вариантах завышает оценку).
+  const idkItems = screen ? (screen.kind === 'group' ? screen.items : [screen.item]) : []
+  const idkChosen = idkItems.length > 0 && idkItems.every((it) => drafts[it.id]?.idk)
+  const markIdk = () => {
+    idkItems.forEach((it) => setDraftFor(it.id)({ ...IDK_DRAFT }))
+    if (pos < screens.length - 1) setPos((p) => p + 1)
+  }
 
   return (
     <Shell>
@@ -395,16 +535,28 @@ export default function PlacementTestPage({ lang = 'ru', onLevel, onDone }) {
             <button className="plc-ghost" disabled={pos === 0} onClick={() => setPos((p) => p - 1)}>
               {t('back')}
             </button>
+            {/* «Не знаю» — честный отказ вместо вынужденной догадки. В словарном
+                блоке такой вариант есть прямо в списке, второй раз не нужен. */}
+            {screen && screen.kind !== 'vocab' && (
+              <button
+                type="button"
+                className={`plc-ghost plc-idk ${idkChosen ? 'on' : ''}`}
+                onClick={markIdk}
+              >
+                {t('idk')}
+              </button>
+            )}
             {pos < screens.length - 1 ? (
               <button className="plc-primary" disabled={!answered} onClick={() => setPos((p) => p + 1)}>
                 {t('next')}
               </button>
             ) : (
-              <button className="plc-primary" disabled={!answered} onClick={finishSection}>
+              <button className="plc-primary" disabled={!answered || grading} onClick={finishSection}>
                 {t('finishSection')}
               </button>
             )}
           </div>
+          {sectionError && <p className="form-error plc-note">{sectionError}</p>}
         </div>
       </div>
     </Shell>
@@ -568,8 +720,14 @@ function SpeakingSection({ session, items, lang, onDone }) {
 }
 
 // ─── результат ────────────────────────────────────────────────────────────
-function PlacementResult({ result, lang, onDone }) {
+// Экспортируется ради теста на баннер «уровень не сохранился»: дойти до этого
+// экрана через полный прогон теста в тесте — 30 заданий и сеть.
+export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave, onDone }) {
   const t = (k) => T(lang, k)
+  // Строки самого теста сняты из бандла школы (strings.js правится только
+  // прогоном скрипта), поэтому сообщение о сохранении берём из словаря
+  // приложения.
+  const { t: appT } = useI18n()
   const LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
   const pos = (x) => Math.max(0, Math.min(100, ((x + 3.5) / 6) * 100))
   const lo = pos(result.theta - result.se)
@@ -597,6 +755,20 @@ function PlacementResult({ result, lang, onDone }) {
             <div className="plc-band__ticks">{LEVELS.map((l) => <span key={l}>{l}</span>)}</div>
           </div>
 
+          {/* Движок сам сообщает, чего стоит его оценка: шкала уровней ещё не
+              откалибрована (у заданий банка нет IRT-параметров), а `unresolved`
+              means SE > 0.6 — уровень не определился уверенно. Молчать об этом
+              на экране, где ученику называют его уровень, нечестно. */}
+          {(result.cutsProvisional || result.pilotMode) && (
+            <p className="plc-note">{appT('placement.provisional')}</p>
+          )}
+          {result.flags?.includes('unresolved') && (
+            <p className="plc-note plc-note--warn">{appT('placement.unresolved')}</p>
+          )}
+          {/* A0 — измеренная полоса, но в профиль уезжает A1: в приложениях A0
+              значит «тест не пройден» и запирает карту. */}
+          {result.level === 'A0' && <p className="plc-note">{appT('placement.startsAtA1')}</p>}
+
           {rows.length > 0 && (
             <div className="plc-rows">
               {rows.map(([key, v]) => (
@@ -619,6 +791,16 @@ function PlacementResult({ result, lang, onDone }) {
               )}
             </div>
           )}
+
+          {saveState === 'error' && (
+            <div className="plc-save-error">
+              <p className="form-error">{appT('level.saveFailed')}</p>
+              <button className="plc-ghost" type="button" onClick={onRetrySave}>
+                {appT('level.saveRetry')}
+              </button>
+            </div>
+          )}
+          {saveState === 'saving' && <p className="plc-hint">{appT('level.saving')}</p>}
 
           <button className="plc-primary" onClick={onDone}>Let&apos;s go 🚀</button>
         </div>

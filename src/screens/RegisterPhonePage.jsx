@@ -3,7 +3,7 @@ import Shell from '../components/Shell.jsx'
 import { ChevronRightIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import Multiline from '../components/Multiline.jsx'
-import { COUNTRIES, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
+import { COUNTRY_OPTIONS, DEFAULT_COUNTRY, formatNational, isNationalComplete } from '../data/countries.js'
 
 /**
  * Шаг 1 саморегистрации: номер телефона. Код подтверждения сюда не идёт —
@@ -81,7 +81,7 @@ export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) 
 
               {pickerOpen && (
                 <ul className="phone-country__menu" role="listbox">
-                  {COUNTRIES.map((c) => (
+                  {COUNTRY_OPTIONS.map((c) => (
                     <li key={c.iso}>
                       <button
                         type="button"
@@ -92,7 +92,9 @@ export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) 
                       >
                         <span className="phone-country__flag">{c.flag}</span>
                         <span className="phone-country__name">{c.name}</span>
-                        <span className="phone-country__code">+{c.dial}</span>
+                        {/* У «другой страны» кода нет — его набирают в самом поле,
+                            и голый «+» рядом с названием читался бы как ошибка. */}
+                        {c.dial && <span className="phone-country__code">+{c.dial}</span>}
                       </button>
                     </li>
                   ))}
@@ -105,7 +107,7 @@ export default function RegisterPhonePage({ onBack, onSubmit, loading, error }) 
               type="tel"
               inputMode="numeric"
               autoFocus
-              placeholder={t('phone.placeholder')}
+              placeholder={country.dial ? t('phone.placeholder') : t('phone.placeholderAnyCountry')}
               value={formatNational(country, digits)}
               onChange={onChange}
             />

@@ -9,11 +9,17 @@ import { uploadMedia } from '../../api.js'
  * `messages[].from`:
  *  - `student` — own bubble (right, orange) — class name kept for design-spec tests
  *  - anything else — peer bubble (left, purple)
+ *
+ * Правка и удаление появляются только там, где вызывающий дал обработчик, а
+ * по каждому сообщению — только если сервер разрешил (`canEdit`/`canDelete`).
+ * Право считает он: чат один и тот же у ученика и в панели преподавателя.
  */
-export default function TeacherChat({ messages, onSend, title, sending = false, token }) {
+export default function TeacherChat({ messages, onSend, onEdit, onDelete, title, sending = false, token }) {
   const { t } = useI18n()
   const [draft, setDraft] = useState('')
   const [photoBusy, setPhotoBusy] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editDraft, setEditDraft] = useState('')
   const listRef = useRef(null)
   const fileRef = useRef(null)
   const list = messages || []
@@ -53,6 +59,24 @@ export default function TeacherChat({ messages, onSend, title, sending = false, 
     }
   }
 
+  function startEdit(message) {
+    setEditingId(message.id)
+    setEditDraft(message.text || '')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditDraft('')
+  }
+
+  function saveEdit(message) {
+    const text = editDraft.trim()
+    // Пустой текст без фотографии — это удаление, и у него свои права.
+    if (!text && !message.photoUrl) return
+    onEdit?.(message.id, text)
+    cancelEdit()
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -76,6 +100,8 @@ export default function TeacherChat({ messages, onSend, title, sending = false, 
         ) : (
           list.map((message) => {
             const own = message.from === 'student'
+            const canEditThis = !!onEdit && message.canEdit
+            const canDeleteThis = !!onDelete && message.canDelete
             return (
               <div
                 key={message.id}
@@ -90,7 +116,48 @@ export default function TeacherChat({ messages, onSend, title, sending = false, 
                     <img src={message.photoUrl} alt={message.photoName || t('lesson.ws.photo')} loading="lazy" />
                   </a>
                 )}
-                {message.text && <span className="lw-chat__text">{message.text}</span>}
+                {editingId === message.id ? (
+                  <div className="lw-chat__edit">
+                    <input
+                      type="text"
+                      className="lw-chat__edit-input"
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); saveEdit(message) }
+                        if (e.key === 'Escape') cancelEdit()
+                      }}
+                      autoFocus
+                    />
+                    <div className="lw-chat__edit-actions">
+                      <button type="button" onClick={() => saveEdit(message)}>{t('lesson.ws.save')}</button>
+                      <button type="button" onClick={cancelEdit}>{t('lesson.ws.cancel')}</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {message.text && <span className="lw-chat__text">{message.text}</span>}
+                    {/* Пометка обязательна: исправленную задним числом фразу
+                        нельзя показывать как сказанную изначально. */}
+                    {message.edited && <span className="lw-chat__edited">{t('lesson.ws.edited')}</span>}
+                    {(canEditThis || canDeleteThis) && (
+                      <div className="lw-chat__actions">
+                        {canEditThis && (
+                          <button type="button" onClick={() => startEdit(message)}
+                                  title={t('lesson.ws.edit')} aria-label={t('lesson.ws.edit')}>
+                            ✏️
+                          </button>
+                        )}
+                        {canDeleteThis && (
+                          <button type="button" onClick={() => onDelete?.(message.id)}
+                                  title={t('lesson.ws.delete')} aria-label={t('lesson.ws.delete')}>
+                            🗑
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )
           })

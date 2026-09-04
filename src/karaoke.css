@@ -1,0 +1,628 @@
+/* Раздел «Караоке» Практики: карточка трека, разогрев, экран исполнения и
+   результат. Префикс kk__ — как cr__ у читалки комиксов.
+
+   Экран исполнения — тёмный: текст на нём крупный (ТЗ требует 36–44 px, на
+   мобильном не меньше 28), читается издалека, и светлый фон на весь экран под
+   такой кегль слепит. Остальные стадии остаются в общей светлой теме
+   Практики, чтобы не выглядеть чужим приложением. */
+
+.kk {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: var(--safe-bottom);
+}
+
+.kk__bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.kk__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.kk__back:hover {
+  color: var(--ink);
+}
+.kk__barTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.kk__barArtist {
+  margin-left: 8px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.kk__empty {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Карточка трека ─────────────────────────────────────────────────────── */
+
+.kk__head {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.kk__cover {
+  width: 148px;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 10px 24px rgba(23, 19, 38, 0.2);
+  flex: 0 0 auto;
+}
+.kk__cover--blank {
+  display: grid;
+  place-items: center;
+  font-size: 42px;
+  color: #fff;
+  background: linear-gradient(140deg, #9047ff, #5a2bd0);
+}
+.kk__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+}
+.kk__artist {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.kk__facts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.kk__badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--purple);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.kk__fact {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #8b8a97;
+}
+.kk__tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.kk__tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6d4bb8;
+  background: #f1eaff;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.kk__stars {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 10px;
+  font-size: 16px;
+  color: #ddd9e8;
+}
+.kk__star--on {
+  color: #ffc53d;
+}
+
+.kk__modes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kk__mode {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border: 1px solid #ece9f5;
+  border-radius: 16px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.kk__mode:hover:not(:disabled) {
+  border-color: var(--purple);
+  transform: translateY(-1px);
+}
+.kk__mode:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.kk__modeIcon {
+  font-size: 22px;
+}
+.kk__modeBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.kk__modeName {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.kk__modeDesc {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.kk__modeState {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--purple);
+}
+.kk__privacy {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 640px;
+}
+.kk__error {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #d1425c;
+}
+
+/* ── Разогрев ───────────────────────────────────────────────────────────── */
+
+.kk__warm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.kk__warmHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kk__warmStep {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.kk__warmCount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.kk__warmExit {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+}
+.kk__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 20px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #ece9f5;
+  text-align: center;
+}
+.kk__cardWord {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.kk__cardTr {
+  font-size: 16px;
+  color: var(--muted);
+}
+.kk__cardLine {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5b5768;
+  max-width: 460px;
+}
+.kk__listen,
+.kk__next,
+.kk__opt,
+.kk__start,
+.kk__ghost,
+.kk__choiceBtn {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.kk__listen {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--purple);
+  background: #f1eaff;
+  border-color: #e2d6ff;
+}
+.kk__listen--big {
+  padding: 14px 26px;
+  font-size: 15px;
+}
+.kk__next,
+.kk__start {
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--purple);
+}
+.kk__ghost {
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  background: none;
+}
+.kk__opts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+}
+.kk__opt {
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #f6f4fb;
+  border-color: #ece9f5;
+}
+.kk__opt--ok {
+  background: #e4f8ec;
+  border-color: #74d69b;
+  color: #1c7a45;
+}
+.kk__opt--bad {
+  background: #fdeaee;
+  border-color: #f0a6b5;
+  color: #a52440;
+}
+
+/* ── Исполнение ─────────────────────────────────────────────────────────── */
+
+.kk__setup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 640px;
+}
+.kk__setupTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.kk__choice {
+  display: flex;
+  gap: 8px;
+}
+.kk__choiceBtn {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #f6f4fb;
+  border-color: #ece9f5;
+}
+.kk__choiceBtn--on {
+  color: #fff;
+  background: var(--purple);
+  border-color: var(--purple);
+}
+.kk__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.kk__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 18px calc(22px + var(--safe-bottom));
+  border-radius: 22px;
+  background: #17132a;
+  color: #fff;
+  min-height: 60vh;
+}
+.kk__timeline {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.kk__timelineFill {
+  height: 100%;
+  background: var(--purple);
+}
+.kk__tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.35);
+}
+.kk__clock {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: right;
+}
+.kk__lyrics {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  min-height: 220px;
+}
+.kk__line {
+  line-height: 1.3;
+  max-width: 760px;
+}
+.kk__line--prev,
+.kk__line--next {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.32);
+}
+.kk__line--cur {
+  font-size: 36px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.45);
+}
+.kk__lineRu {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+}
+/* Спетая часть строки — белым, остальное приглушено: взгляд сам идёт по
+   границе, и не надо искать, где ты. */
+.kk__w--on {
+  color: #fff;
+}
+.kk__fill {
+  background-image: linear-gradient(#fff, #fff);
+  background-repeat: no-repeat;
+  background-size: 0 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  transition: background-size 0.08s linear;
+}
+.kk__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.kk__controls .kk__ghost {
+  color: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.2);
+  border-width: 1px;
+  border-style: solid;
+}
+.kk__mic {
+  flex: 1;
+  min-width: 120px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.kk__micFill {
+  height: 100%;
+  background: linear-gradient(90deg, #6ee7b7, #9047ff);
+  transition: width 0.08s linear;
+}
+
+/* ── Результат ──────────────────────────────────────────────────────────── */
+
+.kk__result {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+}
+.kk__score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px;
+  border-radius: 20px;
+  background: #f6f4fb;
+  border: 1px solid #ece9f5;
+}
+.kk__score--gold {
+  background: linear-gradient(140deg, #fff6d8, #ffe9a8);
+  border-color: #f2d477;
+}
+.kk__score--silver {
+  background: linear-gradient(140deg, #f4f5f8, #e2e5ec);
+  border-color: #cfd3dc;
+}
+.kk__score--bronze {
+  background: linear-gradient(140deg, #fbeade, #f3d5bd);
+  border-color: #e0b58c;
+}
+.kk__scoreValue {
+  font-size: 46px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+}
+.kk__scoreMedal {
+  font-size: 13px;
+  font-weight: 800;
+  color: #6b6678;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.kk__notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fff6e6;
+  border: 1px solid #f3dcb0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #7a5a1e;
+}
+.kk__metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.kk__metricTop {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.kk__metricBar {
+  margin-top: 6px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ece9f5;
+  overflow: hidden;
+}
+.kk__metricFill {
+  height: 100%;
+  background: var(--purple);
+}
+.kk__metricHint {
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.kk__weak h3,
+.kk__missed h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.kk__weakLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f6f4fb;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.kk__weakLine + .kk__weakLine {
+  margin-top: 6px;
+}
+.kk__missedList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.kk__chip {
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid #e2d6ff;
+  background: #f1eaff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--purple);
+  cursor: pointer;
+}
+.kk__chip--saved {
+  background: #e4f8ec;
+  border-color: #74d69b;
+  color: #1c7a45;
+  cursor: default;
+}
+.kk__resultBtns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Мобильный: ТЗ требует работать от 360 px и держать текущую строку не мельче
+   28 px — уменьшаем всё вокруг неё, а её саму почти не трогаем. */
+@media (max-width: 560px) {
+  .kk__head {
+    gap: 14px;
+  }
+  .kk__cover {
+    width: 108px;
+  }
+  .kk__title {
+    font-size: 20px;
+  }
+  .kk__line--cur {
+    font-size: 28px;
+  }
+  .kk__line--prev,
+  .kk__line--next {
+    font-size: 15px;
+  }
+  .kk__stage {
+    padding: 18px 14px calc(18px + var(--safe-bottom));
+  }
+  .kk__opts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Карточка трека в каталоге Практики берёт форму комикса, но обложку песни
+   режет квадратом: у альбомной обложки пропорции 1:1, и в книжном 2:3 она
+   либо обрезается по краям, либо висит в пустых полях. */
+.pp-ccard--square .pp-ccard__cover {
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+}

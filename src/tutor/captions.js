@@ -2,11 +2,18 @@
 // гонять юнит-тестами без LiveKit-комнаты: поднять комнату в тестах нельзя, а
 // именно здесь живут решения «что показать» и «каким кеглем».
 
+// Без lookbehind (`(?<=…)`): Safari до 16.4 такую регулярку не понимает, и это
+// ошибка РАЗБОРА — файл не запускается целиком, а с ним и весь чанк. Границу
+// ставим заменой с меткой (lookahead Safari понимает давно).
+const SENTENCE_BREAK = '\u0000'
+
 // Последнее предложение текущей реплики — подпись сменяется, а не растёт.
 export function lastSentence(text) {
   const s = (text || '').trim()
   if (!s) return ''
-  const parts = s.split(/(?<=[.!?…])\s+/)
+  const parts = s
+    .replace(/([.!?…])\s+/g, `$1${SENTENCE_BREAK}`)
+    .split(SENTENCE_BREAK)
   return (parts[parts.length - 1] || s).trim()
 }
 

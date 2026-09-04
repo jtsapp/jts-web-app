@@ -6,8 +6,10 @@ import { readFileSync } from 'node:fs'
 import { Session, mergeBank2 } from '../practice/placement/engine.generated.js'
 import * as sections from './sections.js'
 import { READING, VOCAB_MATCH } from './content.generated.js'
+import { fileURLToPath } from 'node:url'
 
-const BANK_PATH = new URL('../../public/practice/placement/bank.json', import.meta.url).pathname
+// fileURLToPath: на Windows .pathname отдаёт «/C:/…» и путь склеивался в «C:\C:\…».
+const BANK_PATH = fileURLToPath(new URL('../../public/practice/placement/bank.json', import.meta.url))
 
 let data
 
@@ -61,14 +63,42 @@ describe('разминка', () => {
 })
 
 describe('A0-мост кликами', () => {
-  it('в вариантах есть правильный ответ и три отвлекающих', () => {
+  // Варианты собирает сервер (lib/placementA0.js): ключей в публичном банке
+  // нет, и клиент их взять неоткуда. Здесь проверяется стыковка — что
+  // пришедшее снаружи доезжает до задания, и что без него мост не ломается.
+  it('варианты от сервера доезжают до заданий моста', () => {
+    const s = session(sections.BEGINNER)
+    const ids = s.bridgeItems().map((it) => it.id)
+    expect(ids.length).toBeGreaterThan(0)
+    const fromServer = Object.fromEntries(ids.map((id) => [id, ['works', 'is', 'can', 'went']]))
+
+    const { items } = sections.buildA0Bridge(s, fromServer)
+    expect(items.length).toBeGreaterThan(0)
+    for (const item of items) expect(item.a0options).toEqual(['works', 'is', 'can', 'went'])
+  })
+
+  it('подсказка следует за тем, что реально нарисуется', () => {
+    const s = session(sections.BEGINNER)
+    const ids = s.bridgeItems().map((it) => it.id)
+    const four = ['works', 'is', 'can', 'went']
+
+    const all = sections.buildA0Bridge(s, Object.fromEntries(ids.map((id) => [id, four])))
+    expect(sections.a0BridgeHint(all)).toBe('Выберите слово для пропуска.')
+
+    // Сервер не ответил — на экране поле ввода, и звать «выберите слово» нельзя:
+    // ученик A0 увидел бы пустое поле под инструкцией выбрать.
+    expect(sections.a0BridgeHint(sections.buildA0Bridge(s))).toBe('Впишите слово в пропуск.')
+
+    const half = sections.buildA0Bridge(s, { [ids[0]]: four })
+    expect(sections.a0BridgeHint(half)).toBe('Выберите или впишите слово в пропуск.')
+  })
+
+  it('без вариантов задание остаётся с полем ввода, а не с пустыми кнопками', () => {
+    // Ровно та поломка, ради которой мост переехал на сервер: раньше здесь
+    // получались четыре кнопки, из которых первая undefined.
     const { items } = sections.buildA0Bridge(session(sections.BEGINNER))
     expect(items.length).toBeGreaterThan(0)
-    for (const item of items) {
-      expect(item.a0options).toHaveLength(4)
-      const correct = item.answer.map((a) => a.toLowerCase())
-      expect(item.a0options.filter((w) => correct.includes(w.toLowerCase())).length).toBeGreaterThanOrEqual(1)
-    }
+    for (const item of items) expect(item.a0options).toBeUndefined()
   })
 })
 

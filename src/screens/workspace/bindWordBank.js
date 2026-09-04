@@ -75,10 +75,33 @@ function prepareGaps(root, clickPlace) {
   })
 }
 
+/**
+ * Упражнение «расставь слова из банка» — а не «впиши сам».
+ *
+ * Банк в своей карточке — вопросов нет. Сложность в том, что курс отдаёт банк и
+ * абзац с пропусками двумя блоками, и группировка их не всегда склеивает: банк
+ * оказывается отдельной карточкой, а пропуски — соседней.
+ *
+ * Раньше поэтому искали банк по всему ШАГУ, и любой банк переводил в режим
+ * расстановки все поля шага. Если в шаге стояло законченное упражнение с банком,
+ * то в соседнем («впиши одно слово: much, many, few…») поля становились readonly,
+ * а чипов для них не было вовсе — вписать было нечем. Отсюда «упр не работает,
+ * невозможно вписать».
+ *
+ * Признак «банк наш» — у его карточки НЕТ своих пропусков. Есть свои — это
+ * законченное соседнее упражнение, и его чипы к нашим полям отношения не имеют.
+ */
 function cardHasWordBank(root) {
   const from = root.querySelector(GAP) || root.querySelector(BANK) || root
-  const scope = from?.closest?.(STEP) || from?.closest?.(CARD) || root
-  return !!scope?.querySelector?.(BANK)
+  const card = from?.closest?.(LIVE) || from?.closest?.(CARD) || root
+  if (card?.querySelector?.(BANK)) return true
+
+  const step = from?.closest?.(STEP)
+  if (!step) return false
+  return [...step.querySelectorAll(BANK)].some((bank) => {
+    const bankCard = bank.closest(LIVE) || bank.closest(CARD) || bank
+    return bankCard !== card && !bankCard.querySelector(GAP)
+  })
 }
 
 function liveCard(el) {
