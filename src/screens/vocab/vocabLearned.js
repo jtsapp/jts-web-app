@@ -78,3 +78,20 @@ export function learnedInCards(keys, cards) {
   for (const card of cards) if (keys.has(vocabKey(card))) n++
   return n
 }
+
+/**
+ * Снять отметку «изучено».
+ *
+ * Нужна ручной отметке в списке слов: поставить и не суметь убрать — это не
+ * отметка, а ловушка. Проверке каталога снятие не нужно, она только добавляет.
+ */
+export function forgetVocabLearned(token, scopeId, keys) {
+  if (!scopeId || !Array.isArray(keys) || !keys.length) return
+  const all = readAll()
+  const uid = userKey(token)
+  const bag = all[uid] || {}
+  const drop = new Set(keys.filter(Boolean).map((k) => String(k).toLowerCase()))
+  bag[scopeId] = (bag[scopeId] || []).filter((k) => !drop.has(k))
+  all[uid] = bag
+  writeAll(all)
+}

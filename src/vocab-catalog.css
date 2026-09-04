@@ -946,13 +946,32 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* Динамик лежит поверх карточки, а не внутри неё: вложенная кнопка
+/* Динамик и отметка лежат поверх карточки, а не внутри неё: вложенная кнопка
    невалидна и ломает переворот. */
 .vp-pcard-spk {
   position: absolute; right: 9px; top: 9px; z-index: 2;
   background: rgba(255, 255, 255, .92); color: var(--vp-violet-dk);
   box-shadow: 0 1px 3px rgba(24, 20, 40, .14);
 }
+
+/* Отметка «изучено». Пока не нажата — бледная галочка на белом: место под неё
+   видно, но внимание она не тянет. Нажатая становится зелёной. */
+.vp-pcard-mark {
+  position: absolute; left: 9px; top: 9px; z-index: 2;
+  width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+  background: rgba(255, 255, 255, .92); color: #c3c1cc;
+  box-shadow: 0 1px 3px rgba(24, 20, 40, .14);
+  transition: .15s;
+}
+.vp-pcard-mark:hover { color: var(--vp-green); }
+.vp-pcard-mark.is-on { background: var(--vp-green); color: #fff; }
+
+/* Изученное слово приглушаем: список нужен, чтобы искать глазами то, что ещё
+   не выучено, — и выученное не должно спорить с ним за внимание. */
+.vp-pcard.is-learned .vp-pcard__pic,
+.vp-pcard.is-learned .vp-pcard__bub { opacity: .45; }
+.vp-pcard.is-learned .vp-pcard__face { border-color: var(--vp-green); }
 
 @media (max-width: 760px) {
   /* На телефоне общая сетка уходит в одну колонку — картиночной там нужны две,
