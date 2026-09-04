@@ -99,25 +99,53 @@
   box-shadow: 0 10px 26px rgba(23, 19, 38, 0.1);
   text-align: center;
 }
+/* Цены — двумя наклеенными ярлыками, как в макете: старая на белом,
+   перечёркнутая красным, новая крупнее и поверх неё. Ровный ряд из двух
+   подписей читался как строка таблицы; наклейки видно раньше, чем прочитаешь.
+   Поворот только у ярлыков, у карточки и текста под ними — нет. */
 .dm-offer__prices {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 0;
+  /* Место под наклон: transform не занимает места в потоке, и без запаса
+     углы ярлыков срезал бы padding карточки. */
+  padding: 6px 0 10px;
+  margin-bottom: 4px;
 }
 .dm-offer__was {
-  font-size: 15px;
+  position: relative;
+  z-index: 1;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(23, 19, 38, 0.16);
+  color: #6f6b7e;
+  font-size: 14px;
   font-weight: 700;
-  color: #a5a2b3;
+  white-space: nowrap;
+  /* Красным и потолще: серая линия на сером тексте почти не видна, а
+     зачёркнутая цена — весь смысл ярлыка. */
+  text-decoration-line: line-through;
+  text-decoration-color: #ef4444;
+  text-decoration-thickness: 2px;
+  transform: rotate(-8deg) translateY(-3px);
 }
 .dm-offer__now {
-  padding: 5px 12px;
+  position: relative;
+  z-index: 2;
+  /* Заходит на старую цену — так читается «вместо», а не «и то, и другое». */
+  margin-left: -12px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: var(--purple);
   color: #fff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(135, 75, 248, 0.4);
+  transform: rotate(4deg) translateY(6px);
 }
 .dm-offer__title {
   display: block;
@@ -159,7 +187,22 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px 24px 40px;
-  max-width: 1120px;
+  /* Центрируем и равняемся на «Тарифы» (.pr__grid ниже): там 1240 и margin
+     auto. Здесь центрирования не было вовсе, поэтому на мониторе шире 1120
+     колонка прижималась влево и всё свободное место копилось одной полосой
+     справа — экран выглядел незаполненным, хотя ширина была задана намеренно. */
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+}
+
+/* На больших мониторах отдаём колонке больше места: при 2560 даже
+   центрированные 1240 оставляют по 600 с каждой стороны. Выше не поднимаем —
+   карточка уровня и строки текста в ней становятся неудобно длинными. */
+@media (min-width: 1700px) {
+  .hm {
+    max-width: 1440px;
+  }
 }
 .hm-row {
   display: grid;
