@@ -15,7 +15,10 @@ import { KARAOKE_KEY as KEY } from '../practiceKeys.js'
 import { normalizeTracks, normalizeTrack, normalizeLyrics } from './karaokeShape.js'
 
 let _indexPromise = null
-const _lyricsCache = {}
+// Map, а не объект: ключ — slug трека, а «constructor» и «valueOf» паттерну
+// slug'а (^[a-z0-9-]{2,120}$) вполне удовлетворяют. У объекта такой ключ
+// нашёлся бы в прототипе, и вместо разметки вернулась бы функция.
+const _lyricsCache = new Map()
 
 export function loadKaraokeIndex(token, onFresh) {
   if (!_indexPromise) {
@@ -46,7 +49,7 @@ export function loadKaraokeTrack(token, id) {
 export async function loadLyrics(track, token) {
   const key = track?.slug || track?.id
   if (!key) return null
-  if (_lyricsCache[key] !== undefined) return _lyricsCache[key]
+  if (_lyricsCache.has(key)) return _lyricsCache.get(key)
 
   const result = await (async () => {
     if (track.lyrics) return normalizeLyrics(track.lyrics)
@@ -55,7 +58,7 @@ export async function loadLyrics(track, token) {
     return full?.lyrics ? normalizeLyrics(full.lyrics) : null
   })()
 
-  _lyricsCache[key] = result
+  _lyricsCache.set(key, result)
   return result
 }
 

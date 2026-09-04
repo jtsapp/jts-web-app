@@ -84,7 +84,12 @@ export function coverageScore(lines, userMask, stepMs = MASK_STEP_MS, threshold 
 // разметке может стоять «I am» (и наоборот) — без нормализации это две ошибки
 // на ровном месте. Список короткий и покрывает песенный сленг, остальное
 // добивают общие правила ниже.
-const CONTRACTIONS = {
+// Map, а не объектный литерал: ключи сюда приходят из текста песни и из
+// распознавания, то есть какие угодно. У литерала CONTRACTIONS['constructor']
+// вернул бы не undefined, а функцию Object — и следующая же строка падала бы
+// на mapped.split. Падение случалось бы внутри finish(), в async-колбэке без
+// catch: экран «Считаем…» без единой кнопки, дубль потерян.
+const CONTRACTIONS = new Map(Object.entries({
   gonna: 'going to',
   wanna: 'want to',
   gotta: 'got to',
@@ -108,7 +113,7 @@ const CONTRACTIONS = {
   "there's": 'there is',
   "what's": 'what is',
   "who's": 'who is',
-}
+}))
 
 /** Текст → массив слов в сравнимом виде. */
 export function normalizeWords(text) {
@@ -121,7 +126,7 @@ export function normalizeWords(text) {
   for (const raw of s.split(/\s+/)) {
     const w = raw.replace(/^'+|'+$/g, '')
     if (!w) continue
-    const mapped = CONTRACTIONS[w]
+    const mapped = CONTRACTIONS.get(w)
     if (mapped) {
       out.push(...mapped.split(' '))
       continue
@@ -266,8 +271,11 @@ export function finalScore({ lyrics, rhythm, coverage, pace, hasLyrics, instrume
   // подсказка — небольшой штраф, чтобы не читать с экрана вместо слушания.
   if (instrumental) score *= 1.15
   if (translationShown) score *= 0.95
-  score = Math.max(0, Math.min(100, score))
-  return { score: Math.round(score), medal: medalFor(score) }
+  // Медаль считаем от того же числа, которое увидит студент. От исходного 89.6
+  // экран показывал бы 90 и серебро, хотя золото начинается с 90 — обидно
+  // ровно там, где в результат и всматриваются.
+  const rounded = Math.round(Math.max(0, Math.min(100, score)))
+  return { score: rounded, medal: medalFor(rounded) }
 }
 
 /** Три худшие строки — то, что предлагаем повторить на экране результата. */

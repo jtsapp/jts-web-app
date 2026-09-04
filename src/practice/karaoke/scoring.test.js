@@ -70,6 +70,19 @@ describe('слова', () => {
     ])
   })
 
+  it('не спотыкается о слова из прототипа объекта', () => {
+    // Сюда приходит и текст песни, и результат распознавания — то есть какой
+    // угодно. У обычного литерала CONTRACTIONS['constructor'] вернул бы
+    // функцию Object, и разбор падал бы посреди подсчёта балла.
+    expect(normalizeWords('the constructor came')).toEqual(['the', 'constructor', 'came'])
+    expect(normalizeWords('valueOf toString hasOwnProperty')).toEqual([
+      'valueof',
+      'tostring',
+      'hasownproperty',
+    ])
+    expect(lyricsScore('the constructor came', 'the constructor came').score).toBe(100)
+  })
+
   it('притяжательное «s» не превращается в «is»', () => {
     expect(normalizeWords("the dog's bone")).toEqual(['the', "dog's", 'bone'])
   })
@@ -136,6 +149,15 @@ describe('итоговый балл', () => {
   it('балл не выходит за 100 даже с множителем', () => {
     const r = finalScore({ rhythm: 100, coverage: 100, pace: 100, hasLyrics: false, instrumental: true })
     expect(r.score).toBe(100)
+    expect(r.medal).toBe('gold')
+  })
+
+  it('медаль соответствует тому баллу, который видит студент', () => {
+    // 89.6 на экране округляется до 90, а золото начинается с 90: считать
+    // медаль от неокруглённого — показать «90» и серебро.
+    const r = finalScore({ rhythm: 89.6, coverage: 89.6, pace: 89.6, hasLyrics: false })
+    expect(r.score).toBe(90)
+    expect(r.medal).toBe(medalFor(r.score))
     expect(r.medal).toBe('gold')
   })
 

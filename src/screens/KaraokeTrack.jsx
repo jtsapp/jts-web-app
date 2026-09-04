@@ -16,7 +16,15 @@ import {
   finalScore,
   weakestLines,
 } from '../practice/karaoke/scoring.js'
-import { isMicSupported, requestMic, stopStream, startTake, transcribeTake } from '../practice/karaoke/mic.js'
+import {
+  isMicSupported,
+  requestMic,
+  stopStream,
+  startTake,
+  transcribeTake,
+  unlockPlayback,
+  createAudioContext,
+} from '../practice/karaoke/mic.js'
 
 // Экран одного караоке-трека: карточка → режим → результат.
 //
@@ -478,15 +486,26 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
     setMicError('')
     const audio = audioRef.current
     if (!audio) return
+
+    // Всё, что требует жеста, — здесь, до первого await. Дальше идёт запрос
+    // разрешения на микрофон и полторы секунды калибровки, и к настоящему
+    // play() жест уже не будет засчитан: в Safari трек просто не запускался, а
+    // отказ уходил в пустой catch — экран честно показывал караоке, которое
+    // стоит на нуле.
+    unlockPlayback(audio)
+    const ctx = noScore ? null : createAudioContext()
+
     if (!noScore) {
       if (!isMicSupported()) {
         setMicError(t('karaoke.micUnsupported'))
+        ctx?.close?.().catch(() => {})
         return
       }
       try {
         streamRef.current = await requestMic()
       } catch {
         setMicError(t('karaoke.micDenied'))
+        ctx?.close?.().catch(() => {})
         return
       }
       // Калибровка фона идёт ДО первой ноты — стартуем трек только после неё,
@@ -496,11 +515,25 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
         stream: streamRef.current,
         durationSec: doc.duration,
         positionSec,
+        ctx,
       })
     }
     setPhase('run')
     audio.currentTime = 0
-    await audio.play().catch(() => {})
+    // Отказ здесь больше не должен случаться, но если случился — говорим об
+    // этом, а не оставляем человека смотреть на неподвижный экран.
+    const playing = await audio.play().then(() => true).catch(() => false)
+    if (!playing) {
+      // Дубль уже идёт: у него свой таймер и свой MediaRecorder, и бросить
+      // ссылку недостаточно — останавливаем по-настоящему, результат не нужен.
+      const take = takeRef.current
+      takeRef.current = null
+      take?.stop().catch(() => {})
+      stopAll()
+      setMicError(t('karaoke.playbackBlocked'))
+      setPhase('setup')
+      return
+    }
     const tick = () => {
       const a = audioRef.current
       if (!a) return

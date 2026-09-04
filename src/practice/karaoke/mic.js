@@ -34,6 +34,46 @@ export function stopStream(stream) {
   for (const t of stream?.getTracks?.() || []) t.stop()
 }
 
+// ── Жест пользователя (iOS) ─────────────────────────────────────────────────
+// Safari разрешает и воспроизведение, и звуковой контекст только внутри жеста,
+// и «внутри» понимается буквально: после первого же await жест не засчитан. А
+// между кликом и первой нотой у нас стоит запрос разрешения на микрофон и
+// полторы секунды калибровки фона. Поэтому обе разблокировки делаются
+// синхронно в обработчике клика, а не там, где они реально нужны.
+
+/**
+ * Размечает <audio> как запущенный пользователем.
+ *
+ * Играем и тут же останавливаем — жест тратится на сам вызов play(), а не на
+ * то, что из него вышло. Обещание отклонится с AbortError, это нормально и
+ * ожидаемо. Глушим на время трюка: без этого на быстром устройстве успевает
+ * щёлкнуть первый семпл.
+ */
+export function unlockPlayback(audio) {
+  if (!audio) return
+  const muted = audio.muted
+  try {
+    audio.muted = true
+    audio.play().catch(() => {})
+    audio.pause()
+    audio.currentTime = 0
+  } catch {
+    /* элемент ещё не готов — тогда и разблокировать нечего */
+  }
+  audio.muted = muted
+}
+
+/** Звуковой контекст, созданный в жесте. Отдаём наружу, чтобы startTake его не создавал. */
+export function createAudioContext() {
+  const Ctx = window.AudioContext ?? window.webkitAudioContext
+  if (!Ctx) return null
+  const ctx = new Ctx()
+  // resume() возвращает обещание, но ждать его здесь нельзя — await съел бы жест
+  // ровно так же. Safari успевает перевести контекст в running синхронно.
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {})
+  return ctx
+}
+
 function rmsOf(analyser, buf) {
   if (analyser.getFloatTimeDomainData) {
     analyser.getFloatTimeDomainData(buf)
@@ -59,16 +99,27 @@ function rmsOf(analyser, buf) {
  * записи. Это принципиально: если аудио подвисло на буферизации, стенные часы
  * уедут, а маска должна остаться привязанной к музыке — иначе ритм посчитается
  * по сдвинутым данным и балл будет враньём.
+ *
+ * `ctx` — контекст, созданный в обработчике клика (см. createAudioContext).
+ * Свой заводим только как запасной путь: созданный здесь, уже после запроса
+ * микрофона, в Safari остался бы приостановленным.
  */
-export async function startTake({ stream, durationSec, positionSec, stepMs = MASK_STEP_MS }) {
-  const Ctx = window.AudioContext ?? window.webkitAudioContext
-  const ctx = new Ctx()
+export async function startTake({ stream, durationSec, positionSec, ctx: given, stepMs = MASK_STEP_MS }) {
+  const ctx = given ?? createAudioContext()
   if (ctx.state === 'suspended') await ctx.resume()
   const source = ctx.createMediaStreamSource(stream)
   const analyser = ctx.createAnalyser()
   analyser.fftSize = 1024
   analyser.smoothingTimeConstant = 0
   source.connect(analyser)
+  // Анализатор — тупиковая ветка графа, а рендер тянется от destination: в
+  // части браузеров такая ветка просто не считается, и маска остаётся нулевой
+  // (для поющего человека это ноль баллов). Доводим её до выхода через
+  // молчаливый gain — слышно ничего не станет, а граф начнёт крутиться.
+  const sink = ctx.createGain()
+  sink.gain.value = 0
+  analyser.connect(sink)
+  sink.connect(ctx.destination)
   const buf = new Float32Array(analyser.fftSize)
 
   // Калибровка фона: 1.5 секунды тишины перед стартом (ТЗ 8.1). Без неё порог
@@ -139,6 +190,8 @@ export async function startTake({ stream, durationSec, positionSec, stepMs = MAS
       })
       try {
         source.disconnect()
+        analyser.disconnect()
+        sink.disconnect()
         await ctx.close()
       } catch {
         /* контекст уже закрыт — неважно */
