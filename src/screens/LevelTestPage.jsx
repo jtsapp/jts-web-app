@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Footer from '../components/Footer.jsx'
 import Shell from '../components/Shell.jsx'
-import { getAdaptiveQuestions } from '../api.js'
-import { createSession, next, submit, result, isDone, pctOf, LEVELS, CFG } from '../cefr.js'
+import { startAdaptiveSession, submitAdaptiveAnswer } from '../api.js'
+import { pctOf, LEVELS } from '../cefr.js'
 import { useI18n } from '../i18n.jsx'
 
 // Декоративная «печать» с зубчатым краем (белый бейдж уровня)
@@ -33,35 +33,38 @@ function SealBadge({ level }) {
 // Позиции подписей уровней = pctOf центров полос (чтобы бегунок совпадал с подписями)
 const LABEL_POS = [8.33, 25, 41.67, 58.33, 75, 91.67]
 
-export default function LevelTestPage({ onClose, onDone }) {
+export default function LevelTestPage({ onClose, onDone, token }) {
   const { t } = useI18n()
   const [phase, setPhase] = useState('loading') // loading | error | question | result
   const [errMsg, setErrMsg] = useState('')
   const [cur, setCur] = useState(null)
   const [chosen, setChosen] = useState(null)
-  const [checked, setChecked] = useState(false)
-  const [n, setN] = useState(0)
+  // Правильность приходит с сервера — на клиенте её взять неоткуда.
+  const [verdict, setVerdict] = useState(null)
+  const [n, setN] = useState(1)
+  const [total, setTotal] = useState(0)
   const [theta, setTheta] = useState(0)
   const [res, setRes] = useState(null)
-  const sess = useRef(null)
+  const [sending, setSending] = useState(false)
+  const sessionToken = useRef(null)
+  const pending = useRef(null)
   const advTimer = useRef(null)
 
   useEffect(() => {
     let alive = true
-    getAdaptiveQuestions()
-      .then((qs) => {
+    startAdaptiveSession(token)
+      .then((s) => {
         if (!alive) return
-        if (!Array.isArray(qs) || qs.length === 0) {
+        if (!s || !s.question) {
           // Пустой errMsg → рендер возьмёт локализованный t('test.errLoad').
           setErrMsg('')
           setPhase('error')
           return
         }
-        sess.current = createSession(qs)
-        const q = next(sess.current)
-        setCur(q)
-        setN(sess.current.n)
-        setTheta(sess.current.theta)
+        sessionToken.current = s.sessionToken
+        setCur(s.question)
+        setN(s.questionNumber || 1)
+        setTotal(s.maxQuestions || 0)
         setPhase('question')
       })
       .catch((e) => {
@@ -73,29 +76,44 @@ export default function LevelTestPage({ onClose, onDone }) {
       alive = false
       clearTimeout(advTimer.current)
     }
-  }, [])
+  }, [token])
 
-  function check() {
-    if (chosen == null || checked) return
-    submit(sess.current, cur, chosen)
-    setChecked(true)
-    setTheta(sess.current.theta)
-    advTimer.current = setTimeout(advance, 950)
+  async function check() {
+    if (chosen == null || verdict || sending) return
+    setSending(true)
+    try {
+      const answer = await submitAdaptiveAnswer({
+        sessionToken: sessionToken.current,
+        questionId: cur.id,
+        optionId: chosen,
+        token,
+      })
+      setErrMsg('')
+      setVerdict({ correct: answer.correct, correctOptionId: answer.correctOptionId })
+      if (typeof answer.theta === 'number') setTheta(answer.theta)
+      pending.current = answer
+      advTimer.current = setTimeout(advance, 950)
+    } catch (e) {
+      // Вопрос остаётся на экране — ответ просто не ушёл.
+      setErrMsg(e.message || '')
+    } finally {
+      setSending(false)
+    }
   }
 
   function advance() {
-    const s = sess.current
-    if (isDone(s)) {
-      setRes(result(s))
+    const answer = pending.current
+    pending.current = null
+    if (!answer) return
+    if (answer.finished) {
+      setRes(answer.result)
       setPhase('result')
       return
     }
-    const q = next(s)
-    setCur(q)
+    setCur(answer.nextQuestion)
     setChosen(null)
-    setChecked(false)
-    setN(s.n)
-    setTheta(s.theta)
+    setVerdict(null)
+    setN(answer.questionNumber || n + 1)
   }
 
   if (phase === 'loading' || phase === 'error') {
@@ -124,7 +142,10 @@ export default function LevelTestPage({ onClose, onDone }) {
   }
 
   if (phase === 'result') {
-    const wrong = res.total - res.correct
+    // Посетителю показываем измеренную полосу; в профиль сервер пишет свой,
+    // ограниченный каталогом уровень (assignedLevel).
+    const level = res.detectedLevel || res.assignedLevel
+    const wrong = res.answered - res.correct
     return (
       <Shell onBack={() => onDone?.(res)}>
         <div className="result-wrap">
@@ -132,7 +153,7 @@ export default function LevelTestPage({ onClose, onDone }) {
             <h2 className="result-heading">{t('result.great')}</h2>
             <p className="result-caption">{t('result.determined')}</p>
 
-            <SealBadge level={res.level} />
+            <SealBadge level={level} />
 
             <div className="result-stats">
               <div className="rstat">
@@ -175,7 +196,6 @@ export default function LevelTestPage({ onClose, onDone }) {
 
   const q = cur
   const pct = pctOf(theta)
-  const total = CFG.max // «из 14»
 
   return (
     <div className="screen">
@@ -192,7 +212,7 @@ export default function LevelTestPage({ onClose, onDone }) {
 
         <section className="test-body">
           <div className="test-inner">
-            <div className="test-count">{t('test.question', { n: n + 1, total })}</div>
+            <div className="test-count">{t('test.question', { n, total })}</div>
 
             {/* Слайдер уровня CEFR */}
             <div className="meter">
@@ -223,9 +243,9 @@ export default function LevelTestPage({ onClose, onDone }) {
             <div className="test-options">
               {q.options.map((opt) => {
                 let cls = 'option'
-                if (checked) {
+                if (verdict) {
                   if (opt.id === chosen)
-                    cls += opt.id === q.correctOptionId ? ' option--correct' : ' option--wrong'
+                    cls += opt.id === verdict.correctOptionId ? ' option--correct' : ' option--wrong'
                 } else if (opt.id === chosen) {
                   cls += ' option--selected'
                 }
@@ -233,7 +253,7 @@ export default function LevelTestPage({ onClose, onDone }) {
                   <button
                     key={opt.id}
                     className={cls}
-                    disabled={checked}
+                    disabled={verdict != null}
                     onClick={() => setChosen(opt.id)}
                   >
                     {opt.text}
@@ -242,9 +262,11 @@ export default function LevelTestPage({ onClose, onDone }) {
               })}
             </div>
 
+            {errMsg && <p className="form-error">{errMsg}</p>}
+
             <button
               className="test-check"
-              disabled={chosen == null || checked}
+              disabled={chosen == null || verdict != null || sending}
               onClick={check}
             >
               {t('test.check')}

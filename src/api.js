@@ -46,9 +46,22 @@ async function get(path) {
   return res.json()
 }
 
-// CEFR-тест: банк вопросов (публичный эндпоинт, адаптивная логика — на клиенте)
-export function getAdaptiveQuestions() {
-  return get('/adaptive-test/questions')
+// CEFR-тест. Проверка ответов и оценка уровня живут на сервере: банк вопросов
+// публичный, поэтому вместе с вопросами уезжал и ключ, а посчитанный на клиенте
+// уровень был не измерением, а утверждением клиента. Теперь сервер выдаёт по
+// одному вопросу за раз и сам считает θ.
+//
+// Токен необязателен: сайт тестирует посетителя до регистрации. Если он есть —
+// прогон привязывается к аккаунту и уровень сохраняется в профиль.
+export function startAdaptiveSession(token) {
+  return authPost('/adaptive-test/sessions', token, {})
+}
+
+export function submitAdaptiveAnswer({ sessionToken, questionId, optionId, token }) {
+  return authPost(`/adaptive-test/sessions/${encodeURIComponent(sessionToken)}/answers`, token, {
+    questionId,
+    optionId,
+  })
 }
 
 // Ролевые сценарии для голосового тьютора — публичный эндпоинт (INK AI tutor,
@@ -66,7 +79,13 @@ async function authGet(path, token) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 404 у профильных полей означает «не заполнено»,
+    // а не поломку — отличать это от сетевой осечки приходится по нему.
+    const err = new Error(`Ошибка сервера (${res.status})`)
+    err.status = res.status
+    throw err
+  }
   return res.json()
 }
 
@@ -1042,8 +1061,19 @@ export async function deleteSavedWord(token, id) {
 
 // Уровень CEFR из профиля пользователя (GET /user/language-level).
 // Бэкенд отдаёт enum как JSON-строку ("A1"); подстраховываемся и на объект.
+// Уровень из профиля. null = уровня нет (у нового аккаунта бэкенд отвечает
+// 404: своего уровня ещё нет, а вывести из опросника не из чего). Это не
+// ошибка, а «тест не пройден» — раньше 404 летел исключением и молча уходил в
+// catch на входе, поэтому пропустивший тест больше никогда его не видел.
+// Сетевые и прочие ошибки по-прежнему пробрасываются: «не знаю» ≠ «нет».
 export async function getLanguageLevel(token) {
-  const data = await authGet('/user/language-level', token)
+  let data
+  try {
+    data = await authGet('/user/language-level', token)
+  } catch (e) {
+    if (e?.status === 404) return null
+    throw e
+  }
   if (typeof data === 'string') return data
   return data?.languageLevel || data?.level || data?.value || null
 }

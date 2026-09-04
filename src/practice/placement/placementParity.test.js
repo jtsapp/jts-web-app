@@ -10,28 +10,23 @@
 // детерминирована (mulberry32 от сида), поэтому порт обязан выдавать те же
 // θ, SE, уровень, флаги и разбивку по навыкам — до последнего знака.
 import { describe, it, expect, beforeAll } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { simulateSession, mergeBank2 } from './engine.generated.js'
+import { simulateSession } from './engine.generated.js'
+import { loadFullBank } from '../../lib/placementScore.js'
 import parity from './__fixtures__/parity.json'
-import { fileURLToPath } from 'node:url'
-
-// fileURLToPath: на Windows .pathname отдаёт «/C:/…» и путь склеивался в «C:\C:\…».
-const BANK_PATH = fileURLToPath(new URL('../../../public/practice/placement/bank.json', import.meta.url))
 
 let data
 
 beforeAll(() => {
-  data = JSON.parse(readFileSync(BANK_PATH, 'utf8'))
-  // В бандле слияние дополнительного банка выполняется на верхнем уровне;
-  // здесь данные приходят снаружи, поэтому сливаем их так же перед прогоном.
-  mergeBank2(data.bank, data.manifest, data.bank2)
+  // Публичный банк отдаётся без ответов (bankSplit.js), поэтому прогон идёт по
+  // полному: публичная часть + ключи. Если бы сборка расходилась с исходным
+  // банком, эталоны бандла ниже не сошлись бы.
+  data = loadFullBank()
 })
 
 describe('движок placement совпадает с бандлом школы', () => {
   it('банк доехал целиком', () => {
     expect(data.bank.items.length).toBeGreaterThan(160)
     expect(Object.keys(data.vocab).length).toBeGreaterThan(50)
-    expect(data.appliedPatches.length).toBeGreaterThan(0)
   })
 
   it.each(parity)(
