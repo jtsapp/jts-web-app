@@ -123,6 +123,15 @@ describe('Карточка слова в словаре', () => {
     expect(card.getAttribute('aria-pressed')).toBe('false')
   })
 
+  it('сетка картиночная, а не общая на четыре колонки', () => {
+    // Общая .vp-words держит фиксированные 4/3/2/1 колонки — на широком
+    // мониторе это колонка в 400+ пикселей и карточка почти в 600.
+    const { container } = draw([WITH_PIC])
+
+    const grid = container.querySelector('.vp-words')
+    expect(grid.className).toContain('vp-words--pics')
+  })
+
   it('транскрипцию показывает без лишних косых, как её ни прислали', () => {
     const { container } = draw([{ ...WITH_PIC, ipa: '/laɪk/' }])
 

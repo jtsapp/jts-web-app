@@ -600,7 +600,7 @@ export function LessonWords({ t, lang, lesson, meta, speak, onBack, onPractice }
         </div>
       </div>
       {cards.length > 0 && <p className="vp-words-hint">{t('vocab.flipHint')}</p>}
-      <div className="vp-words">
+      <div className="vp-words vp-words--pics">
         {cards.map((card, i) => {
           const key = card.id || `${card.en}-${i}`
           const isFlipped = flipped.has(key)
