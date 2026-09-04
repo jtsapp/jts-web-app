@@ -30,3 +30,7 @@ export const SITUATIONS_PROGRESS_EVENT = 'situations-progress'
 export const WORKBOOKS_PROGRESS_EVENT = 'workbooks-progress'
 export const WRITING_PROGRESS_EVENT = 'writing-progress'
 export const WORKBOOK_PROGRESS_EVENT = 'workbook-progress'
+// Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
+// плюс стрик по дням. Ключ трека — slug, а не id: карточку в админке могут
+// пересоздать, и прогресс не должен обнуляться вместе с ней.
+export const KARAOKE_KEY = 'jts_karaoke_v1'

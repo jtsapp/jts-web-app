@@ -1,5 +1,5 @@
 import { CheckIcon } from '../../../components/icons.jsx'
-import TapText from '../TapText.jsx'
+import QuestionMedia from './QuestionMedia.jsx'
 
 // «Отметь всё, что услышал»: несколько вариантов верны одновременно.
 // `answer` — массив отмеченных строк; засчитывается только полный набор
@@ -18,7 +18,7 @@ export default function MultiQuestion({ question, answer, checked, onAnswer, rea
 
   return (
     <div className="lw-q lw-q--multi">
-      {question?.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
+      <QuestionMedia question={question} onWord={onWord} />
       <div className="lw-opts">
         {(question?.options || []).map((opt) => {
           const selected = picked.includes(opt)

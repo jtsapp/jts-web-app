@@ -1,6 +1,7 @@
 import { gradeQuestion } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
+import QuestionMedia from './QuestionMedia.jsx'
 
 // Контролируемый вопрос-пропуск, заполняемый чипом из банка. `answer` —
 // выбранное слово (или null); выбранный чип подставляется в предложение.
@@ -13,6 +14,7 @@ export default function ChipsQuestion({ question, answer, checked, onAnswer, rea
 
   return (
     <div className="lw-q lw-q--chips">
+      <QuestionMedia question={question} onWord={onWord} />
       <p className="lw-q__sentence">
         <TapText text={question.gapBefore} onWord={onWord} />
         <span className={gapCls}>

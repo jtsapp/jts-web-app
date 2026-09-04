@@ -52,6 +52,12 @@ export default function IeltsListeningPage({ userLevel = 'A1', userName, token, 
     })
     if (how === 'none') {
       // TTS failed on every path — surface an error; retry does NOT consume a play.
+      // Сюда же приходит iOS-случай «браузерный синтез принял текст, но не
+      // заговорил»: speakListeningAudio отдаёт 'none', только когда звук
+      // подтвердил старт (см. speakBrowser). Раньше он отдавал 'fallback' при
+      // тишине — состояние уходило в 'playing' навсегда (onEnd не приходил, и
+      // кнопка оставалась disabled), а used увеличивался, то есть прослушивание
+      // сгорало. Ниже 'playing'/used выставляются только за зазвучавший звук.
       setPlay((p) => ({ ...p, [partId]: { ...p[partId], state: 'idle', error: true } }))
       return
     }
@@ -151,8 +157,8 @@ export default function IeltsListeningPage({ userLevel = 'A1', userName, token, 
                   </button>
                   <span className="ie-part__left">Осталось прослушиваний: {playsLeft}</span>
                   {ps.error && (
-                    <span className="ie-part__err">
-                      Аудио недоступно — проверь соединение и попробуй ещё раз.
+                    <span className="ie-part__err" role="status">
+                      Запись не зазвучала. Нажми «Прослушать» ещё раз — попытка не потрачена.
                     </span>
                   )}
                 </div>

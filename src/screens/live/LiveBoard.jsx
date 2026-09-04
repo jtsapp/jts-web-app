@@ -145,10 +145,16 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
     // делал холст ШИРЕ экрана, и доска не помещалась целиком — приходилось
     // возить её вбок. Запасные 600×480 остаются только на случай, когда
     // измерять ещё нечего (панель скрыта в момент создания).
-    const stageRect = stageRef.current?.getBoundingClientRect()
+    // Меряем ВНУТРЕННИЙ бокс сцены (clientWidth/clientHeight), а не
+    // getBoundingClientRect(): у .board__stage есть рамка, и на её толщину
+    // холст выходил шире контейнера с overflow: auto — сцена прокручивалась
+    // вбок уже на первом кадре. ResizeObserver ниже отдаёт contentRect, то
+    // есть тоже внутренний бокс: оба места обязаны мерить одно и то же,
+    // иначе размер молча меняется сразу после создания.
+    const stage = stageRef.current
     const canvas = new fabric.Canvas(canvasElRef.current, {
-      width: Math.round(stageRect?.width || 600),
-      height: Math.round(stageRect?.height || 480),
+      width: stage?.clientWidth || 600,
+      height: stage?.clientHeight || 480,
       backgroundColor: '#ffffff',
       preserveObjectStacking: true,
       selection: true,
@@ -164,7 +170,10 @@ export default function LiveBoard({ lessonId, token, selfUserId, isStaff }) {
       resizeObserver = new ResizeObserver((entries) => {
         const box = entries[0]?.contentRect
         if (!box?.width || !box?.height) return
-        canvas.setDimensions({ width: Math.round(box.width), height: Math.round(box.height) })
+        // Вниз, а не к ближайшему: дробную ширину округление вверх делало
+        // больше контейнера, и после поворота холст вылезал за сцену с
+        // overflow: auto — вместо чистой перерисовки появлялась прокрутка.
+        canvas.setDimensions({ width: Math.floor(box.width), height: Math.floor(box.height) })
         canvas.requestRenderAll()
       })
       resizeObserver.observe(stageRef.current)

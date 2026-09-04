@@ -435,7 +435,9 @@ export function MinPair({ item, draft, setDraft, lang }) {
             key={w}
             type="button"
             className={`plc-opt ${draft.optIndex === i ? 'on' : ''}`}
-            onClick={() => setDraft({ optIndex: i, fraction: w === item.word ? 1 : 0 })}
+            // Пишем и само слово: варианты перемешаны на клиенте, по индексу
+            // сервер ответ не перепроверит.
+            onClick={() => setDraft({ optIndex: i, word: w, fraction: w === item.word ? 1 : 0 })}
           >
             {w}
           </button>
