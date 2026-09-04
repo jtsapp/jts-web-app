@@ -41,18 +41,18 @@ const renderPage = (token) => render(
 describe('LessonsPage tabs', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('ученик видит две вкладки — клубы и онлайн-уроки', async () => {
+  it('ученик видит клубы, онлайн-уроки и самостоятельное обучение', async () => {
     const { container } = renderPage(tokenWithRole('STUDENT'))
     await waitFor(() => expect(container.querySelectorAll('.ls-tab').length).toBeGreaterThan(0))
     expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent))
-      .toEqual(['Спикинг-клабы', 'Онлайн-уроки'])
+      .toEqual(['Спикинг-клабы', 'Онлайн-уроки', 'Самостоятельно'])
   })
 
   // Проверка домашних работ — инструмент преподавателя, ученику её показывать
   // нельзя: бэкенд всё равно отдаст ему только свои работы.
   it('преподаватель дополнительно видит вкладку проверки домашних работ', async () => {
     const { container } = renderPage(tokenWithRole('TEACHER'))
-    await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(3))
+    await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(4))
     expect(screen.getByRole('button', { name: 'Домашние задания' })).toBeTruthy()
   })
 
