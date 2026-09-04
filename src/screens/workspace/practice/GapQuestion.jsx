@@ -4,6 +4,7 @@ import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
 import { tidyLessonText } from '../tidyLessonText.js'
 import { inlineBold } from '../inlineBold.jsx'
+import QuestionMedia from './QuestionMedia.jsx'
 
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
@@ -31,6 +32,7 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
 
   return (
     <div className="lw-q lw-q--gap">
+      <QuestionMedia question={question} onWord={onWord} />
       <p className="lw-q__sentence">
         <TapText text={question.gapBefore} onWord={onWord} />
         <span className="lw-gap-input-wrap">

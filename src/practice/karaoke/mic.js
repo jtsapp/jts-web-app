@@ -51,16 +51,19 @@ export function stopStream(stream) {
  */
 export function unlockPlayback(audio) {
   if (!audio) return
-  const muted = audio.muted
   try {
-    audio.muted = true
+    // Жест тратится на сам вызов play(), а не на то, что из него вышло:
+    // pause() стоит следующей строкой, синхронно, поэтому звук начаться не
+    // успевает и глушить элемент не нужно. Глушить и не стоит — muted-
+    // воспроизведение iOS разрешает и без жеста, так что разрешение,
+    // полученное на него, могло бы не распространиться на звук.
+    // Тот же приём, что в createGestureUnlockedAudio (lib/ielts-audio.js).
     audio.play().catch(() => {})
     audio.pause()
     audio.currentTime = 0
   } catch {
     /* элемент ещё не готов — тогда и разблокировать нечего */
   }
-  audio.muted = muted
 }
 
 /** Звуковой контекст, созданный в жесте. Отдаём наружу, чтобы startTake его не создавал. */

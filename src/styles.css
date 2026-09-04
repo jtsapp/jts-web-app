@@ -22,6 +22,37 @@
   --safe-bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
 }
 
+/* Запас в 56px нужен там, где панель браузера висит внизу ПОВЕРХ страницы, —
+   это телефон. На планшете адресная строка сверху, снизу закрывать нечего, и
+   те же 56px превращаются в пустую полосу под кнопкой шага и под последней
+   строкой выезжающего меню.
+
+   Отличить телефон от планшета без UA-сниффинга можно только геометрией, и по
+   одной ширине нельзя: iPhone 17 Pro Max в ландшафте — 956pt, шире iPad mini в
+   портрете (744pt). А пара измерений сразу разделяет их надёжно: у любого
+   iPhone либо ширина <= 440pt (портрет), либо высота <= 440pt (ландшафт).
+
+   Порог высоты считается от ВЬЮПОРТА, а не от экрана устройства, и это не одно
+   и то же: на симуляторе iPad mini (экран 744x1133) Safari отдаёт странице
+   744x1047 — свои 86pt верхней панели с вкладками он забирает себе. От
+   первоначальных 700 iPad mini в ландшафте (1133x744 -> вьюпорт ~1133x658)
+   отваливался, то есть на нём запас возвращался. 600 берёт и его: у самого
+   рослого iPhone в ландшафте вьюпорт около 390pt, до порога ещё двести.
+   Таблица, по которой это считано, живёт в тесте src/safeBottom.design.test.js
+   — правя пороги, правь и её.
+
+   pointer: coarse оставляет в покое десктоп: у .lv-modal и .cp-dict (они вне
+   мобильных медиазапросов) вид в обычном браузере не меняется.
+
+   Не обнуляем совсем: у этих же панелей по бокам 16px, а
+   env(safe-area-inset-bottom) на iPad с кнопкой Home равен нулю — контент лёг
+   бы на самую кромку. Оставляем те же 16px, что и по бокам. */
+@media (pointer: coarse) and (min-width: 600px) and (min-height: 600px) {
+  :root {
+    --safe-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -6873,10 +6904,21 @@ textarea {
 .cal__more { font-size: 9px; color: var(--muted); background: none; }
 .cal-day { background: #fff; border-radius: 20px; padding: 20px; }
 .cal-day__h { font-size: 16px; font-weight: 700; color: var(--ink); margin: 0 0 12px; }
-@media (max-width: 720px) { .cal-layout { grid-template-columns: 1fr; } }
+/* Календарь в одну колонку. Порог 900, а не 720: при двух колонках панель дня
+   забирает до 340px, и на iPad Air (820pt) месяцу оставалось 312px — клетки
+   дня выходили 34×56px, вертикальные полоски вместо квадратов, и попасть по
+   нужному числу пальцем нельзя. Считано от обратного: клетке нужно ≥44px (HIG),
+   7×44 + 6 зазоров по 6 + поля .cal 40 = 384px на месяц, плюс панель 340 и
+   зазор 16 — это 740px на саму сетку, то есть ~892px вьюпорта вместе с рейлом
+   88px и полями 64px. */
+@media (max-width: 900px) { .cal-layout { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .cal__day { transition: none; } }
 
-/* Sidebar icon rail — только десктоп, экраны раздела «Уроки». Сайдбар вынут из
+/* Sidebar icon rail — только ШИРОКИЙ десктоп (≥1024px), экраны раздела
+   «Уроки». Ниже 1024px рейл включается для ВСЕХ экранов кабинета — см. блок
+   «Планшет» дальше по файлу, и раскрытие по наведению там не нужно (на тач-
+   экране hover залипает), поэтому эта раскладка начинается с 1024, а не с 761.
+   Сайдбар вынут из
    потока (absolute), а .learn__body резервирует его свёрнутую ширину через
    padding-left — поэтому раскрытие по наведению кроет контент и НИКОГДА не
    перекладывает <main> и календарь. Якорь — .learn__body (position: relative);
@@ -6890,7 +6932,7 @@ textarea {
    в 39px контента, а монета баланса улетала на x = 102 — целиком за пределы
    рейла. Поэтому здесь подписи убираются ИЗ ПОТОКА (display: none), а каждому
    блоку задана своя форма под колонку 48px. */
-@media (min-width: 761px) {
+@media (min-width: 1024px) and (hover: hover) {
   .learn--rail .learn__body { position: relative; padding-left: 72px; }
   .learn--rail .sb--rail {
     position: absolute; top: 0; left: 0;
@@ -6981,6 +7023,183 @@ textarea {
 }
 @media (prefers-reduced-motion: reduce) {
   .sb--rail { transition: none; }
+}
+
+/* Страница не должна ездить вбок и на планшете. Тот же clip, что стоит в
+   мобильном блоке (и по той же причине — не hidden: он вынудил бы overflow-y
+   стать auto, и тач-скролл начал бы цеплять не тот контейнер), только для
+   диапазона выше 760px. Это страховка, а не замена починки: конкретные широкие
+   блоки (.t-prof__grid, .cp-check, .cp-choices.is-grid, .t-plan__card)
+   исправлены по месту, но фиксированные ширины в этом коде заводятся снова, и
+   лучше пусть блок обрежется, чем поедет вся страница вместе с липким рейлом.
+   Внутренние горизонтальные скроллеры это не трогает — у них свой overflow. */
+@media (min-width: 761px) and (max-width: 1023px),
+       (min-width: 761px) and (hover: none) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+/* ============  ПЛАНШЕТ: сайдбар-рейл  ============ */
+/* iPad в портрете (744–1024pt) до этого попадал в десктопную ветку целиком:
+   сайдбар 272px съедал треть экрана — на iPad Air 11" (820pt) контенту
+   оставалось 548px, то есть меньше, чем закладывает мобильный макет. Здесь
+   сайдбар сжимается в рейл 88px с подписями ПОД иконками, и контент получает
+   +184px.
+
+   Почему рейл с подписями, а не мобильный drawer: на 820–1023px хватает места
+   держать навигацию постоянно видимой, и прятать её за гамбургер — терять
+   ориентацию там, где её терять не нужно. Почему подписи, а не одни иконки:
+   у десктопного рейла подписи достаёт наведение, а на планшете hover'а нет —
+   первое касание по кнопке её же и нажимает, так что раскрывать нечем.
+
+   Рейл остаётся В ПОТОКЕ (в отличие от десктопного .sb--rail, который
+   absolute ради наложения при раскрытии): раскрываться нечему, а в потоке
+   подвал не оказывается под колонкой.
+
+   Границы блока — два условия через запятую:
+   • 761–1023px — любое устройство, включая узкое окно на десктопе;
+   • от 761px при (hover: none) — тач-экран любой ширины, то есть и iPad в
+     ландшафте (1180pt). Без второго условия поворот планшета перекладывал бы
+     всю оболочку (рейл ⇄ полный сайдбар), а на экранах уроков ≥1024px рейл
+     оставался бы без подписей: раскрыть их нечем, наведения на тач-экране
+     нет. iPad с трекпадом сообщает (hover: hover) и получает, как и положено,
+     десктопную раскладку. */
+@media (min-width: 761px) and (max-width: 1023px),
+       (min-width: 761px) and (hover: none) {
+  /* Десктопный рейл здесь не действует (его @media — от 1024px И только для
+     устройств с указателем), но .learn--rail всё ещё висит на обёртке —
+     снимаем его отступ. */
+  .learn--rail .learn__body {
+    position: static;
+    padding-left: 0;
+  }
+
+  .sb,
+  .learn--rail .sb--rail {
+    position: sticky;
+    top: 0;
+    left: auto;
+    width: 88px;
+    height: 100dvh;
+    z-index: auto;
+    /* Поля и зазоры ужаты против десктопных: с возвращёнными именем, званием и
+       уровнем колонка в ландшафте (высота ~700px) вылезала на 14px и получала
+       собственную полосу прокрутки — прокручиваемое меню из шести пунктов
+       выглядит поломкой, хотя формально работает. */
+    padding: 16px 6px;
+    gap: 12px;
+    align-items: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transform: none;
+    box-shadow: none;
+    transition: none;
+  }
+
+  /* Планшет ничего не теряет: имя, ранг и уровень остаются на месте — просто
+     переезжают подписями под иконки, ровно как разделы меню. Скрыты только два
+     чисто декоративных элемента: вордмарк (в колонке 88px он превращается в
+     нечитаемую кашу и никуда не ведёт — в кабинет уводит аватар рядом) и
+     шеврон профиля (стрелка «здесь можно нажать» при видимой подписи лишняя). */
+  .sb .sb__logo,
+  .sb .sb__profile-chev {
+    display: none;
+  }
+
+  .sb .sb__profile {
+    flex-direction: column;
+    gap: 6px;
+    padding: 0;
+    background: none;
+    justify-content: center;
+    text-align: center;
+  }
+  .sb .sb__avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+  }
+  .sb .sb__profile-text {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+  }
+  /* Имя в одну строку с многоточием: длинное «Ученик (ваш)» иначе растянуло бы
+     профиль на три строки и выдавило ранг с монетами за нижний край. */
+  .sb .sb__profile-text b {
+    width: 100%;
+    font-size: 10.5px;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sb .sb__profile-text span {
+    font-size: 9.5px;
+    line-height: 1.15;
+  }
+
+  /* Ранг: иконка, под ней звание, под ним уровень. Всё то же, что на десктопе
+     в строку, только столбиком. */
+  .sb .sb__role-text {
+    flex: none;
+    font-size: 10.5px;
+    line-height: 1.15;
+    text-align: center;
+  }
+  .sb .sb__role-lvl {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .sb .sb__nav {
+    width: 100%;
+    align-items: center;
+    gap: 2px;
+  }
+  /* Иконка сверху, подпись под ней в две строки. 76×56 — выше 44px из HIG,
+     то есть попасть пальцем можно не целясь. */
+  .sb .sb__item {
+    flex-direction: column;
+    width: 76px;
+    gap: 5px;
+    padding: 9px 3px 8px;
+    border-radius: 16px;
+    text-align: center;
+  }
+  .sb .sb__item span {
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.1px;
+  }
+
+  .sb .sb__role {
+    flex-direction: column;
+    gap: 5px;
+    padding: 0;
+    background: none;
+    justify-content: center;
+  }
+  .sb .sb__role-ic {
+    width: 36px;
+    height: 36px;
+  }
+  .sb .sb__balance {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+  }
+  .sb .sb__stat {
+    gap: 4px;
+  }
+  .sb .sb__stat-num {
+    font-size: 15px;
+  }
 }
 
 /* --- Live lesson shell --- */
@@ -8214,6 +8433,27 @@ textarea {
   color: var(--purple); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
 }
 .plc-ghost:disabled { opacity: 0.4; cursor: default; }
+/* «Не знаю» — не основной путь, поэтому тише «Далее»; выбранное состояние
+   видно, чтобы ученик не гадал, засчиталось ли. Подпись не переносим: в ряду
+   из трёх кнопок на узком экране «Не знаю» иначе ломается пополам. */
+.plc-idk {
+  padding: 15px 6px; white-space: nowrap; background: transparent; box-shadow: none;
+  color: var(--purple); text-decoration: underline; text-underline-offset: 3px; font-weight: 600;
+}
+.plc-idk.on {
+  text-decoration: none; background: #f0ebff; box-shadow: inset 0 0 0 1.5px var(--purple);
+  padding: 15px 14px;
+}
+
+/* Честная приписка к уровню: шкала временная / оценка неуверенная. */
+.plc-note { margin: 0 0 16px; font-size: 14px; line-height: 1.45; color: #6b6880; }
+.plc-note + .plc-note { margin-top: -4px; }
+.plc-note--warn { color: #8a5a00; }
+
+/* Уровень определён, но не сохранился: результат теста нельзя терять молча —
+   показываем это на самом экране результата и даём повторить. */
+.plc-save-error { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 22px; }
+.plc-save-error .form-error { margin: 0; text-align: center; }
 
 .plc-level { font-size: 72px; font-weight: 800; color: var(--purple); line-height: 1.1; margin: 10px 0 26px; }
 /* Полоса уверенности: закрашен интервал θ±SE, а не одна точка — оценка всегда
@@ -8234,6 +8474,8 @@ textarea {
   .plc-stem { font-size: 17px; margin-bottom: 18px; }
   .plc-opt { padding: 14px 16px; font-size: 15px; }
   .plc-primary, .plc-ghost { padding: 13px 24px; font-size: 15px; }
+  .plc-idk { padding: 13px 4px; }
+  .plc-idk.on { padding: 13px 12px; }
   .plc-level { font-size: 50px; }
   .plc-match { grid-template-columns: 1fr; }
   .plc-tf { flex-direction: column; align-items: flex-start; gap: 8px; }

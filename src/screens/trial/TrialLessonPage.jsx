@@ -57,6 +57,12 @@ export default function TrialLessonPage({ token, teacherMode = false }) {
   const sess = useRef(null)
   const startedAt = useRef(0)
   const answeredAt = useRef(0)
+  // Между сдачей ответов и сменой экрана стоит запрос вариантов моста, и всё
+  // это время кнопка «Далее» остаётся включённой (`disabled` считается из
+  // черновиков, а они по клику не меняются). Второй клик прогнал бы
+  // submitAnswer по всей секции ещё раз — в движок ушли бы дубликаты, и θ
+  // посчиталась бы по удвоенным ответам.
+  const finishing = useRef(false)
 
   // Ссылка и банк заданий грузятся параллельно: и то и другое нужно до первого
   // экрана, а последовательно это лишняя секунда на глазах у преподавателя.
@@ -189,7 +195,36 @@ export default function TrialLessonPage({ token, teacherMode = false }) {
       sc.kind === 'a0' ? !!(drafts[item.id]?.text || '').trim() : isItemAnswered(item, drafts[item.id]),
     )
 
-  const finishSection = () => {
+  // Варианты A0-моста знает только сервер: ключи в браузер не уезжают
+  // (bankSplit.js). Сеть или роут отказали — возвращаем пусто, и мост покажет
+  // обычное поле ввода вместо кнопок (см. buildA0Bridge).
+  const fetchA0Options = async (ids, runSeed) => {
+    try {
+      const res = await fetch('/api/placement/a0-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Номер прогона обязателен: без него набор и порядок кнопок вырождаются
+        // в константу, одну на всех учеников сразу.
+        body: JSON.stringify({ ids, seed: runSeed }),
+      })
+      if (!res.ok) return {}
+      return (await res.json()).options || {}
+    } catch {
+      return {}
+    }
+  }
+
+  const finishSection = async () => {
+    if (finishing.current) return undefined
+    finishing.current = true
+    try {
+      return await runFinishSection()
+    } finally {
+      finishing.current = false
+    }
+  }
+
+  const runFinishSection = async () => {
     const s = sess.current
     for (const sc of screens) {
       for (const item of itemsOfScreen(sc)) submitAnswer(s, item, drafts[item.id])
@@ -197,7 +232,9 @@ export default function TrialLessonPage({ token, teacherMode = false }) {
 
     // Провал разминки уводит на A0-мост — тот же вердикт движка, что в тесте.
     if (section?.key === 'routing' && s.routingVerdict() && s.bridgeItems().length) {
-      return openBuilt(sections.buildA0Bridge(s), { title: 'Начнём с самого простого', hint: 'Выберите слово для пропуска.' })
+      const a0options = await fetchA0Options(s.bridgeItems().map((it) => it.id), s.seed)
+      const built = sections.buildA0Bridge(s, a0options)
+      return openBuilt(built, { title: 'Начнём с самого простого', hint: sections.a0BridgeHint(built) })
     }
     if (section?.key === 'a0_bridge') {
       // Урок продолжается даже при нулевом уровне: словарь, чтение и

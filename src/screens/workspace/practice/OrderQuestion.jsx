@@ -1,7 +1,7 @@
 import { useI18n } from '../../../i18n.jsx'
 import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
-import TapText from '../TapText.jsx'
+import QuestionMedia from './QuestionMedia.jsx'
 
 /**
  * Слова банка, ещё не поставленные в предложение: жадно вычёркиваем из
@@ -51,7 +51,7 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
 
   return (
     <div className="lw-q lw-q--order">
-      {question?.prompt && <TapText as="p" className="lw-q__prompt" text={question.prompt} onWord={onWord} />}
+      <QuestionMedia question={question} onWord={onWord} />
       {!checked && <p className="lw-order__hint">{t('lesson.ws.orderHint')}</p>}
 
       <div className={sentenceCls} role="group" aria-label={question?.prompt}>

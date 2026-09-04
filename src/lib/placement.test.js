@@ -2,7 +2,10 @@
 // студента, поэтому проверяется в первую очередь то, что в профиль не попадёт
 // мусор, и что A0 — полноценный уровень, а не «почти A1».
 import { describe, it, expect } from 'vitest'
-import { placementLevel, placementFlags, placementSummary, PLACEMENT_LEVELS } from './placement.js'
+import {
+  placementLevel, placementFlags, placementSummary, sanitizePlacementRecord, profileLevel,
+  PLACEMENT_LEVELS,
+} from './placement.js'
 
 describe('placementLevel', () => {
   it('берёт уровень из результата раннера', () => {
@@ -52,5 +55,76 @@ describe('placementSummary', () => {
 
   it('без валидного уровня сводки нет', () => {
     expect(placementSummary({ theta: 1.2 })).toBeNull()
+  })
+})
+
+// Снимок прохождения приходит в роут из недоверенного тела запроса, а уезжает
+// в профиль: то, по чему потом будет видно, можно ли верить уровню, и то, чем
+// когда-нибудь откалибруют банк.
+describe('sanitizePlacementRecord', () => {
+  const at = '2026-08-31T12:00:00.000Z'
+
+  it('складывает уровень, θ, SE и флаги', () => {
+    const rec = sanitizePlacementRecord('B1', {
+      theta: -0.23, se: 0.61, flags: ['unresolved'], variant: 'express', answered: 14,
+    }, at)
+
+    expect(rec).toEqual({
+      level: 'B1', theta: -0.23, se: 0.61, flags: ['unresolved'],
+      variant: 'express', answered: 14, clientLevel: null, at,
+    })
+  })
+
+  it('нечисловые θ/SE становятся null, а не NaN в базе', () => {
+    const rec = sanitizePlacementRecord('A2', { theta: 'nope', se: null }, at)
+    expect(rec.theta).toBeNull()
+    expect(rec.se).toBeNull()
+  })
+
+  it('мусор в флагах отсеивается, длина ограничена', () => {
+    const rec = sanitizePlacementRecord('A2', {
+      flags: ['ok', 42, null, '', 'x'.repeat(80), ...Array.from({ length: 20 }, (_, i) => `f${i}`)],
+    }, at)
+
+    expect(rec.flags[0]).toBe('ok')
+    expect(rec.flags).not.toContain(42)
+    expect(rec.flags.length).toBeLessThanOrEqual(12)
+    expect(rec.flags.every((f) => f.length <= 40)).toBe(true)
+  })
+
+  it('лишние поля из тела запроса в профиль не уезжают', () => {
+    const rec = sanitizePlacementRecord('A1', { theta: 0, evil: 'drop table', session: {} }, at)
+    expect(Object.keys(rec).sort())
+      .toEqual(['answered', 'at', 'clientLevel', 'flags', 'level', 'se', 'theta', 'variant'])
+  })
+
+  it('пустой снимок не роняет запись', () => {
+    expect(sanitizePlacementRecord('A0', undefined, at)).toEqual({
+      level: 'A0', theta: null, se: null, flags: [], variant: null, answered: null,
+      clientLevel: null, at,
+    })
+  })
+
+  it('запоминает клиентский уровень, когда он разошёлся с пересчётом', () => {
+    // Расхождение — сигнал: баг клиента или попытка подделки.
+    const rec = sanitizePlacementRecord('A0', { clientLevel: 'C2' }, at)
+    expect(rec.clientLevel).toBe('C2')
+
+    const same = sanitizePlacementRecord('B1', { clientLevel: 'B1' }, at)
+    expect(same.clientLevel).toBeNull()
+  })
+})
+
+// A0 в приложениях значит «тест не пройден»: мобильный клиент по нему держит
+// карту под замком и снова просит пройти тест. Поэтому в профиль он не уезжает.
+describe('profileLevel', () => {
+  it('A0 превращается в A1 — первый уровень курса', () => {
+    expect(profileLevel('A0')).toBe('A1')
+  })
+
+  it('остальные уровни не трогает', () => {
+    for (const level of ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']) {
+      expect(profileLevel(level)).toBe(level)
+    }
   })
 })

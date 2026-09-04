@@ -1,85 +1,83 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { playBroadcastAudio, stopBroadcastAudio, releaseBroadcastAudio } from './audioReport.js'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// «Слушать вместе»: преподаватель останавливает дорожку там, где непонятно,
-// разбирает и продолжает — класс обязан продолжить с того же места, а не
-// начать сначала. Раньше каждый «play» создавал новый Audio и играл с нуля.
-const created = []
-
-class FakeAudio {
-  constructor(src) {
-    this.src = src
-    this.currentTime = 0
-    this.readyState = 1
-    this.paused = true
-    this.dataset = {}
-    this.play = vi.fn(() => { this.paused = false; return Promise.resolve() })
-    this.pause = vi.fn(() => { this.paused = true })
-    this.addEventListener = vi.fn()
-    created.push(this)
+// jsdom не умеет HTMLMediaElement.play — подменяем конструктор целиком и считаем,
+// сколько элементов создал модуль: в этом весь смысл правки.
+function stubAudio(playImpl) {
+  const created = []
+  class FakeAudio {
+    constructor(src) {
+      this.src = src ?? ''
+      // Настоящий <audio> его имеет, а модуль по dataset.url отличает «та же
+      // дорожка, продолжаем с места» от «дорожку сменили».
+      this.dataset = {}
+      this.play = vi.fn(playImpl)
+      this.pause = vi.fn()
+      created.push(this)
+    }
   }
+  vi.stubGlobal('Audio', FakeAudio)
+  return created
 }
 
-beforeEach(() => {
-  created.length = 0
-  releaseBroadcastAudio()
-  vi.stubGlobal('Audio', FakeAudio)
-  vi.stubGlobal('speechSynthesis', { cancel: vi.fn(), speak: vi.fn() })
-})
+beforeEach(() => { vi.resetModules(); vi.useFakeTimers() })
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('трансляция аудио классу', () => {
-  it('продолжение после паузы идёт с места преподавателя, тем же элементом', () => {
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 0 })
-    playBroadcastAudio({ kind: 'file', action: 'stop', position: 42 })
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 42 })
+  it('играет тем же элементом, что разблокирован жестом входа', async () => {
+    const created = stubAudio(() => Promise.resolve())
+    const { unlockBroadcastAudio, playBroadcastAudio } = await import('./audioReport.js')
 
+    unlockBroadcastAudio()                                   // жест: «Присоединиться к уроку»
+    playBroadcastAudio({ kind: 'file', url: '/course/a1/audio/x.mp3' })
+
+    // На iOS разрешение выдано КОНКРЕТНОМУ элементу — второму играть
+    // не разрешат, поэтому его и не должно появиться.
     expect(created).toHaveLength(1)
-    expect(created[0].currentTime).toBe(42)
-    expect(created[0].play).toHaveBeenCalledTimes(2)
+    expect(created[0].src).toBe('/course/a1/audio/x.mp3')
+    expect(created[0].play).toHaveBeenCalledTimes(2)         // тишина на жесте + трансляция
   })
 
-  it('другая дорожка — новый элемент, прежний остановлен', () => {
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'a.mp3', position: 0 })
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'b.mp3', position: 3 })
+  it('сообщает об отказе браузера, а не глушит его', async () => {
+    stubAudio(() => Promise.reject(new DOMException('gesture required', 'NotAllowedError')))
+    const { playBroadcastAudio } = await import('./audioReport.js')
+    const onBlocked = vi.fn()
+    const onStarted = vi.fn()
 
-    expect(created).toHaveLength(2)
-    expect(created[0].pause).toHaveBeenCalled()
-    expect(created[1].currentTime).toBe(3)
+    playBroadcastAudio({ kind: 'file', url: '/x.mp3' }, { onBlocked, onStarted })
+
+    await vi.waitFor(() => expect(onBlocked).toHaveBeenCalledTimes(1))
+    expect(onStarted).not.toHaveBeenCalled()
   })
 
-  it('перемотка преподавателя переносит класс, а не доигрывает старое', () => {
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 0 })
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 118.5 })
+  it('не ждёт ничего между жестом и play()', async () => {
+    const created = stubAudio(() => Promise.resolve())
+    const { unlockBroadcastAudio } = await import('./audioReport.js')
 
-    expect(created).toHaveLength(1)
-    expect(created[0].currentTime).toBe(118.5)
+    unlockBroadcastAudio()
+    // Синхронно, БЕЗ await перед проверкой: любой await до play() съедает жест.
+    expect(created[0].play).toHaveBeenCalled()
   })
 
-  it('метаданных ещё нет — перемотку откладываем до loadedmetadata', () => {
-    class NotReady extends FakeAudio {
-      constructor(src) { super(src); this.readyState = 0 }
-    }
-    vi.stubGlobal('Audio', NotReady)
+  it('на двух трансляциях подряд не объявляет заблокированной ту, что играет', async () => {
+    // Элемент теперь один, и AbortError от прерванной первой приходит ПОСЛЕ
+    // старта второй — тот же случай, что в lib/ielts-audio.js playTutorSample.
+    let rejectFirst
+    stubAudio(function () {
+      if (this.src === '/first.mp3') return new Promise((_, r) => { rejectFirst = r })
+      return Promise.resolve()
+    })
+    const { playBroadcastAudio } = await import('./audioReport.js')
+    const onBlocked = vi.fn()
 
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 12 })
+    playBroadcastAudio({ kind: 'file', url: '/first.mp3' }, { onBlocked })
+    playBroadcastAudio({ kind: 'file', url: '/second.mp3' }, { onBlocked })
+    rejectFirst(new DOMException('interrupted by pause()', 'AbortError'))
+    // Три такта микрозадач: отказ идёт по цепочке then→catch и за один такт
+    // обработчик ещё не успевает — с одним тактом тест проходил бы и со
+    // сломанным счётчиком поколений, то есть не проверял бы ничего.
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
 
-    expect(created[0].currentTime).toBe(0)
-    expect(created[0].addEventListener).toHaveBeenCalledWith('loadedmetadata', expect.any(Function), { once: true })
-  })
-
-  it('выход из урока отпускает дорожку — следующий урок начинает с нуля', () => {
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 10 })
-    releaseBroadcastAudio()
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 0 })
-
-    expect(created).toHaveLength(2)
-  })
-
-  it('стоп без новой дорожки просто ставит паузу', () => {
-    playBroadcastAudio({ kind: 'file', action: 'play', url: 'track.mp3', position: 0 })
-    stopBroadcastAudio()
-
-    expect(created[0].pause).toHaveBeenCalled()
+    expect(onBlocked).not.toHaveBeenCalled()
   })
 })
