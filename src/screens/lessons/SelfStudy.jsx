@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
-import { getCourseCatalog } from '../../api.js'
+import { getCourseCatalog, getCatalogProgress, completeCatalogLesson, uncompleteCatalogLesson } from '../../api.js'
 import { levelIndex } from '../../kingdoms.js'
 
 const TYPE_ICON = { lesson: '📘', video: '▶', review: '🏆', leadin: '★', test: '🎓' }
@@ -37,14 +37,16 @@ function isLevelOpen(levelId, userLevel) {
  * одинаковым названием, а открывал бы то версию для занятия с преподавателем,
  * то для группы.
  *
- * Прогресса у этих материалов нет: бэкенд по урокам каталога прохождение не
- * хранит (см. CATALOG_LESSON в ContentType — «lock only, no completion data»).
- * Поэтому ни галочек, ни процентов здесь нет — рисовать их было бы враньём.
+ * Прогресс ученик отмечает сам. Автоматически «пройдено» взять неоткуда: из
+ * 215 самостоятельных уроков только 71 разобран на шаги, остальные 144
+ * открываются документом, и события завершения у них не бывает. Отмечать по
+ * факту открытия было бы враньём — «открыл» и «прошёл» разные вещи.
  */
 export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
   const { t } = useI18n()
   const [levels, setLevels] = useState(null) // null — ещё грузим
   const [error, setError] = useState(false)
+  const [done, setDone] = useState(() => new Set())
 
   useEffect(() => {
     if (!token) return
@@ -53,10 +55,39 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
     getCourseCatalog(token, (fresh) => alive && setLevels(fresh || []))
       .then((data) => alive && setLevels(data || []))
       .catch(() => alive && setError(true))
+    // Прогресс не критичен для экрана: не ответил — список работает, просто без
+    // галочек. Ронять из-за него весь раздел незачем.
+    getCatalogProgress(token)
+      .then((r) => alive && setDone(new Set((r?.completedLessonIds || []).map(Number))))
+      .catch(() => {})
     return () => {
       alive = false
     }
   }, [token])
+
+  const toggleDone = async (lessonId) => {
+    const id = Number(lessonId)
+    const was = done.has(id)
+    // Рисуем сразу, не дожидаясь сети: галочка должна отвечать на нажатие, а не
+    // на скорость соединения. Не сошлось — возвращаем как было.
+    setDone((prev) => {
+      const next = new Set(prev)
+      if (was) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    try {
+      const r = was ? await uncompleteCatalogLesson(token, id) : await completeCatalogLesson(token, id)
+      setDone(new Set((r?.completedLessonIds || []).map(Number)))
+    } catch {
+      setDone((prev) => {
+        const next = new Set(prev)
+        if (was) next.add(id)
+        else next.delete(id)
+        return next
+      })
+    }
+  }
 
   const visible = useMemo(() => {
     return (levels || [])
@@ -100,12 +131,19 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
               <div className="cc-unit__head">
                 {unit.emoji && <span className="cc-unit__emoji" aria-hidden="true">{unit.emoji}</span>}
                 <span className="cc-unit__name">{unit.name}</span>
-                <span className="cc-unit__count">{unit.lessons.length}</span>
+                {/* «3 из 4», а не просто число уроков: в разделе, который
+                    проходят сами, полезнее видеть остаток, а не объём. */}
+                <span className="cc-unit__count">
+                  {t('selfStudy.ofTotal', {
+                    n: String(unit.lessons.filter((l) => done.has(Number(l.id))).length),
+                    total: String(unit.lessons.length),
+                  })}
+                </span>
               </div>
 
               <ul className="cc-lessons">
                 {unit.lessons.map((lesson) => (
-                  <li key={lesson.id}>
+                  <li key={lesson.id} className={`ss-row${done.has(Number(lesson.id)) ? ' is-done' : ''}`}>
                     <button type="button" className="cc-lesson" onClick={() => onOpenLesson?.(lesson.id)}>
                       <span className={`cc-lesson__type cc-lesson__type--${typeKey(lesson.type)}`}>
                         <span aria-hidden="true">{TYPE_ICON[typeKey(lesson.type)]}</span>
@@ -113,6 +151,20 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
                       </span>
                       <span className="cc-lesson__title">{lesson.title}</span>
                       <span className="cc-lesson__open">{t('selfStudy.start')}</span>
+                    </button>
+                    {/* Соседом строки, а не внутри неё: строка сама кнопка,
+                        открывающая урок, и вложенная кнопка невалидна. */}
+                    <button
+                      type="button"
+                      className="ss-mark"
+                      onClick={() => toggleDone(lesson.id)}
+                      aria-pressed={done.has(Number(lesson.id))}
+                      title={t(done.has(Number(lesson.id)) ? 'selfStudy.unmark' : 'selfStudy.mark')}
+                      aria-label={t(done.has(Number(lesson.id)) ? 'selfStudy.unmark' : 'selfStudy.mark')}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </button>
                   </li>
                 ))}

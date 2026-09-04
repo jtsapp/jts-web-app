@@ -4,9 +4,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 
 const catalog = { value: [] }
+const progress = { value: [] }
 
 vi.mock('../../api.js', () => ({
   getCourseCatalog: vi.fn(async () => catalog.value),
+  getCatalogProgress: vi.fn(async () => ({ completedLessonIds: progress.value })),
+  completeCatalogLesson: vi.fn(async (t, id) => ({ completedLessonIds: [...progress.value, Number(id)] })),
+  uncompleteCatalogLesson: vi.fn(async (t, id) => ({
+    completedLessonIds: progress.value.filter((x) => Number(x) !== Number(id)),
+  })),
 }))
 
 import SelfStudy from './SelfStudy.jsx'
@@ -60,7 +66,7 @@ function draw(props = {}) {
 }
 
 describe('Самостоятельное обучение', () => {
-  beforeEach(() => { catalog.value = CATALOG })
+  beforeEach(() => { catalog.value = CATALOG; progress.value = [] })
 
   it('показывает уровни до своего включительно', async () => {
     draw()
@@ -120,5 +126,62 @@ describe('Самостоятельное обучение', () => {
     getCourseCatalog.mockClear()
     draw({ token: null })
     expect(getCourseCatalog).not.toHaveBeenCalled()
+  })
+})
+
+describe('Отметка о прохождении', () => {
+  beforeEach(() => { catalog.value = CATALOG; progress.value = [] })
+
+  it('пройденный урок открывается отмеченным', async () => {
+    progress.value = [20]
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+
+    const marks = container.querySelectorAll('.ss-mark')
+    const pressed = [...marks].filter((b) => b.getAttribute('aria-pressed') === 'true')
+    expect(pressed).toHaveLength(1)
+  })
+
+  it('нажатие отмечает урок и сохраняет на сервере', async () => {
+    const { completeCatalogLesson } = await import('../../api.js')
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+
+    const mark = container.querySelector('.ss-row .ss-mark')
+    fireEvent.click(mark)
+
+    await waitFor(() => expect(mark.getAttribute('aria-pressed')).toBe('true'))
+    expect(completeCatalogLesson).toHaveBeenCalled()
+  })
+
+  it('повторное нажатие снимает отметку', async () => {
+    // Отметка ручная — значит её должно быть можно и убрать.
+    progress.value = [20]
+    const { uncompleteCatalogLesson } = await import('../../api.js')
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+
+    const mark = [...container.querySelectorAll('.ss-mark')]
+      .find((b) => b.getAttribute('aria-pressed') === 'true')
+    fireEvent.click(mark)
+
+    await waitFor(() => expect(mark.getAttribute('aria-pressed')).toBe('false'))
+    expect(uncompleteCatalogLesson).toHaveBeenCalled()
+  })
+
+  it('счётчик юнита показывает пройденное из общего', async () => {
+    progress.value = [20]
+    draw()
+    // В юните A2 один урок из одного самостоятельного (второй закрыт).
+    expect(await screen.findByText('1 из 1')).toBeTruthy()
+  })
+
+  it('отметка не открывает урок', async () => {
+    // Строка сама открывает урок, и клик по галочке не должен уводить с экрана.
+    const { container, onOpenLesson } = draw()
+    await screen.findByText('Changing direction')
+
+    fireEvent.click(container.querySelector('.ss-mark'))
+    expect(onOpenLesson).not.toHaveBeenCalled()
   })
 })
