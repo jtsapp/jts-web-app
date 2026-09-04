@@ -1,12 +1,24 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import HomePage from './HomePage.jsx'
 
+// Пробный урок: состояние заявки и расписание отдаём готовыми. Обе величины
+// в изменяемых переменных — vi.mock поднимается наверх файла, и подменить его
+// изнутри it нечем (так же сделано с рейтингом навыков ниже).
+const trialState = { value: { requested: false, managerAssigned: false } }
+const occurrences = { value: [] }
+
 vi.mock('../api.js', () => ({
+  // С токеном оболочка будит колокольчик уведомлений — без заглушки падает
+  // весь экран (та же причина, что в CourseCatalogPage.test.jsx).
+  getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
   getDemoAccess: vi.fn(async () => ({ isDemo: true, expiresAt: null })),
+  getTrialRequestState: vi.fn(async () => trialState.value),
+  getMyLessonOccurrences: vi.fn(async () => occurrences.value),
+  requestTrialLesson: vi.fn(async () => ({ requested: true, managerAssigned: false })),
 }))
 
 // Рейтинг навыков: локальное зеркало отдаём готовым, сеть не трогаем — экран
@@ -30,6 +42,7 @@ vi.mock('../practice/skillStats.js', () => ({
 function renderHome(props = {}) {
   const onOpenPricing = vi.fn()
   const onOpenTrial = vi.fn()
+  const onOpenLesson = vi.fn()
   const view = render(
     <I18nProvider>
       <HomePage
@@ -38,11 +51,12 @@ function renderHome(props = {}) {
         isDemoAccount
         onOpenPricing={onOpenPricing}
         onOpenTrial={onOpenTrial}
+        onOpenLesson={onOpenLesson}
         {...props}
       />
     </I18nProvider>,
   )
-  return { ...view, onOpenPricing, onOpenTrial }
+  return { ...view, onOpenPricing, onOpenTrial, onOpenLesson }
 }
 
 beforeEach(() => {
@@ -101,6 +115,9 @@ describe('Главная демо-аккаунта', () => {
     const { onOpenPricing, onOpenTrial } = renderHome()
     fireEvent.click(screen.getByText('Открыть полный доступ'))
     expect(onOpenPricing).toHaveBeenCalled()
+    // «Записаться» делает два дела: открывает разговор с менеджером (сам сговор
+    // о времени идёт там) и оставляет заявку, чтобы человек не потерялся в
+    // очереди, даже если до чата не дошёл.
     fireEvent.click(screen.getByText('Записаться'))
     expect(onOpenTrial).toHaveBeenCalled()
   })
@@ -116,5 +133,78 @@ describe('Главная демо-аккаунта', () => {
     const until = new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 19)
     const { container } = renderHome({ demoExpiresAt: `${until}Z` })
     expect(container.querySelector('.dm-banner__timer').textContent).toMatch(/осталось \d+ ч/)
+  })
+})
+
+describe('Карточка пробного урока', () => {
+  beforeEach(() => {
+    trialState.value = { requested: false, managerAssigned: false }
+    occurrences.value = []
+  })
+
+  const lesson = (over = {}) => ({
+    lessonId: 42,
+    scheduledAt: '2026-09-10T14:00:00',
+    durationMinutes: 50,
+    teacherName: 'Айгерим',
+    lessonStatus: 'SCHEDULED',
+    ...over,
+  })
+
+  it('без заявки и урока зовёт записаться', async () => {
+    renderHome({ token: 'T' })
+    expect(await screen.findByText('Записаться')).toBeTruthy()
+    expect(screen.getByText('Пробный урок — бесплатно')).toBeTruthy()
+  })
+
+  it('после нажатия открывает разговор с менеджером и показывает, что заявка есть', async () => {
+    const { onOpenTrial } = renderHome({ token: 'T' })
+    fireEvent.click(await screen.findByText('Записаться'))
+
+    // Сговор о времени идёт в чате — слотов в приложении нет.
+    expect(onOpenTrial).toHaveBeenCalled()
+    // А карточка перестаёт звать записываться второй раз.
+    expect(await screen.findByText('Заявка принята')).toBeTruthy()
+    expect(screen.queryByText('Записаться')).toBeNull()
+  })
+
+  it('с оставленной заявкой кнопки нет вовсе', async () => {
+    trialState.value = { requested: true, managerAssigned: false }
+    renderHome({ token: 'T' })
+    expect(await screen.findByText('Заявка принята')).toBeTruthy()
+    expect(screen.queryByText('Записаться')).toBeNull()
+  })
+
+  it('когда менеджер закреплён — говорит об этом, а не «свяжемся»', async () => {
+    trialState.value = { requested: true, managerAssigned: true }
+    renderHome({ token: 'T' })
+    await screen.findByText('Заявка принята')
+    expect(screen.getByText(/закреплён менеджер/)).toBeTruthy()
+  })
+
+  it('назначенный урок показывает когда, с кем и ведёт в него', async () => {
+    occurrences.value = [lesson()]
+    const { onOpenLesson } = renderHome({ token: 'T' })
+
+    expect(await screen.findByText('Урок назначен')).toBeTruthy()
+    expect(screen.getByText(/Айгерим/)).toBeTruthy()
+    fireEvent.click(screen.getByText('Перейти к уроку'))
+    expect(onOpenLesson).toHaveBeenCalledWith(42)
+  })
+
+  it('урок важнее заявки: назначенное занятие вытесняет «Заявка принята»', async () => {
+    // Заявку менеджер мог и не отметить, поставив занятие напрямую, — и
+    // наоборот. Показываем то, что человеку полезнее: сам урок.
+    trialState.value = { requested: true, managerAssigned: true }
+    occurrences.value = [lesson()]
+    renderHome({ token: 'T' })
+
+    expect(await screen.findByText('Урок назначен')).toBeTruthy()
+    expect(screen.queryByText('Заявка принята')).toBeNull()
+  })
+
+  it('без токена в сеть не ходит и остаётся приглашением', async () => {
+    renderHome()
+    await waitFor(() => expect(screen.getByText('Записаться')).toBeTruthy())
   })
 })

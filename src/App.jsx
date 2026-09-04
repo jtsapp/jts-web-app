@@ -1028,6 +1028,8 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenPricing={() => setScreen('pricing')}
+          // Назначенный урок открывается тем же путём, что из расписания.
+          onOpenLesson={(id) => { setLiveLessonId(id); setScreen('live-lesson') }}
           // Записи на пробный урок в приложении нет: слоты подбирает менеджер,
           // и запись идёт через него же — тем самым WhatsApp, куда ведут все
           // остальные демо-призывы (src/lib/support.js).

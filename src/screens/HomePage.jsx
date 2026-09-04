@@ -6,6 +6,9 @@ import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { levelSummary, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
+import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences } from '../api.js'
+import { pickFeaturedOccurrence } from './schedule/liveNow.js'
+import { parseLessonDate, lessonTimeRange } from './schedule/lessonFormat.js'
 
 // «Главная» демо-аккаунта (макет демо-доступа, экран 1): срок демо, свой
 // уровень с прогрессом до следующего, сильные и слабые стороны, вход на
@@ -26,6 +29,7 @@ export default function HomePage({
   onProfile,
   onOpenPricing,
   onOpenTrial,
+  onOpenLesson,
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
@@ -45,6 +49,49 @@ export default function HomePage({
   }, [token])
 
   const summary = useMemo(() => levelSummary(userLevel, stats), [userLevel, stats])
+
+  // Пробный урок — три состояния, и все три уже есть в данных: назначенное
+  // занятие (расписание), оставленная заявка (/mobile/trial-request) и ничего.
+  // Спрашиваем оба источника: заявка живёт отдельно от урока — менеджер может
+  // поставить занятие, так и не отметив заявку, и наоборот.
+  const [trial, setTrial] = useState(null)
+  const [nextLesson, setNextLesson] = useState(null)
+  const [sending, setSending] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    // Оба запроса не критичны для экрана: не ответили — карточка остаётся в
+    // исходном виде, с приглашением записаться. Это честнее, чем пустое место.
+    getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
+    getMyLessonOccurrences(token)
+      .then((occ) => {
+        if (alive) setNextLesson(pickFeaturedOccurrence(Array.isArray(occ) ? occ : []))
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [token])
+
+  const book = async () => {
+    if (sending) return
+    setSending(true)
+    setFailed(false)
+    // Разговор с менеджером открываем сразу и не ждём сети: сам сговор о
+    // времени идёт там, слотов в приложении нет. Заявка его не заменяет — она
+    // помечает человека в очереди менеджера, чтобы про него не забыли, даже
+    // если до чата он не дошёл.
+    onOpenTrial?.()
+    try {
+      // Тот же вызов, что в расписании. Ответ — уже свежее состояние,
+      // перечитывать GET не нужно.
+      setTrial(await requestTrialLesson(token))
+    } catch {
+      setFailed(true)
+    } finally {
+      setSending(false)
+    }
+  }
 
   // Прирост за неделю — от снимка в localStorage (истории на бэкенде нет,
   // см. levelProgress.js). Считаем в эффекте: снимок трогает localStorage, а
@@ -159,19 +206,47 @@ export default function HomePage({
             )}
           </section>
 
-          {/* Пробный урок */}
+          {/* Пробный урок: назначенное занятие → заявка → приглашение */}
           <section className="hm-card hm-trial">
             <div className="hm-trial__art">
               <AssetImage src={`/assets/world/hero/${summary.level.toLowerCase()}.webp`} alt="" />
             </div>
-            <b className="hm-trial__title">{t('home.trial.title')}</b>
-            <span className="hm-trial__sub">{t('home.trial.sub')}</span>
-            <button type="button" className="hm-trial__cta" onClick={onOpenTrial}>
-              {t('home.trial.cta')}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+            {/* Состояние меняется под курсором после нажатия — озвучиваем смену
+                тем, кто кнопку не видит. */}
+            <div className="hm-trial__body" aria-live="polite">
+              <b className="hm-trial__title">
+                {nextLesson
+                  ? t('home.trial.scheduled')
+                  : trial?.requested
+                    ? t('trial.doneTitle')
+                    : t('home.trial.title')}
+              </b>
+              <span className="hm-trial__sub">
+                {nextLesson
+                  ? lessonWhen(nextLesson, lang, t)
+                  : trial?.requested
+                    ? t(trial.managerAssigned ? 'trial.doneManager' : 'trial.doneText')
+                    : t('home.trial.sub')}
+              </span>
+            </div>
+            {nextLesson ? (
+              <button
+                type="button"
+                className="hm-trial__cta"
+                onClick={() => onOpenLesson?.(nextLesson.lessonId)}
+              >
+                {t('home.trial.open')}
+                <Arrow />
+              </button>
+            ) : trial?.requested ? null : (
+              <button type="button" className="hm-trial__cta" disabled={sending} onClick={book}>
+                {t(sending ? 'trial.sending' : 'home.trial.cta')}
+                <Arrow />
+              </button>
+            )}
+            {/* role="alert" на самом абзаце: живая область объявляет изменения
+                внутри себя, а этот абзац появляется её соседом. */}
+            {failed && <p className="hm-trial__error" role="alert">{t('trial.failed')}</p>}
           </section>
         </div>
       </div>
@@ -204,6 +279,26 @@ function TrendIcon({ up = false }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  )
+}
+
+/** «Завтра, 14:00 — 14:50 · Айгерим» — когда и с кем. */
+function lessonWhen(occ, lang, t) {
+  const date = parseLessonDate(occ.scheduledAt)
+  const locale = lang === 'kk' ? 'kk' : 'ru'
+  const day = date
+    ? date.toLocaleDateString(locale === 'kk' ? 'kk-KZ' : 'ru-RU', { day: 'numeric', month: 'long' })
+    : ''
+  const time = lessonTimeRange(occ, locale)
+  const who = occ.teacherName ? ` · ${occ.teacherName}` : ''
+  return [day, time].filter(Boolean).join(', ') + who || t('home.trial.sub')
+}
+
+function Arrow() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
