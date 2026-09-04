@@ -13,7 +13,7 @@ import {
 } from '../api.js'
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { topVocabMisses } from './vocab/vocabMisses.js'
-import { learnedCount } from './vocab/vocabLearned.js'
+import { learnedCount, learnedKeys, learnedInCards } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
 import { levelIndex } from '../kingdoms.js'
 
@@ -268,6 +268,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       <BrowseLessons
         t={t}
         lang={vlang}
+        token={token}
         index={index}
         scope={scope}
         meta={scopeMeta}
@@ -484,7 +485,14 @@ function FieldsScreen({ t, lang, index, onBack, onPick }) {
   )
 }
 
-function BrowseLessons({ t, lang, index, scope, meta, activeLevel, userLevel, onBack, onLevel, onOpen }) {
+function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLevel, onBack, onLevel, onOpen }) {
+  // Прогресс хранится множеством ключей на весь набор, поэтому «сколько
+  // изучено в этом уроке» — это пересечение с его карточками. Раньше в кружке
+  // стоял литерал 0: уровень показывал «7 изучено», а каждый его урок — ноль.
+  const learned = useMemo(
+    () => learnedKeys(token, meta?.id || activeLevel),
+    [token, meta?.id, activeLevel],
+  )
   const isField = meta?.kind === 'field'
   const levels = index?.levels || []
   const title = isField
@@ -535,7 +543,7 @@ function BrowseLessons({ t, lang, index, scope, meta, activeLevel, userLevel, on
                     <b>{item.title}</b>
                     <span className="cnt">{t('vocab.home.words', { n: cardsOf(item).length })}</span>
                   </div>
-                  <span className="ring">0</span>
+                  <span className="ring">{learnedInCards(learned, cardsOf(item))}</span>
                 </button>
               ))}
             </div>
