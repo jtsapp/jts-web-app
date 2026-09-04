@@ -9,6 +9,7 @@ import HomePage from './HomePage.jsx'
 // изнутри it нечем (так же сделано с рейтингом навыков ниже).
 const trialState = { value: { requested: false, managerAssigned: false } }
 const occurrences = { value: [] }
+const homework = { value: [] }
 
 vi.mock('../api.js', () => ({
   // С токеном оболочка будит колокольчик уведомлений — без заглушки падает
@@ -18,6 +19,7 @@ vi.mock('../api.js', () => ({
   getDemoAccess: vi.fn(async () => ({ isDemo: true, expiresAt: null })),
   getTrialRequestState: vi.fn(async () => trialState.value),
   getMyLessonOccurrences: vi.fn(async () => occurrences.value),
+  getMyHomework: vi.fn(async () => homework.value),
   requestTrialLesson: vi.fn(async () => ({ requested: true, managerAssigned: false })),
 }))
 
@@ -187,7 +189,10 @@ describe('Карточка пробного урока', () => {
     const { onOpenLesson } = renderHome({ token: 'T' })
 
     expect(await screen.findByText('Урок назначен')).toBeTruthy()
-    expect(screen.getByText(/Айгерим/)).toBeTruthy()
+    // Ищем внутри самой карточки: то же занятие теперь стоит и в расписании
+    // рядом — как «Мой график» и календарь на экране «Уроки».
+    const card = document.querySelector('.hm-trial')
+    expect(card.textContent).toContain('Айгерим')
     fireEvent.click(screen.getByText('Перейти к уроку'))
     expect(onOpenLesson).toHaveBeenCalledWith(42)
   })

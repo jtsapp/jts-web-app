@@ -88,7 +88,10 @@ export default function Sidebar({
     }
   }, [token])
 
-  const base = demo ? [HOME_ITEM, ...NAV] : NAV
+  // «Главная» теперь у всех: сводка уровня, расписания и домашки нужна и
+  // платящему. Раньше пункт был только у демо, потому что экран показывал
+  // только демо-блоки.
+  const base = [HOME_ITEM, ...NAV]
   const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : base
   const { t } = useI18n()
   const role = roleForLevel(userLevel)

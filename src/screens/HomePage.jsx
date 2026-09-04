@@ -6,7 +6,7 @@ import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { levelSummary, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
-import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences } from '../api.js'
+import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework } from '../api.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
 import { parseLessonDate, lessonTimeRange } from './schedule/lessonFormat.js'
 
@@ -59,16 +59,25 @@ export default function HomePage({
   const [sending, setSending] = useState(false)
   const [failed, setFailed] = useState(false)
 
+  const [occurrences, setOccurrences] = useState([])
+  const [homework, setHomework] = useState([])
+
   useEffect(() => {
     if (!token) return
     let alive = true
-    // Оба запроса не критичны для экрана: не ответили — карточка остаётся в
-    // исходном виде, с приглашением записаться. Это честнее, чем пустое место.
+    // Ни один из запросов не критичен: не ответил — соответствующая карточка
+    // показывает «пусто», а экран остаётся целым. Это честнее пустого места.
     getTrialRequestState(token).then((s) => { if (alive) setTrial(s) }).catch(() => {})
     getMyLessonOccurrences(token)
       .then((occ) => {
-        if (alive) setNextLesson(pickFeaturedOccurrence(Array.isArray(occ) ? occ : []))
+        if (!alive) return
+        const list = Array.isArray(occ) ? occ : []
+        setOccurrences(list)
+        setNextLesson(pickFeaturedOccurrence(list))
       })
+      .catch(() => {})
+    getMyHomework(token)
+      .then((hw) => { if (alive) setHomework(Array.isArray(hw) ? hw : []) })
       .catch(() => {})
     return () => { alive = false }
   }, [token])
@@ -164,6 +173,7 @@ export default function HomePage({
         </section>
 
         <div className="hm-row">
+          <div className="hm-col">
           {/* Сильные и слабые стороны */}
           <section className="hm-card hm-skills">
             <h2 className="hm-card__title">{t('home.skills.title')}</h2>
@@ -206,7 +216,14 @@ export default function HomePage({
             )}
           </section>
 
-          {/* Пробный урок: назначенное занятие → заявка → приглашение */}
+          <PracticeToday t={t} onNav={onNav} />
+          </div>
+
+          <div className="hm-col">
+          {/* Пробный урок: назначенное занятие → заявка → приглашение.
+              Платящему он не нужен — у него уже есть и преподаватель, и уроки,
+              а «Записаться на пробный» рядом с расписанием читается как ошибка. */}
+          {isDemoAccount && (
           <section className="hm-card hm-trial">
             <div className="hm-trial__art">
               <AssetImage src={`/assets/world/hero/${summary.level.toLowerCase()}.webp`} alt="" />
@@ -248,6 +265,11 @@ export default function HomePage({
                 внутри себя, а этот абзац появляется её соседом. */}
             {failed && <p className="hm-trial__error" role="alert">{t('trial.failed')}</p>}
           </section>
+          )}
+
+          <ScheduleCard t={t} lang={lang} occurrences={occurrences} onOpenLesson={onOpenLesson} onNav={onNav} />
+          <HomeworkCard t={t} lang={lang} items={homework} onNav={onNav} />
+          </div>
         </div>
       </div>
     </LearningLayout>
@@ -300,5 +322,157 @@ function Arrow() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M4 12h15M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  )
+}
+
+/**
+ * Расписание на ближайшие дни.
+ *
+ * Не календарь: экран «Уроки» уже показывает месяц целиком, и повторять его
+ * здесь незачем. Здесь — семь дней подряд, включая пустые: «нет уроков» в
+ * субботу это тоже ответ на вопрос «что у меня на неделе», а список из двух
+ * строк с пропусками между ними на него не отвечает.
+ */
+function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
+  const locale = lang === 'kk' ? 'kk-KZ' : 'ru-RU'
+  const days = useMemo(() => {
+    const byDay = new Map()
+    for (const o of occurrences || []) {
+      const d = parseLessonDate(o.scheduledAt)
+      if (!d) continue
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+      if (!byDay.has(key)) byDay.set(key, [])
+      byDay.get(key).push(o)
+    }
+    const out = []
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start.getTime() + i * 86400000)
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+      const items = (byDay.get(key) || []).sort(
+        (a, b) => parseLessonDate(a.scheduledAt) - parseLessonDate(b.scheduledAt),
+      )
+      out.push({ date: d, items })
+    }
+    return out
+  }, [occurrences])
+
+  return (
+    <section className="hm-card hm-sched">
+      <h2 className="hm-card__title">{t('home.schedule.title')}</h2>
+      <ul className="hm-sched__list">
+        {days.map(({ date, items }) => (
+          <li className="hm-sched__day" key={date.toISOString()}>
+            <span className={`hm-sched__date${items.length ? ' is-busy' : ''}`}>
+              <b>{date.getDate()}</b>
+              <i>{date.toLocaleDateString(locale, { weekday: 'short' })}</i>
+            </span>
+            {items.length === 0 ? (
+              <span className="hm-sched__empty">{t('home.schedule.free')}</span>
+            ) : (
+              <span className="hm-sched__items">
+                {items.map((o) => (
+                  <button
+                    type="button"
+                    className="hm-sched__item"
+                    key={o.lessonId}
+                    onClick={() => onOpenLesson?.(o.lessonId)}
+                  >
+                    <b>{o.teacherName || t('home.schedule.lesson')}</b>
+                    <i>{lessonTimeRange(o, lang === 'kk' ? 'kk' : 'ru')}</i>
+                  </button>
+                ))}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="hm-card__more" onClick={() => onNav?.('lessons')}>
+        {t('home.schedule.all')}
+      </button>
+    </section>
+  )
+}
+
+/** Незакрытые домашние задания: сначала те, у которых срок ближе. */
+function HomeworkCard({ t, lang, items, onNav }) {
+  const locale = lang === 'kk' ? 'kk-KZ' : 'ru-RU'
+  const open = useMemo(() => {
+    // Проверенные и сданные сюда не идут: «Главная» — про то, что ещё нужно
+    // сделать, а история заданий живёт в своём разделе.
+    const done = new Set(['SUBMITTED', 'CHECKED', 'COMPLETED', 'GRADED'])
+    return (items || [])
+      .filter((h) => !done.has(String(h.status || '').toUpperCase()))
+      .sort((a, b) => new Date(a.dueDate || 0) - new Date(b.dueDate || 0))
+      .slice(0, 3)
+  }, [items])
+
+  return (
+    <section className="hm-card hm-hw">
+      <h2 className="hm-card__title">{t('home.homework.title')}</h2>
+      {open.length === 0 ? (
+        <p className="hm-hw__empty">{t('home.homework.empty')}</p>
+      ) : (
+        <ul className="hm-hw__list">
+          {open.map((h) => {
+            const count = h.exerciseCount ?? h.exercises?.length ?? null
+            return (
+              <li key={h.id}>
+                <button type="button" className="hm-hw__item" onClick={() => onNav?.('homework')}>
+                  <b>{h.title}</b>
+                  <span>
+                    {h.dueDate && (
+                      <i>{t('home.homework.due', {
+                        date: new Date(h.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'long' }),
+                      })}</i>
+                    )}
+                    {count != null && <i>{t('home.homework.tasks', { n: String(count) })}</i>}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+/**
+ * Практика на сегодня — четыре входа в разделы, а не подобранные задания.
+ *
+ * Подборки на бэкенде нет: ни ручки, ни признака «что человеку сегодня
+ * полезнее». Изобретать её на клиенте значило бы выдавать случайный выбор за
+ * рекомендацию. Пока это ярлыки в разделы Практики — они экономят два клика и
+ * не обещают того, чего система не знает.
+ */
+function PracticeToday({ t, onNav }) {
+  const tiles = [
+    { key: 'books', emoji: '📚', to: 'practice' },
+    { key: 'tutor', emoji: '🖥️', to: 'tutor' },
+    { key: 'listening', emoji: '🎧', to: 'practice' },
+    { key: 'vocab', emoji: '📖', to: 'vocab' },
+  ]
+  return (
+    <section className="hm-card hm-prac">
+      <h2 className="hm-card__title">{t('home.practice.title')}</h2>
+      <div className="hm-prac__grid">
+        {tiles.map((tile) => (
+          <button
+            type="button"
+            className="hm-prac__tile"
+            key={tile.key}
+            onClick={() => onNav?.(tile.to)}
+          >
+            <span className="hm-prac__text">
+              <b>{t(`home.practice.${tile.key}.title`)}</b>
+              <i>{t(`home.practice.${tile.key}.sub`)}</i>
+            </span>
+            <span className="hm-prac__emoji" aria-hidden="true">{tile.emoji}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }

@@ -210,6 +210,128 @@
   gap: 16px;
   align-items: start;
 }
+/* Колонки: слева навыки и практика, справа расписание и домашка. */
+.hm-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* --- расписание --- */
+.hm-sched__list { list-style: none; margin: 12px 0 0; padding: 0; }
+.hm-sched__day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid #f0eff4;
+}
+.hm-sched__day:first-child { border-top: 0; }
+.hm-sched__date {
+  flex: none;
+  width: 30px;
+  text-align: center;
+  color: #8b8a97;
+}
+.hm-sched__date b { display: block; font-size: 15px; font-weight: 800; color: #171326; }
+.hm-sched__date i { display: block; font-style: normal; font-size: 10.5px; }
+/* День с занятием отмечен так же, как в календаре раздела «Уроки». */
+.hm-sched__date.is-busy b {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--purple);
+  color: #fff;
+  font-size: 13px;
+}
+.hm-sched__empty { font-size: 13px; color: #b3b1bd; }
+.hm-sched__items { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.hm-sched__item {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.hm-sched__item b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #171326;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hm-sched__item i { font-style: normal; font-size: 12px; color: #8b8a97; }
+.hm-sched__item:hover b { color: var(--purple); }
+.hm-card__more {
+  margin-top: 12px;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--purple);
+  cursor: pointer;
+}
+
+/* --- домашка --- */
+.hm-hw__empty { margin: 12px 0 0; font-size: 13px; color: #b3b1bd; }
+.hm-hw__list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.hm-hw__item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 13px;
+  border: none;
+  border-radius: 12px;
+  background: #f7f6fb;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hm-hw__item:hover { background: #f0edfb; }
+.hm-hw__item b { font-size: 13.5px; font-weight: 700; color: #171326; }
+.hm-hw__item span { display: flex; flex-wrap: wrap; gap: 10px; }
+.hm-hw__item i { font-style: normal; font-size: 11.5px; color: #8b8a97; }
+
+/* --- практика на сегодня --- */
+.hm-prac__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.hm-prac__tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px;
+  border: none;
+  border-radius: 14px;
+  background: #f7f6fb;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.hm-prac__tile:hover { background: #f0edfb; }
+.hm-prac__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hm-prac__text b { font-size: 13.5px; font-weight: 700; color: #171326; }
+.hm-prac__text i { font-style: normal; font-size: 11.5px; color: #8b8a97; }
+.hm-prac__emoji { flex: none; font-size: 26px; line-height: 1; }
+@media (max-width: 620px) {
+  .hm-prac__grid { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 900px) {
   .hm {
     padding: 16px 14px 32px;

@@ -35,10 +35,12 @@ beforeEach(() => {
 })
 
 describe('Sidebar — демо-аккаунт', () => {
-  it('обычному ученику «Главную» и скидку не показывает', async () => {
+  it('«Главная» есть у всех, а скидка — только у демо', async () => {
     const { container } = renderSidebar()
     await waitFor(() => expect(container.querySelector('.sb__balance')).toBeTruthy())
-    expect(screen.queryByText('Главная')).toBeNull()
+    // «Главная» перестала быть демо-экраном: сводка уровня, расписания и
+    // домашки нужна и платящему. А скидка на пробный — по-прежнему только демо.
+    expect(screen.getByText('Главная')).toBeTruthy()
     expect(container.querySelector('.dm-offer')).toBeFalsy()
   })
 
