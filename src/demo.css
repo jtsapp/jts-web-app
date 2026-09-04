@@ -440,6 +440,18 @@
   max-width: 100%;
   object-fit: contain;
 }
+/* Обёртка ради aria-live: заголовок и текст были прямыми детьми флекса и
+   вставали друг под другом сами. Внутри обычного div <b> и <span> снова
+   строчные — и слипались в одну строку. Колонку задаём и здесь. */
+.hm-trial__body {
+  display: flex;
+  flex-direction: column;
+}
+.hm-trial__error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #d64545;
+}
 .hm-trial__title {
   font-size: 16px;
   font-weight: 800;
