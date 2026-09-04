@@ -3,6 +3,7 @@ import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { getCourseCatalog } from '../api.js'
 import { ChevronRightIcon } from '../components/icons.jsx'
+import { groupLessonsByMode, lessonModeLabel, lessonModeOf } from './catalogLessonModes.js'
 
 const TYPE_ICON = { lesson: '📘', video: '▶', review: '🏆', leadin: '★', test: '🎓' }
 
@@ -82,26 +83,61 @@ export default function CourseCatalogPage({ userName, userLevel = 'A1', token, o
                 <div className="cc-unit__head">
                   {unit.emoji && <span className="cc-unit__emoji" aria-hidden="true">{unit.emoji}</span>}
                   <span className="cc-unit__name">{unit.name}</span>
-                  <span className="cc-unit__count">{(unit.lessons || []).length}</span>
+                  {/* Считаем уроки источника, а не записи: три режима одного урока —
+                        это один урок, и «9» вместо «3» просто врало. */}
+                    <span className="cc-unit__count">{groupLessonsByMode(unit.lessons || []).length}</span>
                 </div>
 
                 <ul className="cc-lessons">
-                  {unit.lessons.map((lesson) => (
-                    <li key={lesson.id}>
-                      <button
-                        type="button"
-                        className="cc-lesson"
-                        onClick={() => onOpenLesson?.(lesson.id)}
-                      >
-                        <span className={`cc-lesson__type cc-lesson__type--${typeKey(lesson.type)}`}>
-                          <span aria-hidden="true">{TYPE_ICON[typeKey(lesson.type)] || TYPE_ICON.lesson}</span>
-                          {t(`catalog.type.${typeKey(lesson.type)}`)}
-                        </span>
-                        <span className="cc-lesson__title">{lesson.title}</span>
-                        <span className="cc-lesson__open">{t('catalog.open')}</span>
-                      </button>
-                    </li>
-                  ))}
+                  {groupLessonsByMode(unit.lessons).map((group) => {
+                    const [first] = group.entries
+                    // Один режим — прежняя строка целиком кликабельной кнопкой:
+                    // выбор из одного варианта только мешает.
+                    if (group.entries.length === 1) {
+                      return (
+                        <li key={group.key}>
+                          <button
+                            type="button"
+                            className="cc-lesson"
+                            onClick={() => onOpenLesson?.(first.id)}
+                          >
+                            <span className={`cc-lesson__type cc-lesson__type--${typeKey(first.type)}`}>
+                              <span aria-hidden="true">{TYPE_ICON[typeKey(first.type)] || TYPE_ICON.lesson}</span>
+                              {t(`catalog.type.${typeKey(first.type)}`)}
+                            </span>
+                            <span className="cc-lesson__title">{first.title}</span>
+                            <span className="cc-lesson__open">{t('catalog.open')}</span>
+                          </button>
+                        </li>
+                      )
+                    }
+                    // Режимов несколько — строка перестаёт быть кнопкой: кнопка
+                    // внутри кнопки недопустима, да и открывать «урок вообще»
+                    // здесь нечего, открывается конкретный режим.
+                    return (
+                      <li key={group.key}>
+                        <div className="cc-lesson cc-lesson--modes">
+                          <span className={`cc-lesson__type cc-lesson__type--${typeKey(first.type)}`}>
+                            <span aria-hidden="true">{TYPE_ICON[typeKey(first.type)] || TYPE_ICON.lesson}</span>
+                            {t(`catalog.type.${typeKey(first.type)}`)}
+                          </span>
+                          <span className="cc-lesson__title">{first.title}</span>
+                          <span className="cc-lesson__modes">
+                            {group.entries.map((entry) => (
+                              <button
+                                type="button"
+                                className="cc-lesson__mode"
+                                key={entry.id}
+                                onClick={() => onOpenLesson?.(entry.id)}
+                              >
+                                {lessonModeLabel(lessonModeOf(entry))}
+                              </button>
+                            ))}
+                          </span>
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             ))}
