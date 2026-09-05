@@ -11,6 +11,47 @@ import { loadLiveLesson } from './workspace/liveLessonData.js'
 import { liveLessonSteps } from './workspace/liveSteps.js'
 import LessonAside from './workspace/LessonAside.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
+import { ChevronLeftIcon } from '../components/icons.jsx'
+
+/**
+ * Файл курса умеет три варианта одного урока и выбирает их по `?mode=` —
+ * `self` / `solo` / `group`, всё остальное считает за `solo` (единственный
+ * скрипт внутри файла ставит `data-mode` на <html>, а вёрстка по нему прячет
+ * лишнее). Без параметра ученик «Самостоятельно» получал вариант для занятия,
+ * а не свой. Свои query и хвост URL сохраняем — файл лежит на чужом хранилище.
+ */
+function selfStudyUrl(fileUrl) {
+  if (!fileUrl) return fileUrl
+  try {
+    const url = new URL(fileUrl, window.location.origin)
+    url.searchParams.set('mode', 'self')
+    return url.toString()
+  } catch {
+    return fileUrl
+  }
+}
+
+/**
+ * Шапка документа урока: назад и название.
+ *
+ * У плеера выход есть в его собственной шапке, а документ и материал до сих пор
+ * открывались вообще без него — уйти можно было только через сайдбар, и то
+ * догадавшись. Название рядом с кнопкой, потому что на этом экране его больше
+ * негде прочитать: у материала оно внутри iframe, а у документа — только во
+ * вкладках шагов.
+ */
+function DocBar({ title, onExit }) {
+  const { t } = useI18n()
+  return (
+    <div className="lw-doc__bar">
+      <button type="button" className="lw-doc__back" onClick={onExit}>
+        <ChevronLeftIcon size={18} />
+        <span>{t('lesson.ws.back')}</span>
+      </button>
+      {title && <h1 className="lw-doc__title">{title}</h1>}
+    </div>
+  )
+}
 
 // Экран онлайн-урока (Figma «pitch JTS» → Уроки → Онлайн-уроки).
 //
@@ -23,8 +64,8 @@ import LessonContent from './workspace/LessonContent.jsx'
 // `lessonId` — id урока (диплинк `?screen=lesson-workspace&lesson=…` в App.jsx).
 // `loadLesson` — как достать контент по id: по умолчанию loadLiveLesson
 // (LiveLesson → jsonUrl с files-api); для урока каталога App передаёт
-// loadCatalogLesson. Без сети/lessonId или при ошибке падаем на SAMPLE_LESSON,
-// чтобы экран не пустовал.
+// loadCatalogLesson. Без lessonId экран показывает демонстрационный урок; урок,
+// который не загрузился, демо НЕ подменяет — об этом говорится прямо.
 export default function LessonWorkspacePage({
   onExit,
   lessonId,
@@ -163,9 +204,10 @@ export default function LessonWorkspacePage({
             // `.lw-doc` снаружи не для вида: на нём объявлены токены `--lw-*`,
             // и без него рамка материала осталась бы без фона и скруглений.
             <div className="lw-doc">
+              <DocBar title={lesson.title} onExit={onExit} />
               <div className="lw-material-frame">
                 <iframe
-                  src={lesson.fileUrl}
+                  src={selfStudyUrl(lesson.fileUrl)}
                   title={lesson.title || t('lessons.tabSelf')}
                   className="lw-material-iframe"
                   allow="autoplay"
@@ -178,6 +220,7 @@ export default function LessonWorkspacePage({
             // урока, как в живом уроке, со своей вкладочной навигацией по шагам
             // вместо очереди экранов.
             <div className="lw-doc">
+              <DocBar title={lesson.title} onExit={onExit} />
               {lesson.steps.length > 1 && (
                 <div className="ls__tabs lw-material-tabs">
                   {lesson.steps.map((s) => (

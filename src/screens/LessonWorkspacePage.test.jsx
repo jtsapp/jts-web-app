@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 vi.mock('../api.js', () => ({
@@ -34,7 +34,26 @@ describe('урок в воркспейсе', () => {
     const { container } = show(async () => ({ id: 42, title: 'Getting to know you', fileUrl: FILE_URL, steps: [] }))
 
     await waitFor(() => expect(container.querySelector('.lw-material-iframe')).toBeTruthy())
-    expect(container.querySelector('.lw-material-iframe').getAttribute('src')).toBe(FILE_URL)
+    expect(container.querySelector('.lw-material-iframe').getAttribute('src')).toContain(FILE_URL)
+  })
+
+  it('материал открывается в самостоятельном варианте', async () => {
+    // Файл курса умеет три варианта одного урока и выбирает их по ?mode=;
+    // без параметра ученик «Самостоятельно» видел вариант для занятия.
+    const { container } = show(async () => ({ id: 42, title: 'L01', fileUrl: FILE_URL, steps: [] }))
+
+    await waitFor(() => expect(container.querySelector('.lw-material-iframe')).toBeTruthy())
+    expect(container.querySelector('.lw-material-iframe').getAttribute('src')).toContain('mode=self')
+  })
+
+  it('из материала есть выход', async () => {
+    // Раньше документ и материал открывались вообще без выхода — уйти можно
+    // было только через сайдбар, и то догадавшись.
+    const onExit = vi.fn()
+    show(async () => ({ id: 42, title: 'Getting to know you', fileUrl: FILE_URL, steps: [] }), { onExit })
+
+    fireEvent.click(await screen.findByRole('button', { name: /К урокам/ }))
+    expect(onExit).toHaveBeenCalled()
   })
 
   it('не подставляет демо-урок вместо запрошенного', async () => {

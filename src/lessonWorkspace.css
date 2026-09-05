@@ -3032,6 +3032,54 @@
   width: 100%;
 }
 
+/* Шапка документа урока: «К урокам» и название. Плеер выходит своей шапкой, а
+   документ и материал до этого открывались без выхода вовсе — уйти можно было
+   только через сайдбар, и то догадавшись. */
+.lw-doc__bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.lw-doc__back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px 9px 12px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.lw-doc__back:hover { background: var(--lw-tint-2); }
+.lw-doc__back:focus-visible { outline: 2px solid var(--lw-primary); outline-offset: 2px; }
+
+/* Название усекается, а не переносится: шапка — одна строка, а полное имя урока
+   всё равно стоит первой строкой внутри самого материала. */
+.lw-doc__title {
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--lw-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .lw-doc__title { font-size: 15px; }
+  .lw-doc__back span { display: none; }
+  .lw-doc__back { padding: 9px 11px; }
+}
+
 .lw-material-iframe {
   display: block;
   width: 100%;
