@@ -6,6 +6,7 @@ import { wrapTapWords } from '../wrapTapWords.js'
 import { useWordBankRoot } from '../useWordBankRoot.js'
 import TapText from '../TapText.jsx'
 import { stripExerciseNumber, stripExerciseNumbersInHtml } from '../stripExerciseNumber.js'
+import { tidyLessonLists } from '../tidyLessonLists.js'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
 // от курса/экстрактора. html санитизируется (см. sanitizeHtml.js), а в DOM
@@ -19,7 +20,7 @@ import { stripExerciseNumber, stripExerciseNumbersInHtml } from '../stripExercis
 // info-блоков. `checked` — ученик нажал «Проверить» на этой карточке.
 function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix, checked }) {
   const html = useMemo(
-    () => stripExerciseNumbersInHtml(sanitizeHtml(block?.html)),
+    () => tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html))),
     [block?.html],
   )
   const title = block?.title ? stripExerciseNumber(block.title) : ''

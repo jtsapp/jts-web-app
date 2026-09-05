@@ -6,7 +6,11 @@ import QuestionMedia from './QuestionMedia.jsx'
 // (gradeQuestion в practiceGrading.js). `multiple` — «отметь сколько хочешь»
 // без ключа проверки: тогда answer — массив, иначе одна строка, как у
 // ChoiceQuestion.
-export default function PickQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
+//
+// `showHint` — показать ли подпись «верного ответа нет». Родитель гасит её у
+// всех пунктов, кроме первого: в опросе из семи слов правило одно на всё
+// упражнение, а семь одинаковых строк только прячут сами вопросы.
+export default function PickQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showHint = true }) {
   const { t } = useI18n()
   const multiple = !!question?.multiple
   const selected = multiple ? (Array.isArray(answer) ? answer : []) : answer
@@ -27,7 +31,7 @@ export default function PickQuestion({ question, answer, checked, onAnswer, read
   return (
     <div className="lw-q lw-q--pick">
       <QuestionMedia question={question} onWord={onWord} />
-      <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>
+      {showHint && <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>}
       <div className="lw-opts">
         {(question?.options || []).map((opt) => {
           const isSelected = multiple ? selected.includes(opt) : selected === opt

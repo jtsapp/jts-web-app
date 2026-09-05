@@ -21,6 +21,7 @@ import {
   wordBankAnswersAttempted,
 } from '../wordBankCheck.js'
 import { stripExerciseNumber, stripExerciseNumbersInHtml, stripExerciseNumbersInText } from '../stripExerciseNumber.js'
+import { tidyLessonLists } from '../tidyLessonLists.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -55,7 +56,7 @@ export default function PracticeBlock({
     : ''
   const showBlockTitle = Boolean(displayTitle && displayTitle !== stepTitle)
   const html = useMemo(
-    () => stripExerciseNumbersInHtml(sanitizeHtml(block?.html)),
+    () => tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html))),
     [block?.html],
   )
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
@@ -66,6 +67,10 @@ export default function PracticeBlock({
 
   const hasWbCheck = htmlHasCheckableWordBank(html)
   const questions = block?.questions || []
+  // «Опрос про себя — верного ответа нет» объясняет правило один раз на
+  // упражнение, а не под каждым пунктом: в разминке таких пунктов семь подряд,
+  // и семь одинаковых строк — шум, из-за которого не видно самих вопросов.
+  const firstPickId = questions.find((q) => q.type === 'pick')?.id
   const canCheckQuestions = questions.some((q) => hasAttempt(q, answers?.[q.id]))
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
@@ -187,6 +192,7 @@ export default function PracticeBlock({
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
+                showHint={question.id === firstPickId}
               />
             </div>
           )
