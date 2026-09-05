@@ -10,7 +10,7 @@ import {
   buildChoiceOptions,
 } from './lessonReview.js'
 import { recordVocabMisses } from './vocabMisses.js'
-import { recordVocabLearned } from './vocabLearned.js'
+import { recordVocabLearned, vocabKey } from './vocabLearned.js'
 import { saveStudentVocab } from '../../api.js'
 import {
   IconSpeaker,
@@ -25,7 +25,7 @@ import {
 
 function toWord(card) {
   return {
-    key: String(card.id || card.en || '').toLowerCase(),
+    key: vocabKey(card),
     word: card.en,
     translationRu: card.ru,
     translationKz: card.kk,

@@ -73,9 +73,23 @@ describe('loadCatalogLesson', () => {
     expect(getCourseCatalogLessonContent).toHaveBeenCalledTimes(1)
   })
 
-  it('returns null when the lesson has no stored structure', async () => {
-    // The workspace falls back to rendering the raw file for these.
+  it('falls back to the course file when the lesson has no stored structure', async () => {
+    // Разбор сделан у 71 самостоятельного урока из 215 — остальные так и
+    // остаются файлом курса, и это штатный случай, а не сбой: в DTO ручки так и
+    // написано «the client falls back to fileUrl». Возвращать здесь null значило
+    // подсунуть экрану пустоту — а он подставлял вместо неё демо-урок.
     vi.mocked(getCourseCatalogLessonContent).mockResolvedValue(stored({ content: null }))
+
+    const lesson = await loadCatalogLesson(nextId, 'token')
+
+    expect(lesson.fileUrl).toBe(FILE_URL)
+    expect(lesson.title).toBe('1A Hello')
+    expect(lesson.steps).toEqual([])
+  })
+
+  it('returns null when there is neither structure nor file', async () => {
+    // Показывать нечего — и сказать об этом надо прямо.
+    vi.mocked(getCourseCatalogLessonContent).mockResolvedValue(stored({ content: null, fileUrl: null }))
 
     expect(await loadCatalogLesson(nextId, 'token')).toBeNull()
   })

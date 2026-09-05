@@ -211,3 +211,105 @@
     flex-basis: 100%;
   }
 }
+
+/* ── Самостоятельное обучение ───────────────────────────────────────────────
+   Разделу нарочно дан вид каталога грамматики: те же чипы уровней, секции и
+   карточки-обложки (.gr-*). Ученик ходит между «Практикой» и «Уроками» по
+   десять раз за занятие, и два разных способа показать одно и то же — сетку
+   учебных материалов — он читает как два разных продукта. */
+.ss .cc__subtitle { margin-bottom: 16px; }
+
+/* Обёртка карточки: сама карточка — кнопка, открывающая урок, поэтому отметка
+   не может лежать внутри неё (кнопка в кнопке невалидна). Кладём соседом и
+   позиционируем поверх обложки. */
+.ss-card { position: relative; display: flex; }
+/* Высота карточек в ряду выравнивается по самой высокой: у пройденных внизу
+   ещё зелёная полоса «Пройдено», и без этого ряд получается ступенькой. Тело
+   забирает свободное место, поэтому полоса всегда прижата к низу. */
+.ss-card > .gr-gcard { flex: 1; min-width: 0; height: 100%; }
+.ss-card > .gr-gcard > .gr-gcard__body { flex: 1; }
+
+.ss-mark {
+  position: absolute;
+  z-index: 4;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  /* Поверх градиента обложки: полупрозрачное молоко читается на всех восьми
+     темах, сплошная заливка спорила бы с самой светлой из них. */
+  background: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(3px);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.ss-mark:hover { background: rgba(255, 255, 255, 0.36); transform: scale(1.06); }
+.ss-mark:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.ss-card.is-done .ss-mark { background: #22c55e; color: #fff; }
+
+@media (max-width: 560px) {
+  .ss-mark { top: 10px; right: 10px; }
+
+  /* На узком экране каталог грамматики уводит бейдж «Пройдено» пилюлей в левый
+     верхний угол обложки — а там у нас стоит марка JTS, и они налезают друг на
+     друга. Возвращаем полосу под телом карточки: место внизу свободно, а
+     состояние и так продублировано кружком в правом верхнем углу. */
+  .ss-card .gr-gcard__done {
+    position: static;
+    border-radius: 0;
+    border-top: 1px solid #d3edc6;
+    padding: 9px 12px;
+  }
+}
+
+/* ── Закрытый уровень ───────────────────────────────────────────────────────
+   Уровни выше своего ученик видит, но не открывает. Показываем их специально:
+   пока их прятали, курс выглядел заканчивающимся там, где он продолжается, и
+   ученик не знал ни что дальше есть, ни что для этого нужно сделать. */
+.gr-levelchip.is-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f0f5;
+  color: #8a8a97;
+}
+.gr-levelchip.is-locked:hover { background: #e7e5ee; }
+/* Выбранный замок остаётся приглушённым: акцентная пилюля обещала бы урок. */
+.gr-levelchip.is-locked.on {
+  background: #ddd9e8;
+  color: #5f5b6e;
+  box-shadow: none;
+}
+
+.ss-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 32px auto;
+  padding: 32px 28px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #ececf3;
+}
+
+.ss-locked__badge {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1ebfe;
+  color: var(--purple);
+}
+
+.ss-locked__title { margin: 0; font-size: 19px; font-weight: 800; }
+.ss-locked__text { margin: 0; color: #6f6b7e; font-size: 14px; line-height: 1.45; }

@@ -831,3 +831,165 @@
   .vp-fld-grid { grid-template-columns: 1fr; }
   .vp-lvl-card { width: min(148px, 70vw); }
 }
+
+/* ============================================================
+   Слово урока — карточка с картинкой
+
+   Картинка приходит с каталогом (`imageUrl` у карточки), её же
+   показывает блок словаря внутри урока. Здесь та же карточка:
+   лицо — картинка и слово, оборот — перевод и пример.
+
+   Отдельный класс, а не .vp-wcard: тем же классом нарисованы
+   карточки «Моего словаря», у которых картинки нет и оборота
+   тоже — они открываются в панель со всеми полями сразу.
+   ============================================================ */
+.vp-words-hint {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  color: var(--vp-muted);
+}
+
+/* Своя сетка, а не общая .vp-words: та рассчитана на текстовые карточки
+   «Моего словаря» и держит фиксированные 4/3/2/1 колонки. Картиночной карточке
+   это даёт на широком мониторе колонку в 400+ пикселей, то есть карточку почти
+   в 600 — она перестаёт быть карточкой. Колонки задаём шириной, а не числом:
+   тогда на любом экране их столько, сколько влезает, а размер один и тот же.
+   Правила стоят ниже медиа-запросов для .vp-words и потому их перебивают. */
+.vp-words--pics {
+  /* 200px на колонку: на мониторе 1740 это карточка 205x277 вместо прежних
+     426x611, на ноутбуке 1170 — 223x301. Шире 240 карточка не вырастает ни при
+     какой ширине окна, потому что вместо неё добавляется колонка. */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.vp-pcard-wrap { position: relative; min-width: 0; }
+
+.vp-pcard {
+  display: block; width: 100%; padding: 0; border: 0; background: none;
+  font: inherit; color: inherit; cursor: pointer; perspective: 1200px;
+  -webkit-tap-highlight-color: transparent;
+}
+.vp-pcard:focus-visible { outline: none; }
+.vp-pcard:focus-visible .vp-pcard__face { outline: 2px solid var(--vp-violet); outline-offset: 2px; }
+
+.vp-pcard__inner {
+  position: relative; display: block; width: 100%;
+  /* Пропорция как у картинок каталога: карточка не «прыгает», пока
+     изображение грузится, и обе стороны одной высоты. */
+  aspect-ratio: 3 / 4.05;
+  transform-style: preserve-3d;
+  transition: transform .5s cubic-bezier(.2, .7, .3, 1);
+}
+.vp-pcard.is-flipped .vp-pcard__inner { transform: rotateY(180deg); }
+
+.vp-pcard__face {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border: 1px solid var(--vp-line); border-radius: var(--vp-r);
+  background: #fff; overflow: hidden; text-align: left;
+}
+.vp-pcard:hover .vp-pcard__face { border-color: #cbb6ff; }
+
+.vp-pcard__pic { flex: 1; min-height: 0; width: 100%; object-fit: cover; display: block; }
+
+/* Слова без картинки: реплика — фигура из знака школы, а не пустая плашка. */
+.vp-pcard__bub {
+  flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
+  padding: 12px;
+}
+.vp-pcard__bub > span {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; padding: 14px 12px; box-sizing: border-box;
+  border-radius: 18px; background: var(--vp-violet-lt); color: var(--vp-violet-dk);
+  font-size: 24px; font-weight: 800; line-height: 1.1; text-align: center;
+  overflow-wrap: anywhere; hyphens: auto;
+}
+.vp-pcard__bub > span::after {
+  content: ''; position: absolute; left: 20px; bottom: -8px; width: 18px; height: 13px;
+  background: inherit; clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.vp-pcard__strip {
+  flex: none; display: block; padding: 10px 40px 12px 13px;
+  border-top: 1px solid var(--vp-line); background: #fff;
+}
+.vp-pcard__strip b {
+  display: block; font-size: 15px; font-weight: 800; line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.vp-pcard__strip i {
+  display: block; margin-top: 2px; font-style: normal;
+  font-size: 11.5px; color: var(--vp-muted);
+}
+
+.vp-pcard__back {
+  transform: rotateY(180deg);
+  background: var(--vp-violet-xlt); border-color: var(--vp-violet-lt);
+}
+.vp-pcard__bin {
+  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
+  justify-content: center; gap: 8px; padding: 16px 14px; text-align: center;
+}
+.vp-pcard__tr {
+  display: block; font-size: 18px; font-weight: 800; line-height: 1.25;
+  color: var(--vp-violet-dk); overflow-wrap: anywhere;
+}
+.vp-pcard__ex {
+  display: block; font-size: 12.5px; line-height: 1.45; color: #555;
+}
+.vp-pcard__ex mark { background: none; color: var(--vp-violet); font-weight: 700; padding: 0; }
+.vp-pcard__foot {
+  flex: none; display: block; padding: 9px 13px 11px;
+  border-top: 1px solid var(--vp-violet-lt);
+  font-size: 11px; color: var(--vp-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Динамик и отметка лежат поверх карточки, а не внутри неё: вложенная кнопка
+   невалидна и ломает переворот. */
+.vp-pcard-spk {
+  position: absolute; right: 9px; top: 9px; z-index: 2;
+  background: rgba(255, 255, 255, .92); color: var(--vp-violet-dk);
+  box-shadow: 0 1px 3px rgba(24, 20, 40, .14);
+}
+
+/* Отметка «изучено». Пока не нажата — бледная галочка на белом: место под неё
+   видно, но внимание она не тянет. Нажатая становится зелёной. */
+.vp-pcard-mark {
+  position: absolute; left: 9px; top: 9px; z-index: 2;
+  width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+  background: rgba(255, 255, 255, .92); color: #c3c1cc;
+  box-shadow: 0 1px 3px rgba(24, 20, 40, .14);
+  transition: .15s;
+}
+.vp-pcard-mark:hover { color: var(--vp-green); }
+.vp-pcard-mark.is-on { background: var(--vp-green); color: #fff; }
+
+/* Изученное слово приглушаем: список нужен, чтобы искать глазами то, что ещё
+   не выучено, — и выученное не должно спорить с ним за внимание. */
+.vp-pcard.is-learned .vp-pcard__pic,
+.vp-pcard.is-learned .vp-pcard__bub { opacity: .45; }
+.vp-pcard.is-learned .vp-pcard__face { border-color: var(--vp-green); }
+
+@media (max-width: 760px) {
+  /* На телефоне общая сетка уходит в одну колонку — картиночной там нужны две,
+     иначе одна карточка занимает почти весь экран. */
+  .vp-words--pics {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 560px) {
+  .vp-pcard__bub > span { font-size: 19px; border-radius: 15px; }
+  .vp-pcard__strip { padding: 9px 36px 10px 11px; }
+  .vp-pcard__strip b { font-size: 13.5px; }
+  .vp-pcard__tr { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-pcard__inner { transition: none; }
+}

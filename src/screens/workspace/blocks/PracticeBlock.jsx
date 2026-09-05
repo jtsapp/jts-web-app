@@ -21,6 +21,7 @@ import {
   wordBankAnswersAttempted,
 } from '../wordBankCheck.js'
 import { stripExerciseNumber, stripExerciseNumbersInHtml, stripExerciseNumbersInText } from '../stripExerciseNumber.js'
+import { tidyLessonLists } from '../tidyLessonLists.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -55,7 +56,7 @@ export default function PracticeBlock({
     : ''
   const showBlockTitle = Boolean(displayTitle && displayTitle !== stepTitle)
   const html = useMemo(
-    () => stripExerciseNumbersInHtml(sanitizeHtml(block?.html)),
+    () => tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html))),
     [block?.html],
   )
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
@@ -66,6 +67,7 @@ export default function PracticeBlock({
 
   const hasWbCheck = htmlHasCheckableWordBank(html)
   const questions = block?.questions || []
+  const hasPick = questions.some((q) => q.type === 'pick')
   const canCheckQuestions = questions.some((q) => hasAttempt(q, answers?.[q.id]))
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
@@ -169,6 +171,11 @@ export default function PracticeBlock({
         <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
       )}
       {html && <div className="lw-practice__html" ref={htmlRef} />}
+
+      {/* «Верного ответа нет» — правило всего упражнения, а не каждого пункта:
+          в разминке их десяток подряд, и десять одинаковых строк прячут сами
+          вопросы. */}
+      {hasPick && <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>}
 
       <div className="lw-practice__list">
         {questions.map((question) => {

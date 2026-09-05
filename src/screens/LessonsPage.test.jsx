@@ -16,6 +16,12 @@ vi.mock('../api.js', () => ({
   requestTrialLesson: vi.fn(async () => ({ requested: true, requestedAt: null, teacherAssigned: false, managerAssigned: false })),
   getLessonById: vi.fn(async () => ({})),
   getLessonSections: vi.fn(async () => []),
+  // Вкладка «Самостоятельно» ходит в каталог и за прогрессом — без заглушек
+  // падает весь экран, а не только она.
+  getCourseCatalog: vi.fn(async () => []),
+  getCatalogProgress: vi.fn(async () => ({ completedLessonIds: [] })),
+  completeCatalogLesson: vi.fn(async () => ({ completedLessonIds: [] })),
+  uncompleteCatalogLesson: vi.fn(async () => ({ completedLessonIds: [] })),
   getHomeworkBoard: vi.fn(async () => []),
   getHomeworkById: vi.fn(async () => ({})),
   saveHomeworkFeedback: vi.fn(async () => ({})),
@@ -32,27 +38,48 @@ function tokenWithRole(role) {
   return `header.${payload}.signature`
 }
 
-const renderPage = (token) => render(
+const renderPage = (token, props = {}) => render(
   <I18nProvider>
-    <LessonsPage token={token} userName="Тест" onNav={() => {}} onProfile={() => {}} onOpenLesson={() => {}} />
+    <LessonsPage token={token} userName="Тест" onNav={() => {}} onProfile={() => {}} onOpenLesson={() => {}} {...props} />
   </I18nProvider>
 )
+
+describe('возврат на свою вкладку', () => {
+  it('initialTab открывает запрошенную вкладку', async () => {
+    // Ученик уходит в материал из «Самостоятельно» — и кнопка «К урокам» должна
+    // вернуть туда же, а не на расписание.
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'self' })
+
+    await waitFor(() =>
+      expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Самостоятельно'),
+    )
+  })
+
+  it('неизвестная вкладка откатывается к онлайн-урокам', async () => {
+    // Вкладка преподавателя у ученика не существует — экран не должен остаться пустым.
+    const { container } = renderPage(tokenWithRole('STUDENT'), { initialTab: 'homework' })
+
+    await waitFor(() =>
+      expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Онлайн-уроки'),
+    )
+  })
+})
 
 describe('LessonsPage tabs', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('ученик видит две вкладки — клубы и онлайн-уроки', async () => {
+  it('ученик видит клубы, онлайн-уроки и самостоятельное обучение', async () => {
     const { container } = renderPage(tokenWithRole('STUDENT'))
     await waitFor(() => expect(container.querySelectorAll('.ls-tab').length).toBeGreaterThan(0))
     expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent))
-      .toEqual(['Спикинг-клабы', 'Онлайн-уроки'])
+      .toEqual(['Спикинг-клабы', 'Онлайн-уроки', 'Самостоятельно'])
   })
 
   // Проверка домашних работ — инструмент преподавателя, ученику её показывать
   // нельзя: бэкенд всё равно отдаст ему только свои работы.
   it('преподаватель дополнительно видит вкладку проверки домашних работ', async () => {
     const { container } = renderPage(tokenWithRole('TEACHER'))
-    await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(3))
+    await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(4))
     expect(screen.getByRole('button', { name: 'Домашние задания' })).toBeTruthy()
   })
 

@@ -2,26 +2,38 @@ import { useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
+import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import { isTeacher } from '../lib/jwt.js'
 
 const TABS = [
   { key: 'clubs', label: 'lessons.tabClubs' },
   { key: 'online', label: 'lessons.tabOnline' },
+  // Самостоятельное обучение: материалы каталога, которые ученик проходит сам.
+  // Не «каталог для ученика» — его срез до своего уровня, см. SelfStudy.
+  { key: 'self', label: 'lessons.tabSelf' },
 ]
 // Проверка домашних работ — вкладка преподавателя: ученик сдаёт работу в своём
 // разделе «Домашняя работа», а принимает её тот, кто ведёт занятия, и логично
 // делать это там же, где он смотрит расписание.
 const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
 
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog }) {
+/**
+ * `initialTab` — с какой вкладки открыть экран.
+ *
+ * Нужен ради возврата из урока: ученик уходил в материал из «Самостоятельно», а
+ * кнопка «К урокам» приводила его на расписание, и вкладку приходилось искать
+ * заново каждый раз. Значение только начальное — дальше вкладку выбирает сам
+ * ученик, и перерисовка родителя его выбор не сбрасывает.
+ */
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, initialTab }) {
   const { t } = useI18n()
   // Каталог уровней — инструмент преподавателя: он выбирает из него, что вести
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
   // поэтому вход в него только по роли.
   const teacher = isTeacher(token)
   const tabs = teacher ? [...TABS, TEACHER_TAB] : TABS
-  const [tab, setTab] = useState('online')
+  const [tab, setTab] = useState(() => (tabs.some((x) => x.key === initialTab) ? initialTab : 'online'))
 
   return (
     <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
@@ -67,6 +79,12 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
           // всю страницу, в отличие от узкой заглушки «клубов» по центру.
           <div className="ls__body ls__body--wide">
             <LessonSchedule token={token} onOpenLesson={onOpenLesson} />
+          </div>
+        )}
+
+        {tab === 'self' && (
+          <div className="ls__body ls__body--wide">
+            <SelfStudy token={token} userLevel={userLevel} onOpenLesson={onOpenSelfStudy} />
           </div>
         )}
 
