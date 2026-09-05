@@ -398,6 +398,27 @@ export function uncompleteCatalogLesson(token, id) {
   return authDelete(`/mobile/course-catalog/lessons/${encodeURIComponent(id)}/complete`, token)
 }
 
+// Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
+// последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
+// на открытие раздела целиком, и таскать в нём работу по всем урокам ради
+// одного открываемого — мегабайты впустую. Формат строки принадлежит клиенту
+// (см. workspace/stepProgress.js), сервер в неё не смотрит.
+export function getCatalogLessonAnswers(token, id) {
+  return authGet(`/mobile/course-catalog/lessons/${encodeURIComponent(id)}/answers`, token)
+}
+
+// `keepalive` — для записи на закрытии вкладки: обычный fetch браузер обрывает
+// вместе со страницей, и последний ответ терялся ровно тогда, когда ученик
+// закончил работу и вышел.
+export function saveCatalogLessonAnswers(token, id, progressJson, options) {
+  return authPut(
+    `/mobile/course-catalog/lessons/${encodeURIComponent(id)}/answers`,
+    token,
+    { progressJson },
+    options,
+  )
+}
+
 // Структура урока, разобранная один раз при регистрации уровня и сохранённая на
 // бэкенде. content === null — структуры нет, урок открывается как файл (fileUrl).
 // SWR-кэш: повторное открытие того же урока в сессии не ждёт сеть (RAM;

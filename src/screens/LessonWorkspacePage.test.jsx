@@ -6,9 +6,29 @@ import { I18nProvider } from '../i18n.jsx'
 vi.mock('../api.js', () => ({
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  getCatalogLessonAnswers: vi.fn(async () => ({ progressJson: null })),
+  saveCatalogLessonAnswers: vi.fn(async () => ({})),
 }))
 
+import { getCatalogLessonAnswers, saveCatalogLessonAnswers } from '../api.js'
 import LessonWorkspacePage from './LessonWorkspacePage.jsx'
+
+// Урок, разобранный на шаги, но не по зубам плееру (pick-вопрос — см.
+// liveSteps.js): именно он открывается документом, где и живут ответы.
+const STEPPED = {
+  id: 42,
+  title: 'Coffee — yes',
+  steps: [
+    {
+      id: 's1',
+      order: 1,
+      title: 'Warm-up',
+      blocks: [{ type: 'practice', title: 'Warm-up', questions: [
+        { id: 'q1', type: 'pick', prompt: '☕ coffee', options: ['👍', '👎'] },
+      ] }],
+    },
+  ],
+}
 
 const FILE_URL = 'https://files-dev.justtostudy.kz/development/course-catalog/a2/lessons/L01.html'
 
@@ -71,5 +91,55 @@ describe('урок в воркспейсе', () => {
     show(undefined, { lessonId: undefined, loadLesson: async () => null })
 
     expect(await screen.findByText('Место для баннера')).toBeTruthy()
+  })
+})
+
+describe('работа ученика в самостоятельном уроке', () => {
+  const props = { catalogLessonId: 42, loadLesson: async () => STEPPED }
+
+  it('сохранённые ответы восстанавливаются при открытии', async () => {
+    // Ученик отвечал, ушёл, вернулся — экран должен продолжить с того же места,
+    // а не начать урок заново.
+    getCatalogLessonAnswers.mockResolvedValueOnce({
+      progressJson: JSON.stringify({ shape: 'lesson-steps', answers: { q1: '👍' }, checked: [], stepId: 's1' }),
+    })
+    const { container } = show(props.loadLesson, props)
+
+    await waitFor(() => {
+      const picked = container.querySelector('.lw-opt[aria-pressed="true"]')
+      expect(picked?.textContent).toBe('👍')
+    })
+  })
+
+  it('ответ уходит на сервер', async () => {
+    saveCatalogLessonAnswers.mockClear()
+    show(props.loadLesson, props)
+
+    fireEvent.click(await screen.findByText('👍'))
+
+    await waitFor(() => expect(saveCatalogLessonAnswers).toHaveBeenCalled())
+    const [, id, payload] = saveCatalogLessonAnswers.mock.calls.at(-1)
+    expect(id).toBe(42)
+    expect(JSON.parse(payload)).toMatchObject({ shape: 'lesson-steps', answers: { q1: '👍' } })
+  })
+
+  it('пока ответы не прочитаны, поверх них ничего не пишется', async () => {
+    // Иначе пустой стартовый объект уехал бы раньше ответа сервера — и работа
+    // терялась бы тем вернее, чем медленнее сеть.
+    getCatalogLessonAnswers.mockReturnValueOnce(new Promise(() => {}))
+    saveCatalogLessonAnswers.mockClear()
+    show(props.loadLesson, props)
+
+    fireEvent.click(await screen.findByText('👍'))
+    await new Promise((r) => setTimeout(r, 60))
+    expect(saveCatalogLessonAnswers).not.toHaveBeenCalled()
+  })
+
+  it('без урока каталога в сеть за ответами не ходит', async () => {
+    // Живой урок хранит ту же работу своим путём (material_progress).
+    getCatalogLessonAnswers.mockClear()
+    show(async () => STEPPED, { catalogLessonId: undefined })
+    await screen.findByText('👍')
+    expect(getCatalogLessonAnswers).not.toHaveBeenCalled()
   })
 })

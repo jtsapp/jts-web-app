@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
@@ -11,6 +11,9 @@ import { loadLiveLesson } from './workspace/liveLessonData.js'
 import { liveLessonSteps } from './workspace/liveSteps.js'
 import LessonAside from './workspace/LessonAside.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
+import { createProgressSaver } from './workspace/progressSaver.js'
+import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
+import { getCatalogLessonAnswers, saveCatalogLessonAnswers } from '../api.js'
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons.jsx'
 
 /**
@@ -164,29 +167,108 @@ export default function LessonWorkspacePage({
   // loadCatalogLesson). Плееру тут нечего показывать, а материал — есть.
   const useMaterialView = steps.length === 0 && (lesson?.steps?.length ?? 0) === 0 && Boolean(lesson?.fileUrl)
   const [docStepId, setDocStepId] = useState(null)
+  // Урок и сохранённая работа приезжают двумя независимыми запросами, и кто
+  // раньше — как повезёт. Раньше здесь стояло безусловное «на первый шаг», и
+  // при быстром ответе каталога оно затирало восстановленный шаг: ученик
+  // возвращался в урок и попадал в начало, хотя остановился на пятом.
+  // Восстановленный шаг сохраняем, если он в этом уроке вообще есть.
   useEffect(() => {
-    setDocStepId(lesson?.steps?.[0]?.id ?? null)
+    const ids = (lesson?.steps || []).map((step) => step.id)
+    setDocStepId((current) => (current != null && ids.includes(current) ? current : ids[0] ?? null))
   }, [lesson])
   const docStep = lesson?.steps?.find((s) => s.id === docStepId) || lesson?.steps?.[0] || null
   const [docAnswers, setDocAnswers] = useState({})
   const [docChecked, setDocChecked] = useState(() => new Set())
+
+  // Работа ученика в самостоятельном уроке живёт на сервере: до этого она была
+  // состоянием экрана и пропадала на первой же перезагрузке — ученик отвечал на
+  // десяток вопросов, отвлекался, возвращался и начинал заново.
+  //
+  // `answersLoaded` — не украшение. Запись идёт по действию, но и до первого
+  // действия был бы соблазн синхронизировать состояние эффектом; без флага
+  // пустой стартовый объект уехал бы поверх сохранённого раньше, чем придёт
+  // ответ сервера, — и ответы терялись бы тем вернее, чем медленнее сеть.
+  const [answersLoaded, setAnswersLoaded] = useState(false)
+  useEffect(() => {
+    if (!catalogLessonId || !token) {
+      setAnswersLoaded(false)
+      return undefined
+    }
+    let alive = true
+    setAnswersLoaded(false)
+    getCatalogLessonAnswers(token, catalogLessonId)
+      .then((res) => {
+        if (!alive) return
+        const saved = parseStepProgress(res?.progressJson)
+        if (saved) {
+          setDocAnswers(saved.answers)
+          setDocChecked(saved.checkedSteps)
+          if (saved.stepId != null) setDocStepId(saved.stepId)
+        }
+        setAnswersLoaded(true)
+      })
+      // Не прочитали — работаем без восстановления, но и НЕ пишем: перезапись
+      // пустотой хуже, чем несохранённый сеанс.
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [catalogLessonId, token])
+
+  const saverRef = useRef(null)
+  if (!saverRef.current) {
+    saverRef.current = createProgressSaver((lessonKey, payload, keepalive) =>
+      saveCatalogLessonAnswers(token, lessonKey, payload, keepalive ? { keepalive: true } : undefined)
+        .catch(() => {}))
+  }
+  const persistDoc = useCallback((next) => {
+    if (!catalogLessonId || !token || !answersLoaded) return
+    saverRef.current.schedule(catalogLessonId, serializeStepProgress(next))
+  }, [catalogLessonId, token, answersLoaded])
   // Переход по шагу снизу оставлял ученика в конце нового шага — там, где он
   // домотал предыдущий. Возвращаем к началу: шаг читают сверху.
   const goDocStep = useCallback((id) => {
     setDocStepId(id)
+    // Последний открытый шаг тоже часть работы: вернувшись, ученик попадает
+    // туда, где остановился, а не в начало урока.
+    persistDoc({ answers: docAnswers, checkedSteps: docChecked, stepId: id })
     document.querySelector('.learn__main')?.scrollTo({ top: 0, behavior: 'smooth' })
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [])
+  }, [persistDoc, docAnswers, docChecked])
   const handleDocAnswer = useCallback((questionId, value) => {
-    setDocAnswers((prev) => ({ ...prev, [questionId]: value }))
-  }, [])
+    setDocAnswers((prev) => {
+      const next = { ...prev, [questionId]: value }
+      persistDoc({ answers: next, checkedSteps: docChecked, stepId: docStepId })
+      return next
+    })
+  }, [persistDoc, docChecked, docStepId])
   const handleDocCheck = useCallback((key, questionIds = []) => {
     setDocChecked((prev) => {
       const next = new Set(prev).add(key)
       questionIds.forEach((id) => next.add(id))
+      persistDoc({ answers: docAnswers, checkedSteps: next, stepId: docStepId })
       return next
     })
+  }, [persistDoc, docAnswers, docStepId])
+
+  // Дебаунс не даёт права потерять последнее сделанное: и уход с экрана, и
+  // усыпление вкладки дописывают то, что не успело уйти. `pagehide`, а не
+  // `beforeunload` — на телефонах и в Safari вкладку усыпляют без второго
+  // события, и запись бы просто не состоялась.
+  useEffect(() => {
+    const saver = saverRef.current
+    const flush = () => saver.flush(true)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
   }, [])
+
+  const exitLesson = useCallback(() => {
+    saverRef.current.flush(true)
+    onExit?.()
+  }, [onExit])
 
   const [messages, setMessages] = useState([])
   const [confirmExit, setConfirmExit] = useState(false)
@@ -257,7 +339,7 @@ export default function LessonWorkspacePage({
             // `.lw-doc` снаружи не для вида: на нём объявлены токены `--lw-*`,
             // и без него рамка материала осталась бы без фона и скруглений.
             <div className="lw-doc">
-              <DocBar title={lesson.title} onExit={onExit} />
+              <DocBar title={lesson.title} onExit={exitLesson} />
               <div className="lw-material-frame">
                 <iframe
                   src={selfStudyUrl(lesson.fileUrl)}
@@ -275,7 +357,7 @@ export default function LessonWorkspacePage({
             <div className="lw-doc">
               <DocBar
                 title={lesson.title}
-                onExit={onExit}
+                onExit={exitLesson}
                 stepNo={Math.max(1, lesson.steps.findIndex((s) => s.id === docStep?.id) + 1)}
                 stepTotal={lesson.steps.length}
               />
