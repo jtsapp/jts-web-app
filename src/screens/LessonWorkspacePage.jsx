@@ -51,7 +51,13 @@ export default function LessonWorkspacePage({
     setLoading(true)
     loadLesson(lessonId, token).then((loaded) => {
       if (cancelled) return
-      setLesson(loaded || SAMPLE_LESSON)
+      // Не подставляем демо-урок вместо запрошенного. Раньше здесь стоял
+      // `loaded || SAMPLE_LESSON`, и ученик, открыв урок каталога, получал
+      // чужой демонстрационный урок про Present Simple с заглушкой «Место для
+      // баннера» — и читал это как «материал обрезали». Не загрузилось —
+      // говорим об этом прямо. SAMPLE_LESSON остаётся тем, чем задуман:
+      // содержимым экрана, открытого вообще без урока.
+      setLesson(loaded || null)
       setLoading(false)
     })
     return () => {
@@ -67,6 +73,9 @@ export default function LessonWorkspacePage({
   // тот же `LessonContent`, что и в живом уроке, только с собственной вкладочной
   // навигацией по шагам, а не route-панелью преподавателя.
   const useDocView = steps.length === 0 && (lesson?.steps?.length ?? 0) > 0
+  // Шагов нет вовсе, но есть файл курса: урок просто не разбирали (см.
+  // loadCatalogLesson). Плееру тут нечего показывать, а материал — есть.
+  const useMaterialView = steps.length === 0 && (lesson?.steps?.length ?? 0) === 0 && Boolean(lesson?.fileUrl)
   const [docStepId, setDocStepId] = useState(null)
   useEffect(() => {
     setDocStepId(lesson?.steps?.[0]?.id ?? null)
@@ -114,10 +123,21 @@ export default function LessonWorkspacePage({
     setAttempt((n) => n + 1)
   }
 
-  if (loading || !lesson) {
+  if (loading) {
     return (
       <div className="lw lw--loading" data-testid="lesson-workspace">
         <p className="lw-loading">{t('lesson.ws.loading')}</p>
+      </div>
+    )
+  }
+
+  if (!lesson) {
+    return (
+      <div className="lw lw--loading" data-testid="lesson-workspace">
+        <p className="lw-loading">{t('lesson.ws.loadFailed')}</p>
+        <button type="button" className="lw-stepnav__btn lw-stepnav__btn--ghost" onClick={onExit}>
+          {t('lesson.ws.exit')}
+        </button>
       </div>
     )
   }
@@ -136,7 +156,23 @@ export default function LessonWorkspacePage({
           onProfile={onProfile}
         />
         <main className="learn__main">
-          {useDocView ? (
+          {useMaterialView ? (
+            // Урок не разобран на шаги — таких в каталоге две трети. Показываем
+            // сам материал курса, а не пустой плеер: файл и есть урок, просто
+            // без интерактива.
+            // `.lw-doc` снаружи не для вида: на нём объявлены токены `--lw-*`,
+            // и без него рамка материала осталась бы без фона и скруглений.
+            <div className="lw-doc">
+              <div className="lw-material-frame">
+                <iframe
+                  src={lesson.fileUrl}
+                  title={lesson.title || t('lessons.tabSelf')}
+                  className="lw-material-iframe"
+                  allow="autoplay"
+                />
+              </div>
+            </div>
+          ) : useDocView ? (
             // Плеер не осилил урок целиком (vocab-колода или вопрос типа
             // order/multi/pick/match — см. liveSteps.js): показываем документ
             // урока, как в живом уроке, со своей вкладочной навигацией по шагам

@@ -20,7 +20,19 @@ export async function loadCatalogLesson(id, token) {
   if (cache.has(id)) return cache.get(id)
   try {
     const stored = await getCourseCatalogLessonContent(id, token)
-    if (!stored?.content) return null
+    if (!stored) return null
+
+    // Разбор на шаги есть не у всех: из 215 самостоятельных уроков каталога он
+    // сделан у 71, остальные 144 остаются файлом курса. Так и задумано — в DTO
+    // ручки прямо написано «null when the lesson has no extracted structure;
+    // the client falls back to fileUrl». Отдаём урок без шагов, но с файлом:
+    // экран покажет материал, а не сделает вид, что урока нет.
+    if (!stored.content) {
+      if (!stored.fileUrl) return null
+      const material = { id: stored.id ?? id, title: stored.title || '', fileUrl: stored.fileUrl, steps: [] }
+      cache.set(id, material)
+      return material
+    }
 
     // Медиа внутри info-блоков лежит относительно файла урока, а не API.
     // Select / order, оставшиеся сырым HTML в старом content_json, поднимаем в
