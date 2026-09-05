@@ -1,4 +1,3 @@
-import { useI18n } from '../../../i18n.jsx'
 import QuestionMedia from './QuestionMedia.jsx'
 
 // Опрос про себя («нравится / не нравится», «как часто»): верного ответа нет
@@ -7,11 +6,10 @@ import QuestionMedia from './QuestionMedia.jsx'
 // без ключа проверки: тогда answer — массив, иначе одна строка, как у
 // ChoiceQuestion.
 //
-// `showHint` — показать ли подпись «верного ответа нет». Родитель гасит её у
-// всех пунктов, кроме первого: в опросе из семи слов правило одно на всё
-// упражнение, а семь одинаковых строк только прячут сами вопросы.
-export default function PickQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showHint = true }) {
-  const { t } = useI18n()
+// Подпись «верного ответа нет» рисует не вопрос, а карточка упражнения: правило
+// одно на всё упражнение, и в опросе из десяти слов десять одинаковых строк
+// только прячут сами вопросы, а заодно ломают строку «слово — кнопки».
+export default function PickQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const multiple = !!question?.multiple
   const selected = multiple ? (Array.isArray(answer) ? answer : []) : answer
   const locked = checked || readOnly
@@ -31,7 +29,6 @@ export default function PickQuestion({ question, answer, checked, onAnswer, read
   return (
     <div className="lw-q lw-q--pick">
       <QuestionMedia question={question} onWord={onWord} />
-      {showHint && <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>}
       <div className="lw-opts">
         {(question?.options || []).map((opt) => {
           const isSelected = multiple ? selected.includes(opt) : selected === opt

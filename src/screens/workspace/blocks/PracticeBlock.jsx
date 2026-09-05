@@ -67,10 +67,7 @@ export default function PracticeBlock({
 
   const hasWbCheck = htmlHasCheckableWordBank(html)
   const questions = block?.questions || []
-  // «Опрос про себя — верного ответа нет» объясняет правило один раз на
-  // упражнение, а не под каждым пунктом: в разминке таких пунктов семь подряд,
-  // и семь одинаковых строк — шум, из-за которого не видно самих вопросов.
-  const firstPickId = questions.find((q) => q.type === 'pick')?.id
+  const hasPick = questions.some((q) => q.type === 'pick')
   const canCheckQuestions = questions.some((q) => hasAttempt(q, answers?.[q.id]))
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
@@ -175,6 +172,11 @@ export default function PracticeBlock({
       )}
       {html && <div className="lw-practice__html" ref={htmlRef} />}
 
+      {/* «Верного ответа нет» — правило всего упражнения, а не каждого пункта:
+          в разминке их десяток подряд, и десять одинаковых строк прячут сами
+          вопросы. */}
+      {hasPick && <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>}
+
       <div className="lw-practice__list">
         {questions.map((question) => {
           const Question = QUESTION_BY_TYPE[question.type]
@@ -192,7 +194,6 @@ export default function PracticeBlock({
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
-                showHint={question.id === firstPickId}
               />
             </div>
           )
