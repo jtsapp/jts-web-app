@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { getCourseCatalog, getCatalogProgress, completeCatalogLesson, uncompleteCatalogLesson } from '../../api.js'
 import { levelIndex } from '../../kingdoms.js'
+import { readSelfStudyLevel, writeSelfStudyLevel } from './selfStudyLevel.js'
 
 function typeKey(type) {
   const key = String(type || 'lesson').toLowerCase()
@@ -107,8 +108,8 @@ function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
  *
  * Уровни разложены по чипам, как в каталоге грамматики: правило «докуда
  * открыто» тогда видно глазами, а не выводится из того, что список кончился.
- * Открывается на самом высоком доступном — на том, до которого ученик дошёл;
- * назад к пройденному он идёт сам, когда захочет повторить.
+ * Открывается на том, где ученик был в прошлый раз, а впервые — на самом
+ * высоком доступном, то есть на том, до которого он дошёл.
  *
  * Каждый урок лежит в каталоге ТРИЖДЫ — по разу на режим: SELF_STUDY,
  * ONE_TO_ONE и GROUP (215 + 215 + 215 на текущем контенте). Берём только
@@ -126,7 +127,9 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
   const [levels, setLevels] = useState(null) // null — ещё грузим
   const [error, setError] = useState(false)
   const [done, setDone] = useState(() => new Set())
-  const [picked, setPicked] = useState(null) // null — уровень ещё не выбирали руками
+  // Выбранный уровень переживает вход в урок: экран размонтируется, а ученик,
+  // вернувшись кнопкой «К урокам», должен попасть туда, откуда уходил.
+  const [picked, setPicked] = useState(readSelfStudyLevel)
 
   useEffect(() => {
     if (!token) return
@@ -191,9 +194,10 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
       .sort((a, b) => levelIndex(a.code) - levelIndex(b.code))
   }, [levels, userLevel])
 
-  // Открываем на том уровне, до которого ученик дошёл, — это последний
-  // открытый. Ручной выбор перебивает умолчание, но только пока он валиден:
-  // каталог мог обновиться, и выбранного уровня в нём уже нет.
+  // Запомненный выбор перебивает умолчание, но только пока он валиден: каталог
+  // мог обновиться, а уровень ученика — вырасти или, наоборот, оказаться ниже
+  // сохранённого. Не нашли — открываем последний доступный, то есть тот, до
+  // которого ученик дошёл.
   const active = open.find((l) => l.code === picked) || open[open.length - 1]
 
   if (!token) return <p className="cc__state">{t('selfStudy.needAuth')}</p>
@@ -219,7 +223,10 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
             type="button"
             className={`gr-levelchip${level.code === active.code ? ' on' : ''}`}
             aria-pressed={level.code === active.code}
-            onClick={() => setPicked(level.code)}
+            onClick={() => {
+              setPicked(level.code)
+              writeSelfStudyLevel(level.code)
+            }}
           >
             {level.code}
           </button>

@@ -68,7 +68,7 @@ function draw(props = {}) {
 const chips = (container) => [...container.querySelectorAll('.gr-levelchip')].map((b) => b.textContent)
 
 describe('Самостоятельное обучение', () => {
-  beforeEach(() => { catalog.value = CATALOG; progress.value = [] })
+  beforeEach(() => { catalog.value = CATALOG; progress.value = []; localStorage.clear() })
 
   it('чипами показывает уровни до своего включительно', async () => {
     const { container } = draw()
@@ -90,6 +90,33 @@ describe('Самостоятельное обучение', () => {
     fireEvent.click(await screen.findByText('A1'))
     expect(await screen.findByText('My biography')).toBeTruthy()
     expect(screen.queryByText('Changing direction')).toBeNull()
+  })
+
+  it('возвращает на тот уровень, где ученик был в прошлый раз', async () => {
+    // Экран размонтируется на входе в урок. Раньше выбор жил только в его
+    // состоянии, и «К урокам» приводило на верхний уровень: тому, кто идёт
+    // курс подряд снизу, приходилось искать своё место после каждого урока.
+    localStorage.setItem('self-study-level', 'A1')
+    const { container } = draw()
+
+    expect(await screen.findByText('My biography')).toBeTruthy()
+    expect(container.querySelector('.gr-levelchip.on').textContent).toBe('A1')
+  })
+
+  it('запомненный уровень, которого больше нет, откатывается к доступному', async () => {
+    // Каталог мог обновиться, а уровень ученика — измениться: пустой экран
+    // из-за несуществующего кода был бы хуже, чем просто не тот чип.
+    localStorage.setItem('self-study-level', 'C2')
+    const { container } = draw()
+
+    await screen.findByText('Changing direction')
+    expect(container.querySelector('.gr-levelchip.on').textContent).toBe('A2')
+  })
+
+  it('выбор чипа запоминается', async () => {
+    draw()
+    fireEvent.click(await screen.findByText('A1'))
+    expect(localStorage.getItem('self-study-level')).toBe('A1')
   })
 
   it('уровни выше своего не показывает', async () => {
@@ -149,7 +176,7 @@ describe('Самостоятельное обучение', () => {
 })
 
 describe('Отметка о прохождении', () => {
-  beforeEach(() => { catalog.value = CATALOG; progress.value = [] })
+  beforeEach(() => { catalog.value = CATALOG; progress.value = []; localStorage.clear() })
 
   it('пройденный урок открывается отмеченным', async () => {
     progress.value = [20]
