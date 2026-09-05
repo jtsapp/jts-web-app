@@ -212,34 +212,58 @@
   }
 }
 
-/* ── Самостоятельное обучение: отметка о прохождении ────────────────────────
-   Отметку ученик ставит сам: у двух третей уроков каталога нет структуры с
-   шагами, они открываются документом, и события «урок завершён» не бывает. */
-.ss-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ss-row .cc-lesson { flex: 1; min-width: 0; }
+/* ── Самостоятельное обучение ───────────────────────────────────────────────
+   Разделу нарочно дан вид каталога грамматики: те же чипы уровней, секции и
+   карточки-обложки (.gr-*). Ученик ходит между «Практикой» и «Уроками» по
+   десять раз за занятие, и два разных способа показать одно и то же — сетку
+   учебных материалов — он читает как два разных продукта. */
+.ss .cc__subtitle { margin-bottom: 16px; }
+
+/* Обёртка карточки: сама карточка — кнопка, открывающая урок, поэтому отметка
+   не может лежать внутри неё (кнопка в кнопке невалидна). Кладём соседом и
+   позиционируем поверх обложки. */
+.ss-card { position: relative; display: flex; }
+/* Высота карточек в ряду выравнивается по самой высокой: у пройденных внизу
+   ещё зелёная полоса «Пройдено», и без этого ряд получается ступенькой. Тело
+   забирает свободное место, поэтому полоса всегда прижата к низу. */
+.ss-card > .gr-gcard { flex: 1; min-width: 0; height: 100%; }
+.ss-card > .gr-gcard > .gr-gcard__body { flex: 1; }
 
 .ss-mark {
-  flex: none;
-  width: 28px;
-  height: 28px;
+  position: absolute;
+  z-index: 4;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   display: grid;
   place-items: center;
   cursor: pointer;
-  background: #f1f0f5;
-  color: #c3c1cc;
-  transition: .15s;
+  /* Поверх градиента обложки: полупрозрачное молоко читается на всех восьми
+     темах, сплошная заливка спорила бы с самой светлой из них. */
+  background: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(3px);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
-.ss-mark:hover { color: #22c55e; }
-.ss-row.is-done .ss-mark { background: #22c55e; color: #fff; }
+.ss-mark:hover { background: rgba(255, 255, 255, 0.36); transform: scale(1.06); }
+.ss-mark:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.ss-card.is-done .ss-mark { background: #22c55e; color: #fff; }
 
-/* Пройденный урок приглушаем: список нужен, чтобы искать глазами то, что ещё
-   не пройдено, и пройденное не должно спорить с ним за внимание. */
-.ss-row.is-done .cc-lesson__title { color: #8a8a97; }
+@media (max-width: 560px) {
+  .ss-mark { top: 10px; right: 10px; }
+
+  /* На узком экране каталог грамматики уводит бейдж «Пройдено» пилюлей в левый
+     верхний угол обложки — а там у нас стоит марка JTS, и они налезают друг на
+     друга. Возвращаем полосу под телом карточки: место внизу свободно, а
+     состояние и так продублировано кружком в правом верхнем углу. */
+  .ss-card .gr-gcard__done {
+    position: static;
+    border-radius: 0;
+    border-top: 1px solid #d3edc6;
+    padding: 9px 12px;
+  }
+}

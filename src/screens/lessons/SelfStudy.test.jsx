@@ -65,33 +65,52 @@ function draw(props = {}) {
   return { ...view, onOpenLesson }
 }
 
+const chips = (container) => [...container.querySelectorAll('.gr-levelchip')].map((b) => b.textContent)
+
 describe('Самостоятельное обучение', () => {
   beforeEach(() => { catalog.value = CATALOG; progress.value = [] })
 
-  it('показывает уровни до своего включительно', async () => {
+  it('чипами показывает уровни до своего включительно', async () => {
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+    expect(chips(container)).toEqual(['A1', 'A2'])
+  })
+
+  it('открывается на уровне, до которого ученик дошёл', async () => {
+    // Не на первом попавшемся: человек продолжает с того места, где он сейчас,
+    // а назад к пройденному уходит сам, когда хочет повторить.
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+    expect(container.querySelector('.gr-levelchip.on').textContent).toBe('A2')
+    expect(screen.queryByText('My biography')).toBeNull()
+  })
+
+  it('по чипу можно вернуться на пройденный уровень', async () => {
     draw()
+    fireEvent.click(await screen.findByText('A1'))
     expect(await screen.findByText('My biography')).toBeTruthy()
-    expect(screen.getByText('Changing direction')).toBeTruthy()
+    expect(screen.queryByText('Changing direction')).toBeNull()
   })
 
   it('уровни выше своего не показывает', async () => {
     // Каталог целиком — инструмент преподавателя; ученику он открыл бы курс
     // в обход программы. Правило то же, что у карты королевств и словаря.
-    draw()
-    await screen.findByText('My biography')
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+    expect(chips(container)).not.toContain('B2')
     expect(screen.queryByText('Далёкий уровень')).toBeNull()
   })
 
   it('A1 открыт даже новичку с A0', async () => {
-    draw({ userLevel: 'A0' })
+    const { container } = draw({ userLevel: 'A0' })
     expect(await screen.findByText('My biography')).toBeTruthy()
-    expect(screen.queryByText('Changing direction')).toBeNull()
+    expect(chips(container)).toEqual(['A1'])
   })
 
   it('берёт только самостоятельный режим, а не все три копии урока', async () => {
     // Каждый урок лежит в каталоге трижды — SELF_STUDY, ONE_TO_ONE и GROUP.
     // Без фильтра ученик увидел бы три одинаковых названия подряд.
-    draw()
+    draw({ userLevel: 'A1' })
     expect(await screen.findAllByText('My biography')).toHaveLength(1)
   })
 
@@ -140,6 +159,7 @@ describe('Отметка о прохождении', () => {
     const marks = container.querySelectorAll('.ss-mark')
     const pressed = [...marks].filter((b) => b.getAttribute('aria-pressed') === 'true')
     expect(pressed).toHaveLength(1)
+    expect(screen.getByText('Пройдено')).toBeTruthy()
   })
 
   it('нажатие отмечает урок и сохраняет на сервере', async () => {
@@ -147,7 +167,7 @@ describe('Отметка о прохождении', () => {
     const { container } = draw()
     await screen.findByText('Changing direction')
 
-    const mark = container.querySelector('.ss-row .ss-mark')
+    const mark = container.querySelector('.ss-card .ss-mark')
     fireEvent.click(mark)
 
     await waitFor(() => expect(mark.getAttribute('aria-pressed')).toBe('true'))
@@ -177,7 +197,7 @@ describe('Отметка о прохождении', () => {
   })
 
   it('отметка не открывает урок', async () => {
-    // Строка сама открывает урок, и клик по галочке не должен уводить с экрана.
+    // Карточка сама открывает урок, и клик по галочке не должен уводить с экрана.
     const { container, onOpenLesson } = draw()
     await screen.findByText('Changing direction')
 
