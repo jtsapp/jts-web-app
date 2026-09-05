@@ -233,6 +233,20 @@ describe('классрум — разметка урока каталога', ()
     expect(section).toMatch(/\.lw-info__body \.res:empty\s*{\s*display:\s*none/)
   })
 
+  it('плитка вариантов раскладывается сеткой, а не столбиком', () => {
+    // `grid2`/`grid3` — сетка в стилях самого курса, которых мы не загружаем.
+    // Без правил десять вариантов «чем заняться» шли столбцом на 2200px.
+    expect(section).toMatch(/\.lw-info__body \.grid3,[\s\S]{0,80}\{[^}]*display:\s*grid/)
+    expect(section).toMatch(/\.lw-info__body \.grid3,[\s\S]{0,120}grid-template-columns:\s*repeat\(auto-fill/)
+  })
+
+  it('карточка курса не становится flex-колонкой от чужого правила', () => {
+    // Глобальный `.card` — карточка другого экрана: display:flex + column.
+    // Внутри неё `.body` с `flex: 1 1 12rem` превращал базис из ширины в
+    // высоту, и строчка распирала плитку до 220px.
+    expect(section).toMatch(/\.lw-info__body \.card,\n\.lw-practice__html \.card\s*\{[^}]*display:\s*block/)
+  })
+
   it('мёртвые кнопки из файла урока не выглядят нажимаемыми', () => {
     const chip = rule('.lw-info__body .ochip,\n.lw-info__body .opt')
     expect(chip).toMatch(/pointer-events:\s*none/)

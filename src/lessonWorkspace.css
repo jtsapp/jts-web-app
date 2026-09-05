@@ -872,11 +872,41 @@
   margin-top: 10px;
 }
 
-/* Разбор правила. */
-.lw-info__body .card {
+/* Разбор правила.
+   `display: block` — не косметика, а починка чужого правила: глобальный `.card`
+   в styles.css это карточка совсем другого экрана, и она делает элемент
+   flex-колонкой. Внутри такой колонки `.body` с `flex: 1 1 12rem` превращает
+   базис из ширины в ВЫСОТУ — строчка «go to the cinema» распирала плитку до
+   220px, и десять вариантов занимали две прокрутки. */
+.lw-info__body .card,
+.lw-practice__html .card {
+  display: block;
+  flex: none;
   padding: 14px 16px;
   border-radius: var(--lw-r-block);
   background: var(--lw-answer-bg);
+}
+
+/* Плитка вариантов из файла курса. `grid2` и `grid3` — сетка на два и три
+   столбца в стилях самого курса, которых мы не загружаем; без правил обе
+   раскладывались столбиком во всю ширину. Колонки набираем по ширине, а не
+   жёстко по два и три: колонка урока уже 940px, а не ширина экрана. */
+.lw-info__body .grid2,
+.lw-info__body .grid3,
+.lw-practice__html .grid2,
+.lw-practice__html .grid3 {
+  display: grid;
+  gap: 10px;
+}
+
+.lw-info__body .grid2,
+.lw-practice__html .grid2 {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.lw-info__body .grid3,
+.lw-practice__html .grid3 {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
 .lw-info__body .card p + p {
