@@ -70,10 +70,19 @@ const chips = (container) => [...container.querySelectorAll('.gr-levelchip')].ma
 describe('Самостоятельное обучение', () => {
   beforeEach(() => { catalog.value = CATALOG; progress.value = []; localStorage.clear() })
 
-  it('чипами показывает уровни до своего включительно', async () => {
+  it('показывает чипами все уровни, а не только свои', async () => {
+    // Пока чужие уровни прятали, курс выглядел заканчивающимся там, где он
+    // продолжается: ученик не знал ни что дальше есть, ни что для этого нужно.
     const { container } = draw()
     await screen.findByText('Changing direction')
-    expect(chips(container)).toEqual(['A1', 'A2'])
+    expect(chips(container)).toEqual(['A1', 'A2', 'B2'])
+  })
+
+  it('чужой уровень помечен замком, свой — нет', async () => {
+    const { container } = draw()
+    await screen.findByText('Changing direction')
+    const locked = [...container.querySelectorAll('.gr-levelchip.is-locked')].map((b) => b.textContent)
+    expect(locked).toEqual(['B2'])
   })
 
   it('открывается на уровне, до которого ученик дошёл', async () => {
@@ -119,19 +128,42 @@ describe('Самостоятельное обучение', () => {
     expect(localStorage.getItem('self-study-level')).toBe('A1')
   })
 
-  it('уровни выше своего не показывает', async () => {
-    // Каталог целиком — инструмент преподавателя; ученику он открыл бы курс
-    // в обход программы. Правило то же, что у карты королевств и словаря.
+  it('уроки закрытого уровня не отдаёт, а объясняет, что делать', async () => {
+    // Показать список и не дать открыть — дразнить; поэтому вместо уроков
+    // объяснение, почему закрыто и как открыть.
+    draw()
+    fireEvent.click(await screen.findByText('B2'))
+
+    expect(screen.queryByText('Далёкий уровень')).toBeNull()
+    expect(await screen.findByText(/Уровень B2 пока закрыт/)).toBeTruthy()
+    expect(screen.getByText(/обновите тариф/)).toBeTruthy()
+  })
+
+  it('замок ставит сервер, а не клиент', async () => {
+    // Выдачи админа знает только сервер; повтори клиент правило «свой уровень
+    // и ниже» — они бы разошлись ровно на выданных уровнях.
+    catalog.value = CATALOG.map((l) => (l.code === 'B2' ? { ...l, locked: false } : { ...l, locked: true }))
+    const { container } = draw()
+
+    await screen.findByText('Далёкий уровень')
+    const locked = [...container.querySelectorAll('.gr-levelchip.is-locked')].map((b) => b.textContent)
+    expect(locked).toEqual(['A1', 'A2'])
+  })
+
+  it('без флага от сервера падает на прежнюю формулу', async () => {
+    // Старый бэкенд поля не шлёт — запирать ученику весь курс за это нельзя.
+    catalog.value = CATALOG.map(({ locked, ...rest }) => rest)
     const { container } = draw()
     await screen.findByText('Changing direction')
-    expect(chips(container)).not.toContain('B2')
-    expect(screen.queryByText('Далёкий уровень')).toBeNull()
+    expect([...container.querySelectorAll('.gr-levelchip.is-locked')].map((b) => b.textContent)).toEqual(['B2'])
   })
 
   it('A1 открыт даже новичку с A0', async () => {
+    // Курс начинается с A1, запирать вход в программу не за что.
     const { container } = draw({ userLevel: 'A0' })
     expect(await screen.findByText('My biography')).toBeTruthy()
-    expect(chips(container)).toEqual(['A1'])
+    expect([...container.querySelectorAll('.gr-levelchip.is-locked')].map((b) => b.textContent))
+      .toEqual(['A2', 'B2'])
   })
 
   it('берёт только самостоятельный режим, а не все три копии урока', async () => {

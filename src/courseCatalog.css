@@ -267,3 +267,49 @@
     padding: 9px 12px;
   }
 }
+
+/* ── Закрытый уровень ───────────────────────────────────────────────────────
+   Уровни выше своего ученик видит, но не открывает. Показываем их специально:
+   пока их прятали, курс выглядел заканчивающимся там, где он продолжается, и
+   ученик не знал ни что дальше есть, ни что для этого нужно сделать. */
+.gr-levelchip.is-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f0f5;
+  color: #8a8a97;
+}
+.gr-levelchip.is-locked:hover { background: #e7e5ee; }
+/* Выбранный замок остаётся приглушённым: акцентная пилюля обещала бы урок. */
+.gr-levelchip.is-locked.on {
+  background: #ddd9e8;
+  color: #5f5b6e;
+  box-shadow: none;
+}
+
+.ss-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 32px auto;
+  padding: 32px 28px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #ececf3;
+}
+
+.ss-locked__badge {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1ebfe;
+  color: var(--purple);
+}
+
+.ss-locked__title { margin: 0; font-size: 19px; font-weight: 800; }
+.ss-locked__text { margin: 0; color: #6f6b7e; font-size: 14px; line-height: 1.45; }

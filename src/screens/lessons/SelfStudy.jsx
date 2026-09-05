@@ -4,6 +4,16 @@ import { getCourseCatalog, getCatalogProgress, completeCatalogLesson, uncomplete
 import { levelIndex } from '../../kingdoms.js'
 import { readSelfStudyLevel, writeSelfStudyLevel } from './selfStudyLevel.js'
 
+/** Замок на чипе закрытого уровня и на карточке-заглушке. */
+function LockIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="4" y="10" width="16" height="11" rx="2.5" fill="currentColor" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function typeKey(type) {
   const key = String(type || 'lesson').toLowerCase()
   return ['lesson', 'video', 'review', 'leadin', 'test'].includes(key) ? key : 'lesson'
@@ -172,13 +182,16 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
     }
   }
 
-  const open = useMemo(() => {
+  const shown = useMemo(() => {
     return (levels || [])
-      // Уровень опознаётся по code (A0, A1…): id у уровня каталога числовой,
-      // и levelIndex на нём молча вернул бы 0 — гейтинг открыл бы весь курс.
-      .filter((level) => isLevelOpen(level.code, userLevel))
       .map((level) => ({
         ...level,
+        // Замок ставит сервер: у него и уровень ученика, и выданные админом
+        // уровни (LevelAccessService). Прежняя формула на клиенте про выдачи не
+        // знала бы вовсе, а держать правило в двух местах — способ их разойти.
+        // Поле необязательное: старый бэкенд его не шлёт, и тогда падаем на
+        // прежнюю формулу, а не запираем ученику весь курс.
+        locked: typeof level.locked === 'boolean' ? level.locked : !isLevelOpen(level.code, userLevel),
         units: (level.units || [])
           .map((unit) => ({
             ...unit,
@@ -189,16 +202,20 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
           .filter((unit) => unit.lessons.length > 0),
       }))
       .filter((level) => level.units.length > 0)
-      // Чипы идут по возрастанию, и последний — тот, до которого ученик дошёл.
-      // Порядок каталога на это полагаться не даёт: он про порядок заведения.
+      // Чипы идут по возрастанию — так же, как идёт курс. Порядок каталога на
+      // это полагаться не даёт: он про порядок заведения.
       .sort((a, b) => levelIndex(a.code) - levelIndex(b.code))
   }, [levels, userLevel])
+
+  // Открытые — то, между чем ученик реально переключается; на них же считается
+  // умолчание «последний доступный».
+  const open = useMemo(() => shown.filter((level) => !level.locked), [shown])
 
   // Запомненный выбор перебивает умолчание, но только пока он валиден: каталог
   // мог обновиться, а уровень ученика — вырасти или, наоборот, оказаться ниже
   // сохранённого. Не нашли — открываем последний доступный, то есть тот, до
   // которого ученик дошёл.
-  const active = open.find((l) => l.code === picked) || open[open.length - 1]
+  const active = shown.find((l) => l.code === picked) || open[open.length - 1] || shown[0]
 
   if (!token) return <p className="cc__state">{t('selfStudy.needAuth')}</p>
   if (error) return <p className="cc__state cc__state--error">{t('catalog.error')}</p>
@@ -206,7 +223,7 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
 
   // Пусто по двум разным причинам, и ученику полезнее знать, по какой:
   // материалов ещё не завели — или его уровень пока ниже первого открытого.
-  if (open.length === 0) {
+  if (shown.length === 0 || !active) {
     return <p className="cc__state">{t('selfStudy.empty')}</p>
   }
 
@@ -214,26 +231,38 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
     <div className="ss">
       <p className="cc__subtitle">{t('selfStudy.lead')}</p>
 
-      {/* Только открытые уровни: чип на недоступный уровень был бы обещанием,
-          которого экран не выполнит. */}
+      {/* Показываем ВСЕ уровни, чужие — с замком. Раньше их просто не было в
+          списке, и курс выглядел заканчивающимся там, где он продолжается:
+          ученик не знал ни что дальше есть, ни что для этого нужно. */}
       <div className="gr-levels">
-        {open.map((level) => (
+        {shown.map((level) => (
           <button
             key={level.code}
             type="button"
-            className={`gr-levelchip${level.code === active.code ? ' on' : ''}`}
+            className={`gr-levelchip${level.code === active.code ? ' on' : ''}${level.locked ? ' is-locked' : ''}`}
             aria-pressed={level.code === active.code}
             onClick={() => {
               setPicked(level.code)
-              writeSelfStudyLevel(level.code)
+              // Запоминаем только открытый: вернуть ученика на замок вместо
+              // урока было бы издевательством.
+              if (!level.locked) writeSelfStudyLevel(level.code)
             }}
           >
+            {level.locked && <LockIcon />}
             {level.code}
           </button>
         ))}
       </div>
 
-      {active.units.map((unit, ui) => (
+      {active.locked ? (
+        // Заглушка вместо уроков. Название уровня ученик видит на чипе, а здесь
+        // ему нужно другое: почему закрыто и что с этим делать.
+        <div className="ss-locked">
+          <span className="ss-locked__badge"><LockIcon size={22} /></span>
+          <h2 className="ss-locked__title">{t('selfStudy.lockedTitle', { level: active.code })}</h2>
+          <p className="ss-locked__text">{t('selfStudy.lockedText')}</p>
+        </div>
+      ) : active.units.map((unit, ui) => (
         <section key={unit.id} className="pp-sec">
           <div className="pp-sec__head">
             <h2>
