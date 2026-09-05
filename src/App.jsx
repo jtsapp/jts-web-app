@@ -1528,7 +1528,7 @@ export default function App() {
         />
       )
     case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     default:
       return null
   }
