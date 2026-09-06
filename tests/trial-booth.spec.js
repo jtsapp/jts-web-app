@@ -69,6 +69,42 @@ test('аккаунт класса после входа оказывается �
   await expect(page.getByText('Мой график')).toHaveCount(0)
 })
 
+// Находка 1 финального ревью: обёртка анимации перехода ключевалась сырым
+// screen, а рисовался вычисленный view (аккаунт класса вместо screen видит
+// 'booth'). Свежий вход ставит screen='success' — в тот же рендер view уже
+// 'booth', BoothEntryPage монтируется и шлёт /enter; страж кабинета следующим
+// тиком переписывает screen на 'booth', ключ обёртки менялся вместе с ним —
+// React перемонтировал уже отрисованный BoothEntryPage заново, и уходил
+// второй /enter на тот же вход.
+//
+// Сервер спеки поднят в dev-режиме (playwright.config.js) — там StrictMode
+// удваивает КАЖДЫЙ монтаж, и один логический монтаж уже даёт 2 запроса.
+// Порог ниже — «не больше одного логического монтажа» (<= 2), а не точное
+// «ровно 2»: тесту не нужно знать, как именно и удваивает ли вообще
+// StrictMode, — важно только что лишнего перемонтажа (который добавил бы ещё
+// монтаж, то есть ещё 2 запроса) не происходит.
+test('свежий вход шлёт вход в класс за один монтаж, а не за два', async ({ page }) => {
+  await stubAccount(page)
+  await page.route('**/auth/login', (r) =>
+    r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
+  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
+  await page.locator('.form-primary').click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  // Даём долететь дублю из StrictMode, если он есть, прежде чем считать.
+  await page.waitForTimeout(500)
+  expect(attempts).toBeLessThanOrEqual(2)
+})
+
 test('класс ещё не открыт — экран ждёт и повторяет вход сам', async ({ page }) => {
   await stubAccount(page)
   await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), TOKEN)

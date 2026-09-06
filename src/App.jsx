@@ -941,23 +941,34 @@ export default function App() {
     )
   }
 
-  // Единая анимация перехода между экранами: key={screen} перемонтирует
-  // обёртку при каждой смене экрана, и CSS-анимация .scr-in проигрывается
-  // заново (fade + лёгкий подъём; отключается при prefers-reduced-motion).
-  const page = renderScreen()
-  return page && (
-    <div key={screen} className="scr-in">
-      {page}
-    </div>
-  )
-
-  function renderScreen() {
   // Что бы ни стояло в screen — диплинк, кнопка из урока, опоздавший ответ про
   // признак аккаунта, — аккаунту класса рисуем класс. Эффект выше приводит сам
   // screen в согласие, а эта строка не даёт запретному экрану смонтироваться
   // даже на один кадр: оболочка кабинета на монтировании поднимает сайдбар и
   // колокольчик, а те сразу уходят в сеть.
+  //
+  // Единая анимация перехода между экранами: ключ обёртки ниже — этот же
+  // вычисленный view, а не сырой screen. Раньше ключевали screen, а рисовали
+  // view — свежий вход ставит screen='success', view в тот же миг уже 'booth'
+  // (см. строку выше): BoothEntryPage монтируется под key='success' и шлёт
+  // /trial/booth/enter, а когда страж кабинета эффектом переписывает screen на
+  // 'booth' следующим тиком, ключ обёртки менялся вместе с ним — React
+  // перемонтировал уже отрисованный BoothEntryPage заново, и уходил второй
+  // /enter на тот же вход (находка 1 финального ревью). key=view между этими
+  // двумя рендерами не меняется (оба раза 'booth') — перемонтажа нет. Смену
+  // ЛЮБОГО другого экрана key=view отличает так же честно, как отличал бы
+  // key=screen: CSS-анимация .scr-in по-прежнему проигрывается заново на
+  // каждый переход (fade + лёгкий подъём; отключается при
+  // prefers-reduced-motion).
   const view = boothAccount && !BOOTH_SCREENS.has(screen) ? 'booth' : screen
+  const page = renderScreen(view)
+  return page && (
+    <div key={view} className="scr-in">
+      {page}
+    </div>
+  )
+
+  function renderScreen(view) {
   switch (view) {
     case 'welcome':
       return (
