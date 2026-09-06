@@ -364,3 +364,160 @@ test('мусор в ?live= не считается известным уроко
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
   expect(attempts).toBeGreaterThan(0)
 })
+
+// Второе ревью, три проявления одной болезни: память вкладки о своём сеансе
+// (boothLessonId, признак «завершён») жила только в React-состоянии, а адрес
+// ?live=<id> при уходе на экран класса вычищается. Три теста ниже — три
+// проявления, каждое чинится ОБОИМИ правилами разом (Правило 1 — sessionStorage
+// переживает F5, см. lib/session.js; Правило 2 — известному уроку не верят на
+// слово, BoothEntryPage перепроверяет его статус у бэкенда перед тем, как
+// предложить «Вернуться»): порознь правила дырявые, только вместе чинят все три.
+
+// Проявление 1 (Important, измерено ревьюером: 2 → 4 запроса): посетитель
+// вышел из урока кнопкой (состояние 'left'), планшет перезагрузил вкладку —
+// без Правила 1 память о сеансе пуста, экран сам шлёт /enter, живой сеанс
+// умирает, доска пустая.
+test('вышел из урока — перезагрузка не забывает сеанс, повторного входа нет', async ({ page }) => {
+  await stubAccount(page)
+  await page.route('**/auth/login', (r) =>
+    r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
+  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
+  await page.locator('.form-primary').click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+
+  await page.locator('.lv-top__act--exit:visible, .lv-top__exit:visible').click()
+  await page.locator('.lx-leave').click()
+  await expect(page.getByText('Вы вышли из класса')).toBeVisible()
+
+  await page.waitForTimeout(500)
+  const settled = attempts
+
+  // Ровно жалоба ревьюера: планшет перезагрузили, пока посетитель числился
+  // «вышедшим из урока».
+  await page.reload()
+
+  // Урок ещё IN_PROGRESS (стаб LESSON не менялся) — Правило 2 подтверждает
+  // это у бэкенда и показывает то же «вернуться», а не автовход.
+  await expect(page.getByText('Вы вышли из класса')).toBeVisible({ timeout: 15_000 })
+  expect(attempts).toBe(settled)
+
+  await page.getByText('Вернуться в класс').click()
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  // «Вернуться» — это onEnter с уже известным id, не новый /enter.
+  expect(attempts).toBe(settled)
+})
+
+// Проявление 2 (Important): преподаватель завершил сеанс, планшет показывает
+// «Урок завершён» и ждёт нажатия. Перезагрузка стирала бы отдельный признак
+// «завершён» (жил только в React) — без Правила 1+2 экран счёл бы урок вовсе
+// неизвестным и сам завёл бы новое занятие, хотя за планшетом ещё никого нет.
+test('урок завершён — перезагрузка не заводит автовход', async ({ page }) => {
+  await stubAccount(page)
+  await page.route('**/auth/login', (r) =>
+    r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
+  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
+  await page.locator('.form-primary').click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  await page.waitForTimeout(500)
+  const settled = attempts
+
+  // Преподаватель нажимает «Завершить» прямо во время урока этого посетителя
+  // (следующий опрос LiveLessonPage /admin/lessons/77 приносит COMPLETED).
+  await page.unroute('**/admin/lessons/77')
+  await page.route('**/admin/lessons/77', (r) => r.fulfill(json({ ...LESSON, status: 'COMPLETED' })))
+
+  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 12_000 })
+  expect(attempts).toBe(settled)
+
+  // Планшет перезагружают — жалоба ревьюера.
+  await page.reload()
+
+  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Живой урок')).toHaveCount(0)
+  // И без нажатия кнопки новый вход не уходит, сколько ни жди.
+  await page.waitForTimeout(6000)
+  expect(attempts).toBe(settled)
+
+  // Новое занятие после входа снова «идёт» — вход только по кнопке.
+  await page.unroute('**/admin/lessons/77')
+  await page.route('**/admin/lessons/77', (r) => r.fulfill(json(LESSON)))
+  await page.getByRole('button', { name: 'Войти в класс' }).click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  expect(attempts).toBe(settled + 1)
+})
+
+// Проявление 3 — не названо ревьюером явно, но следует из тех же мест: та
+// же Critical, которую чинил коммит 578211b2, только другим путём. Посетитель
+// вышел из урока (state 'left'), а ПОСЛЕ этого, уже без наблюдения (экран
+// урока размонтирован, onLessonClosed сработать не может), преподаватель
+// завершил сеанс. Следующий заход на класс не должен предлагать «Вернуться»
+// в чужой завершённый урок — Правило 2 обязано перепроверить статус заново,
+// а не поверить памяти вкладки на слово.
+test('вышел из урока, а его тем временем завершили — вернуться в старый нельзя, только войти заново', async ({ page }) => {
+  await stubAccount(page)
+  await page.route('**/auth/login', (r) =>
+    r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
+  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
+  await page.locator('.form-primary').click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+
+  // Посетитель выходит сам, пока урок ещё идёт.
+  await page.locator('.lv-top__act--exit:visible, .lv-top__exit:visible').click()
+  await page.locator('.lx-leave').click()
+  await expect(page.getByText('Вы вышли из класса')).toBeVisible()
+
+  await page.waitForTimeout(500)
+  const settled = attempts
+
+  // Экран урока уже размонтирован и не следит за статусом. Именно сейчас, «за
+  // кадром», преподаватель завершает сеанс.
+  await page.unroute('**/admin/lessons/77')
+  await page.route('**/admin/lessons/77', (r) => r.fulfill(json({ ...LESSON, status: 'COMPLETED' })))
+
+  // Планшет перезагружают для следующего посетителя (обычный сброс кiosk-режима)
+  // — точка, где Правило 1 отдаёт знакомый lessonId, а Правило 2 не даёт этому
+  // знанию соврать.
+  await page.reload()
+
+  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Вернуться в класс')).toHaveCount(0)
+  expect(attempts).toBe(settled)
+
+  await page.unroute('**/admin/lessons/77')
+  await page.route('**/admin/lessons/77', (r) => r.fulfill(json(LESSON)))
+  await page.getByRole('button', { name: 'Войти в класс' }).click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  expect(attempts).toBe(settled + 1)
+})
