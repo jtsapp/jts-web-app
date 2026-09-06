@@ -99,6 +99,12 @@ test('выключенный класс объясняет, что делать,
   await page.goto('/')
 
   await expect(page.getByText('Класс закрыт')).toBeVisible({ timeout: 15_000 })
+  // Считаем не «сколько было всего», а «выросло ли». Точное число тут не наше
+  // дело: сервер спека поднимает в dev-режиме (playwright.config.js), а там
+  // StrictMode монтирует экран дважды и вход уходит двумя запросами подряд — в
+  // прод-сборке он один. Проверяем то, ради чего тест написан: на 403 экран
+  // больше не стучится, сколько ни жди.
+  const settled = attempts
   await page.waitForTimeout(6000)
-  expect(attempts).toBe(1)
+  expect(attempts).toBe(settled)
 })
