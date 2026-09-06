@@ -66,7 +66,7 @@ import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot } from './lib/session.js'
+import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -351,6 +351,22 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Единая точка простановки признака класса после входа (было продублировано
+  // в трёх обработчиках). Помимо стейта дописывает признак в уже сохранённый
+  // snapshot: saveUserSnapshot в обработчиках входа отрабатывает раньше, чем
+  // придёт этот ответ, и без дописывания снимок остаётся без boothAccount —
+  // а именно снимок держит ответ на «кто вошёл», когда бэкенд недоступен
+  // (restoreSession откатывается на него и не сбрасывает токен). Перезагрузка
+  // сразу после свежего входа при недоступном бэкенде тогда дала бы
+  // boothAccount: false, и пришедший на пробный уехал бы в кабинет, которого
+  // у его аккаунта нет.
+  function applyBoothAccount(tok) {
+    getIsBoothAccount(tok).then((isBooth) => {
+      setBoothAccount(isBooth)
+      patchUserSnapshot({ boothAccount: isBooth })
+    })
+  }
+
   const tutor = getTutor(tutorKey) // { key, name, avatar, ... }
   // Жёсткий нрав тьютора (кнопка 18+) запираем, когда в профиле стоит возраст
   // меньше 18. Неизвестная дата не запирает — у анонима и у аккаунтов, заведённых
@@ -458,7 +474,7 @@ export default function App() {
       }
       if (lvl) setUserLevel(lvl)
       if (tok) getIsDemoAccount(tok).then(setIsDemoAccount)
-      if (tok) getIsBoothAccount(tok).then(setBoothAccount)
+      if (tok) applyBoothAccount(tok)
       // При входе (в отличие от регистрации) даты рождения в стейте нет, а от
       // неё зависит доступ к жёсткому нраву тьютора — подтягиваем из профиля.
       if (tok && mode !== 'register') {
@@ -568,7 +584,7 @@ export default function App() {
       getIsDemoAccount(tok).then(setIsDemoAccount)
       // Логином и паролем входит и пришедший на пробный урок: аккаунт класса
       // общий и служебный, ему после входа положен урок, а не кабинет.
-      getIsBoothAccount(tok).then(setBoothAccount)
+      applyBoothAccount(tok)
       // Возраст решает доступ к жёсткому нраву тьютора — тянем из профиля.
       getCurrentUser(tok)
         .then((me) => {
@@ -609,7 +625,7 @@ export default function App() {
       console.warn('Не удалось получить уровень из профиля:', e)
     }
     getIsDemoAccount(tok).then(setIsDemoAccount)
-    getIsBoothAccount(tok).then(setBoothAccount)
+    applyBoothAccount(tok)
     mergeAnonymousProgress(tok)
       .then(() => loadTutorProfile(tok))
       .then((profile) => {

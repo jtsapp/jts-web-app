@@ -102,6 +102,27 @@ export function saveUserSnapshot(user) {
   }
 }
 
+/**
+ * Дописывает поля в уже сохранённый снимок, не трогая остальные. Нужен для
+ * признаков, которые узнаются отдельным запросом ПОСЛЕ входа (пример —
+ * boothAccount: обработчики входа зовут saveUserSnapshot раньше, чем придёт
+ * ответ getIsBoothAccount) — без дописывания снимок эти поля не увидит
+ * никогда, только следующий успешный restoreSession.
+ *
+ * Снимка нет — не создаём: снимок без userId бесполезен и хуже отсутствия
+ * (App принял бы его за «кто-то вошёл»), а раз saveUserSnapshot ещё не
+ * отработал, полю всё равно неоткуда быть настоящим.
+ */
+export function patchUserSnapshot(fields) {
+  try {
+    const prev = loadUserSnapshot()
+    if (!prev) return
+    localStorage.setItem(USER_KEY, JSON.stringify({ ...prev, ...fields }))
+  } catch {
+    /* ignore */
+  }
+}
+
 /** access обязателен; refresh/user — по возможности с ответа логина. */
 export function saveToken(token, refreshToken) {
   try {

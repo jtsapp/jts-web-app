@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { saveUserSnapshot } from './session.js'
+import { saveUserSnapshot, patchUserSnapshot } from './session.js'
 
 // Снимок профиля в localStorage — запасной ответ на вопрос «кто вошёл», когда
 // бэкенд отвечает 5xx: restoreSession тогда возвращает именно его и токен не
@@ -22,5 +22,42 @@ describe('снимок профиля', () => {
     saveUserSnapshot({ userId: 7, name: 'Асель', role: 'STUDENT' })
 
     expect(JSON.parse(localStorage.getItem('jts_user_snapshot')).boothAccount).toBe(false)
+  })
+})
+
+// patchUserSnapshot дописывает поля в уже сохранённый снимок отдельно от
+// saveUserSnapshot — признак класса узнаётся отдельным запросом ПОСЛЕ входа
+// (getIsBoothAccount), когда обработчики входа уже вызвали saveUserSnapshot
+// без него. Без дописывания перезагрузка при недоступном бэкенде вернула бы
+// снимок с boothAccount: false.
+describe('patchUserSnapshot', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('дописывает поле, не теряя соседних', () => {
+    saveUserSnapshot({ userId: 501, name: 'Класс · Айгуль', role: 'STUDENT' })
+
+    patchUserSnapshot({ boothAccount: true })
+
+    const snap = JSON.parse(localStorage.getItem('jts_user_snapshot'))
+    expect(snap.boothAccount).toBe(true)
+    expect(snap.userId).toBe(501)
+    expect(snap.name).toBe('Класс · Айгуль')
+  })
+
+  it('ничего не создаёт при пустом хранилище', () => {
+    patchUserSnapshot({ boothAccount: true })
+
+    expect(localStorage.getItem('jts_user_snapshot')).toBeNull()
+  })
+
+  it('переживает битый JSON в хранилище', () => {
+    localStorage.setItem('jts_user_snapshot', '{не json')
+
+    expect(() => patchUserSnapshot({ boothAccount: true })).not.toThrow()
+    // Битый снимок не читается как валидный — patchUserSnapshot его не трогает,
+    // а не подменяет наугад собранным объектом.
+    expect(localStorage.getItem('jts_user_snapshot')).toBe('{не json')
   })
 })
