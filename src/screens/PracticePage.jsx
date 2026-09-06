@@ -179,6 +179,46 @@ function ListeningBanner({ userLevel = 'A1', onAll, onStart }) {
   )
 }
 
+// Баннер «Чтение»: вход в библиотеку текстов. Каркас общий с «Письмом»
+// (.pp-listen), перекраска — модификатором .pp-read в reading.css.
+function ReadingBanner({ userLevel = 'A1', onAll, onStart }) {
+  const { t } = useI18n()
+  const level = String(userLevel || 'A1').toUpperCase()
+  const noop = () => {}
+  const [headTop, headRest] = t('practice.reading.heading').split('\n')
+  return (
+    <section id="sec-reading" className="pp-sec pp-listen pp-read">
+      <SectionHead title={t('practice.reading.title')} onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            {headTop}
+            {headRest && (
+              <>
+                <br />
+                {headRest}
+              </>
+            )}
+          </h3>
+          <p className="pp-listen__desc">{t('practice.reading.desc')}</p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            {t('practice.reading.cta')}
+          </button>
+        </div>
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">{t('practice.reading.hint')}</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level">{level}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Баннер «Письмо»: вход в тренажёр Writing (180 жанров + Блокнот). Переиспользует
 // каркас баннера аудирования (.pp-listen), а перекраска — модификатором .pp-write
 // в writing.css. Своего арта у раздела пока нет, поэтому карточка текстовая.
@@ -543,6 +583,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
     { key: null, label: t('practice.chip.all') },
     { key: 'grammar', label: t('practice.chip.grammar') },
     { key: 'writing', label: t('practice.chip.writing') },
+    { key: 'reading', label: t('practice.chip.reading') },
     { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
     { key: 'workbooks', label: t('practice.chip.workbooks') },
@@ -811,6 +852,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
               userLevel={userLevel}
               onAll={() => onNav?.('writing')}
               onStart={() => onNav?.('writing')}
+            />
+          )}
+
+          {/* Чтение — вход в библиотеку. Как и у «Письма», своей сетки у чипа
+              нет: каталог уровней и жанров живёт на экране раздела. */}
+          {show('reading') && (
+            <ReadingBanner
+              userLevel={userLevel}
+              onAll={() => onNav?.('reading')}
+              onStart={() => onNav?.('reading')}
             />
           )}
 

@@ -15,6 +15,8 @@
 // теории), поэтому семантика replace, как у vocab, а не union: гонка двух
 // устройств может потерять результат одного из них — осознанный компромисс,
 // тот же, что уже принят для vocab.
+// 'reading' — стейт-объект {texts: {<id>: {ex, done}}} (результат каждого
+// упражнения текста + «дочитал»), та же семантика replace, что у writing.
 export const PRACTICE_MODULES = [
   'vocab',
   'grammar',
@@ -24,6 +26,7 @@ export const PRACTICE_MODULES = [
   'workbooks',
   'workbook',
   'writing',
+  'reading',
 ]
 
 // Модули, чей state — это растущее множество пройденных id: прохождение нельзя
