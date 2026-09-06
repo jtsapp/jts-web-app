@@ -337,7 +337,12 @@ test('урок завершился — вкладка уходит из нег�
 
   // Вкладка уходит из урока сама — работы предыдущего посетителя на экране
   // больше нет (он весь размонтирован вместе с экраном урока).
-  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 12_000 })
+  //
+  // Заголовок ищем по .form-title, а не голым getByText: тот же текст «Урок
+  // завершён» есть и у баннера ВНУТРИ самого урока (live.finished в
+  // LiveLessonPage, status COMPLETED) — без уточнения тест прошёл бы, даже
+  // если вкладка застряла в уроке и на экран класса не перешла вовсе.
+  await expect(page.locator('.form-title', { hasText: 'Урок завершён' })).toBeVisible({ timeout: 12_000 })
   await expect(page.getByText('Живой урок')).toHaveCount(0)
 
   // И без нажатия кнопки новый вход не уходит, сколько ни жди.
@@ -489,13 +494,15 @@ test('урок завершён — перезагрузка не заводит
   await page.unroute('**/admin/lessons/77')
   await page.route('**/admin/lessons/77', (r) => r.fulfill(json({ ...LESSON, status: 'COMPLETED' })))
 
-  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 12_000 })
+  // .form-title — тот же текст есть у баннера внутри самого урока, см. первый
+  // тест с этим уточнением выше.
+  await expect(page.locator('.form-title', { hasText: 'Урок завершён' })).toBeVisible({ timeout: 12_000 })
   expect(attempts).toBe(settled)
 
   // Планшет перезагружают — жалоба ревьюера.
   await page.reload()
 
-  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.form-title', { hasText: 'Урок завершён' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Живой урок')).toHaveCount(0)
   // И без нажатия кнопки новый вход не уходит, сколько ни жди.
   await page.waitForTimeout(6000)
@@ -553,7 +560,9 @@ test('вышел из урока, а его тем временем заверш
   // знанию соврать.
   await page.reload()
 
-  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 15_000 })
+  // .form-title — тот же текст есть у баннера внутри самого урока, см. первый
+  // тест с этим уточнением выше.
+  await expect(page.locator('.form-title', { hasText: 'Урок завершён' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('Вернуться в класс')).toHaveCount(0)
   expect(attempts).toBe(settled)
 

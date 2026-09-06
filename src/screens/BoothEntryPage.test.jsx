@@ -4,9 +4,11 @@ import { render, screen, act, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 vi.mock('../api.js', () => ({ enterTrialBooth: vi.fn(), getLessonById: vi.fn() }))
+vi.mock('./live/audioReport.js', () => ({ unlockBroadcastAudio: vi.fn() }))
 
 import BoothEntryPage from './BoothEntryPage.jsx'
 import { enterTrialBooth, getLessonById } from '../api.js'
+import { unlockBroadcastAudio } from './live/audioReport.js'
 
 const failWith = (status) => Object.assign(new Error(`http ${status}`), { status })
 
@@ -19,7 +21,13 @@ const renderPage = (props = {}) =>
 
 describe('экран класса', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    // resetAllMocks, а не clearAllMocks: тот не чистит очередь
+    // mockResolvedValueOnce/mockRejectedValueOnce, и остаток из одного теста
+    // утекал в следующий, делая порядок тестов значимым (при мутации это уже
+    // дало ложное падение не в том тесте). reset сбрасывает и очередь, и
+    // реализацию — тесты ниже настраивают её заново сами, ни один не
+    // полагается на реализацию, оставшуюся от соседнего теста.
+    vi.resetAllMocks()
     vi.useFakeTimers()
   })
   afterEach(() => {
@@ -97,6 +105,24 @@ describe('экран класса', () => {
 
     expect(enterTrialBooth).toHaveBeenCalledTimes(2)
     expect(onEnter).toHaveBeenCalledWith(99)
+  })
+
+  // Ручной повтор — тот же жест, что у enterNow и backToLesson, и уводит тем
+  // же путём прямо в урок: без снятия блокировки звука здесь ученику пришлось
+  // бы отдельно жать «Включить звук» уже внутри урока.
+  it('класс закрыт — кнопка ручного повтора тоже снимает блокировку звука', async () => {
+    enterTrialBooth.mockRejectedValueOnce(failWith(403))
+    enterTrialBooth.mockResolvedValueOnce({ sessionId: 14, lessonId: 99, resumed: false })
+
+    renderPage()
+    await act(async () => {})
+
+    expect(unlockBroadcastAudio).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }))
+    await act(async () => {})
+
+    expect(unlockBroadcastAudio).toHaveBeenCalledTimes(1)
   })
 
   // Кнопка сама по себе не заводит цикл — только явный клик, иначе это уже

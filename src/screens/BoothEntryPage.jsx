@@ -153,6 +153,10 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
   // преподаватель включил класс, было нечего нажать (находка 3 финального
   // ревью).
   const retryClosed = () => {
+    // Тот же жест, что у enterNow и backToLesson: успешный повтор ведёт прямо
+    // в урок, минуя отдельное нажатие, — без снятия блокировки здесь ученику
+    // пришлось бы отдельно жать «Включить звук» уже внутри урока.
+    unlockBroadcastAudio()
     setState('entering')
     setRetryTick((n) => n + 1)
   }
