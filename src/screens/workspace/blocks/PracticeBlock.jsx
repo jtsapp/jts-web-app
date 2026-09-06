@@ -22,6 +22,7 @@ import {
 } from '../wordBankCheck.js'
 import { stripExerciseNumber, stripExerciseNumbersInHtml, stripExerciseNumbersInText } from '../stripExerciseNumber.js'
 import { tidyLessonLists } from '../tidyLessonLists.js'
+import { stripAnswerKeySpoilers } from '../stripAnswerKeySpoilers.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -41,6 +42,7 @@ const QUESTION_BY_TYPE = {
 export default function PracticeBlock({
   block, answers, checked, checkedKeys, cardKey, stepTitle, onAnswer, onCheck, readOnly,
   liveQuestionId, onWord, gapPrefix, cardAnchorId, status, highlighted, number,
+  showAnswerKey = true,
 }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
@@ -55,10 +57,10 @@ export default function PracticeBlock({
     ? stripExerciseNumbersInText(block.instruction)
     : ''
   const showBlockTitle = Boolean(displayTitle && displayTitle !== stepTitle)
-  const html = useMemo(
-    () => tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html))),
-    [block?.html],
-  )
+  const html = useMemo(() => {
+    const raw = tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html)))
+    return showAnswerKey ? raw : stripAnswerKeySpoilers(raw)
+  }, [block?.html, showAnswerKey])
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
@@ -194,6 +196,7 @@ export default function PracticeBlock({
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
+                showAnswerKey={showAnswerKey}
               />
             </div>
           )

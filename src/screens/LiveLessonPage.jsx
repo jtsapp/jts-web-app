@@ -565,10 +565,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   const { connected: liveConnected, sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
     onTimer,
-    // Учитель положил слово в мой словарь: тихий пинг, чтобы это не прошло мимо
-    // посреди задания. Список словаря на экране не трогаем — он подтянется,
-    // когда ученик его откроет.
-    onVocabSaved: () => playCue('word'),
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
     //
@@ -750,7 +746,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       if (isStaff) return
       const word = String(evt?.word || '').trim()
       if (!word) return
-      setSavedWord(word)
+      // Перевод — вторая половина сообщения: без него ученик видит слово,
+      // которое ему записали, и всё равно не знает, что оно значит. Приходит
+      // не всегда (старый бэкенд, слово без перевода) — тогда показываем одно
+      // слово, как раньше.
+      setSavedWord({ word, translation: String(evt?.translation || '').trim() })
       setSavedWordNonce((n) => n + 1)
       playCue('word')
     },
@@ -1266,7 +1266,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           )}
                           {savedWord != null && (
                             <span className="lv-flag lv-flag--word" key={savedWordNonce}>
-                              {t('live.wordSaved', { word: savedWord })}
+                              {savedWord.translation
+                                ? t('live.wordSavedFull', { word: savedWord.word, translation: savedWord.translation })
+                                : t('live.wordSaved', { word: savedWord.word })}
                             </span>
                           )}
                           {/* Браузер отказался играть трансляцию без жеста (iOS: ученик
@@ -1361,6 +1363,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               hiddenBlocks={hiddenBlocks}
                               revealedCards={revealedCards}
                               hideStepTitle
+                              // Ключ ответов («Why these answers», эталон после
+                              // «Проверить») — только staff. Ученик видит свой
+                              // выбор и вердикт, но не готовый ответ.
+                              showAnswerKey={isStaff}
                             />
                           </div>
 

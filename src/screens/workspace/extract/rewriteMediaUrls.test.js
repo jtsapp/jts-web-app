@@ -101,3 +101,71 @@ describe('rewriteMediaUrls', () => {
     expect(out.steps[0].blocks[0].cards[1].imageUrl).toBe('data:image/png;base64,AAA')
   })
 })
+
+/**
+ * Иллюстрация к тексту чтения ссылается на картинку по ключу, а сама картинка
+ * лежит на словарной карточке того же урока. Подставлять её должен скрипт
+ * курса, которого в приложении нет, — и у ученика оставался alt вместо
+ * картинки (репорт «Упр картинки нет A2», урок L07).
+ */
+describe('картинки по ключу', () => {
+  const PIC = 'data:image/webp;base64,AAAA'
+
+  it('подставляет источник картинке без src по её data-img', () => {
+    const lesson = {
+      steps: [
+        { blocks: [{ type: 'vocab', cards: [{ word: 'balloon', imageUrl: PIC }] }] },
+        { blocks: [{ html: '<img data-img="balloon" alt="A giant helium balloon">' }] },
+      ],
+    }
+
+    const out = rewriteMediaUrls(lesson, BASE)
+
+    expect(out.steps[1].blocks[0].html).toContain(`src="${PIC}"`)
+  })
+
+  it('берёт картинку и из разметки другого блока, не только из колоды', () => {
+    // В файле курса тот же снимок лежит на словарной карточке внутри html:
+    // <img class="vc-img" alt="balloon" src="data:…">.
+    const lesson = {
+      steps: [
+        { blocks: [{ html: `<img class="vc-img" alt="balloon" src="${PIC}">` }] },
+        { blocks: [{ html: '<img data-img="balloon" alt="подпись">' }] },
+      ],
+    }
+
+    const out = rewriteMediaUrls(lesson, BASE)
+
+    expect(out.steps[1].blocks[0].html).toContain(`src="${PIC}"`)
+  })
+
+  it('ключ сверяется без учёта регистра и пробелов', () => {
+    const lesson = {
+      steps: [
+        { blocks: [{ type: 'vocab', cards: [{ word: 'Take Off', imageUrl: PIC }] }] },
+        { blocks: [{ html: '<img data-img=" take off ">' }] },
+      ],
+    }
+
+    expect(rewriteMediaUrls(lesson, BASE).steps[1].blocks[0].html).toContain(`src="${PIC}"`)
+  })
+
+  it('свой src не перебивает', () => {
+    // Ключ есть, но картинка уже своя: подменять её чужой — потерять ту, что
+    // автор поставил намеренно.
+    const lesson = {
+      steps: [
+        { blocks: [{ type: 'vocab', cards: [{ word: 'balloon', imageUrl: PIC }] }] },
+        { blocks: [{ html: '<img data-img="balloon" src="https://example.com/own.jpg">' }] },
+      ],
+    }
+
+    expect(rewriteMediaUrls(lesson, BASE).steps[1].blocks[0].html).toContain('own.jpg')
+  })
+
+  it('ключа нет в уроке — разметку оставляет как есть', () => {
+    const lesson = { steps: [{ blocks: [{ html: '<img data-img="ghost" alt="нет такой">' }] }] }
+
+    expect(rewriteMediaUrls(lesson, BASE).steps[0].blocks[0].html).not.toContain('src=')
+  })
+})

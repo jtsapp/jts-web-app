@@ -204,6 +204,26 @@ export async function getUsage(deviceId, { totalSince = null, isDemoAccount = fa
  * Завести открытую сессию. Тарификация тут ещё НЕ начинается: строка нужна,
  * чтобы связать комнату с учеником, а отсчёт включит armSession().
  */
+/**
+ * Сбросить сегодняшний расход ученику — ручка поддержки.
+ *
+ * Порядок важен и не косметический: израсходованное считается не только из
+ * voice_usage, к нему прибавляется платное окно ещё не закрытых строк
+ * voice_session (см. getUsage → activeSeconds). Удалив только минуты, зависшая
+ * сессия тут же вернёт лимит в ноль, а при её закрытии секунды запишутся в
+ * сегодняшний день заново. Поэтому сперва сессии, потом минуты.
+ *
+ * Чистим ровно сегодняшний день: месячный лимит считается по тем же строкам и
+ * восстановится сам, а стирать историю ученика ради одного дня незачем.
+ */
+export async function resetTodayUsage(deviceId) {
+  const db = getSql();
+  if (!db) return null;
+  await db`DELETE FROM voice_session WHERE device_id = ${deviceId}`;
+  await db`DELETE FROM voice_usage WHERE device_id = ${deviceId} AND day = CURRENT_DATE`;
+  return getUsage(deviceId);
+}
+
 export async function openSession(room, deviceId) {
   const db = getSql();
   if (!db) return;
