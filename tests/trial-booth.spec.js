@@ -239,3 +239,36 @@ test('урок завершился — вкладка уходит из нег�
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
   expect(attempts).toBe(settled + 1)
 })
+
+// Находка 2 финального ревью: boothLessonId живёт только в состоянии React, а
+// адрес урок помнит (?screen=live-lesson&live=77). Перезагрузка прямо внутри
+// урока раньше стирала boothLessonId, и «Выйти из урока» после неё звало
+// /enter заново — бэкенд закрыл бы ещё живой сеанс как забытый.
+test('перезагрузка внутри урока не забывает сеанс — выход не заходит в класс повторно', async ({ page }) => {
+  await stubAccount(page)
+  await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), TOKEN)
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/?screen=live-lesson&live=77')
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+
+  // Тот же сценарий, что и жалоба про F5: перезагрузка прямо внутри урока.
+  await page.reload()
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+
+  await page.waitForTimeout(500)
+  const settled = attempts
+
+  await page.locator('.lv-top__act--exit:visible, .lv-top__exit:visible').click()
+  await page.locator('.lx-leave').click()
+
+  // Сеанс, восстановленный из адреса, экран класса считает известным — «Вы
+  // вышли из класса», а не повторный вход.
+  await expect(page.getByText('Вы вышли из класса')).toBeVisible()
+  await page.waitForTimeout(6000)
+  expect(attempts).toBe(settled)
+})

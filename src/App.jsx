@@ -764,8 +764,11 @@ export default function App() {
     // тиком, он успел бы вернуть вышедшего обратно в класс.
     setBoothAccount(false)
     setBoothLessonId(null)
-    // Устройство общее: следующий аккаунт класса на этой же вкладке не должен
-    // унаследовать «урок завершён» от того, кто выходит сейчас.
+    // liveLessonId и boothLessonFinished — та же история: устройство общее, и
+    // «известный урок» ниже (knownBoothLessonId) иначе прочитал бы чужой
+    // liveLessonId прошлого пользователя вкладки как сеанс следующего аккаунта
+    // класса, а «урок завершён» показался бы тому, кто ещё не входил ни разу.
+    setLiveLessonId(null)
     setBoothLessonFinished(false)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
@@ -824,12 +827,26 @@ export default function App() {
     window.history.replaceState(null, '', url)
   }, [screen, restoring, liveLessonId])
 
+  // «Известный урок» экрана класса — одно выражение на оба источника, а не два
+  // разных по месту использования. boothLessonId — обычный случай (сеанс
+  // открыт в этой же вкладке через /enter). liveLessonId — сеанс восстановлен
+  // из адреса после перезагрузки прямо внутри урока (?live=<id>, см. эффект
+  // диплинков выше): boothLessonId тогда ещё null, а посетитель тем не менее
+  // сидит в живом уроке. Без этого «Выйти из урока» после F5 не находило бы
+  // сеанс и звало вход в класс заново — тот же побочный эффект, ради которого
+  // вообще завели boothLessonId (находка 2 финального ревью). Приводим к
+  // числу: параметр адреса — строка, а boothLessonId — число из ответа API.
+  const knownBoothLessonId = boothLessonId ?? (liveLessonId != null ? Number(liveLessonId) : null)
+
   // Урок сеанса класса дошёл до терминального статуса — уводим аккаунт класса
   // на экран ожидания следующего посетителя и забываем урок (находка 1
-  // финального ревью): следующий вход не должен счесть сеанс «известным» и
-  // просто вернуть на тот же завершённый урок.
+  // финального ревью). Оба id обнуляем: boothLessonId — иначе следующий вход
+  // счёл бы сеанс «известным» и просто вернул на тот же завершённый урок;
+  // liveLessonId — иначе его подхватил бы knownBoothLessonId выше в обход
+  // первого обнуления.
   function handleBoothLessonClosed() {
     setBoothLessonId(null)
+    setLiveLessonId(null)
     setBoothLessonFinished(true)
     setScreen('booth')
   }
@@ -1195,7 +1212,7 @@ export default function App() {
       return (
         <BoothEntryPage
           token={token}
-          lessonId={boothLessonId}
+          lessonId={knownBoothLessonId}
           justFinished={boothLessonFinished}
           onEnter={(id) => {
             setBoothLessonId(id)
