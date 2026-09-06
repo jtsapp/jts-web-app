@@ -108,3 +108,39 @@ test('выключенный класс объясняет, что делать,
   await page.waitForTimeout(6000)
   expect(attempts).toBe(settled)
 })
+
+test('разделы кабинета аккаунту класса не открываются', async ({ page }) => {
+  await stubAccount(page)
+  await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), TOKEN)
+  // Класс ещё не открыт — экран остаётся экраном ожидания, и по нему видно, что
+  // диплинк в «Практику» никуда не увёл.
+  await page.route('**/trial/booth/enter', (r) => r.fulfill(json({ error: 'no lesson' }, 503)))
+
+  await page.goto('/?screen=practice')
+
+  await expect(page.getByText('Преподаватель ещё не открыл класс')).toBeVisible({ timeout: 15_000 })
+  // Меню кабинета не нарисовано ни в одном из двух своих видов: колонка на
+  // десктопе и шапка с гамбургером на мобилке.
+  await expect(page.locator('.sb')).toHaveCount(0)
+  await expect(page.locator('.mtop')).toHaveCount(0)
+  // И в адресе не осталось обещания раздела, которого у аккаунта нет.
+  await expect(page).toHaveURL(/\/(\?.*)?$/)
+})
+
+test('диплинк в «Уроки» тоже упирается в класс', async ({ page }) => {
+  await stubAccount(page)
+  await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), TOKEN)
+  await page.route('**/trial/booth/enter', (r) => r.fulfill(json({ error: 'no lesson' }, 503)))
+  // Расписание аккаунта класса не показывается вовсе — запрос за ним не должен
+  // даже уйти.
+  let scheduleAsked = false
+  await page.route('**/admin/lessons/occurrences', (r) => {
+    scheduleAsked = true
+    return r.fulfill(json([]))
+  })
+
+  await page.goto('/?screen=lessons')
+
+  await expect(page.getByText('Преподаватель ещё не открыл класс')).toBeVisible({ timeout: 15_000 })
+  expect(scheduleAsked).toBe(false)
+})

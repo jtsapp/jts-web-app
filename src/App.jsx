@@ -97,6 +97,11 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
+// Всё, что открыто аккаунту класса преподавателя (признак boothAccount из
+// /user/me). Остальной кабинет ему закрыт: аккаунт служебный и общий, копить в
+// нём нечего — значит и чистить между учениками нечего.
+const BOOTH_SCREENS = new Set(['booth', 'live-lesson'])
+
 export default function App() {
   const { t, lang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
@@ -795,10 +800,23 @@ export default function App() {
     window.history.replaceState(null, '', url)
   }, [screen, restoring, liveLessonId])
 
+  // Кабинет аккаунту класса закрыт, и закрыт он здесь, а не в каждом экране:
+  // сюда сходятся все способы туда попасть — диплинк ?screen=…, кнопка внутри
+  // экрана, домашний экран после входа. Признак приезжает ответом сети и может
+  // опоздать (SuccessPage уводит через 1.8 с), поэтому проверка живёт эффектом,
+  // а не одной веткой в момент входа.
+  useEffect(() => {
+    if (boothAccount && !BOOTH_SCREENS.has(screen)) setScreen('booth')
+  }, [boothAccount, screen])
+
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
   function handleNav(key, payload) {
+    // Аккаунт класса ходит только в свой урок. Сайдбара у него нет вовсе, но
+    // навигацию зовёт не только сайдбар (колокольчик уведомлений, карточки
+    // внутри экранов) — поэтому запрет стоит здесь, у самой навигации.
+    if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'learning' || key === 'learn') setScreen('kingdom')
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
@@ -824,6 +842,7 @@ export default function App() {
   // Навигация из сайдбара зоны тьютора: «Обучение»/«Практика» уводят из тьютора,
   // «Тьютор» возвращает на домашний экран (welcome до онбординга, dashboard после).
   function handleTutorNav(key, tutorHome = 'tutor-dashboard') {
+    if (boothAccount) return
     if (TUTOR_ONLY && !TUTOR_ONLY_SECTIONS.includes(key)) return
     if (key === 'learn' || key === 'learning') setScreen('kingdom')
     else if (key === 'practice') setScreen('practice')
@@ -882,7 +901,13 @@ export default function App() {
   )
 
   function renderScreen() {
-  switch (screen) {
+  // Что бы ни стояло в screen — диплинк, кнопка из урока, опоздавший ответ про
+  // признак аккаунта, — аккаунту класса рисуем класс. Эффект выше приводит сам
+  // screen в согласие, а эта строка не даёт запретному экрану смонтироваться
+  // даже на один кадр: оболочка кабинета на монтировании поднимает сайдбар и
+  // колокольчик, а те сразу уходят в сеть.
+  const view = boothAccount && !BOOTH_SCREENS.has(screen) ? 'booth' : screen
+  switch (view) {
     case 'welcome':
       return (
         <WelcomePage
