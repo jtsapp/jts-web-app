@@ -114,4 +114,61 @@ describe('экран класса', () => {
 
     expect(onEnter).toHaveBeenCalledWith(77)
   })
+
+  // Находка 1 финального ревью: преподаватель завершил сеанс — App.jsx забыл
+  // урок (lessonId снова null) и передал justFinished. Автовход здесь означал
+  // бы новое занятие в ту же секунду, когда преподаватель закончил, хотя за
+  // планшетом ещё никого нет, — поэтому в отличие от обычного «entering» этот
+  // экран сам /enter не зовёт.
+  it('урок завершён — ждём нажатия, а не входим сами', async () => {
+    const onEnter = vi.fn()
+
+    renderPage({ lessonId: null, justFinished: true, onEnter })
+    await act(async () => {})
+
+    expect(screen.getByText('Урок завершён')).toBeTruthy()
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+
+    // И дальше ничего не меняется само — ни по таймеру, ни как-то ещё.
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+    expect(onEnter).not.toHaveBeenCalled()
+  })
+
+  // Нажатие кнопки — и только оно — заводит новый вход.
+  it('урок завершён — кнопка заводит ровно один новый вход', async () => {
+    enterTrialBooth.mockResolvedValueOnce({ sessionId: 13, lessonId: 88, resumed: false })
+    const onEnter = vi.fn()
+
+    renderPage({ lessonId: null, justFinished: true, onEnter })
+    await act(async () => {})
+
+    fireEvent.click(screen.getByRole('button', { name: 'Войти в класс' }))
+    await act(async () => {})
+
+    expect(enterTrialBooth).toHaveBeenCalledTimes(1)
+    expect(enterTrialBooth).toHaveBeenCalledWith('TOK')
+    expect(onEnter).toHaveBeenCalledWith(88)
+  })
+
+  // После клика та же кнопка ведёт себя как обычный вход: занятия ещё нет —
+  // ждём и повторяем, как в «entering» с самого начала.
+  it('урок завершён — после клика поведение то же, что у обычного входа', async () => {
+    enterTrialBooth.mockRejectedValueOnce(failWith(503))
+    enterTrialBooth.mockResolvedValueOnce({ sessionId: 13, lessonId: 88, resumed: false })
+    const onEnter = vi.fn()
+
+    renderPage({ lessonId: null, justFinished: true, onEnter })
+    await act(async () => {})
+
+    fireEvent.click(screen.getByRole('button', { name: 'Войти в класс' }))
+    await act(async () => {})
+
+    expect(screen.getByText('Преподаватель ещё не открыл класс')).toBeTruthy()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+
+    expect(enterTrialBooth).toHaveBeenCalledTimes(2)
+    expect(onEnter).toHaveBeenCalledWith(88)
+  })
 })

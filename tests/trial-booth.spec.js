@@ -189,3 +189,53 @@ test('выход из урока и возврат в него не заходя
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
   expect(attempts).toBe(settled)
 })
+
+// Находка 1 финального ревью: преподаватель нажал «Завершить» — вкладка
+// раньше оставалась в том же уроке навсегда (boothLessonId никогда не
+// сбрасывался), и следующий посетитель видел работу предыдущего, а «Выйти из
+// урока» возвращало ровно в тот же завершённый урок, минуя новый /enter.
+// Автовход при этом тоже под запретом: он завёл бы новое занятие в ту же
+// секунду, когда преподаватель закончил, хотя за планшетом ещё никого нет.
+test('урок завершился — вкладка уходит из него сама, новый вход только по кнопке', async ({ page }) => {
+  await stubAccount(page)
+  await page.route('**/auth/login', (r) =>
+    r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
+  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
+  await page.locator('.form-primary').click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  await page.waitForTimeout(500)
+  const settled = attempts
+
+  // Преподаватель нажал «Завершить»: следующий опрос статуса (LiveLessonPage
+  // опрашивает /admin/lessons/77 раз в 5 с) приносит уже COMPLETED.
+  await page.unroute('**/admin/lessons/77')
+  await page.route('**/admin/lessons/77', (r) => r.fulfill(json({ ...LESSON, status: 'COMPLETED' })))
+
+  // Вкладка уходит из урока сама — работы предыдущего посетителя на экране
+  // больше нет (он весь размонтирован вместе с экраном урока).
+  await expect(page.getByText('Урок завершён')).toBeVisible({ timeout: 12_000 })
+  await expect(page.getByText('Живой урок')).toHaveCount(0)
+
+  // И без нажатия кнопки новый вход не уходит, сколько ни жди.
+  await page.waitForTimeout(6000)
+  expect(attempts).toBe(settled)
+
+  // Новое занятие после входа снова «идёт».
+  await page.unroute('**/admin/lessons/77')
+  await page.route('**/admin/lessons/77', (r) => r.fulfill(json(LESSON)))
+
+  await page.getByRole('button', { name: 'Войти в класс' }).click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  expect(attempts).toBe(settled + 1)
+})

@@ -20,20 +20,32 @@ const RETRY_MS = 5000
  * не хранится здесь, потому что повторный вход в класс НЕ безобиден: пока
  * вышедшего в классе не видно, бэкенд закрывает открытый сеанс как забытый и
  * заводит новое занятие — с пустой доской и без того, что уже наработали.
+ *
+ * `justFinished` — прошлый сеанс этой вкладки только что завершил преподаватель
+ * (см. onLessonClosed у LiveLessonPage/App.jsx). Отдельно от `lessonId != null`
+ * (тот про «сеанс ещё жив, просто вкладка вышла из урока сама»): здесь сеанс
+ * УЖЕ закрыт, и повторный вход должен состояться, но только по нажатию — сам
+ * по себе он завёл бы новое занятие в ту же секунду, когда преподаватель
+ * закончил, хотя за планшетом ещё никого нет.
  */
-export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
+export default function BoothEntryPage({ token, lessonId = null, justFinished = false, onEnter }) {
   const { t } = useI18n()
-  // 'entering' — идёт первый запрос; 'waiting' — занятия ещё нет, повторяем;
+  // 'entering' — идёт запрос; 'waiting' — занятия ещё нет, повторяем;
   // 'closed' — класс выключен или аккаунт не закреплён (повторять нечего);
-  // 'left' — сеанс этой вкладки известен, ученик вышел из урока сам.
-  const [state, setState] = useState(lessonId != null ? 'left' : 'entering')
+  // 'left' — сеанс этой вкладки известен, ученик вышел из урока сам;
+  // 'finished' — прошлый сеанс завершён, ждём нажатия, чтобы принять следующего.
+  const [state, setState] = useState(lessonId != null ? 'left' : (justFinished ? 'finished' : 'entering'))
+  // Разрешение самому звать /enter. Обычный вход разрешён сразу; после
+  // «урок завершён» — только по нажатию кнопки (см. enterNow ниже), иначе вход
+  // ушёл бы автоматически, стоило экрану класса просто отрисоваться.
+  const [armed, setArmed] = useState(lessonId == null && !justFinished)
   // onEnter приезжает новой стрелкой на каждый рендер App — держим в ref, иначе
   // эффект перезапускался бы вместе с ним и слал вход по кругу.
   const onEnterRef = useRef(onEnter)
   onEnterRef.current = onEnter
 
   useEffect(() => {
-    if (lessonId != null) return undefined
+    if (lessonId != null || !armed) return undefined
     let alive = true
     let timer = null
 
@@ -64,7 +76,7 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
       alive = false
       if (timer) clearTimeout(timer)
     }
-  }, [token, lessonId])
+  }, [token, lessonId, armed])
 
   const backToLesson = () => {
     // Разрешение играть звук трансляции снимается ЖЕСТОМ и заранее (см.
@@ -75,14 +87,29 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     onEnter?.(lessonId)
   }
 
+  // Кнопка состояния «урок завершён»: прошлого сеанса больше нет, значит
+  // вернуться некуда — вооружаем эффект выше, и он честно зовёт /enter, как
+  // при обычном первом входе.
+  const enterNow = () => {
+    unlockBroadcastAudio()
+    setState('entering')
+    setArmed(true)
+  }
+
   const waiting = state === 'entering' || state === 'waiting'
   const titleKey = {
     entering: 'booth.entering',
     waiting: 'booth.waitingTitle',
     closed: 'booth.closedTitle',
     left: 'booth.leftTitle',
+    finished: 'booth.finishedTitle',
   }[state]
-  const textKey = { waiting: 'booth.waitingText', closed: 'booth.closedText', left: 'booth.leftText' }[state]
+  const textKey = {
+    waiting: 'booth.waitingText',
+    closed: 'booth.closedText',
+    left: 'booth.leftText',
+    finished: 'booth.finishedText',
+  }[state]
 
   return (
     <Shell>
@@ -96,6 +123,11 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
           {state === 'left' && (
             <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
               {t('booth.back')}
+            </button>
+          )}
+          {state === 'finished' && (
+            <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>
+              {t('booth.finishedCta')}
             </button>
           )}
         </div>

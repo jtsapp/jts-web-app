@@ -334,6 +334,11 @@ export default function App() {
   // не звал вход в класс повторно: бэкенд закрыл бы открытый сеанс как забытый
   // и завёл новое занятие — с пустой доской.
   const [boothLessonId, setBoothLessonId] = useState(null)
+  // Последний сеанс класса дошёл до терминального статуса (LiveLessonPage
+  // сообщил через onLessonClosed) — экран класса должен показать «урок
+  // завершён» и НЕ входить сам: автовход в ту же секунду завёл бы новое
+  // занятие, хотя за планшетом ещё никого нет (находка 1 финального ревью).
+  const [boothLessonFinished, setBoothLessonFinished] = useState(false)
   // id живого урока для workspace-экрана (диплинк ?screen=lesson-workspace&lesson=<id>,
   // см. эффект восстановления сессии ниже). Без диплинка остаётся null —
   // LessonWorkspacePage тогда показывает SAMPLE_LESSON.
@@ -759,6 +764,9 @@ export default function App() {
     // тиком, он успел бы вернуть вышедшего обратно в класс.
     setBoothAccount(false)
     setBoothLessonId(null)
+    // Устройство общее: следующий аккаунт класса на этой же вкладке не должен
+    // унаследовать «урок завершён» от того, кто выходит сейчас.
+    setBoothLessonFinished(false)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -815,6 +823,16 @@ export default function App() {
     }
     window.history.replaceState(null, '', url)
   }, [screen, restoring, liveLessonId])
+
+  // Урок сеанса класса дошёл до терминального статуса — уводим аккаунт класса
+  // на экран ожидания следующего посетителя и забываем урок (находка 1
+  // финального ревью): следующий вход не должен счесть сеанс «известным» и
+  // просто вернуть на тот же завершённый урок.
+  function handleBoothLessonClosed() {
+    setBoothLessonId(null)
+    setBoothLessonFinished(true)
+    setScreen('booth')
+  }
 
   // Кабинет аккаунту класса закрыт, и закрыт он здесь, а не в каждом экране:
   // сюда сходятся все способы туда попасть — диплинк ?screen=…, кнопка внутри
@@ -1178,17 +1196,23 @@ export default function App() {
         <BoothEntryPage
           token={token}
           lessonId={boothLessonId}
+          justFinished={boothLessonFinished}
           onEnter={(id) => {
             setBoothLessonId(id)
             setLiveLessonId(id)
+            // Новый сеанс открыт по нажатию — прошлое «урок завершён» больше не
+            // относится к тому, что видит вкладка теперь.
+            setBoothLessonFinished(false)
             setScreen('live-lesson')
           }}
         />
       )
     case 'live-lesson':
       // Аккаунт класса выходит из урока не в расписание, которого у него нет, а
-      // обратно на экран класса — тот вернёт его в тот же урок.
-      return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen(boothAccount ? 'booth' : 'lessons')} />
+      // обратно на экран класса — тот вернёт его в тот же урок. onLessonClosed
+      // передаём только аккаунту класса: обычный ученик и преподаватель этот
+      // проп не получают, и их сценарий не меняется ни на йоту.
+      return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen(boothAccount ? 'booth' : 'lessons')} onLessonClosed={boothAccount ? handleBoothLessonClosed : undefined} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
