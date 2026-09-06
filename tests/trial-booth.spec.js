@@ -144,3 +144,48 @@ test('диплинк в «Уроки» тоже упирается в класс
   await expect(page.getByText('Преподаватель ещё не открыл класс')).toBeVisible({ timeout: 15_000 })
   expect(scheduleAsked).toBe(false)
 })
+
+// Регрессия: App передаёт BoothEntryPage урок, который вкладка уже открыла
+// (lessonId={boothLessonId}), чтобы «Вернуться в класс» не заходило в
+// /trial/booth/enter повторно — бэкенд закрыл бы ещё живой сеанс как забытый
+// (closed_by_next_entry) и завёл новое занятие с пустой доской. Юниты этого
+// не видят: они не проходят весь путь вход → урок → выход → класс → возврат.
+test('выход из урока и возврат в него не заходят в класс повторно', async ({ page }) => {
+  await stubAccount(page)
+  await page.route('**/auth/login', (r) =>
+    r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
+  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
+  await page.locator('.form-primary').click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+
+  // StrictMode дев-сервера монтирует экран дважды, и вход уже ушёл двумя
+  // запросами подряд (см. соседний тест про 403) — считаем не «сколько было»,
+  // а «выросло ли» после возврата. Небольшая пауза даёт долететь и второму
+  // из этой пары, прежде чем зафиксировать точку отсчёта.
+  await page.waitForTimeout(500)
+  const settled = attempts
+
+  // Кнопка выхода стоит в шапке в двух видах — иконка на телефоне, подпись на
+  // десktop (переключаются CSS-медиа-запросом, :visible берёт актуальную).
+  await page.locator('.lv-top__act--exit:visible, .lv-top__exit:visible').click()
+  // Подтверждение — общий диалог LessonExitConfirm, кнопка внутри своя
+  // (.lx-leave), а не по тексту: тот же текст «Выйти из урока» есть и у ещё
+  // видимой под диалогом кнопки шапки.
+  await page.locator('.lx-leave').click()
+
+  await expect(page.getByText('Вы вышли из класса')).toBeVisible()
+  await page.getByText('Вернуться в класс').click()
+
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  expect(attempts).toBe(settled)
+})
