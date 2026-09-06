@@ -175,8 +175,9 @@ export async function* chatStreamRich(args) {
   }
 
   // Log cost + cache effectiveness (cache_read should be > 0 from turn 2).
+  let final = null;
   try {
-    const final = await stream.finalMessage();
+    final = await stream.finalMessage();
     const u = final.usage || {};
     console.log(
       JSON.stringify({
@@ -192,6 +193,11 @@ export async function* chatStreamRich(args) {
   } catch {
     /* logging must never break the reply */
   }
+  // Завершающее событие — для диагностики пустых ответов в brain-роуте:
+  // stop_reason говорит, кончилась ли модель сама (end_turn) или её что-то
+  // оборвало (max_tokens / refusal). Потребители, которым это не нужно,
+  // просто игнорируют тип "done".
+  yield { type: "done", stopReason: final?.stop_reason ?? null };
 }
 
 // ---------------------------------------------------------------------------
