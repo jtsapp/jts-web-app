@@ -1,0 +1,387 @@
+/* ============================================================
+   Чтение (Reading) — нативный раздел Практики.
+   Классы с префиксом .rd-. Палитра — та же, что у «Письма» и воркбука
+   (прототип data/jtsreading.html собран на брендбуке JTS), чтобы раздел
+   читался роднёй соседних тренажёров, а не отдельным сайтом.
+   ============================================================ */
+.rd {
+  --rd-purple: #874bf8;
+  --rd-purple-dark: #5718c0;
+  --rd-cyan: #0aafff;
+  --rd-green: #03832c;
+  --rd-green-bg: #e6fbec;
+  --rd-green-line: #00d441;
+  --rd-red: #c43d00;
+  --rd-red-bg: #fff0e9;
+  --rd-red-line: #ff631e;
+  --rd-gold-bg: #fff6e0;
+  --rd-gold-ink: #7a5200;
+  --rd-line: #edeaf5;
+  --rd-soft: #f4f1fc;
+  --rd-field: #fbfafe;
+  --rd-ink-2: #4a4458;
+  --rd-ink-3: #8a849a;
+
+  /* Токены типографики читалки — их значения ставит viewSettings.js
+     (inline-стилем на этом же узле), здесь только запасные дефолты. */
+  --rd-fs: 20px;
+  --rd-lh: 1.8;
+  --rd-measure: 68ch;
+  --rd-track: 0;
+  --rd-wspace: 0;
+
+  /* Перетаскивание переиспользуем из воркбука (screens/workbook/dnd.js), а его
+     подсветка целей нарисована через --wb-purple*. Вне .wb эти переменные не
+     определены, поэтому объявляем их здесь — иначе рамка «сюда можно бросить»
+     просто не появляется. */
+  --wb-purple: var(--rd-purple);
+  --wb-purple-soft: var(--rd-soft);
+
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 32px 48px;
+}
+
+.rd-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── верхняя навигация ── */
+.rd-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.rd-back {
+  display: inline-flex; align-items: center; gap: 4px; border: 0;
+  background: var(--rd-purple); color: #fff; border-radius: 999px;
+  padding: 9px 16px 9px 12px; font-family: inherit; font-size: 14px;
+  font-weight: 700; cursor: pointer;
+}
+.rd-back:hover { filter: brightness(1.05); }
+.rd-crumb { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.rd-crumb b { color: var(--rd-purple); font-size: 15px; font-weight: 800; }
+.rd-crumb span {
+  color: #9a99a6; font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.rd-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; background: var(--rd-soft); color: var(--rd-ink-2); }
+.rd-note--err { background: var(--rd-red-bg); color: var(--rd-red); }
+
+/* ── кнопки ── */
+.rd-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: 14px; padding: 12px 22px;
+  font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.rd-btn--primary { background: var(--rd-purple); color: #fff; }
+.rd-btn--primary:hover { filter: brightness(1.05); }
+.rd-btn--secondary { background: var(--rd-soft); color: var(--rd-purple-dark); }
+.rd-btn--ghost { background: transparent; color: var(--rd-ink-2); border: 1.5px solid var(--rd-line); }
+.rd-btn--block { width: 100%; }
+.rd-btn--sm { padding: 8px 14px; font-size: 13px; border-radius: 10px; }
+.rd-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── библиотека ── */
+.rd-hero { margin-bottom: 18px; }
+.rd-hero h1 { margin: 0 0 6px; font-size: 26px; font-weight: 800; color: var(--ink, #171326); }
+.rd-hero p { margin: 0; color: var(--rd-ink-3); font-size: 14px; }
+
+.rd-label { margin: 18px 0 8px; font-size: 13px; font-weight: 800; color: var(--rd-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.rd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.rd-chip {
+  border: 1.5px solid var(--rd-line); background: #fff; color: var(--rd-ink-2);
+  border-radius: 999px; padding: 8px 14px; font-family: inherit; font-size: 14px;
+  font-weight: 700; cursor: pointer;
+}
+.rd-chip[aria-pressed='true'] { background: var(--rd-purple); border-color: var(--rd-purple); color: #fff; }
+
+.rd-grid {
+  display: grid; gap: 16px; margin-top: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.rd-card { background: #fff; border: 1.5px solid var(--rd-line); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; }
+.rd-card__cover {
+  position: relative; height: 116px; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--rd-g1, #ede3ff), var(--rd-g2, #f4f0ff));
+}
+.rd-card__emoji { font-size: 46px; line-height: 1; }
+.rd-card__lvl,
+.rd-card__done {
+  position: absolute; top: 10px; font-size: 12px; font-weight: 800;
+  border-radius: 999px; padding: 4px 10px; background: rgba(255, 255, 255, 0.85); color: var(--rd-purple-dark);
+}
+.rd-card__lvl { left: 10px; }
+.rd-card__done { right: 10px; background: var(--rd-green-bg); color: var(--rd-green); }
+.rd-card__body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.rd-card__title { margin: 0; font-size: 17px; font-weight: 800; line-height: 1.25; }
+.rd-card__meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--rd-ink-3); }
+.rd-card__bar { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: var(--rd-ink-3); }
+.rd-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--rd-soft); overflow: hidden; }
+.rd-bar i { display: block; height: 100%; background: var(--rd-purple); border-radius: 999px; }
+.rd-card__body .rd-btn { margin-top: auto; }
+
+/* Обложки по жанрам — те же пары, что в прототипе: жанр узнаётся по цвету
+   раньше, чем прочитан заголовок. */
+.rd-g-science { --rd-g1: #dff0ff; --rd-g2: #eef8ff; }
+.rd-g-adventure { --rd-g1: #ffe8d6; --rd-g2: #fff5ec; }
+.rd-g-mystery { --rd-g1: #e6e2f7; --rd-g2: #f2f0fb; }
+.rd-g-history { --rd-g1: #fdf0d5; --rd-g2: #fff8e8; }
+.rd-g-technology { --rd-g1: #e2f5ff; --rd-g2: #f0fbff; }
+.rd-g-nature { --rd-g1: #ddf6e4; --rd-g2: #eefbf1; }
+.rd-g-people { --rd-g1: #ffe4ef; --rd-g2: #fff2f7; }
+.rd-g-culture { --rd-g1: #e3ecff; --rd-g2: #f1f5ff; }
+
+/* ── панель читалки ── */
+.rd-toolbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 0; margin-bottom: 12px;
+  background: linear-gradient(#fff 70%, rgba(255, 255, 255, 0));
+}
+.rd-tabs { display: flex; gap: 6px; background: var(--rd-soft); border-radius: 999px; padding: 4px; }
+.rd-tabs button {
+  border: 0; background: transparent; color: var(--rd-ink-2); border-radius: 999px;
+  padding: 8px 14px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.rd-tabs button[aria-selected='true'] { background: #fff; color: var(--rd-purple-dark); box-shadow: 0 2px 8px rgba(135, 75, 248, 0.12); }
+.rd-tb { display: flex; gap: 6px; }
+.rd-tb__btn {
+  border: 1.5px solid var(--rd-line); background: #fff; color: var(--rd-ink-2);
+  border-radius: 12px; min-width: 40px; height: 40px; padding: 0 10px;
+  font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.rd-tb__btn.is-on { background: var(--rd-purple); border-color: var(--rd-purple); color: #fff; }
+
+.rd-grid2 { display: grid; gap: 24px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+.rd-pane { min-width: 0; }
+
+.rd-texthero {
+  border-radius: 22px; padding: 22px; margin-bottom: 14px; text-align: center;
+  background: linear-gradient(135deg, var(--rd-g1, #ede3ff), var(--rd-g2, #f4f0ff));
+}
+.rd-texthero__emoji { font-size: 44px; line-height: 1; display: block; margin-bottom: 6px; }
+.rd-texthero h1 { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.25; }
+.rd-texthero__meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--rd-ink-2); }
+
+.rd-task { background: var(--rd-gold-bg); color: var(--rd-gold-ink); border-radius: 16px; padding: 14px 16px; font-size: 15px; margin-bottom: 14px; }
+.rd-task b { display: block; margin-bottom: 2px; }
+
+.rd-panel { background: #fff; border: 1.5px solid var(--rd-line); border-radius: 20px; padding: 18px; margin-bottom: 14px; }
+.rd-panel .rd-label { margin-top: 0; }
+
+.rd-words { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.rd-word { display: flex; align-items: flex-start; gap: 10px; background: var(--rd-field); border-radius: 14px; padding: 12px 14px; }
+.rd-word__main { flex: 1; min-width: 0; }
+.rd-word__top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.rd-word__en { font-size: 16px; font-weight: 800; }
+.rd-word__tr { font-size: 13px; color: var(--rd-ink-3); }
+.rd-word__row { display: flex; gap: 8px; font-size: 14px; color: var(--rd-ink-2); margin-top: 2px; }
+.rd-word__ex { margin-top: 6px; font-size: 13px; color: var(--rd-ink-3); font-style: italic; }
+.rd-words--compact .rd-word__ex { display: none; }
+.rd-flag { font-size: 11px; font-weight: 800; color: var(--rd-ink-3); min-width: 22px; }
+.rd-say {
+  border: 0; background: var(--rd-soft); color: var(--rd-purple-dark);
+  border-radius: 12px; width: 38px; height: 38px; font-size: 16px; cursor: pointer; flex: none;
+}
+
+.rd-listen { display: flex; flex-wrap: wrap; gap: 10px; }
+.rd-hint { margin: 12px 0 16px; font-size: 13px; color: var(--rd-ink-3); }
+
+/* ── сам текст ── */
+.rd-article {
+  font-size: var(--rd-fs);
+  line-height: var(--rd-lh);
+  max-width: var(--rd-measure);
+  letter-spacing: var(--rd-track);
+  word-spacing: var(--rd-wspace);
+}
+.rd-article p { margin: 0 0 1em; }
+.rd-s { border-radius: 6px; transition: background 0.15s; }
+.rd-s.is-speaking { background: var(--rd-gold-bg); box-shadow: 0 0 0 4px var(--rd-gold-bg); }
+.rd-w { cursor: pointer; border-radius: 4px; }
+.rd-w:hover { background: var(--rd-soft); }
+.rd-w.is-active { background: var(--rd-purple); color: #fff; }
+/* Дислексия-режим: разрядка уже пришла переменными, здесь снимаем курсив —
+   наклонный шрифт для дислексии самый тяжёлый. */
+.rd--dys .rd-article em,
+.rd--dys .rd-article i,
+.rd--dys .rd-word__ex { font-style: normal; font-weight: 600; }
+
+/* ── карточка перевода слова ── */
+/* Карточка перевода живёт ВНУТРИ статьи (position: absolute), а не в окне:
+   так она едет вместе с текстом и её не надо закрывать на каждом скролле. */
+.rd-articlewrap { position: relative; }
+.rd-pop {
+  position: absolute; z-index: 30; min-width: 200px; max-width: min(320px, calc(100vw - 24px));
+  background: #fff; border: 1.5px solid var(--rd-line); border-radius: 16px;
+  padding: 12px 14px; box-shadow: 0 16px 48px rgba(21, 19, 26, 0.18);
+}
+.rd-pop__close { position: absolute; top: 6px; right: 8px; border: 0; background: transparent; color: var(--rd-ink-3); font-size: 14px; cursor: pointer; }
+.rd-pop__head { display: flex; align-items: center; gap: 8px; padding-right: 18px; }
+.rd-pop__en { font-size: 17px; font-weight: 800; }
+.rd-pop__tr { font-size: 13px; color: var(--rd-ink-3); margin-top: 2px; }
+.rd-pop__row { display: flex; gap: 8px; font-size: 14px; color: var(--rd-ink-2); margin-top: 6px; }
+.rd-pop__hint { color: var(--rd-ink-3); }
+
+/* ── упражнения ── */
+.rd-ex { background: #fff; border: 1.5px solid var(--rd-line); border-radius: 20px; padding: 18px; margin-bottom: 14px; }
+.rd-ex__head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.rd-ex__num { width: 26px; height: 26px; border-radius: 999px; background: var(--rd-purple); color: #fff; font-size: 13px; font-weight: 800; display: grid; place-items: center; }
+.rd-ex__type { font-size: 12px; font-weight: 800; color: var(--rd-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.rd-ex__best { margin-left: auto; font-size: 12px; font-weight: 800; color: var(--rd-green); }
+.rd-ex__inst { margin: 0 0 4px; font-size: 16px; font-weight: 800; line-height: 1.3; }
+.rd-ex__hint { margin: 0 0 14px; font-size: 13px; color: var(--rd-ink-3); }
+.rd-ex__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 14px; }
+.rd-ex__res { flex: 1 1 100%; font-size: 14px; font-weight: 700; }
+.rd-ex__res:focus { outline: none; }
+.rd-ex__res.is-ok { color: var(--rd-green); }
+.rd-ex__res.is-part { color: var(--rd-gold-ink); }
+.rd-ex__res.is-bad { color: var(--rd-red); }
+.rd-expl { flex: 1 1 100%; background: var(--rd-soft); border-radius: 14px; padding: 12px 14px; font-size: 14px; color: var(--rd-ink-2); }
+.rd-expl--model { margin-top: 12px; }
+
+.rd-q { margin-bottom: 16px; }
+.rd-q__text { margin: 0 0 8px; font-size: 16px; font-weight: 700; line-height: 1.4; }
+.rd-opts { display: grid; gap: 8px; }
+.rd-opts--row { grid-auto-flow: column; grid-auto-columns: 1fr; }
+.rd-opt {
+  border: 1.5px solid var(--rd-line); background: #fff; color: var(--ink, #171326);
+  border-radius: 14px; padding: 12px 14px; font-family: inherit; font-size: 15px;
+  font-weight: 600; text-align: left; cursor: pointer;
+}
+.rd-opts--row .rd-opt { text-align: center; }
+.rd-opt[aria-checked='true'] { border-color: var(--rd-purple); background: var(--rd-soft); }
+.rd-opt.is-correct { border-color: var(--rd-green-line); background: var(--rd-green-bg); color: var(--rd-green); }
+.rd-opt.is-wrong { border-color: var(--rd-red-line); background: var(--rd-red-bg); color: var(--rd-red); }
+.rd-fb { margin-top: 8px; font-size: 14px; line-height: 1.45; }
+.rd-fb.is-ok { color: var(--rd-green); }
+.rd-fb.is-bad { color: var(--rd-red); }
+.rd-fb.is-note { color: var(--rd-ink-2); }
+
+.rd-match { display: grid; gap: 8px; }
+.rd-match__row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rd-mt {
+  position: relative; border: 1.5px solid var(--rd-line); background: #fff;
+  border-radius: 14px; padding: 12px 14px; font-family: inherit; font-size: 15px;
+  font-weight: 600; cursor: pointer; min-height: 48px;
+}
+.rd-mt--emoji { font-size: 26px; }
+.rd-mt.is-sel { border-color: var(--rd-purple); background: var(--rd-soft); }
+.rd-mt.is-paired { border-color: var(--rd-purple); }
+.rd-mt.is-correct { border-color: var(--rd-green-line); background: var(--rd-green-bg); }
+.rd-mt.is-wrong { border-color: var(--rd-red-line); background: var(--rd-red-bg); }
+.rd-mt__tag {
+  position: absolute; top: -8px; right: -6px; min-width: 20px; height: 20px;
+  border-radius: 999px; background: var(--rd-purple); color: #fff;
+  font-size: 11px; font-weight: 800; display: grid; place-items: center; padding: 0 5px;
+}
+
+.rd-gaptext { margin: 0 0 14px; font-size: 16px; line-height: 2.1; }
+.rd-gap {
+  border: 0; border-bottom: 2px solid var(--rd-purple); background: var(--rd-field);
+  border-radius: 8px 8px 0 0; padding: 3px 10px; font-family: inherit;
+  font-size: 15px; font-weight: 700; color: var(--rd-purple-dark); cursor: pointer; min-width: 72px;
+}
+.rd-gap.is-active { background: var(--rd-soft); box-shadow: 0 0 0 3px var(--rd-soft); }
+.rd-gap.is-correct { border-bottom-color: var(--rd-green-line); background: var(--rd-green-bg); color: var(--rd-green); }
+.rd-gap.is-wrong { border-bottom-color: var(--rd-red-line); background: var(--rd-red-bg); color: var(--rd-red); }
+.rd-gap s { opacity: 0.6; font-weight: 500; }
+.rd-bank { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--rd-field); border-radius: 14px; padding: 12px; }
+.rd-bank__label { font-size: 12px; font-weight: 800; color: var(--rd-ink-3); text-transform: uppercase; }
+.rd-chipw {
+  border: 1.5px solid var(--rd-line); background: #fff; border-radius: 999px;
+  padding: 8px 14px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.rd-chipw.is-used { opacity: 0.35; }
+
+.rd-ord { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; counter-reset: rd-ord; }
+.rd-ord__item { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--rd-line); background: #fff; border-radius: 14px; padding: 10px 12px; }
+.rd-ord__item.is-correct { border-color: var(--rd-green-line); background: var(--rd-green-bg); }
+.rd-ord__item.is-wrong { border-color: var(--rd-red-line); background: var(--rd-red-bg); }
+.rd-ord__num { width: 24px; height: 24px; border-radius: 999px; background: var(--rd-soft); color: var(--rd-purple-dark); font-size: 12px; font-weight: 800; display: grid; place-items: center; flex: none; }
+.rd-ord__handle { color: var(--rd-ink-3); cursor: grab; touch-action: none; flex: none; }
+.rd-ord__txt { flex: 1; font-size: 15px; line-height: 1.4; }
+.rd-ord__mv { display: flex; flex-direction: column; gap: 2px; flex: none; }
+.rd-ord__mv button { border: 0; background: transparent; color: var(--rd-ink-3); font-size: 11px; line-height: 1; padding: 3px 6px; cursor: pointer; }
+
+.rd-reflect {
+  width: 100%; border: 1.5px solid var(--rd-line); border-radius: 14px;
+  padding: 12px 14px; font-family: inherit; font-size: 15px; line-height: 1.5; resize: vertical;
+}
+.rd-reflect:focus { outline: none; border-color: var(--rd-purple); }
+
+.rd-finish { background: var(--rd-soft); border-radius: 20px; padding: 18px; text-align: center; }
+.rd-finish p { margin: 0 0 12px; font-size: 14px; color: var(--rd-ink-2); }
+
+/* ── результат ── */
+.rd-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 14px 0; }
+.rd-stat { background: #fff; border: 1.5px solid var(--rd-line); border-radius: 18px; padding: 16px; text-align: center; }
+.rd-stat b { display: block; font-size: 28px; font-weight: 800; color: var(--rd-purple-dark); }
+.rd-stat span { font-size: 12px; color: var(--rd-ink-3); }
+.rd-review { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.rd-review li { display: flex; align-items: center; gap: 10px; background: var(--rd-field); border-radius: 14px; padding: 10px 14px; font-size: 14px; }
+.rd-review__score { margin-left: auto; color: var(--rd-ink-3); font-weight: 700; }
+.rd-allgood { margin: 0; font-weight: 700; color: var(--rd-green); }
+.rd-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+
+/* ── панель настроек ── */
+.rd-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(21, 19, 26, 0.35); }
+.rd-drawer {
+  position: fixed; z-index: 71; top: 0; right: 0; bottom: 0; width: min(340px, 92vw);
+  background: #fff; padding: 20px; overflow-y: auto; box-shadow: -8px 0 40px rgba(21, 19, 26, 0.18);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.rd-drawer__head { display: flex; align-items: center; justify-content: space-between; }
+.rd-drawer__head h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.rd-set { display: flex; flex-direction: column; gap: 8px; }
+.rd-set__lbl { font-size: 13px; font-weight: 700; color: var(--rd-ink-2); }
+.rd-seg { display: flex; gap: 6px; background: var(--rd-soft); border-radius: 12px; padding: 4px; }
+.rd-seg button {
+  flex: 1; border: 0; background: transparent; color: var(--rd-ink-2); border-radius: 9px;
+  padding: 8px 6px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.rd-seg button[aria-pressed='true'] { background: #fff; color: var(--rd-purple-dark); box-shadow: 0 2px 8px rgba(135, 75, 248, 0.12); }
+.rd-switch {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border: 1.5px solid var(--rd-line); background: #fff; border-radius: 14px;
+  padding: 12px 14px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.rd-switch__knob { width: 42px; height: 24px; border-radius: 999px; background: var(--rd-line); position: relative; flex: none; transition: background 0.15s; }
+.rd-switch__knob::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 999px; background: #fff; transition: transform 0.15s; }
+.rd-switch[aria-checked='true'] .rd-switch__knob { background: var(--rd-purple); }
+.rd-switch[aria-checked='true'] .rd-switch__knob::after { transform: translateX(18px); }
+.rd-preview {
+  background: var(--rd-field); border-radius: 14px; padding: 14px;
+  font-size: var(--rd-fs); line-height: var(--rd-lh);
+  letter-spacing: var(--rd-track); word-spacing: var(--rd-wspace);
+}
+
+/* ── мобильная раскладка ── */
+@media (max-width: 1023px) {
+  .rd { padding: 10px 16px 40px; }
+  /* Две панели превращаются во вкладки: читать текст в половину телефона
+     невозможно, а прыгать между текстом и заданиями всё равно приходится. */
+  .rd-grid2 { grid-template-columns: 1fr; }
+  .rd-grid2[data-tab='text'] .rd-pane--ex { display: none; }
+  .rd-grid2[data-tab='ex'] .rd-pane--text { display: none; }
+}
+@media (min-width: 1024px) {
+  /* На широком экране вкладки не нужны — панели стоят рядом. */
+  .rd-tabs { display: none; }
+  .rd-toolbar { justify-content: flex-end; }
+}
+@media (max-width: 560px) {
+  .rd-hero h1 { font-size: 22px; }
+  .rd-match__row { grid-template-columns: 1fr; }
+  .rd-opts--row { grid-auto-flow: row; }
+  .rd-actions .rd-btn { width: 100%; }
+}
+
+/* Баннер «Чтение» на хабе Практики: каркас .pp-listen общий с аудированием и
+   письмом, заливка своя — три баннера подряд не должны сливаться в один блок. */
+.pp-read .pp-listen__card {
+  background: linear-gradient(115deg, #874bf8 0%, #0aafff 100%);
+}
