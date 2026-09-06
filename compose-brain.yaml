@@ -1,0 +1,70 @@
+# Ближняя копия мозга тьютора (/api/voice/brain) — для VPS в США рядом с
+# воркером LiveKit Cloud (us-east).
+#
+# Зачем отдельный compose: голосовой агент стоит в us-east, основной стенд —
+# в Казахстане. Каждый ход разговора промпт (~30 КБ) летел агент → KZ →
+# Anthropic (США) → KZ → агент: четыре трансокеанских хопа ради вызова, до
+# которого из us-east ~30 мс. Замер 06.09.2026: llm_ttft у агента 2.7 с при
+# 0.87 с внутри роута — ~1.8 с чистой дороги на каждую реплику.
+#
+# Что здесь крутится: тот же образ jts-web-app, но используется ТОЛЬКО роут
+# /api/voice/brain/*. Он stateless (шим над Anthropic), базы и MinIO не нужны.
+# Память ученика, минуты, токены LiveKit — по-прежнему на основном стенде
+# (агент ходит туда по JTS_API_URL / адресу из метаданных токена).
+#
+# Переключение агента: секрет VOICE_BRAIN_URL=https://<домен этого сервера> в
+# LiveKit Cloud. Убрать секрет — агент вернётся на основной стенд без деплоя.
+#
+# Запуск:
+#   cp .env.brain.example .env.brain   # заполнить 3 значения
+#   docker compose -f compose-brain.yaml --env-file .env.brain up -d --build
+#
+# TLS — Caddy, сертификат Let's Encrypt получает сам по BRAIN_DOMAIN. Домен
+# должен указывать на IP этого сервера ДО первого запуска (порты 80/443 открыты).
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Вшивается в бандл на build; браузером здесь никто не пользуется,
+        # но пусть указывает на реальный бэкенд, а не на пустую строку.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://dev-server.justtostudy.kz}
+    environment:
+      # Мозг: Anthropic Haiku + prompt caching.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # Bearer агент↔мозг. ДОЛЖЕН совпадать с INTERNAL_API_KEY в секретах агента
+      # (LiveKit Cloud) — иначе роут отвечает 401 и тьютор молчит.
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      # (опц.) override модели, как на основном стенде.
+      VOICE_BRAIN_MODEL: ${VOICE_BRAIN_MODEL:-}
+      # DATABASE_URL НАМЕРЕННО не задан: instrumentation.js пропустит миграции
+      # с предупреждением «[migrate] DATABASE_URL не задан», это норма.
+    restart: always
+    expose:
+      - "3000"
+    mem_limit: 1g
+    memswap_limit: 2g
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      BRAIN_DOMAIN: ${BRAIN_DOMAIN}
+    volumes:
+      - ./deploy/brain/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
