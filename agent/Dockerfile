@@ -33,6 +33,7 @@ COPY pronunciation-kk.tsv ./pronunciation-kk.tsv
 # agent.py; the loader's second candidate path (/app/scenarios) finds them.
 COPY scenarios/ ./scenarios/
 COPY agent.py .
+COPY latency_logging.py .
 
 # Pre-fetch the Silero VAD weights so the cold-start of the first call is
 # fast instead of stalling on a model download.
