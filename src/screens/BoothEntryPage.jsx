@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import Shell from '../components/Shell.jsx'
 import { useI18n } from '../i18n.jsx'
-import { enterTrialBooth } from '../api.js'
+import { enterTrialBooth, getLessonById } from '../api.js'
 import { unlockBroadcastAudio } from './live/audioReport.js'
 
 // Через сколько повторять вход, пока преподаватель не открыл класс. Человек в
 // это время стоит перед экраном и ждёт начала урока — пять секунд он замечает
 // как «страница живая», а не как задержку.
 const RETRY_MS = 5000
+
+// Статусы занятия, при которых сеанс ещё жив (тот же список решает то же
+// самое в LiveLessonPage — можно ли ещё отвечать). Любой другой статус,
+// включая COMPLETED, — сеанс кончился.
+const OPEN_STATUSES = new Set(['IN_PROGRESS', 'PAUSED'])
 
 /**
  * Единственный экран аккаунта класса преподавателя: он же вход в пробный урок.
@@ -16,29 +21,42 @@ const RETRY_MS = 5000
  * признаку boothAccount), поэтому экран ничего не предлагает выбрать: он либо
  * уводит в урок, либо честно объясняет, почему пока не уводит.
  *
- * `lessonId` — урок, который эта вкладка уже открывала. Он приходит снаружи, а
- * не хранится здесь, потому что повторный вход в класс НЕ безобиден: пока
- * вышедшего в классе не видно, бэкенд закрывает открытый сеанс как забытый и
- * заводит новое занятие — с пустой доской и без того, что уже наработали.
+ * `lessonId` — урок, который эта вкладка уже открывала. Он приходит снаружи
+ * (App.jsx хранит его в boothLessonId и переживает перезагрузку через
+ * sessionStorage — см. lib/session.js), а не заводится здесь заново, потому
+ * что повторный вход в класс НЕ безобиден: пока вышедшего в классе не видно,
+ * бэкенд закрывает открытый сеанс как забытый и заводит новое занятие — с
+ * пустой доской и без того, что уже наработали.
  *
- * `justFinished` — прошлый сеанс этой вкладки только что завершил преподаватель
- * (см. onLessonClosed у LiveLessonPage/App.jsx). Отдельно от `lessonId != null`
- * (тот про «сеанс ещё жив, просто вкладка вышла из урока сама»): здесь сеанс
- * УЖЕ закрыт, и повторный вход должен состояться, но только по нажатию — сам
- * по себе он завёл бы новое занятие в ту же секунду, когда преподаватель
- * закончил, хотя за планшетом ещё никого нет.
+ * Но и самому lessonId на слово не верят (Правило 2 памяти вкладки): урок мог
+ * завершиться уже ПОСЛЕ того, как эта вкладка в последний раз о нём знала —
+ * например, ученик вышел из урока сам, экран урока размонтировался и больше
+ * не следит за статусом, а преподаватель тем временем нажал «Завершить».
+ * Поэтому известный урок не сразу предлагает «Вернуться»: сначала экран сам
+ * спрашивает бэкенд о его статусе (см. эффект проверки ниже) и только по
+ * ответу решает, куда вести. Раньше это же решала пара признаков из App.jsx
+ * (lessonId для «сеанс жив» и отдельный justFinished для «сеанс только что
+ * закрыт преподавателем) — оба жили только в React-состоянии, и перезагрузка
+ * их стирала. Теперь единственный источник правды — ответ бэкенда на каждом
+ * монтировании этого экрана, а не память вкладки саму по себе.
  */
-export default function BoothEntryPage({ token, lessonId = null, justFinished = false, onEnter }) {
+export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
   const { t } = useI18n()
-  // 'entering' — идёт запрос; 'waiting' — занятия ещё нет, повторяем;
+  // 'checking' — урок известен, спрашиваем у бэкенда его статус, прежде чем
+  // решить, что показать (Правило 2, см. эффект ниже);
+  // 'entering' — идёт запрос /enter; 'waiting' — занятия ещё нет, повторяем;
   // 'closed' — класс выключен или аккаунт не закреплён (повторять нечего);
-  // 'left' — сеанс этой вкладки известен, ученик вышел из урока сам;
-  // 'finished' — прошлый сеанс завершён, ждём нажатия, чтобы принять следующего.
-  const [state, setState] = useState(lessonId != null ? 'left' : (justFinished ? 'finished' : 'entering'))
-  // Разрешение самому звать /enter. Обычный вход разрешён сразу; после
-  // «урок завершён» — только по нажатию кнопки (см. enterNow ниже), иначе вход
-  // ушёл бы автоматически, стоило экрану класса просто отрисоваться.
-  const [armed, setArmed] = useState(lessonId == null && !justFinished)
+  // 'left' — проверка подтвердила, что сеанс ещё жив (IN_PROGRESS/PAUSED),
+  // либо сама проверка не удалась — сеть подвела, а мы не входим заново ни в
+  // коем случае, чтобы не убить ещё живой сеанс из-за одной секунды сети;
+  // 'finished' — проверка вернула терминальный статус, ждём нажатия, чтобы
+  // принять следующего.
+  const [state, setState] = useState(lessonId != null ? 'checking' : 'entering')
+  // Разрешение самому звать /enter. Урок неизвестен — можно сразу; урок
+  // известен — сначала его нужно проверить (эффект ниже сам не входит) или
+  // дождаться нажатия кнопки (enterNow), иначе вход ушёл бы автоматически
+  // поверх ещё не проверенного или ещё живого сеанса.
+  const [armed, setArmed] = useState(lessonId == null)
   // Ручной повтор из состояния «класс закрыт» (см. retryClosed и кнопку ниже).
   // Автоповтора там по спеке нет — armed к этому моменту уже true, и одного
   // setArmed(true) эффекту не хватит, чтобы перезапуститься: его зависимости
@@ -51,8 +69,34 @@ export default function BoothEntryPage({ token, lessonId = null, justFinished = 
   const onEnterRef = useRef(onEnter)
   onEnterRef.current = onEnter
 
+  // Проверка известного урока (Правило 2). Срабатывает один раз при
+  // монтировании с непустым lessonId — App.jsx перемонтирует BoothEntryPage
+  // при каждом переходе на экран 'booth' (key={view} в App.jsx), так что
+  // «протухший» результат этой проверки долго не живёт: следующий заход на
+  // класс — это всегда новое монтирование и новый вопрос бэкенду.
   useEffect(() => {
-    if (lessonId != null || !armed) return undefined
+    if (lessonId == null) return undefined
+    let alive = true
+    getLessonById(token, lessonId)
+      .then((data) => {
+        if (!alive) return
+        setState(OPEN_STATUSES.has(data?.status) ? 'left' : 'finished')
+      })
+      .catch(() => {
+        // Сеть или бэкенд подвели — не входим заново ни в коем случае: мы бы
+        // рисковали убить ещё живой сеанс из-за одной секунды сети. Считаем
+        // урок как будто жив (та же 'left', та же кнопка «Вернуться») — если
+        // ошиблись, экран урока сам обнаружит терминальный статус при своём
+        // следующем опросе и вернёт сюда через onLessonClosed.
+        if (alive) setState('left')
+      })
+    return () => {
+      alive = false
+    }
+  }, [token, lessonId])
+
+  useEffect(() => {
+    if (!armed) return undefined
     let alive = true
     let timer = null
 
@@ -83,7 +127,7 @@ export default function BoothEntryPage({ token, lessonId = null, justFinished = 
       alive = false
       if (timer) clearTimeout(timer)
     }
-  }, [token, lessonId, armed, retryTick])
+  }, [token, armed, retryTick])
 
   const backToLesson = () => {
     // Разрешение играть звук трансляции снимается ЖЕСТОМ и заранее (см.
@@ -113,8 +157,9 @@ export default function BoothEntryPage({ token, lessonId = null, justFinished = 
     setRetryTick((n) => n + 1)
   }
 
-  const waiting = state === 'entering' || state === 'waiting'
+  const waiting = state === 'entering' || state === 'waiting' || state === 'checking'
   const titleKey = {
+    checking: 'booth.checking',
     entering: 'booth.entering',
     waiting: 'booth.waitingTitle',
     closed: 'booth.closedTitle',

@@ -170,6 +170,46 @@ export function clearToken() {
   }
 }
 
+const BOOTH_LESSON_KEY = 'jts_booth_lesson_id'
+
+/**
+ * Урок, который эта вкладка уже открыла как класс преподавателя (App.jsx,
+ * состояние boothLessonId). sessionStorage, а не localStorage: эта память
+ * обязана умереть вместе со вкладкой — закрыли её, значит за общий планшет
+ * сел следующий посетитель, и ему положен собственный /trial/booth/enter, а
+ * не реанимированный чужой сеанс. Но именно F5/восстановление ЭТОЙ ЖЕ вкладки
+ * sessionStorage переживает — а раньше boothLessonId жил только в
+ * React-состоянии, и такая перезагрузка стирала его: экран класса слал
+ * лишний /enter, и бэкенд закрывал ещё живой сеанс как забытый
+ * (closed_by_next_entry, TrialBoothSessionService.enter() на бэкенде).
+ *
+ * Ставится и стирается в одном месте — там же, где App.jsx меняет сам
+ * boothLessonId: вход в урок (case 'booth' → onEnter) пишет, забывание урока
+ * (выход из аккаунта) стирает. Восстановленному отсюда id всё равно не верят
+ * на слово: прежде чем предложить «Вернуться в класс», BoothEntryPage
+ * перепроверяет статус занятия у бэкенда (getLessonById) — память вкладки
+ * доказывает только то, что сеанс был жив, когда его в последний раз видели.
+ */
+export function saveBoothLessonId(id) {
+  try {
+    if (id == null) sessionStorage.removeItem(BOOTH_LESSON_KEY)
+    else sessionStorage.setItem(BOOTH_LESSON_KEY, String(id))
+  } catch {
+    /* приватное окно и т.п. — сеанс тогда просто не переживёт перезагрузку */
+  }
+}
+
+export function loadBoothLessonId() {
+  try {
+    const raw = sessionStorage.getItem(BOOTH_LESSON_KEY)
+    if (raw == null) return null
+    const id = Number(raw)
+    return Number.isFinite(id) ? id : null
+  } catch {
+    return null
+  }
+}
+
 async function fetchMe(token) {
   const res = await fetch('/api/auth/me', {
     method: 'POST',

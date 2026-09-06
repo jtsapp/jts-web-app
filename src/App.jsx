@@ -66,7 +66,7 @@ import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount } from './lib/session.js'
+import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -148,6 +148,14 @@ export default function App() {
     if (liveParam) {
       setLiveLessonId(liveParam)
     }
+    // Сеанс класса, который эта вкладка уже открывала (Правило 1 памяти
+    // вкладки — sessionStorage, см. lib/session.js): переживает перезагрузку
+    // ЭТОЙ вкладки, но не переживает её закрытие. Восстанавливаем здесь же,
+    // рядом с ?live= выше, — тот же смысл «что вкладка помнит при загрузке».
+    // Восстановленному id всё равно не верят на слово: статус занятия
+    // перепроверяет сам BoothEntryPage, прежде чем предложить «Вернуться в
+    // класс» (Правило 2).
+    setBoothLessonId(loadBoothLessonId())
     // ?level=<A1|A2|…> — королевство для kingdom-interior (диплинк
     // ?screen=kingdom-interior&level=b1). Через карту туда не попасть, пока
     // уровень пользователя ниже, а смотреть тропу и урок нужно и до этого.
@@ -332,13 +340,22 @@ export default function App() {
   const [boothAccount, setBoothAccount] = useState(false)
   // Урок класса, который эта вкладка уже открыла. Нужен, чтобы возврат из урока
   // не звал вход в класс повторно: бэкенд закрыл бы открытый сеанс как забытый
-  // и завёл новое занятие — с пустой доской.
+  // и завёл новое занятие — с пустой доской. Стартовое значение читается из
+  // sessionStorage эффектом диплинков ниже (Правило 1 памяти вкладки, см.
+  // lib/session.js) — здесь просто null, чтобы SSR и первый клиентский рендер
+  // совпадали (тот же приём, что у screen: настоящее восстановление только
+  // эффектом, после гидратации).
+  //
+  // Прошлый отдельный признак «сеанс только что завершил преподаватель»
+  // (boothLessonFinished) отсюда убран: раньше он был единственным
+  // источником правды для состояния BoothEntryPage «урок завершён», жил
+  // только в React-состоянии и терялся при перезагрузке (находка 1 второго
+  // ревью). Теперь единственный источник правды — сам BoothEntryPage: он не
+  // верит присланному lessonId на слово и перепроверяет статус занятия у
+  // бэкенда при каждом монтировании (Правило 2), поэтому boothLessonId здесь
+  // НЕ обнуляется, когда преподаватель завершает сеанс, — сеанс просто
+  // остаётся «известным», а его протухший статус ловит проверка на экране.
   const [boothLessonId, setBoothLessonId] = useState(null)
-  // Последний сеанс класса дошёл до терминального статуса (LiveLessonPage
-  // сообщил через onLessonClosed) — экран класса должен показать «урок
-  // завершён» и НЕ входить сам: автовход в ту же секунду завёл бы новое
-  // занятие, хотя за планшетом ещё никого нет (находка 1 финального ревью).
-  const [boothLessonFinished, setBoothLessonFinished] = useState(false)
   // id живого урока для workspace-экрана (диплинк ?screen=lesson-workspace&lesson=<id>,
   // см. эффект восстановления сессии ниже). Без диплинка остаётся null —
   // LessonWorkspacePage тогда показывает SAMPLE_LESSON.
@@ -770,12 +787,14 @@ export default function App() {
     // тиком, он успел бы вернуть вышедшего обратно в класс.
     setBoothAccount(false)
     setBoothLessonId(null)
-    // liveLessonId и boothLessonFinished — та же история: устройство общее, и
-    // «известный урок» ниже (knownBoothLessonId) иначе прочитал бы чужой
-    // liveLessonId прошлого пользователя вкладки как сеанс следующего аккаунта
-    // класса, а «урок завершён» показался бы тому, кто ещё не входил ни разу.
+    // Забываем и в sessionStorage — иначе следующий вошедший в этой же
+    // вкладке (аккаунт общий, устройство общее) унаследовал бы чужой сеанс
+    // урока при простом восстановлении по Правилу 1 памяти вкладки.
+    saveBoothLessonId(null)
+    // liveLessonId — та же история: «известный урок» ниже (knownBoothLessonId)
+    // иначе прочитал бы чужой liveLessonId прошлого пользователя вкладки как
+    // сеанс следующего аккаунта класса.
     setLiveLessonId(null)
-    setBoothLessonFinished(false)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -852,15 +871,23 @@ export default function App() {
   const knownBoothLessonId = boothLessonId ?? (Number.isFinite(parsedLiveLessonId) ? parsedLiveLessonId : null)
 
   // Урок сеанса класса дошёл до терминального статуса — уводим аккаунт класса
-  // на экран ожидания следующего посетителя и забываем урок (находка 1
-  // финального ревью). Оба id обнуляем: boothLessonId — иначе следующий вход
-  // счёл бы сеанс «известным» и просто вернул на тот же завершённый урок;
-  // liveLessonId — иначе его подхватил бы knownBoothLessonId выше в обход
-  // первого обнуления.
+  // на экран ожидания следующего посетителя (находка 1 финального ревью).
+  // boothLessonId НЕ обнуляем (в отличие от прежней версии): урок остаётся
+  // «известным», а решение «сеанс жив или кончился» теперь принимает сам
+  // BoothEntryPage при монтировании, перепроверяя статус у бэкенда (Правило 2
+  // памяти вкладки, см. lib/session.js и BoothEntryPage.jsx) — тот же ответ
+  // COMPLETED, который сейчас увидела эта функция через onLessonClosed,
+  // экран увидит секундой позже сам и покажет «Урок завершён» без автовхода.
+  // Раннее обнуление плюс отдельный признак boothLessonFinished было вторым,
+  // расходящимся источником той же правды: перезагрузка стирала признак из
+  // React-состояния и включала автовход, хотя за планшетом ещё никого нет
+  // (находка второго ревью).
+  //
+  // liveLessonId всё же обнуляем: он держит ?live= в адресе для экрана
+  // «Живой урок», а этот экран мы покидаем — держать сеанс актуальным для
+  // BoothEntryPage должен только boothLessonId.
   function handleBoothLessonClosed() {
-    setBoothLessonId(null)
     setLiveLessonId(null)
-    setBoothLessonFinished(true)
     setScreen('booth')
   }
 
@@ -1257,13 +1284,15 @@ export default function App() {
         <BoothEntryPage
           token={token}
           lessonId={knownBoothLessonId}
-          justFinished={boothLessonFinished}
           onEnter={(id) => {
             setBoothLessonId(id)
+            // Единственное место, где сеанс класса пишется в sessionStorage
+            // (Правило 1 памяти вкладки) — симметрично saveBoothLessonId(null)
+            // в handleLogout, который его стирает. Пишем и на «Вернуться в
+            // класс» (BoothEntryPage вызывает onEnter с тем же id, который уже
+            // лежал в сторадже) — идемпотентно, лишним не будет.
+            saveBoothLessonId(id)
             setLiveLessonId(id)
-            // Новый сеанс открыт по нажатию — прошлое «урок завершён» больше не
-            // относится к тому, что видит вкладка теперь.
-            setBoothLessonFinished(false)
             setScreen('live-lesson')
           }}
         />

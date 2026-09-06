@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { saveUserSnapshot, patchUserSnapshot, patchBoothAccount } from './session.js'
+import { saveUserSnapshot, patchUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './session.js'
 
 // Снимок профиля в localStorage — запасной ответ на вопрос «кто вошёл», когда
 // бэкенд отвечает 5xx: restoreSession тогда возвращает именно его и токен не
@@ -90,5 +90,55 @@ describe('patchBoothAccount', () => {
     const snap = JSON.parse(localStorage.getItem('jts_user_snapshot'))
     expect(snap.boothAccount).toBe(true)
     expect(snap.userId).toBe(501)
+  })
+})
+
+// Правило 1 памяти вкладки (второе ревью): sessionStorage, а не localStorage
+// — значение обязано умереть вместе со вкладкой, но переживать её F5.
+describe('boothLessonId (память вкладки о своём сеансе)', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('пишется и читается тем же значением', () => {
+    saveBoothLessonId(77)
+
+    expect(sessionStorage.getItem('jts_booth_lesson_id')).toBe('77')
+    expect(loadBoothLessonId()).toBe(77)
+  })
+
+  it('null стирает запись, а не пишет строку "null"', () => {
+    saveBoothLessonId(77)
+    saveBoothLessonId(null)
+
+    expect(sessionStorage.getItem('jts_booth_lesson_id')).toBeNull()
+    expect(loadBoothLessonId()).toBeNull()
+  })
+
+  it('пустое хранилище читается как null', () => {
+    expect(loadBoothLessonId()).toBeNull()
+  })
+
+  it('переживает битое значение в хранилище, не бросая исключение', () => {
+    sessionStorage.setItem('jts_booth_lesson_id', 'не число')
+
+    expect(loadBoothLessonId()).toBeNull()
+  })
+
+  it('не бросает, если sessionStorage бросает (приватное окно и т.п.)', () => {
+    const real = globalThis.sessionStorage
+    const throwing = {
+      getItem() { throw new Error('SecurityError') },
+      setItem() { throw new Error('SecurityError') },
+      removeItem() { throw new Error('SecurityError') },
+    }
+    Object.defineProperty(globalThis, 'sessionStorage', { value: throwing, configurable: true })
+
+    try {
+      expect(() => saveBoothLessonId(77)).not.toThrow()
+      expect(loadBoothLessonId()).toBeNull()
+    } finally {
+      Object.defineProperty(globalThis, 'sessionStorage', { value: real, configurable: true })
+    }
   })
 })

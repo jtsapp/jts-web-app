@@ -482,6 +482,7 @@ const dict = {
     'live.waiting': 'Преподаватель ещё не начал урок',
     // Аккаунт класса преподавателя: единственный экран пробного урока.
     'booth.entering': 'Входим в класс…',
+    'booth.checking': 'Проверяем урок…',
     'booth.waitingTitle': 'Преподаватель ещё не открыл класс',
     'booth.waitingText': 'Страница откроет урок сама, как только класс заработает.',
     'booth.closedTitle': 'Класс закрыт',
@@ -1823,6 +1824,7 @@ const dict = {
     'live.noLesson': 'No lesson selected — open one from the schedule',
     'live.waiting': 'The teacher has not started the lesson yet',
     'booth.entering': 'Opening the classroom…',
+    'booth.checking': 'Checking the lesson…',
     'booth.waitingTitle': 'The teacher has not opened the classroom yet',
     'booth.waitingText': 'This page will open the lesson as soon as the classroom is ready.',
     'booth.closedTitle': 'The classroom is closed',
@@ -3154,6 +3156,7 @@ const dict = {
     'live.noLesson': 'Сабақ таңдалмаған — оны кестеден ашыңыз',
     'live.waiting': 'Мұғалім сабақты әлі бастаған жоқ',
     'booth.entering': 'Сыныпқа кіріп жатырмыз…',
+    'booth.checking': 'Сабақты тексеріп жатырмыз…',
     'booth.waitingTitle': 'Мұғалім сыныпты әлі ашқан жоқ',
     'booth.waitingText': 'Сынып дайын болғанда бет сабақты өзі ашады.',
     'booth.closedTitle': 'Сынып жабық',
