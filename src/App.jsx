@@ -55,6 +55,7 @@ import { NO_PREVIOUS_CALL } from './lib/callSummary/freshCall.js'
 import ProfilePage from './screens/ProfilePage.jsx'
 import LessonWorkspacePage from './screens/LessonWorkspacePage.jsx'
 import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
+import BoothEntryPage from './screens/BoothEntryPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, temperFor } from './tutor/tutors.js'
 import { isMinor } from './lib/birthDate.js'
@@ -64,10 +65,10 @@ import { playTutorSample } from './lib/ielts-audio.js'
 import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
-import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
+import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
-import { isTeacher } from './lib/jwt.js'
+import { homeScreenFor } from './lib/homeScreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel } from './lib/levelSave.js'
@@ -169,6 +170,7 @@ export default function App() {
         if (cancelled) return
         if (session) {
           setToken(session.token)
+          setBoothAccount(!!session.boothAccount)
           hydratePractice(session.token)
           if (session.name) setName(session.name)
           if (session.phone) setPhone(session.phone)
@@ -196,11 +198,14 @@ export default function App() {
         // Ссылка из админки важнее сессии: студент должен задать пароль.
         if (inviteToken) setScreen('complete-registration')
         else if (deepLink) setScreen(deepLink)
-        // Преподаватель приходит сюда работать, а не учиться: карта уровней с
-        // запертыми королевствами — ученический экран, и открывать его первым
-        // ему бессмысленно (сайдбар ему всё остальное и так не показывает).
-        else if (session && isTeacher(session.token)) setScreen('lessons')
-        else if (session) setScreen(TUTOR_ONLY ? (profile?.tutor ? 'tutor-dashboard' : 'tutor-welcome') : 'kingdom')
+        // Куда вести после входа — одно решение на все пути входа, см.
+        // lib/homeScreen.js: аккаунт класса в класс, преподавателя в «Уроки»,
+        // ученика в королевства.
+        else if (session) setScreen(homeScreenFor({
+          token: session.token,
+          boothAccount: !!session.boothAccount,
+          tutorOnboarded: !!profile?.tutor,
+        }))
       })
       .finally(() => {
         if (!cancelled) setRestoring(false)
@@ -317,6 +322,13 @@ export default function App() {
   // диплинков ниже.
   const [devUnlock, setDevUnlock] = useState(false)
   const [liveLessonId, setLiveLessonId] = useState(null)
+  // Аккаунт класса преподавателя (признак boothAccount из /user/me): кабинета у
+  // него нет, единственный экран — сам класс (см. screens/BoothEntryPage.jsx).
+  const [boothAccount, setBoothAccount] = useState(false)
+  // Урок класса, который эта вкладка уже открыла. Нужен, чтобы возврат из урока
+  // не звал вход в класс повторно: бэкенд закрыл бы открытый сеанс как забытый
+  // и завёл новое занятие — с пустой доской.
+  const [boothLessonId, setBoothLessonId] = useState(null)
   // id живого урока для workspace-экрана (диплинк ?screen=lesson-workspace&lesson=<id>,
   // см. эффект восстановления сессии ниже). Без диплинка остаётся null —
   // LessonWorkspacePage тогда показывает SAMPLE_LESSON.
@@ -441,6 +453,7 @@ export default function App() {
       }
       if (lvl) setUserLevel(lvl)
       if (tok) getIsDemoAccount(tok).then(setIsDemoAccount)
+      if (tok) getIsBoothAccount(tok).then(setBoothAccount)
       // При входе (в отличие от регистрации) даты рождения в стейте нет, а от
       // неё зависит доступ к жёсткому нраву тьютора — подтягиваем из профиля.
       if (tok && mode !== 'register') {
@@ -548,6 +561,9 @@ export default function App() {
         console.warn('Не удалось получить уровень из профиля:', e)
       }
       getIsDemoAccount(tok).then(setIsDemoAccount)
+      // Логином и паролем входит и пришедший на пробный урок: аккаунт класса
+      // общий и служебный, ему после входа положен урок, а не кабинет.
+      getIsBoothAccount(tok).then(setBoothAccount)
       // Возраст решает доступ к жёсткому нраву тьютора — тянем из профиля.
       getCurrentUser(tok)
         .then((me) => {
@@ -588,6 +604,7 @@ export default function App() {
       console.warn('Не удалось получить уровень из профиля:', e)
     }
     getIsDemoAccount(tok).then(setIsDemoAccount)
+    getIsBoothAccount(tok).then(setBoothAccount)
     mergeAnonymousProgress(tok)
       .then(() => loadTutorProfile(tok))
       .then((profile) => {
@@ -714,6 +731,13 @@ export default function App() {
     setPhone('')
     setEmail('')
     setIsDemoAccount(false)
+    // Аккаунт класса общий: в той же вкладке следующий пользователь не должен
+    // унаследовать ни признак, ни чужой сеанс урока. Снимаем признак ЗДЕСЬ, в
+    // одном обновлении с setScreen('welcome') ниже: страж кабинета (задача 6)
+    // смотрит на пару «признак + экран», и если бы признак снимался отдельным
+    // тиком, он успел бы вернуть вышедшего обратно в класс.
+    setBoothAccount(false)
+    setBoothLessonId(null)
     // Тьютор-профиль принадлежит аккаунту — в той же вкладке следующий юзер
     // не должен унаследовать чужой выбор.
     setTutorKey('spark')
@@ -979,21 +1003,12 @@ export default function App() {
         />
       )
     case 'success':
-      // Уровень уже взят из профиля; если его там не было (новая регистрация) —
-      // сначала письменный CEFR-тест, иначе сразу в обучение. В режиме «только
-      // тьютор» королевств нет: свежий вход ведёт в онбординг тьютора (там свой
-      // голосовой тест уровня), вернувшийся пользователь — сразу на дашборд.
+      // Куда вести после входа, решает одна функция на все пути (см.
+      // lib/homeScreen.js): аккаунт класса — в класс, преподавателя — в
+      // «Уроки», ученику — тест уровня или королевства.
       return (
         <SuccessPage
-          onDone={() =>
-            // Преподавателя ведём в «Уроки»: карта уровней и CEFR-тест — часть
-            // ученического пути, ему они не нужны (см. восстановление сессии).
-            setScreen(
-              isTeacher(token) ? 'lessons'
-                : TUTOR_ONLY ? tutorHome
-                  : needsLevelTest ? 'test-intro' : 'kingdom'
-            )
-          }
+          onDone={() => setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))}
         />
       )
     case 'test-intro':
@@ -1117,8 +1132,22 @@ export default function App() {
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
     case 'course-catalog':
       return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
+    case 'booth':
+      return (
+        <BoothEntryPage
+          token={token}
+          lessonId={boothLessonId}
+          onEnter={(id) => {
+            setBoothLessonId(id)
+            setLiveLessonId(id)
+            setScreen('live-lesson')
+          }}
+        />
+      )
     case 'live-lesson':
-      return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} />
+      // Аккаунт класса выходит из урока не в расписание, которого у него нет, а
+      // обратно на экран класса — тот вернёт его в тот же урок.
+      return <LiveLessonPage lessonId={liveLessonId} userName={name} userLevel={userLevel} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen(boothAccount ? 'booth' : 'lessons')} />
     // Секции IELTS ходят друг к другу по имени экрана — своя мини-навигация
     // поверх общей (onGo), сайдбар при этом остаётся на пункте «IELTS».
     case 'ielts':
