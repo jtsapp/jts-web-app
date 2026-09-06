@@ -96,6 +96,15 @@ const PERSISTABLE_SCREENS = new Set([
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
+// Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
+// deepLink оставлял стартовый 'welcome' (или уводил на kingdom) — жалоба
+// «в тьюторе обновить = выкинуло на логин, в остальных разделах норм».
+// Префикс tutor-* без runtime-id безопасен: дашборд/онбординг/сценарии
+// поднимаются из профиля; voice-chat на F5 просто запросит новый LiveKit-токен.
+function persistsInUrl(screen) {
+  return PERSISTABLE_SCREENS.has(screen) || (typeof screen === 'string' && screen.startsWith('tutor-'))
+}
+
 export default function App() {
   const { t, lang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
@@ -758,7 +767,7 @@ export default function App() {
     const hadLive = url.searchParams.get('live')
     const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
     const wantLive = isLiveLesson ? String(liveLessonId) : null
-    if (PERSISTABLE_SCREENS.has(screen) || isLiveLesson) {
+    if (persistsInUrl(screen) || isLiveLesson) {
       if (hadScreen === screen && hadLive === wantLive) return
       url.searchParams.set('screen', screen)
       if (wantLive != null) url.searchParams.set('live', wantLive)

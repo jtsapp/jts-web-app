@@ -61,4 +61,11 @@ describe('навигация — недостижимых экранов нет'
   it('после подстройки тьютора студент попадает на предложение теста', () => {
     expect(app).toMatch(/onDone=\{\(\) => goAfterTutorEdit\('tutor-level-offer', 'tutor-dashboard'\)\}/)
   })
+
+  // F5 в зоне тьютора должен читать ?screen=tutor-… тем же deepLink-путём,
+  // что и Практика/Словарь — иначе URL чистится и открывается welcome.
+  it('экраны тьютора попадают в ?screen= (persistsInUrl / tutor-*)', () => {
+    expect(app).toMatch(/screen\.startsWith\('tutor-'\)/)
+    expect(app).toMatch(/function persistsInUrl/)
+  })
 })
