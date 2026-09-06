@@ -81,6 +81,13 @@ function sseChunk(id, model, created, delta, finishReason) {
 }
 
 export async function POST(request) {
+  // Замер роута изнутри. У агента в логах видно только llm_ttft — сколько
+  // прошло от его запроса до первого токена, и туда свалено всё разом: дорога
+  // us-east ↔ стенд, nginx, наш сервер, Anthropic. 06.09.2026 живой звонок дал
+  // 2.7 с при том, что сам обработчик на этом же промпте отдаёт первый токен за
+  // 0.87 с (замер через прямой вызов POST). Разницу без этой строки не
+  // локализовать: она либо на дороге, либо в сервере, и снаружи они неразличимы.
+  const t0 = Date.now()
   if (!isTrustedBrainCaller(request)) {
     return Response.json({ error: 'Unauthorized.' }, { status: 401 })
   }
@@ -116,6 +123,13 @@ export async function POST(request) {
   const temperature = typeof body.temperature === 'number' ? body.temperature : undefined
 
   const encoder = new TextEncoder()
+  // Метки замера: tParsed — сколько роут потратил на себя до похода в Anthropic,
+  // tFirst — когда пошёл первый видимый токен. Тела и промпта в лог не пишем,
+  // только размеры: это разговор ученика.
+  const tParsed = Date.now()
+  let tFirst = 0
+  let retried = false
+  const promptChars = systemPrompt.length
   const stream = new ReadableStream({
     async start(controller) {
       const send = (s) => controller.enqueue(encoder.encode(s))
@@ -152,6 +166,7 @@ export async function POST(request) {
           for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature })) {
             if (ev.type === 'text') {
               if (!ev.text) continue
+              if (!tFirst) tFirst = Date.now()
               anyText = true
               send(sseChunk(id, model, created, { content: ev.text }, null))
             } else {
@@ -184,6 +199,7 @@ export async function POST(request) {
         // "could you say that again?". Nothing was streamed yet, so retry once;
         // empties are transient and clear on the second attempt.
         if (!anyText && toolCount === 0) {
+          retried = true
           const retry = await streamOnce(0)
           anyText = retry.anyText
           toolCount = retry.toolCount
@@ -235,6 +251,14 @@ export async function POST(request) {
         send(sseChunk(id, model, created, {}, 'stop'))
         send('data: [DONE]\n\n')
       } finally {
+        // Одна строка на ход. Сверять с llm_ttft из `lk agent logs`: что не
+        // попало сюда — то дорога до стенда и nginx, а не наш код.
+        const done = Date.now()
+        console.log(
+          `[brain] ttft=${((tFirst || done) - t0) / 1000}s own=${(tParsed - t0) / 1000}s ` +
+            `total=${(done - t0) / 1000}s prompt=${promptChars}ch turns=${turns.length}` +
+            (retried ? ' retried=1' : ''),
+        )
         controller.close()
       }
     },
