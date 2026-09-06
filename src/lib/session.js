@@ -86,6 +86,15 @@ export function saveUserSnapshot(user) {
         languageLevel: user.languageLevel ?? null,
         birthDate: user.birthDate ?? null,
         isDemoAccount: !!user.isDemoAccount,
+        // Снимок — это ответ на «кто вошёл» при недоступном бэкенде. Без
+        // признака класса недоступный бэкенд выкидывал бы пришедшего на
+        // пробный в кабинет, которого у его аккаунта нет.
+        //
+        // `!!` обязателен и здесь, но по своей причине: снимок уходит в
+        // JSON.stringify, а undefined из объекта там просто ИСЧЕЗАЕТ — поле
+        // молча пропало бы из localStorage, и отличить «признака не было» от
+        // «снимок старый» стало бы нечем.
+        boothAccount: !!user.boothAccount,
       }),
     )
   } catch {
