@@ -62,10 +62,11 @@ describe('patchUserSnapshot', () => {
   })
 })
 
-// patchBoothAccount — находка 4а финального ревью: getIsBoothAccount отвечает
-// false не только на настоящий «не класс», но и на любую сетевую осечку
-// (задокументировано в api.js), и слепой патч этим false одной неудачной
-// секундой сети стёр бы уже подтверждённое true.
+// patchBoothAccount патчит только достоверное «да». Осечку сети
+// getIsBoothAccount теперь отдаёт отдельным значением null (api.js) и
+// applyBoothAccount (App.jsx) сюда её не пускает вовсе — но патч всё равно не
+// трогает снимок на false: «этот аккаунт больше не класс» дождётся целого
+// снимка на следующем restoreSession, а не точечной перезаписи одного поля.
 describe('patchBoothAccount', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -83,8 +84,6 @@ describe('patchBoothAccount', () => {
     saveUserSnapshot({ userId: 501, name: 'Класс · Айгуль', role: 'STUDENT' })
     patchBoothAccount(true)
 
-    // Следующий вызов — та самая «неудачная секунда сети»: getIsBoothAccount
-    // не смог отличить осечку от настоящего «не класс» и отдал false.
     patchBoothAccount(false)
 
     const snap = JSON.parse(localStorage.getItem('jts_user_snapshot'))

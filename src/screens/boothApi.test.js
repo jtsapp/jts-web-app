@@ -37,10 +37,28 @@ describe('getIsBoothAccount', () => {
     expect(await getIsBoothAccount('TOK')).toBe(false)
   })
 
-  // Осечка сети не должна ронять вход: человек попадёт в обычный кабинет, а
-  // F5 спросит снова. Настоящий запрет всё равно живёт на бэкенде.
-  it('осечка запроса — false, без исключения', async () => {
+  // Осечка сети — это не «не класс»: у аккаунта класса нет кабинета, и false
+  // здесь увело бы его на карту королевств без возврата. Отличаем её от
+  // настоящего ответа отдельным значением null — вызывающий (applyBoothAccount
+  // в App.jsx) на null не трогает ни state, ни снимок и повторяет попытку.
+  it('обрыв сети — null, а не false', async () => {
     global.fetch.mockRejectedValueOnce(new Error('offline'))
+
+    expect(await getIsBoothAccount('TOK')).toBeNull()
+  })
+
+  // 5xx — тот же класс осечки, что и обрыв сети: бэкенд жив, но содержательно
+  // не ответил.
+  it('5xx бэкенда — тоже null', async () => {
+    global.fetch.mockResolvedValueOnce(fail(503))
+
+    expect(await getIsBoothAccount('TOK')).toBeNull()
+  })
+
+  // 4xx — это уже настоящий ответ бэкенда (пусть и ошибкой), а не осечка:
+  // данных о boothAccount в нём нет, поэтому читаем как «не класс».
+  it('4xx бэкенда — false, это ответ, а не осечка', async () => {
+    global.fetch.mockResolvedValueOnce(fail(401))
 
     expect(await getIsBoothAccount('TOK')).toBe(false)
   })

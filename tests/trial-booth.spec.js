@@ -78,6 +78,49 @@ test('аккаунт класса после входа оказывается �
   await expect(page.getByText('Мой график')).toHaveCount(0)
 })
 
+// Находка 1 текущего ревью: getIsBoothAccount раньше не отличал сетевую
+// осечку от настоящего «не класс» — оба приезжали одним и тем же false, а
+// applyBoothAccount зовётся один раз, а не опрашивается, — так что сбой
+// /user/me в момент входа топил признак НАВСЕГДА в этой вкладке: success-экран
+// уводил на карту королевств (boothAccount ещё false), и обратного пути там
+// уже нет — диплинк ?screen=booth сам выгоняет не-класс на домашний экран
+// (см. следующий тест). Теперь на осечку (null) applyBoothAccount не трогает
+// state и сам повторяет попытку через паузу — вкладка сама дотягивает признак
+// и уходит в урок, без перезагрузки.
+test('сетевая осечка на /user/me при входе не топит признак класса — вкладка сама дотягивает урок', async ({ page }) => {
+  await stubAccount(page)
+  await page.route('**/auth/login', (r) =>
+    r.fulfill(json({ accessToken: TOKEN, refreshToken: 'r', userId: 501, name: BOOTH_NAME, role: 'STUDENT' })))
+  await page.route('**/trial/booth/enter', (r) => r.fulfill(json(ENTERED)))
+
+  // Вход зовёт /user/me дважды параллельно (applyBoothAccount и, отдельно,
+  // getCurrentUser за датой рождения) — который из двух долетит до роута
+  // первым, не гарантировано. Поэтому «неудачная секунда сети» держится на
+  // первых ДВУХ вызовах разом (503 обоим, второй вызов молча проглочен
+  // getCurrentUser, см. catch там), а не на одном: иначе тест сам стал бы
+  // случайным в зависимости от порядка гонки. Третий вызов — это уже повтор
+  // applyBoothAccount после паузы, он отвечает как обычно.
+  let userMeCalls = 0
+  await page.unroute('**/user/me')
+  await page.route('**/user/me', (r) => {
+    userMeCalls += 1
+    if (userMeCalls <= 2) return r.fulfill(json({ error: 'unavailable' }, 503))
+    return r.fulfill(json(BOOTH_USER))
+  })
+
+  await page.goto('/')
+  await page.locator('.btn--secondary').click()
+  await page.getByPlaceholder('Телефон или почта').fill(BOOTH_LOGIN)
+  await page.getByPlaceholder('Пароль').fill(BOOTH_PASSWORD)
+  await page.locator('.form-primary').click()
+
+  // Ждём с запасом: success-экран (1.8 с) успевает уйти на карту королевств
+  // со старым false, прежде чем повтор (пауза после осечки) дотянет признак и
+  // вкладка сама переберётся в класс и в урок — без единого F5.
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  expect(userMeCalls).toBeGreaterThanOrEqual(3)
+})
+
 // Находка 1 финального ревью: обёртка анимации перехода ключевалась сырым
 // screen, а рисовался вычисленный view (аккаунт класса вместо screen видит
 // 'booth'). Свежий вход ставит screen='success' — в тот же рендер view уже

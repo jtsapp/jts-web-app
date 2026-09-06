@@ -102,6 +102,11 @@ const PERSISTABLE_SCREENS = new Set([
 // нём нечего — значит и чистить между учениками нечего.
 const BOOTH_SCREENS = new Set(['booth', 'live-lesson'])
 
+// Через сколько повторить проверку признака класса, если getIsBoothAccount
+// (api.js) вернул null — сеть или бэкенд промолчали в момент входа. Пауза, не
+// мгновенный повтор: та же секунда сети, скорее всего, ещё не отпустила.
+const BOOTH_ACCOUNT_RETRY_MS = 4000
+
 export default function App() {
   const { t, lang } = useI18n()
   // Стартуем с welcome: регистрация/вход — первое, что видит пользователь.
@@ -384,12 +389,28 @@ export default function App() {
   // у его аккаунта нет.
   //
   // Патчим снимок через patchBoothAccount (lib/session.js), а не голым
-  // patchUserSnapshot: тот патчит только достоверное true, отличая
-  // подтверждённое «не класс» от сетевой осечки getIsBoothAccount, которая
-  // отвечает тем же false (находка 4а финального ревью) — см. комментарий
-  // там же.
+  // patchUserSnapshot: тот патчит только достоверное true, не давая
+  // подтверждённому классу тихо откатиться на «не класс».
+  //
+  // getIsBoothAccount отдаёт null, когда ответа не было вовсе (сеть/5xx, см.
+  // api.js) — это НЕ «не класс», и трогать им state или снимок нельзя: аккаунт
+  // класса без кабинета уехал бы на карту королевств без возврата (диплинк
+  // ?screen=booth сам выгоняет не-класс на домашний экран). На null не делаем
+  // ничего и один раз повторяем попытку через паузу; если и повтор ни с чем —
+  // оставляем как есть, следующее восстановление сессии всё равно спросит
+  // бэкенд заново.
   function applyBoothAccount(tok) {
     getIsBoothAccount(tok).then((isBooth) => {
+      if (isBooth === null) {
+        setTimeout(() => {
+          getIsBoothAccount(tok).then((retried) => {
+            if (retried === null) return
+            setBoothAccount(retried)
+            patchBoothAccount(retried)
+          })
+        }, BOOTH_ACCOUNT_RETRY_MS)
+        return
+      }
       setBoothAccount(isBooth)
       patchBoothAccount(isBooth)
     })
