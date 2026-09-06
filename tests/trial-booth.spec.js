@@ -343,3 +343,24 @@ test('перезагрузка внутри урока не забывает с�
   await page.waitForTimeout(6000)
   expect(attempts).toBe(settled)
 })
+
+// Находка 4б финального ревью: ?live= в адресе может быть мусором, не числом.
+// knownBoothLessonId без проверки на конечное число принял бы такой мусор за
+// «известный урок» (Number('abc') это NaN, а `NaN != null` истинно) — экран
+// класса решил бы, что сеанс уже открыт, вместо настоящего /enter.
+test('мусор в ?live= не считается известным уроком — класс входит как обычно', async ({ page }) => {
+  await stubAccount(page)
+  await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), TOKEN)
+  let attempts = 0
+  await page.route('**/trial/booth/enter', (r) => {
+    attempts += 1
+    return r.fulfill(json(ENTERED))
+  })
+
+  await page.goto('/?screen=booth&live=abc')
+
+  // «Известный урок» повёл бы сразу на «Вернуться в класс» и не позвал бы
+  // /enter вовсе — здесь же ожидается обычный вход и настоящий урок.
+  await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
+  expect(attempts).toBeGreaterThan(0)
+})

@@ -66,7 +66,7 @@ import { unlockBroadcastAudio } from './screens/live/audioReport.js'
 import { interestIdsToEn, enToInterestIds } from './tutor/interests.js'
 import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getIsDemoAccount, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchUserSnapshot } from './lib/session.js'
+import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
@@ -365,10 +365,16 @@ export default function App() {
   // сразу после свежего входа при недоступном бэкенде тогда дала бы
   // boothAccount: false, и пришедший на пробный уехал бы в кабинет, которого
   // у его аккаунта нет.
+  //
+  // Патчим снимок через patchBoothAccount (lib/session.js), а не голым
+  // patchUserSnapshot: тот патчит только достоверное true, отличая
+  // подтверждённое «не класс» от сетевой осечки getIsBoothAccount, которая
+  // отвечает тем же false (находка 4а финального ревью) — см. комментарий
+  // там же.
   function applyBoothAccount(tok) {
     getIsBoothAccount(tok).then((isBooth) => {
       setBoothAccount(isBooth)
-      patchUserSnapshot({ boothAccount: isBooth })
+      patchBoothAccount(isBooth)
     })
   }
 
@@ -836,7 +842,14 @@ export default function App() {
   // сеанс и звало вход в класс заново — тот же побочный эффект, ради которого
   // вообще завели boothLessonId (находка 2 финального ревью). Приводим к
   // числу: параметр адреса — строка, а boothLessonId — число из ответа API.
-  const knownBoothLessonId = boothLessonId ?? (liveLessonId != null ? Number(liveLessonId) : null)
+  //
+  // Number.isFinite, а не просто «не null»: ?live= может прийти мусором
+  // (?live=abc) — Number('abc') это NaN, а `NaN != null` истинно, и голая
+  // проверка на null приняла бы такой мусор за «известный урок» (находка 4б
+  // финального ревью). Number.isFinite отсекает и NaN, и Infinity, а null —
+  // ветка выше уже привела его к null явно, до вызова Number().
+  const parsedLiveLessonId = liveLessonId != null ? Number(liveLessonId) : null
+  const knownBoothLessonId = boothLessonId ?? (Number.isFinite(parsedLiveLessonId) ? parsedLiveLessonId : null)
 
   // Урок сеанса класса дошёл до терминального статуса — уводим аккаунт класса
   // на экран ожидания следующего посетителя и забываем урок (находка 1

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { saveUserSnapshot, patchUserSnapshot } from './session.js'
+import { saveUserSnapshot, patchUserSnapshot, patchBoothAccount } from './session.js'
 
 // Снимок профиля в localStorage — запасной ответ на вопрос «кто вошёл», когда
 // бэкенд отвечает 5xx: restoreSession тогда возвращает именно его и токен не
@@ -59,5 +59,36 @@ describe('patchUserSnapshot', () => {
     // Битый снимок не читается как валидный — patchUserSnapshot его не трогает,
     // а не подменяет наугад собранным объектом.
     expect(localStorage.getItem('jts_user_snapshot')).toBe('{не json')
+  })
+})
+
+// patchBoothAccount — находка 4а финального ревью: getIsBoothAccount отвечает
+// false не только на настоящий «не класс», но и на любую сетевую осечку
+// (задокументировано в api.js), и слепой патч этим false одной неудачной
+// секундой сети стёр бы уже подтверждённое true.
+describe('patchBoothAccount', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('true патчится в снимок как обычно', () => {
+    saveUserSnapshot({ userId: 501, name: 'Класс · Айгуль', role: 'STUDENT' })
+
+    patchBoothAccount(true)
+
+    expect(JSON.parse(localStorage.getItem('jts_user_snapshot')).boothAccount).toBe(true)
+  })
+
+  it('false не перезаписывает уже подтверждённое true', () => {
+    saveUserSnapshot({ userId: 501, name: 'Класс · Айгуль', role: 'STUDENT' })
+    patchBoothAccount(true)
+
+    // Следующий вызов — та самая «неудачная секунда сети»: getIsBoothAccount
+    // не смог отличить осечку от настоящего «не класс» и отдал false.
+    patchBoothAccount(false)
+
+    const snap = JSON.parse(localStorage.getItem('jts_user_snapshot'))
+    expect(snap.boothAccount).toBe(true)
+    expect(snap.userId).toBe(501)
   })
 })

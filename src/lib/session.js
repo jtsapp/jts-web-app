@@ -123,6 +123,19 @@ export function patchUserSnapshot(fields) {
   }
 }
 
+/**
+ * Признак класса патчим в снимок только на достоверное «да». getIsBoothAccount
+ * (см. api.js) отвечает false не только на настоящий «не класс», но и на
+ * любую сетевую осечку — и слепой патч тем, что он вернёт, одной неудачной
+ * секундой сети записал бы в снимок ложное «не класс» (находка 4а финального
+ * ревью). Настоящее «этот аккаунт больше не класс» и так приедет ответом
+ * /user/me при следующем restoreSession — тот перезаписывает снимок целиком
+ * (см. saveUserSnapshot выше), а не патчит поверх старого.
+ */
+export function patchBoothAccount(isBooth) {
+  if (isBooth) patchUserSnapshot({ boothAccount: true })
+}
+
 /** access обязателен; refresh/user — по возможности с ответа логина. */
 export function saveToken(token, refreshToken) {
   try {
