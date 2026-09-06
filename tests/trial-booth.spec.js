@@ -41,6 +41,15 @@ async function stubAccount(page) {
   await page.route('**/admin/lessons/77/sections', (r) => r.fulfill(json([])))
 }
 
+/** Обычный ученик — контраст к stubAccount(): boothAccount в ответах нет. */
+async function stubRegularStudent(page) {
+  await page.route('**/user/me', (r) => r.fulfill(json({ id: 900, name: 'Ученик', role: 'STUDENT', languageLevel: 'A1' })))
+  await page.route('**/api/auth/me', (r) =>
+    r.fulfill(json({ user: { userId: 900, name: 'Ученик', role: 'STUDENT', languageLevel: 'A1' } })))
+  await page.route('**/user/language-level', (r) => r.fulfill(json('A1')))
+  await page.route('**/api/profile?**', (r) => r.fulfill(json({ configured: true, profile: null })))
+}
+
 test('аккаунт класса после входа оказывается в уроке, а не на «Уроках»', async ({ page }) => {
   await stubAccount(page)
   await page.route('**/auth/login', (r) =>
@@ -179,6 +188,32 @@ test('диплинк в «Уроки» тоже упирается в класс
 
   await expect(page.getByText('Преподаватель ещё не открыл класс')).toBeVisible({ timeout: 15_000 })
   expect(scheduleAsked).toBe(false)
+})
+
+// Находка 2 финального ревью: case 'booth' не проверял boothAccount, а
+// диплинк ?screen=… не валидировался вовсе. Обычный ученик, открывший
+// /?screen=booth, получал бы чужой POST /trial/booth/enter, 403 и тупик
+// «Класс закрыт» без единой кнопки и без выхода.
+test('обычный ученик диплинком ?screen=booth не заходит в чужой класс', async ({ page }) => {
+  await stubRegularStudent(page)
+  await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), TOKEN)
+  let enterCalled = false
+  await page.route('**/trial/booth/enter', (r) => {
+    enterCalled = true
+    return r.fulfill(json({ error: 'forbidden' }, 403))
+  })
+
+  await page.goto('/?screen=booth')
+
+  // Домашний экран ученика — королевства (уровень в профиле уже есть, теста
+  // не просит). Карта уровней — по .lp-node, как и в соседних спеках
+  // LearningPage (learning-lesson.spec.js): заголовок острова на мобилке
+  // не всегда в зоне видимости, а карта — всегда.
+  await expect(page.locator('.lp-node').first()).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText('Класс закрыт')).toHaveCount(0)
+  expect(enterCalled).toBe(false)
+  // И диплинк не остался в адресе — 'booth' не входит в персистируемые экраны.
+  await expect(page).toHaveURL(/\/(\?.*)?$/)
 })
 
 // Регрессия: App передаёт BoothEntryPage урок, который вкладка уже открыла

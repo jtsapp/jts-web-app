@@ -856,9 +856,21 @@ export default function App() {
   // экрана, домашний экран после входа. Признак приезжает ответом сети и может
   // опоздать (SuccessPage уводит через 1.8 с), поэтому проверка живёт эффектом,
   // а не одной веткой в момент входа.
+  //
+  // Обратная сторона того же правила: 'booth' не-классу тоже не положен.
+  // Диплинк ?screen=booth не проверяет, кто его открыл, — обычный ученик или
+  // аноним получил бы чужой POST /trial/booth/enter, 403 и тупик «Класс
+  // закрыт» (находка 2 финального ревью). Уводим той же функцией, что решает
+  // домашний экран после входа, — не отдельным набором условий здесь.
+  // Синхронный аналог этой ветки живёт в view (см. ниже, перед return): он не
+  // даёт BoothEntryPage смонтироваться и позвонить /enter даже на один кадр,
+  // а этот эффект следом приводит screen в согласие с тем, что нарисовано.
   useEffect(() => {
     if (boothAccount && !BOOTH_SCREENS.has(screen)) setScreen('booth')
-  }, [boothAccount, screen])
+    else if (!boothAccount && screen === 'booth') {
+      setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
+    }
+  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
 
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
@@ -947,6 +959,12 @@ export default function App() {
   // даже на один кадр: оболочка кабинета на монтировании поднимает сайдбар и
   // колокольчик, а те сразу уходят в сеть.
   //
+  // Обратная ветка — той же строкой, а не отдельной проверкой в case 'booth':
+  // диплинк ?screen=booth не проверяет, кто его открыл (находка 2 финального
+  // ревью), и без неё BoothEntryPage смонтировался бы под чужим аккаунтом и
+  // сам вызвал бы /trial/booth/enter ещё до того, как эффект выше успел бы
+  // увести на homeScreenFor.
+  //
   // Единая анимация перехода между экранами: ключ обёртки ниже — этот же
   // вычисленный view, а не сырой screen. Раньше ключевали screen, а рисовали
   // view — свежий вход ставит screen='success', view в тот же миг уже 'booth'
@@ -960,7 +978,9 @@ export default function App() {
   // key=screen: CSS-анимация .scr-in по-прежнему проигрывается заново на
   // каждый переход (fade + лёгкий подъём; отключается при
   // prefers-reduced-motion).
-  const view = boothAccount && !BOOTH_SCREENS.has(screen) ? 'booth' : screen
+  const view = boothAccount
+    ? (BOOTH_SCREENS.has(screen) ? screen : 'booth')
+    : (screen === 'booth' ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }) : screen)
   const page = renderScreen(view)
   return page && (
     <div key={view} className="scr-in">
