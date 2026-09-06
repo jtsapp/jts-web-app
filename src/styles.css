@@ -8982,3 +8982,11 @@ textarea {
 }
 .hw-practice__open:hover { background: #6a3ff0; }
 
+/* Экран аккаунта класса (screens/BoothEntryPage.jsx): ожидание, вход в пробный
+   урок и «класс закрыт». Своей вёрстки почти нет — карточка, заголовок и
+   подпись общие с экранами входа (.form-inner/.form-card/.form-title/
+   .form-sub), кружок — общий .spinner. Здесь только центровка этих двух: в
+   колонке карточки они иначе растягиваются по её ширине. */
+.booth__spinner { margin: 0 auto 18px; }
+.booth__cta { align-self: center; margin-top: 20px; }
+

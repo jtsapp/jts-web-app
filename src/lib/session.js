@@ -86,11 +86,55 @@ export function saveUserSnapshot(user) {
         languageLevel: user.languageLevel ?? null,
         birthDate: user.birthDate ?? null,
         isDemoAccount: !!user.isDemoAccount,
+        // Снимок — это ответ на «кто вошёл» при недоступном бэкенде. Без
+        // признака класса недоступный бэкенд выкидывал бы пришедшего на
+        // пробный в кабинет, которого у его аккаунта нет.
+        //
+        // `!!` обязателен и здесь, но по своей причине: снимок уходит в
+        // JSON.stringify, а undefined из объекта там просто ИСЧЕЗАЕТ — поле
+        // молча пропало бы из localStorage, и отличить «признака не было» от
+        // «снимок старый» стало бы нечем.
+        boothAccount: !!user.boothAccount,
       }),
     )
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * Дописывает поля в уже сохранённый снимок, не трогая остальные. Нужен для
+ * признаков, которые узнаются отдельным запросом ПОСЛЕ входа (пример —
+ * boothAccount: обработчики входа зовут saveUserSnapshot раньше, чем придёт
+ * ответ getIsBoothAccount) — без дописывания снимок эти поля не увидит
+ * никогда, только следующий успешный restoreSession.
+ *
+ * Снимка нет — не создаём: снимок без userId бесполезен и хуже отсутствия
+ * (App принял бы его за «кто-то вошёл»), а раз saveUserSnapshot ещё не
+ * отработал, полю всё равно неоткуда быть настоящим.
+ */
+export function patchUserSnapshot(fields) {
+  try {
+    const prev = loadUserSnapshot()
+    if (!prev) return
+    localStorage.setItem(USER_KEY, JSON.stringify({ ...prev, ...fields }))
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Признак класса патчим в снимок только на достоверное «да». Осечку
+ * (сеть/5xx) вызывающий (applyBoothAccount в App.jsx) сюда вовсе не пускает —
+ * getIsBoothAccount (см. api.js) отдаёт её отдельным значением null, а не
+ * false, — так что false, дошедший до этой функции, всегда настоящий ответ
+ * бэкенда. И всё равно не патчим им: «этот аккаунт больше не класс» — судьба
+ * не для точечного патча, она приедет целым снимком при следующем
+ * restoreSession (см. saveUserSnapshot выше), а не перезаписью одного поля
+ * поверх снимка, собранного другим запросом.
+ */
+export function patchBoothAccount(isBooth) {
+  if (isBooth) patchUserSnapshot({ boothAccount: true })
 }
 
 /** access обязателен; refresh/user — по возможности с ответа логина. */
@@ -124,6 +168,46 @@ export function clearToken() {
     localStorage.removeItem(USER_KEY)
   } catch {
     /* ignore */
+  }
+}
+
+const BOOTH_LESSON_KEY = 'jts_booth_lesson_id'
+
+/**
+ * Урок, который эта вкладка уже открыла как класс преподавателя (App.jsx,
+ * состояние boothLessonId). sessionStorage, а не localStorage: эта память
+ * обязана умереть вместе со вкладкой — закрыли её, значит за общий планшет
+ * сел следующий посетитель, и ему положен собственный /trial/booth/enter, а
+ * не реанимированный чужой сеанс. Но именно F5/восстановление ЭТОЙ ЖЕ вкладки
+ * sessionStorage переживает — а раньше boothLessonId жил только в
+ * React-состоянии, и такая перезагрузка стирала его: экран класса слал
+ * лишний /enter, и бэкенд закрывал ещё живой сеанс как забытый
+ * (closed_by_next_entry, TrialBoothSessionService.enter() на бэкенде).
+ *
+ * Ставится и стирается в одном месте — там же, где App.jsx меняет сам
+ * boothLessonId: вход в урок (case 'booth' → onEnter) пишет, забывание урока
+ * (выход из аккаунта) стирает. Восстановленному отсюда id всё равно не верят
+ * на слово: прежде чем предложить «Вернуться в класс», BoothEntryPage
+ * перепроверяет статус занятия у бэкенда (getLessonById) — память вкладки
+ * доказывает только то, что сеанс был жив, когда его в последний раз видели.
+ */
+export function saveBoothLessonId(id) {
+  try {
+    if (id == null) sessionStorage.removeItem(BOOTH_LESSON_KEY)
+    else sessionStorage.setItem(BOOTH_LESSON_KEY, String(id))
+  } catch {
+    /* приватное окно и т.п. — сеанс тогда просто не переживёт перезагрузку */
+  }
+}
+
+export function loadBoothLessonId() {
+  try {
+    const raw = sessionStorage.getItem(BOOTH_LESSON_KEY)
+    if (raw == null) return null
+    const id = Number(raw)
+    return Number.isFinite(id) ? id : null
+  } catch {
+    return null
   }
 }
 
