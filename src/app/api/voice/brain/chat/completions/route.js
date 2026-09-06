@@ -163,13 +163,16 @@ export async function POST(request) {
         const streamOnce = async (toolBase) => {
           let anyText = false
           let toolCount = 0
+          let stopReason = null
           for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature })) {
             if (ev.type === 'text') {
               if (!ev.text) continue
               if (!tFirst) tFirst = Date.now()
               anyText = true
               send(sseChunk(id, model, created, { content: ev.text }, null))
-            } else {
+            } else if (ev.type === 'done') {
+              stopReason = ev.stopReason ?? null
+            } else if (ev.type === 'tool_call') {
               send(
                 sseChunk(
                   id,
@@ -190,19 +193,31 @@ export async function POST(request) {
               )
             }
           }
-          return { anyText, toolCount }
+          return { anyText, toolCount, stopReason }
         }
 
-        let { anyText, toolCount } = await streamOnce(0)
+        let { anyText, toolCount, stopReason } = await streamOnce(0)
         // Haiku occasionally returns an empty completion (no text, no tool call)
         // — most visibly on the greeting, where the learner then sees a bogus
         // "could you say that again?". Nothing was streamed yet, so retry once;
         // empties are transient and clear on the second attempt.
         if (!anyText && toolCount === 0) {
+          // Замер 06.09.2026: в каждой третьей сессии второй ход приходил пустым
+          // ДВАЖДЫ (retried=1, total==ttft) — 1.7–1.9 с тишины у ученика. Без
+          // stop_reason и формы последнего хода причину не найти. Текста не
+          // пишем — только роль и длину.
+          const last = turns[turns.length - 1]
+          console.warn(
+            `[brain] empty stop=${stopReason ?? '?'} last=${last?.role ?? '?'}:${(last?.content ?? '').length}ch ` +
+              `turns=${turns.length} tools=${tools.length} greeting=${isGreeting ? 1 : 0}`,
+          )
           retried = true
           const retry = await streamOnce(0)
           anyText = retry.anyText
           toolCount = retry.toolCount
+          if (!anyText && toolCount === 0) {
+            console.warn(`[brain] empty-again stop=${retry.stopReason ?? '?'} turns=${turns.length}`)
+          }
         }
 
         if (toolCount > 0) {
