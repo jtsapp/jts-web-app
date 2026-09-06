@@ -11,6 +11,7 @@ variables:
 
 stages:
   - deploy
+  - diag
   - trash
 
 workflow:
@@ -43,6 +44,36 @@ deploy:
   # main для прода. POSTGRES_PORT/APP_PORT для production ДОЛЖНЫ быть заданы
   # отдельными от dev значениями в GitLab CI/CD Variables (иначе конфликт
   # портов на одном хосте — dev уже держит 5433/8090).
+  only:
+    - develop
+    - main
+
+# Кнопка «показать замеры мозга». Раннер и так крутится на этом хосте, поэтому
+# логи контейнера он достаёт без SSH — а доступа к серверу есть не у всех, кому
+# нужны цифры.
+#
+# Строка `[brain]` (см. api/voice/brain/chat/completions) говорит, сколько
+# времени ход провёл ВНУТРИ приложения. Сравнивать её надо с `llm_ttft` из
+# `lk agent logs`: разница между ними — это дорога от воркера в us-east до
+# стенда, и без такого сопоставления её не отделить от медленного сервера.
+#
+# when: manual — сама не запускается; allow_failure, чтобы отсутствие строк
+# (никто не звонил) не красило пайплайн.
+brain-logs:
+  environment:
+    name: $APP_ENV
+  tags:
+    - $GITLAB_RUNNER_TAG
+  stage: diag
+  when: manual
+  allow_failure: true
+  variables:
+    # Сколько времени назад смотреть. Переопределяется при ручном запуске:
+    # кнопка Run пускает задать переменные.
+    SINCE: 30m
+  script:
+    - echo "Замеры мозга за последние $SINCE — стенд jts-$APP_ENV"
+    - docker logs --since "$SINCE" "jts-$APP_ENV-web-1" 2>&1 | grep '\[brain\]' || echo "строк [brain] нет — либо звонков не было, либо сборка старая"
   only:
     - develop
     - main
