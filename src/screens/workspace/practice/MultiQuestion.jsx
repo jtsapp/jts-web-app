@@ -5,7 +5,7 @@ import QuestionMedia from './QuestionMedia.jsx'
 // `answer` — массив отмеченных строк; засчитывается только полный набор
 // (gradeQuestion в practiceGrading.js). После «Проверить» подсвечиваем и
 // пропущенные верные варианты — иначе на ошибке не видно, чего не хватило.
-export default function MultiQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
+export default function MultiQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showAnswerKey = true }) {
   const picked = Array.isArray(answer) ? answer : []
 
   function toggle(opt) {
@@ -23,14 +23,12 @@ export default function MultiQuestion({ question, answer, checked, onAnswer, rea
         {(question?.options || []).map((opt) => {
           const selected = picked.includes(opt)
           const isAnswer = (question.answers || []).includes(opt)
-          // Все верные варианты — после «Проверить», даже если ученик не отметил
-          // ничего: иначе на пропущенном вопросе не видно, что вообще требовалось.
-          const isOk = checked && isAnswer
-          // Крест — только на своём выборе.
+          const isOk = showAnswerKey && checked && isAnswer
+          const isYes = !showAnswerKey && checked && selected && isAnswer
           const isNo = checked && selected && !isAnswer
 
           let cls = 'lw-opt'
-          if (isOk) cls += ' is-ok'
+          if (isOk || isYes) cls += ' is-ok'
           else if (isNo) cls += ' is-no'
           else if (selected) cls += ' is-selected'
 
@@ -44,7 +42,7 @@ export default function MultiQuestion({ question, answer, checked, onAnswer, rea
               onClick={() => toggle(opt)}
             >
               <span>{opt}</span>
-              {isOk && <CheckIcon size={14} />}
+              {(isOk || isYes) && <CheckIcon size={14} />}
               {isNo && (
                 <span className="lw-opt__mark" aria-hidden="true">
                   ✕

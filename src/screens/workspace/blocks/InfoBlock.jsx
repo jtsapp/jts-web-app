@@ -7,6 +7,7 @@ import { useWordBankRoot } from '../useWordBankRoot.js'
 import TapText from '../TapText.jsx'
 import { stripExerciseNumber, stripExerciseNumbersInHtml } from '../stripExerciseNumber.js'
 import { tidyLessonLists } from '../tidyLessonLists.js'
+import { stripAnswerKeySpoilers } from '../stripAnswerKeySpoilers.js'
 
 // Один info-блок живого урока: заголовок (опционально) + произвольный rich-html
 // от курса/экстрактора. html санитизируется (см. sanitizeHtml.js), а в DOM
@@ -18,11 +19,12 @@ import { tidyLessonLists } from '../tidyLessonLists.js'
 //
 // Карточки на себе не несёт: её рисует LessonContent сразу на серию соседних
 // info-блоков. `checked` — ученик нажал «Проверить» на этой карточке.
-function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix, checked }) {
-  const html = useMemo(
-    () => tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html))),
-    [block?.html],
-  )
+// `showAnswerKey` — показывать ли спойлер «Why these answers» (только staff).
+function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId, gapPrefix, checked, showAnswerKey = true }) {
+  const html = useMemo(() => {
+    const raw = tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html)))
+    return showAnswerKey ? raw : stripAnswerKeySpoilers(raw)
+  }, [block?.html, showAnswerKey])
   const title = block?.title ? stripExerciseNumber(block.title) : ''
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const bodyRef = useRef(null)

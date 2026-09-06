@@ -1363,6 +1363,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               hiddenBlocks={hiddenBlocks}
                               revealedCards={revealedCards}
                               hideStepTitle
+                              // Ключ ответов («Why these answers», эталон после
+                              // «Проверить») — только staff. Ученик видит свой
+                              // выбор и вердикт, но не готовый ответ.
+                              showAnswerKey={isStaff}
                             />
                           </div>
 
