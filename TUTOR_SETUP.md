@@ -31,6 +31,13 @@ prompt caching, лимиты 20 мин/день · 300 мин/мес). TTS — �
 Смотри `.env.example`. Границы строго:
 - **Vercel (сервер, секреты):** `ANTHROPIC_API_KEY`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`, `DATABASE_URL`.
 - **LiveKit-агент (LiveKit Cloud):** `SONIOX_API_KEY`, `GOOGLE_CREDENTIALS_JSON`, `ELEVENLABS_API_KEY` + `ELEVEN_VOICE_ID_BRO`, `VOICE_STACK=cascade`, `JTS_API_URL=https://<vercel-deploy>`, `INTERNAL_API_KEY`.
+  - (опц.) `VOICE_BRAIN_URL` — адрес ближней копии `/api/voice/brain`, если её
+    подняли рядом с воркером. Смысл в географии: воркер стоит в `us-east`, а
+    стенд — в Казахстане, и без этой переменной каждый ход тащит промпт через
+    океан и обратно (замер 06.09.2026: ~0.18 с к каждой реплике). Мозг
+    stateless, поэтому копия общая для всех стендов; память и звонки всё равно
+    пишутся на `JTS_API_URL` / адрес из метаданных токена. Не задана —
+    поведение ровно как раньше.
 - **Vercel, превью голоса на экране выбора:** `ELEVENLABS_API_KEY` + `ELEVEN_VOICE_ID_DEXTER` (тот же voice id, что в `ELEVEN_VOICE_ID_BRO` — имя другое, потому что фронт знает тьютора как `dexter`, а агент как персону `bro`), плюс `GOOGLE_CREDENTIALS_JSON` и `SONIOX_API_KEY`.
 
 ## TTS: у каждого тьютора свой провайдер
