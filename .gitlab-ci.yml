@@ -59,9 +59,13 @@ deploy:
 #
 # when: manual — сама не запускается; allow_failure, чтобы отсутствие строк
 # (никто не звонил) не красило пайплайн.
+#
+# Без `environment:` НАМЕРЕННО, хотя у deploy он есть. Окружение в GitLab может
+# быть защищённым, и тогда ручной запуск требует прав на деплой — кнопка есть,
+# а нажатие отваливается «An error occurred while making the request» (поймали
+# 06.09.2026). Задача ничего не разворачивает, только читает логи, привязка к
+# окружению ей не нужна. `$APP_ENV` приходит из workflow.rules, а не отсюда.
 brain-logs:
-  environment:
-    name: $APP_ENV
   tags:
     - $GITLAB_RUNNER_TAG
   stage: diag
