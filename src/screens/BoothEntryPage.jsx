@@ -39,6 +39,13 @@ export default function BoothEntryPage({ token, lessonId = null, justFinished = 
   // «урок завершён» — только по нажатию кнопки (см. enterNow ниже), иначе вход
   // ушёл бы автоматически, стоило экрану класса просто отрисоваться.
   const [armed, setArmed] = useState(lessonId == null && !justFinished)
+  // Ручной повтор из состояния «класс закрыт» (см. retryClosed и кнопку ниже).
+  // Автоповтора там по спеке нет — armed к этому моменту уже true, и одного
+  // setArmed(true) эффекту не хватит, чтобы перезапуститься: его зависимости
+  // не увидят изменения значения. Счётчик — та самая недостающая зависимость:
+  // каждый клик меняет своё значение и заставляет attempt() отработать ещё раз
+  // (находка 3 финального ревью).
+  const [retryTick, setRetryTick] = useState(0)
   // onEnter приезжает новой стрелкой на каждый рендер App — держим в ref, иначе
   // эффект перезапускался бы вместе с ним и слал вход по кругу.
   const onEnterRef = useRef(onEnter)
@@ -76,7 +83,7 @@ export default function BoothEntryPage({ token, lessonId = null, justFinished = 
       alive = false
       if (timer) clearTimeout(timer)
     }
-  }, [token, lessonId, armed])
+  }, [token, lessonId, armed, retryTick])
 
   const backToLesson = () => {
     // Разрешение играть звук трансляции снимается ЖЕСТОМ и заранее (см.
@@ -94,6 +101,16 @@ export default function BoothEntryPage({ token, lessonId = null, justFinished = 
     unlockBroadcastAudio()
     setState('entering')
     setArmed(true)
+  }
+
+  // Кнопка состояния «класс закрыт»: 403/404 сами по себе не пересматриваются
+  // (см. эффект выше — ровно то, чего требует спека), но ручной повтор не
+  // автоповтор. Без кнопки посетителю, пришедшему на минуту раньше, чем
+  // преподаватель включил класс, было нечего нажать (находка 3 финального
+  // ревью).
+  const retryClosed = () => {
+    setState('entering')
+    setRetryTick((n) => n + 1)
   }
 
   const waiting = state === 'entering' || state === 'waiting'
@@ -128,6 +145,11 @@ export default function BoothEntryPage({ token, lessonId = null, justFinished = 
           {state === 'finished' && (
             <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>
               {t('booth.finishedCta')}
+            </button>
+          )}
+          {state === 'closed' && (
+            <button type="button" className="btn btn--primary booth__cta" onClick={retryClosed}>
+              {t('booth.closedRetry')}
             </button>
           )}
         </div>

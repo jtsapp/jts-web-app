@@ -78,6 +78,42 @@ describe('экран класса', () => {
     expect(onEnter).not.toHaveBeenCalled()
   })
 
+  // Находка 3 финального ревью: «класс закрыт» был тупиком — автоповтора по
+  // спеке нет (см. тест выше), но и кнопки не было. Преподаватель мог включить
+  // класс через минуту, а посетителю нечего нажать. Ручной повтор — не
+  // автоповтор, спеку не нарушает.
+  it('класс закрыт — кнопка ручного повтора заводит новую попытку', async () => {
+    enterTrialBooth.mockRejectedValueOnce(failWith(403))
+    enterTrialBooth.mockResolvedValueOnce({ sessionId: 14, lessonId: 99, resumed: false })
+    const onEnter = vi.fn()
+
+    renderPage({ onEnter })
+    await act(async () => {})
+
+    expect(screen.getByText('Класс закрыт')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }))
+    await act(async () => {})
+
+    expect(enterTrialBooth).toHaveBeenCalledTimes(2)
+    expect(onEnter).toHaveBeenCalledWith(99)
+  })
+
+  // Кнопка сама по себе не заводит цикл — только явный клик, иначе это уже
+  // автоповтор под другим именем, а его спека запрещает.
+  it('класс закрыт — без клика по-прежнему ни одного повтора', async () => {
+    enterTrialBooth.mockRejectedValue(failWith(403))
+
+    renderPage()
+    await act(async () => {})
+
+    expect(screen.getByRole('button', { name: 'Попробовать снова' })).toBeTruthy()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(30000) })
+
+    expect(enterTrialBooth).toHaveBeenCalledTimes(1)
+  })
+
   it('несуществующий класс — тот же ответ, что и выключенный', async () => {
     enterTrialBooth.mockRejectedValue(failWith(404))
 
