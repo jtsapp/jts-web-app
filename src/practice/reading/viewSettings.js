@@ -51,10 +51,16 @@ export function stepFont(fs, dir) {
  * а разрядка букв и слов плюс отказ от курсива (см. правило .rd--dys в
  * reading.css): OpenDyslexic мы не возим, а разрядка даёт основную часть
  * эффекта и ничего не весит.
+ *
+ * `--rd-scale` — безразмерный множитель кегля для ВСЕГО раздела (в прототипе
+ * размер сидел на body, поэтому A+/A− тянули заодно задания, слова и кнопки).
+ * Считаем его здесь, а не в CSS: `calc(var(--rd-fs) / 20)` дало бы пиксели,
+ * а на пиксели умножать нельзя.
  */
 export function viewVars(view) {
   return {
     '--rd-fs': view.fs + 'px',
+    '--rd-scale': String(view.fs / DEFAULT_VIEW.fs),
     '--rd-lh': String(view.lh),
     '--rd-measure': view.width === 'narrow' ? '48ch' : '68ch',
     '--rd-track': view.dys ? '.06em' : '0',

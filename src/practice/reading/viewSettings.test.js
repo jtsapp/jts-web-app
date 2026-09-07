@@ -36,11 +36,20 @@ describe('viewSettings', () => {
   it('viewVars отдаёт CSS-переменные читалки', () => {
     expect(viewVars({ fs: 24, lh: 1.5, width: 'narrow', dys: false })).toEqual({
       '--rd-fs': '24px',
+      '--rd-scale': '1.2',
       '--rd-lh': '1.5',
       '--rd-measure': '48ch',
       '--rd-track': '0',
       '--rd-wspace': '0',
     })
+  })
+
+  it('множитель кегля тянет весь раздел, а не только абзацы текста', () => {
+    // A+/A− в прототипе двигали размер на body — задания, слова и кнопки росли
+    // вместе с текстом. У нас это делает --rd-scale.
+    expect(viewVars({ ...DEFAULT_VIEW })['--rd-scale']).toBe('1')
+    expect(viewVars({ ...DEFAULT_VIEW, fs: 16 })['--rd-scale']).toBe('0.8')
+    expect(viewVars({ ...DEFAULT_VIEW, fs: 30 })['--rd-scale']).toBe('1.5')
   })
 
   it('режим дислексии — это разрядка букв и слов', () => {
