@@ -32,7 +32,7 @@ function matchedLabel(pair, chosen) {
 // а категория, к которой оно относится, — `pairs[].right`, повторяющийся у
 // всех слов этой категории. Один-два общих перевода (A0: hello и hi → «привет»)
 // такого не дают — колонки только когда категорий заметно меньше, чем слов.
-export default function MatchQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
+export default function MatchQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showAnswerKey = true }) {
   const { t } = useI18n()
   const [activeLeft, setActiveLeft] = useState(null)
   const pairs = question?.pairs || []
@@ -140,7 +140,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
             ))}
           </div>
         </div>
-        {checked && missed.length > 0 && (
+        {showAnswerKey && checked && missed.length > 0 && (
           <p className="lw-q__answer" aria-live="polite">
             {t('lesson.answerWas')}: {missed.map((pair) => `${pair.left} — ${pair.right}`).join('; ')}
           </p>
@@ -205,7 +205,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
           })}
         </div>
       </div>
-      {checked && missed.length > 0 && (
+      {showAnswerKey && checked && missed.length > 0 && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {missed.map((pair) => `${pair.left} — ${pair.right}`).join('; ')}
         </p>

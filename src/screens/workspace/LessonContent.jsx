@@ -122,7 +122,7 @@ export function practiceCardStats(step, checkedKeys) {
 
 /** Info-карточка с word-bank: кнопка «Проверить» и счёт, как в HTML-курсе. */
 function InfoWordBankCard({
-  group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, openWord,
+  group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, openWord, showAnswerKey = true,
 }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
@@ -169,6 +169,7 @@ function InfoWordBankCard({
           liveQuestionId={liveQuestionId}
           gapPrefix={gapPrefix}
           checked={checked}
+          showAnswerKey={showAnswerKey}
         />
       ))}
       {!readOnly && hasCheckable && (
@@ -210,7 +211,7 @@ function InfoWordBankCard({
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys)
   const { lang } = useI18n()
@@ -321,6 +322,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               readOnly={readOnly}
               liveQuestionId={liveQuestionId}
               openWord={openWord}
+              showAnswerKey={showAnswerKey}
             />
           )
         }
@@ -342,6 +344,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 readOnly={readOnly}
                 liveQuestionId={liveQuestionId}
                 gapPrefix={wordBankGapPrefix(step, anchorId)}
+                showAnswerKey={showAnswerKey}
               />
             </div>
           )
@@ -381,6 +384,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 onWord={openWord}
                 gapPrefix={wordBankGapPrefix(step, anchorId)}
                 cardAnchorId={anchorId}
+                showAnswerKey={showAnswerKey}
               />
             </div>
           )

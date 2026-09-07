@@ -4543,6 +4543,7 @@ def build_cascade_session(
     profile: LearnerProfile,
     persona_temperature: float,
     api_url: str,
+    brain_url: str = "",
 ) -> AgentSession:
     """Full cascade: Soniox/Azure STT → (bundled Silero VAD endpointer) → lib/llm brain
     → ElevenLabs/Soniox TTS. The agent's `instructions` (persona/system prompt,
@@ -4580,8 +4581,17 @@ def build_cascade_session(
             "and the tutor will stay silent. Set it to the same value as on the "
             "web app (Vercel)."
         )
+    # Мозг зовём по ОТДЕЛЬНОМУ адресу, а не по api_url. Замер 06.09.2026: воркер
+    # стоит в us-east, веб-приложение — в Казахстане, и каждый ход промпт летел
+    # через океан и обратно ради вызова, которому до Anthropic 38 мс. Два хопа
+    # по ~90 мс = ~0.18 с приписки к каждой реплике на ровном месте.
+    # Мозг состояния не держит (stateless-шим над Anthropic), поэтому его копия
+    # может стоять рядом с воркером и быть общей для всех стендов. А вот
+    # write-back памяти адресный — он остаётся на api_url, то есть на том стенде,
+    # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
+    # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
     llm = lk_openai.LLM(
-        base_url=f"{api_url.rstrip('/')}/api/voice/brain",
+        base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
         api_key=brain_key or "unset",
         model="jts-voice-router",
         temperature=persona_temperature,
@@ -4686,26 +4696,64 @@ def build_session(
 
 
 def _attach_latency_logging(session: AgentSession) -> None:
-    """Log per-turn latency at INFO so `lk agent logs` shows the breakdown:
-    endpointing (EOU) + brain (LLM ttft) + TTS (ttfb) ≈ perceived reply delay."""
+    """Log per-turn latency at INFO so `lk agent logs` shows the breakdown.
+
+    Individual stage lines stay (docs/CI already grep `LATENCY eou_delay=` /
+    `llm_ttft=` / `tts_ttfb=`). After TTS we also emit one `LATENCY turn=N
+    perceived=…` line: endpointing + brain TTFT + TTS TTFB ≈ what the learner
+    feels as «тьютор думает». Сверять `llm_ttft` с `[brain] ttft` из
+    docker/GitLab brain-logs: разница — дорога us-east ↔ стенд.
+    """
+    from latency_logging import latency_ingest, latency_turn_line
+
+    bucket: dict[str, float] = {}
+    turn_n = 0
+
+    def _flush(reason: str) -> None:
+        nonlocal bucket, turn_n
+        if not bucket:
+            return
+        turn_n += 1
+        logger.info("%s reason=%s", latency_turn_line(turn_n, bucket), reason)
+        bucket = {}
 
     @session.on("metrics_collected")
     def _on_metrics(ev: Any) -> None:  # pragma: no cover - runtime telemetry
+        nonlocal bucket
         m = ev.metrics
-        name = type(m).__name__
-        g = lambda a: getattr(m, a, 0.0) or 0.0  # noqa: E731
-        if name == "EOUMetrics":
+        # Новый EOU = новый ход ученика. Если прошлый не закрылся TTS (обрыв,
+        # tool-only) — всё равно зафиксируем то, что успели набрать.
+        if type(m).__name__ == "EOUMetrics" and bucket:
+            _flush("next_eou")
+        stage = latency_ingest(bucket, m)
+        if stage is None:
+            return
+        # Per-stage lines — same format as before, so старые grep'ы не ломаются.
+        if stage == "eou":
             logger.info(
-                "LATENCY eou_delay=%.3fs transcription_delay=%.3fs", g("end_of_utterance_delay"), g("transcription_delay"),
+                "LATENCY eou_delay=%.3fs transcription_delay=%.3fs",
+                bucket.get("eou_delay", 0.0),
+                bucket.get("transcription_delay", 0.0),
             )
-        elif name == "LLMMetrics":
+        elif stage == "stt":
             logger.info(
-                "LATENCY llm_ttft=%.3fs llm_duration=%.3fs", g("ttft"), g("duration"),
+                "LATENCY stt_duration=%.3fs stt_audio_duration=%.3fs",
+                bucket.get("stt_duration", 0.0),
+                bucket.get("stt_audio_duration", 0.0),
             )
-        elif name == "TTSMetrics":
+        elif stage == "llm":
             logger.info(
-                "LATENCY tts_ttfb=%.3fs tts_duration=%.3fs", g("ttfb"), g("duration"),
+                "LATENCY llm_ttft=%.3fs llm_duration=%.3fs",
+                bucket.get("llm_ttft", 0.0),
+                bucket.get("llm_duration", 0.0),
             )
+        elif stage == "tts":
+            logger.info(
+                "LATENCY tts_ttfb=%.3fs tts_duration=%.3fs",
+                bucket.get("tts_ttfb", 0.0),
+                bucket.get("tts_duration", 0.0),
+            )
+            _flush("tts")
 
 
 # Скорость субтитров тьютора. По умолчанию livekit-agents выдаёт их СИНХРОННО
@@ -4866,6 +4914,12 @@ async def entrypoint(ctx: JobContext):
     # Стенд, выдавший токен, важнее нашего env: агент общий для дева и прода.
     api_url = _resolve_api_url(profile.api_url, api_url)
 
+    # Ближняя копия мозга (см. build_cascade_session). Задаётся только там, где
+    # её реально подняли рядом с воркером; пусто → мозг живёт на самом стенде.
+    brain_url = (os.getenv("VOICE_BRAIN_URL") or "").strip().rstrip("/")
+    if brain_url:
+        logger.info("[brain] shim at %s (write-back stays on %s)", brain_url, api_url)
+
     if voice_stack == "cascade":
         # Tool calls (report_placement_level / log_*) flow through the brain
         # shim: livekit-plugins-openai sends the agent's function tools as
@@ -4884,6 +4938,7 @@ async def entrypoint(ctx: JobContext):
             profile=profile,
             persona_temperature=persona_temp,
             api_url=api_url,
+            brain_url=brain_url,
         )
     else:
         session = build_session(

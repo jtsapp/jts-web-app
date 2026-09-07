@@ -27,12 +27,14 @@ test.describe('practiceContract — валидация и merge', () => {
       'workbooks',
       'workbook',
       'writing',
+      'reading',
     ])
     expect(isValidModule('grammar')).toBe(true)
     expect(isValidModule('situations')).toBe(true)
     expect(isValidModule('workbooks')).toBe(true)
     expect(isValidModule('workbook')).toBe(true)
     expect(isValidModule('writing')).toBe(true)
+    expect(isValidModule('reading')).toBe(true)
     expect(isValidModule('tutor')).toBe(false)
     expect(isValidModule(undefined)).toBe(false)
   })
@@ -42,7 +44,7 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(normalizeDone('nope')).toEqual([])
   })
 
-  test('emptyState: done-модули пустой массив, vocab/writing — объект', () => {
+  test('emptyState: done-модули пустой массив, vocab/writing/reading — объект', () => {
     expect(emptyState('grammar')).toEqual({ done: [] })
     expect(emptyState('listening')).toEqual({ done: [] })
     expect(emptyState('situations')).toEqual({ done: [] })
@@ -50,6 +52,7 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(emptyState('vocab')).toEqual({})
     expect(emptyState('writing')).toEqual({})
     expect(emptyState('workbook')).toEqual({})
+    expect(emptyState('reading')).toEqual({})
   })
 
   test('mergeModuleState: situations объединяет открытые уровни', () => {

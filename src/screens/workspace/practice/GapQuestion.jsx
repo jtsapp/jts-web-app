@@ -9,7 +9,7 @@ import QuestionMedia from './QuestionMedia.jsx'
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
 // через `gradeQuestion` (не дублируем `norm` здесь).
-export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
+export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showAnswerKey = true }) {
   const { t } = useI18n()
   const value = answer || ''
   const attempted = hasAttempt(question, value)
@@ -23,6 +23,8 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
   // и ответ, и разбор висели на `attempted`, и пропущенный пропуск оставался
   // пустым полем без единого объяснения. `attempted` теперь решает только,
   // красить ли ОТВЕТ УЧЕНИКА: пустое поле не красное и не зелёное.
+  // На живом уроке эталон/разбор всё равно только у преподавателя
+  // (`showAnswerKey`), иначе ученик видит «Правильный ответ» без разбора с учителем.
 
   let cls = 'lw-gap-input'
   if (checked && attempted) {
@@ -59,14 +61,12 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
       {checked && attempted && isOpen && (
         <p className="lw-q__review" aria-live="polite">{t('lesson.needsTeacherReview')}</p>
       )}
-      {checked && !userCorrect && !isOpen && (
+      {showAnswerKey && checked && !userCorrect && !isOpen && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answers || []).join(' / ')}
         </p>
       )}
-      {/* Разбор из `data-why` курса — правило, которое проверяет задание. Показываем
-          после ошибки и после пропуска: до проверки это была бы подсказка с ответом. */}
-      {checked && !userCorrect && !isOpen && question.why && (
+      {showAnswerKey && checked && !userCorrect && !isOpen && question.why && (
         <p className="lw-q__why">{inlineBold(question.why)}</p>
       )}
     </div>

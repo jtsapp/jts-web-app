@@ -137,3 +137,43 @@ describe('LiveLessonPage — кому уходит «смотрю ваш экр�
     expect(sendWatch).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * Слово, положенное преподавателем в словарь ученика.
+ *
+ * Обработчик этого события стоял в объекте ДВАЖДЫ: сперва звук без метки, потом
+ * метка. Побеждал тот, что ниже по файлу, — то есть поведение зависело от
+ * порядка строк, и любая перестановка молча вернула бы ученику один звук без
+ * объяснения, что ему записали.
+ */
+describe('LiveLessonPage — слово в словаре ученика', () => {
+  it('ученик видит слово и перевод, а не только слышит звук', async () => {
+    await renderLesson('STUDENT', 10)
+    await waitFor(() => expect(socketHandlers.onVocabSaved).toBeTypeOf('function'))
+
+    await act(async () => {
+      socketHandlers.onVocabSaved({ word: 'fall off a bike', translation: 'падение с велосипеда' })
+    })
+
+    expect(await screen.findByText(/fall off a bike — падение с велосипеда/)).toBeTruthy()
+  })
+
+  it('без перевода показывает одно слово, а не пустое тире', async () => {
+    // Старый бэкенд перевод не шлёт, и слово без перевода тоже бывает.
+    await renderLesson('STUDENT', 10)
+    await waitFor(() => expect(socketHandlers.onVocabSaved).toBeTypeOf('function'))
+
+    await act(async () => { socketHandlers.onVocabSaved({ word: 'holiday' }) })
+
+    expect(await screen.findByText(/«holiday» — в вашем словаре/)).toBeTruthy()
+  })
+
+  it('преподавателю метку не показывает — слово клали не ему', async () => {
+    await renderLesson('TEACHER', 7)
+    await waitFor(() => expect(socketHandlers.onVocabSaved).toBeTypeOf('function'))
+
+    await act(async () => { socketHandlers.onVocabSaved({ word: 'holiday', translation: 'отпуск' }) })
+
+    expect(screen.queryByText(/holiday/)).toBeNull()
+  })
+})

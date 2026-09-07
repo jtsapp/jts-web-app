@@ -34,9 +34,16 @@
    объявления здесь `var(--lw-primary)` в ней не разрешалась вовсе — кнопка
    «Выйти из урока» выходила тёмной вместо акцентной, а аватар преподавателя
    прозрачным. */
+/* Четвёртый корень — `.lw-doc`: когда плеер не осилил урок целиком (колода
+   словаря или вопрос order/multi/pick/match), «Самостоятельно» показывает
+   документ урока со своей вкладочной навигацией. В живом уроке этот же вид
+   лежит внутри `.live` и потому выглядит правильно, а здесь — сам себе корень,
+   и без объявления токены не разрешались: варианты ответа теряли фон и
+   скругление, карточки — подложку, весь урок выходил голым текстом. */
 .lv,
 .lw,
 .live,
+.lw-doc,
 .hw-exercises {
   /* --- цвет ---------------------------------------------------- */
   --lw-bg: #f8f8f8;
@@ -865,11 +872,41 @@
   margin-top: 10px;
 }
 
-/* Разбор правила. */
-.lw-info__body .card {
+/* Разбор правила.
+   `display: block` — не косметика, а починка чужого правила: глобальный `.card`
+   в styles.css это карточка совсем другого экрана, и она делает элемент
+   flex-колонкой. Внутри такой колонки `.body` с `flex: 1 1 12rem` превращает
+   базис из ширины в ВЫСОТУ — строчка «go to the cinema» распирала плитку до
+   220px, и десять вариантов занимали две прокрутки. */
+.lw-info__body .card,
+.lw-practice__html .card {
+  display: block;
+  flex: none;
   padding: 14px 16px;
   border-radius: var(--lw-r-block);
   background: var(--lw-answer-bg);
+}
+
+/* Плитка вариантов из файла курса. `grid2` и `grid3` — сетка на два и три
+   столбца в стилях самого курса, которых мы не загружаем; без правил обе
+   раскладывались столбиком во всю ширину. Колонки набираем по ширине, а не
+   жёстко по два и три: колонка урока уже 940px, а не ширина экрана. */
+.lw-info__body .grid2,
+.lw-info__body .grid3,
+.lw-practice__html .grid2,
+.lw-practice__html .grid3 {
+  display: grid;
+  gap: 10px;
+}
+
+.lw-info__body .grid2,
+.lw-practice__html .grid2 {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.lw-info__body .grid3,
+.lw-practice__html .grid3 {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
 .lw-info__body .card p + p {
@@ -1206,9 +1243,19 @@
   color: var(--lw-muted);
 }
 
+/* В глобальных стилях `.chat` — карточка чата с тьютором: белый фон, тень и
+   min-height 320px. Имя класса приходит из HTML самого урока, и диалог с
+   персонажем получал чужую коробку — две реплики растягивались на треть
+   экрана. Сбрасываем чужое оформление: здесь `.chat` — просто колонка реплик. */
 .lw-info__body .chat {
   display: grid;
   gap: 10px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .lw-info__body .msg {
@@ -2180,6 +2227,28 @@
   box-shadow: inset 0 0 0 1px var(--lw-track);
 }
 
+/* Опрос про себя — строкой, а не столбиком.
+   В разминке таких пунктов десяток подряд, и в столбик «слово / кнопки / слово
+   / кнопки» экран растягивался на три прокрутки, а глаз каждый раз заново искал,
+   к какому слову относятся кнопки. Строкой пара читается сразу и целиком. */
+.lw-q--pick {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 14px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-answer-bg);
+}
+
+.lw-q--pick .lw-q__prompt { margin: 0; }
+.lw-q--pick .lw-opts { margin: 0; flex-wrap: nowrap; }
+
+@media (max-width: 560px) {
+  .lw-q--pick { grid-template-columns: 1fr; }
+  .lw-q--pick .lw-opts { justify-content: flex-start; }
+}
+
 /* Опрос про себя — то же ощущение, что у choice, но без ok/no: is-selected —
    единственное состояние, оценивать тут нечего. */
 .lw-opt.is-selected {
@@ -3013,6 +3082,162 @@
      iframe без width это его дефолтные 300×150, ровно та поломка, что уже
      однажды была на этом месте (см. шапку файла). */
   width: 100%;
+}
+
+/* Документ урока и материал рисуются прямо в `.learn__main`, у которого своих
+   полей нет: шапка упиралась в сайдбар слева и в кромку окна сверху, а вкладки
+   при этом были отодвинуты на 32px своими собственными (`.ls__tabs`) — три
+   элемента подряд начинались с трёх разных отступов. Поля задаём здесь, на
+   общем контейнере, а собственные поля вкладок внутри него снимаем, чтобы
+   шапка, вкладки и содержимое шли по одной левой кромке. */
+.lw-doc {
+  padding: 24px 32px 40px;
+  /* Карточки урока белые, а `.learn__main` под ними — тоже белый: границ у
+     заданий не было видно вовсе, урок читался сплошной простынёй. Своя
+     подложка возвращает им контур — та же, что в классруме. */
+  background: var(--lw-bg);
+  min-height: 100%;
+}
+
+/* Колонка чтения. Без ограничения строка задания растягивалась на 1264px —
+   глаз теряет начало следующей строки, а два соседних варианта ответа
+   разъезжаются на полэкрана. Ширина под текст урока, а не под окно. */
+.lw-doc__bar,
+.lw-doc .ls__tabs,
+.lw-doc .lw-content,
+.lw-doc__nav {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lw-doc .ls__tabs {
+  padding-left: 0;
+  padding-right: 0;
+  /* На сером фоне документа белая подложка вкладок читалась отдельной плашкой,
+     оборванной по краю колонки. Вкладки и так пилюли — фон им не нужен. */
+  background: none;
+}
+
+@media (max-width: 900px) {
+  .lw-doc { padding: 16px 16px 32px; }
+}
+
+/* Шапка документа урока: «К урокам» и название. Плеер выходит своей шапкой, а
+   документ и материал до этого открывались без выхода вовсе — уйти можно было
+   только через сайдбар, и то догадавшись. */
+.lw-doc__bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.lw-doc__back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px 9px 12px;
+  border: 0;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-tint-1);
+  color: var(--lw-primary-ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.lw-doc__back:hover { background: var(--lw-tint-2); }
+.lw-doc__back:focus-visible { outline: 2px solid var(--lw-primary); outline-offset: 2px; }
+
+/* Название усекается, а не переносится: шапка — одна строка, а полное имя урока
+   всё равно стоит первой строкой внутри самого материала. */
+.lw-doc__title {
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--lw-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .lw-doc__title { font-size: 15px; }
+  .lw-doc__back span { display: none; }
+  .lw-doc__back { padding: 9px 11px; }
+}
+
+/* Счётчик шагов: вкладки говорят, где ты, но не то, сколько осталось. */
+.lw-doc__count {
+  flex: none;
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-surface);
+  color: var(--lw-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Переход к соседнему шагу внизу страницы: дочитал — иди дальше, не
+   возвращаясь прокруткой к вкладкам. */
+.lw-doc__nav {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.lw-doc__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 48%;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-surface);
+  color: var(--lw-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(23, 19, 38, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.lw-doc__step:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(23, 19, 38, 0.1); }
+.lw-doc__step:focus-visible { outline: 2px solid var(--lw-primary); outline-offset: 2px; }
+
+/* Следующий шаг — то, куда ученик идёт по умолчанию, поэтому он акцентный, а
+   предыдущий остаётся спокойным: возвращаются реже, чем идут вперёд. */
+.lw-doc__step--next {
+  background: var(--lw-primary);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(144, 71, 255, 0.28);
+}
+.lw-doc__step--next:hover { box-shadow: 0 12px 26px rgba(144, 71, 255, 0.34); }
+.lw-doc__step--next .lw-doc__step-label { color: rgba(255, 255, 255, 0.82); }
+
+.lw-doc__step > span { min-width: 0; display: flex; flex-direction: column; }
+.lw-doc__step-label { font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--lw-muted); }
+.lw-doc__step-name {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lw-doc__step--next { text-align: right; }
+
+@media (max-width: 560px) {
+  .lw-doc__count { display: none; }
+  .lw-doc__step { max-width: 49%; padding: 10px 12px; }
+  .lw-doc__step-name { font-size: 13.5px; }
 }
 
 .lw-material-iframe {

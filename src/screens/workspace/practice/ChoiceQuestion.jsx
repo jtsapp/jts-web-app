@@ -10,7 +10,7 @@ import QuestionMedia from './QuestionMedia.jsx'
 // До «Проверить» пилюля только `is-selected`: зелёный/красный до проверки —
 // это подсказка с ответом, а после проверки ряд закрывается. Повторно
 // ответить можно, только если преподаватель сбросит этот вопрос.
-export default function ChoiceQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
+export default function ChoiceQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showAnswerKey = true }) {
   const chosen = hasAttempt(question, answer)
   const correct = chosen && gradeQuestion(question, answer).correct
   const locked = checked || readOnly
@@ -22,16 +22,15 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
       <div className="lw-opts">
         {(question.options || []).map((opt) => {
           const selected = answer === opt
-          // Верный вариант подсвечиваем после «Проверить» даже если ученик не
-          // выбрал ничего: пропущенный вопрос — повод узнать ответ, а не
-          // остаться с рядом одинаковых кнопок.
-          const isOk = !open && checked && opt === question.answer
-          // А вот КРЕСТ ставим только на своём ответе: на пустом вопросе
-          // отмечать нечего, и красить его красным было бы враньём.
+          // Эталон подсвечиваем только когда ключ открыт (staff / самообучение).
+          // На живом уроке ученик видит только вердикт по СВОЕМУ выбору —
+          // иначе зелёная галочка на чужой кнопке и есть «ответ без нажатия».
+          const isOk = showAnswerKey && !open && checked && opt === question.answer
+          const isYes = !showAnswerKey && !open && checked && chosen && selected && correct
           const isNo = !open && checked && chosen && selected && !correct
 
           let cls = 'lw-opt'
-          if (isOk) cls += ' is-ok'
+          if (isOk || isYes) cls += ' is-ok'
           else if (isNo) cls += ' is-no'
           else if (selected) cls += ' is-selected'
 
@@ -45,7 +44,7 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
               onClick={() => onAnswer(question.id, opt)}
             >
               <span>{opt}</span>
-              {isOk && <CheckIcon size={14} />}
+              {(isOk || isYes) && <CheckIcon size={14} />}
               {isNo && (
                 <span className="lw-opt__mark" aria-hidden="true">
                   ✕
@@ -55,9 +54,7 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
           )
         })}
       </div>
-      {/* Разбор — и на ошибке, и на пропуске. У открытых вопросов эталона нет,
-          поэтому там его по-прежнему не показываем. */}
-      {checked && !open && !correct && question.why && (
+      {showAnswerKey && checked && !open && !correct && question.why && (
         <p className="lw-q__why">{inlineBold(question.why)}</p>
       )}
     </div>

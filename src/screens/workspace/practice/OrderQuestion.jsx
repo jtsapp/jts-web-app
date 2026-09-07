@@ -27,7 +27,7 @@ function bankIndices(words, answer) {
 // предложения; клик по слову в предложении откатывает всё ПОСЛЕ него тоже
 // (включая само слово) — простое и всегда однозначное правило, в отличие от
 // удаления одного слова из середины при повторяющихся словах в банке.
-export default function OrderQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
+export default function OrderQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showAnswerKey = true }) {
   const { t } = useI18n()
   const words = question?.words || []
   const built = Array.isArray(answer) ? answer : []
@@ -95,7 +95,7 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
 
       {/* И на ошибке, и на пропуске: собранного предложения нет — тем более
           нужно показать, каким оно должно было получиться. */}
-      {checked && !correct && (
+      {showAnswerKey && checked && !correct && (
         <p className="lw-q__answer" aria-live="polite">
           {t('lesson.answerWas')}: {(question.answer || []).join(' ')}
         </p>

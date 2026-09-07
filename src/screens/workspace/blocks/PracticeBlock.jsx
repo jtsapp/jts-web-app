@@ -21,6 +21,8 @@ import {
   wordBankAnswersAttempted,
 } from '../wordBankCheck.js'
 import { stripExerciseNumber, stripExerciseNumbersInHtml, stripExerciseNumbersInText } from '../stripExerciseNumber.js'
+import { tidyLessonLists } from '../tidyLessonLists.js'
+import { stripAnswerKeySpoilers } from '../stripAnswerKeySpoilers.js'
 
 const QUESTION_BY_TYPE = {
   choice: ChoiceQuestion,
@@ -40,6 +42,7 @@ const QUESTION_BY_TYPE = {
 export default function PracticeBlock({
   block, answers, checked, checkedKeys, cardKey, stepTitle, onAnswer, onCheck, readOnly,
   liveQuestionId, onWord, gapPrefix, cardAnchorId, status, highlighted, number,
+  showAnswerKey = true,
 }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
@@ -54,10 +57,10 @@ export default function PracticeBlock({
     ? stripExerciseNumbersInText(block.instruction)
     : ''
   const showBlockTitle = Boolean(displayTitle && displayTitle !== stepTitle)
-  const html = useMemo(
-    () => stripExerciseNumbersInHtml(sanitizeHtml(block?.html)),
-    [block?.html],
-  )
+  const html = useMemo(() => {
+    const raw = tidyLessonLists(stripExerciseNumbersInHtml(sanitizeHtml(block?.html)))
+    return showAnswerKey ? raw : stripAnswerKeySpoilers(raw)
+  }, [block?.html, showAnswerKey])
   const tappableHtml = useMemo(() => wrapTapWords(html), [html])
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
@@ -66,6 +69,7 @@ export default function PracticeBlock({
 
   const hasWbCheck = htmlHasCheckableWordBank(html)
   const questions = block?.questions || []
+  const hasPick = questions.some((q) => q.type === 'pick')
   const canCheckQuestions = questions.some((q) => hasAttempt(q, answers?.[q.id]))
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
@@ -170,6 +174,11 @@ export default function PracticeBlock({
       )}
       {html && <div className="lw-practice__html" ref={htmlRef} />}
 
+      {/* «Верного ответа нет» — правило всего упражнения, а не каждого пункта:
+          в разминке их десяток подряд, и десять одинаковых строк прячут сами
+          вопросы. */}
+      {hasPick && <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>}
+
       <div className="lw-practice__list">
         {questions.map((question) => {
           const Question = QUESTION_BY_TYPE[question.type]
@@ -187,6 +196,7 @@ export default function PracticeBlock({
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
+                showAnswerKey={showAnswerKey}
               />
             </div>
           )

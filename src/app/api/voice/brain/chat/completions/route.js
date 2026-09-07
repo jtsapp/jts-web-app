@@ -81,6 +81,13 @@ function sseChunk(id, model, created, delta, finishReason) {
 }
 
 export async function POST(request) {
+  // Замер роута изнутри. У агента в логах видно только llm_ttft — сколько
+  // прошло от его запроса до первого токена, и туда свалено всё разом: дорога
+  // us-east ↔ стенд, nginx, наш сервер, Anthropic. 06.09.2026 живой звонок дал
+  // 2.7 с при том, что сам обработчик на этом же промпте отдаёт первый токен за
+  // 0.87 с (замер через прямой вызов POST). Разницу без этой строки не
+  // локализовать: она либо на дороге, либо в сервере, и снаружи они неразличимы.
+  const t0 = Date.now()
   if (!isTrustedBrainCaller(request)) {
     return Response.json({ error: 'Unauthorized.' }, { status: 401 })
   }
@@ -116,6 +123,13 @@ export async function POST(request) {
   const temperature = typeof body.temperature === 'number' ? body.temperature : undefined
 
   const encoder = new TextEncoder()
+  // Метки замера: tParsed — сколько роут потратил на себя до похода в Anthropic,
+  // tFirst — когда пошёл первый видимый токен. Тела и промпта в лог не пишем,
+  // только размеры: это разговор ученика.
+  const tParsed = Date.now()
+  let tFirst = 0
+  let retried = false
+  const promptChars = systemPrompt.length
   const stream = new ReadableStream({
     async start(controller) {
       const send = (s) => controller.enqueue(encoder.encode(s))
@@ -149,12 +163,16 @@ export async function POST(request) {
         const streamOnce = async (toolBase) => {
           let anyText = false
           let toolCount = 0
+          let stopReason = null
           for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature })) {
             if (ev.type === 'text') {
               if (!ev.text) continue
+              if (!tFirst) tFirst = Date.now()
               anyText = true
               send(sseChunk(id, model, created, { content: ev.text }, null))
-            } else {
+            } else if (ev.type === 'done') {
+              stopReason = ev.stopReason ?? null
+            } else if (ev.type === 'tool_call') {
               send(
                 sseChunk(
                   id,
@@ -175,18 +193,31 @@ export async function POST(request) {
               )
             }
           }
-          return { anyText, toolCount }
+          return { anyText, toolCount, stopReason }
         }
 
-        let { anyText, toolCount } = await streamOnce(0)
+        let { anyText, toolCount, stopReason } = await streamOnce(0)
         // Haiku occasionally returns an empty completion (no text, no tool call)
         // — most visibly on the greeting, where the learner then sees a bogus
         // "could you say that again?". Nothing was streamed yet, so retry once;
         // empties are transient and clear on the second attempt.
         if (!anyText && toolCount === 0) {
+          // Замер 06.09.2026: в каждой третьей сессии второй ход приходил пустым
+          // ДВАЖДЫ (retried=1, total==ttft) — 1.7–1.9 с тишины у ученика. Без
+          // stop_reason и формы последнего хода причину не найти. Текста не
+          // пишем — только роль и длину.
+          const last = turns[turns.length - 1]
+          console.warn(
+            `[brain] empty stop=${stopReason ?? '?'} last=${last?.role ?? '?'}:${(last?.content ?? '').length}ch ` +
+              `turns=${turns.length} tools=${tools.length} greeting=${isGreeting ? 1 : 0}`,
+          )
+          retried = true
           const retry = await streamOnce(0)
           anyText = retry.anyText
           toolCount = retry.toolCount
+          if (!anyText && toolCount === 0) {
+            console.warn(`[brain] empty-again stop=${retry.stopReason ?? '?'} turns=${turns.length}`)
+          }
         }
 
         if (toolCount > 0) {
@@ -235,6 +266,14 @@ export async function POST(request) {
         send(sseChunk(id, model, created, {}, 'stop'))
         send('data: [DONE]\n\n')
       } finally {
+        // Одна строка на ход. Сверять с llm_ttft из `lk agent logs`: что не
+        // попало сюда — то дорога до стенда и nginx, а не наш код.
+        const done = Date.now()
+        console.log(
+          `[brain] ttft=${((tFirst || done) - t0) / 1000}s own=${(tParsed - t0) / 1000}s ` +
+            `total=${(done - t0) / 1000}s prompt=${promptChars}ch turns=${turns.length}` +
+            (retried ? ' retried=1' : ''),
+        )
         controller.close()
       }
     },
@@ -245,6 +284,17 @@ export async function POST(request) {
       'content-type': 'text/event-stream; charset=utf-8',
       'cache-control': 'no-store',
       connection: 'keep-alive',
+      // Без этого заголовка поток тут и умирал. Перед приложением стоит nginx,
+      // а у него proxy_buffering включён по умолчанию: он копил ВЕСЬ SSE-ответ
+      // и отдавал агенту одним куском в конце. Замер живого звонка 06.09.2026
+      // показал это в лоб — llm_duration минус llm_ttft = 0.004 с на всех
+      // ходах подряд, при том что реплики звучали по 1.7–17 с. То есть до
+      // агента «первый токен» доезжал вместе с последним, и LiveKit честно
+      // ждал полной генерации: llm_ttft=3.1–4.8 с вместо 0.86 с, которые
+      // Haiku отдаёт первым токеном напрямую.
+      // X-Accel-Buffering: no — штатная ручка nginx, гасит буферизацию для
+      // одного этого ответа; трогать конфиг nginx на VPS не нужно.
+      'x-accel-buffering': 'no',
     },
   })
 }

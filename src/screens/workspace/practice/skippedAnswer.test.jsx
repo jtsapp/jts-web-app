@@ -67,6 +67,15 @@ describe('Пропуск: свободный ввод', () => {
     const { container } = show(<GapQuestion question={open} answer="" checked onAnswer={noop} />)
     expect(container.querySelector('.lw-q__review')).toBeNull()
   })
+  it('на живом уроке без ключа эталон ученику не показывают', () => {
+    show(<GapQuestion question={q} answer="" checked onAnswer={noop} showAnswerKey={false} />)
+    expect(screen.queryByText(/fashion show/)).toBeNull()
+  })
+
+  it('на живом уроке без ключа разбор ученику не показывают', () => {
+    const { container } = show(<GapQuestion question={q} answer="" checked onAnswer={noop} showAnswerKey={false} />)
+    expect(container.querySelector('.lw-q__why')).toBeNull()
+  })
 })
 
 describe('Пропуск: выбор одного варианта', () => {
@@ -77,6 +86,11 @@ describe('Пропуск: выбор одного варианта', () => {
     const ok = container.querySelectorAll('.lw-opt.is-ok')
     expect(ok.length).toBe(1)
     expect(ok[0].textContent).toContain('have')
+  })
+
+  it('на живом уроке без ключа верный вариант не подсвечивают при пропуске', () => {
+    const { container } = show(<ChoiceQuestion question={q} answer={null} checked onAnswer={noop} showAnswerKey={false} />)
+    expect(container.querySelectorAll('.lw-opt.is-ok').length).toBe(0)
   })
 
   it('разбор показан, хотя ученик не выбирал', () => {

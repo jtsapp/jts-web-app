@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
@@ -11,6 +11,96 @@ import { loadLiveLesson } from './workspace/liveLessonData.js'
 import { liveLessonSteps } from './workspace/liveSteps.js'
 import LessonAside from './workspace/LessonAside.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
+import { createProgressSaver } from './workspace/progressSaver.js'
+import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
+import { getCatalogLessonAnswers, saveCatalogLessonAnswers } from '../api.js'
+import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons.jsx'
+
+/**
+ * Файл курса умеет три варианта одного урока и выбирает их по `?mode=` —
+ * `self` / `solo` / `group`, всё остальное считает за `solo` (единственный
+ * скрипт внутри файла ставит `data-mode` на <html>, а вёрстка по нему прячет
+ * лишнее). Без параметра ученик «Самостоятельно» получал вариант для занятия,
+ * а не свой. Свои query и хвост URL сохраняем — файл лежит на чужом хранилище.
+ */
+function selfStudyUrl(fileUrl) {
+  if (!fileUrl) return fileUrl
+  try {
+    const url = new URL(fileUrl, window.location.origin)
+    url.searchParams.set('mode', 'self')
+    return url.toString()
+  } catch {
+    return fileUrl
+  }
+}
+
+/**
+ * Шапка документа урока: назад и название.
+ *
+ * У плеера выход есть в его собственной шапке, а документ и материал до сих пор
+ * открывались вообще без него — уйти можно было только через сайдбар, и то
+ * догадавшись. Название рядом с кнопкой, потому что на этом экране его больше
+ * негде прочитать: у материала оно внутри iframe, а у документа — только во
+ * вкладках шагов.
+ */
+function DocBar({ title, onExit, stepNo, stepTotal }) {
+  const { t } = useI18n()
+  return (
+    <div className="lw-doc__bar">
+      <button type="button" className="lw-doc__back" onClick={onExit}>
+        <ChevronLeftIcon size={18} />
+        <span>{t('lesson.ws.back')}</span>
+      </button>
+      {title && <h1 className="lw-doc__title">{title}</h1>}
+      {/* «Шаг 2 из 7» — единственное на экране, что отвечает «сколько ещё».
+          Вкладки показывают, где ты, но не то, много ли осталось. */}
+      {stepTotal > 1 && (
+        <span className="lw-doc__count">
+          {t('lesson.ws.stepPosition', { current: String(stepNo), total: String(stepTotal) })}
+        </span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Переход к соседнему шагу внизу страницы.
+ *
+ * Вкладки остаются вверху, и, дочитав шаг до конца, ученик возвращался к ним
+ * прокруткой — на длинном шаге это полэкрана впустую. Кнопка называет
+ * следующий шаг, а не просто «Дальше»: так видно, к чему переходишь.
+ */
+function DocNav({ steps, currentId, onGo }) {
+  const { t } = useI18n()
+  const i = steps.findIndex((s) => s.id === currentId)
+  if (i < 0 || steps.length < 2) return null
+  const prev = i > 0 ? steps[i - 1] : null
+  const next = i < steps.length - 1 ? steps[i + 1] : null
+  return (
+    <div className="lw-doc__nav">
+      {prev ? (
+        <button type="button" className="lw-doc__step lw-doc__step--prev" onClick={() => onGo(prev.id)}>
+          <ChevronLeftIcon size={18} />
+          <span>
+            <span className="lw-doc__step-label">{t('lesson.ws.prevStep')}</span>
+            <span className="lw-doc__step-name">{prev.title || prev.id}</span>
+          </span>
+        </button>
+      ) : (
+        <span />
+      )}
+      {next && (
+        <button type="button" className="lw-doc__step lw-doc__step--next" onClick={() => onGo(next.id)}>
+          <span>
+            <span className="lw-doc__step-label">{t('lesson.ws.nextStep')}</span>
+            <span className="lw-doc__step-name">{next.title || next.id}</span>
+          </span>
+          <ChevronRightIcon size={16} />
+        </button>
+      )}
+    </div>
+  )
+}
 
 // Экран онлайн-урока (Figma «pitch JTS» → Уроки → Онлайн-уроки).
 //
@@ -23,8 +113,8 @@ import LessonContent from './workspace/LessonContent.jsx'
 // `lessonId` — id урока (диплинк `?screen=lesson-workspace&lesson=…` в App.jsx).
 // `loadLesson` — как достать контент по id: по умолчанию loadLiveLesson
 // (LiveLesson → jsonUrl с files-api); для урока каталога App передаёт
-// loadCatalogLesson. Без сети/lessonId или при ошибке падаем на SAMPLE_LESSON,
-// чтобы экран не пустовал.
+// loadCatalogLesson. Без lessonId экран показывает демонстрационный урок; урок,
+// который не загрузился, демо НЕ подменяет — об этом говорится прямо.
 export default function LessonWorkspacePage({
   onExit,
   lessonId,
@@ -51,7 +141,13 @@ export default function LessonWorkspacePage({
     setLoading(true)
     loadLesson(lessonId, token).then((loaded) => {
       if (cancelled) return
-      setLesson(loaded || SAMPLE_LESSON)
+      // Не подставляем демо-урок вместо запрошенного. Раньше здесь стоял
+      // `loaded || SAMPLE_LESSON`, и ученик, открыв урок каталога, получал
+      // чужой демонстрационный урок про Present Simple с заглушкой «Место для
+      // баннера» — и читал это как «материал обрезали». Не загрузилось —
+      // говорим об этом прямо. SAMPLE_LESSON остаётся тем, чем задуман:
+      // содержимым экрана, открытого вообще без урока.
+      setLesson(loaded || null)
       setLoading(false)
     })
     return () => {
@@ -67,23 +163,112 @@ export default function LessonWorkspacePage({
   // тот же `LessonContent`, что и в живом уроке, только с собственной вкладочной
   // навигацией по шагам, а не route-панелью преподавателя.
   const useDocView = steps.length === 0 && (lesson?.steps?.length ?? 0) > 0
+  // Шагов нет вовсе, но есть файл курса: урок просто не разбирали (см.
+  // loadCatalogLesson). Плееру тут нечего показывать, а материал — есть.
+  const useMaterialView = steps.length === 0 && (lesson?.steps?.length ?? 0) === 0 && Boolean(lesson?.fileUrl)
   const [docStepId, setDocStepId] = useState(null)
+  // Урок и сохранённая работа приезжают двумя независимыми запросами, и кто
+  // раньше — как повезёт. Раньше здесь стояло безусловное «на первый шаг», и
+  // при быстром ответе каталога оно затирало восстановленный шаг: ученик
+  // возвращался в урок и попадал в начало, хотя остановился на пятом.
+  // Восстановленный шаг сохраняем, если он в этом уроке вообще есть.
   useEffect(() => {
-    setDocStepId(lesson?.steps?.[0]?.id ?? null)
+    const ids = (lesson?.steps || []).map((step) => step.id)
+    setDocStepId((current) => (current != null && ids.includes(current) ? current : ids[0] ?? null))
   }, [lesson])
   const docStep = lesson?.steps?.find((s) => s.id === docStepId) || lesson?.steps?.[0] || null
   const [docAnswers, setDocAnswers] = useState({})
   const [docChecked, setDocChecked] = useState(() => new Set())
+
+  // Работа ученика в самостоятельном уроке живёт на сервере: до этого она была
+  // состоянием экрана и пропадала на первой же перезагрузке — ученик отвечал на
+  // десяток вопросов, отвлекался, возвращался и начинал заново.
+  //
+  // `answersLoaded` — не украшение. Запись идёт по действию, но и до первого
+  // действия был бы соблазн синхронизировать состояние эффектом; без флага
+  // пустой стартовый объект уехал бы поверх сохранённого раньше, чем придёт
+  // ответ сервера, — и ответы терялись бы тем вернее, чем медленнее сеть.
+  const [answersLoaded, setAnswersLoaded] = useState(false)
+  useEffect(() => {
+    if (!catalogLessonId || !token) {
+      setAnswersLoaded(false)
+      return undefined
+    }
+    let alive = true
+    setAnswersLoaded(false)
+    getCatalogLessonAnswers(token, catalogLessonId)
+      .then((res) => {
+        if (!alive) return
+        const saved = parseStepProgress(res?.progressJson)
+        if (saved) {
+          setDocAnswers(saved.answers)
+          setDocChecked(saved.checkedSteps)
+          if (saved.stepId != null) setDocStepId(saved.stepId)
+        }
+        setAnswersLoaded(true)
+      })
+      // Не прочитали — работаем без восстановления, но и НЕ пишем: перезапись
+      // пустотой хуже, чем несохранённый сеанс.
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [catalogLessonId, token])
+
+  const saverRef = useRef(null)
+  if (!saverRef.current) {
+    saverRef.current = createProgressSaver((lessonKey, payload, keepalive) =>
+      saveCatalogLessonAnswers(token, lessonKey, payload, keepalive ? { keepalive: true } : undefined)
+        .catch(() => {}))
+  }
+  const persistDoc = useCallback((next) => {
+    if (!catalogLessonId || !token || !answersLoaded) return
+    saverRef.current.schedule(catalogLessonId, serializeStepProgress(next))
+  }, [catalogLessonId, token, answersLoaded])
+  // Переход по шагу снизу оставлял ученика в конце нового шага — там, где он
+  // домотал предыдущий. Возвращаем к началу: шаг читают сверху.
+  const goDocStep = useCallback((id) => {
+    setDocStepId(id)
+    // Последний открытый шаг тоже часть работы: вернувшись, ученик попадает
+    // туда, где остановился, а не в начало урока.
+    persistDoc({ answers: docAnswers, checkedSteps: docChecked, stepId: id })
+    document.querySelector('.learn__main')?.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [persistDoc, docAnswers, docChecked])
   const handleDocAnswer = useCallback((questionId, value) => {
-    setDocAnswers((prev) => ({ ...prev, [questionId]: value }))
-  }, [])
+    setDocAnswers((prev) => {
+      const next = { ...prev, [questionId]: value }
+      persistDoc({ answers: next, checkedSteps: docChecked, stepId: docStepId })
+      return next
+    })
+  }, [persistDoc, docChecked, docStepId])
   const handleDocCheck = useCallback((key, questionIds = []) => {
     setDocChecked((prev) => {
       const next = new Set(prev).add(key)
       questionIds.forEach((id) => next.add(id))
+      persistDoc({ answers: docAnswers, checkedSteps: next, stepId: docStepId })
       return next
     })
+  }, [persistDoc, docAnswers, docStepId])
+
+  // Дебаунс не даёт права потерять последнее сделанное: и уход с экрана, и
+  // усыпление вкладки дописывают то, что не успело уйти. `pagehide`, а не
+  // `beforeunload` — на телефонах и в Safari вкладку усыпляют без второго
+  // события, и запись бы просто не состоялась.
+  useEffect(() => {
+    const saver = saverRef.current
+    const flush = () => saver.flush(true)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      flush()
+    }
   }, [])
+
+  const exitLesson = useCallback(() => {
+    saverRef.current.flush(true)
+    onExit?.()
+  }, [onExit])
 
   const [messages, setMessages] = useState([])
   const [confirmExit, setConfirmExit] = useState(false)
@@ -114,10 +299,21 @@ export default function LessonWorkspacePage({
     setAttempt((n) => n + 1)
   }
 
-  if (loading || !lesson) {
+  if (loading) {
     return (
       <div className="lw lw--loading" data-testid="lesson-workspace">
         <p className="lw-loading">{t('lesson.ws.loading')}</p>
+      </div>
+    )
+  }
+
+  if (!lesson) {
+    return (
+      <div className="lw lw--loading" data-testid="lesson-workspace">
+        <p className="lw-loading">{t('lesson.ws.loadFailed')}</p>
+        <button type="button" className="lw-stepnav__btn lw-stepnav__btn--ghost" onClick={onExit}>
+          {t('lesson.ws.exit')}
+        </button>
       </div>
     )
   }
@@ -136,12 +332,35 @@ export default function LessonWorkspacePage({
           onProfile={onProfile}
         />
         <main className="learn__main">
-          {useDocView ? (
+          {useMaterialView ? (
+            // Урок не разобран на шаги — таких в каталоге две трети. Показываем
+            // сам материал курса, а не пустой плеер: файл и есть урок, просто
+            // без интерактива.
+            // `.lw-doc` снаружи не для вида: на нём объявлены токены `--lw-*`,
+            // и без него рамка материала осталась бы без фона и скруглений.
+            <div className="lw-doc">
+              <DocBar title={lesson.title} onExit={exitLesson} />
+              <div className="lw-material-frame">
+                <iframe
+                  src={selfStudyUrl(lesson.fileUrl)}
+                  title={lesson.title || t('lessons.tabSelf')}
+                  className="lw-material-iframe"
+                  allow="autoplay"
+                />
+              </div>
+            </div>
+          ) : useDocView ? (
             // Плеер не осилил урок целиком (vocab-колода или вопрос типа
             // order/multi/pick/match — см. liveSteps.js): показываем документ
             // урока, как в живом уроке, со своей вкладочной навигацией по шагам
             // вместо очереди экранов.
             <div className="lw-doc">
+              <DocBar
+                title={lesson.title}
+                onExit={exitLesson}
+                stepNo={Math.max(1, lesson.steps.findIndex((s) => s.id === docStep?.id) + 1)}
+                stepTotal={lesson.steps.length}
+              />
               {lesson.steps.length > 1 && (
                 <div className="ls__tabs lw-material-tabs">
                   {lesson.steps.map((s) => (
@@ -167,6 +386,7 @@ export default function LessonWorkspacePage({
                 source={lesson?.title}
                 catalogLessonId={catalogLessonId}
               />
+              <DocNav steps={lesson.steps} currentId={docStep?.id} onGo={goDocStep} />
             </div>
           ) : (
             <CourseStepPlayer

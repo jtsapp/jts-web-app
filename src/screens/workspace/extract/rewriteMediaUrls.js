@@ -7,14 +7,79 @@
  *  HTML resolved to absolute against `baseUrl`. */
 export function rewriteMediaUrls(lesson, baseUrl) {
   if (!lesson) return lesson
+  const byKey = collectKeyedImages(lesson)
   const steps = (lesson.steps || []).map((step) => ({
     ...step,
-    blocks: (step.blocks || []).map((block) => rewriteBlock(block, baseUrl)),
+    blocks: (step.blocks || []).map((block) => rewriteBlock(block, baseUrl, byKey)),
   }))
   return { ...lesson, steps }
 }
 
-function rewriteBlock(block, baseUrl) {
+/**
+ * Картинки урока по ключу: курс ссылается на них из текста, а сам файл держит
+ * только один экземпляр.
+ *
+ * В разметке чтения стоит `<img data-img="balloon" alt="...">` — БЕЗ src, а
+ * сама картинка лежит на словарной карточке того же урока
+ * (`<img class="vc-img" alt="balloon" src="data:image/webp;base64,…">`).
+ * Подставлять её должен скрипт курса, но в приложении его нет, и у ученика
+ * оставалась битая картинка с alt'ом вместо иллюстрации к тексту.
+ *
+ * Ключ — `data-img`, а если его нет, то `alt`: именно так связаны две стороны
+ * в файле курса.
+ */
+function collectKeyedImages(lesson) {
+  const map = new Map()
+  for (const step of lesson.steps || []) {
+    for (const block of step.blocks || []) {
+      for (const card of block?.cards || []) {
+        if (card?.word && card?.imageUrl) map.set(imageKey(card.word), card.imageUrl)
+      }
+      if (typeof block?.html === 'string' && block.html.includes('<img')) {
+        eachImage(block.html, (img) => {
+          const src = img.getAttribute('src')
+          const key = img.getAttribute('data-img') || img.getAttribute('alt')
+          if (src && key) map.set(imageKey(key), src)
+        })
+      }
+    }
+  }
+  return map
+}
+
+function imageKey(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function eachImage(html, visit) {
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    doc.querySelectorAll('img').forEach(visit)
+  } catch {
+    // Разметка не разобралась — просто нечего собирать.
+  }
+}
+
+/** Подставляет источник картинкам, у которых есть ключ и нет src. */
+function fillKeyedImages(html, byKey) {
+  if (!byKey?.size || typeof html !== 'string' || !html.includes('data-img')) return html
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html')
+    let touched = false
+    doc.querySelectorAll('img[data-img]').forEach((img) => {
+      if (img.getAttribute('src')) return
+      const src = byKey.get(imageKey(img.getAttribute('data-img')))
+      if (!src) return
+      img.setAttribute('src', src)
+      touched = true
+    })
+    return touched ? doc.body.innerHTML : html
+  } catch {
+    return html
+  }
+}
+
+function rewriteBlock(block, baseUrl, byKey) {
   if (block?.type === 'vocab' && Array.isArray(block.cards)) {
     if (!baseUrl) return block
     return {
@@ -24,7 +89,7 @@ function rewriteBlock(block, baseUrl) {
   }
   let next = block
   if (next && typeof next.html === 'string') {
-    next = { ...next, html: rewriteHtml(next.html, baseUrl || '') }
+    next = { ...next, html: fillKeyedImages(rewriteHtml(next.html, baseUrl || ''), byKey) }
   }
   if (baseUrl && next?.audio?.src && !isAbsolute(next.audio.src)) {
     try {
