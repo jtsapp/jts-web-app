@@ -65,6 +65,12 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
   // каждый клик меняет своё значение и заставляет attempt() отработать ещё раз
   // (находка 3 финального ревью).
   const [retryTick, setRetryTick] = useState(0)
+  // Тот же приём для повторной ПРОВЕРКИ урока (находка ревью). Осечка сети
+  // длится секунды, а «Войти заново» стоит целого занятия: выход забывает
+  // сеанс вкладки, и следующий вход заводит новое занятие с пустой доской,
+  // закрыв прежнее как забытое (TrialBoothSessionService.enter). Поэтому
+  // рядом с выходом стоит дешёвый повтор — сначала спросить ещё раз.
+  const [checkTick, setCheckTick] = useState(0)
   // onEnter приезжает новой стрелкой на каждый рендер App — держим в ref, иначе
   // эффект перезапускался бы вместе с ним и слал вход по кругу.
   const onEnterRef = useRef(onEnter)
@@ -100,7 +106,7 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     return () => {
       alive = false
     }
-  }, [token, lessonId])
+  }, [token, lessonId, checkTick])
 
   useEffect(() => {
     if (!armed) return undefined
@@ -168,8 +174,16 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     setRetryTick((n) => n + 1)
   }
 
-  // Выход из аккаунта: единственное, что можно предложить, когда про урок
-  // ничего не известно. Своей логики выхода экран не держит — чистит токен,
+  // Спросить про урок ещё раз. Стоит перед выходом, потому что стоит дешевле:
+  // осечка сети живёт секунды, а выход забывает сеанс вкладки, и следующий
+  // вход заводит новое занятие с пустой доской, закрыв прежнее как забытое.
+  // Ни в какой момент этот жест не шлёт /enter — только повторяет проверку.
+  const checkAgain = () => {
+    setState('checking')
+    setCheckTick((n) => n + 1)
+  }
+
+  // Выход из аккаунта: то, что остаётся, когда проверка не помогла. Своей логики выхода экран не держит — чистит токен,
   // признак класса и память вкладки о сеансе тот же handleLogout из App.jsx,
   // что и кнопка выхода в профиле, и он же уводит на экран входа/регистрации.
   const signOut = () => onSignOut?.()
@@ -207,9 +221,16 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
             </button>
           )}
           {state === 'checkFailed' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={signOut}>
-              {t('booth.checkFailedCta')}
-            </button>
+            <>
+              {/* Сначала дешёвое: спросить про урок ещё раз. Осечка сети живёт
+                  секунды, а выход стоит занятия — см. checkTick. */}
+              <button type="button" className="btn btn--primary booth__cta" onClick={checkAgain}>
+                {t('booth.checkRetry')}
+              </button>
+              <button type="button" className="btn booth__cta" onClick={signOut}>
+                {t('booth.checkFailedCta')}
+              </button>
+            </>
           )}
           {state === 'finished' && (
             <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>

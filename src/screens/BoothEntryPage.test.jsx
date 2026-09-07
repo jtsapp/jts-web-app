@@ -298,4 +298,27 @@ describe('экран класса', () => {
     expect(enterTrialBooth).not.toHaveBeenCalled()
     expect(onEnter).not.toHaveBeenCalled()
   })
+
+  // Находка ревью: «Войти заново» стоит целого занятия — выход забывает сеанс
+  // вкладки, и следующий вход заводит новое, закрыв прежнее как забытое. Сеть
+  // же моргает секундами, поэтому рядом стоит дешёвый повтор проверки.
+  it('проверку урока можно повторить, не выходя из аккаунта', async () => {
+    getLessonById
+      .mockRejectedValueOnce(new Error('сеть'))
+      .mockResolvedValueOnce({ id: 77, status: 'IN_PROGRESS' })
+    const onSignOut = vi.fn()
+
+    renderPage({ lessonId: 77, onSignOut })
+    await act(async () => {})
+    expect(screen.getByRole('button', { name: 'Проверить ещё раз' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Проверить ещё раз' }))
+    await act(async () => {})
+
+    // Урок оказался жив — предлагаем вернуться, а не выходить.
+    expect(screen.getByRole('button', { name: 'Вернуться в класс' })).toBeTruthy()
+    expect(onSignOut).not.toHaveBeenCalled()
+    // И ни одного входа: повтор проверки не имеет права трогать сеанс.
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
 })
