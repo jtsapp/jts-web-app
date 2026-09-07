@@ -1,0 +1,30 @@
+# Caddy перед копией мозга (см. compose-brain.yaml). TLS от Let's Encrypt
+# выдаётся автоматически по имени из BRAIN_DOMAIN.
+{$BRAIN_DOMAIN} {
+	# Снаружи открыт только мозг. Остальные роуты образа (профиль, токены,
+	# IELTS) на этом сервере без базы и ключей бессмысленны — и лучше, чтобы их
+	# тут вообще не было видно.
+	@brain path /api/voice/brain/*
+	handle @brain {
+		# SSE: отдавать чанки агенту сразу, не копить (аналог X-Accel-Buffering
+		# для nginx; Caddy для text/event-stream и так не буферизует, но явно —
+		# надёжнее).
+		reverse_proxy web:3000 {
+			flush_interval -1
+		}
+	}
+
+	# Проверка живости для мониторинга/curl.
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	handle {
+		respond 404
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

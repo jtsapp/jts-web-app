@@ -20,6 +20,7 @@ import ListeningPage from './screens/ListeningPage.jsx'
 import ShadowingPage from './screens/ShadowingPage.jsx'
 import WritingPage from './screens/WritingPage.jsx'
 import WorkbookPage from './screens/WorkbookPage.jsx'
+import ReadingPage from './screens/ReadingPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -92,9 +93,18 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'kingdom', 'practice', 'listening', 'writing', 'workbook', 'homework', 'lessons',
+  'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
+
+// Тьютор раньше в URL не писался: F5 снимал ?screen=, restoreSession без
+// deepLink оставлял стартовый 'welcome' (или уводил на kingdom) — жалоба
+// «в тьюторе обновить = выкинуло на логин, в остальных разделах норм».
+// Префикс tutor-* без runtime-id безопасен: дашборд/онбординг/сценарии
+// поднимаются из профиля; voice-chat на F5 просто запросит новый LiveKit-токен.
+function persistsInUrl(screen) {
+  return PERSISTABLE_SCREENS.has(screen) || (typeof screen === 'string' && screen.startsWith('tutor-'))
+}
 
 export default function App() {
   const { t, lang } = useI18n()
@@ -154,6 +164,9 @@ export default function App() {
       // (?screen=workbook&level=b2). Без него любой диплинк вёл на A0, и
       // проверить экран B2 можно было только кликами из каталога Практики.
       if (deepLink === 'workbook') setWorkbookTarget({ level: levelParam.toLowerCase() })
+      // …и нужный уровень «Чтения» (?screen=reading&level=b1): каталог там
+      // стартует с уровня пользователя, и проверить чужой уровень иначе никак.
+      if (deepLink === 'reading') setReadingTarget({ level: levelParam.toLowerCase() })
     }
     // ?unlock=1 — открыть все королевства и все уроки тропы для просмотра
     // контента. Только в дев-сборке: в проде это обошло бы гейтинг по уровню,
@@ -331,6 +344,7 @@ export default function App() {
   const [practiceTarget, setPracticeTarget] = useState(null)
   const [writingTarget, setWritingTarget] = useState(null) // { level?, genreId? } — прыжок из Практики сразу в уровень/жанр Writing
   const [workbookTarget, setWorkbookTarget] = useState(null) // { level } — какой воркбук открыть из Практики
+  const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -758,7 +772,7 @@ export default function App() {
     const hadLive = url.searchParams.get('live')
     const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
     const wantLive = isLiveLesson ? String(liveLessonId) : null
-    if (PERSISTABLE_SCREENS.has(screen) || isLiveLesson) {
+    if (persistsInUrl(screen) || isLiveLesson) {
       if (hadScreen === screen && hadLive === wantLive) return
       url.searchParams.set('screen', screen)
       if (wantLive != null) url.searchParams.set('live', wantLive)
@@ -785,6 +799,7 @@ export default function App() {
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
     else if (key === 'writing') { if (payload) setWritingTarget(payload); setScreen('writing') }
     else if (key === 'workbook') { if (payload) setWorkbookTarget(payload); setScreen('workbook') }
+    else if (key === 'reading') { if (payload) setReadingTarget(payload); setScreen('reading') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -807,6 +822,7 @@ export default function App() {
     else if (key === 'shadowing') setScreen('shadowing')
     else if (key === 'writing') setScreen('writing')
     else if (key === 'workbook') setScreen('workbook')
+    else if (key === 'reading') setScreen('reading')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -1106,6 +1122,18 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={workbookTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+          isDemoAccount={isDemoAccount}
+        />
+      )
+    case 'reading':
+      return (
+        <ReadingPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={readingTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}

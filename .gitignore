@@ -7,6 +7,9 @@ out/
 .env*.local
 .vercel
 .env*
+# Шаблоны env — в репо (сами .env.* с секретами остаются игнорируемыми).
+!.env.example
+!.env.brain.example
 
 # Python bytecode from the LiveKit agent
 __pycache__/
