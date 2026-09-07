@@ -172,18 +172,23 @@ describe('экран класса', () => {
   it('известный урок ещё идёт — предлагаем вернуться, без нового входа', async () => {
     getLessonById.mockResolvedValueOnce({ id: 77, status: 'IN_PROGRESS' })
     const onEnter = vi.fn()
+    const onSignOut = vi.fn()
 
-    renderPage({ lessonId: 77, onEnter })
+    renderPage({ lessonId: 77, onEnter, onSignOut })
     await act(async () => {})
 
     expect(getLessonById).toHaveBeenCalledWith('TOK', 77)
     expect(screen.getByText('Вы вышли из класса')).toBeTruthy()
     expect(enterTrialBooth).not.toHaveBeenCalled()
+    // Подтверждённо открытое занятие ведёт обратно в урок, а не на выход:
+    // «войти заново» здесь было бы потерей живой доски (регресс на ветку 3).
+    expect(screen.queryByRole('button', { name: 'Войти заново' })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Вернуться в класс' }))
 
     expect(onEnter).toHaveBeenCalledWith(77)
     expect(enterTrialBooth).not.toHaveBeenCalled()
+    expect(onSignOut).not.toHaveBeenCalled()
   })
 
   // Тот же живой сеанс, но на паузе — вторая половина условия IN_PROGRESS ||
@@ -259,27 +264,61 @@ describe('экран класса', () => {
     expect(onEnter).toHaveBeenCalledWith(88)
   })
 
-  // Ветка 3: запрос статуса не удался — сеть или бэкенд подвели. Спека прямо
-  // запрещает входить заново в этом случае (мы бы рисковали убить ещё живой
-  // сеанс из-за одной секунды сети), поэтому экран деградирует к «вернуться»,
-  // а не к автовходу.
-  it('проверка статуса не удалась — не входим заново, показываем «вернуться»', async () => {
+  // Ветка 3: запрос статуса не удался — сеть или бэкенд подвели. Входить
+  // заново по-прежнему нельзя ни в коем случае (лишний /enter закрыл бы ещё
+  // живой сеанс как забытый — ради этого проверка и заведена), но и выдавать
+  // непроверенный урок за живой тоже нельзя: раньше осечка приводила к той же
+  // 'left' с кнопкой «Вернуться», и посетитель ходил по кольцу «вернуться →
+  // завершённый урок → снова этот экран» (наблюдение владельца на дев-стенде).
+  // Про урок мы не знаем ничего — значит и предлагаем единственное честное
+  // действие: войти заново.
+  it('проверка статуса не удалась — предлагаем войти заново, без «вернуться»', async () => {
     getLessonById.mockRejectedValueOnce(new Error('network down'))
     const onEnter = vi.fn()
+    const onSignOut = vi.fn()
 
-    renderPage({ lessonId: 77, onEnter })
+    renderPage({ lessonId: 77, onEnter, onSignOut })
     await act(async () => {})
 
-    expect(screen.getByText('Вы вышли из класса')).toBeTruthy()
+    expect(screen.getByText('Не удалось проверить урок')).toBeTruthy()
+    // Кнопки возврата тут нет вовсе — именно она и замыкала кольцо.
+    expect(screen.queryByRole('button', { name: 'Вернуться в класс' })).toBeNull()
     expect(enterTrialBooth).not.toHaveBeenCalled()
 
-    // И дальше без клика ничего не заводится само.
+    // И дальше без клика ничего не заводится само — ни повтор проверки, ни
+    // тем более вход.
     await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
     expect(enterTrialBooth).not.toHaveBeenCalled()
+    expect(getLessonById).toHaveBeenCalledTimes(1)
 
-    // Кнопка по-прежнему просто возвращает в известный урок — не через /enter.
-    fireEvent.click(screen.getByRole('button', { name: 'Вернуться в класс' }))
-    expect(onEnter).toHaveBeenCalledWith(77)
+    fireEvent.click(screen.getByRole('button', { name: 'Войти заново' }))
+
+    expect(onSignOut).toHaveBeenCalledTimes(1)
+    // Выход — это выход, а не тихий вход в класс другим путём.
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+    expect(onEnter).not.toHaveBeenCalled()
+  })
+
+  // Находка ревью: «Войти заново» стоит целого занятия — выход забывает сеанс
+  // вкладки, и следующий вход заводит новое, закрыв прежнее как забытое. Сеть
+  // же моргает секундами, поэтому рядом стоит дешёвый повтор проверки.
+  it('проверку урока можно повторить, не выходя из аккаунта', async () => {
+    getLessonById
+      .mockRejectedValueOnce(new Error('сеть'))
+      .mockResolvedValueOnce({ id: 77, status: 'IN_PROGRESS' })
+    const onSignOut = vi.fn()
+
+    renderPage({ lessonId: 77, onSignOut })
+    await act(async () => {})
+    expect(screen.getByRole('button', { name: 'Проверить ещё раз' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Проверить ещё раз' }))
+    await act(async () => {})
+
+    // Урок оказался жив — предлагаем вернуться, а не выходить.
+    expect(screen.getByRole('button', { name: 'Вернуться в класс' })).toBeTruthy()
+    expect(onSignOut).not.toHaveBeenCalled()
+    // И ни одного входа: повтор проверки не имеет права трогать сеанс.
     expect(enterTrialBooth).not.toHaveBeenCalled()
   })
 })

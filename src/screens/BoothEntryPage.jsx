@@ -40,15 +40,16 @@ const OPEN_STATUSES = new Set(['IN_PROGRESS', 'PAUSED'])
  * их стирала. Теперь единственный источник правды — ответ бэкенда на каждом
  * монтировании этого экрана, а не память вкладки саму по себе.
  */
-export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
+export default function BoothEntryPage({ token, lessonId = null, onEnter, onSignOut }) {
   const { t } = useI18n()
   // 'checking' — урок известен, спрашиваем у бэкенда его статус, прежде чем
   // решить, что показать (Правило 2, см. эффект ниже);
   // 'entering' — идёт запрос /enter; 'waiting' — занятия ещё нет, повторяем;
   // 'closed' — класс выключен или аккаунт не закреплён (повторять нечего);
-  // 'left' — проверка подтвердила, что сеанс ещё жив (IN_PROGRESS/PAUSED),
-  // либо сама проверка не удалась — сеть подвела, а мы не входим заново ни в
-  // коем случае, чтобы не убить ещё живой сеанс из-за одной секунды сети;
+  // 'left' — проверка ПОДТВЕРДИЛА, что сеанс ещё жив (IN_PROGRESS/PAUSED), —
+  // только этот случай, ничего больше;
+  // 'checkFailed' — проверка не удалась (сеть или бэкенд не ответили), про
+  // урок мы не знаем ничего и предлагаем войти заново;
   // 'finished' — проверка вернула терминальный статус, ждём нажатия, чтобы
   // принять следующего.
   const [state, setState] = useState(lessonId != null ? 'checking' : 'entering')
@@ -64,6 +65,12 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
   // каждый клик меняет своё значение и заставляет attempt() отработать ещё раз
   // (находка 3 финального ревью).
   const [retryTick, setRetryTick] = useState(0)
+  // Тот же приём для повторной ПРОВЕРКИ урока (находка ревью). Осечка сети
+  // длится секунды, а «Войти заново» стоит целого занятия: выход забывает
+  // сеанс вкладки, и следующий вход заводит новое занятие с пустой доской,
+  // закрыв прежнее как забытое (TrialBoothSessionService.enter). Поэтому
+  // рядом с выходом стоит дешёвый повтор — сначала спросить ещё раз.
+  const [checkTick, setCheckTick] = useState(0)
   // onEnter приезжает новой стрелкой на каждый рендер App — держим в ref, иначе
   // эффект перезапускался бы вместе с ним и слал вход по кругу.
   const onEnterRef = useRef(onEnter)
@@ -83,17 +90,23 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
         setState(OPEN_STATUSES.has(data?.status) ? 'left' : 'finished')
       })
       .catch(() => {
-        // Сеть или бэкенд подвели — не входим заново ни в коем случае: мы бы
-        // рисковали убить ещё живой сеанс из-за одной секунды сети. Считаем
-        // урок как будто жив (та же 'left', та же кнопка «Вернуться») — если
-        // ошиблись, экран урока сам обнаружит терминальный статус при своём
-        // следующем опросе и вернёт сюда через onLessonClosed.
-        if (alive) setState('left')
+        // Сеть или бэкенд подвели. Автоматического входа тут по-прежнему нет
+        // ни в коем случае: лишний /enter закрыл бы ещё живой сеанс как
+        // забытый — ради этого проверка и заведена.
+        //
+        // Но и выдавать непроверенный урок за живой больше нельзя. Раньше
+        // осечка приводила к той же 'left' с кнопкой «Вернуться»: нажатие
+        // уводило в урок, урок оказывался завершённым, onLessonClosed
+        // возвращал сюда, проверка падала снова — кольцо, из которого
+        // посетитель не выходил (наблюдение владельца на дев-стенде).
+        // Про урок мы не знаем НИЧЕГО, поэтому и предлагаем единственное
+        // честное действие — войти заново.
+        if (alive) setState('checkFailed')
       })
     return () => {
       alive = false
     }
-  }, [token, lessonId])
+  }, [token, lessonId, checkTick])
 
   useEffect(() => {
     if (!armed) return undefined
@@ -161,6 +174,20 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     setRetryTick((n) => n + 1)
   }
 
+  // Спросить про урок ещё раз. Стоит перед выходом, потому что стоит дешевле:
+  // осечка сети живёт секунды, а выход забывает сеанс вкладки, и следующий
+  // вход заводит новое занятие с пустой доской, закрыв прежнее как забытое.
+  // Ни в какой момент этот жест не шлёт /enter — только повторяет проверку.
+  const checkAgain = () => {
+    setState('checking')
+    setCheckTick((n) => n + 1)
+  }
+
+  // Выход из аккаунта: то, что остаётся, когда проверка не помогла. Своей логики выхода экран не держит — чистит токен,
+  // признак класса и память вкладки о сеансе тот же handleLogout из App.jsx,
+  // что и кнопка выхода в профиле, и он же уводит на экран входа/регистрации.
+  const signOut = () => onSignOut?.()
+
   const waiting = state === 'entering' || state === 'waiting' || state === 'checking'
   const titleKey = {
     checking: 'booth.checking',
@@ -168,12 +195,14 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     waiting: 'booth.waitingTitle',
     closed: 'booth.closedTitle',
     left: 'booth.leftTitle',
+    checkFailed: 'booth.checkFailedTitle',
     finished: 'booth.finishedTitle',
   }[state]
   const textKey = {
     waiting: 'booth.waitingText',
     closed: 'booth.closedText',
     left: 'booth.leftText',
+    checkFailed: 'booth.checkFailedText',
     finished: 'booth.finishedText',
   }[state]
 
@@ -190,6 +219,18 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
             <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
               {t('booth.back')}
             </button>
+          )}
+          {state === 'checkFailed' && (
+            <>
+              {/* Сначала дешёвое: спросить про урок ещё раз. Осечка сети живёт
+                  секунды, а выход стоит занятия — см. checkTick. */}
+              <button type="button" className="btn btn--primary booth__cta" onClick={checkAgain}>
+                {t('booth.checkRetry')}
+              </button>
+              <button type="button" className="btn booth__cta" onClick={signOut}>
+                {t('booth.checkFailedCta')}
+              </button>
+            </>
           )}
           {state === 'finished' && (
             <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>

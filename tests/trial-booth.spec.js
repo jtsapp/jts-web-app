@@ -573,3 +573,41 @@ test('вышел из урока, а его тем временем заверш
   await expect(page.getByText('Живой урок')).toBeVisible({ timeout: 15_000 })
   expect(attempts).toBe(settled + 1)
 })
+
+// Наблюдение владельца на дев-стенде: осечка проверки статуса выдавала
+// непроверенный урок за живой (то же состояние 'left' с «Вернуться в класс»),
+// и посетитель ходил по кольцу: нажал «Вернуться» → урок оказался завершённым
+// → onLessonClosed вернул на экран класса → проверка снова упала → та же
+// кнопка. Теперь про непроверенный урок экран честно говорит, что не знает, и
+// уводит на вход и регистрацию. Нового /enter при этом всё так же не шлёт:
+// он закрыл бы ещё живой сеанс как забытый — ради этого проверка и заведена.
+test('проверка урока не удалась — экран предлагает войти заново, а не ходить по кругу', async ({ page }) => {
+  await stubAccount(page)
+  await page.addInitScript((tok) => localStorage.setItem('jts_access_token', tok), TOKEN)
+  let enterCalled = false
+  await page.route('**/trial/booth/enter', (r) => {
+    enterCalled = true
+    return r.fulfill(json(ENTERED))
+  })
+  // Бэкенд не отвечает про занятие — ровно та ветка, что раньше врала про
+  // живой урок. Заглушка на всю ручку, а не только на 77: у stubAccount свой
+  // ответ на этот же адрес, и снимаем его явно, не полагаясь на порядок роутов.
+  await page.unroute('**/admin/lessons/77')
+  await page.route('**/admin/lessons/*', (r) => r.fulfill(json({ error: 'unavailable' }, 503)))
+
+  // ?live=77 — сеанс, известный вкладке: тот же путь, что после перезагрузки
+  // прямо внутри урока (см. соседние спеки про Правило 1).
+  await page.goto('/?screen=booth&live=77')
+
+  await expect(page.getByText('Не удалось проверить урок')).toBeVisible({ timeout: 15_000 })
+  // Кнопки возврата на этом экране нет вовсе — именно она и замыкала кольцо.
+  await expect(page.getByText('Вернуться в класс')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Войти заново' }).click()
+
+  // Экран входа и регистрации — тот самый, с которого начинается вкладка.
+  await expect(page.locator('.hero .cta .btn--primary')).toHaveText('Регистрация')
+  await expect(page.locator('.hero .cta .btn--secondary')).toHaveText('Войти')
+  // И за всё это время в класс не постучались ни разу.
+  expect(enterCalled).toBe(false)
+})
