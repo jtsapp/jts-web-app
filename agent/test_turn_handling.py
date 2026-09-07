@@ -10,7 +10,14 @@
 import os
 
 import agent as A
-from agent import LearnerProfile, _build_turn_detector, _turn_detector_mode_for
+from agent import (
+    LearnerProfile,
+    _build_turn_detector,
+    _push_to_talk_for,
+    _turn_detector_mode_for,
+    _turn_handling,
+    parse_metadata,
+)
 
 
 def _env(**vals):
@@ -116,5 +123,43 @@ try:
 finally:
     A.inference.TurnDetector = _real
 
-_env(TURN_DETECTOR=None, TURN_DETECTOR_TUTORS=None)
+# --- рация -------------------------------------------------------------------
+# Флаг приходит от ученика (metadata), а не из env: настройка стенда его не
+# включает, поэтому по умолчанию рации нет ни у кого.
+_env(PUSH_TO_TALK=None)
+assert _push_to_talk_for(LearnerProfile()) is False
+assert _push_to_talk_for(LearnerProfile(push_to_talk=True)) is True
+
+# Рубильник воркера сильнее просьбы клиента: если ручной ход поведёт себя плохо
+# в проде, всех возвращаем на VAD секретом, не трогая приложение.
+for off in ("off", "OFF", " off ", "0", "false"):
+    _env(PUSH_TO_TALK=off)
+    assert _push_to_talk_for(LearnerProfile(push_to_talk=True)) is False, off
+
+# Мусор в секрете рацию не выключает — выключает только явное значение.
+_env(PUSH_TO_TALK="yes")
+assert _push_to_talk_for(LearnerProfile(push_to_talk=True)) is True
+_env(PUSH_TO_TALK=None)
+
+# Ручная ветка turn_handling: детектора конца речи нет вовсе, и порогов
+# перебивания тоже — ход перебивает само нажатие рации.
+ptt = _turn_handling(None, push_to_talk=True)
+assert ptt["turn_detection"] == "manual"
+assert "endpointing" not in ptt
+assert "interruption" not in ptt
+assert ptt["preemptive_generation"] == {"enabled": True}
+
+# Детектор в ручном режиме игнорируется: даже если его передали, ход всё равно
+# закрывает клиент.
+assert _turn_handling(object(), push_to_talk=True)["turn_detection"] == "manual"
+
+# Без флага всё как было — обе прежние ветки на месте.
+assert _turn_handling(None)["turn_detection"] == "vad"
+assert _turn_handling(object())["turn_detection"] != "manual"
+
+# metadata → профиль.
+assert parse_metadata('{"pushToTalk": true}').push_to_talk is True
+assert parse_metadata('{}').push_to_talk is False
+
+_env(TURN_DETECTOR=None, TURN_DETECTOR_TUTORS=None, PUSH_TO_TALK=None)
 print("turn handling: ok")

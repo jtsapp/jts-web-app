@@ -164,6 +164,10 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   // (Object.fromEntries над searchParams), поэтому принимаем и 'true'.
   if (p.englishOnly === true || p.englishOnly === 'true' || p.englishOnly === '1')
     meta.englishOnly = true
+  // Режим рации: агент снимает детектор конца речи и ждёт явной команды от
+  // клиента. Тот же приём с 'true' — из-за GET-варианта роута.
+  if (p.pushToTalk === true || p.pushToTalk === 'true' || p.pushToTalk === '1')
+    meta.pushToTalk = true
   if (p.mode === 'placement') {
     meta.mode = 'placement'
     meta.draftLevel = p.draftLevel || meta.level
