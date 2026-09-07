@@ -40,15 +40,16 @@ const OPEN_STATUSES = new Set(['IN_PROGRESS', 'PAUSED'])
  * их стирала. Теперь единственный источник правды — ответ бэкенда на каждом
  * монтировании этого экрана, а не память вкладки саму по себе.
  */
-export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
+export default function BoothEntryPage({ token, lessonId = null, onEnter, onSignOut }) {
   const { t } = useI18n()
   // 'checking' — урок известен, спрашиваем у бэкенда его статус, прежде чем
   // решить, что показать (Правило 2, см. эффект ниже);
   // 'entering' — идёт запрос /enter; 'waiting' — занятия ещё нет, повторяем;
   // 'closed' — класс выключен или аккаунт не закреплён (повторять нечего);
-  // 'left' — проверка подтвердила, что сеанс ещё жив (IN_PROGRESS/PAUSED),
-  // либо сама проверка не удалась — сеть подвела, а мы не входим заново ни в
-  // коем случае, чтобы не убить ещё живой сеанс из-за одной секунды сети;
+  // 'left' — проверка ПОДТВЕРДИЛА, что сеанс ещё жив (IN_PROGRESS/PAUSED), —
+  // только этот случай, ничего больше;
+  // 'checkFailed' — проверка не удалась (сеть или бэкенд не ответили), про
+  // урок мы не знаем ничего и предлагаем войти заново;
   // 'finished' — проверка вернула терминальный статус, ждём нажатия, чтобы
   // принять следующего.
   const [state, setState] = useState(lessonId != null ? 'checking' : 'entering')
@@ -83,12 +84,18 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
         setState(OPEN_STATUSES.has(data?.status) ? 'left' : 'finished')
       })
       .catch(() => {
-        // Сеть или бэкенд подвели — не входим заново ни в коем случае: мы бы
-        // рисковали убить ещё живой сеанс из-за одной секунды сети. Считаем
-        // урок как будто жив (та же 'left', та же кнопка «Вернуться») — если
-        // ошиблись, экран урока сам обнаружит терминальный статус при своём
-        // следующем опросе и вернёт сюда через onLessonClosed.
-        if (alive) setState('left')
+        // Сеть или бэкенд подвели. Автоматического входа тут по-прежнему нет
+        // ни в коем случае: лишний /enter закрыл бы ещё живой сеанс как
+        // забытый — ради этого проверка и заведена.
+        //
+        // Но и выдавать непроверенный урок за живой больше нельзя. Раньше
+        // осечка приводила к той же 'left' с кнопкой «Вернуться»: нажатие
+        // уводило в урок, урок оказывался завершённым, onLessonClosed
+        // возвращал сюда, проверка падала снова — кольцо, из которого
+        // посетитель не выходил (наблюдение владельца на дев-стенде).
+        // Про урок мы не знаем НИЧЕГО, поэтому и предлагаем единственное
+        // честное действие — войти заново.
+        if (alive) setState('checkFailed')
       })
     return () => {
       alive = false
@@ -161,6 +168,12 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     setRetryTick((n) => n + 1)
   }
 
+  // Выход из аккаунта: единственное, что можно предложить, когда про урок
+  // ничего не известно. Своей логики выхода экран не держит — чистит токен,
+  // признак класса и память вкладки о сеансе тот же handleLogout из App.jsx,
+  // что и кнопка выхода в профиле, и он же уводит на экран входа/регистрации.
+  const signOut = () => onSignOut?.()
+
   const waiting = state === 'entering' || state === 'waiting' || state === 'checking'
   const titleKey = {
     checking: 'booth.checking',
@@ -168,12 +181,14 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     waiting: 'booth.waitingTitle',
     closed: 'booth.closedTitle',
     left: 'booth.leftTitle',
+    checkFailed: 'booth.checkFailedTitle',
     finished: 'booth.finishedTitle',
   }[state]
   const textKey = {
     waiting: 'booth.waitingText',
     closed: 'booth.closedText',
     left: 'booth.leftText',
+    checkFailed: 'booth.checkFailedText',
     finished: 'booth.finishedText',
   }[state]
 
@@ -189,6 +204,11 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
           {state === 'left' && (
             <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
               {t('booth.back')}
+            </button>
+          )}
+          {state === 'checkFailed' && (
+            <button type="button" className="btn btn--primary booth__cta" onClick={signOut}>
+              {t('booth.checkFailedCta')}
             </button>
           )}
           {state === 'finished' && (
