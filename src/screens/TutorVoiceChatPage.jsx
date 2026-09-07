@@ -29,6 +29,8 @@ import { MicIcon, CheckIcon, CrossIcon } from '../tutor/TutorIcons.jsx'
 import { useT, useLang } from '../i18n/LanguageContext.jsx'
 import { getDeviceId, authHeaders } from '../lib/identity.js'
 import { getEnglishOnly } from '../lib/englishOnly.js'
+import { getPushToTalk } from '../lib/pushToTalk.js'
+import { usePushToTalk } from '../tutor/usePushToTalk.js'
 
 function ArrowUpIcon({ size = 22 }) {
   return (
@@ -87,6 +89,11 @@ export default function TutorVoiceChatPage({
   // увидел «связь пропала» и результат. Снимает флаг только кнопка «Готово».
   const holdRef = useRef(false)
   const [tokenData, setTokenData] = useState(null)
+  // Режим рации этого звонка. Не читаем localStorage прямо в рендере (SSR его
+  // не видит, и первый клиентский рендер разошёлся бы с серверным): значение
+  // ставим там же, где отправляем его в metadata, — так экран и агент точно
+  // договорились об одном и том же режиме.
+  const [pushToTalk, setPushToTalkMode] = useState(false)
   // null | 'daily' | 'monthly' | 'mic' | 'expired' | 'generic'
   const [error, setError] = useState(null)
 
@@ -134,6 +141,8 @@ export default function TutorVoiceChatPage({
     }
     setPerm('granted')
     setError(null)
+    const ptt = getPushToTalk()
+    setPushToTalkMode(ptt)
     try {
       const res = await fetch('/api/livekit/token', {
         method: 'POST',
@@ -153,6 +162,10 @@ export default function TutorVoiceChatPage({
           // начатого разговора настройка не меняется — промпт агента собирается
           // один раз на старте комнаты.
           ...(getEnglishOnly() ? { englishOnly: true } : {}),
+          // Режим рации: снимает с агента детектор конца речи вовсе — ход
+          // закрывает отпускание кнопки. Читаем здесь же и по той же причине:
+          // сессия агента собирается один раз на старте комнаты.
+          ...(ptt ? { pushToTalk: true } : {}),
           ...(interests.length ? { interests } : {}),
           ...(profession ? { profession } : {}),
           ...(scenarioId ? { scenarioId } : {}),
@@ -278,6 +291,7 @@ export default function TutorVoiceChatPage({
               holdRef={holdRef}
               face={tutor.face || ''}
               roomName={tokenData.room || ''}
+              pushToTalk={pushToTalk}
             />
           </LiveKitRoom>
         ) : (
@@ -337,15 +351,36 @@ const REACTION_MS = 4500
 // обновляет стейт по несколько раз в секунду, и внутри CallStage это
 // перерисовывало бы заодно лицо тьютора с липсинком. Здесь ререндер заперт в
 // одной кнопке. Пороги и шкала — в micLevel(), там же объяснено зачем.
-function MicButton({ track, listening, micOn, onClick, label }) {
-  const volume = useTrackVolume(micOn && listening ? track : undefined)
-  const level = micLevel(volume, { micOn, listening })
+//
+// В режиме рации кнопка не тумблер, а тангента: пока её держат — эфир ученика.
+// Кольцо тогда считаем от факта удержания, а не от состояния мьюта: микрофон в
+// рации включён весь звонок (лишнее выбрасывает агент), и по нему уже не понять,
+// чья очередь.
+function MicButton({
+  track,
+  listening,
+  micOn,
+  onClick,
+  label,
+  ptt = false,
+  holding = false,
+  pointerHandlers = null,
+}) {
+  const live = ptt ? holding : micOn && listening
+  const volume = useTrackVolume(live ? track : undefined)
+  const level = micLevel(volume, { micOn: live, listening: live })
   return (
     <button
-      className={'t-voice__mic' + (level > 0 ? ' is-hearing' : '')}
+      className={
+        't-voice__mic' +
+        (level > 0 ? ' is-hearing' : '') +
+        (ptt ? ' is-ptt' : '') +
+        (ptt && holding ? ' is-holding' : '')
+      }
       style={level > 0 ? { '--mic-level': level.toFixed(2) } : undefined}
       type="button"
-      onClick={onClick}
+      onClick={ptt ? undefined : onClick}
+      {...(pointerHandlers || {})}
     >
       <MicIcon size={28} />
       {label}
@@ -386,6 +421,7 @@ function CallStage({
   holdRef,
   face = '',
   roomName = '',
+  pushToTalk = false,
 }) {
   const state = useConnectionState()
   const va = useVoiceAssistant()
@@ -403,6 +439,14 @@ function CallStage({
   // трубку (комната живёт дальше), а при потерянном вебхуке лимит вообще тёк
   // сам по себе, пока ученик читал разбор.
   const closeCallSession = useCallSession(roomName, agentPresent)
+
+  // Рация. Ход открывает и закрывает ученик, поэтому детектора конца речи у
+  // агента в этом режиме нет вовсе — см. usePushToTalk.
+  const { holding, pointerHandlers } = usePushToTalk({
+    enabled: pushToTalk,
+    room,
+    agentIdentity: va.agent?.identity || '',
+  })
 
   // У сцены со своими часами на экране идёт её бюджет, а не остаток дневного
   // лимита: ученику обещали пять минут — он и должен видеть пять минут.
@@ -701,8 +745,22 @@ function CallStage({
         listening={va.state === 'listening'}
         micOn={micOn}
         onClick={toggleMic}
-        label={micOn ? t('voice.micOn') : t('voice.micOff')}
+        ptt={pushToTalk}
+        holding={holding}
+        pointerHandlers={pointerHandlers}
+        label={
+          pushToTalk
+            ? holding
+              ? t('voice.pttTalking')
+              : t('voice.pttHold')
+            : micOn
+              ? t('voice.micOn')
+              : t('voice.micOff')
+        }
       />
+      {/* Подсказка про пробел — только там, где есть клавиатура: на телефоне
+          CSS её прячет. */}
+      {pushToTalk && <span className="t-voice__ptthint">{t('voice.pttSpace')}</span>}
       <button className="t-voice__end" type="button" onClick={endCall}>
         {t('voice.end')}
       </button>
