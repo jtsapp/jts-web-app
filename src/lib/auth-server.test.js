@@ -12,7 +12,7 @@
 // проверкой оказывается и разбор ответа, где флаг и мог потеряться.
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { resolveProfileId, fetchContentQuota } from './auth-server.js'
+import { resolveProfileId, fetchContentQuota, verifyTokenStatus } from './auth-server.js'
 
 const bearer = (token) => new Request('https://app.test/api/x', { headers: { Authorization: `Bearer ${token}` } })
 const anonymous = () => new Request('https://app.test/api/x')
@@ -126,5 +126,28 @@ describe('fetchContentQuota: «потолка нет» ≠ «спросить н
 
     expect(quota.known).toBe(true)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+// Признак аккаунта класса едет тем же ответом /user/me, что и демо-флаг, и
+// теряется так же незаметно: verifyTokenStatus собирает профиль поимённо, и
+// поле, забытое в этом списке, до клиента не доедет вовсе — служебный аккаунт
+// после F5 окажется в обычном кабинете вместо класса.
+describe('verifyTokenStatus: признак аккаунта класса', () => {
+  it('boothAccount из ответа бэкенда доезжает до клиента', async () => {
+    stubBackend({ id: 501, name: 'Класс · Айгуль', boothAccount: true })
+
+    const result = await verifyTokenStatus('TOK')
+
+    expect(result.status).toBe('ok')
+    expect(result.user.boothAccount).toBe(true)
+  })
+
+  it('обычный ученик — false, а не undefined', async () => {
+    stubBackend({ id: 7, name: 'Асель' })
+
+    const result = await verifyTokenStatus('TOK')
+
+    expect(result.user.boothAccount).toBe(false)
   })
 })

@@ -58,7 +58,7 @@ function parseAnswer(value) {
   }
 }
 
-export default function LiveLessonPage({ lessonId, userName, userLevel, token, onNav, onProfile, onBack }) {
+export default function LiveLessonPage({ lessonId, userName, userLevel, token, onNav, onProfile, onBack, onLessonClosed }) {
   const { t } = useI18n()
   const [lesson, setLesson] = useState(null)
   const [state, setState] = useState('loading') // 'loading' | 'ready' | 'error'
@@ -1048,6 +1048,25 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // «пауза», и после «Завершить» ученик оставался с пустым экраном: ни ленты,
   // ни ответов, ни итога (спека §3.4 описывает совсем другое).
   const lessonOpen = status === 'IN_PROGRESS' || status === 'PAUSED' || status === 'COMPLETED' || followMode
+
+  // Урок сеанса дошёл до терминального статуса — сообщаем об этом наружу ОДИН
+  // раз. Проп необязательный и приходит только у аккаунта класса преподавателя
+  // (см. App.jsx: onLessonClosed уводит его на экран класса и забывает урок) —
+  // у обычного ученика и преподавателя это ничего не меняет.
+  //
+  // Терминален здесь только COMPLETED. CANCELLED для урока сеанса недостижим:
+  // TrialBoothSessionService.started() (бэкенд) стартует занятие в ТОЙ ЖЕ
+  // транзакции, что и создаёт его, минуя SCHEDULED, а
+  // LessonService.maybeCloseLessonIfAllResolved переводит урок в CANCELLED,
+  // только пока он ещё SCHEDULED, — после старта эта ветка уже не сработает.
+  const notifiedLessonClosedRef = useRef(null)
+  useEffect(() => {
+    if (!onLessonClosed || status !== 'COMPLETED') return
+    if (notifiedLessonClosedRef.current === lessonId) return
+    notifiedLessonClosedRef.current = lessonId
+    onLessonClosed()
+  }, [onLessonClosed, status, lessonId])
+
   // Смотрящий не отвечает; на паузе и после урока — тоже, чтобы работа не
   // терялась и не дописывалась задним числом (спека §3.3, §3.4).
   // Чей экран преподаватель читает прямо сейчас — и, значит, кому должна гореть

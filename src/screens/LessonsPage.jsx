@@ -6,8 +6,11 @@ import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
 import { isTeacher } from '../lib/jwt.js'
 
+// Спикинг-клабы скрыты: офлайн-группы в админке так и не завели, и вкладка
+// открывала заглушку «Страница в разработке» — на живом сайте это читается как
+// поломка. Ключ 'lessons.tabClubs' и картинка заглушки на месте: вернуть вкладку
+// — это снова добавить сюда строку и ветку рендера, когда клубы появятся.
 const TABS = [
-  { key: 'clubs', label: 'lessons.tabClubs' },
   { key: 'online', label: 'lessons.tabOnline' },
   // Самостоятельное обучение: материалы каталога, которые ученик проходит сам.
   // Не «каталог для ученика» — его срез до своего уровня, см. SelfStudy.
@@ -58,21 +61,6 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
             </button>
           ))}
         </div>
-
-        {/* Клубы (офлайн-группы) пока не заведены в админке - только «Онлайн». */}
-        {tab === 'clubs' && (
-          <div className="ls__body">
-            <div className="soon">
-              <div className="soon__art">
-                <img src="/assets/lessons/under-construction.png" alt="" />
-              </div>
-              <div className="soon__text">
-                <b>{t('soon.title')}</b>
-                <span>{t('soon.subtitle')}</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {tab === 'online' && (
           // Расписание — широкая раскладка: календарь и карточка урока занимают

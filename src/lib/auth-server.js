@@ -98,6 +98,17 @@ export async function verifyTokenStatus(token) {
         email: user.email ?? null,
         role: user.role ?? null,
         isDemoAccount: !!user.isDemoAccount,
+        // Аккаунт класса преподавателя: по нему клиент ведёт человека сразу в
+        // урок, минуя кабинет (см. lib/homeScreen.js). Список полей тут белый,
+        // поэтому признак приходится называть явно.
+        //
+        // `!!` — по той же причине, что у соседнего isDemoAccount: у обычного
+        // ученика поля в ответе бэкенда нет, и без приведения в сессию уехало бы
+        // undefined. Тут это дороже, чем кажется: значение идёт дальше пропом в
+        // BoothEntryPage и зависимостью эффекта-стража в App, а undefined в
+        // зависимости неотличим от false только до первого сравнения — и
+        // сравнение `=== true` где-нибудь ниже сломалось бы молча.
+        boothAccount: !!user.boothAccount,
         languageLevel: user.languageLevel ?? null,
         birthDate: user.birthDate ?? null,
       },
