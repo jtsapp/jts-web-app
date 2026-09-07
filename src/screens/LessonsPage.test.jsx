@@ -70,18 +70,20 @@ describe('возврат на свою вкладку', () => {
 describe('LessonsPage tabs', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('ученик видит клубы, онлайн-уроки и самостоятельное обучение', async () => {
+  it('ученик видит онлайн-уроки и самостоятельное обучение — без спикинг-клабов', async () => {
+    // Клубов в админке нет, и вкладка открывала «Страница в разработке»;
+    // проверяем именно её отсутствие, чтобы заглушка не вернулась незаметно.
     const { container } = renderPage(tokenWithRole('STUDENT'))
     await waitFor(() => expect(container.querySelectorAll('.ls-tab').length).toBeGreaterThan(0))
     expect([...container.querySelectorAll('.ls-tab')].map((b) => b.textContent))
-      .toEqual(['Спикинг-клабы', 'Онлайн-уроки', 'Самостоятельно'])
+      .toEqual(['Онлайн-уроки', 'Самостоятельно'])
   })
 
   // Проверка домашних работ — инструмент преподавателя, ученику её показывать
   // нельзя: бэкенд всё равно отдаст ему только свои работы.
   it('преподаватель дополнительно видит вкладку проверки домашних работ', async () => {
     const { container } = renderPage(tokenWithRole('TEACHER'))
-    await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(4))
+    await waitFor(() => expect(container.querySelectorAll('.ls-tab')).toHaveLength(3))
     expect(screen.getByRole('button', { name: 'Домашние задания' })).toBeTruthy()
   })
 
