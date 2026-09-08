@@ -3528,7 +3528,18 @@ def _cascade_tts_azure(profile: LearnerProfile):
             "AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set (у проекта нет Azure — "
             "провайдер выбирается в TUTOR_TTS_PROVIDER)"
         )
-    if profile.lang == "kz":
+    # Родной kk-KZ голос берём по языку РЕЧИ, а не интерфейса — но только у
+    # A/B-стенда. profile.lang это язык ИНТЕРФЕЙСА, и у казахскоязычного тьютора
+    # он сплошь и рядом "ru" (дефолт приложения): тогда сюда приезжал
+    # мультиязычный en/ru-голос и читал казахский текст с акцентом — ровно то,
+    # на что жаловались. Остальным тьюторам условие оставлено как было: у них
+    # kz это и правда только интерфейс, казахского в речи нет.
+    speech_lang = (
+        _tts_speech_lang(profile.tutor, profile.lang or "en")
+        if (profile.tutor or "").strip().lower() == KZ_AB_STAND_PERSONA
+        else profile.lang
+    )
+    if speech_lang == "kz":
         voice = AZURE_KZ_FEMALE if profile.tutor in FEMALE_TUTORS else AZURE_KZ_MALE
     else:
         voice = AZURE_TTS_VOICE.get(profile.tutor, DEFAULT_AZURE_VOICE)
