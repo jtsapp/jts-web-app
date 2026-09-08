@@ -70,6 +70,7 @@ import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLogi
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
+import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel } from './lib/levelSave.js'
@@ -186,6 +187,14 @@ export default function App() {
       // …и нужный уровень «Чтения» (?screen=reading&level=b1): каталог там
       // стартует с уровня пользователя, и проверить чужой уровень иначе никак.
       if (deepLink === 'reading') setReadingTarget({ level: levelParam.toLowerCase() })
+    }
+    // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
+    // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
+    // ровно его. До этого попасть в юнит по адресу можно было только из
+    // домашней работы ученика, то есть только из ученического аккаунта.
+    if (deepLink === 'practice') {
+      const unitTarget = practiceUnitTarget(searchParams)
+      if (unitTarget) setPracticeTarget(unitTarget)
     }
     // ?unlock=1 — открыть все королевства и все уроки тропы для просмотра
     // контента. Только в дев-сборке: в проде это обошло бы гейтинг по уровню,
