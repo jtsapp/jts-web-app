@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Shell from '../components/Shell.jsx'
+import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import { useI18n } from '../i18n.jsx'
 import { enterTrialBooth, getLessonById } from '../api.js'
 import { unlockBroadcastAudio } from './live/audioReport.js'
@@ -87,9 +88,15 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     getLessonById(token, lessonId)
       .then((data) => {
         if (!alive) return
-        setState(OPEN_STATUSES.has(data?.status) ? 'left' : 'finished')
+        // Ответ без статуса — не «урок кончился», а «мы не знаем». Разница
+        // дорогая: 'finished' предлагает вход заново, а он закрывает ещё живой
+        // сеанс как забытый и заводит занятие с пустой доской. Сосед по файлу
+        // в такой же неопределённости выбирает ту же безопасную сторону —
+        // ответ /enter без lessonId ведёт в ожидание, а не в отказ.
+        if (data?.status == null) setState('checkFailed')
+        else setState(OPEN_STATUSES.has(data.status) ? 'left' : 'finished')
       })
-      .catch(() => {
+      .catch((e) => {
         // Сеть или бэкенд подвели. Автоматического входа тут по-прежнему нет
         // ни в коем случае: лишний /enter закрыл бы ещё живой сеанс как
         // забытый — ради этого проверка и заведена.
@@ -101,7 +108,17 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
         // посетитель не выходил (наблюдение владельца на дев-стенде).
         // Про урок мы не знаем НИЧЕГО, поэтому и предлагаем единственное
         // честное действие — войти заново.
-        if (alive) setState('checkFailed')
+        //
+        // Но «не знаем» — не всякий отказ. 404 (занятия больше нет) и 403 (оно
+        // не наше) — это ОТВЕТ, а не молчание: возвращаться некуда, и честное
+        // состояние тут 'finished' с настоящим входом заново. Без этой ветки
+        // такой отказ давал «Проверить ещё раз», которая получала бы тот же
+        // код при каждом нажатии, — тупик вместо кольца. Коды берём из
+        // err.status, его кладёт authGet (api.js) — тот же приём, что у
+        // эффекта входа ниже.
+        if (!alive) return
+        if (e?.status === 403 || e?.status === 404) setState('finished')
+        else setState('checkFailed')
       })
     return () => {
       alive = false
@@ -183,10 +200,17 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     setCheckTick((n) => n + 1)
   }
 
-  // Выход из аккаунта: то, что остаётся, когда проверка не помогла. Своей логики выхода экран не держит — чистит токен,
+  // Выход из аккаунта. Своей логики выхода экран не держит — чистит токен,
   // признак класса и память вкладки о сеансе тот же handleLogout из App.jsx,
   // что и кнопка выхода в профиле, и он же уводит на экран входа/регистрации.
   const signOut = () => onSignOut?.()
+
+  // Из состояния 'left' выход СПРАШИВАЕТ. Там занятие подтверждённо идёт, а
+  // кнопка стоит вплотную под «Вернуться в класс»: один промах мышью — и
+  // вернуться уже нечем (память вкладки о сеансе стёрта, нужен пароль класса,
+  // а новый вход закроет живой сеанс как забытый). В 'checkFailed' спрашивать
+  // не о чем: там урока для нас всё равно нет.
+  const [askSignOut, setAskSignOut] = useState(false)
 
   const waiting = state === 'entering' || state === 'waiting' || state === 'checking'
   const titleKey = {
@@ -226,7 +250,7 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
                   в тупик — кабинета у класса нет, выхода на экране нет
                   (наблюдение владельца на дев-стенде). Вторым действием, а не
                   первым: тот, кто вышел случайно, чаще возвращается. */}
-              <button type="button" className="btn booth__cta" onClick={signOut}>
+              <button type="button" className="btn btn--secondary booth__cta" onClick={() => setAskSignOut(true)}>
                 {t('booth.signOut')}
               </button>
             </>
@@ -238,10 +262,19 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
               <button type="button" className="btn btn--primary booth__cta" onClick={checkAgain}>
                 {t('booth.checkRetry')}
               </button>
-              <button type="button" className="btn booth__cta" onClick={signOut}>
+              <button type="button" className="btn btn--secondary booth__cta" onClick={signOut}>
                 {t('booth.checkFailedCta')}
               </button>
             </>
+          )}
+          {askSignOut && (
+            <LessonExitConfirm
+              titleKey="booth.signOutAsk"
+              subKey="booth.signOutAskSub"
+              leaveKey="booth.signOutConfirm"
+              onStay={() => setAskSignOut(false)}
+              onLeave={signOut}
+            />
           )}
           {state === 'finished' && (
             <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>

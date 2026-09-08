@@ -338,8 +338,57 @@ describe('экран класса', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }))
 
+    // Занятие тут подтверждённо ИДЁТ, а кнопка стоит вплотную под возвратом:
+    // один промах мышью стоил бы урока, поэтому сначала вопрос.
+    expect(onSignOut).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти' }))
+
     expect(onSignOut).toHaveBeenCalledTimes(1)
     // Выход не имеет права трогать чужой сеанс.
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
+
+  it('отказ в подтверждении оставляет посетителя в классе', async () => {
+    getLessonById.mockResolvedValueOnce({ id: 77, status: 'IN_PROGRESS' })
+    const onSignOut = vi.fn()
+
+    renderPage({ lessonId: 77, onSignOut })
+    await act(async () => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить' }))
+
+    expect(onSignOut).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Вернуться в класс' })).toBeTruthy()
+  })
+
+  // Находки ревью: отказ с КОДОМ — это ответ, а не молчание. 404 значит, что
+  // занятия больше нет, 403 — что оно не наше; возвращаться некуда, и честно
+  // предложить вход заново, а не «Проверить ещё раз», которая получит тот же
+  // код при каждом нажатии.
+  it.each([404, 403])('отказ %i означает «урока нет», а не «связи нет»', async (status) => {
+    getLessonById.mockRejectedValueOnce(Object.assign(new Error('отказ'), { status }))
+
+    renderPage({ lessonId: 77 })
+    await act(async () => {})
+
+    expect(screen.getByText('Урок завершён')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Проверить ещё раз' })).toBeNull()
+    // Вход заново — по нажатию, сам он не уходит: сеанса, который он мог бы
+    // закрыть, тут уже нет, но правило одно на все состояния.
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
+
+  // Зеркало: ответ 200 без статуса — «мы не знаем», а не «урок кончился».
+  // Иначе кнопка «Войти в класс» позвала бы /enter и закрыла ЕЩЁ ЖИВОЙ сеанс
+  // как забытый, заведя занятие с пустой доской.
+  it('ответ без статуса не выдаём за завершённый урок', async () => {
+    getLessonById.mockResolvedValueOnce({ id: 77 })
+
+    renderPage({ lessonId: 77 })
+    await act(async () => {})
+
+    expect(screen.getByText('Не удалось проверить урок')).toBeTruthy()
+    expect(screen.queryByText('Урок завершён')).toBeNull()
     expect(enterTrialBooth).not.toHaveBeenCalled()
   })
 })
