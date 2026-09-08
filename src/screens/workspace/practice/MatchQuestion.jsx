@@ -20,6 +20,31 @@ function matchedLabel(pair, chosen) {
   return chosen ?? '—'
 }
 
+// Определение из банка — жетон с вместимостью: держать его вправе столько слов,
+// сколько раз оно стоит правой половиной пары (у категории — все её слова).
+// И вместимость, и занятость считаем ТОЛЬКО по question.pairs: в сохранённом
+// ответе живут ключи слов, которых в задании уже нет — методист поправил урок в
+// каталоге, а ответ ученика остался прежним. Пока занятость считалась по
+// Object.values(answer), такой осиротевший ключ занимал место живого слова:
+// вариант гас «использованным» и выключался при пустом слоте, а убрать ключ было
+// нечем — вытеснение ходит по pairs и о нём не знает.
+//
+// Функции лежат снаружи компонента: они чистые, а внутри пересоздавались на
+// каждый рендер, хотя зовёт их каждый вариант банка.
+function capacityOf(pairs, right) {
+  return pairs.filter((pair) => pair.right === right).length
+}
+
+function placedCount(pairs, map, right) {
+  return pairs.filter((pair) => map[pair.left] === right).length
+}
+
+// Одна формула на вид и на поведение: пока они жили порознь, вариант красился
+// серым «использовано», но клик по нему всё равно проходил.
+function isUsedUp(pairs, map, right) {
+  return placedCount(pairs, map, right) >= capacityOf(pairs, right)
+}
+
 // Контролируемый match-вопрос (live-уроки): слева — question.pairs[].left,
 // справа — перемешанные pairs[].right. UX: клик по левому слову выделяет
 // его, следующий клик по правому — сопоставляет; повторный клик по тому же
@@ -51,12 +76,6 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
   // общий перевод на hello+hi (A0 L02) — обычный матчинг, не колонки.
   const isSort = categories.length >= 2 && pairs.length >= categories.length + 2
 
-  // Сколько раз это определение вообще может быть использовано и сколько уже
-  // разложено. Одна формула на вид и на поведение: пока они жили порознь,
-  // вариант красился серым «использовано», но клик по нему всё равно проходил.
-  const capacityOf = (right) => pairs.filter((p) => p.right === right).length
-  const placedCount = (right) => Object.values(map).filter((v) => v === right).length
-  const isUsedUp = (right) => placedCount(right) >= capacityOf(right)
   const hasFreeSlot = pairs.some((p) => map[p.left] == null)
 
   function pickLeft(left) {
@@ -85,17 +104,20 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
     if (!left) return
     const next = { ...map, [left]: right }
     if (!isSort) {
-      // В обычном матчинге определение — один жетон: положив его другому слову,
-      // снимаем с прежнего. Без этого одно и то же определение вставало сразу у
-      // двух слов, а правильное для второго так и лежало в банке — ровно это и
-      // видели на проде. У категорий наоборот: одна категория честно
-      // принадлежит многим словам, поэтому там не вытесняем ничего.
-      const excess = placedCount(right) + (map[left] === right ? 0 : 1) - capacityOf(right)
-      pairs
-        .map((pair) => pair.left)
-        .filter((other) => other !== left && next[other] === right)
-        .slice(0, Math.max(0, excess))
-        .forEach((other) => { delete next[other] })
+      // Держателей у определения не больше его вместимости: в обычном матчинге
+      // это одно слово, у общего перевода (A0 hello/hi) — два. Только что
+      // выбранное слово стоит в очереди первым и ответ не теряет никогда,
+      // лишний хвост очереди — теряет. Без вытеснения одно и то же определение
+      // вставало сразу у двух слов, а правильное для второго так и лежало в
+      // банке — ровно это и видели на проде. У категорий вытеснять некого:
+      // категория честно принадлежит всем своим словам.
+      const holders = [
+        left,
+        ...pairs.map((pair) => pair.left).filter((other) => other !== left && next[other] === right),
+      ]
+      holders.slice(capacityOf(pairs, right)).forEach((other) => {
+        delete next[other]
+      })
     }
     onAnswer(question.id, next)
     setActiveLeft(null)
@@ -225,7 +247,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
         </div>
         <div className="lw-match__col">
           {rightOptions.map((right, i) => {
-            const used = isUsedUp(right)
+            const used = isUsedUp(pairs, map, right)
             // Без выбранного слева вариант ложится в первый свободный слот —
             // значит класть некуда, когда свободных нет или вариант уже
             // разложен. Такой клик раньше молча не делал ничего; теперь кнопка

@@ -27,19 +27,40 @@ export function isAllowedFile(fileName) {
 // преподавателя, и сделать с ней нечего. Отдельная подпись сообщала бы о
 // действии преподавателя, на которое ученик всё равно не отвечает.
 //
-// Без этой ветки статус проваливался в default: взятая в проверку работа
-// снова читалась как «Задано», а с прошедшим сроком — как «Просрочено».
+// Без своей записи в этой таблице статус проваливался в «задано»: взятая в
+// проверку работа снова читалась как «Задано», а с прошедшим сроком — как
+// «Просрочено».
+const STATE_KEY = {
+  COMPLETED: 'completed',
+  SUBMITTED: 'submitted',
+  IN_REVIEW: 'submitted',
+  NEEDS_REVISION: 'needsRevision',
+}
+
+/**
+ * Ключ для статуса, которого этот клиент не знает.
+ *
+ * Пятый статус (IN_REVIEW) бэкенд завёл, а клиент месяцами читал его как
+ * «Задано»: работу уже нельзя было тронуть, а экран звал ученика её делать.
+ * Шестой (CANCELLED, ARCHIVED — какой угодно) обязан деградировать в другую
+ * сторону: «никто никого не ждёт».
+ *
+ * Ключ свой, а не одолженный у 'completed': тот рисует зелёное «Проверено», и
+ * отменённая работа врала бы ученику ровно тем, чего с ней не случилось.
+ * «Недоступно» не обещает ничего и не зовёт действовать — а подпись и бейдж под
+ * него заведены в i18n.jsx и styles.css, чтобы на экран не вышла сырая строка.
+ */
+const UNKNOWN_STATE_KEY = 'closed'
+
 export function homeworkStateKey(hw, now = new Date()) {
-  if (!hw) return 'assigned'
-  switch (hw.status) {
-    case 'COMPLETED': return 'completed'
-    case 'SUBMITTED':
-    case 'IN_REVIEW':
-      return 'submitted'
-    case 'NEEDS_REVISION': return 'needsRevision'
-    default:
-      return isOverdue(hw, now) ? 'overdue' : 'assigned'
-  }
+  const status = hw?.status
+  // hasOwn, а не просто чтение: статус приходит строкой с сервера, и имя вроде
+  // 'constructor' достало бы значение из прототипа объекта.
+  if (Object.hasOwn(STATE_KEY, status ?? '')) return STATE_KEY[status]
+  // Пустой статус — не чужой: так приходит работа, которой ещё нет, и
+  // синтезированные карточки. Их читаем как раньше, включая просрочку.
+  if (!status || status === 'ASSIGNED') return isOverdue(hw, now) ? 'overdue' : 'assigned'
+  return UNKNOWN_STATE_KEY
 }
 
 /**
@@ -140,18 +161,32 @@ export const GRADES = [1, 2, 3, 4, 5]
 // (HomeworkAssignmentService.reviewOrder): сверху то, что преподаватель ещё не
 // открывал, следом то, что уже у него в работе. Без своей записи статус получал
 // вес ASSIGNED и уезжал вниз, к работам, которых никто не касался.
+//
+// Незнакомый статус уезжает за все известные, а не подставляется весом ASSIGNED:
+// шестой статус, о котором клиент ещё не знает, не должен всплывать в начале
+// доски и звать преподавателя открыть работу, с которой тот ничего не сделает.
 const REVIEW_ORDER = { SUBMITTED: 0, IN_REVIEW: 1, ASSIGNED: 2, NEEDS_REVISION: 3, COMPLETED: 4 }
+const REVIEW_ORDER_UNKNOWN = Math.max(...Object.values(REVIEW_ORDER)) + 1
 
 export function reviewOrder(hw) {
-  return REVIEW_ORDER[hw?.status] ?? REVIEW_ORDER.ASSIGNED
+  // Работа без статуса — не незнакомый статус, а отсутствие данных: её место
+  // прежнее, рядом с заданными.
+  if (!hw?.status) return REVIEW_ORDER.ASSIGNED
+  return REVIEW_ORDER[hw.status] ?? REVIEW_ORDER_UNKNOWN
 }
 
 // Порядок в списке ученика — тоже по тому, чья очередь: возвращённое на
 // доработку ждёт его срочнее всего, затем просто заданное; сданное и
 // проверенное не ждут ничего. Внутри группы порядок бэкенда (новые сначала)
 // сохраняется — sort стабильный.
+//
+// Незнакомый статус — последним, по той же причине: сделать в такой работе
+// нечего (canAttach её не пропускает), а в группе «твоя очередь» она заставляла
+// бы ученика открывать её снова и снова.
 const STUDENT_ORDER = { NEEDS_REVISION: 0, ASSIGNED: 1, SUBMITTED: 2, IN_REVIEW: 2, COMPLETED: 3 }
+const STUDENT_ORDER_UNKNOWN = Math.max(...Object.values(STUDENT_ORDER)) + 1
 
 export function studentOrder(hw) {
-  return STUDENT_ORDER[hw?.status] ?? STUDENT_ORDER.ASSIGNED
+  if (!hw?.status) return STUDENT_ORDER.ASSIGNED
+  return STUDENT_ORDER[hw.status] ?? STUDENT_ORDER_UNKNOWN
 }

@@ -337,6 +337,8 @@ const dict = {
     'homework.status.completed': 'Проверено',
     // Только для доски преподавателя: ученик «сдано» и «взято в проверку» не различает.
     'homework.status.inReview': 'Взята в проверку',
+    // Статус, которого этот клиент не знает: обещать по нему нечего.
+    'homework.status.closed': 'Недоступно',
     'homework.from': 'Задал(а): {name}',
     'homework.due': 'Сдать до {date}',
     'homework.dueShort': 'до {date}',
@@ -1804,6 +1806,7 @@ const dict = {
     'homework.status.needsRevision': 'Needs revision',
     'homework.status.completed': 'Reviewed',
     'homework.status.inReview': 'Taken for review',
+    'homework.status.closed': 'Unavailable',
     'homework.from': 'Assigned by {name}',
     'homework.due': 'Due {date}',
     'homework.dueShort': 'due {date}',
@@ -3254,6 +3257,7 @@ const dict = {
     'homework.status.needsRevision': 'Түзетуге',
     'homework.status.completed': 'Тексерілді',
     'homework.status.inReview': 'Тексеруге алынды',
+    'homework.status.closed': 'Қолжетімсіз',
     'homework.from': 'Берген: {name}',
     'homework.due': '{date} дейін тапсыру',
     'homework.dueShort': '{date} дейін',

@@ -32,6 +32,25 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   const [checked, setChecked] = useState(() => new Set())
   const [failed, setFailed] = useState(() => new Set())
 
+  // На закрытой работе показываем ТОЛЬКО то, что дошло до сервера.
+  //
+  // Черновик из localStorage мог не уехать вовсе — отправка упала, ученик был
+  // офлайн, — а в заблокированном поле он неотличим от сданного ответа: ученик
+  // видит заполненное поле и уверен, что преподаватель его ответ получил, а
+  // тот видит «ученик ещё не отвечал». Пока работу правят, разницы нет, и
+  // черновик — то самое, что ученик набрал; как только править нельзя, экран
+  // обязан показывать ровно то, что видит преподаватель.
+  const shown = useMemo(() => (editable ? answers : serverAnswers(hw)), [editable, answers, hw])
+
+  // Черновик закрытой работы не просто бесполезен — он всплывёт при следующем
+  // открытии и снова притворится сданным ответом. Стираем его пустой записью:
+  // отдельной чистилки в homeworkExercises.js нет, а saveAnswers уже переживает
+  // приватный режим и переполненное хранилище. Порядок безопасен: HomeworkPage
+  // дочитывает недосланное (pendingAnswers) синхронно, до смены статуса.
+  useEffect(() => {
+    if (!editable && hw?.id != null) saveAnswers(hw.id, {})
+  }, [editable, hw?.id])
+
   // Сколько заданий отвечено прямо сейчас — вместе с черновиком, который ещё не
   // уехал на сервер. По этому числу оживает «Отправить на проверку»: решённая
   // работа должна сдаваться, даже если ученик не жал «Проверить» у каждого
@@ -39,10 +58,10 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   // на мгновение относился бы к предыдущей.
   const answeredNow = useMemo(
     () => batches.reduce(
-      (sum, batch) => sum + batch.exercises.filter((e) => isAnswered(answers[e.question.id])).length,
+      (sum, batch) => sum + batch.exercises.filter((e) => isAnswered(shown[e.question.id])).length,
       0,
     ),
-    [batches, answers],
+    [batches, shown],
   )
   useEffect(() => {
     onAnswered?.({ homeworkId: hw?.id, answered: answeredNow })
@@ -98,7 +117,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   }
   if (!batches.length) return null
 
-  const solvedIn = (list) => list.filter((e) => gradeQuestion(e.question, answers[e.question.id]).correct).length
+  const solvedIn = (list) => list.filter((e) => gradeQuestion(e.question, shown[e.question.id]).correct).length
   const dateOf = (iso) => {
     if (!iso) return ''
     const d = new Date(iso)
@@ -143,7 +162,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
                   <div className="hw-exercise" key={e.id}>
                     <PracticeBlock
                       block={exerciseBlock(e)}
-                      answers={answers}
+                      answers={shown}
                       checked={checked.has(key)}
                       onAnswer={onAnswer}
                       onCheck={() => onCheck(e)}

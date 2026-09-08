@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../../../i18n.jsx'
@@ -129,6 +132,52 @@ describe('MatchQuestion — ответ можно поменять', () => {
     expect(Object.values(value).filter((v) => v === 'sometimes')).toHaveLength(1)
   })
 
+  // Урок каталога правит методист: слово из задания исчезает, а сохранённый
+  // ответ ученика с ним остаётся. Такой осиротевший ключ считался за разложенное
+  // определение — вариант гас «использованным» и выключался, хотя его слот пустой,
+  // и вернуть его было нечем: вытеснение ходит только по pairs.
+  it('ответ от слова, которого в задании больше нет, не занимает вариант в банке', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderMatch(VOCAB_QUESTION, { answer: { develop: 'sometimes' }, onAnswer })
+    const вариант = [...container.querySelectorAll('.lw-match__right')]
+      .find((b) => b.textContent === 'sometimes')
+    expect(вариант.className).not.toContain('is-used')
+    expect(вариант.disabled).toBe(false)
+    // Вариант ложится в первое свободное слово, а чужой ключ остаётся нетронутым:
+    // чистить сохранённый ответ — не работа экрана.
+    fireEvent.click(вариант)
+    expect(onAnswer).toHaveBeenLastCalledWith('q1', {
+      develop: 'sometimes',
+      'get on (well with someone)': 'sometimes',
+    })
+  })
+
+  // Правило вытеснения целиком: определение держат не больше слов, чем его
+  // вместимость, и только что выбранное слово ответ не теряет никогда. Третьему
+  // слову общий перевод отдать можно — место ему уступает хвост очереди
+  // держателей. Кто именно из прежних уступает, правило не выбирает, поэтому
+  // порядок закреплён здесь: иначе арифметика вытеснения переедет молча.
+  it('третьему слову общий перевод достаётся за счёт хвоста очереди держателей', () => {
+    const question = {
+      id: 'q-a0',
+      type: 'match',
+      pairs: [
+        { left: 'hello', right: 'привет' },
+        { left: 'hi', right: 'привет' },
+        { left: 'bye', right: 'пока' },
+      ],
+    }
+    const onAnswer = vi.fn()
+    const { container } = renderMatch(question, {
+      answer: { hello: 'привет', hi: 'привет' },
+      onAnswer,
+    })
+    fireEvent.click(container.querySelectorAll('.lw-match__left')[2])
+    fireEvent.click([...container.querySelectorAll('.lw-match__right')]
+      .find((b) => b.textContent === 'привет'))
+    expect(onAnswer).toHaveBeenLastCalledWith('q-a0', { hello: 'привет', bye: 'привет' })
+  })
+
   it('без выбранного слова и без свободных слотов банк не притворяется рабочим', () => {
     const { container } = renderMatch(VOCAB_QUESTION, { answer: ЗАПОЛНЕНО })
     // Раньше эти кнопки были доступны и молча ничего не делали.
@@ -137,8 +186,17 @@ describe('MatchQuestion — ответ можно поменять', () => {
 
   it('выбранное слово снова оживляет банк', () => {
     const { container } = renderMatch(VOCAB_QUESTION, { answer: ЗАПОЛНЕНО })
+    const банк = () => [...container.querySelectorAll('.lw-match__right')]
+    // Пока слово не выбрано, класть определение некуда — погашен весь банк.
+    expect(банк().map((b) => b.disabled)).toEqual([true, true])
     fireEvent.click(container.querySelectorAll('.lw-match__left')[1])
-    expect([...container.querySelectorAll('.lw-match__right')].some((b) => !b.disabled)).toBe(true)
+    // С выбранным словом оживают ВСЕ варианты, и уже разложенный тоже: отдать
+    // выбранному слову чужое определение — это и есть «поменять ответ».
+    expect(банк().filter((b) => !b.disabled).map((b) => b.textContent).sort())
+      .toEqual(['sometimes', 'to have a good relationship'])
+    // Серым «использовано» он при этом остаётся: занят — не значит мёртв.
+    expect(банк().find((b) => b.textContent === 'to have a good relationship').className)
+      .toContain('is-used')
   })
 
   it('общий перевод на два слова остаётся доступен обоим (A0 hello/hi)', () => {
@@ -151,11 +209,66 @@ describe('MatchQuestion — ответ можно поменять', () => {
       ],
     }
     const onAnswer = vi.fn()
-    const { container } = renderMatch(question, { answer: { hello: 'привет' }, onAnswer })
+    const { container, rerender } = renderMatch(question, { answer: { hello: 'привет' }, onAnswer })
+    const вариант = () => container.querySelector('.lw-match__right')
+    // Вместимость варианта — два слова, занято одно: банк обязан остаться живым
+    // и без выбранного слова, иначе «hi» закрыть нечем.
+    expect(вариант().disabled).toBe(false)
+    expect(вариант().className).not.toContain('is-used')
     fireEvent.click(container.querySelectorAll('.lw-match__left')[1])
-    fireEvent.click(container.querySelector('.lw-match__right'))
-    // Вместимость этого варианта — два слова, вытеснять первое не за что.
+    fireEvent.click(вариант())
+    // Вытеснять первое слово не за что — определение принадлежит обоим.
     expect(onAnswer).toHaveBeenLastCalledWith('q-a0', { hello: 'привет', hi: 'привет' })
+    rerender(
+      <I18nProvider>
+        <MatchQuestion
+          question={question}
+          answer={{ hello: 'привет', hi: 'привет' }}
+          checked={false}
+          onAnswer={onAnswer}
+        />
+      </I18nProvider>
+    )
+    // А вот когда его получили оба слова, вариант исчерпан и больше не
+    // притворяется рабочим — жать по нему без выбранного слова некуда.
+    expect(вариант().disabled).toBe(true)
+    expect(вариант().className).toContain('is-used')
+  })
+})
+
+// Клик по заполненному слову — действие разрушительное: он снимает ответ и
+// оставляет слово выбранным. Пока .is-filled и .is-selected красились одним
+// --lw-tint-2, фон на этом клике не менялся вовсе, и всей реакцией экрана
+// оставалось тире в слоте — на планшете его закрывает палец. Стили классрума
+// живут в глобальном css, jsdom их не грузит, поэтому правила читаем из файла
+// (так же устроен src/lessonWorkspace.design.test.js).
+describe('MatchQuestion — подсветка слова слева', () => {
+  const here = dirname(fileURLToPath(import.meta.url))
+  // Windows-чекаут кладёт файл с CRLF — приводим переносы, чтобы шаблоны ниже
+  // от них не зависели (так же сделано в lessonWorkspace.design.test.js).
+  const css = readFileSync(join(here, '../../../lessonWorkspace.css'), 'utf8').replace(/\r\n/g, '\n')
+
+  /** Значение background в правиле селектора. */
+  function фон(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const rule = css.match(new RegExp(`${escaped}\\s*{([^}]+)}`))
+    return rule && rule[1].match(/background:\s*([^;]+);/)[1].trim()
+  }
+
+  it('выбранное слово и слово с ответом залиты по-разному', () => {
+    const selected = фон('.lw-match__left.is-selected')
+    const filled = фон('.lw-match__left.is-filled')
+    expect(selected).toBeTruthy()
+    expect(filled).toBeTruthy()
+    expect(selected).not.toBe(filled)
+  })
+
+  it('наведение не перебивает подсветку выбранного слова', () => {
+    // :hover весит больше .is-selected, поэтому без исключения выбранное слово
+    // под курсором возвращалось к бледной заливке — на десктопе фон снова не
+    // менялся ни на клик, ни на наведение.
+    const hover = css.match(/^(\.lw-match__left[^{,]*:hover[^{,]*)\s*{/m)[1]
+    expect(hover).toContain(':not(.is-selected)')
   })
 })
 

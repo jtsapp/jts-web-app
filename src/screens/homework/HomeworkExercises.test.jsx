@@ -256,3 +256,68 @@ describe('HomeworkExercises: закрытая работа не правится
     expect(screen.getByRole('button', { name: /Проверить/i })).toBeTruthy()
   })
 })
+
+// Регрессия: состояние поднималось черновиком из localStorage поверх ответов
+// сервера — и на закрытой работе тоже. Ответ, который до сервера не доехал
+// (упала отправка, ученик был офлайн), в заблокированном поле неотличим от
+// сданного: ученик видит заполненное поле и уверен, что преподаватель его
+// ответ получил, а тот видит «ученик ещё не отвечал».
+describe('HomeworkExercises: на закрытой работе виден только ответ с сервера', () => {
+  const choice = { id: 1, title: 'Выбор', question: { id: 'q1', type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' } }
+
+  beforeEach(() => {
+    localStorage.clear()
+    saveHomeworkAnswer.mockClear()
+    saveHomeworkAnswer.mockResolvedValue({})
+  })
+
+  for (const status of ['SUBMITTED', 'IN_REVIEW', 'COMPLETED']) {
+    it(`статус ${status}: недосланный черновик не выдаётся за ответ`, () => {
+      localStorage.setItem('hw-answers:7', JSON.stringify({ q1: 'a' }))
+
+      show({ id: 7, status, exercises: [choice] })
+
+      expect(screen.getByText('0 из 1 решено')).toBeTruthy()
+      expect(screen.getByText('a').closest('button').getAttribute('aria-pressed')).toBe('false')
+    })
+  }
+
+  it('ответ, который дошёл до сервера, на закрытой работе остаётся', () => {
+    show({ id: 7, status: 'SUBMITTED', exercises: [{ ...choice, studentAnswer: 'a' }] })
+
+    expect(screen.getByText('1 из 1 решено')).toBeTruthy()
+  })
+
+  // Работа закрывается прямо под учеником — он нажал «Отправить на проверку».
+  // Компонент при этом не пересоздаётся (key — это id работы), так что одного
+  // фильтра на старте мало.
+  it('работа, закрывшаяся при ученике, тут же перестаёт показывать черновик', () => {
+    const hw = { id: 7, status: 'ASSIGNED', exercises: [choice] }
+    const { rerender } = render(<I18nProvider><HomeworkExercises hw={hw} token="jwt" /></I18nProvider>)
+
+    fireEvent.click(screen.getByText('a'))
+    expect(screen.getByText('1 из 1 решено')).toBeTruthy()
+
+    // Сдача прошла, но этот ответ до сервера не доехал — работа вернулась без него.
+    rerender(<I18nProvider><HomeworkExercises hw={{ ...hw, status: 'SUBMITTED' }} token="jwt" /></I18nProvider>)
+
+    expect(screen.getByText('0 из 1 решено')).toBeTruthy()
+  })
+
+  it('черновик закрытой работы стирается — иначе всплывёт при следующем открытии', () => {
+    localStorage.setItem('hw-answers:7', JSON.stringify({ q1: 'a' }))
+
+    show({ id: 7, status: 'COMPLETED', exercises: [choice] })
+
+    expect(JSON.parse(localStorage.getItem('hw-answers:7'))).toEqual({})
+  })
+
+  it('на живой работе черновик по-прежнему и виден, и лежит в хранилище', () => {
+    localStorage.setItem('hw-answers:7', JSON.stringify({ q1: 'a' }))
+
+    show({ id: 7, status: 'NEEDS_REVISION', exercises: [choice] })
+
+    expect(screen.getByText('1 из 1 решено')).toBeTruthy()
+    expect(JSON.parse(localStorage.getItem('hw-answers:7'))).toEqual({ q1: 'a' })
+  })
+})
