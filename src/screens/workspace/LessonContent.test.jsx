@@ -5,6 +5,11 @@ import { I18nProvider } from '../../i18n.jsx'
 import LessonContent, { groupBlocks, practiceBlockKey } from './LessonContent.jsx'
 import { hiddenBlockKey, hiddenBlockKeys } from './visibleSteps.js'
 
+const speak = vi.fn()
+vi.mock('../../practice/vocab/audio.js', () => ({
+  speak: (...args) => speak(...args),
+}))
+
 // Регрессия на расхождение экранов ученика и преподавателя.
 //
 // Урок каталога приезжает ученику разобранным на блоки, и экстрактор режет тело
@@ -325,5 +330,19 @@ describe('LessonContent — карточки шага', () => {
     fireEvent.click(card)
     expect(card.classList.contains('is-flipped')).toBe(true)
     expect(container.textContent).toContain('дружба')
+  })
+
+  it('кнопка say-play произносит фразу из data-say', () => {
+    speak.mockClear()
+    const { container } = renderContent([
+      {
+        type: 'info',
+        html: '<div class="player"><button type="button" class="say-play" data-say="I was born in Almaty.">Play</button></div>',
+      },
+    ])
+    const btn = container.querySelector('.say-play')
+    expect(btn).toBeTruthy()
+    fireEvent.click(btn)
+    expect(speak).toHaveBeenCalledWith('I was born in Almaty.')
   })
 })

@@ -774,19 +774,35 @@
   color: var(--lw-muted, #6b6578);
 }
 
-.lw-info__body .player button,
+.lw-info__body .player button:not(.say-play),
 .lw-info__body .player .bar,
 .lw-info__body .player .wave,
 .lw-info__body .player .time,
 .lw-info__body .player .rate,
 .lw-info__body .player select,
-.lw-practice__html .player button,
+.lw-practice__html .player button:not(.say-play),
 .lw-practice__html .player .bar,
 .lw-practice__html .player .wave,
 .lw-practice__html .player .time,
 .lw-practice__html .player .rate,
 .lw-practice__html .player select {
   display: none;
+}
+
+.lw-info__body .player .say-play,
+.lw-practice__html .player .say-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--lw-primary, #6d5bce);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .lw-info__body .track b {
