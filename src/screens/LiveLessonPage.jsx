@@ -659,7 +659,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
           })
           return
         }
-        if (evt.questionId != null && evt.value != null) {
+        // Правка предназначена конкретному ученику — её и применяет только он.
+        //
+        // Событие идёт по общему каналу урока намеренно: адресный канал теряет
+        // правку, когда преподаватель никого не выбрал, а при выбранном
+        // перемонтирование успевало стереть её до прихода. Но без адресата
+        // правку применяли ВСЕ, кто стоял на том же вопросе: на групповом уроке
+        // преподаватель, поправив одного, затирал ответы остальным.
+        //
+        // Пустой адресат — разбор для всего класса (никто не выбран): его
+        // по-прежнему применяют все, на этом держится заливка словаря.
+        const forMe = evt.targetStudentId == null
+          || String(evt.targetStudentId) === String(selfUserId)
+        if (forMe && evt.questionId != null && evt.value != null) {
           handleAnswer(evt.questionId, parseAnswer(evt.value))
         }
         if (followTeacher
