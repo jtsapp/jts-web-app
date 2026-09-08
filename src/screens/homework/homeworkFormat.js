@@ -21,15 +21,39 @@ export function isAllowedFile(fileName) {
 // Ключ статуса для подписи и цвета бейджа. Просроченным считаем только то, что
 // ещё не сдано: работа, отправленная на проверку с опозданием, — уже забота
 // преподавателя, и «просрочено» в ней ничего не объясняет.
+//
+// IN_REVIEW («преподаватель взял работу к себе») ученику показываем тем же
+// «На проверке», что и SUBMITTED: для него это одно состояние — работа у
+// преподавателя, и сделать с ней нечего. Отдельная подпись сообщала бы о
+// действии преподавателя, на которое ученик всё равно не отвечает.
+//
+// Без этой ветки статус проваливался в default: взятая в проверку работа
+// снова читалась как «Задано», а с прошедшим сроком — как «Просрочено».
 export function homeworkStateKey(hw, now = new Date()) {
   if (!hw) return 'assigned'
   switch (hw.status) {
     case 'COMPLETED': return 'completed'
-    case 'SUBMITTED': return 'submitted'
+    case 'SUBMITTED':
+    case 'IN_REVIEW':
+      return 'submitted'
     case 'NEEDS_REVISION': return 'needsRevision'
     default:
       return isOverdue(hw, now) ? 'overdue' : 'assigned'
   }
+}
+
+/**
+ * Ключ статуса для доски преподавателя.
+ *
+ * Ученику «сдано» и «взято в проверку» — одно и то же: работа у преподавателя,
+ * делать нечего. Преподавателю это разные вещи, и различать их — единственная
+ * причина, по которой пятый статус вообще завели: в группе из двадцати человек
+ * иначе не видно, что уже разобрано, а что он ещё не открывал
+ * (HomeworkStatus.IN_REVIEW на бэкенде — там же и эта формулировка).
+ */
+export function boardStateKey(hw, now = new Date()) {
+  if (hw?.status === 'IN_REVIEW') return 'inReview'
+  return homeworkStateKey(hw, now)
 }
 
 export function isOverdue(hw, now = new Date()) {
@@ -43,8 +67,14 @@ export function isOverdue(hw, now = new Date()) {
 /**
  * Файлы редактируются только пока работа у ученика: до сдачи (ASSIGNED) и
  * после возврата (NEEDS_REVISION). Сданная работа зафиксирована — оценка
- * должна встать под тем составом файлов, который видел преподаватель
- * (то же правило держит бэкенд, assertOpenForSubmission).
+ * должна встать под тем составом файлов, который видел преподаватель.
+ *
+ * Клиент здесь строже сервера, и намеренно: assertOpenForSubmission закрывает
+ * только COMPLETED и SUBMITTED, а взятую в проверку (IN_REVIEW) пропускает —
+ * ученик мог бы дослать файл и пересдать работу прямо из-под преподавателя,
+ * сбив ей статус обратно на «сдано». У ответов на задания серверной проверки
+ * статуса нет вовсе. Так что замок держит эта функция; «привести к бэкенду» её
+ * нельзя — так дыра откроется заново.
  */
 export function canAttach(hw) {
   return !!hw && (hw.status === 'ASSIGNED' || hw.status === 'NEEDS_REVISION')
@@ -105,7 +135,12 @@ export const GRADES = [1, 2, 3, 4, 5]
 // Порядок в списке преподавателя — по тому, чья очередь действовать: сданные
 // работы ждут его прямо сейчас, отправленные на доработку — ученика, а
 // проверенные не ждут никого. Сортировка по дате смешала бы всё это в кучу.
-const REVIEW_ORDER = { SUBMITTED: 0, ASSIGNED: 1, NEEDS_REVISION: 2, COMPLETED: 3 }
+//
+// Взятое в проверку идёт сразу за сданным — тем же порядком, что и на сервере
+// (HomeworkAssignmentService.reviewOrder): сверху то, что преподаватель ещё не
+// открывал, следом то, что уже у него в работе. Без своей записи статус получал
+// вес ASSIGNED и уезжал вниз, к работам, которых никто не касался.
+const REVIEW_ORDER = { SUBMITTED: 0, IN_REVIEW: 1, ASSIGNED: 2, NEEDS_REVISION: 3, COMPLETED: 4 }
 
 export function reviewOrder(hw) {
   return REVIEW_ORDER[hw?.status] ?? REVIEW_ORDER.ASSIGNED
@@ -115,7 +150,7 @@ export function reviewOrder(hw) {
 // доработку ждёт его срочнее всего, затем просто заданное; сданное и
 // проверенное не ждут ничего. Внутри группы порядок бэкенда (новые сначала)
 // сохраняется — sort стабильный.
-const STUDENT_ORDER = { NEEDS_REVISION: 0, ASSIGNED: 1, SUBMITTED: 2, COMPLETED: 3 }
+const STUDENT_ORDER = { NEEDS_REVISION: 0, ASSIGNED: 1, SUBMITTED: 2, IN_REVIEW: 2, COMPLETED: 3 }
 
 export function studentOrder(hw) {
   return STUDENT_ORDER[hw?.status] ?? STUDENT_ORDER.ASSIGNED

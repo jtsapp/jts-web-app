@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { answeredExercises, canAttach, canSubmit, fileExtension, homeworkStateKey, isAllowedFile, isOverdue, pendingCount, reviewOrder, studentOrder } from './homeworkFormat.js'
+import { answeredExercises, boardStateKey, canAttach, canSubmit, fileExtension, homeworkStateKey, isAllowedFile, isOverdue, pendingCount, reviewOrder, studentOrder } from './homeworkFormat.js'
 
 const hw = (over = {}) => ({ id: 1, status: 'ASSIGNED', submissions: [], materials: [], ...over })
 
@@ -40,6 +40,15 @@ describe('homeworkStateKey', () => {
   it('возврат на доработку — свой статус', () => {
     expect(homeworkStateKey(hw({ status: 'NEEDS_REVISION' }), now)).toBe('needsRevision')
   })
+
+  // Регрессия: IN_REVIEW не разбирался вовсе и проваливался в default. Работа,
+  // которую преподаватель взял к себе, снова читалась ученику как «Задано», а с
+  // прошедшим сроком — как «Просрочено», хотя сдавать в ней уже нечего.
+  it('взятая преподавателем в проверку — та же «На проверке», а не заданная', () => {
+    expect(homeworkStateKey(hw({ status: 'IN_REVIEW' }), now)).toBe('submitted')
+    expect(homeworkStateKey(hw({ status: 'IN_REVIEW', dueDate: '2026-08-01' }), now)).toBe('submitted')
+    expect(isOverdue(hw({ status: 'IN_REVIEW', dueDate: '2026-08-01' }), now)).toBe(false)
+  })
 })
 
 describe('что ученику можно делать', () => {
@@ -61,6 +70,11 @@ describe('что ученику можно делать', () => {
   it('повторно отправлять уже отправленное нельзя', () => {
     expect(canSubmit(hw({ status: 'SUBMITTED', submissions: [{ id: 1 }] }))).toBe(false)
   })
+
+  it('взятую в проверку работу тоже не тронуть', () => {
+    expect(canAttach(hw({ status: 'IN_REVIEW' }))).toBe(false)
+    expect(canSubmit(hw({ status: 'IN_REVIEW', submissions: [{ id: 1 }] }))).toBe(false)
+  })
 })
 
 describe('reviewOrder', () => {
@@ -73,9 +87,39 @@ describe('reviewOrder', () => {
     expect(order).toEqual(['SUBMITTED', 'ASSIGNED', 'NEEDS_REVISION', 'COMPLETED'])
   })
 
+  // Тот же порядок, что и на сервере: сначала то, что преподаватель не открывал,
+  // потом то, что уже взял к себе, и только потом нетронутые задания.
+  it('взятая в проверку стоит между сданной и нетронутой', () => {
+    const order = ['COMPLETED', 'ASSIGNED', 'IN_REVIEW', 'SUBMITTED']
+      .map((status) => ({ status }))
+      .sort((a, b) => reviewOrder(a) - reviewOrder(b))
+      .map((x) => x.status)
+    expect(order).toEqual(['SUBMITTED', 'IN_REVIEW', 'ASSIGNED', 'COMPLETED'])
+  })
+
   it('незнакомый статус не улетает в конец списка', () => {
     expect(reviewOrder({ status: 'WAT' })).toBe(reviewOrder({ status: 'ASSIGNED' }))
     expect(reviewOrder(null)).toBe(reviewOrder({ status: 'ASSIGNED' }))
+  })
+})
+
+// Ученик и преподаватель читают IN_REVIEW по-разному, и это намеренно: ученику
+// важно «работа у преподавателя», преподавателю — «эту я уже взял».
+describe('boardStateKey — доска преподавателя', () => {
+  const now = new Date(2026, 7, 20, 12, 0, 0)
+
+  it('взятая в проверку отличается от просто сданной', () => {
+    expect(boardStateKey(hw({ status: 'IN_REVIEW' }), now)).toBe('inReview')
+    expect(boardStateKey(hw({ status: 'SUBMITTED' }), now)).toBe('submitted')
+    // А ученику — по-прежнему одно и то же.
+    expect(homeworkStateKey(hw({ status: 'IN_REVIEW' }), now)).toBe('submitted')
+  })
+
+  it('остальные статусы читаются так же, как у ученика', () => {
+    expect(boardStateKey(hw({ status: 'COMPLETED' }), now)).toBe('completed')
+    expect(boardStateKey(hw({ status: 'NEEDS_REVISION' }), now)).toBe('needsRevision')
+    expect(boardStateKey(hw({ dueDate: '2026-08-18' }), now)).toBe('overdue')
+    expect(boardStateKey(null, now)).toBe('assigned')
   })
 })
 
@@ -87,6 +131,15 @@ describe('studentOrder', () => {
       .sort((a, b) => studentOrder(a) - studentOrder(b))
       .map((x) => x.status)
     expect(order).toEqual(['NEEDS_REVISION', 'ASSIGNED', 'SUBMITTED', 'COMPLETED'])
+  })
+
+  it('взятая в проверку лежит там же, где сданная', () => {
+    expect(studentOrder({ status: 'IN_REVIEW' })).toBe(studentOrder({ status: 'SUBMITTED' }))
+    const order = ['COMPLETED', 'IN_REVIEW', 'ASSIGNED', 'NEEDS_REVISION']
+      .map((status) => ({ status }))
+      .sort((a, b) => studentOrder(a) - studentOrder(b))
+      .map((x) => x.status)
+    expect(order).toEqual(['NEEDS_REVISION', 'ASSIGNED', 'IN_REVIEW', 'COMPLETED'])
   })
 
   it('незнакомый статус читается как заданное', () => {
@@ -174,5 +227,7 @@ describe('счётчик «ждут тебя» и отзыв', () => {
   it('обычная работа считается как раньше', () => {
     expect(pendingCount([{ status: 'ASSIGNED', exercises: [задание()] }])).toBe(1)
     expect(pendingCount([{ status: 'SUBMITTED', exercises: [задание()] }])).toBe(0)
+    // Взятая преподавателем работа ученика тоже не ждёт.
+    expect(pendingCount([{ status: 'IN_REVIEW', exercises: [задание()] }])).toBe(0)
   })
 })

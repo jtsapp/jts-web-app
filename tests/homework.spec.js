@@ -17,6 +17,14 @@ const REVIEWED = {
   exercises: [], materials: [], submissions: [{ ...ANSWER_FILE, id: 5 }],
 }
 
+const IN_REVIEW = {
+  id: 8, studentId: 116, title: 'Unit 5 · Modals', status: 'IN_REVIEW',
+  // Срок уже прошёл: до починки такая работа читалась ученику как «Просрочено»,
+  // хотя опаздывать ему не с чем — она на столе у преподавателя.
+  dueDate: '2026-08-10', createdByName: 'Адильжан Алимжанов', createdAt: '2026-08-05T10:00:00',
+  exercises: [], materials: [], submissions: [{ ...ANSWER_FILE, id: 4 }],
+}
+
 /** Логин ученика + бэкенд, отвечающий заготовленными данными. */
 async function signIn(page, homework, assignments = []) {
   await page.addInitScript(() => localStorage.setItem('jts_access_token', 'test-token'))
@@ -75,4 +83,21 @@ test('задание с живого урока видно в списке и о
   await expect(page.getByText('Задание с урока').first()).toBeVisible()
   await page.getByText('Present Perfect · practice test').first().click()
   await expect(page.getByRole('button', { name: 'Открыть задание' })).toBeVisible()
+})
+
+// Регрессия: пятый статус бэкенда (преподаватель взял работу в проверку) клиент
+// не разбирал вовсе — бейдж читался «Задано», а с прошедшим сроком «Просрочено»,
+// и ни слова о том, почему в работе ничего нельзя сделать.
+test('взятая преподавателем работа читается как «На проверке» и ничего не просит', async ({ page }) => {
+  await signIn(page, [IN_REVIEW])
+
+  await page.goto('/?screen=homework')
+
+  await expect(page.locator('.hw-detail .hw-badge')).toHaveText('На проверке')
+  await expect(page.getByText('Работа у преподавателя — ждём проверки')).toBeVisible()
+  await expect(page.locator('.hw-upload__input')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Отправить на проверку' })).toHaveCount(0)
+  // Присланный файл остаётся виден — его просто нельзя убрать.
+  await expect(page.getByRole('link', { name: 'answer.jpg' })).toBeVisible()
+  await expect(page.locator('.hw-file__remove')).toHaveCount(0)
 })

@@ -4,6 +4,7 @@ import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { saveHomeworkAnswer } from '../../api.js'
 import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { canAttach } from './homeworkFormat.js'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
 // PracticeBlock, что и на уроке, — здесь только состояние ответов и отправка.
@@ -15,6 +16,13 @@ import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, revokedEveryth
 export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   const { t, lang } = useI18n()
   const batches = useMemo(() => exerciseBatches(hw), [hw])
+  // Работа, которую ученик уже не правит (сдана, взята в проверку, проверена),
+  // закрыта целиком — не только для файлов. Раньше секция заданий оставалась
+  // живой в любом статусе: ученик переписывал ответы, пока преподаватель
+  // работу оценивал, и оценка вставала под другим содержимым. Сервер тут не
+  // защищает вовсе — у эндпоинта ответа нет проверки статуса, — поэтому замок
+  // держит клиент, тем же правилом, что и загрузку файлов.
+  const editable = canAttach(hw)
 
   // Что уже сохранено на сервере, важнее черновика: ученик мог отвечать с другого
   // устройства, а преподаватель — сбросить ответ через меню упражнения.
@@ -41,6 +49,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   }, [onAnswered, hw?.id, answeredNow])
 
   const onAnswer = (questionId, value) => {
+    if (!editable) return
     setAnswers((prev) => {
       const next = { ...prev, [questionId]: value }
       if (hw?.id != null) saveAnswers(hw.id, next)
@@ -52,6 +61,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   // его преподавателю. Не сохранилось — говорим об этом, а не делаем вид, что
   // работа ушла: ученик должен знать, что его ответ преподаватель не увидит.
   const onCheck = (exercise) => {
+    if (!editable) return
     const key = `hw-${exercise.id}`
     setChecked((prev) => new Set(prev).add(key))
     if (!token || hw?.id == null) return
@@ -137,6 +147,7 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
                       checked={checked.has(key)}
                       onAnswer={onAnswer}
                       onCheck={() => onCheck(e)}
+                      readOnly={!editable}
                     />
                     {failed.has(key) && <p className="hw-exercise__error">{t('homework.answerNotSaved')}</p>}
                   </div>

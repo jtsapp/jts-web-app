@@ -102,7 +102,9 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
             {t('homework.submit')}
           </button>
         )}
-        {hw.status === 'SUBMITTED' && <p className="hw__hint">{t('homework.waitingReview')}</p>}
+        {/* Подсказку вешаем на ключ состояния, а не на статус: «на проверке» —
+            это и SUBMITTED, и IN_REVIEW, и объяснение нужно в обоих. */}
+        {stateKey === 'submitted' && <p className="hw__hint">{t('homework.waitingReview')}</p>}
       </section>
 
       {/* Отзыв преподаватель пишет и до проверки — тогда это ещё не «Проверка»,

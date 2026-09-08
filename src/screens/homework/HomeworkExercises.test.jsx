@@ -9,8 +9,10 @@ import { saveHomeworkAnswer } from '../../api.js'
 
 const question = (id, type, extra = {}) => ({ id, type, prompt: `Вопрос ${id}`, ...extra })
 
+// Статус подставляем: с сервера работа всегда приходит со статусом, а секция
+// заданий теперь закрыта на всём, что ученик уже не правит.
 function show(hw, token = 'jwt') {
-  return render(<I18nProvider><HomeworkExercises hw={hw} token={token} /></I18nProvider>)
+  return render(<I18nProvider><HomeworkExercises hw={{ status: 'ASSIGNED', ...hw }} token={token} /></I18nProvider>)
 }
 
 describe('HomeworkExercises', () => {
@@ -157,7 +159,7 @@ describe('HomeworkExercises: ответ уходит преподавателю'
   // проверку» весь сеанс считала по данным на момент открытия экрана.
   it('обновлённую работу отдаёт наверх, чтобы кнопка сдачи ожила', async () => {
     const onSaved = vi.fn()
-    const hw = { id: 7, exercises: [choice] }
+    const hw = { id: 7, status: 'ASSIGNED', exercises: [choice] }
     saveHomeworkAnswer.mockResolvedValue({ ...hw, exercises: [{ ...choice, studentAnswer: 'a' }] })
     render(<I18nProvider><HomeworkExercises hw={hw} token="jwt" onSaved={onSaved} /></I18nProvider>)
 
@@ -224,5 +226,33 @@ describe('HomeworkExercises: отправки видны раздельно', ()
     // Счётчик у каждой отправки свой: 1 задание в первой и 2 во второй.
     expect(screen.getByText('0 из 1 решено')).toBeTruthy()
     expect(screen.getByText('0 из 2 решено')).toBeTruthy()
+  })
+})
+
+// Регрессия: секция заданий оставалась живой в любом статусе. Ученик правил
+// ответы, пока преподаватель работу оценивал, — оценка вставала под другим
+// содержимым. Сервер это не запрещает вовсе, замок только здесь.
+describe('HomeworkExercises: закрытая работа не правится', () => {
+  const choice = { id: 1, title: 'Выбор', question: { id: 'q1', type: 'choice', prompt: 'A?', options: ['a', 'b'], answer: 'a' } }
+
+  beforeEach(() => {
+    localStorage.clear()
+    saveHomeworkAnswer.mockClear()
+    saveHomeworkAnswer.mockResolvedValue({})
+  })
+
+  for (const status of ['SUBMITTED', 'IN_REVIEW', 'COMPLETED']) {
+    it(`статус ${status} — ни «Проверить», ни отправки ответа`, () => {
+      show({ id: 7, status, exercises: [choice] })
+
+      expect(screen.queryByRole('button', { name: /Проверить/i })).toBeNull()
+      fireEvent.click(screen.getByText('a'))
+      expect(saveHomeworkAnswer).not.toHaveBeenCalled()
+    })
+  }
+
+  it('возвращённую на доработку править можно — она снова у ученика', () => {
+    show({ id: 7, status: 'NEEDS_REVISION', exercises: [choice] })
+    expect(screen.getByRole('button', { name: /Проверить/i })).toBeTruthy()
   })
 })

@@ -7511,6 +7511,9 @@ textarea {
 .hw-badge--submitted { background: #d3ecff; color: #0b74c4; }
 .hw-badge--needsRevision { background: #ffe0e0; color: #b02a2a; }
 .hw-badge--completed { background: #dcf3e2; color: #2c8a45; }
+/* Взятое преподавателем в проверку — фиолетовый: «уже у меня», в отличие от
+   голубого «сдано». Виден только на доске преподавателя. */
+.hw-badge--inReview { background: #efe6ff; color: #5b34d6; }
 
 /* Карточка открытого задания. */
 .hw-detail { background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 4px; }
