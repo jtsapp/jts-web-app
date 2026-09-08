@@ -180,9 +180,10 @@ describe('экран класса', () => {
     expect(getLessonById).toHaveBeenCalledWith('TOK', 77)
     expect(screen.getByText('Вы вышли из класса')).toBeTruthy()
     expect(enterTrialBooth).not.toHaveBeenCalled()
-    // Подтверждённо открытое занятие ведёт обратно в урок, а не на выход:
-    // «войти заново» здесь было бы потерей живой доски (регресс на ветку 3).
-    expect(screen.queryByRole('button', { name: 'Войти заново' })).toBeNull()
+    // Подтверждённо открытое занятие ведёт обратно в урок: вход заново здесь
+    // был бы потерей живой доски (регресс на ветку 3). Выход на экране есть,
+    // но он вторичный и спрашивает — проверяется отдельными тестами ниже.
+    expect(screen.queryByRole('button', { name: 'Войти в класс' })).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Вернуться в класс' }))
 
@@ -291,8 +292,11 @@ describe('экран класса', () => {
     expect(enterTrialBooth).not.toHaveBeenCalled()
     expect(getLessonById).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Войти заново' }))
+    // Подпись выхода одна на все состояния — раньше тут была своя, «Войти
+    // заново», и одна кнопка обещала разное в разных местах.
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }))
 
+    // Из этого состояния не переспрашиваем: терять нечего, урока у нас нет.
     expect(onSignOut).toHaveBeenCalledTimes(1)
     // Выход — это выход, а не тихий вход в класс другим путём.
     expect(enterTrialBooth).not.toHaveBeenCalled()
@@ -320,5 +324,91 @@ describe('экран класса', () => {
     expect(onSignOut).not.toHaveBeenCalled()
     // И ни одного входа: повтор проверки не имеет права трогать сеанс.
     expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
+
+  // Наблюдение владельца на дев-стенде: с экрана «вы вышли из класса» уйти
+  // было некуда — единственная кнопка вела обратно в урок. Сходивший на
+  // пробный и захотевший завести свой аккаунт упирался в тупик: кабинета у
+  // класса нет, выхода на экране нет.
+  it('с экрана «вы вышли» можно выйти к своему аккаунту, а не только вернуться', async () => {
+    getLessonById.mockResolvedValueOnce({ id: 77, status: 'IN_PROGRESS' })
+    const onSignOut = vi.fn()
+
+    renderPage({ lessonId: 77, onSignOut })
+    await act(async () => {})
+
+    // Возврат по-прежнему первым действием: вышедший случайно чаще возвращается.
+    expect(screen.getByRole('button', { name: 'Вернуться в класс' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }))
+
+    // Занятие тут подтверждённо ИДЁТ, а кнопка стоит вплотную под возвратом:
+    // один промах мышью стоил бы урока, поэтому сначала вопрос.
+    expect(onSignOut).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти' }))
+
+    expect(onSignOut).toHaveBeenCalledTimes(1)
+    // Выход не имеет права трогать чужой сеанс.
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
+
+  it('отказ в подтверждении оставляет посетителя в классе', async () => {
+    getLessonById.mockResolvedValueOnce({ id: 77, status: 'IN_PROGRESS' })
+    const onSignOut = vi.fn()
+
+    renderPage({ lessonId: 77, onSignOut })
+    await act(async () => {})
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Отменить' }))
+
+    expect(onSignOut).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Вернуться в класс' })).toBeTruthy()
+  })
+
+  // Находки ревью: отказ с КОДОМ — это ответ, а не молчание. 404 значит, что
+  // занятия больше нет, 403 — что оно не наше; возвращаться некуда, и честно
+  // предложить вход заново, а не «Проверить ещё раз», которая получит тот же
+  // код при каждом нажатии.
+  it.each([404, 403])('отказ %i означает «урока нет», а не «связи нет»', async (status) => {
+    getLessonById.mockRejectedValueOnce(Object.assign(new Error('отказ'), { status }))
+
+    renderPage({ lessonId: 77 })
+    await act(async () => {})
+
+    expect(screen.getByText('Урок завершён')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Проверить ещё раз' })).toBeNull()
+    // Вход заново — по нажатию, сам он не уходит: сеанса, который он мог бы
+    // закрыть, тут уже нет, но правило одно на все состояния.
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
+
+  // Зеркало: ответ 200 без статуса — «мы не знаем», а не «урок кончился».
+  // Иначе кнопка «Войти в класс» позвала бы /enter и закрыла ЕЩЁ ЖИВОЙ сеанс
+  // как забытый, заведя занятие с пустой доской.
+  it('ответ без статуса не выдаём за завершённый урок', async () => {
+    getLessonById.mockResolvedValueOnce({ id: 77 })
+
+    renderPage({ lessonId: 77 })
+    await act(async () => {})
+
+    expect(screen.getByText('Не удалось проверить урок')).toBeTruthy()
+    expect(screen.queryByText('Урок завершён')).toBeNull()
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
+
+  // Ради чего выход вынесен из состояний: пока его добавляли по одному, тупик
+  // просто переезжал в следующее состояние. «Класс закрыт» был последним, где
+  // посетителю нечего было нажать, кроме бесполезного повтора.
+  it('выйти можно и из «класс закрыт», а не только из живого урока', async () => {
+    enterTrialBooth.mockRejectedValueOnce(failWith(403))
+    const onSignOut = vi.fn()
+
+    renderPage({ onSignOut })
+    await act(async () => {})
+    expect(screen.getByText('Класс закрыт')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }))
+
+    expect(onSignOut).toHaveBeenCalledTimes(1)
   })
 })
