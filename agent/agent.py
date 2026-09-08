@@ -4202,6 +4202,54 @@ def _tts_provider_for(profile: LearnerProfile) -> str:
     return (os.getenv("CASCADE_TTS") or DEFAULT_TTS_PROVIDER).strip().lower()
 
 
+# Мозг A/B-стенда можно увести напрямую в Gemini, минуя наш шим. Зачем:
+# Haiku 4.5 ломает казахскую грамматику (язык с малым объёмом данных), и вопрос
+# «а другая модель сможет?» дешевле проверить сменой провайдера, чем спорами.
+# Gemini отдаёт OpenAI-совместимый эндпоинт, поэтому плагин тот же — меняются
+# только base_url, ключ и имя модели.
+#
+# ЧТО ТЕРЯЕТСЯ на этом пути, и это осознанно: наш шим (/api/voice/brain) держит
+# prompt caching (−90% на входе со 2-го хода) и единый лог llm_cost. Идя мимо
+# него, платим полную цену и теряем эту строку в логах. Для dev-стенда с парой
+# звонков в день это дешевле, чем городить второго провайдера внутри роута,
+# которым пользуются ВСЕ тьюторы (правило: эксперимент не трогает чужих).
+#
+# Включается переменной воркера, по умолчанию выключено:
+#   BRAIN_PROVIDER_JARVIS2=gemini   + GEMINI_API_KEY
+# Модель: BRAIN_MODEL_JARVIS2 (дефолт gemini-2.5-flash).
+GEMINI_OPENAI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
+DEFAULT_GEMINI_BRAIN_MODEL = "gemini-2.5-flash"
+
+
+def _build_brain_llm(profile, brain_url, api_url, brain_key, brain_route, temperature):
+    """LLM сессии. По умолчанию — наш шим; у A/B-стенда можно переключить провайдера."""
+    tutor = (profile.tutor or "").strip().lower()
+    if tutor == KZ_AB_STAND_PERSONA:
+        provider = (os.getenv(f"BRAIN_PROVIDER_{tutor.upper()}") or "").strip().lower()
+        if provider == "gemini":
+            gem_key = os.getenv("GEMINI_API_KEY")
+            if not gem_key:
+                logger.error(
+                    "BRAIN_PROVIDER_%s=gemini, но GEMINI_API_KEY не задан — "
+                    "остаёмся на шиме", tutor.upper(),
+                )
+            else:
+                model = os.getenv(f"BRAIN_MODEL_{tutor.upper()}") or DEFAULT_GEMINI_BRAIN_MODEL
+                logger.info("Brain: Gemini напрямую (%s), tutor=%s", model, tutor)
+                return lk_openai.LLM(
+                    base_url=GEMINI_OPENAI_BASE,
+                    api_key=gem_key,
+                    model=model,
+                    temperature=temperature,
+                )
+    return lk_openai.LLM(
+        base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
+        api_key=brain_key or "unset",
+        model=brain_route,
+        temperature=temperature,
+    )
+
+
 def _cascade_tts(profile: LearnerProfile):
     """TTS одной сессии. Провайдер выбирается ПО ТЬЮТОРУ (_tts_provider_for).
 
@@ -4718,12 +4766,7 @@ def build_cascade_session(
     brain_route = "jts-voice-router"
     if (profile.tutor or "").strip().lower() == KZ_AB_STAND_PERSONA:
         brain_route = f"jts-voice-router/{KZ_AB_STAND_PERSONA}"
-    llm = lk_openai.LLM(
-        base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
-        api_key=brain_key or "unset",
-        model=brain_route,
-        temperature=persona_temperature,
-    )
+    llm = _build_brain_llm(profile, brain_url, api_url, brain_key, brain_route, persona_temperature)
     tts = _cascade_tts(profile)
     # Silero остаётся источником речевой активности в обоих режимах. Детектору
     # он тоже нужен: инференс запрашивается не раньше, чем накопится 200мс
