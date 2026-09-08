@@ -91,7 +91,22 @@ const JARVIS = {
   defaultTemper: 'calm',
 }
 
-export const TUTORS = JARVIS_ENABLED ? [...BASE_TUTORS, JARVIS] : BASE_TUTORS
+// KZ тест 2 — A/B-стенд для проверки гипотезы про разговорный казахский:
+// энергия и голос настоящего Спарка (Owen, agent.py SONIOX_TTS_VOICE) плюс
+// секция KAZAKH THAT SOUNDS SPOKEN, отдельно от боевого промпта Спарка — см.
+// data/persona-jarvis2.md. Гейтится тем же флагом, что и первый стенд: обе
+// карточки — dev-only эксперименты, отдельный env-флаг им не нужен. Нрава
+// 18+ нет — у файла-персоны его нет (см. _PERSONA_STANDALONE_FILES).
+const JARVIS2 = {
+  key: 'jarvis2',
+  name: 'KZ тест 2',
+  face: 'orb',
+  assistant: true,
+  traitColors: ['#ffa200', '#f12929', '#51a41e'], // палитра Спарка — та же гипотеза, тот же голос
+  mood: 'happy',
+}
+
+export const TUTORS = JARVIS_ENABLED ? [...BASE_TUTORS, JARVIS, JARVIS2] : BASE_TUTORS
 
 // Визитка тьютора — образец голоса на экране выбора («Послушать голос X»).
 //
@@ -117,6 +132,9 @@ export const TUTOR_GREETING = {
   // (node scripts/make-tutor-voice-samples.js), иначе кнопка играет старое
   // «мырза».
   jarvis: 'Сәлеметсіз бе! Мен қазақша сөйлейтін көмекшімін. Тыңдап тұрмын, айтыңыз.',
+  // KZ тест 2 — та же идея визитки (живой регистр, не книжный), но энергией и
+  // словами Спарка: сверка идёт на слух против jarvis и против самого Спарка.
+  jarvis2: 'Сәлем! Мен де қазақша сөйлеймін — бірақ қатты да, тез де. Дайынсың ба?',
   // Визитки жёсткого нрава (кнопка 18+ на карточке). Отдельные файлы, а не
   // подмена текста на лету: кнопка «послушать» играет готовый mp3 по ключу, а
   // ключ у режима свой — <tutor>-harsh. Мат в визитке намеренный, это и есть
@@ -137,6 +155,7 @@ export const TUTOR_GREETING_LANG = {
   dexter: 'ru',
   spark: 'kk',
   jarvis: 'kk',
+  jarvis2: 'kk',
   'dexter-harsh': 'ru',
   'spark-harsh': 'kk',
   'jarvis-harsh': 'kk',

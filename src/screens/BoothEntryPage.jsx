@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Shell from '../components/Shell.jsx'
+import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import { useI18n } from '../i18n.jsx'
 import { enterTrialBooth, getLessonById } from '../api.js'
 import { unlockBroadcastAudio } from './live/audioReport.js'
@@ -87,9 +88,15 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     getLessonById(token, lessonId)
       .then((data) => {
         if (!alive) return
-        setState(OPEN_STATUSES.has(data?.status) ? 'left' : 'finished')
+        // Ответ без статуса — не «урок кончился», а «мы не знаем». Разница
+        // дорогая: 'finished' предлагает вход заново, а он закрывает ещё живой
+        // сеанс как забытый и заводит занятие с пустой доской. Сосед по файлу
+        // в такой же неопределённости выбирает ту же безопасную сторону —
+        // ответ /enter без lessonId ведёт в ожидание, а не в отказ.
+        if (data?.status == null) setState('checkFailed')
+        else setState(OPEN_STATUSES.has(data.status) ? 'left' : 'finished')
       })
-      .catch(() => {
+      .catch((e) => {
         // Сеть или бэкенд подвели. Автоматического входа тут по-прежнему нет
         // ни в коем случае: лишний /enter закрыл бы ещё живой сеанс как
         // забытый — ради этого проверка и заведена.
@@ -101,7 +108,17 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
         // посетитель не выходил (наблюдение владельца на дев-стенде).
         // Про урок мы не знаем НИЧЕГО, поэтому и предлагаем единственное
         // честное действие — войти заново.
-        if (alive) setState('checkFailed')
+        //
+        // Но «не знаем» — не всякий отказ. 404 (занятия больше нет) и 403 (оно
+        // не наше) — это ОТВЕТ, а не молчание: возвращаться некуда, и честное
+        // состояние тут 'finished' с настоящим входом заново. Без этой ветки
+        // такой отказ давал «Проверить ещё раз», которая получала бы тот же
+        // код при каждом нажатии, — тупик вместо кольца. Коды берём из
+        // err.status, его кладёт authGet (api.js) — тот же приём, что у
+        // эффекта входа ниже.
+        if (!alive) return
+        if (e?.status === 403 || e?.status === 404) setState('finished')
+        else setState('checkFailed')
       })
     return () => {
       alive = false
@@ -183,10 +200,22 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     setCheckTick((n) => n + 1)
   }
 
-  // Выход из аккаунта: то, что остаётся, когда проверка не помогла. Своей логики выхода экран не держит — чистит токен,
+  // Выход из аккаунта. Своей логики выхода экран не держит — чистит токен,
   // признак класса и память вкладки о сеансе тот же handleLogout из App.jsx,
   // что и кнопка выхода в профиле, и он же уводит на экран входа/регистрации.
   const signOut = () => onSignOut?.()
+
+  // Из состояния 'left' выход СПРАШИВАЕТ. Там занятие подтверждённо идёт, а
+  // кнопка стоит вплотную под «Вернуться в класс»: один промах мышью — и
+  // вернуться уже нечем (память вкладки о сеансе стёрта, нужен пароль класса,
+  // а новый вход закроет живой сеанс как забытый). В 'checkFailed' спрашивать
+  // не о чем: там урока для нас всё равно нет.
+  const [askSignOut, setAskSignOut] = useState(false)
+
+  // Спрашиваем только из 'left': там занятие подтверждённо идёт, и выход стоит
+  // урока. В остальных состояниях терять нечего — лишний вопрос был бы
+  // препятствием на пустом месте.
+  const requestSignOut = () => (state === 'left' ? setAskSignOut(true) : signOut())
 
   const waiting = state === 'entering' || state === 'waiting' || state === 'checking'
   const titleKey = {
@@ -197,6 +226,16 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     left: 'booth.leftTitle',
     checkFailed: 'booth.checkFailedTitle',
     finished: 'booth.finishedTitle',
+  }[state]
+  // Что предлагает нажать каждое состояние. Рядом с titleKey/textKey, потому
+  // что это третья колонка одной и той же таблицы: заголовок, пояснение,
+  // действие. У 'entering', 'waiting' и 'checking' действия нет — там экран
+  // ждёт сам и нажимать нечего.
+  const action = {
+    left: { key: 'booth.back', onClick: backToLesson },
+    checkFailed: { key: 'booth.checkRetry', onClick: checkAgain },
+    finished: { key: 'booth.finishedCta', onClick: enterNow },
+    closed: { key: 'booth.closedRetry', onClick: retryClosed },
   }[state]
   const textKey = {
     waiting: 'booth.waitingText',
@@ -215,32 +254,31 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
           {waiting && <div className="booth__spinner spinner" aria-hidden="true" />}
           <h2 className="form-title">{t(titleKey)}</h2>
           {textKey && <p className="form-sub">{t(textKey)}</p>}
-          {state === 'left' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
-              {t('booth.back')}
+          {/* Действие состояния — по таблице, рядом с titleKey/textKey выше.
+              Четыре одинаковых блока `state === '…'` расходились с этими
+              таблицами молча: выход, например, успел обзавестись двумя
+              разными подписями на одну и ту же кнопку. */}
+          {action && (
+            <button type="button" className="btn btn--primary booth__cta" onClick={action.onClick}>
+              {t(action.key)}
             </button>
           )}
-          {state === 'checkFailed' && (
-            <>
-              {/* Сначала дешёвое: спросить про урок ещё раз. Осечка сети живёт
-                  секунды, а выход стоит занятия — см. checkTick. */}
-              <button type="button" className="btn btn--primary booth__cta" onClick={checkAgain}>
-                {t('booth.checkRetry')}
-              </button>
-              <button type="button" className="btn booth__cta" onClick={signOut}>
-                {t('booth.checkFailedCta')}
-              </button>
-            </>
-          )}
-          {state === 'finished' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>
-              {t('booth.finishedCta')}
-            </button>
-          )}
-          {state === 'closed' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={retryClosed}>
-              {t('booth.closedRetry')}
-            </button>
+          {/* Выход — один на все состояния, а не по кнопке в каждом. Кабинета у
+              аккаунта класса нет, и уйти можно только тем, что нарисовал этот
+              экран: пока выход добавляли по состояниям, тупик просто переезжал
+              в следующее (сначала «вы вышли», потом «класс закрыт» — там
+              посетителю по-прежнему нечего было нажать). */}
+          <button type="button" className="btn btn--secondary booth__cta" onClick={requestSignOut}>
+            {t('booth.signOut')}
+          </button>
+          {askSignOut && (
+            <LessonExitConfirm
+              titleKey="booth.signOutAsk"
+              subKey="booth.signOutAskSub"
+              leaveKey="booth.signOutConfirm"
+              onStay={() => setAskSignOut(false)}
+              onLeave={signOut}
+            />
           )}
         </div>
       </div>
