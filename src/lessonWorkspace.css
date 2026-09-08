@@ -1799,8 +1799,15 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.lw-opt:hover {
+.lw-opt:hover:not(:disabled) {
   background: var(--lw-tint-3);
+}
+
+/* Закрытый вариант (после «Проверить» и в сданной домашке) не должен выглядеть
+   живым: он оставался с курсором-рукой и подсветкой на наведение, ученик жал —
+   и не понимал, почему ничего не происходит. */
+.lw-opt:disabled {
+  cursor: default;
 }
 
 .lw-opt:focus-visible {
