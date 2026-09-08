@@ -557,6 +557,14 @@ KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis", "jarvis2"})
 # persona-jarvis2.md), ей нужны те же послабления, что и первому стенду.
 KZ_DEV_STAND_PERSONA = frozenset({"jarvis", "jarvis2"})
 
+# Стенд, на котором сейчас идёт A/B по разговорному казахскому, — и ТОЛЬКО он.
+# Отдельная константа, а не KZ_DEV_STAND_PERSONA: та описывает «оба стенда» и
+# нужна там, где послабления и правда общие (словарь произношения). А правки
+# самого эксперимента обязаны бить строго по своей персоне: первый стенд —
+# чужой опыт, прод-тьюторы тем более. Когда эксперимент закроют, всё, что
+# ссылается на эту константу, снимается вместе с ней.
+KZ_AB_STAND_PERSONA = "jarvis2"
+
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
     "speaks or asks in Kazakh, do NOT answer in Kazakh and do NOT fake it. Say plainly, "
@@ -3810,16 +3818,16 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # Подсказку берём глазами персоны: Спарк на русском интерфейсе говорит
     # по-казахски (tutor_session_lang), и hint "ru" читал бы казахский текст с
     # русской фонетикой — тем самым акцентом, ради которого его сюда и увели.
-    # У СТЕНДОВ берём язык РЕЧИ, а не «глазами персоны»: tutor_session_lang
-    # чинит ru→kz только Спарку (гейт по KZ_TUTOR_PERSONA), поэтому оба KZ-стенда
+    # У СВОЕГО СТЕНДА берём язык РЕЧИ, а не «глазами персоны»: tutor_session_lang
+    # чинит ru→kz только Спарку (гейт по KZ_TUTOR_PERSONA), поэтому KZ-стенды
     # на русском интерфейсе — а он дефолтный — получали hint "ru" и читали
     # казахский текст русской фонетикой. Для A/B со Спарком это подтасовка:
-    # сравнивались бы не тексты, а фонетика. Боевого Спарка НЕ трогаем — у него
-    # ru уже приезжает как kk, а на английском интерфейсе он и сегодня идёт с
-    # hint "en"; менять это заодно со стендом нельзя (см. SONIOX_SPEED).
+    # сравнивались бы не тексты, а фонетика. Ни Спарка, ни первый стенд (jarvis)
+    # НЕ трогаем: тот же баг у jarvis есть, но это чужой эксперимент — чинить
+    # его надо отдельным решением, а не заодно со своим (см. SONIOX_SPEED).
     app_lang = (
         _tts_speech_lang(profile.tutor, profile.lang or "en")
-        if (profile.tutor or "").strip().lower() in KZ_DEV_STAND_PERSONA
+        if (profile.tutor or "").strip().lower() == KZ_AB_STAND_PERSONA
         else tutor_session_lang(profile.tutor, profile.lang or "en")
     )
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
@@ -4268,6 +4276,41 @@ SONIOX_STT_LANGUAGES = ["en", "ru", "kk"]
 # распознавании ломает и субтитры, и разбор ошибок.
 SONIOX_STT_STRICT_DEFAULT = True
 
+# Языки распознавания ПО ТЬЮТОРУ. Список выше — общий, и сузить его глобально
+# нельзя: у Луны с Декстером ученик говорит по-русски, и русский им нужен.
+# А казахскому стенду он мешает ровно так же, как мешал английский в режиме
+# «только английский» (см. english_only в _cascade_stt_soniox): лишний язык в
+# подсказках уводит КОРОТКИЕ реплики в чужой язык, а казахский с русским к тому
+# же оба кириллические и делят заимствования — «Иә», «Жоқ», «Дайын» уезжают
+# русскими охотнее, чем английские слова.
+#
+# Спарка тут НЕТ намеренно: он прод, у него в промпте «Russian in comes back as
+# Kazakh out» — понимать русскую речь ученика он обязан, и отнимать у него
+# русский заодно со стендом нельзя (та же причина, что у SONIOX_SPEED).
+# Стенду русский не нужен: его и держат, чтобы слышать чистый казахский.
+#
+# Переопределяется без пересборки агента: STT_LANGUAGES_JARVIS2=kk,ru,en —
+# вернуть русский конкретному стенду и сравнить на слух.
+TUTOR_STT_LANGUAGES = {
+    # ТОЛЬКО KZ тест 2. Первого стенда (jarvis) здесь намеренно нет: он чужой
+    # эксперимент, и менять ему распознавание заодно со своим нельзя — как и
+    # прод-тьюторам. Если понадобится, ему заводят свою строку отдельно.
+    "jarvis2": ["kk", "en"],
+}
+
+
+def _stt_languages_for(profile: LearnerProfile) -> list[str] | None:
+    """Подсказки языка этой сессии: env персоны -> таблица -> None (общий список).
+    None, а не готовый список, чтобы вызывающий отличил «задано» от «как всегда»
+    и не потерял глобальный env SONIOX_STT_LANGUAGES."""
+    tutor = (profile.tutor or "").strip().lower()
+    if not tutor:
+        return None
+    env = (os.getenv(f"STT_LANGUAGES_{tutor.upper()}") or "").strip()
+    if env:
+        return [x.strip() for x in env.split(",") if x.strip()]
+    return TUTOR_STT_LANGUAGES.get(tutor)
+
 
 def _stt_provider_for(profile: LearnerProfile) -> str:
     """Провайдер STT этой сессии: env персоны → таблица → дефолт."""
@@ -4522,6 +4565,11 @@ def _cascade_stt_soniox(profile: LearnerProfile):
     # сделать секретом воркера, без сборки и деплоя агента (он катится вручную).
     env_langs = (os.getenv("SONIOX_STT_LANGUAGES") or "").strip()
     langs = [x.strip() for x in env_langs.split(",") if x.strip()] or SONIOX_STT_LANGUAGES
+    # Список тьютора важнее общего: казахскому стенду русский в подсказках
+    # только мешает (см. TUTOR_STT_LANGUAGES).
+    per_tutor = _stt_languages_for(profile)
+    if per_tutor:
+        langs = per_tutor
     # «Только английский» сужает и распознавание: русский/казахский в подсказках
     # оставлять незачем, а без них короткие английские реплики ученика больше не
     # уезжают в чужой язык.
