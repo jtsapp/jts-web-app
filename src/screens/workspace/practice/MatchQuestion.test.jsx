@@ -85,6 +85,80 @@ describe('MatchQuestion — обычный словарный матчинг (1:
   })
 })
 
+// Регрессия с прода: у «occasional» и «develop» стояло одно и то же
+// определение, правильное для второго лежало в банке, а клик по банку не делал
+// ничего — все слоты были заполнены, и pickRight молча выходил.
+describe('MatchQuestion — ответ можно поменять', () => {
+  // Все слоты заполнены: раньше с этого места экран становился мёртвым.
+  const ЗАПОЛНЕНО = {
+    'get on (well with someone)': 'to have a good relationship',
+    occasional: 'to have a good relationship',
+  }
+
+  it('клик по слову с ответом возвращает определение в банк и оставляет слово выбранным', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderMatch(VOCAB_QUESTION, { answer: ЗАПОЛНЕНО, onAnswer })
+    fireEvent.click(container.querySelectorAll('.lw-match__left')[1])
+    expect(onAnswer).toHaveBeenCalledWith('q1', { 'get on (well with someone)': 'to have a good relationship' })
+  })
+
+  it('выбранному слову можно отдать определение, которое уже стоит у другого — прежнее его теряет', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderMatch(VOCAB_QUESTION, {
+      answer: { 'get on (well with someone)': 'sometimes' },
+      onAnswer,
+    })
+    fireEvent.click(container.querySelectorAll('.lw-match__left')[1])
+    const вариант = [...container.querySelectorAll('.lw-match__right')]
+      .find((b) => b.textContent === 'sometimes')
+    fireEvent.click(вариант)
+    // Определение переехало целиком, а не размножилось на два слова.
+    expect(onAnswer).toHaveBeenLastCalledWith('q1', { occasional: 'sometimes' })
+  })
+
+  it('одно определение не садится на два слова разом', () => {
+    const onAnswer = vi.fn()
+    const { container } = renderMatch(VOCAB_QUESTION, {
+      answer: { 'get on (well with someone)': 'sometimes' },
+      onAnswer,
+    })
+    fireEvent.click(container.querySelectorAll('.lw-match__left')[1])
+    fireEvent.click([...container.querySelectorAll('.lw-match__right')]
+      .find((b) => b.textContent === 'sometimes'))
+    const [, value] = onAnswer.mock.calls.at(-1)
+    expect(Object.values(value).filter((v) => v === 'sometimes')).toHaveLength(1)
+  })
+
+  it('без выбранного слова и без свободных слотов банк не притворяется рабочим', () => {
+    const { container } = renderMatch(VOCAB_QUESTION, { answer: ЗАПОЛНЕНО })
+    // Раньше эти кнопки были доступны и молча ничего не делали.
+    expect([...container.querySelectorAll('.lw-match__right')].every((b) => b.disabled)).toBe(true)
+  })
+
+  it('выбранное слово снова оживляет банк', () => {
+    const { container } = renderMatch(VOCAB_QUESTION, { answer: ЗАПОЛНЕНО })
+    fireEvent.click(container.querySelectorAll('.lw-match__left')[1])
+    expect([...container.querySelectorAll('.lw-match__right')].some((b) => !b.disabled)).toBe(true)
+  })
+
+  it('общий перевод на два слова остаётся доступен обоим (A0 hello/hi)', () => {
+    const question = {
+      id: 'q-a0',
+      type: 'match',
+      pairs: [
+        { left: 'hello', right: 'привет' },
+        { left: 'hi', right: 'привет' },
+      ],
+    }
+    const onAnswer = vi.fn()
+    const { container } = renderMatch(question, { answer: { hello: 'привет' }, onAnswer })
+    fireEvent.click(container.querySelectorAll('.lw-match__left')[1])
+    fireEvent.click(container.querySelector('.lw-match__right'))
+    // Вместимость этого варианта — два слова, вытеснять первое не за что.
+    expect(onAnswer).toHaveBeenLastCalledWith('q-a0', { hello: 'привет', hi: 'привет' })
+  })
+})
+
 describe('MatchQuestion — «разложи по категориям» (повторяющийся right)', () => {
   it('распознаёт задание и рисует банк слов + колонки категорий, а не список пар', () => {
     const { container } = renderMatch(SORT_QUESTION)

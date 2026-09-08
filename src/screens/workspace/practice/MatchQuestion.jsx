@@ -51,8 +51,31 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
   // общий перевод на hello+hi (A0 L02) — обычный матчинг, не колонки.
   const isSort = categories.length >= 2 && pairs.length >= categories.length + 2
 
+  // Сколько раз это определение вообще может быть использовано и сколько уже
+  // разложено. Одна формула на вид и на поведение: пока они жили порознь,
+  // вариант красился серым «использовано», но клик по нему всё равно проходил.
+  const capacityOf = (right) => pairs.filter((p) => p.right === right).length
+  const placedCount = (right) => Object.values(map).filter((v) => v === right).length
+  const isUsedUp = (right) => placedCount(right) >= capacityOf(right)
+  const hasFreeSlot = pairs.some((p) => map[p.left] == null)
+
   function pickLeft(left) {
     if (checked || readOnly) return
+    // Клик по уже заполненному слову возвращает его определение в банк и
+    // оставляет слово выбранным: «поменять ответ» — это один понятный клик по
+    // самому ответу. Раньше клик только переключал выделение, и когда все слоты
+    // были заполнены, банк переставал делать хоть что-нибудь: ученик видел
+    // мёртвый экран и не знал, что слово вообще кликабельно.
+    //
+    // В «разложи по категориям» ничего не меняем: там возврат в банк — своя
+    // работающая механика (клик по слову, затем по банку, см. sortHint).
+    if (!isSort && map[left] != null) {
+      const next = { ...map }
+      delete next[left]
+      onAnswer(question.id, next)
+      setActiveLeft(left)
+      return
+    }
     setActiveLeft((prev) => (prev === left ? null : left))
   }
 
@@ -60,7 +83,21 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
     if (checked || readOnly) return
     const left = activeLeft ?? pairs.find((p) => map[p.left] == null)?.left
     if (!left) return
-    onAnswer(question.id, { ...map, [left]: right })
+    const next = { ...map, [left]: right }
+    if (!isSort) {
+      // В обычном матчинге определение — один жетон: положив его другому слову,
+      // снимаем с прежнего. Без этого одно и то же определение вставало сразу у
+      // двух слов, а правильное для второго так и лежало в банке — ровно это и
+      // видели на проде. У категорий наоборот: одна категория честно
+      // принадлежит многим словам, поэтому там не вытесняем ничего.
+      const excess = placedCount(right) + (map[left] === right ? 0 : 1) - capacityOf(right)
+      pairs
+        .map((pair) => pair.left)
+        .filter((other) => other !== left && next[other] === right)
+        .slice(0, Math.max(0, excess))
+        .forEach((other) => { delete next[other] })
+    }
+    onAnswer(question.id, next)
     setActiveLeft(null)
   }
 
@@ -188,15 +225,19 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
         </div>
         <div className="lw-match__col">
           {rightOptions.map((right, i) => {
-            const used = pairs.filter((p) => p.right === right).length
-              <= Object.values(map).filter((v) => v === right).length
+            const used = isUsedUp(right)
+            // Без выбранного слева вариант ложится в первый свободный слот —
+            // значит класть некуда, когда свободных нет или вариант уже
+            // разложен. Такой клик раньше молча не делал ничего; теперь кнопка
+            // об этом честно говорит, а выбранное слово снова её оживляет.
+            const nowhereToPut = activeLeft == null && (!hasFreeSlot || used)
             return (
               <button
                 key={`${right}-${i}`}
                 type="button"
                 className={`lw-match__right${used ? ' is-used' : ''}`}
                 aria-label={right}
-                disabled={checked || readOnly}
+                disabled={checked || readOnly || nowhereToPut}
                 onClick={() => pickRight(right)}
               >
                 {right}
