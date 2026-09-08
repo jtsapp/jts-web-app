@@ -350,6 +350,9 @@ const dict = {
     'homework.answerNotSaved': 'Ответ не сохранился — преподаватель его не увидит. Проверьте связь и нажмите «Проверить» ещё раз.',
     'homework.taskEmpty': 'Преподаватель не прикрепил файлов',
     'homework.revokedAll': 'Преподаватель отозвал это задание',
+    // Работу отменили целиком, пока ученик был на её экране: сервер отвечает
+    // 410, и это объяснение, а не отказ.
+    'homework.cancelled': 'Преподаватель отменил эту работу — её больше нет',
     'homework.myAnswer': 'Мой ответ',
     'homework.answerEmpty': 'Вы ещё ничего не прикрепили',
     'homework.attach': 'Прикрепить файл',
@@ -1818,6 +1821,7 @@ const dict = {
     'homework.answerNotSaved': 'The answer was not saved — your teacher will not see it. Check your connection and press Check again.',
     'homework.taskEmpty': 'The teacher attached no files',
     'homework.revokedAll': 'The teacher withdrew this assignment',
+    'homework.cancelled': 'Your teacher cancelled this homework — it is gone',
     'homework.myAnswer': 'My answer',
     'homework.answerEmpty': 'You have not attached anything yet',
     'homework.attach': 'Attach a file',
@@ -3269,6 +3273,7 @@ const dict = {
     'homework.answerNotSaved': 'Жауап сақталмады — мұғалім оны көрмейді. Байланысты тексеріп, «Тексеру» түймесін қайта басыңыз.',
     'homework.taskEmpty': 'Мұғалім файл тіркемеген',
     'homework.revokedAll': 'Мұғалім бұл тапсырманы қайтарып алды',
+    'homework.cancelled': 'Мұғалім бұл жұмысты болдырмады — ол енді жоқ',
     'homework.myAnswer': 'Менің жауабым',
     'homework.answerEmpty': 'Сіз әлі ештеңе тіркемедіңіз',
     'homework.attach': 'Файл тіркеу',

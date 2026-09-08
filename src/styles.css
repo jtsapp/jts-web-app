@@ -7467,6 +7467,9 @@ textarea {
 .hw__layout { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .hw__col { display: block; }
 .hw__hint { color: var(--muted); font-size: 14px; }
+/* Сообщение уровня экрана: работу отменили, и её карточки в списке уже нет. */
+.hw__notice { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: #eceff3; color: #55606e; font-size: 14px; }
+
 .hw__error { color: #c0392b; font-size: 14px; margin-top: 8px; }
 
 /* Список работ: история сверху вниз, новые первыми. */
