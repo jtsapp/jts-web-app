@@ -212,6 +212,11 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
   // не о чем: там урока для нас всё равно нет.
   const [askSignOut, setAskSignOut] = useState(false)
 
+  // Спрашиваем только из 'left': там занятие подтверждённо идёт, и выход стоит
+  // урока. В остальных состояниях терять нечего — лишний вопрос был бы
+  // препятствием на пустом месте.
+  const requestSignOut = () => (state === 'left' ? setAskSignOut(true) : signOut())
+
   const waiting = state === 'entering' || state === 'waiting' || state === 'checking'
   const titleKey = {
     checking: 'booth.checking',
@@ -221,6 +226,16 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
     left: 'booth.leftTitle',
     checkFailed: 'booth.checkFailedTitle',
     finished: 'booth.finishedTitle',
+  }[state]
+  // Что предлагает нажать каждое состояние. Рядом с titleKey/textKey, потому
+  // что это третья колонка одной и той же таблицы: заголовок, пояснение,
+  // действие. У 'entering', 'waiting' и 'checking' действия нет — там экран
+  // ждёт сам и нажимать нечего.
+  const action = {
+    left: { key: 'booth.back', onClick: backToLesson },
+    checkFailed: { key: 'booth.checkRetry', onClick: checkAgain },
+    finished: { key: 'booth.finishedCta', onClick: enterNow },
+    closed: { key: 'booth.closedRetry', onClick: retryClosed },
   }[state]
   const textKey = {
     waiting: 'booth.waitingText',
@@ -239,34 +254,23 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
           {waiting && <div className="booth__spinner spinner" aria-hidden="true" />}
           <h2 className="form-title">{t(titleKey)}</h2>
           {textKey && <p className="form-sub">{t(textKey)}</p>}
-          {state === 'left' && (
-            <>
-              <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
-                {t('booth.back')}
-              </button>
-              {/* Выход есть и здесь. Раньше с этого экрана уйти было некуда:
-                  единственная кнопка вела обратно в урок, а человек, который
-                  на пробный уже сходил и хочет завести СВОЙ аккаунт, упирался
-                  в тупик — кабинета у класса нет, выхода на экране нет
-                  (наблюдение владельца на дев-стенде). Вторым действием, а не
-                  первым: тот, кто вышел случайно, чаще возвращается. */}
-              <button type="button" className="btn btn--secondary booth__cta" onClick={() => setAskSignOut(true)}>
-                {t('booth.signOut')}
-              </button>
-            </>
+          {/* Действие состояния — по таблице, рядом с titleKey/textKey выше.
+              Четыре одинаковых блока `state === '…'` расходились с этими
+              таблицами молча: выход, например, успел обзавестись двумя
+              разными подписями на одну и ту же кнопку. */}
+          {action && (
+            <button type="button" className="btn btn--primary booth__cta" onClick={action.onClick}>
+              {t(action.key)}
+            </button>
           )}
-          {state === 'checkFailed' && (
-            <>
-              {/* Сначала дешёвое: спросить про урок ещё раз. Осечка сети живёт
-                  секунды, а выход стоит занятия — см. checkTick. */}
-              <button type="button" className="btn btn--primary booth__cta" onClick={checkAgain}>
-                {t('booth.checkRetry')}
-              </button>
-              <button type="button" className="btn btn--secondary booth__cta" onClick={signOut}>
-                {t('booth.checkFailedCta')}
-              </button>
-            </>
-          )}
+          {/* Выход — один на все состояния, а не по кнопке в каждом. Кабинета у
+              аккаунта класса нет, и уйти можно только тем, что нарисовал этот
+              экран: пока выход добавляли по состояниям, тупик просто переезжал
+              в следующее (сначала «вы вышли», потом «класс закрыт» — там
+              посетителю по-прежнему нечего было нажать). */}
+          <button type="button" className="btn btn--secondary booth__cta" onClick={requestSignOut}>
+            {t('booth.signOut')}
+          </button>
           {askSignOut && (
             <LessonExitConfirm
               titleKey="booth.signOutAsk"
@@ -275,16 +279,6 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
               onStay={() => setAskSignOut(false)}
               onLeave={signOut}
             />
-          )}
-          {state === 'finished' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>
-              {t('booth.finishedCta')}
-            </button>
-          )}
-          {state === 'closed' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={retryClosed}>
-              {t('booth.closedRetry')}
-            </button>
           )}
         </div>
       </div>
