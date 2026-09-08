@@ -4700,10 +4700,17 @@ def build_cascade_session(
     # write-back памяти адресный — он остаётся на api_url, то есть на том стенде,
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
+    # Поле model у шима — не имя модели, а метка маршрута: роут читает из неё
+    # персону и только A/B-стенду отдаёт другую модель мозга (см. brainModelFor
+    # в app/api/voice/brain/chat/completions/route.js). Всем остальным уезжает
+    # прежняя строка, то есть поведение не меняется ни на байт.
+    brain_route = "jts-voice-router"
+    if (profile.tutor or "").strip().lower() == KZ_AB_STAND_PERSONA:
+        brain_route = f"jts-voice-router/{KZ_AB_STAND_PERSONA}"
     llm = lk_openai.LLM(
         base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
         api_key=brain_key or "unset",
-        model="jts-voice-router",
+        model=brain_route,
         temperature=persona_temperature,
     )
     tts = _cascade_tts(profile)
