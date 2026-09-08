@@ -11,6 +11,7 @@ import TranslatePopover from './TranslatePopover.jsx'
 import TapText from './TapText.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
 import { bindAudioClips } from './audioClip.js'
+import { speak } from '../../practice/vocab/audio.js'
 import { useI18n } from '../../i18n.jsx'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../../lib/wordTranslate.js'
 import { hiddenBlockKey } from './visibleSteps.js'
@@ -271,6 +272,12 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
       className="lw-content"
       data-selectable=""
       onClick={(e) => {
+        const sayBtn = e.target?.closest?.('.say-play[data-say]')
+        if (sayBtn) {
+          e.stopPropagation()
+          speak(sayBtn.getAttribute('data-say') || '')
+          return
+        }
         const raw = window.getSelection()?.toString() || ''
         if (isTapSelection(raw) || isOversizedPhrase(raw)) return
         close()

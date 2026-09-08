@@ -135,6 +135,7 @@ function audioFileForTrack(track) {
 
 function hydrateCoursePlayers(root) {
   root.querySelectorAll('.player').forEach((el) => {
+    if (el.querySelector('.say-play, [data-say]')) return
     const isWidget =
       el.hasAttribute('data-track') ||
       el.hasAttribute('data-jts-media') ||
