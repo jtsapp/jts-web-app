@@ -603,7 +603,7 @@ test('проверка урока не удалась — экран предл�
   // Кнопки возврата на этом экране нет вовсе — именно она и замыкала кольцо.
   await expect(page.getByText('Вернуться в класс')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Войти заново' }).click()
+  await page.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }).click()
 
   // Экран входа и регистрации — тот самый, с которого начинается вкладка.
   await expect(page.locator('.hero .cta .btn--primary')).toHaveText('Регистрация')
