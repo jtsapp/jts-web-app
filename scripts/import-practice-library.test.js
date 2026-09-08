@@ -11,6 +11,7 @@ const {
   decodeCover,
   externalId,
   selectBooks,
+  parseArgs,
 } = require('./import-practice-library.js')
 
 describe('parseLibraryData', () => {
@@ -165,13 +166,69 @@ describe('selectBooks', () => {
     expect(selectBooks(BOOKS, [' Gatsby ']).skipped).toEqual(['gatsby'])
   })
 
-  it('опечатка в id ничего не выкидывает — и это видно по пустому списку', () => {
-    const { kept, skipped } = selectBooks(BOOKS, ['gatsbi'])
+  it('опечатка в id ничего не выкидывает и попадает в missed', () => {
+    const { kept, skipped, missed } = selectBooks(BOOKS, ['gatsbi'])
     expect(kept).toHaveLength(3)
     expect(skipped).toEqual([])
+    expect(missed).toEqual(['gatsbi'])
+  })
+
+  it('совпавшие id в missed не попадают', () => {
+    expect(selectBooks(BOOKS, ['gatsby']).missed).toEqual([])
+  })
+
+  it('часть id с опечаткой видна отдельно от сработавших', () => {
+    const { skipped, missed } = selectBooks(BOOKS, ['gatsby', 'sherlok'])
+    expect(skipped).toEqual(['gatsby'])
+    expect(missed).toEqual(['sherlok'])
   })
 
   it('несколько id разом', () => {
     expect(selectBooks(BOOKS, ['gatsby', 'sherlock']).kept.map((b) => b.id)).toEqual(['canterville'])
+  })
+})
+
+describe('parseArgs', () => {
+  it('берёт путь к файлу и флаги в любом порядке', () => {
+    expect(parseArgs(['lib.html', '--dry-run'])).toEqual({
+      src: 'lib.html', api: null, dryRun: true, skipIds: [],
+    })
+    expect(parseArgs(['--dry-run', 'lib.html'])).toMatchObject({ src: 'lib.html', dryRun: true })
+  })
+
+  // Ради этого разбор и вынесен: значение флага — такой же позиционный
+  // аргумент, и `--skip gatsby lib.html` не должен принять `gatsby` за путь.
+  it('значение --skip не становится путём к файлу', () => {
+    expect(parseArgs(['--skip', 'gatsby', 'lib.html'])).toMatchObject({
+      src: 'lib.html', skipIds: ['gatsby'],
+    })
+  })
+
+  it('значение --api не становится путём к файлу', () => {
+    expect(parseArgs(['--api', 'https://prod', 'lib.html'])).toMatchObject({
+      src: 'lib.html', api: 'https://prod',
+    })
+  })
+
+  it('оба флага со значениями плюс путь между ними', () => {
+    expect(parseArgs(['--api', 'https://prod', 'lib.html', '--skip', 'gatsby,forrest'])).toEqual({
+      src: 'lib.html', api: 'https://prod', dryRun: false, skipIds: ['gatsby', 'forrest'],
+    })
+  })
+
+  it('пробелы вокруг id в списке не мешают', () => {
+    expect(parseArgs(['lib.html', '--skip', ' gatsby , forrest ']).skipIds).toEqual(['gatsby', 'forrest'])
+  })
+
+  // Флаг без значения раньше молчал: --api давал адрес «undefined», --skip
+  // просто не фильтровал, и книга уезжала на контур.
+  it('флаг без значения — ошибка, а не тихий дефолт', () => {
+    expect(() => parseArgs(['lib.html', '--skip'])).toThrow(/--skip требует значение/)
+    expect(() => parseArgs(['lib.html', '--api'])).toThrow(/--api требует значение/)
+    expect(() => parseArgs(['lib.html', '--skip', '--dry-run'])).toThrow(/--skip требует значение/)
+  })
+
+  it('без пути к файлу — понятная ошибка', () => {
+    expect(() => parseArgs(['--dry-run'])).toThrow(/укажите путь/)
   })
 })

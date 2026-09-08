@@ -1,7 +1,18 @@
 'use client'
 
 import { useI18n } from '../../i18n.jsx'
-import { BOOKS_AUDIO_MODES, countByAudio } from '../../practice/books/audioFilter.js'
+import { BOOKS_AUDIO_MODES } from '../../practice/books/audioFilter.js'
+
+// Ключи словаря перечислены явно, а не собираются конкатенацией: собранный
+// ключ не находится грепом (при чистке словаря выглядит неиспользуемым), а
+// t() при промахе молча падает на ru и дальше на сам ключ — забытый перевод
+// вылез бы в интерфейсе строкой «practice.books.filter.text», и ни один тест
+// этого не заметил бы.
+const LABEL_KEY = {
+  all: 'practice.books.filter.all',
+  text: 'practice.books.filter.text',
+  audio: 'practice.books.filter.audio',
+}
 
 // Сегмент «Все · Текст · Аудио» в шапке раздела «Книжки».
 //
@@ -11,12 +22,11 @@ import { BOOKS_AUDIO_MODES, countByAudio } from '../../practice/books/audioFilte
 // (src/screens/reading/ReadingSettings.jsx) — свой третий паттерн заводить не
 // за чем.
 //
-// Счётчик у каждого режима стоит намеренно: без него «Аудио» — это кнопка,
-// после которой библиотека молча усыхает вдвое и непонятно, фильтр это или
-// каталог не догрузился.
-export default function BooksAudioFilter({ value, onChange, books }) {
+// Счётчики считает вызывающий и передаёт готовыми: они зависят только от
+// каталога, а этот компонент перерисовывается на каждый символ в соседнем
+// поиске по книжкам.
+export default function BooksAudioFilter({ value, onChange, counts }) {
   const { t } = useI18n()
-  const counts = countByAudio(books)
 
   return (
     <div className="pp-seg" role="group" aria-label={t('practice.books.filterAria')}>
@@ -28,7 +38,7 @@ export default function BooksAudioFilter({ value, onChange, books }) {
           aria-pressed={value === mode}
           onClick={() => onChange(mode)}
         >
-          {t('practice.books.filter.' + mode)}
+          {t(LABEL_KEY[mode])}
           <span className="pp-seg__n">{counts[mode]}</span>
         </button>
       ))}

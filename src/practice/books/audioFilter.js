@@ -61,6 +61,26 @@ export function countByAudio(books) {
   return { all: list.length, audio, text: list.length - audio }
 }
 
+/**
+ * Режим, который реально применяем к каталогу.
+ *
+ * Запомненный выбор переживает перезагрузку, а каталог — нет: методисты ещё
+ * не залили дорожки, и ученик, однажды нажавший «Аудио», при каждом заходе
+ * встречал бы пустой раздел. Пока он в этой сессии сегмент не трогал, пустой
+ * запомненный режим уступает «Все».
+ *
+ * `touched` обязателен: без него нельзя было бы нажать «Аудио» на каталоге без
+ * озвучки — выбор сбрасывался бы тут же, и кнопка выглядела бы сломанной.
+ * В localStorage при этом остаётся именно то, что выбрал ученик: появятся
+ * аудиокниги — вернётся и его режим.
+ */
+export function effectiveBooksAudioMode(mode, books, touched) {
+  if (touched) return mode
+  const list = Array.isArray(books) ? books : []
+  if (list.length === 0) return mode
+  return filterByAudio(list, mode).length === 0 ? DEFAULT_BOOKS_AUDIO_MODE : mode
+}
+
 export function readBooksAudioMode() {
   try {
     const raw = localStorage.getItem(KEY)

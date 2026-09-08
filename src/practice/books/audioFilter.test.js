@@ -4,6 +4,7 @@ import {
   BOOKS_AUDIO_MODES,
   DEFAULT_BOOKS_AUDIO_MODE,
   countByAudio,
+  effectiveBooksAudioMode,
   filterByAudio,
   hasAudio,
   readBooksAudioMode,
@@ -115,5 +116,30 @@ describe('память выбора', () => {
     writeBooksAudioMode('audio')
     writeBooksAudioMode('видео')
     expect(readBooksAudioMode()).toBe('audio')
+  })
+})
+
+describe('effectiveBooksAudioMode', () => {
+  const CATALOG = [AUDIOBOOK, WHOLE_FILE, TEXT_ONLY]
+  const NO_AUDIO = [TEXT_ONLY]
+
+  it('непустой режим применяется как есть', () => {
+    expect(effectiveBooksAudioMode('audio', CATALOG, false)).toBe('audio')
+    expect(effectiveBooksAudioMode('text', CATALOG, false)).toBe('text')
+  })
+
+  // Ради этого функция и заведена: «Аудио» с прошлой сессии на каталоге без
+  // озвучки встречал бы ученика пустым разделом при каждом заходе.
+  it('запомненный режим, в котором книг нет, уступает «Все»', () => {
+    expect(effectiveBooksAudioMode('audio', NO_AUDIO, false)).toBe('all')
+  })
+
+  it('после клика по сегменту выбор уважается, даже если он пустой', () => {
+    expect(effectiveBooksAudioMode('audio', NO_AUDIO, true)).toBe('audio')
+  })
+
+  it('пока каталог не загружен, режим не сбрасывается', () => {
+    expect(effectiveBooksAudioMode('audio', [], false)).toBe('audio')
+    expect(effectiveBooksAudioMode('audio', null, false)).toBe('audio')
   })
 })

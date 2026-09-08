@@ -25,6 +25,8 @@ import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
 import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
 import {
+  countByAudio,
+  effectiveBooksAudioMode,
   filterByAudio,
   hasAudio,
   readBooksAudioMode,
@@ -494,11 +496,20 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
   // Режим озвучки: «все», «только текст», «только с аудио». Читается лениво из
   // localStorage — экран практики монтируется уже на клиенте (в App.jsx стартовый
   // screen = 'welcome'), поэтому гидратации это не задевает.
-  const [bookAudioMode, setBookAudioMode] = useState(() => readBooksAudioMode())
+  const [storedBookAudioMode, setStoredBookAudioMode] = useState(() => readBooksAudioMode())
+  // Трогал ли ученик сегмент в этой сессии: до первого касания пустой
+  // запомненный режим уступает «Все», после — уважаем выбор (см.
+  // effectiveBooksAudioMode).
+  const [bookAudioTouched, setBookAudioTouched] = useState(false)
+  const bookAudioMode = effectiveBooksAudioMode(storedBookAudioMode, books, bookAudioTouched)
   const pickBookAudioMode = (mode) => {
-    setBookAudioMode(mode)
+    setBookAudioTouched(true)
+    setStoredBookAudioMode(mode)
     writeBooksAudioMode(mode)
   }
+  // Счётчики зависят только от каталога, а компонент сегмента перерисовывается
+  // на каждый символ в поиске по книжкам — считаем один раз на загрузку.
+  const bookAudioCounts = useMemo(() => countByAudio(books), [books])
   const visibleBooks = useMemo(() => {
     // Сначала озвучка, потом поиск: пустой результат тогда объясняется
     // конкретной причиной — «в этом фильтре пусто» или «ничего не нашлось».
@@ -973,7 +984,16 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
           {show('books') && (
           <section id="sec-books" className="pp-sec">
             <SectionHead title={t('practice.chip.books')} onAll={() => setFilter('books')}>
-              <BooksAudioFilter value={bookAudioMode} onChange={pickBookAudioMode} books={books} />
+              {/* Пока каталог не доехал, сегмент не рисуем: иначе поверх
+                  скелетона висит «Все 0 · Текст 0 · Аудио 0» — подпись,
+                  утверждающая, что книг нет. */}
+              {books.length > 0 && (
+                <BooksAudioFilter
+                  value={bookAudioMode}
+                  onChange={pickBookAudioMode}
+                  counts={bookAudioCounts}
+                />
+              )}
               <label className="pp-search">
                 <SearchIcon size={15} />
                 <input

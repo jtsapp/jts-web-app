@@ -3641,6 +3641,15 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   .pp-seg__btn { transition: none; }
 }
+/* Сегмент переносится на свою строку раньше остальной мобильной раскладки
+   (760px): между 761 и 860 заголовок, сегмент, поиск и «Посмотреть все» в одну
+   строку уже не влезают, и на второй строке одиноко повисает «Посмотреть все».
+   Проверено на 770px — до сегмента шапка там укладывалась в строку. */
+@media (max-width: 860px) {
+  .pp-sec__head { flex-wrap: wrap; row-gap: 10px; }
+  .pp-seg { order: 2; flex-basis: 100%; }
+  .pp-seg__btn { flex: 1; justify-content: center; padding: 6px 8px; }
+}
 
 /* Горизонтальная лента */
 .pp-rail {
@@ -3963,13 +3972,10 @@ textarea {
 
   .pp-sec { margin-bottom: 22px; }
 
-  /* Шапка секции: заголовок и «Посмотреть все» в строке, сегмент озвучки и
-     поиск по книжкам переносятся вниз на всю ширину — иначе четырём элементам
-     тесно. Сегмент растягивается, чтобы три режима делили ширину поровну и
-     подписи не прыгали при смене счётчиков. */
+  /* Шапка секции: заголовок и «Посмотреть все» в строке, поиск по книжкам
+     переносится вниз на всю ширину — иначе трём элементам тесно. Сегмент
+     озвучки уезжает на свою строку ещё раньше, на 860px (см. выше). */
   .pp-sec__head { flex-wrap: wrap; row-gap: 10px; }
-  .pp-seg { order: 2; flex-basis: 100%; }
-  .pp-seg__btn { flex: 1; justify-content: center; padding: 6px 8px; }
   .pp-search { order: 3; flex-basis: 100%; padding: 9px 14px; }
   .pp-search input,
   .pp-search input:focus { width: 100%; flex: 1; }
@@ -5558,7 +5564,6 @@ textarea {
   border-radius: 50%;
   background: rgba(20, 19, 28, 0.72);
   color: #fff;
-  pointer-events: none;
 }
 .pp-bcard__cover {
   position: relative;
