@@ -263,6 +263,10 @@ else:
 _PERSONA_STANDALONE_FILES = {
     "jarvis": "persona-jarvis.md",
     "jarvis_harsh": "persona-jarvis-harsh.md",
+    # A/B-стенд: энергия Спарка + секция KAZAKH THAT SOUNDS SPOKEN, отдельно от
+    # живого промпта Спарка (см. шапку persona-jarvis2.md). Нрава 18+ нет —
+    # гипотезу проверяем на спокойном варианте, не дублируем hype_harsh.
+    "jarvis2": "persona-jarvis2.md",
 }
 STANDALONE_PROMPT_PERSONAS = frozenset(_PERSONA_STANDALONE_FILES)
 
@@ -544,13 +548,14 @@ KZ_TUTOR_PERSONA = "hype"  # Спарк
 # («скажи, что твой казахский слабый, и отправь к Спарку») — Джарвису они не
 # нужны, у него свой файл персоны целиком. А вот озвучке разница видна: язык
 # ПРОИЗНОШЕНИЯ у обоих казахский, и он не зависит от языка интерфейса.
-KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis"})
+KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis", "jarvis2"})
 
-# KZ-стенд («KZ тест» на карточке, ключ прежний). Dev-only: на проде карточки
-# нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где прод-тьюторов
-# бережём, стенду можно. Именованная константа, а не литерал по коду: мест, где
-# «это тот самый стенд, ему можно», уже больше одного.
-KZ_DEV_STAND_PERSONA = "jarvis"
+# KZ-стенды («KZ тест» / «KZ тест 2» на карточках, ключи прежние). Dev-only: на
+# проде карточек нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где
+# прод-тьюторов бережём, стендам можно. Множество, а не одна строка: jarvis2 —
+# A/B-копия для проверки гипотезы про разговорный казахский (см.
+# persona-jarvis2.md), ей нужны те же послабления, что и первому стенду.
+KZ_DEV_STAND_PERSONA = frozenset({"jarvis", "jarvis2"})
 
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
@@ -645,7 +650,7 @@ def _pronunciation_lang(profile: LearnerProfile) -> str:
     в гейте назван прямо: провайдер ему больше не указ.
     """
     tutor = (profile.tutor or "").strip().lower()
-    if _tts_provider_for(profile) != "openai" and tutor != KZ_DEV_STAND_PERSONA:
+    if _tts_provider_for(profile) != "openai" and tutor not in KZ_DEV_STAND_PERSONA:
         return ""
     return _tts_speech_lang(profile.tutor, profile.lang or "en")
 
@@ -3581,6 +3586,10 @@ SONIOX_TTS_VOICE = {
     # фразе; Owen намеренно НЕ взят — это тембр Спарка, а стенд должен звучать
     # отдельным человеком, а не его двойником.
     "jarvis": "Daniel",
+    # A/B-стенд про сам текст Спарка (см. persona-jarvis2.md) — здесь наоборот,
+    # Owen НАМЕРЕННО тот же, что у живого Спарка: вопрос ровно в том, зазвучит
+    # ли ЭТОТ ЖЕ голос чище на другом тексте, разный тембр смешал бы переменные.
+    "jarvis2": "Owen",
 }
 DEFAULT_SONIOX_TTS_VOICE = "Owen"
 DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
@@ -3801,7 +3810,18 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # Подсказку берём глазами персоны: Спарк на русском интерфейсе говорит
     # по-казахски (tutor_session_lang), и hint "ru" читал бы казахский текст с
     # русской фонетикой — тем самым акцентом, ради которого его сюда и увели.
-    app_lang = tutor_session_lang(profile.tutor, profile.lang or "en")
+    # У СТЕНДОВ берём язык РЕЧИ, а не «глазами персоны»: tutor_session_lang
+    # чинит ru→kz только Спарку (гейт по KZ_TUTOR_PERSONA), поэтому оба KZ-стенда
+    # на русском интерфейсе — а он дефолтный — получали hint "ru" и читали
+    # казахский текст русской фонетикой. Для A/B со Спарком это подтасовка:
+    # сравнивались бы не тексты, а фонетика. Боевого Спарка НЕ трогаем — у него
+    # ru уже приезжает как kk, а на английском интерфейсе он и сегодня идёт с
+    # hint "en"; менять это заодно со стендом нельзя (см. SONIOX_SPEED).
+    app_lang = (
+        _tts_speech_lang(profile.tutor, profile.lang or "en")
+        if (profile.tutor or "").strip().lower() in KZ_DEV_STAND_PERSONA
+        else tutor_session_lang(profile.tutor, profile.lang or "en")
+    )
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
         "Cascade TTS: Soniox (%s, voice=%s, speed=%.2f, lang=%s), tutor=%s",
@@ -4122,6 +4142,7 @@ TUTOR_TTS_PROVIDER = {
     # провайдер знает сам. Плюс отключается словарь произношения: гейт в
     # _pronunciation_lang стоит по провайдеру openai.
     "jarvis": "soniox",
+    "jarvis2": "soniox",  # A/B со Спарком на одном и том же голосе — см. persona-jarvis2.md
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и

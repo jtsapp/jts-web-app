@@ -86,6 +86,17 @@ export const DICT = {
     'tutor.jarvis.listen': 'Послушать KZ тест',
     'tutor.jarvis.choose': 'Выбрать KZ тест',
 
+    // KZ тест 2 — A/B-стенд к настоящему Спарку: та же энергия и ТОТ ЖЕ голос
+    // (Owen), но промпт учит ещё и разговорному регистру. Нрава 18+ у него нет,
+    // поэтому ключа desc18 здесь тоже нет. См. data/persona-jarvis2.md.
+    'tutor.jarvis2.trait1': 'Энергичный',
+    'tutor.jarvis2.trait2': 'Тестируется',
+    'tutor.jarvis2.trait3': 'Разговорный қазақша',
+    'tutor.jarvis2.desc':
+      'Тот же голос и тот же напор, что у Спарка, — но говорит живым разговорным казахским, без книжных оборотов и калек с русского. Стенд, на котором проверяют, звучит ли этот же голос чище на другом тексте. Доступен только на тестовом стенде.',
+    'tutor.jarvis2.listen': 'Послушать KZ тест 2',
+    'tutor.jarvis2.choose': 'Выбрать KZ тест 2',
+
     // Загрузка
     'loading.heading': '{name} собирает\nтебе обучение...',
 
@@ -479,6 +490,14 @@ export const DICT = {
     'tutor.jarvis.listen': 'KZ тестті тыңдау',
     'tutor.jarvis.choose': 'KZ тестті таңдау',
 
+    'tutor.jarvis2.trait1': 'Қуатты',
+    'tutor.jarvis2.trait2': 'Сынақтан өтуде',
+    'tutor.jarvis2.trait3': 'Ауызекі қазақша',
+    'tutor.jarvis2.desc':
+      'Спарктың дауысы да, қуаты да сол күйінде — бірақ кітаби тіркессіз, орысшадан аударылған калькасыз, тірі ауызекі қазақшамен сөйлейді. Дәл сол дауыс басқа мәтінде таза шыға ма — сол тексерілетін стенд. Тек сынақ стендінде қолжетімді.',
+    'tutor.jarvis2.listen': 'KZ тест 2 тыңдау',
+    'tutor.jarvis2.choose': 'KZ тест 2 таңдау',
+
     'loading.heading': '{name} саған оқу\nжинап жатыр...',
 
     'offer.heading': '{name} сенің деңгейіңе\nбейімделіп жатыр...',
@@ -852,6 +871,14 @@ export const DICT = {
       'The same voice, but a butler out of patience. Still formal, still "мырза" — only now the courtesy is the weapon: cold, clipped, and swearing exactly where you have earned it. He will tell you what he thinks of your plan. The answers stay just as accurate.',
     'tutor.jarvis.listen': 'Listen to KZ test',
     'tutor.jarvis.choose': 'Choose KZ test',
+
+    'tutor.jarvis2.trait1': 'High energy',
+    'tutor.jarvis2.trait2': 'In testing',
+    'tutor.jarvis2.trait3': 'Spoken Kazakh',
+    'tutor.jarvis2.desc':
+      "Spark's voice and Spark's drive, unchanged — but speaking everyday spoken Kazakh, with none of the textbook turns or calques from Russian. A bench for checking whether the same voice comes out cleaner on different text. Available on the test build only.",
+    'tutor.jarvis2.listen': 'Listen to KZ test 2',
+    'tutor.jarvis2.choose': 'Choose KZ test 2',
 
     'loading.heading': '{name} is putting\nyour lessons together...',
 
