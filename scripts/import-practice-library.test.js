@@ -10,6 +10,7 @@ const {
   toAudioLessonRequest,
   decodeCover,
   externalId,
+  selectBooks,
 } = require('./import-practice-library.js')
 
 describe('parseLibraryData', () => {
@@ -141,5 +142,36 @@ describe('decodeCover', () => {
   it('обычная ссылка обложкой не считается', () => {
     expect(decodeCover('https://cdn/x.jpg', 'x')).toBeNull()
     expect(decodeCover('', 'x')).toBeNull()
+  })
+})
+
+describe('selectBooks', () => {
+  const BOOKS = [{ id: 'canterville' }, { id: 'gatsby' }, { id: 'sherlock' }]
+
+  it('без --skip заливается всё', () => {
+    expect(selectBooks(BOOKS, []).kept.map((b) => b.id)).toEqual(['canterville', 'gatsby', 'sherlock'])
+  })
+
+  // Gatsby выкидывают не «на всякий случай»: его название совпадает со статикой
+  // data/books, а читалка предпочитает статику — залитый текст всё равно не
+  // показался бы, зато в каталоге появился бы дубль.
+  it('пропускает книгу по id и говорит, какую именно', () => {
+    const { kept, skipped } = selectBooks(BOOKS, ['gatsby'])
+    expect(kept.map((b) => b.id)).toEqual(['canterville', 'sherlock'])
+    expect(skipped).toEqual(['gatsby'])
+  })
+
+  it('регистр и пробелы в id не мешают', () => {
+    expect(selectBooks(BOOKS, [' Gatsby ']).skipped).toEqual(['gatsby'])
+  })
+
+  it('опечатка в id ничего не выкидывает — и это видно по пустому списку', () => {
+    const { kept, skipped } = selectBooks(BOOKS, ['gatsbi'])
+    expect(kept).toHaveLength(3)
+    expect(skipped).toEqual([])
+  })
+
+  it('несколько id разом', () => {
+    expect(selectBooks(BOOKS, ['gatsby', 'sherlock']).kept.map((b) => b.id)).toEqual(['canterville'])
   })
 })
