@@ -216,9 +216,20 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter, onSign
           <h2 className="form-title">{t(titleKey)}</h2>
           {textKey && <p className="form-sub">{t(textKey)}</p>}
           {state === 'left' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
-              {t('booth.back')}
-            </button>
+            <>
+              <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
+                {t('booth.back')}
+              </button>
+              {/* Выход есть и здесь. Раньше с этого экрана уйти было некуда:
+                  единственная кнопка вела обратно в урок, а человек, который
+                  на пробный уже сходил и хочет завести СВОЙ аккаунт, упирался
+                  в тупик — кабинета у класса нет, выхода на экране нет
+                  (наблюдение владельца на дев-стенде). Вторым действием, а не
+                  первым: тот, кто вышел случайно, чаще возвращается. */}
+              <button type="button" className="btn booth__cta" onClick={signOut}>
+                {t('booth.signOut')}
+              </button>
+            </>
           )}
           {state === 'checkFailed' && (
             <>

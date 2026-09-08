@@ -321,4 +321,25 @@ describe('экран класса', () => {
     // И ни одного входа: повтор проверки не имеет права трогать сеанс.
     expect(enterTrialBooth).not.toHaveBeenCalled()
   })
+
+  // Наблюдение владельца на дев-стенде: с экрана «вы вышли из класса» уйти
+  // было некуда — единственная кнопка вела обратно в урок. Сходивший на
+  // пробный и захотевший завести свой аккаунт упирался в тупик: кабинета у
+  // класса нет, выхода на экране нет.
+  it('с экрана «вы вышли» можно выйти к своему аккаунту, а не только вернуться', async () => {
+    getLessonById.mockResolvedValueOnce({ id: 77, status: 'IN_PROGRESS' })
+    const onSignOut = vi.fn()
+
+    renderPage({ lessonId: 77, onSignOut })
+    await act(async () => {})
+
+    // Возврат по-прежнему первым действием: вышедший случайно чаще возвращается.
+    expect(screen.getByRole('button', { name: 'Вернуться в класс' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти и войти под своим аккаунтом' }))
+
+    expect(onSignOut).toHaveBeenCalledTimes(1)
+    // Выход не имеет права трогать чужой сеанс.
+    expect(enterTrialBooth).not.toHaveBeenCalled()
+  })
 })
