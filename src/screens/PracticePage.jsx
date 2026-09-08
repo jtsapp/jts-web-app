@@ -24,6 +24,12 @@ import { readSituationsDone, markSituationLevelDone } from '../practice/situatio
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
 import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
+import {
+  filterByAudio,
+  hasAudio,
+  readBooksAudioMode,
+  writeBooksAudioMode,
+} from '../practice/books/audioFilter.js'
 import { LESSONS as SHADOWING_LESSONS } from '../practice/shadowing/lessons.js'
 import { countLessonDone } from '../practice/shadowing/shadowingProgress.js'
 import { getLessonScores } from '../practice/shadowing/recordings.js'
@@ -34,6 +40,7 @@ import ComicReader from './ComicReader.jsx'
 import KaraokeTrack from './KaraokeTrack.jsx'
 import GrammarCatalog, { GrammarRail } from './GrammarCatalog.jsx'
 import AssignPracticeBar from './practice/AssignPracticeBar.jsx'
+import BooksAudioFilter from './practice/BooksAudioFilter.jsx'
 import { unitToPayload } from './practice/assignPractice.js'
 import { isTeacher } from '../lib/jwt.js'
 import GrammarLesson from './GrammarLesson.jsx'
@@ -484,11 +491,22 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
   // целиком, поэтому без запросов к бэкенду; normTitle не подходит — вырезает
   // кириллицу, а названия/запросы бывают русскими.
   const [bookQuery, setBookQuery] = useState('')
+  // Режим озвучки: «все», «только текст», «только с аудио». Читается лениво из
+  // localStorage — экран практики монтируется уже на клиенте (в App.jsx стартовый
+  // screen = 'welcome'), поэтому гидратации это не задевает.
+  const [bookAudioMode, setBookAudioMode] = useState(() => readBooksAudioMode())
+  const pickBookAudioMode = (mode) => {
+    setBookAudioMode(mode)
+    writeBooksAudioMode(mode)
+  }
   const visibleBooks = useMemo(() => {
+    // Сначала озвучка, потом поиск: пустой результат тогда объясняется
+    // конкретной причиной — «в этом фильтре пусто» или «ничего не нашлось».
+    const byAudio = filterByAudio(books, bookAudioMode)
     const q = bookQuery.trim().toLowerCase()
-    if (!q) return books
-    return books.filter((b) => `${b.title || ''} ${b.author || ''}`.toLowerCase().includes(q))
-  }, [books, bookQuery])
+    if (!q) return byAudio
+    return byAudio.filter((b) => `${b.title || ''} ${b.author || ''}`.toLowerCase().includes(q))
+  }, [books, bookQuery, bookAudioMode])
 
   // Караоке ищем на клиенте: каталог приходит целиком и он маленький (треки
   // штучные, размечает их методист руками), серверного поиска в контракте нет.
@@ -955,6 +973,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
           {show('books') && (
           <section id="sec-books" className="pp-sec">
             <SectionHead title={t('practice.chip.books')} onAll={() => setFilter('books')}>
+              <BooksAudioFilter value={bookAudioMode} onChange={pickBookAudioMode} books={books} />
               <label className="pp-search">
                 <SearchIcon size={15} />
                 <input
@@ -980,12 +999,35 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
             {books.length === 0 ? (
               <Empty loading={state.loading} skeleton="book" />
             ) : visibleBooks.length === 0 ? (
-              <Empty text={t('practice.books.nothing', { q: bookQuery.trim() })} />
+              /* Пусто по двум разным причинам, и подсказка у них разная: под
+                 запрос ничего не подошло — или в выбранном режиме озвучки
+                 книг нет вовсе (так бывает у «Аудио», пока методисты не
+                 залили дорожки). */
+              <Empty
+                text={
+                  bookQuery.trim()
+                    ? t('practice.books.nothing', { q: bookQuery.trim() })
+                    : t('practice.books.emptyFilter')
+                }
+              />
             ) : (
               <Rail grid={grid}>
                 {visibleBooks.map((b) => (
                   <button key={b.id} type="button" className="pp-bcard" onClick={() => tryOpenBook(b)}>
                     <BookCover book={b} />
+                    {/* Значок озвучки на обложке, а не в заголовке: заголовок
+                        обрезается по двум строкам (-webkit-line-clamp), и
+                        значок в нём просто исчезал бы у длинных названий. */}
+                    {hasAudio(b) && (
+                      <span
+                        className="pp-bcard__audio"
+                        role="img"
+                        aria-label={t('practice.books.hasAudio')}
+                        title={t('practice.books.hasAudio')}
+                      >
+                        <VolumeIcon size={13} />
+                      </span>
+                    )}
                     <div className="pp-bcard__title">{b.title}</div>
                     <div className="pp-bcard__meta">
                       <Dots level={b.level} />

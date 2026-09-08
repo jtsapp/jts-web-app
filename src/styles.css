@@ -3605,6 +3605,43 @@ textarea {
   .pp-search input { transition: none; }
 }
 
+/* Сегмент «Все · Текст · Аудио» в шапке «Книжек»: одна пилюля на всю группу,
+   внутри — три кнопки. Высота и типографика те же, что у .pp-search и .pp-all,
+   иначе шапка секции разъезжается по базовой линии. */
+.pp-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 3px;
+}
+.pp-seg__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pp-seg__btn:hover { color: var(--purple); }
+.pp-seg__btn[aria-pressed='true'] { background: #f1ebfe; color: var(--purple); }
+.pp-seg__btn:focus-visible { outline: 2px solid #b79cf5; outline-offset: 1px; }
+/* Счётчик книг в режиме: тише подписи, но не настолько, чтобы пропасть */
+.pp-seg__n { font-size: 11px; font-weight: 700; color: var(--muted); }
+.pp-seg__btn[aria-pressed='true'] .pp-seg__n { color: var(--purple); opacity: 0.7; }
+@media (prefers-reduced-motion: reduce) {
+  .pp-seg__btn { transition: none; }
+}
+
 /* Горизонтальная лента */
 .pp-rail {
   display: flex;
@@ -3926,9 +3963,13 @@ textarea {
 
   .pp-sec { margin-bottom: 22px; }
 
-  /* Шапка секции: заголовок и «Посмотреть все» в строке, поиск по книжкам
-     переносится вниз на всю ширину — иначе трём элементам тесно. */
+  /* Шапка секции: заголовок и «Посмотреть все» в строке, сегмент озвучки и
+     поиск по книжкам переносятся вниз на всю ширину — иначе четырём элементам
+     тесно. Сегмент растягивается, чтобы три режима делили ширину поровну и
+     подписи не прыгали при смене счётчиков. */
   .pp-sec__head { flex-wrap: wrap; row-gap: 10px; }
+  .pp-seg { order: 2; flex-basis: 100%; }
+  .pp-seg__btn { flex: 1; justify-content: center; padding: 6px 8px; }
   .pp-search { order: 3; flex-basis: 100%; padding: 9px 14px; }
   .pp-search input,
   .pp-search input:focus { width: 100%; flex: 1; }
@@ -5495,10 +5536,29 @@ textarea {
 
 /* ── Практика: карточки Книжек (books.html) ── */
 .pp-bcard {
+  position: relative;
   flex: 0 0 150px;
   width: 150px;
   text-decoration: none;
   color: inherit;
+}
+/* Значок озвучки поверх обложки. Обложки бывают и светлые, и тёмные, поэтому
+   не полупрозрачная плашка, а плотная тёмная — контраст к белой иконке
+   держится на любой картинке. */
+.pp-bcard__audio {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(20, 19, 28, 0.72);
+  color: #fff;
+  pointer-events: none;
 }
 .pp-bcard__cover {
   position: relative;
