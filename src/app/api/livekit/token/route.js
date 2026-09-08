@@ -49,7 +49,13 @@ const APP_PUBLIC_URL = (process.env.APP_PUBLIC_URL || '')
 // Ключи UI → id персон в agent.py. У Джарвиса имя совпадает, и строка тут
 // формально лишняя (ниже стоит `|| p.tutor`), но без неё таблица врёт: она
 // читается как полный список тьюторов, которых знает агент.
-const TUTOR_KEY_TO_PERSONA = { dexter: 'bro', luna: 'gentle', spark: 'hype', jarvis: 'jarvis' }
+const TUTOR_KEY_TO_PERSONA = {
+  dexter: 'bro',
+  luna: 'gentle',
+  spark: 'hype',
+  jarvis: 'jarvis',
+  jarvis2: 'jarvis2',
+}
 
 const MAX_LEN = 120
 function trimStr(s, max = MAX_LEN) {
@@ -164,6 +170,10 @@ function buildMetadata(p, tier, profileId, userName, memory, ttl, scenarioLimitS
   // (Object.fromEntries над searchParams), поэтому принимаем и 'true'.
   if (p.englishOnly === true || p.englishOnly === 'true' || p.englishOnly === '1')
     meta.englishOnly = true
+  // Режим рации: агент снимает детектор конца речи и ждёт явной команды от
+  // клиента. Тот же приём с 'true' — из-за GET-варианта роута.
+  if (p.pushToTalk === true || p.pushToTalk === 'true' || p.pushToTalk === '1')
+    meta.pushToTalk = true
   if (p.mode === 'placement') {
     meta.mode = 'placement'
     meta.draftLevel = p.draftLevel || meta.level

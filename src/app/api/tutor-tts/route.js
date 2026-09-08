@@ -47,6 +47,9 @@ const SONIOX_VOICE = {
   'spark-harsh': 'Owen',
   jarvis: 'Daniel',
   'jarvis-harsh': 'Daniel',
+  // KZ тест 2 — НАРОЧНО тембр Спарка: стенд проверяет текст, а не голос,
+  // разный тембр смешал бы переменные (см. data/persona-jarvis2.md).
+  jarvis2: 'Owen',
 }
 const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
@@ -66,6 +69,7 @@ const TUTOR_PROVIDER = {
   'dexter-harsh': 'eleven',
   'spark-harsh': 'soniox',
   'jarvis-harsh': 'soniox',
+  jarvis2: 'soniox',
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'

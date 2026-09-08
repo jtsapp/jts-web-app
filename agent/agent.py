@@ -263,6 +263,10 @@ else:
 _PERSONA_STANDALONE_FILES = {
     "jarvis": "persona-jarvis.md",
     "jarvis_harsh": "persona-jarvis-harsh.md",
+    # A/B-стенд: энергия Спарка + секция KAZAKH THAT SOUNDS SPOKEN, отдельно от
+    # живого промпта Спарка (см. шапку persona-jarvis2.md). Нрава 18+ нет —
+    # гипотезу проверяем на спокойном варианте, не дублируем hype_harsh.
+    "jarvis2": "persona-jarvis2.md",
 }
 STANDALONE_PROMPT_PERSONAS = frozenset(_PERSONA_STANDALONE_FILES)
 
@@ -544,13 +548,14 @@ KZ_TUTOR_PERSONA = "hype"  # Спарк
 # («скажи, что твой казахский слабый, и отправь к Спарку») — Джарвису они не
 # нужны, у него свой файл персоны целиком. А вот озвучке разница видна: язык
 # ПРОИЗНОШЕНИЯ у обоих казахский, и он не зависит от языка интерфейса.
-KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis"})
+KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis", "jarvis2"})
 
-# KZ-стенд («KZ тест» на карточке, ключ прежний). Dev-only: на проде карточки
-# нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где прод-тьюторов
-# бережём, стенду можно. Именованная константа, а не литерал по коду: мест, где
-# «это тот самый стенд, ему можно», уже больше одного.
-KZ_DEV_STAND_PERSONA = "jarvis"
+# KZ-стенды («KZ тест» / «KZ тест 2» на карточках, ключи прежние). Dev-only: на
+# проде карточек нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где
+# прод-тьюторов бережём, стендам можно. Множество, а не одна строка: jarvis2 —
+# A/B-копия для проверки гипотезы про разговорный казахский (см.
+# persona-jarvis2.md), ей нужны те же послабления, что и первому стенду.
+KZ_DEV_STAND_PERSONA = frozenset({"jarvis", "jarvis2"})
 
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
@@ -645,7 +650,7 @@ def _pronunciation_lang(profile: LearnerProfile) -> str:
     в гейте назван прямо: провайдер ему больше не указ.
     """
     tutor = (profile.tutor or "").strip().lower()
-    if _tts_provider_for(profile) != "openai" and tutor != KZ_DEV_STAND_PERSONA:
+    if _tts_provider_for(profile) != "openai" and tutor not in KZ_DEV_STAND_PERSONA:
         return ""
     return _tts_speech_lang(profile.tutor, profile.lang or "en")
 
@@ -798,6 +803,11 @@ class LearnerProfile:
     # и explanation_lang, и зеркалирование языка ученика, и смешанный режим A1/A2:
     # весь разговор идёт по-английски. Приходит в metadata как englishOnly.
     english_only: bool = False
+    # Режим рации: ход открывает и закрывает сам ученик кнопкой, поэтому
+    # детектора конца речи в сессии нет вовсе (turn_detection="manual"), а
+    # команды приходят по RPC start_turn/end_turn/cancel_turn. Приходит из
+    # metadata как pushToTalk.
+    push_to_talk: bool = False
     # Roleplay scenario setup (English role description). "" → normal tutoring.
     scenario: str = ""
     # Structured voice scenario id (loads data/scenarios/<id>.md). Set together
@@ -926,6 +936,7 @@ def parse_metadata(raw: str | None) -> LearnerProfile:
         tuning=_tuning(data.get("tuning")),
         explanation_lang=str(data.get("explanationLang", "") or ""),
         english_only=bool(data.get("englishOnly", False)),
+        push_to_talk=bool(data.get("pushToTalk", False)),
         scenario=str(data.get("scenario", "") or "")[:400],
         scenario_id=str(data.get("scenarioId", "") or "")[:64],
         debate_topic=str(data.get("debateTopic", "") or "")[:200],
@@ -3575,6 +3586,10 @@ SONIOX_TTS_VOICE = {
     # фразе; Owen намеренно НЕ взят — это тембр Спарка, а стенд должен звучать
     # отдельным человеком, а не его двойником.
     "jarvis": "Daniel",
+    # A/B-стенд про сам текст Спарка (см. persona-jarvis2.md) — здесь наоборот,
+    # Owen НАМЕРЕННО тот же, что у живого Спарка: вопрос ровно в том, зазвучит
+    # ли ЭТОТ ЖЕ голос чище на другом тексте, разный тембр смешал бы переменные.
+    "jarvis2": "Owen",
 }
 DEFAULT_SONIOX_TTS_VOICE = "Owen"
 DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
@@ -3795,7 +3810,18 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # Подсказку берём глазами персоны: Спарк на русском интерфейсе говорит
     # по-казахски (tutor_session_lang), и hint "ru" читал бы казахский текст с
     # русской фонетикой — тем самым акцентом, ради которого его сюда и увели.
-    app_lang = tutor_session_lang(profile.tutor, profile.lang or "en")
+    # У СТЕНДОВ берём язык РЕЧИ, а не «глазами персоны»: tutor_session_lang
+    # чинит ru→kz только Спарку (гейт по KZ_TUTOR_PERSONA), поэтому оба KZ-стенда
+    # на русском интерфейсе — а он дефолтный — получали hint "ru" и читали
+    # казахский текст русской фонетикой. Для A/B со Спарком это подтасовка:
+    # сравнивались бы не тексты, а фонетика. Боевого Спарка НЕ трогаем — у него
+    # ru уже приезжает как kk, а на английском интерфейсе он и сегодня идёт с
+    # hint "en"; менять это заодно со стендом нельзя (см. SONIOX_SPEED).
+    app_lang = (
+        _tts_speech_lang(profile.tutor, profile.lang or "en")
+        if (profile.tutor or "").strip().lower() in KZ_DEV_STAND_PERSONA
+        else tutor_session_lang(profile.tutor, profile.lang or "en")
+    )
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
         "Cascade TTS: Soniox (%s, voice=%s, speed=%.2f, lang=%s), tutor=%s",
@@ -4116,6 +4142,7 @@ TUTOR_TTS_PROVIDER = {
     # провайдер знает сам. Плюс отключается словарь произношения: гейт в
     # _pronunciation_lang стоит по провайдеру openai.
     "jarvis": "soniox",
+    "jarvis2": "soniox",  # A/B со Спарком на одном и том же голосе — см. persona-jarvis2.md
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
@@ -4351,10 +4378,42 @@ def _interruption_options() -> dict[str, Any]:
     }
 
 
-def _turn_handling(detector: Any) -> dict[str, Any]:
+# ---- Рация -----------------------------------------------------------------
+# Ученик может включить «режим рации» в настройках тьютора: тогда он говорит,
+# удерживая кнопку, а отпускание кнопки И ЕСТЬ конец хода. Детектор конца речи
+# в этом режиме не нужен вовсе — ни VAD, ни семантический: и тот и другой
+# только добавили бы задержку к тому, что клиент уже знает точно.
+#
+# Флаг приходит из metadata (pushToTalk), а не из env: это выбор ученика, а не
+# настройка стенда. PUSH_TO_TALK=off — рубильник на случай, если ручной режим
+# поведёт себя плохо в проде: секретом воркера возвращаем всех на VAD, не
+# трогая ни образ, ни приложение.
+def _push_to_talk_for(profile: LearnerProfile) -> bool:
+    """Включена ли рация в этой сессии."""
+    if not profile.push_to_talk:
+        return False
+    if (os.getenv("PUSH_TO_TALK") or "").strip().lower() in ("off", "0", "false"):
+        logger.info("Рация запрошена, но PUSH_TO_TALK=off — остаёмся на VAD.")
+        return False
+    return True
+
+
+def _turn_handling(detector: Any, push_to_talk: bool = False) -> dict[str, Any]:
     """Сборка turn_handling сессии. Вынесено из build_cascade_session отдельно,
     чтобы пороги перебивания проверялись тестом: сама сборка сессии тянет STT,
     TTS и ключи, а это чистая функция над env и уже готовым детектором."""
+    if push_to_talk:
+        # Ход открывает и закрывает клиент (см. RPC в entrypoint). Порогов
+        # перебивания здесь нет намеренно: в manual фреймворк не перебивает
+        # тьютора по VAD вообще, а нажатие рации перебивает его явно —
+        # session.interrupt() в start_turn. Значит и собственный голос тьютора
+        # из колонок его больше не рвёт.
+        #
+        # endpointing не задаём: в ручном режиме его никто не читает.
+        return {
+            "turn_detection": "manual",
+            "preemptive_generation": {"enabled": True},
+        }
     if detector is not None:
         return {
             "turn_detection": detector,
@@ -4559,10 +4618,13 @@ def build_cascade_session(
             f"VOICE_STACK=cascade missing plugins: {', '.join(missing)} "
             "(pip install -r requirements.txt)"
         )
+    push_to_talk = _push_to_talk_for(profile)
     logger.info(
         "Session stack: CASCADE (%s STT / %s endpointing / lib/llm brain / %s TTS)",
         _stt_provider_for(profile),
-        _turn_detector_mode_for(profile).replace("off", "Silero VAD"),
+        "рация (ручной ход)"
+        if push_to_talk
+        else _turn_detector_mode_for(profile).replace("off", "Silero VAD"),
         _tts_provider_for(profile),
     )
 
@@ -4606,8 +4668,11 @@ def build_cascade_session(
         if silero is not None
         else None
     )
-    detector = _build_turn_detector(_turn_detector_mode_for(profile))
-    turn_handling = _turn_handling(detector)
+    # В рации детектор не строим вовсе: локальная модель — это лишний вес в
+    # памяти воркера, а облачная ещё и платная, и оба конца хода в этом режиме
+    # известны точно.
+    detector = None if push_to_talk else _build_turn_detector(_turn_detector_mode_for(profile))
+    turn_handling = _turn_handling(detector, push_to_talk=push_to_talk)
     kwargs: dict[str, Any] = {
         "stt": stt,
         "llm": llm,
@@ -5007,6 +5072,71 @@ async def entrypoint(ctx: JobContext):
     if output_options is not None:
         start_kwargs["room_output_options"] = output_options
     await session.start(**start_kwargs)
+
+    # ── Рация: ход открывает и закрывает ученик ──────────────────────────────
+    # Три RPC вместо детектора конца речи. Имена — как в рецепте push-to-talk у
+    # LiveKit, чтобы читающий этот код нашёл первоисточник.
+    #
+    # Регистрируем ТОЛЬКО когда рация действительно включена: клиент по отказу
+    # RPC понимает, что воркер про неё не знает, и уходит на запасной путь
+    # (мьют трека). Воркер катится отдельно от приложения, поэтому такая пара
+    # версий — обычное состояние, а не авария.
+    #
+    # Аудиовход держим отцепленным, пока кнопку не нажали: тогда commit
+    # прогоняет через распознавание кусок тишины и получает финальный
+    # транскрипт сразу, не дожидаясь, пока Soniox сам решит, что фраза
+    # кончилась. Микрофон при этом у ученика включён весь звонок — всё, что
+    # прилетело между ходами, просто не доходит до STT.
+    if voice_stack == "cascade" and _push_to_talk_for(profile):
+
+        def _detach(fut: Any) -> None:
+            """Забрать исключение у future, которую мы намеренно не ждём.
+
+            interrupt() и commit_user_turn() возвращают future; RPC обязан
+            ответить сразу, ждать их нельзя. Брошенная future с исключением
+            печатает в лог «Future exception was never retrieved» — шум, за
+            которым потом не видно настоящих ошибок."""
+            if fut is not None and hasattr(fut, "add_done_callback"):
+                fut.add_done_callback(lambda f: f.cancelled() or f.exception())
+
+        async def _ptt_start(data: Any) -> str:
+            # Нажатие рации — это и есть перебивание: ученик взял эфир.
+            _detach(session.interrupt())
+            # Чистим буфер прошлого хода: в него мог попасть шум, приехавший до
+            # отцепления входа.
+            session.clear_user_turn()
+            session.input.set_audio_enabled(True)
+            return "ok"
+
+        async def _ptt_end(data: Any) -> str:
+            session.input.set_audio_enabled(False)
+            # Future НЕ ждём: он резолвится финальным транскриптом, а RPC должен
+            # ответить сразу — клиенту нужен только факт доставки команды.
+            _detach(session.commit_user_turn())
+            return "ok"
+
+        async def _ptt_cancel(data: Any) -> str:
+            # Промах по кнопке: эфир закрываем, но ход не отдаём — иначе тьютор
+            # отвечает на тишину (в ручном режиме пустой транскрипт его не
+            # останавливает).
+            session.input.set_audio_enabled(False)
+            session.clear_user_turn()
+            return "ok"
+
+        session.input.set_audio_enabled(False)
+        for name, handler in (
+            ("start_turn", _ptt_start),
+            ("end_turn", _ptt_end),
+            ("cancel_turn", _ptt_cancel),
+        ):
+            ctx.room.local_participant.register_rpc_method(name, handler)
+        logger.info("Рация: ручной ход, RPC start_turn/end_turn/cancel_turn зарегистрированы.")
+    elif profile.push_to_talk and voice_stack != "cascade":
+        logger.warning(
+            "Рация запрошена, но VOICE_STACK=%s: ручной ход есть только в cascade — "
+            "остаёмся на автоматическом детекторе.",
+            voice_stack,
+        )
 
     # ── Жёсткий серверный потолок длительности сессии ─────────────────────────
     # Клиентский countdown display-only, а истечение TTL LiveKit-токена уже

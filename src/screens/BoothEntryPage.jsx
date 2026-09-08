@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Shell from '../components/Shell.jsx'
+import LessonExitConfirm from '../components/LessonExitConfirm.jsx'
 import { useI18n } from '../i18n.jsx'
 import { enterTrialBooth, getLessonById } from '../api.js'
 import { unlockBroadcastAudio } from './live/audioReport.js'
@@ -40,15 +41,16 @@ const OPEN_STATUSES = new Set(['IN_PROGRESS', 'PAUSED'])
  * их стирала. Теперь единственный источник правды — ответ бэкенда на каждом
  * монтировании этого экрана, а не память вкладки саму по себе.
  */
-export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
+export default function BoothEntryPage({ token, lessonId = null, onEnter, onSignOut }) {
   const { t } = useI18n()
   // 'checking' — урок известен, спрашиваем у бэкенда его статус, прежде чем
   // решить, что показать (Правило 2, см. эффект ниже);
   // 'entering' — идёт запрос /enter; 'waiting' — занятия ещё нет, повторяем;
   // 'closed' — класс выключен или аккаунт не закреплён (повторять нечего);
-  // 'left' — проверка подтвердила, что сеанс ещё жив (IN_PROGRESS/PAUSED),
-  // либо сама проверка не удалась — сеть подвела, а мы не входим заново ни в
-  // коем случае, чтобы не убить ещё живой сеанс из-за одной секунды сети;
+  // 'left' — проверка ПОДТВЕРДИЛА, что сеанс ещё жив (IN_PROGRESS/PAUSED), —
+  // только этот случай, ничего больше;
+  // 'checkFailed' — проверка не удалась (сеть или бэкенд не ответили), про
+  // урок мы не знаем ничего и предлагаем войти заново;
   // 'finished' — проверка вернула терминальный статус, ждём нажатия, чтобы
   // принять следующего.
   const [state, setState] = useState(lessonId != null ? 'checking' : 'entering')
@@ -64,6 +66,12 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
   // каждый клик меняет своё значение и заставляет attempt() отработать ещё раз
   // (находка 3 финального ревью).
   const [retryTick, setRetryTick] = useState(0)
+  // Тот же приём для повторной ПРОВЕРКИ урока (находка ревью). Осечка сети
+  // длится секунды, а «Войти заново» стоит целого занятия: выход забывает
+  // сеанс вкладки, и следующий вход заводит новое занятие с пустой доской,
+  // закрыв прежнее как забытое (TrialBoothSessionService.enter). Поэтому
+  // рядом с выходом стоит дешёвый повтор — сначала спросить ещё раз.
+  const [checkTick, setCheckTick] = useState(0)
   // onEnter приезжает новой стрелкой на каждый рендер App — держим в ref, иначе
   // эффект перезапускался бы вместе с ним и слал вход по кругу.
   const onEnterRef = useRef(onEnter)
@@ -80,20 +88,42 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     getLessonById(token, lessonId)
       .then((data) => {
         if (!alive) return
-        setState(OPEN_STATUSES.has(data?.status) ? 'left' : 'finished')
+        // Ответ без статуса — не «урок кончился», а «мы не знаем». Разница
+        // дорогая: 'finished' предлагает вход заново, а он закрывает ещё живой
+        // сеанс как забытый и заводит занятие с пустой доской. Сосед по файлу
+        // в такой же неопределённости выбирает ту же безопасную сторону —
+        // ответ /enter без lessonId ведёт в ожидание, а не в отказ.
+        if (data?.status == null) setState('checkFailed')
+        else setState(OPEN_STATUSES.has(data.status) ? 'left' : 'finished')
       })
-      .catch(() => {
-        // Сеть или бэкенд подвели — не входим заново ни в коем случае: мы бы
-        // рисковали убить ещё живой сеанс из-за одной секунды сети. Считаем
-        // урок как будто жив (та же 'left', та же кнопка «Вернуться») — если
-        // ошиблись, экран урока сам обнаружит терминальный статус при своём
-        // следующем опросе и вернёт сюда через onLessonClosed.
-        if (alive) setState('left')
+      .catch((e) => {
+        // Сеть или бэкенд подвели. Автоматического входа тут по-прежнему нет
+        // ни в коем случае: лишний /enter закрыл бы ещё живой сеанс как
+        // забытый — ради этого проверка и заведена.
+        //
+        // Но и выдавать непроверенный урок за живой больше нельзя. Раньше
+        // осечка приводила к той же 'left' с кнопкой «Вернуться»: нажатие
+        // уводило в урок, урок оказывался завершённым, onLessonClosed
+        // возвращал сюда, проверка падала снова — кольцо, из которого
+        // посетитель не выходил (наблюдение владельца на дев-стенде).
+        // Про урок мы не знаем НИЧЕГО, поэтому и предлагаем единственное
+        // честное действие — войти заново.
+        //
+        // Но «не знаем» — не всякий отказ. 404 (занятия больше нет) и 403 (оно
+        // не наше) — это ОТВЕТ, а не молчание: возвращаться некуда, и честное
+        // состояние тут 'finished' с настоящим входом заново. Без этой ветки
+        // такой отказ давал «Проверить ещё раз», которая получала бы тот же
+        // код при каждом нажатии, — тупик вместо кольца. Коды берём из
+        // err.status, его кладёт authGet (api.js) — тот же приём, что у
+        // эффекта входа ниже.
+        if (!alive) return
+        if (e?.status === 403 || e?.status === 404) setState('finished')
+        else setState('checkFailed')
       })
     return () => {
       alive = false
     }
-  }, [token, lessonId])
+  }, [token, lessonId, checkTick])
 
   useEffect(() => {
     if (!armed) return undefined
@@ -161,6 +191,32 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     setRetryTick((n) => n + 1)
   }
 
+  // Спросить про урок ещё раз. Стоит перед выходом, потому что стоит дешевле:
+  // осечка сети живёт секунды, а выход забывает сеанс вкладки, и следующий
+  // вход заводит новое занятие с пустой доской, закрыв прежнее как забытое.
+  // Ни в какой момент этот жест не шлёт /enter — только повторяет проверку.
+  const checkAgain = () => {
+    setState('checking')
+    setCheckTick((n) => n + 1)
+  }
+
+  // Выход из аккаунта. Своей логики выхода экран не держит — чистит токен,
+  // признак класса и память вкладки о сеансе тот же handleLogout из App.jsx,
+  // что и кнопка выхода в профиле, и он же уводит на экран входа/регистрации.
+  const signOut = () => onSignOut?.()
+
+  // Из состояния 'left' выход СПРАШИВАЕТ. Там занятие подтверждённо идёт, а
+  // кнопка стоит вплотную под «Вернуться в класс»: один промах мышью — и
+  // вернуться уже нечем (память вкладки о сеансе стёрта, нужен пароль класса,
+  // а новый вход закроет живой сеанс как забытый). В 'checkFailed' спрашивать
+  // не о чем: там урока для нас всё равно нет.
+  const [askSignOut, setAskSignOut] = useState(false)
+
+  // Спрашиваем только из 'left': там занятие подтверждённо идёт, и выход стоит
+  // урока. В остальных состояниях терять нечего — лишний вопрос был бы
+  // препятствием на пустом месте.
+  const requestSignOut = () => (state === 'left' ? setAskSignOut(true) : signOut())
+
   const waiting = state === 'entering' || state === 'waiting' || state === 'checking'
   const titleKey = {
     checking: 'booth.checking',
@@ -168,12 +224,24 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
     waiting: 'booth.waitingTitle',
     closed: 'booth.closedTitle',
     left: 'booth.leftTitle',
+    checkFailed: 'booth.checkFailedTitle',
     finished: 'booth.finishedTitle',
+  }[state]
+  // Что предлагает нажать каждое состояние. Рядом с titleKey/textKey, потому
+  // что это третья колонка одной и той же таблицы: заголовок, пояснение,
+  // действие. У 'entering', 'waiting' и 'checking' действия нет — там экран
+  // ждёт сам и нажимать нечего.
+  const action = {
+    left: { key: 'booth.back', onClick: backToLesson },
+    checkFailed: { key: 'booth.checkRetry', onClick: checkAgain },
+    finished: { key: 'booth.finishedCta', onClick: enterNow },
+    closed: { key: 'booth.closedRetry', onClick: retryClosed },
   }[state]
   const textKey = {
     waiting: 'booth.waitingText',
     closed: 'booth.closedText',
     left: 'booth.leftText',
+    checkFailed: 'booth.checkFailedText',
     finished: 'booth.finishedText',
   }[state]
 
@@ -186,20 +254,31 @@ export default function BoothEntryPage({ token, lessonId = null, onEnter }) {
           {waiting && <div className="booth__spinner spinner" aria-hidden="true" />}
           <h2 className="form-title">{t(titleKey)}</h2>
           {textKey && <p className="form-sub">{t(textKey)}</p>}
-          {state === 'left' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={backToLesson}>
-              {t('booth.back')}
+          {/* Действие состояния — по таблице, рядом с titleKey/textKey выше.
+              Четыре одинаковых блока `state === '…'` расходились с этими
+              таблицами молча: выход, например, успел обзавестись двумя
+              разными подписями на одну и ту же кнопку. */}
+          {action && (
+            <button type="button" className="btn btn--primary booth__cta" onClick={action.onClick}>
+              {t(action.key)}
             </button>
           )}
-          {state === 'finished' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={enterNow}>
-              {t('booth.finishedCta')}
-            </button>
-          )}
-          {state === 'closed' && (
-            <button type="button" className="btn btn--primary booth__cta" onClick={retryClosed}>
-              {t('booth.closedRetry')}
-            </button>
+          {/* Выход — один на все состояния, а не по кнопке в каждом. Кабинета у
+              аккаунта класса нет, и уйти можно только тем, что нарисовал этот
+              экран: пока выход добавляли по состояниям, тупик просто переезжал
+              в следующее (сначала «вы вышли», потом «класс закрыт» — там
+              посетителю по-прежнему нечего было нажать). */}
+          <button type="button" className="btn btn--secondary booth__cta" onClick={requestSignOut}>
+            {t('booth.signOut')}
+          </button>
+          {askSignOut && (
+            <LessonExitConfirm
+              titleKey="booth.signOutAsk"
+              subKey="booth.signOutAskSub"
+              leaveKey="booth.signOutConfirm"
+              onStay={() => setAskSignOut(false)}
+              onLeave={signOut}
+            />
           )}
         </div>
       </div>

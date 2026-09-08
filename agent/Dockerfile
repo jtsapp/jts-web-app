@@ -26,7 +26,11 @@ COPY persona-jarvis.md ./persona-jarvis.md
 # промолчит про ошибку только в логе, а злой Джарвис выйдет в звонок вообще
 # без характера.
 COPY persona-jarvis-harsh.md ./persona-jarvis-harsh.md
-# Словарь произношения казахской речи (Спарк, Джарвис) — правится человеком,
+# A/B-стенд «KZ тест 2»: энергия и голос Спарка + KAZAKH THAT SOUNDS SPOKEN,
+# отдельно от боевого промпта Спарка. См. data/persona-jarvis2.md (шапка файла)
+# и _PERSONA_STANDALONE_FILES в agent.py.
+COPY persona-jarvis2.md ./persona-jarvis2.md
+# Словарь произношения казахской речи (Спарк, Джарвис, KZ тест 2) — правится человеком,
 # читается на старте воркера. См. _PRONUNCIATION_FILES.
 COPY pronunciation-kk.tsv ./pronunciation-kk.tsv
 # Structured voice scenarios (data/scenarios/*.md in dev). Bundled next to

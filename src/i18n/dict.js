@@ -86,6 +86,17 @@ export const DICT = {
     'tutor.jarvis.listen': 'Послушать KZ тест',
     'tutor.jarvis.choose': 'Выбрать KZ тест',
 
+    // KZ тест 2 — A/B-стенд к настоящему Спарку: та же энергия и ТОТ ЖЕ голос
+    // (Owen), но промпт учит ещё и разговорному регистру. Нрава 18+ у него нет,
+    // поэтому ключа desc18 здесь тоже нет. См. data/persona-jarvis2.md.
+    'tutor.jarvis2.trait1': 'Энергичный',
+    'tutor.jarvis2.trait2': 'Тестируется',
+    'tutor.jarvis2.trait3': 'Разговорный қазақша',
+    'tutor.jarvis2.desc':
+      'Тот же голос и тот же напор, что у Спарка, — но говорит живым разговорным казахским, без книжных оборотов и калек с русского. Стенд, на котором проверяют, звучит ли этот же голос чище на другом тексте. Доступен только на тестовом стенде.',
+    'tutor.jarvis2.listen': 'Послушать KZ тест 2',
+    'tutor.jarvis2.choose': 'Выбрать KZ тест 2',
+
     // Загрузка
     'loading.heading': '{name} собирает\nтебе обучение...',
 
@@ -126,6 +137,9 @@ export const DICT = {
     'voice.end': 'Завершить разговор',
     'voice.micOn': 'Выключить микрофон',
     'voice.micOff': 'Включить микрофон',
+    'voice.pttHold': 'Держи, чтобы говорить',
+    'voice.pttTalking': 'Говори…',
+    'voice.pttSpace': 'или удерживай пробел',
     'voice.permAllow': 'Разрешить, когда я на сайте',
     'voice.permHint': 'Дайте разрешение на использование микрофона в браузере',
     'voice.permDenied':
@@ -221,6 +235,8 @@ export const DICT = {
     'manage.interests': 'Интересы',
     'manage.profession': 'Чем занимаешься',
     'manage.retest': 'Пересдать тест уровня',
+    'manage.ptt': 'Режим рации',
+    'manage.pttHint': 'Держи кнопку микрофона, пока говоришь',
     'manage.notSet': 'Не указано',
     'manage.history': 'История разговоров',
     'manage.historyEmpty': 'Здесь появится история ваших разговоров с тьютором',
@@ -474,6 +490,14 @@ export const DICT = {
     'tutor.jarvis.listen': 'KZ тестті тыңдау',
     'tutor.jarvis.choose': 'KZ тестті таңдау',
 
+    'tutor.jarvis2.trait1': 'Қуатты',
+    'tutor.jarvis2.trait2': 'Сынақтан өтуде',
+    'tutor.jarvis2.trait3': 'Ауызекі қазақша',
+    'tutor.jarvis2.desc':
+      'Спарктың дауысы да, қуаты да сол күйінде — бірақ кітаби тіркессіз, орысшадан аударылған калькасыз, тірі ауызекі қазақшамен сөйлейді. Дәл сол дауыс басқа мәтінде таза шыға ма — сол тексерілетін стенд. Тек сынақ стендінде қолжетімді.',
+    'tutor.jarvis2.listen': 'KZ тест 2 тыңдау',
+    'tutor.jarvis2.choose': 'KZ тест 2 таңдау',
+
     'loading.heading': '{name} саған оқу\nжинап жатыр...',
 
     'offer.heading': '{name} сенің деңгейіңе\nбейімделіп жатыр...',
@@ -508,6 +532,9 @@ export const DICT = {
     'voice.end': 'Әңгімені аяқтау',
     'voice.micOn': 'Микрофонды өшіру',
     'voice.micOff': 'Микрофонды қосу',
+    'voice.pttHold': 'Сөйлеу үшін ұстап тұр',
+    'voice.pttTalking': 'Сөйле…',
+    'voice.pttSpace': 'немесе бос орынды басып тұр',
     'voice.permAllow': 'Сайтта болғанда рұқсат ету',
     'voice.permHint': 'Браузерде микрофонды пайдалануға рұқсат беріңіз',
     'voice.permDenied':
@@ -595,6 +622,8 @@ export const DICT = {
     'manage.interests': 'Қызығушылықтар',
     'manage.profession': 'Немен айналысасың',
     'manage.retest': 'Деңгей тестін қайта тапсыру',
+    'manage.ptt': 'Рация режимі',
+    'manage.pttHint': 'Сөйлеп тұрғанда микрофон түймесін ұстап тұр',
     'manage.notSet': 'Көрсетілмеген',
     'manage.history': 'Әңгімелер тарихы',
     'manage.historyEmpty': 'Мұнда тьютормен әңгімелеріңіздің тарихы пайда болады',
@@ -843,6 +872,14 @@ export const DICT = {
     'tutor.jarvis.listen': 'Listen to KZ test',
     'tutor.jarvis.choose': 'Choose KZ test',
 
+    'tutor.jarvis2.trait1': 'High energy',
+    'tutor.jarvis2.trait2': 'In testing',
+    'tutor.jarvis2.trait3': 'Spoken Kazakh',
+    'tutor.jarvis2.desc':
+      "Spark's voice and Spark's drive, unchanged — but speaking everyday spoken Kazakh, with none of the textbook turns or calques from Russian. A bench for checking whether the same voice comes out cleaner on different text. Available on the test build only.",
+    'tutor.jarvis2.listen': 'Listen to KZ test 2',
+    'tutor.jarvis2.choose': 'Choose KZ test 2',
+
     'loading.heading': '{name} is putting\nyour lessons together...',
 
     'offer.heading': '{name} is adjusting\nto your level...',
@@ -877,6 +914,9 @@ export const DICT = {
     'voice.end': 'End the call',
     'voice.micOn': 'Turn off microphone',
     'voice.micOff': 'Turn on microphone',
+    'voice.pttHold': 'Hold to talk',
+    'voice.pttTalking': 'Talking…',
+    'voice.pttSpace': 'or hold the spacebar',
     'voice.permAllow': 'Allow while on the site',
     'voice.permHint': 'Grant microphone permission in the browser',
     'voice.permDenied':
@@ -964,6 +1004,8 @@ export const DICT = {
     'manage.interests': 'Interests',
     'manage.profession': 'What you do',
     'manage.retest': 'Retake the level test',
+    'manage.ptt': 'Walkie-talkie mode',
+    'manage.pttHint': 'Hold the mic button while you speak',
     'manage.notSet': 'Not set',
     'manage.history': 'Conversation history',
     'manage.historyEmpty': 'Your conversation history with the tutor will appear here',
