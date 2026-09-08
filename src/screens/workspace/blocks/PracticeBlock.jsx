@@ -76,6 +76,8 @@ export default function PracticeBlock({
   const showCheck = !readOnly && (questions.length > 0 || hasWbCheck)
 
   const [wbScore, setWbScore] = useState(null)
+  // Пропуск, в который уедет следующее слово из банка.
+  const [activeGapId, setActiveGapId] = useState(null)
 
   useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
@@ -88,6 +90,41 @@ export default function PracticeBlock({
       setWbScore(gradeWordBankInRoot(htmlRef.current))
     }
   }, [checked, hasWbCheck, answers, tappableHtml])
+
+  // Слово из банка — в пропуск.
+  //
+  // Задание «вставь слово из словаря» экстрактор разрывает пополам: банк
+  // остаётся в html блока, а предложения становятся отдельными gap-вопросами.
+  // Движок bindWordBank к этой разметке не цепляется — он ищет .wbank/.wchip и
+  // input.gap, а тут .bank/.bw и React-инпуты, — поэтому слова банка не делали
+  // ничего, и заполнить пропуск можно было только руками с клавиатуры.
+  //
+  // Слушатель вешаем РАНЬШЕ тап-перевода (эффекты идут по порядку объявления) и
+  // глушим его через stopImmediatePropagation: клик по слову банка — это ответ,
+  // а не просьба перевести.
+  useEffect(() => {
+    const root = htmlRef.current
+    if (!root || readOnly || checked) return undefined
+    const onClick = (e) => {
+      const chip = e.target?.closest?.('.bw')
+      if (!chip) return
+      const word = (chip.textContent || '').trim()
+      if (!word) return
+      const gaps = questions.filter((q) => q.type === 'gap')
+      if (!gaps.length) return
+      const target = gaps.find((q) => q.id === activeGapId)
+        ?? gaps.find((q) => !String(answers?.[q.id] ?? '').trim())
+      // Класть некуда — молча ничего не делаем, но и перевод не открываем:
+      // иначе одно и то же нажатие вело бы то в ответ, то в словарь.
+      e.stopImmediatePropagation()
+      e.preventDefault()
+      if (!target) return
+      onAnswer(target.id, word)
+      setActiveGapId(null)
+    }
+    root.addEventListener('click', onClick)
+    return () => root.removeEventListener('click', onClick)
+  }, [tappableHtml, questions, answers, activeGapId, onAnswer, readOnly, checked])
 
   useEffect(() => {
     const root = htmlRef.current
@@ -196,6 +233,7 @@ export default function PracticeBlock({
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
+                onFocusGap={setActiveGapId}
                 showAnswerKey={showAnswerKey}
               />
             </div>
