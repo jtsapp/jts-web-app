@@ -798,9 +798,7 @@ export async function sendRegistrationOtp(name, phone, email, birthDate) {
     })
     return 'register'
   } catch (e) {
-    if ((e.message || '').toLowerCase().includes('exist')) {
-      e.code = 'USER_EXISTS'
-    }
+    if (isUserExistsError(e)) e.code = 'USER_EXISTS'
     throw e
   }
 }
@@ -810,13 +808,38 @@ export async function sendRegistrationOtp(name, phone, email, birthDate) {
 // RegistrationVerifyResponse на бэкенде) — отдельного входа после регистрации
 // больше не требуется.
 export async function verifyRegistrationOtp(name, phone, email, code, birthDate) {
-  return post('/registration/verify', {
-    name: name || 'Гость',
-    phone: normalizePhone(phone),
-    email,
-    birthDate,
-    otp: code,
-  })
+  try {
+    return await post('/registration/verify', {
+      name: name || 'Гость',
+      phone: normalizePhone(phone),
+      email,
+      birthDate,
+      otp: code,
+    })
+  } catch (e) {
+    // Гонка двух вкладок / повтор OTP после уже созданного аккаунта раньше
+    // доезжала как 500 «не удалось выполнить операцию в базе данных».
+    if (isUserExistsError(e) || isGenericDbError(e)) e.code = 'USER_EXISTS'
+    throw e
+  }
+}
+
+function isUserExistsError(e) {
+  const msg = (e?.message || '').toLowerCase()
+  return (
+    msg.includes('exist') ||
+    msg.includes('уже есть') ||
+    msg.includes('уже существует') ||
+    msg.includes('duplicate') ||
+    msg.includes('idx_users_email') ||
+    msg.includes('idx_users_phone') ||
+    msg.includes('unique constraint')
+  )
+}
+
+function isGenericDbError(e) {
+  const msg = (e?.message || '').toLowerCase()
+  return msg.includes('базе данных') || msg.includes('database')
 }
 
 export async function getCurrentUser(token) {
@@ -1090,6 +1113,19 @@ export function completeLessonVocabCycle(lessonId, cycle, results, token) {
     : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}/cycles/${encodeURIComponent(cycle)}`
   return authPost(path, token, { results }).then((data) => {
     dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
+    return data
+  })
+}
+
+export function markVocabLearned(token, words) {
+  const keys = [...new Set((words || []).map((w) => String(w || '').trim().toLowerCase()).filter(Boolean))]
+  if (!keys.length) return Promise.resolve()
+  return authPost('/mobile/lesson-vocab/saved/learned', token, { words: keys }).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
     return data
   })
 }
