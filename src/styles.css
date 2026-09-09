@@ -4750,6 +4750,37 @@ textarea {
   border-radius: 48px;
   box-shadow: 0 24px 64px -8px rgba(13, 8, 31, 0.34);
 }
+@media (max-width: 560px) {
+  .ds-card {
+    padding: 18px 18px 16px;
+    border-radius: 32px;
+  }
+  .ds-art {
+    height: 170px;
+    border-radius: 18px;
+  }
+  .ds-title {
+    margin-top: 16px;
+    font-size: 21px;
+    line-height: 28px;
+  }
+  .ds-body {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  /* Кнопки в столбик: «Приобрести подписку» рядом с «Вернуться» на 360px
+     переносится в две строки внутри кнопки. */
+  .ds-acts {
+    flex-direction: column;
+    margin-top: 18px;
+  }
+  .ds-back,
+  .ds-buy {
+    width: 100%;
+    height: 48px;
+  }
+}
+
 /* Картинка во всю ширину карточки, как в макете (536×241, скругление 24):
    прежние 132×152 остались от иллюстрации-персонажа. */
 .ds-art {

@@ -343,6 +343,28 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+@media (max-width: 520px) {
+  .hm-card {
+    padding: 16px;
+  }
+  .hm-card__title {
+    font-size: 18px;
+    line-height: 24px;
+  }
+  /* Название навыка и процент жмутся, полоса остаётся читаемой: на 360px
+     колонка в 96 съедала половину строки. */
+  .hm-skill {
+    grid-template-columns: 76px minmax(0, 1fr) 38px 18px;
+    gap: 10px;
+  }
+  .hm-skill__name {
+    font-size: 13px;
+  }
+  .hm-tag {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+}
 
 /* --- карточка уровня --- */
 .hm-level {
@@ -540,16 +562,54 @@
   height: 88px;
   object-fit: contain;
 }
+@media (max-width: 900px) {
+  /* Дорожка переносится по строкам — отрезкам нужен минимум, иначе они
+     схлопываются в точки и «Старт → Финиш» перестаёт читаться как путь. */
+  .hm-level__seg {
+    flex: 1 1 28px;
+    min-width: 28px;
+  }
+}
 @media (max-width: 720px) {
   .hm-level {
     flex-direction: column;
-  }
-  .hm-level__goal {
-    width: 100%;
-    flex-direction: row;
+    padding: 18px;
+    gap: 16px;
   }
   .hm-level__name {
-    font-size: 24px;
+    font-size: 26px;
+    line-height: 34px;
+  }
+  /* Плашка цели ложится поперёк: медаль слева, подпись рядом. Квадрат 140 на
+     всю ширину телефона выглядел бы дырой. */
+  .hm-level__goal {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    height: auto;
+    min-height: 96px;
+    padding: 12px 16px;
+  }
+  .hm-level__medal {
+    position: static;
+    transform: none;
+    width: 72px;
+    height: 72px;
+  }
+}
+@media (max-width: 520px) {
+  .hm-level__track {
+    gap: 6px;
+  }
+  .hm-level__stop {
+    padding: 2px 8px;
+    font-size: 13px;
+  }
+  .hm-level__name {
+    font-size: 22px;
+    line-height: 30px;
   }
 }
 
@@ -792,6 +852,22 @@
 @media (max-width: 1040px) {
   .pr__grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .pr__top {
+    padding: 14px 20px;
+  }
+  .pr__grid {
+    padding: 0 20px;
+  }
+  .pr-sec {
+    padding: 16px;
+  }
+  .pr-sec__title {
+    font-size: 18px;
+    line-height: 24px;
+    gap: 10px;
   }
 }
 @media (max-width: 620px) {
@@ -1163,19 +1239,37 @@
 }
 @media (max-width: 900px) {
   .pr-bonus__art img {
-    height: 96px;
+    max-height: 104px;
   }
   .pr-bonus__gift {
-    height: 112px;
+    max-height: 120px;
   }
 }
-@media (max-width: 520px) {
+@media (max-width: 620px) {
   .pr-bonus {
     grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    overflow: hidden;
   }
-  .pr-bonus__art img {
-    width: 36px;
-    height: 36px;
+  /* Композиция внахлёст держится на абсолютных смещениях и в одну колонку не
+     ложится — на телефоне логотипы становятся обычным рядом под списком. */
+  .pr-bonus__art {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: auto;
+    margin-top: 10px;
+  }
+  .pr-bonus__art img,
+  .pr-bonus__gift {
+    position: static;
+    transform: none;
+    width: auto;
+    height: 44px;
+    max-height: none;
+  }
+  .pr-bonus__gift {
+    height: 52px;
   }
 }
 .pr-bonus__title {
@@ -1683,6 +1777,48 @@
   padding: 24px;
   overflow: auto;
   background: rgba(15, 10, 26, 0.52);
+}
+/* На телефоне окно занимает почти весь экран, но отступы и картинка ужимаются:
+   с макетными 32/241 карточка не влезала в 640 по высоте и кнопка уезжала за
+   нижний край. */
+@media (max-width: 560px) {
+  .bt-over,
+  .lm-over {
+    padding: 14px;
+  }
+  .bt-card,
+  .lm-card {
+    padding: 18px 18px 16px;
+    border-radius: 32px;
+  }
+  .bt-art,
+  .lm-art {
+    height: 170px;
+    border-radius: 18px;
+  }
+  .bt-title,
+  .lm-title {
+    margin-top: 16px;
+    font-size: 21px;
+    line-height: 28px;
+  }
+  .bt-body,
+  .lm-body {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .bt-ok,
+  .lm-back,
+  .lm-buy {
+    height: 48px;
+    font-size: 15px;
+  }
+  .bt-ok {
+    margin-top: 18px;
+  }
+  .lm-acts {
+    margin-top: 18px;
+  }
 }
 /* Размеры окон — из макета (Modal/ЛимитДемо, 600×): это событие, ради которого
    человек нажимал кнопку, и оно должно занимать экран, а не жаться в углу. */
