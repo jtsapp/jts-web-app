@@ -527,8 +527,14 @@ export async function createOrder(token, { items, idempotencyKey, returnUrl } = 
 // Возвращает { accepted } — есть ли у аккаунта телефон, по которому вообще
 // можно перезвонить. Повторное нажатие бэкенд схлопывает сам, для клиента это
 // по-прежнему успех.
-export async function createLead(token, { source, comment } = {}) {
-  const data = await authPost('/mobile/leads', token, { source, comment: comment || null })
+// `amount` — итог корзины в тенге; уедет бюджетом сделки, иначе воронка продаж
+// показывает ₸0 по всем заявкам с платформы. У заявок без покупки его нет.
+export async function createLead(token, { source, comment, amount } = {}) {
+  const data = await authPost('/mobile/leads', token, {
+    source,
+    comment: comment || null,
+    amount: Number.isFinite(amount) ? Math.round(amount) : null,
+  })
   return { accepted: data?.accepted !== false }
 }
 

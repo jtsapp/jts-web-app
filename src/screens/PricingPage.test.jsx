@@ -217,6 +217,22 @@ describe('Витрина тарифов', () => {
     expect(backend.leadCalls[0].source).toBe('PRICING')
   })
 
+  it('в заявку едет и состав заказа, и его сумма', async () => {
+    const { container } = await renderLoaded()
+    await addTile(container, '12 уроков')          // 84 000
+    await addTile(container, '12 уроков · 1 курс') // 29 990
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+    fireEvent.click(screen.getByText('Связаться с менеджером'))
+
+    await waitFor(() => expect(backend.leadCalls).toHaveLength(1))
+    const lead = backend.leadCalls[0]
+    // Состав — примечанием, он у менеджера перед глазами при звонке.
+    expect(lead.comment).toContain('12 уроков')
+    // Сумма — отдельным числом: она станет бюджетом сделки. Достать её из
+    // текста примечания в amoCRM нечем, и без неё воронка продаж считает ₸0.
+    expect(lead.amount).toBe(113990)
+  })
+
   it('«Связаться со мной» оставляет заявку и показывает подтверждение', async () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')

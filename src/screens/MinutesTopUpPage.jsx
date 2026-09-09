@@ -75,7 +75,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
     // эквайринг подключён, чат — запасной путь.
     let accepted = false
     try {
-      accepted = (await createLead(token, { source: 'MINUTES', comment: text })).accepted
+      accepted = (await createLead(token, { source: 'MINUTES', comment: text, amount: picked.price })).accepted
     } catch {
       /* заявка не единственный путь */
     }

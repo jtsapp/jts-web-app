@@ -122,7 +122,7 @@ export default function PricingPage({ token, onBack, onDone }) {
     // платить или писать в чат, менеджер увидит, что именно тот выбрал.
     let accepted = false
     try {
-      accepted = (await createLead(token, { source: 'PRICING', comment: text })).accepted
+      accepted = (await createLead(token, { source: 'PRICING', comment: text, amount: total })).accepted
     } catch {
       // Молча: заявка — не единственный путь, ниже есть и оплата, и чат.
     }
