@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { assignPracticeUnits, getMyLessonOccurrences } from '../../api.js'
-import { assignableLessons, newBatchId } from './assignPractice.js'
+import {
+  assignableLessons,
+  assignedDueDate,
+  defaultDueDate,
+  isPastDue,
+  minDueDate,
+  newBatchId,
+  parseIsoDate,
+} from './assignPractice.js'
 
 /**
  * Панель выдачи заданий «Практики» на дом — видна преподавателю, когда он
@@ -18,6 +26,10 @@ export default function AssignPracticeBar({ token, area, level, units, onClear }
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null)
   const [error, setError] = useState(null)
+  // Срок подставлен: преподаватель на уроке не должен думать о дате, а менять
+  // её приходится, только когда «к следующему занятию» не подходит. Пустое
+  // поле — выдача без срока, как было до этого поля.
+  const [dueDate, setDueDate] = useState(() => defaultDueDate())
 
   useEffect(() => {
     if (!open || !token || lessons != null) return
@@ -28,20 +40,29 @@ export default function AssignPracticeBar({ token, area, level, units, onClear }
     return () => { alive = false }
   }, [open, token, lessons])
 
+  const locale = lang === 'en' ? 'en-GB' : lang === 'kk' ? 'kk-KZ' : 'ru-RU'
   const fmt = useMemo(
-    () => new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'ru-RU', {
+    () => new Intl.DateTimeFormat(locale, {
       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
     }),
-    [lang],
+    [locale],
+  )
+  const dayFmt = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }),
+    [locale],
   )
 
+  // Дату можно набрать руками мимо `min` — тогда сервер отвечает отказом и не
+  // пишет ни одного задания. Ловим здесь, пока преподаватель ещё смотрит в поле.
+  const duePast = isPastDue(dueDate)
+
   function assign(lessonId) {
-    if (busy) return
+    if (busy || duePast) return
     setBusy(true)
     setError(null)
-    assignPracticeUnits(token, lessonId, { area, units, batchId: newBatchId() })
-      .then(() => {
-        setDone(units.length)
+    assignPracticeUnits(token, lessonId, { area, units, batchId: newBatchId(), dueDate: dueDate || null })
+      .then((response) => {
+        setDone({ count: units.length, dueDate: assignedDueDate(response) })
         setOpen(false)
         onClear?.()
       })
@@ -52,9 +73,15 @@ export default function AssignPracticeBar({ token, area, level, units, onClear }
   // Подтверждение живёт своей жизнью: панель к этому моменту уже пуста, потому
   // что выбор сброшен, а сказать о результате всё равно надо.
   if (done != null) {
+    const doneDay = parseIsoDate(done.dueDate)
     return (
       <div className="pr-assign pr-assign--done" role="status">
-        <span>{t('practice.assign.done', { n: String(done) })}</span>
+        <span>
+          {t('practice.assign.done', { n: String(done.count) })}
+          {/* Срок — из ответа сервера: в работе мог стоять более поздний, и он
+              остаётся. Называть выбранный день было бы неправдой. */}
+          {doneDay ? ` ${t('practice.assign.doneDue', { date: dayFmt.format(doneDay) })}` : ''}
+        </span>
         <button type="button" onClick={() => setDone(null)}>{t('practice.assign.close')}</button>
       </div>
     )
@@ -81,6 +108,25 @@ export default function AssignPracticeBar({ token, area, level, units, onClear }
             <button type="button" onClick={() => setOpen(false)} aria-label={t('practice.assign.close')}>✕</button>
           </div>
 
+          {/* Срок стоит НАД списком уроков: выбор урока — последнее действие,
+              оно же и отправляет выдачу, и вернуться к дате уже не выйдет. */}
+          <label className="pr-assign__due">
+            <span className="pr-assign__due-label">{t('practice.assign.due')}</span>
+            <input
+              type="date"
+              className="pr-assign__due-input"
+              value={dueDate}
+              min={minDueDate()}
+              aria-invalid={duePast || undefined}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </label>
+          {duePast ? (
+            <p className="pr-assign__error">{t('practice.assign.duePast')}</p>
+          ) : (
+            !dueDate && <p className="pr-assign__hint">{t('practice.assign.dueNone')}</p>
+          )}
+
           {error && <p className="pr-assign__error">{error}</p>}
 
           {lessons == null ? (
@@ -93,7 +139,7 @@ export default function AssignPracticeBar({ token, area, level, units, onClear }
             <ul className="pr-assign__lessons">
               {lessons.map((occ) => (
                 <li key={occ.lessonId}>
-                  <button type="button" disabled={busy} onClick={() => assign(occ.lessonId)}>
+                  <button type="button" disabled={busy || duePast} onClick={() => assign(occ.lessonId)}>
                     <span className="pr-assign__lesson-who">{occ.studentName || occ.teacherName || '—'}</span>
                     <span className="pr-assign__lesson-when">{fmt.format(new Date(occ.scheduledAt))}</span>
                   </button>

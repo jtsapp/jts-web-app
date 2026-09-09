@@ -471,12 +471,17 @@ export function getLessonsSummary(token) {
  *
  * `batchId` — один на нажатие: повтор с тем же ключом ничего не задваивает,
  * поэтому двойной клик и ретрай после обрыва безопасны.
+ *
+ * `dueDate` (`YYYY-MM-DD`, null — без срока) сервер применяет только вперёд:
+ * стоящий в работе более поздний срок он не сдвигает, а прошедший отвергает
+ * целиком, до записи заданий.
  */
-export function assignPracticeUnits(token, lessonId, { area, units, batchId }) {
+export function assignPracticeUnits(token, lessonId, { area, units, batchId, dueDate = null }) {
   return authPut(`/admin/homework/lesson/${lessonId}/exercises/from-practice`, token, {
     area,
     units,
     batchId,
+    dueDate,
   })
 }
 
