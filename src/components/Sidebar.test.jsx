@@ -24,3 +24,22 @@ describe('Sidebar rail mode', () => {
     expect(container.querySelector('aside.sb')).not.toBeNull()
   })
 })
+
+// Чип профиля: имя сверху, подпись «Профиль» снизу. Без имени подпись
+// поднимается наверх и снизу НИЧЕГО не рисуется — иначе выходило «Профиль»
+// над «Профиль» (жалоба владельца 08.09.2026). Так же ведёт себя MobileTopBar.
+describe('Sidebar profile chip', () => {
+  it('shows the name on top and the label under it', () => {
+    const { container } = renderSidebar({ userName: 'Сакен' })
+    const text = container.querySelector('.sb__profile-text')
+    expect(text.querySelector('b').textContent).toBe('Сакен')
+    expect(text.querySelector('span').textContent).toBe('Профиль')
+  })
+
+  it('does not repeat the label when there is no name', () => {
+    const { container } = renderSidebar({ userName: '' })
+    const text = container.querySelector('.sb__profile-text')
+    expect(text.querySelector('b').textContent).toBe('Профиль')
+    expect(text.querySelector('span')).toBeNull()
+  })
+})

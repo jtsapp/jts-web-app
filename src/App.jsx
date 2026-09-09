@@ -521,6 +521,11 @@ export default function App() {
           ? await verifyRegistrationOtp(name, phone, email, code, birthDate)
           : await verifyLoginOtp(phone, code)
       const tok = data?.accessToken || null
+      // Та же причина, что у входа по паролю: у входа по коду имя в стейте
+      // пустое, и взять его неоткуда, кроме ответа. Регистрации ответ вернёт
+      // ровно то имя, которое она и отправила, поэтому ветка одна на два режима
+      // — и совпадает с тем, что уходит в снимок строчкой ниже.
+      setName(data?.name || name || '')
       setToken(tok || null)
       saveToken(tok || null, data?.refreshToken || null)
       if (tok && data) {
@@ -633,6 +638,12 @@ export default function App() {
       const data = await loginWithPassword(identifier, password)
       const tok = data?.accessToken || null
       if (!tok) throw new Error(t('login.failed'))
+      // Имя приезжает только этим ответом: экран входа его перед собой чистит
+      // (onLogin → setName('')), а сам сеанс восстановления не проходит. Без
+      // этой строки сайдбар и профиль весь сеанс показывали «Без имени», и имя
+      // появлялось лишь после F5 — там его ставит restoreSession. В снимок
+      // localStorage строчкой ниже оно писалось и раньше, в стейт — нет.
+      setName(data.name || '')
       setPhone(identifier)
       setToken(tok)
       saveToken(tok, data?.refreshToken || null)

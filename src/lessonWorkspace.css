@@ -756,6 +756,7 @@
 .lw-practice__html .player {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
   margin: 8px 0 4px;
 }
@@ -774,19 +775,61 @@
   color: var(--lw-muted, #6b6578);
 }
 
-.lw-info__body .player button,
+.lw-info__body .player button:not(.say-play),
 .lw-info__body .player .bar,
 .lw-info__body .player .wave,
 .lw-info__body .player .time,
 .lw-info__body .player .rate,
 .lw-info__body .player select,
-.lw-practice__html .player button,
+.lw-practice__html .player button:not(.say-play),
 .lw-practice__html .player .bar,
 .lw-practice__html .player .wave,
 .lw-practice__html .player .time,
 .lw-practice__html .player .rate,
 .lw-practice__html .player select {
   display: none;
+}
+
+.lw-info__body .player .say-play,
+.lw-practice__html .player .say-play {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  margin: 0 0 2px;
+  padding: 11px 22px;
+  border: none;
+  border-radius: var(--lw-r-pill);
+  background: var(--lw-primary);
+  color: #ffffff;
+  font: inherit;
+  font-size: calc(14.5px * var(--lw-text-scale, 1));
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lw-info__body .player .say-play::before,
+.lw-practice__html .player .say-play::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent currentColor;
+}
+
+.lw-info__body .player .say-play:hover,
+.lw-practice__html .player .say-play:hover {
+  background: var(--lw-primary-ink);
+}
+
+.lw-info__body .player .say-play:focus-visible,
+.lw-practice__html .player .say-play:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
 }
 
 .lw-info__body .track b {
@@ -1032,6 +1075,14 @@
 }
 
 .lw-info__body .ochip .pin {
+  display: none;
+}
+
+.lw-practice--has-qs .lw-practice__html .opt,
+.lw-practice--has-qs .lw-practice__html .opts,
+.lw-practice--has-qs .lw-practice__html .mcq,
+.lw-practice--has-qs .lw-practice__html select,
+.lw-practice--has-qs .lw-practice__html .num {
   display: none;
 }
 

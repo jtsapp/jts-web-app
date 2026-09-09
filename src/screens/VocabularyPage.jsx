@@ -10,6 +10,7 @@ import {
   openLessonVocab,
   saveStudentVocab,
   deleteStudentVocabWord,
+  markVocabLearned,
 } from '../api.js'
 import VocabPractice from './vocab/VocabPractice.jsx'
 import { topVocabMisses } from './vocab/vocabMisses.js'
@@ -213,9 +214,17 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         title={practiceTitle}
         token={token}
         scopeId={practiceScopeId}
+        onLearned={(keys) => {
+          if (practiceScopeId === 'mine' && keys?.length) {
+            markVocabLearned(token, keys).catch(() => {})
+          }
+        }}
         onExit={() => {
           refreshTopMiss()
           setLearnedTick((n) => n + 1)
+          if (practiceBack === 'mine') {
+            openLessonVocab('saved', token).then(setMine).catch(() => {})
+          }
           setScreen(practiceBack)
         }}
         speak={speak}
@@ -259,7 +268,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
             ipa: w.ipa,
             example: '',
           }))
-          startPractice(cards, t('vocab.home.mine'), 'mine')
+          startPractice(cards, t('vocab.home.mine'), 'mine', 'mine')
         }}
       />,
     )
@@ -773,7 +782,7 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
       {!words.length && <p className="vp-state">{t('vocab.lesson.empty')}</p>}
       <div className="vp-words">
         {words.map((w) => (
-          <button type="button" className="vp-wcard" key={w.id || w.word} onClick={() => setDetail(w)}>
+          <button type="button" className={`vp-wcard${w.learned ? ' is-learned' : ''}`} key={w.id || w.word} onClick={() => setDetail(w)}>
             <div className="top">
               <b>{w.word}</b>
               <span
@@ -783,7 +792,7 @@ function MineScreen({ t, lang, session, token, speak, flash, onBack, onChanged, 
               ><IconSpeaker /></span>
             </div>
             <div className="tr">{trOf(w, lang)}</div>
-            <div className="foot">{w.source || t('vocab.home.mine')}</div>
+            <div className="foot">{w.learned ? t('vocab.learnedBadge') : (w.source || t('vocab.home.mine'))}</div>
           </button>
         ))}
       </div>
