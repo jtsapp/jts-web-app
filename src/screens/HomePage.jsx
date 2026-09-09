@@ -172,11 +172,17 @@ export default function HomePage({
                   <span className="hm-level__seg">
                     {i === 0 && <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />}
                   </span>
-                  <span className="hm-level__stop">{t('home.level.stop', { level: code })}</span>
+                  <span className="hm-level__stop">
+                    <FlagIcon />
+                    {t('home.level.stop', { level: code })}
+                  </span>
                 </Fragment>
               ))}
               <span className="hm-level__seg" />
-              <span className="hm-level__stop hm-level__stop--finish">{t('home.level.finish')}</span>
+              <span className="hm-level__stop hm-level__stop--finish">
+                <FinishIcon />
+                {t('home.level.finish')}
+              </span>
             </div>
 
             <p className="hm-level__plan">
@@ -319,6 +325,29 @@ function band(percent) {
   if (percent >= 70) return 'high'
   if (percent >= 60) return 'mid'
   return 'low'
+}
+
+// Ступень впереди — флажок на пути: вешка, до которой ещё идти. Иконки
+// местные, как TrendIcon ниже: тащить их в общий icons.jsx ради одного экрана
+// незачем.
+function FlagIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 21V4" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+      <path d="M7 5h9.5l-2.2 3.4L16.5 12H7z" fill="currentColor" />
+    </svg>
+  )
+}
+
+// Финиш — та же вешка, но в круге: конец пути, а не очередная ступень.
+function FinishIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.1" />
+      <path d="M10 17V7.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M10 8h5l-1.2 1.9L15 11.8h-5z" fill="currentColor" />
+    </svg>
+  )
 }
 
 function TrendIcon({ up = false }) {

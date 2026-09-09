@@ -358,7 +358,7 @@
   min-width: 0;
 }
 .hm-level__label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.09em;
   color: rgba(255, 255, 255, 0.72);
@@ -372,7 +372,7 @@
 }
 .hm-level__name {
   margin: 0;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -399,31 +399,37 @@
 .hm-level__seg {
   flex: 1 1 34px;
   min-width: 24px;
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.28);
   overflow: hidden;
 }
+/* Ступень впереди — пунктирная рамка без заливки: намеченная вешка, до которой
+   ещё идти. Сплошная заливка на всех ступенях делала пройденное и предстоящее
+   неотличимыми — а вся дорожка ровно про эту разницу. */
 .hm-level__stop {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  gap: 7px;
+  padding: 7px 15px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.55);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  font-size: 12px;
+  background: transparent;
+  font-size: 13.5px;
   font-weight: 700;
   white-space: nowrap;
 }
 /* Текущее положение — единственная сплошная заливка белым: на фиолетовом это
    самый сильный контраст, и достаться он должен тому, где человек сейчас. */
 .hm-level__stop--now {
+  border-color: #fff;
+  border-style: solid;
   background: #fff;
   color: #7b2ff7;
 }
 .hm-level__stop--finish {
-  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 /* Карточка вместо уровня, когда тест не пройден. Ростом с карточку уровня —
    иначе экран проседает пустотой ровно там, где обычно главный блок. */
@@ -480,8 +486,8 @@
   font-weight: 700;
 }
 .hm-level__plan {
-  margin: 10px 0 0;
-  font-size: 13px;
+  margin: 14px 0 0;
+  font-size: 14px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.82);
 }
