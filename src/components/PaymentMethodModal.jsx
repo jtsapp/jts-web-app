@@ -12,6 +12,12 @@ import { useDialogKeys } from '../lib/useDialogKeys.js'
 // Сам платёж отсюда не проводится: `onPick` получает выбранный способ, а куда
 // он ведёт, решает экран (см. PricingPage — там же объяснено, почему все три
 // пути сейчас сходятся на менеджере).
+// Kaspi спрятан до подключения эквайринга: кнопка «Оплатить через Kaspi.kz»
+// ведёт туда же, куда и остальные две (к менеджеру), и обещание автоматической
+// оплаты, которой ещё нет, злит сильнее её отсутствия. Разметка и знак банка
+// оставлены целиком — включить обратно значит поставить здесь true.
+const KASPI_ENABLED = false
+
 export default function PaymentMethodModal({ onClose, onPick }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
@@ -43,6 +49,7 @@ export default function PaymentMethodModal({ onClose, onPick }) {
         <h2 className="pm-title" id="pm-title">{t('pay.title')}</h2>
         <p className="pm-sub" id="pm-sub">{t('pay.sub')}</p>
 
+        {KASPI_ENABLED && (
         <button type="button" className="pm-main" ref={firstRef} onClick={() => onPick?.('kaspi')}>
           <span className="pm-main__ic" aria-hidden="true"><KaspiMark /></span>
           <span className="pm-main__body">
@@ -55,9 +62,12 @@ export default function PaymentMethodModal({ onClose, onPick }) {
             </svg>
           </span>
         </button>
+        )}
 
         <div className="pm-alt">
-          <button type="button" className="pm-opt" onClick={() => onPick?.('manager')}>
+          {/* Фокус при открытии — на первой доступной кнопке: пока Kaspi
+              скрыт, ею оказывается «Связаться с менеджером». */}
+          <button type="button" className="pm-opt" ref={KASPI_ENABLED ? null : firstRef} onClick={() => onPick?.('manager')}>
             <b>{t('pay.manager')}</b>
             <span>{t('pay.managerSub')}</span>
             <i className="pm-opt__chev" aria-hidden="true">

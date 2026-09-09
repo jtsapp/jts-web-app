@@ -9,10 +9,18 @@
 // POST /media/upload и в каталог попадает уже ссылкой.
 //
 // Запуск:
-//   JTS_ADMIN_TOKEN=... node scripts/import-practice-library.js <файл.html> [--dry-run] [--api URL]
+//   JTS_ADMIN_TOKEN=... node scripts/import-practice-library.js <файл.html> [--dry-run] [--api URL] [--skip id,id]
 //
 // --dry-run ничего не отправляет: печатает, что улетело бы, и складывает тела
 // запросов в scripts/.import-preview.json — им же удобно свериться глазами.
+//
+// --skip выкидывает книги по id из библиотеки. Нужен, когда название книги
+// совпадает со статикой data/books: читалка отдаёт предпочтение статике
+// (loadBookContent в src/screens/BookDetail.jsx ищет по нормализованному
+// названию и только при промахе идёт на detail-эндпоинт), поэтому залитый
+// текст такой книги всё равно не покажется, а в каталоге появится второй
+// карточкой-дублем. На выгрузке от 26.08.2026 такое совпадение одно —
+// `gatsby` (в библиотеке 24 главы, в статике 9).
 const fs = require('fs')
 const path = require('path')
 
@@ -91,6 +99,67 @@ function externalId(id) {
   return h >>> 0
 }
 
+/** Разбор аргументов командной строки.
+ *
+ *  Отдельной чистой функцией, потому что здесь легче всего ошибиться молча:
+ *  значение флага — такой же позиционный аргумент, как путь к файлу, и стоит
+ *  перепутать порядок, как `--skip gatsby` уедет в путь к html. `taken`
+ *  помечает индексы, уже съеденные флагами, — по ним и отсеиваем.
+ *
+ *  Флаг без значения — ошибка, а не пустая строка: раньше `--api` в конце
+ *  строки давал адрес «undefined/media/upload», а `--skip` в конце тихо
+ *  отключал фильтр, и книга уезжала на контур.
+ */
+function parseArgs(argv) {
+  const args = Array.isArray(argv) ? argv : []
+  const taken = new Set()
+  const valueOf = (name) => {
+    const i = args.indexOf(name)
+    if (i < 0) return null
+    const value = args[i + 1]
+    if (value === undefined || value.startsWith('--')) throw new Error(`${name} требует значение`)
+    taken.add(i + 1)
+    return value
+  }
+  const api = valueOf('--api')
+  const skip = valueOf('--skip')
+  const src = args.find((a, i) => !a.startsWith('--') && !taken.has(i))
+  if (!src) throw new Error('укажите путь к html библиотеки')
+  return {
+    src,
+    api,
+    dryRun: args.includes('--dry-run'),
+    skipIds: skip ? skip.split(',').map((s) => s.trim()).filter(Boolean) : [],
+  }
+}
+
+/** Отбор книг для заливки: всё, кроме перечисленных id.
+ *
+ *  Отдельной чистой функцией, потому что молчаливый пропуск здесь опаснее
+ *  ошибки: опечатка в --skip не должна выглядеть как «книгу выкинули».
+ *  Поэтому кроме отобранного отдаём и `missed` — запрошенные id, которых в
+ *  библиотеке не нашлось: на них вызывающий останавливает импорт, иначе книга
+ *  уехала бы на контур мимо фильтра.
+ */
+function selectBooks(books, skipIds) {
+  const list = Array.isArray(books) ? books : []
+  const wanted = (skipIds || []).map((id) => String(id).trim()).filter(Boolean)
+  const skip = new Set(wanted.map((id) => id.toLowerCase()))
+  const kept = []
+  const skipped = []
+  const hit = new Set()
+  for (const book of list) {
+    const id = String(book?.id || '').toLowerCase()
+    if (skip.has(id)) {
+      skipped.push(book?.id)
+      hit.add(id)
+    } else {
+      kept.push(book)
+    }
+  }
+  return { kept, skipped, missed: wanted.filter((id) => !hit.has(id.toLowerCase())) }
+}
+
 /** Книга библиотеки → тело AudioLessonRequest. coverUrl приходит снаружи:
  *  его отдаёт /media/upload, а в dry-run его просто нет. */
 function toAudioLessonRequest(book, coverUrl) {
@@ -139,20 +208,29 @@ async function uploadCover(api, token, cover) {
 }
 
 async function run() {
-  const args = process.argv.slice(2)
-  const dryRun = args.includes('--dry-run')
-  const apiIdx = args.indexOf('--api')
-  const api = apiIdx >= 0 ? args[apiIdx + 1] : process.env.JTS_API_URL || DEFAULT_API
-  // Значение --api тоже позиционный аргумент, поэтому исключаем его по индексу,
-  // а не по значению: путь к файлу мог бы совпасть с ним и потеряться.
-  const src = args.find((a, i) => !a.startsWith('--') && !(apiIdx >= 0 && i === apiIdx + 1))
-  if (!src) throw new Error('укажите путь к html библиотеки')
+  const { src, api: apiArg, dryRun, skipIds } = parseArgs(process.argv.slice(2))
+  const api = apiArg || process.env.JTS_API_URL || DEFAULT_API
   const token = process.env.JTS_ADMIN_TOKEN
   if (!token && !dryRun) throw new Error('нет JTS_ADMIN_TOKEN — токен админа обязателен')
 
   const data = parseLibraryData(fs.readFileSync(src, 'utf8'))
-  const books = data.books || []
-  console.log(`${books.length} книг в файле, контур ${api}${dryRun ? ' (dry-run)' : ''}\n`)
+  const all = data.books
+  // Раньше здесь стояло `data.books || []`, и сменившийся формат выгрузки
+  // молча превращался в «заливаем: 0» плюс POST с пустым телом — оператор
+  // читал это как «на контуре уже всё есть».
+  if (!Array.isArray(all)) throw new Error('в библиотеке нет массива books — формат файла сменился')
+
+  const { kept: books, skipped, missed } = selectBooks(all, skipIds)
+  // Опечатка в id — не повод продолжать: --skip добавлен ровно затем, чтобы
+  // конкретная книга НЕ уехала на контур, и «предупредили и залили» здесь
+  // равно «не сработало».
+  if (missed.length) {
+    throw new Error(`--skip: в библиотеке нет книг с id ${missed.join(', ')} — проверьте написание`)
+  }
+
+  console.log(`${all.length} книг в файле, контур ${api}${dryRun ? ' (dry-run)' : ''}`)
+  if (skipped.length) console.log(`пропускаем по --skip: ${skipped.join(', ')}`)
+  console.log(`заливаем: ${books.length}\n`)
 
   const payload = []
   for (const book of books) {
@@ -201,4 +279,6 @@ module.exports = {
   toAudioLessonRequest,
   decodeCover,
   externalId,
+  selectBooks,
+  parseArgs,
 }

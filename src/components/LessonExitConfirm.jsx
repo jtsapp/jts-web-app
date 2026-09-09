@@ -13,7 +13,17 @@ import { useI18n } from '../i18n.jsx'
 // действие («Выйти из урока») стоит первым, как нарисовано, поэтому фокус при
 // открытии уходит на «Отменить» — чтобы Enter по инерции не выбрасывал из
 // урока.
-export default function LessonExitConfirm({ onStay, onLeave }) {
+// Тексты — с ключами по умолчанию, потому что спрашивают тут не только про
+// урок: экран класса переспрашивает про выход из общего аккаунта, и заводить
+// ради этого второй такой же диалог значило бы разъехаться с макетом при
+// первой же правке — ровно то, что этот компонент и собирал воедино.
+export default function LessonExitConfirm({
+  onStay,
+  onLeave,
+  titleKey = 'lesson.exitAsk',
+  subKey = 'lesson.exitAskSub',
+  leaveKey = 'lesson.exitLeave',
+}) {
   const { t } = useI18n()
   const cancelRef = useRef(null)
 
@@ -42,8 +52,8 @@ export default function LessonExitConfirm({ onStay, onLeave }) {
       >
         <div className="lx-head">
           <div className="lx-texts">
-            <h2 className="lx-title" id="lx-title">{t('lesson.exitAsk')}</h2>
-            <p className="lx-sub">{t('lesson.exitAskSub')}</p>
+            <h2 className="lx-title" id="lx-title">{t(titleKey)}</h2>
+            <p className="lx-sub">{t(subKey)}</p>
           </div>
           <button type="button" className="lx-close" aria-label={t('common.close')} onClick={onStay}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -54,7 +64,7 @@ export default function LessonExitConfirm({ onStay, onLeave }) {
 
         <div className="lx-acts">
           <button type="button" className="lx-leave" onClick={onLeave}>
-            {t('lesson.exitLeave')}
+            {t(leaveKey)}
           </button>
           <button type="button" className="lx-continue" ref={cancelRef} onClick={onStay}>
             {t('lesson.exitStay')}

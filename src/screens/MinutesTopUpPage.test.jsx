@@ -114,7 +114,7 @@ describe('Докупить минуты', () => {
     const { container } = await renderLoaded()
     fireEvent.click(packByName(container, '60 минут'))
     fireEvent.click(container.querySelector('.tu-order__pay'))
-    fireEvent.click(screen.getByText('Оплатить через Kaspi.kz'))
+    fireEvent.click(screen.getByText('Связаться с менеджером'))
 
     await waitFor(() => expect(backend.orderCalls).toHaveLength(1))
     expect(backend.orderCalls[0].items).toEqual([{ offerCode: 'min-60', quantity: 1 }])
@@ -125,7 +125,7 @@ describe('Докупить минуты', () => {
   it('ссылки на оплату нет — остаётся путь к менеджеру', async () => {
     const { container } = await renderLoaded()
     fireEvent.click(container.querySelector('.tu-order__pay'))
-    fireEvent.click(screen.getByText('Оплатить через Kaspi.kz'))
+    fireEvent.click(screen.getByText('Связаться с менеджером'))
     await waitFor(() => expect(window.open).toHaveBeenCalledTimes(1))
     expect(window.open.mock.calls[0][0].startsWith('https://wa.me/')).toBe(true)
   })

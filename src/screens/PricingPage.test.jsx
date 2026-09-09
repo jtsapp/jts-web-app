@@ -159,12 +159,25 @@ describe('Витрина тарифов', () => {
 
   /* ------------------------------- оплата ------------------------------- */
 
+  // Kaspi скрыт до подключения эквайринга: кнопка вела туда же, куда и
+  // остальные две, а обещание автоматической оплаты, которой нет, злит сильнее
+  // её отсутствия.
+  it('способа «Kaspi» в окне оплаты нет — остались два пути к менеджеру', async () => {
+    const { container } = await renderLoaded()
+    await addTile(container, '12 уроков')
+    fireEvent.click(container.querySelector('.pr-cart__pay'))
+
+    expect(screen.queryByText('Оплатить через Kaspi.kz')).toBeNull()
+    expect(screen.getByText('Связаться с менеджером')).toBeTruthy()
+    expect(screen.getByText('Связаться со мной')).toBeTruthy()
+  })
+
   // Цену клиент не отправляет вовсе — её считает сервер по кодам.
   it('в заказ уходят коды и количества, без цен', async () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
-    fireEvent.click(screen.getByText('Оплатить через Kaspi.kz'))
+    fireEvent.click(screen.getByText('Связаться с менеджером'))
 
     await waitFor(() => expect(backend.orderCalls).toHaveLength(1))
     const sent = backend.orderCalls[0]
@@ -185,7 +198,7 @@ describe('Витрина тарифов', () => {
     const { container } = await renderLoaded()
     await addTile(container, '12 уроков')
     fireEvent.click(container.querySelector('.pr-cart__pay'))
-    fireEvent.click(screen.getByText('Оплатить через Kaspi.kz'))
+    fireEvent.click(screen.getByText('Связаться с менеджером'))
 
     await waitFor(() => expect(href).toHaveBeenCalledWith('https://pay.example/1'))
     expect(window.open).not.toHaveBeenCalled()

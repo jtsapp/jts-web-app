@@ -5,6 +5,7 @@ import { ArrowRightIcon } from '../tutor/TutorIcons.jsx'
 import { useLang } from '../i18n/LanguageContext.jsx'
 import { groupCallsByDate } from '../tutor/callHistory.js'
 import { INTEREST_TOPICS } from '../tutor/interests.js'
+import { usePushToTalkSetting } from '../lib/pushToTalk.js'
 
 export default function TutorManagePage({
   user,
@@ -36,6 +37,10 @@ export default function TutorManagePage({
   onOpenCall,
 }) {
   const { lang, t } = useLang()
+  // Рация — настройка устройства, а не тьютора: живёт в localStorage и читается
+  // в момент выдачи токена комнаты (см. TutorVoiceChatPage → pushToTalk в
+  // metadata). Внутри уже начатого разговора не меняется.
+  const [pushToTalk, togglePushToTalk] = usePushToTalkSetting()
   const { name = 'Спарк' } = tutor
   const history = groupCallsByDate(calls, t, lang)
   const interestsText = INTEREST_TOPICS.filter((topic) => interestIds.includes(topic.id))
@@ -100,6 +105,23 @@ export default function TutorManagePage({
               ))}
             </div>
           )}
+
+          {/* Тумблер рации стоит здесь, а не на дашборде рядом с «только
+              английский»: он про то, КАК ученик говорит с тьютором, и живёт с
+              остальными настройками разговора. */}
+          <button
+            className={'t-manage__ptt' + (pushToTalk ? ' is-on' : '')}
+            type="button"
+            role="switch"
+            aria-checked={pushToTalk}
+            onClick={() => togglePushToTalk()}
+          >
+            <span className="t-manage__ptttext">
+              <b>{t('manage.ptt')}</b>
+              <small>{t('manage.pttHint')}</small>
+            </span>
+            <span className="t-manage__switch" aria-hidden="true" />
+          </button>
         </div>
 
         <div className="t-manage__history">

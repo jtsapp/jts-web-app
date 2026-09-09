@@ -39,6 +39,18 @@ describe('rewriteHtml', () => {
     expect(out).not.toContain('0:00 / --:--')
     expect(out).toContain('The rules of conversation')
   })
+
+  it('does not turn a sayText player into a fake mp3', () => {
+    const html = `
+      <div class="player">
+        <button type="button" class="say-play" data-say="I was born in Almaty.">Play</button>
+        <div class="meta"><b>Amina's story</b></div>
+      </div>`
+    const out = rewriteHtml(html, BASE)
+    expect(out).toContain('say-play')
+    expect(out).toContain('I was born in Almaty.')
+    expect(out).not.toContain('<audio')
+  })
 })
 
 describe('rewriteMediaUrls', () => {

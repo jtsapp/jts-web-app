@@ -80,6 +80,25 @@ test.describe('читалка', () => {
     await expect(pop).toBeHidden()
   })
 
+  test('A+ тянет весь раздел, а не только абзацы текста', async ({ page }) => {
+    await openText(page)
+    await openTasks(page)
+    const sizes = () =>
+      page.evaluate(() =>
+        ['.rd-article', '.rd-task', '.rd-word__en', '.rd-ex__inst', '.rd-opt'].map((s) =>
+          parseFloat(getComputedStyle(document.querySelector(s)).fontSize),
+        ),
+      )
+
+    const before = await sizes()
+    await page.getByRole('button', { name: 'A+' }).click()
+    await expect.poll(async () => (await sizes())[0]).toBeGreaterThan(before[0])
+    const after = await sizes()
+    // Раньше рос только текст статьи: в прототипе размер сидел на body, и
+    // задания, слова и кнопки увеличивались вместе с ним.
+    after.forEach((v, i) => expect(v, `элемент ${i}`).toBeGreaterThan(before[i]))
+  })
+
   test('панель настроек меняет типографику текста', async ({ page }) => {
     await openText(page)
     const article = page.locator('.rd-article')
@@ -95,6 +114,46 @@ test.describe('читалка', () => {
     await expect
       .poll(async () => article.evaluate((el) => getComputedStyle(el).maxWidth))
       .not.toBe('none')
+  })
+})
+
+test.describe('раскладка на широком экране', () => {
+  // Вкладок тут нет — колонки стоят рядом, и это только про десктоп.
+  test.skip(({ viewport }) => !viewport || viewport.width < 1024, 'только для двухколоночной раскладки')
+
+  test('колонка текста листается сама и не уезжает со страницей', async ({ page }) => {
+    await openText(page)
+    const pane = page.locator('.rd-pane--text')
+
+    // Своя прокрутка: содержимое колонки выше её самой.
+    const box = await pane.evaluate((el) => ({
+      overflowY: getComputedStyle(el).overflowY,
+      scrollable: el.scrollHeight > el.clientHeight,
+    }))
+    expect(box.overflowY).toBe('auto')
+    expect(box.scrollable).toBe(true)
+
+    // Прокрутили колонку — страница осталась на месте.
+    await pane.evaluate((el) => { el.scrollTop = 300 })
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    expect(await pane.evaluate((el) => el.scrollTop)).toBe(300)
+
+    // Прокрутили страницу — колонка липнет под панелью читалки, а колонка
+    // заданий уезжает вверх вместе со страницей.
+    // Колёсиком нельзя: указатель может стоять над колонкой с текстом, и тогда
+    // прокрутится она, а не страница — тест был бы флаковым.
+    await page.evaluate(() => window.scrollTo(0, 400))
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    const pinned = await page.evaluate(() => {
+      const tb = document.querySelector('.rd-toolbar').getBoundingClientRect()
+      const text = document.querySelector('.rd-pane--text').getBoundingClientRect()
+      const ex = document.querySelector('.rd-pane--ex').getBoundingClientRect()
+      return { toolbarTop: Math.round(tb.top), textTop: Math.round(text.top), exTop: Math.round(ex.top) }
+    })
+    expect(pinned.toolbarTop).toBe(0)
+    expect(pinned.textTop).toBeGreaterThan(0)
+    expect(pinned.textTop).toBeLessThan(120)
+    expect(pinned.exTop).toBeLessThan(0)
   })
 })
 

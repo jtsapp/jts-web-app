@@ -3605,6 +3605,52 @@ textarea {
   .pp-search input { transition: none; }
 }
 
+/* Сегмент «Все · Текст · Аудио» в шапке «Книжек»: одна пилюля на всю группу,
+   внутри — три кнопки. Высота и типографика те же, что у .pp-search и .pp-all,
+   иначе шапка секции разъезжается по базовой линии. */
+.pp-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid #ececf3;
+  background: #fff;
+  border-radius: 999px;
+  padding: 3px;
+}
+.pp-seg__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6c6b78;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.pp-seg__btn:hover { color: var(--purple); }
+.pp-seg__btn[aria-pressed='true'] { background: #f1ebfe; color: var(--purple); }
+.pp-seg__btn:focus-visible { outline: 2px solid #b79cf5; outline-offset: 1px; }
+/* Счётчик книг в режиме: тише подписи, но не настолько, чтобы пропасть */
+.pp-seg__n { font-size: 11px; font-weight: 700; color: var(--muted); }
+.pp-seg__btn[aria-pressed='true'] .pp-seg__n { color: var(--purple); opacity: 0.7; }
+@media (prefers-reduced-motion: reduce) {
+  .pp-seg__btn { transition: none; }
+}
+/* Сегмент переносится на свою строку раньше остальной мобильной раскладки
+   (760px): между 761 и 860 заголовок, сегмент, поиск и «Посмотреть все» в одну
+   строку уже не влезают, и на второй строке одиноко повисает «Посмотреть все».
+   Проверено на 770px — до сегмента шапка там укладывалась в строку. */
+@media (max-width: 860px) {
+  .pp-sec__head { flex-wrap: wrap; row-gap: 10px; }
+  .pp-seg { order: 2; flex-basis: 100%; }
+  .pp-seg__btn { flex: 1; justify-content: center; padding: 6px 8px; }
+}
+
 /* Горизонтальная лента */
 .pp-rail {
   display: flex;
@@ -3927,7 +3973,8 @@ textarea {
   .pp-sec { margin-bottom: 22px; }
 
   /* Шапка секции: заголовок и «Посмотреть все» в строке, поиск по книжкам
-     переносится вниз на всю ширину — иначе трём элементам тесно. */
+     переносится вниз на всю ширину — иначе трём элементам тесно. Сегмент
+     озвучки уезжает на свою строку ещё раньше, на 860px (см. выше). */
   .pp-sec__head { flex-wrap: wrap; row-gap: 10px; }
   .pp-search { order: 3; flex-basis: 100%; padding: 9px 14px; }
   .pp-search input,
@@ -5495,10 +5542,28 @@ textarea {
 
 /* ── Практика: карточки Книжек (books.html) ── */
 .pp-bcard {
+  position: relative;
   flex: 0 0 150px;
   width: 150px;
   text-decoration: none;
   color: inherit;
+}
+/* Значок озвучки поверх обложки. Обложки бывают и светлые, и тёмные, поэтому
+   не полупрозрачная плашка, а плотная тёмная — контраст к белой иконке
+   держится на любой картинке. */
+.pp-bcard__audio {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(20, 19, 28, 0.72);
+  color: #fff;
 }
 .pp-bcard__cover {
   position: relative;
@@ -8981,4 +9046,12 @@ textarea {
   background: #7a4dff; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .hw-practice__open:hover { background: #6a3ff0; }
+
+/* Экран аккаунта класса (screens/BoothEntryPage.jsx): ожидание, вход в пробный
+   урок и «класс закрыт». Своей вёрстки почти нет — карточка, заголовок и
+   подпись общие с экранами входа (.form-inner/.form-card/.form-title/
+   .form-sub), кружок — общий .spinner. Здесь только центровка этих двух: в
+   колонке карточки они иначе растягиваются по её ширине. */
+.booth__spinner { margin: 0 auto 18px; }
+.booth__cta { align-self: center; margin-top: 20px; }
 

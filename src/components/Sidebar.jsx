@@ -150,7 +150,9 @@ export default function Sidebar({
           <span className="sb__avatar">{initial || <UserIcon size={18} />}</span>
           <span className="sb__profile-text">
             <b>{userName || t('kingdom.profile')}</b>
-            <span>{t('kingdom.profile')}</span>
+            {/* Без имени верхняя строка уже показывает подпись — не дублируем
+                её («Профиль» над «Профиль»); та же развилка в MobileTopBar. */}
+            {userName && <span>{t('kingdom.profile')}</span>}
           </span>
           <span className="sb__profile-chev">
             <ChevronRightIcon size={16} />
