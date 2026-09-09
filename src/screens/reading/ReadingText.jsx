@@ -5,15 +5,15 @@ import { useI18n } from '../../i18n.jsx'
 import { genreOf } from '../../practice/reading/genres.js'
 import { loc } from '../../practice/reading/loc.js'
 import { readMin, sentences, wordCount } from '../../practice/reading/engine.js'
-import { speak } from '../../practice/workbook/voice.js'
 import ReadingArticle from './ReadingArticle.jsx'
+import ReadingKeywords from './ReadingKeywords.jsx'
 import ReadingTasks from './ReadingTasks.jsx'
 import useReadingVoice from './useReadingVoice.js'
 
 // Читалка: слева текст, справа задания (viewRead прототипа, :745). На узком
 // экране две панели превращаются в вкладки — на телефоне читать текст в
 // половину ширины невозможно.
-export default function ReadingText({ text, dict, ensureDict, onFont, onSettings, onFinish }) {
+export default function ReadingText({ text, dict, ensureDict, token, onFont, onSettings, onFinish }) {
   const { t, lang } = useI18n()
   const [tab, setTab] = useState('text')
   const g = genreOf(text.genre)
@@ -83,22 +83,7 @@ export default function ReadingText({ text, dict, ensureDict, onFont, onSettings
 
           <section className="rd-panel">
             <h2 className="rd-label">🔑 {t('reading.keyWords')}</h2>
-            <ul className="rd-words">
-              {text.words.map((w) => (
-                <li key={w.en} className="rd-word">
-                  <div className="rd-word__main">
-                    <div className="rd-word__top">
-                      <span className="rd-word__en" lang="en">{w.en}</span>
-                      <span className="rd-word__tr">{w.tr}</span>
-                    </div>
-                    <div className="rd-word__row"><span className="rd-flag">RU</span><span lang="ru">{w.ru}</span></div>
-                    <div className="rd-word__row"><span className="rd-flag">KZ</span><span lang="kk">{w.kz}</span></div>
-                    <div className="rd-word__ex" lang="en">“{w.ex}”</div>
-                  </div>
-                  <button type="button" className="rd-say" onClick={() => speak([w.en])} aria-label={`🔊 ${w.en}`}>🔊</button>
-                </li>
-              ))}
-            </ul>
+            <ReadingKeywords words={text.words} token={token} source={text.title} />
           </section>
 
           <section className="rd-panel">
@@ -117,7 +102,7 @@ export default function ReadingText({ text, dict, ensureDict, onFont, onSettings
               )}
             </div>
             <p className="rd-hint">💬 {t('reading.tapWord')}</p>
-            <ReadingArticle text={text} dict={dict} ensureDict={ensureDict} speakingIndex={voice.index} />
+            <ReadingArticle text={text} dict={dict} ensureDict={ensureDict} speakingIndex={voice.index} token={token} />
           </section>
         </aside>
 

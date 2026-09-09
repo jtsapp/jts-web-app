@@ -5,12 +5,12 @@ import { useI18n } from '../../i18n.jsx'
 import { exTotal } from '../../practice/reading/engine.js'
 import { mood } from '../../practice/reading/check.js'
 import { markTextDone, progressOf, readState } from '../../practice/reading/readingProgress.js'
-import { speak } from '../../practice/workbook/voice.js'
+import ReadingKeywords from './ReadingKeywords.jsx'
 
 // Экран результата (viewResult прототипа, :1057). XP из прототипа не
 // перенесены: в приложении нет системы очков, а вторая валюта рядом с
 // процентом прогресса только путала бы.
-export default function ReadingResult({ text, texts, progressTick, onOpen, onLibrary, onReview }) {
+export default function ReadingResult({ text, texts, progressTick, token, onOpen, onLibrary, onReview }) {
   const { t } = useI18n()
 
   // «Дочитал» ставим самим фактом открытия результата — как в прототипе.
@@ -83,21 +83,7 @@ export default function ReadingResult({ text, texts, progressTick, onOpen, onLib
 
       <section className="rd-panel">
         <h2 className="rd-label">🔑 {t('reading.result.wordsReview')}</h2>
-        <ul className="rd-words rd-words--compact">
-          {text.words.map((w) => (
-            <li key={w.en} className="rd-word">
-              <div className="rd-word__main">
-                <div className="rd-word__top">
-                  <span className="rd-word__en" lang="en">{w.en}</span>
-                  <span className="rd-word__tr">{w.tr}</span>
-                </div>
-                <div className="rd-word__row"><span className="rd-flag">RU</span><span lang="ru">{w.ru}</span></div>
-                <div className="rd-word__row"><span className="rd-flag">KZ</span><span lang="kk">{w.kz}</span></div>
-              </div>
-              <button type="button" className="rd-say" onClick={() => speak([w.en])} aria-label={`🔊 ${w.en}`}>🔊</button>
-            </li>
-          ))}
-        </ul>
+        <ReadingKeywords words={text.words} compact token={token} source={text.title} />
       </section>
 
       <div className="rd-actions">
