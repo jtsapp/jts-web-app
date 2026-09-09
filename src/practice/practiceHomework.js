@@ -17,11 +17,21 @@ import { markPracticeUnitDone } from '../api.js'
 /**
  * Сообщает бэкенду, что юнит пройден.
  *
+ * @param area    раздел «Практики»: grammar, workbooks, shadowing…
+ * @param level   код уровня; null там, где уровня нет (шэдоуинг)
+ * @param address номер юнита (грамматика) ИЛИ строковый ключ: код уровня у
+ *                воркбуков, id урока у шэдоуинга — тот же адрес, каким юнит
+ *                выдавали
  * @returns промис, который никогда не отклоняется — вызывающему ждать нечего.
  */
-export function countUnitTowardsHomework(area, level, unitId) {
+export function countUnitTowardsHomework(area, level, address) {
   const token = loadToken()
-  if (!token || !area || !level || unitId == null) return Promise.resolve()
-  return markPracticeUnitDone(token, { area, level, unitId })
-    .catch((e) => console.warn('[practice.homework] не удалось засчитать юнит', area, level, unitId, e))
+  if (!token || !area || address == null || address === '') return Promise.resolve()
+  const numeric = typeof address === 'number'
+  return markPracticeUnitDone(token, {
+    area,
+    level: level || null,
+    unitId: numeric ? address : null,
+    unitKey: numeric ? null : String(address),
+  }).catch((e) => console.warn('[practice.homework] не удалось засчитать юнит', area, level, address, e))
 }

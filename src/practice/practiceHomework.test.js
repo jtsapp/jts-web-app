@@ -25,7 +25,7 @@ describe('засчитывание юнита «Практики» в домаш
     await countUnitTowardsHomework('grammar', 'a1', 12)
 
     expect(markPracticeUnitDone).toHaveBeenCalledWith('токен', {
-      area: 'grammar', level: 'a1', unitId: 12,
+      area: 'grammar', level: 'a1', unitId: 12, unitKey: null,
     })
   })
 
@@ -54,7 +54,31 @@ describe('засчитывание юнита «Практики» в домаш
 
     await countUnitTowardsHomework('grammar', 'a1', null)
     await countUnitTowardsHomework('', 'a1', 12)
+    await countUnitTowardsHomework('workbooks', 'a0', '')
 
     expect(markPracticeUnitDone).not.toHaveBeenCalled()
+  })
+
+  // Нумерована только грамматика. У воркбука адрес — код уровня, у шэдоуинга —
+  // id урока: тот же адрес, каким юнит выдавали.
+  it('строковый адрес уезжает ключом, а не номером', async () => {
+    loadToken.mockReturnValue('токен')
+
+    await countUnitTowardsHomework('workbooks', 'a0', 'a0')
+
+    expect(markPracticeUnitDone).toHaveBeenCalledWith('токен', {
+      area: 'workbooks', level: 'a0', unitId: null, unitKey: 'a0',
+    })
+  })
+
+  // У шэдоуинга уровня нет вовсе — урок адресуется сам собой.
+  it('без уровня отправляется null, а не пустая строка', async () => {
+    loadToken.mockReturnValue('токен')
+
+    await countUnitTowardsHomework('shadowing', null, 'sg')
+
+    expect(markPracticeUnitDone).toHaveBeenCalledWith('токен', {
+      area: 'shadowing', level: null, unitId: null, unitKey: 'sg',
+    })
   })
 })

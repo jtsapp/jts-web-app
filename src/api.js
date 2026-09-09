@@ -447,8 +447,8 @@ export function getLessonsSummary(token) {
  * Уезжает тот же АДРЕС, каким юнит выдавали: раздел, уровень, номер. Сервер сам
  * найдёт, в каких работах этого ученика он задан.
  */
-export function markPracticeUnitDone(token, { area, level, unitId }) {
-  return authPost('/admin/homework/practice/done', token, { area, level, unitId })
+export function markPracticeUnitDone(token, { area, level, unitId, unitKey }) {
+  return authPost('/admin/homework/practice/done', token, { area, level, unitId, unitKey })
 }
 
 /**
