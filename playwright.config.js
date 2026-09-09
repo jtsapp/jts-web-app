@@ -10,21 +10,12 @@ const BASE = `http://localhost:${PORT}`
 
 // Онбординг-тур экранов выходит сам при первом заходе и перехватывает клики
 // (модалка поверх страницы) — любой тест про другое застревал бы на нём. Гасим
-// отметками в localStorage для всего прогона; device-id фиксируем тем же
-// снимком, иначе ключ отметки случайный (см. tourKeyFor в OnboardingTour.jsx).
+// на весь прогон тумблером `jts_tours_off`: отметки о показе привязаны к id
+// профиля, а он приезжает с бэкенда, и снаружи такой ключ не угадать.
 // Тесты самого тура берут чистый профиль через test.use(FRESH_PROFILE).
-const TOUR_SCOPES = ['dash', 'learn', 'practice', 'lessons', 'homework', 'vocab']
 const noTours = {
   cookies: [],
-  origins: [
-    {
-      origin: BASE,
-      localStorage: [
-        { name: 'jts_device_id', value: 'e2e-device' },
-        ...TOUR_SCOPES.map((scope) => ({ name: `jts_tour_${scope}:e2e-device`, value: '1' })),
-      ],
-    },
-  ],
+  origins: [{ origin: BASE, localStorage: [{ name: 'jts_tours_off', value: '1' }] }],
 }
 
 export default defineConfig({

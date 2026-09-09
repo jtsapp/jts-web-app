@@ -48,7 +48,13 @@ async function signIn(page, tracks, lyrics = LYRICS) {
 test.beforeEach(async ({ page }) => {
   // Каталог кэшируется в localStorage (stale-while-revalidate), а тесты
   // подменяют ответ — чужой кэш от соседнего теста показал бы прошлый каталог.
-  await page.addInitScript(() => localStorage.clear())
+  // Тумблер туров переживает уборку: он общий на прогон (playwright.config.js),
+  // а без него авто-тур «Практики» перехватывает клики по карточкам.
+  await page.addInitScript(() => {
+    const toursOff = localStorage.getItem('jts_tours_off')
+    localStorage.clear()
+    if (toursOff) localStorage.setItem('jts_tours_off', toursOff)
+  })
 })
 
 test('раздел появляется только вместе с контентом', async ({ page }) => {
