@@ -226,7 +226,7 @@ export default function HomePage({
                       </div>
                       <span className="hm-skill__pct">{percent}%</span>
                       <span className="hm-skill__trend" aria-hidden="true">
-                        <TrendIcon up={percent >= 60} />
+                        <TrendIcon up={percent >= 60} size={18} />
                       </span>
                     </div>
                   ))}
@@ -350,9 +350,9 @@ function FinishIcon() {
   )
 }
 
-function TrendIcon({ up = false }) {
+function TrendIcon({ up = false, size = 16 }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d={up ? 'M4 17 10 11l4 4 6-6' : 'M4 7 10 13l4-4 6 6'}
         stroke="currentColor"
