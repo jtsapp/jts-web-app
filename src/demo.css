@@ -1030,6 +1030,7 @@
   /* Пополам, как в макете: у бонусов справа своя картинка, и узкая колонка
      срезала бы половину композиции. */
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
   gap: 12px;
   margin-top: 12px;
 }
@@ -1072,9 +1073,11 @@
   padding: 14px 16px;
   border-radius: 18px;
   background: #fff;
-  /* Картинки нарочно шире своей колонки — лишнее срезаем краем блока, иначе
-     на узком экране они наползали на список. */
-  overflow: hidden;
+  /* Картинки выходят за верх и низ карточки, как в макете (91–137px при
+     высоте блока 128 и подъёме на -48), поэтому блок их не режет. От
+     наползания на список спасает не обрезка, а доля колонки у каждой
+     картинки — см. .pr-bonus__art img. */
+  overflow: visible;
 }
 /* Подложка — цветом раздела: блок бонусов принадлежит своему тарифу, а белым
    он сливался с соседней карточкой преимуществ. */
@@ -1101,42 +1104,58 @@
 /* Логотипы лежат внахлёст и с наклоном, как в макете: аккуратный ряд
    одинаковых иконок читается как список сервисов, а это украшение блока. */
 .pr-bonus__art {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  position: relative;
+  align-self: stretch;
   min-width: 0;
-  /* Режем по своей колонке, а не по краю блока: при узком экране картинки
-     вылезали влево и ложились поверх списка. */
-  overflow: hidden;
+}
+/* Список лежит поверх картинок: они крупные и заходят на его сторону. */
+.pr-bonus__body {
+  position: relative;
+  z-index: 1;
 }
 .pr-bonus__title {
   white-space: nowrap;
 }
 .pr-bonus__art img {
-  flex: none;
+  position: absolute;
+  bottom: -22px;
   width: auto;
-  height: 104px;
+  height: 128px;
   object-fit: contain;
 }
-.pr-bonus__art img + img {
-  margin-left: -34px;
+/* Раскладка справа налево, чтобы работала и на четырёх логотипах, и на двух.
+   Наклоны — из макета, там ни одна картинка не стоит ровно. */
+.pr-bonus__art img:nth-last-child(1) {
+  right: -14px;
+  transform: rotate(-6deg);
 }
-.pr-bonus__art img:nth-child(1) {
-  transform: rotate(-10deg);
+.pr-bonus__art img:nth-last-child(2) {
+  right: 66px;
+  transform: rotate(5deg);
 }
-.pr-bonus__art img:nth-child(3) {
-  transform: rotate(9deg);
+.pr-bonus__art img:nth-last-child(3) {
+  right: 140px;
+  transform: rotate(-9deg);
+}
+.pr-bonus__art img:nth-last-child(4) {
+  right: 208px;
+  bottom: -8px;
+  transform: rotate(7deg);
+}
+.pr-bonus__art img:nth-last-child(5) {
+  right: 272px;
+  transform: rotate(-11deg);
 }
 /* Подарок крупнее и последний: он не сервис, а знак «это всё в подарок». */
 .pr-bonus__gift {
-  height: 102px;
+  height: 150px;
 }
 @media (max-width: 900px) {
   .pr-bonus__art img {
-    height: 76px;
+    height: 96px;
   }
   .pr-bonus__gift {
-    height: 86px;
+    height: 112px;
   }
 }
 @media (max-width: 520px) {
@@ -1162,8 +1181,8 @@
 .pr-bonus ul {
   margin: 8px 0 0;
   padding-left: 18px;
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 18px;
   color: #6b6976;
 }
 
