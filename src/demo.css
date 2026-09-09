@@ -731,7 +731,7 @@
 .pr {
   min-height: 100vh;
   padding: 0 0 48px;
-  background: #f8f8f8;
+  background: #f4f2f9;
 }
 .pr__top {
   position: sticky;
@@ -741,7 +741,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 24px;
-  background: #f8f8f8;
+  background: #f4f2f9;
 }
 .pr__back {
   display: grid;
@@ -823,27 +823,14 @@
 }
 /* Разделы различаются оттенком подложки, как в макете: три белых блока подряд
    сливаются в одну простыню и найти в ней «групповые» глазами нечем. */
-/* Разделы белые: цвет ушёл в значок и в обводку выбранного, а сплошные
-   заливки во всю ширину спорили с плитками внутри. */
-.pr-sec__ic {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-}
-.pr-sec--self .pr-sec__ic {
+.pr-sec--self {
   background: #e5f6ff;
-  color: #0e9ecc;
 }
-.pr-sec--ind .pr-sec__ic {
+.pr-sec--ind {
   background: #f1eaff;
-  color: #9047ff;
 }
-.pr-sec--group .pr-sec__ic {
+.pr-sec--group {
   background: #e2f7df;
-  color: #31b423;
 }
 .pr-sec__head {
   display: flex;
@@ -933,13 +920,10 @@
 }
 /* Выбранный пакет заливаем акцентом — в корзине справа он тоже есть, но на
    длинной витрине до неё ещё надо доскроллить. */
-/* Выбранная плитка не заливается акцентом целиком: на белом разделе такой
-   прямоугольник перетягивает на себя весь экран, а цена на нём читается хуже
-   тёмной. Светлая подложка своего цвета плюс рамка — как в макете. */
 .pr-tile.is-chosen {
-  background: #f1eaff;
-  box-shadow: inset 0 0 0 1px #9047ff;
-  color: #181818;
+  background: #9047ff;
+  box-shadow: none;
+  color: #fff;
 }
 .pr-tile--accent:not(.is-chosen) {
   background: #fff;
@@ -949,12 +933,18 @@
    зелёном блоке «Групповые уроки» фиолетовая плитка читается как чужая,
    залетевшая из «Индивидуальных». */
 .pr-tile--accent.is-chosen {
-  background: #e2f7df;
-  box-shadow: inset 0 0 0 2px #31b423;
+  background: #31b423;
 }
-/* Подпись «за урок» остаётся серой: подложка теперь светлая. */
+.pr-tile--accent.is-chosen .pr-step button.is-plus {
+  color: #31b423;
+}
+/* Подпись «за урок» на залитой плитке — светлее фона, но читаемая: в макете
+   у фиолетовой она #D6BCFF, у зелёной #AEFFC7. */
 .pr-tile.is-chosen .pr-tile__note {
-  color: #8a8a8a;
+  color: #d6bcff;
+}
+.pr-tile--accent.is-chosen .pr-tile__note {
+  color: #aeffc7;
 }
 .pr-tile__head {
   display: flex;
@@ -1015,7 +1005,7 @@
   background: rgba(23, 19, 38, 0.08);
 }
 .pr-tile.is-chosen .pr-step {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.2);
 }
 .pr-step button {
   display: grid;
@@ -1033,12 +1023,8 @@
   color: #fff;
 }
 .pr-tile.is-chosen .pr-step button.is-plus {
-  background: #9047ff;
-  color: #fff;
-}
-.pr-tile--accent.is-chosen .pr-step button.is-plus {
-  background: #31b423;
-  color: #fff;
+  background: #fff;
+  color: var(--purple);
 }
 .pr-step i {
   min-width: 18px;
@@ -1068,7 +1054,7 @@
   padding: 14px 16px;
   list-style: none;
   border-radius: 18px;
-  background: #f8f8f8;
+  background: #fff;
 }
 .pr-feats li {
   display: flex;
@@ -1095,17 +1081,25 @@
 }
 /* Подложка — цветом раздела: блок бонусов принадлежит своему тарифу, а белым
    он сливался с соседней карточкой преимуществ. */
-/* Бонусы у всех разделов одинаковые — серая карточка с оранжевой подписью:
-   в позднем макете цвет раздела живёт только в значке и в рамке выбранного. */
-.pr-bonus {
-  background: #f8f8f8;
+.pr-sec--ind .pr-bonus {
+  background: #d4bfff;
 }
-.pr-bonus__title,
-.pr-bonus__title svg {
-  color: #e8a020;
+.pr-sec--ind .pr-bonus__title,
+.pr-sec--ind .pr-bonus__title svg {
+  color: #7817b9;
 }
-.pr-bonus ul {
-  color: #181818;
+.pr-sec--ind .pr-bonus ul {
+  color: #614673;
+}
+.pr-sec--group .pr-bonus {
+  background: #b2e8aa;
+}
+.pr-sec--group .pr-bonus__title,
+.pr-sec--group .pr-bonus__title svg {
+  color: #1c7f12;
+}
+.pr-sec--group .pr-bonus ul {
+  color: #3f653b;
 }
 .pr-bonus__art {
   display: flex;
@@ -1191,7 +1185,7 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: 14px;
-  background: #fff;
+  background: #f8f8f8;
 }
 .pr-inc__cell svg {
   flex: none;
@@ -1694,7 +1688,7 @@
 .tu {
   min-height: 100vh;
   padding: 0 0 48px;
-  background: #f8f8f8;
+  background: #f4f2f9;
 }
 .tu__top {
   position: sticky;
@@ -1704,7 +1698,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 24px;
-  background: #f8f8f8;
+  background: #f4f2f9;
 }
 .tu__back {
   display: grid;
