@@ -9046,6 +9046,19 @@ textarea {
   background: #7a4dff; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .hw-practice__open:hover { background: #6a3ff0; }
+/* Пройденный юнит: зелёная отметка и приглушённая кнопка — перепройти можно,
+   но звать к этому нечего, работа по нему уже засчитана. */
+.hw-practice__done {
+  flex: none; display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 999px;
+  background: #e8f7ee; color: #1b7f4b; font-size: 12px; font-weight: 700;
+}
+.hw-practice__done::before { content: '✓'; }
+.hw-practice__row.is-done { border-color: #cdeddb; background: #fbfefc; }
+.hw-practice__row.is-done .hw-practice__open {
+  background: #f1f2f4; color: #4b5563;
+}
+.hw-practice__row.is-done .hw-practice__open:hover { background: #e6e8ec; }
 
 /* Экран аккаунта класса (screens/BoothEntryPage.jsx): ожидание, вход в пробный
    урок и «класс закрыт». Своей вёрстки почти нет — карточка, заголовок и

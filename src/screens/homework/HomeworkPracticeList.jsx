@@ -21,7 +21,10 @@ export default function HomeworkPracticeList({ hw, onOpen }) {
 
       <ul className="hw-practice__list">
         {items.map((item) => (
-          <li className="hw-practice__row" key={item.id}>
+          <li
+            className={`hw-practice__row${item.practiceDoneAt ? ' is-done' : ''}`}
+            key={item.id}
+          >
             <div className="hw-practice__main">
               <span className="hw-practice__name">{item.title || t('homework.practice.unit')}</span>
               <span className="hw-practice__meta">
@@ -30,12 +33,18 @@ export default function HomeworkPracticeList({ hw, onOpen }) {
                   .join(' · ')}
               </span>
             </div>
+            {/* Пройденное видно сразу: ученик закрыл юнит в «Практике», и
+                домашка об этом теперь знает — раньше он не мог отличить
+                сделанное от несделанного и проходил юнит второй раз. */}
+            {item.practiceDoneAt && (
+              <span className="hw-practice__done">{t('homework.practice.done')}</span>
+            )}
             <button
               type="button"
               className="hw-practice__open"
               onClick={() => onOpen?.({ level: item.practiceLevel, unitId: item.practiceUnitId })}
             >
-              {t('homework.practice.open')}
+              {item.practiceDoneAt ? t('homework.practice.again') : t('homework.practice.open')}
             </button>
           </li>
         ))}

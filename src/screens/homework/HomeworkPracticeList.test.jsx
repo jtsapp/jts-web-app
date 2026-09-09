@@ -66,4 +66,26 @@ describe('practiceExercises', () => {
   it('запись без номера юнита не считается заданием', () => {
     expect(practiceExercises({ exercises: [unit({ practiceUnitId: null })] })).toEqual([])
   })
+
+  /**
+   * Прогресс «Практики» теперь доезжает до домашки: ученик проходит юнит в
+   * разделе, бэкенд помечает его practiceDoneAt, и здесь это видно. Раньше
+   * сделанное от несделанного не отличалось никак, и ученик проходил юнит
+   * второй раз, а «выполнено» преподаватель ставил руками.
+   */
+  it('пройденный юнит помечен и зовёт пройти снова', () => {
+    const { container } = show({ exercises: [unit({ practiceDoneAt: '2026-09-10T10:00:00' })] })
+
+    expect(screen.getByText('Пройдено')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Пройти снова' })).toBeTruthy()
+    expect(container.querySelector('.hw-practice__row.is-done')).toBeTruthy()
+  })
+
+  it('непройденный юнит остаётся как был', () => {
+    const { container } = show({ exercises: [unit()] })
+
+    expect(screen.queryByText('Пройдено')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Открыть' })).toBeTruthy()
+    expect(container.querySelector('.hw-practice__row.is-done')).toBeNull()
+  })
 })
