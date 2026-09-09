@@ -177,7 +177,108 @@ function blockFromRow(row) {
   return say ? { ...block, say } : block
 }
 
+function findIn(row, sel) {
+  return row.matches(sel) ? row : row.querySelector(sel)
+}
+
+function pairsFromPairbox(box) {
+  const lefts = [...box.querySelectorAll('.pit[data-side="l"][data-key]')]
+  const rights = [...box.querySelectorAll('.pit[data-side="r"][data-key]')]
+  return lefts
+    .map((left) => {
+      const key = left.getAttribute('data-key')
+      const right = rights.find((tile) => tile.getAttribute('data-key') === key)
+      const full = right ? clean(right.getAttribute('data-short')) : ''
+      return {
+        left: clean(left.textContent),
+        right: right ? clean(right.textContent) : '',
+        ...(full ? { full } : {}),
+      }
+    })
+    .filter((p) => p.left && p.right)
+}
+
+function pairsFromSortbox(box) {
+  const labelByCol = new Map()
+  for (const col of box.querySelectorAll('.sortcol')) {
+    const key = col.getAttribute('data-col')
+    const label = clean((col.querySelector('h5') || col).textContent) || key || ''
+    if (key && label) labelByCol.set(key, label)
+  }
+  return [...box.querySelectorAll('.swd')]
+    .map((word) => {
+      const col = word.getAttribute('data-col')
+      const right = col ? labelByCol.get(col) : ''
+      return { left: clean(word.textContent), right: right || '' }
+    })
+    .filter((p) => p.left && p.right)
+}
+
+function promptAroundSelect(msg) {
+  const copy = msg.cloneNode(true)
+  const doc = copy.ownerDocument
+  for (const el of [...copy.querySelectorAll('select')]) {
+    el.replaceWith(doc.createTextNode(' ___ '))
+  }
+  const name = copy.querySelector('b, strong')
+  let speaker = ''
+  if (name) {
+    speaker = clean(name.textContent)
+    name.remove()
+  }
+  const text = clean(copy.textContent)
+  return speaker ? `${speaker}: ${text}` : text
+}
+
+function blocksFromChat(row) {
+  const chat = findIn(row, '.chat')
+  if (!chat) return []
+  const blocks = []
+  for (const select of chat.querySelectorAll('select[data-answer]')) {
+    const options = [...select.querySelectorAll('option')]
+      .filter((o) => o.getAttribute('value') !== '')
+      .map((o) => clean(o.textContent))
+      .filter(Boolean)
+    const msg = select.closest('.msg') || chat
+    blocks.push({
+      kind: 'select',
+      prompt: promptAroundSelect(msg),
+      options,
+      answer: clean(select.getAttribute('data-answer')),
+      why: whyOf(select),
+    })
+  }
+  return blocks
+}
+
 function rowBlock(row) {
+  const pairbox = findIn(row, '.pairbox')
+  if (pairbox) {
+    const pairs = pairsFromPairbox(pairbox)
+    if (pairs.length) return { kind: 'match', pairs }
+  }
+
+  const sortbox = findIn(row, '.sortbox')
+  if (sortbox) {
+    const pairs = pairsFromSortbox(sortbox)
+    if (pairs.length) return { kind: 'match', pairs }
+  }
+
+  const errline = findIn(row, '.errline')
+  if (errline && errline.hasAttribute('data-err')) {
+    const options = [...errline.querySelectorAll('.ew')].map((w) => clean(w.textContent)).filter(Boolean)
+    const errIndex = Number(errline.getAttribute('data-err'))
+    if (Number.isInteger(errIndex) && errIndex >= 1 && errIndex <= options.length) {
+      return {
+        kind: 'choice',
+        prompt: promptOf(row, '.errline'),
+        options,
+        correct: errIndex - 1,
+        why: whyOf(errline),
+      }
+    }
+  }
+
   const multi = row.querySelector('.opts[data-multi]')
   if (multi) {
     // data-multi — список тех же значений data-val через запятую (в A0 это
@@ -461,6 +562,15 @@ function collectTaskBody(node, blocks, onDrop) {
       collectTaskBody(child, blocks, onDrop)
       continue
     }
+    // pairbox / sortbox / errline / chat иногда лежат прямым ребёнком `.task`,
+    // без `.row`. Это те же виджеты, что и в строке — не info.
+    if (
+      child.matches('.pairbox, .sortbox, .errline, .chat') ||
+      child.querySelector('.pairbox, .sortbox, .errline[data-err], .chat select[data-answer]')
+    ) {
+      pushRow(child, blocks, onDrop)
+      continue
+    }
     // Кнопка «Check answers» и пустой `.res` — контролы проверки самого курса:
     // в плеере их роль играет собственная кнопка проверки. Это не потерянный
     // контент, поэтому в сводку потерь такой ребёнок не идёт.
@@ -471,6 +581,11 @@ function collectTaskBody(node, blocks, onDrop) {
 
 /** Строка задания → блок; строка без интерактива — в сводку потерь. */
 function pushRow(row, blocks, onDrop) {
+  const chatBlocks = blocksFromChat(row)
+  if (chatBlocks.length) {
+    blocks.push(...chatBlocks)
+    return
+  }
   const block = blockFromRow(row)
   if (block) blocks.push(block)
   // Строка задания, из которой не вышло ни одного блока, — это потерянный

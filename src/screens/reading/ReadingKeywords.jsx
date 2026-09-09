@@ -37,13 +37,14 @@ export default function ReadingKeywords({ words, compact, token, source }) {
             <button type="button" className="rd-say" onClick={() => speak([w.en])} aria-label={`🔊 ${w.en}`}>🔊</button>
             <button
               type="button"
-              className={`rd-say rd-save${saved[w.en] ? ' is-saved' : ''}`}
+              className={`rd-save${saved[w.en] ? ' is-saved' : ''}`}
               disabled={!!saved[w.en]}
               title={saved[w.en] ? t('lesson.inVocab') : t('lesson.addToVocab')}
               aria-label={saved[w.en] ? t('lesson.inVocab') : t('lesson.addToVocab')}
               onClick={() => add(w)}
             >
               {saved[w.en] ? <SavedIcon /> : <BookIcon />}
+              <span>{saved[w.en] ? t('lesson.inVocab') : t('lesson.toVocab')}</span>
             </button>
           </div>
         </li>

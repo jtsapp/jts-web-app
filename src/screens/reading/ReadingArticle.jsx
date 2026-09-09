@@ -202,14 +202,16 @@ function WordPop({ pop, host, onClose, t, token, source, saved, onSaved }) {
           {/* Казахский есть только у курируемых слоёв: сетевой переводчик его
               портит, и пустая строка честнее плохого перевода. */}
           {e.kz && <div className="rd-pop__row"><span className="rd-flag">KZ</span><span lang="kk">{e.kz}</span></div>}
-          <button
-            type="button"
-            className={`rd-pop__save${saved ? ' is-saved' : ''}`}
-            disabled={!canSave}
-            onClick={onSave}
-          >
-            {saved ? t('lesson.savedVocab') : t('lesson.toVocab')}
-          </button>
+          {(e.ru || e.kz) && (
+            <button
+              type="button"
+              className={`rd-pop__save${saved ? ' is-saved' : ''}`}
+              disabled={saved || saving}
+              onClick={onSave}
+            >
+              {saved ? t('lesson.inVocab') : t('lesson.addToVocab')}
+            </button>
+          )}
         </>
       )}
     </div>

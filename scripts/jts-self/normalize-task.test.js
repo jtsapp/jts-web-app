@@ -148,6 +148,7 @@ describe('normalizeBlock — причина отбраковки', () => {
       [{ kind: 'order', prompt: '', words: ['I', 'like'], order: [0, 0] }, DROP.orderNotPermutation],
       [{ kind: 'audio', trackId: 'нет', label: 'x' }, DROP.audioNoTrack],
       [{ kind: 'info', html: '  ' }, DROP.infoEmpty],
+      [{ kind: 'match', pairs: [] }, DROP.matchNoPairs],
       [{ kind: 'что-то новое' }, DROP.unknownKind],
     ]
     for (const [block, reason] of cases) {
@@ -229,6 +230,18 @@ describe('normalizeBlock — самооценка check', () => {
     const onDrop = vi.fn()
     normalizeBlock({ kind: 'check', items: [] }, { ...ctx, onDrop })
     expect(onDrop).toHaveBeenCalledWith(DROP.checkEmpty, expect.anything())
+  })
+
+  it('match → пары и банк вариантов из правых частей', () => {
+    const t = normalizeBlock(
+      { kind: 'match', pairs: [{ left: 'keep', right: 'in touch', full: 'keep in touch' }, { left: 'fall out', right: 'over money' }] },
+      ctx,
+    )
+    expect(t).toMatchObject({
+      type: 'match',
+      pairs: [{ left: 'keep', right: 'in touch', full: 'keep in touch' }, { left: 'fall out', right: 'over money' }],
+      options: ['in touch', 'over money'],
+    })
   })
 })
 

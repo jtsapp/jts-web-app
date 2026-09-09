@@ -616,6 +616,82 @@ describe('collectLesson — подписи внутри задания', () => {
   })
 })
 
+describe('collectLesson — виджеты юнит-теста (pairbox, sortbox, chat)', () => {
+  it('pairbox становится match со всеми парами, а не одной', () => {
+    const html = stage(
+      'Unit Test',
+      `<div class="task" data-task data-tid="review-u1">
+        <p class="subline">Match the beginning of each phrase to its ending.</p>
+        <div class="row"><span class="num">5–9</span><span class="body">
+          <div class="pairbox">
+            <div class="pcol">
+              <button class="pit" data-side="l" data-key="v1">keep</button>
+              <button class="pit" data-side="l" data-key="v2">fall out</button>
+            </div>
+            <div class="pcol">
+              <button class="pit" data-side="r" data-key="v1" data-short="in touch">in touch</button>
+              <button class="pit" data-side="r" data-key="v2" data-short="over money">over money</button>
+            </div>
+          </div>
+        </span></div>
+      </div>`,
+    )
+    const [s] = collectLesson(html)
+    const match = s.blocks.find((b) => b.kind === 'match')
+    expect(match.pairs).toEqual([
+      { left: 'keep', right: 'in touch', full: 'in touch' },
+      { left: 'fall out', right: 'over money', full: 'over money' },
+    ])
+    expect(s.blocks.map((b) => b.kind)).toEqual(['info', 'match'])
+  })
+
+  it('sortbox становится match слово → колонка', () => {
+    const html = stage(
+      'Unit Test',
+      `<div class="task" data-task>
+        <div class="row"><span class="body">
+          <div class="sortbox">
+            <div class="sortpool"><button class="swd" data-col="Post">What do you reckon?</button><button class="swd" data-col="Mail">It seems to me that…</button></div>
+            <div class="sortcols"><div class="sortcol" data-col="Post"><h5>A post to friends</h5></div><div class="sortcol" data-col="Mail"><h5>An email to a company</h5></div></div>
+          </div>
+        </span></div>
+      </div>`,
+    )
+    const [s] = collectLesson(html)
+    expect(s.blocks[0]).toMatchObject({
+      kind: 'match',
+      pairs: [
+        { left: 'What do you reckon?', right: 'A post to friends' },
+        { left: 'It seems to me that…', right: 'An email to a company' },
+      ],
+    })
+  })
+
+  it('каждый select в реплике чата — отдельный вопрос, не один на всё сообщение', () => {
+    const html = stage(
+      'Unit Test',
+      `<div class="task" data-task>
+        <div class="row"><span class="body">
+          <div class="chat">
+            <div class="msg you"><b>You</b>
+              <select data-answer="That's a fair point,"><option value="">—</option><option>That's a fair point,</option><option>You're completely wrong,</option></select>
+              but I
+              <select data-answer="have wanted"><option value="">—</option><option>am wanting</option><option>have wanted</option></select>
+              this one since October.
+            </div>
+          </div>
+        </span></div>
+      </div>`,
+    )
+    const [s] = collectLesson(html)
+    const selects = s.blocks.filter((b) => b.kind === 'select')
+    expect(selects).toHaveLength(2)
+    expect(selects[0].answer).toContain('fair point')
+    expect(selects[1].answer).toBe('have wanted')
+    expect(selects[0].prompt).toContain('You:')
+  })
+})
+
 // Находка ревью (Minor): разминка A0 в плеере стала чек-листом с галочками —
 // кнопок 👍/👎 на экране больше нет, а инструкция про них осталась.
 describe('collectLesson — инструкция разминки под чек-лист', () => {

@@ -24,6 +24,7 @@ const DROP = {
   infoEmpty: 'info-empty',
   checkEmpty: 'check-empty',
   rowNoBlock: 'row-no-block',
+  matchNoPairs: 'match-no-pairs',
   unknownKind: 'unknown-kind',
 }
 
@@ -125,6 +126,17 @@ function buildTask(block, ctx) {
       const items = (block.items || []).map((s) => String(s || '').trim()).filter(Boolean)
       if (!items.length) return drop(DROP.checkEmpty)
       return { ...base, type: 'check', items }
+    }
+
+    case 'match': {
+      const pairs = (block.pairs || []).filter((p) => p && p.left && p.right)
+      if (!pairs.length) return drop(DROP.matchNoPairs)
+      return {
+        ...base,
+        type: 'match',
+        pairs: pairs.map((p) => ({ left: p.left, right: p.right, ...(p.full ? { full: p.full } : {}) })),
+        options: pairs.map((p) => p.right),
+      }
     }
 
     default:
