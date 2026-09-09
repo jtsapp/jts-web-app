@@ -51,7 +51,11 @@ export default function LearningPage({
   // включён unlockAll.
   const tour = useScreenTour(tourKey)
   const tourSteps = [
-    { selector: '.lp-isle__head', title: t('tour.learn.map.title'), text: t('tour.learn.map.text') },
+    // Первый шаг подсвечивает сам остров, а не шапку: на телефоне заголовок с
+    // подписью из макета убран, и подсветка шапки — это светящаяся полоса без
+    // содержимого. Остров выше экрана, поэтому прожектор его обрежет (см.
+    // OnboardingTour), зато видно, о чём речь.
+    { selector: '.lp-isle__map', title: t('tour.learn.map.title'), text: t('tour.learn.map.text') },
     { selector: '.lp-node.is-current', title: t('tour.learn.current.title'), text: t('tour.learn.current.text') },
     { selector: '.lp-node.is-locked', title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text') },
   ]

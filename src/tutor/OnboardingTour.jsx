@@ -8,13 +8,19 @@ const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
 // Если элемент такой высокий, что поповер не помещается ни там, ни там (частый
 // случай на телефоне), прибиваем поповер к низу экрана — раньше он ложился
 // прямо на подсвеченный элемент или упирался в статусбар.
+//
+// rect — прямоугольник «дырки», собранный руками: {left, top, width, height},
+// без bottom. Раньше место под элементом считалось через rect.bottom, выходил
+// NaN, и ветка «под элементом» не срабатывала НИ РАЗУ: карточку всегда
+// прибивало к низу экрана — оттуда и жалоба «поповер накрывает подсветку».
 function placePopover(rect, popW, popH) {
   const vw = window.innerWidth
   const vh = window.innerHeight
   const m = 16
   if (!rect) return { left: (vw - popW) / 2, top: (vh - popH) / 2 }
+  const bottom = rect.top + rect.height
   const spaceLeft = rect.left
-  const spaceBelow = vh - rect.bottom
+  const spaceBelow = vh - bottom
   const centeredLeft = clamp(rect.left + rect.width / 2 - popW / 2, m, vw - popW - m)
   if (rect.left > vw * 0.55 && spaceLeft > popW + m) {
     return {
@@ -23,7 +29,7 @@ function placePopover(rect, popW, popH) {
     }
   }
   if (spaceBelow > popH + m) {
-    return { left: centeredLeft, top: rect.bottom + m }
+    return { left: centeredLeft, top: bottom + m }
   }
   if (rect.top - popH - m > m) {
     return { left: centeredLeft, top: rect.top - popH - m }
