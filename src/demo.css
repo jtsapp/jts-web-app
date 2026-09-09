@@ -740,7 +740,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 24px;
+  /* Шапка равняется по той же сетке, что и витрина ниже. */
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px 32px;
   background: #fff;
 }
 .pr__back {
@@ -769,12 +773,15 @@
 }
 .pr__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  /* Кадр макета — 1440 с полями 32 и корзиной 340: витрина занимает экран
+     целиком, а не колонку 1240 посередине. На плитки это влияет напрямую —
+     их в ряду четыре, и в узкой колонке они мельчали. */
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 20px;
   align-items: start;
-  max-width: 1240px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
 }
 .pr__cols {
   display: flex;
@@ -1117,38 +1124,43 @@
   white-space: nowrap;
 }
 .pr-bonus__art img {
+  /* Ширина и смещения — в долях колонки, а не в пикселях: в приложении блок
+     уже, чем в фигме (справа корзина), и от абсолютных пикселей картинки
+     уезжали на текст. */
   position: absolute;
   bottom: -22px;
-  width: auto;
-  height: 128px;
+  width: 32%;
+  height: auto;
+  max-height: 128px;
   object-fit: contain;
 }
 /* Раскладка справа налево, чтобы работала и на четырёх логотипах, и на двух.
    Наклоны — из макета, там ни одна картинка не стоит ровно. */
 .pr-bonus__art img:nth-last-child(1) {
-  right: -14px;
+  right: -4%;
   transform: rotate(-6deg);
 }
 .pr-bonus__art img:nth-last-child(2) {
-  right: 66px;
+  right: 18%;
   transform: rotate(5deg);
 }
 .pr-bonus__art img:nth-last-child(3) {
-  right: 140px;
+  right: 40%;
   transform: rotate(-9deg);
 }
 .pr-bonus__art img:nth-last-child(4) {
-  right: 208px;
+  right: 62%;
   bottom: -8px;
   transform: rotate(7deg);
 }
 .pr-bonus__art img:nth-last-child(5) {
-  right: 272px;
+  right: 84%;
   transform: rotate(-11deg);
 }
 /* Подарок крупнее и последний: он не сервис, а знак «это всё в подарок». */
 .pr-bonus__gift {
-  height: 150px;
+  width: 38%;
+  max-height: 150px;
 }
 @media (max-width: 900px) {
   .pr-bonus__art img {
