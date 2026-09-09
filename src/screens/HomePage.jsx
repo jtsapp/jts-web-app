@@ -192,7 +192,7 @@ export default function HomePage({
 
           {summary.next && (
             <div className="hm-level__goal">
-              <AssetImage className="hm-level__medal" src="/assets/coin-star.png" alt="" />
+              <AssetImage className="hm-level__medal" src="/assets/medal-goal.png" alt="" />
               <span>{t('home.level.goal', { level: summary.next })}</span>
             </div>
           )}
