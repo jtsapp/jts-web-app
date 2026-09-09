@@ -271,9 +271,12 @@ function ExitModal({ onStay, onLeave }) {
 }
 
 // ───────────────────────── Screen ─────────────────────────
-export default function ListeningPage({ userLevel, userName, token, onNav, onProfile, isDemoAccount }) {
+export default function ListeningPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
-  const level = normLevel(userLevel)
+  // Обычно уровень берётся из профиля, но домашняя работа задаёт свой: у неё
+  // адресом юнита служит сам уровень, и открывать «свой» вместо заданного
+  // значит дать ученику решать не то.
+  const level = normLevel(initialTarget?.level || userLevel)
   const [phase, setPhase] = useState('intro') // 'intro' | 'task' | 'result'
   const [content, setContent] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -322,6 +325,17 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   // Оба перехода сторожит tests/practice-gate.spec.js.
   const [attemptedStart, setAttemptedStart] = useState(false)
   const blocked = attemptedStart && !entitlement.loading && !entitlement.allowed
+
+  // Контент лежит в состоянии, а уровень теперь может смениться без
+  // перемонтирования экрана (переход из домашки на уже открытом «Аудировании»).
+  // Без сброса ученик получил бы задания прежнего уровня.
+  useEffect(() => {
+    setContent(null)
+    setQueue([])
+    setPhase('intro')
+    setResponse(null)
+    setAnswered(null)
+  }, [level])
 
   const loadContent = useCallback(async () => {
     if (content) return content

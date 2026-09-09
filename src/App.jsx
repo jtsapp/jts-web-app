@@ -397,6 +397,7 @@ export default function App() {
   const [practiceTarget, setPracticeTarget] = useState(null)
   const [writingTarget, setWritingTarget] = useState(null) // { level?, genreId? } — прыжок из Практики сразу в уровень/жанр Writing
   const [workbookTarget, setWorkbookTarget] = useState(null) // { level } — какой воркбук открыть из Практики
+  const [listeningTarget, setListeningTarget] = useState(null) // { level } — какой уровень аудирования открыть из домашки
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -980,12 +981,16 @@ export default function App() {
     // Практика открывается и с домашней работы: payload несёт адрес юнита,
     // который задал преподаватель.
     else if (key === 'practice') { setPracticeTarget(payload || null); setScreen('practice') }
-    else if (key === 'listening') setScreen('listening')
+    // Уровень аудирования приходит из домашней работы: сам экран уровня не
+    // выбирает, он идёт от уровня ученика.
+    else if (key === 'listening') { setListeningTarget(payload || null); setScreen('listening') }
     // Shadowing открывается с карточки Практики — payload несёт id урока.
     else if (key === 'shadowing') { if (payload) setShadowingLesson(payload); setScreen('shadowing') }
-    else if (key === 'writing') { if (payload) setWritingTarget(payload); setScreen('writing') }
-    else if (key === 'workbook') { if (payload) setWorkbookTarget(payload); setScreen('workbook') }
-    else if (key === 'reading') { if (payload) setReadingTarget(payload); setScreen('reading') }
+    // Цель СБРАСЫВАЕТСЯ переходом без payload — иначе вчерашняя домашка
+    // выбрасывала бы ученика в свой текст при каждом заходе из сайдбара.
+    else if (key === 'writing') { setWritingTarget(payload || null); setScreen('writing') }
+    else if (key === 'workbook') { setWorkbookTarget(payload || null); setScreen('workbook') }
+    else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -1289,6 +1294,7 @@ export default function App() {
           userLevel={userLevel}
           userName={name}
           token={token}
+          initialTarget={listeningTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}

@@ -187,6 +187,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
               {selected?.kind === 'material' ? (
                 <MaterialAssignmentDetail card={selected} token={token} />
               ) : (
+                /* onOpenPractice получает готовый переход из карты разделов
+                   (practiceNavTarget): «Чтение», «Письмо», шэдоуинг и воркбуки
+                   живут на своих экранах, а не внутри «Практики». */
                 <HomeworkDetail
                   hw={selected}
                   token={token}
@@ -197,7 +200,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   onSubmit={handleSubmit}
                   onSaved={replace}
                   onAnswered={setDraft}
-                  onOpenPractice={(target) => onNav?.('practice', target)}
+                  onOpenPractice={(target) => onNav?.(target.key, target.payload)}
                   draftAnswered={draftAnswered}
                 />
               )}
