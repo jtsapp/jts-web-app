@@ -9,6 +9,7 @@ import {
   planCycle,
   foldResults,
   shouldOfferCycle4,
+  learnedKeysFromCycles,
 } from './lessonReview.js'
 import { ChoiceTask, MatchTask, DictationTask, WriteTask } from './lessonTasks.jsx'
 
@@ -26,10 +27,12 @@ function isSavedDeck(session) {
   return session?.lessonId == null || session?.code === 'SAVED'
 }
 
-function nextPracticeCycle(session, saved) {
+function nextPracticeCycle(session, saved, words) {
   const done = session.finishedCycle || 0
   if (saved) {
-    // Личный словарь не закрывается после циклов — новые слова приходят постоянно.
+    const learned = learnedKeysFromCycles(session.cycleResults)
+    const hasNew = (words || []).some((w) => w?.key && !learned.has(w.key))
+    if (hasNew) return 1
     return done >= 3 ? 1 : done + 1
   }
   if (done >= 4) return 0
@@ -46,7 +49,7 @@ export default function LessonVocabSession({ session, token, lang, onExit, onFin
   )
   const byKey = useMemo(() => Object.fromEntries(words.map((w) => [w.key, w])), [words])
 
-  const startCycle = nextPracticeCycle(session, saved)
+  const startCycle = nextPracticeCycle(session, saved, words)
 
   const [cycle, setCycle] = useState(startCycle)
   const [tasks, setTasks] = useState([])
@@ -63,7 +66,8 @@ export default function LessonVocabSession({ session, token, lang, onExit, onFin
   }, [t])
 
   const begin = () => {
-    setTasks(planCycle(words, cycle, cycle === 1 ? null : session.cycleResults?.[cycle - 1] || null))
+    const learned = cycle === 1 ? learnedKeysFromCycles(session.cycleResults) : null
+    setTasks(planCycle(words, cycle, cycle === 1 ? null : session.cycleResults?.[cycle - 1] || session.cycleResults?.[String(cycle - 1)] || null, Math.random, learned))
     setIdx(0)
     setAnswers([])
     setPhase('task')
@@ -114,7 +118,9 @@ export default function LessonVocabSession({ session, token, lang, onExit, onFin
 
   if (phase === 'preview' || phase === 'done') {
     const canTest = cycle > 0 && words.length > 0
-    const restart = saved && (session.finishedCycle || 0) >= 3
+    const learned = learnedKeysFromCycles(session.cycleResults)
+    const hasNew = words.some((w) => !learned.has(w.key))
+    const restart = saved && (session.finishedCycle || 0) >= 3 && !hasNew
     return (
       <section className="v-screen v-show">
         <div className="v-scroll v-pad">
@@ -131,6 +137,7 @@ export default function LessonVocabSession({ session, token, lang, onExit, onFin
                 <li key={w.key}>
                   <b>{w.word}</b>
                   <span>{translationOf(w, lang)}</span>
+                  {learned.has(w.key) ? <em>{t('vocab.learnedBadge')}</em> : null}
                 </li>
               ))}
             </ul>

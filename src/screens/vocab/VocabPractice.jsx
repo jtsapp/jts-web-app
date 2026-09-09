@@ -11,7 +11,7 @@ import {
 } from './lessonReview.js'
 import { recordVocabMisses } from './vocabMisses.js'
 import { recordVocabLearned, vocabKey } from './vocabLearned.js'
-import { saveStudentVocab } from '../../api.js'
+import { saveStudentVocab, markVocabLearned } from '../../api.js'
 import {
   IconSpeaker,
   IconCheck,
@@ -102,6 +102,7 @@ function CorrectReveal({ word, lang, t, speak, token }) {
     }
     if (word.ipa) body.ipa = String(word.ipa).replace(/\//g, '')
     saveStudentVocab(token, body)
+      .then(() => markVocabLearned(token, [word.word]).catch(() => {}))
       .then(() => setSaved(true))
       .catch(() => {})
       .finally(() => setSaving(false))
@@ -166,7 +167,7 @@ function AnswerFeedback({ ok, word, lang, t, speak, token }) {
   return <CorrectReveal word={word} lang={lang} t={t} speak={speak} token={token} />
 }
 
-export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId }) {
+export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId, onLearned }) {
   const { t } = useI18n()
   const words = useMemo(() => uniqueByKey((cards || []).map(toWord).filter((w) => w.word)), [cards])
   const byKey = useMemo(() => Object.fromEntries(words.map((w) => [w.key, w])), [words])
@@ -251,6 +252,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       if (allMissed.length) recordVocabMisses(token, allMissed)
       const okKeys = [...new Set(answers.filter((a) => a.ok && a.key).map((a) => a.key))]
       if (scopeId && okKeys.length) recordVocabLearned(token, scopeId, okKeys)
+      if (okKeys.length) onLearned?.(okKeys)
     }
 
     return (

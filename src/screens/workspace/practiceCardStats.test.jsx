@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import LessonContent, { practiceCardStats } from './LessonContent.jsx'
+import { hiddenBlockKey, hiddenBlockKeys } from './visibleSteps.js'
 
 // Шаг реального урока: задания идут не подряд — между ними теория и серия
 // info-блоков, которые LessonContent склеивает в одну карточку.
@@ -48,6 +49,12 @@ describe('practiceCardStats — нумерация заданий шага', () 
   it('в теме без заданий считать нечего', () => {
     const stats = practiceCardStats({ id: 's2', blocks: [{ type: 'theory', title: 'Правило' }] }, new Set())
     expect(stats).toMatchObject({ total: 0, current: 0, currentKey: null })
+  })
+
+  it('скрытая практика не занимает номер у видимых', () => {
+    const stats = practiceCardStats(STEP, new Set(), hiddenBlockKeys([hiddenBlockKey('s1', 1)]))
+    expect(stats.total).toBe(2)
+    expect(stats.numberByKey).toEqual({ [K2]: 1, [K3]: 2 })
   })
 })
 

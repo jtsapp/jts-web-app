@@ -29,6 +29,12 @@ describe('lesson vocab cycles', () => {
     expect(q).toBe(10)
   })
 
+  it('цикл 1 личного словаря спрашивает только новые слова', () => {
+    const tasks = planCycle(words(5), 1, null, rng(), new Set(['w1', 'w2', 'w3']))
+    const keys = tasks.flatMap((t) => t.wordKeys)
+    expect(keys.sort()).toEqual(['w4', 'w5'])
+  })
+
   it('цикл 2: N+20% и больше вопросов на ошибки', () => {
     expect(cycleQuestionCount(10, 2)).toBe(12)
     const prev = {
