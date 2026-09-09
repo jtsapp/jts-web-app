@@ -40,6 +40,18 @@ describe('homeworkStateKey', () => {
   it('возврат на доработку — свой статус', () => {
     expect(homeworkStateKey(hw({ status: 'NEEDS_REVISION' }), now)).toBe('needsRevision')
   })
+
+  // Преподаватель закрыл работу, которую ученик не сдавал: «Проверено» тут врёт —
+  // его ответа никто не видел, а экран у такой работы пустой.
+  it('закрытая без сдачи работа подписана не «проверено»', () => {
+    expect(homeworkStateKey(hw({ status: 'COMPLETED', closedWithoutSubmission: true }), now))
+      .toBe('closedNoSubmission')
+  })
+
+  it('проверенная работа остаётся проверенной', () => {
+    expect(homeworkStateKey(hw({ status: 'COMPLETED', closedWithoutSubmission: false }), now))
+      .toBe('completed')
+  })
 })
 
 describe('что ученику можно делать', () => {

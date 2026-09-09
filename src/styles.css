@@ -7576,6 +7576,9 @@ textarea {
 .hw-badge--submitted { background: #d3ecff; color: #0b74c4; }
 .hw-badge--needsRevision { background: #ffe0e0; color: #b02a2a; }
 .hw-badge--completed { background: #dcf3e2; color: #2c8a45; }
+/* Закрыто без сдачи — не достижение и не долг: нейтральный серый, чтобы его не
+   читали как зелёное «проверено». */
+.hw-badge--closedNoSubmission { background: #eceef2; color: #55606e; }
 
 /* Карточка открытого задания. */
 .hw-detail { background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 4px; }

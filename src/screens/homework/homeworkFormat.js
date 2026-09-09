@@ -24,7 +24,9 @@ export function isAllowedFile(fileName) {
 export function homeworkStateKey(hw, now = new Date()) {
   if (!hw) return 'assigned'
   switch (hw.status) {
-    case 'COMPLETED': return 'completed'
+    // «Проверено» на работе, которую ученик не сдавал, — неправда: его ответа
+    // никто не открывал. Преподаватель закрыл её, и подписано это так и есть.
+    case 'COMPLETED': return hw.closedWithoutSubmission ? 'closedNoSubmission' : 'completed'
     case 'SUBMITTED': return 'submitted'
     case 'NEEDS_REVISION': return 'needsRevision'
     default:

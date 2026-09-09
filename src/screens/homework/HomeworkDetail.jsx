@@ -103,6 +103,9 @@ export default function HomeworkDetail({ hw, token, busy, error, onUpload, onRem
           </button>
         )}
         {hw.status === 'SUBMITTED' && <p className="hw__hint">{t('homework.waitingReview')}</p>}
+        {/* Работа закрыта преподавателем, а не проверена: иначе пустой экран с
+            бейджем «Проверено» ученику ничего не объясняет. */}
+        {hw.closedWithoutSubmission && <p className="hw__hint">{t('homework.closedNoSubmission')}</p>}
       </section>
 
       {/* Отзыв преподаватель пишет и до проверки — тогда это ещё не «Проверка»,
