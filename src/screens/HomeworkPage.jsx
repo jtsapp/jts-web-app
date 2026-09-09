@@ -13,6 +13,7 @@ import { isAllowedFile, studentOrder } from './homework/homeworkFormat.js'
 import { loadAnswers, pendingAnswers } from './homework/homeworkExercises.js'
 import { gradeQuestion } from './workspace/practiceGrading.js'
 import { materialCard } from './homework/materialAssignments.js'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 
 /**
  * Экран «Домашняя работа» ученика: история заданий слева, открытое задание справа.
@@ -24,7 +25,7 @@ import { materialCard } from './homework/materialAssignments.js'
  * задание перечитывается только после действий, которые его меняют, —
  * загрузки файла, удаления и отправки на проверку.
  */
-export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
+export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav, onProfile, tourKey }) {
   const { t } = useI18n()
   const [items, setItems] = useState([])
   const [materials, setMaterials] = useState([])
@@ -88,6 +89,18 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   }, [token, replace])
 
   const selected = combined.find((hw) => hw.id === selectedId) || null
+
+  // Тур ждёт загруженный список: до него на экране одна строчка «Загрузка…»,
+  // тур пропустил бы все шаги подряд и закрылся. Ключ передаём только в
+  // готовом состоянии — хук решает один раз, на первом непустом ключе.
+  const tour = useScreenTour(view === 'ready' ? tourKey : null)
+  // Шаги про ответ есть не всегда: у сданной и проверенной работы ни загрузки
+  // файла, ни кнопки отправки нет — тур такие шаги пропускает сам.
+  const tourSteps = [
+    { selector: '.hw-list', title: t('tour.hw.list.title'), text: t('tour.hw.list.text') },
+    { selector: '.hw-upload', title: t('tour.hw.upload.title'), text: t('tour.hw.upload.text') },
+    { selector: '.hw-submit', title: t('tour.hw.submit.title'), text: t('tour.hw.submit.text') },
+  ]
 
   // Файлы грузятся по очереди, а не разом.
   //
@@ -169,7 +182,15 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="homework" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout
+      userName={userName}
+      userLevel={userLevel}
+      active="homework"
+      token={token}
+      onNav={onNav}
+      onProfile={onProfile}
+      onHelp={view === 'ready' ? tour.start : undefined}
+    >
       <div className="hw">
         <header className="hw__head">
           <h1 className="hw__title">{t('nav.homework')}</h1>
@@ -204,6 +225,10 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
             </div>
           )}
         </div>
+
+        {tour.open && (
+          <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+        )}
       </div>
     </LearningLayout>
   )

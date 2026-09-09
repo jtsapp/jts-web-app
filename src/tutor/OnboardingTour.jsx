@@ -100,12 +100,16 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
   // высота вообще зависит от длины текста шага — поповер ложился на подсветку.
   const popRef = useRef(null)
   const [popSize, setPopSize] = useState(null)
+  // Показали ли хоть один шаг. Экран мог открыться пустым (домашних работ нет,
+  // расписание не загрузилось) — тогда тур пропускает все шаги подряд и обязан
+  // закрыться БЕЗ отметки: иначе он «пройден» молча и больше не выйдет никогда.
+  const shownRef = useRef(false)
   const step = steps[i]
   const selector = step?.selector
 
   const finish = () => {
     try {
-      if (storageKey) localStorage.setItem(storageKey, '1')
+      if (storageKey && shownRef.current) localStorage.setItem(storageKey, '1')
     } catch {
       /* localStorage недоступен — просто закрываем */
     }
@@ -122,6 +126,7 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
       else finish()
       return undefined
     }
+    shownRef.current = true
     // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
     // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
     el.scrollIntoView({ block: 'center', behavior: 'auto' })
