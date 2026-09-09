@@ -10,6 +10,8 @@ import HomePage from './HomePage.jsx'
 const trialState = { value: { requested: false, managerAssigned: false } }
 const occurrences = { value: [] }
 const homework = { value: [] }
+// Прогресс по уровню считает сервер — здесь отдаём его готовым.
+const levelProgress = { value: { percent: 45, done: 9, total: 20, remaining: 11 } }
 
 vi.mock('../api.js', () => ({
   // С токеном оболочка будит колокольчик уведомлений — без заглушки падает
@@ -21,6 +23,7 @@ vi.mock('../api.js', () => ({
   getMyLessonOccurrences: vi.fn(async () => occurrences.value),
   getMyHomework: vi.fn(async () => homework.value),
   requestTrialLesson: vi.fn(async () => ({ requested: true, managerAssigned: false })),
+  getLevelProgress: vi.fn(async () => levelProgress.value),
 }))
 
 // Рейтинг навыков: локальное зеркало отдаём готовым, сеть не трогаем — экран
@@ -64,6 +67,7 @@ function renderHome(props = {}) {
 beforeEach(() => {
   localStorage.clear()
   localStats.value = FULL_STATS
+  levelProgress.value = { percent: 45, done: 9, total: 20, remaining: 11 }
 })
 
 describe('Главная демо-аккаунта', () => {
@@ -73,12 +77,40 @@ describe('Главная демо-аккаунта', () => {
     expect(screen.getByText('Цель — B2')).toBeTruthy()
   })
 
-  it('прогресс до следующего уровня — среднее по навыкам', () => {
-    const { container } = renderHome()
-    // (84+76+68+48+40+60)/6 = 62.7 → 63. Залит только первый отрезок дорожки:
-    // процент считается до ближайшей ступени, про дальние знать неоткуда.
-    expect(container.querySelector('.hm-level__fill').style.width).toBe('63%')
+  it('прогресс — доля освоенных материалов уровня, а не точность в практике', async () => {
+    const { container } = renderHome({ token: 'T' })
+
+    // Навыки у этого ученика набраны (см. FULL_STATS), но уровень пройден на
+    // 45%: полоса показывает пройденное, а не то, насколько уверенно выходит.
+    // Залит только первый отрезок — про дальние ступени знать неоткуда.
+    await waitFor(() => expect(container.querySelector('.hm-level__fill')).not.toBeNull())
+    expect(container.querySelector('.hm-level__fill').style.width).toBe('45%')
     expect(container.querySelectorAll('.hm-level__fill')).toHaveLength(1)
+  })
+
+  it('остаток назван в материалах курса', async () => {
+    renderHome({ token: 'T' })
+
+    // «Ещё примерно 4 урока» было выдумкой: плана «сколько уроков до B2» у
+    // приложения нет. Материалы уровня — есть, и их можно пересчитать.
+    expect(await screen.findByText('Ещё 11 материалов — и вы перейдёте на уровень B2')).toBeTruthy()
+  })
+
+  it('пока сервер не ответил, полосы и подписи нет', () => {
+    // Пустая дорожка честнее правдоподобной цифры: увиденный процент человек
+    // примет за свой и не узнает, что он взят с потолка.
+    levelProgress.value = null
+    const { container } = renderHome({ token: 'T' })
+
+    expect(container.querySelector('.hm-level__fill')).toBeNull()
+    expect(container.querySelector('.hm-level__plan')).toBeNull()
+  })
+
+  it('пройденный уровень говорит об этом, а не «ещё 0 материалов»', async () => {
+    levelProgress.value = { percent: 100, done: 20, total: 20, remaining: 0 }
+    renderHome({ token: 'T' })
+
+    expect(await screen.findByText('Материалы уровня пройдены — впереди B2')).toBeTruthy()
   })
 
   it('дорожка ведёт от старта через ближайшие ступени к финишу', () => {
@@ -126,12 +158,14 @@ describe('Главная демо-аккаунта', () => {
     expect(names[names.length - 1]).toBe('Письмо')
   })
 
-  it('у новичка вместо цифр — приглашение позаниматься', () => {
+  it('у новичка вместо цифр — приглашение позаниматься', async () => {
     localStats.value = {}
-    const { container } = renderHome()
+    levelProgress.value = { percent: 0, done: 0, total: 20, remaining: 20 }
+    const { container } = renderHome({ token: 'T' })
     expect(container.querySelectorAll('.hm-skill')).toHaveLength(0)
     expect(screen.getByText(/Пройдите несколько заданий/)).toBeTruthy()
     // Нулевой прогресс — не повод обещать переход: план остаётся честным.
+    await waitFor(() => expect(container.querySelector('.hm-level__fill')).not.toBeNull())
     expect(container.querySelector('.hm-level__fill').style.width).toBe('0%')
   })
 

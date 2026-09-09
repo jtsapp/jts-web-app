@@ -29,7 +29,7 @@ const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
  * заново каждый раз. Значение только начальное — дальше вкладку выбирает сам
  * ученик, и перерисовка родителя его выбор не сбрасывает.
  */
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, initialTab }) {
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, onOpenPricing, initialTab }) {
   const { t } = useI18n()
   // Каталог уровней — инструмент преподавателя: он выбирает из него, что вести
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
@@ -72,7 +72,7 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
 
         {tab === 'self' && (
           <div className="ls__body ls__body--wide">
-            <SelfStudy token={token} userLevel={userLevel} onOpenLesson={onOpenSelfStudy} />
+            <SelfStudy token={token} userLevel={userLevel} onOpenLesson={onOpenSelfStudy} onOpenPricing={onOpenPricing} />
           </div>
         )}
 

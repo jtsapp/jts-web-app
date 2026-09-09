@@ -287,6 +287,78 @@
   box-shadow: none;
 }
 
+/* Полоса над сеткой закрытого уровня: чем он открыт, что за остальным и куда
+   идти. Отдельной строкой, а не подписью на карточках — сказать это один раз
+   на уровень честнее, чем повторять на каждом из двух десятков материалов. */
+.ss-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #ececf3;
+}
+
+.ss-preview__badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f1ebfe;
+  color: var(--purple);
+}
+
+.ss-preview__body { flex: 1; min-width: 0; }
+.ss-preview__title { margin: 0; font-size: 16px; font-weight: 800; }
+.ss-preview__text { margin: 4px 0 0; color: #6f6b7e; font-size: 13px; line-height: 1.45; }
+
+.ss-preview__cta {
+  flex: none;
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--purple);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ss-preview__cta:hover { filter: brightness(1.06); }
+.ss-preview__cta:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+
+/* Кнопка на телефоне уезжает под текст: втроём в строку они сжимают подпись до
+   двух слов на строку. */
+@media (max-width: 560px) {
+  .ss-preview { flex-wrap: wrap; }
+  .ss-preview__cta { width: 100%; }
+}
+
+/* Материал за подпиской. Обложка приглушена, но читаема: название и раздел —
+   это и есть то, что покупают, и прятать их за сплошной заливкой значит снова
+   показывать замок вместо содержимого. */
+.ss-paywall .gr-cover { filter: grayscale(0.55) brightness(0.92); }
+.ss-paywall .gr-gcard__t { color: var(--purple); }
+
+.ss-paywall__lock {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #4a4458;
+}
+
 .ss-locked {
   display: flex;
   flex-direction: column;

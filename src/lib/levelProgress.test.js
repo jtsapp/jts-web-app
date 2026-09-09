@@ -44,29 +44,42 @@ describe('nextLevel', () => {
 })
 
 describe('levelSummary', () => {
-  it('процент — среднее по навыкам, цель — следующий уровень', () => {
-    const s = levelSummary('B1', {
-      listening: { done: 25, firstTry: 25 },
-      speaking: { done: 25, firstTry: 25 },
-      reading: { done: 25, firstTry: 25 },
-      writing: { done: 25, firstTry: 25 },
-      grammar: { done: 25, firstTry: 25 },
-      vocab: { done: 25, firstTry: 25 },
-    })
-    expect(s.percent).toBe(100)
+  const SKILLED = {
+    listening: { done: 25, firstTry: 25 },
+    speaking: { done: 25, firstTry: 25 },
+    reading: { done: 25, firstTry: 25 },
+    writing: { done: 25, firstTry: 25 },
+    grammar: { done: 25, firstTry: 25 },
+    vocab: { done: 25, firstTry: 25 },
+  }
+
+  it('процент и остаток — из освоенных материалов, а не из навыков', () => {
+    const s = levelSummary('B1', SKILLED, { percent: 40, done: 12, total: 30, remaining: 18 })
+
+    // Навыки безупречны, но уровень пройден на 40%: это разные величины, и
+    // карточка обязана показывать вторую — «сколько пройдено», а не «как точно».
+    expect(s.percent).toBe(40)
+    expect(s.done).toBe(12)
+    expect(s.total).toBe(30)
+    expect(s.remaining).toBe(18)
     expect(s.next).toBe('B2')
-    expect(s.lessonsLeft).toBe(0)
-    expect(s.practiceLeft).toBe(0)
+  })
+
+  it('без ответа сервера процента нет вовсе', () => {
+    const s = levelSummary('B1', SKILLED)
+
+    // Не ноль: ноль означал бы «ничего не пройдено», а мы просто ещё не знаем.
+    // Подставить сюда правдоподобное число хуже, чем не показать ничего.
+    expect(s.percent).toBe(null)
+    expect(s.remaining).toBe(null)
   })
 
   it('у новичка нет ни сильной, ни слабой стороны', () => {
-    const s = levelSummary('A1', null)
+    const s = levelSummary('A1', null, { percent: 0, done: 0, total: 40, remaining: 40 })
     expect(s.percent).toBe(0)
     expect(s.strongest).toBe(null)
     expect(s.weakest).toBe(null)
-    // Остаток целиком: примерно 25 уроков и 9 практик.
-    expect(s.lessonsLeft).toBe(25)
-    expect(s.practiceLeft).toBe(9)
+    expect(s.remaining).toBe(40)
   })
 
   it('на C2 следующего уровня нет', () => {

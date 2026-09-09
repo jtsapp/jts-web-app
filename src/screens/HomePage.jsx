@@ -6,7 +6,7 @@ import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
 import { levelSummary, nextLevel, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
-import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework } from '../api.js'
+import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework, getLevelProgress } from '../api.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
 import { parseLessonDate, lessonTimeRange } from './schedule/lessonFormat.js'
 
@@ -38,6 +38,10 @@ export default function HomePage({
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
+  // Прогресс по уровню — освоенные материалы, и считает их сервер. Пока не
+  // ответил, остаётся null: своей оценки на этот случай нет, и придумывать её
+  // нельзя (см. lib/levelProgress.js).
+  const [progress, setProgress] = useState(null)
 
   // Локальное зеркало сразу, сервер — следом: иначе карточка навыков секунду
   // висит пустой у человека, который вчера прошёл десяток заданий.
@@ -53,7 +57,16 @@ export default function HomePage({
     }
   }, [token])
 
-  const summary = useMemo(() => levelSummary(userLevel, stats), [userLevel, stats])
+  useEffect(() => {
+    if (!token) return
+    let alive = true
+    getLevelProgress(token)
+      .then((p) => { if (alive) setProgress(p) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [token])
+
+  const summary = useMemo(() => levelSummary(userLevel, stats, progress), [userLevel, stats, progress])
 
   // Ступени дорожки — ближайший уровень и следующий за ним. Дальше рисовать
   // нечего: «Финиш» и есть конец пути, а обещать конкретную ступень через две
@@ -116,9 +129,22 @@ export default function HomePage({
   // рендер обязан быть одинаковым на сервере и клиенте.
   const [week, setWeek] = useState(null)
   useEffect(() => {
-    if (stats === null) return
+    if (summary.percent === null) return
     setWeek(touchWeeklySnapshot(summary.percent))
-  }, [stats, summary.percent])
+  }, [summary.percent])
+
+  // Три разных сообщения, и все три — правда о разном: уровень ещё идёт,
+  // уровень пройден, выше некуда.
+  const planLine = !summary.next
+    ? t('home.level.max')
+    : summary.remaining === null
+      ? null
+      : summary.remaining === 0
+        ? t('home.level.done', { level: summary.next })
+        : t('home.level.plan', {
+            materials: plural(t, lang, 'home.materials', summary.remaining),
+            level: summary.next,
+          })
 
   const hasData = summary.ranked.some((r) => r.percent > 0)
   const levelName = t(`cefr.${summary.level}`)
@@ -170,7 +196,9 @@ export default function HomePage({
               {stops.map((code, i) => (
                 <Fragment key={code}>
                   <span className="hm-level__seg">
-                    {i === 0 && <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />}
+                    {i === 0 && summary.percent !== null && (
+                      <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />
+                    )}
                   </span>
                   <span className="hm-level__stop">
                     <FlagIcon />
@@ -185,15 +213,11 @@ export default function HomePage({
               </span>
             </div>
 
-            <p className="hm-level__plan">
-              {summary.next
-                ? t('home.level.plan', {
-                    lessons: plural(t, lang, 'pricing.lessons', summary.lessonsLeft),
-                    practice: plural(t, lang, 'home.practice', summary.practiceLeft),
-                    level: summary.next,
-                  })
-                : t('home.level.max')}
-            </p>
+            {/* Остаток — в материалах курса, а не в «примерно четырёх уроках»:
+                раньше его выводили из процента по средней отдаче занятия, потому
+                что самого курса в этих числах не было. Пока сервер не ответил,
+                подписи нет вовсе: правдоподобное число человек примет за своё. */}
+            {planLine && <p className="hm-level__plan">{planLine}</p>}
           </div>
 
           {summary.next && (

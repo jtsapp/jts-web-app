@@ -1,9 +1,16 @@
 // Прогресс по уровню и сильные/слабые стороны для «Главной».
 //
-// Данные — те же, что у рейтинга навыков в профиле ({done, firstTry} на навык,
-// см. practice/skillStats.js). Нового источника у нас нет, и придумывать его
-// ради красивой карточки нельзя: цифра на первом экране должна означать ровно
-// то же, что цифра в профиле, иначе ученик увидит два разных «своих» прогресса.
+// Здесь ДВЕ разные величины, и путать их нельзя:
+//
+//  1. «Сколько пройдено» — доля освоенных материалов уровня. Считает сервер
+//     (GET /mobile/level-progress): слагаемые лежат в отметках каталога, в
+//     состоявшихся занятиях и в объёме самого курса, и в браузере их не собрать.
+//     Раньше эту цифру давала точность в практике — она отвечала на другой
+//     вопрос и упиралась в потолок у того, кто просто идёт дальше по программе.
+//  2. «Что получается лучше и хуже» — рейтинг навыков из практики
+//     ({done, firstTry} на навык, см. practice/skillStats.js). Он остался
+//     прежним и тем же, что в профиле: две карточки об одном себе не должны
+//     показывать разные числа.
 //
 // Модуль чистый (кроме явно помеченных снимков в localStorage) — считается в
 // тестах без DOM.
@@ -41,18 +48,20 @@ export function nextLevel(level) {
 /**
  * Сводка для карточки уровня.
  *
- * `lessonsLeft`/`practiceLeft` — оценка, а не план курса: у приложения нет
- * «сколько уроков до B2», и обещать точное число было бы враньём. Считаем от
- * остатка процента по средней отдаче одного занятия (урок ≈ 4%, практика ≈ 2%)
- * и так и говорим в подписи («примерно»).
+ * @param progress ответ сервера про освоенные материалы или null, пока он не
+ *   пришёл. Своей оценки на этот случай не выдумываем: `percent` остаётся null,
+ *   и карточка рисует пустую дорожку. Показать вместо неизвестного прогресса
+ *   правдоподобное число хуже, чем не показать ничего, — человек примет его за
+ *   свой и не узнает, что оно взято с потолка.
+ *
+ * Остаток — в материалах, а не в «примерно четырёх уроках»: раньше он считался
+ * от процента по средней отдаче занятия, потому что курса в этих числах не
+ * было. Теперь есть: `remaining` — сколько материалов уровня ещё не пройдено.
  */
-export function levelSummary(userLevel, stats) {
+export function levelSummary(userLevel, stats, progress = null) {
   const ranked = rankSkills(stats)
-  const percent = ranked.length
-    ? Math.round(ranked.reduce((s, r) => s + r.percent, 0) / ranked.length)
-    : 0
   const next = nextLevel(userLevel)
-  const remaining = Math.max(0, 100 - percent)
+  const percent = typeof progress?.percent === 'number' ? progress.percent : null
   return {
     level: String(userLevel || 'A1').toUpperCase(),
     next,
@@ -62,8 +71,9 @@ export function levelSummary(userLevel, stats) {
     weakest: ranked.length && ranked[ranked.length - 1].percent < ranked[0].percent
       ? ranked[ranked.length - 1]
       : null,
-    lessonsLeft: Math.ceil(remaining / 4),
-    practiceLeft: Math.ceil(remaining / 12),
+    done: progress?.done ?? null,
+    total: progress?.total ?? null,
+    remaining: typeof progress?.remaining === 'number' ? progress.remaining : null,
   }
 }
 
@@ -89,6 +99,9 @@ export function weeklyDelta(percent, snapshot, now = Date.now()) {
  * Единственное место модуля, которое трогает localStorage.
  */
 export function touchWeeklySnapshot(percent, now = Date.now()) {
+  // Прогресс ещё не приехал — снимать нечего. Записать null значило бы стереть
+  // недельную точку отсчёта каждым открытием экрана в офлайне.
+  if (typeof percent !== 'number') return null
   let snapshot = null
   try {
     const raw = localStorage.getItem(SNAPSHOT_KEY)
