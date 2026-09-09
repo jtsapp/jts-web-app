@@ -24,10 +24,32 @@ export function isStandaloneLessonUrl(url) {
   return /\/course-catalog\/standalone\//i.test(String(url || ''))
 }
 
-/** Ссылка без хвостов, которые не меняют, какой это урок. */
+/** Ссылка без якоря. */
 function normalize(url) {
   if (!url) return ''
   return String(url).trim().replace(/#.*$/, '')
+}
+
+/**
+ * Путь файла + `mode`. Подпись S3, cache-buster и прочий query не входят:
+ * материал раздела часто приходит с `?mode=solo&X-Amz-…`, а в каталоге тот же
+ * урок лежит как `?mode=solo`. Сравнивать строки целиком — значит не найти
+ * разбор и показать ученику одну «Section 1» вместо шагов.
+ */
+function catalogFileKey(url) {
+  const raw = normalize(url)
+  if (!raw) return { path: '', mode: '' }
+  try {
+    const parsed = new URL(raw, 'https://jts.invalid')
+    return { path: parsed.pathname, mode: parsed.searchParams.get('mode') || '' }
+  } catch {
+    const [path, query = ''] = raw.split('?')
+    const mode = String(query)
+      .split('&')
+      .map((part) => part.split('='))
+      .find(([key]) => key === 'mode')?.[1] || ''
+    return { path, mode: decodeURIComponent(mode) }
+  }
 }
 
 /** Плоский список уроков каталога — дерево уровень → юнит → урок. */
@@ -53,11 +75,19 @@ export function findCatalogLessonId(levels, fileUrl) {
   const exact = lessons.find((l) => normalize(l.fileUrl) === target)
   if (exact) return exact.id
 
-  // Ссылка могла прийти без режима (уровень залит до того, как режимы
-  // появились) — тогда достаточно совпадения по самому файлу.
-  const path = target.split('?')[0]
-  const byFile = lessons.find((l) => normalize(l.fileUrl).split('?')[0] === path)
-  return byFile ? byFile.id : null
+  const want = catalogFileKey(target)
+  if (!want.path) return null
+
+  const sameFile = lessons.filter((l) => catalogFileKey(l.fileUrl).path === want.path)
+  if (!sameFile.length) return null
+
+  if (want.mode) {
+    const byMode = sameFile.find((l) => catalogFileKey(l.fileUrl).mode === want.mode)
+    if (byMode) return byMode.id
+  }
+
+  // Уровень, залитый до появления режимов, ссылается на файл без ?mode=.
+  return sameFile[0].id
 }
 
 /** То же, но с походом за каталогом. Каталог кэшируется на уровне api.js. */
