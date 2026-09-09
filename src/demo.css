@@ -731,7 +731,7 @@
 .pr {
   min-height: 100vh;
   padding: 0 0 48px;
-  background: #f4f2f9;
+  background: #fff;
 }
 .pr__top {
   position: sticky;
@@ -741,7 +741,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 24px;
-  background: #f4f2f9;
+  background: #fff;
 }
 .pr__back {
   display: grid;
@@ -936,7 +936,8 @@
   background: #31b423;
 }
 .pr-tile--accent.is-chosen .pr-step button.is-plus {
-  color: #31b423;
+  background: #181818;
+  color: #fff;
 }
 /* Подпись «за урок» на залитой плитке — светлее фона, но читаемая: в макете
    у фиолетовой она #D6BCFF, у зелёной #AEFFC7. */
@@ -1005,7 +1006,16 @@
   background: rgba(23, 19, 38, 0.08);
 }
 .pr-tile.is-chosen .pr-step {
-  background: rgba(255, 255, 255, 0.2);
+  background: #fff;
+}
+.pr-tile.is-chosen .pr-step button {
+  color: #181818;
+}
+.pr-tile.is-chosen .pr-step i {
+  color: #181818;
+}
+.pr-tile.is-chosen .pr-step button:not(.is-plus) {
+  background: #f8f8f8;
 }
 .pr-step button {
   display: grid;
@@ -1023,8 +1033,8 @@
   color: #fff;
 }
 .pr-tile.is-chosen .pr-step button.is-plus {
-  background: #fff;
-  color: var(--purple);
+  background: #181818;
+  color: #fff;
 }
 .pr-step i {
   min-width: 18px;
@@ -1071,7 +1081,9 @@
 }
 .pr-bonus {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* Список держит свою ширину, картинки уступают: иначе подросшие логотипы
+     сжимали колонку и «Бонусы к курсу» ломалось на две строки. */
+  grid-template-columns: minmax(150px, auto) minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   padding: 14px 16px;
@@ -1101,20 +1113,35 @@
 .pr-sec--group .pr-bonus ul {
   color: #3f653b;
 }
+/* Логотипы лежат внахлёст и с наклоном, как в макете: аккуратный ряд
+   одинаковых иконок читается как список сервисов, а это украшение блока. */
 .pr-bonus__art {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.pr-bonus__title {
+  white-space: nowrap;
 }
 .pr-bonus__art img {
-  width: 44px;
-  height: 44px;
+  width: 68px;
+  height: 68px;
   object-fit: contain;
+}
+.pr-bonus__art img + img {
+  margin-left: -10px;
+}
+.pr-bonus__art img:nth-child(1) {
+  transform: rotate(-10deg);
+}
+.pr-bonus__art img:nth-child(3) {
+  transform: rotate(9deg);
 }
 /* Подарок крупнее и последний: он не сервис, а знак «это всё в подарок». */
 .pr-bonus__gift {
-  width: 54px;
-  height: 54px;
+  width: 82px;
+  height: 82px;
 }
 @media (max-width: 520px) {
   .pr-bonus {
@@ -1688,7 +1715,7 @@
 .tu {
   min-height: 100vh;
   padding: 0 0 48px;
-  background: #f4f2f9;
+  background: #fff;
 }
 .tu__top {
   position: sticky;
@@ -1698,7 +1725,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 24px;
-  background: #f4f2f9;
+  background: #fff;
 }
 .tu__back {
   display: grid;
