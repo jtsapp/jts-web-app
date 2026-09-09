@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { noTours } from './tour-helper.js'
 
 // Регрессия на баг «после логина сайдбар не сворачивается на мобилке»
 // (коммит revert(mobile) убрал адаптацию — экраны тьютора/обучения ломались).
@@ -17,6 +18,7 @@ test.describe('адаптивная оболочка — мобилка', () => 
 
   for (const screen of SCREENS) {
     test(`${screen}: шапка видна, сайдбар off-canvas, drawer открывается/закрывается`, async ({ page }) => {
+      await noTours(page)
       await page.goto(`/?screen=${screen}`)
 
       const topbar = page.locator('.mtop')
