@@ -54,7 +54,7 @@ describe('levelSummary', () => {
   }
 
   it('процент и остаток — из освоенных материалов, а не из навыков', () => {
-    const s = levelSummary('B1', SKILLED, { percent: 40, done: 12, total: 30, remaining: 18 })
+    const s = levelSummary('B1', SKILLED, { level: 'B1', next: 'B2', percent: 40, done: 12, total: 30, remaining: 18 })
 
     // Навыки безупречны, но уровень пройден на 40%: это разные величины, и
     // карточка обязана показывать вторую — «сколько пройдено», а не «как точно».
@@ -75,7 +75,7 @@ describe('levelSummary', () => {
   })
 
   it('у новичка нет ни сильной, ни слабой стороны', () => {
-    const s = levelSummary('A1', null, { percent: 0, done: 0, total: 40, remaining: 40 })
+    const s = levelSummary('A1', null, { level: 'A1', next: 'A2', percent: 0, done: 0, total: 40, remaining: 40 })
     expect(s.percent).toBe(0)
     expect(s.strongest).toBe(null)
     expect(s.weakest).toBe(null)
@@ -84,6 +84,21 @@ describe('levelSummary', () => {
 
   it('на C2 следующего уровня нет', () => {
     expect(levelSummary('C2', null).next).toBe(null)
+  })
+
+  it('купленный курс выше своего ведёт карточку целиком', () => {
+    // Ученик A1 купил A2 — проходит он A2. Считать полосу по A2, а подписывать
+    // карточку «A1» нельзя: вышло бы «ВАШ УРОВЕНЬ A1» с дорожкой до B1.
+    const s = levelSummary('A1', null, { level: 'A2', next: 'B1', percent: 20, done: 4, total: 20, remaining: 16 })
+
+    expect(s.level).toBe('A2')
+    expect(s.next).toBe('B1')
+  })
+
+  it('сервер сказал «выше некуда» — своего мнения о потолке у карточки нет', () => {
+    const s = levelSummary('B2', null, { level: 'C2', next: null, percent: 10, done: 1, total: 10, remaining: 9 })
+
+    expect(s.next).toBe(null)
   })
 })
 

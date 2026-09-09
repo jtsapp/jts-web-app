@@ -11,7 +11,7 @@ const trialState = { value: { requested: false, managerAssigned: false } }
 const occurrences = { value: [] }
 const homework = { value: [] }
 // Прогресс по уровню считает сервер — здесь отдаём его готовым.
-const levelProgress = { value: { percent: 45, done: 9, total: 20, remaining: 11 } }
+const levelProgress = { value: { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 } }
 
 vi.mock('../api.js', () => ({
   // С токеном оболочка будит колокольчик уведомлений — без заглушки падает
@@ -67,7 +67,7 @@ function renderHome(props = {}) {
 beforeEach(() => {
   localStorage.clear()
   localStats.value = FULL_STATS
-  levelProgress.value = { percent: 45, done: 9, total: 20, remaining: 11 }
+  levelProgress.value = { level: 'B1', next: 'B2', percent: 45, done: 9, total: 20, remaining: 11 }
 })
 
 describe('Главная демо-аккаунта', () => {
@@ -107,10 +107,21 @@ describe('Главная демо-аккаунта', () => {
   })
 
   it('пройденный уровень говорит об этом, а не «ещё 0 материалов»', async () => {
-    levelProgress.value = { percent: 100, done: 20, total: 20, remaining: 0 }
+    levelProgress.value = { level: 'B1', next: 'B2', percent: 100, done: 20, total: 20, remaining: 0 }
     renderHome({ token: 'T' })
 
     expect(await screen.findByText('Материалы уровня пройдены — впереди B2')).toBeTruthy()
+  })
+
+  it('купленный курс выше своего ведёт карточку целиком', async () => {
+    // Ученик A1 купил A2 — проходит он A2, и полоса считается по нему. Оставить
+    // в заголовке A1 значило бы подписать карточку одним уровнем, а мерить
+    // другим: вышло бы «ВАШ УРОВЕНЬ A1» с дорожкой, ведущей к B1.
+    levelProgress.value = { level: 'A2', next: 'B1', percent: 20, done: 4, total: 20, remaining: 16 }
+    renderHome({ userLevel: 'A1', token: 'T' })
+
+    expect(await screen.findByText('A2 · Elementary')).toBeTruthy()
+    expect(screen.getByText('Цель — B1')).toBeTruthy()
   })
 
   it('дорожка ведёт от старта через ближайшие ступени к финишу', () => {
@@ -160,7 +171,7 @@ describe('Главная демо-аккаунта', () => {
 
   it('у новичка вместо цифр — приглашение позаниматься', async () => {
     localStats.value = {}
-    levelProgress.value = { percent: 0, done: 0, total: 20, remaining: 20 }
+    levelProgress.value = { level: 'B1', next: 'B2', percent: 0, done: 0, total: 20, remaining: 20 }
     const { container } = renderHome({ token: 'T' })
     expect(container.querySelectorAll('.hm-skill')).toHaveLength(0)
     expect(screen.getByText(/Пройдите несколько заданий/)).toBeTruthy()
