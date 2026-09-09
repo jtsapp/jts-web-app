@@ -3,13 +3,15 @@ import { useI18n } from '../i18n.jsx'
 import AssetImage from './AssetImage.jsx'
 import { useDialogKeys } from '../lib/useDialogKeys.js'
 
-// «Поздравляем с покупкой!» — окно поверх того экрана, на котором ученика
-// застало открытие полного доступа.
+// Окно «сбылось»: поздравление с покупкой и — теми же средствами — принятая
+// заявка с витрины. Радостная новость выглядит одинаково, а плашка в углу
+// корзины для такого повода слишком тиха: человек только что нажал «перейти к
+// оплате» и ждёт ответа, а не ищет глазами, где что-то изменилось.
 //
-// Когда оно показывается, решает App: своей оплаты у приложения нет, поэтому
-// событием служит сам факт, что аккаунт перестал быть демо (менеджер открыл
-// доступ). Здесь — только вёрстка и одна кнопка: закрыть.
-export default function PurchaseSuccessModal({ onClose }) {
+// Когда показывать поздравление, решает App: своей оплаты у приложения нет,
+// поэтому событием служит сам факт, что аккаунт перестал быть демо (менеджер
+// открыл доступ). Заявку показывает экран витрины. Здесь — только вёрстка.
+export default function PurchaseSuccessModal({ onClose, title, body }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
   const okRef = useRef(null)
@@ -34,11 +36,15 @@ export default function PurchaseSuccessModal({ onClose }) {
         <div className="bt-art">
           <AssetImage src="/assets/demo/modal-london.webp" alt="" />
         </div>
-        <h2 className="bt-title" id="bt-title">{t('bought.title')}</h2>
+        <h2 className="bt-title" id="bt-title">{title || t('bought.title')}</h2>
         <p className="bt-body" id="bt-body">
-          {t('bought.body1')}
-          <br />
-          {t('bought.body2')}
+          {body || (
+            <>
+              {t('bought.body1')}
+              <br />
+              {t('bought.body2')}
+            </>
+          )}
         </p>
         <button type="button" className="bt-ok" ref={okRef} onClick={onClose}>
           {t('bought.ok')}

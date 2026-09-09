@@ -5,6 +5,7 @@ import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { useOffers } from '../lib/useOffers.js'
 import { createLead, createOrder } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
+import PurchaseSuccessModal from '../components/PurchaseSuccessModal.jsx'
 import CatalogError from '../components/CatalogError.jsx'
 import {
   BONUSES,
@@ -43,6 +44,8 @@ export default function PricingPage({ token, onBack, onDone }) {
   const [items, setItems] = useState([])
   const [payOpen, setPayOpen] = useState(false)
   const [sent, setSent] = useState(false)
+  // Окно закрыли — плашка в корзине остаётся, второй раз окно не всплывает.
+  const [hidNote, setHidNote] = useState(false)
 
   const groups = useMemo(() => splitOffers(offers || []), [offers])
   const durations = useMemo(() => durationsOf(groups.individual), [groups.individual])
@@ -144,11 +147,13 @@ export default function PricingPage({ token, onBack, onDone }) {
     }
 
     setPayOpen(false)
+    // Заявка дошла до менеджера — говорим об этом окном, а не только плашкой в
+    // корзине: человек ждёт ответа на своё нажатие.
+    if (accepted) setSent(true)
     // «Связаться со мной» — единственный способ, который не уводит из
     // приложения. Но если звонить некуда (в профиле нет телефона), оставлять
     // человека ни с чем нельзя — тогда открываем чат.
     if (method === 'callback' && accepted) {
-      setSent(true)
       onDone?.(method)
       return
     }
@@ -376,6 +381,10 @@ export default function PricingPage({ token, onBack, onDone }) {
       )}
 
       {payOpen && <PaymentMethodModal onClose={() => setPayOpen(false)} onPick={pay} />}
+      {/* Плашка в корзине остаётся после закрытия окна — как напоминание. */}
+      {sent && !hidNote && (
+        <PurchaseSuccessModal title={t('pay.sent')} body={t('pay.sentSub')} onClose={() => setHidNote(true)} />
+      )}
     </div>
   )
 }

@@ -223,8 +223,16 @@ describe('Витрина тарифов', () => {
     fireEvent.click(container.querySelector('.pr-cart__pay'))
     fireEvent.click(screen.getByText('Связаться со мной'))
 
-    await waitFor(() => expect(screen.getByText('Заявка принята')).toBeTruthy())
+    // Подтверждений два и это намеренно: окно — ответ на нажатие, плашка в
+    // корзине остаётся после того, как окно закрыли.
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy())
+    expect(screen.getAllByText('Заявка принята')).toHaveLength(2)
+    expect(container.querySelector('.pr-sent')).not.toBeNull()
     expect(window.open).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Отлично' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(container.querySelector('.pr-sent')).not.toBeNull()
   })
 
   it('перезвонить некуда — открывается чат', async () => {

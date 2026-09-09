@@ -5,6 +5,7 @@ import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 import { useOffers } from '../lib/useOffers.js'
 import { createLead, createOrder } from '../api.js'
 import PaymentMethodModal from '../components/PaymentMethodModal.jsx'
+import PurchaseSuccessModal from '../components/PurchaseSuccessModal.jsx'
 import CatalogError from '../components/CatalogError.jsx'
 import { CURRENCY, formatPrice, packDiscount, pricePerMinute, splitOffers } from '../data/pricing.js'
 
@@ -34,6 +35,7 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
   const [pickedCode, setPickedCode] = useState(null)
   const [payOpen, setPayOpen] = useState(false)
   const [sent, setSent] = useState(false)
+  const [hidNote, setHidNote] = useState(false)
 
   const packs = useMemo(() => splitOffers(offers || []).minutes, [offers])
   const picked = packs.find((p) => p.code === pickedCode) || packs[0] || null
@@ -95,8 +97,10 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
     }
 
     setPayOpen(false)
+    // Заявка дошла до менеджера — говорим об этом окном, а не только плашкой
+    // в корзине: человек ждёт ответа на своё нажатие.
+    if (accepted) setSent(true)
     if (method === 'callback' && accepted) {
-      setSent(true)
       onDone?.(method)
       return
     }
@@ -204,6 +208,10 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
       )}
 
       {payOpen && <PaymentMethodModal onClose={() => setPayOpen(false)} onPick={pay} />}
+      {/* Плашка в корзине остаётся после закрытия окна — как напоминание. */}
+      {sent && !hidNote && (
+        <PurchaseSuccessModal title={t('pay.sent')} body={t('pay.sentSub')} onClose={() => setHidNote(true)} />
+      )}
     </div>
   )
 }

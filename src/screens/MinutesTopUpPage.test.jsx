@@ -134,7 +134,8 @@ describe('Докупить минуты', () => {
     const { container } = await renderLoaded()
     fireEvent.click(container.querySelector('.tu-order__pay'))
     fireEvent.click(screen.getByText('Связаться со мной'))
-    await waitFor(() => expect(screen.getByText('Заявка принята')).toBeTruthy())
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy())
+    expect(screen.getAllByText('Заявка принята')).toHaveLength(2)
     expect(window.open).not.toHaveBeenCalled()
   })
 
