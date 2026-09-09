@@ -9094,6 +9094,18 @@ textarea {
 }
 .hw-practice__open:hover { background: #6a3ff0; }
 
+/* Задание, которое открывать нечем (раздела нет, урок не найден, уровня не
+   существует). Кнопки у него нет — вместо неё объяснение, и оно обязано вести
+   себя как кнопка в раскладке строки: без ширины и flex:none длинный текст
+   раздавливал название юнита в столбик по букве. */
+.hw-practice__gone {
+  flex: none; max-width: 260px; text-align: right;
+  font-size: 12.5px; line-height: 1.35; color: var(--muted, #6b6580);
+}
+@media (max-width: 560px) {
+  .hw-practice__gone { max-width: 100%; text-align: left; }
+}
+
 /* Экран аккаунта класса (screens/BoothEntryPage.jsx): ожидание, вход в пробный
    урок и «класс закрыт». Своей вёрстки почти нет — карточка, заголовок и
    подпись общие с экранами входа (.form-inner/.form-card/.form-title/

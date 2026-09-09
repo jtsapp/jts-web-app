@@ -609,6 +609,26 @@ export default function PracticePage({
     setGrammarLevel(openTarget.level)
     setOpenUnit({ level: openTarget.level, unit })
   }, [openTarget, grammarIndex])
+  /**
+   * Пришли из домашней работы за уровнем разговорной практики.
+   *
+   * Своего экрана у раздела нет — это оверлей поверх «Практики», и открыть его
+   * можно только отсюда. Ждём загрузки страницы: до неё не известны
+   * заблокированные уровни, и открытие сорвалось бы молча.
+   *
+   * Цель отрабатывается один раз по своему ключу, как и у грамматики: закрыл
+   * оверлей — не должен тут же открыться снова.
+   */
+  const openedSituationsRef = useRef(null)
+  useEffect(() => {
+    if (openTarget?.area !== 'situations' || !openTarget?.level) return
+    const key = `situations:${openTarget.level}`
+    if (openedSituationsRef.current === key || situationsEntitlement.loading) return
+    openedSituationsRef.current = key
+    setFilter('situations')
+    openSituationsLevel(String(openTarget.level).toLowerCase())
+  }, [openTarget, situationsEntitlement.loading])   // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     setGrammarLevel(levelToCourse(userLevel))
   }, [userLevel])

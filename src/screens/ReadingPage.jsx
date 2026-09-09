@@ -116,13 +116,21 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
 
   const texts = levels[level] ? levels[level].texts : null
 
-  // Прыжок из Практики: ?screen=reading (+ level/textId в payload).
-  const appliedTargetRef = useRef(false)
+  // Прыжок из Практики и из домашней работы: ?screen=reading (+ level/textId).
+  //
+  // Ключ, а не флаг: экран не перемонтируется при переходе с уже открытого
+  // «Чтения», и вторая домашка подряд ни разу бы не открылась. Тот же приём у
+  // грамматики (PracticePage) — цель отрабатывается один раз на адрес, но
+  // выход «Назад» из текста не возвращает в него же.
+  const appliedTargetRef = useRef(null)
   useEffect(() => {
-    if (appliedTargetRef.current || !initialTarget) return
-    appliedTargetRef.current = true
-    const lv = READING_LEVELS.includes(initialTarget.level) ? initialTarget.level : null
-    if (!lv) return
+    if (!initialTarget) return
+    // Уровень приходит с бэкенда как есть: «A1» здесь чужой уровень.
+    const lv = String(initialTarget.level || '').toLowerCase()
+    const key = `${lv}:${initialTarget.textId ?? ''}`
+    if (appliedTargetRef.current === key) return
+    appliedTargetRef.current = key
+    if (!READING_LEVELS.includes(lv)) return
     setLevel(lv)
     if (!initialTarget.textId) return
     loadLevel(lv).then((data) => {
