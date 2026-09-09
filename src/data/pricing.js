@@ -68,9 +68,18 @@ export function packDiscount(offer, packs = []) {
 /* ------------------------------- оформление ------------------------------- */
 
 /** Бонусы раздела — маркетинговые списки, к цене отношения не имеют. */
+// Названия сервисов не переводятся — это бренды, они одинаковы на всех языках.
+// Значок лежит рядом с подписью: логотипы узнают раньше, чем читают список.
+const BONUS = {
+  duolingo: { id: 'duolingo', label: 'Duolingo Plus', icon: '/assets/demo/logo-duolingo.png' },
+  netflix: { id: 'netflix', label: 'Netflix', icon: '/assets/demo/logo-netflix.png' },
+  puzzleEnglish: { id: 'puzzle-english', label: 'Puzzle English', icon: '/assets/demo/logo-puzzle-english.png' },
+  puzzleMovies: { id: 'puzzle-movies', label: 'Puzzle Movies', icon: '/assets/demo/logo-puzzle-movies.png' },
+}
+
 export const BONUSES = {
-  individual: ['Duolingo Plus', 'Netflix', 'Puzzle English', 'Puzzle Movies'],
-  group: ['Netflix', 'Puzzle Movies'],
+  individual: [BONUS.duolingo, BONUS.netflix, BONUS.puzzleEnglish, BONUS.puzzleMovies],
+  group: [BONUS.netflix, BONUS.puzzleMovies],
 }
 
 // «Входит в любой тариф» — плитки внизу экрана. Ключи i18n, а не готовый текст:

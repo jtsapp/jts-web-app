@@ -487,22 +487,24 @@
 }
 .hm-level__goal {
   flex: none;
-  width: 150px;
+  width: 168px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 14px 10px;
-  border-radius: 18px;
+  gap: 10px;
+  padding: 16px 12px;
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.16);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   text-align: center;
 }
+/* Медаль — главный предмет карточки, а не значок при подписи: на макете она
+   занимает почти всю плашку, и лента над ней видна целиком. */
 .hm-level__medal {
-  width: 62px;
-  height: 62px;
+  width: 108px;
+  height: 108px;
   object-fit: contain;
 }
 @media (max-width: 720px) {
@@ -616,19 +618,23 @@
   display: flex;
   flex-direction: column;
 }
+/* Картинка из макета — не герой уровня на градиенте, а фотография звонка:
+   она вписана в карточку со всех сторон, а не вытекает под её края. Градиент
+   остался подложкой на время загрузки — пустой серый прямоугольник в этом
+   месте читается как поломка. */
 .hm-trial__art {
   display: grid;
   place-items: center;
-  height: 170px;
-  margin: -18px -18px 14px;
-  border-radius: 20px 20px 0 0;
+  height: 176px;
+  margin-bottom: 14px;
+  border-radius: 16px;
   background: linear-gradient(150deg, #c9b7ff 0%, #a8dcf0 100%);
   overflow: hidden;
 }
 .hm-trial__art img {
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 /* Обёртка ради aria-live: заголовок и текст были прямыми детьми флекса и
    вставали друг под другом сами. Внутри обычного div <b> и <span> снова
@@ -980,9 +986,46 @@
   color: var(--purple);
 }
 .pr-bonus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
   padding: 14px;
   border-radius: 16px;
   background: #fff;
+  overflow: hidden;
+}
+/* Подложка — цветом раздела: блок бонусов принадлежит своему тарифу, а белым
+   он сливался с соседней карточкой преимуществ. */
+.pr-sec--ind .pr-bonus {
+  background: #ece2ff;
+}
+.pr-sec--group .pr-bonus {
+  background: #d9f2e2;
+}
+.pr-bonus__art {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pr-bonus__art img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+/* Подарок крупнее и последний: он не сервис, а знак «это всё в подарок». */
+.pr-bonus__gift {
+  width: 54px;
+  height: 54px;
+}
+@media (max-width: 520px) {
+  .pr-bonus {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pr-bonus__art img {
+    width: 36px;
+    height: 36px;
+  }
 }
 .pr-bonus__title {
   display: flex;

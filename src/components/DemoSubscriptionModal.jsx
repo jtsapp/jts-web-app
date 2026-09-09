@@ -74,7 +74,7 @@ export default function DemoSubscriptionModal({ onClose, onBuy }) {
             регистрацию). Своей картинки «подписка» в public/ нет, а тянуть
             внешнюю в вёрстку нельзя, поэтому берём то, что уже есть и по смыслу
             принадлежит этому голосу. Декоративная: текст рядом полный. */}
-        <AssetImage className="ds-art" src="/assets/dexter.png" alt="" />
+        <AssetImage className="ds-art" src="/assets/demo/modal-london.webp" alt="" />
         <h2 className="ds-title" id="ds-title">{t('demo.paywall.title')}</h2>
         <p className="ds-body" id="ds-body">{t('demo.paywall.body')}</p>
         <div className="ds-acts">

@@ -32,7 +32,7 @@ export default function PurchaseSuccessModal({ onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bt-art">
-          <AssetImage src="/assets/hero-london.jpg" alt="" />
+          <AssetImage src="/assets/demo/modal-london.webp" alt="" />
         </div>
         <h2 className="bt-title" id="bt-title">{t('bought.title')}</h2>
         <p className="bt-body" id="bt-body">

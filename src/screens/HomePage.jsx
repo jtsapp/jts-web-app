@@ -259,7 +259,7 @@ export default function HomePage({
           {isDemoAccount && (
           <section className="hm-card hm-trial">
             <div className="hm-trial__art">
-              <AssetImage src={`/assets/world/hero/${summary.level.toLowerCase()}.webp`} alt="" />
+              <AssetImage src="/assets/demo/trial-call.webp" alt="" />
             </div>
             {/* Состояние меняется под курсором после нажатия — озвучиваем смену
                 тем, кто кнопку не видит. */}

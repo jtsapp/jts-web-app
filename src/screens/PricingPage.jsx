@@ -424,15 +424,25 @@ function Stepper({ qty, onBump, t }) {
 function Bonuses({ list, t }) {
   return (
     <div className="pr-bonus">
-      <div className="pr-bonus__title">
-        <GiftMark />
-        {t('pricing.bonus')}
+      <div className="pr-bonus__body">
+        <div className="pr-bonus__title">
+          <GiftMark />
+          {t('pricing.bonus')}
+        </div>
+        <ul>
+          {list.map((b) => (
+            <li key={b.id}>{b.label}</li>
+          ))}
+        </ul>
       </div>
-      <ul>
+      {/* Логотипы — украшение блока, а не список: подписи уже слева, и второй
+          раз называть их скринридеру незачем. */}
+      <div className="pr-bonus__art" aria-hidden="true">
         {list.map((b) => (
-          <li key={b}>{b}</li>
+          <img key={b.id} src={b.icon} alt="" />
         ))}
-      </ul>
+        <img className="pr-bonus__gift" src="/assets/demo/gift.png" alt="" />
+      </div>
     </div>
   )
 }
