@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test'
-import { noTours } from './tour-helper.js'
 
 // Локализация Практики: тексты страницы берутся из словаря i18n.jsx (ru/en/kk),
 // а фильтр секций работает на стабильных ключах — смена языка не ломает логику.
 
 const openPractice = async (page, lang) => {
-  await noTours(page)
   if (lang) await page.addInitScript((l) => localStorage.setItem('lang', l), lang)
   await page.goto('/?screen=practice')
   // Ждём саму страницу, а не заголовок: на мобильном вьюпорте .pp__title

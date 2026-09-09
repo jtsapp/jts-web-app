@@ -770,6 +770,31 @@ const dict = {
       'Карта открывается здесь. Внутри города — тропа уроков: проходишь их по порядку, в конце юнита ждёт тест.',
     'tour.learn.locked.title': 'Закрытые города',
     'tour.learn.locked.text': 'Уровни выше откроются, когда пройдёшь текущий.',
+    'tour.lessons.tabs.title': 'Две вкладки',
+    'tour.lessons.tabs.text':
+      '«Онлайн» — занятия с преподавателем по расписанию. «Самостоятельно» — материалы курса твоего уровня, которые проходишь сам.',
+    'tour.lessons.next.title': 'Ближайшее занятие',
+    'tour.lessons.next.text':
+      'Карточка сверху — следующий урок. Когда преподаватель начнёт занятие, отсюда же в него и заходишь.',
+    'tour.lessons.calendar.title': 'Календарь',
+    'tour.lessons.calendar.text': 'Здесь видно все занятия месяца — и прошедшие, и запланированные.',
+    'tour.hw.list.title': 'Список работ',
+    'tour.hw.list.text':
+      'Сверху то, что ждёт тебя: заданное и возвращённое на доработку. Ниже — сданное и проверенное.',
+    'tour.hw.upload.title': 'Твой ответ',
+    'tour.hw.upload.text':
+      'Прикрепи файл с работой — фото, документ или аудио. Разрешённые форматы подписаны под кнопкой.',
+    'tour.hw.submit.title': 'Отправить на проверку',
+    'tour.hw.submit.text':
+      'Работа уходит преподавателю; оценка и комментарий вернутся в эту же карточку.',
+    'tour.vocab.levels.title': 'Основная лексика',
+    'tour.vocab.levels.text':
+      'Базовые слова по уровням английского. Открыт твой уровень и всё, что ниже.',
+    'tour.vocab.fields.title': 'Лексика по специальности',
+    'tour.vocab.fields.text': 'Те же слова, но подобранные под профессию и предмет: работа, еда, путешествия.',
+    'tour.vocab.mine.title': 'Мой словарь',
+    'tour.vocab.mine.text':
+      'Сюда падает всё, что ты сохранил в чтении и практике. Их же гоняет тренажёр повторения.',
     'practice.chip.all': 'Все',
     'practice.chip.grammar': 'Грамматика',
     'practice.chip.situations': 'Ситуации',
@@ -2268,6 +2293,31 @@ const dict = {
       'The map opens here. Inside a town is the lesson trail: you walk it in order, with a test at the end of a unit.',
     'tour.learn.locked.title': 'Locked towns',
     'tour.learn.locked.text': 'Higher levels open once you finish the current one.',
+    'tour.lessons.tabs.title': 'Two tabs',
+    'tour.lessons.tabs.text':
+      'Online — classes with a teacher by schedule. Self-study — course materials for your level that you go through on your own.',
+    'tour.lessons.next.title': 'Your next class',
+    'tour.lessons.next.text':
+      'The card on top is the upcoming lesson. When the teacher starts it, you join from right here.',
+    'tour.lessons.calendar.title': 'Calendar',
+    'tour.lessons.calendar.text': 'Every class of the month is here — the ones you had and the ones ahead.',
+    'tour.hw.list.title': 'Your assignments',
+    'tour.hw.list.text':
+      'On top is what waits for you: assigned and sent back for a redo. Below — submitted and graded.',
+    'tour.hw.upload.title': 'Your answer',
+    'tour.hw.upload.text':
+      'Attach the file with your work — a photo, a document or audio. The accepted formats are listed under the button.',
+    'tour.hw.submit.title': 'Send for review',
+    'tour.hw.submit.text':
+      'The work goes to the teacher; the grade and the comment come back to this same card.',
+    'tour.vocab.levels.title': 'Core vocabulary',
+    'tour.vocab.levels.text':
+      'Base words by English level. Your level is open, and everything below it.',
+    'tour.vocab.fields.title': 'Specialist vocabulary',
+    'tour.vocab.fields.text': 'The same words picked for your profession and subject: work, food, travel.',
+    'tour.vocab.mine.title': 'My dictionary',
+    'tour.vocab.mine.text':
+      'Everything you saved while reading and practising lands here. The review trainer drills exactly these.',
     'practice.chip.all': 'All',
     'practice.chip.grammar': 'Grammar',
     'practice.chip.situations': 'Situations',
@@ -3756,6 +3806,31 @@ const dict = {
       'Карта осы жерден ашылады. Қала ішінде — сабақтар соқпағы: ретімен өтесің, юнит соңында тест күтеді.',
     'tour.learn.locked.title': 'Жабық қалалар',
     'tour.learn.locked.text': 'Жоғарғы деңгейлер ағымдағысын аяқтағанда ашылады.',
+    'tour.lessons.tabs.title': 'Екі қойынды',
+    'tour.lessons.tabs.text':
+      '«Онлайн» — мұғаліммен кесте бойынша сабақ. «Өз бетінше» — өз деңгейіңдегі курс материалдары, оларды өзің өтесің.',
+    'tour.lessons.next.title': 'Жақындағы сабақ',
+    'tour.lessons.next.text':
+      'Жоғарыдағы карточка — келесі сабақ. Мұғалім сабақты бастағанда, оған осы жерден кіресің.',
+    'tour.lessons.calendar.title': 'Күнтізбе',
+    'tour.lessons.calendar.text': 'Мұнда айдың барлық сабағы көрінеді — өткені де, жоспарланғаны да.',
+    'tour.hw.list.title': 'Жұмыстар тізімі',
+    'tour.hw.list.text':
+      'Жоғарыда — сені күтіп тұрғаны: берілген және пысықтауға қайтарылған. Төменде — тапсырылғаны мен тексерілгені.',
+    'tour.hw.upload.title': 'Сенің жауабың',
+    'tour.hw.upload.text':
+      'Жұмысың бар файлды тірке — сурет, құжат немесе аудио. Рұқсат етілген форматтар түйменің астында жазулы.',
+    'tour.hw.submit.title': 'Тексеруге жіберу',
+    'tour.hw.submit.text':
+      'Жұмыс мұғалімге кетеді; баға мен пікір осы карточкаға қайта оралады.',
+    'tour.vocab.levels.title': 'Негізгі лексика',
+    'tour.vocab.levels.text':
+      'Ағылшын деңгейі бойынша негізгі сөздер. Өз деңгейің және одан төмені ашық.',
+    'tour.vocab.fields.title': 'Мамандық лексикасы',
+    'tour.vocab.fields.text': 'Сол сөздер, бірақ кәсіп пен пәнге қарай таңдалған: жұмыс, тамақ, саяхат.',
+    'tour.vocab.mine.title': 'Менің сөздігім',
+    'tour.vocab.mine.text':
+      'Оқу мен тәжірибеде сақтағаныңның бәрі осында түседі. Қайталау тренажёры дәл соларды жаттықтырады.',
     'practice.chip.all': 'Барлығы',
     'practice.chip.grammar': 'Грамматика',
     'practice.chip.situations': 'Жағдаяттар',

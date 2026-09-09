@@ -877,6 +877,9 @@ export default function App() {
   // пройденный тьюторский не должен закрывать их (и наоборот).
   const learnTourKey = tourKeyFor(profileId || getDeviceId(), 'learn')
   const practiceTourKey = tourKeyFor(profileId || getDeviceId(), 'practice')
+  const lessonsTourKey = tourKeyFor(profileId || getDeviceId(), 'lessons')
+  const homeworkTourKey = tourKeyFor(profileId || getDeviceId(), 'homework')
+  const vocabTourKey = tourKeyFor(profileId || getDeviceId(), 'vocab')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
@@ -1342,9 +1345,9 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setScreen('lesson-workspace') }} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setScreen('lesson-workspace') }} tourKey={lessonsTourKey} />
     case 'homework':
-      return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} />
+      return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'course-catalog':
       return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
     case 'booth':
@@ -1411,6 +1414,7 @@ export default function App() {
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}
+          tourKey={vocabTourKey}
         />
       )
     case 'kingdom-interior':

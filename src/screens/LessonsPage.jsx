@@ -4,6 +4,7 @@ import { useI18n } from '../i18n.jsx'
 import LessonSchedule from './schedule/LessonSchedule.jsx'
 import SelfStudy from './lessons/SelfStudy.jsx'
 import TeacherHomeworkBoard from './homework/TeacherHomeworkBoard.jsx'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { isTeacher } from '../lib/jwt.js'
 
 // Спикинг-клабы скрыты: офлайн-группы в админке так и не завели, и вкладка
@@ -29,7 +30,7 @@ const TEACHER_TAB = { key: 'homework', label: 'lessons.tabHomework' }
  * заново каждый раз. Значение только начальное — дальше вкладку выбирает сам
  * ученик, и перерисовка родителя его выбор не сбрасывает.
  */
-export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, initialTab }) {
+export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, onProfile, onOpenLesson, onOpenCatalog, onOpenSelfStudy, initialTab, tourKey }) {
   const { t } = useI18n()
   // Каталог уровней — инструмент преподавателя: он выбирает из него, что вести
   // на уроке. Ученику он показывал бы всё содержимое курса в обход программы,
@@ -38,8 +39,33 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
   const tabs = teacher ? [...TABS, TEACHER_TAB] : TABS
   const [tab, setTab] = useState(() => (tabs.some((x) => x.key === initialTab) ? initialTab : 'online'))
 
+  // Тур — ученический: он рассказывает, как заходить на свой урок и сдавать
+  // работы. Преподаватель этот экран использует как рабочее место (каталог,
+  // проверка ДЗ), и объяснять ему «твоё ближайшее занятие» нечего.
+  const tour = useScreenTour(teacher ? null : tourKey)
+  // Расписание — вкладка по умолчанию, поэтому шаги про ближайший урок и
+  // календарь ищут элементы именно там; на других вкладках их нет, и тур их
+  // пропустит сам. «?» возвращает на «Онлайн», чтобы этого не случилось.
+  const tourSteps = [
+    { selector: '.ls__tabs', title: t('tour.lessons.tabs.title'), text: t('tour.lessons.tabs.text') },
+    { selector: '.sch__top', title: t('tour.lessons.next.title'), text: t('tour.lessons.next.text') },
+    { selector: '.cal-layout', title: t('tour.lessons.calendar.title'), text: t('tour.lessons.calendar.text') },
+  ]
+  const startTour = () => {
+    setTab('online')
+    tour.start()
+  }
+
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="lessons" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout
+      userName={userName}
+      userLevel={userLevel}
+      active="lessons"
+      token={token}
+      onNav={onNav}
+      onProfile={onProfile}
+      onHelp={teacher ? undefined : startTour}
+    >
       <div className="ls">
         <header className="ls__head">
           <h1 className="ls__title">{t('nav.lessons')}</h1>
@@ -83,6 +109,10 @@ export default function LessonsPage({ userLevel = 'A1', userName, token, onNav, 
               <TeacherHomeworkBoard token={token} />
             </section>
           </div>
+        )}
+
+        {tour.open && (
+          <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
         )}
       </div>
     </LearningLayout>
