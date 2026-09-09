@@ -1128,7 +1128,7 @@
      уже, чем в фигме (справа корзина), и от абсолютных пикселей картинки
      уезжали на текст. */
   position: absolute;
-  bottom: -22px;
+  top: 50%;
   width: 32%;
   height: auto;
   max-height: 128px;
@@ -1138,24 +1138,23 @@
    Наклоны — из макета, там ни одна картинка не стоит ровно. */
 .pr-bonus__art img:nth-last-child(1) {
   right: -4%;
-  transform: rotate(-6deg);
+  transform: translateY(-50%) rotate(-6deg);
 }
 .pr-bonus__art img:nth-last-child(2) {
   right: 18%;
-  transform: rotate(5deg);
+  transform: translateY(-50%) rotate(5deg);
 }
 .pr-bonus__art img:nth-last-child(3) {
   right: 40%;
-  transform: rotate(-9deg);
+  transform: translateY(-50%) rotate(-9deg);
 }
 .pr-bonus__art img:nth-last-child(4) {
   right: 62%;
-  bottom: -8px;
-  transform: rotate(7deg);
+  transform: translateY(-50%) rotate(7deg);
 }
 .pr-bonus__art img:nth-last-child(5) {
   right: 84%;
-  transform: rotate(-11deg);
+  transform: translateY(-50%) rotate(-11deg);
 }
 /* Подарок крупнее и последний: он не сервис, а знак «это всё в подарок». */
 .pr-bonus__gift {
