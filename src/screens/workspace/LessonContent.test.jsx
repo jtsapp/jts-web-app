@@ -241,6 +241,33 @@ describe('LessonContent — карточки шага', () => {
     expect(container.querySelector('.lw-practice__html').textContent).toContain('I’m')
   })
 
+  it('рисует два соседних recording из html, не один голый <audio>', () => {
+    const { container } = renderContent([
+      {
+        type: 'practice',
+        title: 'Listening',
+        instruction: 'Play each recording twice.',
+        html: `
+          <div class="player">
+            <audio src="https://example.test/Track_1.4.mp3" controls></audio>
+            <div class="meta"><b>Navigate B1+ · Audio 1.4</b></div>
+          </div>
+          <div class="player">
+            <audio src="https://example.test/Track_1.5.mp3" controls></audio>
+            <div class="meta"><b>Navigate B1+ · Audio 1.5</b></div>
+          </div>`,
+        questions: [{ id: 'q1', type: 'choice', prompt: 'Black Friday falls in', options: ['November', 'October'], answer: 'November' }],
+      },
+    ])
+    const audios = container.querySelectorAll('.lw-practice__html audio')
+    expect(audios).toHaveLength(2)
+    expect(audios[0].getAttribute('src')).toContain('Track_1.4.mp3')
+    expect(audios[1].getAttribute('src')).toContain('Track_1.5.mp3')
+    expect(container.querySelector('.lw-practice__audio')).toBeNull()
+    expect(container.textContent).toContain('Audio 1.4')
+    expect(container.textContent).toContain('Audio 1.5')
+  })
+
   it('рисует writing одним полем, а не стопкой info', () => {
     const { container } = renderContent([
       {
