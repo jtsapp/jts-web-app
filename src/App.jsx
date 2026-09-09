@@ -873,6 +873,10 @@ export default function App() {
   // Отметка «тур дашборда показан» — на профиль. Профиль ещё не подтянулся
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
+  // Туры «Обучения» и «Практики» отмечаются своими ключами: экраны разные, и
+  // пройденный тьюторский не должен закрывать их (и наоборот).
+  const learnTourKey = tourKeyFor(profileId || getDeviceId(), 'learn')
+  const practiceTourKey = tourKeyFor(profileId || getDeviceId(), 'practice')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
@@ -1244,6 +1248,7 @@ export default function App() {
           userName={name}
           token={token}
           unlockAll={devUnlock}
+          tourKey={learnTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenKingdom={(k) => {
@@ -1271,6 +1276,7 @@ export default function App() {
           userName={name}
           token={token}
           openTarget={practiceTarget}
+          tourKey={practiceTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}

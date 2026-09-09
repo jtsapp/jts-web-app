@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { noTours } from './tour-helper.js'
 
 // Мобильная адаптация Практики (вьюпорт 390×844, см. playwright.config.js):
 //   — страница не шире экрана, чипсы-фильтры одной строкой с прокруткой;
@@ -38,6 +39,7 @@ async function mockPracticeApi(page) {
 }
 
 async function openPractice(page) {
+  await noTours(page)
   await mockPracticeApi(page)
   await page.goto('/')
   await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))

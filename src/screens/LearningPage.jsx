@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
 import LearningLayout from '../components/LearningLayout.jsx'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { useI18n } from '../i18n.jsx'
 import { computeKingdoms, kingdomAvatar } from '../kingdoms.js'
 
@@ -10,7 +11,17 @@ import { computeKingdoms, kingdomAvatar } from '../kingdoms.js'
 // КАРТИНКИ (kingdoms.js), иначе при любой другой ширине короли уезжают со
 // своих городов. Кадр острова — колонкой по центру контента (ширина как у
 // продовой карты), вокруг — океан; заголовок и его затемнение липнут сверху.
-export default function LearningPage({ userLevel = 'A1', userName, token, unlockAll = false, onOpenKingdom, onNav, onProfile }) {
+export default function LearningPage({
+  userLevel = 'A1',
+  userName,
+  token,
+  unlockAll = false,
+  onOpenKingdom,
+  onNav,
+  onProfile,
+  // Ключ отметки «тур показан» приходит из App — в нём id профиля (tourKeyFor).
+  tourKey,
+}) {
   const { t } = useI18n()
   // unlockAll — режим просмотра контента (?unlock=1, только dev): замки на
   // карте сняты, гейтинг по уровню не применяется.
@@ -35,8 +46,18 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
   // Вместе с плашкой ушёл и запрос `/homework/my` — карта уровней грузила весь
   // список работ ради одной цифры при каждом открытии.
 
+  // Онбординг-тур карты: шапка → свой город → замки. Шаг про замки отпадает сам
+  // (тур пропускает шаги без элемента), когда закрытых уровней не осталось или
+  // включён unlockAll.
+  const tour = useScreenTour(tourKey)
+  const tourSteps = [
+    { selector: '.lp-isle__head', title: t('tour.learn.map.title'), text: t('tour.learn.map.text') },
+    { selector: '.lp-node.is-current', title: t('tour.learn.current.title'), text: t('tour.learn.current.text') },
+    { selector: '.lp-node.is-locked', title: t('tour.learn.locked.title'), text: t('tour.learn.locked.text') },
+  ]
+
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile} onHelp={tour.start}>
       <div className="lp lp--map">
         <div className="lp-isle">
           {/* Шапка с затемнением: липнет сверху и не перехватывает клики —
@@ -89,6 +110,10 @@ export default function LearningPage({ userLevel = 'A1', userName, token, unlock
           </div>
         </div>
       </div>
+
+      {tour.open && (
+        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+      )}
     </LearningLayout>
   )
 }

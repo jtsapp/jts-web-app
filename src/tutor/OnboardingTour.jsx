@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../i18n/LanguageContext.jsx'
 
@@ -31,16 +31,19 @@ function placePopover(rect, popW, popH) {
   return { left: centeredLeft, top: vh - popH - m }
 }
 
-// Ключ отметки «тур дашборда уже показан» и её чтение живут рядом с тем, кто её
-// пишет (finish ниже). Раньше storageKey никто не передавал, отметка не писалась
+// Ключ отметки «тур уже показан» и её чтение живут рядом с тем, кто её пишет
+// (finish ниже). Раньше storageKey никто не передавал, отметка не писалась
 // и читать её было некому — тур выходил заново после каждой смены тьютора, потому
 // что смена гоняет ту же онбординг-цепочку, а его включение висит на её конце.
 //
 // Ключ включает id профиля (`user-<id>` у залогиненного, device-id у анонима) —
 // именно из-за этого браузерный флаг когда-то и убрали: он был один на
 // устройство, и второй аккаунт на том же браузере тура не видел.
-export function tourKeyFor(profileId) {
-  return `jts_tour_dash:${profileId || 'anon'}`
+//
+// scope разводит туры разных экранов; у дашборда он остался 'dash', поэтому
+// старые отметки в силе и второй раз тьюторский тур никому не выпадет.
+export function tourKeyFor(profileId, scope = 'dash') {
+  return `jts_tour_${scope}:${profileId || 'anon'}`
 }
 
 /** Показывали ли уже тур. localStorage недоступен → false: лучше лишний тур, чем молча пропущенный. */
@@ -52,6 +55,33 @@ export function isTourSeen(key) {
   }
 }
 
+/**
+ * Тур экрана: сам открывается при первом заходе и открывается заново по кнопке «?».
+ * Возвращает { open, start, finish } — при open рисуем <OnboardingTour>.
+ */
+export function useScreenTour(storageKey) {
+  const [open, setOpen] = useState(false)
+  const armed = useRef(false)
+
+  useEffect(() => {
+    if (armed.current || !storageKey) return
+    // Решаем ОДИН раз за монтирование: ключ включает id профиля, а тот приезжает
+    // из /api/profile асинхронно — на смене device-id → user-<id> повторная
+    // проверка открывала бы тур заново сразу после «Готово».
+    armed.current = true
+    // Отметку читаем эффектом, а не в useState: на сервере localStorage нет, и
+    // посчитанное в рендере значение разошлось бы с клиентским (hydration
+    // mismatch — по той же причине и ?screen= применяется после гидратации).
+    if (!isTourSeen(storageKey)) setOpen(true)
+  }, [storageKey])
+
+  return {
+    open,
+    start: () => setOpen(true),
+    finish: () => setOpen(false),
+  }
+}
+
 // Гайд-тур: затемняет экран, «прожигает» дырку на текущем элементе (по CSS-селектору),
 // рядом рисует поповер с текстом, прогрессом и кнопкой «ОК». По шагам вперёд; в конце
 // ставит флаг в localStorage и вызывает onFinish.
@@ -59,27 +89,13 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
   const t = useT()
   const [i, setI] = useState(0)
   const [rect, setRect] = useState(null)
+  // Реальный размер карточки. Раньше он был зашит числами из макета (393×184),
+  // и раскладка считалась по вымыслу: на десктопе карточка 300 шириной, а её
+  // высота вообще зависит от длины текста шага — поповер ложился на подсветку.
+  const popRef = useRef(null)
+  const [popSize, setPopSize] = useState(null)
   const step = steps[i]
-
-  useLayoutEffect(() => {
-    if (!step) return undefined
-    // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
-    // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
-    const el = document.querySelector(step.selector)
-    el?.scrollIntoView({ block: 'center', behavior: 'auto' })
-    const prevOverflow = document.documentElement.style.overflow
-    document.documentElement.style.overflow = 'hidden'
-    const measure = () => {
-      const node = document.querySelector(step.selector)
-      setRect(node ? node.getBoundingClientRect() : null)
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => {
-      document.documentElement.style.overflow = prevOverflow
-      window.removeEventListener('resize', measure)
-    }
-  }, [step])
+  const selector = step?.selector
 
   const finish = () => {
     try {
@@ -89,6 +105,52 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
     }
     onFinish?.()
   }
+  useLayoutEffect(() => {
+    if (!selector) return undefined
+    const el = document.querySelector(selector)
+    // Шаг без своего элемента на экране пропускаем: в Практике секции зависят от
+    // контента и выбранного чипа, и подсветка несуществующего узла показала бы
+    // «дырку» в пустоте (у тьютора это раньше отсеивал сам экран).
+    if (!el) {
+      if (i + 1 < steps.length) setI(i + 1)
+      else finish()
+      return undefined
+    }
+    // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
+    // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
+    el.scrollIntoView({ block: 'center', behavior: 'auto' })
+    const prevOverflow = document.documentElement.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    const measure = () => {
+      const node = document.querySelector(selector)
+      setRect(node ? node.getBoundingClientRect() : null)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => {
+      document.documentElement.style.overflow = prevOverflow
+      window.removeEventListener('resize', measure)
+    }
+  }, [selector, i, steps.length])
+
+  // Меряем карточку: текст шага меняет высоту, а на мобилке другая ширина
+  // (медиазапрос) — за обоими следит ResizeObserver. offset*, а не
+  // getBoundingClientRect: на первом кадре карточка внутри анимации появления
+  // (scale .94), и рект вернул бы размер уменьшенной копии.
+  useLayoutEffect(() => {
+    const el = popRef.current
+    if (!el) return undefined
+    const read = () => {
+      const w = el.offsetWidth
+      const h = el.offsetHeight
+      setPopSize((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }))
+    }
+    read()
+    const ro = new ResizeObserver(read)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const next = () => (i + 1 < steps.length ? setI(i + 1) : finish())
 
   useEffect(() => {
@@ -103,7 +165,7 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
   if (!step) return null
 
   const pad = 10
-  const hole = rect
+  let hole = rect
     ? {
         left: rect.left - pad,
         top: rect.top - pad,
@@ -111,7 +173,17 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
         height: rect.height + pad * 2,
       }
     : null
-  const pos = placePopover(hole, 393, 184) // размеры карточки из кадра тура
+  if (hole && popSize) {
+    // Элемент выше, чем остаток экрана под карточку (на телефоне это почти любая
+    // секция ленты): раньше в таком случае поповер прибивался к низу и ложился
+    // прямо на подсветку. Обрезаем прожектор сверху экрана и оставляем внизу
+    // полосу под карточку — подсвечено начало элемента, а не «всё сразу».
+    const maxH = window.innerHeight - popSize.h - 16 * 3
+    if (hole.height > maxH) {
+      hole = { ...hole, top: Math.max(16, hole.top), height: Math.max(80, maxH) }
+    }
+  }
+  const pos = popSize ? placePopover(hole, popSize.w, popSize.h) : { left: 0, top: 0 }
   const last = i + 1 === steps.length
 
   // Портал в body: обёртка смены экранов (.scr-in) анимируется transform'ом и
@@ -125,7 +197,13 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
         <div className="t-tour__veil" />
       )}
 
-      <div className="t-tour__pop" style={{ left: pos.left, top: pos.top }}>
+      {/* До первого замера позиции ещё нет — прячем карточку, чтобы она не
+          мигнула в углу. Замер идёт в layout-эффекте, то есть до пейнта. */}
+      <div
+        ref={popRef}
+        className="t-tour__pop"
+        style={{ left: pos.left, top: pos.top, visibility: popSize ? undefined : 'hidden' }}
+      >
         <b className="t-tour__title">{step.title}</b>
         <p className="t-tour__text">{step.text}</p>
 
