@@ -33,14 +33,17 @@ export function shouldOfferCycle4(cycle3Results) {
  * words — массив { key, word } (key = lower(word)).
  * prevResults — итог предыдущего цикла; для цикла 1 не нужен.
  */
-export function planCycle(words, cycle, prevResults, rng = Math.random) {
+export function planCycle(words, cycle, prevResults, rng = Math.random, learnedKeys = null) {
   const list = uniqueByKey((words || []).filter((w) => w && w.key))
   if (!list.length) return []
   const byKey = Object.fromEntries(list.map((w) => [w.key, w]))
 
   let targets
   if (cycle === 1) {
-    targets = list.map((w) => w.key)
+    const fresh = learnedKeys?.size
+      ? list.filter((w) => !learnedKeys.has(w.key))
+      : list
+    targets = (fresh.length ? fresh : list).map((w) => w.key)
   } else if (cycle === 4) {
     const wrong = wrongKeys(prevResults).filter((k) => byKey[k])
     if (!wrong.length) return []
@@ -216,4 +219,15 @@ export function foldResults(answers) {
     out[k] = !!a.ok
   }
   return out
+}
+
+/** Слова, которые уже были верно отвечены хотя бы в одном цикле. */
+export function learnedKeysFromCycles(cycleResults) {
+  const keys = new Set()
+  for (const map of Object.values(cycleResults || {})) {
+    for (const [k, ok] of Object.entries(map || {})) {
+      if (ok && k) keys.add(String(k).toLowerCase())
+    }
+  }
+  return keys
 }

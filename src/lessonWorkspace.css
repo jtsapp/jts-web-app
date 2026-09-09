@@ -1078,6 +1078,14 @@
   display: none;
 }
 
+.lw-practice--has-qs .lw-practice__html .opt,
+.lw-practice--has-qs .lw-practice__html .opts,
+.lw-practice--has-qs .lw-practice__html .mcq,
+.lw-practice--has-qs .lw-practice__html select,
+.lw-practice--has-qs .lw-practice__html .num {
+  display: none;
+}
+
 .lw-info__body .mcq .q {
   margin-bottom: 8px;
   font-weight: 600;

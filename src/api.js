@@ -1038,6 +1038,19 @@ export function completeLessonVocabCycle(lessonId, cycle, results, token) {
     : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}/cycles/${encodeURIComponent(cycle)}`
   return authPost(path, token, { results }).then((data) => {
     dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
+    return data
+  })
+}
+
+export function markVocabLearned(token, words) {
+  const keys = [...new Set((words || []).map((w) => String(w || '').trim().toLowerCase()).filter(Boolean))]
+  if (!keys.length) return Promise.resolve()
+  return authPost('/mobile/lesson-vocab/saved/learned', token, { words: keys }).then((data) => {
+    dropCachedAuthGet('/mobile/lesson-vocab', token)
+    dropCachedAuthGet('/mobile/lesson-vocab/saved', token)
+    dropCachedAuthGet('/mobile/saved-words', token)
     return data
   })
 }

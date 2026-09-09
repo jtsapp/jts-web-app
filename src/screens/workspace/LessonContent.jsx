@@ -100,9 +100,10 @@ function wordBankGapPrefix(step, anchorId) {
  * Текущее задание — первое непроверенное: ученик идёт лентой сверху вниз и
  * нажимает «Проверить» по очереди, так что именно оно у него под руками.
  */
-export function practiceCardStats(step, checkedKeys) {
+export function practiceCardStats(step, checkedKeys, hiddenBlocks) {
   const cards = []
   groupBlocks(step?.blocks).forEach((group, i) => {
+    if (hiddenBlocks?.has(hiddenBlockKey(step?.id, group.blockIndex))) return
     if (group.type !== 'info' && group.block?.type === 'practice') {
       cards.push(practiceBlockKey(step?.id, i))
     }
@@ -214,7 +215,7 @@ function InfoWordBankCard({
 // скрытую карточку он видит помеченной и может вернуть.
 export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
   const groups = groupBlocks(step?.blocks)
-  const cards = practiceCardStats(step, checkedKeys)
+  const cards = practiceCardStats(step, checkedKeys, hiddenBlocks)
   const { lang } = useI18n()
   // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
   // в читалке книг, см. useTapTranslate.js. Один экземпляр на весь шаг, а не
