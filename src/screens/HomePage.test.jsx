@@ -75,9 +75,31 @@ describe('Главная демо-аккаунта', () => {
 
   it('прогресс до следующего уровня — среднее по навыкам', () => {
     const { container } = renderHome()
-    // (84+76+68+48+40+60)/6 = 62.7 → 63
-    expect(screen.getByText('63% до B2')).toBeTruthy()
+    // (84+76+68+48+40+60)/6 = 62.7 → 63. Залит только первый отрезок дорожки:
+    // процент считается до ближайшей ступени, про дальние знать неоткуда.
     expect(container.querySelector('.hm-level__fill').style.width).toBe('63%')
+    expect(container.querySelectorAll('.hm-level__fill')).toHaveLength(1)
+  })
+
+  it('дорожка ведёт от старта через ближайшие ступени к финишу', () => {
+    const { container } = renderHome()
+
+    expect([...container.querySelectorAll('.hm-level__stop')].map((e) => e.textContent))
+      .toEqual(['Старт', 'Уровень B2', 'Уровень C1', 'Финиш'])
+  })
+
+  it('без пройденного теста вместо уровня — приглашение на тест', () => {
+    // Показать здесь карточку с 'A1' нельзя: это подстановка по умолчанию, а
+    // человек прочитал бы её как свой определённый уровень.
+    const onStartLevelTest = vi.fn()
+    const { container } = renderHome({ levelUnknown: true, onStartLevelTest })
+
+    expect(screen.getByText('Прогресс вашего обучения недоступен')).toBeTruthy()
+    expect(container.querySelector('.hm-level')).toBeNull()
+    expect(container.querySelector('.hm-skills')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Начать тестирование сейчас' }))
+    expect(onStartLevelTest).toHaveBeenCalled()
   })
 
   it('сильная и слабая стороны названы', () => {

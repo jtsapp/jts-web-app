@@ -386,11 +386,79 @@
   font-size: 12px;
   font-weight: 700;
 }
-.hm-level__barrow {
+/* Дорожка уровней: чередование «ступень — отрезок». Ступени не расставляются
+   по проценту: у дальних уровней процента нет, и прижимать их к произвольным
+   точкам значило бы рисовать прогресс, которого никто не считал. */
+.hm-level__track {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin-top: 18px;
+  flex-wrap: wrap;
+}
+.hm-level__seg {
+  flex: 1 1 34px;
+  min-width: 24px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.26);
+  overflow: hidden;
+}
+.hm-level__stop {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* Текущее положение — единственная сплошная заливка белым: на фиолетовом это
+   самый сильный контраст, и достаться он должен тому, где человек сейчас. */
+.hm-level__stop--now {
+  background: #fff;
+  color: #7b2ff7;
+}
+.hm-level__stop--finish {
+  background: rgba(255, 255, 255, 0.28);
+}
+/* Карточка вместо уровня, когда тест не пройден. Ростом с карточку уровня —
+   иначе экран проседает пустотой ровно там, где обычно главный блок. */
+.hm-placement {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  min-height: 190px;
+}
+.hm-placement__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.hm-placement__sub {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.55);
+}
+.hm-placement__cta {
+  margin-top: 8px;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #8d3bff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hm-placement__cta:hover {
+  background: #7b2ff7;
 }
 .hm-level__bar {
   flex: 1 1 auto;

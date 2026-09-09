@@ -1102,6 +1102,10 @@ export default function App() {
           token={token}
           isDemoAccount={isDemoAccount}
           demoExpiresAt={demoExpiresAt}
+          // Тот же признак, по которому вход ведёт на 'test-intro': без уровня
+          // «Главная» показывает приглашение на тест, а не чужие цифры.
+          levelUnknown={needsLevelTest}
+          onStartLevelTest={() => setScreen('test-intro')}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenPricing={() => setScreen('pricing')}

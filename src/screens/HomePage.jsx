@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import DemoBanner from '../components/DemoBanner.jsx'
 import AssetImage from '../components/AssetImage.jsx'
 import { useI18n } from '../i18n.jsx'
 import { plural } from '../lib/plural.js'
-import { levelSummary, touchWeeklySnapshot } from '../lib/levelProgress.js'
+import { levelSummary, nextLevel, touchWeeklySnapshot } from '../lib/levelProgress.js'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { getTrialRequestState, requestTrialLesson, getMyLessonOccurrences, getMyHomework } from '../api.js'
 import { pickFeaturedOccurrence } from './schedule/liveNow.js'
@@ -25,11 +25,16 @@ export default function HomePage({
   token,
   isDemoAccount = false,
   demoExpiresAt = null,
+  // Уровня в профиле нет — тест ещё не пройден (тот же признак, по которому
+  // App ведёт на 'test-intro' после входа). Показывать вместо него карточку с
+  // 'A1' нельзя: человек читал бы её как свой определённый уровень.
+  levelUnknown = false,
   onNav,
   onProfile,
   onOpenPricing,
   onOpenTrial,
   onOpenLesson,
+  onStartLevelTest,
 }) {
   const { t, lang } = useI18n()
   const [stats, setStats] = useState(null)
@@ -49,6 +54,11 @@ export default function HomePage({
   }, [token])
 
   const summary = useMemo(() => levelSummary(userLevel, stats), [userLevel, stats])
+
+  // Ступени дорожки — ближайший уровень и следующий за ним. Дальше рисовать
+  // нечего: «Финиш» и есть конец пути, а обещать конкретную ступень через две
+  // от текущей значило бы показывать план, которого у курса нет.
+  const stops = useMemo(() => [summary.next, nextLevel(summary.next)].filter(Boolean), [summary.next])
 
   // Пробный урок — три состояния, и все три уже есть в данных: назначенное
   // занятие (расписание), оставленная заявка (/mobile/trial-request) и ничего.
@@ -126,7 +136,17 @@ export default function HomePage({
       <div className="hm">
         {isDemoAccount && <DemoBanner expiresAt={demoExpiresAt} onOpenAccess={onOpenPricing} />}
 
-        {/* Карточка уровня */}
+        {/* Уровня нет — тест не пройден. Вместо карточки с чужими цифрами
+            зовём пройти тест: это единственный способ её наполнить. */}
+        {levelUnknown ? (
+          <section className="hm-card hm-placement">
+            <h1 className="hm-placement__title">{t('home.level.unknown.title')}</h1>
+            <p className="hm-placement__sub">{t('home.level.unknown.sub')}</p>
+            <button type="button" className="hm-placement__cta" onClick={() => onStartLevelTest?.()}>
+              {t('test.start')}
+            </button>
+          </section>
+        ) : (
         <section className="hm-level">
           <div className="hm-level__body">
             <span className="hm-level__label">{t('home.level.label')}</span>
@@ -142,15 +162,22 @@ export default function HomePage({
               )}
             </div>
 
-            <div className="hm-level__barrow">
-              <div className="hm-level__bar">
-                <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />
-              </div>
-              {summary.next && (
-                <span className="hm-level__toNext">
-                  {t('home.level.toNext', { n: String(summary.percent), level: summary.next })}
-                </span>
-              )}
+            {/* Дорожка «Старт → следующие ступени → Финиш». Одинокая полоса
+                показывала только «сколько до соседнего уровня» — по ней не было
+                видно, куда путь ведёт дальше. Заполнен только первый отрезок:
+                процент считается до ближайшей ступени, дальние знать неоткуда. */}
+            <div className="hm-level__track">
+              <span className="hm-level__stop hm-level__stop--now">{t('home.level.start')}</span>
+              {stops.map((code, i) => (
+                <Fragment key={code}>
+                  <span className="hm-level__seg">
+                    {i === 0 && <i className="hm-level__fill" style={{ width: `${summary.percent}%` }} />}
+                  </span>
+                  <span className="hm-level__stop">{t('home.level.stop', { level: code })}</span>
+                </Fragment>
+              ))}
+              <span className="hm-level__seg" />
+              <span className="hm-level__stop hm-level__stop--finish">{t('home.level.finish')}</span>
             </div>
 
             <p className="hm-level__plan">
@@ -171,10 +198,13 @@ export default function HomePage({
             </div>
           )}
         </section>
+        )}
 
         <div className="hm-row">
           <div className="hm-col">
-          {/* Сильные и слабые стороны */}
+          {/* Сильные и слабые стороны. Без пройденного теста профиль навыков
+              не показываем: считать его не от чего, и на макете его там нет. */}
+          {!levelUnknown && (
           <section className="hm-card hm-skills">
             <h2 className="hm-card__title">{t('home.skills.title')}</h2>
             {hasData ? (
@@ -215,6 +245,7 @@ export default function HomePage({
               <p className="hm-skills__empty">{t('home.skills.empty')}</p>
             )}
           </section>
+          )}
 
           <PracticeToday t={t} onNav={onNav} />
           </div>
