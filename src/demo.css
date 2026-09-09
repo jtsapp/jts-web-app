@@ -404,16 +404,20 @@
   font-weight: 700;
   letter-spacing: -0.02em;
 }
+/* Прирост за неделю. Заливка та же, что у подписи под дорожкой: обе плашки —
+   одно семейство, и разойдись они по прозрачности, карточка выглядела бы
+   собранной из чужих деталей. */
 .hm-level__week {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px 6px 10px;
+  padding: 7px 14px 7px 11px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
   font-size: 13px;
   line-height: 18px;
   font-weight: 700;
+  color: #fff;
 }
 /* Дорожка уровней: чередование «ступень — отрезок». Ступени не расставляются
    по проценту: у дальних уровней процента нет, и прижимать их к произвольным
@@ -524,12 +528,26 @@
   font-size: 13px;
   font-weight: 700;
 }
+/* Плашка, а не строка приглушённого текста: это единственная фраза на карточке,
+   которая говорит, что делать дальше, и на заливке она терялась. Того же
+   семейства, что «+% за неделю» — обе читаются как ярлыки поверх карточки, а не
+   как её текст.
+
+   Радиус 21, а не 999: на узком экране фраза переносится на две строки, и у
+   капсулы с полным скруглением торцы превращаются в большие дуги. 21 — это
+   половина высоты однострочной плашки (11 + 20 + 11), так что в одну строку она
+   всё равно капсула. */
 .hm-level__plan {
+  display: inline-block;
+  max-width: 100%;
   margin: 16px 0 0;
-  font-size: 14px;
-  line-height: 19px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  padding: 11px 18px;
+  border-radius: 21px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #fff;
 }
 .hm-level__goal {
   position: relative;
@@ -600,6 +618,13 @@
   }
 }
 @media (max-width: 520px) {
+  .hm-level__plan {
+    display: block;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 19px;
+  }
   .hm-level__track {
     gap: 6px;
   }
