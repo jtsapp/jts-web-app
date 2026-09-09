@@ -80,7 +80,7 @@ import { KINGDOMS } from './kingdoms.js'
 
 // Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
 // если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
-// проставляет api.js: USER_EXISTS (регистрация занятого номера) и
+// проставляет api.js: USER_EXISTS (регистрация занятого номера/почты) и
 // USER_NOT_FOUND (вход незарегистрированным номером).
 function phoneErrorKey(e) {
   if (e?.code === 'USER_EXISTS') return 'err.userExists'
@@ -599,7 +599,8 @@ export default function App() {
       // пропускаем: ставить пароль нечем.
       setScreen(mode === 'register' && tok ? 'set-password' : 'success')
     } catch (e) {
-      setError(e.message || t('err.otp'))
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || t('err.otp'))
     } finally {
       setLoading(false)
     }
@@ -872,6 +873,10 @@ export default function App() {
   // Отметка «тур дашборда показан» — на профиль. Профиль ещё не подтянулся
   // (свежая регистрация) — падаем на device-id: он стабилен для этого браузера.
   const tutorTourKey = tourKeyFor(profileId || getDeviceId())
+  // Туры «Обучения» и «Практики» отмечаются своими ключами: экраны разные, и
+  // пройденный тьюторский не должен закрывать их (и наоборот).
+  const learnTourKey = tourKeyFor(profileId || getDeviceId(), 'learn')
+  const practiceTourKey = tourKeyFor(profileId || getDeviceId(), 'practice')
 
   // Держим ?screen= (и служебный ?live= для «Живого урока») в URL синхронными
   // с текущим экраном (см. PERSISTABLE_SCREENS выше) — обновление страницы (F5)
@@ -1029,7 +1034,8 @@ export default function App() {
         setMode(m)
       }
     } catch (e) {
-      setError(e.message || 'Не удалось отправить код повторно.')
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || 'Не удалось отправить код повторно.')
     }
   }
 
@@ -1242,6 +1248,7 @@ export default function App() {
           userName={name}
           token={token}
           unlockAll={devUnlock}
+          tourKey={learnTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           onOpenKingdom={(k) => {
@@ -1269,6 +1276,7 @@ export default function App() {
           userName={name}
           token={token}
           openTarget={practiceTarget}
+          tourKey={practiceTourKey}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
           isDemoAccount={isDemoAccount}

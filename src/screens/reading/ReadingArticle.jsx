@@ -6,12 +6,14 @@ import { sentences, norm } from '../../practice/reading/engine.js'
 import { lookup, displayWord } from '../../practice/reading/dict.js'
 import { translateWord } from '../../lib/wordTranslate.js'
 import { speak } from '../../practice/workbook/voice.js'
+import { saveReadingKeyword } from '../../practice/reading/saveKeyword.js'
 
 // Текст статьи: абзац → предложения → слова. Разбивка нужна дважды — по
 // предложениям идёт подсветка озвучки, по словам работает тап-перевод.
-export default function ReadingArticle({ text, dict, ensureDict, speakingIndex }) {
+export default function ReadingArticle({ text, dict, ensureDict, speakingIndex, token }) {
   const { t } = useI18n()
   const [pop, setPop] = useState(null) // { at: {left, top}, word, entry, state }
+  const [savedKeys, setSavedKeys] = useState(() => new Set())
   const hostRef = useRef(null)
 
   // Плоский список предложений в порядке чтения — тот же индекс, что у
@@ -129,16 +131,28 @@ export default function ReadingArticle({ text, dict, ensureDict, speakingIndex }
         ))}
       </article>
 
-      {pop && <WordPop pop={pop} host={hostRef} onClose={() => setPop(null)} t={t} />}
+      {pop && (
+        <WordPop
+          pop={pop}
+          host={hostRef}
+          onClose={() => setPop(null)}
+          t={t}
+          token={token}
+          source={text.title}
+          saved={savedKeys.has(norm(pop.entry?.en || pop.word))}
+          onSaved={(en) => setSavedKeys((prev) => new Set(prev).add(norm(en)))}
+        />
+      )}
     </div>
   )
 }
 
-function WordPop({ pop, host, onClose, t }) {
+function WordPop({ pop, host, onClose, t, token, source, saved, onSaved }) {
   const ref = useRef(null)
   // Стартуем от слова; влезает ли карточка по ширине — известно только после
   // отрисовки, поэтому левый край доводим эффектом.
   const [left, setLeft] = useState(pop.at.left)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     const el = ref.current
@@ -149,6 +163,16 @@ function WordPop({ pop, host, onClose, t }) {
   }, [pop, host])
 
   const e = pop.entry
+  const canSave = pop.state === 'ready' && e && (e.ru || e.kz) && !saved && !saving
+
+  const onSave = async () => {
+    if (!canSave) return
+    setSaving(true)
+    const ok = await saveReadingKeyword(token, { en: e.en, ru: e.ru, kz: e.kz }, source)
+    setSaving(false)
+    if (ok) onSaved(e.en)
+  }
+
   return (
     <div
       className="rd-pop"
@@ -178,6 +202,16 @@ function WordPop({ pop, host, onClose, t }) {
           {/* Казахский есть только у курируемых слоёв: сетевой переводчик его
               портит, и пустая строка честнее плохого перевода. */}
           {e.kz && <div className="rd-pop__row"><span className="rd-flag">KZ</span><span lang="kk">{e.kz}</span></div>}
+          {(e.ru || e.kz) && (
+            <button
+              type="button"
+              className={`rd-pop__save${saved ? ' is-saved' : ''}`}
+              disabled={saved || saving}
+              onClick={onSave}
+            >
+              {saved ? t('lesson.inVocab') : t('lesson.addToVocab')}
+            </button>
+          )}
         </>
       )}
     </div>
