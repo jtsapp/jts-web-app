@@ -11,38 +11,41 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px 10px 14px;
+  padding: 12px 16px 12px 14px;
   border-radius: 16px;
-  background: #171326;
+  background: #181818;
   color: #fff;
 }
 .dm-banner__badge {
   flex: none;
   padding: 4px 10px;
-  border-radius: 8px;
-  background: #ffc93f;
-  color: #171326;
-  font-size: 11px;
-  font-weight: 800;
+  border-radius: 999px;
+  background: #e8a020;
+  color: #181818;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
   letter-spacing: 0.06em;
 }
 .dm-banner__text {
   flex: 1 1 auto;
   min-width: 0;
   font-size: 14px;
+  line-height: 19px;
   font-weight: 500;
-  color: #e9e7f2;
+  color: #fff;
 }
 .dm-banner__timer {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 6px 12px 6px 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.14);
   font-size: 13px;
-  font-weight: 600;
+  line-height: 18px;
+  font-weight: 700;
   white-space: nowrap;
 }
 /* Истёкшее демо — не ошибка, а другой повод нажать кнопку: подсвечиваем сам
@@ -56,15 +59,15 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 16px;
+  gap: 6px;
+  padding: 8px 14px 8px 16px;
   border: none;
   border-radius: 999px;
   background: #fff;
-  color: #171326;
+  color: #181818;
   font-family: inherit;
   font-size: 13px;
+  line-height: 18px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -346,10 +349,11 @@
   position: relative;
   display: flex;
   align-items: stretch;
-  gap: 16px;
-  padding: 20px;
-  border-radius: 22px;
-  background: linear-gradient(120deg, #8d3bff 0%, #9047ff 55%, #a35cff 100%);
+  gap: 24px;
+  padding: 20px 24px 20px 28px;
+  border-radius: 24px;
+  /* Плоский фиолетовый, а не градиент: в макете заливка одним цветом. */
+  background: #9047ff;
   color: #fff;
   overflow: hidden;
 }
@@ -359,31 +363,34 @@
 }
 .hm-level__label {
   font-size: 12px;
+  line-height: 16px;
   font-weight: 700;
-  letter-spacing: 0.09em;
-  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.7);
 }
 .hm-level__head {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 12px;
+  margin-top: 16px;
 }
 .hm-level__name {
   margin: 0;
-  font-size: 34px;
-  font-weight: 800;
-  line-height: 1.1;
+  font-size: 32px;
+  line-height: 44px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .hm-level__week {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 11px;
+  gap: 6px;
+  padding: 6px 12px 6px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 700;
 }
 /* Дорожка уровней: чередование «ступень — отрезок». Ступени не расставляются
@@ -393,15 +400,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 18px;
+  margin-top: 16px;
+  padding: 4px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.18);
   flex-wrap: wrap;
 }
 .hm-level__seg {
   flex: 1 1 34px;
   min-width: 24px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.28);
+  height: 4px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.2);
   overflow: hidden;
 }
 /* Ступень впереди — пунктирная рамка без заливки: намеченная вешка, до которой
@@ -411,25 +421,27 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 15px;
-  border: 1.5px dashed rgba(255, 255, 255, 0.55);
-  border-radius: 999px;
+  gap: 4px;
+  padding: 2px 6px 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
   background: transparent;
-  font-size: 13.5px;
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
   white-space: nowrap;
 }
 /* Текущее положение — единственная сплошная заливка белым: на фиолетовом это
    самый сильный контраст, и достаться он должен тому, где человек сейчас. */
 .hm-level__stop--now {
-  border-color: #fff;
+  border-color: transparent;
   border-style: solid;
   background: #fff;
-  color: #7b2ff7;
+  color: #9047ff;
 }
 .hm-level__stop--finish {
-  border-color: rgba(255, 255, 255, 0.55);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 /* Карточка вместо уровня, когда тест не пройден. Ростом с карточку уровня —
    иначе экран проседает пустотой ровно там, где обычно главный блок. */
@@ -438,28 +450,33 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 10px;
+  gap: 16px;
   min-height: 190px;
+  padding: 32px;
 }
 .hm-placement__title {
   margin: 0;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.2;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+  color: #181818;
 }
 .hm-placement__sub {
   margin: 0;
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.55);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #181818;
 }
 .hm-placement__cta {
-  margin-top: 8px;
-  padding: 12px 22px;
+  margin-top: 16px;
+  padding: 16px 40px;
   border: 0;
-  border-radius: 999px;
-  background: #8d3bff;
+  border-radius: 60px;
+  background: #9047ff;
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
+  line-height: 17px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -486,34 +503,41 @@
   font-weight: 700;
 }
 .hm-level__plan {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   font-size: 14px;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.82);
+  line-height: 19px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
 }
 .hm-level__goal {
+  position: relative;
   flex: none;
-  width: 168px;
+  align-self: center;
+  width: 140px;
+  height: 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 16px 12px;
-  border-radius: 24px;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.16);
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 22px;
   font-weight: 700;
   text-align: center;
 }
-/* Медаль — главный предмет плашки, а не значок при подписи: лента над ней
-   видна целиком. max-height, потому что плашка тянется по высоте карточки
-   уровня: на узком экране карточка ниже, и без ограничения медаль вылезала бы
-   за её край вместе с подписью. */
+/* Медаль занимает почти всю плашку, подпись — у её нижнего края, как в
+   макете. Абсолютная: в потоке она сдвигала бы подпись и плашка переставала
+   быть квадратом 140×140. */
 .hm-level__medal {
-  width: 96px;
-  height: 96px;
-  max-height: calc(100% - 30px);
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  transform: translateX(-50%);
+  width: 104px;
+  height: 104px;
   object-fit: contain;
 }
 @media (max-width: 720px) {
@@ -531,16 +555,18 @@
 
 /* --- общая карточка --- */
 .hm-card {
-  padding: 18px;
-  border-radius: 20px;
+  padding: 20px 24px;
+  border: 1px solid #ededed;
+  border-radius: 24px;
   background: #fff;
-  box-shadow: 0 8px 24px rgba(23, 19, 38, 0.06);
 }
 .hm-card__title {
-  margin: 0 0 14px;
-  font-size: 17px;
-  font-weight: 800;
-  color: #171326;
+  margin: 0 0 12px;
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #181818;
 }
 
 /* --- навыки --- */
@@ -551,19 +577,20 @@
 }
 .hm-skill {
   display: grid;
-  grid-template-columns: 108px minmax(0, 1fr) 42px 18px;
+  grid-template-columns: 96px minmax(0, 1fr) 44px 18px;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 .hm-skill__name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #3c3850;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #181818;
 }
 .hm-skill__bar {
   height: 8px;
   border-radius: 999px;
-  background: #efedf5;
+  background: #f8f8f8;
   overflow: hidden;
 }
 .hm-skill__fill {
@@ -573,18 +600,19 @@
   transition: width 0.4s ease;
 }
 .hm-skill__fill--high {
-  background: #3ec97a;
+  background: #31b423;
 }
 .hm-skill__fill--mid {
-  background: var(--purple);
+  background: #9047ff;
 }
 .hm-skill__fill--low {
-  background: #f5a623;
+  background: #e8a020;
 }
 .hm-skill__pct {
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 19px;
   font-weight: 700;
-  color: #171326;
+  color: #181818;
   text-align: right;
 }
 .hm-skill__trend {
@@ -602,18 +630,19 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 8px 14px 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
 }
 .hm-tag--up {
-  background: #e8f9ef;
-  color: #1f8a4c;
+  background: #e2f7df;
+  color: #31b423;
 }
 .hm-tag--down {
-  background: #fff3e0;
-  color: #b8730a;
+  background: #fdf2dc;
+  color: #e8a020;
 }
 .hm-skills__empty {
   margin: 0;
@@ -626,6 +655,8 @@
 .hm-trial {
   display: flex;
   flex-direction: column;
+  padding: 18px 20px;
+  border-radius: 20px;
 }
 /* Картинка из макета — не герой уровня на градиенте, а фотография звонка:
    она вписана в карточку со всех сторон, а не вытекает под её края. Градиент
@@ -634,10 +665,10 @@
 .hm-trial__art {
   display: grid;
   place-items: center;
-  height: 176px;
+  height: 238px;
   margin-bottom: 14px;
-  border-radius: 16px;
-  background: linear-gradient(150deg, #c9b7ff 0%, #a8dcf0 100%);
+  border-radius: 14px;
+  background: #e2f7df;
   overflow: hidden;
 }
 .hm-trial__art img {
@@ -658,28 +689,32 @@
   color: #d64545;
 }
 .hm-trial__title {
-  font-size: 16px;
-  font-weight: 800;
-  color: #171326;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  color: #181818;
 }
 .hm-trial__sub {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: 13px;
-  color: #8b8a97;
+  line-height: 18px;
+  font-weight: 500;
+  color: #8a8a8a;
 }
 .hm-trial__cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 46px;
+  gap: 6px;
+  height: 44px;
   margin-top: 14px;
   border: none;
-  border-radius: 14px;
-  background: var(--purple);
+  border-radius: 999px;
+  background: #9047ff;
   color: #fff;
   font-family: inherit;
   font-size: 15px;
+  line-height: 20px;
   font-weight: 700;
   cursor: pointer;
 }
