@@ -135,7 +135,7 @@ export default function PracticeBlock({
 
   return (
     <div
-      className={`lw-card lw-practice is-${status}${highlighted ? ' is-highlighted' : ''}`}
+      className={`lw-card lw-practice is-${status}${highlighted ? ' is-highlighted' : ''}${questions.length ? ' lw-practice--has-qs' : ''}`}
       data-question-id={cardAnchorId || gapPrefix}
     >
       <div className="lw-practice__top">

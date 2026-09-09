@@ -11,6 +11,7 @@ import TranslatePopover from './TranslatePopover.jsx'
 import TapText from './TapText.jsx'
 import { useTapTranslate } from './useTapTranslate.js'
 import { bindAudioClips } from './audioClip.js'
+import { speak } from '../../practice/vocab/audio.js'
 import { useI18n } from '../../i18n.jsx'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../../lib/wordTranslate.js'
 import { hiddenBlockKey } from './visibleSteps.js'
@@ -99,9 +100,10 @@ function wordBankGapPrefix(step, anchorId) {
  * Текущее задание — первое непроверенное: ученик идёт лентой сверху вниз и
  * нажимает «Проверить» по очереди, так что именно оно у него под руками.
  */
-export function practiceCardStats(step, checkedKeys) {
+export function practiceCardStats(step, checkedKeys, hiddenBlocks) {
   const cards = []
   groupBlocks(step?.blocks).forEach((group, i) => {
+    if (hiddenBlocks?.has(hiddenBlockKey(step?.id, group.blockIndex))) return
     if (group.type !== 'info' && group.block?.type === 'practice') {
       cards.push(practiceBlockKey(step?.id, i))
     }
@@ -213,7 +215,7 @@ function InfoWordBankCard({
 // скрытую карточку он видит помеченной и может вернуть.
 export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
   const groups = groupBlocks(step?.blocks)
-  const cards = practiceCardStats(step, checkedKeys)
+  const cards = practiceCardStats(step, checkedKeys, hiddenBlocks)
   const { lang } = useI18n()
   // Тап-перевод слова в info-блоках (тексты для чтения) — та же карточка, что
   // в читалке книг, см. useTapTranslate.js. Один экземпляр на весь шаг, а не
@@ -271,6 +273,12 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
       className="lw-content"
       data-selectable=""
       onClick={(e) => {
+        const sayBtn = e.target?.closest?.('.say-play[data-say]')
+        if (sayBtn) {
+          e.stopPropagation()
+          speak(sayBtn.getAttribute('data-say') || '')
+          return
+        }
         const raw = window.getSelection()?.toString() || ''
         if (isTapSelection(raw) || isOversizedPhrase(raw)) return
         close()

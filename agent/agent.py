@@ -263,10 +263,6 @@ else:
 _PERSONA_STANDALONE_FILES = {
     "jarvis": "persona-jarvis.md",
     "jarvis_harsh": "persona-jarvis-harsh.md",
-    # A/B-стенд: энергия Спарка + секция KAZAKH THAT SOUNDS SPOKEN, отдельно от
-    # живого промпта Спарка (см. шапку persona-jarvis2.md). Нрава 18+ нет —
-    # гипотезу проверяем на спокойном варианте, не дублируем hype_harsh.
-    "jarvis2": "persona-jarvis2.md",
 }
 STANDALONE_PROMPT_PERSONAS = frozenset(_PERSONA_STANDALONE_FILES)
 
@@ -548,22 +544,13 @@ KZ_TUTOR_PERSONA = "hype"  # Спарк
 # («скажи, что твой казахский слабый, и отправь к Спарку») — Джарвису они не
 # нужны, у него свой файл персоны целиком. А вот озвучке разница видна: язык
 # ПРОИЗНОШЕНИЯ у обоих казахский, и он не зависит от языка интерфейса.
-KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis", "jarvis2"})
+KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis"})
 
-# KZ-стенды («KZ тест» / «KZ тест 2» на карточках, ключи прежние). Dev-only: на
-# проде карточек нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где
-# прод-тьюторов бережём, стендам можно. Множество, а не одна строка: jarvis2 —
-# A/B-копия для проверки гипотезы про разговорный казахский (см.
-# persona-jarvis2.md), ей нужны те же послабления, что и первому стенду.
-KZ_DEV_STAND_PERSONA = frozenset({"jarvis", "jarvis2"})
-
-# Стенд, на котором сейчас идёт A/B по разговорному казахскому, — и ТОЛЬКО он.
-# Отдельная константа, а не KZ_DEV_STAND_PERSONA: та описывает «оба стенда» и
-# нужна там, где послабления и правда общие (словарь произношения). А правки
-# самого эксперимента обязаны бить строго по своей персоне: первый стенд —
-# чужой опыт, прод-тьюторы тем более. Когда эксперимент закроют, всё, что
-# ссылается на эту константу, снимается вместе с ней.
-KZ_AB_STAND_PERSONA = "jarvis2"
+# KZ-стенд («KZ тест» на карточке, ключ прежний). Dev-only: на проде карточки
+# нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где прод-тьюторов
+# бережём, стенду можно. Именованная константа, а не литерал по коду: мест, где
+# «это тот самый стенд, ему можно», уже больше одного.
+KZ_DEV_STAND_PERSONA = "jarvis"
 
 _KAZAKH_NOT_MY_LANGUAGE = (
     "KAZAKH IS NOT YOUR LANGUAGE — one exception to MIRROR THE LEARNER. If the learner "
@@ -658,7 +645,7 @@ def _pronunciation_lang(profile: LearnerProfile) -> str:
     в гейте назван прямо: провайдер ему больше не указ.
     """
     tutor = (profile.tutor or "").strip().lower()
-    if _tts_provider_for(profile) != "openai" and tutor not in KZ_DEV_STAND_PERSONA:
+    if _tts_provider_for(profile) != "openai" and tutor != KZ_DEV_STAND_PERSONA:
         return ""
     return _tts_speech_lang(profile.tutor, profile.lang or "en")
 
@@ -3528,18 +3515,7 @@ def _cascade_tts_azure(profile: LearnerProfile):
             "AZURE_SPEECH_KEY / AZURE_SPEECH_REGION not set (у проекта нет Azure — "
             "провайдер выбирается в TUTOR_TTS_PROVIDER)"
         )
-    # Родной kk-KZ голос берём по языку РЕЧИ, а не интерфейса — но только у
-    # A/B-стенда. profile.lang это язык ИНТЕРФЕЙСА, и у казахскоязычного тьютора
-    # он сплошь и рядом "ru" (дефолт приложения): тогда сюда приезжал
-    # мультиязычный en/ru-голос и читал казахский текст с акцентом — ровно то,
-    # на что жаловались. Остальным тьюторам условие оставлено как было: у них
-    # kz это и правда только интерфейс, казахского в речи нет.
-    speech_lang = (
-        _tts_speech_lang(profile.tutor, profile.lang or "en")
-        if (profile.tutor or "").strip().lower() == KZ_AB_STAND_PERSONA
-        else profile.lang
-    )
-    if speech_lang == "kz":
+    if profile.lang == "kz":
         voice = AZURE_KZ_FEMALE if profile.tutor in FEMALE_TUTORS else AZURE_KZ_MALE
     else:
         voice = AZURE_TTS_VOICE.get(profile.tutor, DEFAULT_AZURE_VOICE)
@@ -3605,10 +3581,6 @@ SONIOX_TTS_VOICE = {
     # фразе; Owen намеренно НЕ взят — это тембр Спарка, а стенд должен звучать
     # отдельным человеком, а не его двойником.
     "jarvis": "Daniel",
-    # A/B-стенд про сам текст Спарка (см. persona-jarvis2.md) — здесь наоборот,
-    # Owen НАМЕРЕННО тот же, что у живого Спарка: вопрос ровно в том, зазвучит
-    # ли ЭТОТ ЖЕ голос чище на другом тексте, разный тембр смешал бы переменные.
-    "jarvis2": "Owen",
 }
 DEFAULT_SONIOX_TTS_VOICE = "Owen"
 DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
@@ -3829,18 +3801,7 @@ def _cascade_tts_soniox(profile: LearnerProfile):
     # Подсказку берём глазами персоны: Спарк на русском интерфейсе говорит
     # по-казахски (tutor_session_lang), и hint "ru" читал бы казахский текст с
     # русской фонетикой — тем самым акцентом, ради которого его сюда и увели.
-    # У СВОЕГО СТЕНДА берём язык РЕЧИ, а не «глазами персоны»: tutor_session_lang
-    # чинит ru→kz только Спарку (гейт по KZ_TUTOR_PERSONA), поэтому KZ-стенды
-    # на русском интерфейсе — а он дефолтный — получали hint "ru" и читали
-    # казахский текст русской фонетикой. Для A/B со Спарком это подтасовка:
-    # сравнивались бы не тексты, а фонетика. Ни Спарка, ни первый стенд (jarvis)
-    # НЕ трогаем: тот же баг у jarvis есть, но это чужой эксперимент — чинить
-    # его надо отдельным решением, а не заодно со своим (см. SONIOX_SPEED).
-    app_lang = (
-        _tts_speech_lang(profile.tutor, profile.lang or "en")
-        if (profile.tutor or "").strip().lower() == KZ_AB_STAND_PERSONA
-        else tutor_session_lang(profile.tutor, profile.lang or "en")
-    )
+    app_lang = tutor_session_lang(profile.tutor, profile.lang or "en")
     language = SONIOX_LANG_CODE.get(app_lang, app_lang)
     logger.info(
         "Cascade TTS: Soniox (%s, voice=%s, speed=%.2f, lang=%s), tutor=%s",
@@ -4161,7 +4122,6 @@ TUTOR_TTS_PROVIDER = {
     # провайдер знает сам. Плюс отключается словарь произношения: гейт в
     # _pronunciation_lang стоит по провайдеру openai.
     "jarvis": "soniox",
-    "jarvis2": "soniox",  # A/B со Спарком на одном и том же голосе — см. persona-jarvis2.md
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
@@ -4200,54 +4160,6 @@ def _tts_provider_for(profile: LearnerProfile) -> str:
         if tutor in TUTOR_TTS_PROVIDER:
             return TUTOR_TTS_PROVIDER[tutor]
     return (os.getenv("CASCADE_TTS") or DEFAULT_TTS_PROVIDER).strip().lower()
-
-
-# Мозг A/B-стенда можно увести напрямую в Gemini, минуя наш шим. Зачем:
-# Haiku 4.5 ломает казахскую грамматику (язык с малым объёмом данных), и вопрос
-# «а другая модель сможет?» дешевле проверить сменой провайдера, чем спорами.
-# Gemini отдаёт OpenAI-совместимый эндпоинт, поэтому плагин тот же — меняются
-# только base_url, ключ и имя модели.
-#
-# ЧТО ТЕРЯЕТСЯ на этом пути, и это осознанно: наш шим (/api/voice/brain) держит
-# prompt caching (−90% на входе со 2-го хода) и единый лог llm_cost. Идя мимо
-# него, платим полную цену и теряем эту строку в логах. Для dev-стенда с парой
-# звонков в день это дешевле, чем городить второго провайдера внутри роута,
-# которым пользуются ВСЕ тьюторы (правило: эксперимент не трогает чужих).
-#
-# Включается переменной воркера, по умолчанию выключено:
-#   BRAIN_PROVIDER_JARVIS2=gemini   + GEMINI_API_KEY
-# Модель: BRAIN_MODEL_JARVIS2 (дефолт gemini-2.5-flash).
-GEMINI_OPENAI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
-DEFAULT_GEMINI_BRAIN_MODEL = "gemini-2.5-flash"
-
-
-def _build_brain_llm(profile, brain_url, api_url, brain_key, brain_route, temperature):
-    """LLM сессии. По умолчанию — наш шим; у A/B-стенда можно переключить провайдера."""
-    tutor = (profile.tutor or "").strip().lower()
-    if tutor == KZ_AB_STAND_PERSONA:
-        provider = (os.getenv(f"BRAIN_PROVIDER_{tutor.upper()}") or "").strip().lower()
-        if provider == "gemini":
-            gem_key = os.getenv("GEMINI_API_KEY")
-            if not gem_key:
-                logger.error(
-                    "BRAIN_PROVIDER_%s=gemini, но GEMINI_API_KEY не задан — "
-                    "остаёмся на шиме", tutor.upper(),
-                )
-            else:
-                model = os.getenv(f"BRAIN_MODEL_{tutor.upper()}") or DEFAULT_GEMINI_BRAIN_MODEL
-                logger.info("Brain: Gemini напрямую (%s), tutor=%s", model, tutor)
-                return lk_openai.LLM(
-                    base_url=GEMINI_OPENAI_BASE,
-                    api_key=gem_key,
-                    model=model,
-                    temperature=temperature,
-                )
-    return lk_openai.LLM(
-        base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
-        api_key=brain_key or "unset",
-        model=brain_route,
-        temperature=temperature,
-    )
 
 
 def _cascade_tts(profile: LearnerProfile):
@@ -4334,41 +4246,6 @@ SONIOX_STT_LANGUAGES = ["en", "ru", "kk"]
 # Держим включённым, потому что цена ошибки несимметрична — лишний язык в
 # распознавании ломает и субтитры, и разбор ошибок.
 SONIOX_STT_STRICT_DEFAULT = True
-
-# Языки распознавания ПО ТЬЮТОРУ. Список выше — общий, и сузить его глобально
-# нельзя: у Луны с Декстером ученик говорит по-русски, и русский им нужен.
-# А казахскому стенду он мешает ровно так же, как мешал английский в режиме
-# «только английский» (см. english_only в _cascade_stt_soniox): лишний язык в
-# подсказках уводит КОРОТКИЕ реплики в чужой язык, а казахский с русским к тому
-# же оба кириллические и делят заимствования — «Иә», «Жоқ», «Дайын» уезжают
-# русскими охотнее, чем английские слова.
-#
-# Спарка тут НЕТ намеренно: он прод, у него в промпте «Russian in comes back as
-# Kazakh out» — понимать русскую речь ученика он обязан, и отнимать у него
-# русский заодно со стендом нельзя (та же причина, что у SONIOX_SPEED).
-# Стенду русский не нужен: его и держат, чтобы слышать чистый казахский.
-#
-# Переопределяется без пересборки агента: STT_LANGUAGES_JARVIS2=kk,ru,en —
-# вернуть русский конкретному стенду и сравнить на слух.
-TUTOR_STT_LANGUAGES = {
-    # ТОЛЬКО KZ тест 2. Первого стенда (jarvis) здесь намеренно нет: он чужой
-    # эксперимент, и менять ему распознавание заодно со своим нельзя — как и
-    # прод-тьюторам. Если понадобится, ему заводят свою строку отдельно.
-    "jarvis2": ["kk", "en"],
-}
-
-
-def _stt_languages_for(profile: LearnerProfile) -> list[str] | None:
-    """Подсказки языка этой сессии: env персоны -> таблица -> None (общий список).
-    None, а не готовый список, чтобы вызывающий отличил «задано» от «как всегда»
-    и не потерял глобальный env SONIOX_STT_LANGUAGES."""
-    tutor = (profile.tutor or "").strip().lower()
-    if not tutor:
-        return None
-    env = (os.getenv(f"STT_LANGUAGES_{tutor.upper()}") or "").strip()
-    if env:
-        return [x.strip() for x in env.split(",") if x.strip()]
-    return TUTOR_STT_LANGUAGES.get(tutor)
 
 
 def _stt_provider_for(profile: LearnerProfile) -> str:
@@ -4624,11 +4501,6 @@ def _cascade_stt_soniox(profile: LearnerProfile):
     # сделать секретом воркера, без сборки и деплоя агента (он катится вручную).
     env_langs = (os.getenv("SONIOX_STT_LANGUAGES") or "").strip()
     langs = [x.strip() for x in env_langs.split(",") if x.strip()] or SONIOX_STT_LANGUAGES
-    # Список тьютора важнее общего: казахскому стенду русский в подсказках
-    # только мешает (см. TUTOR_STT_LANGUAGES).
-    per_tutor = _stt_languages_for(profile)
-    if per_tutor:
-        langs = per_tutor
     # «Только английский» сужает и распознавание: русский/казахский в подсказках
     # оставлять незачем, а без них короткие английские реплики ученика больше не
     # уезжают в чужой язык.
@@ -4759,14 +4631,12 @@ def build_cascade_session(
     # write-back памяти адресный — он остаётся на api_url, то есть на том стенде,
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
-    # Поле model у шима — не имя модели, а метка маршрута: роут читает из неё
-    # персону и только A/B-стенду отдаёт другую модель мозга (см. brainModelFor
-    # в app/api/voice/brain/chat/completions/route.js). Всем остальным уезжает
-    # прежняя строка, то есть поведение не меняется ни на байт.
-    brain_route = "jts-voice-router"
-    if (profile.tutor or "").strip().lower() == KZ_AB_STAND_PERSONA:
-        brain_route = f"jts-voice-router/{KZ_AB_STAND_PERSONA}"
-    llm = _build_brain_llm(profile, brain_url, api_url, brain_key, brain_route, persona_temperature)
+    llm = lk_openai.LLM(
+        base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
+        api_key=brain_key or "unset",
+        model="jts-voice-router",
+        temperature=persona_temperature,
+    )
     tts = _cascade_tts(profile)
     # Silero остаётся источником речевой активности в обоих режимах. Детектору
     # он тоже нужен: инференс запрашивается не раньше, чем накопится 200мс

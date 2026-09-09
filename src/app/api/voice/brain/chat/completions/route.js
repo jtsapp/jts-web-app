@@ -69,19 +69,6 @@ function toToolDefs(tools) {
     }))
 }
 
-// Персона → модель мозга. Таблица нарочно пустая для всех, кроме A/B-стенда:
-// правило проекта — эксперимент не трогает чужих тьюторов.
-// Переопределяется без деплоя: VOICE_BRAIN_MODEL_JARVIS2=claude-sonnet-5.
-const BRAIN_MODEL_BY_PERSONA = {
-  jarvis2: process.env.VOICE_BRAIN_MODEL_JARVIS2 || 'claude-sonnet-5',
-}
-
-export function brainModelFor(modelField) {
-  const persona = String(modelField || '').split('/')[1]
-  if (!persona) return undefined
-  return BRAIN_MODEL_BY_PERSONA[persona.trim().toLowerCase()]
-}
-
 function sseChunk(id, model, created, delta, finishReason) {
   const payload = {
     id,
@@ -131,20 +118,6 @@ export async function POST(request) {
     lastUserTurn !== undefined && !/[\p{L}\p{N}]/u.test(lastUserTurn.content)
 
   const model = body.model || 'jts-voice-router'
-  // Модель мозга ПО СТЕНДУ. Поле model у этого шима всегда было заглушкой
-  // ('jts-voice-router') — роут его только возвращал эхом. Агент теперь может
-  // дописать туда персону ('jts-voice-router/jarvis2'), и это единственный
-  // способ дать одному тьютору другую модель: VOICE_BRAIN_MODEL глобальный и
-  // переключил бы заодно Спарка, Луну и Декстера.
-  //
-  // Зачем вообще: мозг — Haiku 4.5, взят за скорость и цену. На казахском (язык
-  // с малым объёмом данных) маленькая модель ломает грамматику, и никакой
-  // промпт этого не чинит — поэтому A/B-стенд проверяет ГИПОТЕЗУ О МОДЕЛИ
-  // отдельно от гипотезы о тексте. Дороже: Sonnet ~3x Haiku, но стенд dev-only.
-  //
-  // Пусто/неизвестная персона → undefined → chatStreamRich берёт свой DEFAULT_MODEL,
-  // то есть для всех остальных ничего не меняется.
-  const brainModel = brainModelFor(model)
   const created = Math.floor(Date.now() / 1000)
   const id = `chatcmpl-${created}-${Math.random().toString(36).slice(2, 10)}`
   const temperature = typeof body.temperature === 'number' ? body.temperature : undefined
@@ -191,7 +164,7 @@ export async function POST(request) {
           let anyText = false
           let toolCount = 0
           let stopReason = null
-          for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature, model: brainModel })) {
+          for await (const ev of chatStreamRich({ systemPrompt, messages: turns, tools, temperature })) {
             if (ev.type === 'text') {
               if (!ev.text) continue
               if (!tFirst) tFirst = Date.now()

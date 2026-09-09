@@ -268,10 +268,12 @@
 .vp-wcard .ex mark {
   background: none; color: var(--vp-violet); font-weight: 700; padding: 0;
 }
-.vp-wcard .foot {
-  margin-top: auto; padding-top: 10px; border-top: 1px solid var(--vp-line);
-  font-size: 11.5px; color: var(--vp-muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.vp-wcard.is-learned {
+  border-color: var(--vp-green, #1a9e6a);
+}
+.vp-wcard.is-learned .foot {
+  color: #0f6b45;
+  font-weight: 700;
 }
 
 .vp-btn {
