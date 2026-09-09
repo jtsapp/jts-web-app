@@ -157,19 +157,6 @@ describe('Витрина тарифов', () => {
     expect(container.querySelectorAll('.pr-line')).toHaveLength(0)
   })
 
-  it('раздел с выбранным пакетом подсвечивается целиком', async () => {
-    // Одной залитой плитки мало: витрина длинная, и прокрутив её, человек уже
-    // не помнит, в каком блоке набрал.
-    const { container } = await renderLoaded()
-    expect(container.querySelectorAll('.pr-sec.is-picked')).toHaveLength(0)
-
-    await addTile(container, '12 уроков')
-
-    const picked = [...container.querySelectorAll('.pr-sec.is-picked')]
-    expect(picked).toHaveLength(1)
-    expect(picked[0].className).toContain('pr-sec--ind')
-  })
-
   /* ------------------------------- оплата ------------------------------- */
 
   // Kaspi скрыт до подключения эквайринга: кнопка вела туда же, куда и

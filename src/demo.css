@@ -537,7 +537,7 @@
   top: 6px;
   transform: translateX(-50%);
   width: 104px;
-  height: 104px;
+  height: 88px;
   object-fit: contain;
 }
 @media (max-width: 720px) {
@@ -801,26 +801,6 @@
   border-radius: 24px;
   background: #fff;
 }
-/* Раздел, в котором что-то выбрано, обводится своим цветом целиком: одной
-   залитой плитки мало — на длинной витрине человек прокручивает мимо и не
-   помнит, в каком блоке уже набрал. Обводка внутренняя (box-shadow), чтобы
-   раздел не дёргался по высоте в момент выбора. */
-.pr-sec.is-picked {
-  box-shadow: inset 0 0 0 2px currentColor;
-}
-.pr-sec--self.is-picked {
-  color: #0e9ecc;
-}
-.pr-sec--ind.is-picked {
-  color: #9047ff;
-}
-.pr-sec--group.is-picked {
-  color: #31b423;
-}
-/* Цвет обводки не должен протечь в текст раздела. */
-.pr-sec.is-picked > * {
-  color: #181818;
-}
 /* Разделы различаются оттенком подложки, как в макете: три белых блока подряд
    сливаются в одну простыню и найти в ней «групповые» глазами нечем. */
 .pr-sec--self {
@@ -1047,7 +1027,9 @@
 /* --- преимущества и бонусы раздела --- */
 .pr-extras {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  /* Пополам, как в макете: у бонусов справа своя картинка, и узкая колонка
+     срезала бы половину композиции. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   margin-top: 12px;
 }
@@ -1083,12 +1065,15 @@
   display: grid;
   /* Список держит свою ширину, картинки уступают: иначе подросшие логотипы
      сжимали колонку и «Бонусы к курсу» ломалось на две строки. */
-  grid-template-columns: minmax(150px, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(152px, max-content) minmax(0, 1fr);
   align-items: center;
   gap: 8px;
+  min-height: 128px;
   padding: 14px 16px;
   border-radius: 18px;
   background: #fff;
+  /* Картинки нарочно шире своей колонки — лишнее срезаем краем блока, иначе
+     на узком экране они наползали на список. */
   overflow: hidden;
 }
 /* Подложка — цветом раздела: блок бонусов принадлежит своему тарифу, а белым
@@ -1120,17 +1105,21 @@
   align-items: center;
   justify-content: flex-end;
   min-width: 0;
+  /* Режем по своей колонке, а не по краю блока: при узком экране картинки
+     вылезали влево и ложились поверх списка. */
+  overflow: hidden;
 }
 .pr-bonus__title {
   white-space: nowrap;
 }
 .pr-bonus__art img {
-  width: 68px;
-  height: 68px;
+  flex: none;
+  width: auto;
+  height: 104px;
   object-fit: contain;
 }
 .pr-bonus__art img + img {
-  margin-left: -10px;
+  margin-left: -34px;
 }
 .pr-bonus__art img:nth-child(1) {
   transform: rotate(-10deg);
@@ -1140,8 +1129,15 @@
 }
 /* Подарок крупнее и последний: он не сервис, а знак «это всё в подарок». */
 .pr-bonus__gift {
-  width: 82px;
-  height: 82px;
+  height: 102px;
+}
+@media (max-width: 900px) {
+  .pr-bonus__art img {
+    height: 76px;
+  }
+  .pr-bonus__gift {
+    height: 86px;
+  }
 }
 @media (max-width: 520px) {
   .pr-bonus {
