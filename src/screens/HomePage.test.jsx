@@ -102,6 +102,17 @@ describe('Главная демо-аккаунта', () => {
     expect(onStartLevelTest).toHaveBeenCalled()
   })
 
+  it('на «Главной» нет расписания, домашки и практики — только уровень, навыки и пробный', () => {
+    // Так на макете демо-доступа: те же данные у ученика есть в своих
+    // разделах, и дублировать их здесь значит растить экран без нужды.
+    const { container } = renderHome()
+
+    expect(container.querySelector('.hm-sched')).toBeNull()
+    expect(container.querySelector('.hm-hw')).toBeNull()
+    expect(screen.queryByText('Ваша практика на сегодня')).toBeNull()
+    expect(container.querySelector('.hm-trial')).not.toBeNull()
+  })
+
   it('сильная и слабая стороны названы', () => {
     renderHome()
     expect(screen.getByText('Сильнее всего — Говорение')).toBeTruthy()
