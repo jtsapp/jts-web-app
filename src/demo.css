@@ -851,6 +851,15 @@
   background: #d9f2e2;
   box-shadow: none;
 }
+/* Выбранная плитка красится цветом своего раздела, а не общим фиолетовым: в
+   зелёном блоке «Групповые уроки» фиолетовая плитка читается как чужая,
+   залетевшая из «Индивидуальных». */
+.pr-tile--accent.is-chosen {
+  background: #1d9d4e;
+}
+.pr-tile--accent.is-chosen .pr-step button.is-plus {
+  color: #1d9d4e;
+}
 .pr-tile__head {
   display: flex;
   align-items: center;
