@@ -9,7 +9,7 @@ import QuestionMedia from './QuestionMedia.jsx'
 // Контролируемый вопрос со свободным вводом. `answer` — введённый текст;
 // нормализация регистра/пробелов и сравнение с допустимыми `answers` — только
 // через `gradeQuestion` (не дублируем `norm` здесь).
-export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showAnswerKey = true }) {
+export default function GapQuestion({ question, answer, checked, onAnswer, readOnly, onWord, onFocusGap, showAnswerKey = true }) {
   const { t } = useI18n()
   const value = answer || ''
   const attempted = hasAttempt(question, value)
@@ -43,8 +43,16 @@ export default function GapQuestion({ question, answer, checked, onAnswer, readO
             className={cls}
             value={value}
             onChange={(e) => onAnswer(question.id, e.target.value)}
+            // Выбранный пропуск — цель для следующего слова из банка (см.
+            // PracticeBlock): у заданий «вставь слово из словаря» банк и
+            // предложения приезжают порознь и сами по себе не связаны.
+            onFocus={() => onFocusGap?.(question.id)}
+            onClick={() => onFocusGap?.(question.id)}
             disabled={checked || readOnly}
             autoComplete="off"
+            // Планшетная клавиатура превращала «lately» в «Lately».
+            autoCapitalize="none"
+            autoCorrect="off"
             spellCheck="false"
             aria-label={t('lesson.yourAnswer')}
           />

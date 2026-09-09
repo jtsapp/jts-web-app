@@ -218,7 +218,9 @@ describe('классрум — разметка урока каталога', ()
   // запрет для всего остального: список ниже — ровно те элементы, где рамка
   // осмысленна, и новая рамка на чём-то ещё снова зажжёт тест.
   it('рамка есть только у полей ввода, чипов и карточек урока', () => {
-    const allowed = /input\.gap|\.wchip|\.wbank|\.bw\b|\.msg\b/
+    // .say-play — кнопка проигрывания реплики: рамка у неё осмысленна ровно
+    // так же, как у чипа. Приехала на develop, пока эта ветка жила отдельно.
+    const allowed = /input\.gap|\.wchip|\.wbank|\.bw\b|\.msg\b|\.say-play\b/
     const unexpected = rules()
       .filter(([sel, body]) => hasBorder(body) && !allowed.test(sel))
       .map(([sel]) => sel.trim().replace(/\s+/g, ' '))

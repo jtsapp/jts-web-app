@@ -5,7 +5,7 @@ import {
   saveHomeworkFeedback, gradeHomework, returnHomeworkForRevision,
 } from '../../api.js'
 import HomeworkFileList from './HomeworkFileList.jsx'
-import { homeworkStateKey, reviewOrder, GRADES } from './homeworkFormat.js'
+import { boardStateKey, reviewOrder, GRADES } from './homeworkFormat.js'
 
 /**
  * Проверка домашних работ — экран преподавателя внутри «Уроков».
@@ -99,7 +99,7 @@ export default function TeacherHomeworkBoard({ token }) {
     <div className="hw__layout">
       <ul className="hw-list">
         {sorted.map((hw) => {
-          const stateKey = homeworkStateKey(hw)
+          const stateKey = boardStateKey(hw)
           return (
             <li key={hw.id}>
               <button
@@ -129,8 +129,8 @@ export default function TeacherHomeworkBoard({ token }) {
         <div className="hw-detail">
           <div className="hw-detail__head">
             <h2 className="hw-detail__title">{selected.title}</h2>
-            <span className={`hw-badge hw-badge--${homeworkStateKey(selected)}`}>
-              {t(`homework.status.${homeworkStateKey(selected)}`)}
+            <span className={`hw-badge hw-badge--${boardStateKey(selected)}`}>
+              {t(`homework.status.${boardStateKey(selected)}`)}
             </span>
           </div>
           <div className="hw-detail__meta">

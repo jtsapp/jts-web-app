@@ -107,7 +107,13 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -125,7 +131,13 @@ async function authPost(path, token, body) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -143,7 +155,13 @@ async function authPatch(path, token, body) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -157,7 +175,13 @@ async function authDelete(path, token) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
