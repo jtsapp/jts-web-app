@@ -21,6 +21,21 @@ describe('GET /api/practice/catalog', () => {
     })
   })
 
+  /**
+   * Ярлык темы не говорит, что ученик будет делать: «Present simple negative» —
+   * это название правила. Описание у юнита в данных есть с самого начала, и
+   * пока каталог его выбрасывал, преподаватель выбирал вслепую.
+   */
+  it('у юнитов грамматики есть описание, и оно без разметки', async () => {
+    const body = await (await GET()).json()
+    const grammar = body.areas.find((a) => a.key === 'grammar')
+    const units = grammar.levels.flatMap((l) => l.units)
+
+    const withDesc = units.filter((u) => u.desc)
+    expect(withDesc.length).toBeGreaterThan(units.length / 2)
+    expect(withDesc.some((u) => u.desc.includes('<'))).toBe(false)
+  })
+
   // Названия в каталоге размечены (<em>…</em>) — в списке выбора нужен голый текст.
   it('в названиях юнитов нет разметки', async () => {
     const body = await (await GET()).json()
