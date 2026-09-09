@@ -19,10 +19,19 @@ export default function LearningLayout({
   // во всю ширину. Просят его сами экраны-рабочие места (класс, каталог), а не
   // раздел целиком: расписание — обычный экран и живёт с полным сайдбаром.
   rail = false,
+  // Перезапуск онбординг-тура экрана. Кнопка живёт в том же углу, что колокольчик
+  // и язык: заголовки экранов на телефоне из макета убраны (.pp__title,
+  // .lp-isle__title в media 760), и рядом с ними «?» просто исчезала бы.
+  onHelp,
   children,
 }) {
   const { t } = useI18n()
   const [drawer, setDrawer] = useState(false)
+  const help = onHelp ? (
+    <button className="tour-help" type="button" onClick={onHelp} title={t('tour.help')} aria-label={t('tour.help')}>
+      ?
+    </button>
+  ) : null
 
   return (
     <NotificationProvider token={token} onNavigate={onNav}>
@@ -33,7 +42,7 @@ export default function LearningLayout({
         menuLabel={t('nav.learning')}
         onMenu={() => setDrawer(true)}
         onProfile={onProfile}
-        right={<><LangSelector compact /><NotificationBell /></>}
+        right={<>{help}<LangSelector compact /><NotificationBell /></>}
       />
       <div className="learn__body">
         <Sidebar
@@ -51,6 +60,7 @@ export default function LearningLayout({
           {/* Язык рядом с колокольчиком: до этого переключатель был только на
               входных экранах, и сменить язык из кабинета было нечем. */}
           <div className="learn__bell">
+            {help}
             <LangSelector compact />
             <NotificationBell />
           </div>

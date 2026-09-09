@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { noTours } from './tour-helper.js'
 
 // Виджет «Словарь» в правой колонке Практики. Новая логика: показываем только
 // сохранённые слова, у каждого — корзина для удаления; вкладки «Изучено» и
@@ -41,6 +42,7 @@ test.describe('Практика — виджет «Словарь»', () => {
     page,
   }) => {
     const deleted = []
+    await noTours(page)
     await mockAuthAndWords(page, deleted)
     await page.goto('/')
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
