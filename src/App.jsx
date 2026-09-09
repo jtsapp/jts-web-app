@@ -80,7 +80,7 @@ import { KINGDOMS } from './kingdoms.js'
 
 // Переводит ошибку запроса кода в ключ локализованного сообщения — или null,
 // если случай не распознан (тогда показываем текст бэкенда/общий фолбэк). Коды
-// проставляет api.js: USER_EXISTS (регистрация занятого номера) и
+// проставляет api.js: USER_EXISTS (регистрация занятого номера/почты) и
 // USER_NOT_FOUND (вход незарегистрированным номером).
 function phoneErrorKey(e) {
   if (e?.code === 'USER_EXISTS') return 'err.userExists'
@@ -599,7 +599,8 @@ export default function App() {
       // пропускаем: ставить пароль нечем.
       setScreen(mode === 'register' && tok ? 'set-password' : 'success')
     } catch (e) {
-      setError(e.message || t('err.otp'))
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || t('err.otp'))
     } finally {
       setLoading(false)
     }
@@ -1029,7 +1030,8 @@ export default function App() {
         setMode(m)
       }
     } catch (e) {
-      setError(e.message || 'Не удалось отправить код повторно.')
+      const key = phoneErrorKey(e)
+      setError(key ? t(key) : e.message || 'Не удалось отправить код повторно.')
     }
   }
 
