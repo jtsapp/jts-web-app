@@ -65,7 +65,6 @@ export default function PracticeBlock({
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
   const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId, checked })
-  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked }
 
   const hasWbCheck = htmlHasCheckableWordBank(html)
   const questions = block?.questions || []
@@ -78,6 +77,10 @@ export default function PracticeBlock({
   const [wbScore, setWbScore] = useState(null)
   // Пропуск, в который уедет следующее слово из банка.
   const [activeGapId, setActiveGapId] = useState(null)
+
+  // Всё изменчивое, что читают слушатели на живом DOM: подписка не должна
+  // зависеть от состояния, иначе она пересоздаётся на каждый ответ.
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked, questions, activeGapId }
 
   useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
@@ -99,13 +102,22 @@ export default function PracticeBlock({
   // input.gap, а тут .bank/.bw и React-инпуты, — поэтому слова банка не делали
   // ничего, и заполнить пропуск можно было только руками с клавиатуры.
   //
-  // Слушатель вешаем РАНЬШЕ тап-перевода (эффекты идут по порядку объявления) и
-  // глушим его через stopImmediatePropagation: клик по слову банка — это ответ,
-  // а не просьба перевести.
+  // Клик по слову банка — это ответ, а не просьба перевести, поэтому тап-перевод
+  // глушим. Ловим на ПЕРЕХВАТЕ, а не на всплытии: на всплытии оба слушателя
+  // висят на одном узле, и кто из них первый — решает порядок подписки. Он
+  // переставал быть нашим сразу после первого же ответа: этот эффект зависел от
+  // `answers`, на новом ответе переподписывался и уезжал в конец очереди — со
+  // второго слова банка окно перевода успевало открыться раньше и накрывало
+  // задание. Перехват отрабатывает до любого всплытия и от порядка не зависит.
+  //
+  // Изменчивое читаем из `liveRef` по той же причине: подписка не должна
+  // зависеть от состояния.
   useEffect(() => {
     const root = htmlRef.current
-    if (!root || readOnly || checked) return undefined
+    if (!root) return undefined
     const onClick = (e) => {
+      const { questions, answers, activeGapId, onAnswer, readOnly, checked } = liveRef.current
+      if (readOnly || checked) return
       const chip = e.target?.closest?.('.bw')
       if (!chip) return
       const word = (chip.textContent || '').trim()
@@ -122,9 +134,9 @@ export default function PracticeBlock({
       onAnswer(target.id, word)
       setActiveGapId(null)
     }
-    root.addEventListener('click', onClick)
-    return () => root.removeEventListener('click', onClick)
-  }, [tappableHtml, questions, answers, activeGapId, onAnswer, readOnly, checked])
+    root.addEventListener('click', onClick, true)
+    return () => root.removeEventListener('click', onClick, true)
+  }, [tappableHtml])
 
   useEffect(() => {
     const root = htmlRef.current
