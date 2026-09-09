@@ -75,6 +75,11 @@ export default function PricingPage({ token, onBack, onDone }) {
   const add = (offer, kind) => setItems((prev) => addItem(prev, cartLine(offer, kind)))
   const bump = (id, delta) => setItems((prev) => setQty(prev, id, qtyOf(prev, id) + delta))
 
+  // Выбрано ли что-нибудь в разделе — по нему подсвечивается весь блок, а не
+  // одна плитка: витрина длинная, и прокрутив её, человек уже не помнит, где
+  // именно набрал.
+  const picked = (list) => list.some((offer) => qtyOf(items, offer.code) > 0)
+
   const cartLine = (offer, kind) => ({
     id: offer.code,
     kind,
@@ -173,7 +178,7 @@ export default function PricingPage({ token, onBack, onDone }) {
           <div className="pr__cols">
             {/* ——— Self Study ——— */}
             {groups.self.length > 0 && (
-              <section className="pr-sec pr-sec--self">
+              <section className={`pr-sec pr-sec--self${picked(groups.self) ? ' is-picked' : ''}`}>
                 <h2 className="pr-sec__title">
                   <SecIcon kind="self" />
                   {t('pricing.self')}
@@ -197,7 +202,7 @@ export default function PricingPage({ token, onBack, onDone }) {
 
             {/* ——— Индивидуальные ——— */}
             {groups.individual.length > 0 && (
-              <section className="pr-sec pr-sec--ind">
+              <section className={`pr-sec pr-sec--ind${picked(groups.individual) ? ' is-picked' : ''}`}>
                 <div className="pr-sec__head">
                   <h2 className="pr-sec__title">
                     <SecIcon kind="ind" />
@@ -251,7 +256,7 @@ export default function PricingPage({ token, onBack, onDone }) {
 
             {/* ——— Групповые ——— */}
             {groups.group.length > 0 && (
-              <section className="pr-sec pr-sec--group">
+              <section className={`pr-sec pr-sec--group${picked(groups.group) ? ' is-picked' : ''}`}>
                 <h2 className="pr-sec__title">
                   <SecIcon kind="group" />
                   {t('pricing.group')}

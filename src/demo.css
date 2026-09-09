@@ -797,20 +797,40 @@
 
 /* --- раздел --- */
 .pr-sec {
-  padding: 18px;
-  border-radius: 20px;
+  padding: 20px;
+  border-radius: 24px;
   background: #fff;
+}
+/* Раздел, в котором что-то выбрано, обводится своим цветом целиком: одной
+   залитой плитки мало — на длинной витрине человек прокручивает мимо и не
+   помнит, в каком блоке уже набрал. Обводка внутренняя (box-shadow), чтобы
+   раздел не дёргался по высоте в момент выбора. */
+.pr-sec.is-picked {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+.pr-sec--self.is-picked {
+  color: #0e9ecc;
+}
+.pr-sec--ind.is-picked {
+  color: #9047ff;
+}
+.pr-sec--group.is-picked {
+  color: #31b423;
+}
+/* Цвет обводки не должен протечь в текст раздела. */
+.pr-sec.is-picked > * {
+  color: #181818;
 }
 /* Разделы различаются оттенком подложки, как в макете: три белых блока подряд
    сливаются в одну простыню и найти в ней «групповые» глазами нечем. */
 .pr-sec--self {
-  background: #eef7fd;
+  background: #e5f6ff;
 }
 .pr-sec--ind {
-  background: #f4efff;
+  background: #f1eaff;
 }
 .pr-sec--group {
-  background: #ecf9f0;
+  background: #e2f7df;
 }
 .pr-sec__head {
   display: flex;
@@ -823,11 +843,13 @@
 .pr-sec__title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 14px;
-  font-size: 15px;
-  font-weight: 800;
-  color: #171326;
+  gap: 14px;
+  margin: 0 0 16px;
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #181818;
 }
 .pr-sec__head .pr-sec__title {
   margin: 0;
@@ -836,25 +858,31 @@
 /* переключатель длительности */
 .pr-toggle {
   display: inline-flex;
-  padding: 3px;
+  padding: 4px;
+  gap: 4px;
   border-radius: 999px;
-  background: #fff;
+  background: #f8f8f8;
 }
 .pr-toggle__btn {
-  height: 32px;
+  height: 34px;
   padding: 0 16px;
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #6b6976;
+  color: #8a8a8a;
   font-family: inherit;
   font-size: 13px;
-  font-weight: 700;
+  line-height: 18px;
+  font-weight: 500;
   cursor: pointer;
 }
+/* Выбранная длительность — белая таблетка с тенью, а не чёрная заливка: в
+   макете это переключатель, а не главная кнопка раздела. */
 .pr-toggle__btn.is-on {
-  background: #171326;
-  color: #fff;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(51, 26, 89, 0.12);
+  color: #181818;
+  font-weight: 700;
 }
 .pr-toggle__btn:focus-visible {
   outline: 2px solid var(--purple);
@@ -886,29 +914,37 @@
 }
 .pr-tile {
   padding: 14px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: #fff;
-  box-shadow: inset 0 0 0 1px #e8e5f2;
+  box-shadow: inset 0 0 0 1px #ededed;
 }
 /* Выбранный пакет заливаем акцентом — в корзине справа он тоже есть, но на
    длинной витрине до неё ещё надо доскроллить. */
 .pr-tile.is-chosen {
-  background: var(--purple);
+  background: #9047ff;
   box-shadow: none;
   color: #fff;
 }
 .pr-tile--accent:not(.is-chosen) {
-  background: #d9f2e2;
-  box-shadow: none;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #ededed;
 }
 /* Выбранная плитка красится цветом своего раздела, а не общим фиолетовым: в
    зелёном блоке «Групповые уроки» фиолетовая плитка читается как чужая,
    залетевшая из «Индивидуальных». */
 .pr-tile--accent.is-chosen {
-  background: #1d9d4e;
+  background: #31b423;
 }
 .pr-tile--accent.is-chosen .pr-step button.is-plus {
-  color: #1d9d4e;
+  color: #31b423;
+}
+/* Подпись «за урок» на залитой плитке — светлее фона, но читаемая: в макете
+   у фиолетовой она #D6BCFF, у зелёной #AEFFC7. */
+.pr-tile.is-chosen .pr-tile__note {
+  color: #d6bcff;
+}
+.pr-tile--accent.is-chosen .pr-tile__note {
+  color: #aeffc7;
 }
 .pr-tile__head {
   display: flex;
@@ -919,6 +955,7 @@
 }
 .pr-tile__title {
   font-size: 14px;
+  line-height: 19px;
   font-weight: 700;
 }
 .pr-tile__add {
@@ -928,9 +965,9 @@
   width: 26px;
   height: 26px;
   border: none;
-  border-radius: 8px;
-  background: rgba(23, 19, 38, 0.06);
-  color: #171326;
+  border-radius: 999px;
+  background: #f8f8f8;
+  color: #181818;
   cursor: pointer;
 }
 .pr-tile__add:hover {
@@ -942,9 +979,11 @@
   outline-offset: 2px;
 }
 .pr-tile__price {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 20px;
-  font-weight: 800;
+  line-height: 27px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .pr-tile__note {
   margin-top: 4px;
@@ -1010,11 +1049,11 @@
 .pr-feats {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
-  padding: 14px;
+  padding: 14px 16px;
   list-style: none;
-  border-radius: 16px;
+  border-radius: 18px;
   background: #fff;
 }
 .pr-feats li {
@@ -1022,8 +1061,9 @@
   align-items: center;
   gap: 10px;
   font-size: 13px;
+  line-height: 18px;
   font-weight: 500;
-  color: #3c3850;
+  color: #181818;
 }
 .pr-feats li svg {
   flex: none;
@@ -1033,19 +1073,33 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 16px;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
   background: #fff;
   overflow: hidden;
 }
 /* Подложка — цветом раздела: блок бонусов принадлежит своему тарифу, а белым
    он сливался с соседней карточкой преимуществ. */
 .pr-sec--ind .pr-bonus {
-  background: #ece2ff;
+  background: #d4bfff;
+}
+.pr-sec--ind .pr-bonus__title,
+.pr-sec--ind .pr-bonus__title svg {
+  color: #7817b9;
+}
+.pr-sec--ind .pr-bonus ul {
+  color: #614673;
 }
 .pr-sec--group .pr-bonus {
-  background: #d9f2e2;
+  background: #b2e8aa;
+}
+.pr-sec--group .pr-bonus__title,
+.pr-sec--group .pr-bonus__title svg {
+  color: #1c7f12;
+}
+.pr-sec--group .pr-bonus ul {
+  color: #3f653b;
 }
 .pr-bonus__art {
   display: flex;
@@ -1092,22 +1146,23 @@
 
 /* --- «входит в любой тариф» --- */
 .pr-inc {
-  padding: 18px;
-  border-radius: 20px;
-  background: #fff;
+  padding: 16px 0;
+  border-radius: 24px;
+  background: transparent;
 }
 .pr-inc__title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0 0 14px;
-  font-size: 14px;
-  font-weight: 800;
-  color: #171326;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+  color: #181818;
 }
 .pr-inc__title svg {
   flex: none;
-  color: #3ec97a;
+  color: #31b423;
 }
 .pr-inc__grid {
   display: grid;
@@ -1127,10 +1182,10 @@
 .pr-inc__cell {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
+  gap: 12px;
+  padding: 12px 16px;
   border-radius: 14px;
-  background: #f7f6fb;
+  background: #f8f8f8;
 }
 .pr-inc__cell svg {
   flex: none;
