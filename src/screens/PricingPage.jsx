@@ -180,7 +180,7 @@ export default function PricingPage({ token, onBack, onDone }) {
             {groups.self.length > 0 && (
               <section className={`pr-sec pr-sec--self${picked(groups.self) ? ' is-picked' : ''}`}>
                 <h2 className="pr-sec__title">
-                  <SecIcon kind="self" />
+                  <span className="pr-sec__ic"><SecIcon kind="self" /></span>
                   {t('pricing.self')}
                 </h2>
                 <div className="pr-tiles pr-tiles--4">
@@ -205,7 +205,7 @@ export default function PricingPage({ token, onBack, onDone }) {
               <section className={`pr-sec pr-sec--ind${picked(groups.individual) ? ' is-picked' : ''}`}>
                 <div className="pr-sec__head">
                   <h2 className="pr-sec__title">
-                    <SecIcon kind="ind" />
+                    <span className="pr-sec__ic"><SecIcon kind="ind" /></span>
                     {t('pricing.ind')}
                   </h2>
                   {/* Переключатель длительности меняет и цену, и то, что попадёт
@@ -258,7 +258,7 @@ export default function PricingPage({ token, onBack, onDone }) {
             {groups.group.length > 0 && (
               <section className={`pr-sec pr-sec--group${picked(groups.group) ? ' is-picked' : ''}`}>
                 <h2 className="pr-sec__title">
-                  <SecIcon kind="group" />
+                  <span className="pr-sec__ic"><SecIcon kind="group" /></span>
                   {t('pricing.group')}
                 </h2>
                 <div className="pr-tiles pr-tiles--3">
