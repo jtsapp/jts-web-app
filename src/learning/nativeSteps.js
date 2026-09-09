@@ -647,6 +647,28 @@ export function tasksToSteps(lesson, lang = 'ru') {
         )
         break
 
+      case 'match': {
+        // Готовое соединение из pairbox/sortbox юнит-теста — не режем по экранам:
+        // MATCH_PER_SCREEN для развёрнутых choice-серий, а здесь пять пар
+        // (keep / fall out / …) это одно упражнение «5–9».
+        const pairs = (t.pairs || []).filter((p) => p && p.left && p.right).map((p) => ({
+          left: p.left,
+          right: tr(p.right),
+        }))
+        if (!pairs.length) break
+        push(
+          {
+            stage,
+            type: 'match',
+            title: title || 'Соедини пары',
+            pairs,
+            options: t.options && t.options.length ? trAll(t.options) : pairs.map((p) => p.right),
+          },
+          !!title,
+        )
+        break
+      }
+
       case 'order': {
         // Порядок слов: правильный ответ — сама фраза, банк перемешивает плеер.
         // В данных уровня answer лежит СПИСКОМ слов (["I","like","coffee"]) —

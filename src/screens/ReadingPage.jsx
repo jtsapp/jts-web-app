@@ -205,6 +205,7 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
           text={current}
           dict={dict}
           ensureDict={ensureDict}
+          token={token}
           onFont={(dir) => applyView({ ...viewPrefs, fs: stepFont(viewPrefs.fs, dir) })}
           onSettings={() => setSettingsOpen(true)}
           onFinish={() => {
@@ -220,6 +221,7 @@ export default function ReadingPage({ userLevel, userName, token, initialTarget,
         text={current}
         texts={texts}
         progressTick={progressTick}
+        token={token}
         onOpen={openText}
         onLibrary={goLibrary}
         onReview={() => setView({ name: 'read', textId: current.id, tab: 'ex' })}

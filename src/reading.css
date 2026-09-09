@@ -196,10 +196,23 @@
 .rd-word__ex { margin-top: 6px; font-size: calc(13px * var(--rd-scale)); color: var(--rd-ink-3); font-style: italic; }
 .rd-words--compact .rd-word__ex { display: none; }
 .rd-flag { font-size: calc(11px * var(--rd-scale)); font-weight: 800; color: var(--rd-ink-3); min-width: 22px; }
+.rd-word__acts { display: flex; flex-direction: column; align-items: stretch; gap: 6px; flex: none; }
 .rd-say {
   border: 0; background: var(--rd-soft); color: var(--rd-purple-dark);
   border-radius: 12px; width: 2.4em; height: 2.4em; font-size: calc(16px * var(--rd-scale)); cursor: pointer; flex: none;
+  display: grid; place-items: center;
 }
+.rd-say.is-saved { background: var(--rd-green-bg); color: var(--rd-green); cursor: default; }
+.rd-say:disabled { opacity: 1; }
+.rd-save {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: 12px; padding: 8px 12px;
+  background: var(--rd-purple); color: #fff;
+  font: inherit; font-size: calc(13px * var(--rd-scale)); font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.rd-save.is-saved { background: var(--rd-green-bg); color: var(--rd-green); cursor: default; }
+.rd-save:disabled { opacity: 1; }
 
 .rd-listen { display: flex; flex-wrap: wrap; gap: 10px; }
 .rd-hint { margin: 12px 0 16px; font-size: calc(13px * var(--rd-scale)); color: var(--rd-ink-3); }
@@ -239,6 +252,13 @@
 .rd-pop__tr { font-size: calc(13px * var(--rd-scale)); color: var(--rd-ink-3); margin-top: 2px; }
 .rd-pop__row { display: flex; gap: 8px; font-size: calc(14px * var(--rd-scale)); color: var(--rd-ink-2); margin-top: 6px; }
 .rd-pop__hint { color: var(--rd-ink-3); }
+.rd-pop__save {
+  margin-top: 12px; width: 100%; border: 0; border-radius: 12px; padding: 10px 12px;
+  background: var(--rd-purple); color: #fff;
+  font: inherit; font-size: calc(14px * var(--rd-scale)); font-weight: 700; cursor: pointer;
+}
+.rd-pop__save.is-saved { background: var(--rd-green-bg); color: var(--rd-green); cursor: default; }
+.rd-pop__save:disabled:not(.is-saved) { opacity: 0.55; cursor: default; }
 
 /* ── упражнения ── */
 .rd-ex { background: #fff; border: 1.5px solid var(--rd-line); border-radius: 20px; padding: 18px; margin-bottom: 14px; }

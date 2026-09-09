@@ -34,6 +34,20 @@ describe('findCatalogLessonId', () => {
     expect(findCatalogLessonId(CATALOG, 'https://files/a2/lessons/L01.html?mode=solo#s2')).toBe(101)
   })
 
+  // Материал раздела часто приходит с подписью S3. Сравнивать строки целиком
+  // не находило разбор — ученик видел одну «Section 1» вместо шагов урока.
+  it('находит урок по подписанной ссылке S3 с тем же mode', () => {
+    const signed =
+      'https://files/a2/lessons/L01.html?mode=solo&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=abc'
+    expect(findCatalogLessonId(CATALOG, signed)).toBe(101)
+  })
+
+  it('не путает режимы, когда подпись стоит первой в query', () => {
+    const signed =
+      'https://files/a2/lessons/L01.html?X-Amz-Expires=3600&mode=group&X-Amz-Signature=abc'
+    expect(findCatalogLessonId(CATALOG, signed)).toBe(102)
+  })
+
   // Уровень, залитый до появления режимов, ссылается на файл без ?mode=.
   it('без режима довольствуется совпадением файла', () => {
     expect(findCatalogLessonId(CATALOG, 'https://files/a2/lessons/L01.html')).toBe(100)

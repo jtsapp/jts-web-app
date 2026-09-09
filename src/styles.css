@@ -2060,6 +2060,30 @@ textarea {
   }
 }
 
+/* Кнопка «?» — перезапуск онбординг-тура экрана (LearningLayout onHelp). Стоит
+   в одной группе с колокольчиком и языком — и в углу кабинета, и в мобильной
+   шапке, — поэтому метрики один в один как у .nbell__btn ниже. */
+.tour-help {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 12px;
+  background: #f5f2fe;
+  color: var(--purple, #7b3cff);
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.tour-help:hover {
+  transform: translateY(-1px);
+}
+
 .nbell {
   position: relative;
 }

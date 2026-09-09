@@ -56,6 +56,7 @@ import {
 import { loadKaraokeIndex, trackProgress as karaokeProgress } from '../practice/karaoke/karaokeData.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { loadModule } from '../lib/lazyModule.js'
 
 // Фолбэк для сказок (открытие в новой вкладке по ctrl/cmd-клику); обычный клик
@@ -311,7 +312,18 @@ async function enrichCovers(list) {
   )
 }
 
-export default function PracticePage({ userLevel = 'A1', userName, token, openTarget, onNav, onProfile, isDemoAccount }) {
+export default function PracticePage({
+  userLevel = 'A1',
+  userName,
+  token,
+  openTarget,
+  onNav,
+  onProfile,
+  isDemoAccount,
+  // Ключ отметки «тур показан» приходит из App: в нём id профиля, поэтому
+  // «один раз» считается на аккаунт, а не на браузер (см. tourKeyFor).
+  tourKey,
+}) {
   const { t } = useI18n()
   const [state, setState] = useState({ loading: true, error: '' })
   const [clips, setClips] = useState([])
@@ -628,6 +640,26 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
   const [filter, setFilter] = useState(null)
 
+  // Онбординг-тур: сам выходит при первом заходе, дальше — по кнопке «?» в углу.
+  // Шаги идут сверху вниз по странице, чтобы прожектор не прыгал; секции, которых
+  // на экране нет, тур пропускает сам (см. OnboardingTour).
+  const tour = useScreenTour(tourKey)
+  const tourSteps = [
+    { selector: '.pp-chips', title: t('tour.practice.chips.title'), text: t('tour.practice.chips.text') },
+    { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text') },
+    { selector: '#sec-writing', title: t('tour.practice.writing.title'), text: t('tour.practice.writing.text') },
+    { selector: '#sec-reading', title: t('tour.practice.reading.title'), text: t('tour.practice.reading.text') },
+    { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text') },
+    { selector: '#sec-situations', title: t('tour.practice.situations.title'), text: t('tour.practice.situations.text') },
+    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
+  ]
+  // Перед стартом возвращаем ленту в «Все»: под выбранным чипом остальных
+  // секций в DOM нет, и тур из семи шагов свёлся бы к одному.
+  const startTour = () => {
+    setFilter(null)
+    tour.start()
+  }
+
   // Мастерство Shadowing на карточках — локально из IndexedDB (best-effort,
   // async, не блокирует рендер лент; см. fetchCoversIndex по духу). Возврат из
   // урока перемонтирует страницу, поэтому подгружаем при монтировании.
@@ -845,7 +877,7 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile} onHelp={startTour}>
       <div className="pp pp--enter">
         {/* ───── Центр: ленты контента ───── */}
         <div className="pp__center">
@@ -1364,6 +1396,10 @@ export default function PracticePage({ userLevel = 'A1', userName, token, openTa
           units={pickedUnits.map((u) => unitToPayload(grammarLevel, u))}
           onClear={clearPickedUnits}
         />
+      )}
+
+      {tour.open && (
+        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
       )}
     </LearningLayout>
   )

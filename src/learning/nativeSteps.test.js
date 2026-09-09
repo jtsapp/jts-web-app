@@ -178,6 +178,30 @@ describe('nativeSteps — соединение пар', () => {
     steps.forEach((s) => expect(s.options).toEqual(s.pairs.map((p) => p.right)))
   })
 
+  it('готовое соединение из pairbox остаётся одним экраном со всеми парами', () => {
+    const steps = tasksToSteps({
+      tasks: [
+        { type: 'info', sec: 'Unit Test', html: '<p class="subline">Match the beginning of each phrase to its ending.</p>' },
+        {
+          type: 'match',
+          sec: 'Unit Test',
+          pairs: [
+            { left: 'keep', right: 'in touch' },
+            { left: 'fall out', right: 'over money' },
+            { left: 'get on well', right: 'with somebody' },
+            { left: 'buy something', right: 'on credit' },
+            { left: 'have a lot', right: 'in common' },
+          ],
+          options: ['in touch', 'over money', 'with somebody', 'on credit', 'in common'],
+        },
+      ],
+    })
+    expect(steps).toHaveLength(1)
+    expect(steps[0].type).toBe('match')
+    expect(steps[0].pairs).toHaveLength(5)
+    expect(steps[0].pairs[0]).toEqual({ left: 'keep', right: 'in touch' })
+  })
+
   it('двух пар мало — это честно два отдельных вопроса', () => {
     const steps = tasksToSteps({ tasks: [matchLead(), pair('👂 listen', 'слушать'), pair('🔁 repeat', 'повторять')] })
     expect(steps.map((s) => s.type)).toEqual(['choice', 'choice'])

@@ -896,6 +896,38 @@ const dict = {
 
     // Практика (названия разделов — официальные строки из ARB мобилки)
     'practice.title': 'Практика',
+    // Онбординг-тур «Практики» и «Обучения» (OnboardingTour). Тексты шагов — в
+    // этом словаре: оба экрана живут в зоне useI18n, а не useT (см. providers.jsx).
+    'tour.help': 'Как устроен раздел',
+    'tour.practice.chips.title': 'Разделы практики',
+    'tour.practice.chips.text':
+      'Чипы сверху фильтруют ленту: нажми — останется только этот раздел, «Все» вернёт всё обратно.',
+    'tour.practice.listening.title': 'Аудирование',
+    'tour.practice.listening.text':
+      'Слушаешь фразу и собираешь её из слов. Уровень подставляется твой — на слух, без текста перед глазами.',
+    'tour.practice.writing.title': 'Письмо',
+    'tour.practice.writing.text':
+      'Пишешь эссе и письма по заданию. Проверка возвращается с разбором ошибок и оценкой.',
+    'tour.practice.reading.title': 'Чтение',
+    'tour.practice.reading.text':
+      'Библиотека текстов по уровням: читаешь и отвечаешь на вопросы к прочитанному.',
+    'tour.practice.shadowing.title': 'Шэдоуинг',
+    'tour.practice.shadowing.text':
+      'Повторяешь за диктором вслух. Запись сравнивается с оригиналом — видно, какие звуки хромают.',
+    'tour.practice.situations.title': 'Ситуации',
+    'tour.practice.situations.text':
+      'Разговорные сценки: кофейня, аэропорт, врач. Говоришь ты, собеседник отвечает голосом.',
+    'tour.practice.library.title': 'Сказки, книжки и комиксы',
+    'tour.practice.library.text':
+      'Чтение для удовольствия. Тапни незнакомое слово — покажем перевод и сохраним его в «Словарь» в меню слева.',
+    'tour.learn.map.title': 'Карта уровней',
+    'tour.learn.map.text':
+      'Остров — весь путь от A0 до C1. Каждый город на нём — уровень, карта прокручивается снизу вверх.',
+    'tour.learn.current.title': 'Твой уровень',
+    'tour.learn.current.text':
+      'Карта открывается здесь. Внутри города — тропа уроков: проходишь их по порядку, в конце юнита ждёт тест.',
+    'tour.learn.locked.title': 'Закрытые города',
+    'tour.learn.locked.text': 'Уровни выше откроются, когда пройдёшь текущий.',
     'practice.chip.all': 'Все',
     'practice.chip.grammar': 'Грамматика',
     'practice.chip.situations': 'Ситуации',
@@ -2520,6 +2552,36 @@ const dict = {
 
     // Practice (section names — official strings from the mobile app ARB)
     'practice.title': 'Practice',
+    'tour.help': 'How this section works',
+    'tour.practice.chips.title': 'Practice sections',
+    'tour.practice.chips.text':
+      'The chips on top filter the feed: tap one and only that section stays, «All» brings everything back.',
+    'tour.practice.listening.title': 'Listening',
+    'tour.practice.listening.text':
+      'You hear a phrase and rebuild it from words. Your own level is used — by ear, with no text in front of you.',
+    'tour.practice.writing.title': 'Writing',
+    'tour.practice.writing.text':
+      'You write essays and letters to a prompt. The check comes back with mistakes explained and a score.',
+    'tour.practice.reading.title': 'Reading',
+    'tour.practice.reading.text':
+      'A library of texts by level: read, then answer questions about what you have read.',
+    'tour.practice.shadowing.title': 'Shadowing',
+    'tour.practice.shadowing.text':
+      'Repeat after the speaker out loud. Your recording is compared with the original — you see which sounds slip.',
+    'tour.practice.situations.title': 'Situations',
+    'tour.practice.situations.text':
+      'Role-play scenes: a cafe, the airport, a doctor. You speak, the other side answers with a voice.',
+    'tour.practice.library.title': 'Tales, books and comics',
+    'tour.practice.library.text':
+      'Reading for pleasure. Tap an unfamiliar word — we show the translation and save it to «Vocabulary» in the left menu.',
+    'tour.learn.map.title': 'Level map',
+    'tour.learn.map.text':
+      'The island is the whole path from A0 to C1. Every town on it is a level, and the map scrolls bottom to top.',
+    'tour.learn.current.title': 'Your level',
+    'tour.learn.current.text':
+      'The map opens here. Inside a town is the lesson trail: you walk it in order, with a test at the end of a unit.',
+    'tour.learn.locked.title': 'Locked towns',
+    'tour.learn.locked.text': 'Higher levels open once you finish the current one.',
     'practice.chip.all': 'All',
     'practice.chip.grammar': 'Grammar',
     'practice.chip.situations': 'Situations',
@@ -4134,6 +4196,36 @@ const dict = {
 
     // Практика (бөлім атаулары — мобилка ARB-ының ресми жолдары)
     'practice.title': 'Тәжірибе',
+    'tour.help': 'Бөлім қалай жұмыс істейді',
+    'tour.practice.chips.title': 'Тәжірибе бөлімдері',
+    'tour.practice.chips.text':
+      'Жоғарыдағы чиптер таспаны сүзеді: біреуін бассаң, сол бөлім ғана қалады. «Барлығы» бәрін қайтарады.',
+    'tour.practice.listening.title': 'Тыңдалым',
+    'tour.practice.listening.text':
+      'Сөйлемді тыңдап, сөздерден құрастырасың. Деңгей — өзіңдікі: мәтінсіз, тек құлақпен.',
+    'tour.practice.writing.title': 'Жазылым',
+    'tour.practice.writing.text':
+      'Тапсырма бойынша эссе мен хат жазасың. Тексеру қателердің талдауымен және баллмен келеді.',
+    'tour.practice.reading.title': 'Оқылым',
+    'tour.practice.reading.text':
+      'Деңгейлер бойынша мәтіндер кітапханасы: оқисың да, оқығаның бойынша сұрақтарға жауап бересің.',
+    'tour.practice.shadowing.title': 'Шэдоуинг',
+    'tour.practice.shadowing.text':
+      'Диктордан кейін дауыстап қайталайсың. Жазбаң түпнұсқамен салыстырылады — қай дыбыс ақсайтыны көрінеді.',
+    'tour.practice.situations.title': 'Жағдаяттар',
+    'tour.practice.situations.text':
+      'Сөйлесу көріністері: кофехана, әуежай, дәрігер. Сен сөйлейсің, әңгімелесуші дауыспен жауап береді.',
+    'tour.practice.library.title': 'Ертегілер, кітаптар және комикстер',
+    'tour.practice.library.text':
+      'Рахат үшін оқу. Таныс емес сөзді бассаң — аудармасын көрсетеміз және сол сөз сол жақтағы мәзірдегі «Сөздікке» түседі.',
+    'tour.learn.map.title': 'Деңгейлер картасы',
+    'tour.learn.map.text':
+      'Арал — A0-ден C1-ге дейінгі бүкіл жол. Ондағы әр қала — деңгей, карта төменнен жоғары қарай айналады.',
+    'tour.learn.current.title': 'Сенің деңгейің',
+    'tour.learn.current.text':
+      'Карта осы жерден ашылады. Қала ішінде — сабақтар соқпағы: ретімен өтесің, юнит соңында тест күтеді.',
+    'tour.learn.locked.title': 'Жабық қалалар',
+    'tour.learn.locked.text': 'Жоғарғы деңгейлер ағымдағысын аяқтағанда ашылады.',
     'practice.chip.all': 'Барлығы',
     'practice.chip.grammar': 'Грамматика',
     'practice.chip.situations': 'Жағдаяттар',
