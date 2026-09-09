@@ -48,6 +48,30 @@ test.describe('онбординг-тур «Практики»', () => {
 })
 
 test.describe('онбординг-тур «Обучения»', () => {
+  // Регрессия: прожектор мерился один раз, на монтировании. Пока картинка
+  // острова не загрузилась, у цели нулевая высота — подсветка оставалась
+  // полоской у верхнего края, а карточка уезжала за ней (жалоба со скриншотом).
+  test('прожектор переезжает на остров, когда картинка догрузилась', async ({ page }) => {
+    await page.route('**/assets/learning/island.webp', async (route) => {
+      await new Promise((r) => setTimeout(r, 1200))
+      await route.continue()
+    })
+    await page.goto('/?screen=kingdom')
+    await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
+    await page.waitForTimeout(2200)
+
+    const { hole, target } = await page.evaluate(() => {
+      const box = (el) => (el ? el.getBoundingClientRect() : null)
+      const h = box(document.querySelector('.t-tour__hole'))
+      const t = box(document.querySelector('.lp-isle__map'))
+      return { hole: h && { top: h.top, height: h.height }, target: t && { height: t.height } }
+    })
+    expect(target.height).toBeGreaterThan(400)
+    // Прожектор больше не полоска и стоит на острове, а не над ним.
+    expect(hole.height).toBeGreaterThan(300)
+    expect(hole.top).toBeLessThan(200)
+  })
+
   test('выходит сам на карте уровней и проходится целиком', async ({ page, viewport }) => {
     await page.goto('/?screen=kingdom')
     await expect(page.locator('.lp-isle')).toBeVisible({ timeout: 15000 })
