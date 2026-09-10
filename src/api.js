@@ -979,9 +979,15 @@ export async function completeActivation(activationToken, password) {
 }
 
 // Демо-доступ для витрины «Практика», когда пользователь ещё не залогинен
-// (флоу Skip). Кэшируем промис, чтобы не логиниться повторно.
-const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
-const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
+// (флоу Skip). Кэшируем промис, чтобы не ходить за токеном повторно.
+//
+// Пароля демо-аккаунта здесь БОЛЬШЕ НЕТ и быть не должно. Раньше браузер
+// логинился сам парой NEXT_PUBLIC_DEMO_PHONE / NEXT_PUBLIC_DEMO_PASSWORD со
+// значениями по умолчанию прямо в этой строке: префикс NEXT_PUBLIC_ означает
+// «вшить в бандл», то есть пароль общего аккаунта читался из исходников
+// вкладки. Токен протухает и годится только этому приложению, а паролем можно
+// войти откуда угодно и сменить его. Теперь пару знает только сервер —
+// src/app/api/practice/demo-token/route.js.
 const DEMO_TOKEN_KEY = 'jts_demo_token'
 
 let _demoTokenPromise = null
@@ -1005,19 +1011,32 @@ export function getPracticeToken(token) {
       const saved = window.localStorage.getItem(DEMO_TOKEN_KEY)
       if (saved && jwtAlive(saved)) _demoTokenPromise = Promise.resolve(saved)
     } catch {
-      /* localStorage недоступен — просто логинимся */
+      /* localStorage недоступен — просто сходим за токеном */
     }
   }
   if (!_demoTokenPromise) {
-    _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD)
-      .then((res) => {
-        const tok = res?.accessToken || null
-        if (tok) {
-          try {
-            window.localStorage.setItem(DEMO_TOKEN_KEY, tok)
-          } catch {
-            /* квота/приватный режим — работаем без кэша */
-          }
+    _demoTokenPromise = fetch('/api/practice/demo-token', { method: 'POST' })
+      .then(async (res) => {
+        // Стенд без настроенного демо-доступа отвечает 503, недоступный
+        // бэкенд — 502. И то и другое значит «витрины сейчас нет»: раздел
+        // откроется без серверной части, ровно как при неудачном входе раньше.
+        if (!res.ok) return null
+        const body = await res.json().catch(() => null)
+        return body?.accessToken || null
+      })
+      .then((tok) => {
+        // Пустой ответ не запоминаем: отказ бывает временным (передеплой
+        // бэкенда — секунды), а запомненный он держался бы до перезагрузки
+        // вкладки, и второй заход в раздел был бы так же бесполезен. Та же
+        // причина, по которой сбрасывается кэш каталога в админке.
+        if (!tok) {
+          _demoTokenPromise = null
+          return null
+        }
+        try {
+          window.localStorage.setItem(DEMO_TOKEN_KEY, tok)
+        } catch {
+          /* квота/приватный режим — работаем без кэша */
         }
         return tok
       })

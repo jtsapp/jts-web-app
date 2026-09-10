@@ -76,6 +76,9 @@ import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLogi
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
+import { isTeacher } from './lib/jwt.js'
+import { isStudentOnlyScreen } from './lib/screenAccess.js'
+import { rememberPendingScreen, consumePendingScreen, clearPendingScreen } from './lib/pendingScreen.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
@@ -252,7 +255,15 @@ export default function App() {
         }
         // Ссылка из админки важнее сессии: студент должен задать пароль.
         if (inviteToken) setScreen('complete-registration')
-        else if (deepLink) setScreen(deepLink)
+        else if (deepLink) {
+          setScreen(deepLink)
+          // Гостю раздел открывается сразу, но стоит ему пойти логиниться — и
+          // намерение пропадало: адрес чистит эффект синхронизации, а после
+          // входа экран назначает homeScreenFor. Запоминаем, чтобы вернуть его
+          // туда, куда он шёл (см. lib/pendingScreen.js). Вошедшему помнить
+          // нечего — он уже на месте.
+          if (!session) rememberPendingScreen(deepLink)
+        }
         // Куда вести после входа — одно решение на все пути входа, см.
         // lib/homeScreen.js: аккаунт класса в класс, преподавателя в «Уроки»,
         // ученика на «Главную».
@@ -851,9 +862,36 @@ export default function App() {
   }
 
   // Выход из аккаунта: чистим токен и возвращаем на welcome.
+  /**
+   * Куда сажать человека сразу после входа.
+   *
+   * Обычно — домашний экран его роли (lib/homeScreen.js). Но если он пришёл по
+   * присланной ссылке и логинился ровно затем, чтобы её открыть, вернуть его
+   * надо туда, куда он шёл, а не на «Главную», где этот текст ещё надо найти.
+   *
+   * Намерение съедается при первом же применении: следующий вход в этой
+   * вкладке — уже про другое, в том числе под другим аккаунтом.
+   *
+   * Сверяем с persistsInUrl, а не просто «строка не пуста»: возвращаем только
+   * на экраны, которые вообще открываются по адресу. Значение могло лечь ещё
+   * прошлой версией приложения, где экран назывался иначе, — и человек получил
+   * бы пустоту вместо кабинета.
+   */
+  function screenAfterLogin() {
+    const home = homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
+    const pending = consumePendingScreen()
+    // Аккаунт класса важнее любой ссылки: кабинет ему закрыт весь, кроме
+    // класса и урока (BOOTH_SCREENS выше), и страж всё равно увёл бы его назад.
+    if (boothAccount) return home
+    return pending && persistsInUrl(pending) ? pending : home
+  }
+
   function handleLogout() {
     clearToken()
     clearLocalPractice()
+    // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
+    // вход в этой же вкладке увёл бы другого человека на чужой текст.
+    clearPendingScreen()
     setToken(null)
     setName('')
     setPhone('')
@@ -1003,6 +1041,18 @@ export default function App() {
     }
   }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
 
+  // Тот же страж для преподавателя: ученические разделы ему не положены, а
+  // `?screen=` до сих пор клался в состояние без сверки с ролью — и в меню, из
+  // которого эти разделы вырезаны, вернуться было нечем. Уводим той же
+  // функцией, что решает домашний экран после входа, — не отдельным условием
+  // здесь. Аккаунт класса разбирает страж выше: у него свой, более узкий набор.
+  useEffect(() => {
+    if (boothAccount || !isTeacher(token)) return
+    if (isStudentOnlyScreen(screen)) {
+      setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
+    }
+  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
+
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
@@ -1134,7 +1184,13 @@ export default function App() {
   // prefers-reduced-motion).
   const view = boothAccount
     ? (BOOTH_SCREENS.has(screen) ? screen : 'booth')
-    : (screen === 'booth' ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }) : screen)
+    // Ученический экран преподавателю не даём смонтировать даже на один кадр:
+    // эффект-страж выше приведёт screen в согласие следующим тиком, но экран
+    // успел бы сходить в сеть за чужим содержимым (та же грабля, что была у
+    // BoothEntryPage с повторным /enter).
+    : ((screen === 'booth' || (isTeacher(token) && isStudentOnlyScreen(screen)))
+        ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
+        : screen)
   const page = renderScreen(view)
   return (
     <>
@@ -1276,7 +1332,7 @@ export default function App() {
       // «Уроки», ученику — тест уровня или королевства.
       return (
         <SuccessPage
-          onDone={() => setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))}
+          onDone={() => setScreen(screenAfterLogin())}
         />
       )
     case 'test-intro':
