@@ -52,6 +52,17 @@ describe('homeworkStateKey', () => {
     expect(homeworkStateKey(hw({ status: 'IN_REVIEW', dueDate: '2026-08-01' }), now)).toBe('submitted')
     expect(isOverdue(hw({ status: 'IN_REVIEW', dueDate: '2026-08-01' }), now)).toBe(false)
   })
+
+  // Преподаватель закрыл работу, которую ученик не сдавал: «Проверено» тут врёт —
+  // его ответа никто не видел, а экран у такой работы пустой.
+  it('закрытая без сдачи работа подписана не «проверено»', () => {
+    expect(homeworkStateKey(hw({ status: 'COMPLETED', closedWithoutSubmission: true }), now))
+      .toBe('closedNoSubmission')
+  })
+
+  it('проверенная работа остаётся проверенной', () => {
+    expect(homeworkStateKey(hw({ status: 'COMPLETED', closedWithoutSubmission: false }), now))
+      .toBe('completed')  })
 })
 
 describe('что ученику можно делать', () => {
