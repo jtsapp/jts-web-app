@@ -76,6 +76,8 @@ import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLogi
 import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
+import { isTeacher } from './lib/jwt.js'
+import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
@@ -1003,6 +1005,18 @@ export default function App() {
     }
   }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
 
+  // Тот же страж для преподавателя: ученические разделы ему не положены, а
+  // `?screen=` до сих пор клался в состояние без сверки с ролью — и в меню, из
+  // которого эти разделы вырезаны, вернуться было нечем. Уводим той же
+  // функцией, что решает домашний экран после входа, — не отдельным условием
+  // здесь. Аккаунт класса разбирает страж выше: у него свой, более узкий набор.
+  useEffect(() => {
+    if (boothAccount || !isTeacher(token)) return
+    if (isStudentOnlyScreen(screen)) {
+      setScreen(homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }))
+    }
+  }, [boothAccount, screen, token, needsLevelTest, tutorOnboarded])
+
   // Навигация по левому сайдбару обучающей зоны. В тьютор-онли (main)
   // скрытые разделы недоступны и через навигацию — только разделы
   // из TUTOR_ONLY_SECTIONS (тьютор, практика, словарь, аудирование, шэдоуинг).
@@ -1134,7 +1148,13 @@ export default function App() {
   // prefers-reduced-motion).
   const view = boothAccount
     ? (BOOTH_SCREENS.has(screen) ? screen : 'booth')
-    : (screen === 'booth' ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded }) : screen)
+    // Ученический экран преподавателю не даём смонтировать даже на один кадр:
+    // эффект-страж выше приведёт screen в согласие следующим тиком, но экран
+    // успел бы сходить в сеть за чужим содержимым (та же грабля, что была у
+    // BoothEntryPage с повторным /enter).
+    : ((screen === 'booth' || (isTeacher(token) && isStudentOnlyScreen(screen)))
+        ? homeScreenFor({ token, boothAccount, needsLevelTest, tutorOnboarded })
+        : screen)
   const page = renderScreen(view)
   return (
     <>
