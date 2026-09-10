@@ -10,7 +10,11 @@ import { timingSafeEqual } from 'node:crypto'
 // BOM/пробелы из env вырезаем: значение, вставленное через Windows-пайп,
 // приходит с U+FEFF (BOM) в начале — fetch падает «Invalid URL», и каждый Bearer
 // превращался в 401 «сессия истекла» на всём проде (поймано 17.07.2026).
-const BACKEND_URL = (
+// Экспортируется: адрес бэкенда и разбор env (BOM выше) нужны и другим
+// серверным путям — например выдаче демо-токена витрины «Практики»
+// (src/app/api/practice/demo-token/route.js). Второй такой же разбор рядом
+// значил бы, что грабля с BOM чинится в одном месте из двух.
+export const BACKEND_URL = (
   process.env.BACKEND_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   'https://dev-server.justtostudy.kz'
