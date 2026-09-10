@@ -2,6 +2,7 @@ import { gradeQuestion } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import TapText from '../TapText.jsx'
 import QuestionMedia from './QuestionMedia.jsx'
+import { stableShuffle } from './optionOrder.js'
 
 // Контролируемый вопрос-пропуск, заполняемый чипом из банка. `answer` —
 // выбранное слово (или null); выбранный чип подставляется в предложение.
@@ -30,7 +31,7 @@ export default function ChipsQuestion({ question, answer, checked, onAnswer, rea
         <TapText text={question.gapAfter} onWord={onWord} />
       </p>
       <div className="lw-bank">
-        {(question.bank || []).map((word) => {
+        {stableShuffle(question.bank, question.id).map((word) => {
           const selected = answer === word
           const isCorrectWord = showAnswerKey && checked && word === question.answer
           const isYes = !showAnswerKey && checked && selected && userCorrect

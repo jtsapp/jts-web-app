@@ -2,6 +2,7 @@ import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import { inlineBold } from '../inlineBold.jsx'
 import QuestionMedia from './QuestionMedia.jsx'
+import { stableShuffle } from './optionOrder.js'
 
 // Контролируемый выбор одного варианта из ряда кнопок. `answer` — текущая
 // выбранная строка (или null); `onAnswer(question.id, value)` репортит выбор
@@ -20,7 +21,7 @@ export default function ChoiceQuestion({ question, answer, checked, onAnswer, re
     <div className="lw-q lw-q--choice">
       <QuestionMedia question={question} onWord={onWord} />
       <div className="lw-opts">
-        {(question.options || []).map((opt) => {
+        {stableShuffle(question.options, question.id).map((opt) => {
           const selected = answer === opt
           // Эталон подсвечиваем только когда ключ открыт (staff / самообучение).
           // На живом уроке ученик видит только вердикт по СВОЕМУ выбору —

@@ -1,4 +1,5 @@
 import QuestionMedia from './QuestionMedia.jsx'
+import { stableShuffle } from './optionOrder.js'
 
 // Опрос про себя («нравится / не нравится», «как часто»): верного ответа нет
 // и оценивать нечего — шаг засчитывается по самому факту выбора
@@ -30,7 +31,7 @@ export default function PickQuestion({ question, answer, checked, onAnswer, read
     <div className="lw-q lw-q--pick">
       <QuestionMedia question={question} onWord={onWord} />
       <div className="lw-opts">
-        {(question?.options || []).map((opt) => {
+        {stableShuffle(question?.options, question?.id).map((opt) => {
           const isSelected = multiple ? selected.includes(opt) : selected === opt
           return (
             <button

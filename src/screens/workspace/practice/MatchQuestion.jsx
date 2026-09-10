@@ -3,17 +3,7 @@ import { useI18n } from '../../../i18n.jsx'
 import { CheckIcon } from '../../../components/icons.jsx'
 import { hasAttempt } from '../practiceGrading.js'
 import QuestionMedia from './QuestionMedia.jsx'
-
-// Перемешивает копию массива (Fisher–Yates) — правый столбец не должен идти
-// в том же порядке, что и левый, иначе пары угадываются по позиции.
-function shuffled(arr) {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
+import { stableShuffle } from './optionOrder.js'
 
 function matchedLabel(pair, chosen) {
   if (pair?.full && chosen === pair.right) return pair.full
@@ -68,9 +58,13 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
   // неразложенной фишки просто нет ни в одной колонке.
   const missed = pairs.filter((pair) => map[pair.left] !== pair.right)
 
-  // Перемешиваем один раз на вопрос, а не на каждый рендер — иначе правый
-  // столбец «прыгал» бы при каждом клике.
-  const rightOptions = useMemo(() => shuffled([...new Set(pairs.map((p) => p.right))]), [question?.id])
+  // Порядок один на вопрос и одинаковый у преподавателя и ученика: раньше он
+  // брался из Math.random, то есть у каждого свой — и клик преподавателя по
+  // варианту («поправить ответ прямо здесь») попадал не туда, куда он метил.
+  const rightOptions = useMemo(
+    () => stableShuffle([...new Set(pairs.map((p) => p.right))], question?.id),
+    [pairs, question?.id],
+  )
   const categories = useMemo(() => [...new Set(pairs.map((p) => p.right))], [pairs])
   // Сортировка — когда категорий заметно меньше слов (Nouns/Verbs/…). Один
   // общий перевод на hello+hi (A0 L02) — обычный матчинг, не колонки.
