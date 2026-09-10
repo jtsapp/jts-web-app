@@ -166,7 +166,13 @@ function readPrototype(html) {
   const ctx = vm.createContext(sandbox)
   vm.runInContext(sliceScript(html), ctx, { timeout: 20000 })
 
-  const data = vm.runInContext('({ENVS, ANIMALS, SECTIONS, HOSTED, CONFUSABLE, COMPAT, ROUND_SIZE, BASE, MIN_W, SAFE})', ctx)
+  // Забирать значения приходится выражением ВНУТРИ контекста: объявленные
+  // через const/let они живут в лексической области скрипта и на объекте
+  // песочницы не появляются (ctx.CDN был бы undefined).
+  const data = vm.runInContext(
+    '({ENVS, ANIMALS, SECTIONS, HOSTED, CONFUSABLE, COMPAT, ROUND_SIZE, BASE, MIN_W, SAFE, CDN, AUDIO_BASE, AUDIO_ALIAS, cleanAudio, sizeOf2})',
+    ctx,
+  )
   return { ...data, ctx, state }
 }
 
@@ -243,7 +249,7 @@ function main() {
   const html = fs.readFileSync(src, 'utf8')
 
   const proto = readPrototype(html)
-  const { ENVS, ANIMALS, SECTIONS, HOSTED } = proto
+  const { ENVS, ANIMALS, SECTIONS, HOSTED, CONFUSABLE, sizeOf2 } = proto
   const words = playableWords(proto)
   const dropped = ANIMALS.length - words.length
 
@@ -283,8 +289,14 @@ function main() {
     const sectionWords = words.filter((w) => w.section === section.id)
     if (!envs.length || !sectionWords.length) fail(`секция ${section.id} пуста`)
 
+    // Путаемые пары этой секции: разводить frog/toad по разным раундам умеет
+    // движок, а какие именно пары путаются — данные, и живут они рядом с ними.
+    const sectionIds = new Set(sectionWords.map((w) => w.id))
+    const confusable = CONFUSABLE.filter(([a, b]) => sectionIds.has(a) && sectionIds.has(b))
+
     write(path.join(OUT_DIR, `${section.id}.json`), {
       section: section.id,
+      confusable,
       scenes: envs.map((e) => ({
         id: e.id,
         name: e.name,
@@ -304,6 +316,10 @@ function main() {
         pl: w.pl,
         anim: w.anim,
         pri: w.pri,
+        // Размерный класс считает прототип (sizeOf2 по восьми спискам id).
+        // Кладём готовым: движку раскладки нужен только он, а тащить в порт
+        // восемь списков — это восемь мест, где он разъедется с исходником.
+        sz: sizeOf2(w),
         ...(w.cm ? { cm: w.cm } : {}),
       })),
     })
