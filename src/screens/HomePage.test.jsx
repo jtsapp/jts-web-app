@@ -222,9 +222,20 @@ describe('Карточка пробного урока', () => {
     occurrences.value = []
   })
 
+  // Время урока — всегда «через два часа», а не зашитая дата. С датой тест
+  // становился бомбой с часовым механизмом: карточка показывает занятие, пока
+  // оно не кончилось, и в назначенный день после назначенного часа тест начинал
+  // падать сам по себе — что и случилось 10.09.2026 с прежним '2026-09-10T14:00'.
+  const inTwoHours = () => {
+    const at = new Date(Date.now() + 2 * 60 * 60 * 1000)
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
+      + `T${pad(at.getHours())}:${pad(at.getMinutes())}:00`
+  }
+
   const lesson = (over = {}) => ({
     lessonId: 42,
-    scheduledAt: '2026-09-10T14:00:00',
+    scheduledAt: inTwoHours(),
     durationMinutes: 50,
     teacherName: 'Айгерим',
     lessonStatus: 'SCHEDULED',
