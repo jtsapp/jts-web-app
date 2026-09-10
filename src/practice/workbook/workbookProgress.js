@@ -137,7 +137,13 @@ export function nextLesson(level, nums, counts, state) {
 }
 
 /** Доля пройденных экранов уровня в процентах. */
-export function levelProgress(level, counts, state) {
+/**
+ * Сколько экранов уровня закрыто и сколько их всего.
+ *
+ * Числа, а не процент: домашней работе нужны оба — преподаватель смотрит на
+ * «сделано 37 из 124», а порог засчитывания считает сервер.
+ */
+export function levelCounts(level, counts, state) {
   const st = state || readState()
   let done = 0
   let total = 0
@@ -145,6 +151,11 @@ export function levelProgress(level, counts, state) {
     total += counts[n]
     done += lessonDone(level, n, counts[n], st)
   }
+  return { done, total }
+}
+
+export function levelProgress(level, counts, state) {
+  const { done, total } = levelCounts(level, counts, state)
   return total ? Math.round((done / total) * 100) : 0
 }
 

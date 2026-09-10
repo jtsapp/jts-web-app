@@ -25,7 +25,7 @@ describe('засчитывание юнита «Практики» в домаш
     await countUnitTowardsHomework('grammar', 'a1', 12)
 
     expect(markPracticeUnitDone).toHaveBeenCalledWith('токен', {
-      area: 'grammar', level: 'a1', unitId: 12, unitKey: null,
+      area: 'grammar', level: 'a1', unitId: 12, unitKey: null, done: null, total: null,
     })
   })
 
@@ -67,7 +67,7 @@ describe('засчитывание юнита «Практики» в домаш
     await countUnitTowardsHomework('workbooks', 'a0', 'a0')
 
     expect(markPracticeUnitDone).toHaveBeenCalledWith('токен', {
-      area: 'workbooks', level: 'a0', unitId: null, unitKey: 'a0',
+      area: 'workbooks', level: 'a0', unitId: null, unitKey: 'a0', done: null, total: null,
     })
   })
 
@@ -78,7 +78,36 @@ describe('засчитывание юнита «Практики» в домаш
     await countUnitTowardsHomework('shadowing', null, 'sg')
 
     expect(markPracticeUnitDone).toHaveBeenCalledWith('токен', {
-      area: 'shadowing', level: null, unitId: null, unitKey: 'sg',
+      area: 'shadowing', level: null, unitId: null, unitKey: 'sg', done: null, total: null,
     })
+  })
+
+  /**
+   * Разделы, выдаваемые уровнем целиком, шлют ЧИСЛА: «пройдено» там не событие,
+   * а доля. Порог засчитывания держит сервер — здесь только факты.
+   */
+  it('ход работы уезжает числами', async () => {
+    loadToken.mockReturnValue('токен')
+
+    await countUnitTowardsHomework('listening', 'a1', 'a1', { done: 37, total: 124 })
+
+    expect(markPracticeUnitDone).toHaveBeenCalledWith('токен', {
+      area: 'listening', level: 'a1', unitId: null, unitKey: 'a1', done: 37, total: 124,
+    })
+  })
+
+  /* Мусорные числа не отправляем: сервер поймёт отчёт без них как «закрыт»,
+     а «сделано 0 из 0» было бы ложным закрытием. */
+  it('негодные числа не подмешиваются', async () => {
+    loadToken.mockReturnValue('токен')
+
+    await countUnitTowardsHomework('listening', 'a1', 'a1', { done: 5, total: 0 })
+    await countUnitTowardsHomework('listening', 'a1', 'a1', { done: undefined, total: 124 })
+
+    const [, первый] = markPracticeUnitDone.mock.calls[0]
+    const [, второй] = markPracticeUnitDone.mock.calls[1]
+    expect(первый.total).toBeNull()
+    expect(первый.done).toBe(5)
+    expect(второй.done).toBeNull()
   })
 })

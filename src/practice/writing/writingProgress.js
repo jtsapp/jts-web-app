@@ -9,6 +9,7 @@
 
 import { WRITING_KEY as KEY, WRITING_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
 import { pushModule } from '../practiceSync.js'
+import { countUnitTowardsHomework } from '../practiceHomework.js'
 // Единица знаменателя прогресса — из движка (11 заданий на жанр в прототипе):
 // движок чистый и без данных, тянуть его сюда безопасно.
 import { TASKS_PER_GENRE } from './engine.js'
@@ -58,6 +59,18 @@ export function taskState(genreId, taskId) {
   return readState().tasks[taskKey(genreId, taskId)] || null
 }
 
+/**
+ * Сообщает домашней работе ход по жанру.
+ *
+ * Жанр — единица выдачи, а внутри него фиксированное число заданий
+ * (TASKS_PER_GENRE), поэтому шлём числа: порог засчитывания считает сервер.
+ */
+function reportGenre(genreId) {
+  if (!genreId) return
+  countUnitTowardsHomework('writing', String(genreId).split('-')[0], genreId,
+    { done: genreDoneCount(genreId), total: TASKS_PER_GENRE })
+}
+
 export function markTask(genreId, taskId, correct, total) {
   if (!genreId || !taskId) return
   const state = readState()
@@ -70,6 +83,7 @@ export function markTask(genreId, taskId, correct, total) {
   writeState(state)
   pushModule('writing', state) // best-effort серверный синк (no-op для гостя)
   emitChanged()
+  reportGenre(genreId)
 }
 
 // Идемпотентна: фиксируем время ПЕРВОГО просмотра, повторные заходы не пишут,
