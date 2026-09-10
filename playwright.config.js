@@ -8,11 +8,21 @@ import { defineConfig, devices } from '@playwright/test'
 const PORT = Number(process.env.E2E_PORT) || 3100
 const BASE = `http://localhost:${PORT}`
 
+// Онбординг-тур экранов выходит сам при первом заходе и перехватывает клики
+// (модалка поверх страницы) — любой тест про другое застревал бы на нём. Гасим
+// на весь прогон тумблером `jts_tours_off`: отметки о показе привязаны к id
+// профиля, а он приезжает с бэкенда, и снаружи такой ключ не угадать.
+// Тесты самого тура берут чистый профиль через test.use(FRESH_PROFILE).
+const noTours = {
+  cookies: [],
+  origins: [{ origin: BASE, localStorage: [{ name: 'jts_tours_off', value: '1' }] }],
+}
+
 export default defineConfig({
   testDir: './tests',
   timeout: 30_000,
   fullyParallel: true,
-  use: { baseURL: BASE },
+  use: { baseURL: BASE, storageState: noTours },
   projects: [
     // Мобилку эмулируем chromium'ом с узким вьюпортом — так тест не тянет
     // отдельный webkit-браузер и запускается на любой машине с chromium.

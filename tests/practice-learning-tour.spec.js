@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { FRESH_PROFILE, walkTour } from './tour-helper.js'
 
 // Онбординг-тур «Практики» и «Обучения»: тот же движок, что у дашборда тьютора
 // (src/tutor/OnboardingTour.jsx), но шаги свои и отметка «показан» — своя на
@@ -8,43 +9,8 @@ import { test, expect } from '@playwright/test'
 //     ленты обрезаются прожектором, иначе поповеру негде встать);
 //   — кнопка «?» в углу открывает тур заново.
 
-// Идём по всем шагам тура, проверяя геометрию на каждом. Возвращает число шагов.
-async function walkTour(page, viewport) {
-  await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
-  const total = Number((await page.locator('.t-tour__count').textContent()).split('/')[1])
-  expect(total).toBeGreaterThan(1)
-
-  for (let step = 1; ; step++) {
-    await page.waitForTimeout(500) // transition поповера между шагами
-    const { pop, hole, overlap } = await page.evaluate(() => {
-      const pop = document.querySelector('.t-tour__pop').getBoundingClientRect()
-      const hole = document.querySelector('.t-tour__hole')?.getBoundingClientRect()
-      const overlap =
-        hole &&
-        !(pop.right < hole.left || pop.left > hole.right || pop.bottom < hole.top || pop.top > hole.bottom)
-      return { pop: { t: pop.top, b: pop.bottom, l: pop.left, r: pop.right }, hole: Boolean(hole), overlap }
-    })
-    expect(pop.t, `шаг ${step}: поповер вылез за верх`).toBeGreaterThanOrEqual(0)
-    expect(pop.b, `шаг ${step}: поповер вылез за низ`).toBeLessThanOrEqual(viewport.height + 1)
-    expect(pop.l, `шаг ${step}: поповер вылез за левый край`).toBeGreaterThanOrEqual(0)
-    expect(pop.r, `шаг ${step}: поповер вылез за правый край`).toBeLessThanOrEqual(viewport.width + 1)
-    expect(hole, `шаг ${step}: нет прожектора`).toBe(true)
-    expect(overlap, `шаг ${step}: поповер накрывает подсвеченный элемент`).toBe(false)
-
-    // Заголовок и текст шага — из словаря, а не ключи (i18n.jsx, зона useI18n).
-    expect(await page.locator('.t-tour__title').textContent()).not.toContain('tour.')
-    expect(await page.locator('.t-tour__text').textContent()).not.toContain('tour.')
-
-    const isLast = (await page.locator('.t-tour__count').textContent()).startsWith(`${total}/`)
-    await page.locator('.t-tour__ok').click()
-    if (isLast) break
-  }
-
-  await expect(page.locator('.t-tour__pop')).toHaveCount(0)
-  // Скролл страницы тур запирал — после закрытия он снова свободен.
-  expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('')
-  return total
-}
+// Тур должен выйти — значит, профиль чистый (прогон целиком идёт с погашенными).
+test.use(FRESH_PROFILE)
 
 test.describe('онбординг-тур «Практики»', () => {
   test('выходит сам, проходится целиком и второй раз не выходит', async ({ page, viewport }) => {
@@ -82,6 +48,30 @@ test.describe('онбординг-тур «Практики»', () => {
 })
 
 test.describe('онбординг-тур «Обучения»', () => {
+  // Регрессия: прожектор мерился один раз, на монтировании. Пока картинка
+  // острова не загрузилась, у цели нулевая высота — подсветка оставалась
+  // полоской у верхнего края, а карточка уезжала за ней (жалоба со скриншотом).
+  test('прожектор переезжает на остров, когда картинка догрузилась', async ({ page }) => {
+    await page.route('**/assets/learning/island.webp', async (route) => {
+      await new Promise((r) => setTimeout(r, 1200))
+      await route.continue()
+    })
+    await page.goto('/?screen=kingdom')
+    await page.waitForSelector('.t-tour__pop', { timeout: 20000 })
+    await page.waitForTimeout(2200)
+
+    const { hole, target } = await page.evaluate(() => {
+      const box = (el) => (el ? el.getBoundingClientRect() : null)
+      const h = box(document.querySelector('.t-tour__hole'))
+      const t = box(document.querySelector('.lp-isle__map'))
+      return { hole: h && { top: h.top, height: h.height }, target: t && { height: t.height } }
+    })
+    expect(target.height).toBeGreaterThan(400)
+    // Прожектор больше не полоска и стоит на острове, а не над ним.
+    expect(hole.height).toBeGreaterThan(300)
+    expect(hole.top).toBeLessThan(200)
+  })
+
   test('выходит сам на карте уровней и проходится целиком', async ({ page, viewport }) => {
     await page.goto('/?screen=kingdom')
     await expect(page.locator('.lp-isle')).toBeVisible({ timeout: 15000 })

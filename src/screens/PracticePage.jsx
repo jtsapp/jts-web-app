@@ -643,7 +643,10 @@ export default function PracticePage({
   // Онбординг-тур: сам выходит при первом заходе, дальше — по кнопке «?» в углу.
   // Шаги идут сверху вниз по странице, чтобы прожектор не прыгал; секции, которых
   // на экране нет, тур пропускает сам (см. OnboardingTour).
-  const tour = useScreenTour(tourKey)
+  // Тур — ученический: он объясняет, как заниматься. Преподаватель этим экраном
+  // пользуется как витриной заданий для выдачи на дом (AssignPracticeBar), и
+  // «слушаешь фразу и собираешь её из слов» ему не про него.
+  const tour = useScreenTour(teacher ? null : tourKey)
   const tourSteps = [
     { selector: '.pp-chips', title: t('tour.practice.chips.title'), text: t('tour.practice.chips.text') },
     { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text') },
@@ -877,7 +880,7 @@ export default function PracticePage({
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile} onHelp={startTour}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile} onHelp={teacher ? undefined : startTour}>
       <div className="pp pp--enter">
         {/* ───── Центр: ленты контента ───── */}
         <div className="pp__center">
