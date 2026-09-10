@@ -5,7 +5,7 @@
 // браузерный синтез читает «bass» и «bat» мимо, и учит не тому.
 // Если запись не проигралась, кнопка повтора мигает, и человек пробует ещё раз.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { audioUrl } from '../../practice/words/assets.js'
 
 export default function useWordsVoice() {
@@ -15,7 +15,6 @@ export default function useWordsVoice() {
   // Счётчик поколений: у каждого play свой номер, и обработчик просроченного
   // воспроизведения не гасит индикатор уже начавшегося следующего.
   const gen = useRef(0)
-  const [playing, setPlaying] = useState(false)
   const [failedAt, setFailedAt] = useState(0)
 
   const element = useCallback((wordId) => {
@@ -42,7 +41,6 @@ export default function useWordsVoice() {
       }
       active.current = null
     }
-    setPlaying(false)
   }, [])
 
   const play = useCallback(
@@ -57,10 +55,7 @@ export default function useWordsVoice() {
       }
       active.current = el
       el.onended = () => {
-        if (my === gen.current) {
-          active.current = null
-          setPlaying(false)
-        }
+        if (my === gen.current) active.current = null
       }
       let p
       try {
@@ -69,11 +64,8 @@ export default function useWordsVoice() {
         p = Promise.reject(e)
       }
       if (p && p.then) {
-        p.then(() => {
-          if (my === gen.current) setPlaying(true)
-        }).catch((err) => {
+        p.catch((err) => {
           if (my !== gen.current) return
-          setPlaying(false)
           // Автоплей до первого касания страницы браузер не пускает, и это НЕ
           // сломанная запись: раскрашивать кнопку «нет файла» здесь значит
           // встречать каждого новичка красной кнопкой на пустом месте.
@@ -112,5 +104,15 @@ export default function useWordsVoice() {
   // Уходя с экрана, глушим звук: иначе слово доигрывается уже в каталоге.
   useEffect(() => () => stop(), [stop])
 
-  return { play, schedule, stop, preload, playing, failedAt }
+  // Ссылка на набор команд обязана быть СТАБИЛЬНОЙ. Пока хук возвращал новый
+  // объект на каждый рендер, эффект озвучки в WordsRound видел «изменившийся
+  // voice» и переозвучивал слово заново — а play() начинается со stop(), так
+  // что запись рвалась с самого начала по одиннадцать раз подряд и услышать её
+  // было нельзя. Регрессию сторожит tests/words.spec.js («звук»).
+  //
+  // Поэтому команды отдельно (мемо на useCallback'ах, то есть один объект на
+  // всю жизнь хука), а реактивный флаг — отдельным значением: попади он внутрь
+  // объекта, ссылка снова менялась бы на каждую осечку записи.
+  const voice = useMemo(() => ({ play, schedule, stop, preload }), [play, schedule, stop, preload])
+  return { voice, failedAt }
 }

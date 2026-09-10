@@ -29,7 +29,7 @@ const PORTRAIT_MAX = 720
 
 export default function WordsPage({ userName, userLevel, token, onNav, onProfile, initialTarget }) {
   const { t, lang } = useI18n()
-  const voice = useWordsVoice()
+  const { voice, failedAt: voiceFailedAt } = useWordsVoice()
 
   const [meta, setMeta] = useState(null)
   const [section, setSection] = useState(initialTarget?.section || WORDS_SECTIONS[0])
@@ -99,7 +99,6 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
     if (owner && owner.id !== section) setSection(owner.id)
   }, [meta, initialTarget, section])
 
-  const sectionData = data[section] || null
   const scene = useMemo(() => {
     if (!view.sceneId) return null
     for (const d of Object.values(data)) {
@@ -197,6 +196,7 @@ export default function WordsPage({ userName, userLevel, token, onNav, onProfile
           portrait={portrait}
           wordLang={wordLang}
           voice={voice}
+          voiceFailedAt={voiceFailedAt}
           onFound={(wordId) => markWordFound(scene.id, wordId)}
           onFinish={() => {
             markSceneDone(scene.id)

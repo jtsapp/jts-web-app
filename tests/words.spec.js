@@ -105,6 +105,12 @@ test.describe('превью сцены', () => {
 })
 
 test.describe('игра', () => {
+  // Экраны сцены тяжёлые: фон 1600px, до восьми спрайтов и записи раунда,
+  // и всё это тянется с дев-сервера, который параллельно обслуживает второй
+  // вьюпорт. В штатные 30 секунд такой тест укладывается не всегда — падал
+  // не код, а нетерпение.
+  test.slow()
+
   test('раунд начинается заданием, точками по числу слов и спрайтами на сцене', async ({ page }) => {
     await openScene(page)
     await page.locator('.wd-preview__text .wd-btn').click()
@@ -149,7 +155,6 @@ test.describe('игра', () => {
   })
 
   test('сцена проходится целиком и доводит до результата', async ({ page }) => {
-    test.slow() // девятнадцать слов по полторы секунды паузы
     await openScene(page)
     await page.locator('.wd-preview__text .wd-btn').click()
     await expect(page.locator('.wd-sprite').first()).toBeVisible()
@@ -172,6 +177,68 @@ test.describe('игра', () => {
     await page.locator('.wd-result__btns .wd-btn--ghost').click()
     const card = page.locator('.wd-card', { hasText: SCENE.name })
     await expect(card.locator('.wd-card__done')).toHaveText('Пройдено')
+  })
+})
+
+test.describe('звук', () => {
+  // Экраны сцены тяжёлые: фон 1600px, до восьми спрайтов и записи раунда,
+  // и всё это тянется с дев-сервера, который параллельно обслуживает второй
+  // вьюпорт. В штатные 30 секунд такой тест укладывается не всегда — падал
+  // не код, а нетерпение.
+  test.slow()
+
+  // Слово должно звучать РОВНО один раз на вопрос. Регрессия из первой версии:
+  // хук голоса возвращал новый объект на каждый рендер, эффект озвучки видел
+  // «изменившийся voice» и переозвучивал слово заново — а play() начинается со
+  // stop(), поэтому запись рвалась с начала по три раза подряд и не слышалась
+  // вовсе. Глазами такое не ловится: DOM при этом правильный.
+  const countPlays = async (page) => {
+    await page.addInitScript(() => {
+      window.__played = []
+      const orig = HTMLMediaElement.prototype.play
+      HTMLMediaElement.prototype.play = function play(...args) {
+        window.__played.push((this.currentSrc || this.src || '').split('/').pop())
+        // Звука в headless нет, и отклонённый промис здесь не важен: считаем
+        // попытки, а не факт воспроизведения.
+        return orig.apply(this, args).catch(() => {})
+      }
+    })
+  }
+
+  test('слово раунда произносится один раз, а не на каждый рендер', async ({ page }) => {
+    await countPlays(page)
+    await openScene(page)
+    await page.locator('.wd-preview__text .wd-btn').click()
+    await expect(page.locator('.wd-sprite').first()).toBeVisible()
+    await page.waitForTimeout(2000)
+
+    const played = await page.evaluate(() => window.__played)
+    expect(played.length).toBe(1)
+    // И это запись слова, а не что-то постороннее.
+    expect(played[0]).toMatch(/^[a-z-]+\.mp3$/)
+  })
+
+  test('тап по слову в превью проигрывает его запись', async ({ page }) => {
+    await countPlays(page)
+    await openScene(page)
+    const first = POOL[0]
+    await page.locator('.wd-word', { hasText: first.word }).first().click()
+    await page.waitForTimeout(500)
+    expect(await page.evaluate(() => window.__played)).toEqual([`${first.id}.mp3`])
+  })
+
+  test('кнопка повтора называет то же слово, что и было', async ({ page }) => {
+    await countPlays(page)
+    await openScene(page)
+    await page.locator('.wd-preview__text .wd-btn').click()
+    await expect(page.locator('.wd-sprite').first()).toBeVisible()
+    await page.waitForTimeout(1200)
+
+    const asked = await page.evaluate(() => window.__played[0])
+    await page.locator('.wd-speak').click()
+    await page.waitForTimeout(400)
+    const played = await page.evaluate(() => window.__played)
+    expect(played).toEqual([asked, asked])
   })
 })
 

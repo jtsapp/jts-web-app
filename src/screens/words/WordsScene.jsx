@@ -30,7 +30,7 @@ const ROUND_PAUSE = 1500
 // звук успеха.
 const ANNOUNCE_DELAY = 150
 
-export default function WordsScene({ scene, session, section, seed, portrait, wordLang, voice, onFound, onFinish }) {
+export default function WordsScene({ scene, session, section, seed, portrait, wordLang, voice, voiceFailedAt, onFound, onFinish }) {
   const [round, setRound] = useState(0)
   const [toast, setToast] = useState('')
   const { t } = useI18n()
@@ -64,6 +64,7 @@ export default function WordsScene({ scene, session, section, seed, portrait, wo
       portrait={portrait}
       wordLang={wordLang}
       voice={voice}
+      voiceFailedAt={voiceFailedAt}
       toast={toast}
       onFound={onFound}
       onRoundDone={finishRound}
@@ -86,6 +87,7 @@ function WordsRound({
   portrait,
   wordLang,
   voice,
+  voiceFailedAt,
   toast,
   onFound,
   onRoundDone,
@@ -184,7 +186,7 @@ function WordsRound({
         </div>
         <button
           type="button"
-          className={`wd-speak${wrong ? ' wd-speak--nudge' : ''}${voice.failedAt ? ' wd-speak--missing' : ''}`}
+          className={`wd-speak${wrong ? ' wd-speak--nudge' : ''}${voiceFailedAt ? ' wd-speak--missing' : ''}`}
           onClick={() => target && voice.play(target)}
           aria-label={t('words.replay')}
         >
