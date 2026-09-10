@@ -32,6 +32,14 @@
 
 /* ── верхняя навигация ── */
 .wd-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+/* Кабинет вешает свою группу «язык + уведомления» абсолютом в правый верхний
+   угол (.learn__bell, z-index 40, styles.css) — ровно туда, где стоит наш
+   переключатель языка подписи. Без этого запаса кнопка KZ лежит ПОД чужим
+   селектором и не нажимается вовсе (поймано e2e-прогоном). Брейкпоинт тот же,
+   на котором кабинет эту группу показывает. */
+@media (min-width: 761px) {
+  .wd-top { padding-right: 170px; }
+}
 .wd-back {
   display: inline-flex; align-items: center; gap: 4px; border: 0;
   background: var(--wd-purple); color: #fff; border-radius: 999px;

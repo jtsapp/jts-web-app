@@ -128,7 +128,6 @@ function sliceConst(src, name) {
 
 function isComplete(code) {
   try {
-    // eslint-disable-next-line no-new-func
     new Function(code)
     return true
   } catch {
