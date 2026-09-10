@@ -9,11 +9,15 @@ const submitted = {
   materials: [{ id: 1, fileName: 'task.pdf', url: 'u1' }],
   submissions: [{ id: 9, fileName: 'answer.jpg', url: 'u2' }],
 }
-const assigned = { ...submitted, id: 1, title: 'Unit 4 · Past Simple', status: 'ASSIGNED', submittedAt: null, submissions: [] }
+// id больше, чем у взятой в проверку: тайбрейк идёт по убыванию id, и с
+// прежним id 1 порядок сходился даже без записи IN_REVIEW в REVIEW_ORDER —
+// тест проходил на сломанном коде.
+const assigned = { ...submitted, id: 5, title: 'Unit 4 · Past Simple', status: 'ASSIGNED', submittedAt: null, submissions: [] }
 const graded = { ...submitted, id: 3, title: 'Unit 2 · Daily routine', status: 'COMPLETED', grade: 5, teacherComment: 'Молодец' }
+const taken = { ...submitted, id: 4, title: 'Unit 5 · Modals', status: 'IN_REVIEW' }
 
 vi.mock('../../api.js', () => ({
-  getHomeworkBoard: vi.fn(async () => [assigned, graded, submitted]),
+  getHomeworkBoard: vi.fn(async () => [assigned, graded, submitted, taken]),
   getHomeworkById: vi.fn(async () => submitted),
   saveHomeworkFeedback: vi.fn(async () => ({ ...submitted, teacherComment: 'Переделай второе' })),
   gradeHomework: vi.fn(async () => ({ ...submitted, status: 'COMPLETED', grade: 4, teacherComment: '' })),
@@ -40,9 +44,32 @@ describe('TeacherHomeworkBoard', () => {
   // ищет их среди заданных и уже проверенных.
   it('сданные работы стоят первыми, проверенные — последними', async () => {
     const { container } = renderBoard()
-    await waitFor(() => expect(container.querySelectorAll('.hw-card')).toHaveLength(3))
+    await waitFor(() => expect(container.querySelectorAll('.hw-card')).toHaveLength(4))
     const titles = [...container.querySelectorAll('.hw-card__title')].map((e) => e.textContent)
-    expect(titles).toEqual(['Unit 3 · Present Perfect', 'Unit 4 · Past Simple', 'Unit 2 · Daily routine'])
+    expect(titles).toEqual([
+      'Unit 3 · Present Perfect', 'Unit 5 · Modals', 'Unit 4 · Past Simple', 'Unit 2 · Daily routine',
+    ])
+  })
+
+  // Регрессия: IN_REVIEW не разбирался вовсе — взятая в проверку работа читалась
+  // как «Задано» и лежала среди тех, которых преподаватель не открывал. Пятый
+  // статус завели ровно ради этого различия.
+  it('взятая в проверку отличается от сданной и подписью, и цветом', async () => {
+    const { container } = renderBoard()
+    await waitFor(() => expect(container.querySelectorAll('.hw-card')).toHaveLength(4))
+    const badges = [...container.querySelectorAll('.hw-card .hw-badge')].map((e) => e.textContent)
+    // Первые две карточки — сданная и взятая в проверку; ниже даты фикстур
+    // делают подписи зависимыми от сегодняшнего числа, и сверять их незачем.
+    expect(badges.slice(0, 2)).toEqual(['На проверке', 'Взята в проверку'])
+    expect(container.querySelector('.hw-badge--inReview')).not.toBeNull()
+  })
+
+  it('в открытой карточке подпись та же, что в списке', async () => {
+    const { container } = renderBoard()
+    await waitFor(() => expect(container.querySelectorAll('.hw-card')).toHaveLength(4))
+    fireEvent.click(container.querySelectorAll('.hw-card')[1])
+    await waitFor(() => expect(container.querySelector('.hw-detail__title')).not.toBeNull())
+    expect(container.querySelector('.hw-detail .hw-badge').textContent).toBe('Взята в проверку')
   })
 
   it('в карточке видно ответ ученика и файлы задания', async () => {
@@ -92,8 +119,9 @@ describe('TeacherHomeworkBoard', () => {
 
   it('уже проверенная работа открывается с оценкой и отзывом', async () => {
     const { container } = renderBoard()
-    await waitFor(() => expect(container.querySelectorAll('.hw-card')).toHaveLength(3))
-    fireEvent.click(container.querySelectorAll('.hw-card')[2])
+    await waitFor(() => expect(container.querySelectorAll('.hw-card')).toHaveLength(4))
+    // Проверенная — последняя: ниже неё в порядке разбора ничего нет.
+    fireEvent.click(container.querySelectorAll('.hw-card')[3])
 
     await waitFor(() => expect(container.querySelector('.hw-field__input').value).toBe('Молодец'))
     expect(container.querySelector('.hw-grade-btn--on').textContent).toBe('5')

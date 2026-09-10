@@ -107,7 +107,13 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -125,7 +131,13 @@ async function authPost(path, token, body) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -143,7 +155,13 @@ async function authPatch(path, token, body) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -157,7 +175,13 @@ async function authDelete(path, token) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -446,6 +470,20 @@ export function getLessonsSummary(token) {
 }
 
 /**
+ * Ученик прошёл юнит «Практики» — засчитать его в домашних работах.
+ *
+ * Раздел «Практика» целиком клиентский: контент лежит статикой здесь, прогресс
+ * — в localStorage и в своей базе кабинета. Бэкенд домашки об этом не знал, и
+ * «выполнено» у выданного юнита преподаватель ставил руками, по слову ученика.
+ *
+ * Уезжает тот же АДРЕС, каким юнит выдавали: раздел, уровень, номер. Сервер сам
+ * найдёт, в каких работах этого ученика он задан.
+ */
+export function markPracticeUnitDone(token, { area, level, unitId, unitKey }) {
+  return authPost('/admin/homework/practice/done', token, { area, level, unitId, unitKey })
+}
+
+/**
  * Выдать юниты «Практики» на дом всем участникам урока.
  *
  * Уезжает АДРЕС юнита, а не его содержимое: контент «Практики» лежит статикой
@@ -455,12 +493,17 @@ export function getLessonsSummary(token) {
  *
  * `batchId` — один на нажатие: повтор с тем же ключом ничего не задваивает,
  * поэтому двойной клик и ретрай после обрыва безопасны.
+ *
+ * `dueDate` (`YYYY-MM-DD`, null — без срока) сервер применяет только вперёд:
+ * стоящий в работе более поздний срок он не сдвигает, а прошедший отвергает
+ * целиком, до записи заданий.
  */
-export function assignPracticeUnits(token, lessonId, { area, units, batchId }) {
+export function assignPracticeUnits(token, lessonId, { area, units, batchId, dueDate = null }) {
   return authPut(`/admin/homework/lesson/${lessonId}/exercises/from-practice`, token, {
     area,
     units,
     batchId,
+    dueDate,
   })
 }
 

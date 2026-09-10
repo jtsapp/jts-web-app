@@ -76,10 +76,10 @@ function mockServer({ limit, completed = 0, entitlementFails = false }) {
   return fn
 }
 
-function renderPage() {
+function renderPage(props = {}) {
   render(
     <I18nProvider>
-      <ListeningPage userLevel="a1" userName="Тест" token="TOK" isDemoAccount onNav={() => {}} onProfile={() => {}} />
+      <ListeningPage userLevel="a1" userName="Тест" token="TOK" isDemoAccount onNav={() => {}} onProfile={() => {}} {...props} />
     </I18nProvider>,
   )
 }
@@ -159,5 +159,39 @@ describe('ListeningPage: лимит меряется на КАЖДОМ стар�
 
     const asked = fetchMock.calls.filter((c) => c === 'GET /api/practice/entitlement').length
     expect(asked).toBe(1) // только запрос при монтировании
+  })
+})
+
+/**
+ * Уровень из домашней работы.
+ *
+ * У аудирования адресом юнита служит сам уровень: экран до этого брал его
+ * только из профиля, и выданное на B1 открывалось бы на A1 ученика — то есть
+ * ученик решал бы не то, что задали.
+ */
+describe('ListeningPage — уровень из домашней работы', () => {
+  it('тянет контент заданного уровня, а не уровня ученика', async () => {
+    const fetchMock = mockServer({ limit: null })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPage({ initialTarget: { level: 'b1' } })
+    fireEvent.click(await screen.findByText('Начать тренировку'))
+
+    await waitFor(() => expect(
+      fetchMock.calls.some((c) => c.includes('/practice/listening/content/b1.json')),
+    ).toBe(true))
+    expect(fetchMock.calls.some((c) => c.includes('/practice/listening/content/a1.json'))).toBe(false)
+  })
+
+  it('без цели остаётся уровень ученика', async () => {
+    const fetchMock = mockServer({ limit: null })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPage()
+    fireEvent.click(await screen.findByText('Начать тренировку'))
+
+    await waitFor(() => expect(
+      fetchMock.calls.some((c) => c.includes('/practice/listening/content/a1.json')),
+    ).toBe(true))
   })
 })

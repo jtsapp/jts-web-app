@@ -33,7 +33,11 @@ export function lessonExercises(hw) {
  * Отозванные не показываем — по тому же правилу, что и задания с урока.
  */
 export function practiceExercises(hw) {
-  return (hw?.exercises || []).filter((e) => e && e.practiceArea && e.practiceUnitId != null && !e.revoked)
+  return (hw?.exercises || []).filter((e) => e && e.practiceArea && !e.revoked
+    // Адрес юнита — номер ИЛИ строковый ключ: нумерована только грамматика, а
+    // у текста «Чтения», урока шэдоуинга и жанра «Письма» номера нет вовсе.
+    // Пока проверялся один номер, шесть разделов из семи не доезжали до списка.
+    && (e.practiceUnitId != null || (typeof e.practiceUnitKey === 'string' && e.practiceUnitKey.trim())))
 }
 
 /**

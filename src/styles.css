@@ -7591,6 +7591,9 @@ textarea {
 .hw__layout { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 16px; align-items: start; }
 .hw__col { display: block; }
 .hw__hint { color: var(--muted); font-size: 14px; }
+/* Сообщение уровня экрана: работу отменили, и её карточки в списке уже нет. */
+.hw__notice { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: #eceff3; color: #55606e; font-size: 14px; }
+
 .hw__error { color: #c0392b; font-size: 14px; margin-top: 8px; }
 
 /* Список работ: история сверху вниз, новые первыми. */
@@ -7635,6 +7638,26 @@ textarea {
 .hw-badge--submitted { background: #d3ecff; color: #0b74c4; }
 .hw-badge--needsRevision { background: #ffe0e0; color: #b02a2a; }
 .hw-badge--completed { background: #dcf3e2; color: #2c8a45; }
+/* Взятое преподавателем в проверку — «уже у меня». Виден только на доске
+   преподавателя, и различать его нужно прежде всего с соседями по доске:
+   «Задано» (#e6ecff) и «Сдано» (#d3ecff).
+
+   Пастельная таблетка тут не работает вовсе. Прежний фиолетовый #efe6ff при
+   дейтеранопии совпадал с «Задано» до неразличимости (ΔE2000 = 0.4), то есть
+   именно та пара, ради которой пятый статус и завели, сливалась в одну плашку.
+   Свободного пастельного тона не осталось ни одного: любой светлый тон при
+   красно-зелёной слепоте сходится хоть с одним из пяти бейджей (лучший
+   кандидат дал ΔE 6 — для несоседних плашек этого мало).
+
+   Поэтому различие не в тоне, а в заливке: тёмная плитка со светлым текстом
+   отличается ЯРКОСТЬЮ, а её переживает и дейтеранопия, и протанопия, и печать
+   в серый. Тон — тёмная бирюза, вне сине-фиолетового коридора и не совпадает
+   ни с янтарным, ни с красным, ни с зелёным. Белый на #0f5f59 — 7.5:1
+   при 12px/700 (AA требует 4.5:1). */
+.hw-badge--inReview { background: #0f5f59; color: #ffffff; }
+/* Статус, которого клиент не знает: серый — единственный честный цвет, он
+   ничего не обещает и ни к чему не зовёт. */
+.hw-badge--closed { background: #eceff3; color: #55606e; }
 
 /* Карточка открытого задания. */
 .hw-detail { background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 4px; }
@@ -9105,6 +9128,31 @@ textarea {
   background: #7a4dff; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .hw-practice__open:hover { background: #6a3ff0; }
+/* Пройденный юнит: зелёная отметка и приглушённая кнопка — перепройти можно,
+   но звать к этому нечего, работа по нему уже засчитана. */
+.hw-practice__done {
+  flex: none; display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 999px;
+  background: #e8f7ee; color: #1b7f4b; font-size: 12px; font-weight: 700;
+}
+.hw-practice__done::before { content: '✓'; }
+.hw-practice__row.is-done { border-color: #cdeddb; background: #fbfefc; }
+.hw-practice__row.is-done .hw-practice__open {
+  background: #f1f2f4; color: #4b5563;
+}
+.hw-practice__row.is-done .hw-practice__open:hover { background: #e6e8ec; }
+
+/* Задание, которое открывать нечем (раздела нет, урок не найден, уровня не
+   существует). Кнопки у него нет — вместо неё объяснение, и оно обязано вести
+   себя как кнопка в раскладке строки: без ширины и flex:none длинный текст
+   раздавливал название юнита в столбик по букве. */
+.hw-practice__gone {
+  flex: none; max-width: 260px; text-align: right;
+  font-size: 12.5px; line-height: 1.35; color: var(--muted, #6b6580);
+}
+@media (max-width: 560px) {
+  .hw-practice__gone { max-width: 100%; text-align: left; }
+}
 
 /* Экран аккаунта класса (screens/BoothEntryPage.jsx): ожидание, вход в пробный
    урок и «класс закрыт». Своей вёрстки почти нет — карточка, заголовок и

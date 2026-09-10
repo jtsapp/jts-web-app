@@ -221,7 +221,7 @@ describe('классрум — разметка урока каталога', ()
     // .say-play — кнопка озвучки из файла урока: `border: none` там снятие
     // рамки браузера (то же, что `border: 0`), а border-* у её ::before рисуют
     // треугольник «play». Ни то, ни другое не рамка в смысле §0.3.
-    const allowed = /input\.gap|\.wchip|\.wbank|\.bw\b|\.msg\b|\.say-play/
+    const allowed = /input\.gap|\.wchip|\.wbank|\.bw\b|\.msg\b|\.say-play\b/
     const unexpected = rules()
       .filter(([sel, body]) => hasBorder(body) && !allowed.test(sel))
       .map(([sel]) => sel.trim().replace(/\s+/g, ' '))

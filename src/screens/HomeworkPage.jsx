@@ -33,6 +33,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   const [selectedId, setSelectedId] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // Сообщение уровня экрана, а не карточки: работа, которую отменили, из списка
+  // уходит, карточка становится пустой — и объяснению внутри неё места нет.
+  const [notice, setNotice] = useState(null)
 
   useEffect(() => {
     if (!token) return
@@ -80,6 +83,20 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
     setItems((list) => list.map((hw) => (hw.id === updated.id ? updated : hw)))
   }, [])
 
+  // Работу отменили целиком, пока ученик был на её экране. Сервер отвечает 410
+  // (см. GoneException на бэкенде) — по нему и отличаем: под общим отказом это
+  // было неотличимо от нехватки прав, экран показывал «не удалось отправить», и
+  // ученик жал ещё раз. Убираем работу из списка: её больше нет, и держать
+  // мёртвую карточку значит звать в неё вернуться.
+  const cancelled = useCallback((error, id) => {
+    if (error?.status !== 410) return false
+    setItems((list) => list.filter((hw) => hw.id !== id))
+    setSelectedId((current) => (current === id ? null : current))
+    setError(null)
+    setNotice(t('homework.cancelled'))
+    return true
+  }, [t])
+
   const refresh = useCallback(async (id) => {
     try {
       replace(await getHomeworkById(token, id))
@@ -125,9 +142,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         if (!url) throw new Error('upload returned no url')
         replace(await attachHomeworkAnswer(token, selected.id, file.name, url))
       }
-    } catch {
-      setError(t('homework.uploadFailed'))
-      await refresh(selected.id)
+    } catch (e) {
+      if (!cancelled(e, selected.id)) {
+        setError(t('homework.uploadFailed'))
+        await refresh(selected.id)
+      }
     } finally {
       setBusy(false)
     }
@@ -139,9 +158,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
     setBusy(true)
     try {
       replace(await removeHomeworkAnswer(token, selected.id, material.id))
-    } catch {
-      setError(t('homework.removeFailed'))
-      await refresh(selected.id)
+    } catch (e) {
+      if (!cancelled(e, selected.id)) {
+        setError(t('homework.removeFailed'))
+        await refresh(selected.id)
+      }
     } finally {
       setBusy(false)
     }
@@ -171,11 +192,13 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         await saveHomeworkAnswer(selected.id, exercise.id, token, answer, correct)
       }
       replace(await submitHomework(token, selected.id))
-    } catch {
+    } catch (e) {
       // Статус не двигаем: работа, сданная без ответов, выглядит проверяемой,
       // а проверять в ней нечего.
-      setError(t('homework.submitFailed'))
-      await refresh(selected.id)
+      if (!cancelled(e, selected.id)) {
+        setError(t('homework.submitFailed'))
+        await refresh(selected.id)
+      }
     } finally {
       setBusy(false)
     }
@@ -200,6 +223,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
           {view === 'loading' && <p className="hw__hint">{t('homework.loading')}</p>}
           {view === 'anon' && <p className="hw__hint">{t('homework.needAuth')}</p>}
           {view === 'error' && <p className="hw__error">{t('homework.loadError')}</p>}
+          {notice && <p className="hw__notice" role="status">{notice}</p>}
           {view === 'ready' && (
             <div className="hw__layout">
               <div className="hw__col">
@@ -208,6 +232,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
               {selected?.kind === 'material' ? (
                 <MaterialAssignmentDetail card={selected} token={token} />
               ) : (
+                /* onOpenPractice получает готовый переход из карты разделов
+                   (practiceNavTarget): «Чтение», «Письмо», шэдоуинг и воркбуки
+                   живут на своих экранах, а не внутри «Практики». */
                 <HomeworkDetail
                   hw={selected}
                   token={token}
@@ -218,7 +245,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   onSubmit={handleSubmit}
                   onSaved={replace}
                   onAnswered={setDraft}
-                  onOpenPractice={(target) => onNav?.('practice', target)}
+                  onOpenPractice={(target) => onNav?.(target.key, target.payload)}
                   draftAnswered={draftAnswered}
                 />
               )}

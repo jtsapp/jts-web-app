@@ -6,6 +6,7 @@
 
 import { GRAMMAR_KEY as KEY, GRAMMAR_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
 import { pushModule } from '../practiceSync.js'
+import { countUnitTowardsHomework } from '../practiceHomework.js'
 
 function read() {
   try {
@@ -47,6 +48,10 @@ export function markUnitDone(level, unitId) {
   set.add(key)
   write(set)
   pushModule('grammar', set) // best-effort серверный синк (no-op для гостя)
+  // Тот же юнит мог быть задан на дом: засчитываем его и там. Отдельным
+  // вызовом, а не внутри синка, — домашка живёт в другом сервисе (JTS), и
+  // прогресс «Практики» ему в его виде не нужен, нужен только адрес юнита.
+  countUnitTowardsHomework('grammar', level, unitId)
   try {
     window.dispatchEvent(new Event(EVENT))
   } catch {
