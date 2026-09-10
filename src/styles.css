@@ -7658,7 +7658,9 @@ textarea {
 /* Статус, которого клиент не знает: серый — единственный честный цвет, он
    ничего не обещает и ни к чему не зовёт. */
 .hw-badge--closed { background: #eceff3; color: #55606e; }
-
+/* Закрыто без сдачи — не достижение и не долг: нейтральный серый, чтобы его не
+   читали как зелёное «проверено». */
+.hw-badge--closedNoSubmission { background: #eceef2; color: #55606e; }
 /* Карточка открытого задания. */
 .hw-detail { background: #fff; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 4px; }
 .hw-detail--empty { align-items: center; justify-content: center; min-height: 200px; }

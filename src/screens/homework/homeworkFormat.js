@@ -56,6 +56,9 @@ export function homeworkStateKey(hw, now = new Date()) {
   const status = hw?.status
   // hasOwn, а не просто чтение: статус приходит строкой с сервера, и имя вроде
   // 'constructor' достало бы значение из прототипа объекта.
+  // «Проверено» на работе, которую ученик не сдавал, — неправда: его ответа
+  // никто не открывал. Преподаватель закрыл её, и подписано это так и есть.
+  if (status === 'COMPLETED' && hw?.closedWithoutSubmission) return 'closedNoSubmission'
   if (Object.hasOwn(STATE_KEY, status ?? '')) return STATE_KEY[status]
   // Пустой статус — не чужой: так приходит работа, которой ещё нет, и
   // синтезированные карточки. Их читаем как раньше, включая просрочку.
@@ -74,8 +77,7 @@ export function homeworkStateKey(hw, now = new Date()) {
  */
 export function boardStateKey(hw, now = new Date()) {
   if (hw?.status === 'IN_REVIEW') return 'inReview'
-  return homeworkStateKey(hw, now)
-}
+  return homeworkStateKey(hw, now)}
 
 export function isOverdue(hw, now = new Date()) {
   if (!hw?.dueDate || hw.status !== 'ASSIGNED') return false

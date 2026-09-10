@@ -7,6 +7,7 @@
 // через pushModule('reading', …) — семантика replace, см. practiceContract.js.
 
 import { READING_KEY as KEY, READING_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
+import { countUnitTowardsHomework } from '../practiceHomework.js'
 import { pushModule } from '../practiceSync.js'
 import { textScore } from './engine.js'
 
@@ -65,6 +66,10 @@ export function markTextDone(textId) {
   if (cur.done) return
   state.texts[textId] = { ...cur, done: true }
   writeState(state)
+  // Текст — единица домашней работы, и закрывается он целиком: отчёт без
+  // чисел, сервер понимает его как «пройден». Уровень выводится из id
+  // (a1-sci-honey), поэтому отдельно его тащить не нужно.
+  countUnitTowardsHomework('reading', String(textId).split('-')[0], textId)
 }
 
 /** Прогресс одного текста в процентах — тому же тексту нужен его объект данных. */

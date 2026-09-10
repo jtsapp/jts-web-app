@@ -452,6 +452,12 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
       takesRef.current[i] = { url: URL.createObjectURL(blob), blob }
       // Попытка засчитана сразу (синкается в аккаунт), балл придёт от оценки.
       markSegmentDone(segmentId(curId, i))
+      // Урок — единица выдачи, внутри него фразы: шлём долю. Мастерство для
+      // этого не годится — оно живёт в IndexedDB, не синкается и упирается в
+      // недельный бюджет оценок, то есть у честно записавшего ученика было бы
+      // нулевым.
+      countUnitTowardsHomework('shadowing', null, curId,
+        { done: getLessonDone(curId).size, total })
       setDone(getLessonDone(curId))
       // Урок дописан целиком — засчитываем его в домашке, если он там задан.
       // Не на каждую фразу: заданием выдают урок, а не отдельную реплику.

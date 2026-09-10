@@ -479,8 +479,13 @@ export function getLessonsSummary(token) {
  * Уезжает тот же АДРЕС, каким юнит выдавали: раздел, уровень, номер. Сервер сам
  * найдёт, в каких работах этого ученика он задан.
  */
-export function markPracticeUnitDone(token, { area, level, unitId, unitKey }) {
-  return authPost('/admin/homework/practice/done', token, { area, level, unitId, unitKey })
+export function markPracticeUnitDone(token, { area, level, unitId, unitKey, done, total }) {
+  // done/total — только там, где раздел выдаётся уровнем целиком: у юнита,
+  // который закрывается сам собой, отчёт остаётся событием «закрыт». Порог
+  // засчитывания (80 %) держит сервер: правило домашней работы должно жить в
+  // одном месте, иначе старые вкладки будут считать по-своему.
+  return authPost('/admin/homework/practice/done', token,
+    { area, level, unitId, unitKey, done, total })
 }
 
 /**
