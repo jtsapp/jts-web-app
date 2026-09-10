@@ -6,6 +6,7 @@ import { I18nProvider } from '../i18n.jsx'
 vi.mock('../api.js', () => ({
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getCatalogLessonAnswers: vi.fn(async () => ({ progressJson: null })),
   saveCatalogLessonAnswers: vi.fn(async () => ({})),
 }))

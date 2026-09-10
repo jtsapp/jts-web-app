@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { FRESH_PROFILE } from './tour-helper.js'
+
+// Здесь проверяется в том числе сам тур дашборда — значит, профиль чистый:
+// прогон целиком идёт с погашенными турами (storageState в playwright.config.js).
+test.use(FRESH_PROFILE)
 
 // Онбординг тьютора на мобиле — регрессии на баги с реального телефона:
 // маскоты вылезали из панели на кнопки выбора языка, карусель тьюторов не

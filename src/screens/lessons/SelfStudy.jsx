@@ -42,12 +42,61 @@ function isLevelOpen(levelCode, userLevel) {
  * кнопка, открывающая урок, и кнопка внутри кнопки — невалидная разметка.
  * Поэтому кружок позиционируется поверх обложки, оставаясь отдельным элементом.
  */
-function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
-  const { t } = useI18n()
+function Cover({ lesson, unit, theme, no, children }) {
   const ang = 120 + ((lesson.id * 37) % 90)
   const ox = -70 + ((lesson.id * 29) % 80)
   const oy = -80 + ((lesson.id * 23) % 60)
   const os = 150 + ((lesson.id * 13) % 80)
+  return (
+    <span
+      className="gr-cover"
+      data-th={theme}
+      style={{ '--ang': `${ang}deg`, '--ox': `${ox}px`, '--oy': `${oy}px`, '--os': `${os}px` }}
+    >
+      <span className="gr-cov-tex" />
+      <span className="gr-cov-orb" />
+      <span className="gr-cov-arc" />
+      <span className="gr-cov-no">{String(no).padStart(2, '0')}</span>
+      <span className="gr-cov-brand">
+        <span className="gr-cov-mark">JTS</span>
+        <span className="gr-cov-wm">Just to Study</span>
+      </span>
+      <span className="gr-cov-ttl">{lesson.title}</span>
+      <span className="gr-cov-tag">{unit.name}</span>
+      {children}
+    </span>
+  )
+}
+
+/**
+ * Материал уровня, который ещё не куплен.
+ *
+ * Показан целиком — с названием, разделом и типом: закрытое содержимое, о
+ * котором ничего не сказано, не продаётся, а прежняя заглушка «уровень закрыт»
+ * сообщала ровно то, что ученик и так видел по замку на чипе. Нажатие ведёт в
+ * тарифы: это единственное, что здесь можно сделать, и притворяться кнопкой
+ * «Пройти» карточка не должна.
+ */
+function PaywallCard({ lesson, unit, theme, no, onBuy }) {
+  const { t } = useI18n()
+  return (
+    <div className="ss-card">
+      <button type="button" className="gr-gcard ss-paywall" onClick={() => onBuy?.()}>
+        <Cover lesson={lesson} unit={unit} theme={theme} no={no}>
+          <span className="ss-paywall__lock"><LockIcon size={20} /></span>
+        </Cover>
+        <span className="gr-gcard__body">
+          <span className="gr-unit-no">{t(`catalog.type.${typeKey(lesson.type)}`)}</span>
+          <span className="gr-gcard__desc">{t('selfStudy.paywallNote')}</span>
+          <span className="gr-gcard__t">{t('selfStudy.paywallCta')}</span>
+        </span>
+      </button>
+    </div>
+  )
+}
+
+function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
+  const { t } = useI18n()
   const markLabel = t(done ? 'selfStudy.unmark' : 'selfStudy.mark')
   return (
     <div className={`ss-card${done ? ' is-done' : ''}`}>
@@ -56,22 +105,7 @@ function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
         className={`gr-gcard${done ? ' is-done' : ''}`}
         onClick={() => onOpen?.(lesson.id)}
       >
-        <span
-          className="gr-cover"
-          data-th={theme}
-          style={{ '--ang': `${ang}deg`, '--ox': `${ox}px`, '--oy': `${oy}px`, '--os': `${os}px` }}
-        >
-          <span className="gr-cov-tex" />
-          <span className="gr-cov-orb" />
-          <span className="gr-cov-arc" />
-          <span className="gr-cov-no">{String(no).padStart(2, '0')}</span>
-          <span className="gr-cov-brand">
-            <span className="gr-cov-mark">JTS</span>
-            <span className="gr-cov-wm">Just to Study</span>
-          </span>
-          <span className="gr-cov-ttl">{lesson.title}</span>
-          <span className="gr-cov-tag">{unit.name}</span>
-        </span>
+        <Cover lesson={lesson} unit={unit} theme={theme} no={no} />
         <span className="gr-gcard__body">
           <span className="gr-unit-no">{t(`catalog.type.${typeKey(lesson.type)}`)}</span>
           {/* Подпись про сам урок, а не про юнит: описание юнита стоит и в
@@ -132,7 +166,7 @@ function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
  * открываются документом, и события завершения у них не бывает. Отмечать по
  * факту открытия было бы враньём — «открыл» и «прошёл» разные вещи.
  */
-export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
+export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpenPricing }) {
   const { t } = useI18n()
   const [levels, setLevels] = useState(null) // null — ещё грузим
   const [error, setError] = useState(false)
@@ -202,6 +236,17 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
           .filter((unit) => unit.lessons.length > 0),
       }))
       .filter((level) => level.units.length > 0)
+      .map((level) => ({
+        ...level,
+        // Витринные материалы отмечает сервер (первые несколько на уровень в
+        // каждом режиме). Клиент своих трёх не отсчитывает: «первые три» на
+        // экране и «первые три» в проверке доступа обязаны совпадать, иначе
+        // ученик получит отказ на материал, который ему показали открытым.
+        previewCount: level.units.reduce(
+          (n, unit) => n + unit.lessons.filter((l) => l.preview).length,
+          0,
+        ),
+      }))
       // Чипы идут по возрастанию — так же, как идёт курс. Порядок каталога на
       // это полагаться не даёт: он про порядок заведения.
       .sort((a, b) => levelIndex(a.code) - levelIndex(b.code))
@@ -254,9 +299,30 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
         ))}
       </div>
 
-      {active.locked ? (
-        // Заглушка вместо уроков. Название уровня ученик видит на чипе, а здесь
-        // ему нужно другое: почему закрыто и что с этим делать.
+      {/* Закрытый уровень показываем целиком: первые материалы открыты, за
+          остальными — подписка. Раньше здесь стояла заглушка «уровень закрыт»,
+          то есть ровно то, что ученик и так видел по замку на чипе. */}
+      {active.locked && active.previewCount > 0 && (
+        <div className="ss-preview">
+          <span className="ss-preview__badge"><LockIcon size={20} /></span>
+          <div className="ss-preview__body">
+            <h2 className="ss-preview__title">{t('selfStudy.previewTitle', { level: active.code })}</h2>
+            <p className="ss-preview__text">
+              {t('selfStudy.previewText', { n: String(active.previewCount) })}
+            </p>
+          </div>
+          {onOpenPricing && (
+            <button type="button" className="ss-preview__cta" onClick={() => onOpenPricing()}>
+              {t('selfStudy.previewCta')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Старый бэкенд витрины не размечает — тогда остаётся прежняя заглушка:
+          закрытый уровень без единого открытого материала это просто стена
+          замков, и показывать её россыпью карточек хуже, чем одной фразой. */}
+      {active.locked && active.previewCount === 0 ? (
         <div className="ss-locked">
           <span className="ss-locked__badge"><LockIcon size={22} /></span>
           <h2 className="ss-locked__title">{t('selfStudy.lockedTitle', { level: active.code })}</h2>
@@ -281,16 +347,27 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson }) {
 
           <div className="gr-grid">
             {unit.lessons.map((lesson, li) => (
-              <LessonCard
-                key={lesson.id}
-                lesson={lesson}
-                unit={unit}
-                theme={ui % 8}
-                no={li + 1}
-                done={done.has(Number(lesson.id))}
-                onOpen={onOpenLesson}
-                onToggle={toggleDone}
-              />
+              active.locked && !lesson.preview ? (
+                <PaywallCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  unit={unit}
+                  theme={ui % 8}
+                  no={li + 1}
+                  onBuy={onOpenPricing}
+                />
+              ) : (
+                <LessonCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  unit={unit}
+                  theme={ui % 8}
+                  no={li + 1}
+                  done={done.has(Number(lesson.id))}
+                  onOpen={onOpenLesson}
+                  onToggle={toggleDone}
+                />
+              )
             ))}
           </div>
         </section>
