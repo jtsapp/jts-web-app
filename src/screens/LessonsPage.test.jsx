@@ -8,6 +8,8 @@ vi.mock('../api.js', () => ({
   // NotificationBell), и он ходит в api.js — без заглушки падает весь экран.
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
+  getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getMyLessonOccurrences: vi.fn(async () => []),
   getLessonsSummary: vi.fn(async () => ({ conducted: 0, remaining: 0, cancelled: 0, rescheduled: 0 })),
   // Вкладка «Онлайн» спрашивает, есть ли у человека преподаватель: без этого

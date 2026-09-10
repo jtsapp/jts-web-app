@@ -772,7 +772,7 @@ export default function PracticePage({
   if (situationsBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} source={situationsEntitlement.source} sourceName={situationsEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} source={situationsEntitlement.source} sourceName={situationsEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -780,7 +780,7 @@ export default function PracticePage({
   if (workbooksBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={workbooksEntitlement.limit} onBack={() => setWorkbooksBlocked(false)} isDemoAccount={isDemoAccount} source={workbooksEntitlement.source} sourceName={workbooksEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={workbooksEntitlement.limit} onBack={() => setWorkbooksBlocked(false)} isDemoAccount={isDemoAccount} source={workbooksEntitlement.source} sourceName={workbooksEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -789,7 +789,7 @@ export default function PracticePage({
   if (memesBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={memesEntitlement.limit} onBack={() => setMemesBlocked(false)} isDemoAccount={isDemoAccount} source={memesEntitlement.source} sourceName={memesEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={memesEntitlement.limit} onBack={() => setMemesBlocked(false)} isDemoAccount={isDemoAccount} source={memesEntitlement.source} sourceName={memesEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -797,7 +797,7 @@ export default function PracticePage({
   if (talesBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={talesEntitlement.limit} onBack={() => setTalesBlocked(false)} isDemoAccount={isDemoAccount} source={talesEntitlement.source} sourceName={talesEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={talesEntitlement.limit} onBack={() => setTalesBlocked(false)} isDemoAccount={isDemoAccount} source={talesEntitlement.source} sourceName={talesEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -807,7 +807,7 @@ export default function PracticePage({
     if (!grammarEntitlement.loading && !grammarEntitlement.allowed) {
       return (
         <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-          <PracticeLimitScreen limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} isDemoAccount={isDemoAccount} source={grammarEntitlement.source} sourceName={grammarEntitlement.sourceName} />
+          <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} isDemoAccount={isDemoAccount} source={grammarEntitlement.source} sourceName={grammarEntitlement.sourceName} />
         </LearningLayout>
       )
     }

@@ -440,7 +440,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   if (blocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={backToIntro} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={backToIntro} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
       </LearningLayout>
     )
   }

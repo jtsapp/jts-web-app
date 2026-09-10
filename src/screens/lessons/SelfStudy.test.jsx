@@ -55,6 +55,21 @@ const CATALOG = [
   },
 ]
 
+// Тот же каталог, но у закрытого B2 сервер разметил витрину: первые два
+// материала открыты, третий — за подпиской.
+const WITH_PREVIEW = CATALOG.map((level) => (level.code !== 'B2' ? level : {
+  ...level,
+  units: [{
+    id: 3,
+    name: 'Unit 3',
+    lessons: [
+      { id: 30, title: 'Витрина раз', mode: 'SELF_STUDY', preview: true },
+      { id: 31, title: 'Витрина два', mode: 'SELF_STUDY', preview: true },
+      { id: 32, title: 'За подпиской', mode: 'SELF_STUDY', preview: false },
+    ],
+  }],
+}))
+
 function draw(props = {}) {
   const onOpenLesson = vi.fn()
   const view = render(
@@ -128,15 +143,68 @@ describe('Самостоятельное обучение', () => {
     expect(localStorage.getItem('self-study-level')).toBe('A1')
   })
 
-  it('уроки закрытого уровня не отдаёт, а объясняет, что делать', async () => {
-    // Показать список и не дать открыть — дразнить; поэтому вместо уроков
-    // объяснение, почему закрыто и как открыть.
+  it('закрытый уровень без витрины объясняет, что делать', async () => {
+    // Старый бэкенд витрину не размечает. Уровень, где не открыть ни одного
+    // материала, — это стена замков, и одной фразой она читается лучше, чем
+    // россыпью недоступных карточек.
     draw()
     fireEvent.click(await screen.findByText('B2'))
 
     expect(screen.queryByText('Далёкий уровень')).toBeNull()
     expect(await screen.findByText(/Уровень B2 пока закрыт/)).toBeTruthy()
     expect(screen.getByText(/обновите тариф/)).toBeTruthy()
+  })
+
+  it('на закрытом уровне первые материалы открыты, остальные — за подпиской', async () => {
+    // Заглушка «уровень закрыт» сообщала ровно то, что ученик и так видел по
+    // замку на чипе. Продать закрытое можно, только показав, что внутри.
+    catalog.value = WITH_PREVIEW
+    const { container, onOpenLesson } = draw()
+    fireEvent.click(await screen.findByText('B2'))
+
+    expect(await screen.findByText('Витрина раз')).toBeTruthy()
+    expect(screen.getByText('За подпиской')).toBeTruthy()
+    expect(container.querySelectorAll('.ss-paywall')).toHaveLength(1)
+
+    fireEvent.click(screen.getByText('Витрина раз'))
+    expect(onOpenLesson).toHaveBeenCalledWith(30)
+  })
+
+  it('материал за подпиской ведёт в тарифы, а не в урок', async () => {
+    catalog.value = WITH_PREVIEW
+    const onOpenPricing = vi.fn()
+    const { onOpenLesson } = draw({ onOpenPricing })
+    fireEvent.click(await screen.findByText('B2'))
+
+    fireEvent.click(await screen.findByText('За подпиской'))
+
+    // Открыть его всё равно нельзя — сервер откажет. Единственное осмысленное
+    // действие здесь одно, и карточка ведёт именно туда.
+    expect(onOpenPricing).toHaveBeenCalled()
+    expect(onOpenLesson).not.toHaveBeenCalled()
+  })
+
+  it('над витриной сказано, сколько открыто и чем открывается остальное', async () => {
+    catalog.value = WITH_PREVIEW
+    const onOpenPricing = vi.fn()
+    draw({ onOpenPricing })
+    fireEvent.click(await screen.findByText('B2'))
+
+    // Один раз на уровень, а не подписью на каждой из карточек.
+    expect(await screen.findByText('Уровень B2 открыт частично')).toBeTruthy()
+    expect(screen.getByText(/Первые 2 материала можно пройти бесплатно/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Смотреть тарифы' }))
+    expect(onOpenPricing).toHaveBeenCalled()
+  })
+
+  it('на своём уровне витрины нет: там открыто всё', async () => {
+    catalog.value = WITH_PREVIEW
+    const { container } = draw()
+
+    await screen.findByText('Changing direction')
+    expect(container.querySelector('.ss-preview')).toBeNull()
+    expect(container.querySelectorAll('.ss-paywall')).toHaveLength(0)
   })
 
   it('замок ставит сервер, а не клиент', async () => {

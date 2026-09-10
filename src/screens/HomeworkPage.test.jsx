@@ -24,6 +24,8 @@ vi.mock('../api.js', () => ({
   getUnreadNotificationCount: vi.fn(async () => 0),
   // Сайдбар оболочки тянет баланс — без заглушки падает весь экран.
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
+  getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getMyHomework: vi.fn(async () => [ASSIGNMENT]),
   getHomeworkById: vi.fn(async () => ASSIGNMENT),
   uploadMedia: vi.fn(async () => ({ url: 'https://files.example/answer.jpg', fileId: 'f1' })),

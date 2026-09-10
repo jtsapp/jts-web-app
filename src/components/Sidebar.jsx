@@ -3,10 +3,12 @@ import Logo from './Logo.jsx'
 import { useI18n } from '../i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from '../config.js'
 import { roleForLevel } from '../kingdoms.js'
-import { getBalance } from '../api.js'
+import { getBalance, getDemoAccess } from '../api.js'
+import DemoOfferCard from './DemoOfferCard.jsx'
 import { loadToken } from '../lib/session.js'
 import { isTeacher } from '../lib/jwt.js'
 import {
+  HomeIcon,
   LearningIcon,
   PracticeIcon,
   TutorIcon,
@@ -17,6 +19,13 @@ import {
   CloseIcon,
   UserIcon,
 } from './icons.jsx'
+
+// «Главная» держится отдельно от NAV не по правам, а по порядку: она всегда
+// первая, а NAV — общий список разделов. Пункт есть у КАЖДОГО ученика, демо и
+// оплаченного (см. сборку `base` ниже): экран давно перестал быть сводкой
+// демо-доступа и показывает уровень, прогресс, расписание и домашку.
+// Преподаватель — исключение: у него свой набор разделов.
+const HOME_ITEM = { key: 'home', label: 'nav.home', Icon: HomeIcon }
 
 const NAV_FULL = [
   { key: 'learning', label: 'nav.learning', Icon: LearningIcon },
@@ -64,7 +73,27 @@ export default function Sidebar({
   // Роль читается из токена прямо здесь: сайдбар и так его получает, а
   // прокидывать признак сверху пришлось бы через полдюжины экранов.
   const teacher = isTeacher(token)
-  const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : NAV
+  // Демо-статус сайдбар выясняет сам — как и баланс ниже. Тянуть его пропсом
+  // пришлось бы через полтора десятка экранов ради двух элементов меню; ответ
+  // мемоизирован в api.js, так что переход по разделам не стоит запроса.
+  const [demo, setDemo] = useState(false)
+  useEffect(() => {
+    const authToken = token || loadToken()
+    if (!authToken) return
+    let alive = true
+    getDemoAccess(authToken).then((d) => {
+      if (alive) setDemo(d.isDemo)
+    })
+    return () => {
+      alive = false
+    }
+  }, [token])
+
+  // «Главная» теперь у всех: сводка уровня, расписания и домашки нужна и
+  // платящему. Раньше пункт был только у демо, потому что экран показывал
+  // только демо-блоки.
+  const base = [HOME_ITEM, ...NAV]
+  const nav = teacher ? NAV.filter((item) => TEACHER_SECTIONS.includes(item.key)) : base
   const { t } = useI18n()
   const role = roleForLevel(userLevel)
   const trimmedName = (userName || '').trim()
@@ -156,7 +185,12 @@ export default function Sidebar({
         <span className="sb__role-lvl">{(userLevel || 'A1').toUpperCase()}</span>
       </div>
 
-      {/* Стрик + монеты (данные из бэкенда) */}
+      {/* У демо-ученика на месте стрика и монет — плашка скидки: игровые
+          счётчики у него всё равно пустые (заданий он почти не проходил), а
+          продать полный доступ здесь важнее. */}
+      {demo ? (
+        <DemoOfferCard onUse={() => pick(onNav)('pricing')} />
+      ) : (
       <div className="sb__balance">
         <div className="sb__stat">
           <img
@@ -173,6 +207,7 @@ export default function Sidebar({
           <span className="sb__stat-num sb__stat-num--coin">{groupNum(balance.coins)}</span>
         </div>
         </div>
+      )}
         </>
       )}
       </aside>

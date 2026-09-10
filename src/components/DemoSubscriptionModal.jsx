@@ -17,7 +17,7 @@ import { SUPPORT_WHATSAPP_URL } from '../lib/support.js'
 // Диалог сделан по образцу LessonExitConfirm (роль, aria-modal, подпись
 // заголовком, Esc, клик по подложке), плюс замок фокуса: без него Tab уходит на
 // экран под модалкой, где по требованию ничего нажимать нельзя.
-export default function DemoSubscriptionModal({ onClose }) {
+export default function DemoSubscriptionModal({ onClose, onBuy }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
   const backRef = useRef(null)
@@ -74,29 +74,36 @@ export default function DemoSubscriptionModal({ onClose }) {
             регистрацию). Своей картинки «подписка» в public/ нет, а тянуть
             внешнюю в вёрстку нельзя, поэтому берём то, что уже есть и по смыслу
             принадлежит этому голосу. Декоративная: текст рядом полный. */}
-        <AssetImage className="ds-art" src="/assets/dexter.png" alt="" />
+        <AssetImage className="ds-art" src="/assets/demo/modal-london.webp" alt="" />
         <h2 className="ds-title" id="ds-title">{t('demo.paywall.title')}</h2>
         <p className="ds-body" id="ds-body">{t('demo.paywall.body')}</p>
         <div className="ds-acts">
           <button type="button" className="ds-back" ref={backRef} onClick={onClose}>
             {t('demo.paywall.back')}
           </button>
-          {/* Покупки подписки в приложении нет: экрана оплаты нет в state-машине
-              App.jsx, платёжного роута нет в src/app/api. Кнопка, которая никуда
-              не ведёт или открывает несуществующий экран, читается как сломанная
-              оплата, поэтому ведём туда, где подписку правда оформляют — в
-              WhatsApp поддержки (src/lib/support.js), тот же адрес, что у всех
-              остальных демо-призывов. Ссылка, а не button с обработчиком:
-              человек должен видеть, куда его отправляют, и уметь открыть это
-              своим способом. */}
-          <a
-            className="ds-buy"
-            href={SUPPORT_WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t('demo.paywall.buy')}
-          </a>
+          {/* Теперь у покупки есть свой экран — витрина тарифов (PricingPage),
+              и «Приобрести подписку» ведёт туда: это тот же шаг, что и «Открыть
+              полный доступ» в плашке демо, и разводить их по разным маршрутам
+              было бы странно. Договорить с менеджером человек всё равно сможет
+              — это следующий шаг витрины («Способ оплаты»).
+
+              onBuy не передали (окно открыто с экрана, который не умеет
+              навигировать) — остаётся прежний путь в WhatsApp поддержки: кнопка,
+              которая молча ничего не делает, читается как сломанная оплата. */}
+          {onBuy ? (
+            <button type="button" className="ds-buy" onClick={onBuy}>
+              {t('demo.paywall.buy')}
+            </button>
+          ) : (
+            <a
+              className="ds-buy"
+              href={SUPPORT_WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('demo.paywall.buy')}
+            </a>
+          )}
         </div>
       </div>
     </div>
