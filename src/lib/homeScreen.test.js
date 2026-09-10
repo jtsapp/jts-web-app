@@ -30,14 +30,16 @@ describe('домашний экран после входа', () => {
     expect(homeScreenFor({ token: STUDENT, needsLevelTest: true })).toBe('test-intro')
   })
 
-  it('ученик с уровнем — в королевства', () => {
-    expect(homeScreenFor({ token: STUDENT })).toBe('kingdom')
+  it('ученик с уровнем — на «Главную»', () => {
+    // И демо, и оплаченный: «Главная» — сводка кабинета, королевства теперь
+    // один из разделов в ней, а не вход в приложение.
+    expect(homeScreenFor({ token: STUDENT })).toBe('home')
   })
 
   // Восстановление сессии зовёт функцию без needsLevelTest: пройден тест или
   // нет, оно не знает. Умолчание обязано быть «не приставать с тестом».
-  it('без аргументов вообще — королевства, а не тест', () => {
-    expect(homeScreenFor({})).toBe('kingdom')
+  it('без аргументов вообще — «Главная», а не тест', () => {
+    expect(homeScreenFor({})).toBe('home')
   })
 })
 

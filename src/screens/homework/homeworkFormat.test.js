@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { answeredExercises, canAttach, canSubmit, fileExtension, homeworkStateKey, isAllowedFile, isOverdue, pendingCount, reviewOrder, studentOrder } from './homeworkFormat.js'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { answeredExercises, boardStateKey, canAttach, canSubmit, fileExtension, homeworkStateKey, isAllowedFile, isOverdue, pendingCount, reviewOrder, studentOrder } from './homeworkFormat.js'
 
 const hw = (over = {}) => ({ id: 1, status: 'ASSIGNED', submissions: [], materials: [], ...over })
 
@@ -40,6 +43,26 @@ describe('homeworkStateKey', () => {
   it('возврат на доработку — свой статус', () => {
     expect(homeworkStateKey(hw({ status: 'NEEDS_REVISION' }), now)).toBe('needsRevision')
   })
+
+  // Регрессия: IN_REVIEW не разбирался вовсе и проваливался в default. Работа,
+  // которую преподаватель взял к себе, снова читалась ученику как «Задано», а с
+  // прошедшим сроком — как «Просрочено», хотя сдавать в ней уже нечего.
+  it('взятая преподавателем в проверку — та же «На проверке», а не заданная', () => {
+    expect(homeworkStateKey(hw({ status: 'IN_REVIEW' }), now)).toBe('submitted')
+    expect(homeworkStateKey(hw({ status: 'IN_REVIEW', dueDate: '2026-08-01' }), now)).toBe('submitted')
+    expect(isOverdue(hw({ status: 'IN_REVIEW', dueDate: '2026-08-01' }), now)).toBe(false)
+  })
+
+  // Преподаватель закрыл работу, которую ученик не сдавал: «Проверено» тут врёт —
+  // его ответа никто не видел, а экран у такой работы пустой.
+  it('закрытая без сдачи работа подписана не «проверено»', () => {
+    expect(homeworkStateKey(hw({ status: 'COMPLETED', closedWithoutSubmission: true }), now))
+      .toBe('closedNoSubmission')
+  })
+
+  it('проверенная работа остаётся проверенной', () => {
+    expect(homeworkStateKey(hw({ status: 'COMPLETED', closedWithoutSubmission: false }), now))
+      .toBe('completed')  })
 })
 
 describe('что ученику можно делать', () => {
@@ -61,6 +84,11 @@ describe('что ученику можно делать', () => {
   it('повторно отправлять уже отправленное нельзя', () => {
     expect(canSubmit(hw({ status: 'SUBMITTED', submissions: [{ id: 1 }] }))).toBe(false)
   })
+
+  it('взятую в проверку работу тоже не тронуть', () => {
+    expect(canAttach(hw({ status: 'IN_REVIEW' }))).toBe(false)
+    expect(canSubmit(hw({ status: 'IN_REVIEW', submissions: [{ id: 1 }] }))).toBe(false)
+  })
 })
 
 describe('reviewOrder', () => {
@@ -73,9 +101,42 @@ describe('reviewOrder', () => {
     expect(order).toEqual(['SUBMITTED', 'ASSIGNED', 'NEEDS_REVISION', 'COMPLETED'])
   })
 
-  it('незнакомый статус не улетает в конец списка', () => {
-    expect(reviewOrder({ status: 'WAT' })).toBe(reviewOrder({ status: 'ASSIGNED' }))
+  // Тот же порядок, что и на сервере: сначала то, что преподаватель не открывал,
+  // потом то, что уже взял к себе, и только потом нетронутые задания.
+  it('взятая в проверку стоит между сданной и нетронутой', () => {
+    const order = ['COMPLETED', 'ASSIGNED', 'IN_REVIEW', 'SUBMITTED']
+      .map((status) => ({ status }))
+      .sort((a, b) => reviewOrder(a) - reviewOrder(b))
+      .map((x) => x.status)
+    expect(order).toEqual(['SUBMITTED', 'IN_REVIEW', 'ASSIGNED', 'COMPLETED'])
+  })
+
+  // Было наоборот: незнакомому статусу подставлялся вес ASSIGNED, и работа с
+  // ним всплывала в начале доски. Отсутствие работы — не то же самое: там вес
+  // остался прежним.
+  it('незнакомый статус уезжает за все известные, пустая работа — нет', () => {
+    expect(reviewOrder({ status: 'WAT' })).toBeGreaterThan(reviewOrder({ status: 'COMPLETED' }))
     expect(reviewOrder(null)).toBe(reviewOrder({ status: 'ASSIGNED' }))
+  })
+})
+
+// Ученик и преподаватель читают IN_REVIEW по-разному, и это намеренно: ученику
+// важно «работа у преподавателя», преподавателю — «эту я уже взял».
+describe('boardStateKey — доска преподавателя', () => {
+  const now = new Date(2026, 7, 20, 12, 0, 0)
+
+  it('взятая в проверку отличается от просто сданной', () => {
+    expect(boardStateKey(hw({ status: 'IN_REVIEW' }), now)).toBe('inReview')
+    expect(boardStateKey(hw({ status: 'SUBMITTED' }), now)).toBe('submitted')
+    // А ученику — по-прежнему одно и то же.
+    expect(homeworkStateKey(hw({ status: 'IN_REVIEW' }), now)).toBe('submitted')
+  })
+
+  it('остальные статусы читаются так же, как у ученика', () => {
+    expect(boardStateKey(hw({ status: 'COMPLETED' }), now)).toBe('completed')
+    expect(boardStateKey(hw({ status: 'NEEDS_REVISION' }), now)).toBe('needsRevision')
+    expect(boardStateKey(hw({ dueDate: '2026-08-18' }), now)).toBe('overdue')
+    expect(boardStateKey(null, now)).toBe('assigned')
   })
 })
 
@@ -89,8 +150,17 @@ describe('studentOrder', () => {
     expect(order).toEqual(['NEEDS_REVISION', 'ASSIGNED', 'SUBMITTED', 'COMPLETED'])
   })
 
-  it('незнакомый статус читается как заданное', () => {
-    expect(studentOrder({ status: 'WAT' })).toBe(studentOrder({ status: 'ASSIGNED' }))
+  it('взятая в проверку лежит там же, где сданная', () => {
+    expect(studentOrder({ status: 'IN_REVIEW' })).toBe(studentOrder({ status: 'SUBMITTED' }))
+    const order = ['COMPLETED', 'IN_REVIEW', 'ASSIGNED', 'NEEDS_REVISION']
+      .map((status) => ({ status }))
+      .sort((a, b) => studentOrder(a) - studentOrder(b))
+      .map((x) => x.status)
+    expect(order).toEqual(['NEEDS_REVISION', 'ASSIGNED', 'IN_REVIEW', 'COMPLETED'])
+  })
+
+  it('незнакомый статус уезжает в конец, а не в группу «твоя очередь»', () => {
+    expect(studentOrder({ status: 'WAT' })).toBeGreaterThan(studentOrder({ status: 'COMPLETED' }))
     expect(studentOrder(null)).toBe(studentOrder({ status: 'ASSIGNED' }))
   })
 })
@@ -174,5 +244,107 @@ describe('счётчик «ждут тебя» и отзыв', () => {
   it('обычная работа считается как раньше', () => {
     expect(pendingCount([{ status: 'ASSIGNED', exercises: [задание()] }])).toBe(1)
     expect(pendingCount([{ status: 'SUBMITTED', exercises: [задание()] }])).toBe(0)
+    // Взятая преподавателем работа ученика тоже не ждёт.
+    expect(pendingCount([{ status: 'IN_REVIEW', exercises: [задание()] }])).toBe(0)
+  })
+})
+
+// Регрессия наперёд, ровно той же формы, что и уже починенный IN_REVIEW: бэкенд
+// вырастил пятый статус, а клиент месяцами читал его как «Задано» — предлагал
+// загрузку и сдачу там, где сделать было нечего. Шестой (CANCELLED, ARCHIVED —
+// какой угодно) обязан деградировать в другую сторону.
+describe('статус, которого клиент не знает', () => {
+  const now = new Date(2026, 7, 20, 12, 0, 0)
+
+  it('не читается как «Задано» и не притворяется просроченным', () => {
+    expect(homeworkStateKey(hw({ status: 'CANCELLED' }), now)).not.toBe('assigned')
+    expect(homeworkStateKey(hw({ status: 'CANCELLED', dueDate: '2026-08-01' }), now)).not.toBe('overdue')
+    // Ключ свой и переведён на три языка: незнакомый вышел бы на экран сырой
+    // строкой «homework.status.…», а одолженный 'completed' нарисовал бы
+    // зелёное «Проверено» на работе, которую никто не проверял.
+    expect(homeworkStateKey(hw({ status: 'ARCHIVED' }), now)).toBe('closed')
+    expect(boardStateKey(hw({ status: 'ARCHIVED' }), now)).toBe('closed')
+    // Не 'completed': зелёное «Проверено» на отменённой работе — прямая ложь.
+    expect(homeworkStateKey(hw({ status: 'ARCHIVED' }), now)).not.toBe('completed')
+  })
+
+  it('работа только для чтения: ни приложить файл, ни сдать', () => {
+    expect(canAttach(hw({ status: 'CANCELLED' }))).toBe(false)
+    expect(canSubmit(hw({ status: 'CANCELLED', submissions: [{ id: 1 }] }))).toBe(false)
+    expect(pendingCount([hw({ status: 'CANCELLED' })])).toBe(0)
+  })
+
+  it('стоит последним в обоих списках', () => {
+    const sorted = (order, statuses) => statuses
+      .map((status) => ({ status }))
+      .sort((a, b) => order(a) - order(b))
+      .map((x) => x.status)
+
+    expect(sorted(reviewOrder, ['COMPLETED', 'CANCELLED', 'ASSIGNED', 'SUBMITTED']))
+      .toEqual(['SUBMITTED', 'ASSIGNED', 'COMPLETED', 'CANCELLED'])
+    expect(sorted(studentOrder, ['COMPLETED', 'CANCELLED', 'NEEDS_REVISION', 'ASSIGNED']))
+      .toEqual(['NEEDS_REVISION', 'ASSIGNED', 'COMPLETED', 'CANCELLED'])
+  })
+
+  // Работа без статуса — не шестой статус, а отсутствие данных: на ней стоят и
+  // соседние тесты, и карточки, собранные на клиенте.
+  it('работа без статуса ведёт себя как раньше', () => {
+    expect(homeworkStateKey({ id: 1 }, now)).toBe('assigned')
+    expect(homeworkStateKey({ id: 1, dueDate: '2026-08-01' }, now)).toBe('assigned')
+    expect(reviewOrder({ id: 1 })).toBe(reviewOrder({ status: 'ASSIGNED' }))
+    expect(studentOrder({ id: 1 })).toBe(studentOrder({ status: 'ASSIGNED' }))
+  })
+
+  it('четыре известных статуса читаются как прежде', () => {
+    expect(homeworkStateKey(hw({ status: 'ASSIGNED' }), now)).toBe('assigned')
+    expect(homeworkStateKey(hw({ status: 'ASSIGNED', dueDate: '2026-08-18' }), now)).toBe('overdue')
+    expect(homeworkStateKey(hw({ status: 'SUBMITTED' }), now)).toBe('submitted')
+    expect(homeworkStateKey(hw({ status: 'NEEDS_REVISION' }), now)).toBe('needsRevision')
+    expect(homeworkStateKey(hw({ status: 'COMPLETED' }), now)).toBe('completed')
+  })
+})
+
+// Цвет бейджа — часть того же правила: ключ статуса выбирает плашку, и если две
+// плашки неразличимы, различать статусы бесполезно. Читаем CSS текстом, как в
+// соседних *.design.test.js: предмет проверки — сами цвета, а не то, как их
+// посчитает jsdom.
+const styles = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../styles.css'), 'utf8')
+
+/** Значение свойства из правила `.selector { … }` в styles.css. */
+function css(selector, prop) {
+  const body = styles.match(new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`))?.[1]
+  return body?.match(new RegExp(`(?:^|;)\\s*${prop}:\\s*(#[0-9a-f]{3,8})`, 'i'))?.[1] ?? null
+}
+
+/** Относительная яркость и контраст по WCAG 2.1. */
+function contrast(a, b) {
+  const luminance = (hex) => {
+    const full = hex.length === 4 ? '#' + [...hex.slice(1)].map((c) => c + c).join('') : hex
+    const [red, green, blue] = [1, 3, 5].map((i) => {
+      const v = parseInt(full.slice(i, i + 2), 16) / 255
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+  }
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+describe('бейдж «Взята в проверку»', () => {
+  const inReview = { bg: css('.hw-badge--inReview', 'background'), fg: css('.hw-badge--inReview', 'color') }
+
+  // Регрессия на цвет. Прежняя пастельно-фиолетовая плашка (#efe6ff) при
+  // дейтеранопии совпадала с «Задано» (#e6ecff) — ΔE2000 = 0.4, то есть один и
+  // тот же цвет. Различать эту пару и есть единственная причина, по которой
+  // пятый статус завели. Свободного пастельного тона не нашлось, поэтому
+  // плашка отличается ЯРКОСТЬЮ: это переживает любую форму цветовой слепоты.
+  it('отличается от остальных бейджей яркостью, а не только тоном', () => {
+    for (const neighbour of ['.hw-badge', '.hw-badge--submitted', '.hw-badge--overdue', '.hw-badge--needsRevision', '.hw-badge--completed']) {
+      expect(contrast(inReview.bg, css(neighbour, 'background'))).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('подпись на нём читается: WCAG AA при 12px/700', () => {
+    expect(contrast(inReview.fg, inReview.bg)).toBeGreaterThanOrEqual(4.5)
   })
 })

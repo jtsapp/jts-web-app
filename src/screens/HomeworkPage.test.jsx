@@ -24,6 +24,8 @@ vi.mock('../api.js', () => ({
   getUnreadNotificationCount: vi.fn(async () => 0),
   // Сайдбар оболочки тянет баланс — без заглушки падает весь экран.
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
+  getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getMyHomework: vi.fn(async () => [ASSIGNMENT]),
   getHomeworkById: vi.fn(async () => ASSIGNMENT),
   uploadMedia: vi.fn(async () => ({ url: 'https://files.example/answer.jpg', fileId: 'f1' })),
@@ -280,5 +282,36 @@ describe('HomeworkPage: сдача досылает решённое', () => {
 
     await waitFor(() => expect(screen.getByText(/Не удалось отправить/i)).toBeTruthy())
     expect(api.submitHomework).not.toHaveBeenCalled()
+  })
+})
+
+// Работу отменили целиком, пока ученик был на её экране. Сервер отвечает 410, и
+// под общим отказом это было неотличимо от нехватки прав: экран показывал «не
+// удалось отправить», ученик жал ещё раз, а работы уже не существовало.
+describe('HomeworkPage: отменённая работа', () => {
+  const отменена = () => Object.assign(new Error('request failed: 410'), { status: 410 })
+
+  it('объясняет отмену и убирает работу из списка', async () => {
+    api.getMyHomework.mockResolvedValueOnce([{ ...ASSIGNMENT, submissions: [{ id: 9, fileName: 'a.jpg', url: 'u' }] }])
+    api.submitHomework.mockRejectedValueOnce(отменена())
+    render(<I18nProvider><HomeworkPage token="TOK" /></I18nProvider>)
+
+    const кнопка = await screen.findByRole('button', { name: /отправить на проверку/i })
+    fireEvent.click(кнопка)
+
+    expect(await screen.findByText('Преподаватель отменил эту работу — её больше нет')).toBeTruthy()
+    // Карточки в списке больше нет: держать мёртвую значит звать в неё вернуться.
+    await waitFor(() => expect(screen.queryByText(ASSIGNMENT.title)).toBeNull())
+  })
+
+  it('обычная ошибка отправки по-прежнему читается как сбой', async () => {
+    api.getMyHomework.mockResolvedValueOnce([{ ...ASSIGNMENT, submissions: [{ id: 9, fileName: 'a.jpg', url: 'u' }] }])
+    api.submitHomework.mockRejectedValueOnce(new Error('boom'))
+    render(<I18nProvider><HomeworkPage token="TOK" /></I18nProvider>)
+
+    fireEvent.click(await screen.findByRole('button', { name: /отправить на проверку/i }))
+
+    expect(await screen.findByText('Не удалось отправить работу на проверку')).toBeTruthy()
+    expect(screen.getAllByText(ASSIGNMENT.title).length).toBeGreaterThan(0)
   })
 })

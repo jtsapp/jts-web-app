@@ -42,6 +42,17 @@ export function countLessonDone(lessonId) {
   return getLessonDone(lessonId).size
 }
 
+/**
+ * Урок пройден — все его фразы записаны хотя бы раз.
+ *
+ * Порога «сколько достаточно» у шэдоуинга нет: верного и неверного в тренаже
+ * тоже нет, засчитывается сам факт записи. Поэтому единственная честная
+ * граница — все фразы урока.
+ */
+export function isLessonDone(lessonId, total) {
+  return total > 0 && countLessonDone(lessonId) >= total
+}
+
 export function markSegmentDone(segId) {
   if (typeof segId !== 'string' || !segId) return
   const set = read()

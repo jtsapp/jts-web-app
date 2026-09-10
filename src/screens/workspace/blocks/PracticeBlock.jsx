@@ -65,7 +65,6 @@ export default function PracticeBlock({
   const htmlRef = useRef(null)
   const audioRef = useRef(null)
   const liveRef = useRef({ onAnswer, readOnly, answers, liveQuestionId, checked })
-  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked }
 
   const hasWbCheck = htmlHasCheckableWordBank(html)
   const questions = block?.questions || []
@@ -76,6 +75,12 @@ export default function PracticeBlock({
   const showCheck = !readOnly && (questions.length > 0 || hasWbCheck)
 
   const [wbScore, setWbScore] = useState(null)
+  // Пропуск, в который уедет следующее слово из банка.
+  const [activeGapId, setActiveGapId] = useState(null)
+
+  // Всё изменчивое, что читают слушатели на живом DOM: подписка не должна
+  // зависеть от состояния, иначе она пересоздаётся на каждый ответ.
+  liveRef.current = { onAnswer, readOnly, answers, liveQuestionId, checked, questions, activeGapId }
 
   useWordBankRoot(htmlRef, tappableHtml, gapPrefix, liveRef)
 
@@ -88,6 +93,50 @@ export default function PracticeBlock({
       setWbScore(gradeWordBankInRoot(htmlRef.current))
     }
   }, [checked, hasWbCheck, answers, tappableHtml])
+
+  // Слово из банка — в пропуск.
+  //
+  // Задание «вставь слово из словаря» экстрактор разрывает пополам: банк
+  // остаётся в html блока, а предложения становятся отдельными gap-вопросами.
+  // Движок bindWordBank к этой разметке не цепляется — он ищет .wbank/.wchip и
+  // input.gap, а тут .bank/.bw и React-инпуты, — поэтому слова банка не делали
+  // ничего, и заполнить пропуск можно было только руками с клавиатуры.
+  //
+  // Клик по слову банка — это ответ, а не просьба перевести, поэтому тап-перевод
+  // глушим. Ловим на ПЕРЕХВАТЕ, а не на всплытии: на всплытии оба слушателя
+  // висят на одном узле, и кто из них первый — решает порядок подписки. Он
+  // переставал быть нашим сразу после первого же ответа: этот эффект зависел от
+  // `answers`, на новом ответе переподписывался и уезжал в конец очереди — со
+  // второго слова банка окно перевода успевало открыться раньше и накрывало
+  // задание. Перехват отрабатывает до любого всплытия и от порядка не зависит.
+  //
+  // Изменчивое читаем из `liveRef` по той же причине: подписка не должна
+  // зависеть от состояния.
+  useEffect(() => {
+    const root = htmlRef.current
+    if (!root) return undefined
+    const onClick = (e) => {
+      const { questions, answers, activeGapId, onAnswer, readOnly, checked } = liveRef.current
+      if (readOnly || checked) return
+      const chip = e.target?.closest?.('.bw')
+      if (!chip) return
+      const word = (chip.textContent || '').trim()
+      if (!word) return
+      const gaps = questions.filter((q) => q.type === 'gap')
+      if (!gaps.length) return
+      const target = gaps.find((q) => q.id === activeGapId)
+        ?? gaps.find((q) => !String(answers?.[q.id] ?? '').trim())
+      // Класть некуда — молча ничего не делаем, но и перевод не открываем:
+      // иначе одно и то же нажатие вело бы то в ответ, то в словарь.
+      e.stopImmediatePropagation()
+      e.preventDefault()
+      if (!target) return
+      onAnswer(target.id, word)
+      setActiveGapId(null)
+    }
+    root.addEventListener('click', onClick, true)
+    return () => root.removeEventListener('click', onClick, true)
+  }, [tappableHtml])
 
   useEffect(() => {
     const root = htmlRef.current
@@ -196,6 +245,7 @@ export default function PracticeBlock({
                 onAnswer={onAnswer}
                 readOnly={readOnly}
                 onWord={onWord}
+                onFocusGap={setActiveGapId}
                 showAnswerKey={showAnswerKey}
               />
             </div>

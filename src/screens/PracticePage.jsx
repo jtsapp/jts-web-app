@@ -609,6 +609,26 @@ export default function PracticePage({
     setGrammarLevel(openTarget.level)
     setOpenUnit({ level: openTarget.level, unit })
   }, [openTarget, grammarIndex])
+  /**
+   * Пришли из домашней работы за уровнем разговорной практики.
+   *
+   * Своего экрана у раздела нет — это оверлей поверх «Практики», и открыть его
+   * можно только отсюда. Ждём загрузки страницы: до неё не известны
+   * заблокированные уровни, и открытие сорвалось бы молча.
+   *
+   * Цель отрабатывается один раз по своему ключу, как и у грамматики: закрыл
+   * оверлей — не должен тут же открыться снова.
+   */
+  const openedSituationsRef = useRef(null)
+  useEffect(() => {
+    if (openTarget?.area !== 'situations' || !openTarget?.level) return
+    const key = `situations:${openTarget.level}`
+    if (openedSituationsRef.current === key || situationsEntitlement.loading) return
+    openedSituationsRef.current = key
+    setFilter('situations')
+    openSituationsLevel(String(openTarget.level).toLowerCase())
+  }, [openTarget, situationsEntitlement.loading])   // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     setGrammarLevel(levelToCourse(userLevel))
   }, [userLevel])
@@ -643,7 +663,10 @@ export default function PracticePage({
   // Онбординг-тур: сам выходит при первом заходе, дальше — по кнопке «?» в углу.
   // Шаги идут сверху вниз по странице, чтобы прожектор не прыгал; секции, которых
   // на экране нет, тур пропускает сам (см. OnboardingTour).
-  const tour = useScreenTour(tourKey)
+  // Тур — ученический: он объясняет, как заниматься. Преподаватель этим экраном
+  // пользуется как витриной заданий для выдачи на дом (AssignPracticeBar), и
+  // «слушаешь фразу и собираешь её из слов» ему не про него.
+  const tour = useScreenTour(teacher ? null : tourKey)
   const tourSteps = [
     { selector: '.pp-chips', title: t('tour.practice.chips.title'), text: t('tour.practice.chips.text') },
     { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text') },
@@ -769,7 +792,7 @@ export default function PracticePage({
   if (situationsBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} source={situationsEntitlement.source} sourceName={situationsEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={situationsEntitlement.limit} onBack={() => setSituationsBlocked(false)} isDemoAccount={isDemoAccount} source={situationsEntitlement.source} sourceName={situationsEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -777,7 +800,7 @@ export default function PracticePage({
   if (workbooksBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={workbooksEntitlement.limit} onBack={() => setWorkbooksBlocked(false)} isDemoAccount={isDemoAccount} source={workbooksEntitlement.source} sourceName={workbooksEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={workbooksEntitlement.limit} onBack={() => setWorkbooksBlocked(false)} isDemoAccount={isDemoAccount} source={workbooksEntitlement.source} sourceName={workbooksEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -786,7 +809,7 @@ export default function PracticePage({
   if (memesBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={memesEntitlement.limit} onBack={() => setMemesBlocked(false)} isDemoAccount={isDemoAccount} source={memesEntitlement.source} sourceName={memesEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={memesEntitlement.limit} onBack={() => setMemesBlocked(false)} isDemoAccount={isDemoAccount} source={memesEntitlement.source} sourceName={memesEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -794,7 +817,7 @@ export default function PracticePage({
   if (talesBlocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={talesEntitlement.limit} onBack={() => setTalesBlocked(false)} isDemoAccount={isDemoAccount} source={talesEntitlement.source} sourceName={talesEntitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={talesEntitlement.limit} onBack={() => setTalesBlocked(false)} isDemoAccount={isDemoAccount} source={talesEntitlement.source} sourceName={talesEntitlement.sourceName} />
       </LearningLayout>
     )
   }
@@ -804,7 +827,7 @@ export default function PracticePage({
     if (!grammarEntitlement.loading && !grammarEntitlement.allowed) {
       return (
         <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-          <PracticeLimitScreen limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} isDemoAccount={isDemoAccount} source={grammarEntitlement.source} sourceName={grammarEntitlement.sourceName} />
+          <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={grammarEntitlement.limit} onBack={() => setOpenUnit(null)} isDemoAccount={isDemoAccount} source={grammarEntitlement.source} sourceName={grammarEntitlement.sourceName} />
         </LearningLayout>
       )
     }
@@ -877,7 +900,7 @@ export default function PracticePage({
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile} onHelp={startTour}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile} onHelp={teacher ? undefined : startTour}>
       <div className="pp pp--enter">
         {/* ───── Центр: ленты контента ───── */}
         <div className="pp__center">

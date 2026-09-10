@@ -2,6 +2,7 @@ import { useI18n } from '../../../i18n.jsx'
 import { gradeQuestion, hasAttempt } from '../practiceGrading.js'
 import { CheckIcon } from '../../../components/icons.jsx'
 import QuestionMedia from './QuestionMedia.jsx'
+import { stableShuffle } from './optionOrder.js'
 
 /**
  * Слова банка, ещё не поставленные в предложение: жадно вычёркиваем из
@@ -29,7 +30,7 @@ function bankIndices(words, answer) {
 // удаления одного слова из середины при повторяющихся словах в банке.
 export default function OrderQuestion({ question, answer, checked, onAnswer, readOnly, onWord, showAnswerKey = true }) {
   const { t } = useI18n()
-  const words = question?.words || []
+  const words = stableShuffle(question?.words, question?.id)
   const built = Array.isArray(answer) ? answer : []
   const used = bankIndices(words, built)
   const done = built.length === words.length

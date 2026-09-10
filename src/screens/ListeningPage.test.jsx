@@ -15,8 +15,13 @@ import { I18nProvider } from '../i18n.jsx'
 // (getUnreadNotificationCount) — без заглушки эти сетевые вызовы валят экран
 // (см. тот же приём в IeltsPage.test.jsx).
 vi.mock('../api.js', () => ({
+  // Экран тянет мост «Практика → домашка» (practiceHomework.js), а тот —
+  // markPracticeUnitDone: без заглушки мок падает на неизвестном экспорте.
+  markPracticeUnitDone: vi.fn(async () => ({ counted: 0, alreadyDone: 0 })),
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
+  // Сайдбар спрашивает демо-статус сам — пункт «Главная» и плашка скидки.
+  getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
 }))
 
 import ListeningPage from './ListeningPage.jsx'
@@ -74,10 +79,10 @@ function mockServer({ limit, completed = 0, entitlementFails = false }) {
   return fn
 }
 
-function renderPage() {
+function renderPage(props = {}) {
   render(
     <I18nProvider>
-      <ListeningPage userLevel="a1" userName="Тест" token="TOK" isDemoAccount onNav={() => {}} onProfile={() => {}} />
+      <ListeningPage userLevel="a1" userName="Тест" token="TOK" isDemoAccount onNav={() => {}} onProfile={() => {}} {...props} />
     </I18nProvider>,
   )
 }
@@ -157,5 +162,39 @@ describe('ListeningPage: лимит меряется на КАЖДОМ стар�
 
     const asked = fetchMock.calls.filter((c) => c === 'GET /api/practice/entitlement').length
     expect(asked).toBe(1) // только запрос при монтировании
+  })
+})
+
+/**
+ * Уровень из домашней работы.
+ *
+ * У аудирования адресом юнита служит сам уровень: экран до этого брал его
+ * только из профиля, и выданное на B1 открывалось бы на A1 ученика — то есть
+ * ученик решал бы не то, что задали.
+ */
+describe('ListeningPage — уровень из домашней работы', () => {
+  it('тянет контент заданного уровня, а не уровня ученика', async () => {
+    const fetchMock = mockServer({ limit: null })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPage({ initialTarget: { level: 'b1' } })
+    fireEvent.click(await screen.findByText('Начать тренировку'))
+
+    await waitFor(() => expect(
+      fetchMock.calls.some((c) => c.includes('/practice/listening/content/b1.json')),
+    ).toBe(true))
+    expect(fetchMock.calls.some((c) => c.includes('/practice/listening/content/a1.json'))).toBe(false)
+  })
+
+  it('без цели остаётся уровень ученика', async () => {
+    const fetchMock = mockServer({ limit: null })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderPage()
+    fireEvent.click(await screen.findByText('Начать тренировку'))
+
+    await waitFor(() => expect(
+      fetchMock.calls.some((c) => c.includes('/practice/listening/content/a1.json')),
+    ).toBe(true))
   })
 })

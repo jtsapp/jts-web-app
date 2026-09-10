@@ -56,6 +56,25 @@ describe('HomeworkDetail', () => {
     expect(screen.getByText('Работа у преподавателя — ждём проверки')).toBeTruthy()
   })
 
+  // Регрессия: у IN_REVIEW бейдж читался как «Задано» (а с прошедшим сроком —
+  // «Просрочено»), и объяснение «работа у преподавателя» не показывалось вовсе:
+  // ученик видел закрытый экран без единого слова о том, почему в нём ничего
+  // нельзя сделать.
+  it('взятая преподавателем в проверку выглядит так же, как сданная', () => {
+    const { container } = renderDetail({
+      hw: hw({
+        status: 'IN_REVIEW',
+        dueDate: '2020-01-01',
+        submissions: [{ id: 9, fileName: 'answer.jpg', url: 'u' }],
+      }),
+    })
+    expect(container.querySelector('.hw-badge').textContent).toBe('На проверке')
+    expect(container.querySelector('.hw-upload')).toBeNull()
+    expect(container.querySelector('.hw-file__remove')).toBeNull()
+    expect(screen.queryByRole('button', { name: /отправить на проверку/i })).toBeNull()
+    expect(screen.getByText('Работа у преподавателя — ждём проверки')).toBeTruthy()
+  })
+
   it('после проверки нельзя ни приложить файл, ни удалить его', () => {
     const { container } = renderDetail({
       hw: hw({ status: 'COMPLETED', grade: 5, teacherComment: 'Отлично', submissions: [{ id: 9, fileName: 'answer.jpg', url: 'u' }] }),
@@ -63,6 +82,15 @@ describe('HomeworkDetail', () => {
     expect(container.querySelector('.hw-upload')).toBeNull()
     expect(container.querySelector('.hw-file__remove')).toBeNull()
     expect(screen.queryByRole('button', { name: /отправить на проверку/i })).toBeNull()
+  })
+
+  // Ровно случай со скриншота: пустая работа с бейджем «Проверено», который
+  // ученику ничего не объясняет — ни файлов, ни оценки, ни отзыва.
+  it('закрытая без сдачи работа так и подписана', () => {
+    renderDetail({ hw: hw({ status: 'COMPLETED', closedWithoutSubmission: true, materials: [] }) })
+    expect(screen.getByText('Закрыто без сдачи')).toBeTruthy()
+    expect(screen.getByText(/вы её не сдавали/i)).toBeTruthy()
+    expect(screen.queryByText('Проверено')).toBeNull()
   })
 
   it('оценка и комментарий преподавателя видны ученику', () => {

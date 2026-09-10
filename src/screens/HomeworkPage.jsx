@@ -13,6 +13,7 @@ import { isAllowedFile, studentOrder } from './homework/homeworkFormat.js'
 import { loadAnswers, pendingAnswers } from './homework/homeworkExercises.js'
 import { gradeQuestion } from './workspace/practiceGrading.js'
 import { materialCard } from './homework/materialAssignments.js'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 
 /**
  * Экран «Домашняя работа» ученика: история заданий слева, открытое задание справа.
@@ -24,7 +25,7 @@ import { materialCard } from './homework/materialAssignments.js'
  * задание перечитывается только после действий, которые его меняют, —
  * загрузки файла, удаления и отправки на проверку.
  */
-export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav, onProfile }) {
+export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav, onProfile, tourKey }) {
   const { t } = useI18n()
   const [items, setItems] = useState([])
   const [materials, setMaterials] = useState([])
@@ -32,6 +33,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   const [selectedId, setSelectedId] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // Сообщение уровня экрана, а не карточки: работа, которую отменили, из списка
+  // уходит, карточка становится пустой — и объяснению внутри неё места нет.
+  const [notice, setNotice] = useState(null)
 
   useEffect(() => {
     if (!token) return
@@ -79,6 +83,20 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
     setItems((list) => list.map((hw) => (hw.id === updated.id ? updated : hw)))
   }, [])
 
+  // Работу отменили целиком, пока ученик был на её экране. Сервер отвечает 410
+  // (см. GoneException на бэкенде) — по нему и отличаем: под общим отказом это
+  // было неотличимо от нехватки прав, экран показывал «не удалось отправить», и
+  // ученик жал ещё раз. Убираем работу из списка: её больше нет, и держать
+  // мёртвую карточку значит звать в неё вернуться.
+  const cancelled = useCallback((error, id) => {
+    if (error?.status !== 410) return false
+    setItems((list) => list.filter((hw) => hw.id !== id))
+    setSelectedId((current) => (current === id ? null : current))
+    setError(null)
+    setNotice(t('homework.cancelled'))
+    return true
+  }, [t])
+
   const refresh = useCallback(async (id) => {
     try {
       replace(await getHomeworkById(token, id))
@@ -88,6 +106,18 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
   }, [token, replace])
 
   const selected = combined.find((hw) => hw.id === selectedId) || null
+
+  // Тур ждёт загруженный список: до него на экране одна строчка «Загрузка…»,
+  // тур пропустил бы все шаги подряд и закрылся. Ключ передаём только в
+  // готовом состоянии — хук решает один раз, на первом непустом ключе.
+  const tour = useScreenTour(view === 'ready' ? tourKey : null)
+  // Шаги про ответ есть не всегда: у сданной и проверенной работы ни загрузки
+  // файла, ни кнопки отправки нет — тур такие шаги пропускает сам.
+  const tourSteps = [
+    { selector: '.hw-list', title: t('tour.hw.list.title'), text: t('tour.hw.list.text') },
+    { selector: '.hw-upload', title: t('tour.hw.upload.title'), text: t('tour.hw.upload.text') },
+    { selector: '.hw-submit', title: t('tour.hw.submit.title'), text: t('tour.hw.submit.text') },
+  ]
 
   // Файлы грузятся по очереди, а не разом.
   //
@@ -112,9 +142,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         if (!url) throw new Error('upload returned no url')
         replace(await attachHomeworkAnswer(token, selected.id, file.name, url))
       }
-    } catch {
-      setError(t('homework.uploadFailed'))
-      await refresh(selected.id)
+    } catch (e) {
+      if (!cancelled(e, selected.id)) {
+        setError(t('homework.uploadFailed'))
+        await refresh(selected.id)
+      }
     } finally {
       setBusy(false)
     }
@@ -126,9 +158,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
     setBusy(true)
     try {
       replace(await removeHomeworkAnswer(token, selected.id, material.id))
-    } catch {
-      setError(t('homework.removeFailed'))
-      await refresh(selected.id)
+    } catch (e) {
+      if (!cancelled(e, selected.id)) {
+        setError(t('homework.removeFailed'))
+        await refresh(selected.id)
+      }
     } finally {
       setBusy(false)
     }
@@ -158,18 +192,28 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
         await saveHomeworkAnswer(selected.id, exercise.id, token, answer, correct)
       }
       replace(await submitHomework(token, selected.id))
-    } catch {
+    } catch (e) {
       // Статус не двигаем: работа, сданная без ответов, выглядит проверяемой,
       // а проверять в ней нечего.
-      setError(t('homework.submitFailed'))
-      await refresh(selected.id)
+      if (!cancelled(e, selected.id)) {
+        setError(t('homework.submitFailed'))
+        await refresh(selected.id)
+      }
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="homework" token={token} onNav={onNav} onProfile={onProfile}>
+    <LearningLayout
+      userName={userName}
+      userLevel={userLevel}
+      active="homework"
+      token={token}
+      onNav={onNav}
+      onProfile={onProfile}
+      onHelp={view === 'ready' ? tour.start : undefined}
+    >
       <div className="hw">
         <header className="hw__head">
           <h1 className="hw__title">{t('nav.homework')}</h1>
@@ -179,6 +223,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
           {view === 'loading' && <p className="hw__hint">{t('homework.loading')}</p>}
           {view === 'anon' && <p className="hw__hint">{t('homework.needAuth')}</p>}
           {view === 'error' && <p className="hw__error">{t('homework.loadError')}</p>}
+          {notice && <p className="hw__notice" role="status">{notice}</p>}
           {view === 'ready' && (
             <div className="hw__layout">
               <div className="hw__col">
@@ -187,6 +232,9 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
               {selected?.kind === 'material' ? (
                 <MaterialAssignmentDetail card={selected} token={token} />
               ) : (
+                /* onOpenPractice получает готовый переход из карты разделов
+                   (practiceNavTarget): «Чтение», «Письмо», шэдоуинг и воркбуки
+                   живут на своих экранах, а не внутри «Практики». */
                 <HomeworkDetail
                   hw={selected}
                   token={token}
@@ -197,13 +245,17 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                   onSubmit={handleSubmit}
                   onSaved={replace}
                   onAnswered={setDraft}
-                  onOpenPractice={(target) => onNav?.('practice', target)}
+                  onOpenPractice={(target) => onNav?.(target.key, target.payload)}
                   draftAnswered={draftAnswered}
                 />
               )}
             </div>
           )}
         </div>
+
+        {tour.open && (
+          <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+        )}
       </div>
     </LearningLayout>
   )

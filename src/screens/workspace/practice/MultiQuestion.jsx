@@ -1,5 +1,6 @@
 import { CheckIcon } from '../../../components/icons.jsx'
 import QuestionMedia from './QuestionMedia.jsx'
+import { stableShuffle } from './optionOrder.js'
 
 // «Отметь всё, что услышал»: несколько вариантов верны одновременно.
 // `answer` — массив отмеченных строк; засчитывается только полный набор
@@ -20,7 +21,7 @@ export default function MultiQuestion({ question, answer, checked, onAnswer, rea
     <div className="lw-q lw-q--multi">
       <QuestionMedia question={question} onWord={onWord} />
       <div className="lw-opts">
-        {(question?.options || []).map((opt) => {
+        {stableShuffle(question?.options, question?.id).map((opt) => {
           const selected = picked.includes(opt)
           const isAnswer = (question.answers || []).includes(opt)
           const isOk = showAnswerKey && checked && isAnswer

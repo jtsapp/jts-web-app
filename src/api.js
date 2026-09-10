@@ -107,7 +107,13 @@ async function authPut(path, token, body, { keepalive = false } = {}) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -125,7 +131,13 @@ async function authPost(path, token, body) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -143,7 +155,13 @@ async function authPatch(path, token, body) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -157,7 +175,13 @@ async function authDelete(path, token) {
   } catch (e) {
     throw new Error('Нет связи с сервером.')
   }
-  if (!res.ok) throw new Error(`request failed: ${res.status}`)
+  if (!res.ok) {
+    // Код нужен вызывающему: 410 у домашней работы значит «преподаватель её
+    // отменил», и это объяснение ученику, а не общая осечка сети.
+    const err = new Error(`request failed: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
   return res.json().catch(() => null)
 }
 
@@ -398,6 +422,14 @@ export function uncompleteCatalogLesson(token, id) {
   return authDelete(`/mobile/course-catalog/lessons/${encodeURIComponent(id)}/complete`, token)
 }
 
+// Прогресс по своему уровню — освоенные материалы, а не точность в практике.
+// Считает сервер: слагаемые лежат в трёх местах (отметки в каталоге,
+// состоявшиеся занятия, объём самого курса), и собрать их в браузере значило бы
+// выкачать туда весь каталог ради одного числа.
+export function getLevelProgress(token) {
+  return authGet('/mobile/level-progress', token)
+}
+
 // Работа ученика в самостоятельном уроке: ответы, проверенные карточки и
 // последний открытый шаг. Отдельной ручкой, а не полем дерева: дерево читается
 // на открытие раздела целиком, и таскать в нём работу по всем урокам ради
@@ -438,6 +470,25 @@ export function getLessonsSummary(token) {
 }
 
 /**
+ * Ученик прошёл юнит «Практики» — засчитать его в домашних работах.
+ *
+ * Раздел «Практика» целиком клиентский: контент лежит статикой здесь, прогресс
+ * — в localStorage и в своей базе кабинета. Бэкенд домашки об этом не знал, и
+ * «выполнено» у выданного юнита преподаватель ставил руками, по слову ученика.
+ *
+ * Уезжает тот же АДРЕС, каким юнит выдавали: раздел, уровень, номер. Сервер сам
+ * найдёт, в каких работах этого ученика он задан.
+ */
+export function markPracticeUnitDone(token, { area, level, unitId, unitKey, done, total }) {
+  // done/total — только там, где раздел выдаётся уровнем целиком: у юнита,
+  // который закрывается сам собой, отчёт остаётся событием «закрыт». Порог
+  // засчитывания (80 %) держит сервер: правило домашней работы должно жить в
+  // одном месте, иначе старые вкладки будут считать по-своему.
+  return authPost('/admin/homework/practice/done', token,
+    { area, level, unitId, unitKey, done, total })
+}
+
+/**
  * Выдать юниты «Практики» на дом всем участникам урока.
  *
  * Уезжает АДРЕС юнита, а не его содержимое: контент «Практики» лежит статикой
@@ -447,12 +498,17 @@ export function getLessonsSummary(token) {
  *
  * `batchId` — один на нажатие: повтор с тем же ключом ничего не задваивает,
  * поэтому двойной клик и ретрай после обрыва безопасны.
+ *
+ * `dueDate` (`YYYY-MM-DD`, null — без срока) сервер применяет только вперёд:
+ * стоящий в работе более поздний срок он не сдвигает, а прошедший отвергает
+ * целиком, до записи заданий.
  */
-export function assignPracticeUnits(token, lessonId, { area, units, batchId }) {
+export function assignPracticeUnits(token, lessonId, { area, units, batchId, dueDate = null }) {
   return authPut(`/admin/homework/lesson/${lessonId}/exercises/from-practice`, token, {
     area,
     units,
     batchId,
+    dueDate,
   })
 }
 
@@ -484,6 +540,50 @@ export async function getTrialRequestState(token) {
 // идемпотентность страхует гонку вкладок, а не заменяет гард.
 export async function requestTrialLesson(token) {
   return trialRequestState(await authPost('/mobile/trial-request', token))
+}
+
+// Витрина: что и почём продаётся (GET /catalog/offers, публично).
+//
+// Каталог живёт на бэкенде, а не в этом репозитории, и это не вкусовщина: цену
+// заказа считает сервер по своим же данным, а клиент присылает только коды. Всё
+// остальное — статичный прайс в бандле — означало бы «12 уроков за 1 тенге»
+// правкой в консоли браузера.
+export async function getOffers() {
+  const data = await get('/catalog/offers')
+  return Array.isArray(data) ? data : []
+}
+
+// Заказ и ссылка на оплату (POST /mobile/orders, Bearer).
+//
+// `items` — [{ offerCode, quantity }]. Цены здесь нет намеренно, см. getOffers.
+// `idempotencyKey` обязателен: двойной клик по «Перейти к оплате» с тем же
+// ключом вернёт тот же заказ, а не создаст второй платёж.
+//
+// paymentUrl пуст, когда эквайринг ещё не подключён — тогда экран показывает
+// запасной путь (написать менеджеру), а не пустую страницу оплаты.
+export async function createOrder(token, { items, idempotencyKey, returnUrl } = {}) {
+  return authPost('/mobile/orders', token, { items, idempotencyKey, returnUrl })
+}
+
+// Заявка менеджеру с коммерческих экранов (тарифы, докупка минут) — уезжает в
+// amoCRM (бэкенд: POST /mobile/leads, modules/crm).
+//
+// ФИО и телефон не отправляем: бэкенд берёт их из токена. Позволить клиенту
+// прислать чужой номер значило бы отдать менеджерам открытую форму спама.
+// `comment` — состав заказа, менеджер видит его в карточке сделки.
+//
+// Возвращает { accepted } — есть ли у аккаунта телефон, по которому вообще
+// можно перезвонить. Повторное нажатие бэкенд схлопывает сам, для клиента это
+// по-прежнему успех.
+// `amount` — итог корзины в тенге; уедет бюджетом сделки, иначе воронка продаж
+// показывает ₸0 по всем заявкам с платформы. У заявок без покупки его нет.
+export async function createLead(token, { source, comment, amount } = {}) {
+  const data = await authPost('/mobile/leads', token, {
+    source,
+    comment: comment || null,
+    amount: Number.isFinite(amount) ? Math.round(amount) : null,
+  })
+  return { accepted: data?.accepted !== false }
 }
 
 // Живой урок: загрузка одного урока и управление жизненным циклом (учитель/админ).
@@ -879,9 +979,15 @@ export async function completeActivation(activationToken, password) {
 }
 
 // Демо-доступ для витрины «Практика», когда пользователь ещё не залогинен
-// (флоу Skip). Кэшируем промис, чтобы не логиниться повторно.
-const DEMO_PHONE = process.env.NEXT_PUBLIC_DEMO_PHONE || '+7 (777) 123-45-67'
-const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'password123'
+// (флоу Skip). Кэшируем промис, чтобы не ходить за токеном повторно.
+//
+// Пароля демо-аккаунта здесь БОЛЬШЕ НЕТ и быть не должно. Раньше браузер
+// логинился сам парой NEXT_PUBLIC_DEMO_PHONE / NEXT_PUBLIC_DEMO_PASSWORD со
+// значениями по умолчанию прямо в этой строке: префикс NEXT_PUBLIC_ означает
+// «вшить в бандл», то есть пароль общего аккаунта читался из исходников
+// вкладки. Токен протухает и годится только этому приложению, а паролем можно
+// войти откуда угодно и сменить его. Теперь пару знает только сервер —
+// src/app/api/practice/demo-token/route.js.
 const DEMO_TOKEN_KEY = 'jts_demo_token'
 
 let _demoTokenPromise = null
@@ -905,19 +1011,32 @@ export function getPracticeToken(token) {
       const saved = window.localStorage.getItem(DEMO_TOKEN_KEY)
       if (saved && jwtAlive(saved)) _demoTokenPromise = Promise.resolve(saved)
     } catch {
-      /* localStorage недоступен — просто логинимся */
+      /* localStorage недоступен — просто сходим за токеном */
     }
   }
   if (!_demoTokenPromise) {
-    _demoTokenPromise = loginWithPassword(DEMO_PHONE, DEMO_PASSWORD)
-      .then((res) => {
-        const tok = res?.accessToken || null
-        if (tok) {
-          try {
-            window.localStorage.setItem(DEMO_TOKEN_KEY, tok)
-          } catch {
-            /* квота/приватный режим — работаем без кэша */
-          }
+    _demoTokenPromise = fetch('/api/practice/demo-token', { method: 'POST' })
+      .then(async (res) => {
+        // Стенд без настроенного демо-доступа отвечает 503, недоступный
+        // бэкенд — 502. И то и другое значит «витрины сейчас нет»: раздел
+        // откроется без серверной части, ровно как при неудачном входе раньше.
+        if (!res.ok) return null
+        const body = await res.json().catch(() => null)
+        return body?.accessToken || null
+      })
+      .then((tok) => {
+        // Пустой ответ не запоминаем: отказ бывает временным (передеплой
+        // бэкенда — секунды), а запомненный он держался бы до перезагрузки
+        // вкладки, и второй заход в раздел был бы так же бесполезен. Та же
+        // причина, по которой сбрасывается кэш каталога в админке.
+        if (!tok) {
+          _demoTokenPromise = null
+          return null
+        }
+        try {
+          window.localStorage.setItem(DEMO_TOKEN_KEY, tok)
+        } catch {
+          /* квота/приватный режим — работаем без кэша */
         }
         return tok
       })
@@ -1158,13 +1277,35 @@ export async function getLanguageLevel(token) {
 // При сетевой осечке считаем аккаунт не демо — это не критично (просто не
 // покажем CTA), а не наоборот.
 export async function getIsDemoAccount(token) {
-  if (!token) return false
-  try {
-    const data = await authGet('/user/me', token)
-    return !!data?.isDemoAccount
-  } catch {
-    return false
-  }
+  return (await getDemoAccess(token)).isDemo
+}
+
+// То же самое, но вместе со сроком демо-доступа: «Главная» рисует по нему
+// обратный отсчёт (см. lib/demoAccess.js). Отдельная функция, а не расширенный
+// getIsDemoAccount: местам, которым нужен только флаг, лишнее поле ни к чему.
+//
+// `expiresAt: null` — демо без срока (менеджер выдал доступ руками), а не
+// «истекло»: это разные вещи, и таймер во втором случае рисовать нельзя.
+// Ответ помним по токену: сайдбар спрашивает демо-статус на каждом экране, а
+// смена экрана его перемонтирует — без памяти это /user/me на каждый переход по
+// меню. Ключ — сам токен, поэтому выход и вход под другим аккаунтом отвечают
+// заново, а не отдают чужой ответ.
+const _demoAccess = new Map()
+
+export async function getDemoAccess(token) {
+  if (!token) return { isDemo: false, expiresAt: null }
+  if (_demoAccess.has(token)) return _demoAccess.get(token)
+  const p = authGet('/user/me', token)
+    .then((data) => ({ isDemo: !!data?.isDemoAccount, expiresAt: data?.demoExpiresAt || null }))
+    .catch(() => {
+      // Сетевая осечка не должна залипать в памяти: следующий экран спросит
+      // заново, а пока считаем аккаунт обычным (не покажем демо-плашку —
+      // это безопаснее, чем показать её платящему).
+      _demoAccess.delete(token)
+      return { isDemo: false, expiresAt: null }
+    })
+  _demoAccess.set(token, p)
+  return p
 }
 
 // Обновление профиля (PUT /user/update, Bearer). Тело — как UpdateUserRequest

@@ -17,6 +17,7 @@ import { topVocabMisses } from './vocab/vocabMisses.js'
 import { learnedCount, learnedKeys, learnedInCards, vocabKey, recordVocabLearned, forgetVocabLearned } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
 import { levelIndex } from '../kingdoms.js'
+import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 
 const vocabLang = (lang) => (lang === 'kk' ? 'kk' : 'ru')
 
@@ -54,7 +55,7 @@ function trOf(card, lang) {
 
 const CAT_ORDER = ['tech', 'biz', 'health', 'science']
 
-export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount }) {
+export default function VocabularyPage({ userLevel = 'A1', userName, token, onNav, onProfile, isDemoAccount, tourKey }) {
   const { lang, t } = useI18n()
   const vlang = vocabLang(lang)
   const [screen, setScreen] = useState('home')
@@ -192,9 +193,17 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
     setScreen('practice')
   }
 
+  // Тур домашнего экрана словаря. Хук — до ранних return'ов ниже (правило
+  // хуков) и ждёт загруженный каталог: до него секции пустые, и тур пропустил
+  // бы все шаги подряд. Ключ читается один раз, на первом непустом значении.
+  const tour = useScreenTour(!indexLoading && (index?.levels || []).length > 0 ? tourKey : null)
+
   const entitlement = usePracticeEntitlement('vocab', token)
-  const shell = (children) => (
-    <LearningLayout userName={userName} userLevel={userLevel} active="vocab" token={token} onNav={onNav} onProfile={onProfile}>
+  // help — кнопка «?» в углу; её передаёт только домашний экран словаря: тур
+  // рассказывает про его разделы, а внутри набора или тренажёра объяснять ими
+  // уже нечего.
+  const shell = (children, help) => (
+    <LearningLayout userName={userName} userLevel={userLevel} active="vocab" token={token} onNav={onNav} onProfile={onProfile} onHelp={help}>
       <div className="vp">
         {children}
         {toast ? <div className="v-toast v-show"><span>{toast}</span></div> : null}
@@ -203,7 +212,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   )
 
   if (!entitlement.loading && !entitlement.allowed) {
-    return shell(<PracticeLimitScreen limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />)
+    return shell(<PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={() => onNav?.('practice')} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />)
   }
 
   if (screen === 'practice' && practiceCards) {
@@ -321,6 +330,12 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const fields = index?.fields || []
   const mineWords = mine?.words || []
 
+  const tourSteps = [
+    { selector: '#vsec-levels', title: t('tour.vocab.levels.title'), text: t('tour.vocab.levels.text') },
+    { selector: '#vsec-fields', title: t('tour.vocab.fields.title'), text: t('tour.vocab.fields.text') },
+    { selector: '#vsec-mine', title: t('tour.vocab.mine.title'), text: t('tour.vocab.mine.text') },
+  ]
+
   return shell(
     <section className="vp-pad">
       <h1>{t('vocab.home.title')}</h1>
@@ -328,7 +343,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       {indexLoading && <p className="vp-state">…</p>}
       {indexError && !levels.length && !indexLoading && <p className="vp-state">{t('vocab.home.empty')}</p>}
 
-      <div className="vp-sec">
+      <div className="vp-sec" id="vsec-levels">
         <div className="vp-sec-hd">
           <div>
             <h2>{t('vocab.home.core')}</h2>
@@ -370,7 +385,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         </div>
       </div>
 
-      <div className="vp-sec">
+      <div className="vp-sec" id="vsec-fields">
         <div className="vp-sec-hd">
           <div>
             <h2>{t('vocab.home.field')}</h2>
@@ -389,7 +404,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         </div>
       </div>
 
-      <div className="vp-sec">
+      <div className="vp-sec" id="vsec-mine">
         <div className="vp-sec-hd">
           <div>
             <h2>{t('vocab.home.mine')}</h2>
@@ -455,7 +470,11 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
           </div>
         </div>
       )}
+      {tour.open && (
+        <OnboardingTour steps={tourSteps} storageKey={tourKey} onFinish={tour.finish} />
+      )}
     </section>,
+    tour.start,
   )
 }
 

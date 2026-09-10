@@ -14,6 +14,7 @@ import {
   COINS_PER_TASK,
 } from '../practice/listening/engine.js'
 import { markTaskDone, getListeningDone, LISTENING_PROGRESS_EVENT } from '../practice/listening/listeningProgress.js'
+import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { recordSkill } from '../practice/skillStats.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
@@ -271,9 +272,12 @@ function ExitModal({ onStay, onLeave }) {
 }
 
 // ───────────────────────── Screen ─────────────────────────
-export default function ListeningPage({ userLevel, userName, token, onNav, onProfile, isDemoAccount }) {
+export default function ListeningPage({ userLevel, userName, token, initialTarget, onNav, onProfile, isDemoAccount }) {
   const { t } = useI18n()
-  const level = normLevel(userLevel)
+  // Обычно уровень берётся из профиля, но домашняя работа задаёт свой: у неё
+  // адресом юнита служит сам уровень, и открывать «свой» вместо заданного
+  // значит дать ученику решать не то.
+  const level = normLevel(initialTarget?.level || userLevel)
   const [phase, setPhase] = useState('intro') // 'intro' | 'task' | 'result'
   const [content, setContent] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -322,6 +326,17 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   // Оба перехода сторожит tests/practice-gate.spec.js.
   const [attemptedStart, setAttemptedStart] = useState(false)
   const blocked = attemptedStart && !entitlement.loading && !entitlement.allowed
+
+  // Контент лежит в состоянии, а уровень теперь может смениться без
+  // перемонтирования экрана (переход из домашки на уже открытом «Аудировании»).
+  // Без сброса ученик получил бы задания прежнего уровня.
+  useEffect(() => {
+    setContent(null)
+    setQueue([])
+    setPhase('intro')
+    setResponse(null)
+    setAnswered(null)
+  }, [level])
 
   const loadContent = useCallback(async () => {
     if (content) return content
@@ -390,6 +405,11 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
       setCoins((c) => c + COINS_PER_TASK)
       setCorrect((c) => c + 1)
       markTaskDone(current.id)
+      // Уровень — единица выдачи: домашка задаёт «Аудирование A1» целиком, и
+      // «пройдено» там не событие, а доля (в A1 124 задания). Порог считает
+      // сервер, отсюда уходят только числа.
+      countUnitTowardsHomework('listening', level, level,
+        { done: getListeningDone(level).size, total: content?.length })
     } else {
       setWrong((w) => w + 1)
       if (!current._retry) {
@@ -440,7 +460,7 @@ export default function ListeningPage({ userLevel, userName, token, onNav, onPro
   if (blocked) {
     return (
       <LearningLayout userName={userName} userLevel={userLevel} active="practice" token={token} onNav={onNav} onProfile={onProfile}>
-        <PracticeLimitScreen limit={entitlement.limit} onBack={backToIntro} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
+        <PracticeLimitScreen onBuy={() => onNav?.('pricing')} limit={entitlement.limit} onBack={backToIntro} isDemoAccount={isDemoAccount} source={entitlement.source} sourceName={entitlement.sourceName} />
       </LearningLayout>
     )
   }

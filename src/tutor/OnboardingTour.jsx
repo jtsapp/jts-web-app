@@ -62,6 +62,20 @@ export function isTourSeen(key) {
 }
 
 /**
+ * Тумблер «туры не показывать сами». Ключ отметки о показе включает id профиля,
+ * а он приезжает с бэкенда — снаружи (e2e, поддержка) его не угадать, поэтому
+ * гасить туры оптом нужно чем-то, что от профиля не зависит. Кнопку «?» не
+ * трогает: по ней тур открывается всегда.
+ */
+function toursOff() {
+  try {
+    return localStorage.getItem('jts_tours_off') === '1'
+  } catch {
+    return false
+  }
+}
+
+/**
  * Тур экрана: сам открывается при первом заходе и открывается заново по кнопке «?».
  * Возвращает { open, start, finish } — при open рисуем <OnboardingTour>.
  */
@@ -70,7 +84,7 @@ export function useScreenTour(storageKey) {
   const armed = useRef(false)
 
   useEffect(() => {
-    if (armed.current || !storageKey) return
+    if (armed.current || !storageKey || toursOff()) return
     // Решаем ОДИН раз за монтирование: ключ включает id профиля, а тот приезжает
     // из /api/profile асинхронно — на смене device-id → user-<id> повторная
     // проверка открывала бы тур заново сразу после «Готово».
@@ -100,12 +114,16 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
   // высота вообще зависит от длины текста шага — поповер ложился на подсветку.
   const popRef = useRef(null)
   const [popSize, setPopSize] = useState(null)
+  // Показали ли хоть один шаг. Экран мог открыться пустым (домашних работ нет,
+  // расписание не загрузилось) — тогда тур пропускает все шаги подряд и обязан
+  // закрыться БЕЗ отметки: иначе он «пройден» молча и больше не выйдет никогда.
+  const shownRef = useRef(false)
   const step = steps[i]
   const selector = step?.selector
 
   const finish = () => {
     try {
-      if (storageKey) localStorage.setItem(storageKey, '1')
+      if (storageKey && shownRef.current) localStorage.setItem(storageKey, '1')
     } catch {
       /* localStorage недоступен — просто закрываем */
     }
@@ -122,20 +140,36 @@ export default function OnboardingTour({ steps, onFinish, storageKey }) {
       else finish()
       return undefined
     }
+    shownRef.current = true
     // Скроллим мгновенно и запираем прокрутку страницы: под туром она жила
     // своей жизнью — прожектор и поповер уезжали с подсвеченного элемента.
     el.scrollIntoView({ block: 'center', behavior: 'auto' })
     const prevOverflow = document.documentElement.style.overflow
     document.documentElement.style.overflow = 'hidden'
+    // Меряем цель не один раз, а следим за ней. Замер на монтировании врёт,
+    // когда элемент дорастает позже: картинка острова догружается, ряд чипов
+    // переносится во вторую строку по шрифту — прожектор оставался на старом
+    // месте и уезжал за экран. ResizeObserver ловит и саму цель, и перекладку
+    // страницы, слушатель scroll с capture — прокрутку внутренних контейнеров
+    // (у карты уровней скроллится не документ, и запирать её нечем).
+    const same = (a, b) =>
+      a && b && a.top === b.top && a.left === b.left && a.width === b.width && a.height === b.height
     const measure = () => {
       const node = document.querySelector(selector)
-      setRect(node ? node.getBoundingClientRect() : null)
+      const next = node ? node.getBoundingClientRect() : null
+      setRect((prev) => (same(prev, next) ? prev : next))
     }
     measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    ro.observe(document.documentElement)
     window.addEventListener('resize', measure)
+    window.addEventListener('scroll', measure, true)
     return () => {
       document.documentElement.style.overflow = prevOverflow
+      ro.disconnect()
       window.removeEventListener('resize', measure)
+      window.removeEventListener('scroll', measure, true)
     }
   }, [selector, i, steps.length])
 

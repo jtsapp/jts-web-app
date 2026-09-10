@@ -6,8 +6,9 @@ import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 import { useI18n } from '../i18n.jsx'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import { WORKBOOK_PROGRESS_EVENT } from '../practice/practiceKeys.js'
-import { readState, missKeys, nextLesson } from '../practice/workbook/workbookProgress.js'
+import { readState, missKeys, nextLesson, levelCounts, levelProgress } from '../practice/workbook/workbookProgress.js'
 import { markWorkbookLevelDone } from '../practice/workbooks/workbooksProgress.js'
+import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { stopAudio } from '../practice/workbook/voice.js'
 import WorkbookUnits, { LessonSheet } from './workbook/WorkbookUnits.jsx'
@@ -161,6 +162,25 @@ export default function WorkbookPage({
   )
   const nums = useMemo(() => Object.keys(counts).map(Number).sort((a, b) => a - b), [counts])
 
+  // Воркбук выдаётся уровнем целиком, и засчитать его можно только целиком:
+  // единица выдачи — уровень, а не отдельный экран. Порог — все экраны всех
+  // уроков (levelProgress === 100), а не факт открытия: markWorkbookLevelDone
+  // выше помечает уровень ОТКРЫТЫМ, и брать его за выполнение значило бы
+  // закрывать домашку одним заходом в раздел.
+  // Домашняя работа задаёт воркбук УРОВНЕМ, а «пройден» там не событие, а доля:
+  // в уровне десятки экранов. Поэтому отсылаем числа при каждом сдвиге, а
+  // засчитывает задание сервер по своему порогу — раньше отчёт уходил только на
+  // 100 %, и до самого конца преподаватель видел «не выполнено».
+  const levelCount = useMemo(
+    () => (Object.keys(counts).length > 0 ? levelCounts(level, counts, progress) : null),
+    [level, counts, progress]
+  )
+  useEffect(() => {
+    if (levelCount && levelCount.total > 0) {
+      countUnitTowardsHomework('workbooks', level, level, levelCount)
+    }
+  }, [levelCount, level])
+
   const goBack = () => {
     if (view.name === 'units') {
       onNav?.('practice')
@@ -182,6 +202,7 @@ export default function WorkbookPage({
     if (!entitlement.loading && !entitlement.allowed) {
       return (
         <PracticeLimitScreen
+          onBuy={() => onNav?.('pricing')}
           limit={entitlement.limit}
           onBack={() => onNav?.('practice')}
           isDemoAccount={isDemoAccount}

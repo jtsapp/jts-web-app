@@ -119,13 +119,19 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
     [meta, levels],
   )
 
-  // Прыжок с карточки Практики сразу в уровень/жанр (?screen=writing + payload).
-  const appliedTargetRef = useRef(false)
+  // Прыжок с карточки Практики и из домашней работы (?screen=writing + payload).
+  //
+  // Ключ, а не флаг: экран не перемонтируется при переходе с уже открытого
+  // «Письма», и вторая выданная тема подряд не открылась бы вовсе.
+  const appliedTargetRef = useRef(null)
   useEffect(() => {
-    if (appliedTargetRef.current || !initialTarget) return
-    appliedTargetRef.current = true
-    const level = WRITING_LEVELS.includes(initialTarget.level) ? initialTarget.level : null
-    if (!level) return
+    if (!initialTarget) return
+    // Уровень с бэкенда приходит как есть — сверка идёт точным совпадением.
+    const level = String(initialTarget.level || '').toLowerCase()
+    const key = `${level}:${initialTarget.genreId ?? ''}`
+    if (appliedTargetRef.current === key) return
+    appliedTargetRef.current = key
+    if (!WRITING_LEVELS.includes(level)) return
     loadLevel(level).then((data) => {
       if (!data) return
       if (initialTarget.genreId && data.seeds.some((s) => s.id === initialTarget.genreId)) {
@@ -214,6 +220,7 @@ export default function WritingPage({ userLevel, userName, token, initialTarget,
     if (!entitlement.loading && !entitlement.allowed) {
       return (
         <PracticeLimitScreen
+          onBuy={() => onNav?.('pricing')}
           limit={entitlement.limit}
           onBack={() => onNav?.('practice')}
           isDemoAccount={isDemoAccount}
