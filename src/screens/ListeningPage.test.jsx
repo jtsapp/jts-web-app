@@ -15,6 +15,9 @@ import { I18nProvider } from '../i18n.jsx'
 // (getUnreadNotificationCount) — без заглушки эти сетевые вызовы валят экран
 // (см. тот же приём в IeltsPage.test.jsx).
 vi.mock('../api.js', () => ({
+  // Экран тянет мост «Практика → домашка» (practiceHomework.js), а тот —
+  // markPracticeUnitDone: без заглушки мок падает на неизвестном экспорте.
+  markPracticeUnitDone: vi.fn(async () => ({ counted: 0, alreadyDone: 0 })),
   getUnreadNotificationCount: vi.fn(async () => 0),
   getBalance: vi.fn(async () => ({ coins: 0, streak: 0, streakActiveToday: false })),
 }))

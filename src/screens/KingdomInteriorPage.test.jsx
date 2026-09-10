@@ -12,6 +12,9 @@ const { TRAIL, DONE_CODES } = vi.hoisted(() => {
 })
 
 vi.mock('../api.js', () => ({
+  // Экран тянет мост «Практика → домашка» (practiceHomework.js), а тот —
+  // markPracticeUnitDone: без заглушки мок падает на неизвестном экспорте.
+  markPracticeUnitDone: vi.fn(async () => ({ counted: 0, alreadyDone: 0 })),
   // Оболочка рисует колокольчик уведомлений и баланс сайдбара — без заглушек
   // падает весь экран (см. LessonsPage.test.jsx/HomeworkPage.test.jsx).
   getUnreadNotificationCount: vi.fn(async () => 0),

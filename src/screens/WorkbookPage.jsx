@@ -6,7 +6,7 @@ import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 import { useI18n } from '../i18n.jsx'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import { WORKBOOK_PROGRESS_EVENT } from '../practice/practiceKeys.js'
-import { readState, missKeys, nextLesson, levelProgress } from '../practice/workbook/workbookProgress.js'
+import { readState, missKeys, nextLesson, levelCounts, levelProgress } from '../practice/workbook/workbookProgress.js'
 import { markWorkbookLevelDone } from '../practice/workbooks/workbooksProgress.js'
 import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
@@ -167,13 +167,19 @@ export default function WorkbookPage({
   // уроков (levelProgress === 100), а не факт открытия: markWorkbookLevelDone
   // выше помечает уровень ОТКРЫТЫМ, и брать его за выполнение значило бы
   // закрывать домашку одним заходом в раздел.
-  const levelDone = useMemo(
-    () => (Object.keys(counts).length > 0 && levelProgress(level, counts, progress) === 100),
+  // Домашняя работа задаёт воркбук УРОВНЕМ, а «пройден» там не событие, а доля:
+  // в уровне десятки экранов. Поэтому отсылаем числа при каждом сдвиге, а
+  // засчитывает задание сервер по своему порогу — раньше отчёт уходил только на
+  // 100 %, и до самого конца преподаватель видел «не выполнено».
+  const levelCount = useMemo(
+    () => (Object.keys(counts).length > 0 ? levelCounts(level, counts, progress) : null),
     [level, counts, progress]
   )
   useEffect(() => {
-    if (levelDone) countUnitTowardsHomework('workbooks', level, level)
-  }, [levelDone, level])
+    if (levelCount && levelCount.total > 0) {
+      countUnitTowardsHomework('workbooks', level, level, levelCount)
+    }
+  }, [levelCount, level])
 
   const goBack = () => {
     if (view.name === 'units') {

@@ -14,6 +14,7 @@ import {
   COINS_PER_TASK,
 } from '../practice/listening/engine.js'
 import { markTaskDone, getListeningDone, LISTENING_PROGRESS_EVENT } from '../practice/listening/listeningProgress.js'
+import { countUnitTowardsHomework } from '../practice/practiceHomework.js'
 import { recordSkill } from '../practice/skillStats.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
@@ -404,6 +405,11 @@ export default function ListeningPage({ userLevel, userName, token, initialTarge
       setCoins((c) => c + COINS_PER_TASK)
       setCorrect((c) => c + 1)
       markTaskDone(current.id)
+      // Уровень — единица выдачи: домашка задаёт «Аудирование A1» целиком, и
+      // «пройдено» там не событие, а доля (в A1 124 задания). Порог считает
+      // сервер, отсюда уходят только числа.
+      countUnitTowardsHomework('listening', level, level,
+        { done: getListeningDone(level).size, total: content?.length })
     } else {
       setWrong((w) => w + 1)
       if (!current._retry) {
