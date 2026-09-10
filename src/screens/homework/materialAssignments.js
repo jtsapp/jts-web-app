@@ -21,7 +21,10 @@ export function materialCard(a) {
   return {
     id: `m-${a.id}`,
     kind: 'material',
-    title: a.materialTitle,
+    // Задали одну карточку урока — она и есть название задания. «Unit 3» про
+    // одну карточку из тридцати не сообщает ученику ничего: он не поймёт, что
+    // именно ему задали, пока не откроет урок и не пролистает его целиком.
+    title: a.cardTitle || a.materialTitle,
     status: isMaterialGraded(a) ? 'COMPLETED' : 'ASSIGNED',
     dueDate: a.dueDate ?? null,
     grade: a.teacherScore ?? null,
@@ -32,4 +35,16 @@ export function materialCard(a) {
 /** Интерактив открывается через render-эндпоинт (с bridge-скриптом), остальное — прямой файл. */
 export function isInteractiveMaterial(a) {
   return a?.materialType === 'INTERACTIVE_HTML'
+}
+
+/**
+ * Назначена одна карточка живого урока, а не материал целиком.
+ *
+ * <p>Такое задание открывается НЕ файлом в новой вкладке, а самим уроком в
+ * кабинете: у карточки бывает аудио с относительным путём и картинки из
+ * словарной колоды того же урока — вне урока они не работают. Поэтому и
+ * выдаётся адрес, а не снимок.
+ */
+export function isLessonCard(a) {
+  return !!a?.cardId && a?.catalogLessonId != null
 }

@@ -52,3 +52,37 @@ test.describe('lesson workspace', () => {
     await expect(match.locator('.lw-match__left.is-correct, .lw-match__left.is-wrong')).toHaveCount(1)
   })
 })
+
+/**
+ * Карточка урока, заданная на дом.
+ *
+ * Диплинк `?card=<адрес>` — то же, чем открывает задание домашняя работа
+ * (App.jsx: handleNav('lesson-workspace', {catalogLessonId, cardId})), только
+ * без урока каталога: показательный урок экрана годится ровно так же и не
+ * требует ни токена, ни бэкенда. Проверяется вся проводка разом — адрес из URL,
+ * состояние App, проп экрана, переезд на шаг карточки и подсветка.
+ */
+test.describe('карточка урока, заданная на дом', () => {
+  // Адрес блока «Итог урока» — последний шаг показательного урока (s9).
+  // Считается по содержимому (src/lib/lessonCardId.js): правка этого блока
+  // адрес меняет, и тест об этом честно скажет.
+  const ИТОГ_УРОКА = 'cd55aa29a'
+
+  test('открывается шаг карточки, а не начало урока', async ({ page }) => {
+    await page.goto(`/?screen=lesson-workspace&card=${ИТОГ_УРОКА}`)
+    await expect(page.locator('[data-testid="lesson-workspace"]')).toBeVisible({ timeout: 20000 })
+
+    await expect(page.locator('.ls-tab--active')).toHaveText('Итог урока')
+    await expect(page.locator('.lw-q--live-here')).toHaveCount(1)
+  })
+
+  test('пропавшая карточка не подменяется соседней', async ({ page }) => {
+    // Карточку переписали — говорим прямо. Молчаливое начало урока читалось бы
+    // как «задание — вот это».
+    await page.goto('/?screen=lesson-workspace&card=cdeadbeef')
+    await expect(page.locator('[data-testid="lesson-workspace"]')).toBeVisible({ timeout: 20000 })
+
+    await expect(page.locator('.lw-sysbanner')).toContainText('в уроке его больше нет')
+    await expect(page.locator('.lw-q--live-here')).toHaveCount(0)
+  })
+})

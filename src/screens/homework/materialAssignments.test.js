@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { materialCard, isMaterialGraded, isInteractiveMaterial } from './materialAssignments.js'
+import { materialCard, isMaterialGraded, isInteractiveMaterial, isLessonCard } from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
 
 const assignment = (over = {}) => ({
@@ -52,3 +52,39 @@ describe('isMaterialGraded / isInteractiveMaterial', () => {
     expect(isInteractiveMaterial(assignment({ materialType: 'PDF' }))).toBe(false)
   })
 })
+
+/**
+ * Одна карточка живого урока вместо материала целиком.
+ *
+ * Раньше такого задания не существовало: с урока на дом уходили только вопросы,
+ * а карточку без них задать было нечем.
+ */
+describe('карточка живого урока', () => {
+  const карточка = (over = {}) => ({
+    id: 7, materialTitle: 'Unit 3', cardId: 'ce37fee00', catalogLessonId: 77,
+    cardTitle: 'Four seasons, one favourite', ...over,
+  })
+
+  it('заданием называется карточка, а не весь материал', () => {
+    expect(materialCard(карточка()).title).toBe('Four seasons, one favourite')
+  })
+
+  // Название карточки могло не сохраниться (старая выдача) — тогда лучше
+  // название материала, чем пустая строка в списке заданий.
+  it('без названия карточки остаётся название материала', () => {
+    expect(materialCard(карточка({ cardTitle: null })).title).toBe('Unit 3')
+  })
+
+  it('материал целиком по-прежнему называется собой', () => {
+    expect(materialCard({ id: 8, materialTitle: 'Unit 3' }).title).toBe('Unit 3')
+  })
+
+  it('карточку урока отличаем от обычного материала', () => {
+    expect(isLessonCard(карточка())).toBe(true)
+    expect(isLessonCard({ id: 8, materialTitle: 'Unit 3' })).toBe(false)
+    // Адрес без урока открыть нечем — это не карточка.
+    expect(isLessonCard(карточка({ catalogLessonId: null }))).toBe(false)
+    expect(isLessonCard(null)).toBe(false)
+  })
+})
+

@@ -230,7 +230,11 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                 <HomeworkList items={combined} selectedId={selectedId} onSelect={setSelectedId} />
               </div>
               {selected?.kind === 'material' ? (
-                <MaterialAssignmentDetail card={selected} token={token} />
+                <MaterialAssignmentDetail
+                  card={selected}
+                  token={token}
+                  onOpenCard={(target) => onNav?.('lesson-workspace', target)}
+                />
               ) : (
                 /* onOpenPractice получает готовый переход из карты разделов
                    (practiceNavTarget): «Чтение», «Письмо», шэдоуинг и воркбуки

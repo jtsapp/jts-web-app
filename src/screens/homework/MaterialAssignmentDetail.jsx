@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { startMaterialAssignment, materialAssignmentRenderUrl } from '../../api.js'
 import { homeworkStateKey } from './homeworkFormat.js'
-import { isInteractiveMaterial } from './materialAssignments.js'
+import { isInteractiveMaterial, isLessonCard } from './materialAssignments.js'
 
 /**
  * Задание с живого урока, открытое в «Домашней работе».
@@ -12,7 +12,7 @@ import { isInteractiveMaterial } from './materialAssignments.js'
  * сам через bridge-скрипт), а преподаватель ставит балл в админке. Экран
  * только открывает задание и показывает результат проверки.
  */
-export default function MaterialAssignmentDetail({ card, token }) {
+export default function MaterialAssignmentDetail({ card, token, onOpenCard }) {
   const { t, lang } = useI18n()
   const locale = lang || 'ru'
   const a = card.assignment
@@ -26,6 +26,13 @@ export default function MaterialAssignmentDetail({ card, token }) {
 
   const open = async () => {
     setError(null)
+    // Задана одна карточка живого урока — открываем сам урок в кабинете, а не
+    // файл в новой вкладке: у карточки бывает аудио с относительным путём и
+    // картинки из словарной колоды того же урока, вне урока они не работают.
+    if (isLessonCard(a)) {
+      onOpenCard?.({ catalogLessonId: a.catalogLessonId, cardId: a.cardId })
+      return
+    }
     // Обычный файл (PDF/видео/ссылка) открывается как есть. Интерактив идёт
     // через render-эндпоинт: там в страницу внедряется bridge-скрипт, а для
     // материала с проверкой сначала стартует сессия — иначе ответы ученика

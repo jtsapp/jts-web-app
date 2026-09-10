@@ -43,10 +43,10 @@ vi.mock('../api.js', () => ({
 import HomeworkPage from './HomeworkPage.jsx'
 import * as api from '../api.js'
 
-function renderPage() {
+function renderPage(props = {}) {
   return render(
     <I18nProvider>
-      <HomeworkPage token="TOK" userName="Сакен" onNav={() => {}} onProfile={() => {}} />
+      <HomeworkPage token="TOK" userName="Сакен" onNav={() => {}} onProfile={() => {}} {...props} />
     </I18nProvider>
   )
 }
@@ -193,6 +193,29 @@ describe('HomeworkPage', () => {
     expect(opened).toHaveLength(1)
     expect(opened[0]).toContain('/student/materials/12/render')
     expect(opened[0]).toContain('sessionId=77')
+    vi.unstubAllGlobals()
+  })
+
+  it('карточка урока открывает сам урок, а не файл в новой вкладке', async () => {
+    // Преподаватель задал одну карточку живого урока (⋮ → «Добавить в домашнее
+    // задание»), и в выдаче лежит её адрес. Открывать файл материала тут
+    // нечего: у карточки бывает аудио с относительным путём и картинки из
+    // словарной колоды того же урока — вне урока они молча не работают.
+    api.getMyMaterialAssignments.mockResolvedValueOnce([{
+      ...MATERIAL, catalogLessonId: 314, cardId: 'cd55aa29a', cardTitle: 'Итог урока',
+    }])
+    const opened = []
+    vi.stubGlobal('open', (url) => { opened.push(url); return null })
+    const onNav = vi.fn()
+
+    renderPage({ onNav })
+    // Заголовок карточки, а не название материала: задали именно её.
+    fireEvent.click((await screen.findAllByText('Итог урока'))[0])
+    fireEvent.click(await screen.findByRole('button', { name: 'Открыть задание' }))
+
+    expect(onNav).toHaveBeenCalledWith('lesson-workspace', { catalogLessonId: 314, cardId: 'cd55aa29a' })
+    expect(opened).toHaveLength(0)
+    expect(api.startMaterialAssignment).not.toHaveBeenCalled()
     vi.unstubAllGlobals()
   })
 
