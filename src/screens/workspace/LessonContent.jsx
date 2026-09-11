@@ -124,7 +124,7 @@ export function practiceCardStats(step, checkedKeys, hiddenBlocks) {
 
 /** Info-карточка с word-bank: кнопка «Проверить» и счёт, как в HTML-курсе. */
 function InfoWordBankCard({
-  group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, openWord, showAnswerKey = true,
+  group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, openWord, showAnswerKey = true,
 }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
@@ -156,7 +156,7 @@ function InfoWordBankCard({
   return (
     <div
       ref={cardRef}
-      className={`lw-card lw-info${isLiveHere(anchorId, liveQuestionId) ? ' lw-q--live-here' : ''}`}
+      className={`lw-card lw-info${isLiveHere(anchorId, liveQuestionId) || isLiveHere(anchorId, focusCardId) ? ' lw-q--live-here' : ''}`}
       data-question-id={anchorId}
       data-group-index={group._groupIndex}
     >
@@ -207,13 +207,19 @@ function InfoWordBankCard({
 // последнем вопросе шага, пока ученик уже читает материал дальше. Сам
 // ученик liveQuestionId не получает — он не следует за собой.
 //
+// `focusCardId` — карточка, на которую ученика НАВЕЛИ: её задали на дом, и он
+// пришёл по ссылке (`block-<индекс>`, см. lessonCardTarget.js). Отдельный проп,
+// а не второе значение `liveQuestionId`, потому что смысл другой: подъехать и
+// пометить — да, но «Подсвечено у учителя» здесь не про что. Указки
+// преподавателя в домашке нет вовсе, и бейдж соврал бы.
+//
 // `hiddenBlocks` — карточки, которые преподаватель скрыл поштучно (множество
 // ключей, см. hiddenBlockKeys в visibleSteps.js). Пропускаются на рендере, а не
 // вырезаются из `step.blocks`: `blockIndex` — это позиция в сыром массиве, и
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys, hiddenBlocks)
   const { lang } = useI18n()
@@ -227,8 +233,15 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
   // ждём, пока смотрящий сам найдёт нужную карточку в потоке. Без задержки
   // элемента ещё может не быть в DOM (смена шага и первого live-события
   // приходят почти одновременно).
+  // Подъезжаем и к указке преподавателя, и к заданной карточке: наведение одно,
+  // источников два.
+  const focusTarget = liveQuestionId ?? focusCardId ?? null
+  // Пометка на карточке — от обоих источников; а бейдж «Подсвечено у учителя»
+  // ниже остаётся только за указкой: в домашке указки нет вовсе, и он соврал бы.
+  const focusedHere = (anchorId) =>
+    isLiveHere(anchorId, liveQuestionId) || isLiveHere(anchorId, focusCardId)
   useEffect(() => {
-    if (liveQuestionId == null) return
+    if (focusTarget == null) return
     const t = setTimeout(() => {
       // instant, не smooth: smooth scrollIntoView внутри скроллящегося предка
       // ненадёжен (проверено живьём — анимация иногда просто не запускается).
@@ -237,11 +250,11 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
       // встаёт серединой в центр кадра, и формулировка задания уезжает за
       // верхний край. Отступ даёт `scroll-margin-top` в styles.css.
       document
-        .querySelector(`[data-question-id="${CSS.escape(String(liveQuestionId))}"]`)
+        .querySelector(`[data-question-id="${CSS.escape(String(focusTarget))}"]`)
         ?.scrollIntoView({ behavior: 'instant', block: 'start' })
     }, 60)
     return () => clearTimeout(t)
-  }, [liveQuestionId, liveFocusNonce, step?.id])
+  }, [focusTarget, liveFocusNonce, step?.id])
 
   /* Отрывки внутри дорожки. Конец медиа-фрагмента (`…mp3#t=3.77,19.74`) браузеры
      не соблюдают: перематывают на начало и играют до конца файла. Слушатель один
@@ -329,6 +342,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               onCheck={onCheck}
               readOnly={readOnly}
               liveQuestionId={liveQuestionId}
+              focusCardId={focusCardId}
               openWord={openWord}
               showAnswerKey={showAnswerKey}
             />
@@ -340,7 +354,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
           const anchorId = `block-${group.blockIndex}`
           return (
             <div
-              className={`lw-card lw-info${isLiveHere(anchorId, liveQuestionId) ? ' lw-q--live-here' : ''}`}
+              className={`lw-card lw-info${focusedHere(anchorId) ? ' lw-q--live-here' : ''}`}
               key={i}
               data-question-id={anchorId}
             >
@@ -364,7 +378,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
             <div
               key={i}
               data-question-id={anchorId}
-              className={isLiveHere(anchorId, liveQuestionId) ? 'lw-q--live-here' : undefined}
+              className={focusedHere(anchorId) ? 'lw-q--live-here' : undefined}
             >
               <PracticeBlock
                 block={block}
@@ -404,7 +418,7 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
           <div
             key={i}
             data-question-id={anchorId}
-            className={isLiveHere(anchorId, liveQuestionId) ? 'lw-q--live-here' : undefined}
+            className={focusedHere(anchorId) ? 'lw-q--live-here' : undefined}
           >
             <Block
               block={block}
