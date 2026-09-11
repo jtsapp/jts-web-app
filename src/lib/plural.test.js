@@ -21,10 +21,34 @@ describe('pluralForm', () => {
     expect(pluralForm(21)).toBe('one')
   })
 
-  it('английский — две формы, казахский — одна', () => {
+  it('ноль и сотни — по правилам CLDR, а не по последней цифре числа', () => {
+    expect(pluralForm(0)).toBe('many')
+    expect(pluralForm(101)).toBe('one')
+    expect(pluralForm(111)).toBe('many')
+    expect(pluralForm(122)).toBe('few')
+  })
+
+  it('английский и казахский — две формы: ровно один и всё остальное', () => {
     expect(pluralForm(1, 'en')).toBe('one')
     expect(pluralForm(2, 'en')).toBe('many')
-    expect(pluralForm(1, 'kk')).toBe('many')
+    expect(pluralForm(0, 'en')).toBe('many')
+    expect(pluralForm(21, 'en')).toBe('many')
+    // Существительное после числа по-казахски не меняется, но «один» свою
+    // форму получает: во фразе «Алғашқы материалды» число выпадает, а при
+    // двух и больше — стоит («Алғашқы 3 материалды»).
+    expect(pluralForm(1, 'kk')).toBe('one')
+    expect(pluralForm(2, 'kk')).toBe('many')
+    expect(pluralForm(21, 'kk')).toBe('many')
+  })
+
+  it('незнакомый язык считается по-русски — как и словарь, откатывающийся на ru', () => {
+    expect(pluralForm(2, 'de')).toBe('few')
+    expect(pluralForm(5, undefined)).toBe('many')
+  })
+
+  it('знак и дробная часть не меняют формы', () => {
+    expect(pluralForm(-2)).toBe('few')
+    expect(pluralForm(1.5)).toBe('one')
   })
 })
 
