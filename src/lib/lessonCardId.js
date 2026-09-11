@@ -48,6 +48,27 @@ function plainText(html) {
     .trim()
 }
 
+/**
+ * Содержимое блока незнакомого типа — без служебного.
+ *
+ * `id` порядковый, а путь к аудио ОТНОСИТЕЛЬНЫЙ и абсолютизируется здесь, в
+ * кабинете, при загрузке урока (rewriteMediaUrls) — в админке он таким и
+ * остаётся. Оставь мы их в подписи, две копии считали бы РАЗНЫЕ адреса на одном
+ * и том же блоке, и задание перестало бы находиться — молча. Ключи обходим по
+ * Object.keys, а не rest-деструктуризацией: порядок обхода обязан совпадать с
+ * копией в админке.
+ */
+const SERVICE_KEYS = new Set(['id', 'audio'])
+
+function contentJson(block) {
+  const source = block ?? {}
+  const content = {}
+  for (const key of Object.keys(source)) {
+    if (!SERVICE_KEYS.has(key)) content[key] = source[key]
+  }
+  return JSON.stringify(content)
+}
+
 /** Подпись вопроса: без его собственного id — тот порядковый и умеет сталкиваться. */
 function questionSignature(q) {
   const parts = [q.type, plainText(String(q.prompt ?? ''))]
@@ -102,8 +123,10 @@ export function cardSignature(block) {
       ].join('\x1e')
     default:
       // Незнакомый тип адрес всё равно получает: без него карточку нельзя ни
-      // выдать, ни найти.
-      return [...head, plainText(JSON.stringify(block))].join('\x1e')
+      // выдать, ни найти. И это не теория: ⋮ в админке стоит на КАЖДОЙ
+      // карточке, включая типы, которых ни один из двух экранов не рисует
+      // (theory и banner из старых выгрузок).
+      return [...head, plainText(contentJson(block))].join('\x1e')
   }
 }
 

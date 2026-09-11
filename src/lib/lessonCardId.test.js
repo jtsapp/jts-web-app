@@ -31,6 +31,11 @@ export const FIXTURE = {
           questions: [{ id: 's1-c0', type: 'pick', prompt: 'I look forward to…', options: ['spring', 'summer'] }],
         },
         { type: 'vocab', cards: [{ word: 'season', translationRu: 'время года' }] },
+        // Незнакомый обеим сторонам тип: ⋮ стоит и на нём, значит и адрес у него
+        // должен получаться одинаковый. `id` и `audio` в подпись не входят —
+        // кабинет абсолютизирует путь к аудио при загрузке урока, админка нет.
+        { type: 'theory', id: 's1-t0', title: 'Правило', text: 'Present Simple: привычки.',
+          audio: { src: 'audio/rule.mp3' } },
       ],
     },
     {
@@ -50,6 +55,7 @@ export const EXPECTED = [
   'ce37fee00', // s1 / info
   'c8aa84c76', // s1 / practice
   'cc9a9577a', // s1 / vocab
+  'cad401560', // s1 / theory — незнакомый тип
   'c2e34941a', // s2 / checklist
   'cb1602305', // s2 / speaking
 ]
@@ -97,6 +103,29 @@ describe('Адрес карточки', () => {
     expect(первый).not.toBe(второй)
   })
 
+  /**
+   * У незнакомого типа подпись считается по всему содержимому — и служебное
+   * обязано из неё выпасть. Путь к аудио относительный, и абсолютизирует его
+   * ТОЛЬКО кабинет (rewriteMediaUrls при загрузке урока); собственный id блока
+   * порядковый. Войди они в подпись — две копии считали бы разные адреса на
+   * одном блоке, и задание перестало бы находиться, молча.
+   */
+  it('у незнакомого типа служебное в адрес не входит', () => {
+    const было = { steps: [{ id: 's', blocks: [
+      { type: 'theory', id: 's1-t0', title: 'Правило', text: 'Текст', audio: { src: 'audio/rule.mp3' } },
+    ] }] }
+    const стало = { steps: [{ id: 's', blocks: [
+      { type: 'theory', id: 's1-t9', title: 'Правило', text: 'Текст', audio: { src: 'https://files/a2/L01/audio/rule.mp3' } },
+    ] }] }
+    expect(адреса(было)).toEqual(адреса(стало))
+  })
+
+  it('а содержимое незнакомого типа — входит', () => {
+    const было = { steps: [{ id: 's', blocks: [{ type: 'theory', text: 'Правило A' }] }] }
+    const стало = { steps: [{ id: 's', blocks: [{ type: 'theory', text: 'Правило B' }] }] }
+    expect(адреса(было)[0]).not.toBe(адреса(стало)[0])
+  })
+
   it('пустой урок адресов не даёт и не падает', () => {
     expect(адреса({ steps: [] })).toEqual([])
     expect(адреса({})).toEqual([])
@@ -105,7 +134,7 @@ describe('Адрес карточки', () => {
 
 describe('Поиск карточки по адресу', () => {
   it('находит карточку и её место на момент открытия', () => {
-    const найдено = findCardById(FIXTURE, EXPECTED[4])
+    const найдено = findCardById(FIXTURE, EXPECTED[5])
     expect(найдено?.stepId).toBe('s2')
     expect(найдено?.blockIndex).toBe(1)
     expect(найдено?.block.type).toBe('speaking')

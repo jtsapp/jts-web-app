@@ -78,7 +78,8 @@ import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
-import { rememberPendingScreen, consumePendingScreen, clearPendingScreen } from './lib/pendingScreen.js'
+import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
+import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
@@ -893,7 +894,12 @@ export default function App() {
     // Аккаунт класса важнее любой ссылки: кабинет ему закрыт весь, кроме
     // класса и урока (BOOTH_SCREENS выше), и страж всё равно увёл бы его назад.
     if (boothAccount) return home
-    return pending && persistsInUrl(pending) ? pending : home
+    return pendingScreenAfterLogin(pending, {
+      persists: persistsInUrl,
+      // Урок с карточкой открывается не по имени экрана, а по прочитанному из
+      // ссылки адресу — см. pendingScreenAfterLogin.
+      hasCardAddress: Boolean(workspaceCardId) && liveWorkspaceId != null,
+    }) ?? home
   }
 
   function handleLogout() {
@@ -973,30 +979,17 @@ export default function App() {
   // на главную).
   useEffect(() => {
     if (restoring) return
-    const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
-    // Карточка урока, заданная на дом: на неё ведёт ссылка из домашней работы,
-    // и F5 не должен ронять ученика на главную. В адрес едет ПОЛНЫЙ путь — урок
-    // каталога плюс карточка; без обоих экран открылся бы пустым, ровно поэтому
-    // lesson-workspace и не входит в PERSISTABLE_SCREENS.
-    const isCardWorkspace = screen === 'lesson-workspace' && Boolean(workspaceCardId) && liveWorkspaceId != null
-    // Служебные параметры пишутся и стираются вместе со ?screen=: адрес без
-    // своего id — это тот же пустой экран, только с видом рабочей ссылки.
-    const want = { screen: null, live: null, catalog: null, card: null }
-    if (persistsInUrl(screen) || isLiveLesson || isCardWorkspace) {
-      want.screen = screen
-      if (isLiveLesson) want.live = String(liveLessonId)
-      if (isCardWorkspace) {
-        want.catalog = String(liveWorkspaceId)
-        want.card = workspaceCardId
-      }
-    }
+    // Само решение — чистой функцией в lib/screenUrlParams.js: там оно
+    // проверяется тестами, а здесь остаётся только запись.
     const url = new URL(window.location.href)
-    if (Object.entries(want).every(([key, value]) => url.searchParams.get(key) === value)) return
-    for (const [key, value] of Object.entries(want)) {
-      if (value == null) url.searchParams.delete(key)
-      else url.searchParams.set(key, value)
-    }
-    window.history.replaceState(null, '', url)
+    const changed = applyScreenUrlParams(url, screenUrlParams({
+      screen,
+      persists: persistsInUrl(screen),
+      liveLessonId,
+      liveWorkspaceId,
+      workspaceCardId,
+    }))
+    if (changed) window.history.replaceState(null, '', url)
   }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId])
 
   // «Известный урок» экрана класса — одно выражение на оба источника, а не два

@@ -238,6 +238,33 @@ describe('карточка урока, заданная на дом', () => {
     expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Talk')
   })
 
+  /**
+   * Бейдж «Подсвечено у учителя» — про указку преподавателя в живом уроке.
+   * В домашке указки нет вовсе, и на карточке он соврал бы. А задать карточкой
+   * можно и блок practice: в нём бывают вопросы, которых окно выдачи не берёт
+   * (match/order/multi/pick), и тогда «проверяемых заданий» у него ноль.
+   */
+  it('заданная карточка не притворяется указкой преподавателя', async () => {
+    const СПРАКТИКОЙ = {
+      id: 8,
+      title: 'Seasons',
+      steps: [{
+        id: 's1', order: 1, title: 'Read',
+        blocks: [{
+          type: 'practice', title: 'Сопоставь',
+          questions: [{ id: 'q1', type: 'match', prompt: 'Пары', pairs: [{ left: 'a', right: 'b' }] }],
+        }],
+      }],
+    }
+    const адрес = lessonCardIds(СПРАКТИКОЙ).get(СПРАКТИКОЙ.steps[0].blocks[0])
+    const { container } = show(async () => СПРАКТИКОЙ, { catalogLessonId: 8, cardId: адрес })
+
+    // Подъехали и пометили.
+    await waitFor(() => expect(container.querySelector('.lw-q--live-here')).toBeTruthy())
+    // Но бейджа указки нет.
+    expect(container.textContent).not.toContain('Подсвечено у учителя')
+  })
+
   it('карточку переписали — говорим прямо, а не открываем соседнюю', async () => {
     // Молчаливое открытие начала урока читалось бы как «задание — вот это».
     const { container } = show(props.loadLesson, { ...props, cardId: 'cdeadbeef' })

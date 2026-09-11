@@ -417,11 +417,12 @@ export default function LessonWorkspacePage({
                 token={token}
                 source={lesson?.title}
                 catalogLessonId={catalogLessonId}
-                /* Не «где сейчас ученик», а «сюда смотреть»: тем же пропом
-                   живой урок наводит ученика на карточку в режиме следования
-                   (LiveLessonPage, focusTargetId). Третий механизм подъезда
-                   заводить незачем — подсветка и скролл там уже решены. */
-                liveQuestionId={target?.anchorId ?? null}
+                /* Наведение на заданную карточку — своим пропом, не
+                   `liveQuestionId`. Подъезд и пометка у них общие, а вот бейдж
+                   «Подсвечено у учителя» — только у указки преподавателя:
+                   в домашке указки нет вовсе, и на карточке practice с
+                   непроверяемыми вопросами он соврал бы ученику. */
+                focusCardId={target?.anchorId ?? null}
               />
               <DocNav steps={lesson.steps} currentId={docStep?.id} onGo={goDocStep} />
             </div>
