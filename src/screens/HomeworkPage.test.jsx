@@ -35,8 +35,6 @@ vi.mock('../api.js', () => ({
   saveHomeworkAnswer: vi.fn(async () => ASSIGNMENT),
   // Задания с живых уроков (назначенные материалы) — по умолчанию их нет.
   getMyMaterialAssignments: vi.fn(async () => []),
-  attachMaterialAnswer: vi.fn(async () => ({})),
-  removeMaterialAnswer: vi.fn(async () => ({})),
   startMaterialAssignment: vi.fn(async () => ({ id: 77 })),
   materialAssignmentRenderUrl: vi.fn((materialId, assignmentId, token, sessionId) =>
     `https://api.example/student/materials/${materialId}/render?assignmentId=${assignmentId}&sessionId=${sessionId}`),
@@ -45,10 +43,10 @@ vi.mock('../api.js', () => ({
 import HomeworkPage from './HomeworkPage.jsx'
 import * as api from '../api.js'
 
-function renderPage(props = {}) {
+function renderPage() {
   return render(
     <I18nProvider>
-      <HomeworkPage token="TOK" userName="Сакен" onNav={() => {}} onProfile={() => {}} {...props} />
+      <HomeworkPage token="TOK" userName="Сакен" onNav={() => {}} onProfile={() => {}} />
     </I18nProvider>
   )
 }
@@ -196,64 +194,6 @@ describe('HomeworkPage', () => {
     expect(opened[0]).toContain('/student/materials/12/render')
     expect(opened[0]).toContain('sessionId=77')
     vi.unstubAllGlobals()
-  })
-
-  it('карточка урока открывает сам урок, а не файл в новой вкладке', async () => {
-    // Преподаватель задал одну карточку живого урока (⋮ → «Добавить в домашнее
-    // задание»), и в выдаче лежит её адрес. Открывать файл материала тут
-    // нечего: у карточки бывает аудио с относительным путём и картинки из
-    // словарной колоды того же урока — вне урока они молча не работают.
-    api.getMyMaterialAssignments.mockResolvedValueOnce([{
-      ...MATERIAL, catalogLessonId: 314, cardId: 'cd55aa29a', cardTitle: 'Итог урока',
-    }])
-    const opened = []
-    vi.stubGlobal('open', (url) => { opened.push(url); return null })
-    const onNav = vi.fn()
-
-    renderPage({ onNav })
-    // Заголовок карточки, а не название материала: задали именно её.
-    fireEvent.click((await screen.findAllByText('Итог урока'))[0])
-    fireEvent.click(await screen.findByRole('button', { name: 'Открыть задание' }))
-
-    expect(onNav).toHaveBeenCalledWith('lesson-workspace', { catalogLessonId: 314, cardId: 'cd55aa29a' })
-    expect(opened).toHaveLength(0)
-    expect(api.startMaterialAssignment).not.toHaveBeenCalled()
-    vi.unstubAllGlobals()
-  })
-
-  /**
-   * Карточку урока ученик закрывает ВЛОЖЕНИЕМ: проверяемых заданий в ней нет,
-   * сессии она не заводит, а срок выдача получает по умолчанию — без файла
-   * такая работа краснела бы просроченной навсегда.
-   */
-  it('к карточке урока можно приложить файл, и он уходит на её назначение', async () => {
-    const КАРТОЧКА = { ...MATERIAL, catalogLessonId: 314, cardId: 'cad401560', cardTitle: 'Итог урока', files: [] }
-    api.getMyMaterialAssignments.mockResolvedValueOnce([КАРТОЧКА])
-    api.uploadMedia.mockResolvedValueOnce({ url: 'https://files/answer.pdf' })
-    api.attachMaterialAnswer.mockResolvedValueOnce({
-      ...КАРТОЧКА, files: [{ id: 77, fileName: 'answer.pdf', url: 'https://files/answer.pdf' }],
-    })
-
-    const { container } = renderPage()
-    fireEvent.click((await screen.findAllByText('Итог урока'))[0])
-    pickFile(container, file('answer.pdf', 'application/pdf'))
-
-    await waitFor(() => expect(api.attachMaterialAnswer).toHaveBeenCalledWith(
-      'TOK', 5, 'answer.pdf', 'https://files/answer.pdf'))
-    // Ответ сервера чинит карточку на месте: файл виден, просрочки больше нет.
-    expect(await screen.findByText('answer.pdf')).toBeTruthy()
-  })
-
-  it('не тот формат до сервера не доходит', async () => {
-    const КАРТОЧКА = { ...MATERIAL, catalogLessonId: 314, cardId: 'cad401560', cardTitle: 'Итог урока', files: [] }
-    api.getMyMaterialAssignments.mockResolvedValueOnce([КАРТОЧКА])
-
-    const { container } = renderPage()
-    fireEvent.click((await screen.findAllByText('Итог урока'))[0])
-    pickFile(container, file('answer.zip', 'application/zip'))
-
-    expect(await screen.findByText(/не тот формат/)).toBeTruthy()
-    expect(api.uploadMedia).not.toHaveBeenCalled()
   })
 
   it('падение списка назначений не ломает обычную домашку', async () => {

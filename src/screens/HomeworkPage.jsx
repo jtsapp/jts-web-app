@@ -83,16 +83,6 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
     setItems((list) => list.map((hw) => (hw.id === updated.id ? updated : hw)))
   }, [])
 
-  // То же для назначенного материала: он живёт в своём состоянии, и общий
-  // replace его не чинит — id у карточки материала строковый («m-7»), а в
-  // items лежат числовые id домашних работ. Ответ сервера — уже свежее
-  // назначение, приводим его к карточке тем же materialCard.
-  const replaceMaterial = useCallback((assignment) => {
-    if (!assignment?.id) return
-    const card = materialCard(assignment)
-    setMaterials((list) => list.map((item) => (item.id === card.id ? card : item)))
-  }, [])
-
   // Работу отменили целиком, пока ученик был на её экране. Сервер отвечает 410
   // (см. GoneException на бэкенде) — по нему и отличаем: под общим отказом это
   // было неотличимо от нехватки прав, экран показывал «не удалось отправить», и
@@ -240,12 +230,7 @@ export default function HomeworkPage({ userLevel = 'A1', userName, token, onNav,
                 <HomeworkList items={combined} selectedId={selectedId} onSelect={setSelectedId} />
               </div>
               {selected?.kind === 'material' ? (
-                <MaterialAssignmentDetail
-                  card={selected}
-                  token={token}
-                  onOpenCard={(target) => onNav?.('lesson-workspace', target)}
-                  onSaved={replaceMaterial}
-                />
+                <MaterialAssignmentDetail card={selected} token={token} />
               ) : (
                 /* onOpenPractice получает готовый переход из карты разделов
                    (practiceNavTarget): «Чтение», «Письмо», шэдоуинг и воркбуки

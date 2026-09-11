@@ -47,51 +47,23 @@ describe('zip — свой писатель архива', () => {
     expect(unzipSync(zip)).toEqual({})
   })
 
-  /**
-   * Свой unzipSync мог бы «понимать» собственные ошибки, поэтому итог проверяем
-   * ЧУЖИМ кодом — тем самым, каким архив откроет бэкенд.
-   *
-   * Распаковщик выбираем по тому, что есть на машине. Раньше здесь был жёстко
-   * прописан `powershell`, и тест падал везде, кроме Windows: на macOS и в CI
-   * он краснел «command not found» — то есть не проверял ничего и вдобавок не
-   * давал завести стадию тестов в пайплайне.
-   */
-  const распаковщики = [
-    // zipfile из стандартной библиотеки Python — строгая независимая реализация.
-    { cmd: 'python3', args: (file) => ['-c',
-      'import sys,zipfile\n' +
-      'z=zipfile.ZipFile(sys.argv[1])\n' +
-      'n=z.namelist()[0]\n' +
-      'sys.stdout.write(n + "|" + z.read(n).decode())', file] },
-    { cmd: 'unzip', args: (file) => ['-p', file, 'yellow/index.json'], prefix: 'yellow/index.json|' },
-    { cmd: 'powershell', args: (file) => ['-NoProfile', '-Command',
-      `Add-Type -A System.IO.Compression.FileSystem;` +
-      `$z=[IO.Compression.ZipFile]::OpenRead('${file.replace(/\\/g, '\\\\')}');` +
-      `$e=$z.Entries[0];$r=New-Object IO.StreamReader($e.Open());` +
-      `Write-Output ($e.FullName + '|' + $r.ReadToEnd());$z.Dispose()`] },
-  ]
-
-  /** Первый распаковщик, который вообще есть на этой машине. */
-  const доступный = распаковщики.find((u) => {
-    try {
-      execFileSync(process.platform === 'win32' ? 'where' : 'which', [u.cmd], { stdio: 'ignore' })
-      return true
-    } catch {
-      return false
-    }
-  })
-
   it('архив распаковывается системным распаковщиком, а не только своим', () => {
-    // Молчаливого пропуска быть не должно: если чужого распаковщика нет вовсе,
-    // проверка не состоялась, и знать об этом надо.
-    expect(доступный).toBeTruthy()
-
+    // Свой unzipSync мог бы «понимать» собственные ошибки, поэтому итог
+    // проверяем чужим кодом — тем самым, каким его откроет бэкенд.
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zip-test-'))
     const file = path.join(dir, 'a.zip')
     fs.writeFileSync(file, zipSync([{ name: 'yellow/index.json', data: '{"ok":true}' }]))
     try {
-      const out = execFileSync(доступный.cmd, доступный.args(file), { encoding: 'utf8' }).trim()
-      expect((доступный.prefix ?? '') + out).toBe('yellow/index.json|{"ok":true}')
+      const out = execFileSync(
+        'powershell',
+        ['-NoProfile', '-Command',
+         `Add-Type -A System.IO.Compression.FileSystem;` +
+         `$z=[IO.Compression.ZipFile]::OpenRead('${file.replace(/\\/g, '\\\\')}');` +
+         `$e=$z.Entries[0];$r=New-Object IO.StreamReader($e.Open());` +
+         `Write-Output ($e.FullName + '|' + $r.ReadToEnd());$z.Dispose()`],
+        { encoding: 'utf8' },
+      ).trim()
+      expect(out).toBe('yellow/index.json|{"ok":true}')
     } finally {
       fs.rmSync(dir, { recursive: true, force: true })
     }
