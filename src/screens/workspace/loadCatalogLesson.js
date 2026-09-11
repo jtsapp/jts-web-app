@@ -6,12 +6,7 @@
 // рендер в скрытом iframe и до 4 с ожидания на каждое открытие, с результатом,
 // зависящим от скорости машины. Теперь это стоит один GET.
 import { getCourseCatalogLessonContent } from '../../api.js'
-import { rewriteMediaUrls } from './extract/rewriteMediaUrls.js'
-import { hoistSelectQuestions } from './hoistSelectQuestions.js'
-import { hoistOrderQuestions } from './hoistOrderQuestions.js'
-import { hoistChoiceOptions } from './hoistChoiceOptions.js'
-import { foldOrphanAudioSteps } from './foldOrphanAudioSteps.js'
-import { hoistStepLeads } from './hoistStepLead.js'
+import { applyLessonHoists } from './lessonPipeline.js'
 
 // Кэш по id урока: содержимое не меняется до перерегистрации уровня.
 const cache = new Map()
@@ -34,17 +29,10 @@ export async function loadCatalogLesson(id, token) {
       return material
     }
 
-    // Медиа внутри info-блоков лежит относительно файла урока, а не API.
-    // Select / order, оставшиеся сырым HTML в старом content_json, поднимаем в
-    // настоящие practice-вопросы — иначе чипы на экране не кликаются.
-    const lesson = hoistChoiceOptions(
-      hoistOrderQuestions(hoistSelectQuestions(rewriteMediaUrls(stored.content, stored.fileUrl))),
-    )
+    // Конвейер подъёмов — общий с админкой и стадия в стадию тот же, см.
+    // lessonPipeline.js: по нему считается и id вопросов, и адрес карточки.
+    const lesson = applyLessonHoists(stored.content, stored.fileUrl)
     if (!lesson.title && stored.title) lesson.title = stored.title
-    // Хвостовой «Audio» из старой конвертации — в Practice/Listening, не отдельным шагом.
-    if (Array.isArray(lesson.steps)) {
-      lesson.steps = hoistStepLeads(foldOrphanAudioSteps(lesson.steps))
-    }
 
     cache.set(id, lesson)
     return lesson

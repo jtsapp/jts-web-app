@@ -24,5 +24,8 @@ export default {
     // node_modules, и vitest собирал тесты чужих пакетов — 1273 файла из .next
     // и 424 «падения», к коду проекта отношения не имеющих.
     exclude: ['tests/**/*.spec.js', '**/node_modules/**', '.next/**'],
+    // На Node 25 глобальный localStorage рантайма перекрывает хранилище jsdom и
+    // роняет 208 тестов. Почему не флагом Node — в самом файле.
+    setupFiles: ['./vitest.setup.js'],
   },
 }
