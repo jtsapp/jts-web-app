@@ -95,9 +95,41 @@ describe('loadCatalogLesson', () => {
   })
 
   it('returns null when the request fails', async () => {
-    vi.mocked(getCourseCatalogLessonContent).mockRejectedValue(new Error('403'))
+    vi.mocked(getCourseCatalogLessonContent).mockRejectedValue(
+      Object.assign(new Error('Ошибка сервера (500)'), { status: 500 }),
+    )
 
     expect(await loadCatalogLesson(nextId, 'token')).toBeNull()
+  })
+
+  it('returns null when there is no connection at all', async () => {
+    // authGet бросает сетевую осечку без кода — это сбой, а не отказ.
+    vi.mocked(getCourseCatalogLessonContent).mockRejectedValue(new Error('Нет связи с сервером.'))
+
+    expect(await loadCatalogLesson(nextId, 'token')).toBeNull()
+  })
+
+  it('passes a 403 through: the lesson is closed to this student, not broken', async () => {
+    // Отдельный курс без выдачи или выдачу отозвали после того, как урок задали
+    // на дом. Проглоти загрузчик отказ в null — экран звал бы «попробовать ещё
+    // раз», а открывает такой урок только менеджер.
+    vi.mocked(getCourseCatalogLessonContent).mockRejectedValue(
+      Object.assign(new Error('Ошибка сервера (403)'), { status: 403 }),
+    )
+
+    await expect(loadCatalogLesson(nextId, 'token')).rejects.toMatchObject({ status: 403 })
+  })
+
+  it('does not remember a refusal: once access is granted the lesson opens', async () => {
+    const id = nextId
+    vi.mocked(getCourseCatalogLessonContent)
+      .mockRejectedValueOnce(Object.assign(new Error('Ошибка сервера (403)'), { status: 403 }))
+      .mockResolvedValueOnce(stored())
+
+    await expect(loadCatalogLesson(id, 'token')).rejects.toMatchObject({ status: 403 })
+    const lesson = await loadCatalogLesson(id, 'token')
+
+    expect(lesson.title).toBe('1A Hello')
   })
 
   it('falls back to the catalog title when the structure carries none', async () => {

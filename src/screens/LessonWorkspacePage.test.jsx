@@ -87,6 +87,34 @@ describe('урок в воркспейсе', () => {
     expect(screen.queryByText('Место для баннера')).toBeNull()
   })
 
+  it('закрытый урок говорит, кто его открывает, а не зовёт попробовать ещё раз', async () => {
+    // Отдельный курс без выдачи — или выдачу отозвали уже после того, как урок
+    // задали на дом: бэкенд отвечает 403. Раньше экран писал «не удалось
+    // загрузить, попробуйте ещё раз», и повтор не помогал никогда.
+    const onExit = vi.fn()
+    show(async () => {
+      throw Object.assign(new Error('Ошибка сервера (403)'), { status: 403 })
+    }, { onExit })
+
+    expect(await screen.findByText(/доступ к курсу открывает менеджер/)).toBeTruthy()
+    expect(screen.queryByText(/Попробуйте открыть/)).toBeNull()
+    // Отдельный курс в подписку не входит — звать в тарифы нельзя.
+    expect(screen.queryByText(/тариф/i)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти из урока' }))
+    expect(onExit).toHaveBeenCalled()
+  })
+
+  it('упавшая загрузка не оставляет экран в вечной загрузке', async () => {
+    // Любое другое исключение загрузчика — сбой: говорим о нём, а не висим
+    // на «Загрузка…».
+    show(async () => {
+      throw new Error('Нет связи с сервером.')
+    })
+
+    expect(await screen.findByText(/Не удалось загрузить урок/)).toBeTruthy()
+    expect(screen.queryByText(/открывает менеджер/)).toBeNull()
+  })
+
   it('без урока вовсе демо-урок остаётся — это его место', async () => {
     // SAMPLE_LESSON задуман содержимым экрана, открытого без lessonId.
     show(undefined, { lessonId: undefined, loadLesson: async () => null })
