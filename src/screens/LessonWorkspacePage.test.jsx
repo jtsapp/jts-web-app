@@ -13,6 +13,7 @@ vi.mock('../api.js', () => ({
 
 import { getCatalogLessonAnswers, saveCatalogLessonAnswers } from '../api.js'
 import LessonWorkspacePage from './LessonWorkspacePage.jsx'
+import { lessonCardIds } from '../lib/lessonCardId.js'
 
 // Урок, разобранный на шаги, но не по зубам плееру (pick-вопрос — см.
 // liveSteps.js): именно он открывается документом, где и живут ответы.
@@ -142,5 +143,133 @@ describe('работа ученика в самостоятельном урок
     show(async () => STEPPED, { catalogLessonId: undefined })
     await screen.findByText('👍')
     expect(getCatalogLessonAnswers).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Карточка урока, заданная на дом.
+ *
+ * Преподаватель отправляет из живого урока не весь урок, а одну карточку
+ * (⋮ → «Добавить в домашнее задание»), и в выдаче лежит её АДРЕС — урок каталога
+ * плюс адрес по содержимому (см. src/lib/lessonCardId.js). Открывая задание,
+ * ученик обязан попасть на эту карточку, а не в начало урока.
+ */
+describe('карточка урока, заданная на дом', () => {
+  // Урок, который плеер осиливает целиком: info + choice, ничего из
+  // UNSUPPORTED (см. liveSteps.js). Обычным путём он открывается очередью
+  // экранов — и ровно поэтому годится проверить, что ссылка на карточку уводит
+  // в документ: в очереди экранов якорей нет вовсе.
+  const PLAYABLE = {
+    id: 7,
+    title: 'Seasons',
+    steps: [
+      {
+        id: 's1',
+        order: 1,
+        title: 'Read',
+        blocks: [
+          { type: 'info', html: '<p>Winter is the coldest season.</p>' },
+          { type: 'practice', title: 'Warm-up', questions: [
+            { id: 'q1', type: 'choice', prompt: 'Sky?', options: ['blue', 'green'], answer: 'blue' },
+          ] },
+        ],
+      },
+      {
+        id: 's2',
+        order: 2,
+        title: 'Talk',
+        blocks: [{ type: 'info', html: '<p>Tell your teacher about your favourite season.</p>' }],
+      },
+    ],
+  }
+
+  const адресКарточки = (stepIndex, blockIndex) =>
+    lessonCardIds(PLAYABLE).get(PLAYABLE.steps[stepIndex].blocks[blockIndex])
+
+  const props = { catalogLessonId: 7, loadLesson: async () => PLAYABLE }
+
+  beforeEach(() => {
+    // jsdom не умеет ни прокрутку, ни CSS.escape (в браузерах есть оба);
+    // подъезд к карточке проверяем по подсветке.
+    Element.prototype.scrollIntoView = vi.fn()
+    globalThis.CSS = globalThis.CSS || { escape: (v) => v }
+    getCatalogLessonAnswers.mockResolvedValue({ progressJson: null })
+  })
+
+  // Текст урока ищем по textContent, а не getByText: тап-перевод оборачивает
+  // каждое слово в свой span (wrapTapWords), и матчер по узлу его не собирает.
+  const виден = (container, text) => container.textContent.includes(text)
+
+  it('без карточки урок открывается как раньше — очередью экранов', async () => {
+    const { container } = show(props.loadLesson, props)
+    await waitFor(() => expect(container.querySelector('.cp')).toBeTruthy())
+    expect(container.querySelector('.lw-doc')).toBeNull()
+  })
+
+  it('по адресу карточки открывается её шаг, а не начало урока', async () => {
+    const { container } = show(props.loadLesson, { ...props, cardId: адресКарточки(1, 0) })
+
+    // Документ, а не плеер: в очереди экранов подъезжать некуда.
+    await waitFor(() => expect(container.querySelector('.lw-doc')).toBeTruthy())
+    expect(container.querySelector('.cp')).toBeNull()
+    // Второй шаг, и он же помечен активной вкладкой.
+    await waitFor(() => expect(виден(container, 'Tell your teacher')).toBe(true))
+    expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Talk')
+    // Сама карточка помечена «сюда смотреть».
+    const focused = container.querySelector('.lw-q--live-here')
+    expect(focused?.getAttribute('data-question-id')).toBe('block-0')
+  })
+
+  it('восстановленный прогресс не уводит с заданной карточки', async () => {
+    // Урок и сохранённая работа приезжают двумя запросами, ответ сервера —
+    // позже. Без оговорки карточка открывалась бы и через полсекунды уезжала
+    // на последний шаг ученика, уже на глазах.
+    // Ответ ПОЗЖЕ урока — иначе гонки нет вовсе: восстановление успевало бы
+    // до карточки, и тест проходил бы даже без оговорки.
+    getCatalogLessonAnswers.mockReturnValueOnce(new Promise((resolve) => {
+      setTimeout(() => resolve({
+        progressJson: JSON.stringify({ shape: 'lesson-steps', answers: {}, checked: [], stepId: 's1' }),
+      }), 20)
+    }))
+    const { container } = show(props.loadLesson, { ...props, cardId: адресКарточки(1, 0) })
+
+    await waitFor(() => expect(виден(container, 'Tell your teacher')).toBe(true))
+    await new Promise((r) => setTimeout(r, 40))
+    expect(container.querySelector('.ls-tab--active')?.textContent).toBe('Talk')
+  })
+
+  /**
+   * Бейдж «Подсвечено у учителя» — про указку преподавателя в живом уроке.
+   * В домашке указки нет вовсе, и на карточке он соврал бы. А задать карточкой
+   * можно и блок practice: в нём бывают вопросы, которых окно выдачи не берёт
+   * (match/order/multi/pick), и тогда «проверяемых заданий» у него ноль.
+   */
+  it('заданная карточка не притворяется указкой преподавателя', async () => {
+    const СПРАКТИКОЙ = {
+      id: 8,
+      title: 'Seasons',
+      steps: [{
+        id: 's1', order: 1, title: 'Read',
+        blocks: [{
+          type: 'practice', title: 'Сопоставь',
+          questions: [{ id: 'q1', type: 'match', prompt: 'Пары', pairs: [{ left: 'a', right: 'b' }] }],
+        }],
+      }],
+    }
+    const адрес = lessonCardIds(СПРАКТИКОЙ).get(СПРАКТИКОЙ.steps[0].blocks[0])
+    const { container } = show(async () => СПРАКТИКОЙ, { catalogLessonId: 8, cardId: адрес })
+
+    // Подъехали и пометили.
+    await waitFor(() => expect(container.querySelector('.lw-q--live-here')).toBeTruthy())
+    // Но бейджа указки нет.
+    expect(container.textContent).not.toContain('Подсвечено у учителя')
+  })
+
+  it('карточку переписали — говорим прямо, а не открываем соседнюю', async () => {
+    // Молчаливое открытие начала урока читалось бы как «задание — вот это».
+    const { container } = show(props.loadLesson, { ...props, cardId: 'cdeadbeef' })
+
+    expect(await screen.findByText(/в уроке его больше нет/)).toBeTruthy()
+    expect(container.querySelector('.lw-q--live-here')).toBeNull()
   })
 })
