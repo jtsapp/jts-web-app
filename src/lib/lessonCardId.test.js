@@ -36,6 +36,23 @@ export const FIXTURE = {
         // кабинет абсолютизирует путь к аудио при загрузке урока, админка нет.
         { type: 'theory', id: 's1-t0', title: 'Правило', text: 'Present Simple: привычки.',
           audio: { src: 'audio/rule.mp3' } },
+        // ДВА вопроса — единственное, чем проверяется разделитель между ними
+        // (\x1d). С одним вопросом его в подписи просто нет, и разъедься копии
+        // по нему — обе остались бы зелёными.
+        {
+          type: 'practice',
+          title: 'Слова и пропуски',
+          questions: [
+            { id: 's1-c1', type: 'match', prompt: 'Сопоставь',
+              pairs: [{ left: 'spring', right: 'весна' }, { left: 'autumn', right: 'осень' }] },
+            { id: 's1-c2', type: 'gap', prompt: 'Допиши',
+              gapBefore: 'It ', gapAfter: ' cold in winter.', words: ['is', 'are'] },
+          ],
+        },
+        { type: 'writing', title: 'Напиши абзац', html: '<p>Describe your favourite season.</p>',
+          placeholder: 'Not less than 60 words' },
+        { type: 'grammar_concept', title: 'Present Simple', leadText: 'Правило коротко',
+          html: '<p>He <b>works</b>.</p>' },
       ],
     },
     {
@@ -53,9 +70,12 @@ export const FIXTURE = {
 /** Ожидаемые адреса фикстуры. ТЕ ЖЕ значения обязаны получаться в админке. */
 export const EXPECTED = [
   'ce37fee00', // s1 / info
-  'c8aa84c76', // s1 / practice
+  'c8aa84c76', // s1 / practice — один вопрос
   'cc9a9577a', // s1 / vocab
   'cad401560', // s1 / theory — незнакомый тип
+  'cf48bd802', // s1 / practice — ДВА вопроса, pairs и gap
+  'c7d964c1f', // s1 / writing
+  'c44d863d1', // s1 / grammar_concept
   'c2e34941a', // s2 / checklist
   'cb1602305', // s2 / speaking
 ]
@@ -134,7 +154,7 @@ describe('Адрес карточки', () => {
 
 describe('Поиск карточки по адресу', () => {
   it('находит карточку и её место на момент открытия', () => {
-    const найдено = findCardById(FIXTURE, EXPECTED[5])
+    const найдено = findCardById(FIXTURE, EXPECTED[8])
     expect(найдено?.stepId).toBe('s2')
     expect(найдено?.blockIndex).toBe(1)
     expect(найдено?.block.type).toBe('speaking')
