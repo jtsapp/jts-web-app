@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { rememberPendingScreen, consumePendingScreen, clearPendingScreen } from './pendingScreen.js'
+import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './pendingScreen.js'
 
 const KEY = 'jts_pending_screen'
 
@@ -68,5 +68,46 @@ describe('недоступное хранилище', () => {
   it('очистка не бросает наружу', () => {
     vi.spyOn(window.sessionStorage, 'removeItem').mockImplementation(бросает)
     expect(() => clearPendingScreen()).not.toThrow()
+  })
+})
+
+/**
+ * Куда вести после входа.
+ *
+ * Отдельно от самого хранилища: запомнить намерение и принять его — разные
+ * решения, и второе умеет отказывать.
+ */
+describe('намерение после входа', () => {
+  const умеетПоАдресу = (screen) => ['homework', 'reading', 'lessons'].includes(screen)
+
+  it('обычный экран возвращается, если открывается по адресу', () => {
+    expect(pendingScreenAfterLogin('reading', { persists: умеетПоАдресу })).toBe('reading')
+  })
+
+  /**
+   * Значение могло лечь ещё прошлой версией приложения, где экран назывался
+   * иначе, — человек получил бы пустоту вместо кабинета.
+   */
+  it('незнакомый экран отбрасывается', () => {
+    expect(pendingScreenAfterLogin('старое-имя', { persists: умеетПоАдресу })).toBeNull()
+    expect(pendingScreenAfterLogin(null, { persists: умеетПоАдресу })).toBeNull()
+    expect(pendingScreenAfterLogin('', { persists: умеетПоАдресу })).toBeNull()
+  })
+
+  /**
+   * ГЛАВНОЕ. Урок в PERSISTABLE_SCREENS не входит намеренно — без своего id он
+   * открылся бы демонстрационным уроком. Но ссылка на карточку, заданную на
+   * дом, — это ровно та присланная ссылка, ради которой человек и логинится:
+   * открыл домашку с телефона, вкладка попросила войти, и после входа он обязан
+   * оказаться на карточке, а не на «Главной».
+   */
+  it('урок с адресом карточки переживает вход', () => {
+    expect(pendingScreenAfterLogin('lesson-workspace', { persists: умеетПоАдресу, hasCardAddress: true }))
+      .toBe('lesson-workspace')
+  })
+
+  it('урок БЕЗ адреса карточки не возвращается: открылся бы чужим демо-уроком', () => {
+    expect(pendingScreenAfterLogin('lesson-workspace', { persists: умеетПоАдресу, hasCardAddress: false })).toBeNull()
+    expect(pendingScreenAfterLogin('lesson-workspace', { persists: умеетПоАдресу })).toBeNull()
   })
 })
