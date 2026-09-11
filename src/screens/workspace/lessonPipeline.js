@@ -27,7 +27,7 @@ import { hoistStepLeads } from './hoistStepLead.js'
  * Вынесено отдельной функцией, чтобы конвейер было чем проверить: раньше он жил
  * выражением внутри загрузчика, и тест на него можно было написать только через
  * сеть. Согласие с админкой держит lessonPipeline.test.js — та же фикстура и те
- * же ожидаемые адреса лежат там в lesson-pipeline.spec.ts.
+ * же ожидаемые адреса лежат там в lesson-pipeline.parity.ts.
  */
 export function applyLessonHoists(content, fileUrl) {
   const lesson = hoistChoiceOptions(
