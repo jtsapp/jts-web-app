@@ -241,6 +241,18 @@ export async function saveHomeworkAnswer(id, exerciseId, token, answer, correct)
 // в «Домашней работе». Ничего нового на бэкенде — это тот же студенческий
 // фасад, которым пользуется web-admin (/student/**).
 
+// Ответ на выданный материал файлом. Для карточки урока это единственный способ
+// её закрыть: проверяемых заданий в теории нет, сессии она не заводит. Файл к
+// этому моменту уже лежит в хранилище — его кладёт uploadMedia, ровно как у
+// ответа на обычную домашку.
+export function attachMaterialAnswer(token, id, fileName, url) {
+  return authPost(`/student/assignments/${id}/files`, token, { fileName, url })
+}
+
+export function removeMaterialAnswer(token, id, fileId) {
+  return authDelete(`/student/assignments/${id}/files/${fileId}`, token)
+}
+
 export function getMyMaterialAssignments(token) {
   return authGet('/student/assignments', token)
 }

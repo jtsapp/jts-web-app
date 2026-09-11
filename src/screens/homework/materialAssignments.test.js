@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { materialCard, isMaterialGraded, isInteractiveMaterial, isLessonCard } from './materialAssignments.js'
+import { materialCard, isMaterialGraded, isInteractiveMaterial, isLessonCard, hasAnswerFiles, needsAnswerFile } from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
 
 const assignment = (over = {}) => ({
@@ -88,3 +88,52 @@ describe('карточка живого урока', () => {
   })
 })
 
+/**
+ * Ответ файлом.
+ *
+ * У карточки урока нет ни проверяемых заданий, ни сессии — закрыть её нечем, а
+ * срок выдача получает по умолчанию. Без вложения такая работа краснела у
+ * ученика просроченной и оставалась такой навсегда: снять это могла только
+ * ручная оценка преподавателя.
+ */
+describe('Ответ на выданный материал файлом', () => {
+  const карточкаУрока = (over = {}) =>
+    assignment({ catalogLessonId: 314, cardId: 'cad401560', cardTitle: 'Итог урока', ...over })
+
+  it('файл требуется у карточки урока', () => {
+    expect(needsAnswerFile(карточкаУрока())).toBe(true)
+  })
+
+  /**
+   * У материала целиком свой цикл: интерактив закрывается сессией и оценкой,
+   * обычный файл так и живёт. Расширять туда — отдельное решение.
+   */
+  it('и не требуется у материала целиком', () => {
+    expect(needsAnswerFile(assignment())).toBe(false)
+  })
+
+  it('пустой список вложений — это «не ответил»', () => {
+    expect(hasAnswerFiles(карточкаУрока())).toBe(false)
+    expect(hasAnswerFiles(карточкаУрока({ files: [] }))).toBe(false)
+    expect(hasAnswerFiles(карточкаУрока({ files: [{ id: 1 }] }))).toBe(true)
+  })
+
+  /** ГЛАВНОЕ: приложенный файл снимает вечную просрочку. */
+  it('приложенный файл переводит карточку в «на проверке» и снимает просрочку', () => {
+    const просроченнаяДата = '2020-01-01'
+    const без = materialCard(карточкаУрока({ dueDate: просроченнаяДата }))
+    const с = materialCard(карточкаУрока({ dueDate: просроченнаяДата, files: [{ id: 1, fileName: 'answer.pdf' }] }))
+
+    expect(без.status).toBe('ASSIGNED')
+    expect(homeworkStateKey(без)).toBe('overdue')
+
+    expect(с.status).toBe('SUBMITTED')
+    expect(homeworkStateKey(с)).toBe('submitted')
+  })
+
+  /** Оценка весомее вложения: проверенная работа проверена. */
+  it('оценка перебивает вложение', () => {
+    const проверено = materialCard(карточкаУрока({ files: [{ id: 1 }], teacherScore: 5, gradedAt: '2026-09-11T10:00:00' }))
+    expect(проверено.status).toBe('COMPLETED')
+  })
+})
