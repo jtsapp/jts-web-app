@@ -15,6 +15,7 @@ import WorkbookUnits, { LessonSheet } from './workbook/WorkbookUnits.jsx'
 import WorkbookAct from './workbook/WorkbookAct.jsx'
 import WorkbookWrap from './workbook/WorkbookWrap.jsx'
 import WorkbookReview from './workbook/WorkbookReview.jsx'
+import { useTimeOnTask } from '../lib/useTimeOnTask.js'
 
 // Раздел «Воркбук» — нативный порт standalone-прототипа. Внутренняя
 // view-машина (каталог → экран задания → итог урока → разбор ошибок), как в
@@ -66,6 +67,9 @@ export default function WorkbookPage({
   const levelMeta = WORKBOOK_LEVELS.find((l) => l.code === level) || WORKBOOK_LEVELS[0]
 
   const [view, setView] = useState({ name: 'units' })
+  // Время в воркбуке — «actual» модуля workbooks недельной сводки. Каталог
+  // юнитов не считаем: листать меню — ещё не работа с грамматикой.
+  useTimeOnTask('workbooks', { token, enabled: view.name !== 'units' })
   const [index, setIndex] = useState(null)
   const [meta, setMeta] = useState(null)
   const [lessons, setLessons] = useState({})
