@@ -30,9 +30,10 @@ export function isEmailIdentifier(input) {
 // Приводит идентификатор (телефон или email, с логина/регистрации) к телу
 // запроса { phone } или { email } — бэкенд принимает ровно один из двух.
 function identifierBody(identifier) {
-  return isEmailIdentifier(identifier)
-    ? { email: String(identifier).trim() }
-    : { phone: normalizePhone(identifier) }
+  const trimmed = String(identifier).trim()
+  return isEmailIdentifier(trimmed)
+    ? { email: trimmed.toLowerCase() }
+    : { phone: normalizePhone(trimmed) }
 }
 
 async function get(path) {
