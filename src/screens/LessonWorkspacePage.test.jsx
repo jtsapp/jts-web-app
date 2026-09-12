@@ -9,11 +9,13 @@ vi.mock('../api.js', () => ({
   getDemoAccess: vi.fn(async () => ({ isDemo: false, expiresAt: null })),
   getCatalogLessonAnswers: vi.fn(async () => ({ progressJson: null })),
   saveCatalogLessonAnswers: vi.fn(async () => ({})),
+  getCourseCatalogLessonContent: vi.fn(async () => null),
 }))
 
-import { getCatalogLessonAnswers, saveCatalogLessonAnswers } from '../api.js'
+import { getCatalogLessonAnswers, saveCatalogLessonAnswers, getCourseCatalogLessonContent } from '../api.js'
 import LessonWorkspacePage from './LessonWorkspacePage.jsx'
 import { lessonCardIds } from '../lib/lessonCardId.js'
+import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 
 // Урок, разобранный на шаги, но не по зубам плееру (pick-вопрос — см.
 // liveSteps.js): именно он открывается документом, где и живут ответы.
@@ -86,6 +88,34 @@ describe('урок в воркспейсе', () => {
 
     expect(await screen.findByText(/Не удалось загрузить урок/)).toBeTruthy()
     expect(screen.queryByText('Место для баннера')).toBeNull()
+  })
+
+  it('закрытый урок говорит, кто его открывает, а не зовёт попробовать ещё раз', async () => {
+    // Отдельный курс без выдачи — или выдачу отозвали уже после того, как урок
+    // задали на дом: бэкенд отвечает 403. Раньше экран писал «не удалось
+    // загрузить, попробуйте ещё раз», и повтор не помогал никогда.
+    const onExit = vi.fn()
+    show(async () => {
+      throw Object.assign(new Error('Ошибка сервера (403)'), { status: 403 })
+    }, { onExit })
+
+    expect(await screen.findByText(/доступ к курсу открывает менеджер/)).toBeTruthy()
+    expect(screen.queryByText(/Попробуйте открыть/)).toBeNull()
+    // Отдельный курс в подписку не входит — звать в тарифы нельзя.
+    expect(screen.queryByText(/тариф/i)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти из урока' }))
+    expect(onExit).toHaveBeenCalled()
+  })
+
+  it('упавшая загрузка не оставляет экран в вечной загрузке', async () => {
+    // Любое другое исключение загрузчика — сбой: говорим о нём, а не висим
+    // на «Загрузка…».
+    show(async () => {
+      throw new Error('Нет связи с сервером.')
+    })
+
+    expect(await screen.findByText(/Не удалось загрузить урок/)).toBeTruthy()
+    expect(screen.queryByText(/открывает менеджер/)).toBeNull()
   })
 
   it('без урока вовсе демо-урок остаётся — это его место', async () => {
@@ -271,5 +301,30 @@ describe('карточка урока, заданная на дом', () => {
 
     expect(await screen.findByText(/в уроке его больше нет/)).toBeTruthy()
     expect(container.querySelector('.lw-q--live-here')).toBeNull()
+  })
+
+  it('закрытый курс по ссылке из домашки говорит про доступ, а не «карточки больше нет»', async () => {
+    // Карточку отдельного курса задали на дом, а выдачи у ученика нет (или её
+    // отозвали уже после выдачи) — бэкенд отвечает 403. Урока на экране нет
+    // вовсе, значит и сверять карточку не с чем: «материал изменился» было бы
+    // неправдой, «попробуйте ещё раз» — бесполезным советом. Цепочка настоящая:
+    // загрузчик каталога плюс экран, как их связывает App для домашки.
+    getCourseCatalogLessonContent.mockRejectedValueOnce(
+      Object.assign(new Error('Ошибка сервера (403)'), { status: 403 }),
+    )
+    const onExit = vi.fn()
+    show(loadCatalogLesson, {
+      lessonId: 9001,
+      catalogLessonId: 9001,
+      cardId: адресКарточки(1, 0),
+      onExit,
+    })
+
+    expect(await screen.findByText(/доступ к курсу открывает менеджер/)).toBeTruthy()
+    expect(screen.queryByText(/в уроке его больше нет/)).toBeNull()
+    expect(screen.queryByText(/Не удалось загрузить урок/)).toBeNull()
+    // Выход остаётся: из домашки ученик уходит обратно в домашку.
+    fireEvent.click(screen.getByRole('button', { name: 'Выйти из урока' }))
+    expect(onExit).toHaveBeenCalled()
   })
 })
