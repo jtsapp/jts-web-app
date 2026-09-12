@@ -37,7 +37,7 @@ export default function PickQuestion({ question, answer, checked, onAnswer, read
             <button
               key={opt}
               type="button"
-              className={`lw-opt${isSelected ? ' is-selected' : ''}`}
+              className={`lw-opt${isSelected ? ' is-selected' : ''}${!isSelected && readOnly ? ' is-locked' : ''}`}
               aria-pressed={isSelected}
               disabled={locked}
               onClick={() => toggle(opt)}

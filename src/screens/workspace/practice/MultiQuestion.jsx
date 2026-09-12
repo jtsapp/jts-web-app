@@ -32,6 +32,10 @@ export default function MultiQuestion({ question, answer, checked, onAnswer, rea
           if (isOk || isYes) cls += ' is-ok'
           else if (isNo) cls += ' is-no'
           else if (selected) cls += ' is-selected'
+          // Урок на паузе / завершён / открыт преподавателем: кнопка закрыта не
+          // ответом ученика, а снаружи, и выглядеть она должна закрытой. Свой
+          // выбор и вердикт важнее — они красятся выше и остаются видимыми.
+          else if (readOnly) cls += ' is-locked'
 
           return (
             <button

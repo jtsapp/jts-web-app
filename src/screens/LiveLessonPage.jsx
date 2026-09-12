@@ -8,7 +8,7 @@ import {
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
-import { canControl } from './live/liveStatus.js'
+import { canControl, contentLocked, contentLockNoteKey } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
 import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroadcastAudio } from './live/audioReport.js'
@@ -1142,7 +1142,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // заданиями, и на рамку файлового материала — что из них на экране, зависит
   // от вида урока, а состояние одно.
   const stageFlags = `${calledBy != null ? ' is-called' : ''}${watchedBy != null ? ' is-watched' : ''}`
-  const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
+  // Признак блокировки и её причина считаются парой в liveStatus.js — врозь они
+  // разъезжаются, и ученик получает закрытые кнопки без единого слова о том,
+  // почему они закрыты.
+  const contentReadOnly = contentLocked(status, isStaff)
+  const lockNoteKey = contentLockNoteKey(status, isStaff)
+  const contentLockNote = lockNoteKey ? t(lockNoteKey) : ''
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
   // Шапка урока считает задания открытой темы теми же карточками, что лента их
   // и нумерует, — иначе «Задание 3 из 7» разъедется с цифрой на карточке.
@@ -1413,6 +1418,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               onAnswer={handleAnswer}
                               onCheck={handleCheckStep}
                               readOnly={contentReadOnly}
+                              lockNote={contentLockNote}
                               liveQuestionId={isStaff ? reviewLiveQuestionId : (followMode ? focusTargetId : null)}
                               liveFocusNonce={isStaff ? 0 : focusNonce}
                               token={token}
