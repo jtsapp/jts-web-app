@@ -38,6 +38,38 @@ function renderMatch(question, props = {}) {
   )
 }
 
+// Урок на паузе / завершён / открыт преподавателем. Плитки сопоставления
+// disabled, но выглядели ровно как живые — ученик жмёт и не понимает, почему
+// ничего не происходит. Тот же дефект, что был у вариантов выбора.
+describe('MatchQuestion — закрытый урок виден', () => {
+  it('плитки пар и варианты справа выглядят закрытыми', () => {
+    const { container } = renderMatch(VOCAB_QUESTION, { readOnly: true })
+    const left = [...container.querySelectorAll('.lw-match__left')]
+    const right = [...container.querySelectorAll('.lw-match__right')]
+    expect(left.length).toBeGreaterThan(0)
+    expect(right.length).toBeGreaterThan(0)
+    for (const el of [...left, ...right]) {
+      expect(el.disabled).toBe(true)
+      expect(el.className).toMatch(/is-locked/)
+    }
+  })
+
+  it('на живом уроке метки закрытости нет', () => {
+    const { container } = renderMatch(VOCAB_QUESTION)
+    expect(container.querySelector('.is-locked')).toBeNull()
+  })
+
+  it('свой ответ на закрытом уроке остаётся видимым', () => {
+    const { container } = renderMatch(VOCAB_QUESTION, {
+      readOnly: true,
+      answer: { 'get on (well with someone)': 'to have a good relationship' },
+    })
+    const filled = container.querySelector('.lw-match__left.is-filled')
+    expect(filled).not.toBeNull()
+    expect(filled.className).not.toMatch(/is-locked/)
+  })
+})
+
 describe('MatchQuestion — обычный словарный матчинг (1:1) остаётся прежним рендером', () => {
   it('не переключается на вид «разложи по категориям»', () => {
     const { container } = renderMatch(VOCAB_QUESTION)

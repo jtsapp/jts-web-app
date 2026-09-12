@@ -14,6 +14,9 @@ export default function WritingBlock({ block, answer, onAnswer, readOnly, onWord
       {html && <div className="lw-practice__html" dangerouslySetInnerHTML={{ __html: html }} />}
       <textarea
         className="lw-writing__field"
+        // `readonly` браузер, в отличие от `disabled`, никак не показывает:
+        // поле выглядит как поле, курсор в нём стоит, а буквы не печатаются.
+        // Вид закрытого даёт CSS по этому же атрибуту.
         placeholder={block?.placeholder || ''}
         rows={6}
         value={typeof answer === 'string' ? answer : ''}

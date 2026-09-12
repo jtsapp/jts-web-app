@@ -1870,10 +1870,30 @@
    которая просто пересчитывает цвета. Вердикт и свой выбор красятся ниже: они
    важнее и остаются видимыми. */
 .lw-opt.is-locked,
-.lw-ochip.is-locked {
+.lw-ochip.is-locked,
+.lw-match__left.is-locked,
+.lw-match__right.is-locked,
+.lw-info__body.is-locked .bw,
+.lw-practice__html.is-locked .bw {
   background: transparent;
   color: var(--lw-muted);
   box-shadow: inset 0 0 0 1px var(--lw-track);
+}
+
+/* Банк слов приезжает разметкой курса: у `.bw` своя рамка, и без сброса
+   закрытая плашка осталась бы с обычным контуром поверх нашего. */
+.lw-info__body.is-locked .bw,
+.lw-practice__html.is-locked .bw {
+  border-color: transparent;
+}
+
+/* Поле письма: `readonly` браузер не показывает ничем — ученик ставит в него
+   курсор и печатает в пустоту. Обводку тут НЕ трогаем (рамка у textarea своя,
+   браузерная, и вторая легла бы поверх) — гасим заливкой и цветом текста. */
+.lw-writing__field:read-only {
+  background: var(--lw-tint-3);
+  color: var(--lw-muted);
+  cursor: default;
 }
 
 .lw-opt:focus-visible {

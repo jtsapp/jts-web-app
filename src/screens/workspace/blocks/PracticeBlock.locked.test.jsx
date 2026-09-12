@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import { I18nProvider } from '../../../i18n.jsx'
 import PracticeBlock from './PracticeBlock.jsx'
+import InfoBlock from './InfoBlock.jsx'
 
 const БЛОК = {
   type: 'practice',
@@ -68,5 +69,46 @@ describe('PracticeBlock — почему карточка не принимае�
       lockNote: ПРИЧИНА,
     })
     expect(container.querySelector('.lw-practice__locked')).toBeNull()
+  })
+})
+
+// Банк слов приезжает разметкой курса, и на закрытом уроке bindWordBank просто
+// не отвечает на нажатие. Без метки на контейнере плашки оставались белыми и
+// живыми на вид — тот же немой контрол, что и варианты выбора.
+describe('Банк слов курса на закрытом уроке', () => {
+  const BANK_HTML = '<div class="bank"><span class="bw">communication</span><span class="bw">meet</span></div>'
+
+  it('в карточке практики контейнер разметки помечен закрытым', () => {
+    const { container } = render(
+      <I18nProvider>
+        <PracticeBlock
+          block={{ type: 'practice', title: 'Complete', html: BANK_HTML, questions: [] }}
+          answers={{}}
+          checked={false}
+          onAnswer={() => {}}
+          readOnly
+        />
+      </I18nProvider>,
+    )
+    expect(container.querySelector('.lw-practice__html.is-locked')).not.toBeNull()
+  })
+
+  it('в info-блоке — тоже', () => {
+    const { container } = render(
+      <I18nProvider>
+        <InfoBlock block={{ type: 'info', html: BANK_HTML }} answers={{}} onAnswer={() => {}} readOnly />
+      </I18nProvider>,
+    )
+    expect(container.querySelector('.lw-info__body.is-locked')).not.toBeNull()
+  })
+
+  it('на живом уроке метки нет', () => {
+    const { container } = render(
+      <I18nProvider>
+        <InfoBlock block={{ type: 'info', html: BANK_HTML }} answers={{}} onAnswer={() => {}} />
+      </I18nProvider>,
+    )
+    expect(container.querySelector('.lw-info__body')).not.toBeNull()
+    expect(container.querySelector('.is-locked')).toBeNull()
   })
 })

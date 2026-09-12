@@ -217,6 +217,10 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
             else if (isWrong) cls += ' is-wrong'
             else if (activeLeft === pair.left) cls += ' is-selected'
             else if (chosen != null) cls += ' is-filled'
+            // Урок закрыт снаружи (перерыв, завершён, смотрит преподаватель):
+            // плитка должна выглядеть закрытой. Свой ответ и вердикт красятся
+            // выше и остаются видимыми.
+            else if (readOnly) cls += ' is-locked'
             return (
               <button
                 key={pair.left}
@@ -251,7 +255,7 @@ export default function MatchQuestion({ question, answer, checked, onAnswer, rea
               <button
                 key={`${right}-${i}`}
                 type="button"
-                className={`lw-match__right${used ? ' is-used' : ''}`}
+                className={`lw-match__right${used ? ' is-used' : ''}${!used && readOnly ? ' is-locked' : ''}`}
                 aria-label={right}
                 disabled={checked || readOnly || nowhereToPut}
                 onClick={() => pickRight(right)}

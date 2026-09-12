@@ -228,7 +228,7 @@ export default function PracticeBlock({
       {block?.audio?.src && (
         <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
       )}
-      {html && <div className="lw-practice__html" ref={htmlRef} />}
+      {html && <div className={`lw-practice__html${readOnly ? ' is-locked' : ''}`} ref={htmlRef} />}
 
       {/* «Верного ответа нет» — правило всего упражнения, а не каждого пункта:
           в разминке их десяток подряд, и десять одинаковых строк прячут сами
