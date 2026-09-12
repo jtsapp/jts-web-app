@@ -1,0 +1,4914 @@
+{
+  "audio/rat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rat.mp3",
+    "bytes": 38706
+  },
+  "audio/dog": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dog.mp3",
+    "bytes": 25645
+  },
+  "audio/cat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cat.mp3",
+    "bytes": 20943
+  },
+  "audio/horse": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/horse.mp3",
+    "bytes": 38706
+  },
+  "sprites/dog": {
+    "src": "hf_20260906_054153_504f363e-37c2-4ca5-85f5-e913a565f08d.png",
+    "bytes": 33486
+  },
+  "sprites/rat": {
+    "src": "hf_20260906_054013_f70870dd-33cc-40fb-bc4d-3c7d526b8baf.png",
+    "bytes": 26530
+  },
+  "sprites/cat": {
+    "src": "hf_20260906_054157_37eb88a6-fd8f-4fea-b830-cd2eecdbeb6b.png",
+    "bytes": 37044
+  },
+  "audio/cow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cow.mp3",
+    "bytes": 31392
+  },
+  "audio/sheep": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sheep.mp3",
+    "bytes": 38706
+  },
+  "audio/goat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/goat.mp3",
+    "bytes": 38706
+  },
+  "sprites/sheep": {
+    "src": "hf_20260905_074446_807fa866-1fcf-442d-9e06-b474ef5ba500.png",
+    "bytes": 31868
+  },
+  "sprites/horse": {
+    "src": "hf_20260905_074440_28d7610c-2fa0-4a78-97a2-0ef8dc408d66.png",
+    "bytes": 35910
+  },
+  "sprites/goat": {
+    "src": "hf_20260905_074500_b040413c-7675-44e0-8fae-32c3996a567d.png",
+    "bytes": 36060
+  },
+  "audio/pig": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pig.mp3",
+    "bytes": 22510
+  },
+  "audio/rooster": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rooster.mp3",
+    "bytes": 20420
+  },
+  "audio/chicken": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chicken.mp3",
+    "bytes": 29824
+  },
+  "audio/duck": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/duck.mp3",
+    "bytes": 38706
+  },
+  "sprites/pig": {
+    "src": "hf_20260905_074450_ab3a5da7-0b13-472b-aa49-8fe92e55835e.png",
+    "bytes": 26712
+  },
+  "sprites/chicken": {
+    "src": "hf_20260905_074453_06926595-e7a8-4401-8c62-695b8beefc1d.png",
+    "bytes": 34818
+  },
+  "sprites/cow": {
+    "src": "hf_20260905_074443_c7f18105-5bc8-41c9-a43e-3723f7b10679.png",
+    "bytes": 32402
+  },
+  "sprites/rooster": {
+    "src": "hf_20260906_045355_a02c6cc6-972c-4c13-89d6-1294a8a2c9fd.png",
+    "bytes": 45326
+  },
+  "audio/goose": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/goose.mp3",
+    "bytes": 15718
+  },
+  "audio/turkey": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/turkey.mp3",
+    "bytes": 38706
+  },
+  "sprites/duck": {
+    "src": "hf_20260905_074456_e7954168-1790-4525-a90e-42b9c3a54354.png",
+    "bytes": 20330
+  },
+  "audio/rabbit": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rabbit.mp3",
+    "bytes": 37138
+  },
+  "sprites/goose": {
+    "src": "hf_20260906_045358_75dba23d-8bb7-4ec6-8ddd-b88ae7ac834c.png",
+    "bytes": 20876
+  },
+  "audio/mouse": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mouse.mp3",
+    "bytes": 27734
+  },
+  "sprites/turkey": {
+    "src": "hf_20260906_045401_8ae265d1-c0c4-46f9-b06d-6b9dc4ef5009.png",
+    "bytes": 49806
+  },
+  "audio/bee": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bee.mp3",
+    "bytes": 19898
+  },
+  "sprites/mouse": {
+    "src": "hf_20260906_045404_e8a1b1c9-0b1f-42a0-8994-0f1bf8715c8d.png",
+    "bytes": 25664
+  },
+  "sprites/rabbit": {
+    "src": "hf_20260906_042337_05cec44f-2487-4185-9293-1007961ea314.png",
+    "bytes": 34280
+  },
+  "audio/grasshopper": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/grasshopper.mp3",
+    "bytes": 28257
+  },
+  "audio/llama": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/llama.mp3",
+    "bytes": 30869
+  },
+  "audio/crow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/crow.mp3",
+    "bytes": 20943
+  },
+  "sprites/bee": {
+    "src": "hf_20260906_051428_62546388-e106-42d1-b948-deee7179cc75.png",
+    "bytes": 31250
+  },
+  "sprites/grasshopper": {
+    "src": "hf_20260906_051452_1aef2345-60a0-44cb-998c-7f63f85e5604.png",
+    "bytes": 36812
+  },
+  "sprites/llama": {
+    "src": "hf_20260906_061244_112f8936-34b2-41b4-9b30-387c88c08b73.png",
+    "bytes": 33034
+  },
+  "sprites/crow": {
+    "src": "hf_20260906_051551_d9bb7318-64d1-4c7a-9e1a-d586ab403b3b.png",
+    "bytes": 28102
+  },
+  "scenes/farm/cover": {
+    "src": "hf_20260905_074309_0e99ac38-3205-46e5-8c97-a6cf0d0f4e0c.png",
+    "bytes": 39798
+  },
+  "scenes/farm/bg": {
+    "src": "hf_20260905_074159_57540302-c61e-4949-bfa3-008b05e0b57d.png",
+    "bytes": 89296
+  },
+  "audio/guinea-pig": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/guinea-pig.mp3",
+    "bytes": 33481
+  },
+  "audio/goldfish": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/goldfish.mp3",
+    "bytes": 38706
+  },
+  "audio/budgie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/budgie.mp3",
+    "bytes": 21465
+  },
+  "audio/hamster": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hamster.mp3",
+    "bytes": 23032
+  },
+  "sprites/goldfish": {
+    "src": "hf_20260906_054005_cfb0738b-958d-4ae6-9425-079ed8ad9ce2.png",
+    "bytes": 34816
+  },
+  "audio/bear": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bear.mp3",
+    "bytes": 22510
+  },
+  "sprites/hamster": {
+    "src": "hf_20260906_053958_e0d63dd5-e22c-4316-a053-aeebe28b1637.png",
+    "bytes": 38046
+  },
+  "sprites/guinea-pig": {
+    "src": "hf_20260906_054001_7b569db3-d471-40e1-802b-6632a3b32885.png",
+    "bytes": 47464
+  },
+  "audio/fox": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fox.mp3",
+    "bytes": 19898
+  },
+  "audio/wolf": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wolf.mp3",
+    "bytes": 28779
+  },
+  "sprites/wolf": {
+    "src": "hf_20260906_042408_77ab82d0-aceb-4d51-96f8-5d6477574c87.png",
+    "bytes": 37802
+  },
+  "audio/deer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/deer.mp3",
+    "bytes": 19898
+  },
+  "sprites/fox": {
+    "src": "hf_20260906_042330_d46dfd60-e01b-4573-b4ee-2bc4437824ff.png",
+    "bytes": 37256
+  },
+  "audio/squirrel": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/squirrel.mp3",
+    "bytes": 30869
+  },
+  "sprites/bear": {
+    "src": "hf_20260906_042404_b5cb3ab2-ad89-4f91-8888-47812e7c7b9a.png",
+    "bytes": 38760
+  },
+  "sprites/deer": {
+    "src": "hf_20260906_042334_1eccea33-856b-43b4-adbb-39b2792b8831.png",
+    "bytes": 36808
+  },
+  "audio/raccoon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/raccoon.mp3",
+    "bytes": 28779
+  },
+  "audio/hedgehog": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hedgehog.mp3",
+    "bytes": 36616
+  },
+  "sprites/squirrel": {
+    "src": "hf_20260906_042341_22f06bab-866c-4e8f-9b00-8c8bac014f74.png",
+    "bytes": 61988
+  },
+  "sprites/hedgehog": {
+    "src": "hf_20260906_050625_a71886bb-3d05-4f3b-b39c-bafa2df2440a.png",
+    "bytes": 63942
+  },
+  "audio/badger": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/badger.mp3",
+    "bytes": 37138
+  },
+  "sprites/raccoon": {
+    "src": "hf_20260906_050629_f3344639-7661-41a7-b876-473d1a739730.png",
+    "bytes": 34496
+  },
+  "audio/owl": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/owl.mp3",
+    "bytes": 21987
+  },
+  "sprites/budgie": {
+    "src": "hf_20260906_054009_c7f74433-2a4e-4459-9f02-28a66a9d2432.png",
+    "bytes": 36104
+  },
+  "audio/wild-boar": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wild-boar.mp3",
+    "bytes": 39228
+  },
+  "sprites/badger": {
+    "src": "hf_20260906_050633_f73c03ca-642b-4e95-95c4-41f950d5a4fa.png",
+    "bytes": 37276
+  },
+  "sprites/owl": {
+    "src": "hf_20260906_042412_80e988d9-b139-49f8-b79d-55ee4b3ecaf8.png",
+    "bytes": 40522
+  },
+  "audio/moose": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/moose.mp3",
+    "bytes": 27212
+  },
+  "sprites/moose": {
+    "src": "hf_20260906_050641_c907e99f-c68c-4244-9859-3b0c247d417c.png",
+    "bytes": 39856
+  },
+  "sprites/wild-boar": {
+    "src": "hf_20260906_050637_20ca094f-9d71-4583-9b93-0446b15583be.png",
+    "bytes": 53956
+  },
+  "audio/skunk": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/skunk.mp3",
+    "bytes": 30869
+  },
+  "audio/chipmunk": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chipmunk.mp3",
+    "bytes": 35571
+  },
+  "audio/woodpecker": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/woodpecker.mp3",
+    "bytes": 38183
+  },
+  "sprites/skunk": {
+    "src": "hf_20260906_050644_115b67f1-fd40-4c62-8dbd-f94ca7ef4398.png",
+    "bytes": 49080
+  },
+  "audio/fish": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fish.mp3",
+    "bytes": 19375
+  },
+  "audio/bat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bat.mp3",
+    "bytes": 36094
+  },
+  "sprites/chipmunk": {
+    "src": "hf_20260906_050648_eb87e7ed-4dec-4122-b836-9c1b2a6d998b.png",
+    "bytes": 37120
+  },
+  "sprites/woodpecker": {
+    "src": "hf_20260906_050652_19c24baa-7872-4efa-b2c9-f2778b4829cf.png",
+    "bytes": 48516
+  },
+  "audio/frog": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/frog.mp3",
+    "bytes": 38706
+  },
+  "audio/toad": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toad.mp3",
+    "bytes": 21987
+  },
+  "sprites/bat": {
+    "src": "hf_20260906_050656_2318fb60-3212-46cf-aa69-5ac3fa12e5f8.png",
+    "bytes": 38118
+  },
+  "sprites/fish": {
+    "src": "hf_20260906_054017_d091d760-d2fd-4bea-a9da-e5d76c8cb01b.png",
+    "bytes": 32322
+  },
+  "audio/beaver": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/beaver.mp3",
+    "bytes": 38706
+  },
+  "audio/otter": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/otter.mp3",
+    "bytes": 37138
+  },
+  "sprites/beaver": {
+    "src": "hf_20260906_054201_0763983d-06c5-4c80-8e46-898c9ad70f26.png",
+    "bytes": 27632
+  },
+  "sprites/frog": {
+    "src": "hf_20260906_054021_5bb92598-64dc-4a54-bbcf-53a3452c3bff.png",
+    "bytes": 26778
+  },
+  "audio/swan": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/swan.mp3",
+    "bytes": 31392
+  },
+  "audio/heron": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/heron.mp3",
+    "bytes": 36616
+  },
+  "sprites/otter": {
+    "src": "hf_20260906_054029_35578ec3-00d9-4f6d-8d60-e6e9e35091c4.png",
+    "bytes": 33582
+  },
+  "sprites/swan": {
+    "src": "hf_20260906_054204_f377921f-f079-4c13-aa40-8b6010ff216e.png",
+    "bytes": 19378
+  },
+  "audio/kingfisher": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/kingfisher.mp3",
+    "bytes": 23555
+  },
+  "audio/alligator": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/alligator.mp3",
+    "bytes": 38706
+  },
+  "sprites/heron": {
+    "src": "hf_20260906_054034_3f57a2b9-9c1d-4efd-b6c4-3135a59e9138.png",
+    "bytes": 26280
+  },
+  "sprites/alligator": {
+    "src": "hf_20260906_054207_e67cc9af-23ee-4eb1-b1d4-64221cdc4ffd.png",
+    "bytes": 22284
+  },
+  "sprites/kingfisher": {
+    "src": "hf_20260906_054039_7644b7fa-5f44-4fc3-9dfa-0bd539b2cc0e.png",
+    "bytes": 30356
+  },
+  "sprites/turtle": {
+    "src": "hf_20260906_054042_3d249797-84be-428e-a603-91193b01ac71.png",
+    "bytes": 31558
+  },
+  "audio/turtle": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/turtle.mp3",
+    "bytes": 22510
+  },
+  "audio/salamander": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/salamander.mp3",
+    "bytes": 31392
+  },
+  "audio/newt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/newt.mp3",
+    "bytes": 20943
+  },
+  "sprites/salamander": {
+    "src": "hf_20260906_054046_c874305f-4cda-44bf-bfdd-7abd1fe1d070.png",
+    "bytes": 22584
+  },
+  "audio/butterfly": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/butterfly.mp3",
+    "bytes": 36094
+  },
+  "sprites/newt": {
+    "src": "hf_20260906_054050_f1ddfb8f-4431-4a04-b518-e4b45644725d.png",
+    "bytes": 15234
+  },
+  "audio/ant": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ant.mp3",
+    "bytes": 35571
+  },
+  "sprites/toad": {
+    "src": "hf_20260906_054025_e37f3080-9cfa-4e72-b2eb-50d54a8c37f7.png",
+    "bytes": 44874
+  },
+  "audio/mosquito": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mosquito.mp3",
+    "bytes": 26689
+  },
+  "sprites/ant": {
+    "src": "hf_20260906_051431_fb91278f-b755-4a2b-8aaf-0a4f3b0de88b.png",
+    "bytes": 31880
+  },
+  "audio/fly": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fly.mp3",
+    "bytes": 21987
+  },
+  "sprites/butterfly": {
+    "src": "hf_20260906_051424_24c7dbab-9552-4cdc-9db7-154b4de0546f.png",
+    "bytes": 41430
+  },
+  "audio/beetle": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/beetle.mp3",
+    "bytes": 20943
+  },
+  "audio/ladybug": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ladybug.mp3",
+    "bytes": 28779
+  },
+  "sprites/fly": {
+    "src": "hf_20260906_051439_c683fc4c-bad0-4447-b0f3-adf4c575ce61.png",
+    "bytes": 53852
+  },
+  "sprites/mosquito": {
+    "src": "hf_20260906_051436_276bdec1-0760-4feb-ad35-b13f15a5e8e3.png",
+    "bytes": 36754
+  },
+  "audio/dragonfly": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dragonfly.mp3",
+    "bytes": 26167
+  },
+  "sprites/ladybug": {
+    "src": "hf_20260906_051448_108a775b-8eb5-4f86-98b6-ab20f72d50a2.png",
+    "bytes": 36170
+  },
+  "audio/cricket": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cricket.mp3",
+    "bytes": 19898
+  },
+  "sprites/beetle": {
+    "src": "hf_20260906_051444_1b01cd60-23bf-4990-b080-60229c629cf7.png",
+    "bytes": 26000
+  },
+  "sprites/cricket": {
+    "src": "hf_20260906_051456_04b1fedb-9c0e-461f-ba99-64e02cd820eb.png",
+    "bytes": 41044
+  },
+  "audio/moth": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/moth.mp3",
+    "bytes": 25645
+  },
+  "audio/wasp": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wasp.mp3",
+    "bytes": 24600
+  },
+  "audio/praying-mantis": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/praying-mantis.mp3",
+    "bytes": 31392
+  },
+  "sprites/wasp": {
+    "src": "hf_20260906_051504_7d629945-2b8e-44e9-b07f-ddcccef79866.png",
+    "bytes": 42902
+  },
+  "sprites/dragonfly": {
+    "src": "hf_20260906_051459_0f272f7a-400a-44cd-917d-af139ff3ff04.png",
+    "bytes": 41196
+  },
+  "sprites/moth": {
+    "src": "hf_20260906_051508_9c886323-d992-4a32-b0a0-d625689137b4.png",
+    "bytes": 43414
+  },
+  "sprites/praying-mantis": {
+    "src": "hf_20260906_051511_32600bcb-a5db-4194-a0cf-1a6831214686.png",
+    "bytes": 34830
+  },
+  "audio/cockroach": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cockroach.mp3",
+    "bytes": 37138
+  },
+  "sprites/cockroach": {
+    "src": "hf_20260906_051515_b82983a2-b339-4701-9831-237734c33d88.png",
+    "bytes": 49376
+  },
+  "audio/firefly": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/firefly.mp3",
+    "bytes": 20943
+  },
+  "audio/caterpillar": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/caterpillar.mp3",
+    "bytes": 38706
+  },
+  "audio/spider": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/spider.mp3",
+    "bytes": 27734
+  },
+  "sprites/caterpillar": {
+    "src": "hf_20260906_051523_c5ae61dc-6740-4cf8-9aa5-c657cb9f284e.png",
+    "bytes": 18208
+  },
+  "sprites/firefly": {
+    "src": "hf_20260906_051519_0af7c06f-6ea4-425b-82e4-f81cf0c1163f.png",
+    "bytes": 24716
+  },
+  "audio/snail": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/snail.mp3",
+    "bytes": 20943
+  },
+  "sprites/spider": {
+    "src": "hf_20260906_051527_460fe2c4-f891-45cf-b7e2-13cba49a7d62.png",
+    "bytes": 52602
+  },
+  "audio/worm": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/worm.mp3",
+    "bytes": 38183
+  },
+  "audio/centipede": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/centipede.mp3",
+    "bytes": 29824
+  },
+  "audio/lion": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lion.mp3",
+    "bytes": 34004
+  },
+  "sprites/snail": {
+    "src": "hf_20260906_051531_14ca770e-d1fd-4fae-8aeb-546c79af8650.png",
+    "bytes": 29914
+  },
+  "sprites/centipede": {
+    "src": "hf_20260906_051538_e3b2d571-4b85-4cc0-8b1b-dc9bd451eff5.png",
+    "bytes": 28508
+  },
+  "audio/elephant": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/elephant.mp3",
+    "bytes": 28779
+  },
+  "sprites/lion": {
+    "src": "hf_20260906_042140_0b9ae91b-07a7-46f3-9993-583c3fa686d2.png",
+    "bytes": 52086
+  },
+  "audio/giraffe": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/giraffe.mp3",
+    "bytes": 38706
+  },
+  "sprites/elephant": {
+    "src": "hf_20260906_042106_b9c1ec4c-2e04-4de3-adf4-c1b8d6bfed1e.png",
+    "bytes": 33718
+  },
+  "audio/zebra": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/zebra.mp3",
+    "bytes": 25122
+  },
+  "audio/rhinoceros": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rhinoceros.mp3",
+    "bytes": 38706
+  },
+  "sprites/giraffe": {
+    "src": "hf_20260906_054054_25ab8d03-87e9-4e17-a759-ae902e6aabe0.png",
+    "bytes": 31344
+  },
+  "audio/hippopotamus": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hippopotamus.mp3",
+    "bytes": 34004
+  },
+  "sprites/zebra": {
+    "src": "hf_20260906_054058_1bfc2fd9-8470-4011-a528-a6c9dd40ff72.png",
+    "bytes": 41882
+  },
+  "sprites/worm": {
+    "src": "hf_20260906_051534_c4c2d7cf-e27a-4159-9b53-e269fe31a87c.png",
+    "bytes": 18858
+  },
+  "sprites/rhinoceros": {
+    "src": "hf_20260906_054104_41f533ed-68a0-4b91-a21a-baeb0339db8c.png",
+    "bytes": 39170
+  },
+  "audio/leopard": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/leopard.mp3",
+    "bytes": 19898
+  },
+  "sprites/hippopotamus": {
+    "src": "hf_20260906_054108_c3717cae-89f7-471c-b79e-d7934e834b22.png",
+    "bytes": 30450
+  },
+  "audio/cheetah": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cheetah.mp3",
+    "bytes": 38183
+  },
+  "audio/meerkat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/meerkat.mp3",
+    "bytes": 37138
+  },
+  "audio/hyena": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hyena.mp3",
+    "bytes": 38706
+  },
+  "sprites/hyena": {
+    "src": "hf_20260906_054215_5b583b7a-783f-4617-8b51-f9f837135eba.png",
+    "bytes": 41648
+  },
+  "sprites/cheetah": {
+    "src": "hf_20260906_054211_fb0aa3d6-4691-460a-9f2a-c660d5eaec13.png",
+    "bytes": 39944
+  },
+  "audio/warthog": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/warthog.mp3",
+    "bytes": 26689
+  },
+  "audio/buffalo": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/buffalo.mp3",
+    "bytes": 19898
+  },
+  "sprites/warthog": {
+    "src": "hf_20260906_054122_7836ce81-9f91-47ea-8a7d-b9160847b4e8.png",
+    "bytes": 45682
+  },
+  "audio/antelope": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/antelope.mp3",
+    "bytes": 21465
+  },
+  "sprites/meerkat": {
+    "src": "hf_20260906_054117_6e2f253a-4126-4204-b271-5aed8bfd9a69.png",
+    "bytes": 32326
+  },
+  "sprites/leopard": {
+    "src": "hf_20260906_054112_798989f1-96c5-4356-bb72-16e3f1e95a16.png",
+    "bytes": 56490
+  },
+  "audio/ostrich": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ostrich.mp3",
+    "bytes": 34526
+  },
+  "audio/tiger": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tiger.mp3",
+    "bytes": 17808
+  },
+  "sprites/antelope": {
+    "src": "hf_20260906_054129_ff5020b0-0a9a-4dd5-9c84-42625f1a45e5.png",
+    "bytes": 29840
+  },
+  "sprites/ostrich": {
+    "src": "hf_20260906_054219_a8ca897a-8f3b-4f94-baae-e2e98f729dad.png",
+    "bytes": 22072
+  },
+  "sprites/buffalo": {
+    "src": "hf_20260906_054125_756739af-ce4c-4e9b-b9d8-7d3e740ff392.png",
+    "bytes": 40222
+  },
+  "audio/monkey": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/monkey.mp3",
+    "bytes": 30347
+  },
+  "sprites/tiger": {
+    "src": "hf_20260906_042102_ff8e6cab-8a05-4bd1-870f-a3ecf0ba7a17.png",
+    "bytes": 49938
+  },
+  "audio/chimpanzee": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chimpanzee.mp3",
+    "bytes": 38706
+  },
+  "audio/gorilla": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/gorilla.mp3",
+    "bytes": 38706
+  },
+  "sprites/monkey": {
+    "src": "hf_20260906_042401_20297e23-d0f3-456f-a788-c30e29532fe4.png",
+    "bytes": 57924
+  },
+  "sprites/gorilla": {
+    "src": "hf_20260906_050559_aa81a1c8-e224-4a50-84eb-fb4886422b5d.png",
+    "bytes": 31830
+  },
+  "audio/orangutan": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/orangutan.mp3",
+    "bytes": 28257
+  },
+  "sprites/orangutan": {
+    "src": "hf_20260906_133921_fc5fa531-01ff-4404-8d16-14e5edac52f4.png",
+    "bytes": 50290
+  },
+  "audio/jaguar": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/jaguar.mp3",
+    "bytes": 24600
+  },
+  "audio/sloth": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sloth.mp3",
+    "bytes": 38706
+  },
+  "sprites/chimpanzee": {
+    "src": "hf_20260906_050603_c518c8c8-c7a4-4894-9315-6adf307c71de.png",
+    "bytes": 34524
+  },
+  "audio/anteater": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/anteater.mp3",
+    "bytes": 24600
+  },
+  "sprites/jaguar": {
+    "src": "hf_20260906_050610_92e5c199-7404-47a3-969d-b2211d622266.png",
+    "bytes": 54448
+  },
+  "audio/parrot": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/parrot.mp3",
+    "bytes": 23032
+  },
+  "sprites/anteater": {
+    "src": "hf_20260906_050618_12225c33-8955-492d-a5cf-941cf4861560.png",
+    "bytes": 46998
+  },
+  "sprites/sloth": {
+    "src": "hf_20260906_050614_93d5fdd3-9ae1-4f26-926f-940d505da749.png",
+    "bytes": 49394
+  },
+  "audio/toucan": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toucan.mp3",
+    "bytes": 25645
+  },
+  "sprites/parrot": {
+    "src": "hf_20260906_042109_fe382cab-1ef1-4188-bd1b-9aa22660e2b6.png",
+    "bytes": 29900
+  },
+  "audio/crocodile": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/crocodile.mp3",
+    "bytes": 30347
+  },
+  "audio/whale": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/whale.mp3",
+    "bytes": 38706
+  },
+  "sprites/crocodile": {
+    "src": "hf_20260906_042114_7d1363c2-8cf4-4083-acc1-0c10ed3ad8cc.png",
+    "bytes": 18762
+  },
+  "sprites/toucan": {
+    "src": "hf_20260906_050621_fd2d6f33-c017-4eb0-8275-7f1019060259.png",
+    "bytes": 39590
+  },
+  "audio/dolphin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dolphin.mp3",
+    "bytes": 38706
+  },
+  "sprites/whale": {
+    "src": "hf_20260906_041755_fd6ae704-2a40-4242-bc73-18dc8f3e8a1e.png",
+    "bytes": 21396
+  },
+  "audio/shark": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shark.mp3",
+    "bytes": 38706
+  },
+  "audio/octopus": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/octopus.mp3",
+    "bytes": 38706
+  },
+  "sprites/shark": {
+    "src": "hf_20260906_041901_92eed5be-133e-4e5d-8939-83b069941f36.png",
+    "bytes": 20438
+  },
+  "audio/squid": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/squid.mp3",
+    "bytes": 36094
+  },
+  "sprites/dolphin": {
+    "src": "hf_20260906_041752_cdd5f48f-dde0-4142-94e7-7be09ecf864f.png",
+    "bytes": 20788
+  },
+  "sprites/octopus": {
+    "src": "hf_20260906_041758_9c2e9491-cbbe-4615-a14e-6de57faf117a.png",
+    "bytes": 46926
+  },
+  "sprites/squid": {
+    "src": "hf_20260906_045408_7034ab38-5b97-480c-9104-4247c47b8ca4.png",
+    "bytes": 21898
+  },
+  "audio/jellyfish": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/jellyfish.mp3",
+    "bytes": 24077
+  },
+  "sprites/jellyfish": {
+    "src": "hf_20260906_041833_a1cad01c-e67a-4b28-a26e-c719922c5305.png",
+    "bytes": 39722
+  },
+  "audio/seahorse": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/seahorse.mp3",
+    "bytes": 24077
+  },
+  "audio/starfish": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/starfish.mp3",
+    "bytes": 26167
+  },
+  "audio/stingray": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stingray.mp3",
+    "bytes": 31914
+  },
+  "audio/eel": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/eel.mp3",
+    "bytes": 36616
+  },
+  "sprites/starfish": {
+    "src": "hf_20260906_041808_2c278aec-8a25-424e-8bb2-6aa70893b360.png",
+    "bytes": 26754
+  },
+  "audio/sea-turtle": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sea-turtle.mp3",
+    "bytes": 32959
+  },
+  "sprites/eel": {
+    "src": "hf_20260906_045415_476ddc5e-7b14-4e61-8109-6a71f2602fd6.png",
+    "bytes": 22118
+  },
+  "sprites/seahorse": {
+    "src": "hf_20260906_041805_f0413069-8480-42dc-97e0-4fd8803c34fe.png",
+    "bytes": 24726
+  },
+  "sprites/stingray": {
+    "src": "hf_20260906_045411_d08ec17a-ac48-4fbc-87c8-0f477faa2363.png",
+    "bytes": 21334
+  },
+  "audio/swordfish": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/swordfish.mp3",
+    "bytes": 38706
+  },
+  "sprites/sea-turtle": {
+    "src": "hf_20260906_045420_c5f0b0fa-c769-41ae-8323-5a84cd672704.png",
+    "bytes": 30644
+  },
+  "audio/orca": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/orca.mp3",
+    "bytes": 32436
+  },
+  "audio/crab": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/crab.mp3",
+    "bytes": 17808
+  },
+  "audio/lobster": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lobster.mp3",
+    "bytes": 29302
+  },
+  "audio/shrimp": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shrimp.mp3",
+    "bytes": 17285
+  },
+  "sprites/swordfish": {
+    "src": "hf_20260906_045423_bf6e5939-b85f-4ff0-bd3c-94566a135dae.png",
+    "bytes": 22128
+  },
+  "sprites/lobster": {
+    "src": "hf_20260906_061140_8c6bf94e-738e-4d93-a39b-57b3cd49a536.png",
+    "bytes": 41222
+  },
+  "audio/seal": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/seal.mp3",
+    "bytes": 30347
+  },
+  "sprites/shrimp": {
+    "src": "hf_20260906_061144_fbf49f19-323e-456e-9020-5a1b7594b040.png",
+    "bytes": 50442
+  },
+  "audio/sea-lion": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sea-lion.mp3",
+    "bytes": 41841
+  },
+  "sprites/crab": {
+    "src": "hf_20260906_041802_76a54b45-3630-4f56-a1b2-ca3294ed05f8.png",
+    "bytes": 38082
+  },
+  "sprites/sea-lion": {
+    "src": "hf_20260906_061149_0fe43095-af7a-4f4d-aeba-04413f196203.png",
+    "bytes": 29956
+  },
+  "sprites/seal": {
+    "src": "hf_20260906_042639_9b226b0c-fd84-42fe-9e9e-0cbd2f2e434b.png",
+    "bytes": 26532
+  },
+  "audio/seagull": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/seagull.mp3",
+    "bytes": 33481
+  },
+  "sprites/seagull": {
+    "src": "hf_20260906_061152_1464f72c-3958-4eb0-be45-a55b2572bfa1.png",
+    "bytes": 28210
+  },
+  "audio/pelican": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pelican.mp3",
+    "bytes": 24077
+  },
+  "sprites/orca": {
+    "src": "hf_20260906_045427_a9a0e955-82da-4ee1-b9cd-ffc5cd057f02.png",
+    "bytes": 22416
+  },
+  "audio/polar-bear": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/polar-bear.mp3",
+    "bytes": 22510
+  },
+  "sprites/pelican": {
+    "src": "hf_20260906_061156_8786d342-447c-48f6-a3e3-b5a59ea8e0e5.png",
+    "bytes": 27780
+  },
+  "audio/penguin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/penguin.mp3",
+    "bytes": 31392
+  },
+  "sprites/polar-bear": {
+    "src": "hf_20260906_042528_2c067321-8c23-4b8a-a553-f2790c89b450.png",
+    "bytes": 24102
+  },
+  "audio/walrus": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/walrus.mp3",
+    "bytes": 31914
+  },
+  "sprites/penguin": {
+    "src": "hf_20260906_042636_b1dff39a-226d-45c0-889b-374c20dc7764.png",
+    "bytes": 27044
+  },
+  "audio/arctic-fox": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/arctic-fox.mp3",
+    "bytes": 27734
+  },
+  "audio/reindeer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/reindeer.mp3",
+    "bytes": 34526
+  },
+  "sprites/arctic-fox": {
+    "src": "hf_20260906_042645_6c10bb24-85e4-4460-b117-fe04795b7657.png",
+    "bytes": 36538
+  },
+  "audio/snowy-owl": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/snowy-owl.mp3",
+    "bytes": 38183
+  },
+  "sprites/walrus": {
+    "src": "hf_20260906_042642_6382a99d-4400-48c4-bc2c-fb671ea16ea0.png",
+    "bytes": 40516
+  },
+  "sprites/reindeer": {
+    "src": "hf_20260906_050700_d5156cae-d563-409b-9300-8ce06c689574.png",
+    "bytes": 42796
+  },
+  "audio/arctic-hare": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/arctic-hare.mp3",
+    "bytes": 47065
+  },
+  "audio/narwhal": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/narwhal.mp3",
+    "bytes": 21987
+  },
+  "sprites/snowy-owl": {
+    "src": "hf_20260906_050704_55199100-9756-4d40-80ff-9038a6dbfd3f.png",
+    "bytes": 25366
+  },
+  "audio/puffin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/puffin.mp3",
+    "bytes": 23555
+  },
+  "audio/camel": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/camel.mp3",
+    "bytes": 20943
+  },
+  "sprites/arctic-hare": {
+    "src": "hf_20260906_050707_5c79801b-6d1e-4006-854d-69107dc3092b.png",
+    "bytes": 32042
+  },
+  "sprites/puffin": {
+    "src": "hf_20260906_050715_fff3e1d3-e922-4bca-9714-5a3292a0110c.png",
+    "bytes": 22320
+  },
+  "audio/scorpion": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/scorpion.mp3",
+    "bytes": 32959
+  },
+  "sprites/camel": {
+    "src": "hf_20260906_061200_e28e9dfd-6481-402f-9676-dd7f17345060.png",
+    "bytes": 40536
+  },
+  "audio/rattlesnake": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rattlesnake.mp3",
+    "bytes": 34004
+  },
+  "audio/lizard": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lizard.mp3",
+    "bytes": 38183
+  },
+  "sprites/scorpion": {
+    "src": "hf_20260906_061204_7fb0ee29-1428-4b14-9c1f-f1f71c80e8a9.png",
+    "bytes": 37866
+  },
+  "sprites/rattlesnake": {
+    "src": "hf_20260906_061208_32d0aa1d-1c75-4409-968e-4a25f6f9431f.png",
+    "bytes": 34068
+  },
+  "audio/fennec-fox": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fennec-fox.mp3",
+    "bytes": 37138
+  },
+  "sprites/lizard": {
+    "src": "hf_20260906_061212_693ea11e-4ddb-4012-be32-4468b2a0a14f.png",
+    "bytes": 31996
+  },
+  "audio/vulture": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/vulture.mp3",
+    "bytes": 27734
+  },
+  "audio/tortoise": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tortoise.mp3",
+    "bytes": 38706
+  },
+  "sprites/narwhal": {
+    "src": "hf_20260906_050711_84ae52b7-3e3c-4806-b442-862083dfd5c3.png",
+    "bytes": 20350
+  },
+  "sprites/fennec-fox": {
+    "src": "hf_20260906_061216_b158b500-5c97-4d63-954b-cb9e42c954ed.png",
+    "bytes": 35350
+  },
+  "sprites/vulture": {
+    "src": "hf_20260906_061219_4c9a47c1-f022-484b-ab42-3055902289f4.png",
+    "bytes": 38658
+  },
+  "audio/eagle": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/eagle.mp3",
+    "bytes": 24600
+  },
+  "audio/coyote": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/coyote.mp3",
+    "bytes": 38706
+  },
+  "audio/snow-leopard": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/snow-leopard.mp3",
+    "bytes": 43930
+  },
+  "audio/mountain-goat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mountain-goat.mp3",
+    "bytes": 31392
+  },
+  "sprites/snow-leopard": {
+    "src": "hf_20260906_061236_f4196b64-fa93-467f-9b21-b5cc941768b4.png",
+    "bytes": 52872
+  },
+  "sprites/mountain-goat": {
+    "src": "hf_20260906_061240_1ab980d4-8c79-438a-ba6e-74c3a0bc3494.png",
+    "bytes": 40346
+  },
+  "audio/yak": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/yak.mp3",
+    "bytes": 15196
+  },
+  "audio/panda": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/panda.mp3",
+    "bytes": 21465
+  },
+  "sprites/yak": {
+    "src": "hf_20260906_061248_e4fc055f-7868-46fe-8ad5-da0b5dcf5e2d.png",
+    "bytes": 47092
+  },
+  "sprites/eagle": {
+    "src": "hf_20260906_061232_52dfc0e7-a463-424c-81e0-dfe78e4fed44.png",
+    "bytes": 36286
+  },
+  "audio/red-panda": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/red-panda.mp3",
+    "bytes": 24600
+  },
+  "sprites/panda": {
+    "src": "hf_20260906_061253_5934d018-e928-4a8f-b5a4-3a4f95a53781.png",
+    "bytes": 30452
+  },
+  "sprites/tortoise": {
+    "src": "hf_20260906_061224_3fb47a27-f4dd-4550-8a6a-6efe682d22b3.png",
+    "bytes": 36532
+  },
+  "audio/kangaroo": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/kangaroo.mp3",
+    "bytes": 27734
+  },
+  "audio/koala": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/koala.mp3",
+    "bytes": 20943
+  },
+  "sprites/kangaroo": {
+    "src": "hf_20260906_061327_e54697d1-76b6-4818-8b97-3eaf3b9bdc7f.png",
+    "bytes": 30384
+  },
+  "audio/platypus": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/platypus.mp3",
+    "bytes": 33481
+  },
+  "sprites/coyote": {
+    "src": "hf_20260906_061228_fd70135b-fd18-4770-8b12-cf7670baa280.png",
+    "bytes": 37686
+  },
+  "audio/emu": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/emu.mp3",
+    "bytes": 24077
+  },
+  "sprites/platypus": {
+    "src": "hf_20260906_061334_90c7c114-8680-47a2-b49f-c285664e4a1d.png",
+    "bytes": 29318
+  },
+  "sprites/emu": {
+    "src": "hf_20260906_061338_2489503d-6d14-4597-8d0c-8b338ade8ed5.png",
+    "bytes": 37646
+  },
+  "sprites/red-panda": {
+    "src": "hf_20260906_061257_3658c541-01c4-43db-b426-8351f3058614.png",
+    "bytes": 39428
+  },
+  "audio/wombat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wombat.mp3",
+    "bytes": 20420
+  },
+  "audio/dingo": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dingo.mp3",
+    "bytes": 38706
+  },
+  "audio/kookaburra": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/kookaburra.mp3",
+    "bytes": 38706
+  },
+  "audio/snake": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/snake.mp3",
+    "bytes": 16763
+  },
+  "sprites/dingo": {
+    "src": "hf_20260906_061347_0157f806-5d13-4e47-b6fc-32aa4af30098.png",
+    "bytes": 33750
+  },
+  "sprites/wombat": {
+    "src": "hf_20260906_061342_dd1671d4-e5e8-41d6-9755-62ac87bd8a79.png",
+    "bytes": 36060
+  },
+  "sprites/koala": {
+    "src": "hf_20260906_061330_557b1d01-3a14-4d1a-a9b5-7e89f8c8c5a9.png",
+    "bytes": 48004
+  },
+  "sprites/kookaburra": {
+    "src": "hf_20260906_061351_4de156d4-1d9c-4530-96f8-8fb9719cd8ff.png",
+    "bytes": 28380
+  },
+  "audio/python": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/python.mp3",
+    "bytes": 19375
+  },
+  "audio/cobra": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cobra.mp3",
+    "bytes": 24600
+  },
+  "sprites/snake": {
+    "src": "hf_20260906_042137_7c593d67-8eda-4278-b3ac-be54ebdff64c.png",
+    "bytes": 27012
+  },
+  "audio/chameleon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chameleon.mp3",
+    "bytes": 23032
+  },
+  "audio/iguana": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/iguana.mp3",
+    "bytes": 38706
+  },
+  "audio/gecko": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/gecko.mp3",
+    "bytes": 27734
+  },
+  "sprites/iguana": {
+    "src": "hf_20260906_061314_25480ff0-4a40-4db6-8ad1-21373b4cee91.png",
+    "bytes": 36794
+  },
+  "sprites/chameleon": {
+    "src": "hf_20260906_061310_2f43c745-dadb-4fdc-914c-d72de5d9b662.png",
+    "bytes": 47502
+  },
+  "sprites/python": {
+    "src": "hf_20260906_061302_c9da20db-7b5a-4a85-8c8e-fd64bbe6a88d.png",
+    "bytes": 54920
+  },
+  "audio/komodo-dragon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/komodo-dragon.mp3",
+    "bytes": 38183
+  },
+  "sprites/gecko": {
+    "src": "hf_20260906_061319_81e67e53-337f-4674-bdd7-c583d1f9ff7d.png",
+    "bytes": 44298
+  },
+  "audio/flamingo": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/flamingo.mp3",
+    "bytes": 31914
+  },
+  "sprites/flamingo": {
+    "src": "hf_20260906_051543_1d8a81f2-3e32-4ee8-8819-71b7d596d4c0.png",
+    "bytes": 28178
+  },
+  "sprites/komodo-dragon": {
+    "src": "hf_20260906_061322_8e29fbfc-fc93-4997-85ef-701c8989f2d9.png",
+    "bytes": 41034
+  },
+  "audio/peacock": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/peacock.mp3",
+    "bytes": 38706
+  },
+  "audio/pigeon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pigeon.mp3",
+    "bytes": 24600
+  },
+  "audio/sparrow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sparrow.mp3",
+    "bytes": 23032
+  },
+  "audio/hummingbird": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hummingbird.mp3",
+    "bytes": 26167
+  },
+  "sprites/peacock": {
+    "src": "hf_20260906_051547_95aed1d0-ded1-4d97-9680-d17f195ac49b.png",
+    "bytes": 24408
+  },
+  "sprites/sparrow": {
+    "src": "hf_20260906_051600_70cc273b-c289-428c-972a-1eac55dac956.png",
+    "bytes": 35700
+  },
+  "audio/stork": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stork.mp3",
+    "bytes": 24077
+  },
+  "sprites/hummingbird": {
+    "src": "hf_20260906_051603_86bf18ed-a2a6-4bce-bf07-b6fe9ca3a6c5.png",
+    "bytes": 31534
+  },
+  "sprites/pigeon": {
+    "src": "hf_20260906_051555_b296e7fb-4e09-4260-b0ac-1b0a74625346.png",
+    "bytes": 27730
+  },
+  "audio/robin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/robin.mp3",
+    "bytes": 24077
+  },
+  "audio/swallow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/swallow.mp3",
+    "bytes": 26689
+  },
+  "sprites/cobra": {
+    "src": "hf_20260906_061306_f4fbeeee-d069-41f1-a294-c0dd2fe632c4.png",
+    "bytes": 36346
+  },
+  "sprites/stork": {
+    "src": "hf_20260906_051607_1b0502ae-7854-4968-8017-7ada792f5909.png",
+    "bytes": 22756
+  },
+  "sprites/robin": {
+    "src": "hf_20260906_051611_7116c118-6914-4e8a-a62d-328e54b1c856.png",
+    "bytes": 33740
+  },
+  "audio/magpie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/magpie.mp3",
+    "bytes": 25645
+  },
+  "sprites/swallow": {
+    "src": "hf_20260906_051614_4c12f458-a4a3-4d3b-824a-ede4ca3f3fe6.png",
+    "bytes": 29364
+  },
+  "audio/dove": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dove.mp3",
+    "bytes": 27734
+  },
+  "audio/canary": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/canary.mp3",
+    "bytes": 20943
+  },
+  "sprites/apple": {
+    "src": "hf_20260906_160117_8eb864ce-cccf-407e-a769-84b411e7dd0f.png",
+    "bytes": 17534
+  },
+  "audio/apple": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/apple.mp3",
+    "bytes": 20943
+  },
+  "sprites/dove": {
+    "src": "hf_20260906_051622_80fe2931-5ede-4345-b430-87f58a246a5b.png",
+    "bytes": 19500
+  },
+  "sprites/canary": {
+    "src": "hf_20260906_051625_cd7e588a-5a81-42b3-b04d-78cfc83aa920.png",
+    "bytes": 21640
+  },
+  "sprites/banana": {
+    "src": "hf_20260906_160142_bb504b3e-8a62-4a28-ac49-42053a001f8f.png",
+    "bytes": 25318
+  },
+  "audio/banana": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/banana.mp3",
+    "bytes": 20943
+  },
+  "sprites/orange": {
+    "src": "hf_20260906_160146_002aadb2-c824-4198-a42e-b8e8a2ae70fe.png",
+    "bytes": 29918
+  },
+  "audio/orange": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/orange.mp3",
+    "bytes": 38706
+  },
+  "audio/pear": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pear.mp3",
+    "bytes": 20420
+  },
+  "audio/grapes": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/grapes.mp3",
+    "bytes": 26167
+  },
+  "sprites/grapes": {
+    "src": "hf_20260906_160155_9dea8196-c113-4cda-894f-d1c4ab17c779.png",
+    "bytes": 38640
+  },
+  "audio/strawberry": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/strawberry.mp3",
+    "bytes": 29302
+  },
+  "sprites/pear": {
+    "src": "hf_20260906_160151_53f08cd7-96c4-4c2c-81e4-cc2b3d651acd.png",
+    "bytes": 16998
+  },
+  "sprites/strawberry": {
+    "src": "hf_20260906_160159_6fface0b-fd77-41fb-9d13-b93497d43cea.png",
+    "bytes": 50906
+  },
+  "audio/cherry": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cherry.mp3",
+    "bytes": 19375
+  },
+  "audio/watermelon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/watermelon.mp3",
+    "bytes": 27212
+  },
+  "sprites/cherry": {
+    "src": "hf_20260906_160203_99cdbe47-9930-4f6e-b5ed-a09dcaad3ee8.png",
+    "bytes": 33446
+  },
+  "sprites/magpie": {
+    "src": "hf_20260906_051618_a9255ac7-5669-4a08-adb5-60d0608e1421.png",
+    "bytes": 27766
+  },
+  "audio/melon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/melon.mp3",
+    "bytes": 38706
+  },
+  "sprites/melon": {
+    "src": "hf_20260906_160212_794f6901-6293-43cf-9655-8fa4bd23b168.png",
+    "bytes": 38982
+  },
+  "audio/pineapple": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pineapple.mp3",
+    "bytes": 24600
+  },
+  "sprites/watermelon": {
+    "src": "hf_20260906_160207_d33806da-8ac6-49a2-a947-ac18052e6fbc.png",
+    "bytes": 41634
+  },
+  "sprites/pineapple": {
+    "src": "hf_20260906_160216_4150f1b2-a6d2-492f-ad87-c6cc3969ee15.png",
+    "bytes": 48044
+  },
+  "sprites/mango": {
+    "src": "hf_20260906_160221_edbd1fb0-f78e-4fe3-aadd-794dbf37e818.png",
+    "bytes": 19678
+  },
+  "audio/mango": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mango.mp3",
+    "bytes": 31392
+  },
+  "sprites/lemon": {
+    "src": "hf_20260906_160225_9ffd35f7-f37f-4298-b419-d98a58880474.png",
+    "bytes": 20248
+  },
+  "audio/lemon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lemon.mp3",
+    "bytes": 25122
+  },
+  "audio/lime": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lime.mp3",
+    "bytes": 23555
+  },
+  "sprites/peach": {
+    "src": "hf_20260906_160243_b8498817-fdc6-48fc-b7b6-2de6208ee155.png",
+    "bytes": 19626
+  },
+  "audio/plum": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/plum.mp3",
+    "bytes": 38706
+  },
+  "sprites/lime": {
+    "src": "hf_20260906_160231_6765c540-bfca-47cc-bbaa-1565c8d705c6.png",
+    "bytes": 26046
+  },
+  "audio/apricot": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/apricot.mp3",
+    "bytes": 36616
+  },
+  "audio/peach": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/peach.mp3",
+    "bytes": 16763
+  },
+  "sprites/apricot": {
+    "src": "hf_20260906_160252_536dcd3a-616c-40b2-9aea-ed219084bb6d.png",
+    "bytes": 21986
+  },
+  "sprites/plum": {
+    "src": "hf_20260906_160248_3244d9be-fb98-4881-be1e-c974297b42df.png",
+    "bytes": 26018
+  },
+  "audio/kiwi": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/kiwi.mp3",
+    "bytes": 23032
+  },
+  "audio/coconut": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/coconut.mp3",
+    "bytes": 35571
+  },
+  "sprites/kiwi": {
+    "src": "hf_20260906_160256_889826a1-82f4-4611-8ccd-ae641cace6a4.png",
+    "bytes": 33492
+  },
+  "audio/pomegranate": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pomegranate.mp3",
+    "bytes": 35571
+  },
+  "sprites/pomegranate": {
+    "src": "hf_20260906_160301_52c0489f-e366-4407-91bd-9434aab7ddcd.png",
+    "bytes": 41650
+  },
+  "audio/blueberry": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/blueberry.mp3",
+    "bytes": 26167
+  },
+  "audio/carrot": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/carrot.mp3",
+    "bytes": 18330
+  },
+  "sprites/blueberry": {
+    "src": "hf_20260906_160310_d1a15c7a-5c99-439b-bcd1-7b62eaed013e.png",
+    "bytes": 31722
+  },
+  "sprites/coconut": {
+    "src": "hf_20260906_160306_4a24d118-866f-4c28-bb07-510e43e14edb.png",
+    "bytes": 46692
+  },
+  "audio/potato": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/potato.mp3",
+    "bytes": 20943
+  },
+  "sprites/carrot": {
+    "src": "hf_20260906_162013_f6c9694e-a182-4039-aade-c8d08a184e73.png",
+    "bytes": 37498
+  },
+  "audio/tomato": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tomato.mp3",
+    "bytes": 32436
+  },
+  "sprites/potato": {
+    "src": "hf_20260906_162018_24682b5b-a7e0-4807-8373-ac5097446f54.png",
+    "bytes": 22996
+  },
+  "audio/cucumber": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cucumber.mp3",
+    "bytes": 23555
+  },
+  "sprites/tomato": {
+    "src": "hf_20260906_162023_8452b875-a475-49f9-9970-b1caa7eb9eb0.png",
+    "bytes": 23060
+  },
+  "audio/onion": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/onion.mp3",
+    "bytes": 20943
+  },
+  "sprites/cucumber": {
+    "src": "hf_20260906_162027_96e0b2b0-cd8a-41be-8117-af7e3feaf68e.png",
+    "bytes": 19130
+  },
+  "sprites/onion": {
+    "src": "hf_20260906_162032_99e6dfb7-0c44-4b5c-a642-b9bd27e6d112.png",
+    "bytes": 21922
+  },
+  "audio/cabbage": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cabbage.mp3",
+    "bytes": 38706
+  },
+  "audio/garlic": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/garlic.mp3",
+    "bytes": 24077
+  },
+  "sprites/garlic": {
+    "src": "hf_20260906_162036_0cd44f10-ee1d-47c2-8515-0875a31952d6.png",
+    "bytes": 28552
+  },
+  "audio/pepper": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pepper.mp3",
+    "bytes": 34526
+  },
+  "audio/broccoli": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/broccoli.mp3",
+    "bytes": 27734
+  },
+  "sprites/cabbage": {
+    "src": "hf_20260906_162041_2d5fdc66-c4f3-4d14-bc49-f6cabdd25794.png",
+    "bytes": 35726
+  },
+  "sprites/pepper": {
+    "src": "hf_20260906_162045_b73680fc-5500-4a7a-a3ba-176a77c1b5ab.png",
+    "bytes": 21346
+  },
+  "audio/cauliflower": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cauliflower.mp3",
+    "bytes": 25122
+  },
+  "sprites/broccoli": {
+    "src": "hf_20260906_162102_30432d50-7bb2-405f-8555-faccfa68d2b5.png",
+    "bytes": 25408
+  },
+  "sprites/cauliflower": {
+    "src": "hf_20260906_162107_528cf5da-1a83-4ba5-b82f-562796ac20e1.png",
+    "bytes": 31406
+  },
+  "audio/corn": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/corn.mp3",
+    "bytes": 32959
+  },
+  "audio/peas": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/peas.mp3",
+    "bytes": 17808
+  },
+  "audio/beans": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/beans.mp3",
+    "bytes": 21465
+  },
+  "sprites/corn": {
+    "src": "hf_20260906_162112_aff49fdd-e7bd-4c74-87f3-581df08717c1.png",
+    "bytes": 45496
+  },
+  "sprites/beans": {
+    "src": "hf_20260906_162122_f59e83b0-0db4-46e8-9940-0946dd6169cd.png",
+    "bytes": 33292
+  },
+  "audio/pumpkin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pumpkin.mp3",
+    "bytes": 22510
+  },
+  "sprites/peas": {
+    "src": "hf_20260906_162117_57b99109-2532-4ec2-a331-7717f3790505.png",
+    "bytes": 39450
+  },
+  "audio/eggplant": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/eggplant.mp3",
+    "bytes": 31392
+  },
+  "sprites/pumpkin": {
+    "src": "hf_20260906_162128_86a98acd-9dcd-435d-8df6-d6db851a97d0.png",
+    "bytes": 21994
+  },
+  "audio/zucchini": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/zucchini.mp3",
+    "bytes": 31392
+  },
+  "audio/lettuce": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lettuce.mp3",
+    "bytes": 35571
+  },
+  "sprites/zucchini": {
+    "src": "hf_20260906_162138_4cce00e1-622c-4ecb-a2a0-ab90bb8b1324.png",
+    "bytes": 23936
+  },
+  "sprites/eggplant": {
+    "src": "hf_20260906_162133_935c3d1d-5707-4d6f-b7b8-529338961a02.png",
+    "bytes": 15416
+  },
+  "audio/spinach": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/spinach.mp3",
+    "bytes": 34004
+  },
+  "sprites/lettuce": {
+    "src": "hf_20260906_162142_7af9badd-5148-4aed-aa09-986c24165afc.png",
+    "bytes": 47732
+  },
+  "audio/mushroom": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mushroom.mp3",
+    "bytes": 27734
+  },
+  "sprites/mushroom": {
+    "src": "hf_20260906_162152_f7e2ba3d-5595-46cb-8509-9c1fa563493c.png",
+    "bytes": 24224
+  },
+  "sprites/spinach": {
+    "src": "hf_20260906_162147_edf26921-7a9d-4831-a048-64c39b62793a.png",
+    "bytes": 34386
+  },
+  "audio/radish": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/radish.mp3",
+    "bytes": 28257
+  },
+  "audio/milk": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/milk.mp3",
+    "bytes": 24600
+  },
+  "audio/cheese": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cheese.mp3",
+    "bytes": 23032
+  },
+  "sprites/radish": {
+    "src": "hf_20260906_162156_5f4d4bf1-aaf6-44a2-b76e-bf6db477a218.png",
+    "bytes": 37382
+  },
+  "sprites/milk": {
+    "src": "hf_20260906_162211_1767781b-a6da-4ccf-b497-06a84b14b024.png",
+    "bytes": 13250
+  },
+  "audio/butter": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/butter.mp3",
+    "bytes": 32436
+  },
+  "sprites/cheese": {
+    "src": "hf_20260906_162216_ae1bb0ae-ea65-400d-abb3-7a47708cbb58.png",
+    "bytes": 18622
+  },
+  "audio/yogurt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/yogurt.mp3",
+    "bytes": 35571
+  },
+  "sprites/butter": {
+    "src": "hf_20260906_162221_66d63b76-eafb-407f-8543-db2ab9f51130.png",
+    "bytes": 21750
+  },
+  "audio/cream": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cream.mp3",
+    "bytes": 20943
+  },
+  "sprites/cream": {
+    "src": "hf_20260906_162230_08036d16-7dc3-488f-b16b-35e3cf88c77f.png",
+    "bytes": 23558
+  },
+  "sprites/yogurt": {
+    "src": "hf_20260906_162226_a1690f0f-2918-45bb-a910-5fc76c985925.png",
+    "bytes": 23230
+  },
+  "sprites/sour-cream": {
+    "src": "hf_20260906_162235_c6edc998-e698-489b-b632-571f18bc0637.png",
+    "bytes": 24826
+  },
+  "audio/sour-cream": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sour-cream.mp3",
+    "bytes": 38183
+  },
+  "audio/egg": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/egg.mp3",
+    "bytes": 32959
+  },
+  "audio/cottage-cheese": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cottage-cheese.mp3",
+    "bytes": 36094
+  },
+  "sprites/cottage-cheese": {
+    "src": "hf_20260906_162239_1a8dd906-52a8-4c94-ae96-7722d9308903.png",
+    "bytes": 25728
+  },
+  "sprites/egg": {
+    "src": "hf_20260906_162250_577cc4a6-32bb-46fc-95b6-9f8baead1d38.png",
+    "bytes": 20270
+  },
+  "audio/kefir": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/kefir.mp3",
+    "bytes": 37661
+  },
+  "sprites/kefir": {
+    "src": "hf_20260906_162255_41c50892-9306-47c6-be36-15f8db50859e.png",
+    "bytes": 19962
+  },
+  "audio/chicken-meat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chicken.mp3",
+    "bytes": 29824
+  },
+  "audio/beef": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/beef.mp3",
+    "bytes": 38706
+  },
+  "sprites/chicken-meat": {
+    "src": "hf_20260906_163849_0ab6c5a6-d896-435e-8752-a2ae1b62234a.png",
+    "bytes": 24014
+  },
+  "sprites/beef": {
+    "src": "hf_20260906_163853_001b1f60-7156-4816-bbe4-a6c687877b63.png",
+    "bytes": 23666
+  },
+  "audio/pork": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pork.mp3",
+    "bytes": 24600
+  },
+  "sprites/pork": {
+    "src": "hf_20260906_163858_816ce98d-44c8-49b3-8761-b60a34033507.png",
+    "bytes": 20008
+  },
+  "audio/lamb": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lamb.mp3",
+    "bytes": 24077
+  },
+  "audio/sausage": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sausage.mp3",
+    "bytes": 30869
+  },
+  "sprites/lamb": {
+    "src": "hf_20260906_163902_89430c89-6862-438b-8dcd-f0226a1556b0.png",
+    "bytes": 51258
+  },
+  "sprites/sausage": {
+    "src": "hf_20260906_163907_1a29b700-951e-4fb3-9f48-1ef882a7e7b3.png",
+    "bytes": 27678
+  },
+  "audio/ham": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ham.mp3",
+    "bytes": 38706
+  },
+  "audio/bacon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bacon.mp3",
+    "bytes": 38706
+  },
+  "sprites/ham": {
+    "src": "hf_20260906_163913_db46a5f3-e7de-4230-a3cd-75a043430fca.png",
+    "bytes": 49242
+  },
+  "audio/steak": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/steak.mp3",
+    "bytes": 38706
+  },
+  "sprites/bacon": {
+    "src": "hf_20260906_163929_b6384ccd-8a15-4430-ba5f-76cf749698c4.png",
+    "bytes": 31616
+  },
+  "audio/fish-food": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fish.mp3",
+    "bytes": 19375
+  },
+  "audio/minced-meat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/minced-meat.mp3",
+    "bytes": 37661
+  },
+  "sprites/fish-food": {
+    "src": "hf_20260906_163943_53fa0bee-7e59-4b1d-9b12-df7ff3bc1cc1.png",
+    "bytes": 43990
+  },
+  "sprites/minced-meat": {
+    "src": "hf_20260906_163939_70d290ad-376e-4e1c-aa84-88bb064366ed.png",
+    "bytes": 29696
+  },
+  "sprites/salmon": {
+    "src": "hf_20260906_163948_d96baae6-6db9-436d-a0b2-f0160bf28c50.png",
+    "bytes": 37904
+  },
+  "audio/salmon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/salmon.mp3",
+    "bytes": 38706
+  },
+  "audio/shrimp-food": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shrimp.mp3",
+    "bytes": 17285
+  },
+  "sprites/tuna": {
+    "src": "hf_20260906_163952_56b87449-7395-4c34-9aae-b9f66f6bea62.png",
+    "bytes": 29212
+  },
+  "audio/tuna": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tuna.mp3",
+    "bytes": 19898
+  },
+  "sprites/shrimp-food": {
+    "src": "hf_20260906_163957_b434125f-036b-47df-984a-9965fe8a151e.png",
+    "bytes": 50586
+  },
+  "audio/crab-food": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/crab.mp3",
+    "bytes": 17808
+  },
+  "sprites/crab-food": {
+    "src": "hf_20260906_164001_81f24d71-6072-4505-9e84-7f11a4eef62b.png",
+    "bytes": 38534
+  },
+  "audio/lobster-food": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lobster.mp3",
+    "bytes": 29302
+  },
+  "sprites/steak": {
+    "src": "hf_20260906_163935_8c8c7e61-c00b-41d9-ae51-8a3bde8ffa63.png",
+    "bytes": 43180
+  },
+  "audio/squid-food": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/squid.mp3",
+    "bytes": 36094
+  },
+  "sprites/lobster-food": {
+    "src": "hf_20260906_164005_a149a7e8-745d-4790-a79e-bea80e7561b1.png",
+    "bytes": 40722
+  },
+  "sprites/squid-food": {
+    "src": "hf_20260906_164010_9ecdfa89-8dad-49b6-adea-c9668c1aca82.png",
+    "bytes": 40318
+  },
+  "audio/oyster": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/oyster.mp3",
+    "bytes": 36094
+  },
+  "audio/mussel": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mussel.mp3",
+    "bytes": 14673
+  },
+  "sprites/oyster": {
+    "src": "hf_20260906_164013_b5b94276-3f57-4674-9d25-cce15ca67e3a.png",
+    "bytes": 54762
+  },
+  "audio/caviar": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/caviar.mp3",
+    "bytes": 30869
+  },
+  "sprites/bread": {
+    "src": "hf_20260906_164042_2dc4bfb4-085d-476d-ada2-7c56515b7ad9.png",
+    "bytes": 36784
+  },
+  "sprites/mussel": {
+    "src": "hf_20260906_164019_ea0b9918-6bf0-4209-b183-1b3534e6b801.png",
+    "bytes": 40814
+  },
+  "sprites/caviar": {
+    "src": "hf_20260906_164037_5af64a92-6214-4969-bdbe-05a4119928f2.png",
+    "bytes": 47002
+  },
+  "audio/bread": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bread.mp3",
+    "bytes": 23555
+  },
+  "audio/baguette": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/baguette.mp3",
+    "bytes": 13628
+  },
+  "sprites/baguette": {
+    "src": "hf_20260906_164046_a6e8a447-7791-46f0-937d-369a3819fae2.png",
+    "bytes": 29238
+  },
+  "sprites/croissant": {
+    "src": "hf_20260906_164050_5653320e-8cc7-4d92-bfe1-a4e51aaa50f1.png",
+    "bytes": 29948
+  },
+  "audio/croissant": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/croissant.mp3",
+    "bytes": 29302
+  },
+  "audio/bagel": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bagel.mp3",
+    "bytes": 32436
+  },
+  "sprites/bagel": {
+    "src": "hf_20260906_164055_718abaad-edd7-490a-9ae6-a047ebac8835.png",
+    "bytes": 32958
+  },
+  "audio/roll": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/roll.mp3",
+    "bytes": 24600
+  },
+  "sprites/roll": {
+    "src": "hf_20260906_164059_cb1bc827-6ae9-41db-a8a3-e89cdfa30773.png",
+    "bytes": 19232
+  },
+  "audio/muffin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/muffin.mp3",
+    "bytes": 35571
+  },
+  "sprites/muffin": {
+    "src": "hf_20260906_164103_c28ce783-1f84-4d41-b5ea-462b4f014cf5.png",
+    "bytes": 44310
+  },
+  "sprites/pie": {
+    "src": "hf_20260906_164108_a8eaa371-a284-4a47-9601-afec7e68be4d.png",
+    "bytes": 40470
+  },
+  "audio/pie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pie.mp3",
+    "bytes": 18330
+  },
+  "audio/pretzel": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pretzel.mp3",
+    "bytes": 23555
+  },
+  "sprites/pretzel": {
+    "src": "hf_20260906_164113_7b401cd4-9ad2-4200-838f-38d1251600c8.png",
+    "bytes": 40918
+  },
+  "audio/tortilla": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tortilla.mp3",
+    "bytes": 37138
+  },
+  "audio/cracker": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cracker.mp3",
+    "bytes": 29302
+  },
+  "sprites/tortilla": {
+    "src": "hf_20260906_164118_7dd60e11-6c6a-4a18-92bc-2a4f5672de22.png",
+    "bytes": 32584
+  },
+  "sprites/cracker": {
+    "src": "hf_20260906_164122_1629828f-d214-4ae6-8d69-0fbeb4b8fdbb.png",
+    "bytes": 30716
+  },
+  "audio/flatbread": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/flatbread.mp3",
+    "bytes": 38183
+  },
+  "audio/rice": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rice.mp3",
+    "bytes": 38706
+  },
+  "sprites/flatbread": {
+    "src": "hf_20260906_164126_421b597f-bd87-47c2-b564-f7f658b75d7d.png",
+    "bytes": 27820
+  },
+  "audio/pasta": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pasta.mp3",
+    "bytes": 22510
+  },
+  "sprites/pasta": {
+    "src": "hf_20260907_030728_49032654-30f4-4e44-a4fb-85bf54bb69cb.png",
+    "bytes": 32762
+  },
+  "audio/noodles": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/noodles.mp3",
+    "bytes": 28779
+  },
+  "sprites/noodles": {
+    "src": "hf_20260907_030732_42019fd7-7678-438f-84fe-95108e0d04d5.png",
+    "bytes": 43854
+  },
+  "sprites/rice": {
+    "src": "hf_20260907_030724_b2893f3f-b614-4a14-b665-c28d96109033.png",
+    "bytes": 49252
+  },
+  "audio/flour": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/flour.mp3",
+    "bytes": 24077
+  },
+  "sprites/flour": {
+    "src": "hf_20260907_030742_8929d1a7-baa9-401e-a9bd-f6ab5dc6c203.png",
+    "bytes": 32832
+  },
+  "audio/oats": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/oats.mp3",
+    "bytes": 27734
+  },
+  "sprites/sugar": {
+    "src": "hf_20260907_030748_4978d531-e101-4945-9bc1-3ddaa95c509e.png",
+    "bytes": 25866
+  },
+  "sprites/oats": {
+    "src": "hf_20260907_030738_19f0e181-161b-432f-87ae-fe5be4d40ead.png",
+    "bytes": 39360
+  },
+  "audio/sugar": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sugar.mp3",
+    "bytes": 26689
+  },
+  "audio/buckwheat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/buckwheat.mp3",
+    "bytes": 27734
+  },
+  "audio/lentils": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lentils.mp3",
+    "bytes": 22510
+  },
+  "audio/salt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/salt.mp3",
+    "bytes": 38706
+  },
+  "sprites/lentils": {
+    "src": "hf_20260907_030813_b7b1d330-010f-4bb6-aa16-c72e27b7bb36.png",
+    "bytes": 36494
+  },
+  "sprites/salt": {
+    "src": "hf_20260907_030803_012085e7-6e55-4062-a05a-ac3713c2e615.png",
+    "bytes": 44092
+  },
+  "sprites/buckwheat": {
+    "src": "hf_20260907_030809_be8b28dd-c4d8-4f97-aaae-75732a12fe77.png",
+    "bytes": 33398
+  },
+  "sprites/oil": {
+    "src": "hf_20260907_030817_e2bab94a-7ea7-4dc7-a9af-12af61724102.png",
+    "bytes": 13160
+  },
+  "audio/oil": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/oil.mp3",
+    "bytes": 38706
+  },
+  "audio/burger": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/burger.mp3",
+    "bytes": 21465
+  },
+  "audio/cheeseburger": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cheeseburger.mp3",
+    "bytes": 30869
+  },
+  "sprites/burger": {
+    "src": "hf_20260907_030822_91b70538-4eae-4fab-bd95-8de97e608b78.png",
+    "bytes": 34202
+  },
+  "audio/hot-dog": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hot-dog.mp3",
+    "bytes": 16763
+  },
+  "sprites/cheeseburger": {
+    "src": "hf_20260907_030827_6f65b7a3-f572-488c-990f-5d664089deb2.png",
+    "bytes": 27790
+  },
+  "sprites/hot-dog": {
+    "src": "hf_20260907_030831_abb351ca-7e06-49bb-814c-b64b89c6ead4.png",
+    "bytes": 23612
+  },
+  "sprites/french-fries": {
+    "src": "hf_20260907_030836_bab879ad-902d-499c-ac59-9d8de87d4905.png",
+    "bytes": 33866
+  },
+  "audio/french-fries": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/french-fries.mp3",
+    "bytes": 22510
+  },
+  "audio/pizza": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pizza.mp3",
+    "bytes": 38706
+  },
+  "sprites/pizza": {
+    "src": "hf_20260907_030841_3ee35258-cb2c-470e-aefb-3b831f86d9a9.png",
+    "bytes": 65720
+  },
+  "audio/sandwich": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sandwich.mp3",
+    "bytes": 31392
+  },
+  "sprites/sandwich": {
+    "src": "hf_20260907_030846_a47734f4-15c5-49ed-bc73-6d7150842cc3.png",
+    "bytes": 29290
+  },
+  "audio/taco": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/taco.mp3",
+    "bytes": 18330
+  },
+  "sprites/taco": {
+    "src": "hf_20260907_030850_4533d486-7e1a-4845-8131-b83b9bebe22b.png",
+    "bytes": 29454
+  },
+  "audio/kebab": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/kebab.mp3",
+    "bytes": 27212
+  },
+  "sprites/kebab": {
+    "src": "hf_20260907_030854_694e98c1-3527-448f-8bca-4435cbcc3ff4.png",
+    "bytes": 32838
+  },
+  "audio/nuggets": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/nuggets.mp3",
+    "bytes": 17285
+  },
+  "audio/wrap": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wrap.mp3",
+    "bytes": 26167
+  },
+  "sprites/nuggets": {
+    "src": "hf_20260907_030911_d8757607-7d51-42b3-9e54-e3e9d8766f87.png",
+    "bytes": 35742
+  },
+  "audio/fried-chicken": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fried-chicken.mp3",
+    "bytes": 30347
+  },
+  "sprites/wrap": {
+    "src": "hf_20260907_030915_4b22401e-dec4-4548-bb28-d2f5a50c26bd.png",
+    "bytes": 38752
+  },
+  "sprites/fried-chicken": {
+    "src": "hf_20260907_030921_8c50039a-d8b3-4d7c-8a13-5ceaa4702d91.png",
+    "bytes": 30898
+  },
+  "sprites/onion-rings": {
+    "src": "hf_20260907_030925_865a57b4-1c8d-481a-9214-bb0fa6b720cd.png",
+    "bytes": 45584
+  },
+  "audio/onion-rings": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/onion-rings.mp3",
+    "bytes": 35049
+  },
+  "sprites/water": {
+    "src": "hf_20260907_030929_e8e68eed-4cfa-4af1-a604-1ddc816e1e7b.png",
+    "bytes": 36500
+  },
+  "audio/water": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/water.mp3",
+    "bytes": 35571
+  },
+  "audio/tea": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tea.mp3",
+    "bytes": 36094
+  },
+  "sprites/tea": {
+    "src": "hf_20260907_030934_05a0323b-4a09-45b0-a8df-671157e49936.png",
+    "bytes": 22566
+  },
+  "audio/coffee": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/coffee.mp3",
+    "bytes": 38706
+  },
+  "sprites/coffee": {
+    "src": "hf_20260907_030939_70013a49-20a7-4367-ab15-aba8358da7da.png",
+    "bytes": 25688
+  },
+  "audio/juice": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/juice.mp3",
+    "bytes": 23555
+  },
+  "sprites/juice": {
+    "src": "hf_20260907_030945_3dde1db7-67ac-43bc-b4e6-51d57dbb616f.png",
+    "bytes": 26030
+  },
+  "sprites/lemonade": {
+    "src": "hf_20260907_030949_d854fbdb-c8f7-4c3a-9ef2-69befaab17d0.png",
+    "bytes": 19788
+  },
+  "audio/milkshake": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/milkshake.mp3",
+    "bytes": 25122
+  },
+  "audio/lemonade": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lemonade.mp3",
+    "bytes": 37138
+  },
+  "audio/smoothie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/smoothie.mp3",
+    "bytes": 38706
+  },
+  "sprites/milkshake": {
+    "src": "hf_20260907_030954_c62a5c33-1444-426c-b069-3ed0ce42c9bc.png",
+    "bytes": 20634
+  },
+  "sprites/smoothie": {
+    "src": "hf_20260907_030958_e3e3fb18-4a3c-43d4-a782-3a25cab0a0ec.png",
+    "bytes": 24706
+  },
+  "audio/hot-chocolate": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hot-chocolate.mp3",
+    "bytes": 46020
+  },
+  "audio/soda": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/soda.mp3",
+    "bytes": 32436
+  },
+  "sprites/hot-chocolate": {
+    "src": "hf_20260907_031003_ce243ed2-be5c-45fe-8021-1c50f183e08c.png",
+    "bytes": 23200
+  },
+  "sprites/soda": {
+    "src": "hf_20260907_031013_dfd22cf8-a1ef-4d69-9e11-1aa7272b79d7.png",
+    "bytes": 39430
+  },
+  "audio/iced-tea": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/iced-tea.mp3",
+    "bytes": 43930
+  },
+  "sprites/cappuccino": {
+    "src": "hf_20260907_031023_efc80951-39d9-45c4-ae9a-30a4ad797fcd.png",
+    "bytes": 28120
+  },
+  "audio/cappuccino": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cappuccino.mp3",
+    "bytes": 38706
+  },
+  "sprites/iced-tea": {
+    "src": "hf_20260907_031017_ade3f3c2-f78a-4052-9490-3069867c33ce.png",
+    "bytes": 30126
+  },
+  "audio/cake": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cake.mp3",
+    "bytes": 38706
+  },
+  "sprites/cake": {
+    "src": "hf_20260907_031956_3c06205d-723c-4b1e-aea0-ab1be2923067.png",
+    "bytes": 32398
+  },
+  "sprites/cupcake": {
+    "src": "hf_20260907_032001_46889a9f-89e7-4bae-a3dd-21aa35bdbd2d.png",
+    "bytes": 30396
+  },
+  "audio/ice-cream": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ice-cream.mp3",
+    "bytes": 30869
+  },
+  "audio/cupcake": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cupcake.mp3",
+    "bytes": 26689
+  },
+  "audio/chocolate": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chocolate.mp3",
+    "bytes": 36094
+  },
+  "sprites/ice-cream": {
+    "src": "hf_20260907_032006_3e7a935e-4817-435a-b6c6-2100c6118361.png",
+    "bytes": 27710
+  },
+  "sprites/chocolate": {
+    "src": "hf_20260907_032010_ef68d7e5-d3c1-4393-8ee9-576a4886394a.png",
+    "bytes": 25298
+  },
+  "audio/candy": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/candy.mp3",
+    "bytes": 19898
+  },
+  "sprites/candy": {
+    "src": "hf_20260907_032014_df69c53c-6cd4-4aac-8f0f-fa008a96c80e.png",
+    "bytes": 46540
+  },
+  "audio/cookie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cookie.mp3",
+    "bytes": 19375
+  },
+  "sprites/cookie": {
+    "src": "hf_20260907_032019_4338a40f-7176-488b-b972-6845e8811c2a.png",
+    "bytes": 53836
+  },
+  "audio/donut": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/donut.mp3",
+    "bytes": 14151
+  },
+  "sprites/donut": {
+    "src": "hf_20260907_032034_efb3f5ba-ddd2-4a28-956a-7dcee843fb99.png",
+    "bytes": 36280
+  },
+  "sprites/pudding": {
+    "src": "hf_20260907_032039_090ab47d-bff7-4f36-8d72-247a94b100e8.png",
+    "bytes": 22244
+  },
+  "audio/pudding": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pudding.mp3",
+    "bytes": 20420
+  },
+  "sprites/jelly": {
+    "src": "hf_20260907_032044_2b7e42cf-08d9-49be-8898-e09af6637460.png",
+    "bytes": 30324
+  },
+  "audio/jelly": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/jelly.mp3",
+    "bytes": 38183
+  },
+  "audio/cheesecake": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cheesecake.mp3",
+    "bytes": 30869
+  },
+  "sprites/cheesecake": {
+    "src": "hf_20260907_032049_3e0e05b1-50e8-4381-a7a9-ce0094f42bf0.png",
+    "bytes": 27888
+  },
+  "audio/brownie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/brownie.mp3",
+    "bytes": 33481
+  },
+  "audio/marshmallow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/marshmallow.mp3",
+    "bytes": 37138
+  },
+  "sprites/marshmallow": {
+    "src": "hf_20260907_032058_5d4def16-5498-4968-8045-a512f2bc5c38.png",
+    "bytes": 24490
+  },
+  "audio/lollipop": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lollipop.mp3",
+    "bytes": 22510
+  },
+  "sprites/lollipop": {
+    "src": "hf_20260907_032102_83cfa8a3-4a11-4eb4-9553-daa366dbf14f.png",
+    "bytes": 40058
+  },
+  "sprites/macaron": {
+    "src": "hf_20260907_032106_f807e95c-75bb-453f-8533-a9d28cbc48e4.png",
+    "bytes": 26150
+  },
+  "audio/macaron": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/macaron.mp3",
+    "bytes": 21465
+  },
+  "audio/omelette": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/omelette.mp3",
+    "bytes": 24600
+  },
+  "sprites/omelette": {
+    "src": "hf_20260907_032111_83886e5c-47cb-4071-a50a-849d9798e837.png",
+    "bytes": 26346
+  },
+  "audio/fried-egg": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fried-egg.mp3",
+    "bytes": 31392
+  },
+  "sprites/fried-egg": {
+    "src": "hf_20260907_032115_cca20e1c-d755-46e0-af45-1b1383b9bd16.png",
+    "bytes": 35592
+  },
+  "audio/boiled-egg": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/boiled-egg.mp3",
+    "bytes": 38183
+  },
+  "sprites/boiled-egg": {
+    "src": "hf_20260907_032120_c605e666-1af7-4ab7-8634-0fd779061e64.png",
+    "bytes": 23478
+  },
+  "sprites/brownie": {
+    "src": "hf_20260907_032053_f09fce8d-734c-4398-9c4a-2fd2b5ec9d5a.png",
+    "bytes": 33176
+  },
+  "sprites/pancake": {
+    "src": "hf_20260907_032124_e4fb844a-ed28-4bde-b99a-5f802e2cb032.png",
+    "bytes": 34730
+  },
+  "audio/pancake": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pancake.mp3",
+    "bytes": 38706
+  },
+  "audio/waffle": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/waffle.mp3",
+    "bytes": 26167
+  },
+  "sprites/waffle": {
+    "src": "hf_20260907_032140_087d9dee-71f5-4ba2-bf9e-04b2af003499.png",
+    "bytes": 41282
+  },
+  "audio/porridge": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/porridge.mp3",
+    "bytes": 26167
+  },
+  "sprites/porridge": {
+    "src": "hf_20260907_032144_ff84f1ff-eb81-4528-9864-41253788d56f.png",
+    "bytes": 33676
+  },
+  "audio/jam": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/jam.mp3",
+    "bytes": 20943
+  },
+  "sprites/jam": {
+    "src": "hf_20260907_032149_89621083-469f-49f1-b1db-1d8692d52fc7.png",
+    "bytes": 38322
+  },
+  "sprites/honey": {
+    "src": "hf_20260907_032154_fb7cc28e-ed06-4575-8175-35ced27da178.png",
+    "bytes": 34344
+  },
+  "audio/honey": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/honey.mp3",
+    "bytes": 21465
+  },
+  "audio/cereal": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cereal.mp3",
+    "bytes": 38706
+  },
+  "sprites/cereal": {
+    "src": "hf_20260907_032200_afd51cd0-ca64-48a6-8b66-787bbce54c5a.png",
+    "bytes": 37588
+  },
+  "audio/toast": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toast.mp3",
+    "bytes": 21987
+  },
+  "audio/soup": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/soup.mp3",
+    "bytes": 16241
+  },
+  "sprites/toast": {
+    "src": "hf_20260907_032205_0b74048d-d07c-4984-b0d9-023abca5c287.png",
+    "bytes": 29318
+  },
+  "sprites/soup": {
+    "src": "hf_20260907_032209_a041bfb9-dd55-445a-84dd-f5b834a99dde.png",
+    "bytes": 28676
+  },
+  "sprites/salad": {
+    "src": "hf_20260907_032214_ef78a3c4-99f4-4d1f-8f9e-3ecd0f03a90e.png",
+    "bytes": 35690
+  },
+  "audio/salad": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/salad.mp3",
+    "bytes": 25122
+  },
+  "audio/spaghetti": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/spaghetti.mp3",
+    "bytes": 23032
+  },
+  "audio/mashed-potatoes": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mashed-potatoes.mp3",
+    "bytes": 26167
+  },
+  "sprites/spaghetti": {
+    "src": "hf_20260907_032218_f05bf1f9-5fcf-4336-b229-763b731aadf2.png",
+    "bytes": 89744
+  },
+  "sprites/mashed-potatoes": {
+    "src": "hf_20260907_032223_bc8ccea9-ee7b-4990-a5de-544cfe9abcee.png",
+    "bytes": 28286
+  },
+  "audio/roast-chicken": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/roast-chicken.mp3",
+    "bytes": 44975
+  },
+  "sprites/roast-chicken": {
+    "src": "hf_20260907_032228_287627d0-9408-4c2d-b6b4-10f08c2a57cc.png",
+    "bytes": 56344
+  },
+  "audio/sushi": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sushi.mp3",
+    "bytes": 32959
+  },
+  "audio/stew": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stew.mp3",
+    "bytes": 32959
+  },
+  "sprites/stew": {
+    "src": "hf_20260907_032233_5507443c-9c7a-4609-8c95-961cfb1fb2f9.png",
+    "bytes": 34944
+  },
+  "sprites/sushi": {
+    "src": "hf_20260907_032246_9a142a89-6b6b-479d-a376-ce1919c65998.png",
+    "bytes": 32320
+  },
+  "audio/dumplings": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dumplings.mp3",
+    "bytes": 30347
+  },
+  "sprites/dumplings": {
+    "src": "hf_20260907_032251_e267eb08-9e50-42b4-98a6-a99578c62c1d.png",
+    "bytes": 26562
+  },
+  "audio/pilaf": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pilaf.mp3",
+    "bytes": 38706
+  },
+  "audio/lasagna": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lasagna.mp3",
+    "bytes": 26689
+  },
+  "sprites/pilaf": {
+    "src": "hf_20260907_032255_cce14d6f-30ab-4a9d-920a-4ececcf8419f.png",
+    "bytes": 58490
+  },
+  "audio/curry": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/curry.mp3",
+    "bytes": 24600
+  },
+  "sprites/lasagna": {
+    "src": "hf_20260907_032302_db6fb027-c493-4fde-bf39-0d5f02ec8a84.png",
+    "bytes": 38908
+  },
+  "sprites/curry": {
+    "src": "hf_20260907_032306_24c1c52d-73f2-491a-a862-63e912b14c8d.png",
+    "bytes": 38492
+  },
+  "audio/fried-rice": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fried-rice.mp3",
+    "bytes": 23032
+  },
+  "sprites/fried-rice": {
+    "src": "hf_20260907_032311_8314dd3a-35e5-4faa-8dd6-df27bee524d8.png",
+    "bytes": 47538
+  },
+  "audio/meatballs": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/meatballs.mp3",
+    "bytes": 24077
+  },
+  "sprites/meatballs": {
+    "src": "hf_20260907_032316_29385447-46e8-4791-9d27-3d5cc5f86e14.png",
+    "bytes": 27136
+  },
+  "audio/black-pepper": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/black-pepper.mp3",
+    "bytes": 47065
+  },
+  "sprites/black-pepper": {
+    "src": "hf_20260907_033619_40de0a21-dc34-447c-972f-2c284aa0a249.png",
+    "bytes": 27792
+  },
+  "audio/ketchup": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ketchup.mp3",
+    "bytes": 31392
+  },
+  "audio/mayonnaise": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mayonnaise.mp3",
+    "bytes": 36094
+  },
+  "audio/mustard": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mustard.mp3",
+    "bytes": 20943
+  },
+  "sprites/mayonnaise": {
+    "src": "hf_20260907_033626_6724969b-961d-4912-aaba-b6296fefea63.png",
+    "bytes": 24320
+  },
+  "sprites/ketchup": {
+    "src": "hf_20260907_033623_e7eef045-619f-4392-b174-cb9c45d146b0.png",
+    "bytes": 22248
+  },
+  "sprites/mustard": {
+    "src": "hf_20260907_033631_090782e4-558a-4e57-80eb-bd29c239a2fe.png",
+    "bytes": 18564
+  },
+  "audio/vinegar": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/vinegar.mp3",
+    "bytes": 22510
+  },
+  "sprites/vinegar": {
+    "src": "hf_20260907_033635_42a41637-2fb8-4eeb-bdbe-468cb81acb04.png",
+    "bytes": 19876
+  },
+  "audio/olive-oil": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/olive-oil.mp3",
+    "bytes": 28257
+  },
+  "sprites/olive-oil": {
+    "src": "hf_20260907_033638_ec78946c-0313-4473-9700-c2938cdc9164.png",
+    "bytes": 30762
+  },
+  "audio/soy-sauce": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/soy-sauce.mp3",
+    "bytes": 26167
+  },
+  "sprites/ginger": {
+    "src": "hf_20260907_033643_8f82fc29-7bae-466a-bcb2-9ab4150cb690.png",
+    "bytes": 35054
+  },
+  "audio/cinnamon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cinnamon.mp3",
+    "bytes": 21987
+  },
+  "sprites/cinnamon": {
+    "src": "hf_20260907_033700_f89451c7-a64a-4174-8aae-72cbdc84dd42.png",
+    "bytes": 32250
+  },
+  "sprites/soy-sauce": {
+    "src": "hf_20260907_033657_b1f83a6c-fb75-4981-8599-fd291a3fed7e.png",
+    "bytes": 21058
+  },
+  "audio/parsley": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/parsley.mp3",
+    "bytes": 38706
+  },
+  "sprites/parsley": {
+    "src": "hf_20260907_033703_64d0aa78-3e71-489c-b651-6f16fdc84b9c.png",
+    "bytes": 79018
+  },
+  "audio/dill": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dill.mp3",
+    "bytes": 20420
+  },
+  "sprites/basil": {
+    "src": "hf_20260907_033710_0e63f563-417c-435e-931d-f627867acb35.png",
+    "bytes": 31712
+  },
+  "sprites/dill": {
+    "src": "hf_20260907_033707_9aea40db-dee0-4e45-b6ca-a47e6d91e965.png",
+    "bytes": 125800
+  },
+  "audio/basil": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/basil.mp3",
+    "bytes": 32959
+  },
+  "sprites/mint": {
+    "src": "hf_20260907_033714_faaf5b30-fd9d-433c-9dd3-23f3da78f444.png",
+    "bytes": 33944
+  },
+  "audio/chili": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chili.mp3",
+    "bytes": 32959
+  },
+  "sprites/chili": {
+    "src": "hf_20260907_033717_e153b6e4-64a7-41f8-9d4b-a629ee58ee18.png",
+    "bytes": 31762
+  },
+  "sprites/chips": {
+    "src": "hf_20260907_033721_a44b4fae-9d2d-490e-b901-05806a32541d.png",
+    "bytes": 31502
+  },
+  "sprites/popcorn": {
+    "src": "hf_20260907_033725_b3281c70-3a49-4f61-917f-af346706f12a.png",
+    "bytes": 28890
+  },
+  "audio/popcorn": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/popcorn.mp3",
+    "bytes": 37661
+  },
+  "audio/chips": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chips.mp3",
+    "bytes": 34526
+  },
+  "audio/mint": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mint.mp3",
+    "bytes": 21465
+  },
+  "sprites/nuts": {
+    "src": "hf_20260907_033728_2f1cb7f1-27e8-4e1a-90bb-1e483e5b9a7d.png",
+    "bytes": 29698
+  },
+  "audio/peanuts": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/peanuts.mp3",
+    "bytes": 28257
+  },
+  "sprites/peanuts": {
+    "src": "hf_20260907_033732_7351c7c5-9ce5-44b4-9384-66ae1a200dd7.png",
+    "bytes": 33842
+  },
+  "audio/almonds": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/almonds.mp3",
+    "bytes": 32436
+  },
+  "sprites/almonds": {
+    "src": "hf_20260907_033735_d54e4926-222d-4970-ba86-bfcfba35d665.png",
+    "bytes": 17952
+  },
+  "audio/walnuts": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/walnuts.mp3",
+    "bytes": 23555
+  },
+  "sprites/walnuts": {
+    "src": "hf_20260907_033747_d5d41d46-d6bf-48d1-afff-bb40a1e7393b.png",
+    "bytes": 40970
+  },
+  "audio/nuts": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/nuts.mp3",
+    "bytes": 38706
+  },
+  "audio/hazelnuts": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hazelnuts.mp3",
+    "bytes": 38706
+  },
+  "sprites/hazelnuts": {
+    "src": "hf_20260907_033750_c01a52d5-abd5-4cc9-ab93-7b1fc734e41d.png",
+    "bytes": 31594
+  },
+  "sprites/sunflower-seeds": {
+    "src": "hf_20260907_033757_87252615-a59c-481d-8aca-0469d2e1eb20.png",
+    "bytes": 34514
+  },
+  "audio/pistachios": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pistachios.mp3",
+    "bytes": 38706
+  },
+  "sprites/pistachios": {
+    "src": "hf_20260907_033754_8bb62729-4276-4d9b-bd70-7fee6a42ec64.png",
+    "bytes": 36172
+  },
+  "audio/sunflower-seeds": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sunflower-seeds.mp3",
+    "bytes": 30869
+  },
+  "sprites/raisins": {
+    "src": "hf_20260907_033801_99a6f0fa-e34f-4554-8f45-bd710b5889c6.png",
+    "bytes": 37362
+  },
+  "audio/dried-apricots": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dried-apricots.mp3",
+    "bytes": 38706
+  },
+  "sprites/dried-apricots": {
+    "src": "hf_20260907_033806_1a30e4c9-c46f-4d33-acfa-0f0828c4647e.png",
+    "bytes": 26964
+  },
+  "sprites/chocolate-bar": {
+    "src": "hf_20260907_033810_2dd5bc4c-2df5-425d-a9c6-dde437391ef3.png",
+    "bytes": 26980
+  },
+  "audio/chocolate-bar": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chocolate-bar.mp3",
+    "bytes": 38183
+  },
+  "audio/raisins": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/raisins.mp3",
+    "bytes": 28779
+  },
+  "audio/shirt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shirt.mp3",
+    "bytes": 19898
+  },
+  "sprites/t-shirt": {
+    "src": "hf_20260907_064730_dc017f79-9668-4b3c-a940-5e695e6d7be7.png",
+    "bytes": 20976
+  },
+  "sprites/blouse": {
+    "src": "hf_20260907_064827_6765733d-48ea-4932-8929-5db0b0d9dd17.png",
+    "bytes": 24040
+  },
+  "sprites/shirt": {
+    "src": "hf_20260907_064823_fdf98a0e-4d6d-480f-858b-5be1847a402f.png",
+    "bytes": 20544
+  },
+  "audio/blouse": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/blouse.mp3",
+    "bytes": 21987
+  },
+  "audio/sweater": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sweater.mp3",
+    "bytes": 21465
+  },
+  "audio/t-shirt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/t-shirt.mp3",
+    "bytes": 28779
+  },
+  "audio/hoodie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hoodie.mp3",
+    "bytes": 21987
+  },
+  "sprites/sweater": {
+    "src": "hf_20260907_064833_d5b4678e-d711-4296-8ea0-4c7565e7e884.png",
+    "bytes": 53058
+  },
+  "audio/ginger": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ginger.mp3",
+    "bytes": 26689
+  },
+  "audio/cardigan": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cardigan.mp3",
+    "bytes": 31392
+  },
+  "sprites/hoodie": {
+    "src": "hf_20260907_064838_a660c200-10c0-4f8f-8e54-d5bfa1251a99.png",
+    "bytes": 24304
+  },
+  "sprites/cardigan": {
+    "src": "hf_20260907_064843_5b7b6e1d-961b-4d6e-8793-df2e2e9fdf1e.png",
+    "bytes": 59404
+  },
+  "sprites/polo-shirt": {
+    "src": "hf_20260907_064925_62c94958-604d-42ee-ba59-bd546010cc1c.png",
+    "bytes": 20952
+  },
+  "audio/tank-top": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tank-top.mp3",
+    "bytes": 17808
+  },
+  "audio/polo-shirt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/polo-shirt.mp3",
+    "bytes": 27734
+  },
+  "sprites/tank-top": {
+    "src": "hf_20260907_064848_1d4f8fd5-c747-45f0-951d-1f4ebd7b6ea9.png",
+    "bytes": 17122
+  },
+  "audio/trousers": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/trousers.mp3",
+    "bytes": 30869
+  },
+  "sprites/jeans": {
+    "src": "hf_20260907_064852_61e45ba1-a3d2-4dbf-8708-b98f679f06cb.png",
+    "bytes": 42134
+  },
+  "sprites/trousers": {
+    "src": "hf_20260907_064857_641dcdf0-2b8c-4832-a228-e83ec49c5ffc.png",
+    "bytes": 20610
+  },
+  "sprites/shorts": {
+    "src": "hf_20260907_064903_68e473dc-448a-42bf-93e9-4ca6134e52bc.png",
+    "bytes": 27734
+  },
+  "audio/shorts": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shorts.mp3",
+    "bytes": 22510
+  },
+  "audio/skirt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/skirt.mp3",
+    "bytes": 36094
+  },
+  "audio/jeans": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/jeans.mp3",
+    "bytes": 26167
+  },
+  "sprites/dress": {
+    "src": "hf_20260907_064914_303ff4ee-c2e3-477a-94fa-c6cadf8c7594.png",
+    "bytes": 23382
+  },
+  "sprites/leggings": {
+    "src": "hf_20260907_064931_ac48869f-df81-4d70-b4f7-974b1a36665a.png",
+    "bytes": 18666
+  },
+  "audio/leggings": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/leggings.mp3",
+    "bytes": 34004
+  },
+  "sprites/skirt": {
+    "src": "hf_20260907_064909_6787561a-5000-4945-bfc8-52bd3627aee1.png",
+    "bytes": 27114
+  },
+  "audio/pyjamas": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pyjamas.mp3",
+    "bytes": 30869
+  },
+  "audio/dress": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dress.mp3",
+    "bytes": 26689
+  },
+  "audio/bathrobe": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bathrobe.mp3",
+    "bytes": 23555
+  },
+  "sprites/pyjamas": {
+    "src": "hf_20260907_064936_4ce1e822-32fe-4a5f-9bf2-e2a589953988.png",
+    "bytes": 40492
+  },
+  "audio/suit": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/suit.mp3",
+    "bytes": 38706
+  },
+  "sprites/bathrobe": {
+    "src": "hf_20260907_064941_f0b74555-38ce-4103-ab03-99cf5b085431.png",
+    "bytes": 24138
+  },
+  "sprites/suit": {
+    "src": "hf_20260907_070053_e17114a0-d668-4c73-977f-40821f43f3f0.png",
+    "bytes": 20630
+  },
+  "audio/blazer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/blazer.mp3",
+    "bytes": 25122
+  },
+  "audio/tie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tie.mp3",
+    "bytes": 24077
+  },
+  "sprites/blazer": {
+    "src": "hf_20260907_070058_6a64a13b-85bc-4f68-89da-7bfcafd87f1f.png",
+    "bytes": 28354
+  },
+  "sprites/tie": {
+    "src": "hf_20260907_070102_51ce229a-3a26-443c-b70d-a157c158f616.png",
+    "bytes": 16786
+  },
+  "audio/waistcoat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/waistcoat.mp3",
+    "bytes": 32436
+  },
+  "sprites/bow-tie": {
+    "src": "hf_20260907_070106_17cfc5c0-eaf0-4829-bb37-253ea9762318.png",
+    "bytes": 18846
+  },
+  "sprites/waistcoat": {
+    "src": "hf_20260907_070110_4eda9c45-4dfd-48b4-85c0-e848fec6b8b2.png",
+    "bytes": 22148
+  },
+  "audio/bow-tie": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bow-tie.mp3",
+    "bytes": 24600
+  },
+  "audio/coat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/coat.mp3",
+    "bytes": 36094
+  },
+  "audio/jacket": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/jacket.mp3",
+    "bytes": 36094
+  },
+  "sprites/jacket": {
+    "src": "hf_20260907_070129_7648c31c-40f9-4a34-a954-49d4d4536448.png",
+    "bytes": 26480
+  },
+  "sprites/coat": {
+    "src": "hf_20260907_070114_afa64648-e99f-4c98-beb3-54a07fa13eb2.png",
+    "bytes": 25694
+  },
+  "audio/raincoat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/raincoat.mp3",
+    "bytes": 38183
+  },
+  "sprites/raincoat": {
+    "src": "hf_20260907_070132_c5cb8c1f-0ef8-4670-96f1-9b5bf80bdb57.png",
+    "bytes": 31290
+  },
+  "audio/overalls": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/overalls.mp3",
+    "bytes": 30347
+  },
+  "sprites/apron": {
+    "src": "hf_20260907_070136_0f3ff0fd-6cd0-474a-b085-69a78a6a81c5.png",
+    "bytes": 24868
+  },
+  "sprites/shoes": {
+    "src": "hf_20260907_070144_e089f178-c1aa-49e1-bfd4-8127c74234ca.png",
+    "bytes": 30332
+  },
+  "audio/shoes": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shoes.mp3",
+    "bytes": 38706
+  },
+  "sprites/overalls": {
+    "src": "hf_20260907_070140_4c0b7c86-8095-4fac-b716-2cd7f0052b69.png",
+    "bytes": 35168
+  },
+  "audio/sneakers": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sneakers.mp3",
+    "bytes": 29302
+  },
+  "sprites/sneakers": {
+    "src": "hf_20260907_070148_bd57e07c-81f8-4654-9488-732a4469401a.png",
+    "bytes": 29816
+  },
+  "audio/boots": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/boots.mp3",
+    "bytes": 29824
+  },
+  "audio/sandals": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sandals.mp3",
+    "bytes": 28779
+  },
+  "sprites/boots": {
+    "src": "hf_20260907_070153_5b1fae53-d8e9-4f8e-80dc-ed8c7b289919.png",
+    "bytes": 36262
+  },
+  "audio/high-heels": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/high-heels.mp3",
+    "bytes": 45498
+  },
+  "sprites/high-heels": {
+    "src": "hf_20260907_070201_e351bd96-6d3b-4999-ab0e-47d4283bef24.png",
+    "bytes": 33546
+  },
+  "sprites/sandals": {
+    "src": "hf_20260907_070157_a9b8ac7e-7071-46e3-90b9-2e59eb116298.png",
+    "bytes": 30984
+  },
+  "sprites/slippers": {
+    "src": "hf_20260907_070205_6efead4b-4a00-4e4d-9a03-3ad7579b6f7a.png",
+    "bytes": 25624
+  },
+  "audio/slippers": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/slippers.mp3",
+    "bytes": 20943
+  },
+  "sprites/flip-flops": {
+    "src": "hf_20260907_070209_4863a283-f701-4ef3-95d0-50a45675ada3.png",
+    "bytes": 40356
+  },
+  "audio/rubber-boots": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rubber-boots.mp3",
+    "bytes": 28257
+  },
+  "audio/flip-flops": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/flip-flops.mp3",
+    "bytes": 31392
+  },
+  "audio/apron": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/apron.mp3",
+    "bytes": 25645
+  },
+  "audio/socks": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/socks.mp3",
+    "bytes": 38706
+  },
+  "audio/tights": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tights.mp3",
+    "bytes": 36094
+  },
+  "sprites/rubber-boots": {
+    "src": "hf_20260907_070212_68f183a0-4075-47d4-901d-fe112de14248.png",
+    "bytes": 19658
+  },
+  "sprites/socks": {
+    "src": "hf_20260907_070225_77e0c9fa-20b1-4d1a-9420-5755b37bcd9a.png",
+    "bytes": 57082
+  },
+  "audio/woolly-hat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/woolly-hat.mp3",
+    "bytes": 36616
+  },
+  "sprites/tights": {
+    "src": "hf_20260907_070229_bbf1e648-d9e2-4157-96aa-a4eb94a1ece3.png",
+    "bytes": 21990
+  },
+  "audio/scarf": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/scarf.mp3",
+    "bytes": 36616
+  },
+  "audio/gloves": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/gloves.mp3",
+    "bytes": 29302
+  },
+  "sprites/woolly-hat": {
+    "src": "hf_20260907_070233_c9cf689d-6485-42f1-a443-5ffedc1efe15.png",
+    "bytes": 39362
+  },
+  "sprites/scarf": {
+    "src": "hf_20260907_070237_6855443f-5970-433e-8255-1bc936a2a036.png",
+    "bytes": 59286
+  },
+  "audio/mittens": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mittens.mp3",
+    "bytes": 32436
+  },
+  "sprites/mittens": {
+    "src": "hf_20260907_070245_35a08918-43b4-4b25-821e-d6b6b153b4ee.png",
+    "bytes": 59264
+  },
+  "sprites/gloves": {
+    "src": "hf_20260907_070241_d6990fba-4cdb-4653-9e42-6d6949d011bc.png",
+    "bytes": 50680
+  },
+  "audio/earmuffs": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/earmuffs.mp3",
+    "bytes": 35571
+  },
+  "audio/puffer-jacket": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/puffer-jacket.mp3",
+    "bytes": 26167
+  },
+  "sprites/puffer-jacket": {
+    "src": "hf_20260907_070252_7eb2bbb1-190d-48b0-b748-7caee9848f51.png",
+    "bytes": 31666
+  },
+  "sprites/earmuffs": {
+    "src": "hf_20260907_070248_0f57465c-0f05-4253-936a-904602a9894b.png",
+    "bytes": 30078
+  },
+  "audio/fur-coat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fur-coat.mp3",
+    "bytes": 47065
+  },
+  "audio/swimsuit": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/swimsuit.mp3",
+    "bytes": 31914
+  },
+  "audio/swimming-trunks": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/swimming-trunks.mp3",
+    "bytes": 27734
+  },
+  "sprites/fur-coat": {
+    "src": "hf_20260907_070256_427f3859-df5e-4636-a9fe-c8389c245c4d.png",
+    "bytes": 42288
+  },
+  "sprites/swimsuit": {
+    "src": "hf_20260907_071732_24b4b2dc-0411-45cd-ab8c-3297222fd77c.png",
+    "bytes": 28478
+  },
+  "audio/sunglasses": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sunglasses.mp3",
+    "bytes": 24600
+  },
+  "sprites/sunglasses": {
+    "src": "hf_20260907_071742_8cd56c66-91c1-45c2-bf06-66632bd5e27b.png",
+    "bytes": 16894
+  },
+  "sprites/swimming-trunks": {
+    "src": "hf_20260907_071737_6419a530-a233-481d-8f4f-35569a9de66f.png",
+    "bytes": 40732
+  },
+  "audio/sun-hat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sun-hat.mp3",
+    "bytes": 26167
+  },
+  "audio/cap": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cap.mp3",
+    "bytes": 38706
+  },
+  "sprites/sun-hat": {
+    "src": "hf_20260907_071747_43e7dcb2-62f1-4ecd-8c02-5d3dd2108957.png",
+    "bytes": 47270
+  },
+  "audio/beach-bag": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/beach-bag.mp3",
+    "bytes": 26689
+  },
+  "sprites/cap": {
+    "src": "hf_20260907_072001_e787e63b-c195-4c1d-a288-6a1ef799af84.png",
+    "bytes": 16474
+  },
+  "audio/tracksuit": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tracksuit.mp3",
+    "bytes": 21987
+  },
+  "sprites/tracksuit": {
+    "src": "hf_20260907_072011_36eb93fa-b2b1-4aa4-b9cc-b1aaf90ecb4f.png",
+    "bytes": 23670
+  },
+  "audio/jersey": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/jersey.mp3",
+    "bytes": 15196
+  },
+  "sprites/beach-bag": {
+    "src": "hf_20260907_072005_6b42a0ae-a133-4491-8ea2-89be09462030.png",
+    "bytes": 39778
+  },
+  "audio/helmet": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/helmet.mp3",
+    "bytes": 38706
+  },
+  "audio/gym-bag": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/gym-bag.mp3",
+    "bytes": 44975
+  },
+  "sprites/jersey": {
+    "src": "hf_20260907_072015_3a0a7fd7-1d99-4d67-b82d-2ce172e47efc.png",
+    "bytes": 22078
+  },
+  "sprites/helmet": {
+    "src": "hf_20260907_072020_613ddb70-a12d-4ebe-b151-c415f09af157.png",
+    "bytes": 35144
+  },
+  "audio/goggles": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/goggles.mp3",
+    "bytes": 33481
+  },
+  "sprites/gym-bag": {
+    "src": "hf_20260907_072024_ce2d9b90-9c26-4c6f-9d46-261513be241e.png",
+    "bytes": 37910
+  },
+  "audio/sweatband": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sweatband.mp3",
+    "bytes": 28779
+  },
+  "sprites/goggles": {
+    "src": "hf_20260907_072029_5e69dd4c-e582-4cc1-8b7a-bb7d1d3ceafc.png",
+    "bytes": 29364
+  },
+  "audio/belt": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/belt.mp3",
+    "bytes": 17285
+  },
+  "sprites/sweatband": {
+    "src": "hf_20260907_072032_eee66724-84fa-4d94-8f8f-3220e3bff423.png",
+    "bytes": 24856
+  },
+  "audio/watch": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/watch.mp3",
+    "bytes": 29302
+  },
+  "sprites/belt": {
+    "src": "hf_20260907_072037_86ed5642-431e-4497-ad3c-744d36185729.png",
+    "bytes": 24164
+  },
+  "audio/glasses": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/glasses.mp3",
+    "bytes": 31392
+  },
+  "sprites/glasses": {
+    "src": "hf_20260907_072046_4e765890-5cdd-4cce-bdd9-85b2f8c84d64.png",
+    "bytes": 21182
+  },
+  "sprites/watch": {
+    "src": "hf_20260907_072042_fde3ce03-b812-4a67-bf92-6baf60ac3135.png",
+    "bytes": 36802
+  },
+  "audio/umbrella": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/umbrella.mp3",
+    "bytes": 25645
+  },
+  "audio/wallet": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wallet.mp3",
+    "bytes": 21465
+  },
+  "audio/handbag": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/handbag.mp3",
+    "bytes": 30347
+  },
+  "sprites/umbrella": {
+    "src": "hf_20260907_072050_b4897965-9a78-419b-b219-5394efa170e3.png",
+    "bytes": 24626
+  },
+  "sprites/handbag": {
+    "src": "hf_20260907_072110_aaf0a9f1-6e3f-4ea6-9935-29a53644c713.png",
+    "bytes": 34512
+  },
+  "sprites/wallet": {
+    "src": "hf_20260907_072106_84c838e9-5429-4974-b774-563326326536.png",
+    "bytes": 27732
+  },
+  "sprites/backpack": {
+    "src": "hf_20260907_072114_be7f9fa5-89e4-4f4f-9fac-7ab5986414ea.png",
+    "bytes": 31962
+  },
+  "audio/backpack": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/backpack.mp3",
+    "bytes": 24077
+  },
+  "audio/suitcase": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/suitcase.mp3",
+    "bytes": 38706
+  },
+  "audio/hat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hat.mp3",
+    "bytes": 38706
+  },
+  "audio/headband": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/headband.mp3",
+    "bytes": 38706
+  },
+  "sprites/hat": {
+    "src": "hf_20260907_072122_f92198ab-11f4-46ac-9e18-3ce78e648215.png",
+    "bytes": 32896
+  },
+  "sprites/suitcase": {
+    "src": "hf_20260907_072118_688c588d-aee3-495c-97fc-f4d3d8fc56a6.png",
+    "bytes": 23038
+  },
+  "audio/necklace": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/necklace.mp3",
+    "bytes": 31392
+  },
+  "sprites/necklace": {
+    "src": "hf_20260907_072131_9809dbd4-2c6b-4da4-bc36-2e5526111034.png",
+    "bytes": 38066
+  },
+  "audio/bracelet": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bracelet.mp3",
+    "bytes": 38183
+  },
+  "sprites/headband": {
+    "src": "hf_20260907_072127_ef0aef2e-97bc-4c01-81a0-313f5e88e8cc.png",
+    "bytes": 30218
+  },
+  "audio/earrings": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/earrings.mp3",
+    "bytes": 38183
+  },
+  "sprites/earrings": {
+    "src": "hf_20260907_072139_051bc985-2f2e-482b-987f-86ac3f965354.png",
+    "bytes": 31516
+  },
+  "sprites/bracelet": {
+    "src": "hf_20260907_072135_079b2a90-19fb-4388-9dae-30c7820d8c61.png",
+    "bytes": 28414
+  },
+  "audio/ring": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ring.mp3",
+    "bytes": 19898
+  },
+  "sprites/ring": {
+    "src": "hf_20260907_072143_955ba819-e2da-404d-8baf-0f97e82c7d9f.png",
+    "bytes": 26526
+  },
+  "audio/brooch": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/brooch.mp3",
+    "bytes": 38706
+  },
+  "audio/crown": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/crown.mp3",
+    "bytes": 26167
+  },
+  "audio/sofa": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sofa.mp3",
+    "bytes": 17808
+  },
+  "sprites/brooch": {
+    "src": "hf_20260907_072148_98ca34a6-e8ea-4ba3-bdfa-1ca172abf936.png",
+    "bytes": 40920
+  },
+  "audio/armchair": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/armchair.mp3",
+    "bytes": 31914
+  },
+  "sprites/sofa": {
+    "src": "hf_20260907_074511_f84a40a7-dc22-4159-a455-734a59f78ff7.png",
+    "bytes": 19682
+  },
+  "sprites/armchair": {
+    "src": "hf_20260907_074603_300c9b35-1f88-4014-9f99-96c64c907470.png",
+    "bytes": 18148
+  },
+  "sprites/crown": {
+    "src": "hf_20260907_072156_bea00166-0140-4809-95a2-fdbe8a98d26a.png",
+    "bytes": 20956
+  },
+  "audio/coffee-table": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/coffee-table.mp3",
+    "bytes": 26167
+  },
+  "audio/tv": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tv.mp3",
+    "bytes": 29302
+  },
+  "audio/bookshelf": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bookshelf.mp3",
+    "bytes": 31914
+  },
+  "audio/lamp": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lamp.mp3",
+    "bytes": 29302
+  },
+  "sprites/tv": {
+    "src": "hf_20260907_074642_668f30a2-a578-4b62-b820-e0e50ddfa8c0.png",
+    "bytes": 27106
+  },
+  "sprites/bookshelf": {
+    "src": "hf_20260907_074647_ed5cfb99-2a1d-492b-a0f1-c4a34eea9cc1.png",
+    "bytes": 15972
+  },
+  "sprites/lamp": {
+    "src": "hf_20260907_074612_06e0aef4-2d4e-4209-9640-efc86eb31f54.png",
+    "bytes": 27320
+  },
+  "audio/rug": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/rug.mp3",
+    "bytes": 28779
+  },
+  "sprites/rug": {
+    "src": "hf_20260907_074652_0af5d402-507c-4891-b1f4-ee1d1e44cce4.png",
+    "bytes": 61582
+  },
+  "audio/cushion": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cushion.mp3",
+    "bytes": 19375
+  },
+  "sprites/coffee-table": {
+    "src": "hf_20260907_074607_7ad939b1-3f36-43ef-a001-38f71510e8e7.png",
+    "bytes": 19808
+  },
+  "audio/curtains": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/curtains.mp3",
+    "bytes": 28779
+  },
+  "sprites/cushion": {
+    "src": "hf_20260907_074616_8a2406e7-1a3e-42b4-9686-23341e939747.png",
+    "bytes": 21952
+  },
+  "audio/fireplace": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fireplace.mp3",
+    "bytes": 28779
+  },
+  "audio/picture": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/picture.mp3",
+    "bytes": 37138
+  },
+  "sprites/curtains": {
+    "src": "hf_20260907_074656_bdb69907-9c9f-46c6-ab5a-4e177274a175.png",
+    "bytes": 30024
+  },
+  "sprites/picture": {
+    "src": "hf_20260907_074625_86030199-5931-44c4-bc33-7607702f8438.png",
+    "bytes": 24144
+  },
+  "audio/clock": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/clock.mp3",
+    "bytes": 23555
+  },
+  "sprites/fireplace": {
+    "src": "hf_20260907_074621_c82630c0-4c8a-48d7-b487-7615721dc0f0.png",
+    "bytes": 42944
+  },
+  "sprites/clock": {
+    "src": "hf_20260907_074630_79df2ae7-251c-4da5-a239-13e18a43c174.png",
+    "bytes": 26752
+  },
+  "audio/bed": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bed.mp3",
+    "bytes": 38706
+  },
+  "audio/pillow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pillow.mp3",
+    "bytes": 29824
+  },
+  "sprites/bed": {
+    "src": "hf_20260907_075334_d6bad188-565a-4f60-a8c7-651e1d7f44da.png",
+    "bytes": 21062
+  },
+  "audio/blanket": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/blanket.mp3",
+    "bytes": 38706
+  },
+  "sprites/blanket": {
+    "src": "hf_20260907_075341_52f37526-b513-4cec-bfa7-2b913639a1f5.png",
+    "bytes": 33870
+  },
+  "audio/wardrobe": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wardrobe.mp3",
+    "bytes": 38706
+  },
+  "sprites/pillow": {
+    "src": "hf_20260907_075338_2ac7c6b7-62f1-4d16-b446-70e4b5d476f6.png",
+    "bytes": 18850
+  },
+  "audio/chest-of-drawers": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chest-of-drawers.mp3",
+    "bytes": 35049
+  },
+  "sprites/chest-of-drawers": {
+    "src": "hf_20260907_075348_b02b8297-f4d6-4801-a842-372f68ddb1fa.png",
+    "bytes": 24224
+  },
+  "sprites/wardrobe": {
+    "src": "hf_20260907_075345_a02fae6b-5925-4a24-90c1-2e46415cce0c.png",
+    "bytes": 18588
+  },
+  "audio/bedside-table": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bedside-table.mp3",
+    "bytes": 38183
+  },
+  "audio/mirror": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mirror.mp3",
+    "bytes": 23032
+  },
+  "sprites/bedside-table": {
+    "src": "hf_20260907_075352_e396b8a0-3c90-42d4-8c6e-1c662db3663e.png",
+    "bytes": 24862
+  },
+  "audio/alarm-clock": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/alarm-clock.mp3",
+    "bytes": 27734
+  },
+  "audio/houseplant": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/houseplant.mp3",
+    "bytes": 38706
+  },
+  "sprites/mirror": {
+    "src": "hf_20260907_075405_8f9dec15-987c-47ed-8757-f37b822e0934.png",
+    "bytes": 19128
+  },
+  "sprites/alarm-clock": {
+    "src": "hf_20260907_075409_ea3b2bd6-2e53-49d8-99ee-c07954c4f09c.png",
+    "bytes": 32470
+  },
+  "sprites/houseplant": {
+    "src": "hf_20260907_075413_3e7954ef-77d9-46f5-aa76-7f800623947b.png",
+    "bytes": 44330
+  },
+  "audio/fridge": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fridge.mp3",
+    "bytes": 38706
+  },
+  "audio/cooker": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cooker.mp3",
+    "bytes": 34004
+  },
+  "audio/oven": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/oven.mp3",
+    "bytes": 19898
+  },
+  "sprites/fridge": {
+    "src": "hf_20260907_075417_0d728d84-ffde-44c4-8882-b6aa0b821013.png",
+    "bytes": 12204
+  },
+  "sprites/cooker": {
+    "src": "hf_20260907_075420_69f79e72-cc24-4b4e-bf35-657f589070f6.png",
+    "bytes": 22640
+  },
+  "sprites/oven": {
+    "src": "hf_20260907_075424_9fee2d06-2556-48da-8eb2-5d73c6e3cbd1.png",
+    "bytes": 18118
+  },
+  "audio/microwave": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/microwave.mp3",
+    "bytes": 30869
+  },
+  "audio/sink": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sink.mp3",
+    "bytes": 21987
+  },
+  "audio/tap": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tap.mp3",
+    "bytes": 20420
+  },
+  "sprites/sink": {
+    "src": "hf_20260907_075431_fb86ed0a-b1ab-4c2e-a6f9-2f4721d77d22.png",
+    "bytes": 18040
+  },
+  "sprites/microwave": {
+    "src": "hf_20260907_075427_791d9c89-382e-4484-b240-89a02461e163.png",
+    "bytes": 14136
+  },
+  "audio/kettle": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/kettle.mp3",
+    "bytes": 38706
+  },
+  "sprites/kettle": {
+    "src": "hf_20260907_075438_44b51291-7e56-45af-bfba-60db0b53316d.png",
+    "bytes": 14698
+  },
+  "sprites/tap": {
+    "src": "hf_20260907_075434_6b2c5a75-7027-4907-9d8e-15458da26559.png",
+    "bytes": 24062
+  },
+  "audio/toaster": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toaster.mp3",
+    "bytes": 38706
+  },
+  "sprites/toaster": {
+    "src": "hf_20260907_075441_1a42dab5-aade-4af6-81a4-c02fd7b3f62b.png",
+    "bytes": 18304
+  },
+  "audio/cupboard": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cupboard.mp3",
+    "bytes": 17808
+  },
+  "audio/dishwasher": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dishwasher.mp3",
+    "bytes": 24600
+  },
+  "audio/bin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bin.mp3",
+    "bytes": 32959
+  },
+  "sprites/bin": {
+    "src": "hf_20260907_075503_794c661f-48c4-4522-a2ef-db3148c65a2b.png",
+    "bytes": 12154
+  },
+  "sprites/dishwasher": {
+    "src": "hf_20260907_075459_f9c5a9e5-dfff-4df1-a573-23f2b8d01054.png",
+    "bytes": 35764
+  },
+  "audio/table": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/table.mp3",
+    "bytes": 27212
+  },
+  "sprites/cupboard": {
+    "src": "hf_20260907_075445_b400ad4e-3847-4729-9c5a-c7aa27dcd6bc.png",
+    "bytes": 27420
+  },
+  "sprites/table": {
+    "src": "hf_20260907_075506_6bc0412a-064b-48b9-a05f-a3d2432f765c.png",
+    "bytes": 19696
+  },
+  "audio/chair": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chair.mp3",
+    "bytes": 37138
+  },
+  "audio/plate": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/plate.mp3",
+    "bytes": 22510
+  },
+  "sprites/chair": {
+    "src": "hf_20260907_075510_868ad461-13e5-4ffe-b0cd-3380117dd694.png",
+    "bytes": 23066
+  },
+  "audio/bowl": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bowl.mp3",
+    "bytes": 38706
+  },
+  "audio/cup": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cup.mp3",
+    "bytes": 20420
+  },
+  "sprites/plate": {
+    "src": "hf_20260907_075513_5fd6f773-34a5-41a1-9dc3-487a87f693b0.png",
+    "bytes": 15376
+  },
+  "sprites/bowl": {
+    "src": "hf_20260907_075517_c9970a5a-134c-4e69-8bc6-5607e096f540.png",
+    "bytes": 16848
+  },
+  "sprites/cup": {
+    "src": "hf_20260907_075520_ce36e51d-278a-4494-a022-55717eb7768d.png",
+    "bytes": 16612
+  },
+  "audio/glass": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/glass.mp3",
+    "bytes": 28257
+  },
+  "audio/mug": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mug.mp3",
+    "bytes": 32436
+  },
+  "sprites/glass": {
+    "src": "hf_20260907_075524_c4835449-5b1b-47d1-b5d5-1a123889fd79.png",
+    "bytes": 18248
+  },
+  "audio/fork": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fork.mp3",
+    "bytes": 15718
+  },
+  "sprites/mug": {
+    "src": "hf_20260907_075528_ba107644-2c1c-4fd7-973c-8a46f926b659.png",
+    "bytes": 19410
+  },
+  "sprites/fork": {
+    "src": "hf_20260907_075531_04c63453-70f7-4d71-b0a1-18d932c6aaab.png",
+    "bytes": 37894
+  },
+  "audio/knife": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/knife.mp3",
+    "bytes": 23032
+  },
+  "audio/spoon": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/spoon.mp3",
+    "bytes": 25645
+  },
+  "sprites/knife": {
+    "src": "hf_20260907_075535_b93ec843-d816-4cc8-a7ed-4e302cb03c8b.png",
+    "bytes": 36560
+  },
+  "audio/teapot": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/teapot.mp3",
+    "bytes": 24600
+  },
+  "sprites/spoon": {
+    "src": "hf_20260907_075538_565d15cb-a66a-455d-bc3e-242dfb8a88f1.png",
+    "bytes": 12856
+  },
+  "audio/napkin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/napkin.mp3",
+    "bytes": 26689
+  },
+  "sprites/napkin": {
+    "src": "hf_20260907_075608_51305bf9-c903-4589-945f-409052fb4dcc.png",
+    "bytes": 25042
+  },
+  "sprites/teapot": {
+    "src": "hf_20260907_075556_46bd8935-03f7-4bbb-b0a3-b6a3e0b85ffa.png",
+    "bytes": 35104
+  },
+  "sprites/bath": {
+    "src": "hf_20260907_081036_49ac8dd6-0233-4c99-9d91-768d746a04b5.png",
+    "bytes": 15618
+  },
+  "audio/bath": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bath.mp3",
+    "bytes": 29302
+  },
+  "audio/shower": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shower.mp3",
+    "bytes": 26689
+  },
+  "audio/toilet": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toilet.mp3",
+    "bytes": 25122
+  },
+  "sprites/toilet": {
+    "src": "hf_20260907_081040_79b88805-a92c-443b-8951-38aff9d26cc6.png",
+    "bytes": 14938
+  },
+  "audio/washbasin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/washbasin.mp3",
+    "bytes": 33481
+  },
+  "audio/towel": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/towel.mp3",
+    "bytes": 37138
+  },
+  "sprites/washbasin": {
+    "src": "hf_20260907_081044_58762a28-2ef6-4850-82f1-e1578fd1c033.png",
+    "bytes": 10470
+  },
+  "sprites/shower": {
+    "src": "hf_20260907_081105_1541c123-7a15-4ebf-9261-bd2df41d20ef.png",
+    "bytes": 88670
+  },
+  "sprites/toothbrush": {
+    "src": "hf_20260907_081051_0841e9dc-1812-4136-a916-847277e6e152.png",
+    "bytes": 12566
+  },
+  "audio/toothbrush": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toothbrush.mp3",
+    "bytes": 25645
+  },
+  "sprites/towel": {
+    "src": "hf_20260907_081048_9c8e94fa-13e7-43c9-95da-b90c8c38629e.png",
+    "bytes": 42028
+  },
+  "audio/toothpaste": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toothpaste.mp3",
+    "bytes": 28779
+  },
+  "audio/soap": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/soap.mp3",
+    "bytes": 19375
+  },
+  "audio/shampoo": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shampoo.mp3",
+    "bytes": 26689
+  },
+  "sprites/toothpaste": {
+    "src": "hf_20260907_081109_6ce37909-abe9-4a3d-b69e-6a6379a6a266.png",
+    "bytes": 20552
+  },
+  "sprites/shampoo": {
+    "src": "hf_20260907_081117_a7fec75f-c4e1-45b6-8f51-7ba0ec5b5661.png",
+    "bytes": 10638
+  },
+  "audio/toilet-paper": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toilet-paper.mp3",
+    "bytes": 32959
+  },
+  "sprites/soap": {
+    "src": "hf_20260907_081113_98b24fa0-e1b9-4e38-8e6f-bf4422726e18.png",
+    "bytes": 15416
+  },
+  "sprites/toilet-paper": {
+    "src": "hf_20260907_081121_2610bce7-9a09-470b-bf6a-35c8d98ace70.png",
+    "bytes": 17250
+  },
+  "audio/hairdryer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hairdryer.mp3",
+    "bytes": 33481
+  },
+  "audio/bath-mat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bath-mat.mp3",
+    "bytes": 26167
+  },
+  "audio/desk": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/desk.mp3",
+    "bytes": 25122
+  },
+  "sprites/hairdryer": {
+    "src": "hf_20260907_081125_b752a4c9-f25e-42be-bfc8-a2709f130535.png",
+    "bytes": 32934
+  },
+  "sprites/bath-mat": {
+    "src": "hf_20260907_081128_b6d93bf9-abb4-43f6-869d-af81106753b1.png",
+    "bytes": 26450
+  },
+  "sprites/desk": {
+    "src": "hf_20260907_081131_deb10bc4-e67e-4563-bf81-6cecaad841c0.png",
+    "bytes": 26622
+  },
+  "audio/office-chair": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/office-chair.mp3",
+    "bytes": 26167
+  },
+  "sprites/office-chair": {
+    "src": "hf_20260907_081135_13a7822e-8c31-4828-9cb9-99394d033657.png",
+    "bytes": 21876
+  },
+  "audio/computer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/computer.mp3",
+    "bytes": 32436
+  },
+  "audio/laptop": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/laptop.mp3",
+    "bytes": 26167
+  },
+  "audio/printer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/printer.mp3",
+    "bytes": 17808
+  },
+  "sprites/laptop": {
+    "src": "hf_20260907_081142_bab14c71-f2d7-4f2b-bc21-585aabc44c49.png",
+    "bytes": 21454
+  },
+  "sprites/computer": {
+    "src": "hf_20260907_081139_c12418c1-9af6-4fed-a7b3-c2d677d6d490.png",
+    "bytes": 21610
+  },
+  "sprites/printer": {
+    "src": "hf_20260907_081146_805e23be-07d9-4d3d-b4df-87a01e59eda5.png",
+    "bytes": 18060
+  },
+  "audio/bookcase": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bookcase.mp3",
+    "bytes": 37138
+  },
+  "sprites/bookcase": {
+    "src": "hf_20260907_081159_b4e88b43-236e-4f6e-9794-df0bd78479ff.png",
+    "bytes": 32138
+  },
+  "audio/desk-lamp": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/desk-lamp.mp3",
+    "bytes": 25122
+  },
+  "audio/drawer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/drawer.mp3",
+    "bytes": 24077
+  },
+  "audio/telephone": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/telephone.mp3",
+    "bytes": 32436
+  },
+  "sprites/drawer": {
+    "src": "hf_20260907_081206_7582293b-1498-48e1-bbed-e24d14bd4cd7.png",
+    "bytes": 23040
+  },
+  "sprites/desk-lamp": {
+    "src": "hf_20260907_081203_8f460483-cfd9-49e7-bbf1-82d9bdbdc610.png",
+    "bytes": 37554
+  },
+  "audio/door": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/door.mp3",
+    "bytes": 25122
+  },
+  "sprites/telephone": {
+    "src": "hf_20260907_081210_c34aac0f-0ee3-4591-a63e-3de51727c42c.png",
+    "bytes": 37920
+  },
+  "sprites/door": {
+    "src": "hf_20260907_081215_4f97ffe3-fa9b-4b6f-a24c-33dd704187be.png",
+    "bytes": 18004
+  },
+  "audio/window": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/window.mp3",
+    "bytes": 38706
+  },
+  "audio/key": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/key.mp3",
+    "bytes": 38706
+  },
+  "sprites/key": {
+    "src": "hf_20260907_081222_7293fca6-d51b-4c11-a903-b7a16be29873.png",
+    "bytes": 23150
+  },
+  "sprites/doormat": {
+    "src": "hf_20260907_081226_e9de08ae-7f74-4115-9fd3-03ac320b52ce.png",
+    "bytes": 43468
+  },
+  "audio/doormat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/doormat.mp3",
+    "bytes": 28779
+  },
+  "audio/coat-rack": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/coat-rack.mp3",
+    "bytes": 29302
+  },
+  "sprites/coat-rack": {
+    "src": "hf_20260907_081229_826d184b-7c89-4504-9f8d-0736683c1f61.png",
+    "bytes": 17342
+  },
+  "audio/stairs": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stairs.mp3",
+    "bytes": 38706
+  },
+  "audio/light-switch": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/light-switch.mp3",
+    "bytes": 58559
+  },
+  "sprites/stairs": {
+    "src": "hf_20260907_081232_23c15d20-a419-44a5-b394-f58bc9b468fd.png",
+    "bytes": 32998
+  },
+  "audio/doorbell": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/doorbell.mp3",
+    "bytes": 23032
+  },
+  "sprites/light-switch": {
+    "src": "hf_20260907_081236_1e778f3a-955d-430c-b0e0-df15efeb2666.png",
+    "bytes": 12484
+  },
+  "sprites/window": {
+    "src": "hf_20260907_081218_dcd52783-2185-432e-bb1e-f51b10645edb.png",
+    "bytes": 20006
+  },
+  "audio/washing-machine": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/washing-machine.mp3",
+    "bytes": 40796
+  },
+  "sprites/doorbell": {
+    "src": "hf_20260907_081240_52497331-1e46-4454-ac87-0eb3c4b4c30f.png",
+    "bytes": 13472
+  },
+  "audio/iron": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/iron.mp3",
+    "bytes": 24077
+  },
+  "audio/ironing-board": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ironing-board.mp3",
+    "bytes": 28257
+  },
+  "sprites/washing-machine": {
+    "src": "hf_20260907_082334_020f4ecd-0cb7-4ad5-8cff-71ce59012330.png",
+    "bytes": 20414
+  },
+  "sprites/iron": {
+    "src": "hf_20260907_082340_b81370fa-800c-4402-a1b6-f3ecac1c59b3.png",
+    "bytes": 17564
+  },
+  "sprites/vacuum-cleaner": {
+    "src": "hf_20260907_082351_02dc23ea-bfa6-49bd-920b-539b86537b79.png",
+    "bytes": 29670
+  },
+  "sprites/ironing-board": {
+    "src": "hf_20260907_082346_43326709-54f6-438f-87ce-2e301e0f4f57.png",
+    "bytes": 32610
+  },
+  "audio/vacuum-cleaner": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/vacuum-cleaner.mp3",
+    "bytes": 36094
+  },
+  "audio/bucket": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bucket.mp3",
+    "bytes": 15718
+  },
+  "sprites/mop": {
+    "src": "hf_20260907_082402_1baf985e-61bb-4511-a91f-986351e53318.png",
+    "bytes": 16052
+  },
+  "sprites/bucket": {
+    "src": "hf_20260907_082357_a8f7f951-9d38-4060-a9f6-ef74996545d0.png",
+    "bytes": 19708
+  },
+  "audio/mop": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mop.mp3",
+    "bytes": 18853
+  },
+  "audio/broom": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/broom.mp3",
+    "bytes": 36616
+  },
+  "sprites/broom": {
+    "src": "hf_20260907_082407_0051044a-7e34-489f-bdc5-54aafcad793f.png",
+    "bytes": 14868
+  },
+  "audio/dustpan": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/dustpan.mp3",
+    "bytes": 33481
+  },
+  "audio/laundry-basket": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/laundry-basket.mp3",
+    "bytes": 41841
+  },
+  "audio/clothes-pegs": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/clothes-pegs.mp3",
+    "bytes": 38706
+  },
+  "sprites/laundry-basket": {
+    "src": "hf_20260907_082429_38699714-c71b-4a95-a286-a1b84327e027.png",
+    "bytes": 33438
+  },
+  "sprites/dustpan": {
+    "src": "hf_20260907_082411_38744cc3-efe1-407c-9cfd-a2d1ca81e34a.png",
+    "bytes": 20192
+  },
+  "audio/fence": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fence.mp3",
+    "bytes": 26167
+  },
+  "sprites/clothes-pegs": {
+    "src": "hf_20260907_082435_ed766bee-08da-485d-80a6-59d9ecf80abd.png",
+    "bytes": 27172
+  },
+  "audio/gate": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/gate.mp3",
+    "bytes": 15718
+  },
+  "sprites/fence": {
+    "src": "hf_20260907_082440_3cfc8820-2d6a-47e7-8317-5f7e2ba9caf1.png",
+    "bytes": 25284
+  },
+  "audio/mailbox": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mailbox.mp3",
+    "bytes": 24077
+  },
+  "sprites/gate": {
+    "src": "hf_20260907_082444_2ba6b3e1-89b5-41cb-a975-593234c1fa96.png",
+    "bytes": 40130
+  },
+  "sprites/mailbox": {
+    "src": "hf_20260907_082448_383a7f2e-2447-41e3-a36f-6818918b0246.png",
+    "bytes": 20008
+  },
+  "audio/bench": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bench.mp3",
+    "bytes": 25122
+  },
+  "sprites/bench": {
+    "src": "hf_20260907_082453_7a537297-b840-4b05-a691-2de7436630cd.png",
+    "bytes": 45358
+  },
+  "audio/flower-pot": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/flower-pot.mp3",
+    "bytes": 30347
+  },
+  "audio/barbecue": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/barbecue.mp3",
+    "bytes": 30347
+  },
+  "audio/swing": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/swing.mp3",
+    "bytes": 31914
+  },
+  "sprites/flower-pot": {
+    "src": "hf_20260907_082500_b6f63d40-84dc-4153-9df6-29ab0f160afc.png",
+    "bytes": 49020
+  },
+  "audio/shed": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shed.mp3",
+    "bytes": 13628
+  },
+  "sprites/swing": {
+    "src": "hf_20260907_082509_0327fd19-1878-42ca-bbc8-747509a75550.png",
+    "bytes": 61334
+  },
+  "sprites/barbecue": {
+    "src": "hf_20260907_082505_8ac047a3-f67e-40b0-88c4-e45b89f16696.png",
+    "bytes": 29322
+  },
+  "audio/watering-can": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/watering-can.mp3",
+    "bytes": 44453
+  },
+  "sprites/shed": {
+    "src": "hf_20260907_082515_e093473a-4b24-4fdf-81b6-aa002de0da39.png",
+    "bytes": 31346
+  },
+  "sprites/watering-can": {
+    "src": "hf_20260907_082520_f4067a8e-fe4a-47e7-a253-7701d3d7db5c.png",
+    "bytes": 25242
+  },
+  "audio/hose": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hose.mp3",
+    "bytes": 38706
+  },
+  "sprites/ladder": {
+    "src": "hf_20260907_082539_c3d48940-3e43-48c2-ae6f-4e4c53f2e0fc.png",
+    "bytes": 32376
+  },
+  "audio/ladder": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ladder.mp3",
+    "bytes": 27734
+  },
+  "audio/lawnmower": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lawnmower.mp3",
+    "bytes": 25645
+  },
+  "sprites/hose": {
+    "src": "hf_20260907_082525_dbb66322-4da7-4e3c-ac60-3d7836470b10.png",
+    "bytes": 27296
+  },
+  "audio/hair": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hair.mp3",
+    "bytes": 15718
+  },
+  "sprites/hair": {
+    "src": "hf_20260907_124152_95e24b05-e909-40a2-bf74-1cfbb1c2791e.png",
+    "bytes": 41838
+  },
+  "audio/forehead": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/forehead.mp3",
+    "bytes": 23555
+  },
+  "sprites/lawnmower": {
+    "src": "hf_20260907_082544_d1439f93-8bb1-482c-817a-8cbad4161093.png",
+    "bytes": 33694
+  },
+  "audio/eyebrow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/eyebrow.mp3",
+    "bytes": 24600
+  },
+  "audio/eye": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/eye.mp3",
+    "bytes": 19375
+  },
+  "sprites/forehead": {
+    "src": "hf_20260907_124157_377d2a3f-eecd-4ee2-a266-2bc8bbe40c94.png",
+    "bytes": 26224
+  },
+  "sprites/eyebrow": {
+    "src": "hf_20260907_124112_fa6ea7f6-b521-48db-88f1-8336bddb95d8.png",
+    "bytes": 24796
+  },
+  "audio/ear": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ear.mp3",
+    "bytes": 23032
+  },
+  "sprites/eye": {
+    "src": "hf_20260907_124107_41c96249-e990-4d9d-93dd-276c6c3008f0.png",
+    "bytes": 22506
+  },
+  "audio/nose": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/nose.mp3",
+    "bytes": 31392
+  },
+  "sprites/ear": {
+    "src": "hf_20260907_124103_25f0e4c9-09d7-47a1-8f88-c9a191815f69.png",
+    "bytes": 31250
+  },
+  "audio/cheek": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cheek.mp3",
+    "bytes": 38706
+  },
+  "sprites/cheek": {
+    "src": "hf_20260907_124202_6d1366af-8031-4f11-bdb7-2b2389d86d7e.png",
+    "bytes": 24734
+  },
+  "audio/mouth": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mouth.mp3",
+    "bytes": 19375
+  },
+  "sprites/nose": {
+    "src": "hf_20260907_124116_ef09bcff-9bec-4be3-86d5-e977560b5448.png",
+    "bytes": 26222
+  },
+  "audio/lips": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lips.mp3",
+    "bytes": 38706
+  },
+  "audio/teeth": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/teeth.mp3",
+    "bytes": 15718
+  },
+  "audio/tongue": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tongue.mp3",
+    "bytes": 24600
+  },
+  "sprites/teeth": {
+    "src": "hf_20260907_124128_c6ff1730-50f9-4227-bb27-5b36526cb35a.png",
+    "bytes": 29028
+  },
+  "sprites/mouth": {
+    "src": "hf_20260907_124120_18f2d660-e0ca-49e9-9b52-e228c84c5a08.png",
+    "bytes": 27212
+  },
+  "sprites/lips": {
+    "src": "hf_20260907_124124_83310730-2fae-40b5-b6d0-118da31287aa.png",
+    "bytes": 23310
+  },
+  "audio/chin": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chin.mp3",
+    "bytes": 21987
+  },
+  "audio/neck": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/neck.mp3",
+    "bytes": 9971
+  },
+  "sprites/tongue": {
+    "src": "hf_20260907_124132_3de0aed8-904b-4a82-9855-d96da49a948a.png",
+    "bytes": 19580
+  },
+  "sprites/neck": {
+    "src": "hf_20260907_124210_bca34233-8461-4f26-aee4-2bf9cccf819e.png",
+    "bytes": 21678
+  },
+  "audio/head": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/head.mp3",
+    "bytes": 24600
+  },
+  "sprites/chin": {
+    "src": "hf_20260907_124206_5c5293b4-8557-4d55-9f29-e5f95b5aef20.png",
+    "bytes": 22418
+  },
+  "audio/shoulder": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/shoulder.mp3",
+    "bytes": 38706
+  },
+  "sprites/head": {
+    "src": "hf_20260907_124136_b2fc5c2d-6d35-4cfc-864d-31b383d85653.png",
+    "bytes": 20178
+  },
+  "sprites/shoulder": {
+    "src": "hf_20260907_124215_3db4c993-7204-4446-8546-d2cf4a0f84ad.png",
+    "bytes": 21624
+  },
+  "audio/chest": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/chest.mp3",
+    "bytes": 38706
+  },
+  "audio/arm": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/arm.mp3",
+    "bytes": 27212
+  },
+  "sprites/arm": {
+    "src": "hf_20260907_124223_e4f782a8-42be-437d-88b1-e01955abc29f.png",
+    "bytes": 22138
+  },
+  "sprites/chest": {
+    "src": "hf_20260907_124219_5a7de3d1-ab71-4586-bc29-9721334e84d8.png",
+    "bytes": 31144
+  },
+  "audio/elbow": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/elbow.mp3",
+    "bytes": 20943
+  },
+  "audio/stomach": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stomach.mp3",
+    "bytes": 26167
+  },
+  "sprites/stomach": {
+    "src": "hf_20260907_124232_8cab335f-557e-4c50-8ca2-3f717b075b6f.png",
+    "bytes": 21434
+  },
+  "sprites/elbow": {
+    "src": "hf_20260907_124228_ba02524e-3fb3-4201-978a-d27aec319c35.png",
+    "bytes": 51776
+  },
+  "audio/wrist": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wrist.mp3",
+    "bytes": 26167
+  },
+  "audio/hand": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hand.mp3",
+    "bytes": 27212
+  },
+  "audio/finger": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/finger.mp3",
+    "bytes": 20943
+  },
+  "sprites/wrist": {
+    "src": "hf_20260907_124236_f13f5cfd-e2df-4f39-9354-51e6a43cbf8c.png",
+    "bytes": 22376
+  },
+  "audio/thumb": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/thumb.mp3",
+    "bytes": 19898
+  },
+  "sprites/hand": {
+    "src": "hf_20260907_124242_2b7237c7-bcda-4745-b82b-97dc790178a4.png",
+    "bytes": 30152
+  },
+  "sprites/thumb": {
+    "src": "hf_20260907_124259_5ebb7845-67a7-4444-a62a-810c2ec4bf21.png",
+    "bytes": 29888
+  },
+  "audio/knee": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/knee.mp3",
+    "bytes": 19898
+  },
+  "sprites/finger": {
+    "src": "hf_20260907_124255_380d1b5f-4dfb-4ca3-a3c1-6da3ac47115f.png",
+    "bytes": 28474
+  },
+  "audio/leg": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/leg.mp3",
+    "bytes": 19898
+  },
+  "sprites/leg": {
+    "src": "hf_20260907_124303_5a6202a6-785b-4bc0-b60f-50038fc049cf.png",
+    "bytes": 19494
+  },
+  "sprites/knee": {
+    "src": "hf_20260907_124307_c2cae985-5e22-4b72-825b-464d8434002d.png",
+    "bytes": 16852
+  },
+  "audio/ankle": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ankle.mp3",
+    "bytes": 38706
+  },
+  "audio/foot": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/foot.mp3",
+    "bytes": 38706
+  },
+  "audio/toe": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toe.mp3",
+    "bytes": 20943
+  },
+  "sprites/ankle": {
+    "src": "hf_20260907_124312_f2b4e354-ad31-41ad-92fd-25a78d4257fb.png",
+    "bytes": 21468
+  },
+  "audio/brain": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/brain.mp3",
+    "bytes": 16763
+  },
+  "sprites/toe": {
+    "src": "hf_20260907_124321_ff773cd4-9877-438a-a1e7-8daf8493f2a2.png",
+    "bytes": 28898
+  },
+  "audio/lungs": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/lungs.mp3",
+    "bytes": 14151
+  },
+  "sprites/foot": {
+    "src": "hf_20260907_124316_cdf042ab-d2b0-4de0-8e74-90786c3d620f.png",
+    "bytes": 22338
+  },
+  "sprites/brain": {
+    "src": "hf_20260907_120433_eb04faec-03c3-4a2b-92aa-225841bb335a.png",
+    "bytes": 21446
+  },
+  "audio/heart": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/heart.mp3",
+    "bytes": 17285
+  },
+  "sprites/lungs": {
+    "src": "hf_20260907_120438_76626707-7a2e-46b0-a86a-f32813b2b7d0.png",
+    "bytes": 16998
+  },
+  "audio/stomach-organ": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stomach.mp3",
+    "bytes": 26167
+  },
+  "sprites/heart": {
+    "src": "hf_20260907_120442_169ad59e-1eac-4628-ba7c-afb6ce09b43c.png",
+    "bytes": 20376
+  },
+  "sprites/stomach-organ": {
+    "src": "hf_20260907_120448_99d1157f-cf08-4509-8bb8-273f12924961.png",
+    "bytes": 16072
+  },
+  "audio/bone": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bone.mp3",
+    "bytes": 31392
+  },
+  "audio/blood": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/blood.mp3",
+    "bytes": 17808
+  },
+  "sprites/blood": {
+    "src": "hf_20260907_120514_be94c912-0927-46d0-8e25-c65df6b70764.png",
+    "bytes": 14554
+  },
+  "audio/doctor": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/doctor.mp3",
+    "bytes": 25645
+  },
+  "sprites/doctor": {
+    "src": "hf_20260907_154728_babf69bb-e358-4448-b42d-0d2c10d46899.png",
+    "bytes": 23406
+  },
+  "sprites/bone": {
+    "src": "hf_20260907_120453_2af8c343-6030-412f-8902-5f2996a48388.png",
+    "bytes": 12248
+  },
+  "audio/nurse": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/nurse.mp3",
+    "bytes": 18853
+  },
+  "audio/patient": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/patient.mp3",
+    "bytes": 38706
+  },
+  "audio/stethoscope": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stethoscope.mp3",
+    "bytes": 30347
+  },
+  "sprites/nurse": {
+    "src": "hf_20260907_154733_71fb3ee8-5d5d-4a21-ad2e-c5653cf89aff.png",
+    "bytes": 20424
+  },
+  "sprites/patient": {
+    "src": "hf_20260907_154737_bb815199-c884-4656-afa2-4dd521811e90.png",
+    "bytes": 25882
+  },
+  "sprites/thermometer": {
+    "src": "hf_20260907_120543_559893cc-b988-4f25-8fb5-7f1e774a9f89.png",
+    "bytes": 14220
+  },
+  "audio/thermometer": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/thermometer.mp3",
+    "bytes": 24600
+  },
+  "sprites/stethoscope": {
+    "src": "hf_20260907_120538_240e510c-0125-42cc-acd1-02ca123a0fef.png",
+    "bytes": 40206
+  },
+  "audio/x-ray": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/x-ray.mp3",
+    "bytes": 23032
+  },
+  "audio/hospital-bed": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/hospital-bed.mp3",
+    "bytes": 27734
+  },
+  "sprites/x-ray": {
+    "src": "hf_20260907_120548_5d3c29fb-63f3-4d6e-a656-cf7759e754f0.png",
+    "bytes": 24050
+  },
+  "audio/wheelchair": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/wheelchair.mp3",
+    "bytes": 25645
+  },
+  "sprites/wheelchair": {
+    "src": "hf_20260907_120557_cec11e6d-6fc3-4dfe-ba5d-00b79acd34a8.png",
+    "bytes": 65020
+  },
+  "audio/crutches": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/crutches.mp3",
+    "bytes": 37138
+  },
+  "sprites/hospital-bed": {
+    "src": "hf_20260907_120553_22ccf019-f597-41ee-93f4-10d43cb69952.png",
+    "bytes": 32652
+  },
+  "audio/first-aid-kit": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/first-aid-kit.mp3",
+    "bytes": 47065
+  },
+  "sprites/crutches": {
+    "src": "hf_20260907_120602_f21dfaef-17ec-49aa-8e1f-c181e232e0a5.png",
+    "bytes": 25256
+  },
+  "audio/bandage": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/bandage.mp3",
+    "bytes": 28779
+  },
+  "sprites/first-aid-kit": {
+    "src": "hf_20260907_120607_10b09520-013e-4f76-9f8e-907876d8ede9.png",
+    "bytes": 21332
+  },
+  "sprites/bandage": {
+    "src": "hf_20260907_120613_7f6794fe-1409-43b7-9dff-a0a54f0869aa.png",
+    "bytes": 43784
+  },
+  "sprites/plaster": {
+    "src": "hf_20260907_121131_9323c64d-0712-43aa-b1a4-ad77d3787690.png",
+    "bytes": 26024
+  },
+  "audio/medicine": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/medicine.mp3",
+    "bytes": 38706
+  },
+  "sprites/medicine": {
+    "src": "hf_20260907_121136_2cdd19d2-9663-4436-8899-35e3c35824c1.png",
+    "bytes": 16278
+  },
+  "audio/pills": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/pills.mp3",
+    "bytes": 38706
+  },
+  "audio/plaster": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/plaster.mp3",
+    "bytes": 26167
+  },
+  "sprites/syringe": {
+    "src": "hf_20260907_121145_6700d6fc-ebe0-440e-9147-543bab366e27.png",
+    "bytes": 14464
+  },
+  "sprites/pills": {
+    "src": "hf_20260907_121141_e1bbfcca-853f-4f19-92b9-b5d1f1d79184.png",
+    "bytes": 23404
+  },
+  "audio/ointment": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/ointment.mp3",
+    "bytes": 24600
+  },
+  "sprites/ointment": {
+    "src": "hf_20260907_121149_58df9b13-ee02-4ebc-8bec-f0e9840987b6.png",
+    "bytes": 14566
+  },
+  "audio/tissues": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/tissues.mp3",
+    "bytes": 38706
+  },
+  "audio/syringe": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/syringe.mp3",
+    "bytes": 38706
+  },
+  "sprites/tissues": {
+    "src": "hf_20260907_121152_d082f399-168e-4f57-86cf-1f78c50e66c3.png",
+    "bytes": 13478
+  },
+  "audio/mask": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/mask.mp3",
+    "bytes": 25122
+  },
+  "audio/headache": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/headache.mp3",
+    "bytes": 38706
+  },
+  "sprites/headache": {
+    "src": "hf_20260907_154746_5936ad91-84dc-431d-9baa-8af395b2b0c3.png",
+    "bytes": 24918
+  },
+  "sprites/mask": {
+    "src": "hf_20260907_121156_2a9afb49-ad7b-44d7-b269-1b2611131639.png",
+    "bytes": 27410
+  },
+  "sprites/cough": {
+    "src": "hf_20260907_154704_0c3c139c-257c-464d-91f0-5a48bc9c4cbd.png",
+    "bytes": 25194
+  },
+  "audio/cough": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/cough.mp3",
+    "bytes": 36094
+  },
+  "audio/fever": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/fever.mp3",
+    "bytes": 20943
+  },
+  "audio/sore-throat": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/sore-throat.mp3",
+    "bytes": 26167
+  },
+  "audio/stomach-ache": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/stomach-ache.mp3",
+    "bytes": 23555
+  },
+  "sprites/sore-throat": {
+    "src": "hf_20260907_154714_bcd53bf9-d118-496d-9989-58e35e693a03.png",
+    "bytes": 23088
+  },
+  "sprites/fever": {
+    "src": "hf_20260907_154709_9a66e46b-294c-4695-bada-f8964d361397.png",
+    "bytes": 43014
+  },
+  "sprites/stomach-ache": {
+    "src": "hf_20260907_154750_f247ce7d-6ac6-4484-b1af-bbdc82e75607.png",
+    "bytes": 25194
+  },
+  "audio/toothache": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/toothache.mp3",
+    "bytes": 29824
+  },
+  "sprites/toothache": {
+    "src": "hf_20260907_154754_1c1c392d-836d-4371-ab58-c2491e1a22b3.png",
+    "bytes": 22866
+  },
+  "audio/runny-nose": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/runny-nose.mp3",
+    "bytes": 29302
+  },
+  "audio/broken-arm": {
+    "src": "https://jts-vocabulary-audio.higgsfield.app/audio/broken-arm.mp3",
+    "bytes": 34004
+  },
+  "sprites/runny-nose": {
+    "src": "hf_20260907_154719_b5a34fb1-e562-41ad-87e8-1166097b030c.png",
+    "bytes": 21398
+  },
+  "sprites/broken-arm": {
+    "src": "hf_20260907_160600_293e112b-a69a-4c3a-8c08-d4f868c49a88.png",
+    "bytes": 26602
+  },
+  "scenes/jungle/cover": {
+    "src": "hf_20260906_042022_6cf61d5e-09d0-438c-8077-ca5f4c1d65af.png",
+    "bytes": 61410
+  },
+  "scenes/ocean/cover": {
+    "src": "hf_20260906_041748_853c2afb-e6aa-45d3-a77c-f5f6f724e1d1.png",
+    "bytes": 28770
+  },
+  "scenes/ocean/bg": {
+    "src": "hf_20260906_041614_3ae400f4-d8ec-46a2-be80-b38a1ec90515.png",
+    "bytes": 48788
+  },
+  "scenes/jungle/bg": {
+    "src": "hf_20260906_042022_1999efc2-78a5-4c7c-8544-72be90e050cb.png",
+    "bytes": 116430
+  },
+  "scenes/arctic/cover": {
+    "src": "hf_20260906_042432_ba155d68-4e09-4de3-ad56-eff849c5d795.png",
+    "bytes": 23676
+  },
+  "scenes/garden/bg": {
+    "src": "hf_20260906_051053_adfb9af6-00cc-485b-a533-619d2ec9a4df.png",
+    "bytes": 105800
+  },
+  "scenes/garden/cover": {
+    "src": "hf_20260906_051053_c1b3286b-5332-427b-8690-0b1106608ade.png",
+    "bytes": 43756
+  },
+  "scenes/arctic/bg": {
+    "src": "hf_20260906_042432_948da952-5a70-4fe4-b979-ca76de6592de.png",
+    "bytes": 38864
+  },
+  "scenes/birds/bg": {
+    "src": "hf_20260906_051053_7604ed99-d446-4b6b-8f8d-862cbf4b9bd1.png",
+    "bytes": 89580
+  },
+  "scenes/home/bg": {
+    "src": "hf_20260906_053602_78c212c2-f91e-418f-b6f9-648600d6e98e.png",
+    "bytes": 75560
+  },
+  "scenes/birds/cover": {
+    "src": "hf_20260906_051053_7a000e9c-bce0-4723-bebe-6e0d3108f0f5.png",
+    "bytes": 43890
+  },
+  "scenes/home/cover": {
+    "src": "hf_20260906_053602_f02df77f-6d2f-4fbe-863e-c38f3e9272ad.png",
+    "bytes": 45586
+  },
+  "scenes/pond/cover": {
+    "src": "hf_20260906_053602_274ded94-81c3-4d74-a9ad-dd3900b0f63f.png",
+    "bytes": 42578
+  },
+  "scenes/savanna/bg": {
+    "src": "hf_20260906_053602_0de532b4-9b6c-469d-a6c8-3dbac52c4d38.png",
+    "bytes": 79102
+  },
+  "scenes/savanna/cover": {
+    "src": "hf_20260906_053602_a0db0cf1-db9f-4779-a1be-c6aaa24fb086.png",
+    "bytes": 38896
+  },
+  "scenes/pond/bg": {
+    "src": "hf_20260906_053602_afc65eaa-fc1f-47d9-8c3d-5f50a2bdf9f4.png",
+    "bytes": 118412
+  },
+  "scenes/desert/bg": {
+    "src": "hf_20260906_060639_3d6f02da-be9a-467f-93dd-ab5858a694e9.png",
+    "bytes": 53274
+  },
+  "scenes/desert/cover": {
+    "src": "hf_20260906_060639_e385e525-6533-4997-89c9-4e0c597a06ab.png",
+    "bytes": 29016
+  },
+  "scenes/coast/cover": {
+    "src": "hf_20260906_060639_5db08472-b9ca-4ab2-8c7b-2347ce27c28b.png",
+    "bytes": 33844
+  },
+  "scenes/coast/bg": {
+    "src": "hf_20260906_060639_fda72479-a773-4821-8703-112ab70af638.png",
+    "bytes": 59160
+  },
+  "scenes/mountains/cover": {
+    "src": "hf_20260906_060640_122d5d02-6bd1-42e9-91c9-9337fdd40b3b.png",
+    "bytes": 55544
+  },
+  "scenes/reptiles/bg": {
+    "src": "hf_20260906_060639_dd265667-46de-41e2-9fb5-14c5149ce358.png",
+    "bytes": 92766
+  },
+  "scenes/mountains/bg": {
+    "src": "hf_20260906_060639_9c7de059-76f3-43db-ae4f-b268e65d618b.png",
+    "bytes": 129136
+  },
+  "scenes/forest/cover": {
+    "src": "hf_20260906_042248_90e8e46f-437b-4ef7-a02c-35fdbccf3e9f.png",
+    "bytes": 54858
+  },
+  "scenes/reptiles/cover": {
+    "src": "hf_20260906_060639_35a99376-5fb9-481a-9487-72490ac61168.png",
+    "bytes": 48308
+  },
+  "scenes/fruit/cover": {
+    "src": "hf_20260906_155907_864dc32c-afdc-4b57-be86-d3ad40590a37.png",
+    "bytes": 50056
+  },
+  "scenes/fruit/bg": {
+    "src": "hf_20260906_155905_47d4932d-9817-49ce-9641-d18eb8e5ca5e.png",
+    "bytes": 92894
+  },
+  "scenes/australia/bg": {
+    "src": "hf_20260906_060639_095d870d-2933-495b-b822-21344af95219.png",
+    "bytes": 99634
+  },
+  "scenes/veg/cover": {
+    "src": "hf_20260906_161803_23bf2a5d-5c15-46b1-a800-fdace63264aa.png",
+    "bytes": 60734
+  },
+  "scenes/australia/cover": {
+    "src": "hf_20260906_060639_8466c62f-e0ab-4f89-86ac-da80e007bdc8.png",
+    "bytes": 49974
+  },
+  "scenes/veg/bg": {
+    "src": "hf_20260906_161802_0ab42630-1fb8-4fa9-a4bc-8138ff63f520.png",
+    "bytes": 125168
+  },
+  "scenes/dairy/bg": {
+    "src": "hf_20260906_161802_c6ec8acb-de28-4d79-83f3-b44407852e72.png",
+    "bytes": 66826
+  },
+  "scenes/dairy/cover": {
+    "src": "hf_20260906_161804_9b1398aa-adc4-45b4-a9e5-33b8c3d52c85.png",
+    "bytes": 46258
+  },
+  "scenes/seafood/cover": {
+    "src": "hf_20260906_163637_2127e081-7633-4ee3-a75d-25b094370828.png",
+    "bytes": 64676
+  },
+  "scenes/meat/cover": {
+    "src": "hf_20260906_163637_da2fc7c7-3a90-4310-a301-cb764d25e38c.png",
+    "bytes": 41364
+  },
+  "scenes/meat/bg": {
+    "src": "hf_20260906_163637_38ec9f71-8aa9-419b-9c26-48ebf8764285.png",
+    "bytes": 95854
+  },
+  "scenes/bakery/cover": {
+    "src": "hf_20260906_163637_17c8d3cd-6efc-4dc1-ab6b-51ed5e431555.png",
+    "bytes": 59306
+  },
+  "scenes/bakery/bg": {
+    "src": "hf_20260906_163637_b0c64519-c18e-47d9-bafd-2f47f0ef8718.png",
+    "bytes": 68898
+  },
+  "scenes/pantry/cover": {
+    "src": "hf_20260907_030445_2288d1cc-d1a7-4264-8794-c574fee73653.png",
+    "bytes": 54370
+  },
+  "scenes/fastfood/bg": {
+    "src": "hf_20260907_030445_d426ee0d-44b2-47d3-a929-197b29ac412d.png",
+    "bytes": 82496
+  },
+  "scenes/fastfood/cover": {
+    "src": "hf_20260907_030445_1c73c8c2-f70c-49cd-8fc7-2a6f39d94e8e.png",
+    "bytes": 51160
+  },
+  "scenes/cafe/bg": {
+    "src": "hf_20260907_030445_c8a288f3-8308-43ae-a085-72f39dd75ef7.png",
+    "bytes": 91082
+  },
+  "scenes/seafood/bg": {
+    "src": "hf_20260906_163637_e38a218e-65e8-43e7-a22f-4bae9267d806.png",
+    "bytes": 156884
+  },
+  "scenes/cafe/cover": {
+    "src": "hf_20260907_030445_cb1dfb8c-3400-42be-9151-e8041cfa121b.png",
+    "bytes": 45700
+  },
+  "scenes/desserts/bg": {
+    "src": "hf_20260907_031658_4d1950fc-f62e-4cb8-89b0-4128ddce1020.png",
+    "bytes": 57492
+  },
+  "scenes/desserts/cover": {
+    "src": "hf_20260907_031658_fd8ed520-9495-4a8b-ba55-71ad7b7db125.png",
+    "bytes": 43450
+  },
+  "scenes/breakfast/bg": {
+    "src": "hf_20260907_031658_c00d85b1-8146-49ca-88f4-b3e3e53a3852.png",
+    "bytes": 40968
+  },
+  "scenes/breakfast/cover": {
+    "src": "hf_20260907_031658_ef5517dd-a194-4b83-a7d7-5e4bdb068755.png",
+    "bytes": 43614
+  },
+  "scenes/dinner/bg": {
+    "src": "hf_20260907_031658_287f2eb3-b866-4f69-8793-e51a81780a49.png",
+    "bytes": 44774
+  },
+  "scenes/dinner/cover": {
+    "src": "hf_20260907_031658_c79f909a-d0dd-47cf-ba40-b231348993c4.png",
+    "bytes": 47522
+  },
+  "scenes/spices/bg": {
+    "src": "hf_20260907_033412_e56af9de-940f-4086-9de1-af54e5f18cff.png",
+    "bytes": 49920
+  },
+  "scenes/spices/cover": {
+    "src": "hf_20260907_033412_cb67cadc-4bec-4d0d-b443-8ad8a36d9574.png",
+    "bytes": 48466
+  },
+  "scenes/pantry/bg": {
+    "src": "hf_20260907_030445_6ad80c59-bd6b-4753-8f23-8b7b9d05758a.png",
+    "bytes": 79640
+  },
+  "scenes/snacks/cover": {
+    "src": "hf_20260907_033412_e6d15f43-790a-456d-9084-4ce3aa12fc4b.png",
+    "bytes": 50208
+  },
+  "scenes/snacks/bg": {
+    "src": "hf_20260907_033412_024916b8-64dc-4a9b-86a6-44938169b241.png",
+    "bytes": 59464
+  },
+  "scenes/wardrobe/cover": {
+    "src": "hf_20260907_064610_b784d856-4c35-4f0c-ad67-3deb3fdf2dc0.png",
+    "bytes": 23198
+  },
+  "scenes/wardrobe/bg": {
+    "src": "hf_20260907_064609_97c51210-e7a1-47e8-8fd9-c849414909ca.png",
+    "bytes": 73192
+  },
+  "scenes/store/bg": {
+    "src": "hf_20260907_065849_e37ef72f-cc62-4a1a-8083-7cdb06929832.png",
+    "bytes": 58824
+  },
+  "scenes/shoes/cover": {
+    "src": "hf_20260907_065849_a8080651-d09e-4e40-a09c-5863acb510d8.png",
+    "bytes": 34166
+  },
+  "scenes/store/cover": {
+    "src": "hf_20260907_065848_e00f0908-f1fe-4c56-9dda-401866e7cc15.png",
+    "bytes": 30026
+  },
+  "scenes/shoes/bg": {
+    "src": "hf_20260907_065849_29164be9-98c1-47c2-adb4-c0f70185747d.png",
+    "bytes": 24050
+  },
+  "scenes/winter/cover": {
+    "src": "hf_20260907_065848_df1c8ede-7069-46c7-979c-46931a2ff9e3.png",
+    "bytes": 32142
+  },
+  "scenes/beach/cover": {
+    "src": "hf_20260907_071451_786e975e-8ab6-4fe6-a0a2-cf0fcce26b07.png",
+    "bytes": 26168
+  },
+  "scenes/winter/bg": {
+    "src": "hf_20260907_065849_8073448d-efe9-45b2-a667-fefbc1f88f4a.png",
+    "bytes": 95620
+  },
+  "scenes/sports/bg": {
+    "src": "hf_20260907_071451_cad3d09a-88f5-43d1-b8e2-a2d4ef62a11a.png",
+    "bytes": 59370
+  },
+  "scenes/beach/bg": {
+    "src": "hf_20260907_071451_d2f3b296-ff4c-40f0-9f22-cd6641fc495d.png",
+    "bytes": 53410
+  },
+  "scenes/sports/cover": {
+    "src": "hf_20260907_071451_00881a22-766d-4867-b847-b81722edede6.png",
+    "bytes": 36818
+  },
+  "scenes/accessories/cover": {
+    "src": "hf_20260907_071451_6b8e1b04-f7ca-4fba-a500-9ef777a99df0.png",
+    "bytes": 21984
+  },
+  "scenes/jewellery/cover": {
+    "src": "hf_20260907_071451_c6d1bf9e-5207-42b1-8748-8aaaa4010e29.png",
+    "bytes": 21374
+  },
+  "scenes/accessories/bg": {
+    "src": "hf_20260907_071451_07e56f49-7c5d-4c4d-818c-038bf9a5d9e5.png",
+    "bytes": 48034
+  },
+  "scenes/jewellery/bg": {
+    "src": "hf_20260907_071451_e0d9a90e-6093-4a83-8cd4-a6efed629d5d.png",
+    "bytes": 41984
+  },
+  "scenes/living/bg": {
+    "src": "hf_20260907_074353_1689f9d1-3325-460c-9b1d-b1f85db5129b.png",
+    "bytes": 43284
+  },
+  "scenes/bedroom/bg": {
+    "src": "hf_20260907_075112_fa1a3e3c-7ee9-46bf-98d1-ea81baadc8b9.png",
+    "bytes": 40462
+  },
+  "scenes/kitchen/cover": {
+    "src": "hf_20260907_075112_533072dc-620f-4282-abab-3b6c53f08899.png",
+    "bytes": 26118
+  },
+  "scenes/living/cover": {
+    "src": "hf_20260907_074353_8d23a095-6c2d-4da4-8249-a76197d4b39f.png",
+    "bytes": 26006
+  },
+  "scenes/kitchen/bg": {
+    "src": "hf_20260907_075112_39f3ef75-1ac1-4049-80f5-48a002d58d36.png",
+    "bytes": 24520
+  },
+  "scenes/bedroom/cover": {
+    "src": "hf_20260907_075113_52d45402-d065-44de-b013-cabecb96b919.png",
+    "bytes": 30946
+  },
+  "scenes/dining/cover": {
+    "src": "hf_20260907_075112_3e18cbaa-5d20-4d37-99f6-581ae6e53722.png",
+    "bytes": 35234
+  },
+  "scenes/bathroom/cover": {
+    "src": "hf_20260907_080808_883f668c-a439-4562-8823-269f2f0f5224.png",
+    "bytes": 22948
+  },
+  "scenes/dining/bg": {
+    "src": "hf_20260907_075112_d8216c5f-71ad-4adc-b72f-4703ce525cd9.png",
+    "bytes": 48610
+  },
+  "scenes/office/bg": {
+    "src": "hf_20260907_080808_1b2839c6-0c37-46be-8154-f72d96463365.png",
+    "bytes": 64032
+  },
+  "scenes/bathroom/bg": {
+    "src": "hf_20260907_080808_1243e281-ebbd-421d-9364-8665e20e84a7.png",
+    "bytes": 32570
+  },
+  "scenes/hallway/cover": {
+    "src": "hf_20260907_080807_87156a83-7b80-4dc9-84cc-9549413ffdc1.png",
+    "bytes": 23556
+  },
+  "scenes/hallway/bg": {
+    "src": "hf_20260907_080808_98bdfe7b-1d0f-43b9-9189-6768fe8abe17.png",
+    "bytes": 34534
+  },
+  "scenes/utility/bg": {
+    "src": "hf_20260907_082150_ee3ddbf1-03b1-4340-a2e2-cd2b62bafbb7.png",
+    "bytes": 21038
+  },
+  "scenes/utility/cover": {
+    "src": "hf_20260907_082150_421c14df-5001-450b-9da0-1c9be6e2024d.png",
+    "bytes": 21798
+  },
+  "scenes/forest/bg": {
+    "src": "hf_20260906_042248_021df211-78bf-44ff-a4d8-31c29c60fd08.png",
+    "bytes": 116352
+  },
+  "scenes/outside/cover": {
+    "src": "hf_20260907_082150_8be6643e-1ea0-4462-8f2b-010ae4ce0ece.png",
+    "bytes": 71266
+  },
+  "scenes/office/cover": {
+    "src": "hf_20260907_080808_5aad9e4b-fb48-4f3b-9bcd-46963ae3becd.png",
+    "bytes": 29460
+  },
+  "scenes/outside/bg": {
+    "src": "hf_20260907_082150_2a427529-2c9c-44f0-86a5-aa68e2fba670.png",
+    "bytes": 64710
+  },
+  "scenes/body/cover": {
+    "src": "hf_20260907_112223_a5e67cf1-2fba-418d-b9a1-3a47c056f4dc.png",
+    "bytes": 10550
+  },
+  "scenes/body/bg": {
+    "src": "hf_20260907_123932_b13976d4-c203-4b87-b828-8b3fc85b8915.png",
+    "bytes": 30414
+  },
+  "scenes/face/bg": {
+    "src": "hf_20260907_123932_b13976d4-c203-4b87-b828-8b3fc85b8915.png",
+    "bytes": 30414
+  },
+  "scenes/inside/cover": {
+    "src": "hf_20260907_114643_896528ac-ce85-453b-985b-7d6649882c1d.png",
+    "bytes": 12672
+  },
+  "scenes/face/cover": {
+    "src": "hf_20260907_112223_fa4d2a61-d073-4d72-b9f2-861242e52b8c.png",
+    "bytes": 20158
+  },
+  "scenes/inside/bg": {
+    "src": "hf_20260907_123932_4fc714f0-97bc-4fd0-bc42-26e3672f69ff.png",
+    "bytes": 34608
+  },
+  "scenes/clinic/cover": {
+    "src": "hf_20260907_114643_a08604e6-127b-4807-a143-693bb9f99759.png",
+    "bytes": 21592
+  },
+  "scenes/clinic/bg": {
+    "src": "hf_20260907_123932_1954c225-6093-4f3a-b7c0-85c676aadfd3.png",
+    "bytes": 17648
+  },
+  "scenes/firstaid/cover": {
+    "src": "hf_20260907_114643_ba5dc19f-6c9c-4426-b751-1fba2ddb4df6.png",
+    "bytes": 18240
+  },
+  "scenes/firstaid/bg": {
+    "src": "hf_20260907_123932_1954c225-6093-4f3a-b7c0-85c676aadfd3.png",
+    "bytes": 17648
+  },
+  "scenes/symptoms/cover": {
+    "src": "hf_20260907_114643_a2dcf251-b963-4d4a-a5a3-6458498210a1.png",
+    "bytes": 19548
+  },
+  "scenes/symptoms/bg": {
+    "src": "hf_20260907_123932_1954c225-6093-4f3a-b7c0-85c676aadfd3.png",
+    "bytes": 17648
+  }
+}

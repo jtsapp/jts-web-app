@@ -10,6 +10,7 @@ variables:
   GIT_CLONE_PATH: '$CI_BUILDS_DIR/$CI_COMMIT_BRANCH/$CI_PROJECT_NAME'
 
 stages:
+  - test
   - deploy
   - diag
   - trash
@@ -22,6 +23,27 @@ workflow:
     - if: $CI_COMMIT_BRANCH == "develop"
       variables:
         APP_ENV: development
+
+# Тесты идут ДО деплоя и деплой блокируют.
+#
+# Завели ради одной вещи, которую иначе не удержать: расчёт адреса карточки
+# урока и конвейер подъёмов существуют ДВУМЯ рукописными копиями — здесь и в
+# админке. Разойдутся — заданная карточка перестанет находиться у ученика, и
+# молча: он увидит «этого задания больше нет» на существующей карточке.
+# Держат это lessonCardId.test.js и lessonPipeline.test.js, у которых в обоих
+# репозиториях одна фикстура и одни ожидаемые значения, — но защита, которую
+# запускают руками, защитой не является.
+#
+# Только vitest: браузерных тестов (Playwright) тут нет намеренно — им нужен
+# `npx playwright install --with-deps`, а это сотни мегабайт на каждый пайплайн
+# и отдельное решение. Оба сторожа согласия — юнит-тесты, так что они покрыты.
+test:
+  stage: test
+  tags:
+    - $GITLAB_RUNNER_TAG
+  script:
+    - npm ci
+    - npm test
 
 # Отдельного build-стейджа, в отличие от backend, не нужно — сборка Next.js
 # (`npm ci` + `npm run build`) целиком внутри Dockerfile (multi-stage), её

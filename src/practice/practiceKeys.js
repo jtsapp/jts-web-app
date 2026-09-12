@@ -25,6 +25,10 @@ export const WORKBOOK_KEY = 'jts_workbook_state'
 // Прогресс «Чтения»: { texts: { <textId>: { ex: {…}, done } } } — результат
 // каждого упражнения плюс флаг «дочитал». Семантика replace, как у writing.
 export const READING_KEY = 'jts_reading_done'
+// Прогресс «Слов в картинках»: { scenes: { <sceneId>: { found: [id], done } } }
+// — найденные слова копятся между заходами (сцену проходят не за раз), плюс
+// флаг «дошёл до результата». Семантика replace, как у reading.
+export const WORDS_KEY = 'jts_words_done'
 
 export const GRAMMAR_PROGRESS_EVENT = 'grammar-progress'
 export const LISTENING_PROGRESS_EVENT = 'listening-progress'
@@ -34,6 +38,7 @@ export const WORKBOOKS_PROGRESS_EVENT = 'workbooks-progress'
 export const WRITING_PROGRESS_EVENT = 'writing-progress'
 export const WORKBOOK_PROGRESS_EVENT = 'workbook-progress'
 export const READING_PROGRESS_EVENT = 'reading-progress'
+export const WORDS_PROGRESS_EVENT = 'words-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
 // плюс стрик по дням. Ключ трека — slug, а не id: карточку в админке могут
 // пересоздать, и прогресс не должен обнуляться вместе с ней.

@@ -229,6 +229,48 @@ function ReadingBanner({ userLevel = 'A1', onAll, onStart }) {
   )
 }
 
+// Баннер «Слова в картинках»: вход в визуальный словарь. Каркас тот же
+// (.pp-listen), перекраска — модификатором .pp-words в words.css. Уровня у
+// раздела нет вовсе (сцены разбиты по темам, а не по CEFR), поэтому вместо
+// печати уровня в углу стоит число слов: это единственная цифра, которая тут
+// что-то значит.
+function WordsBanner({ onAll, onStart }) {
+  const { t } = useI18n()
+  const noop = () => {}
+  const [headTop, headRest] = t('practice.words.heading').split('\n')
+  return (
+    <section id="sec-words" className="pp-sec pp-listen pp-words">
+      <SectionHead title={t('practice.words.title')} onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            {headTop}
+            {headRest && (
+              <>
+                <br />
+                {headRest}
+              </>
+            )}
+          </h3>
+          <p className="pp-listen__desc">{t('practice.words.desc')}</p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            {t('practice.words.cta')}
+          </button>
+        </div>
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">{t('practice.words.hint')}</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level pp-listen__level--num">562</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Баннер «Письмо»: вход в тренажёр Writing (180 жанров + Блокнот). Переиспользует
 // каркас баннера аудирования (.pp-listen), а перекраска — модификатором .pp-write
 // в writing.css. Своего арта у раздела пока нет, поэтому карточка текстовая.
@@ -645,6 +687,7 @@ export default function PracticePage({
     { key: 'grammar', label: t('practice.chip.grammar') },
     { key: 'writing', label: t('practice.chip.writing') },
     { key: 'reading', label: t('practice.chip.reading') },
+    { key: 'words', label: t('practice.chip.words') },
     { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
     { key: 'workbooks', label: t('practice.chip.workbooks') },
@@ -672,6 +715,7 @@ export default function PracticePage({
     { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text') },
     { selector: '#sec-writing', title: t('tour.practice.writing.title'), text: t('tour.practice.writing.text') },
     { selector: '#sec-reading', title: t('tour.practice.reading.title'), text: t('tour.practice.reading.text') },
+    { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text') },
     { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text') },
     { selector: '#sec-situations', title: t('tour.practice.situations.title'), text: t('tour.practice.situations.text') },
     { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
@@ -948,6 +992,10 @@ export default function PracticePage({
               onStart={() => onNav?.('reading')}
             />
           )}
+
+          {/* Слова в картинках — вход в визуальный словарь. Своей сетки у чипа
+              нет: каталог секций и сцен живёт на экране раздела. */}
+          {show('words') && <WordsBanner onAll={() => onNav?.('words')} onStart={() => onNav?.('words')} />}
 
           {/* Грамматика — полный каталог (чип «Грамматика») */}
           {filter === 'grammar' &&
