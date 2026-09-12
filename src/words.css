@@ -1,0 +1,253 @@
+/* ============================================================
+   Слова в картинках (Words) — нативный раздел Практики.
+   Классы с префиксом .wd-. Палитра и раскладка каталога те же, что у
+   «Чтения» (reading.css): раздел должен читаться роднёй соседних
+   тренажёров, а не отдельным сайтом. Своё здесь только сцена — она из
+   прототипа data/jtswords.html и красится в цвета самой сцены.
+   ============================================================ */
+.wd {
+  --wd-purple: #874bf8;
+  --wd-purple-dark: #5718c0;
+  --wd-cyan: #0aafff;
+  --wd-green: #03832c;
+  --wd-green-bg: #e6fbec;
+  --wd-green-line: #00d441;
+  --wd-red: #c43d00;
+  --wd-red-bg: #fff0e9;
+  --wd-line: #edeaf5;
+  --wd-soft: #f4f1fc;
+  --wd-ink-2: #4a4458;
+  --wd-ink-3: #8a849a;
+  /* Цвета сцены приходят из данных (tint/tint2). Здесь запасные — карточка
+     каталога рисуется до загрузки секции. */
+  --wd-tint: #874bf8;
+  --wd-tint2: #0aafff;
+
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 32px 48px;
+}
+
+.wd-i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ── верхняя навигация ── */
+.wd-top { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+/* Кабинет вешает свою группу «язык + уведомления» абсолютом в правый верхний
+   угол (.learn__bell, z-index 40, styles.css) — ровно туда, где стоит наш
+   переключатель языка подписи. Без этого запаса кнопка KZ лежит ПОД чужим
+   селектором и не нажимается вовсе (поймано e2e-прогоном). Брейкпоинт тот же,
+   на котором кабинет эту группу показывает. */
+@media (min-width: 761px) {
+  .wd-top { padding-right: 170px; }
+}
+.wd-back {
+  display: inline-flex; align-items: center; gap: 4px; border: 0;
+  background: var(--wd-purple); color: #fff; border-radius: 999px;
+  padding: 9px 16px 9px 12px; font-family: inherit; font-size: 14px;
+  font-weight: 700; cursor: pointer;
+}
+.wd-back:hover { filter: brightness(1.05); }
+.wd-crumb { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; flex: 1; }
+.wd-crumb b { color: var(--wd-purple); font-size: 15px; font-weight: 800; }
+.wd-crumb span { color: #9a99a6; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Язык подписи живёт отдельно от языка интерфейса: учиться можно на русском,
+   а проверять себя на казахском. */
+.wd-lang { display: flex; gap: 4px; background: var(--wd-soft); border-radius: 999px; padding: 3px; }
+.wd-lang__btn {
+  border: 0; background: transparent; color: var(--wd-ink-2); border-radius: 999px;
+  padding: 6px 12px; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.wd-lang__btn[aria-pressed='true'] { background: #fff; color: var(--wd-purple-dark); box-shadow: 0 1px 3px rgba(30, 20, 60, 0.12); }
+
+.wd-note { border-radius: 14px; padding: 12px 16px; font-size: 14px; background: var(--wd-soft); color: var(--wd-ink-2); }
+.wd-note--err { background: var(--wd-red-bg); color: var(--wd-red); }
+
+/* ── кнопки ── */
+.wd-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: 14px; padding: 12px 22px;
+  font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.wd-btn--primary { background: var(--wd-purple); color: #fff; }
+.wd-btn--primary:hover { filter: brightness(1.05); }
+.wd-btn--ghost { background: transparent; color: var(--wd-ink-2); border: 1.5px solid var(--wd-line); }
+.wd-btn--block { width: 100%; }
+
+/* ── каталог ── */
+.wd-hero { margin-bottom: 18px; }
+.wd-hero h1 { margin: 0 0 6px; font-size: 26px; font-weight: 800; color: var(--ink, #171326); }
+.wd-hero p { margin: 0; color: var(--wd-ink-3); font-size: 14px; }
+
+.wd-label { margin: 18px 0 8px; font-size: 13px; font-weight: 800; color: var(--wd-ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.wd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.wd-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1.5px solid var(--wd-line); background: #fff; color: var(--wd-ink-2);
+  border-radius: 999px; padding: 8px 14px; font-family: inherit; font-size: 14px;
+  font-weight: 700; cursor: pointer;
+}
+.wd-chip em { font-style: normal; font-size: 12px; font-weight: 800; color: var(--wd-ink-3); }
+.wd-chip[aria-pressed='true'] { background: var(--wd-purple); border-color: var(--wd-purple); color: #fff; }
+.wd-chip[aria-pressed='true'] em { color: rgba(255, 255, 255, 0.75); }
+
+.wd-grid { display: grid; gap: 16px; margin-top: 20px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.wd-card { background: #fff; border: 1.5px solid var(--wd-line); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; }
+.wd-card__cover {
+  position: relative; aspect-ratio: 16 / 10; overflow: hidden;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--wd-tint) 22%, #fff), color-mix(in srgb, var(--wd-tint2) 16%, #fff));
+}
+.wd-card__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wd-card__done {
+  position: absolute; top: 10px; right: 10px; font-size: 12px; font-weight: 800;
+  border-radius: 999px; padding: 4px 10px; background: var(--wd-green-bg); color: var(--wd-green);
+}
+.wd-card__body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.wd-card__title { margin: 0; font-size: 17px; font-weight: 800; line-height: 1.25; }
+.wd-card__meta { font-size: 12px; color: var(--wd-ink-3); }
+.wd-card__bar { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: var(--wd-ink-3); }
+.wd-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--wd-soft); overflow: hidden; }
+.wd-bar i { display: block; height: 100%; background: var(--wd-purple); border-radius: 999px; }
+.wd-card__body .wd-btn { margin-top: auto; }
+
+/* ── превью сцены ── */
+.wd-preview__hero {
+  display: flex; gap: 24px; align-items: center; flex-wrap: wrap;
+  border-radius: 26px; padding: 20px; margin-bottom: 22px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--wd-tint) 18%, #fff), color-mix(in srgb, var(--wd-tint2) 14%, #fff));
+}
+.wd-preview__cover { width: min(340px, 100%); border-radius: 18px; display: block; }
+.wd-preview__text { flex: 1; min-width: 240px; }
+.wd-preview__kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--wd-purple-dark); }
+.wd-preview__text h1 { margin: 6px 0 8px; font-size: 32px; font-weight: 800; line-height: 1.1; }
+.wd-preview__text p { margin: 0 0 16px; color: var(--wd-ink-2); font-size: 15px; }
+.wd-preview__foot { margin-top: 22px; }
+
+/* Сетка слов — общая у превью и результата. */
+.wd-words { display: flex; flex-wrap: wrap; gap: 10px; }
+.wd-word {
+  display: inline-flex; align-items: center; gap: 10px;
+  border: 1.5px solid var(--wd-line); background: #fff; border-radius: 18px;
+  padding: 8px 14px 8px 8px; font-family: inherit; cursor: pointer; color: var(--wd-ink-2);
+}
+.wd-word:hover { border-color: var(--wd-purple); }
+.wd-word img { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.wd-word__text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
+.wd-word__text b { font-size: 15px; font-weight: 800; color: var(--ink, #171326); }
+.wd-word__text em { font-style: normal; font-size: 12px; color: var(--wd-ink-3); }
+
+/* ── игра ── */
+.wd-task { position: relative; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.wd-task__row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.wd-task__text { font-size: 17px; font-weight: 800; }
+.wd-task__round { font-size: 12px; font-weight: 700; color: var(--wd-ink-3); }
+.wd-dots { display: inline-flex; gap: 5px; }
+.wd-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--wd-soft); border: 1.5px solid var(--wd-line); }
+.wd-dots i.on { background: var(--wd-green-line); border-color: var(--wd-green-line); }
+
+.wd-speak {
+  display: inline-grid; place-items: center; width: 46px; height: 46px; flex: none;
+  border: 0; border-radius: 50%; background: var(--wd-purple); color: #fff; cursor: pointer;
+}
+.wd-speak .wd-i { width: 24px; height: 24px; }
+.wd-speak--nudge { animation: wd-nudge 0.5s ease; }
+.wd-speak--missing { background: var(--wd-red); }
+@keyframes wd-nudge {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.12); }
+  60% { transform: scale(0.96); }
+}
+
+/* Найденное слово: показывается на паузе после верного тапа. */
+.wd-fb {
+  position: absolute; right: 0; top: -6px; display: flex; align-items: baseline; gap: 8px;
+  background: #fff; border: 1.5px solid var(--wd-green-line); border-radius: 14px; padding: 6px 14px;
+  opacity: 0; transform: translateY(-6px); transition: opacity 0.18s, transform 0.18s; pointer-events: none;
+}
+.wd-fb--show { opacity: 1; transform: translateY(0); }
+.wd-fb b { font-size: 17px; font-weight: 800; }
+.wd-fb em { font-style: normal; font-size: 13px; color: var(--wd-ink-3); }
+
+.wd-hint { min-height: 18px; width: 100%; font-size: 13px; color: var(--wd-red); }
+
+.wd-stagewrap { border-radius: 24px; overflow: hidden; border: 1.5px solid var(--wd-line); }
+/* Сцена — координатная сетка 100×100 для солвера раскладки. Пропорции задаёт
+   --wd-ar (16/9 в ландшафте, 4/3 в портрете): та же величина участвует в
+   расчёте высоты спрайта, и разъезд здесь сдвинул бы все картинки. */
+.wd-stage {
+  position: relative; width: 100%; aspect-ratio: var(--wd-ar, 1.7778);
+  background-size: cover; background-position: center; overflow: hidden;
+}
+.wd-stage--water::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(10, 175, 255, 0.12), rgba(10, 175, 255, 0.02));
+}
+
+/* Спрайт стоит якорем в низ-центр: (left, top) — точка, где он «стоит».
+   Квадратная пропорция обязательна: солвер считает высоту как ширину,
+   умноженную на пропорции сцены, и растянутая картинка сломала бы разведение
+   перекрытий. */
+.wd-sprite {
+  position: absolute; transform: translate(-50%, -100%); aspect-ratio: 1;
+  border: 0; background: none; padding: 0; cursor: pointer; z-index: 1;
+  transition: filter 0.15s;
+}
+.wd-sprite img { width: 100%; height: 100%; object-fit: contain; display: block; user-select: none; }
+.wd-sprite:hover { filter: drop-shadow(0 0 10px rgba(135, 75, 248, 0.55)); }
+.wd-sprite--found { cursor: default; filter: grayscale(0.35) opacity(0.55); }
+.wd-sprite--found:hover { filter: grayscale(0.35) opacity(0.55); }
+.wd-sprite--no { animation: wd-no 0.42s ease; }
+@keyframes wd-no {
+  0%, 100% { transform: translate(-50%, -100%); }
+  25% { transform: translate(calc(-50% - 7px), -100%); }
+  75% { transform: translate(calc(-50% + 7px), -100%); }
+}
+
+.wd-toast {
+  position: absolute; inset: 0; display: grid; place-items: center; z-index: 3;
+  background: rgba(23, 19, 38, 0.45); color: #fff; font-size: 22px; font-weight: 800;
+}
+
+.wd-foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 12px 2px 0; font-size: 12px; color: var(--wd-ink-3); }
+
+/* ── результат ── */
+.wd-result__card {
+  border-radius: 26px; padding: 26px; margin-bottom: 20px; text-align: center;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--wd-tint) 20%, #fff), color-mix(in srgb, var(--wd-tint2) 16%, #fff));
+}
+.wd-result__kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--wd-purple-dark); }
+.wd-result__card h1 { margin: 8px 0; font-size: 30px; font-weight: 800; line-height: 1.15; }
+.wd-result__card p { margin: 0; color: var(--wd-ink-2); font-size: 15px; }
+.wd-result__btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+
+/* ── узкие экраны ── */
+@media (max-width: 720px) {
+  .wd { padding: 8px 14px 32px; }
+  .wd-top { gap: 10px; }
+  .wd-preview__text h1 { font-size: 26px; }
+  .wd-task__text { font-size: 15px; }
+  /* Найденное слово на узком экране встаёт под задание: справа для него нет
+     места, и оно наезжало на кнопку повтора. Пока показывать нечего — его
+     нет в потоке вовсе: пустая коробка с рамкой и отступами держала над
+     сценой сотню пикселей воздуха. */
+  .wd-fb { display: none; position: static; order: 3; width: 100%; justify-content: center; transform: none; }
+  .wd-fb--show { display: flex; transform: none; }
+  .wd-stagewrap { border-radius: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wd-speak--nudge,
+  .wd-sprite--no { animation: none; }
+  .wd-fb { transition: none; }
+}
+
+/* Карточка раздела на экране Практики. Каркас общий с «Аудированием»
+   (.pp-listen в styles.css), здесь только перекраска — как .pp-read у
+   «Чтения». Градиент взят с обложек сцен: раздел узнаётся по цвету раньше,
+   чем прочитан заголовок. */
+.pp-words .pp-listen__card {
+  background: linear-gradient(115deg, #00d441 0%, #0aafff 100%);
+}
+/* В печати уровня у этого раздела стоит число слов: уровня у сцен нет вовсе,
+   и трёхзначная цифра в кружок под «A1» не влезает. */
+.pp-listen__level--num { font-size: 0.72em; letter-spacing: -0.02em; }

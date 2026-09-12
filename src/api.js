@@ -2,6 +2,8 @@
 // По умолчанию бьём в dev-бэкенд — тот же, что читает dev-админка
 // (https://dev-admin.justtostudy.kz → https://dev-server.justtostudy.kz),
 // поэтому новые регистрации сразу видны в разделе «Пользователи» админки.
+import { payloadOf } from './lib/jwt.js'
+
 const BASE = process.env.NEXT_PUBLIC_API_URL || 'https://dev-server.justtostudy.kz'
 
 // Приводим телефон к формату бэкенда: цифры «код страны + национальный номер»
@@ -30,9 +32,10 @@ export function isEmailIdentifier(input) {
 // Приводит идентификатор (телефон или email, с логина/регистрации) к телу
 // запроса { phone } или { email } — бэкенд принимает ровно один из двух.
 function identifierBody(identifier) {
-  return isEmailIdentifier(identifier)
-    ? { email: String(identifier).trim() }
-    : { phone: normalizePhone(identifier) }
+  const trimmed = String(identifier).trim()
+  return isEmailIdentifier(trimmed)
+    ? { email: trimmed.toLowerCase() }
+    : { phone: normalizePhone(trimmed) }
 }
 
 async function get(path) {
@@ -241,6 +244,18 @@ export async function saveHomeworkAnswer(id, exerciseId, token, answer, correct)
 // в «Домашней работе». Ничего нового на бэкенде — это тот же студенческий
 // фасад, которым пользуется web-admin (/student/**).
 
+// Ответ на выданный материал файлом. Для карточки урока это единственный способ
+// её закрыть: проверяемых заданий в теории нет, сессии она не заводит. Файл к
+// этому моменту уже лежит в хранилище — его кладёт uploadMedia, ровно как у
+// ответа на обычную домашку.
+export function attachMaterialAnswer(token, id, fileName, url) {
+  return authPost(`/student/assignments/${id}/files`, token, { fileName, url })
+}
+
+export function removeMaterialAnswer(token, id, fileId) {
+  return authDelete(`/student/assignments/${id}/files/${fileId}`, token)
+}
+
 export function getMyMaterialAssignments(token) {
   return authGet('/student/assignments', token)
 }
@@ -285,7 +300,16 @@ export function returnHomeworkForRevision(token, id, comment) {
 // открытия страницы отдаются мгновенно из localStorage, а сеть обновляет копию в
 // фоне — свежие данные подхватятся при следующем открытии. Первый-в-жизни запрос
 // ждёт сеть, как раньше.
-const CATALOG_CACHE_VER = 'v1' // поднять при несовместимой смене формы ответа
+
+// Поколение кэша. Поднимается при несовместимой смене формы ответа — и при
+// смене смысла ключа: ключи прошлого поколения не читаются и выметаются
+// (sweepStaleCatalogCache ниже), поэтому «несовместимо» здесь значит
+// «читать старые записи больше нельзя», независимо от причины.
+//
+// v1 → v2: в v1 ученик, чей токен не разобрался, попадал в общий бакет 'anon'.
+const CATALOG_CACHE_VER = 'v2'
+const CATALOG_KEY_PREFIX = 'jts_catalog_'
+const CATALOG_LIVE_PREFIX = `${CATALOG_KEY_PREFIX}${CATALOG_CACHE_VER}:`
 
 // RAM-кэш на сессию вкладки: тяжёлые ответы (scopes словаря) часто не
 // помещаются в localStorage — без Map повторный заход в том же табе снова
@@ -295,18 +319,71 @@ const memoryCatalogCache = new Map()
 // Пользовательская часть ключа: sub из JWT (стабилен между сессиями). Ключ
 // разделяет пользователей — у ситуативок есть per-user флаг completed — и
 // окружения (BASE).
+//
+// Payload разбирает payloadOf из lib/jwt.js, а не собственный atob: JWT кодирует
+// payload в base64url, где вместо '+' и '/' стоят '-' и '_', а их в алфавите
+// base64 нет — atob на таком payload бросает. На payload из одних латинских
+// полей эти символы почти не встречаются, но как только в нём есть кириллическое
+// имя — примерно каждый десятый токен, а имена у нас кириллические.
+//
+// null — «не опознали», и это НЕ ещё одна личность: раньше здесь стояло 'anon',
+// то есть ключ, общий на всех безымянных. На общем компьютере (класс, ресепшн)
+// следующий вошедший видел из localStorage баланс, стрик, сохранённые слова и
+// отметки «пройдено» предыдущего ученика — мгновенно, до всякой сети. Починить
+// разбор токена мало: в бакет заезжает кто угодно с пустым токеном, а такой
+// вызов в приложении есть — getPracticeToken отдаёт null, когда демо-ручка
+// ответила 503 (передеплой) или 502, и PracticePage несёт этот null дальше в
+// getSavedWords, getSituativki и соседей. Поэтому безымянному бакету не из чего
+// взяться: нет личности — нет ключа — нет кэша.
 function tokenIdentity(token) {
+  const payload = payloadOf(token)
+  return payload?.sub || payload?.userId || payload?.phone || null
+}
+
+// null — «этот ответ кэшировать не за кем», см. tokenIdentity.
+function catalogCacheKey(path, token) {
+  const identity = tokenIdentity(token)
+  return identity == null ? null : `${CATALOG_LIVE_PREFIX}${BASE}:${identity}:${path}`
+}
+
+// Уборка прошлых поколений кэша. Версия в ключе разводит поколения, но сама по
+// себе ничего не удаляет: записи прошлого поколения просто остаются лежать —
+// читать их уже некому, а место в общей квоте localStorage (5 МБ на домен) они
+// занимают навсегда и вытесняют то, что терять нельзя: черновики ответов
+// домашки (hw-answers:*), прогресс разделов Практики (practiceKeys.js), снимок
+// сессии. Поэтому каждое поколение при старте выметает предыдущие.
+//
+// Эта же уборка закрывает копии, отложенные в v1 под общим 'anon'. Своим ключом
+// их не достать — у безымянного вызова ключа теперь нет вовсе, — поэтому идём
+// по префиксу. Трогаем ровно `jts_catalog_*`: всё остальное в хранилище чужое
+// (токены сессии, прогресс, настройки профиля), и ни один ключ приложения с
+// этого префикса больше не начинается.
+//
+// Не «одноразовая миграция с флагом»: пока в соседней вкладке открыт прошлый
+// бандл, он продолжает писать записи своего поколения, и собрать их получится
+// только следующей загрузкой. Стоимость — перебор ИМЁН ключей (значения не
+// читаем) один раз на загрузку вкладки.
+function sweepStaleCatalogCache() {
+  if (typeof window === 'undefined') return // SSR — хранилища нет
   try {
-    const payload = JSON.parse(atob(String(token).split('.')[1]))
-    return payload.sub || payload.userId || payload.phone || 'anon'
+    const stale = []
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (key?.startsWith(CATALOG_KEY_PREFIX) && !key.startsWith(CATALOG_LIVE_PREFIX)) stale.push(key)
+    }
+    // Удаляем вторым проходом: removeItem сдвигает индексы, и удаление прямо в
+    // цикле по key(i) пропускало бы каждый второй ключ.
+    for (const key of stale) window.localStorage.removeItem(key)
   } catch {
-    return 'anon'
+    /* приватный режим Safari / хранилище недоступно — уборки просто не будет */
   }
 }
 
-function catalogCacheKey(path, token) {
-  return `jts_catalog_${CATALOG_CACHE_VER}:${BASE}:${tokenIdentity(token)}:${path}`
-}
+// На импорте, а не лениво при первом обращении к кэшу: записи прошлого
+// поколения должны исчезнуть до того, как их успеет попросить первый экран, и
+// у ученика, который в этот заход до Практики не дошёл, — тоже (квота общая).
+// Тот же приём, что у миграции языкового ключа в i18n/LanguageContext.jsx.
+sweepStaleCatalogCache()
 
 // onFresh (опционально) вызывается со свежими данными, когда фоновое обновление
 // закончилось ПОСЛЕ того, как вызвавший уже получил кэшированный ответ. Это
@@ -315,6 +392,11 @@ function catalogCacheKey(path, token) {
 async function cachedAuthGet(path, token, onFresh) {
   if (typeof window === 'undefined') return authGet(path, token) // SSR — без кэша
   const key = catalogCacheKey(path, token)
+  // Личность не опознана (пустой токен, мусор из localStorage, payload без
+  // полей) — мимо кэша в обе стороны: не читаем, чтобы не отдать гостю чужое, и
+  // не пишем, чтобы отдавать было нечего. Сеть на такой вызов ответит 401, и
+  // это правильный ответ — в отличие от копии, оставшейся от прошлого ученика.
+  if (key === null) return authGet(path, token)
   let cached = memoryCatalogCache.has(key) ? memoryCatalogCache.get(key) : null
   if (cached === null) {
     try {
@@ -337,7 +419,17 @@ async function cachedAuthGet(path, token, onFresh) {
   if (cached !== null) {
     refresh()
       .then((data) => onFresh?.(data))
-      .catch(() => {}) // фоновое обновление; его сбой не всплывает в UI
+      .catch((err) => {
+        // Сбой фонового обновления в UI не всплывает — кроме одного случая.
+        // 403 это не осечка сети, а «этому ученику больше нельзя»: менеджер
+        // отозвал выдачу. Раньше отказ глотался вместе со всем остальным, и
+        // сохранённый ответ оставался лежать — сервер мог отказывать сколько
+        // угодно раз подряд, а браузер продолжал отдавать то, что успел
+        // запомнить до отзыва. Забываем ответ, за который сервер сказал «нет»;
+        // обрыв связи и пятисотки запись по-прежнему не трогают, иначе ученик
+        // в метро остался бы без каталога.
+        if (err?.status === 403) dropCachedAuthGet(path, token)
+      })
     return cached
   }
   return refresh()
@@ -346,6 +438,7 @@ async function cachedAuthGet(path, token, onFresh) {
 function dropCachedAuthGet(path, token) {
   if (typeof window === 'undefined') return
   const key = catalogCacheKey(path, token)
+  if (key === null) return // безымянному вызову кэш не заводился — удалять нечего
   memoryCatalogCache.delete(key)
   try {
     window.localStorage.removeItem(key)
@@ -453,10 +546,24 @@ export function saveCatalogLessonAnswers(token, id, progressJson, options) {
 
 // Структура урока, разобранная один раз при регистрации уровня и сохранённая на
 // бэкенде. content === null — структуры нет, урок открывается как файл (fileUrl).
-// SWR-кэш: повторное открытие того же урока в сессии не ждёт сеть (RAM;
-// localStorage часто не тянет размер content_json).
-export function getCourseCatalogLessonContent(id, token, onFresh) {
-  return cachedAuthGet(`/mobile/course-catalog/lessons/${id}/content`, token, onFresh)
+//
+// Единственная каталожная ручка, на которой сервер проверяет ВЫДАЧУ курса, —
+// поэтому она намеренно без SWR-кэша, в отличие от всех соседей по файлу. Пока
+// содержимое урока лежало в localStorage, отзыв выдачи оставался невидимым:
+// менеджер её отзывал, сервер отвечал 403, фоновое обновление отказ глотало — и
+// ученик открывал закрытый курс с любой перезагрузки, пока не почистит кэш
+// руками. Долговременный кэш этой ручке покупал немного: onFresh ей никто не
+// передаёт, а content_json обычно не влезает в квоту localStorage.
+// Запасной аэродром на случай обрыва связи остался, но в разобранном виде и на
+// время вкладки — см. workspace/loadCatalogLesson.js.
+//
+// Копии, отложенные здесь прошлой версией приложения, выметает
+// sweepStaleCatalogCache при старте — вместе со всем поколением v1 и у всех
+// аккаунтов машины сразу. Точечная чистка «своей» записи была бы хуже: она
+// снимала бы копию только с того, кто в этот заход снова открыл ровно этот урок,
+// а уроки прошлого ученика на общем компьютере лежали бы дальше.
+export function getCourseCatalogLessonContent(id, token) {
+  return authGet(`/mobile/course-catalog/lessons/${encodeURIComponent(id)}/content`, token)
 }
 
 // Расписание вошедшего пользователя. Бэкенд скоупит /admin/lessons* под личность

@@ -88,7 +88,12 @@ export default function PasswordLoginPage({ onBack, onSubmit, onOtpLogin, onGoog
             {t('setpass.show')}
           </label>
 
-          {error && <div className="form-error">{error}</div>}
+          {error && (
+            <div className="form-error">
+              <div>{error}</div>
+              <p className="form-error__hint">{t('login.failedHint')}</p>
+            </div>
+          )}
 
           <button className="form-primary" type="submit" disabled={!valid || loading}>
             {loading ? t('login.submitting') : t('login.submit')}

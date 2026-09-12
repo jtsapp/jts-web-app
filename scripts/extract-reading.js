@@ -20,6 +20,8 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
+// Резак кусков JS общий с extract-words.js — см. scripts/lib/js-slice.js.
+const { sliceFunction } = require('./lib/js-slice.js')
 
 const ROOT = path.join(__dirname, '..')
 const DEFAULT_SRC = path.join(ROOT, 'data', 'jtsreading.html')
@@ -81,72 +83,6 @@ function sliceI18n(html) {
   const end = html.indexOf('/* ---------- state ---------- */')
   if (start < 0 || end < 0 || end < start) fail('не нашёл границы блока I18N')
   return html.slice(start, end)
-}
-
-// Выкусывает исходник именованной функции по балансу скобок. Нужен для оракула:
-// метрики должен считать САМ прототип, иначе фикстура проверяет наш же порт
-// против нашего же порта и ничего не ловит.
-function sliceFunction(src, name) {
-  const head = `function ${name}(`
-  const at = src.indexOf(head)
-  if (at < 0) fail(`не найдена функция ${name}() — прототип изменил структуру`)
-  const open = src.indexOf('{', src.indexOf(')', at))
-  if (open < 0) fail(`не найдено тело функции ${name}()`)
-  let depth = 0
-  let i = open
-  while (i < src.length) {
-    const c = src[i]
-    // Голый счётчик скобок тут не годится: exTotal ищет пропуски регэкспом
-    // /\{[^}]+\}/g, и его фигурные скобки закрыли бы функцию на середине.
-    // Поэтому строки, комментарии и регэкспы проматываем целиком.
-    if (c === '"' || c === "'" || c === '`') { i = skipString(src, i); continue }
-    if (c === '/' && src[i + 1] === '/') { i = src.indexOf('\n', i); if (i < 0) break; continue }
-    if (c === '/' && src[i + 1] === '*') { i = src.indexOf('*/', i) + 2; continue }
-    if (c === '/' && isRegexStart(src, i)) { i = skipRegex(src, i); continue }
-    if (c === '{') depth++
-    else if (c === '}') {
-      depth--
-      if (depth === 0) return src.slice(at, i + 1)
-    }
-    i++
-  }
-  return fail(`не закрылось тело функции ${name}()`)
-}
-
-function skipString(src, at) {
-  const quote = src[at]
-  for (let i = at + 1; i < src.length; i++) {
-    if (src[i] === '\\') { i++; continue }
-    if (src[i] === quote) return i + 1
-  }
-  return fail('не закрылась строка в исходнике прототипа')
-}
-
-// Слеш начинает регэксп, а не деление, если перед ним оператор или открывающая
-// скобка. В вырезаемых функциях регэкспы стоят только после `(` и `,`
-// (.match(/…/), .replace(/…/, …)), так что списка хватает с запасом.
-function isRegexStart(src, at) {
-  for (let i = at - 1; i >= 0; i--) {
-    const c = src[i]
-    if (/\s/.test(c)) continue
-    return '(,=:[!&|?{};+-*%~^'.includes(c)
-  }
-  return true
-}
-
-function skipRegex(src, at) {
-  let inClass = false
-  for (let i = at + 1; i < src.length; i++) {
-    const c = src[i]
-    if (c === '\\') { i++; continue }
-    if (c === '[') inClass = true
-    else if (c === ']') inClass = false
-    else if (c === '/' && !inClass) {
-      while (/[a-z]/.test(src[i + 1] || '')) i++ // флаги
-      return i + 1
-    }
-  }
-  return fail('не закрылся регэксп в исходнике прототипа')
 }
 
 // ── Валидация ────────────────────────────────────────────────────────────

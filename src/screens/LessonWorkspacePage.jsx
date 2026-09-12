@@ -11,6 +11,8 @@ import { loadLiveLesson } from './workspace/liveLessonData.js'
 import { liveLessonSteps } from './workspace/liveSteps.js'
 import LessonAside from './workspace/LessonAside.jsx'
 import LessonContent from './workspace/LessonContent.jsx'
+import SystemBanner from './workspace/SystemBanner.jsx'
+import { cardTarget } from '../lib/lessonCardTarget.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { getCatalogLessonAnswers, saveCatalogLessonAnswers } from '../api.js'
@@ -118,6 +120,7 @@ function DocNav({ steps, currentId, onGo }) {
 export default function LessonWorkspacePage({
   onExit,
   lessonId,
+  cardId,
   token,
   catalogLessonId,
   loadLesson = loadLiveLesson,
@@ -130,9 +133,14 @@ export default function LessonWorkspacePage({
   const { t } = useI18n()
   const [lesson, setLesson] = useState(() => (lessonId ? null : SAMPLE_LESSON))
   const [loading, setLoading] = useState(() => Boolean(lessonId))
+  // Урок не пришёл потому, что он закрыт этому ученику (403), а не потому, что
+  // сломалась сеть. Это разные сообщения: «попробуйте ещё раз» здесь не
+  // поможет никогда, помогает только менеджер.
+  const [denied, setDenied] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    setDenied(false)
     if (!lessonId) {
       setLesson(SAMPLE_LESSON)
       setLoading(false)
@@ -149,6 +157,14 @@ export default function LessonWorkspacePage({
       // содержимым экрана, открытого вообще без урока.
       setLesson(loaded || null)
       setLoading(false)
+    }).catch((err) => {
+      // Загрузчик урока каталога отдаёт отказ (403) исключением — см.
+      // loadCatalogLesson. Без этой ветки экран на любом исключении навсегда
+      // оставался на «Загрузка…».
+      if (cancelled) return
+      setLesson(null)
+      setDenied(err?.status === 403)
+      setLoading(false)
     })
     return () => {
       cancelled = true
@@ -157,15 +173,30 @@ export default function LessonWorkspacePage({
 
   const steps = useMemo(() => liveLessonSteps(lesson), [lesson])
 
+  // Карточка, заданная на дом (адрес в ?card=, см. App.jsx и lessonCardId.js).
+  // Место на экране считает cardTarget: шаг урока и якорь карточки.
+  const target = useMemo(() => (cardId ? cardTarget(lesson, cardId) : null), [lesson, cardId])
+  // Карточку правили или удалили — говорим об этом прямо и показываем урок
+  // целиком. Молча открыть начало урока значило бы соврать: ученик считал бы,
+  // что задание — вот это.
+  const cardGone = Boolean(cardId) && lesson != null && target == null
+
   // Шаг урока не всегда сводится к очереди экранов плеера (`vocab`-колода,
   // вопрос типа order/multi/pick/match — см. комментарий в liveSteps.js): тогда
   // `steps` пустеет весь, и вместо плеера показываем документ урока целиком —
   // тот же `LessonContent`, что и в живом уроке, только с собственной вкладочной
   // навигацией по шагам, а не route-панелью преподавателя.
-  const useDocView = steps.length === 0 && (lesson?.steps?.length ?? 0) > 0
+  //
+  // Открытая карточка тоже уводит в документ, даже когда плеер урок осилил:
+  // очередь экранов не показывает блоки по отдельности (серия info склеивается
+  // в один экран, см. liveSteps.js) и якорей у неё нет вовсе — подъехать к
+  // заданной карточке там просто некуда. А документ — ровно то, из чего
+  // преподаватель её и выбирал.
+  const useDocView = (steps.length === 0 || Boolean(cardId)) && (lesson?.steps?.length ?? 0) > 0
   // Шагов нет вовсе, но есть файл курса: урок просто не разбирали (см.
   // loadCatalogLesson). Плееру тут нечего показывать, а материал — есть.
   const useMaterialView = steps.length === 0 && (lesson?.steps?.length ?? 0) === 0 && Boolean(lesson?.fileUrl)
+
   const [docStepId, setDocStepId] = useState(null)
   // Урок и сохранённая работа приезжают двумя независимыми запросами, и кто
   // раньше — как повезёт. Раньше здесь стояло безусловное «на первый шаг», и
@@ -176,6 +207,14 @@ export default function LessonWorkspacePage({
     const ids = (lesson?.steps || []).map((step) => step.id)
     setDocStepId((current) => (current != null && ids.includes(current) ? current : ids[0] ?? null))
   }, [lesson])
+  // Шаг открытой карточки. Эффект стоит ПОСЛЕ сброса шага по уроку выше —
+  // иначе тот вернул бы ученика на первый шаг сразу после переезда на карточку.
+  // Дальше по шагам ученик ходит сам: адрес карточки не меняется, эффект не
+  // перезапускается и вкладки не отбирает.
+  useEffect(() => {
+    if (target?.stepId == null) return
+    setDocStepId(target.stepId)
+  }, [target])
   const docStep = lesson?.steps?.find((s) => s.id === docStepId) || lesson?.steps?.[0] || null
   const [docAnswers, setDocAnswers] = useState({})
   const [docChecked, setDocChecked] = useState(() => new Set())
@@ -203,7 +242,11 @@ export default function LessonWorkspacePage({
         if (saved) {
           setDocAnswers(saved.answers)
           setDocChecked(saved.checkedSteps)
-          if (saved.stepId != null) setDocStepId(saved.stepId)
+          // Пришли по ссылке из домашки — шаг задаёт карточка, а не последнее
+          // место ученика. Ответ сервера приходит позже загрузки урока, и без
+          // этой оговорки переезд с заданного материала случался бы уже на
+          // глазах: карточка открылась и через полсекунды уехала.
+          if (saved.stepId != null && !cardId) setDocStepId(saved.stepId)
         }
         setAnswersLoaded(true)
       })
@@ -213,7 +256,7 @@ export default function LessonWorkspacePage({
     return () => {
       alive = false
     }
-  }, [catalogLessonId, token])
+  }, [catalogLessonId, token, cardId])
 
   const saverRef = useRef(null)
   if (!saverRef.current) {
@@ -310,7 +353,10 @@ export default function LessonWorkspacePage({
   if (!lesson) {
     return (
       <div className="lw lw--loading" data-testid="lesson-workspace">
-        <p className="lw-loading">{t('lesson.ws.loadFailed')}</p>
+        {/* Отказ — не сбой. Тарифов не предлагаем: отдельный курс в подписку не
+            входит и открывается только выдачей от менеджера, а замок снимает
+            тоже он. Кнопка «в тарифы» вела бы ученика туда, где этого нет. */}
+        <p className="lw-loading">{t(denied ? 'lesson.ws.accessDenied' : 'lesson.ws.loadFailed')}</p>
         <button type="button" className="lw-stepnav__btn lw-stepnav__btn--ghost" onClick={onExit}>
           {t('lesson.ws.exit')}
         </button>
@@ -340,6 +386,7 @@ export default function LessonWorkspacePage({
             // и без него рамка материала осталась бы без фона и скруглений.
             <div className="lw-doc">
               <DocBar title={lesson.title} onExit={exitLesson} />
+              {cardGone && <SystemBanner icon="!" tone="attention" text={t('lesson.ws.cardGone')} />}
               <div className="lw-material-frame">
                 <iframe
                   src={selfStudyUrl(lesson.fileUrl)}
@@ -361,6 +408,7 @@ export default function LessonWorkspacePage({
                 stepNo={Math.max(1, lesson.steps.findIndex((s) => s.id === docStep?.id) + 1)}
                 stepTotal={lesson.steps.length}
               />
+              {cardGone && <SystemBanner icon="!" tone="attention" text={t('lesson.ws.cardGone')} />}
               {lesson.steps.length > 1 && (
                 <div className="ls__tabs lw-material-tabs">
                   {lesson.steps.map((s) => (
@@ -385,6 +433,12 @@ export default function LessonWorkspacePage({
                 token={token}
                 source={lesson?.title}
                 catalogLessonId={catalogLessonId}
+                /* Наведение на заданную карточку — своим пропом, не
+                   `liveQuestionId`. Подъезд и пометка у них общие, а вот бейдж
+                   «Подсвечено у учителя» — только у указки преподавателя:
+                   в домашке указки нет вовсе, и на карточке practice с
+                   непроверяемыми вопросами он соврал бы ученику. */
+                focusCardId={target?.anchorId ?? null}
               />
               <DocNav steps={lesson.steps} currentId={docStep?.id} onGo={goDocStep} />
             </div>

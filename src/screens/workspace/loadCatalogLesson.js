@@ -6,19 +6,30 @@
 // рендер в скрытом iframe и до 4 с ожидания на каждое открытие, с результатом,
 // зависящим от скорости машины. Теперь это стоит один GET.
 import { getCourseCatalogLessonContent } from '../../api.js'
-import { rewriteMediaUrls } from './extract/rewriteMediaUrls.js'
-import { hoistSelectQuestions } from './hoistSelectQuestions.js'
-import { hoistOrderQuestions } from './hoistOrderQuestions.js'
-import { hoistChoiceOptions } from './hoistChoiceOptions.js'
-import { foldOrphanAudioSteps } from './foldOrphanAudioSteps.js'
-import { hoistStepLeads } from './hoistStepLead.js'
+import { userIdFromToken } from '../../lib/jwt.js'
+import { applyLessonHoists } from './lessonPipeline.js'
 
-// Кэш по id урока: содержимое не меняется до перерегистрации уровня.
+// Разобранный урок на время вкладки. Ключ несёт аккаунт — как у кэша книги
+// (BookDetail.jsx): на общем компьютере (класс, ноутбук преподавателя на
+// пробном) кэш модуля переживает выход и вход под другим логином, и без
+// аккаунта в ключе следующему ученику доставался бы урок предыдущего.
 const cache = new Map()
 
+function cacheKey(id, token) {
+  return `${id}:${userIdFromToken(token) ?? 'anon'}`
+}
+
 export async function loadCatalogLesson(id, token) {
-  if (cache.has(id)) return cache.get(id)
+  const key = cacheKey(id, token)
   try {
+    // Спрашиваем сервер на КАЖДОЕ открытие, даже когда урок уже разобран и
+    // лежит в двух строчках отсюда. Содержимое урока и правда не меняется до
+    // перерегистрации уровня — а вот право его видеть меняется в любую минуту:
+    // менеджер отзывает выдачу курса. Пока кэш отвечал раньше сети, отозванный
+    // урок продолжал открываться как ни в чём не бывало: сервер отказывал,
+    // ученик об этом не узнавал и работал в уроке, ответы из которого уже
+    // никуда не сохранялись. Кэш ниже остался запасным аэродромом на случай,
+    // когда сервер не ответил вовсе, — но пропуском внутрь больше не служит.
     const stored = await getCourseCatalogLessonContent(id, token)
     if (!stored) return null
 
@@ -30,25 +41,34 @@ export async function loadCatalogLesson(id, token) {
     if (!stored.content) {
       if (!stored.fileUrl) return null
       const material = { id: stored.id ?? id, title: stored.title || '', fileUrl: stored.fileUrl, steps: [] }
-      cache.set(id, material)
+      cache.set(key, material)
       return material
     }
 
-    // Медиа внутри info-блоков лежит относительно файла урока, а не API.
-    // Select / order, оставшиеся сырым HTML в старом content_json, поднимаем в
-    // настоящие practice-вопросы — иначе чипы на экране не кликаются.
-    const lesson = hoistChoiceOptions(
-      hoistOrderQuestions(hoistSelectQuestions(rewriteMediaUrls(stored.content, stored.fileUrl))),
-    )
+    // Конвейер подъёмов — общий с админкой и стадия в стадию тот же, см.
+    // lessonPipeline.js: по нему считается и id вопросов, и адрес карточки.
+    const lesson = applyLessonHoists(stored.content, stored.fileUrl)
     if (!lesson.title && stored.title) lesson.title = stored.title
-    // Хвостовой «Audio» из старой конвертации — в Practice/Listening, не отдельным шагом.
-    if (Array.isArray(lesson.steps)) {
-      lesson.steps = hoistStepLeads(foldOrphanAudioSteps(lesson.steps))
-    }
 
-    cache.set(id, lesson)
+    cache.set(key, lesson)
     return lesson
-  } catch {
-    return null
+  } catch (err) {
+    // 403 — не сбой, а отказ: урок закрыт именно этому ученику (отдельный курс
+    // без выдачи, замок, выдачу отозвали уже после того, как урок задали на
+    // дом). Проглоти мы его в null, экран сказал бы «не удалось загрузить,
+    // попробуйте ещё раз» — и ученик жал бы снова в дверь, которую открывает
+    // только менеджер. Отказ отдаём экрану, остальные сбои — по-прежнему null.
+    //
+    // Вместе с отказом выбрасываем и разобранную копию: иначе ученик, которому
+    // выдачу отозвали, дожал бы урок через ближайший обрыв связи. Выбрасываем
+    // ровно этот урок — за соседние сервер не отказывал, и отбирать их не за что.
+    if (err?.status === 403) {
+      cache.delete(key)
+      throw err
+    }
+    // Сервер не ответил (метро, туннель, упавший бэкенд) — вердикта о доступе
+    // нет. Урок, который ученик уже открыл в этой вкладке, за это отбирать не
+    // за что: отдаём разобранную копию, а если её нет — по-прежнему null.
+    return cache.get(key) ?? null
   }
 }

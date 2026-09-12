@@ -25,6 +25,7 @@ import ShadowingPage from './screens/ShadowingPage.jsx'
 import WritingPage from './screens/WritingPage.jsx'
 import WorkbookPage from './screens/WorkbookPage.jsx'
 import ReadingPage from './screens/ReadingPage.jsx'
+import WordsPage from './screens/WordsPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -78,7 +79,8 @@ import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
-import { rememberPendingScreen, consumePendingScreen, clearPendingScreen } from './lib/pendingScreen.js'
+import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
+import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
@@ -106,7 +108,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -167,6 +169,12 @@ export default function App() {
       setLiveWorkspaceId(catalogParam)
       setWorkspaceSource('catalog')
     }
+    // ?card=<адрес> — карточка урока, заданная на дом (?screen=lesson-workspace
+    // &catalog=<id>&card=<адрес>). Ссылку на неё ученик открывает из домашней
+    // работы, и она обязана пережить F5 — поэтому и читается, и пишется (см.
+    // эффект синхронизации адреса ниже).
+    const cardParam = searchParams.get('card')
+    if (cardParam) setWorkspaceCardId(cardParam)
     // ?live=<id> — id живого урока для «Живой урок» (диплинк
     // ?screen=live-lesson&live=<id>). Отдельный параметр от lessonParam выше:
     // тот наполняет liveWorkspaceId для другого экрана (lesson-workspace), а
@@ -198,6 +206,15 @@ export default function App() {
       // …и нужный уровень «Чтения» (?screen=reading&level=b1): каталог там
       // стартует с уровня пользователя, и проверить чужой уровень иначе никак.
       if (deepLink === 'reading') setReadingTarget({ level: levelParam.toLowerCase() })
+    }
+    // ?screen=words&scene=farm — конкретная сцена «Слов в картинках».
+    // Уровня у сцен нет вовсе (материал разбит по темам), поэтому адресуемся
+    // сценой, а не level: без этого проверить сцену можно было бы только
+    // кликами через каталог из пяти секций.
+    if (deepLink === 'words') {
+      const scene = searchParams.get('scene')
+      const sec = searchParams.get('section')
+      if (scene || sec) setWordsTarget({ sceneId: scene || null, section: sec || null })
     }
     // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
@@ -423,6 +440,10 @@ export default function App() {
   // 'live' — id из LiveLesson (jsonUrl), 'catalog' — id урока каталога (сырой
   // L*.html + клиентское извлечение). Определяет, чем workspace грузит контент.
   const [workspaceSource, setWorkspaceSource] = useState('live')
+  // Адрес карточки урока, заданной на дом (см. src/lib/lessonCardId.js). Экран
+  // урока открывается на её шаге и подъезжает к ней; null — обычное открытие
+  // урока целиком.
+  const [workspaceCardId, setWorkspaceCardId] = useState(null)
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   // Юнит «Практики», который задали на дом: с карточки домашней работы
   // открываем сразу его, а не общий список — иначе ученик ищет глазами то,
@@ -431,6 +452,7 @@ export default function App() {
   const [writingTarget, setWritingTarget] = useState(null) // { level?, genreId? } — прыжок из Практики сразу в уровень/жанр Writing
   const [workbookTarget, setWorkbookTarget] = useState(null) // { level } — какой воркбук открыть из Практики
   const [listeningTarget, setListeningTarget] = useState(null) // { level } — какой уровень аудирования открыть из домашки
+  const [wordsTarget, setWordsTarget] = useState(null) // { section?, sceneId? } — прыжок из Практики в секцию/сцену «Слов в картинках»
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -883,7 +905,12 @@ export default function App() {
     // Аккаунт класса важнее любой ссылки: кабинет ему закрыт весь, кроме
     // класса и урока (BOOTH_SCREENS выше), и страж всё равно увёл бы его назад.
     if (boothAccount) return home
-    return pending && persistsInUrl(pending) ? pending : home
+    return pendingScreenAfterLogin(pending, {
+      persists: persistsInUrl,
+      // Урок с карточкой открывается не по имени экрана, а по прочитанному из
+      // ссылки адресу — см. pendingScreenAfterLogin.
+      hasCardAddress: Boolean(workspaceCardId) && liveWorkspaceId != null,
+    }) ?? home
   }
 
   function handleLogout() {
@@ -963,23 +990,18 @@ export default function App() {
   // на главную).
   useEffect(() => {
     if (restoring) return
+    // Само решение — чистой функцией в lib/screenUrlParams.js: там оно
+    // проверяется тестами, а здесь остаётся только запись.
     const url = new URL(window.location.href)
-    const hadScreen = url.searchParams.get('screen')
-    const hadLive = url.searchParams.get('live')
-    const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
-    const wantLive = isLiveLesson ? String(liveLessonId) : null
-    if (persistsInUrl(screen) || isLiveLesson) {
-      if (hadScreen === screen && hadLive === wantLive) return
-      url.searchParams.set('screen', screen)
-      if (wantLive != null) url.searchParams.set('live', wantLive)
-      else url.searchParams.delete('live')
-    } else {
-      if (!hadScreen && !hadLive) return
-      url.searchParams.delete('screen')
-      url.searchParams.delete('live')
-    }
-    window.history.replaceState(null, '', url)
-  }, [screen, restoring, liveLessonId])
+    const changed = applyScreenUrlParams(url, screenUrlParams({
+      screen,
+      persists: persistsInUrl(screen),
+      liveLessonId,
+      liveWorkspaceId,
+      workspaceCardId,
+    }))
+    if (changed) window.history.replaceState(null, '', url)
+  }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId])
 
   // «Известный урок» экрана класса — одно выражение на оба источника, а не два
   // разных по месту использования. boothLessonId — обычный случай (сеанс
@@ -1089,6 +1111,7 @@ export default function App() {
     else if (key === 'writing') { setWritingTarget(payload || null); setScreen('writing') }
     else if (key === 'workbook') { setWorkbookTarget(payload || null); setScreen('workbook') }
     else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
+    else if (key === 'words') { setWordsTarget(payload || null); setScreen('words') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -1097,6 +1120,17 @@ export default function App() {
       } else setScreen('lessons')
     }
     else if (key === 'homework') setScreen('homework')
+    // Карточка урока, заданная на дом: домашка зовёт с адресом урока каталога и
+    // адресом самой карточки. Без урока никуда не идём — экран без id открылся
+    // бы демонстрационным уроком, то есть чужим материалом вместо задания.
+    else if (key === 'lesson-workspace') {
+      if (payload?.catalogLessonId != null) {
+        setLiveWorkspaceId(payload.catalogLessonId)
+        setWorkspaceSource('catalog')
+        setWorkspaceCardId(payload.cardId || null)
+        setScreen('lesson-workspace')
+      }
+    }
     else if (key === 'ielts') setScreen('ielts')
     else if (key === 'vocab') setScreen('vocab')
   }
@@ -1116,6 +1150,7 @@ export default function App() {
     else if (key === 'writing') setScreen('writing')
     else if (key === 'workbook') setScreen('workbook')
     else if (key === 'reading') setScreen('reading')
+    else if (key === 'words') setScreen('words')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -1488,6 +1523,17 @@ export default function App() {
           isDemoAccount={isDemoAccount}
         />
       )
+    case 'words':
+      return (
+        <WordsPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={wordsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
     case 'reading':
       return (
         <ReadingPage
@@ -1501,11 +1547,11 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'course-catalog':
-      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setScreen('lesson-workspace') }} />
+      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
     case 'booth':
       return (
         <BoothEntryPage
@@ -1945,8 +1991,11 @@ export default function App() {
           onRetry={() => setScreen('tutor-voice-chat')}
         />
       )
+    // Выход возвращает туда, откуда пришли: с карточки — в домашнюю работу, из
+    // каталога — в каталог. Иначе ученик, открывший задание, уходил бы в чужой
+    // список уроков и искал домашку заново.
     case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceCardId ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     default:
       return null
   }

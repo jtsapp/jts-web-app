@@ -1135,6 +1135,12 @@ textarea {
   font-weight: 600;
   margin-top: 14px;
 }
+.form-error__hint {
+  margin: 8px 0 0;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #8d4a4d;
+}
 
 /* Поля СМС-кода */
 .otp-row {
