@@ -1862,6 +1862,40 @@
   cursor: default;
 }
 
+/* Ответы закрыты снаружи — перерыв, завершённый урок, взгляд преподавателя.
+   Курсора на телефоне нет, и до этого правила закрытая пилюля была неотличима
+   от живой: ученик жал её, ничего не происходило, и объяснения на экране не
+   было. Заливку снимаем совсем и оставляем обводку — разница «налитая кнопка
+   против пустого контура» переживает и авто-тёмную тему Android Chrome,
+   которая просто пересчитывает цвета. Вердикт и свой выбор красятся ниже: они
+   важнее и остаются видимыми. */
+.lw-opt.is-locked,
+.lw-ochip.is-locked,
+.lw-match__left.is-locked,
+.lw-match__right.is-locked,
+.lw-info__body.is-locked .bw,
+.lw-practice__html.is-locked .bw {
+  background: transparent;
+  color: var(--lw-muted);
+  box-shadow: inset 0 0 0 1px var(--lw-track);
+}
+
+/* Банк слов приезжает разметкой курса: у `.bw` своя рамка, и без сброса
+   закрытая плашка осталась бы с обычным контуром поверх нашего. */
+.lw-info__body.is-locked .bw,
+.lw-practice__html.is-locked .bw {
+  border-color: transparent;
+}
+
+/* Поле письма: `readonly` браузер не показывает ничем — ученик ставит в него
+   курсор и печатает в пустоту. Обводку тут НЕ трогаем (рамка у textarea своя,
+   браузерная, и вторая легла бы поверх) — гасим заливкой и цветом текста. */
+.lw-writing__field:read-only {
+  background: var(--lw-tint-3);
+  color: var(--lw-muted);
+  cursor: default;
+}
+
 .lw-opt:focus-visible {
   outline: 2px solid var(--lw-primary);
   outline-offset: 2px;
@@ -1956,6 +1990,18 @@
 }
 
 /* Кнопка «Проверить» — здесь проверка по кнопке (спека §4.4). */
+/* Причина, по которой карточка не принимает ответы. Стоит на месте пропавшей
+   кнопки «Проверить» по смыслу, но выше — до списка вопросов, чтобы её было
+   видно там же, где ученик жмёт варианты. */
+.lw-practice__locked {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: var(--lw-r-inner);
+  background: var(--lw-tint-3);
+  color: var(--lw-ink-2);
+  font-size: calc(14px * var(--lw-text-scale, 1));
+}
+
 .lw-practice__check {
   align-self: flex-start;
   margin-top: 16px;

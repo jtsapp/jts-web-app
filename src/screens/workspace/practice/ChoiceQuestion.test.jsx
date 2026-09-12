@@ -21,7 +21,7 @@ function show(props = {}) {
         answer={props.answer ?? null}
         checked={props.checked ?? false}
         onAnswer={onAnswer}
-        readOnly={false}
+        readOnly={props.readOnly ?? false}
       />
     </I18nProvider>,
   )
@@ -40,6 +40,36 @@ describe('ChoiceQuestion — оценка только после «Провер
     expect(cls).not.toMatch(/is-ok/)
     expect(cls).not.toMatch(/is-no/)
     expect(after.querySelectorAll('.lw-opt')[0].disabled).toBe(false)
+  })
+
+  // Урок на паузе: кнопки закрыты, но выглядели ровно как живые — курсор на
+  // телефоне не виден, и ученик жал их, не понимая, почему ничего не
+  // происходит. Закрытый вариант обязан выглядеть закрытым.
+  it('на закрытом уроке варианты и не нажимаются, и выглядят закрытыми', () => {
+    const { container, onAnswer } = show({ readOnly: true })
+    const opts = container.querySelectorAll('.lw-opt')
+    fireEvent.click(opts[0])
+    expect(onAnswer).not.toHaveBeenCalled()
+    for (const opt of opts) {
+      expect(opt.disabled).toBe(true)
+      expect(opt.className).toMatch(/is-locked/)
+    }
+  })
+
+  it('свой ответ на закрытом уроке остаётся видимым, а не гаснет', () => {
+    const { container } = show({ readOnly: true, answer: 'a' })
+    const opts = container.querySelectorAll('.lw-opt')
+    expect(opts[0].className).toMatch(/is-selected/)
+    expect(opts[0].className).not.toMatch(/is-locked/)
+    expect(opts[1].className).toMatch(/is-locked/)
+  })
+
+  it('после проверки вердикт важнее блокировки', () => {
+    const { container } = show({ readOnly: true, answer: 'b', checked: true })
+    const opts = container.querySelectorAll('.lw-opt')
+    expect(opts[0].className).toMatch(/is-ok/)
+    expect(opts[1].className).toMatch(/is-no/)
+    expect(container.querySelector('.is-locked')).toBeNull()
   })
 
   it('после проверки ряд закрыт и виден вердикт', () => {
