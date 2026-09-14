@@ -4,6 +4,8 @@ import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
 import { saveHomeworkAnswer } from '../../api.js'
 import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { groupByContext } from './exerciseContext.js'
+import { sanitizeHtml } from '../workspace/sanitizeHtml.js'
 import { canAttach } from './homeworkFormat.js'
 
 // Задания, которые преподаватель добавил с живого урока. Рисует их тот же
@@ -13,6 +15,23 @@ import { canAttach } from './homeworkFormat.js'
 //
 // Каждая отправка — своя секция: преподаватель выдаёт задания по ходу занятий, и
 // сваленные в одну кучу они не дают понять, что задано сегодня, а что на прошлом уроке.
+/** Шапка группы: запись и текст, к которым относятся её задания. */
+function ExerciseContext({ context }) {
+  return (
+    <div className="hw-context">
+      {context.audioUrl && (
+        <audio className="hw-context__audio" controls preload="none" src={context.audioUrl} />
+      )}
+      {context.articleHtml && (
+        <div
+          className="hw-context__article"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(context.articleHtml) }}
+        />
+      )}
+    </div>
+  )
+}
+
 export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   const { t, lang } = useI18n()
   const batches = useMemo(() => exerciseBatches(hw), [hw])
@@ -156,22 +175,29 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
             </div>
 
             <div className="hw-exercises">
-              {batch.exercises.map((e) => {
-                const key = `hw-${e.id}`
-                return (
-                  <div className="hw-exercise" key={e.id}>
-                    <PracticeBlock
-                      block={exerciseBlock(e)}
-                      answers={shown}
-                      checked={checked.has(key)}
-                      onAnswer={onAnswer}
-                      onCheck={() => onCheck(e)}
-                      readOnly={!editable}
-                    />
-                    {failed.has(key) && <p className="hw-exercise__error">{t('homework.answerNotSaved')}</p>}
-                  </div>
-                )
-              })}
+              {groupByContext(batch.exercises).map((group) => (
+                <div className="hw-group" key={group.key}>
+                  {/* Запись и текст — один раз на всю группу: восемь вопросов к
+                      одной записи приехали каждый со своей копией снимка. */}
+                  {group.context && <ExerciseContext context={group.context} />}
+                  {group.exercises.map((e) => {
+                    const key = `hw-${e.id}`
+                    return (
+                      <div className="hw-exercise" key={e.id}>
+                        <PracticeBlock
+                          block={exerciseBlock(e)}
+                          answers={shown}
+                          checked={checked.has(key)}
+                          onAnswer={onAnswer}
+                          onCheck={() => onCheck(e)}
+                          readOnly={!editable}
+                        />
+                        {failed.has(key) && <p className="hw-exercise__error">{t('homework.answerNotSaved')}</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
             </div>
           </section>
         )
