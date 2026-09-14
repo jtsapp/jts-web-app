@@ -10,10 +10,25 @@ import { stableShuffle } from './optionOrder.js'
 // Подпись «верного ответа нет» рисует не вопрос, а карточка упражнения: правило
 // одно на всё упражнение, и в опросе из десяти слов десять одинаковых строк
 // только прячут сами вопросы, а заодно ломают строку «слово — кнопки».
+
+/** Короткие ответы (emoji / 1–2 слова) — слово и кнопки в одну строку.
+ *  Длинные фразы в одну строку сжимают формулировку до одной буквы в столбец
+ *  (grid 1fr + auto + overflow-wrap:anywhere на живом уроке). */
+export function isCompactPick(options) {
+  const opts = Array.isArray(options) ? options : []
+  if (!opts.length) return false
+  return opts.every((o) => {
+    const s = String(o ?? '').trim()
+    if (!s || s.length > 14) return false
+    return s.split(/\s+/).length <= 2
+  })
+}
+
 export default function PickQuestion({ question, answer, checked, onAnswer, readOnly, onWord }) {
   const multiple = !!question?.multiple
   const selected = multiple ? (Array.isArray(answer) ? answer : []) : answer
   const locked = checked || readOnly
+  const row = isCompactPick(question?.options)
 
   function toggle(opt) {
     if (locked) return
@@ -28,8 +43,12 @@ export default function PickQuestion({ question, answer, checked, onAnswer, read
   }
 
   return (
-    <div className="lw-q lw-q--pick">
-      <QuestionMedia question={question} onWord={onWord} />
+    <div className={`lw-q lw-q--pick${row ? ' lw-q--pick-row' : ''}`}>
+      {/* Обёртка: QuestionMedia отдаёт фрагмент (🔊 + текст + картинка), и без
+          неё каждый кусок становился отдельной колонкой грида. */}
+      <div className="lw-q__media">
+        <QuestionMedia question={question} onWord={onWord} />
+      </div>
       <div className="lw-opts">
         {stableShuffle(question?.options, question?.id).map((opt) => {
           const isSelected = multiple ? selected.includes(opt) : selected === opt
