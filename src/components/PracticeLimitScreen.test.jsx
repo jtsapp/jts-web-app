@@ -36,17 +36,17 @@ describe('PracticeLimitScreen — плашка про подписку толь�
     const { container } = renderLimit({ source: 'PLAN', sourceName: 'Стандарт', isDemoAccount: false })
     expect(screen.queryByText(PAYWALL)).toBe(null)
     expect(container.querySelector('.pl-limit__body').textContent)
-      .toBe('Лимит абонемента «Стандарт»: доступно до 3. Чтобы расширить доступ, обновите абонемент или обратитесь к куратору.')
+      .toBe('Лимит абонемента «Стандарт»: доступно до 3. Чтобы расширить доступ, обновите абонемент или напишите менеджеру.')
   })
 
   it('лимит подписки показывает прежний текст, а не плашку', () => {
     const { container } = renderLimit({ source: 'SUBSCRIPTION', sourceName: 'Премиум', isDemoAccount: false })
     expect(screen.queryByText(PAYWALL)).toBe(null)
     expect(container.querySelector('.pl-limit__body').textContent)
-      .toBe('Лимит подписки «Премиум»: доступно до 3. Чтобы расширить доступ, обновите подписку или обратитесь к куратору.')
+      .toBe('Лимит подписки «Премиум»: доступно до 3. Чтобы расширить доступ, обновите подписку или напишите менеджеру.')
   })
 
-  it('точечная квота куратора показывает прежний текст, а не плашку', () => {
+  it('точечная квота менеджера показывает прежний текст, а не плашку', () => {
     const { container } = renderLimit({ source: 'STUDENT', isDemoAccount: false })
     expect(screen.queryByText(PAYWALL)).toBe(null)
     expect(container.querySelector('.pl-limit')).toBeTruthy()

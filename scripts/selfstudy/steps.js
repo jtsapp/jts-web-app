@@ -9,20 +9,24 @@
 // Чего в плеере нет — добавлено типами шагов mistake / cols / phrases / record,
 // остальное ложится на существующие: choice, gap, order, match, listen, cards,
 // note, pick, write, checklist.
+// {en,ru,kk} — как и остальной контент курса (см. line()); резолвится по
+// ctx.lang в screenToStep. Раньше здесь лежали голые английские строки, и
+// подпись стадии («Practice» и т.п.) не переводилась вообще ни при каком
+// lang — единственное место в файле, которое не проходило через line()/plain().
 const STAGE_NAMES = {
-  warm: 'Warm-up',
-  vocab: 'Vocabulary',
-  gram: 'Grammar',
-  prac: 'Practice',
-  lisrd: 'Listening',
-  freer: 'Speaking',
-  wrap: 'Wrap',
+  warm: { en: 'Warm-up', ru: 'Разминка', kk: 'Қыздыру' },
+  vocab: { en: 'Vocabulary', ru: 'Слова', kk: 'Сөздер' },
+  gram: { en: 'Grammar', ru: 'Грамматика', kk: 'Грамматика' },
+  prac: { en: 'Practice', ru: 'Практика', kk: 'Тәжірибе' },
+  lisrd: { en: 'Listening', ru: 'Аудирование', kk: 'Тыңдалым' },
+  freer: { en: 'Speaking', ru: 'Говорение', kk: 'Сөйлеу' },
+  wrap: { en: 'Wrap', ru: 'Итоги', kk: 'Қорытынды' },
   // B1/B2 называют стадии иначе: input — материал (чтение и аудирование),
   // prod — говорение и письмо, quiz/test — проверка в конце урока и юнита.
-  input: 'Listening',
-  prod: 'Speaking',
-  quiz: 'Practice',
-  test: 'Practice',
+  input: { en: 'Listening', ru: 'Аудирование', kk: 'Тыңдалым' },
+  prod: { en: 'Speaking', ru: 'Говорение', kk: 'Сөйлеу' },
+  quiz: { en: 'Practice', ru: 'Практика', kk: 'Тәжірибе' },
+  test: { en: 'Practice', ru: 'Практика', kk: 'Тәжірибе' },
 }
 
 /** Строка курса: либо готовая строка, либо {en,ru,kk}. */
@@ -189,7 +193,7 @@ function tableHtml(sc, lang) {
  */
 function screenToStep(sc, ctx) {
   const lang = ctx.lang || 'ru'
-  const stage = STAGE_NAMES[sc.stage] || 'Practice'
+  const stage = line(STAGE_NAMES[sc.stage] || STAGE_NAMES.prac, lang)
   const title = plain(sc.ins, lang)
   const sub = plain(sc.sub, lang)
   const seed = hashSeed(`${ctx.seedBase || ''}:${sc.t}:${title}:${JSON.stringify(sc.opts || sc.a || sc.w || '')}`)
