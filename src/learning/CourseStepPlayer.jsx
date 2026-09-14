@@ -803,6 +803,15 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
     case 'write':
       return (
         <>
+          {/* Опора задания: рамки предложений («I like ___ .») и слова, из
+              которых их собирают. Подпись «Используйте слова ниже» ссылается
+              именно на них, а ветка их не рисовала — студент видел пустое поле
+              под требованием использовать слова, которых нет. */}
+          {step.html && (
+            <div className="cp-note">
+              <TappableHtml className="cp-note__body" html={step.html} onWord={onWord} />
+            </div>
+          )}
           {/* Поле растёт под ответ само: уголок ресайза в макете не нарисован,
               а без роста двух предложений в него не видно. */}
           <textarea

@@ -1271,7 +1271,12 @@
   pointer-events: none;
 }
 
-.lw-info__body .blabel {
+/* Подпись / чипы / примечание банка (.blabel .bw .bnote) — и в info-блоке,
+   и внутри html задания. Раньше pill-стили были только у .lw-info__body:
+   в practice слова шли сплошной строкой, а у учителя (catalog-step-review)
+   те же .bw уже были капсулами — ученики не понимали, что это банк для gaps. */
+.lw-info__body .blabel,
+.lw-practice__html .blabel {
   width: 100%;
   font-size: calc(11px * var(--lw-text-scale, 1));
   font-weight: 800;
@@ -1280,15 +1285,31 @@
   color: var(--lw-muted);
 }
 
-.lw-info__body .bw {
+.lw-info__body .bw,
+.lw-practice__html .bw {
   padding: 6px 12px;
   border-radius: 999px;
   background: #fff;
   border: 1px solid var(--lw-line, #e6e8ef);
   font-size: calc(14px * var(--lw-text-scale, 1));
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
 }
 
-.lw-info__body .bnote {
+.lw-info__body .bw:hover,
+.lw-practice__html .bw:hover {
+  border-color: var(--lw-primary, #9047ff);
+  background: var(--lw-tint-1, #f4f0ff);
+}
+
+.lw-info__body .bw.used,
+.lw-practice__html .bw.used {
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.lw-info__body .bnote,
+.lw-practice__html .bnote {
   width: 100%;
   font-size: calc(12px * var(--lw-text-scale, 1));
   color: var(--lw-muted);
@@ -2301,26 +2322,44 @@
   box-shadow: inset 0 0 0 1px var(--lw-track);
 }
 
-/* Опрос про себя — строкой, а не столбиком.
-   В разминке таких пунктов десяток подряд, и в столбик «слово / кнопки / слово
-   / кнопки» экран растягивался на три прокрутки, а глаз каждый раз заново искал,
-   к какому слову относятся кнопки. Строкой пара читается сразу и целиком. */
+/* Опрос про себя.
+   Короткие ответы (👍/👎, «часто») — строкой: слово слева, кнопки справа.
+   Длинные фразы (warm-up «Which of these…») — столбиком, как у преподавателя:
+   иначе грид «1fr | auto» + overflow-wrap:anywhere на живом уроке сжимает
+   формулировку до ~1ch, и текст сыплется буквой в столбец. */
 .lw-q--pick {
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 8px 16px;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 10px;
   padding: 10px 14px;
   border-radius: var(--lw-r-inner);
   background: var(--lw-answer-bg);
 }
 
+.lw-q--pick .lw-q__media { min-width: 0; max-width: 100%; }
 .lw-q--pick .lw-q__prompt { margin: 0; }
-.lw-q--pick .lw-opts { margin: 0; flex-wrap: nowrap; }
+.lw-q--pick .lw-opts { margin: 0; flex-wrap: wrap; }
+
+/* Строка только для компактных ответов (см. isCompactPick). */
+.lw-q--pick-row {
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+}
+.lw-q--pick-row .lw-opts { flex-wrap: nowrap; }
+
+/* На живом полотне карточки режут слова anywhere — для формулировки опроса
+   это как раз превращает колонку в «по букве». */
+.lv-sheet .lw-q--pick .lw-q__prompt,
+.lv-sheet .lw-q--pick .lw-q__media {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
 
 @media (max-width: 560px) {
-  .lw-q--pick { grid-template-columns: 1fr; }
-  .lw-q--pick .lw-opts { justify-content: flex-start; }
+  .lw-q--pick-row { grid-template-columns: 1fr; }
+  .lw-q--pick-row .lw-opts { flex-wrap: wrap; justify-content: flex-start; }
 }
 
 /* Опрос про себя — то же ощущение, что у choice, но без ok/no: is-selected —

@@ -106,6 +106,17 @@ describe('Главная демо-аккаунта', () => {
     expect(container.querySelector('.hm-level__plan')).toBeNull()
   })
 
+  it('уровень без материалов молчит, а не рапортует «пройдено»', async () => {
+    // Пустой уровень каталога даёт remaining = 0 — как и полностью пройденный.
+    // Но полоса при этом на нуле, и «Материалы уровня пройдены» рядом с пустой
+    // полосой читается издевательски. Это про каталог, а не про ученика.
+    levelProgress.value = { level: 'B2', next: 'C1', percent: 0, done: 0, total: 0, remaining: 0 }
+    const { container } = renderHome({ token: 'T' })
+
+    await waitFor(() => expect(container.querySelector('.hm-level')).not.toBeNull())
+    expect(container.querySelector('.hm-level__plan')).toBeNull()
+  })
+
   it('пройденный уровень говорит об этом, а не «ещё 0 материалов»', async () => {
     levelProgress.value = { level: 'B1', next: 'B2', percent: 100, done: 20, total: 20, remaining: 0 }
     renderHome({ token: 'T' })

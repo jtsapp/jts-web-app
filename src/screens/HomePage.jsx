@@ -139,12 +139,17 @@ export default function HomePage({
     ? t('home.level.max')
     : summary.remaining === null
       ? null
-      : summary.remaining === 0
-        ? t('home.level.done', { level: summary.next })
-        : t('home.level.plan', {
-            materials: plural(t, lang, 'home.materials', summary.remaining),
-            level: summary.next,
-          })
+      // Уровень, в котором не заведено ни одного материала, даёт remaining = 0 —
+      // и подпись «материалы пройдены» при пустой полосе читается издевательски.
+      // Это про каталог, а не про ученика: молчим, пока считать нечего.
+      : summary.total === 0
+        ? null
+        : summary.remaining === 0
+          ? t('home.level.done', { level: summary.next })
+          : t('home.level.plan', {
+              materials: plural(t, lang, 'home.materials', summary.remaining),
+              level: summary.next,
+            })
 
   const hasData = summary.ranked.some((r) => r.percent > 0)
   const levelName = t(`cefr.${summary.level}`)
