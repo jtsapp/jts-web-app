@@ -69,7 +69,10 @@ function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId,
   return (
     <div className="lw-info__item">
       {title && <TapText as="h3" className="lw-info__title" text={title} onWord={onWord} />}
-      {html && <div className="lw-info__body" ref={bodyRef} />}
+      {/* Банк слов внутри курсовой разметки нажатия при readOnly просто глотает
+          (bindWordBank), а плашки остаются белыми и живыми на вид. Метим
+          контейнер — дальше гасит CSS. */}
+      {html && <div className={`lw-info__body${readOnly ? ' is-locked' : ''}`} ref={bodyRef} />}
     </div>
   )
 }
