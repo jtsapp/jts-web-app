@@ -67,6 +67,23 @@ describe('groupByContext — контекст показывается один 
     expect(группы[0].context).toBeNull()
   })
 
+  // Снимок без ключа приезжает от старой админки. Раньше каждое такое задание
+  // становилось своей группой, и статья разворачивалась над каждым вопросом.
+  it('без ключа склеивает по самому содержимому', () => {
+    const безКлюча = { audioUrl: 'https://cdn/track.mp3' }
+    const группы = groupByContext([задание(1, безКлюча), задание(2, безКлюча), задание(3, безКлюча)])
+    expect(группы).toHaveLength(1)
+    expect(группы[0].exercises).toHaveLength(3)
+  })
+
+  it('без ключа разное содержимое не склеивается', () => {
+    const группы = groupByContext([
+      задание(1, { audioUrl: 'https://cdn/one.mp3' }),
+      задание(2, { audioUrl: 'https://cdn/two.mp3' }),
+    ])
+    expect(группы).toHaveLength(2)
+  })
+
   it('пустой список — пустой результат', () => {
     expect(groupByContext([])).toEqual([])
     expect(groupByContext(undefined)).toEqual([])

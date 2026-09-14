@@ -16,8 +16,16 @@ export function exerciseContext(exercise) {
   const audioUrl = typeof context.audioUrl === 'string' ? context.audioUrl.trim() : ''
   const articleHtml = typeof context.articleHtml === 'string' ? context.articleHtml.trim() : ''
   if (!audioUrl && !articleHtml) return null
+  // Ключ карточки-источника кладёт админка. Если его нет (снимок от старой
+  // версии или от другого писателя), склеивать всё равно надо: без ключа каждое
+  // задание становилось своей группой, и статья разворачивалась над каждым из
+  // восьми вопросов — ровно то, ради чего группировка и писалась. Тогда
+  // считаем ключом само содержимое: одинаковый контекст — одна карточка.
+  const key = typeof context.key === 'string' && context.key
+    ? context.key
+    : `by-content:${audioUrl}|${articleHtml}`
   return {
-    key: typeof context.key === 'string' && context.key ? context.key : null,
+    key,
     ...(audioUrl ? { audioUrl } : {}),
     ...(articleHtml ? { articleHtml } : {}),
   }
