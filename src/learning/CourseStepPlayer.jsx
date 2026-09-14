@@ -1099,6 +1099,17 @@ function PhraseList({ items, onWord }) {
 // Микрофон бывает недоступен (нет разрешения, http-контекст, старый браузер):
 // экран обязан остаться проходимым, поэтому отказ показывается строкой, а
 // кнопка «Продолжить» работает в любом случае.
+//
+// mimeType — не косметика: Safari на iPhone/iPad писать webm не умеет вообще
+// (только audio/mp4), а тегать Blob чужим типом нельзя — <audio> ниже открывает
+// его по заявленному типу, и Safari webm не проигрывает ни в каком виде. Без
+// подбора запись воспроизводилась бы на Android/десктопе и падала «Error» у
+// каждого студента с айфона (см. ShadowingPage.jsx — тот же приём).
+function pickRecordMime() {
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+  return candidates.find((m) => window.MediaRecorder?.isTypeSupported?.(m)) || ''
+}
+
 function RecordBoard({ items, t }) {
   const [state, setState] = useState('idle') // idle | live | done | denied
   const [url, setUrl] = useState('')
@@ -1127,11 +1138,12 @@ function RecordBoard({ items, t }) {
     }
     try {
       const stream = await md.getUserMedia({ audio: true })
-      const rec = new MediaRecorder(stream)
+      const mime = pickRecordMime()
+      const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
       const chunks = []
       rec.ondataavailable = (e) => chunks.push(e.data)
       rec.onstop = () => {
-        setUrl(URL.createObjectURL(new Blob(chunks, { type: 'audio/webm' })))
+        setUrl(URL.createObjectURL(new Blob(chunks, { type: rec.mimeType || 'audio/webm' })))
         setState('done')
         stream.getTracks().forEach((x) => x.stop())
       }
