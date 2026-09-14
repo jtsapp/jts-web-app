@@ -1,6 +1,7 @@
 ﻿import { useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { initVoices, speak as ttsSpeak } from '../../practice/vocab/audio.js'
+import { useTimeOnTask } from '../../lib/useTimeOnTask.js'
 import {
   uniqueByKey,
   planCycle,
@@ -169,6 +170,9 @@ function AnswerFeedback({ ok, word, lang, t, speak, token }) {
 
 export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId, onLearned }) {
   const { t } = useI18n()
+  // Практика «Словаря» — «actual» модуля vocabulary_sr недельной сводки. Экран
+  // смонтирован ровно пока идёт практика, поэтому считаем всё его время.
+  useTimeOnTask('vocabulary_sr', { token })
   const words = useMemo(() => uniqueByKey((cards || []).map(toWord).filter((w) => w.word)), [cards])
   const byKey = useMemo(() => Object.fromEntries(words.map((w) => [w.key, w])), [words])
   const [phase, setPhase] = useState('intro')
