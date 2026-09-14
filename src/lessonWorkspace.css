@@ -1130,7 +1130,7 @@
 .lw-practice__html .body {
   flex: 1 1 12rem;
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .lw-info__body select,
 .lw-info__body input:not([type="checkbox"]):not([type="radio"]),
@@ -2054,6 +2054,16 @@
   cursor: default;
 }
 
+/* Колонки сортировки не ужимаются ниже 160px (`.lw-sort__cols`), и длинному
+   слову деваться больше некуда: без `anywhere` «internationalisation» при
+   крупном тексте выезжает за колонку на 20px, а в последней его срезает
+   `overflow: hidden` карточки. Это единственное место урока, где перенос
+   внутри слова — меньшее зло; схлопнуться колонка не может, у неё есть пол. */
+.lw-sort__col-body .lw-chip,
+.lw-sort__bank .lw-chip {
+  overflow-wrap: anywhere;
+}
+
 /* Сопоставление и банк слов. */
 .lw-match {
   display: flex;
@@ -2371,8 +2381,10 @@
 /* Опрос про себя.
    Короткие ответы (👍/👎, «часто») — строкой: слово слева, кнопки справа.
    Длинные фразы (warm-up «Which of these…») — столбиком, как у преподавателя:
-   иначе грид «1fr | auto» + overflow-wrap:anywhere на живом уроке сжимает
-   формулировку до ~1ch, и текст сыплется буквой в столбец. */
+   в строке ряд вариантов с `nowrap` забирает всю ширину, и на формулировку
+   остаются считанные пиксели. Раньше она при этом сыпалась буквой в столбец —
+   это чинит уже перенос (см. .lv-sheet .lw-card), но узкая колонка из одного
+   слова осталась бы и так. */
 .lw-q--pick {
   display: grid;
   grid-template-columns: 1fr;
@@ -2394,14 +2406,6 @@
   gap: 8px 16px;
 }
 .lw-q--pick-row .lw-opts { flex-wrap: nowrap; }
-
-/* На живом полотне карточки режут слова anywhere — для формулировки опроса
-   это как раз превращает колонку в «по букве». */
-.lv-sheet .lw-q--pick .lw-q__prompt,
-.lv-sheet .lw-q--pick .lw-q__media {
-  overflow-wrap: break-word;
-  word-break: normal;
-}
 
 @media (max-width: 560px) {
   .lw-q--pick-row { grid-template-columns: 1fr; }
@@ -2692,7 +2696,7 @@
   background: var(--lw-primary);
   align-self: flex-start;
   border-bottom-left-radius: 6px;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .lw-chat__msg.is-student {
@@ -3655,7 +3659,7 @@
   font-weight: 800;
   color: var(--lw-ink, #181818);
   padding-top: 4px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .lw-tap-pop__tr-row {
   margin-top: 8px;
@@ -3668,7 +3672,7 @@
 .lw-tap-pop__tr {
   font-size: 14px;
   color: var(--lw-ink-2, #3f3a4d);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .lw-tap-pop__alts {
   font-size: 12px;
@@ -3808,8 +3812,8 @@ button.lw-tap-pop__save.is-on:disabled {
   .lw-dict__row { grid-template-columns: minmax(0, 1fr); }
 }
 
-.lw-dict__word { font-weight: 700; color: #15131a; overflow-wrap: anywhere; }
-.lw-dict__tr { color: #898787; overflow-wrap: anywhere; }
+.lw-dict__word { font-weight: 700; color: #15131a; overflow-wrap: break-word; }
+.lw-dict__tr { color: #898787; overflow-wrap: break-word; }
 
 /* Перевод вместо «ничего не найдено»: отличаем от карточек школьного банка
    рамкой — видно, что это машинный перевод, а не запись словаря. */
@@ -3832,7 +3836,7 @@ button.lw-tap-pop__save.is-on:disabled {
 .lw-dict__alt {
   font-size: 12.5px;
   color: #6e6880;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* Слово в свой словарь прямо отсюда: раньше перевод показывался, а забрать его
@@ -4850,8 +4854,16 @@ button.lw-tap-pop__save.is-on:disabled {
   min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  /* `break-word`, а НЕ `anywhere`: оба одинаково спасают полотно от выезда за
+     край, но `anywhere` вдобавок опускает min-content текста до одного символа
+     (CSS Text 4 §5.5 — его точки переноса считаются в min-content, у
+     `break-word` нет). Любой бокс, чья ширина выводится из содержимого, после
+     этого схлопывался: в уроке B1 формулировка опроса легла колонкой по букве —
+     грид `1fr auto` отдал всю ширину ряду вариантов, а `1fr` упал до 13.6px.
+     Замер min-content той же фразы: 92px при `break-word` против 11px при
+     `anywhere`. Legacy `word-break: break-word` убран не за компанию: он равен
+     `anywhere` и перебил бы эту правку молча. */
+  overflow-wrap: break-word;
 }
 
 /* Сопоставление и банки вариантов: длинные фразы переносятся, ряд не
@@ -4878,8 +4890,7 @@ button.lw-tap-pop__save.is-on:disabled {
 }
 
 .lw-match__left-label {
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .lw-info__body,
@@ -4887,8 +4898,10 @@ button.lw-tap-pop__save.is-on:disabled {
   min-width: 0;
   max-width: 100%;
   overflow-x: hidden;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  /* Та же причина, что у полотна выше. Правило глобальное — это контейнеры
+     всего авторского HTML задания, и оно красит классрум, домашку и пробный
+     урок наравне с живым. */
+  overflow-wrap: break-word;
 }
 
 .lw-info__body table,
@@ -4896,7 +4909,7 @@ button.lw-tap-pop__save.is-on:disabled {
   width: 100%;
   max-width: 100%;
   table-layout: fixed;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .lw-info__body img,
