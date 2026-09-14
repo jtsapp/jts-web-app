@@ -92,3 +92,26 @@ describe('tasksToSteps — собери предложение', () => {
     expect(normAnswer('I like coffee')).toBe(normAnswer(step.answer))
   })
 })
+
+describe('нераскрытая сущность апострофа в эталоне', () => {
+  // Курс пишет апостроф как `&#x27;`, конвертер эту форму не раскрывал, и в
+  // эталон попадал текст «don&#x27;t». Знаки препинания резали его на
+  // «don x27t» — совпасть с ним было нельзя ничем, и 62 задания одного только
+  // A0 стали непроходимыми. Ловили это на живых уроках: «0 из 3 правильно» при
+  // верных ответах.
+  it('ответ с апострофом засчитывается', () => {
+    expect(answerMatches("I don't like rain", ['I don&#x27;t like rain.'])).toBe(true)
+    expect(answerMatches('I dont like rain', ['I don&#x27;t like rain.'])).toBe(true)
+    expect(answerMatches("don't", ['don&#x27;t'])).toBe(true)
+  })
+
+  it('десятичная и именованная формы тоже', () => {
+    expect(answerMatches("I'm Anna", ['I&#39;m Anna'])).toBe(true)
+    expect(answerMatches("I'm Anna", ['I&apos;m Anna'])).toBe(true)
+  })
+
+  it('неверный ответ остаётся неверным', () => {
+    // Снятие сущности не должно превращать проверку в «принимаем всё».
+    expect(answerMatches('I like rain', ['I don&#x27;t like rain.'])).toBe(false)
+  })
+})
