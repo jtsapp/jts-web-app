@@ -133,9 +133,14 @@ export default function LessonWorkspacePage({
   const { t } = useI18n()
   const [lesson, setLesson] = useState(() => (lessonId ? null : SAMPLE_LESSON))
   const [loading, setLoading] = useState(() => Boolean(lessonId))
+  // Урок не пришёл потому, что он закрыт этому ученику (403), а не потому, что
+  // сломалась сеть. Это разные сообщения: «попробуйте ещё раз» здесь не
+  // поможет никогда, помогает только менеджер.
+  const [denied, setDenied] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    setDenied(false)
     if (!lessonId) {
       setLesson(SAMPLE_LESSON)
       setLoading(false)
@@ -151,6 +156,14 @@ export default function LessonWorkspacePage({
       // говорим об этом прямо. SAMPLE_LESSON остаётся тем, чем задуман:
       // содержимым экрана, открытого вообще без урока.
       setLesson(loaded || null)
+      setLoading(false)
+    }).catch((err) => {
+      // Загрузчик урока каталога отдаёт отказ (403) исключением — см.
+      // loadCatalogLesson. Без этой ветки экран на любом исключении навсегда
+      // оставался на «Загрузка…».
+      if (cancelled) return
+      setLesson(null)
+      setDenied(err?.status === 403)
       setLoading(false)
     })
     return () => {
@@ -340,7 +353,10 @@ export default function LessonWorkspacePage({
   if (!lesson) {
     return (
       <div className="lw lw--loading" data-testid="lesson-workspace">
-        <p className="lw-loading">{t('lesson.ws.loadFailed')}</p>
+        {/* Отказ — не сбой. Тарифов не предлагаем: отдельный курс в подписку не
+            входит и открывается только выдачей от менеджера, а замок снимает
+            тоже он. Кнопка «в тарифы» вела бы ученика туда, где этого нет. */}
+        <p className="lw-loading">{t(denied ? 'lesson.ws.accessDenied' : 'lesson.ws.loadFailed')}</p>
         <button type="button" className="lw-stepnav__btn lw-stepnav__btn--ghost" onClick={onExit}>
           {t('lesson.ws.exit')}
         </button>

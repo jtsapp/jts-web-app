@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
+import { plural } from '../../lib/plural.js'
 import { getCourseCatalog, getCatalogProgress, completeCatalogLesson, uncompleteCatalogLesson } from '../../api.js'
 import { levelIndex } from '../../kingdoms.js'
 import { readSelfStudyLevel, writeSelfStudyLevel } from './selfStudyLevel.js'
+import { compareCourses, courseCaptions, courseKey, courseShortName, defaultCourse, findPickedCourse } from './selfStudyCourses.js'
 
 /** Замок на чипе закрытого уровня и на карточке-заглушке. */
 function LockIcon({ size = 14 }) {
@@ -76,9 +78,29 @@ function Cover({ lesson, unit, theme, no, children }) {
  * сообщала ровно то, что ученик и так видел по замку на чипе. Нажатие ведёт в
  * тарифы: это единственное, что здесь можно сделать, и притворяться кнопкой
  * «Пройти» карточка не должна.
+ *
+ * Материал курса с отдельным доступом (`byGrant`) тарифом не открывается вовсе:
+ * такой курс открывает только выдача менеджера, и дорога в тарифы вела бы туда,
+ * где его нет. Поэтому там карточка не кнопка, а спокойный замок с подсказкой,
+ * к кому идти, — нажать её значит никуда не попасть, и обещать нажатие нечего.
  */
-function PaywallCard({ lesson, unit, theme, no, onBuy }) {
+function PaywallCard({ lesson, unit, theme, no, byGrant, onBuy }) {
   const { t } = useI18n()
+  if (byGrant) {
+    return (
+      <div className="ss-card">
+        <div className="gr-gcard ss-paywall ss-paywall--grant">
+          <Cover lesson={lesson} unit={unit} theme={theme} no={no}>
+            <span className="ss-paywall__lock"><LockIcon size={20} /></span>
+          </Cover>
+          <span className="gr-gcard__body">
+            <span className="gr-unit-no">{t(`catalog.type.${typeKey(lesson.type)}`)}</span>
+            <span className="gr-gcard__desc">{t('selfStudy.courseLockNote')}</span>
+          </span>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="ss-card">
       <button type="button" className="gr-gcard ss-paywall" onClick={() => onBuy?.()}>
@@ -167,7 +189,7 @@ function LessonCard({ lesson, unit, theme, no, done, onOpen, onToggle }) {
  * факту открытия было бы враньём — «открыл» и «прошёл» разные вещи.
  */
 export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpenPricing }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const [levels, setLevels] = useState(null) // null — ещё грузим
   const [error, setError] = useState(false)
   const [done, setDone] = useState(() => new Set())
@@ -224,8 +246,12 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
         // уровни (LevelAccessService). Прежняя формула на клиенте про выдачи не
         // знала бы вовсе, а держать правило в двух местах — способ их разойти.
         // Поле необязательное: старый бэкенд его не шлёт, и тогда падаем на
-        // прежнюю формулу, а не запираем ученику весь курс.
-        locked: typeof level.locked === 'boolean' ? level.locked : !isLevelOpen(level.code, userLevel),
+        // прежнюю формулу, а не запираем ученику весь курс. Курс с отдельным
+        // доступом эта формула не открывает: его открывает только выдача, а о
+        // ней знает один сервер.
+        locked: typeof level.locked === 'boolean'
+          ? level.locked
+          : Boolean(level.separateAccess) || !isLevelOpen(level.code, userLevel),
         units: (level.units || [])
           .map((unit) => ({
             ...unit,
@@ -247,20 +273,32 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
           0,
         ),
       }))
-      // Чипы идут по возрастанию — так же, как идёт курс. Порядок каталога на
-      // это полагаться не даёт: он про порядок заведения.
-      .sort((a, b) => levelIndex(a.code) - levelIndex(b.code))
+      // Чипы идут по возрастанию — так же, как идёт курс; внутри уровня общий
+      // курс раньше отдельного (см. compareCourses). Порядок каталога на это
+      // полагаться не даёт: он про порядок заведения.
+      .sort(compareCourses)
   }, [levels, userLevel])
 
-  // Открытые — то, между чем ученик реально переключается; на них же считается
-  // умолчание «последний доступный».
-  const open = useMemo(() => shown.filter((level) => !level.locked), [shown])
+  // Код уровня у двух курсов бывает один и тот же, поэтому где он повторяется,
+  // рядом с ним на чипе стоит имя курса. Имя считается по всему каталогу, а не
+  // по показанному: так курс зовётся одинаково здесь и в админке.
+  const captions = useMemo(() => courseCaptions(shown, levels || []), [shown, levels])
 
   // Запомненный выбор перебивает умолчание, но только пока он валиден: каталог
   // мог обновиться, а уровень ученика — вырасти или, наоборот, оказаться ниже
   // сохранённого. Не нашли — открываем последний доступный, то есть тот, до
   // которого ученик дошёл.
-  const active = shown.find((l) => l.code === picked) || open[open.length - 1] || shown[0]
+  const pickedCourse = findPickedCourse(shown, picked)
+  const active = pickedCourse || defaultCourse(shown)
+
+  // В браузере мог остаться выбор старого формата — код уровня. Он уже привёл
+  // на курс; переписываем его на id, чтобы следующий курс того же уровня не
+  // перехватил выбор. Только открытый — по той же причине, что и на клике.
+  useEffect(() => {
+    if (pickedCourse && !pickedCourse.locked && courseKey(pickedCourse) !== picked) {
+      writeSelfStudyLevel(courseKey(pickedCourse))
+    }
+  }, [pickedCourse, picked])
 
   if (!token) return <p className="cc__state">{t('selfStudy.needAuth')}</p>
   if (error) return <p className="cc__state cc__state--error">{t('catalog.error')}</p>
@@ -272,6 +310,30 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
     return <p className="cc__state">{t('selfStudy.empty')}</p>
   }
 
+  // Курс с отдельным доступом закрыт не потому, что он выше уровня ученика:
+  // «Уровень B2 пока закрыт» рядом с открытым общим B2 читалось бы как
+  // поломка, а совет обновить тариф — как неправда. Про него говорим курсом.
+  const courseName = captions.get(courseKey(active)) || courseShortName(active.label, active.code) || active.code
+  const lockedTitle = active.separateAccess
+    ? t('selfStudy.courseLockedTitle', { course: courseName })
+    : t('selfStudy.lockedTitle', { level: active.code })
+  const lockedText = t(active.separateAccess ? 'selfStudy.courseLockedText' : 'selfStudy.lockedText')
+  const previewTitle = active.separateAccess
+    ? t('selfStudy.coursePreviewTitle', { course: courseName })
+    : t('selfStudy.previewTitle', { level: active.code })
+  // Витрину сервер размечает любому закрытому курсу, в том числе отдельному, —
+  // а тот подпиской не открывается. Про него «остальные откроются с подпиской»
+  // было бы неправдой, и кнопка тарифов тоже: остальное открывает менеджер.
+  // Число витрины стоит во фразе, поэтому форма — по числу: одна строка на
+  // все случаи давала «Первые 1 материала».
+  const previewText = plural(
+    t,
+    lang,
+    active.separateAccess ? 'selfStudy.coursePreviewText' : 'selfStudy.previewText',
+    active.previewCount,
+  )
+  const canBuy = Boolean(onOpenPricing) && !active.separateAccess
+
   return (
     <div className="ss">
       <p className="cc__subtitle">{t('selfStudy.lead')}</p>
@@ -280,38 +342,46 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
           списке, и курс выглядел заканчивающимся там, где он продолжается:
           ученик не знал ни что дальше есть, ни что для этого нужно. */}
       <div className="gr-levels">
-        {shown.map((level) => (
-          <button
-            key={level.code}
-            type="button"
-            className={`gr-levelchip${level.code === active.code ? ' on' : ''}${level.locked ? ' is-locked' : ''}`}
-            aria-pressed={level.code === active.code}
-            onClick={() => {
-              setPicked(level.code)
-              // Запоминаем только открытый: вернуть ученика на замок вместо
-              // урока было бы издевательством.
-              if (!level.locked) writeSelfStudyLevel(level.code)
-            }}
-          >
-            {level.locked && <LockIcon />}
-            {level.code}
-          </button>
-        ))}
+        {shown.map((level) => {
+          const key = courseKey(level)
+          const on = level === active
+          const caption = captions.get(key)
+          return (
+            <button
+              key={key}
+              type="button"
+              className={`gr-levelchip${on ? ' on' : ''}${level.locked ? ' is-locked' : ''}`}
+              aria-pressed={on}
+              // Имя на чипе режется многоточием — полное название курса в
+              // подсказке, чтобы его можно было дочитать.
+              title={caption ? level.label || undefined : undefined}
+              onClick={() => {
+                setPicked(key)
+                // Запоминаем только открытый: вернуть ученика на замок вместо
+                // урока было бы издевательством.
+                if (!level.locked) writeSelfStudyLevel(key)
+              }}
+            >
+              {level.locked && <LockIcon />}
+              {level.code}
+              {caption && <>{' '}<span className="gr-levelchip__name">{caption}</span></>}
+            </button>
+          )
+        })}
       </div>
 
       {/* Закрытый уровень показываем целиком: первые материалы открыты, за
-          остальными — подписка. Раньше здесь стояла заглушка «уровень закрыт»,
-          то есть ровно то, что ученик и так видел по замку на чипе. */}
+          остальными — подписка (у отдельного курса — выдача менеджера). Раньше
+          здесь стояла заглушка «уровень закрыт», то есть ровно то, что ученик
+          и так видел по замку на чипе. */}
       {active.locked && active.previewCount > 0 && (
         <div className="ss-preview">
           <span className="ss-preview__badge"><LockIcon size={20} /></span>
           <div className="ss-preview__body">
-            <h2 className="ss-preview__title">{t('selfStudy.previewTitle', { level: active.code })}</h2>
-            <p className="ss-preview__text">
-              {t('selfStudy.previewText', { n: String(active.previewCount) })}
-            </p>
+            <h2 className="ss-preview__title">{previewTitle}</h2>
+            <p className="ss-preview__text">{previewText}</p>
           </div>
-          {onOpenPricing && (
+          {canBuy && (
             <button type="button" className="ss-preview__cta" onClick={() => onOpenPricing()}>
               {t('selfStudy.previewCta')}
             </button>
@@ -325,8 +395,8 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
       {active.locked && active.previewCount === 0 ? (
         <div className="ss-locked">
           <span className="ss-locked__badge"><LockIcon size={22} /></span>
-          <h2 className="ss-locked__title">{t('selfStudy.lockedTitle', { level: active.code })}</h2>
-          <p className="ss-locked__text">{t('selfStudy.lockedText')}</p>
+          <h2 className="ss-locked__title">{lockedTitle}</h2>
+          <p className="ss-locked__text">{lockedText}</p>
         </div>
       ) : active.units.map((unit, ui) => (
         <section key={unit.id} className="pp-sec">
@@ -354,6 +424,7 @@ export default function SelfStudy({ token, userLevel = 'A1', onOpenLesson, onOpe
                   unit={unit}
                   theme={ui % 8}
                   no={li + 1}
+                  byGrant={Boolean(active.separateAccess)}
                   onBuy={onOpenPricing}
                 />
               ) : (

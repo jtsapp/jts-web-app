@@ -1,6 +1,11 @@
 // Read the JWT payload client-side (no verification — server enforces auth). Used only
 // to pick the UI variant by role; never for authorization decisions.
-function payloadOf(token) {
+//
+// Экспортируется, потому что по payload'у опознаётся не только роль: из него же
+// собирается пользовательская часть ключа кэша каталога (tokenIdentity в
+// api.js). Свой разбор там уже однажды разошёлся с этим — падал на base64url и
+// сваливал ученика в общий 'anon', — поэтому разбор ровно один на всё приложение.
+export function payloadOf(token) {
   if (!token || typeof token !== 'string') return null
   const parts = token.split('.')
   if (parts.length < 2) return null
