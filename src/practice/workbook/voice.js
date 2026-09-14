@@ -206,38 +206,76 @@ function synth() {
   }
 }
 
-/* Список голосов в Chrome приезжает асинхронно и первый getVoices() пуст —
-   поэтому опрос с потолком в 2.5 с плюс подписка на voiceschanged. */
+/* Список голосов в Chrome приезжает асинхронно и первый getVoices() пуст.
+   Ждать его нельзя: на iOS speak() после паузы 2.5 с уже вне жеста и молчит.
+   Берём то, что есть сейчас; voiceschanged подтянет пару для следующих реплик. */
 function withVoices(cb) {
   const sy = synth()
-  if (!sy || built) {
+  if (!sy) {
     cb()
     return
   }
-  const vs = sy.getVoices() || []
-  if (vs.length) {
-    ;({ a: VA, b: VB } = pickVoices(vs))
-    built = true
-    cb()
-    return
-  }
-  let n = 0
-  const iv = setInterval(() => {
-    const v2 = sy.getVoices() || []
-    if (v2.length || ++n > 25) {
-      clearInterval(iv)
-      if (v2.length) ({ a: VA, b: VB } = pickVoices(v2))
+  if (!built) {
+    const vs = sy.getVoices() || []
+    if (vs.length) {
+      ;({ a: VA, b: VB } = pickVoices(vs))
       built = true
-      cb()
+    } else {
+      try {
+        sy.addEventListener(
+          'voiceschanged',
+          () => {
+            const later = sy.getVoices() || []
+            if (later.length) {
+              ;({ a: VA, b: VB } = pickVoices(later))
+              built = true
+            }
+          },
+          { once: true },
+        )
+      } catch {
+        /* старый Safari без событий — читаем системным голосом */
+      }
     }
-  }, 100)
+  }
+  cb()
+}
+
+/** Пустая реплика в том же тике, что и тап: iOS выдаёт разрешение на синтез жесту. */
+function primeSpeech() {
+  const sy = synth()
+  if (!sy) return
   try {
-    sy.addEventListener('voiceschanged', () => {
-      const v3 = sy.getVoices() || []
-      if (v3.length && !VA) ({ a: VA, b: VB } = pickVoices(v3))
-    })
+    sy.resume()
   } catch {
-    /* старый Safari без событий — доберём опросом */
+    /* очередь не на паузе */
+  }
+  try {
+    const warm = new SpeechSynthesisUtterance(' ')
+    warm.volume = 0
+    sy.speak(warm)
+  } catch {
+    /* нет синтеза */
+  }
+}
+
+function stopPlayback({ cancelSpeech = true } = {}) {
+  token++
+  clearKeep()
+  try {
+    if (curAudio) {
+      curAudio.pause()
+      curAudio = null
+    }
+  } catch {
+    /* элемент уже уничтожен */
+  }
+  if (!cancelSpeech) return
+  try {
+    const sy = synth()
+    if (sy) sy.cancel()
+  } catch {
+    /* нет синтеза — нечего останавливать */
   }
 }
 
@@ -249,32 +287,24 @@ function clearKeep() {
 }
 
 export function stopAudio() {
-  token++
-  clearKeep()
-  try {
-    if (curAudio) {
-      curAudio.pause()
-      curAudio = null
-    }
-  } catch {
-    /* элемент уже уничтожен */
-  }
-  try {
-    const sy = synth()
-    if (sy) sy.cancel()
-  } catch {
-    /* нет синтеза — нечего останавливать */
-  }
+  stopPlayback({ cancelSpeech: true })
 }
 
-export function speak(lines, { slow = false } = {}, cb) {
+export function speak(lines, { slow = false, keepPrime = false } = {}, cb) {
   const sy = synth()
   if (!sy || !lines || !lines.length) {
     if (cb) cb()
     return
   }
-  stopAudio()
-  const my = ++token
+  if (keepPrime) {
+    // mp3 уже не нашёл файл: cancel() здесь снял бы разрешение, выданное
+    // primeSpeech() в том же тапе, и iPhone снова остался бы без звука.
+    stopPlayback({ cancelSpeech: false })
+  } else {
+    stopAudio()
+    primeSpeech()
+  }
+  const my = token
   const q = plan(lines)
   let i = 0
   withVoices(() => {
@@ -345,8 +375,9 @@ export function speak(lines, { slow = false } = {}, cb) {
         go()
       }
     }
-    // Chrome глотает речь, начатую сразу после cancel().
-    setTimeout(step, 90)
+    // Chrome глотает речь сразу после cancel(). После прогрева в том же жесте
+    // ждать нечего — пауза снова вывела бы iOS из жеста.
+    setTimeout(step, keepPrime ? 0 : 90)
   })
 }
 
@@ -356,6 +387,9 @@ export function speak(lines, { slow = false } = {}, cb) {
  */
 export function playTrack(sources, lines, { slow = false, onState } = {}) {
   stopAudio()
+  // Прогрев до попытки mp3: у A0 файла нет, play() уйдёт в onerror уже вне
+  // жеста, и без этой реплики синтез на iPhone молчит.
+  primeSpeech()
   const state = (playing) => onState && onState(playing)
   state(true)
   const done = () => state(false)
@@ -365,7 +399,7 @@ export function playTrack(sources, lines, { slow = false, onState } = {}) {
   const tryNext = () => {
     if (k >= paths.length) {
       curAudio = null
-      speak(lines, { slow }, done)
+      speak(lines, { slow, keepPrime: true }, done)
       return
     }
     const a = new Audio(paths[k++])

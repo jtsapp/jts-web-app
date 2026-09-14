@@ -73,4 +73,9 @@ describe('файлы уроков Shadowing', () => {
       expect(text.length).toBeLessThanOrEqual(MAX_SEGMENT_CHARS)
     }
   })
+
+  it('sg: на 0:12 Селена говорит So, не Well — иначе оценка ждёт другое слово', () => {
+    const sg = loaded.find(({ lesson }) => lesson.id === 'sg')
+    expect(sg.file.segments[1][2]).toMatch(/^So good to see you guys/)
+  })
 })
