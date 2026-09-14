@@ -34,7 +34,7 @@ describe('selfstudy/steps — типы заданий', () => {
     const [card] = steps([
       { t: 'cards', stage: 'vocab', items: [{ w: 'like', ru: 'нравится', kk: 'ұнайды', use: 'I <em>like</em> tea.', wordClip: 'w1' }] },
     ])
-    expect(card).toMatchObject({ type: 'cards', stage: 'Vocabulary' })
+    expect(card).toMatchObject({ type: 'cards', stage: 'Слова' })
     expect(card.words[0]).toMatchObject({ en: 'like', ru: 'нравится', kk: 'ұнайды', def: 'I like tea.', audio: '/course/a0/audio/w1.mp3' })
   })
 

@@ -39,11 +39,21 @@ describe('buildWeeklySummary', () => {
     expect(m.shadowing.tracked).toBe('estimated')
   })
 
-  it('неизмеряемые модули отдают ноль и честный флаг', () => {
+  it('время воркбука и словаря берётся из activity_time', () => {
+    const m = buildWeeklySummary({ activitySeconds: { workbooks: 1800, vocabulary_sr: 610 } })
+    expect(m.workbooks).toMatchObject({ actualMinutes: 30, tracked: 'measured' })
+    expect(m.vocabulary_sr).toMatchObject({ actualMinutes: 10, tracked: 'measured' })
+  })
+
+  it('без записей activity_time — нули, но флаг «меряем»', () => {
     const m = buildWeeklySummary({})
-    for (const key of ['workbooks', 'media_practice', 'vocabulary_sr']) {
-      expect(`${key}: ${m[key].actualMinutes} ${m[key].tracked}`).toBe(`${key}: 0 none`)
-    }
+    expect(m.workbooks).toMatchObject({ actualMinutes: 0, tracked: 'measured' })
+    expect(m.vocabulary_sr).toMatchObject({ actualMinutes: 0, tracked: 'measured' })
+  })
+
+  it('медиа не меряется — ноль и честный флаг', () => {
+    const m = buildWeeklySummary({ activitySeconds: { media_practice: 9999 } })
+    expect(m.media_practice).toMatchObject({ actualMinutes: 0, tracked: 'none' })
   })
 
   it('без плана целей нет — дефицит показывать не от чего', () => {
@@ -66,25 +76,36 @@ describe('buildWeeklySummary', () => {
 describe('loadEcosystemWeek', () => {
   it('без базы отдаёт нули, а не падает', async () => {
     const week = await loadEcosystemWeek('user-1', new Date('2026-09-09T12:00:00Z'), null)
-    expect(week.voiceSeconds).toBe(0)
-    expect(week.shadowingCredits).toBe(0)
+    expect(week).toMatchObject({ voiceSeconds: 0, shadowingCredits: 0, activitySeconds: {} })
     expect(week.weekStart).toBe('2026-09-07')
   })
 
-  it('собирает оба запроса в одну сводку', async () => {
+  it('собирает три источника в одну сводку', async () => {
     // Поддельный тег: отвечает по тексту запроса, чтобы не зависеть от порядка.
     const fakeSql = (strings) => {
       const q = strings.join(' ')
       if (q.includes('voice_usage')) return Promise.resolve([{ seconds: 1800 }])
       if (q.includes('shadowing_assess')) return Promise.resolve([{ used: 6 }])
+      if (q.includes('activity_time')) {
+        return Promise.resolve([
+          { module: 'workbooks', seconds: 1200 },
+          { module: 'vocabulary_sr', seconds: 300 },
+        ])
+      }
       return Promise.resolve([])
     }
     const week = await loadEcosystemWeek('user-1', new Date('2026-09-09T12:00:00Z'), fakeSql)
-    expect(week).toMatchObject({ voiceSeconds: 1800, shadowingCredits: 6 })
+    expect(week).toMatchObject({
+      voiceSeconds: 1800,
+      shadowingCredits: 6,
+      activitySeconds: { workbooks: 1200, vocabulary_sr: 300 },
+    })
 
     const m = buildWeeklySummary({ ...week, homeworkMinutesPerDay: 30 })
     expect(m.ai_tutor.actualMinutes).toBe(30)
     expect(m.shadowing.actualMinutes).toBe(3)
+    expect(m.workbooks.actualMinutes).toBe(20)
+    expect(m.vocabulary_sr.actualMinutes).toBe(5)
   })
 
   // lesson_progress в нашей базе — это сценарии тьютора и старый «План уроков»,
@@ -103,6 +124,6 @@ describe('loadEcosystemWeek', () => {
     const week = await loadEcosystemWeek('user-1', new Date('2026-09-09T12:00:00Z'), () =>
       Promise.resolve([]),
     )
-    expect(week).toMatchObject({ voiceSeconds: 0, shadowingCredits: 0 })
+    expect(week).toMatchObject({ voiceSeconds: 0, shadowingCredits: 0, activitySeconds: {} })
   })
 })
