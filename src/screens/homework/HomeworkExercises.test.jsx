@@ -321,3 +321,61 @@ describe('HomeworkExercises: на закрытой работе виден то�
     expect(JSON.parse(localStorage.getItem('hw-answers:7'))).toEqual({ q1: 'a' })
   })
 })
+
+/**
+ * Запись и текст, к которым относится задание.
+ *
+ * Прогон на стенде 14.09.2026: выданная с урока карточка Listening приезжала
+ * ученику как восемь True/False с инструкцией «Listen…» и без единого плеера —
+ * слушать было нечего и уйти некуда. Теперь контекст едет в снимке вопроса.
+ * Спека: docs/superpowers/specs/2026-09-14-homework-exercise-context.md
+ */
+describe('HomeworkExercises — звук и текст задания', () => {
+  const слушание = (id) => ({
+    id,
+    title: `Утверждение ${id}`,
+    instruction: 'Listen. Tick what she likes. You can listen again.',
+    question: question(`q${id}`, 'choice', {
+      options: ['True', 'False'],
+      answer: 'True',
+      context: { key: 's5#4', audioUrl: 'https://cdn/track.mp3' },
+    }),
+  })
+
+  it('плеер один на всю карточку, а не по одному на вопрос', () => {
+    const { container } = show({ id: 40, exercises: [слушание(1), слушание(2), слушание(3)] })
+
+    expect(container.querySelectorAll('.hw-exercise')).toHaveLength(3)
+    const плееры = container.querySelectorAll('.hw-context__audio')
+    expect(плееры).toHaveLength(1)
+    expect(плееры[0].getAttribute('src')).toBe('https://cdn/track.mp3')
+  })
+
+  it('текст для чтения показывается над вопросами к нему', () => {
+    const чтение = (id) => ({
+      id,
+      title: `Вопрос ${id}`,
+      question: question(`r${id}`, 'gap', {
+        gapBefore: 'an American',
+        gapAfter: 'called Arthur Aron',
+        answers: ['psychologist'],
+        context: { key: 's5#6', articleHtml: '<article class="reading"><p>In 1997 Arthur Aron…</p></article>' },
+      }),
+    })
+    const { container } = show({ id: 41, exercises: [чтение(1), чтение(2)] })
+
+    const статьи = container.querySelectorAll('.hw-context__article')
+    expect(статьи).toHaveLength(1)
+    expect(статьи[0].textContent).toContain('Arthur Aron')
+  })
+
+  it('задания без контекста рисуются как раньше', () => {
+    const { container } = show({ id: 42, exercises: [
+      { id: 1, title: 'Выбор', question: question('q1', 'choice', { options: ['a', 'b'], answer: 'a' }) },
+    ] })
+
+    expect(container.querySelector('.hw-context')).toBeNull()
+    expect(container.querySelectorAll('.hw-exercise')).toHaveLength(1)
+  })
+})
+
