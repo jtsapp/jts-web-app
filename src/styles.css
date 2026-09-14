@@ -8062,7 +8062,12 @@ textarea {
   font-size: 14px;
   line-height: 1.55;
   color: var(--ink);
-  overflow-wrap: anywhere;
+  /* `break-word`, а не `anywhere`: последний опускает min-content текста до
+     одного символа, и любой контейнер, чья ширина выводится из содержимого,
+     схлопывается в колонку по букве (см. src/textCollapse.test.js). Здесь
+     родитель — колоночный flex и ширину отбирать некому, но правило одно на всё
+     приложение: исключения объявляются в сторо́же и с причиной. */
+  overflow-wrap: break-word;
 }
 
 .hw-context__article p { margin: 0 0 8px; }
