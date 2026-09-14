@@ -112,6 +112,21 @@ function stopSpeaking() {
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
 const PROMPT_FIRST = new Set(['pick', 'write', 'checklist'])
 
+// scripts/selfstudy/steps.js печёт подпись стадии («Practice», «Vocabulary»…)
+// в JSON один раз при выгрузке курса, и до этой правки — всегда на английском,
+// при любом lang. У уже выгруженных public/course/*/steps-*.json это так и
+// останется, пока кто-то не прогонит экстрактор заново на файле уровня (сотни
+// МБ, не в репозитории) — переводим тут, на экране, а не в данных.
+const STAGE_LABEL_RU = {
+  'Warm-up': 'Разминка',
+  Vocabulary: 'Слова',
+  Grammar: 'Грамматика',
+  Practice: 'Практика',
+  Listening: 'Аудирование',
+  Speaking: 'Говорение',
+  Wrap: 'Итоги',
+}
+
 
 // Предложение шага «впиши пропуск» целиком: в макете оно стоит вопросом, а поле
 // ответа — отдельным блоком под ним. Пропуск дорисовываем только если его нет в
@@ -231,7 +246,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           <span className="cp-bar__label">{t('lesson.exitLesson')}</span>
         </button>
         <div className="cp-bar__place">
-          <b>{step.stage}</b>
+          <b>{STAGE_LABEL_RU[step.stage] || step.stage}</b>
           <span>{title}</span>
         </div>
         {/* Язык интерфейса прямо в уроке: в макете «Обучение» пилюля с флагом
@@ -505,8 +520,23 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
   const promptFirst = PROMPT_FIRST.has(step.type)
   // У списка утверждений сам вопрос стоит в строках, а над ними в макете одна
   // тёмная строка — инструкция. Крупной фиолетовой на этом экране нет.
-  const big = step.type === 'rows' ? '' : step.type === 'gap' ? gapSentence(step) : promptFirst ? step.title : step.prompt || step.sub
-  const small = promptFirst ? step.sub : step.title
+  // У cols инструкция в данных («Put the words in the correct column.») —
+  // авторский текст курса, а не UI-строка, и в источнике он английский без
+  // ru/kk (см. STAGE_LABEL_RU выше — тот же баг). Заголовки колонок (was/were
+  // и т.п.) и так называют, что куда класть, поэтому вместо содержимого
+  // экрана — общая переведённая инструкция; title экрана в cols не показываем
+  // вовсе, чтобы английский не просочился второй строкой.
+  const big =
+    step.type === 'rows'
+      ? ''
+      : step.type === 'gap'
+        ? gapSentence(step)
+        : step.type === 'cols'
+          ? t('lesson.cols.instr')
+          : promptFirst
+            ? step.title
+            : step.prompt || step.sub
+  const small = step.type === 'cols' ? '' : promptFirst ? step.sub : step.title
 
   return (
     <>

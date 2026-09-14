@@ -1758,7 +1758,11 @@
 }
 .cp-cols__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  /* minmax(0, 1fr) давало auto-fit генерировать колонки нулевой ширины —
+     их влезает больше, чем реальных (2–4), и настоящие сжимались до текста
+     содержимого вместо равного деления ширины (слово вроде Almaty ломалось
+     посередине). 140px — тот же порог, что у .gr-cat-buckets в grammar.css. */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
 }
 .cp-cols__col {
