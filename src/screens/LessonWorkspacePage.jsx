@@ -15,7 +15,7 @@ import SystemBanner from './workspace/SystemBanner.jsx'
 import { cardTarget } from '../lib/lessonCardTarget.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
-import { getCatalogLessonAnswers, saveCatalogLessonAnswers } from '../api.js'
+import { getCatalogLessonAnswers, saveCatalogLessonAnswers, getMyMaterialAssignments } from '../api.js'
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons.jsx'
 
 /**
@@ -121,6 +121,9 @@ export default function LessonWorkspacePage({
   onExit,
   lessonId,
   cardId,
+  // Назначение, по которому ученик пришёл сюда из домашней работы. Экран обязан
+  // знать, в какое задание сдавать: у урока каталога своего «сдано» нет.
+  assignmentId,
   token,
   catalogLessonId,
   loadLesson = loadLiveLesson,
@@ -192,7 +195,13 @@ export default function LessonWorkspacePage({
   // в один экран, см. liveSteps.js) и якорей у неё нет вовсе — подъехать к
   // заданной карточке там просто некуда. А документ — ровно то, из чего
   // преподаватель её и выбирал.
-  const useDocView = (steps.length === 0 || Boolean(cardId)) && (lesson?.steps?.length ?? 0) > 0
+  // Вид привязан к ЗАДАНИЮ, а не к наличию карточки. Раньше документ включался
+  // по Boolean(cardId), и урок, заданный целиком, приходил без карточки — то
+  // есть открывался ДРУГИМ экраном, чем карточка из того же урока: ученик видел
+  // два разных интерфейса у двух заданий из одного материала. Сдавать в очереди
+  // экранов к тому же негде — у неё нет ни ленты блоков, ни якорей.
+  const useDocView =
+    (steps.length === 0 || Boolean(cardId) || assignmentId != null) && (lesson?.steps?.length ?? 0) > 0
   // Шагов нет вовсе, но есть файл курса: урок просто не разбирали (см.
   // loadCatalogLesson). Плееру тут нечего показывать, а материал — есть.
   const useMaterialView = steps.length === 0 && (lesson?.steps?.length ?? 0) === 0 && Boolean(lesson?.fileUrl)
@@ -257,6 +266,41 @@ export default function LessonWorkspacePage({
       alive = false
     }
   }, [catalogLessonId, token, cardId])
+
+  // Назначение, по которому ученик сюда пришёл.
+  //
+  // Спрашиваем сами, а не получаем пропом: адрес задания переживает F5
+  // (?assignment=<id>), а состояние домашней работы — нет. Урок на 54 вопроса
+  // ученик обновит не раз, и терять после этого кнопку сдачи нельзя.
+  const [assignment, setAssignment] = useState(null)
+  useEffect(() => {
+    if (assignmentId == null || !token) {
+      setAssignment(null)
+      return undefined
+    }
+    let alive = true
+    getMyMaterialAssignments(token)
+      .then((list) => {
+        if (!alive) return
+        const found = (Array.isArray(list) ? list : [])
+          .find((a) => String(a?.id) === String(assignmentId))
+        setAssignment(found ?? null)
+      })
+      // Не достали — урок всё равно открыт и работа сохраняется; сдать нельзя,
+      // пока не ответил сервер, и это честнее кнопки, которая уронит 404.
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [assignmentId, token])
+
+  // Тип урока каталога приезжает ВМЕСТЕ с содержимым урока — его кладёт на урок
+  // loadCatalogLesson (поле `type` ответа содержимого). Отдельной ручки за одним
+  // полем здесь нет намеренно: содержимое экран и так запрашивает на каждое
+  // открытие. Тип неизвестен (живой урок, демо, ответ бэкенда без поля) — ведём
+  // урок обычным, с покарточной проверкой и ключами: ошибиться в эту сторону
+  // безопаснее, чем спрятать эталоны у тренажёра.
+  const lessonType = lesson?.catalogType ?? null
 
   const saverRef = useRef(null)
   if (!saverRef.current) {

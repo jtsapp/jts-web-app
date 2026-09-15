@@ -40,7 +40,13 @@ export async function loadCatalogLesson(id, token) {
     // экран покажет материал, а не сделает вид, что урока нет.
     if (!stored.content) {
       if (!stored.fileUrl) return null
-      const material = { id: stored.id ?? id, title: stored.title || '', fileUrl: stored.fileUrl, steps: [] }
+      const material = {
+        id: stored.id ?? id,
+        title: stored.title || '',
+        fileUrl: stored.fileUrl,
+        steps: [],
+        catalogType: stored.type ?? null,
+      }
       cache.set(key, material)
       return material
     }
@@ -49,6 +55,12 @@ export async function loadCatalogLesson(id, token) {
     // lessonPipeline.js: по нему считается и id вопросов, и адрес карточки.
     const lesson = applyLessonHoists(stored.content, stored.fileUrl)
     if (!lesson.title && stored.title) lesson.title = stored.title
+    // Тип урока каталога («REVIEW», «LESSON») живёт в ответе ручки, а не внутри
+    // разобранной структуры: applyLessonHoists собирает шаги и про карточку
+    // каталога не знает. Везём его на уроке — кабинету он нужен, чтобы вести
+    // заданный на дом урок тестом (эталоны скрыты до сдачи) или тренажёром, а
+    // отдельный GET за одним полем на каждое открытие урока не нужен никому.
+    lesson.catalogType = stored.type ?? null
 
     cache.set(key, lesson)
     return lesson

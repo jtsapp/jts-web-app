@@ -10,9 +10,15 @@ vi.mock('../api.js', () => ({
   getCatalogLessonAnswers: vi.fn(async () => ({ progressJson: null })),
   saveCatalogLessonAnswers: vi.fn(async () => ({})),
   getCourseCatalogLessonContent: vi.fn(async () => null),
+  // Задание на дом: экран сам достаёт своё назначение — сдано ли оно и с каким
+  // процентом. Обёртки getCourseCatalogLesson здесь намеренно НЕТ: тип урока
+  // приезжает вместе с содержимым (lesson.catalogType), и попытка сходить за
+  // ним отдельным запросом уронит тест на месте — ровно этого мы и хотим.
+  getMyMaterialAssignments: vi.fn(async () => []),
+  submitAssignment: vi.fn(async () => ({})),
 }))
 
-import { getCatalogLessonAnswers, saveCatalogLessonAnswers, getCourseCatalogLessonContent } from '../api.js'
+import { getCatalogLessonAnswers, saveCatalogLessonAnswers, getCourseCatalogLessonContent, getMyMaterialAssignments, submitAssignment } from '../api.js'
 import LessonWorkspacePage from './LessonWorkspacePage.jsx'
 import { lessonCardIds } from '../lib/lessonCardId.js'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
@@ -326,5 +332,93 @@ describe('карточка урока, заданная на дом', () => {
     // Выход остаётся: из домашки ученик уходит обратно в домашку.
     fireEvent.click(screen.getByRole('button', { name: 'Выйти из урока' }))
     expect(onExit).toHaveBeenCalled()
+  })
+})
+
+/**
+ * Урок каталога, заданный на дом ЦЕЛИКОМ.
+ *
+ * Преподаватель задаёт не карточку и не вопрос, а весь урок — чаще всего
+ * юнит-тест на 54 вопроса. Экран обязан открыться так же, как открывается
+ * карточка из того же урока: лентой блоков со вкладками шагов. Иначе у двух
+ * заданий из одного материала два разных интерфейса, и сдавать в очереди
+ * экранов негде.
+ */
+describe('урок, заданный на дом целиком', () => {
+  // Урок, который плеер осиливает ЦЕЛИКОМ (info + choice, ничего из
+  // UNSUPPORTED — см. liveSteps.js). Обычным путём он открывается очередью
+  // экранов, и ровно поэтому годится проверить, что задание уводит в документ.
+  //
+  // `catalogType` — то, что кладёт на урок loadCatalogLesson из ответа
+  // содержимого: здесь загрузчик подменён, и тип приходит вместе с уроком.
+  const PLAYABLE = {
+    id: 314,
+    title: 'Unit 1 Review Test',
+    catalogType: 'LESSON',
+    steps: [
+      {
+        id: 's1', order: 1, title: 'Grammar',
+        blocks: [
+          { type: 'info', html: '<p>Read the rule.</p>' },
+          { type: 'practice', title: 'Choose', questions: [
+            { id: 'q1', type: 'choice', prompt: 'He ___ ready.', options: ['is', 'are'], answer: 'is' },
+            { id: 'q2', type: 'choice', prompt: 'They ___ here.', options: ['is', 'are'], answer: 'are' },
+          ] },
+        ],
+      },
+      { id: 's2', order: 2, title: 'Writing', blocks: [{ type: 'info', html: '<p>Write five sentences.</p>' }] },
+    ],
+  }
+
+  const НАЗНАЧЕНИЕ = {
+    id: 9, materialId: 12, materialTitle: 'Unit 1 Review Test', materialType: 'LINK',
+    catalogLessonId: 314, cardId: null, cardTitle: null, wholeLesson: true,
+    submittedAt: null, autoCorrect: null, autoTotal: null, autoPercent: null, files: [],
+  }
+
+  const грузить = async () => PLAYABLE
+  const props = { catalogLessonId: 314, assignmentId: 9 }
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn()
+    globalThis.CSS = globalThis.CSS || { escape: (v) => v }
+    getCatalogLessonAnswers.mockResolvedValue({ progressJson: null })
+    getMyMaterialAssignments.mockClear()
+    getMyMaterialAssignments.mockResolvedValue([НАЗНАЧЕНИЕ])
+  })
+
+  it('задание открывается документом, хотя плеер этот урок осиливает', async () => {
+    const { container } = show(грузить, props)
+
+    await waitFor(() => expect(container.querySelector('.lw-doc')).toBeTruthy())
+    expect(container.querySelector('.cp')).toBeNull()
+    // Вкладки шагов на месте — урок остаётся уроком, а не рассыпается.
+    expect(container.querySelectorAll('.ls-tab')).toHaveLength(2)
+  })
+
+  it('тот же урок БЕЗ задания открывается как раньше — очередью экранов', async () => {
+    // Иначе правка задела бы обычное открытие урока из каталога.
+    const { container } = show(грузить, { catalogLessonId: 314 })
+
+    await waitFor(() => expect(container.querySelector('.cp')).toBeTruthy())
+    expect(container.querySelector('.lw-doc')).toBeNull()
+  })
+
+  it('экран достаёт своё назначение — и только его', async () => {
+    show(грузить, props)
+
+    await waitFor(() => expect(getMyMaterialAssignments).toHaveBeenCalledWith('TOK'))
+    // За типом урока экран в сеть не ходит вовсе: тип уже лежит на загруженном
+    // уроке (lesson.catalogType). Обёртки getCourseCatalogLesson в моке api.js
+    // нет — отдельный запрос за типом упал бы прямо здесь.
+    expect(getMyMaterialAssignments).toHaveBeenCalledTimes(1)
+  })
+
+  it('без задания в сеть за назначениями не ходит', async () => {
+    // Обычное открытие урока из каталога — назначения тут ни при чём.
+    show(грузить, { catalogLessonId: 314 })
+
+    await waitFor(() => expect(getCatalogLessonAnswers).toHaveBeenCalled())
+    expect(getMyMaterialAssignments).not.toHaveBeenCalled()
   })
 })
