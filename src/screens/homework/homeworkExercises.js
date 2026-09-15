@@ -66,7 +66,10 @@ export function exerciseBatches(hw) {
   const groups = new Map()
   for (const e of lessonExercises(hw)) {
     const key = e.batchId || `legacy-${e.catalogLessonId ?? 'none'}`
-    const group = groups.get(key) || { key, addedAt: e.addedAt || null, lessonTitle: e.lessonTitle || '', exercises: [] }
+    const group = groups.get(key)
+      // catalogLessonId — по нему экран спрашивает тип урока (юнит-тест или нет):
+      // все вопросы одного пакета из одного и того же урока, значит и ключ один.
+      || { key, addedAt: e.addedAt || null, lessonTitle: e.lessonTitle || '', catalogLessonId: e.catalogLessonId ?? null, exercises: [] }
     group.exercises.push(e)
     if (!group.addedAt && e.addedAt) group.addedAt = e.addedAt
     if (!group.lessonTitle && e.lessonTitle) group.lessonTitle = e.lessonTitle
@@ -171,6 +174,28 @@ export function isAnswered(value) {
   if (Array.isArray(value)) return value.length > 0
   if (typeof value === 'object') return Object.keys(value).length > 0
   return true
+}
+
+/**
+ * Юнит-тест каталога («review»/«test») кабинет проходит без ключей и одной
+ * сдачей на весь пакет — обычный урок остаётся тренажёром с проверкой по
+ * карточкам. Регистр не важен: сервер отдаёт имя enum'а («REVIEW»).
+ */
+export function isUnitTestType(type) {
+  return ['review', 'test'].includes(String(type ?? '').trim().toLowerCase())
+}
+
+/**
+ * Пакет юнит-теста сдан — все его вопросы уже подтверждены сервером.
+ *
+ * Отдельной колонки «сдано» под это заводить не пришлось: studentAnswer у
+ * каждого вопроса и так приходит после «Завершить тест», а до момента, пока
+ * ВСЕ вопросы пакета не подтверждены, эталоны остаются скрыты. Переживает
+ * перезагрузку страницы сам, без localStorage — источник истины сервер.
+ */
+export function batchFullyAnswered(batch) {
+  const exercises = batch?.exercises || []
+  return exercises.length > 0 && exercises.every((e) => e.studentAnswer != null)
 }
 
 /**
