@@ -2,13 +2,19 @@ import { describe, it, expect } from 'vitest'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { EMOTIONS, moodToEmotion } from './avatarEmotions.js'
+import { BUDDY_RIG } from './buddyRig.js'
 import { TUTORS } from './tutors.js'
 
 describe('avatarEmotions', () => {
-  it('у каждой эмоции есть подпись и картинка, которая лежит в public', () => {
-    for (const [key, { label, src }] of Object.entries(EMOTIONS)) {
+  it('у каждой эмоции есть подпись и набор слоёв с телом, файлы лежат в public', () => {
+    for (const [key, { label }] of Object.entries(EMOTIONS)) {
       expect(label, `${key} без label`).toBeTruthy()
-      expect(existsSync(join(process.cwd(), 'public', src)), `${key}: нет файла ${src}`).toBe(true)
+      const rig = BUDDY_RIG[key]
+      expect(rig, `${key}: нет слоёв`).toBeDefined()
+      expect(rig.layers[0].part, `${key}: первым слоем должно идти тело`).toBe('base')
+      for (const { src } of rig.layers) {
+        expect(existsSync(join(process.cwd(), 'public', src)), `${key}: нет файла ${src}`).toBe(true)
+      }
     }
   })
 

@@ -1,29 +1,23 @@
-// Словарь эмоций аватара тьютора: ключ → готовый рендер из Figma.
-//
-// Лицо — картинка, а не рисунок в коде. Источник — component set «Speaking
-// Buddy» (файл HbXfjz582soaO4UzzbwBBa, node 5080:1807, страница «АВАТАР
-// ТЬЮТОРА»): каждая карточка выгружена exportAsync PNG ×2 и уложена на общий
-// холст так, что центр рамки 428×428 у всех 13 в одной точке — иначе при смене
-// эмоции маскот прыгал бы (у карточек разный вылет свечения и значков).
-// Раньше лицо рисовал canvas-движок по числам «похоже на макет», и это
-// оказалось не то: наклон тела, подложки, свечение и значки руками не
-// совпадали. Меняется карточка в Figma — перевыгружай картинку, а не правь код.
+// Эмоции аватара тьютора. Лицо — готовые рендеры карточек Figma «Speaking
+// Buddy», разобранные на слои (см. buddyRig.js), а не рисунок в коде: прежний
+// canvas-движок рисовал «похоже на макет», и наклон тела, подложки, свечение и
+// значки руками не совпадали. Меняется карточка в Figma — перевыгружай слои.
 //
 // label — подпись для aria-label, ровно как вариант называется в макете.
 export const EMOTIONS = {
-  idle: { label: 'Дефолт', src: '/tutor/buddy/idle.webp' },
-  confused: { label: 'Не понимает', src: '/tutor/buddy/confused.webp' },
-  talking: { label: 'Говорит', src: '/tutor/buddy/talking.webp' },
-  listening: { label: 'Слушает', src: '/tutor/buddy/listening.webp' },
-  thinking: { label: 'Думает', src: '/tutor/buddy/thinking.webp' },
-  happy: { label: 'Счастлив', src: '/tutor/buddy/happy.webp' },
-  celebrate: { label: 'Радуется', src: '/tutor/buddy/celebrate.webp' },
-  angry: { label: 'Злится', src: '/tutor/buddy/angry.webp' },
-  sleepy: { label: 'Скука', src: '/tutor/buddy/sleepy.webp' },
-  gloat: { label: 'Соркастичен', src: '/tutor/buddy/gloat.webp' },
-  surprised: { label: 'Удивление', src: '/tutor/buddy/surprised.webp' },
-  sympathy: { label: 'Сочувствие', src: '/tutor/buddy/sympathy.webp' },
-  rage: { label: 'Ярость', src: '/tutor/buddy/rage.webp' },
+  idle: { label: 'Дефолт' },
+  confused: { label: 'Не понимает' },
+  talking: { label: 'Говорит' },
+  listening: { label: 'Слушает' },
+  thinking: { label: 'Думает' },
+  happy: { label: 'Счастлив' },
+  celebrate: { label: 'Радуется' },
+  angry: { label: 'Злится' },
+  sleepy: { label: 'Скука' },
+  gloat: { label: 'Соркастичен' },
+  surprised: { label: 'Удивление' },
+  sympathy: { label: 'Сочувствие' },
+  rage: { label: 'Ярость' },
 }
 
 // Имя от агента (топик "mood") → ключ картинки. Именно Map, а не литерал:

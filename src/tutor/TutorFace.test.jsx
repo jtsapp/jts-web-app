@@ -3,39 +3,48 @@ import { describe, it, expect } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import TutorFace from './TutorFace.jsx'
 
-const shownSrc = (container) => container.querySelector('.t-face__img.is-on').getAttribute('src')
-const img = (container, key) => container.querySelector(`img[src="/tutor/buddy/${key}.webp"]`)
+const shownKey = (container) =>
+  [...container.querySelector('.t-face__stack.is-on').classList].find((c) => c.startsWith('t-face--')).slice(8)
+const body = (container, key) => container.querySelector(`.t-face--${key} .t-face__layer--base`)
 
 describe('TutorFace', () => {
   it('на первом кадре сразу показывает запрошенную эмоцию', () => {
     const { container, getByRole } = render(<TutorFace emotion="angry" />)
-    expect(shownSrc(container)).toBe('/tutor/buddy/angry.webp')
+    expect(shownKey(container)).toBe('angry')
     expect(getByRole('img').getAttribute('aria-label')).toBe('Злится')
   })
 
   it('незнакомый ключ показывает дефолт', () => {
     const { container } = render(<TutorFace emotion="nope" />)
-    expect(shownSrc(container)).toBe('/tutor/buddy/idle.webp')
+    expect(shownKey(container)).toBe('idle')
+  })
+
+  it('рисует все слои карточки, а не одну картинку', () => {
+    const { container } = render(<TutorFace emotion="sleepy" />)
+    const parts = [...container.querySelectorAll('.t-face--sleepy .t-face__layer')].map((el) =>
+      [...el.classList].find((c) => c.startsWith('t-face__layer--')).slice(15)
+    )
+    expect(parts).toEqual(['base', 'eyes', 'z1', 'z2', 'z3'])
   })
 
   it('держит прежнее лицо, пока новое не догрузилось', () => {
     const { container, rerender } = render(<TutorFace emotion="idle" />)
     rerender(<TutorFace emotion="happy" />)
-    expect(shownSrc(container)).toBe('/tutor/buddy/idle.webp')
+    expect(shownKey(container)).toBe('idle')
 
-    fireEvent.load(img(container, 'happy'))
-    expect(shownSrc(container)).toBe('/tutor/buddy/happy.webp')
+    fireEvent.load(body(container, 'happy'))
+    expect(shownKey(container)).toBe('happy')
   })
 
   it('пока тьютор говорит — «Говорит», замолчал — снова его эмоция', () => {
     const { container, rerender } = render(<TutorFace emotion="angry" />)
-    fireEvent.load(img(container, 'angry'))
+    fireEvent.load(body(container, 'angry'))
 
     rerender(<TutorFace emotion="angry" speaking />)
-    fireEvent.load(img(container, 'talking'))
-    expect(shownSrc(container)).toBe('/tutor/buddy/talking.webp')
+    fireEvent.load(body(container, 'talking'))
+    expect(shownKey(container)).toBe('talking')
 
     rerender(<TutorFace emotion="angry" speaking={false} />)
-    expect(shownSrc(container)).toBe('/tutor/buddy/angry.webp')
+    expect(shownKey(container)).toBe('angry')
   })
 })
