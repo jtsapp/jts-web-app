@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 vi.mock('../api.js', () => ({
@@ -420,5 +420,168 @@ describe('урок, заданный на дом целиком', () => {
 
     await waitFor(() => expect(getCatalogLessonAnswers).toHaveBeenCalled())
     expect(getMyMaterialAssignments).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Юнит-тест на дом: эталоны скрыты до сдачи, сдача одна.
+ *
+ * Обычный урок остаётся тренажёром — покарточная «Проверить» с ключами, как
+ * сейчас. Разница между ними одна: тип урока каталога.
+ */
+describe('режим теста и сдача', () => {
+  // Тип каталога едет НА УРОКЕ: его кладёт loadCatalogLesson из ответа
+  // содержимого урока (задача 6). Здесь загрузчик подменён, и режим теста
+  // включается ровно тем же полем, что и в жизни, — без отдельного запроса.
+  const УРОК = {
+    id: 314,
+    title: 'Unit 1 Review Test',
+    catalogType: 'REVIEW',
+    steps: [{
+      id: 's1', order: 1, title: 'Grammar',
+      blocks: [{ type: 'practice', title: 'Choose', questions: [
+        { id: 'q1', type: 'choice', prompt: 'He ___ ready.', options: ['is', 'are'], answer: 'is' },
+        { id: 'q2', type: 'choice', prompt: 'They ___ here.', options: ['is', 'are'], answer: 'are' },
+      ] }],
+    }],
+  }
+
+  const НАЗНАЧЕНИЕ = {
+    id: 9, materialId: 12, materialTitle: 'Unit 1 Review Test', materialType: 'LINK',
+    catalogLessonId: 314, cardId: null, wholeLesson: true,
+    submittedAt: null, autoCorrect: null, autoTotal: null, autoPercent: null, files: [],
+  }
+
+  // Ответ сервера на сдачу: он и считает процент, и хранит пару чисел, из
+  // которой посчитал. Кабинет показывает ученику процент (§8 спеки), но поля
+  // приезжают все — имена держим здесь, чтобы разъезд контракта было видно.
+  const СДАНО = {
+    ...НАЗНАЧЕНИЕ, submittedAt: '2026-09-15T10:00:00', autoCorrect: 1, autoTotal: 2, autoPercent: 50,
+  }
+
+  const грузить = async () => УРОК
+  const props = { catalogLessonId: 314, assignmentId: 9 }
+
+  // q1 и q2 делят один пул вариантов ('is'/'are') — getByText('is') без
+  // скоупа зацепит обе карточки разом. Скоуп на первую практик-карточку —
+  // то есть ровно на q1 («He ___ ready.», верный ответ 'is').
+  const q1 = (container) => within(container.querySelectorAll('.lw-q--choice')[0])
+
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn()
+    globalThis.CSS = globalThis.CSS || { escape: (v) => v }
+    getCatalogLessonAnswers.mockResolvedValue({ progressJson: null })
+    getMyMaterialAssignments.mockResolvedValue([НАЗНАЧЕНИЕ])
+    submitAssignment.mockReset()
+  })
+
+  it('у теста одна кнопка сдачи вместо покарточных «Проверить»', async () => {
+    const { container } = show(грузить, props)
+
+    expect(await screen.findByRole('button', { name: 'Завершить тест' })).toBeTruthy()
+    expect(container.querySelectorAll('.lw-practice__check')).toHaveLength(0)
+    // И сказано, почему ключей не видно: иначе ученик ищет «Проверить» глазами.
+    expect(container.textContent).toContain('ответы откроются после сдачи')
+  })
+
+  it('у обычного урока покарточная проверка остаётся, а сдача называется сдачей', async () => {
+    // Разница между тестом и тренажёром — одно поле типа на самом уроке.
+    const { container } = show(async () => ({ ...УРОК, catalogType: 'LESSON' }), props)
+
+    expect(await screen.findByRole('button', { name: 'Сдать урок' })).toBeTruthy()
+    await waitFor(() => expect(container.querySelectorAll('.lw-practice__check')).toHaveLength(1))
+  })
+
+  it('до первого ответа сдавать нечего — кнопка мертва', async () => {
+    show(грузить, props)
+
+    const кнопка = await screen.findByRole('button', { name: 'Завершить тест' })
+    expect(кнопка.disabled).toBe(true)
+    fireEvent.click(кнопка)
+    expect(submitAssignment).not.toHaveBeenCalled()
+  })
+
+  it('у теста эталоны до сдачи не видны', async () => {
+    const { container } = show(грузить, props)
+    await screen.findByRole('button', { name: 'Завершить тест' })
+
+    // Отвечаем неверно и убеждаемся, что ключ не проступил: карточка не
+    // проверена, а showAnswerKey у теста выключен.
+    fireEvent.click(q1(container).getByText('are'))
+    expect(container.querySelectorAll('.lw-opt.is-ok')).toHaveLength(0)
+    expect(container.querySelectorAll('.lw-opt.is-no')).toHaveLength(0)
+  })
+
+  it('сдача уходит парой {correct, total} по фактическим ответам', async () => {
+    submitAssignment.mockResolvedValue(СДАНО)
+    const { container } = show(грузить, props)
+    await screen.findByRole('button', { name: 'Завершить тест' })
+
+    // Один верный из двух: q1 отвечен верно, q2 не отвечен вовсе.
+    fireEvent.click(q1(container).getByText('is'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Завершить тест' }))
+
+    await waitFor(() => expect(submitAssignment).toHaveBeenCalledWith('TOK', 9, { correct: 1, total: 2 }))
+  })
+
+  it('после сдачи ученик видит результат, а ответы больше не принимаются', async () => {
+    submitAssignment.mockResolvedValue(СДАНО)
+    const { container } = show(грузить, props)
+    await screen.findByRole('button', { name: 'Завершить тест' })
+
+    fireEvent.click(q1(container).getByText('is'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Завершить тест' }))
+
+    expect(await screen.findByText(/50% верно/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Завершить тест' })).toBeNull()
+    // Варианты заперты, и ключи теперь открыты: тест позади, прятать нечего.
+    await waitFor(() => expect(container.querySelector('.lw-opt').disabled).toBe(true))
+    expect(container.querySelectorAll('.lw-opt.is-ok').length).toBeGreaterThan(0)
+  })
+
+  it('уже сданное задание открывается только на чтение', async () => {
+    getMyMaterialAssignments.mockResolvedValue([
+      { ...НАЗНАЧЕНИЕ, submittedAt: '2026-09-15T10:00:00', autoCorrect: 42, autoTotal: 54, autoPercent: 78 },
+    ])
+    const { container } = show(грузить, props)
+
+    expect(await screen.findByText(/78% верно/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Завершить тест' })).toBeNull()
+    await waitFor(() => expect(container.querySelector('.lw-opt').disabled).toBe(true))
+  })
+
+  /**
+   * ВОЗВРАТ НА ДОРАБОТКУ. Преподаватель проверил, вернул работу, и сервер снял
+   * submittedAt с auto_*-полями, а балл с gradedAt оставил. Сдачу запирает
+   * ТОЛЬКО submittedAt — и на сервере тоже: у ручки сдачи свой гвард, оценку он
+   * не смотрит намеренно. Начни экран смотреть на оценку — ученик после
+   * возврата не сдал бы вовсе: балл стоит, а работа не двигается.
+   */
+  it('возвращённая на доработку работа снова сдаётся, хотя балл уже стоит', async () => {
+    getMyMaterialAssignments.mockResolvedValue([
+      { ...НАЗНАЧЕНИЕ, submittedAt: null, autoCorrect: null, autoTotal: null, autoPercent: null,
+        teacherScore: 3, gradedAt: '2026-09-16T10:00:00' },
+    ])
+    submitAssignment.mockResolvedValue({ ...СДАНО, teacherScore: 3, gradedAt: '2026-09-16T10:00:00' })
+    const { container } = show(грузить, props)
+    await screen.findByRole('button', { name: 'Завершить тест' })
+
+    fireEvent.click(q1(container).getByText('is'))
+    // И эталоны снова скрыты: работа опять впереди, а не позади.
+    expect(container.querySelectorAll('.lw-opt.is-ok')).toHaveLength(0)
+    fireEvent.click(await screen.findByRole('button', { name: 'Завершить тест' }))
+
+    await waitFor(() => expect(submitAssignment).toHaveBeenCalledWith('TOK', 9, { correct: 1, total: 2 }))
+  })
+
+  it('отказ сервера объясняется словами, а не молчанием', async () => {
+    submitAssignment.mockRejectedValue(Object.assign(new Error('bad request'), { status: 400 }))
+    const { container } = show(грузить, props)
+    await screen.findByRole('button', { name: 'Завершить тест' })
+
+    fireEvent.click(q1(container).getByText('is'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Завершить тест' }))
+
+    expect(await screen.findByText(/уже сдана/)).toBeTruthy()
   })
 })

@@ -15,8 +15,14 @@ import SystemBanner from './workspace/SystemBanner.jsx'
 import { cardTarget } from '../lib/lessonCardTarget.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
-import { getCatalogLessonAnswers, saveCatalogLessonAnswers, getMyMaterialAssignments } from '../api.js'
+import { getCatalogLessonAnswers, saveCatalogLessonAnswers, getMyMaterialAssignments, submitAssignment } from '../api.js'
 import { ChevronLeftIcon, ChevronRightIcon } from '../components/icons.jsx'
+import {
+  countLessonAnswers,
+  answeredCount,
+  lessonQuestions,
+  isUnitTestType,
+} from './workspace/lessonSubmission.js'
 
 /**
  * Файл курса умеет три варианта одного урока и выбирает их по `?mode=` —
@@ -100,6 +106,52 @@ function DocNav({ steps, currentId, onGo }) {
           <ChevronRightIcon size={16} />
         </button>
       )}
+    </div>
+  )
+}
+
+/**
+ * Сдача урока, заданного на дом.
+ *
+ * Кнопка одна на весь урок — и у теста, и у обычного урока. У теста она
+ * называется концом теста и стоит вместо покарточных «Проверить»: эталоны
+ * скрыты до сдачи, и проверять по одной карточке там нечего. У обычного урока
+ * покарточная проверка остаётся, а эта кнопка добавляется к ней.
+ *
+ * Сдав, ученик видит процент. Это не оценка: оценку по решению владельца ставит
+ * преподаватель, и об этом здесь сказано прямо — иначе «50%» читается приговором.
+ */
+function SubmitBar({ unitTest, submitted, percent, answered, total, busy, error, onSubmit }) {
+  const { t } = useI18n()
+
+  if (submitted) {
+    return (
+      <div className="lw-submit" data-testid="lesson-submit">
+        <SystemBanner icon="✓" text={t('lesson.ws.submitted', { percent: String(percent ?? 0) })} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="lw-submit" data-testid="lesson-submit">
+      {unitTest && <p className="lw-submit__hint">{t('lesson.ws.testNoKeys')}</p>}
+      <div className="lw-submit__row">
+        <button
+          type="button"
+          className="lw-submit__btn"
+          // Пустая сдача ставит «сдано» на работе, в которой проверять нечего, а
+          // переоткрыть её ученик сам не может — сдача одна.
+          disabled={busy || answered === 0 || total === 0}
+          title={answered === 0 ? t('lesson.ws.submitEmpty') : undefined}
+          onClick={onSubmit}
+        >
+          {busy ? t('lesson.ws.submitting') : t(unitTest ? 'lesson.ws.finishTest' : 'lesson.ws.submitLesson')}
+        </button>
+        <span className="lw-submit__count">
+          {t('lesson.ws.answeredCount', { answered: String(answered), total: String(total) })}
+        </span>
+      </div>
+      {error && <p className="lw-submit__error" role="status">{error}</p>}
     </div>
   )
 }
@@ -338,6 +390,57 @@ export default function LessonWorkspacePage({
     })
   }, [persistDoc, docAnswers, docStepId])
 
+  // Три режима показа документа, все — из одного вопроса «что это за задание».
+  //
+  // Юнит-тест: эталоны скрыты до сдачи, покарточной проверки нет вовсе.
+  // Обычный урок: тренажёр как был, плюс кнопка сдачи.
+  // Сданное: только чтение, ключи открыты — прятать больше нечего.
+  //
+  // «Сдано» — это submittedAt и ничего кроме. Возврат на доработку снимает его
+  // вместе с auto_*-полями, а балл с gradedAt оставляет: смотри мы на оценку,
+  // возвращённая работа осталась бы заперта, и возврат стал бы тупиком.
+  const submitted = assignment?.submittedAt != null
+  const unitTest = isUnitTestType(lessonType)
+  const docReadOnly = submitted
+  const docShowAnswerKey = submitted || !unitTest
+  const docAllowCheck = !unitTest && !submitted
+
+  const [submitBusy, setSubmitBusy] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
+
+  const submitLesson = useCallback(async () => {
+    if (assignmentId == null || submitBusy) return
+    const score = countLessonAnswers(lesson, docAnswers)
+    // Сервер отбивает total < 1 четырёхсотым; кнопка и так мертва, но считать
+    // её единственной защитой нельзя — режимы показа меняются на лету.
+    if (score.total < 1) return
+
+    setSubmitError(null)
+    setSubmitBusy(true)
+    try {
+      // Черновик уезжает ДО сдачи: дебаунс мог держать последний ответ, а
+      // преподаватель откроет работу сразу после уведомления о сдаче.
+      saverRef.current.flush(true)
+      const updated = await submitAssignment(token, assignmentId, score)
+      setAssignment(updated)
+      // Сдав, ученик должен увидеть, где ошибся. Ключи открываются только на
+      // ПРОВЕРЕННЫХ вопросах (см. ChoiceQuestion), поэтому помечаем все разом —
+      // иначе после сдачи экран показывал бы голые ответы без вердикта.
+      setDocChecked((prev) => {
+        const next = new Set(prev)
+        lessonQuestions(lesson).forEach((q) => next.add(q.id))
+        persistDoc({ answers: docAnswers, checkedSteps: next, stepId: docStepId })
+        return next
+      })
+    } catch (e) {
+      // Повторная сдача — 400. «Попробуйте ещё раз» здесь не поможет никогда:
+      // открыть работу заново может только преподаватель.
+      setSubmitError(t(e?.status === 400 ? 'lesson.ws.alreadySubmitted' : 'lesson.ws.submitFailed'))
+    } finally {
+      setSubmitBusy(false)
+    }
+  }, [assignmentId, submitBusy, lesson, docAnswers, docChecked, docStepId, persistDoc, token, t])
+
   // Дебаунс не даёт права потерять последнее сделанное: и уход с экрана, и
   // усыпление вкладки дописывают то, что не успело уйти. `pagehide`, а не
   // `beforeunload` — на телефонах и в Safari вкладку усыпляют без второго
@@ -473,7 +576,7 @@ export default function LessonWorkspacePage({
                 checkedKeys={docChecked}
                 onAnswer={handleDocAnswer}
                 onCheck={handleDocCheck}
-                readOnly={false}
+                readOnly={docReadOnly}
                 token={token}
                 source={lesson?.title}
                 catalogLessonId={catalogLessonId}
@@ -483,7 +586,25 @@ export default function LessonWorkspacePage({
                    в домашке указки нет вовсе, и на карточке practice с
                    непроверяемыми вопросами он соврал бы ученику. */
                 focusCardId={target?.anchorId ?? null}
+                showAnswerKey={docShowAnswerKey}
+                allowCheck={docAllowCheck}
               />
+              {/* Сдача — под лентой блоков и НАД переходом к соседнему шагу:
+                  ученик дочитывает шаг и решает, сдавать или идти дальше.
+                  Панель есть только у задания: урок, открытый из каталога,
+                  сдавать некуда. */}
+              {assignmentId != null && (
+                <SubmitBar
+                  unitTest={unitTest}
+                  submitted={submitted}
+                  percent={assignment?.autoPercent}
+                  answered={answeredCount(lesson, docAnswers)}
+                  total={countLessonAnswers(lesson, docAnswers).total}
+                  busy={submitBusy}
+                  error={submitError}
+                  onSubmit={submitLesson}
+                />
+              )}
               <DocNav steps={lesson.steps} currentId={docStep?.id} onGo={goDocStep} />
             </div>
           ) : (

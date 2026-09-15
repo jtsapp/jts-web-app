@@ -5324,3 +5324,66 @@ button.lw-tap-pop__save.is-on:disabled {
   .ls-follow__text { display: none; }
 }
 
+
+/* Сдача урока, заданного на дом. Ширина та же, что у перехода между шагами
+   (.lw-doc__nav), — панель читается частью ленты урока, а не всплывшим
+   диалогом. */
+.lw-submit {
+  max-width: 940px;
+  margin: 28px auto 0;
+  padding: 16px;
+  border-radius: var(--lw-r-block);
+  background: var(--lw-surface);
+}
+
+.lw-submit__hint {
+  margin: 0 0 12px;
+  color: var(--lw-muted);
+  font-size: calc(14px * var(--lw-text-scale, 1));
+}
+
+.lw-submit__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.lw-submit__btn {
+  border: none;
+  border-radius: var(--lw-r-pill);
+  padding: 13px 26px;
+  background: var(--lw-primary);
+  color: #ffffff;
+  font: inherit;
+  font-size: calc(15px * var(--lw-text-scale, 1));
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.lw-submit__btn:hover:enabled {
+  background: var(--lw-primary-ink);
+}
+
+.lw-submit__btn:focus-visible {
+  outline: 2px solid var(--lw-primary);
+  outline-offset: 2px;
+}
+
+.lw-submit__btn:disabled {
+  background: var(--lw-track);
+  color: var(--lw-muted);
+  cursor: default;
+}
+
+.lw-submit__count {
+  color: var(--lw-muted);
+  font-size: calc(14px * var(--lw-text-scale, 1));
+}
+
+.lw-submit__error {
+  margin: 12px 0 0;
+  color: var(--lw-error);
+  font-size: calc(14px * var(--lw-text-scale, 1));
+}
