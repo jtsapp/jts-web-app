@@ -7745,6 +7745,11 @@ textarea {
 .hw-submit:disabled { background: #ece9f5; color: #8b8a97; cursor: default; }
 .hw-submit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
+/* «Завершить тест» — сдача одного пакета, не всей работы: меньше и без
+   растяжения на всю ширину секции, чтобы не путаться с «Отправить на
+   проверку» внизу страницы. */
+.hw-submit--batch { margin-top: 14px; padding: 10px 20px; font-size: 14px; }
+
 .hw-block--review { background: #f7f4ff; border-radius: 16px; padding: 16px; border-top: 0; }
 .hw-grade { display: flex; align-items: baseline; gap: 10px; }
 .hw-grade__num { font-size: 32px; font-weight: 800; color: var(--purple); line-height: 1; }
