@@ -19,14 +19,14 @@ import { BUDDY_RIG } from './buddyRig.js'
  * нужны все 13 наборов.
  *
  * @param emotion   ключ из EMOTIONS; незнакомый → idle
- * @param speaking  тьютор озвучивает реплику: пока true, на лице «Говорит»
- *                  поверх эмоции агента — решение по продукту под карточку
- *                  макета; как только замолчал, возвращается его эмоция
+ * @param speaking  тьютор озвучивает реплику: на лице «Говорит», если текущая
+ *                  эмоция не из тех, что держатся во время речи (speaks в
+ *                  EMOTIONS); как только замолчал, возвращается его эмоция
  * @param className класс обёртки: размер задаёт вёрстка (см. .t-voice__face)
  */
 export default function TutorFace({ emotion = 'idle', speaking = false, className = 't-voice__face' }) {
-  const asked = speaking ? 'talking' : emotion
-  const want = EMOTIONS[asked] ? asked : 'idle'
+  const known = EMOTIONS[emotion] ? emotion : 'idle'
+  const want = speaking && !EMOTIONS[known].speaks ? 'talking' : known
 
   // Однажды запрошенные наборы не размонтируем: повторная смена на них
   // мгновенная, файлы уже декодированы.

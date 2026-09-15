@@ -36,15 +36,28 @@ describe('TutorFace', () => {
     expect(shownKey(container)).toBe('happy')
   })
 
-  it('пока тьютор говорит — «Говорит», замолчал — снова его эмоция', () => {
-    const { container, rerender } = render(<TutorFace emotion="angry" />)
-    fireEvent.load(body(container, 'angry'))
+  it('обычная эмоция на время речи уступает «Говорит», замолчал — возвращается', () => {
+    const { container, rerender } = render(<TutorFace emotion="confused" />)
+    fireEvent.load(body(container, 'confused'))
 
-    rerender(<TutorFace emotion="angry" speaking />)
+    rerender(<TutorFace emotion="confused" speaking />)
     fireEvent.load(body(container, 'talking'))
     expect(shownKey(container)).toBe('talking')
 
-    rerender(<TutorFace emotion="angry" speaking={false} />)
-    expect(shownKey(container)).toBe('angry')
+    rerender(<TutorFace emotion="confused" speaking={false} />)
+    expect(shownKey(container)).toBe('confused')
+  })
+
+  it('сильная эмоция держится на лице, пока тьютор говорит', () => {
+    for (const key of ['happy', 'celebrate', 'sympathy', 'gloat', 'angry', 'rage']) {
+      const { container, unmount } = render(<TutorFace emotion={key} speaking />)
+      expect(shownKey(container), key).toBe(key)
+      unmount()
+    }
+  })
+
+  it('без эмоции речь показывает «Говорит» с первого кадра', () => {
+    const { container } = render(<TutorFace emotion="idle" speaking />)
+    expect(shownKey(container)).toBe('talking')
   })
 })
