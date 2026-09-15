@@ -21,8 +21,9 @@
  * @param liveLessonId   id живого урока — у экрана «Живой урок»
  * @param liveWorkspaceId id урока каталога — у экрана урока
  * @param workspaceCardId адрес карточки, заданной на дом
- * @returns `{ screen, live, catalog, card }`, где null — «этого параметра быть
- *          не должно»
+ * @param workspaceAssignmentId номер задания, по которому открыт урок целиком
+ * @returns `{ screen, live, catalog, card, assignment }`, где null — «этого
+ *          параметра быть не должно»
  */
 export function screenUrlParams({
   screen,
@@ -30,8 +31,9 @@ export function screenUrlParams({
   liveLessonId = null,
   liveWorkspaceId = null,
   workspaceCardId = null,
+  workspaceAssignmentId = null,
 } = {}) {
-  const params = { screen: null, live: null, catalog: null, card: null }
+  const params = { screen: null, live: null, catalog: null, card: null, assignment: null }
 
   const isLiveLesson = screen === 'live-lesson' && liveLessonId != null
   // Карточка урока, заданная на дом: на неё ведёт ссылка из домашней работы, и
@@ -41,15 +43,19 @@ export function screenUrlParams({
   // PERSISTABLE_SCREENS и не входит.
   const isCardWorkspace =
     screen === 'lesson-workspace' && Boolean(workspaceCardId) && liveWorkspaceId != null
+  // Урок, заданный на дом целиком: карточки у него нет, а пережить F5 он обязан
+  // тем более — это урок на полсотни вопросов, и без номера задания после
+  // обновления страницы ученику некуда сдавать.
+  const isAssignedWorkspace =
+    screen === 'lesson-workspace' && workspaceAssignmentId != null && liveWorkspaceId != null
 
-  if (!(persists || isLiveLesson || isCardWorkspace)) return params
+  if (!(persists || isLiveLesson || isCardWorkspace || isAssignedWorkspace)) return params
 
   params.screen = screen
   if (isLiveLesson) params.live = String(liveLessonId)
-  if (isCardWorkspace) {
-    params.catalog = String(liveWorkspaceId)
-    params.card = String(workspaceCardId)
-  }
+  if (isCardWorkspace || isAssignedWorkspace) params.catalog = String(liveWorkspaceId)
+  if (isCardWorkspace) params.card = String(workspaceCardId)
+  if (isAssignedWorkspace) params.assignment = String(workspaceAssignmentId)
   return params
 }
 

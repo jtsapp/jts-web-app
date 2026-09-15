@@ -6,7 +6,7 @@ import { screenUrlParams, applyScreenUrlParams } from './screenUrlParams.js'
  * из-за неё ученик посреди живого урока улетал на главную. Поэтому решение и
  * вынесено из эффекта в чистую функцию.
  */
-const пусто = { screen: null, live: null, catalog: null, card: null }
+const пусто = { screen: null, live: null, catalog: null, card: null, assignment: null }
 
 describe('параметры адреса по экрану', () => {
   it('обычный экран пишется одним ?screen=', () => {
@@ -36,7 +36,7 @@ describe('параметры адреса по экрану', () => {
   it('урок с карточкой пишется полным адресом', () => {
     expect(screenUrlParams({
       screen: 'lesson-workspace', persists: false, liveWorkspaceId: 314, workspaceCardId: 'cad401560',
-    })).toEqual({ screen: 'lesson-workspace', live: null, catalog: '314', card: 'cad401560' })
+    })).toEqual({ ...пусто, screen: 'lesson-workspace', catalog: '314', card: 'cad401560' })
   })
 
   it('урок без карточки в адрес не едет — это обычное открытие из каталога', () => {
@@ -46,6 +46,22 @@ describe('параметры адреса по экрану', () => {
 
   it('карточка без урока — тоже не едет: искать её негде', () => {
     expect(screenUrlParams({ screen: 'lesson-workspace', persists: false, workspaceCardId: 'cad401560' }))
+      .toEqual(пусто)
+  })
+
+  /**
+   * Урок, заданный на дом ЦЕЛИКОМ, карточки не имеет вовсе — и всё равно обязан
+   * пережить F5: это урок на 54 вопроса, ученик обновит страницу не раз, и
+   * потерять после этого кнопку сдачи нельзя.
+   */
+  it('урок с заданием пишется уроком и номером задания', () => {
+    expect(screenUrlParams({
+      screen: 'lesson-workspace', persists: false, liveWorkspaceId: 314, workspaceAssignmentId: 9,
+    })).toEqual({ ...пусто, screen: 'lesson-workspace', catalog: '314', assignment: '9' })
+  })
+
+  it('задание без урока в адрес не едет: открывать нечего', () => {
+    expect(screenUrlParams({ screen: 'lesson-workspace', persists: false, workspaceAssignmentId: 9 }))
       .toEqual(пусто)
   })
 
