@@ -8036,6 +8036,43 @@ textarea {
   gap: 12px;
 }
 
+.hw-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Запись и текст, к которым относятся задания группы. Стоят НАД ними и один раз:
+   в снимке контекст лежит у каждого вопроса, но восемь одинаковых статей на
+   экране утопили бы само задание. */
+.hw-context {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f7f4ff;
+}
+
+.hw-context__audio {
+  width: 100%;
+}
+
+.hw-context__article {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink);
+  /* `break-word`, а не `anywhere`: последний опускает min-content текста до
+     одного символа, и любой контейнер, чья ширина выводится из содержимого,
+     схлопывается в колонку по букве (см. src/textCollapse.test.js). Здесь
+     родитель — колоночный flex и ширину отбирать некому, но правило одно на всё
+     приложение: исключения объявляются в сторо́же и с причиной. */
+  overflow-wrap: break-word;
+}
+
+.hw-context__article p { margin: 0 0 8px; }
+.hw-context__article p:last-child { margin-bottom: 0; }
+
 .hw-exercises__count {
   flex: none;
   font-size: 13px;

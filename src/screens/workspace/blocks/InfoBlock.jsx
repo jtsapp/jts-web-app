@@ -80,7 +80,10 @@ function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId,
       {audioSrc && (
         <audio className="lw-practice__audio" controls preload="none" src={audioSrc} />
       )}
-      {html && <div className="lw-info__body" ref={bodyRef} />}
+      {/* Банк слов внутри курсовой разметки нажатия при readOnly просто глотает
+          (bindWordBank), а плашки остаются белыми и живыми на вид. Метим
+          контейнер — дальше гасит CSS. */}
+      {html && <div className={`lw-info__body${readOnly ? ' is-locked' : ''}`} ref={bodyRef} />}
     </div>
   )
 }

@@ -84,7 +84,10 @@ export default function OrderQuestion({ question, answer, checked, onAnswer, rea
             <button
               key={`${word}-${i}`}
               type="button"
-              className="lw-ochip"
+              // Снаружи закрытый банк слов красим так же, как варианты выбора:
+              // собранное предложение остаётся в своём виде — это работа
+              // ученика, а не подсказка, которую надо гасить.
+              className={`lw-ochip${readOnly ? ' is-locked' : ''}`}
               disabled={checked || readOnly}
               onClick={() => pick(word, i)}
             >
