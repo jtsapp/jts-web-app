@@ -42,7 +42,7 @@ const QUESTION_BY_TYPE = {
 export default function PracticeBlock({
   block, answers, checked, checkedKeys, cardKey, stepTitle, onAnswer, onCheck, readOnly,
   liveQuestionId, onWord, gapPrefix, cardAnchorId, status, highlighted, number,
-  showAnswerKey = true, allowCheck = true,
+  showAnswerKey = true, allowCheck = true, lockNote = '',
 }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
@@ -72,11 +72,18 @@ export default function PracticeBlock({
   const canCheckQuestions = questions.some((q) => hasAttempt(q, answers?.[q.id]))
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
+  const hasAnswerable = questions.length > 0 || hasWbCheck
   // `allowCheck` — не то же, что `readOnly`. В юнит-тесте, заданном на дом,
   // ученик отвечает свободно, но проверить по одной карточке не может: эталоны
   // скрыты до сдачи, а сдача одна и общая на весь урок. Запрети мы это через
   // readOnly — вместе с кнопкой заперся бы и ввод.
-  const showCheck = allowCheck && !readOnly && (questions.length > 0 || hasWbCheck)
+  const showCheck = allowCheck && !readOnly && hasAnswerable
+  // Почему карточка молчит. Баннер урока висит наверху страницы, и ученик,
+  // доскроллив до задания, его уже не видит: «Проверить» просто исчезает, а
+  // варианты перестают нажиматься без единого слова. Причина должна быть в
+  // самой карточке — и до вопросов, а не под ними, иначе в длинном задании она
+  // окажется там же за экраном.
+  const showLockNote = readOnly && hasAnswerable && Boolean(lockNote)
 
   const [wbScore, setWbScore] = useState(null)
   // Пропуск, в который уедет следующее слово из банка.
@@ -225,12 +232,18 @@ export default function PracticeBlock({
       {block?.audio?.src && (
         <audio ref={audioRef} className="lw-practice__audio" controls preload="none" src={block.audio.src} />
       )}
-      {html && <div className="lw-practice__html" ref={htmlRef} />}
+      {html && <div className={`lw-practice__html${readOnly ? ' is-locked' : ''}`} ref={htmlRef} />}
 
       {/* «Верного ответа нет» — правило всего упражнения, а не каждого пункта:
           в разминке их десяток подряд, и десять одинаковых строк прячут сами
           вопросы. */}
       {hasPick && <p className="lw-pick__hint">{t('lesson.ws.pickHint')}</p>}
+
+      {showLockNote && (
+        <p className="lw-practice__locked" role="status">
+          {lockNote}
+        </p>
+      )}
 
       <div className="lw-practice__list">
         {questions.map((question) => {

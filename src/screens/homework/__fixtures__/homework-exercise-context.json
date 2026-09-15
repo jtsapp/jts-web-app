@@ -1,0 +1,15 @@
+{
+  "_": "Снимок вопроса с контекстом — пример из спеки docs/superpowers/specs/2026-09-14-homework-exercise-context.md. Тот же файл лежит в web-admin (lesson-question-picker/__fixtures__): обе стороны сверяются с ним, иначе форма разъезжается молча и тесты обеих сторон остаются зелёными.",
+  "question": {
+    "id": "s5-c0",
+    "type": "choice",
+    "prompt": "It is a family photo.",
+    "options": ["True", "False"],
+    "answer": "True",
+    "context": {
+      "key": "s5#4",
+      "audioUrl": "https://files.example/a0/audio/a0_dfc2ed551f.mp3",
+      "articleHtml": "<article class=\"reading\"><p>In 1997 an American psychologist called Arthur Aron…</p></article>"
+    }
+  }
+}

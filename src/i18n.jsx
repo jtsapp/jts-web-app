@@ -819,6 +819,8 @@ const dict = {
     'lesson.ws.largeText': 'Крупный текст',
     'lesson.ws.check': 'Проверить',
     'lesson.ws.checkNeedAnswer': 'Сначала выберите или введите ответ',
+    'lesson.ws.lockedPaused': 'Перерыв — ответы пока не принимаются',
+    'lesson.ws.lockedFinished': 'Урок завершён — ответы больше не принимаются',
     'lesson.ws.correctCount': 'верно',
     // Сдача урока, заданного на дом. У юнит-теста кнопка одна и называется
     // концом теста: покарточных «Проверить» в нём нет вовсе.
@@ -2597,6 +2599,8 @@ const dict = {
     'lesson.ws.largeText': 'Large text',
     'lesson.ws.check': 'Check',
     'lesson.ws.checkNeedAnswer': 'Choose or type an answer first',
+    'lesson.ws.lockedPaused': 'Break — answers are not accepted right now',
+    'lesson.ws.lockedFinished': 'The lesson is over — answers are no longer accepted',
     'lesson.ws.correctCount': 'correct',
     'lesson.ws.finishTest': 'Finish the test',
     'lesson.ws.submitLesson': 'Submit the lesson',
@@ -4361,6 +4365,8 @@ const dict = {
     'lesson.ws.largeText': 'Ірі мәтін',
     'lesson.ws.check': 'Тексеру',
     'lesson.ws.checkNeedAnswer': 'Алдымен жауапты таңдаңыз немесе жазыңыз',
+    'lesson.ws.lockedPaused': 'Үзіліс — жауаптар әзірге қабылданбайды',
+    'lesson.ws.lockedFinished': 'Сабақ аяқталды — жауаптар енді қабылданбайды',
     'lesson.ws.correctCount': 'дұрыс',
     'lesson.ws.finishTest': 'Тестті аяқтау',
     'lesson.ws.submitLesson': 'Сабақты тапсыру',
