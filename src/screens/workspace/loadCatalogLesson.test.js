@@ -227,32 +227,4 @@ describe('loadCatalogLesson', () => {
 
     expect(lesson.title).toBe('1A Hello')
   })
-
-  /**
-   * Тип урока каталога нужен кабинету, чтобы вести урок тестом (эталоны скрыты
-   * до сдачи, сдача одна) или тренажёром. Он приезжает полем ответа СОДЕРЖИМОГО
-   * и дальше едет на самом уроке: отдельного GET за одним полем на каждое
-   * открытие урока не будет.
-   */
-  it('тип урока каталога едет вместе с содержимым', async () => {
-    vi.mocked(getCourseCatalogLessonContent).mockResolvedValue(stored({ type: 'REVIEW' }))
-
-    expect((await loadCatalogLesson(nextId, 'token')).catalogType).toBe('REVIEW')
-  })
-
-  it('неразобранный урок несёт свой тип так же, как разобранный', async () => {
-    // Из 215 самостоятельных уроков 144 открываются файлом. Терять у них тип
-    // незачем: поле ответа одно и то же, а ветка возврата разная.
-    vi.mocked(getCourseCatalogLessonContent).mockResolvedValue(stored({ content: null, type: 'LESSON' }))
-
-    expect((await loadCatalogLesson(nextId, 'token')).catalogType).toBe('LESSON')
-  })
-
-  it('типа в ответе нет — на уроке тоже null, а не undefined', async () => {
-    // Старый ответ бэкенда (поле ещё не выкачено) — штатный случай: кабинет
-    // ведёт такой урок обычным, с покарточной проверкой и ключами.
-    vi.mocked(getCourseCatalogLessonContent).mockResolvedValue(stored())
-
-    expect((await loadCatalogLesson(nextId, 'token')).catalogType).toBeNull()
-  })
 })

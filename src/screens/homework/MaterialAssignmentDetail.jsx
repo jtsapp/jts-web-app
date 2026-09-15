@@ -8,7 +8,7 @@ import {
   removeMaterialAnswer,
 } from '../../api.js'
 import { homeworkStateKey, ALLOWED_EXTENSIONS, isAllowedFile } from './homeworkFormat.js'
-import { isInteractiveMaterial, isLessonCard, needsAnswerFile, isMaterialGraded, isWholeLesson, isSubmitted } from './materialAssignments.js'
+import { isInteractiveMaterial, isLessonCard, needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
 import HomeworkFileList from './HomeworkFileList.jsx'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
@@ -36,20 +36,9 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
   const due = card.dueDate
     ? new Date(card.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
     : null
-  const submittedOn = a.submittedAt
-    ? new Date(a.submittedAt).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
-    : null
 
   const open = async () => {
     setError(null)
-    // Задан урок каталога ЦЕЛИКОМ — открываем его в кабинете и берём с собой
-    // номер задания: сдавать эту работу некуда, кроме как в него. Ветка стоит
-    // до карточки, потому что у урока целиком cardId пуст, и без неё он ушёл бы
-    // в общий случай «файл в новой вкладке».
-    if (isWholeLesson(a)) {
-      onOpenCard?.({ catalogLessonId: a.catalogLessonId, cardId: null, assignmentId: a.id })
-      return
-    }
     // Задана одна карточка живого урока — открываем сам урок в кабинете, а не
     // файл в новой вкладке: у карточки бывает аудио с относительным путём и
     // картинки из словарной колоды того же урока, вне урока они не работают.
@@ -135,30 +124,10 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.task')}</h3>
         <button type="button" className="hw-submit" disabled={busy} onClick={open}>
-          {t(isWholeLesson(a) ? 'homework.openLesson' : 'homework.open')}
+          {t('homework.open')}
         </button>
-        {/* Кнопки «Отправить» у назначения нет вовсе, а у урока целиком нет и
-            вложения: он закрывается сдачей ВНУТРИ урока. Сказать об этом надо
-            до того, как ученик начнёт искать кнопку глазами. */}
-        {isWholeLesson(a) && !isSubmitted(a) && <p className="hw__hint">{t('homework.wholeLessonHint')}</p>}
         {error && <p className="hw__error">{error}</p>}
       </section>
-
-      {/* Результат автопроверки. Это НЕ оценка: процент считается автоматом, а
-          балл ставит преподаватель существующим диалогом — и стоит ниже, в
-          блоке «Проверено». Пара autoCorrect/autoTotal в назначении тоже есть,
-          но «42 из 54» по спеке показывает преподавателю админка: ученику
-          здесь довольно процента, а два числа рядом читались бы как балл.
-          Возврат на доработку снимает submittedAt — и блок уходит сам. */}
-      {isWholeLesson(a) && isSubmitted(a) && (
-        <section className="hw-block">
-          <h3 className="hw-block__title">{t('homework.autoCheck')}</h3>
-          <div className="hw-autocheck">
-            <span className="hw-autocheck__num">{t('homework.autoPercent', { percent: String(a.autoPercent ?? 0) })}</span>
-            {submittedOn && <span className="hw-autocheck__date">{t('homework.submittedOn', { date: submittedOn })}</span>}
-          </div>
-        </section>
-      )}
 
       {needsAnswerFile(a) && (
         <section className="hw-block">

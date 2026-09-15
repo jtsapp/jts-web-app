@@ -125,7 +125,7 @@ export function practiceCardStats(step, checkedKeys, hiddenBlocks) {
 /** Info-карточка с word-bank: кнопка «Проверить» и счёт, как в HTML-курсе. */
 function InfoWordBankCard({
   group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, openWord, showAnswerKey = true,
-  allowCheck = true, lockNote = '',
+  lockNote = '',
 }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
@@ -175,9 +175,7 @@ function InfoWordBankCard({
           showAnswerKey={showAnswerKey}
         />
       ))}
-      {/* Тот же рычаг, что у practice-карточки: в юнит-тесте покарточной
-          проверки нет, а отвечать в пропуски word-bank можно. */}
-      {allowCheck && !readOnly && hasCheckable && (
+      {!readOnly && hasCheckable && (
         <button
           type="button"
           className="lw-practice__check"
@@ -229,7 +227,7 @@ function InfoWordBankCard({
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, lockNote = '', liveQuestionId, focusCardId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true, allowCheck = true }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, lockNote = '', liveQuestionId, focusCardId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys, hiddenBlocks)
   const { lang } = useI18n()
@@ -356,7 +354,6 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               focusCardId={focusCardId}
               openWord={openWord}
               showAnswerKey={showAnswerKey}
-              allowCheck={allowCheck}
             />
           )
         }
@@ -420,7 +417,6 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 gapPrefix={wordBankGapPrefix(step, anchorId)}
                 cardAnchorId={anchorId}
                 showAnswerKey={showAnswerKey}
-                allowCheck={allowCheck}
               />
             </div>
           )

@@ -222,63 +222,6 @@ describe('HomeworkPage', () => {
   })
 
   /**
-   * Урок каталога, заданный ЦЕЛИКОМ.
-   *
-   * Отличается от карточки только флагом: пара «урок есть, карточки нет» уже
-   * сегодня означает «материал урока файлом», и без флага такое задание
-   * открылось бы файлом в новой вкладке вместо урока.
-   */
-  const УРОК_ЦЕЛИКОМ = {
-    ...MATERIAL,
-    id: 9, materialType: 'LINK', materialTitle: 'Unit 1 Review Test',
-    catalogLessonId: 314, cardId: null, cardTitle: null, wholeLesson: true,
-    submittedAt: null, autoCorrect: null, autoTotal: null, autoPercent: null, files: [],
-  }
-
-  it('урок целиком открывается уроком и несёт с собой номер задания', async () => {
-    api.getMyMaterialAssignments.mockResolvedValueOnce([УРОК_ЦЕЛИКОМ])
-    const opened = []
-    vi.stubGlobal('open', (url) => { opened.push(url); return null })
-    const onNav = vi.fn()
-
-    renderPage({ onNav })
-    fireEvent.click((await screen.findAllByText('Unit 1 Review Test'))[0])
-    fireEvent.click(await screen.findByRole('button', { name: 'Открыть урок' }))
-
-    // assignmentId обязателен: экран урока должен знать, в какое задание сдавать.
-    expect(onNav).toHaveBeenCalledWith('lesson-workspace', {
-      catalogLessonId: 314, cardId: null, assignmentId: 9,
-    })
-    expect(opened).toHaveLength(0)
-    vi.unstubAllGlobals()
-  })
-
-  it('вложений у урока целиком не спрашивают — он закрывается сдачей', async () => {
-    api.getMyMaterialAssignments.mockResolvedValueOnce([УРОК_ЦЕЛИКОМ])
-    const { container } = renderPage()
-
-    fireEvent.click((await screen.findAllByText('Unit 1 Review Test'))[0])
-    await waitFor(() => expect(container.querySelector('.hw-upload__input')).toBeNull())
-    // И сказано, где его закрывать: кнопки «Отправить» тут нет вовсе.
-    expect(container.textContent).toContain('решается прямо в уроке')
-  })
-
-  it('сданный урок показывает процент и дату, а в списке — метку «Урок целиком»', async () => {
-    api.getMyMaterialAssignments.mockResolvedValueOnce([
-      { ...УРОК_ЦЕЛИКОМ, submittedAt: '2026-09-15T10:00:00', autoCorrect: 42, autoTotal: 54, autoPercent: 78 },
-    ])
-    const { container } = renderPage()
-
-    fireEvent.click((await screen.findAllByText('Unit 1 Review Test'))[0])
-    await waitFor(() => expect(container.querySelector('.hw-autocheck')).not.toBeNull())
-    expect(container.querySelector('.hw-autocheck').textContent).toContain('78% верно')
-    expect(container.querySelector('.hw-autocheck').textContent).toContain('Сдано')
-    // Процент виден и в списке — ради него ученик сюда и возвращается.
-    expect(container.querySelector('.hw-card__percent').textContent).toBe('78% верно')
-    expect(screen.getAllByText('Урок целиком').length).toBeGreaterThan(0)
-  })
-
-  /**
    * Карточку урока ученик закрывает ВЛОЖЕНИЕМ: проверяемых заданий в ней нет,
    * сессии она не заводит, а срок выдача получает по умолчанию — без файла
    * такая работа краснела бы просроченной навсегда.

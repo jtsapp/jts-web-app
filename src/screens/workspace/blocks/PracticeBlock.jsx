@@ -73,10 +73,10 @@ export default function PracticeBlock({
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
   const hasAnswerable = questions.length > 0 || hasWbCheck
-  // `allowCheck` — не то же, что `readOnly`. В юнит-тесте, заданном на дом,
+  // `allowCheck` — не то же, что `readOnly`. У юнит-теста, заданного на дом,
   // ученик отвечает свободно, но проверить по одной карточке не может: эталоны
-  // скрыты до сдачи, а сдача одна и общая на весь урок. Запрети мы это через
-  // readOnly — вместе с кнопкой заперся бы и ввод.
+  // скрыты до сдачи, а сдача одна и общая на весь пакет заданий урока. Запрети
+  // мы это через readOnly — вместе с кнопкой заперся бы и ввод.
   const showCheck = allowCheck && !readOnly && hasAnswerable
   // Почему карточка молчит. Баннер урока висит наверху страницы, и ученик,
   // доскроллив до задания, его уже не видит: «Проверить» просто исчезает, а

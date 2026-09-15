@@ -267,22 +267,6 @@ export function startMaterialAssignment(token, assignmentId) {
   return authPost(`/student/assignments/${assignmentId}/start`, token)
 }
 
-// Сдача задания, которое ученик решает в самом уроке (урок каталога, заданный
-// целиком). Файла у такого задания нет, и «я сделал» выражать больше нечем.
-//
-// Процент считает СЕРВЕР из пары {correct, total} — клиент её только приносит,
-// а сервер кладёт оба числа рядом с процентом (auto_correct/auto_total):
-// преподавателю «42 из 54» говорит больше, чем «78%».
-// Тем же путём устроен действующий прецедент /admin/homework/practice/done: с
-// клиента едут done/total, а правило засчитывания живёт на сервере. Оценку всё
-// равно ставит преподаватель, процент ему подсказка.
-//
-// Ответ — полное назначение (как у grade), поэтому карточка ученика чинится на
-// месте, без повторного похода за списком.
-export function submitAssignment(token, id, { correct, total }) {
-  return authPost(`/student/assignments/${id}/submit`, token, { correct, total })
-}
-
 // Рендер интерактивного материала открывается навигацией браузера (новая
 // вкладка), а не fetch'ем — токен уезжает в query: JwtAuthenticationFilter
 // принимает ?access_token= ровно для этого пути (тот же приём, что в
