@@ -42,7 +42,7 @@ const QUESTION_BY_TYPE = {
 export default function PracticeBlock({
   block, answers, checked, checkedKeys, cardKey, stepTitle, onAnswer, onCheck, readOnly,
   liveQuestionId, onWord, gapPrefix, cardAnchorId, status, highlighted, number,
-  showAnswerKey = true, lockNote = '',
+  showAnswerKey = true, allowCheck = true, lockNote = '',
 }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
@@ -73,7 +73,11 @@ export default function PracticeBlock({
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
   const hasAnswerable = questions.length > 0 || hasWbCheck
-  const showCheck = !readOnly && hasAnswerable
+  // `allowCheck` — не то же, что `readOnly`. В юнит-тесте, заданном на дом,
+  // ученик отвечает свободно, но проверить по одной карточке не может: эталоны
+  // скрыты до сдачи, а сдача одна и общая на весь урок. Запрети мы это через
+  // readOnly — вместе с кнопкой заперся бы и ввод.
+  const showCheck = allowCheck && !readOnly && hasAnswerable
   // Почему карточка молчит. Баннер урока висит наверху страницы, и ученик,
   // доскроллив до задания, его уже не видит: «Проверить» просто исчезает, а
   // варианты перестают нажиматься без единого слова. Причина должна быть в
