@@ -357,15 +357,6 @@ export default class TutorAvatar {
     ctx.translate(this.CX + shx, this.CY - bob + shy)
     ctx.rotate(tilt)
 
-    if (s.ring > 0.03 && !this.reduced) {
-      const p = (mt * 0.55) % 1
-      ctx.beginPath()
-      ctx.ellipse(0, 0, sx * 0.5 * (1 + p * 0.38), sy * 0.5 * (1 + p * 0.38), 0, 0, 6.283)
-      ctx.strokeStyle = this._rgba(s.c1, s.ring * (1 - p) * 0.45)
-      ctx.lineWidth = 5 * k
-      ctx.stroke()
-    }
-
     ctx.save()
     ctx.shadowColor = this._rgba(s.c2, 0.32)
     // Тень обязана уместиться в прозрачное поле: обрезанная канвой, она даёт
@@ -416,7 +407,10 @@ export default class TutorAvatar {
     // Эффекты позиционируем от РЕАЛЬНОГО радиуса формы, а не от R: они белые,
     // и за краем формы им нечем контрастировать — светлый фон их съедает.
     const rb = sx * 0.5
-    if (s.dots > 0.3) this._drawDots(0, -rb * 0.58, s.dots, mt)
+    // Раньше точки сидели по центру над глазами и читались как сыпь на лбу
+    // (поэтому thinking их не включал вовсе) — сдвиг в угол решает то же,
+    // что в Figma-карточке «Думает»: плавающий «...» сбоку, не на лице.
+    if (s.dots > 0.3) this._drawDots(rb * 0.72, -rb * 0.55, s.dots, mt)
     if (s.spark > 0.3) {
       this._drawSpark(-rb * 0.6, -rb * 0.42, s.spark, mt)
       this._drawSpark(rb * 0.58, -rb * 0.34, s.spark, mt)
@@ -429,6 +423,10 @@ export default class TutorAvatar {
       this._drawSteam(-rb * 1.02, -rb * 0.72, s.steam, mt, rb, -1)
       this._drawSteam(rb * 1.02, -rb * 0.72, s.steam, mt, rb, 1)
     }
+    if (s.question > 0.3) this._drawQuestionBadge(rb * 0.78, -rb * 0.68, s.question, mt)
+    if (s.chatDots > 0.3) this._drawChatBadge(rb * 0.8, -rb * 0.62, s.chatDots, mt)
+    if (s.soundwave > 0.3) this._drawSoundwave(rb * 1.05, 0, s.soundwave, mt)
+    if (s.exclaim > 0.3) this._drawExclaimBadge(rb * 0.68, -rb * 0.7, s.exclaim, mt)
 
     ctx.restore()
   }
@@ -437,10 +435,26 @@ export default class TutorAvatar {
     const ctx = this.ctx
     const s = this.state
     const k = this.fk
+    const FEATURE = '#ffffff'
+
+    // Звезда — отдельная форма (только celebrate), не часть capsule/arc.
+    if (s.star > 0.5) {
+      this._drawStarEye(x, y, k)
+      return
+    }
+
     const w = (s.round * (25 - 19) + 19) * s.eyeW * k
     const h = 32 * k * s.eyeH * asymScale * (1 - blinkK)
     const a = s.arc
     const minH = 7 * k
+    // Раньше дуга была фиксированной геометрией (16/8/14), одинаковой для
+    // любого пресета с arc>0 — из-за этого нельзя было отличить «плоскую»
+    // дугу (sympathy, ширина/высота в макете 30×13) от «выраженной» (idle,
+    // 31×17). Масштабируем полушироту по eyeW, а высоту дуги — по eyeH.
+    const hw = 16 * k * s.eyeW
+    const lo = 8 * k * s.eyeH
+    const hi = 14 * k * s.eyeH
+    const loNeg = 6 * k * s.eyeH
 
     if (a > 0.35) {
       ctx.save()
@@ -448,16 +462,16 @@ export default class TutorAvatar {
       ctx.beginPath()
       ctx.lineWidth = 8 * k
       ctx.lineCap = 'round'
-      ctx.strokeStyle = this.INK
-      ctx.moveTo(x - 16 * k, y + 8 * k)
-      ctx.quadraticCurveTo(x, y - 14 * k, x + 16 * k, y + 8 * k)
+      ctx.strokeStyle = FEATURE
+      ctx.moveTo(x - hw, y + lo)
+      ctx.quadraticCurveTo(x, y - hi, x + hw, y + lo)
       ctx.stroke()
       ctx.restore()
       if (a < 0.9) {
         ctx.save()
         ctx.globalAlpha = 1 - a
         this._caps(x, y, w, Math.max(h, minH), w / 2)
-        ctx.fillStyle = this.INK
+        ctx.fillStyle = FEATURE
         ctx.fill()
         ctx.restore()
       }
@@ -467,25 +481,49 @@ export default class TutorAvatar {
       ctx.beginPath()
       ctx.lineWidth = 8 * k
       ctx.lineCap = 'round'
-      ctx.strokeStyle = this.INK
-      ctx.moveTo(x - 16 * k, y - 6 * k)
-      ctx.quadraticCurveTo(x, y + 14 * k, x + 16 * k, y - 6 * k)
+      ctx.strokeStyle = FEATURE
+      ctx.moveTo(x - hw, y - loNeg)
+      ctx.quadraticCurveTo(x, y + hi, x + hw, y - loNeg)
       ctx.stroke()
       ctx.restore()
       if (-a < 0.9) {
         ctx.save()
         ctx.globalAlpha = 1 + a
         this._caps(x, y, w, Math.max(h, minH), w / 2)
-        ctx.fillStyle = this.INK
+        ctx.fillStyle = FEATURE
         ctx.fill()
         ctx.restore()
       }
     } else {
       const hh = Math.max(h, minH)
       this._caps(x, y, w, hh, Math.min(w, hh) / 2)
-      ctx.fillStyle = this.INK
+      ctx.fillStyle = FEATURE
       ctx.fill()
     }
+  }
+
+  // Звезда вместо глаза (celebrate). Отдельный метод: капсульная/дуговая
+  // геометрия соседних веток тут ни при чём, это другая форма и свой цвет
+  // (жёлтый, не белый — золото звёзд в Figma-карточке «Радуется»).
+  _drawStarEye(x, y, k) {
+    const ctx = this.ctx
+    const r = 13 * k
+    const rInner = r * 0.45
+    const spikes = 5
+    ctx.save()
+    ctx.fillStyle = '#ffc764'
+    ctx.beginPath()
+    for (let i = 0; i < spikes * 2; i++) {
+      const rad = i % 2 === 0 ? r : rInner
+      const ang = (Math.PI / spikes) * i - Math.PI / 2
+      const px = x + Math.cos(ang) * rad
+      const py = y + Math.sin(ang) * rad
+      if (i === 0) ctx.moveTo(px, py)
+      else ctx.lineTo(px, py)
+    }
+    ctx.closePath()
+    ctx.fill()
+    ctx.restore()
   }
 
   // side: -1 левый глаз, +1 правый. b: -1 внутренние концы вниз (злость),
@@ -510,7 +548,7 @@ export default class TutorAvatar {
     const yy = y + 8 * k * rage
     ctx.save()
     ctx.globalAlpha = a
-    ctx.strokeStyle = this.INK
+    ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = (8 + 5 * rage) * k
     ctx.lineCap = 'round'
     ctx.beginPath()
@@ -524,8 +562,8 @@ export default class TutorAvatar {
     const ctx = this.ctx
     const s = this.state
     const k = this.fk
-    ctx.strokeStyle = this.INK
-    ctx.fillStyle = this.INK
+    ctx.strokeStyle = '#ffffff'
+    ctx.fillStyle = '#ffffff'
     ctx.lineWidth = 8 * k
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
@@ -584,14 +622,19 @@ export default class TutorAvatar {
         if (i === 0) ctx.moveTo(px, py)
         else ctx.lineTo(px, py)
       }
+      // Делитель зубов рисуется ПОВЕРХ их же белой заливки — обязан остаться
+      // тёмным, иначе исчезает независимо от того, что мы перекрасили черты
+      // лица в белое (там черты стоят на фиолетовом теле, тут — на белом).
+      ctx.strokeStyle = this.INK
       ctx.lineWidth = 6 * k
       ctx.stroke()
       ctx.restore()
 
       this._caps(x, y, mw, mh, r)
+      ctx.strokeStyle = '#ffffff'
       ctx.lineWidth = 7 * k
       ctx.stroke()
-      ctx.fillStyle = this.INK
+      ctx.fillStyle = '#ffffff'
     } else if (s.mouth === 'wave') {
       // Волна — это верхняя губа, кривизну эмоции держит она. Нижняя — ровная
       // дуга: если отзеркалить ей волну, при открытом рте выходит клякса, а не
@@ -736,6 +779,92 @@ export default class TutorAvatar {
       paint(3 * k, this.INK)
       paint(0, '#ffffff')
     }
+    ctx.restore()
+  }
+
+  // «?» — тьютор не понял реплику: белый пузырь сбоку от головы, фиолетовый
+  // глиф. Пульс альфы, как у остальных бейджей — эффект появляется плавно,
+  // а не рывком одновременно со сменой эмоции.
+  _drawQuestionBadge(x, y, a, mt) {
+    const ctx = this.ctx
+    const k = this.fk
+    const pulse = 0.85 + 0.15 * Math.sin(mt * 2.4)
+    const w = 30 * k
+    const h = 24 * k
+    ctx.save()
+    ctx.globalAlpha = Math.min(1, a) * pulse
+    this._caps(x, y, w, h, 10 * k)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+    ctx.fillStyle = '#762dd4'
+    ctx.font = `700 ${17 * k}px Manrope, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('?', x, y + 1 * k)
+    ctx.restore()
+  }
+
+  // Пузырь «говорит»: тот же белый бейдж, но с тремя точками вместо «?» —
+  // отличим от _drawDots (те — плавающие без пузыря, признак «думает»).
+  _drawChatBadge(x, y, a, mt) {
+    const ctx = this.ctx
+    const k = this.fk
+    const pulse = 0.85 + 0.15 * Math.sin(mt * 2.4)
+    const w = 34 * k
+    const h = 22 * k
+    ctx.save()
+    ctx.globalAlpha = Math.min(1, a) * pulse
+    this._caps(x, y, w, h, 10 * k)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+    ctx.fillStyle = '#a06be4'
+    for (let i = 0; i < 3; i++) {
+      const dx = (i - 1) * 9 * k
+      const bounce = Math.max(0, Math.sin(mt * 5 - i * 0.6)) * 2 * k
+      ctx.beginPath()
+      ctx.arc(x + dx, y - bounce, 3 * k, 0, 6.283)
+      ctx.fill()
+    }
+    ctx.restore()
+  }
+
+  // Звуковые дуги «слушает» — две скруглённые полоски сбоку от головы,
+  // высота пульсирует по очереди, как эквалайзер. Заменяет прежний ring.
+  _drawSoundwave(x, y, a, mt) {
+    const ctx = this.ctx
+    const k = this.fk
+    ctx.save()
+    ctx.globalAlpha = Math.min(1, a)
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineCap = 'round'
+    const bars = [
+      { dx: 0, base: 14, amp: 8, ph: 0 },
+      { dx: 12 * k, base: 22, amp: 12, ph: 1.4 },
+    ]
+    bars.forEach((barSpec) => {
+      const h = (barSpec.base + Math.sin(mt * 3.4 + barSpec.ph) * barSpec.amp) * k
+      ctx.lineWidth = 6 * k
+      ctx.beginPath()
+      ctx.moveTo(x + barSpec.dx, y - h / 2)
+      ctx.lineTo(x + barSpec.dx, y + h / 2)
+      ctx.stroke()
+    })
+    ctx.restore()
+  }
+
+  // «‼» ярости — тот же приём, что у _drawZzz (текст на canvas), другой
+  // глиф и розовый цвет вместо фиолетового/белого.
+  _drawExclaimBadge(x, y, a, mt) {
+    const ctx = this.ctx
+    const k = this.fk
+    const pulse = 0.8 + 0.2 * Math.sin(mt * 6)
+    ctx.save()
+    ctx.globalAlpha = Math.min(1, a) * pulse
+    ctx.fillStyle = '#e46bce'
+    ctx.font = `800 ${26 * k}px Manrope, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText('‼', x, y)
     ctx.restore()
   }
 }
