@@ -175,12 +175,6 @@ export default function App() {
     // эффект синхронизации адреса ниже).
     const cardParam = searchParams.get('card')
     if (cardParam) setWorkspaceCardId(cardParam)
-    // ?assignment=<id> — задание, по которому открыт урок целиком
-    // (?screen=lesson-workspace&catalog=<id>&assignment=<id>). Читается и
-    // пишется по той же причине, что и ?card=: ссылка из домашки обязана
-    // пережить F5, иначе ученик теряет кнопку сдачи посреди теста.
-    const assignmentParam = searchParams.get('assignment')
-    if (assignmentParam) setWorkspaceAssignmentId(assignmentParam)
     // ?live=<id> — id живого урока для «Живой урок» (диплинк
     // ?screen=live-lesson&live=<id>). Отдельный параметр от lessonParam выше:
     // тот наполняет liveWorkspaceId для другого экрана (lesson-workspace), а
@@ -450,9 +444,6 @@ export default function App() {
   // урока открывается на её шаге и подъезжает к ней; null — обычное открытие
   // урока целиком.
   const [workspaceCardId, setWorkspaceCardId] = useState(null)
-  // Номер назначения, по которому открыт урок целиком. Экран урока по нему
-  // достаёт сдано/не сдано и с каким процентом; null — обычное открытие урока.
-  const [workspaceAssignmentId, setWorkspaceAssignmentId] = useState(null)
   const [shadowingLesson, setShadowingLesson] = useState('sg') // урок Shadowing, выбранный на карточке Практики
   // Юнит «Практики», который задали на дом: с карточки домашней работы
   // открываем сразу его, а не общий список — иначе ученик ищет глазами то,
@@ -918,10 +909,7 @@ export default function App() {
       persists: persistsInUrl,
       // Урок с карточкой открывается не по имени экрана, а по прочитанному из
       // ссылки адресу — см. pendingScreenAfterLogin.
-      // Имя параметра осталось прежним, а смысл шире: «адрес задания прочитан
-      // из ссылки». Урок, заданный целиком, карточки не имеет, но ссылка на
-      // него — ровно та же присланная ссылка, ради которой человек и логинится.
-      hasCardAddress: (Boolean(workspaceCardId) || workspaceAssignmentId != null) && liveWorkspaceId != null,
+      hasCardAddress: Boolean(workspaceCardId) && liveWorkspaceId != null,
     }) ?? home
   }
 
@@ -1011,10 +999,9 @@ export default function App() {
       liveLessonId,
       liveWorkspaceId,
       workspaceCardId,
-      workspaceAssignmentId,
     }))
     if (changed) window.history.replaceState(null, '', url)
-  }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId, workspaceAssignmentId])
+  }, [screen, restoring, liveLessonId, liveWorkspaceId, workspaceCardId])
 
   // «Известный урок» экрана класса — одно выражение на оба источника, а не два
   // разных по месту использования. boothLessonId — обычный случай (сеанс
@@ -1141,7 +1128,6 @@ export default function App() {
         setLiveWorkspaceId(payload.catalogLessonId)
         setWorkspaceSource('catalog')
         setWorkspaceCardId(payload.cardId || null)
-        setWorkspaceAssignmentId(payload.assignmentId ?? null)
         setScreen('lesson-workspace')
       }
     }
@@ -1561,11 +1547,11 @@ export default function App() {
         />
       )
     case 'lessons':
-      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setWorkspaceAssignmentId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
+      return <LessonsPage userLevel={userLevel} userName={name} token={token} initialTab={workspaceSource === 'self' ? 'self' : undefined} onNav={handleNav} onProfile={() => setScreen('profile')} onOpenLesson={(id) => { unlockBroadcastAudio(); setLiveLessonId(id); setScreen('live-lesson') }} onOpenCatalog={() => setScreen('course-catalog')} onOpenSelfStudy={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('self'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} onOpenPricing={() => setScreen('pricing')} tourKey={lessonsTourKey} />
     case 'homework':
       return <HomeworkPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} tourKey={homeworkTourKey} />
     case 'course-catalog':
-      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setWorkspaceAssignmentId(null); setScreen('lesson-workspace') }} />
+      return <CourseCatalogPage userLevel={userLevel} userName={name} token={token} onNav={handleNav} onProfile={() => setScreen('profile')} onBack={() => setScreen('lessons')} onOpenLesson={(id) => { setLiveWorkspaceId(id); setWorkspaceSource('catalog'); setWorkspaceCardId(null); setScreen('lesson-workspace') }} />
     case 'booth':
       return (
         <BoothEntryPage
@@ -2009,7 +1995,7 @@ export default function App() {
     // каталога — в каталог. Иначе ученик, открывший задание, уходил бы в чужой
     // список уроков и искал домашку заново.
     case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} assignmentId={workspaceAssignmentId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceCardId || workspaceAssignmentId ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceCardId ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
     default:
       return null
   }
