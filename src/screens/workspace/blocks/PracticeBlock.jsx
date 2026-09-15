@@ -42,7 +42,7 @@ const QUESTION_BY_TYPE = {
 export default function PracticeBlock({
   block, answers, checked, checkedKeys, cardKey, stepTitle, onAnswer, onCheck, readOnly,
   liveQuestionId, onWord, gapPrefix, cardAnchorId, status, highlighted, number,
-  showAnswerKey = true,
+  showAnswerKey = true, allowCheck = true,
 }) {
   function questionChecked(question) {
     if (checkedKeys?.has(question.id)) return true
@@ -72,7 +72,11 @@ export default function PracticeBlock({
   const canCheckQuestions = questions.some((q) => hasAttempt(q, answers?.[q.id]))
   const canCheckWb = hasWbCheck && wordBankAnswersAttempted(answers, gapPrefix)
   const canCheck = canCheckQuestions || canCheckWb
-  const showCheck = !readOnly && (questions.length > 0 || hasWbCheck)
+  // `allowCheck` — не то же, что `readOnly`. В юнит-тесте, заданном на дом,
+  // ученик отвечает свободно, но проверить по одной карточке не может: эталоны
+  // скрыты до сдачи, а сдача одна и общая на весь урок. Запрети мы это через
+  // readOnly — вместе с кнопкой заперся бы и ввод.
+  const showCheck = allowCheck && !readOnly && (questions.length > 0 || hasWbCheck)
 
   const [wbScore, setWbScore] = useState(null)
   // Пропуск, в который уедет следующее слово из банка.
