@@ -101,7 +101,24 @@ function dropPlaybackSpeedQuestions(blocks) {
       continue
     }
     if (htmlHasMeaningfulContent(block.html)) {
-      out.push({ type: 'info', title: block.title, html: block.html })
+      // Дорожку переносим в info-блок. Раньше она здесь терялась: карточка
+      // аудирования, где единственным «вопросом» был переключатель скорости
+      // плеера, пересобиралась в info из трёх полей — type/title/html, — и
+      // <audio> в пересборку не входил. Ученик видел «Listen and write…» без
+      // единой кнопки, преподаватель на том же уроке слышал.
+      //
+      // Именно переносом, а НЕ «оставим блок практическим»: адрес карточки
+      // считается по содержимому блока и в него входит type (см.
+      // lib/lessonCardId.js). Сменив тип, мы переставили бы адреса уже
+      // выданных домашних заданий — ученик получил бы «этого задания больше
+      // нет». А вот audio в подпись не входит (SERVICE_KEYS), поэтому лишнее
+      // поле адрес не двигает.
+      out.push({
+        type: 'info',
+        title: block.title,
+        html: block.html,
+        ...(block.audio ? { audio: block.audio } : {}),
+      })
     } else if (block.audio?.src) {
       out.push({ ...block, questions: [] })
     }
