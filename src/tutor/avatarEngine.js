@@ -347,6 +347,11 @@ export default class TutorAvatar {
     const sq = 1 + (this.reduced ? 0 : Math.sin(this.phase - 0.7) * 0.045 * bounce)
     const sx = this.R * (2 - sq) * (1 + pop)
     const sy = this.R * sq * (1 + pop)
+    // Тело — скруглённый квадрат («сквиркл»), не овал: в Figma-карточках
+    // (node 5080:1807) Body — RECTANGLE 246×246 с cornerRadius 60, отношение
+    // 60/246 ≈ 0.244. Раньше тут был ctx.ellipse — форма читалась как шар,
+    // а не как квадратная «плюшка» с макета.
+    const bodyR = Math.min(sx, sy) * 0.244
     const tilt = this.reduced ? 0 : s.tilt * Math.sin(mt * 1.6) * 0.1
     // Дрожь злости: частая и мелкая, живёт поверх обычного дыхания и не зависит
     // от speed — иначе сливается с подскоками и читается как радость.
@@ -363,8 +368,7 @@ export default class TutorAvatar {
     // хорошо заметную прямую границу внизу формы.
     ctx.shadowBlur = Math.min(48 * k, this.pad * 0.9)
     ctx.shadowOffsetY = Math.min(12 * k, this.pad * 0.25)
-    ctx.beginPath()
-    ctx.ellipse(0, 0, sx * 0.5, sy * 0.5, 0, 0, 6.283)
+    this._caps(0, 0, sx, sy, bodyR)
     ctx.fillStyle = this._rgb(s.c2)
     ctx.fill()
     ctx.restore()
@@ -373,8 +377,7 @@ export default class TutorAvatar {
     this.frame++
 
     ctx.save()
-    ctx.beginPath()
-    ctx.ellipse(0, 0, sx * 0.5, sy * 0.5, 0, 0, 6.283)
+    this._caps(0, 0, sx, sy, bodyR)
     ctx.clip()
     if (this.blob) {
       const w = this.blobSpan * (sx / (this.R * 2))
