@@ -42,4 +42,29 @@ describe('что показать в центре урока', () => {
     expect(materialView({ hasStep: true, fileUrl: 'https://f/a2/L01.html', catalogResolved: true, allStepsHidden: false }))
       .toBe('steps')
   })
+
+  // Регрессия, стоившая жалоб с живых уроков: «разделов нет, один сплошной, и
+  // ничего не кликается». Сервер отказывал в разборе урока чужого уровня, отказ
+  // проглатывался, и экран показывал файл урока — тот же материал, только
+  // картинкой. Отказ обязан звучать отказом.
+  it('урок закрыт этому ученику — говорим об этом, а не показываем файл', () => {
+    expect(materialView({
+      hasStep: false,
+      fileUrl: 'https://f/a2/L01.html',
+      catalogResolved: true,
+      denied: true,
+    })).toBe('denied')
+  })
+
+  it('отказ перевешивает всё остальное', () => {
+    // Отказ приходит вместо разбора, так что шагов при нём не бывает. Но если
+    // где-то остался разбор от прошлого материала, показывать его тоже нельзя.
+    expect(materialView({ hasStep: true, fileUrl: 'https://f/a2/L01.html', catalogResolved: true, denied: true }))
+      .toBe('denied')
+  })
+
+  it('без отказа ничего не меняется', () => {
+    expect(materialView({ hasStep: false, fileUrl: 'https://f/own.pdf', catalogResolved: true, denied: false }))
+      .toBe('file')
+  })
 })

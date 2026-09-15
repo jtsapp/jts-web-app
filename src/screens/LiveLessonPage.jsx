@@ -258,6 +258,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Держим url, а не флаг: сброс флага — setState в теле эффекта, то есть каскад
   // рендеров, на который ругается линтер.
   const [catalogResolvedFor, setCatalogResolvedFor] = useState(null)
+  // Урок закрыт именно этому ученику (403), а не «не загрузился». Разница в том,
+  // что показать: отказ объясняет, к кому идти, а запасной файл делает вид, что
+  // всё в порядке. Тот же признак и та же подпись, что в «Самостоятельно»
+  // (LessonWorkspacePage) — разъезжаться этим двум экранам не за что.
+  const [catalogDenied, setCatalogDenied] = useState(false)
   const materialFileUrl = activeMaterial?.fileUrl || null
   const catalogResolved = materialFileUrl != null && catalogResolvedFor === materialFileUrl
 
@@ -278,6 +283,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         if (cancelled) return
         setResolvedCatalogLessonId(id)
         setCatalogLesson(loaded || null)
+        setCatalogDenied(false)
         const forced = pendingFocusStepRef.current
         pendingFocusStepRef.current = null
         const restored = restoredStepRef.current
@@ -302,10 +308,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         }
         setCatalogResolvedFor(url)
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return
         setResolvedCatalogLessonId(null)
         setCatalogLesson(null)
+        // Загрузчик отдаёт отказ исключением, остальные сбои — null
+        // (см. loadCatalogLesson): 403 сюда доходит, и его нельзя равнять с
+        // обрывом связи.
+        setCatalogDenied(err?.status === 403)
         setCatalogResolvedFor(url)
       })
     return () => { cancelled = true }
@@ -1157,7 +1167,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Кнопки «Темы» нет, когда тем нет: у самодостаточного урока шагов не бывает,
   // и лист открывался бы пустым. LiveHeader сам прячет кнопку без обработчика.
   const openTopics = routeSteps.length ? () => setSheet('topics') : undefined
-  const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved, allStepsHidden })
+  const view = materialView({
+    hasStep: activeStep != null,
+    fileUrl: materialFileUrl,
+    catalogResolved,
+    allStepsHidden,
+    denied: catalogDenied,
+  })
 
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
@@ -1451,6 +1467,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <p className="live__status-msg">{t('schedule.loading')}</p>
                       ) : view === 'hidden' ? (
                         <p className="live__status-msg">{t('live.allStepsHidden')}</p>
+                      ) : view === 'denied' ? (
+                        <p className="live__status-msg">{t('lesson.ws.accessDenied')}</p>
                       ) : (
                         <SectionMaterialFrame
                           className={stageFlags}
