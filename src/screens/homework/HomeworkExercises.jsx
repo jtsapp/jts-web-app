@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import PracticeBlock from '../workspace/blocks/PracticeBlock.jsx'
 import { gradeQuestion } from '../workspace/practiceGrading.js'
 import { useI18n } from '../../i18n.jsx'
-import { saveHomeworkAnswer } from '../../api.js'
-import { exerciseBatches, exerciseBlock, isAnswered, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
+import { getCourseCatalogLesson, saveHomeworkAnswer } from '../../api.js'
+import { batchFullyAnswered, exerciseBatches, exerciseBlock, isAnswered, isUnitTestType, loadAnswers, revokedEverything, saveAnswers, serverAnswers } from './homeworkExercises.js'
 import { groupByContext } from './exerciseContext.js'
 import { sanitizeHtml } from '../workspace/sanitizeHtml.js'
 import { canAttach } from './homeworkFormat.js'
@@ -50,6 +50,35 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
   const [answers, setAnswers] = useState(() => ({ ...loadAnswers(hw?.id), ...serverAnswers(hw) }))
   const [checked, setChecked] = useState(() => new Set())
   const [failed, setFailed] = useState(() => new Set())
+  // batch.key пакета, который сейчас уезжает по «Завершить тест» — кнопка
+  // на время запроса недоступна, чтобы двойной клик не отправил тест дважды.
+  const [submittingBatch, setSubmittingBatch] = useState(null)
+
+  // Тип урока каталога — по нему отличаем юнит-тест (без ключей, одна сдача
+  // на пакет) от обычного урока (покарточная проверка, как раньше). В самом
+  // назначении ДЗ типа нет — только catalogLessonId, след происхождения,
+  // поэтому спрашиваем каталог отдельно, один раз на урок за сессию экрана.
+  const [lessonTypes, setLessonTypes] = useState({})
+  const askedLessonIds = useRef(new Set())
+  useEffect(() => {
+    if (!token) return
+    const ids = [...new Set(batches.map((b) => b.catalogLessonId).filter((id) => id != null))]
+    const missing = ids.filter((id) => !askedLessonIds.current.has(id))
+    if (!missing.length) return
+    missing.forEach((id) => askedLessonIds.current.add(id))
+    let alive = true
+    Promise.all(missing.map((id) =>
+      getCourseCatalogLesson(id, token).then((r) => [id, r?.type ?? null]).catch(() => [id, null])
+    )).then((pairs) => {
+      if (!alive) return
+      setLessonTypes((prev) => {
+        const next = { ...prev }
+        pairs.forEach(([id, type]) => { next[id] = type })
+        return next
+      })
+    })
+    return () => { alive = false }
+  }, [batches, token])
 
   // На закрытой работе показываем ТОЛЬКО то, что дошло до сервера.
   //
@@ -129,6 +158,49 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
       .catch(() => setFailed((prev) => new Set(prev).add(key)))
   }
 
+  /**
+   * «Завершить тест» — сдача юнит-теста целиком, одной кнопкой на пакет.
+   *
+   * У обычного урока каждый вопрос сдаётся своим «Проверить»; у юнит-теста
+   * эталоны скрыты до этого момента — значит и сохранить все ответы, и
+   * открыть разбор нужно разом, а не по одному. Вердикт по-прежнему считает
+   * сервер (AutoGrading) — correct в запросе тот же формальный аргумент, что
+   * и у обычного «Проверить».
+   */
+  const onSubmitBatch = (batch) => {
+    if (!editable || !token || hw?.id == null) return
+    const toSave = batch.exercises.filter((e) => isAnswered(shown[e.question.id]))
+    if (toSave.length !== batch.exercises.length) return
+    setSubmittingBatch(batch.key)
+    Promise.all(toSave.map((e) => {
+      const answer = shown[e.question.id]
+      const { correct } = gradeQuestion(e.question, answer)
+      return saveHomeworkAnswer(hw.id, e.id, token, answer, correct)
+        .then((saved) => ({ ok: true, id: e.id, saved }))
+        .catch(() => ({ ok: false, id: e.id }))
+    })).then((results) => {
+      setSubmittingBatch(null)
+      // Открываем разбор только у того, что реально сохранилось — упавшему
+      // вопросу нечего показывать, и «Завершить тест» на него можно нажать
+      // снова: он остался в числе неотвеченных для toSave.
+      setChecked((prev) => {
+        const next = new Set(prev)
+        results.filter((r) => r.ok).forEach((r) => next.add(`hw-${r.id}`))
+        return next
+      })
+      const failedIds = results.filter((r) => !r.ok).map((r) => r.id)
+      if (failedIds.length) {
+        setFailed((prev) => {
+          const next = new Set(prev)
+          failedIds.forEach((id) => next.add(`hw-${id}`))
+          return next
+        })
+      }
+      const lastSaved = [...results].reverse().find((r) => r.ok)?.saved
+      if (lastSaved) onSaved?.(lastSaved)
+    })
+  }
+
   // Задания были, но их отозвали — говорим об этом. Молча спрятать секцию значит
   // оставить ученика гадать, куда делось вчерашнее задание.
   if (!batches.length && revokedEverything(hw)) {
@@ -148,6 +220,13 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
       {batches.map((batch) => {
         const solved = solvedIn(batch.exercises)
         const total = batch.exercises.length
+        const unitTest = isUnitTestType(lessonTypes[batch.catalogLessonId])
+        // Сдано — выводим из уже сохранённых ответов, без своего флага: как
+        // только на сервере есть studentAnswer у каждого вопроса пакета,
+        // пересдавать нечего, и разбор открыт сам, даже после перезагрузки.
+        const submitted = unitTest && batchFullyAnswered(batch)
+        const answeredInBatch = batch.exercises.filter((e) => isAnswered(shown[e.question.id])).length
+        const canFinishTest = editable && !submitted && answeredInBatch === total && total > 0
         return (
           <section className="hw-block hw-block--exercises" key={batch.key}>
             <div className="hw-block__head">
@@ -187,10 +266,14 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
                         <PracticeBlock
                           block={exerciseBlock(e)}
                           answers={shown}
-                          checked={checked.has(key)}
+                          checked={submitted || checked.has(key)}
                           onAnswer={onAnswer}
                           onCheck={() => onCheck(e)}
-                          readOnly={!editable}
+                          readOnly={!editable || submitted}
+                          // У юнит-теста «Проверить» нет вовсе — эталон открывает
+                          // только «Завершить тест» на весь пакет разом.
+                          allowCheck={!unitTest}
+                          showAnswerKey={!unitTest || submitted}
                         />
                         {failed.has(key) && <p className="hw-exercise__error">{t('homework.answerNotSaved')}</p>}
                       </div>
@@ -199,6 +282,17 @@ export default function HomeworkExercises({ hw, token, onSaved, onAnswered }) {
                 </div>
               ))}
             </div>
+
+            {unitTest && !submitted && (
+              <button
+                type="button"
+                className="hw-submit hw-submit--batch"
+                disabled={!canFinishTest || submittingBatch === batch.key}
+                onClick={() => onSubmitBatch(batch)}
+              >
+                {t('homework.finishTest')}
+              </button>
+            )}
           </section>
         )
       })}

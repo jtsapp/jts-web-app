@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { answersKey, dedupeTail, exerciseBatches, exerciseBlock, isAnswered, lessonExercises, loadAnswers, pendingAnswers, readableInstruction, revokedEverything, saveAnswers } from './homeworkExercises.js'
+import { answersKey, batchFullyAnswered, dedupeTail, exerciseBatches, exerciseBlock, isAnswered, isUnitTestType, lessonExercises, loadAnswers, pendingAnswers, readableInstruction, revokedEverything, saveAnswers } from './homeworkExercises.js'
 
 describe('homeworkExercises', () => {
   beforeEach(() => localStorage.clear())
@@ -94,6 +94,61 @@ describe('отправки', () => {
 
     expect(batches).toHaveLength(2)
     expect(batches[0].exercises).toHaveLength(2)
+  })
+
+  it('несёт catalogLessonId пакета — по нему экран спрашивает тип урока', () => {
+    const hw = { exercises: [
+      { id: 1, batchId: 'b1', catalogLessonId: 314, question: q('q1') },
+      { id: 2, batchId: 'b1', catalogLessonId: 314, question: q('q2') },
+    ] }
+
+    expect(exerciseBatches(hw)[0].catalogLessonId).toBe(314)
+  })
+})
+
+/**
+ * Юнит-тест на дом: без ключей, одна сдача на весь пакет — решение владельца.
+ * Опознаём по типу урока каталога (тот же приём, что и в web-admin), «сдано»
+ * выводим из уже сохранённых на сервере ответов — новой колонки под это не
+ * заводим, studentAnswer у каждого вопроса пакета и так есть.
+ */
+describe('isUnitTestType', () => {
+  it('review и test — тест, регистр не важен', () => {
+    expect(isUnitTestType('REVIEW')).toBe(true)
+    expect(isUnitTestType('review')).toBe(true)
+    expect(isUnitTestType('TEST')).toBe(true)
+  })
+
+  it('обычный урок и пустое значение — не тест', () => {
+    expect(isUnitTestType('LESSON')).toBe(false)
+    expect(isUnitTestType(undefined)).toBe(false)
+    expect(isUnitTestType(null)).toBe(false)
+  })
+})
+
+describe('batchFullyAnswered', () => {
+  const q = (id) => ({ id, type: 'choice', prompt: id, options: ['a'], answer: 'a' })
+
+  it('все вопросы пакета сохранены на сервере — сдан', () => {
+    const batch = { exercises: [
+      { id: 1, studentAnswer: 'a', question: q('q1') },
+      { id: 2, studentAnswer: 'b', question: q('q2') },
+    ] }
+
+    expect(batchFullyAnswered(batch)).toBe(true)
+  })
+
+  it('хоть один без studentAnswer — не сдан', () => {
+    const batch = { exercises: [
+      { id: 1, studentAnswer: 'a', question: q('q1') },
+      { id: 2, studentAnswer: null, question: q('q2') },
+    ] }
+
+    expect(batchFullyAnswered(batch)).toBe(false)
+  })
+
+  it('пустой пакет не считается сданным', () => {
+    expect(batchFullyAnswered({ exercises: [] })).toBe(false)
   })
 })
 
