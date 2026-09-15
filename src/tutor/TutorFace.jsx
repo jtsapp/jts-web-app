@@ -1,116 +1,62 @@
-import { useEffect, useRef } from 'react'
-import TutorAvatar from './avatarEngine.js'
+import { useCallback, useState } from 'react'
 import { EMOTIONS } from './avatarEmotions.js'
 
 /**
- * Лицо тьютора на canvas. Заменяет плоский орб: эмоция — это выражение лица,
- * цвет формы и характер движения, а не подсветка рамки вокруг карточки.
+ * Лицо тьютора — готовые рендеры карточек Figma «Speaking Buddy» (см.
+ * avatarEmotions.js), а не рисунок в коде.
  *
- * Размер берётся из вёрстки (ResizeObserver по обёртке), а не из пропа: у канвы
- * пиксельный буфер, и на мобилке он обязан пересчитаться при смене ширины.
+ * Смена эмоции — кроссфейд с пружинкой: в прототипе макета переход между
+ * вариантами задан Smart Animate, EASE_OUT_BACK, 200 мс. Послойно картинку не
+ * «доморфить», поэтому повторяем длительность и кривую, а не сам морфинг.
  *
- * @param emotion    ключ пресета из avatarEmotions.js
- * @param intensity  сила 1..3 (из тега агента); двигает подвижность
- * @param speaking   тьютор сейчас озвучивает реплику. Не эмоция, а слой поверх
- *                   неё: рот открывается у ЛЮБОГО выражения, мимика остаётся
- *                   той, что прислал агент
- * @param audioTrack MediaStreamTrack голоса тьютора — рот открывается по
- *                   реальной амплитуде вместо имитации
- * @param className  класс обёртки: размер лица задаёт вёрстка (в канве ~1/3
- *                   бокса — прозрачное поле под тень и конфетти, его съедает
- *                   отрицательный margin). Дефолт — экран звонка.
+ * Новая картинка показывается только когда догрузилась: до этого на экране
+ * остаётся прежнее лицо. Иначе первый переход в незнакомую эмоцию мигал бы
+ * пустым местом, пока тянется файл. Грузим лишь то, что реально просили, —
+ * дашборду с одним лицом не нужны все 13 файлов.
+ *
+ * @param emotion   ключ из EMOTIONS; незнакомый → idle
+ * @param speaking  тьютор озвучивает реплику: пока true, на лице «Говорит»
+ *                  поверх эмоции агента — решение по продукту под карточку
+ *                  макета; как только замолчал, возвращается его эмоция
+ * @param className класс обёртки: размер задаёт вёрстка (см. .t-voice__face)
  */
-export default function TutorFace({
-  emotion = 'idle',
-  intensity = 2,
-  speaking = false,
-  audioTrack = null,
-  className = 't-voice__face',
-}) {
-  const boxRef = useRef(null)
-  const canvasRef = useRef(null)
-  const avRef = useRef(null)
+export default function TutorFace({ emotion = 'idle', speaking = false, className = 't-voice__face' }) {
+  const asked = speaking ? 'talking' : emotion
+  const want = EMOTIONS[asked] ? asked : 'idle'
 
-  useEffect(() => {
-    const box = boxRef.current
-    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    const av = new TutorAvatar(canvasRef.current, {
-      size: box?.clientWidth || 300,
-      reducedMotion: Boolean(mq?.matches),
-    })
-    avRef.current = av
+  // Однажды запрошенные картинки не размонтируем: повторная смена на них
+  // мгновенная, файл уже декодирован.
+  const [keys, setKeys] = useState([want])
+  if (!keys.includes(want)) setKeys([...keys, want])
 
-    const fit = () => {
-      const w = box?.clientWidth
-      if (w) av.setSize(Math.round(w))
-    }
-    const ro = new ResizeObserver(fit)
-    if (box) ro.observe(box)
-    // Смена зума/монитора меняет devicePixelRatio, а ширина бокса при этом та
-    // же — ResizeObserver молчит, и канва остаётся в старом разрешении (мыло).
-    // window.resize при смене dpr срабатывает, setSize сам сверит буфер.
-    window.addEventListener('resize', fit)
-
-    const onMotion = (e) => av.setReducedMotion(e.matches)
-    mq?.addEventListener?.('change', onMotion)
-    // Вкладка скрыта — rAF и так засыпает, но после возврата время не должно
-    // прыгнуть на минуты вперёд и дёрнуть анимацию.
-    const onVis = () => av.setPaused(document.hidden)
-    document.addEventListener('visibilitychange', onVis)
-
-    return () => {
-      ro.disconnect()
-      window.removeEventListener('resize', fit)
-      mq?.removeEventListener?.('change', onMotion)
-      document.removeEventListener('visibilitychange', onVis)
-      av.destroy()
-      avRef.current = null
-    }
+  const [loaded, setLoaded] = useState(() => new Set())
+  const markLoaded = useCallback((key) => {
+    setLoaded((prev) => (prev.has(key) ? prev : new Set(prev).add(key)))
   }, [])
 
-  // Пока тьютор говорит, лицо показывает talking ПОВЕРХ эмоции от агента —
-  // осознанное решение продукта под Figma-карточку «Говорит» (см. комментарий
-  // в avatarEmotions.js у EMOTIONS.talking). Как только speaking снова false,
-  // возвращаемся к последней присланной эмоции.
-  useEffect(() => {
-    avRef.current?.setEmotion(speaking ? 'talking' : emotion, intensity)
-  }, [emotion, intensity, speaking])
-
-  useEffect(() => {
-    avRef.current?.setSpeaking(speaking)
-  }, [speaking])
-
-  // Липсинк по реальному звуку. AudioContext заводим только когда трек реально
-  // пришёл: до разговора он не нужен, а лишний «висящий» контекст в Safari ещё
-  // и держит батарею.
-  useEffect(() => {
-    const av = avRef.current
-    if (!av || !audioTrack) return
-    const Ctx = window.AudioContext || window.webkitAudioContext
-    if (!Ctx) return
-    let actx
-    try {
-      actx = new Ctx()
-      const src = actx.createMediaStreamSource(new MediaStream([audioTrack]))
-      const analyser = actx.createAnalyser()
-      analyser.fftSize = 256
-      // Только source → analyser, без destination: звук уже играет через
-      // RoomAudioRenderer, второе подключение дало бы эхо.
-      src.connect(analyser)
-      av.attachAnalyser(analyser)
-    } catch {
-      // Нет Web Audio или трек не отдался — рот шевелится имитацией.
-      return
-    }
-    return () => {
-      av.attachAnalyser(null)
-      actx?.close?.().catch(() => {})
-    }
-  }, [audioTrack])
+  // На первом кадре показывать ещё нечего — рисуем запрошенное сразу, браузер
+  // догрузит его сам. Дальше держим прежнее лицо, пока новое не придёт.
+  const [shown, setShown] = useState(null)
+  const visible = shown === null || loaded.has(want) ? want : shown
+  if (visible !== shown) setShown(visible)
 
   return (
-    <div className={className} ref={boxRef}>
-      <canvas ref={canvasRef} role="img" aria-label={EMOTIONS[emotion]?.label || ''} />
+    <div className={className + ' t-face'} role="img" aria-label={EMOTIONS[visible].label}>
+      {keys.map((key) => (
+        <img
+          key={key}
+          className={'t-face__img' + (key === visible ? ' is-on' : '')}
+          src={EMOTIONS[key].src}
+          alt=""
+          draggable={false}
+          onLoad={() => markLoaded(key)}
+          // Закешированная картинка может успеть загрузиться до того, как React
+          // повесит onLoad, — тогда событие не придёт вовсе.
+          ref={(el) => {
+            if (el?.complete && el.naturalWidth) markLoaded(key)
+          }}
+        />
+      ))}
     </div>
   )
 }

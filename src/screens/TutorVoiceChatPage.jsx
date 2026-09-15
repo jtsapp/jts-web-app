@@ -357,20 +357,16 @@ function fmtClock(sec) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-// Сколько держать реакцию на лице ПОСЛЕ того, как тьютор договорил. Сам тег
-// приходит в начале реплики и попадает на лицо сразу: речь больше не занимает
-// мимику (см. setSpeaking в avatarEngine.js), поэтому эмоция живёт всю реплику
-// и ещё это окно. Раньше тег ждал конца озвучки — эмоцию, которой агент пометил
-// фразу, ученик видел только когда фраза уже кончилась.
-//
-// Окно нужно, чтобы лицо потом вернулось к «слушаю»: иначе ученик не видит,
-// что микрофон снова его. Цвет доезжает примерно за 1.6с (TAU_COLOR), так что
-// окно короче ~3с читалось бы как вспышка.
+// Сколько держать реакцию на лице ПОСЛЕ того, как тьютор договорил. Тег
+// приходит в начале реплики, но пока тьютор говорит, на лице карточка «Говорит»
+// (см. TutorFace) — эмоция агента проявляется, когда он замолкает, и держится
+// это окно. Потом лицо возвращается к «слушаю»: иначе ученик не видит, что
+// микрофон снова его.
 const REACTION_MS = 4500
 
 // Кнопка микрофона вынесена в отдельный компонент НЕ ради красоты: useTrackVolume
 // обновляет стейт по несколько раз в секунду, и внутри CallStage это
-// перерисовывало бы заодно лицо тьютора с липсинком. Здесь ререндер заперт в
+// перерисовывало бы заодно аватар тьютора. Здесь ререндер заперт в
 // одной кнопке. Пороги и шкала — в micLevel(), там же объяснено зачем.
 //
 // В режиме рации кнопка не тумблер, а тангента: пока её держат — эфир ученика.
@@ -417,19 +413,12 @@ function MicButton({
 // несколько раз в секунду и перерисовывал бы весь CallStage (ровно поэтому он
 // и заперт в MicButton, см. комментарий выше). Что ученика слышат, показывает
 // кольцо на кнопке мика; орб отражает сторону тьютора.
-function CallFace({ face, emotion, intensity, speaking, agentState, audioTrack }) {
+function CallFace({ face, emotion, speaking, agentState, audioTrack }) {
   if (face === 'orb') {
     const state = ['listening', 'thinking', 'speaking'].includes(agentState) ? agentState : 'idle'
     return <JarvisOrb state={state} audioTrack={audioTrack} />
   }
-  return (
-    <TutorFace
-      emotion={emotion}
-      intensity={intensity}
-      speaking={speaking}
-      audioTrack={audioTrack}
-    />
-  )
+  return <TutorFace emotion={emotion} speaking={speaking} />
 }
 
 // Внутри LiveKitRoom: состояние агента → выражение лица, живая подпись, тумблер мика.
@@ -535,13 +524,13 @@ function CallStage({
   useDataChannel('mood', (msg) => {
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload))
-      const key = moodToEmotion(data?.mood, Number(data?.intensity))
       const level = Number(data?.intensity)
+      const key = moodToEmotion(data?.mood, level)
       // Number.isInteger, а не только диапазон: 1.5 прошло бы `>= 1 && <= 3`,
-      // а сила — это индекс в таблице подвижности, дробной она не бывает.
+      // а сила — это ступень шкалы агента, дробной она не бывает.
       if (key && Number.isInteger(level) && level >= 1 && level <= 3) {
         stopReactionTimer()
-        setReaction({ key, level })
+        setReaction(key)
       }
     } catch {
       /* ignore malformed payloads */
@@ -562,25 +551,21 @@ function CallStage({
 
   useEffect(() => stopReactionTimer, [])
 
-  // Голос тьютора для липсинка. Берём сырой MediaStreamTrack: TrackReference
-  // пересоздаётся на каждый ререндер, а трек внутри тот же — иначе эффект с
-  // AudioContext пересобирался бы вхолостую по десятку раз за реплику.
+  // Голос тьютора для пульсации орба Джарвиса. Берём сырой MediaStreamTrack:
+  // TrackReference пересоздаётся на каждый ререндер, а трек внутри тот же —
+  // иначе эффект с AudioContext пересобирался бы вхолостую по десятку раз.
   const agentTrack = va.audioTrack?.publication?.track?.mediaStreamTrack || null
 
   // Микрофон ученика — для индикации «слышу тебя» на кнопке (см. MicButton).
   const micTrack = localParticipant?.getTrackPublication(Track.Source.Microphone)?.track || undefined
 
-  // Речи в этой лесенке нет: она не эмоция, а отдельный флаг ниже. Во время
-  // реплики на лице то, чем её пометил агент, — а без тега просто нейтраль,
-  // которая говорит.
+  // Речи в этой лесенке нет: её показывает сам TutorFace по флагу speaking
+  // (карточка «Говорит» поверх эмоции).
   let emotion = 'idle'
-  let intensity = 2
   if (!connected || !agentPresent) emotion = 'idle'
   else if (va.state === 'thinking') emotion = 'thinking'
-  else if (reaction) {
-    emotion = reaction.key
-    intensity = reaction.level
-  } else if (va.state === 'listening') emotion = 'listening'
+  else if (reaction) emotion = reaction
+  else if (va.state === 'listening') emotion = 'listening'
 
   // Субтитры ТЬЮТОРА — из agentTranscriptions (синхрон с аудио). Показываем
   // предложение, которое он произносит сейчас. Гаснуть между сегментами подписи
@@ -755,7 +740,6 @@ function CallStage({
       <CallFace
         face={face}
         emotion={emotion}
-        intensity={intensity}
         speaking={speaking}
         agentState={va.state}
         audioTrack={agentTrack}
