@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { hoistSelectQuestions } from './hoistSelectQuestions.js'
+import { lessonCardIds } from '../../lib/lessonCardId.js'
 
 describe('hoistSelectQuestions', () => {
   it('достаёт leftover <select> из info и делает choice, как у остальных вопросов', () => {
@@ -108,6 +109,67 @@ describe('hoistSelectQuestions', () => {
     const questions = hoistSelectQuestions(lesson).steps[0].blocks[0].questions
     expect(questions).toHaveLength(1)
     expect(questions[0].prompt).toContain('Who speaks first')
+  })
+
+  // Карточка аудирования: дорожка, текст задания и единственный «вопрос» —
+  // переключатель скорости плеера. Он выкидывается, и раньше вместе с ним
+  // пропадала дорожка: блок пересобирался в info из трёх полей, а audio в
+  // пересборку не входил. Ученица видела «Listen and write the four pieces of
+  // advice» и ни одной кнопки, преподаватель на том же уроке слышал
+  // (жалоба 15.09.2026).
+  it('сохраняет дорожку, когда у карточки есть и запись, и текст', () => {
+    const lesson = {
+      steps: [
+        {
+          id: 'listen',
+          blocks: [
+            {
+              type: 'practice',
+              title: 'Listen and write the four pieces of advice.',
+              html: '<p>First of all, you should try to reduce ___.</p>',
+              audio: { src: 'https://files.example/track.mp3#t=3.77,19.74' },
+              questions: [{ id: 'spd', type: 'choice', prompt: 'Speed', options: ['1x', '0.75x'] }],
+            },
+          ],
+        },
+      ],
+    }
+    const [block] = hoistSelectQuestions(lesson).steps[0].blocks
+    expect(block.audio.src).toBe('https://files.example/track.mp3#t=3.77,19.74')
+    expect(block.html).toContain('you should try to reduce')
+  })
+
+  // Тип блока НЕ меняем — по нему считается адрес карточки (lib/lessonCardId.js),
+  // и сменённый тип переставил бы адреса уже выданных домашних заданий: ученик
+  // получил бы «этого задания больше нет» на живой карточке. Дорожка адрес не
+  // двигает — audio входит в SERVICE_KEYS и в подпись не попадает.
+  it('не меняет тип блока и его адрес', () => {
+    const make = (audio) => ({
+      steps: [
+        {
+          id: 'listen',
+          blocks: [
+            {
+              type: 'practice',
+              title: 'Listen and write the four pieces of advice.',
+              html: '<p>First of all, you should try to reduce ___.</p>',
+              ...(audio ? { audio } : {}),
+              questions: [{ id: 'spd', type: 'choice', prompt: 'Speed', options: ['1x', '0.75x'] }],
+            },
+          ],
+        },
+      ],
+    })
+    const [withAudio] = hoistSelectQuestions(make({ src: 'https://files.example/t.mp3' })).steps[0].blocks
+    const [withoutAudio] = hoistSelectQuestions(make(null)).steps[0].blocks
+    expect(withAudio.type).toBe('info')
+    // Сравниваем сами адреса: ключ Map — объект блока, он с дорожкой и без
+    // ожидаемо разный, а адрес обязан совпасть до символа.
+    const ids = (lesson) => [...lessonCardIds(lesson).values()]
+    expect(ids(hoistSelectQuestions(make({ src: 'https://files.example/t.mp3' })))).toEqual(
+      ids(hoistSelectQuestions(make(null))),
+    )
+    expect(withoutAudio.type).toBe('info')
   })
 
   it('убирает карточку, если в ней была только скорость плеера', () => {

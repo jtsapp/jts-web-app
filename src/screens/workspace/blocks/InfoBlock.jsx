@@ -64,12 +64,26 @@ function InfoBlock({ block, onWord, answers, onAnswer, readOnly, liveQuestionId,
     return () => root.removeEventListener('click', onClick)
   }, [tappableHtml, onWord])
 
-  if (!html && !title) return null
+  const audioSrc = block?.audio?.src || ''
+
+  if (!html && !title && !audioSrc) return null
 
   return (
     <div className="lw-info__item">
       {title && <TapText as="h3" className="lw-info__title" text={title} onWord={onWord} />}
-      {html && <div className="lw-info__body" ref={bodyRef} />}
+      {/* Дорожка карточки аудирования. Info-блок получает её, когда все его
+          «вопросы» оказались переключателем скорости плеера и сам блок
+          пересобран (hoistSelectQuestions). Без этого плеера ученик видел
+          задание «Listen and write…» и слушать его было нечем, хотя у
+          преподавателя в админке запись играла. Класс общий с практическим
+          блоком — оформление у них одинаковое. */}
+      {audioSrc && (
+        <audio className="lw-practice__audio" controls preload="none" src={audioSrc} />
+      )}
+      {/* Банк слов внутри курсовой разметки нажатия при readOnly просто глотает
+          (bindWordBank), а плашки остаются белыми и живыми на вид. Метим
+          контейнер — дальше гасит CSS. */}
+      {html && <div className={`lw-info__body${readOnly ? ' is-locked' : ''}`} ref={bodyRef} />}
     </div>
   )
 }

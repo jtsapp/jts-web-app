@@ -8,7 +8,7 @@ import {
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
-import { canControl } from './live/liveStatus.js'
+import { canControl, contentLocked, contentLockNoteKey } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
 import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroadcastAudio } from './live/audioReport.js'
@@ -258,6 +258,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Держим url, а не флаг: сброс флага — setState в теле эффекта, то есть каскад
   // рендеров, на который ругается линтер.
   const [catalogResolvedFor, setCatalogResolvedFor] = useState(null)
+  // Урок закрыт именно этому ученику (403), а не «не загрузился». Разница в том,
+  // что показать: отказ объясняет, к кому идти, а запасной файл делает вид, что
+  // всё в порядке. Тот же признак и та же подпись, что в «Самостоятельно»
+  // (LessonWorkspacePage) — разъезжаться этим двум экранам не за что.
+  const [catalogDenied, setCatalogDenied] = useState(false)
   const materialFileUrl = activeMaterial?.fileUrl || null
   const catalogResolved = materialFileUrl != null && catalogResolvedFor === materialFileUrl
 
@@ -278,6 +283,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         if (cancelled) return
         setResolvedCatalogLessonId(id)
         setCatalogLesson(loaded || null)
+        setCatalogDenied(false)
         const forced = pendingFocusStepRef.current
         pendingFocusStepRef.current = null
         const restored = restoredStepRef.current
@@ -302,10 +308,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         }
         setCatalogResolvedFor(url)
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return
         setResolvedCatalogLessonId(null)
         setCatalogLesson(null)
+        // Загрузчик отдаёт отказ исключением, остальные сбои — null
+        // (см. loadCatalogLesson): 403 сюда доходит, и его нельзя равнять с
+        // обрывом связи.
+        setCatalogDenied(err?.status === 403)
         setCatalogResolvedFor(url)
       })
     return () => { cancelled = true }
@@ -1142,7 +1152,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // заданиями, и на рамку файлового материала — что из них на экране, зависит
   // от вида урока, а состояние одно.
   const stageFlags = `${calledBy != null ? ' is-called' : ''}${watchedBy != null ? ' is-watched' : ''}`
-  const contentReadOnly = isStaff || status === 'PAUSED' || status === 'COMPLETED'
+  // Признак блокировки и её причина считаются парой в liveStatus.js — врозь они
+  // разъезжаются, и ученик получает закрытые кнопки без единого слова о том,
+  // почему они закрыты.
+  const contentReadOnly = contentLocked(status, isStaff)
+  const lockNoteKey = contentLockNoteKey(status, isStaff)
+  const contentLockNote = lockNoteKey ? t(lockNoteKey) : ''
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
   // Шапка урока считает задания открытой темы теми же карточками, что лента их
   // и нумерует, — иначе «Задание 3 из 7» разъедется с цифрой на карточке.
@@ -1152,7 +1167,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Кнопки «Темы» нет, когда тем нет: у самодостаточного урока шагов не бывает,
   // и лист открывался бы пустым. LiveHeader сам прячет кнопку без обработчика.
   const openTopics = routeSteps.length ? () => setSheet('topics') : undefined
-  const view = materialView({ hasStep: activeStep != null, fileUrl: materialFileUrl, catalogResolved, allStepsHidden })
+  const view = materialView({
+    hasStep: activeStep != null,
+    fileUrl: materialFileUrl,
+    catalogResolved,
+    allStepsHidden,
+    denied: catalogDenied,
+  })
 
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
@@ -1413,6 +1434,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               onAnswer={handleAnswer}
                               onCheck={handleCheckStep}
                               readOnly={contentReadOnly}
+                              lockNote={contentLockNote}
                               liveQuestionId={isStaff ? reviewLiveQuestionId : (followMode ? focusTargetId : null)}
                               liveFocusNonce={isStaff ? 0 : focusNonce}
                               token={token}
@@ -1445,6 +1467,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <p className="live__status-msg">{t('schedule.loading')}</p>
                       ) : view === 'hidden' ? (
                         <p className="live__status-msg">{t('live.allStepsHidden')}</p>
+                      ) : view === 'denied' ? (
+                        <p className="live__status-msg">{t('lesson.ws.accessDenied')}</p>
                       ) : (
                         <SectionMaterialFrame
                           className={stageFlags}
