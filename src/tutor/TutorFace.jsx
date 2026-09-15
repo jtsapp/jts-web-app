@@ -68,9 +68,13 @@ export default function TutorFace({
     }
   }, [])
 
+  // Пока тьютор говорит, лицо показывает talking ПОВЕРХ эмоции от агента —
+  // осознанное решение продукта под Figma-карточку «Говорит» (см. комментарий
+  // в avatarEmotions.js у EMOTIONS.talking). Как только speaking снова false,
+  // возвращаемся к последней присланной эмоции.
   useEffect(() => {
-    avRef.current?.setEmotion(emotion, intensity)
-  }, [emotion, intensity])
+    avRef.current?.setEmotion(speaking ? 'talking' : emotion, intensity)
+  }, [emotion, intensity, speaking])
 
   useEffect(() => {
     avRef.current?.setSpeaking(speaking)
