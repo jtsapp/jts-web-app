@@ -37,6 +37,13 @@ function takeLeadInfo(blocks) {
   const list = blocks || []
   const first = list[0]
   if (!first || first.type !== 'info' || first.title) return { blocks: list }
+  // Блок с дорожкой в подзаголовок не уносим: подзаголовок — это строка, а
+  // запись строкой не бывает, и она пропадала вместе с блоком. Так молчало
+  // «Listen to the conversation» в живом уроке. Разметку с <audio> внутри
+  // сюда и раньше не пускали (см. querySelector ниже), но у уроков каталога
+  // дорожка лежит ОТДЕЛЬНЫМ полем блока, а не тегом в html, — и этот случай
+  // проверка не ловила.
+  if (first.audio?.src) return { blocks: list }
   const subtitle = leadTextFromInfoHtml(first.html)
   if (!subtitle) return { blocks: list }
   return { subtitle, blocks: list.slice(1) }
