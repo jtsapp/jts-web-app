@@ -7640,6 +7640,9 @@ textarea {
 .hw-badge { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; background: #e6ecff; color: #2b57d6; }
 /* Метка «Задание с урока» — материал, назначенный преподавателем как ДЗ. */
 .hw-card__lesson { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; background: #f0e9ff; color: var(--purple); }
+/* Процент автопроверки в карточке списка: подсказка, а не оценка, — поэтому
+   приглушённый текст, а не пилюля балла справа. */
+.hw-card__percent { font-size: 13px; font-weight: 700; color: var(--purple); }
 .hw-badge--overdue { background: #fdecd2; color: #b26a12; }
 .hw-badge--submitted { background: #d3ecff; color: #0b74c4; }
 .hw-badge--needsRevision { background: #ffe0e0; color: #b02a2a; }
@@ -7750,6 +7753,12 @@ textarea {
 .hw-grade__num { font-size: 32px; font-weight: 800; color: var(--purple); line-height: 1; }
 .hw-grade__label { color: var(--muted); font-size: 14px; }
 .hw-comment { margin-top: 10px; color: var(--ink); font-size: 15px; line-height: 1.5; }
+
+/* Результат автопроверки сданного урока. Крупно — процент, рядом дата: это
+   первое, за чем ученик открывает сданную работу. */
+.hw-autocheck { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.hw-autocheck__num { font-size: 24px; font-weight: 800; color: var(--purple); line-height: 1; }
+.hw-autocheck__date { color: var(--muted); font-size: 14px; }
 
 @media (max-width: 900px) {
   .hw__layout { grid-template-columns: 1fr; }
