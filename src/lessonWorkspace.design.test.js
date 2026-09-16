@@ -355,3 +355,42 @@ describe('токены доступны там, где рисуется прак
     expect(roots).not.toBeNull()
   })
 })
+
+describe('набор отрывков под заданием', () => {
+  // Преподаватель прислал экран: пять отрывков одного задания стояли колонкой
+  // во всю ширину, каждый — полноразмерный плеер, и само задание уезжало под
+  // сгиб. В курсе на их месте узкий ряд кнопок.
+  it('отрывки лежат плитками в ряд и переносятся', () => {
+    const rule = css.match(/\.lw-practice__html \.clips \{([^}]+)\}/)
+
+    expect(rule).not.toBeNull()
+    expect(rule[1]).toMatch(/display:\s*flex/)
+    expect(rule[1]).toMatch(/flex-wrap:\s*wrap/)
+  })
+
+  it('плитка держит свою ширину и не растягивается', () => {
+    const rule = css.match(/\.lw-practice__html \.clips \.track \{([^}]+)\}/)
+
+    expect(rule).not.toBeNull()
+    // Растягивающаяся плитка делала последнюю в ряду шире соседей.
+    expect(rule[1]).toMatch(/flex:\s*0 0 200px/)
+    // Без min-width длинная подпись распирает плитку и перенос ломается.
+    expect(rule[1]).toMatch(/min-width:\s*0/)
+  })
+
+  it('одиночные кнопки списка — такие же плитки, подпись над своим плеером', () => {
+    const rule = css.match(/\.lw-practice__html \.player\.seg-clip \{([^}]+)\}/)
+
+    expect(rule).not.toBeNull()
+    expect(rule[1]).toMatch(/width:\s*200px/)
+    // В разметке подпись идёт после звука — без order она вставала под плеером
+    // и читалась как подпись к следующему.
+    expect(css).toMatch(/\.player\.seg-clip \.meta[\s\S]{0,300}order:\s*-1/)
+  })
+
+  it('правило есть и у преподавателя, и у ученика', () => {
+    // Урок один, экрана два: разъехавшись, они молча покажут разное.
+    expect(css).toContain('.lw-info__body .clips')
+    expect(css).toContain('.lw-practice__html .clips')
+  })
+})
