@@ -6,8 +6,9 @@ import { BUDDY_RIG } from './buddyRig.js'
  * Лицо тьютора — слои карточек Figma «Speaking Buddy» (см. buddyRig.js): тело
  * со свечением, глаза и значки отдельными картинками. Вместе они дают ровно
  * рендер карточки, а раздельно — анимируются: у каждой эмоции своё движение
- * (tutor.css, .t-face--<ключ>). Своей анимации у макета нет, кроме перехода;
- * движения придуманы под характер эмоции, пока дизайнер не нарисует свои.
+ * (tutor.css, .t-face--<ключ>). Поверх него у четырёх эмоций идёт петля из
+ * макета — тело (.t-face__body) качается между двумя кадрами дизайнера, а
+ * слои, что в карточке лежат вне тела (free в buddyRig.js), стоят на месте.
  *
  * Смена эмоции — кроссфейд с пружинкой: в прототипе макета переход между
  * вариантами задан Smart Animate, EASE_OUT_BACK, 200 мс. Послойно картинку не
@@ -53,29 +54,36 @@ export default function TutorFace({ emotion = 'idle', speaking = false, classNam
           style={{ '--tilt': `${BUDDY_RIG[key].tilt}deg` }}
         >
           <div className="t-face__rig">
-            {BUDDY_RIG[key].layers.map(({ part, src, box }) => (
-              <img
-                key={part}
-                className={`t-face__layer t-face__layer--${part}`}
-                src={src}
-                alt=""
-                draggable={false}
-                style={{ left: `${box[0]}%`, top: `${box[1]}%`, width: `${box[2]}%`, height: `${box[3]}%` }}
-                onLoad={part === 'base' ? () => markLoaded(key) : undefined}
-                // Закешированная картинка может успеть загрузиться до того, как
-                // React повесит onLoad, — тогда событие не придёт вовсе.
-                ref={
-                  part === 'base'
-                    ? (el) => {
-                        if (el?.complete && el.naturalWidth) markLoaded(key)
-                      }
-                    : undefined
-                }
-              />
-            ))}
+            <div className="t-face__body">
+              {BUDDY_RIG[key].layers.filter((l) => !l.free).map((layer) => renderLayer(key, layer, markLoaded))}
+            </div>
+            {BUDDY_RIG[key].layers.filter((l) => l.free).map((layer) => renderLayer(key, layer, markLoaded))}
           </div>
         </div>
       ))}
     </div>
+  )
+}
+
+function renderLayer(key, { part, src, box }, markLoaded) {
+  return (
+    <img
+      key={part}
+      className={`t-face__layer t-face__layer--${part}`}
+      src={src}
+      alt=""
+      draggable={false}
+      style={{ left: `${box[0]}%`, top: `${box[1]}%`, width: `${box[2]}%`, height: `${box[3]}%` }}
+      onLoad={part === 'base' ? () => markLoaded(key) : undefined}
+      // Закешированная картинка может успеть загрузиться до того, как
+      // React повесит onLoad, — тогда событие не придёт вовсе.
+      ref={
+        part === 'base'
+          ? (el) => {
+              if (el?.complete && el.naturalWidth) markLoaded(key)
+            }
+          : undefined
+      }
+    />
   )
 }

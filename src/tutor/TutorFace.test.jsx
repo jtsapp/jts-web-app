@@ -27,6 +27,19 @@ describe('TutorFace', () => {
     expect(parts).toEqual(['base', 'eyes', 'z1', 'z2', 'z3'])
   })
 
+  it('петля макета качает тело с глазами, а пузырь вне тела стоит', () => {
+    const { container } = render(<TutorFace emotion="talking" />)
+    const inBody = [...container.querySelectorAll('.t-face--talking .t-face__body .t-face__layer')].map((el) => el.alt || el.className)
+    expect(inBody.join(' ')).toMatch(/--base.*--eyes/)
+    expect(container.querySelector('.t-face--talking .t-face__body .t-face__layer--bubble')).toBeNull()
+    expect(container.querySelector('.t-face--talking .t-face__rig > .t-face__layer--bubble')).not.toBeNull()
+  })
+
+  it('бровь «Соркастичен» — отдельный слой в теле', () => {
+    const { container } = render(<TutorFace emotion="gloat" />)
+    expect(container.querySelector('.t-face--gloat .t-face__body .t-face__layer--brow')).not.toBeNull()
+  })
+
   it('держит прежнее лицо, пока новое не догрузилось', () => {
     const { container, rerender } = render(<TutorFace emotion="idle" />)
     rerender(<TutorFace emotion="happy" />)
