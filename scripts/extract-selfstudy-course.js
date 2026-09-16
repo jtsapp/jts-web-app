@@ -24,6 +24,7 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const { readSelfStudyCourse } = require('./selfstudy/read-course')
 const { lessonSteps, plain } = require('./selfstudy/steps')
+const { clipFixer, clipFixFiles, FIX_ROOT } = require('./selfstudy/clip-fixes')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 
 const ROOT = path.join(__dirname, '..')
@@ -101,9 +102,24 @@ function build(file) {
   const outDir = path.join(ROOT, 'public/course', course.level)
   fs.mkdirSync(outDir, { recursive: true })
 
+  // Куски треков, вырезанные под правки привязки записей, пишутся в audio/
+  // вместе с записями курса — иначе --prune удалил бы их как чужие.
+  for (const rel of clipFixFiles(course.level)) {
+    course.audio[`fix:${rel}`] = fs.readFileSync(path.join(FIX_ROOT, rel)).toString('base64')
+  }
   const { byKey, written } = writeAudio(course, outDir)
   const imgs = imageIndex(outDir)
   const wordAudio = wordAudioLookup(course.level)
+
+  // Ключ клипа у A0/A2 живёт внутри урока, у A1 — общий на уровень: пробуем
+  // сначала «урок:ключ», потом голый ключ.
+  const rawClip = (lessonKey, key) => byKey.get(`${lessonKey}:${key}`) || byKey.get(key) || null
+  // Файл курса местами привязывает задание к соседнему куску трека или к
+  // обрезанному клипу — правки в selfstudy/clip-fixes.js.
+  const fixes = clipFixer(course.level, rawClip, {
+    fileUrl: (rel) => byKey.get(`fix:${rel}`) || null,
+    sayUrl: wordAudio,
+  })
 
   // Видео B2 в файл курса не вшито — оно ссылается на внешний ролик
   // (videos/nav_B2_report_unit7_olb.mp4). Те же ролики уже лежат в репозитории
@@ -120,13 +136,15 @@ function build(file) {
     lang: 'ru',
     level: course.level,
     video: videoUrl,
-    // Ключ клипа у A0/A2 живёт внутри урока, у A1 — общий на уровень: пробуем
-    // сначала «урок:ключ», потом голый ключ.
-    clip: (key) => byKey.get(`${lessonKey}:${key}`) || byKey.get(key) || null,
+    clip: (key) => fixes.clip(lessonKey, key),
     img: (word) => imgs.get(imgKey(word)) || null,
     wordAudio,
   })
 
+  // Шаги копятся в памяти и ложатся на диск только после сверки правок записей:
+  // разошедшаяся правка — повод остановиться, а не оставить половину файлов
+  // пересобранной.
+  const pending = new Map()
   const kept = new Set(['index.json', 'img-index.json'])
   const lessons = []
   let stepCount = 0
@@ -137,10 +155,7 @@ function build(file) {
     // Подпись урока у A0 в меню курса трёхъязычная, у A1/A2 — строкой. Плеер
     // печатает её как есть, поэтому объект сюда попасть не должен.
     const blurb = plain(lesson.blurb, 'ru')
-    fs.writeFileSync(
-      path.join(outDir, name),
-      `${JSON.stringify({ n: lesson.no, title: lesson.title, blurb, steps }, null, 0)}\n`,
-    )
+    pending.set(name, `${JSON.stringify({ n: lesson.no, title: lesson.title, blurb, steps }, null, 0)}\n`)
     kept.add(name)
     lessons.push({ n: lesson.no, unit: lesson.unit, no: lesson.no, title: lesson.title, blurb })
   }
@@ -166,8 +181,8 @@ function build(file) {
       const id = test.exam.final ? 'f' : `t${Math.max(1, Math.ceil((test.exam.to || 0) / 4))}`
       const after = test.exam.after ? Math.ceil(test.exam.after / 4) : course.units.length
       const name = `steps-X${id}.json`
-      fs.writeFileSync(
-        path.join(outDir, name),
+      pending.set(
+        name,
         `${JSON.stringify({ n: id, title: test.title, blurb: test.blurb || '', passRatio: graded ? pass / graded : null, steps }, null, 0)}\n`,
       )
       // passRatio читает плеер (exam = passRatio != null): без него большой
@@ -191,13 +206,23 @@ function build(file) {
     if (!unit) continue
     const title = test.title || `Тест юнита ${unit}`
     const name = `steps-T${unit}.json`
-    fs.writeFileSync(
-      path.join(outDir, name),
+    pending.set(
+      name,
       `${JSON.stringify({ n: unit, title, blurb: plain(test.blurb, 'ru'), passRatio: graded ? pass / graded : null, steps }, null, 0)}\n`,
     )
     kept.add(name)
     tests.push({ unit, title, items: graded, pass })
   }
+
+  // Правка, которая разошлась с файлом курса или не встретилась ни в одном
+  // задании, значит одно: файл курса поменялся. Накладывать её вслепую нельзя —
+  // сверьте записи заново и поправьте таблицу.
+  const fixReport = fixes.report()
+  const broken = [...fixReport.stale, ...fixReport.unused.map((id) => `${id}: клип не встретился ни в одном задании`)]
+  if (broken.length) {
+    throw new Error(`${course.level}: правки записей не сходятся с файлом курса (scripts/selfstudy/clip-fixes.js):\n  ${broken.join('\n  ')}`)
+  }
+  for (const [name, content] of pending) fs.writeFileSync(path.join(outDir, name), content)
 
   // Юниты каталога: имя юнита и заголовки его уроков — как читает courseTrail.
   const units = course.units.map((u) => [
@@ -234,7 +259,8 @@ function build(file) {
 
   console.log(
     `${course.level}: уроков ${lessons.length}, тестов ${tests.length}, шагов ${stepCount}, ` +
-      `аудио ${written.size}${PRUNE ? `, удалено старых файлов ${removed}` : ''}`,
+      `аудио ${written.size}, правок записей ${fixReport.applied.length}` +
+      `${PRUNE ? `, удалено старых файлов ${removed}` : ''}`,
   )
   return { level: course.level, lessons: lessons.length, tests: tests.length, steps: stepCount, audio: written.size, removed }
 }
