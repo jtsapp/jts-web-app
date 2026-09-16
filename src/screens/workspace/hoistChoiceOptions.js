@@ -46,6 +46,30 @@ function promptFor(container) {
  * ключ проверки там, где его не было, значило бы отмечать ученику ошибки на
  * вопросе «что тебе нравится».
  */
+/**
+ * Слово, которое ученик должен услышать.
+ *
+ * Задание «послушай и выбери слово» держит его не в тексте: в разметке курса это
+ * кнопка `sayWord('answer')`, конвертация превращает её в маркер `data-say` на
+ * самом вопросе или в пустой `.say[data-say]` рядом с вариантами.
+ *
+ * Здесь вопрос собирается заново — и раньше маркер не читался вовсе. Кнопки
+ * приезжали, звук нет, и задание становилось неотвечаемым: выбрать слово на слух,
+ * не услышав его, нельзя.
+ *
+ * Тот же разбор, слово в слово, делает сторона преподавателя
+ * (web-admin hoist-choice-options.ts): разъедься они — живой урок сведёт вопросы
+ * по questionId и покажет сторонам разное.
+ */
+function sayOf(container) {
+  const own = container.getAttribute('data-say')?.trim()
+  if (own) return own
+  // Голые `.opts`: маркер лежит не на них, а рядом, в той же строке задания.
+  const holder =
+    container.closest('.mcq, .multi-q, .row, .line, li, .card, .body') || container.parentElement
+  return holder?.querySelector('[data-say]')?.getAttribute('data-say')?.trim() || undefined
+}
+
 export function choiceFromOptions(container, id) {
   const buttons = Array.from(container.querySelectorAll('.opt'))
   if (buttons.length < 2) return null
@@ -56,16 +80,18 @@ export function choiceFromOptions(container, id) {
   const correct = buttons.filter((b) => b.hasAttribute('data-correct')).map(textOf).filter(Boolean)
   const prompt = promptFor(container)
   const multiple = container.hasAttribute('data-multiple')
+  const say = sayOf(container)
+  const withSay = say ? { say } : {}
 
   // prompt пишем всегда, даже пустой: тот же объект собирает сторона
   // преподавателя (hoist-choice-options.ts), и расходиться формой они не должны.
   if (correct.length > 1) {
-    return { id, type: 'multi', prompt, options, answers: correct }
+    return { id, type: 'multi', prompt, options, answers: correct, ...withSay }
   }
   if (correct.length === 1) {
-    return { id, type: 'choice', prompt, options, answer: correct[0] }
+    return { id, type: 'choice', prompt, options, answer: correct[0], ...withSay }
   }
-  return { id, type: 'pick', prompt, options, ...(multiple ? { multiple: true } : {}) }
+  return { id, type: 'pick', prompt, options, ...(multiple ? { multiple: true } : {}), ...withSay }
 }
 
 function extractFromHtml(html, stepId, nextIndex) {

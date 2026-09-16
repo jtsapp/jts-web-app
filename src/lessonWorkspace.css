@@ -750,6 +750,83 @@
   width: 100%;
 }
 
+/* Набор отрывков одного задания: «1 · Sandra», «2 · Omar», «Conversation 3».
+   В курсе это узкий ряд кнопок. Нативный <audio> в кнопку не ужать — он нужен,
+   чтобы звук работал без скриптов курса, — но колонкой во всю ширину пять
+   отрывков съедали экран, и само задание уезжало под сгиб. Кладём плитками: на
+   широком экране в ряд, на телефоне переносятся сами. */
+.lw-info__body .clips,
+.lw-practice__html .clips {
+  /* Родительский .player прижимает детей влево (align-items: flex-start), и без
+     этого ряд схлопывается по содержимому, а плееры внутри сжимаются в точку. */
+  align-self: stretch;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 2px 0 8px;
+}
+
+.lw-info__body .clips .track,
+.lw-practice__html .clips .track {
+  /* Та же ширина, что у одиночных плиток: иначе последняя в ряду растягивалась
+     и набор выглядел рваным. */
+  flex: 0 0 200px;
+  /* Без этого длинная подпись распирает плитку и ломает перенос. */
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+}
+
+.lw-info__body .clips .track b,
+.lw-practice__html .clips .track b {
+  display: block;
+  margin-bottom: 3px;
+  font-size: calc(12.5px * var(--lw-text-scale, 1));
+  font-weight: 600;
+  color: var(--lw-muted, #6b6578);
+}
+
+.lw-info__body .clips .track audio,
+.lw-practice__html .clips .track audio {
+  width: 100%;
+  height: 36px;
+}
+
+/* Список отрывков из самого курса: там это узкий ряд кнопок «1 · Sandra»,
+   «2 · Omar». У нас каждая кнопка — свой <audio>, и колонкой они занимали
+   экран целиком, а задание уезжало под сгиб. Плитка в строку: соседние встают
+   рядом сами, на узком экране переносятся. */
+.lw-info__body .player.seg-clip,
+.lw-practice__html .player.seg-clip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  width: 200px;
+  max-width: 100%;
+  margin: 0 10px 8px 0;
+  vertical-align: top;
+}
+
+.lw-info__body .player.seg-clip .meta,
+.lw-info__body .player.seg-clip .meta b,
+.lw-practice__html .player.seg-clip .meta,
+.lw-practice__html .player.seg-clip .meta b {
+  /* В разметке подпись идёт ПОСЛЕ звука, и на экране она вставала под плеером —
+     читаясь как подпись к следующему. Поднимаем её над своим плеером. */
+  order: -1;
+  font-size: calc(12.5px * var(--lw-text-scale, 1));
+  font-weight: 600;
+  color: var(--lw-muted, #6b6578);
+}
+
+.lw-info__body .player.seg-clip audio,
+.lw-practice__html .player.seg-clip audio {
+  width: 100%;
+  height: 36px;
+}
+
 /* Кастомный плеер курса (B2 и A0–B1 `.player`): заголовок с курса — отдельная
    строка, фейковые Play/полоса/скорость скрыты. Живой контрол — <audio>. */
 .lw-info__body .player,
