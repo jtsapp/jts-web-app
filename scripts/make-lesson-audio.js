@@ -41,6 +41,7 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const { sayAudioFile } = require('./jts-self/say-audio')
 const { strip } = require('./lib/html-text.js')
+const { clipFixTexts } = require('./selfstudy/clip-fixes')
 // Привязка записей к нативным урокам — тем же шагом, что и генерация: иначе
 // её забывают сделать отдельно (см. комментарий в конце run()).
 const { linkLevel } = require('./link-lesson-audio')
@@ -157,16 +158,31 @@ async function synthesizeSoniox(text, { voice = SONIOX_VOICE, speed = SONIOX_SPE
  * проверяло бы не память, а способность узнать другой голос.
  */
 function wordsOf(level) {
-  if (!hasNativeContent(level)) return courseWordsOf(level)
   // У A0/A1 источника два сразу, и оба живые: сам урок рендерится из
   // public/learning/<level>.json (nativeLessonSteps), а тест юнита — из
   // steps-T<u>.json курса. Берём объединение, иначе половина словаря
   // остаётся немой в зависимости от того, откуда пришёл экран.
+  const sources = hasNativeContent(level) ? [...nativeWordsOf(level), ...courseWordsOf(level)] : courseWordsOf(level)
   const seen = new Map()
-  for (const item of [...nativeWordsOf(level), ...courseWordsOf(level)]) {
+  for (const item of [...sources, ...fixWordsOf(level)]) {
     if (!seen.has(item.file)) seen.set(item.file, item)
   }
   return [...seen.values()]
+}
+
+// Правки привязки записей курса (scripts/selfstudy/clip-fixes.js): где нужного
+// куска трека нет ни в файле курса, ни в прошлой выгрузке, запись делаем сами —
+// тем же голосом, что и слова словаря. Фразы там короткие (время, дата,
+// «There isn't a theatre.»), и словарный темп им подходит.
+function fixWordsOf(level) {
+  return clipFixTexts(level).map((text) => ({
+    file: sayAudioFile(text),
+    text,
+    code: 'clip-fix',
+    title: 'правка привязки записей курса',
+    provider: 'soniox',
+    kind: 'word',
+  }))
 }
 
 // Откуда у уровня берётся САМ УРОК. Каталог public/course/<level>/ есть уже у
