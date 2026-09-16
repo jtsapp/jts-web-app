@@ -12,6 +12,12 @@
 // box — [x, y, w, h] в % общего холста 726×726 единиц вокруг центра рамки
 // 428×428 (тот же холст, что у base). tilt — наклон тела в карточке, градусы
 // CSS: моргание сплющивает глаза вдоль их собственной оси, а не экрана.
+//
+// free — слой лежит в карточке вне Container (пузыри «Говорит» и точки
+// «Думает»): в петлях макета тело под ним качается, а он стоит на месте.
+// Бровь «Соркастичен» (brow) выгружена из того же узла отдельно от глаз:
+// в петле макета она поднимается, а глаза нет. Этой разметки в исходной
+// выгрузке не было — перевыгружаешь, сохрани.
 export const BUDDY_RIG = {
   idle: {
     tilt: -15,
@@ -33,10 +39,10 @@ export const BUDDY_RIG = {
     layers: [
       { part: 'base', src: '/tutor/buddy/talking.webp', box: [0, 0, 100, 100] },
       { part: 'eyes', src: '/tutor/buddy/talking-eyes.webp', box: [41.6667, 45.9366, 13.0165, 7.0248] },
-      { part: 'bubble', src: '/tutor/buddy/talking-bubble.webp', box: [61.2259, 45.1102, 12.741, 11.5014] },
-      { part: 'dot1', src: '/tutor/buddy/talking-dot1.webp', box: [63.5675, 49.6556, 2.3416, 2.2727] },
-      { part: 'dot2', src: '/tutor/buddy/talking-dot2.webp', box: [65.7713, 50.6887, 2.2727, 2.3416] },
-      { part: 'dot3', src: '/tutor/buddy/talking-dot3.webp', box: [67.9063, 51.7906, 2.2727, 2.2727] },
+      { part: 'bubble', free: true, src: '/tutor/buddy/talking-bubble.webp', box: [61.2259, 45.1102, 12.741, 11.5014] },
+      { part: 'dot1', free: true, src: '/tutor/buddy/talking-dot1.webp', box: [63.5675, 49.6556, 2.3416, 2.2727] },
+      { part: 'dot2', free: true, src: '/tutor/buddy/talking-dot2.webp', box: [65.7713, 50.6887, 2.2727, 2.3416] },
+      { part: 'dot3', free: true, src: '/tutor/buddy/talking-dot3.webp', box: [67.9063, 51.7906, 2.2727, 2.2727] },
     ],
   },
   listening: {
@@ -53,9 +59,9 @@ export const BUDDY_RIG = {
     layers: [
       { part: 'base', src: '/tutor/buddy/thinking.webp', box: [0, 0, 100, 100] },
       { part: 'eyes', src: '/tutor/buddy/thinking-eyes.webp', box: [36.7769, 49.9311, 11.4325, 5.9229] },
-      { part: 'dot1', src: '/tutor/buddy/thinking-dot1.webp', box: [65.3581, 38.2231, 2.9614, 2.9614] },
-      { part: 'dot2', src: '/tutor/buddy/thinking-dot2.webp', box: [68.8017, 38.5675, 2.9614, 2.9614] },
-      { part: 'dot3', src: '/tutor/buddy/thinking-dot3.webp', box: [72.2452, 38.9118, 2.9614, 2.8926] },
+      { part: 'dot1', free: true, src: '/tutor/buddy/thinking-dot1.webp', box: [65.3581, 38.2231, 2.9614, 2.9614] },
+      { part: 'dot2', free: true, src: '/tutor/buddy/thinking-dot2.webp', box: [68.8017, 38.5675, 2.9614, 2.9614] },
+      { part: 'dot3', free: true, src: '/tutor/buddy/thinking-dot3.webp', box: [72.2452, 38.9118, 2.9614, 2.8926] },
     ],
   },
   happy: {
@@ -99,7 +105,8 @@ export const BUDDY_RIG = {
     tilt: 5,
     layers: [
       { part: 'base', src: '/tutor/buddy/gloat.webp', box: [0, 0, 100, 100] },
-      { part: 'eyes', src: '/tutor/buddy/gloat-eyes.webp', box: [45.5234, 44.5592, 16.3223, 6.8182] },
+      { part: 'eyes', src: '/tutor/buddy/gloat-eyes.webp', box: [45.9364, 44.5986, 15.0138, 6.6116] },
+      { part: 'brow', src: '/tutor/buddy/gloat-brow.webp', box: [56.0022, 45.1165, 5.4408, 2.4105] },
     ],
   },
   surprised: {
