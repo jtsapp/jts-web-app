@@ -46,8 +46,14 @@ const dict = {
     'demo.retry.title': 'Давай попробуем еще раз',
     'demo.retry.sub': 'Специальная скидка для вас',
     'demo.retry.cta': 'Использовать скидку',
-    'cefr.A1': 'Beginner',
-    'cefr.A2': 'Elementary',
+    // Ступени названы как сами курсы школы: A0 Beginner, A1 Elementary,
+    // A2 Pre-Intermediate. Раньше подписи были сдвинуты на ступень вниз, и
+    // ученица с закреплённым A2 видела «A2 · Elementary», хотя преподаватель
+    // открыл ей Pre-Intermediate. A0 не было вовсе — на его месте показывался
+    // сам ключ.
+    'cefr.A0': 'Beginner',
+    'cefr.A1': 'Elementary',
+    'cefr.A2': 'Pre-Intermediate',
     'cefr.B1': 'Intermediate',
     'cefr.B2': 'Upper-Intermediate',
     'cefr.C1': 'Advanced',
@@ -1826,8 +1832,14 @@ const dict = {
     'demo.retry.title': 'Let us try once more',
     'demo.retry.sub': 'A special discount for you',
     'demo.retry.cta': 'Use the discount',
-    'cefr.A1': 'Beginner',
-    'cefr.A2': 'Elementary',
+    // Ступени названы как сами курсы школы: A0 Beginner, A1 Elementary,
+    // A2 Pre-Intermediate. Раньше подписи были сдвинуты на ступень вниз, и
+    // ученица с закреплённым A2 видела «A2 · Elementary», хотя преподаватель
+    // открыл ей Pre-Intermediate. A0 не было вовсе — на его месте показывался
+    // сам ключ.
+    'cefr.A0': 'Beginner',
+    'cefr.A1': 'Elementary',
+    'cefr.A2': 'Pre-Intermediate',
     'cefr.B1': 'Intermediate',
     'cefr.B2': 'Upper-Intermediate',
     'cefr.C1': 'Advanced',
@@ -3585,8 +3597,14 @@ const dict = {
     'demo.retry.title': 'Тағы бір рет көрейік',
     'demo.retry.sub': 'Сізге арнайы жеңілдік',
     'demo.retry.cta': 'Жеңілдікті пайдалану',
-    'cefr.A1': 'Beginner',
-    'cefr.A2': 'Elementary',
+    // Ступени названы как сами курсы школы: A0 Beginner, A1 Elementary,
+    // A2 Pre-Intermediate. Раньше подписи были сдвинуты на ступень вниз, и
+    // ученица с закреплённым A2 видела «A2 · Elementary», хотя преподаватель
+    // открыл ей Pre-Intermediate. A0 не было вовсе — на его месте показывался
+    // сам ключ.
+    'cefr.A0': 'Beginner',
+    'cefr.A1': 'Elementary',
+    'cefr.A2': 'Pre-Intermediate',
     'cefr.B1': 'Intermediate',
     'cefr.B2': 'Upper-Intermediate',
     'cefr.C1': 'Advanced',
