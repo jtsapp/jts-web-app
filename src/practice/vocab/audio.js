@@ -3,6 +3,7 @@
 // ресурсы уровня вкладки, а не компонента.
 
 import { reportAudio } from '../../screens/live/audioReport.js'
+import { speakListeningAudio } from '../../lib/ielts-audio.js'
 
 /* ─────────────── TTS ───────────────
    Качество Web Speech API зависит от голосов устройства: ранжируем все
@@ -92,13 +93,32 @@ export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } =
   }
   const gb = accent === 'gb'
   const v = gb ? VOICE.gb : VOICE.us
-  // Английского голоса нет — молчим, а не отдаём слово русскому/казахскому голосу.
+  // Английского голоса на устройстве нет. Отдавать английское слово русскому или
+  // казахскому голосу нельзя — выйдет не произношение, а пародия. Но и молчать
+  // нельзя: ровно это преподаватель и прислал — «в словаре слова не
+  // озвучиваются, и в упражнениях, где нужно по аудио определить какое слово,
+  // нету озвучки». Задание, где слово надо услышать, без звука неотвечаемо.
+  //
+  // Уходим на серверную озвучку — ту же, что читает тексты Listening. Она сама
+  // вернёт 'none', если не настроена на сервере; только тогда сознаёмся, что
+  // звука не будет, и делаем это ОДИН раз за сеанс, а не на каждое слово.
   if (!v || !/^en[-_]/i.test(v.lang || '')) {
-    if (!voiceWarned) {
-      voiceWarned = true
-      onNoVoice && onNoVoice()
-    }
-    onEnd && onEnd()
+    speakListeningAudio(String(text), { onEnd })
+      .then((played) => {
+        if (played === 'none') {
+          if (!voiceWarned) {
+            voiceWarned = true
+            onNoVoice && onNoVoice()
+          }
+          onEnd && onEnd()
+          return
+        }
+        reportAudio({ kind: 'tts', action: 'play', text: String(text), accent: gb ? 'GB' : 'US' })
+      })
+      .catch(() => {
+        onEnd && onEnd()
+      })
+    onStart && onStart()
     return
   }
   const single = /^[a-z'’-]+$/i.test(String(text).trim())
