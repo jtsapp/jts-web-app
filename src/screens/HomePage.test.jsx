@@ -131,7 +131,10 @@ describe('Главная демо-аккаунта', () => {
     levelProgress.value = { level: 'A2', next: 'B1', percent: 20, done: 4, total: 20, remaining: 16 }
     renderHome({ userLevel: 'A1', token: 'T' })
 
-    expect(await screen.findByText('A2 · Elementary')).toBeTruthy()
+    // A2 у школы называется Pre-Intermediate — как курс и как в панели
+    // преподавателя. Раньше здесь стояло «Elementary», и это закрепляло
+    // сдвиг подписей на ступень вниз (см. cefrNames.test.js).
+    expect(await screen.findByText('A2 · Pre-Intermediate')).toBeTruthy()
     expect(screen.getByText('Цель — B1')).toBeTruthy()
   })
 
