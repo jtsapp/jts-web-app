@@ -52,9 +52,12 @@ export function recordVocabMisses(token, words) {
   writeAll(all)
 }
 
+/** Худшие слова вместе с ключом записи: практика «повторить» спрашивает под
+ *  этим же ключом, иначе верный ответ не нашёл бы, что снять. */
 export function topVocabMisses(token, limit = 3) {
   const bag = readAll()[userKey(token)] || {}
-  return Object.values(bag)
+  return Object.entries(bag)
+    .map(([key, entry]) => ({ ...entry, key }))
     .sort((a, b) => (b.misses - a.misses) || (b.at - a.at))
     .slice(0, limit)
 }

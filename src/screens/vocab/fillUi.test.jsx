@@ -10,12 +10,12 @@ import { FillUI } from './VocabPractice.jsx'
 
 const WORD = { key: 'pleasant', word: 'pleasant', translationRu: 'приятный', example: 'It is our most pleasant season.' }
 
-function Harness({ word = WORD, onDone }) {
+function Harness({ word = WORD, sentence = 'It is our most ________ season.', onDone }) {
   const { t } = useI18n()
   return (
     <FillUI
       word={word}
-      sentence="It is our most ________ season."
+      sentence={sentence}
       lang="ru"
       t={t}
       speak={() => {}}
@@ -86,6 +86,46 @@ describe('FillUI — набор слова по буквам', () => {
     fireEvent.click(screen.getByRole('button', { name: /Проверить|Check/i }))
 
     expect(boxes(container).every((i) => i.className.includes('ok'))).toBe(true)
+  })
+
+  // Половина каталога — фразы. Прочерк под пробелом выглядел как ещё одна
+  // буква: ученик набирал верное «look at», а «Проверить» оставалась серой.
+  it('во фразе ячейки только под буквы — пробел и апостроф стоят готовыми', () => {
+    const word = { key: 'dont-like', word: 'don’t like', translationRu: 'не нравится' }
+    const { container } = render(
+      <I18nProvider><Harness word={word} sentence="I ________ fish." onDone={() => {}} /></I18nProvider>,
+    )
+
+    expect(boxes(container)).toHaveLength(8) // d o n t l i k e
+    напечатать(container, 'dontlike')
+    fireEvent.click(screen.getByRole('button', { name: /Проверить|Check/i }))
+
+    expect(boxes(container).every((i) => i.className.includes('ok'))).toBe(true)
+  })
+
+  it('фраза набирается подряд: курсор перепрыгивает через пробел', () => {
+    const word = { key: 'look-at', word: 'look at', translationRu: 'смотреть на' }
+    const { container } = render(
+      <I18nProvider><Harness word={word} sentence="________ the board." onDone={() => {}} /></I18nProvider>,
+    )
+    const inputs = boxes(container)
+
+    fireEvent.change(inputs[3], { target: { value: 'k' } }) // последняя буква look
+
+    expect(document.activeElement).toBe(inputs[4]) // первая буква at
+  })
+
+  // Курсор уезжает вперёд сам — значит, и назад его нужно уметь вернуть без
+  // мыши, иначе опечатку не исправить.
+  it('Backspace в пустой ячейке возвращает на предыдущую и стирает её', () => {
+    const { container } = render(<I18nProvider><Harness onDone={() => {}} /></I18nProvider>)
+    const inputs = boxes(container)
+
+    fireEvent.change(inputs[1], { target: { value: 'x' } })
+    fireEvent.keyDown(inputs[2], { key: 'Backspace' })
+
+    expect(document.activeElement).toBe(inputs[1])
+    expect(inputs[1].value).toBe('')
   })
 
   // Само слово из букв не собрать — «Не помню» остаётся честным выходом и

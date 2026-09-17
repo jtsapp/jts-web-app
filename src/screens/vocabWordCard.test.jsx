@@ -108,6 +108,44 @@ describe('Карточка слова в словаре', () => {
     expect(back.textContent).toContain('нравится')
   })
 
+  it('у слова без перевода (B2) на обороте — определение, даже при примере', () => {
+    // Перевода у B2 каталога нет вовсе, а определение пряталось за примером:
+    // оборот показывал только предложение, и значение слова не видел никто.
+    const b2 = {
+      id: 'b2c1_awkward', en: 'awkward', ru: '', kk: '',
+      def: 'making you feel embarrassed or uncomfortable',
+      example: 'Stand too close and you might make someone feel ___.',
+    }
+    const { container } = draw([b2])
+
+    const back = container.querySelector('.vp-pcard__back')
+    expect(back.querySelector('.vp-pcard__tr').textContent).toBe(b2.def)
+    expect(back.querySelector('.vp-pcard__ex').textContent).toContain('Stand too close')
+    // Определение одно — не дублируется вместо примера.
+    expect(back.textContent.split(b2.def)).toHaveLength(2)
+  })
+
+  it('в пример подставляется слово атома, а не заголовок карточки', () => {
+    // Пример карточки «Father, mother» — предложение её первого атома, и в
+    // пропуск встаёт father. Раньше выходило «My Father, mother is a doctor».
+    const card = {
+      id: 'c5_father_mother', en: 'Father, mother', ru: 'отец, мать',
+      atoms: ['a5_father', 'a5_mother'], example: 'My ___ is a doctor. He is fifty.',
+    }
+    const lesson = {
+      no: 5, title: 'The family group chat', cards: [card],
+      atoms: [
+        { id: 'a5_father', en: 'father', ctx: 'My ___ is a doctor. He is fifty.' },
+        { id: 'a5_mother', en: 'mother', ctx: 'My ___ is a teacher. She is forty-five.' },
+      ],
+    }
+    const { container } = render(
+      <LessonWords t={t} lang="ru" lesson={lesson} meta={{ id: 'A0', kind: 'level' }} speak={() => {}} onBack={() => {}} onPractice={() => {}} />,
+    )
+
+    expect(container.querySelector('.vp-pcard__ex').textContent).toBe('My father is a doctor. He is fifty.')
+  })
+
   it('динамик не вложен в карточку — иначе переворот ломается', () => {
     // Кнопка внутри кнопки — невалидный HTML: браузер закрывает внешний тег
     // раньше, и клик по карточке перестаёт её переворачивать.
