@@ -38,11 +38,16 @@ export function rankSkills(stats) {
     .sort((a, b) => b.percent - a.percent || SKILLS.indexOf(a.skill) - SKILLS.indexOf(b.skill))
 }
 
+// Шкала «Главной» начинается с A0: сервер считает A0 отдельным уровнем курса.
+// LEVELS из cefr.js не расширяем — по нему рисуется шкала теста, где A0 нет.
+const COURSE_LEVELS = ['A0', ...LEVELS]
+
 /** Следующий уровень CEFR или null на потолке (C2). */
 export function nextLevel(level) {
-  const i = LEVELS.indexOf(String(level || 'A1').toUpperCase())
-  if (i < 0) return LEVELS[1]
-  return LEVELS[i + 1] || null
+  const i = COURSE_LEVELS.indexOf(String(level || 'A1').toUpperCase())
+  // Неизвестный уровень читаем как A1 — так же, как сервер читает пустой.
+  if (i < 0) return 'A2'
+  return COURSE_LEVELS[i + 1] || null
 }
 
 /**

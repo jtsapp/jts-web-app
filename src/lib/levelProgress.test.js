@@ -38,12 +38,25 @@ describe('nextLevel', () => {
   it('на потолке следующей нет', () => {
     expect(nextLevel('C2')).toBe(null)
   })
+  it('после A0 идёт A1, а не A2', () => {
+    expect(nextLevel('A0')).toBe('A1')
+  })
   it('неизвестный уровень не роняет карточку', () => {
     expect(nextLevel(undefined)).toBe('A2')
   })
 })
 
 describe('levelSummary', () => {
+  it('уровень карточки — серверный, и A0 остаётся A0', () => {
+    const s = levelSummary('A0', null, { level: 'A0', next: 'A1', percent: 20, done: 10, total: 50, remaining: 40 })
+    expect(s.level).toBe('A0')
+    expect(s.next).toBe('A1')
+  })
+  it('пока сервер молчит, A0 ведёт к A1', () => {
+    const s = levelSummary('A0', null)
+    expect(s.level).toBe('A0')
+    expect(s.next).toBe('A1')
+  })
   const SKILLED = {
     listening: { done: 25, firstTry: 25 },
     speaking: { done: 25, firstTry: 25 },
