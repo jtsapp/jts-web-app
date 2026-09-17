@@ -58,6 +58,27 @@ function sentenceFor(word) {
   return blanked
 }
 
+// Кириллические двойники латиницы: на экране «е» и «e» одинаковы, а для
+// сравнения это разные символы. Ученик с русской раскладкой набирает визуально
+// правильное слово и получает отказ, не понимая за что. Перед сверкой сводим
+// двойники к латинице — обе стороны одинаково, поэтому настоящих английских
+// слов это не портит.
+const LOOKALIKE = {
+  а: 'a', А: 'a', в: 'b', В: 'b', с: 'c', С: 'c', е: 'e', Е: 'e', ё: 'e', Ё: 'e',
+  н: 'h', Н: 'h', к: 'k', К: 'k', м: 'm', М: 'm', о: 'o', О: 'o', р: 'p', Р: 'p',
+  ѕ: 's', Ѕ: 's', т: 't', Т: 't', у: 'y', У: 'y', х: 'x', Х: 'x', і: 'i', І: 'i',
+  ј: 'j', Ј: 'j',
+}
+
+function latinLookalikes(s) {
+  return String(s || '').replace(/[\u0400-\u04FF]/g, (ch) => LOOKALIKE[ch] ?? ch)
+}
+
+/** Одна буква совпала — с той же терпимостью к двойникам, что и всё слово. */
+function sameLetter(a, b) {
+  return !!a && latinLookalikes(a).toLowerCase() === latinLookalikes(b).toLowerCase()
+}
+
 function escapeRe(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -599,7 +620,9 @@ function WriteUI({ word, lang, t, speak, token, onDone }) {
   )
 }
 
-function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
+/** Набор слова по буквам. Экспортируется ради теста: живьём до него надо
+ *  пройти три задания подряд, а проверяется здесь ровно он. */
+export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
   const letters = word.word.split('')
   const [chars, setChars] = useState(() => letters.map(() => ''))
   const [opened, setOpened] = useState(() => letters.map((_, i) => i === 0))
@@ -608,11 +631,28 @@ function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
   const meaning = translationOf(word, lang || 'ru')
   const active = chars.findIndex((c, i) => !opened[i] && !c)
 
+  // Ячейки нужны, чтобы перевести фокус самим: без этого человек печатает
+  // букву и ЖДЁТ, а курсор стоит на месте — приходится мышью тыкать в каждый
+  // следующий прочерк. Про это и написали: «букву пишешь, потом нужно на
+  // второй _ нажимать и только потом ещё букву».
+  const boxes = useRef([])
+
+  /** Следующая ячейка, куда имеет смысл встать: не открытая подсказкой. */
+  const focusNext = (from) => {
+    for (let j = from + 1; j < letters.length; j++) {
+      if (!opened[j]) {
+        boxes.current[j]?.focus()
+        return
+      }
+    }
+  }
+
   const setAt = (i, ch) => {
     if (opened[i] || checked != null) return
     const next = chars.slice()
     next[i] = ch.slice(-1)
     setChars(next)
+    if (next[i]) focusNext(i)
   }
 
   const openLetter = () => {
@@ -636,14 +676,38 @@ function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
   const submit = () => {
     if (checked != null) return
     const typed = chars.map((c, i) => (opened[i] ? letters[i] : c)).join('')
-    const ok = answersMatch(typed, word.word)
-    if (!ok) {
-      openLetter()
-      setMsg(t('vocab.prac.openMore'))
+    if (answersMatch(latinLookalikes(typed), latinLookalikes(word.word))) {
+      setChecked(true)
+      setMsg('')
       return
     }
-    setChecked(true)
-    setMsg('')
+    // Не сошлось. Раньше здесь просто звали openLetter() и советовали открыть
+    // ещё букву — но открывает он только ПУСТУЮ ячейку, а на этом шаге пустых
+    // уже нет: все заполнены, иначе кнопка «Проверить» была бы недоступна.
+    // Кнопка молчала, совет повторялся, и единственным выходом оставалось
+    // «Не помню» — то есть засчитанная ошибка. Так и выглядела жалоба
+    // «пишет ошибку, хоть и верно»: на экране целое правильное слово и
+    // красный вердикт.
+    //
+    // Поэтому чистим ровно неверные буквы (верные человек уже угадал — отнимать
+    // их незачем) и открываем одну сверху. Подсказка после этого выполнима.
+    const kept = chars.map((c, i) => (opened[i] || sameLetter(c, letters[i]) ? c : ''))
+    const freeIdx = kept.findIndex((c, i) => !opened[i] && !c)
+    if (freeIdx < 0) {
+      // Открывать нечего — всё слово уже раскрыто подсказками. Тогда честный
+      // вердикт, а не совет, которому нельзя последовать.
+      setChars(letters.slice())
+      setOpened(letters.map(() => true))
+      setChecked(false)
+      setMsg('')
+      return
+    }
+    const nextO = opened.slice()
+    nextO[freeIdx] = true
+    kept[freeIdx] = letters[freeIdx]
+    setOpened(nextO)
+    setChars(kept)
+    setMsg(t('vocab.prac.openMore'))
   }
 
   const cont = () => onDone([{ key: word.key, ok: checked === true }])
@@ -666,6 +730,7 @@ function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
             return (
               <input
                 key={i}
+                ref={(el) => { boxes.current[i] = el }}
                 className={cls}
                 maxLength={1}
                 value={shown}
