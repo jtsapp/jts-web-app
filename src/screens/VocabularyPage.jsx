@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LearningLayout from '../components/LearningLayout.jsx'
 import { useI18n } from '../i18n.jsx'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
@@ -87,6 +87,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
   const [toast, setToast] = useState('')
   const [topMiss, setTopMiss] = useState([])
   const [learnedTick, setLearnedTick] = useState(0)
+  const scopeReq = useRef(0)
 
   const refreshTopMiss = useCallback(() => {
     setTopMiss(topVocabMisses(token, 3))
@@ -170,7 +171,17 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       flash(t('learn.locked', { label: String(cefrId).toUpperCase() }))
       return
     }
+    // Кэш отвечает сразу, а свежая версия приходит позже через onFresh. Раньше
+    // обе шли через apply, и поздний ответ заново ставил экран — ученика,
+    // успевшего открыть урок и начать практику, выбрасывало на список уроков.
+    // Свежие данные только подменяют набор, и только если ученик не ушёл за
+    // другим: иначе медленный ответ по A1 лёг бы поверх открытого B1.
+    const req = ++scopeReq.current
+    const fresh = (data) => {
+      if (scopeReq.current === req) setScope(data)
+    }
     const apply = (data) => {
+      if (scopeReq.current !== req) return
       setScope(data)
       setScopeMeta(meta || { id })
       let nextLevel = levelId || null
@@ -182,7 +193,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       setActiveLevel(nextLevel)
       setScreen(meta?.kind === 'field' ? 'field-lessons' : 'levels')
     }
-    getVocabScope(token, id, apply)
+    getVocabScope(token, id, fresh)
       .then(apply)
       .catch(() => flash(t('vocab.home.empty')))
   }
@@ -193,7 +204,8 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
       setMine(data)
       setScreen('mine')
     }
-    openLessonVocab('saved', token, apply)
+    // Свежая версия — только данные, без перехода: см. loadScope.
+    openLessonVocab('saved', token, setMine)
       .then(apply)
       .catch(() => flash(t('vocab.lesson.error')))
   }
