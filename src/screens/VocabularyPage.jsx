@@ -13,6 +13,7 @@ import {
   markVocabLearned,
 } from '../api.js'
 import VocabPractice from './vocab/VocabPractice.jsx'
+import { practiceCardsOf } from './vocab/practiceCards.js'
 import { topVocabMisses } from './vocab/vocabMisses.js'
 import { learnedCount, learnedKeys, learnedInCards, vocabKey, recordVocabLearned, forgetVocabLearned } from './vocab/vocabLearned.js'
 import { IconSpeaker, IconPlay, IconRefresh, IconTrash, IconX } from './vocab/VocabIcons.jsx'
@@ -36,13 +37,25 @@ function cardsOf(lesson) {
   return Array.isArray(lesson?.cards) ? lesson.cards : []
 }
 
-function exampleHtml(card) {
+/** word — чем заполнить пропуск; по умолчанию слово карточки. */
+function exampleHtml(card, word = card.en || '') {
   const raw = card.example || card.ex || ''
   if (!raw) return ''
-  const word = card.en || ''
   return String(raw)
     .replace(/\{\{(.+?)\}\}/g, '<mark>$1</mark>')
     .replace(/___+/g, word ? `<mark>${word}</mark>` : '___')
+}
+
+/**
+ * Слово для пропуска в примере карточки. Пример — предложение её первого атома
+ * (так его заполняет бэкенд), и ждёт оно слово атома: у «Father, mother» —
+ * father, а не всю строку. У карточки из одного атома отличается разве что
+ * регистр («Family» посреди предложения), но и это лишнее.
+ */
+function gapWord(card, atomsById) {
+  const atom = atomsById.get(card.atoms?.[0])
+  if (atom?.en && (card.example || '') === (atom.ctx || '')) return atom.en
+  return card.en || ''
 }
 
 function trOf(card, lang) {
@@ -252,7 +265,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
         meta={scopeMeta}
         speak={speak}
         onBack={() => setScreen(scopeMeta?.kind === 'field' ? 'field-lessons' : 'levels')}
-        onPractice={() => startPractice(cardsOf(lesson), lesson.title, 'lesson', scopeMeta?.id || activeLevel || null)}
+        onPractice={() => startPractice(practiceCardsOf(lesson), lesson.title, 'lesson', scopeMeta?.id || activeLevel || null)}
       />,
     )
   }
@@ -442,7 +455,7 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
               {t('vocab.prac.review')}
             </div>
             {topMiss.map((w) => (
-              <div className="vp-top3-row" key={w.word}>
+              <div className="vp-top3-row" key={w.key || w.word}>
                 <button type="button" className="vp-spk" onClick={() => speak(w.word)} aria-label={t('vocab.lesson.listen')}>
                   <IconSpeaker />
                 </button>
@@ -455,8 +468,10 @@ export default function VocabularyPage({ userLevel = 'A1', userName, token, onNa
               className="vp-btn wide"
               style={{ marginTop: 14 }}
               onClick={() => {
+                // Ключ — тот же, под которым записана ошибка: по нему верный
+                // ответ снимет слово из списка.
                 const cards = topMiss.map((w) => ({
-                  id: w.word,
+                  id: w.key || w.word,
                   en: w.word,
                   ru: w.ru,
                   kk: w.kk,
@@ -602,6 +617,10 @@ function BrowseLessons({ t, lang, token, index, scope, meta, activeLevel, userLe
    ради разметки одной карточки. */
 export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBack, onPractice }) {
   const cards = cardsOf(lesson)
+  const atomsById = useMemo(
+    () => new Map((Array.isArray(lesson?.atoms) ? lesson.atoms : []).map((a) => [a.id, a])),
+    [lesson],
+  )
   const [flipped, setFlipped] = useState(() => new Set())
   // Отметка «изучено» руками. Прогресс писала только проверка, но слово можно
   // знать и без неё — а число у урока считается из того же множества, поэтому
@@ -664,6 +683,11 @@ export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBa
           const isFlipped = flipped.has(key)
           const hasImg = !!card.imageUrl && !imgFailed.has(key)
           const isLearned = learned.has(vocabKey(card))
+          // У B2 каталога перевода нет вовсе — значение несёт определение. Оно
+          // пряталось за примером, и оборот таких карточек значения не показывал.
+          const tr = trOf(card, lang)
+          const meaning = tr || card.def || ''
+          const ex = exampleHtml(card, gapWord(card, atomsById))
           return (
             // Динамик — сосед карточки, а не её потомок: карточка сама кнопка,
             // а вложенная кнопка невалидна и ломает переворот — браузер
@@ -697,10 +721,10 @@ export function LessonWords({ t, lang, token, scopeId, lesson, meta, speak, onBa
                   </span>
                   <span className="vp-pcard__face vp-pcard__back">
                     <span className="vp-pcard__bin">
-                      <span className="vp-pcard__tr">{trOf(card, lang)}</span>
-                      {exampleHtml(card) ? (
-                        <span className="vp-pcard__ex" dangerouslySetInnerHTML={{ __html: exampleHtml(card) }} />
-                      ) : card.def ? (
+                      <span className={`vp-pcard__tr${tr ? '' : ' is-def'}`}>{meaning}</span>
+                      {ex ? (
+                        <span className="vp-pcard__ex" dangerouslySetInnerHTML={{ __html: ex }} />
+                      ) : tr && card.def ? (
                         <span className="vp-pcard__ex">{card.def}</span>
                       ) : null}
                     </span>
