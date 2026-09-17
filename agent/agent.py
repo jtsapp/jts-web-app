@@ -3713,6 +3713,43 @@ def _cascade_tts_gemini(profile: LearnerProfile):
     return _GeminiTTS(**kwargs)
 
 
+def _eleven_key_for(tutor: str) -> str:
+    """Ключ ElevenLabs персоны: env ELEVENLABS_API_KEY_<PERSONA> важнее общего.
+
+    Аккаунт — часть голоса, а не общая настройка. Клон живёт В КАБИНЕТЕ, где его
+    сделали, и voice_id из чужого аккаунта не резолвится вовсе. Пока голос был
+    один (Декстер), общего ключа хватало; как только казахский клон завели в
+    отдельной учётке, общий ключ перестал быть общим.
+
+    Так у dev-стенда может быть свой аккаунт, а Декстер на проде не трогается —
+    подменять один ключ на двоих означало бы уронить живого тьютора ради пробы.
+    """
+    tutor = (tutor or "").strip().lower()
+    if tutor:
+        env = (os.getenv(f"ELEVENLABS_API_KEY_{tutor.upper()}") or "").strip()
+        if env:
+            return env
+    return (os.getenv("ELEVENLABS_API_KEY") or "").strip()
+
+
+def _eleven_model_for(tutor: str) -> str:
+    """Модель ElevenLabs персоны: env ELEVENLABS_MODEL_<PERSONA> важнее общей.
+
+    Тоже по персоне, и по той же причине, что и ключ: модели знают РАЗНЫЕ языки.
+    Flash v2.5 казахского в списке не держит, а v3 — держит, и казахскому стенду
+    нужна именно она. Глобальная ELEVENLABS_MODEL переключила бы заодно Декстера:
+    v3 тяжелее Flash и по задержке, и по числу параллельных запросов (см. оговорку
+    о конкуренции в _cascade_tts_eleven), а он говорит по-русски, где Flash и так
+    справляется. Платить его задержкой за чужой язык незачем.
+    """
+    tutor = (tutor or "").strip().lower()
+    if tutor:
+        env = (os.getenv(f"ELEVENLABS_MODEL_{tutor.upper()}") or "").strip()
+        if env:
+            return env
+    return os.getenv("ELEVENLABS_MODEL", "eleven_flash_v2_5")
+
+
 def _cascade_tts_eleven(profile: LearnerProfile):
     """ElevenLabs TTS. Ported from felix agent/_cascade_tts.
 
@@ -3723,14 +3760,14 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     """
     if elevenlabs is None:
         raise RuntimeError("TTS eleven needs livekit-plugins-elevenlabs")
-    key = os.getenv("ELEVENLABS_API_KEY")
+    key = _eleven_key_for(profile.tutor)
     if not key:
         raise RuntimeError("TTS eleven needs ELEVENLABS_API_KEY")
     # Flash is the default for concurrency, not quality: Pro allows 20 parallel
     # requests on Flash/Turbo but only 10 on multilingual_v2. felix runs Flash
     # too. Set ELEVENLABS_MODEL=eleven_multilingual_v2 to trade headroom for
     # fidelity.
-    model = os.getenv("ELEVENLABS_MODEL", "eleven_flash_v2_5")
+    model = _eleven_model_for(profile.tutor)
     # profile.eleven_voice_id stays "" in this app (the token route never sends
     # elevenLabsVoiceId) — kept first so a future per-learner override just works.
     voice_id = (
