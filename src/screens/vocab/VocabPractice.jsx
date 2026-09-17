@@ -5,12 +5,16 @@ import { useTimeOnTask } from '../../lib/useTimeOnTask.js'
 import {
   uniqueByKey,
   planCycle,
+  fitTasks,
   translationOf,
+  meaningOf,
+  normalizeAnswer,
+  latinLookalikes,
   answersMatch,
   writeTranslationOk,
   buildChoiceOptions,
 } from './lessonReview.js'
-import { recordVocabMisses } from './vocabMisses.js'
+import { recordVocabMisses, clearVocabMiss } from './vocabMisses.js'
 import { recordVocabLearned, vocabKey } from './vocabLearned.js'
 import { saveStudentVocab, markVocabLearned } from '../../api.js'
 import {
@@ -32,6 +36,8 @@ function toWord(card) {
     translationKz: card.kk,
     ipa: card.ipa,
     example: card.example || card.ex || '',
+    def: card.def || '',
+    nogap: !!card.nogap,
   }
 }
 
@@ -56,6 +62,31 @@ function sentenceFor(word) {
   const blanked = raw.replace(new RegExp(`\\b${escapeRe(word.word)}\\b`, 'i'), '________')
   if (!blanked.includes('________')) return null
   return blanked
+}
+
+/** Пропуск, который имеет смысл спрашивать набором: ровно один и не выданный
+ *  самим предложением. В двух пропусках («I ___ as much ___ online» у waste
+ *  time) слово разорвано, а ячейки ждут его целиком; флаг nogap ставит файл
+ *  словаря, когда слово видно в тексте (call stack: «Each function call…»). */
+function gapSentence(word) {
+  if (word.nogap) return null
+  const gaps = String(word.example || '').match(/_{3,}|\{\{.+?\}\}/g) || []
+  if (gaps.length > 1) return null
+  return sentenceFor(word)
+}
+
+/** Перевод, который можно написать буквами. У чисел A0 «перевод» — цифра
+ *  (seven → «7»): «семь» тоже верно, и такое честнее спросить на слух. */
+function canAskTranslation(word) {
+  return [word.translationRu, word.translationKz].some((tr) => /\p{L}/u.test(String(tr || '')))
+}
+
+/** Буква или цифра — под неё ячейка; пробел и знаки стоят готовыми. */
+const isSlot = (ch) => /[\p{L}\p{N}]/u.test(ch)
+
+/** Одна буква совпала — с той же терпимостью к двойникам, что и всё слово. */
+function sameLetter(a, b) {
+  return !!a && latinLookalikes(a).toLowerCase() === latinLookalikes(b).toLowerCase()
 }
 
 function escapeRe(s) {
@@ -87,6 +118,9 @@ function CorrectReveal({ word, lang, t, speak, token }) {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const tr = translationOf(word, lang)
+  // Показываем значение, а сохраняем только перевод: определение B2 в поле
+  // translationRu личного словаря выдавало бы себя за перевод.
+  const meaning = meaningOf(word, lang)
   const ipa = word.ipa ? `/${String(word.ipa).replace(/\//g, '')}/` : ''
   const exHtml = exampleHtml(word)
   const exSpeak = examplePlain(word)
@@ -117,7 +151,7 @@ function CorrectReveal({ word, lang, t, speak, token }) {
           <div className="vp-reveal-main">
             <b className="vp-reveal-word">{word.word}</b>
             {ipa ? <span className="vp-reveal-ipa">{ipa}</span> : null}
-            {tr ? <span className="vp-reveal-tr">— {tr}</span> : null}
+            {meaning ? <span className="vp-reveal-tr">— {meaning}</span> : null}
           </div>
           <div className="vp-reveal-acts">
             {speak ? (
@@ -176,7 +210,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
   const words = useMemo(() => uniqueByKey((cards || []).map(toWord).filter((w) => w.word)), [cards])
   const byKey = useMemo(() => Object.fromEntries(words.map((w) => [w.key, w])), [words])
   const [phase, setPhase] = useState('intro')
-  const [tasks] = useState(() => planCycle(words, 1, null))
+  const [tasks] = useState(() => fitTasks(planCycle(words, 1, null), byKey, lang))
   const [idx, setIdx] = useState(0)
   const [answers, setAnswers] = useState([])
   const [toast, setToast] = useState('')
@@ -255,6 +289,10 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       const allMissed = Object.values(missMap)
       if (allMissed.length) recordVocabMisses(token, allMissed)
       const okKeys = [...new Set(answers.filter((a) => a.ok && a.key).map((a) => a.key))]
+      // Верно отвеченное уходит из «хуже всего запомненных». Снятия не было
+      // нигде: список только копился, и слово, которое ученик уже знает,
+      // висело на главной словаря навсегда.
+      for (const k of okKeys) if (!missMap[k]) clearVocabMiss(token, k)
       if (scopeId && okKeys.length) recordVocabLearned(token, scopeId, okKeys)
       if (okKeys.length) onLearned?.(okKeys)
     }
@@ -360,23 +398,35 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
         <DictationUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
       {task?.type === 'write' && itemWords[0] && (
-        sentenceFor(itemWords[0])
-          ? <FillUI key={idx} word={itemWords[0]} sentence={sentenceFor(itemWords[0])} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
-          : <WriteUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+        <WriteTask key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
       {toast ? <p className="vp-state">{toast}</p> : null}
     </div>
   )
 }
 
+/**
+ * «Напишите слово». Чем спросить, решает само слово: предложение с одним
+ * пропуском — набор по буквам; нет предложения, но перевод пишется буквами —
+ * ввод перевода; иначе — на слух. Раньше без предложения всегда спрашивался
+ * перевод, в том числе у B2, где его нет, — и любой ответ был ошибкой.
+ */
+function WriteTask(props) {
+  const sentence = gapSentence(props.word)
+  if (sentence) return <FillUI {...props} sentence={sentence} />
+  if (canAskTranslation(props.word)) return <WriteUI {...props} />
+  return <DictationUI {...props} />
+}
+
 function ChoiceUI({ word, bank, lang, t, speak, token, onDone }) {
   const options = useMemo(() => buildChoiceOptions(word, bank, lang), [word.key, lang, bank])
   const [picked, setPicked] = useState(null)
-  if (!options) return <WriteUI word={word} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+  if (!options) return <WriteTask word={word} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
+  const byDefinition = !translationOf(word, lang)
 
   return (
     <>
-      <p className="vp-howto">{t('vocab.prac.askChoice')}</p>
+      <p className="vp-howto">{t(byDefinition ? 'vocab.prac.askChoiceDef' : 'vocab.prac.askChoice')}</p>
       <div className="vp-wordbox">
         <div className="w">
           {word.word}
@@ -429,67 +479,73 @@ function ChoiceUI({ word, bank, lang, t, speak, token, onDone }) {
   )
 }
 
-function MatchUI({ words, lang, t, onDone }) {
+/** «Соедините». Экспортируется ради теста — как и FillUI. */
+export function MatchUI({ words, lang, t, onDone }) {
   const items = useMemo(() => uniqueByKey(words), [words])
   const left = useMemo(() => shuffle(items), [items])
   const right = useMemo(() => shuffle(items), [items])
   const [pick, setPick] = useState(null)
-  const [done, setDone] = useState({})
+  // Сделанное — отдельно по колонкам: при одинаковых переводах слово слева
+  // может сойтись с «чужой» кнопкой справа, и пара больше не одно слово.
+  const [done, setDone] = useState({ L: {}, R: {} })
   const [flash, setFlash] = useState(null)
   const missedRef = useRef(new Set())
-  const allDone = Object.keys(done).length === items.length
+  const allDone = Object.keys(done.L).length === items.length
+  const meaning = (w) => normalizeAnswer(meaningOf(w, lang))
+  const byDefinition = items.every((w) => !translationOf(w, lang))
 
   const finish = () => {
     onDone(items.map((w) => ({ key: w.key, ok: !missedRef.current.has(w.key) })))
   }
 
   const click = (item, col) => {
-    if (done[item.key]) return
-    if (!pick) {
-      setPick({ key: item.key, col })
+    if (done[col][item.key]) return
+    if (!pick || pick.col === col) {
+      setPick({ item, col })
       return
     }
-    if (pick.col === col) {
-      setPick({ key: item.key, col })
-      return
-    }
-    const ok = pick.key === item.key
+    const l = col === 'L' ? item : pick.item
+    const r = col === 'R' ? item : pick.item
+    // Пара верна и тогда, когда перевод у двух слов один: hello и hi — оба
+    // «привет», и одинаковые кнопки справа не различить. Засчитывалась
+    // только «своя» из двух — ученик жал на верный перевод и получал ошибку.
+    const ok = l.key === r.key || (!!meaning(l) && meaning(l) === meaning(r))
     if (ok) {
-      setDone((prev) => ({ ...prev, [item.key]: true }))
+      setDone((prev) => ({ L: { ...prev.L, [l.key]: true }, R: { ...prev.R, [r.key]: true } }))
       setPick(null)
       setFlash(null)
     } else {
-      missedRef.current.add(pick.key)
-      missedRef.current.add(item.key)
-      setFlash([pick.key, item.key])
+      missedRef.current.add(l.key)
+      missedRef.current.add(r.key)
+      setFlash({ L: l.key, R: r.key })
       setPick(null)
       setTimeout(() => setFlash(null), 450)
     }
   }
 
   const cls = (item, col) => {
-    if (done[item.key]) return ' ok'
-    if (flash?.includes(item.key)) return ' no'
-    if (pick?.key === item.key && pick.col === col) return ' sel'
+    if (done[col][item.key]) return ' ok'
+    if (flash?.[col] === item.key) return ' no'
+    if (pick?.item.key === item.key && pick.col === col) return ' sel'
     return ''
   }
 
   return (
     <>
-      <p className="vp-howto">{t('vocab.prac.askMatch')}</p>
-      <div className="vp-tip"><IconPin /> {t('vocab.prac.matchTip')}</div>
+      <p className="vp-howto">{t(byDefinition ? 'vocab.prac.askMatchDef' : 'vocab.prac.askMatch')}</p>
+      <div className="vp-tip"><IconPin /> {t(byDefinition ? 'vocab.prac.matchTipDef' : 'vocab.prac.matchTip')}</div>
       <div className="vp-pairs">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {left.map((w) => (
-            <button key={`L-${w.key}`} type="button" className={`vp-pair${cls(w, 'L')}`} disabled={!!done[w.key]} onClick={() => click(w, 'L')}>
+            <button key={`L-${w.key}`} type="button" className={`vp-pair${cls(w, 'L')}`} disabled={!!done.L[w.key]} onClick={() => click(w, 'L')}>
               {w.word}
             </button>
           ))}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {right.map((w) => (
-            <button key={`R-${w.key}`} type="button" className={`vp-pair${cls(w, 'R')}`} disabled={!!done[w.key]} onClick={() => click(w, 'R')}>
-              {translationOf(w, lang)}
+            <button key={`R-${w.key}`} type="button" className={`vp-pair${cls(w, 'R')}`} disabled={!!done.R[w.key]} onClick={() => click(w, 'R')}>
+              {meaningOf(w, lang)}
             </button>
           ))}
         </div>
@@ -599,24 +655,67 @@ function WriteUI({ word, lang, t, speak, token, onDone }) {
   )
 }
 
-function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
-  const letters = word.word.split('')
+/** Набор слова по буквам. Экспортируется ради теста: живьём до него надо
+ *  пройти три задания подряд, а проверяется здесь ровно он. */
+export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
+  const letters = [...word.word]
+  // Половина каталога — фразы: «look at», «What's your name?». Прочерк под
+  // пробелом или апострофом выглядел как ещё одна буква — ученик набирал
+  // верное слово, а «Проверить» оставалась серой. Ячейка теперь только под
+  // букву или цифру, остальное стоит готовым.
+  const slot = letters.map(isSlot)
+  const firstSlot = slot.indexOf(true)
+  const lastSlot = slot.lastIndexOf(true)
   const [chars, setChars] = useState(() => letters.map(() => ''))
-  const [opened, setOpened] = useState(() => letters.map((_, i) => i === 0))
+  const [opened, setOpened] = useState(() => letters.map((_, i) => i === firstSlot))
   const [checked, setChecked] = useState(null)
   const [msg, setMsg] = useState('')
-  const meaning = translationOf(word, lang || 'ru')
-  const active = chars.findIndex((c, i) => !opened[i] && !c)
+  const meaning = meaningOf(word, lang || 'ru')
+  /** Позиция не ждёт ввода: открыта подсказкой или это не буква. */
+  const fixed = (i) => opened[i] || !slot[i]
+  const active = chars.findIndex((c, i) => !fixed(i) && !c)
+
+  // Ячейки нужны, чтобы перевести фокус самим: без этого человек печатает
+  // букву и ЖДЁТ, а курсор стоит на месте — приходится мышью тыкать в каждый
+  // следующий прочерк. Про это и написали: «букву пишешь, потом нужно на
+  // второй _ нажимать и только потом ещё букву».
+  const boxes = useRef([])
+
+  /** Следующая ячейка, куда имеет смысл встать: не открытая подсказкой. */
+  const focusNext = (from) => {
+    for (let j = from + 1; j < letters.length; j++) {
+      if (!fixed(j)) {
+        boxes.current[j]?.focus()
+        return
+      }
+    }
+  }
 
   const setAt = (i, ch) => {
-    if (opened[i] || checked != null) return
+    if (fixed(i) || checked != null) return
     const next = chars.slice()
     next[i] = ch.slice(-1)
     setChars(next)
+    if (next[i]) focusNext(i)
+  }
+
+  // Курсор уезжает вперёд сам — значит, и назад его нужно вернуть без мыши:
+  // Backspace в пустой ячейке стирает предыдущую букву и встаёт на неё.
+  const onKeyDown = (i, e) => {
+    if (e.key !== 'Backspace' || chars[i] || checked != null) return
+    for (let j = i - 1; j >= 0; j--) {
+      if (fixed(j)) continue
+      e.preventDefault()
+      const next = chars.slice()
+      next[j] = ''
+      setChars(next)
+      boxes.current[j]?.focus()
+      return
+    }
   }
 
   const openLetter = () => {
-    const i = opened.findIndex((o, idx) => !o && !chars[idx])
+    const i = opened.findIndex((o, idx) => !fixed(idx) && !chars[idx])
     if (i < 0) return
     const nextO = opened.slice()
     nextO[i] = true
@@ -635,19 +734,56 @@ function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
 
   const submit = () => {
     if (checked != null) return
-    const typed = chars.map((c, i) => (opened[i] ? letters[i] : c)).join('')
-    const ok = answersMatch(typed, word.word)
-    if (!ok) {
-      openLetter()
-      setMsg(t('vocab.prac.openMore'))
+    const typed = chars.map((c, i) => (fixed(i) ? letters[i] : c)).join('')
+    if (answersMatch(typed, word.word)) {
+      setChecked(true)
+      setMsg('')
       return
     }
-    setChecked(true)
-    setMsg('')
+    // Не сошлось. Раньше здесь просто звали openLetter() и советовали открыть
+    // ещё букву — но открывает он только ПУСТУЮ ячейку, а на этом шаге пустых
+    // уже нет: все заполнены, иначе кнопка «Проверить» была бы недоступна.
+    // Кнопка молчала, совет повторялся, и единственным выходом оставалось
+    // «Не помню» — то есть засчитанная ошибка. Так и выглядела жалоба
+    // «пишет ошибку, хоть и верно»: на экране целое правильное слово и
+    // красный вердикт.
+    //
+    // Поэтому чистим ровно неверные буквы (верные человек уже угадал — отнимать
+    // их незачем) и открываем одну сверху. Подсказка после этого выполнима.
+    const kept = chars.map((c, i) => (fixed(i) || sameLetter(c, letters[i]) ? c : ''))
+    const freeIdx = kept.findIndex((c, i) => !fixed(i) && !c)
+    if (freeIdx < 0) {
+      // Открывать нечего — всё слово уже раскрыто подсказками. Тогда честный
+      // вердикт, а не совет, которому нельзя последовать.
+      setChars(letters.slice())
+      setOpened(letters.map(() => true))
+      setChecked(false)
+      setMsg('')
+      return
+    }
+    const nextO = opened.slice()
+    nextO[freeIdx] = true
+    kept[freeIdx] = letters[freeIdx]
+    setOpened(nextO)
+    setChars(kept)
+    setMsg(t('vocab.prac.openMore'))
   }
 
   const cont = () => onDone([{ key: word.key, ok: checked === true }])
-  const filled = chars.every((c, i) => opened[i] || c)
+  const filled = chars.every((c, i) => fixed(i) || c)
+
+  // Слова фразы — отдельными группами: перенос строки идёт между словами, а
+  // пробел виден как пробел, а не как ячейка.
+  const groups = []
+  let group = null
+  letters.forEach((ch, i) => {
+    if (/\s/.test(ch)) {
+      group = null
+      return
+    }
+    if (!group) groups.push((group = []))
+    group.push(i)
+  })
 
   return (
     <>
@@ -655,26 +791,36 @@ function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
       <div className="vp-wordbox">
         <p style={{ margin: '0 0 18px', fontSize: 18, fontWeight: 700, lineHeight: 1.45 }}>{sentence}</p>
         <div className="vp-letters">
-          {letters.map((L, i) => {
-            const shown = opened[i] ? L : chars[i]
-            const isActive = i === (active < 0 ? letters.length - 1 : active)
-            let cls = 'vp-letter'
-            if (opened[i] && checked == null) cls += i === 0 ? ' revealed' : ' hint'
-            if (checked === true) cls += ' ok'
-            if (checked === false) cls += ' no'
-            if (isActive && checked == null && !opened[i]) cls += ' on'
-            return (
-              <input
-                key={i}
-                className={cls}
-                maxLength={1}
-                value={shown}
-                disabled={opened[i] || checked != null}
-                onChange={(e) => setAt(i, e.target.value)}
-                onFocus={(e) => e.target.select()}
-              />
-            )
-          })}
+          {groups.map((idxs) => (
+            <span className="vp-letters-word" key={idxs[0]}>
+              {idxs.map((i) => {
+                const L = letters[i]
+                if (!slot[i]) {
+                  return <span key={i} className="vp-letter-sep" aria-hidden="true">{L}</span>
+                }
+                const shown = opened[i] ? L : chars[i]
+                const isActive = i === (active < 0 ? lastSlot : active)
+                let cls = 'vp-letter'
+                if (opened[i] && checked == null) cls += i === firstSlot ? ' revealed' : ' hint'
+                if (checked === true) cls += ' ok'
+                if (checked === false) cls += ' no'
+                if (isActive && checked == null && !opened[i]) cls += ' on'
+                return (
+                  <input
+                    key={i}
+                    ref={(el) => { boxes.current[i] = el }}
+                    className={cls}
+                    maxLength={1}
+                    value={shown}
+                    disabled={opened[i] || checked != null}
+                    onChange={(e) => setAt(i, e.target.value)}
+                    onKeyDown={(e) => onKeyDown(i, e)}
+                    onFocus={(e) => e.target.select()}
+                  />
+                )
+              })}
+            </span>
+          ))}
         </div>
         {msg ? <p className="vp-state" style={{ color: 'var(--vp-red)' }}>{msg}</p> : null}
         {meaning ? (

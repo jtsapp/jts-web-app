@@ -539,7 +539,17 @@
 }
 
 .vp-letters {
-  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 10px 22px; justify-content: center;
+}
+/* Слово фразы — своей группой: перенос идёт между словами, а промежуток
+   между группами и есть пробел. Длинное слово переносится внутри себя. */
+.vp-letters-word {
+  display: inline-flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-width: 0;
+}
+/* Апостроф, дефис, «…» — готовая часть слова, а не ячейка для ввода. */
+.vp-letter-sep {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 48px; min-width: 8px; font-size: 20px; font-weight: 800; color: #111;
 }
 .vp-letter {
   width: 40px; height: 48px; border-radius: 12px; border: 1.5px solid var(--vp-line);
@@ -796,7 +806,9 @@
     box-shadow: 0 0 0 10px rgba(135,75,248,.12);
   }
   .vp-letter { width: 34px; height: 42px; font-size: 16px; border-radius: 10px; gap: 6px; }
-  .vp-letters { gap: 6px; }
+  .vp-letters { gap: 8px 16px; }
+  .vp-letters-word { gap: 6px; }
+  .vp-letter-sep { height: 42px; font-size: 17px; }
 
   .vp-intro, .vp-res {
     margin: 16px auto;
@@ -937,6 +949,8 @@
   display: block; font-size: 18px; font-weight: 800; line-height: 1.25;
   color: var(--vp-violet-dk); overflow-wrap: anywhere;
 }
+/* Определение вместо перевода (B2) — фраза, а не слово: мельче и не жирно. */
+.vp-pcard__tr.is-def { font-size: 14px; font-weight: 700; line-height: 1.35; }
 .vp-pcard__ex {
   display: block; font-size: 12.5px; line-height: 1.45; color: #555;
 }
