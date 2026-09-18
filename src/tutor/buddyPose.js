@@ -5,6 +5,11 @@ import { BUDDY_RIG } from './buddyRig.js'
 // (is-leaving). В CSS длительность уходит переменной --face-swap — число одно.
 export const SWAP_MS = 600
 
+// За сколько уходящее лицо успокаивает собственное движение (см. settleMotion).
+// Новое начинает проявляться на 25 % смены (150 мс) — к этому моменту ease-out
+// успевает погасить почти всё смещение, и второго контура не видно.
+export const SETTLE_MS = 200
+
 // Центр тела каждой карточки — в % общего холста 726 (того же, что у base и box
 // в buddyRig.js). В выгрузке из Figma его нет, а плавной смене он нужен: тела
 // у эмоций стоят по-разному, и у «Не понимает», «Говорит», «Удивление»,
@@ -53,3 +58,26 @@ export function poseStyle(key, anchor) {
 
 // Разность дробей даёт хвосты вроде −3.3200000000000003: стилю они ни к чему.
 const fix = (n) => Math.round(n * 1000) / 1000
+
+/**
+ * Успокоить тело уходящего набора: rig и body за SETTLE_MS плавно идут от
+ * текущего положения к покою. Общая поза совмещает тела В ПОКОЕ, а у эмоций
+ * своё движение — петля «Счастлив» качает тело на 12°, прыжок «Радуется»
+ * уводит на 5 % холста, — и без успокоения из-под нового тела выглядывал бы
+ * второй контур. Остановить CSS-анимацию нельзя — тело прыгнуло бы в покой,
+ * поэтому поверх неё идёт WAAPI-анимация: она старше по порядку композиции и
+ * перекрывает CSS, не трогая её. Снимать — cancel() в конце смены, когда уйдёт
+ * и сама CSS-анимация (оба дают покой, шва нет).
+ *
+ * @returns запущенные анимации; без WAAPI (jsdom) — пустой список
+ */
+export function settleMotion(stack) {
+  if (!stack) return []
+  return ['.t-face__rig', '.t-face__body'].flatMap((sel) => {
+    const el = stack.querySelector(sel)
+    if (typeof el?.animate !== 'function') return []
+    const from = getComputedStyle(el).transform
+    if (!from || from === 'none') return []
+    return [el.animate([{ transform: from }, { transform: 'none' }], { duration: SETTLE_MS, easing: 'ease-out', fill: 'forwards' })]
+  })
+}

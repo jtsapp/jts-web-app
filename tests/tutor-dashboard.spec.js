@@ -60,12 +60,21 @@ test.describe('дашборд тьютора — витрина эмоций', (
     await expect.poll(() => shownEmotion(page), { timeout: 10_000 }).not.toBe(first)
   })
 
-  test('смена плавная: уходящее лицо гаснет, а не пропадает', async ({ page }) => {
+  test('смена плавная: уходящее гаснет, новое — неподвижный кадр до конца смены', async ({ page }) => {
     await page.goto('/?screen=tutor-dashboard')
     await expect(page.locator('.t-dash__face')).toHaveClass(/is-morph/)
-    // На каждой смене уходящий набор ~0.6 с держит is-leaving — за пару шагов
-    // круга он обязан попасться.
-    await expect(page.locator('.t-dash__face .t-face__stack.is-leaving')).toHaveCount(1, { timeout: 6_000 })
+    // Смена держится ~0.6 с на каждом шаге круга — за пару шагов она обязана
+    // попасться.
+    const entering = page.locator('.t-dash__face .t-face__stack.is-entering')
+    await expect(entering).toHaveCount(1, { timeout: 6_000 })
+    await expect(page.locator('.t-dash__face .t-face__stack.is-leaving')).toHaveCount(1)
+    // Собственное движение нового стоит на паузе, пока идёт смена: иначе его
+    // прыжок или петля рисовали бы второй контур из-под общей позы.
+    const states = await entering.evaluate((el) =>
+      el.querySelector('.t-face__rig').getAnimations().map((a) => a.playState)
+    )
+    expect(states.length).toBeGreaterThan(0)
+    expect(states.every((s) => s === 'paused')).toBe(true)
   })
 
   test('при «уменьшить движение» лицо стоит на родной эмоции', async ({ page }) => {

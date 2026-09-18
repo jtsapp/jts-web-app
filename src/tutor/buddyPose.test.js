@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { BODY_CENTER, poseStyle } from './buddyPose.js'
+import { BODY_CENTER, SETTLE_MS, poseStyle, settleMotion } from './buddyPose.js'
 import { EMOTIONS } from './avatarEmotions.js'
 
 describe('buddyPose', () => {
@@ -35,5 +35,38 @@ describe('buddyPose', () => {
       expect(m, key).not.toBeNull()
       expect(BODY_CENTER[key], key).toEqual([Number(m[1]), Number(m[2])])
     }
+  })
+})
+
+describe('settleMotion', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Набор-заглушка: тело (rig и body) — элементы с WAAPI-методом animate.
+  const fakeStack = (transforms) => {
+    const els = Object.fromEntries(
+      Object.keys(transforms).map((sel) => [sel, { animate: vi.fn(() => `anim${sel}`) }])
+    )
+    vi.stubGlobal('getComputedStyle', (el) => ({
+      transform: transforms[Object.keys(els).find((sel) => els[sel] === el)],
+    }))
+    return { els, stack: { querySelector: (sel) => els[sel] ?? null } }
+  }
+
+  it('ведёт тело уходящего от текущего положения к покою', () => {
+    const { els, stack } = fakeStack({ '.t-face__rig': 'matrix(1, 0, 0, 1, 0, -12)', '.t-face__body': 'none' })
+    expect(settleMotion(stack)).toEqual(['anim.t-face__rig'])
+    expect(els['.t-face__rig'].animate).toHaveBeenCalledWith(
+      [{ transform: 'matrix(1, 0, 0, 1, 0, -12)' }, { transform: 'none' }],
+      { duration: SETTLE_MS, easing: 'ease-out', fill: 'forwards' }
+    )
+    // Тело уже в покое — анимировать нечего.
+    expect(els['.t-face__body'].animate).not.toHaveBeenCalled()
+  })
+
+  it('без WAAPI и без набора — ничего не делает', () => {
+    expect(settleMotion(null)).toEqual([])
+    const stack = { querySelector: () => ({}) }
+    vi.stubGlobal('getComputedStyle', () => ({ transform: 'matrix(1, 0, 0, 1, 0, -12)' }))
+    expect(settleMotion(stack)).toEqual([])
   })
 })

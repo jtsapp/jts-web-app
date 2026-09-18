@@ -116,7 +116,7 @@ describe('TutorFace', () => {
     expect(container.querySelector('.t-face--talking').style.transform).toBe('translate(0%, 0%) rotate(0deg)')
   })
 
-  it('morph: уходящее лицо доигрывает движение, пока гаснет', () => {
+  it('morph: на время смены уходящее гаснет с движением, новое — неподвижный кадр', () => {
     vi.useFakeTimers()
     try {
       const { container, rerender } = render(<TutorFace emotion="idle" preload={['happy']} morph />)
@@ -124,13 +124,16 @@ describe('TutorFace', () => {
       rerender(<TutorFace emotion="happy" morph />)
       expect(shownKey(container)).toBe('happy')
       const idle = container.querySelector('.t-face--idle')
+      const happy = container.querySelector('.t-face--happy')
       expect(idle.classList.contains('is-leaving')).toBe(true)
+      expect(happy.classList.contains('is-entering')).toBe(true)
       // Уходящее уже едет в позу нового: тела совпадут к концу перехода.
       expect(idle.style.transform).toBe('translate(-0.02%, -0.01%) rotate(-3deg)')
       act(() => {
         vi.advanceTimersByTime(SWAP_MS)
       })
       expect(idle.classList.contains('is-leaving')).toBe(false)
+      expect(happy.classList.contains('is-entering')).toBe(false)
     } finally {
       vi.useRealTimers()
     }

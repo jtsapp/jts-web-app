@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { EMOTIONS } from './avatarEmotions.js'
 import { BUDDY_RIG } from './buddyRig.js'
-import { SWAP_MS, poseStyle } from './buddyPose.js'
+import { SWAP_MS, poseStyle, settleMotion } from './buddyPose.js'
 
 /**
  * Лицо тьютора — слои карточек Figma «Speaking Buddy» (см. buddyRig.js): тело
@@ -66,23 +66,41 @@ export default function TutorFace({
   // На первом кадре показывать ещё нечего — рисуем запрошенное сразу, браузер
   // догрузит его сам. Дальше держим прежнее лицо, пока новое не придёт.
   const [shown, setShown] = useState(null)
-  // Уходящее лицо плавной смены: пока гаснет, доигрывает своё движение
-  // (is-leaving в tutor.css), а не встаёт рывком в позу покоя.
-  const [leaving, setLeaving] = useState(null)
+  // Плавная смена, пока идёт: from — уходящее лицо, to — новое. Уходящее
+  // (is-leaving) гаснет, не обрывая своего движения, а тело успокаивает в покой;
+  // новое (is-entering) — неподвижный кадр до конца смены. Так тела обоих стоят
+  // в покое и совпадают, как варианты в макете (подробнее — tutor.css).
+  const [swap, setSwap] = useState(null)
   const visible = shown === null || loaded.has(want) ? want : shown
   if (visible !== shown) {
     setShown(visible)
-    if (morph && shown !== null) setLeaving(shown)
+    if (morph && shown !== null) setSwap({ from: shown, to: visible })
   }
 
   useEffect(() => {
-    if (!leaving) return undefined
-    const id = setTimeout(() => setLeaving(null), SWAP_MS)
+    if (!swap) return undefined
+    const id = setTimeout(() => setSwap(null), SWAP_MS)
     return () => clearTimeout(id)
-  }, [leaving])
+  }, [swap])
+
+  // До отрисовки: текущее положение тела читается, пока CSS-движение уходящего
+  // ещё идёт (is-leaving держит его). Снятие — в конце смены, в том же коммите,
+  // где уходит и само движение: оба дают покой, шва нет.
+  const faceRef = useRef(null)
+  useLayoutEffect(() => {
+    if (!swap) return undefined
+    const settling = settleMotion(faceRef.current?.querySelector(`.t-face--${swap.from}`))
+    return () => settling.forEach((a) => a.cancel())
+  }, [swap])
+
+  const stateClass = (key) => {
+    if (key === visible) return swap?.to === key ? ' is-on is-entering' : ' is-on'
+    return swap?.from === key ? ' is-leaving' : ''
+  }
 
   return (
     <div
+      ref={faceRef}
       className={className + ' t-face' + (morph ? ' is-morph' : '')}
       style={morph ? { '--face-swap': `${SWAP_MS}ms` } : undefined}
       role="img"
@@ -91,9 +109,7 @@ export default function TutorFace({
       {keys.map((key) => (
         <div
           key={key}
-          className={
-            `t-face__stack t-face--${key}` + (key === visible ? ' is-on' : key === leaving ? ' is-leaving' : '')
-          }
+          className={`t-face__stack t-face--${key}` + stateClass(key)}
           style={{ '--tilt': `${BUDDY_RIG[key].tilt}deg`, ...(morph ? poseStyle(key, visible) : null) }}
         >
           <div className="t-face__rig">
