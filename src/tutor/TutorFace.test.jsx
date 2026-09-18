@@ -14,9 +14,12 @@ describe('TutorFace', () => {
     expect(getByRole('img').getAttribute('aria-label')).toBe('Злится')
   })
 
-  it('незнакомый ключ показывает дефолт', () => {
-    const { container } = render(<TutorFace emotion="nope" />)
-    expect(shownKey(container)).toBe('idle')
+  it('незнакомый ключ показывает дефолт, в том числе ключ прототипа', () => {
+    for (const key of ['nope', 'constructor']) {
+      const { container, unmount } = render(<TutorFace emotion={key} />)
+      expect(shownKey(container), key).toBe('idle')
+      unmount()
+    }
   })
 
   it('рисует все слои карточки, а не одну картинку', () => {
@@ -72,5 +75,25 @@ describe('TutorFace', () => {
   it('без эмоции речь показывает «Говорит» с первого кадра', () => {
     const { container } = render(<TutorFace emotion="idle" speaking />)
     expect(shownKey(container)).toBe('talking')
+  })
+
+  it('preload монтирует набор скрытым, видимое лицо не меняется', () => {
+    const { container } = render(<TutorFace emotion="idle" preload={['happy']} />)
+    expect(shownKey(container)).toBe('idle')
+    const happy = container.querySelector('.t-face__stack.t-face--happy')
+    expect(happy).not.toBeNull()
+    expect(happy.classList.contains('is-on')).toBe(false)
+  })
+
+  it('заранее догруженный набор показывается сразу, без ожидания', () => {
+    const { container, rerender } = render(<TutorFace emotion="idle" preload={['happy']} />)
+    fireEvent.load(body(container, 'happy'))
+    rerender(<TutorFace emotion="happy" />)
+    expect(shownKey(container)).toBe('happy')
+  })
+
+  it('незнакомые ключи и null в preload пропускаются', () => {
+    const { container } = render(<TutorFace emotion="idle" preload={['nope', 'constructor', null]} />)
+    expect(container.querySelectorAll('.t-face__stack')).toHaveLength(1)
   })
 })

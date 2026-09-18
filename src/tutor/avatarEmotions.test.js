@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { EMOTIONS, moodToEmotion } from './avatarEmotions.js'
+import { EMOTIONS, SHOWCASE_ORDER, moodToEmotion, showcaseFrom } from './avatarEmotions.js'
 import { BUDDY_RIG } from './buddyRig.js'
 import { TUTORS } from './tutors.js'
 
@@ -54,5 +54,23 @@ describe('avatarEmotions', () => {
       if (tutor.face === 'orb') continue
       expect(EMOTIONS[tutor.mood], `${tutor.key}: mood ${tutor.mood}`).toBeDefined()
     }
+  })
+})
+
+describe('круг витрины', () => {
+  it('каждая эмоция в круге ровно один раз', () => {
+    expect([...SHOWCASE_ORDER].sort()).toEqual(Object.keys(EMOTIONS).sort())
+  })
+
+  it('круг начинается с родной эмоции, порядок тот же', () => {
+    const n = SHOWCASE_ORDER.length
+    const start = SHOWCASE_ORDER.indexOf('angry')
+    expect(showcaseFrom('angry')[0]).toBe('angry')
+    expect(showcaseFrom('angry')).toEqual(SHOWCASE_ORDER.map((_, i) => SHOWCASE_ORDER[(start + i) % n]))
+  })
+
+  it('незнакомая эмоция — круг с дефолта', () => {
+    expect(showcaseFrom('nope')).toEqual(SHOWCASE_ORDER)
+    expect(showcaseFrom(undefined)[0]).toBe('idle')
   })
 })
