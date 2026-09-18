@@ -26,6 +26,36 @@ export const EMOTIONS = {
   rage: { label: 'Ярость', speaks: true },
 }
 
+// Круг витрины на дашборде (useEmotionShowcase): все эмоции по одному разу.
+// Порядок свой, а не как в EMOTIONS: там порядок вариантов макета, и подряд
+// шли бы «Злится → Скука». Здесь соседи близки по смыслу — лицо не прыгает из
+// ярости в сон, а от скуки по кругу возвращается к спокойному дефолту.
+export const SHOWCASE_ORDER = [
+  'idle',
+  'listening',
+  'thinking',
+  'talking',
+  'happy',
+  'celebrate',
+  'surprised',
+  'confused',
+  'gloat',
+  'angry',
+  'rage',
+  'sympathy',
+  'sleepy',
+]
+
+/**
+ * Круг витрины, начатый с родной эмоции тьютора (mood в tutors.js): первым
+ * ученик видит характер персонажа, дальше весь спектр в том же порядке.
+ * Незнакомая эмоция → круг с idle.
+ */
+export function showcaseFrom(mood) {
+  const start = Math.max(0, SHOWCASE_ORDER.indexOf(mood))
+  return [...SHOWCASE_ORDER.slice(start), ...SHOWCASE_ORDER.slice(0, start)]
+}
+
 // Имя от агента (топик "mood") → ключ картинки. Именно Map, а не литерал:
 // у литерала есть цепочка прототипов, и MOOD_EMOTION['constructor'] вернул бы
 // функцию Object — то есть «незнакомое» имя прошло бы проверку.
