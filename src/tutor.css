@@ -1085,6 +1085,11 @@
    полупрозрачных тела дали бы ≈ 75 % плотности — тело бы просвечивало.
    Кривая позы — пресет Figma «Ease in and out»; длительность приходит из
    SWAP_MS переменной --face-swap. */
+/* z-index нового набора — только внутри лица: без своего контекста наложения
+   свечение лица (холст больше бокса) поднялось бы над кнопкой под ним. */
+.t-face.is-morph {
+  isolation: isolate;
+}
 .t-face.is-morph .t-face__stack {
   transition:
     opacity calc(var(--face-swap) * 0.45) ease-in calc(var(--face-swap) * 0.4),

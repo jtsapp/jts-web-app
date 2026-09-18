@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { EMOTIONS } from './avatarEmotions.js'
 import { BUDDY_RIG } from './buddyRig.js'
-import { SWAP_MS, poseStyle, settleMotion } from './buddyPose.js'
+import { SWAP_MS, poseStyle, rewindMotion, settleMotion } from './buddyPose.js'
 
 /**
  * Лицо тьютора — слои карточек Figma «Speaking Buddy» (см. buddyRig.js): тело
@@ -84,12 +84,16 @@ export default function TutorFace({
   }, [swap])
 
   // До отрисовки: текущее положение тела читается, пока CSS-движение уходящего
-  // ещё идёт (is-leaving держит его). Снятие — в конце смены, в том же коммите,
-  // где уходит и само движение: оба дают покой, шва нет.
+  // ещё идёт (is-leaving держит его). Снятие — в конце смены, когда уходящее уже
+  // погасло. Смена посреди смены (бывает только при смене тьютора) снимает
+  // успокоение с гаснущего раньше срока — его тело может дёрнуться, пока оно
+  // полупрозрачно; ради редкого случая сложность не городили.
   const faceRef = useRef(null)
   useLayoutEffect(() => {
     if (!swap) return undefined
-    const settling = settleMotion(faceRef.current?.querySelector(`.t-face--${swap.from}`))
+    const face = faceRef.current
+    rewindMotion(face?.querySelector(`.t-face--${swap.to}`))
+    const settling = settleMotion(face?.querySelector(`.t-face--${swap.from}`))
     return () => settling.forEach((a) => a.cancel())
   }, [swap])
 
