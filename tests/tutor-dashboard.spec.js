@@ -45,3 +45,27 @@ test.describe('дашборд тьютора — мобилка', () => {
     await expect(scenarios).toBeInViewport()
   })
 })
+
+test.describe('дашборд тьютора — витрина эмоций', () => {
+  // Видимая эмоция — ключ из класса t-face--<ключ> у набора с is-on.
+  const shownEmotion = (page) =>
+    page
+      .locator('.t-dash__face .t-face__stack.is-on')
+      .evaluate((el) => [...el.classList].find((c) => c.startsWith('t-face--')).slice(8))
+
+  test('лицо в орбе листает эмоции по кругу', async ({ page }) => {
+    await page.goto('/?screen=tutor-dashboard')
+    const first = await shownEmotion(page)
+    // Смена раз в 3 с; запас — на подгрузку картинок следующего набора.
+    await expect.poll(() => shownEmotion(page), { timeout: 10_000 }).not.toBe(first)
+  })
+
+  test('при «уменьшить движение» лицо стоит на родной эмоции', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/?screen=tutor-dashboard')
+    const first = await shownEmotion(page)
+    // Дольше одного шага круга: будь витрина включена, лицо бы уже сменилось.
+    await page.waitForTimeout(4_000)
+    expect(await shownEmotion(page)).toBe(first)
+  })
+})
