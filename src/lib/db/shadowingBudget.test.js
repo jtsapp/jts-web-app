@@ -1,16 +1,16 @@
-// Демо-бюджет оценок Shadowing: у демо-аккаунта свой недельный потолок, и один
+// Демо-бюджет оценок Shadowing: у демо-аккаунта свой дневной потолок, и один
 // и тот же выбор лимита обязан решать показ остатка, отсечку слишком дорогой
-// записи и само списание. Базовая математика модуля (ISO-неделя, кредиты по
+// записи и само списание. Базовая математика модуля (ключ суток, кредиты по
 // длине wav) покрыта в tests/shadowing-budget.spec.js — здесь только то, что
 // зависит от демо-статуса.
 
 import { describe, it, expect } from 'vitest'
 import {
-  WEEKLY_LIMIT,
-  DEMO_WEEKLY_LIMIT,
-  weeklyLimitFor,
+  DAILY_LIMIT,
+  DEMO_DAILY_LIMIT,
+  dailyLimitFor,
   budgetPayload,
-  exceedsWeeklyBudget,
+  exceedsDailyBudget,
   creditsForSeconds,
   getUsed,
   consume,
@@ -55,15 +55,15 @@ function makeFakeSql(store = {}) {
 }
 
 describe('выбор лимита по демо-статусу', () => {
-  it('10 кредитов в неделю обычному, 3 демо', () => {
-    expect(WEEKLY_LIMIT).toBe(10)
-    expect(DEMO_WEEKLY_LIMIT).toBe(3)
-    expect(weeklyLimitFor(false)).toBe(10)
-    expect(weeklyLimitFor(true)).toBe(3)
+  it('10 кредитов в сутки обычному, 3 демо', () => {
+    expect(DAILY_LIMIT).toBe(10)
+    expect(DEMO_DAILY_LIMIT).toBe(3)
+    expect(dailyLimitFor(false)).toBe(10)
+    expect(dailyLimitFor(true)).toBe(3)
   })
 
   it('отсутствие флага — обычный потолок (аноним демо-аккаунтом не бывает)', () => {
-    expect(weeklyLimitFor(undefined)).toBe(10)
+    expect(dailyLimitFor(undefined)).toBe(10)
   })
 })
 
@@ -85,19 +85,19 @@ describe('клиенту отдаётся ВЫБРАННЫЙ лимит', () => 
   })
 })
 
-describe('exceedsWeeklyBudget — страховка INSERT-пути', () => {
+describe('exceedsDailyBudget — страховка INSERT-пути', () => {
   it('демо: запись дороже трёх кредитов не начинаем', () => {
     // Путь INSERT в consume() лимит не проверяет, поэтому первая же запись
-    // недели на 2 минуты (4 кредита) иначе списалась бы поверх потолка.
-    expect(exceedsWeeklyBudget(4, true)).toBe(true)
-    expect(exceedsWeeklyBudget(creditsForSeconds(120), true)).toBe(true)
-    expect(exceedsWeeklyBudget(3, true)).toBe(false)
-    expect(exceedsWeeklyBudget(creditsForSeconds(90), true)).toBe(false)
+    // суток на 2 минуты (4 кредита) иначе списалась бы поверх потолка.
+    expect(exceedsDailyBudget(4, true)).toBe(true)
+    expect(exceedsDailyBudget(creditsForSeconds(120), true)).toBe(true)
+    expect(exceedsDailyBudget(3, true)).toBe(false)
+    expect(exceedsDailyBudget(creditsForSeconds(90), true)).toBe(false)
   })
 
   it('обычному аккаунту те же 4 кредита проходят, 11 — нет', () => {
-    expect(exceedsWeeklyBudget(4, false)).toBe(false)
-    expect(exceedsWeeklyBudget(11, false)).toBe(true)
+    expect(exceedsDailyBudget(4, false)).toBe(false)
+    expect(exceedsDailyBudget(11, false)).toBe(true)
   })
 })
 

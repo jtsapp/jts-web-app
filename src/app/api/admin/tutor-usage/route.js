@@ -16,7 +16,7 @@
 // Заголовок Authorization при `*` работает — запрос идёт с явным заголовком, а
 // не с куками.
 import { verifyTokenStatus, profileIdForUser } from '../../../../lib/auth-server.js'
-import { getUsage, resetTodayUsage, isDbConfigured, DAILY_LIMIT_SEC } from '../../../../lib/usage.js'
+import { getUsage, resetTodayUsage, isDbConfigured, DAILY_LIMIT_SEC, MONTH_LIMIT_SEC } from '../../../../lib/usage.js'
 
 export const runtime = 'nodejs'
 
@@ -65,7 +65,12 @@ export async function GET(request) {
   const { error, deviceId } = await resolve(request, studentId)
   if (error) return error
   const usage = await getUsage(deviceId)
-  return json({ ...usage, dailyLimitSec: DAILY_LIMIT_SEC })
+  // Оба потолка ПО УМОЛЧАНИЮ. Персональный лимит ученика здесь неизвестен: он
+  // лежит в бэкенде и читается его же ручкой, по токену АДМИНА эта ручка отдала
+  // бы лимит самого админа. Поэтому карточка ученика складывает сама: есть
+  // персональный — берёт его, нет — вот эти. Месячный до этого не отдавался
+  // вовсе, и карточка не могла показать, что ученика запер именно он.
+  return json({ ...usage, dailyLimitSec: DAILY_LIMIT_SEC, monthLimitSec: MONTH_LIMIT_SEC })
 }
 
 export async function POST(request) {
@@ -78,5 +83,5 @@ export async function POST(request) {
   const { error, deviceId } = await resolve(request, body?.studentId)
   if (error) return error
   const usage = await resetTodayUsage(deviceId)
-  return json({ ...(usage || { todaySeconds: 0, monthSeconds: 0 }), dailyLimitSec: DAILY_LIMIT_SEC })
+  return json({ ...(usage || { todaySeconds: 0, monthSeconds: 0 }), dailyLimitSec: DAILY_LIMIT_SEC, monthLimitSec: MONTH_LIMIT_SEC })
 }

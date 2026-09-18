@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test'
 import {
-  WEEKLY_LIMIT,
+  DAILY_LIMIT,
   SECONDS_PER_CREDIT,
   wavSeconds,
   creditsForSeconds,
+  dayKey,
+  nextDayResetAt,
   isoWeekKey,
   nextWeekResetAt,
   getUsed,
@@ -15,13 +17,13 @@ import {
 // в памяти, чтобы проверить JS-контракт обёрток (что возвращается, что пишется)
 // без живой БД. Точность самого SQL-атомика — на Postgres.
 function makeFakeSql(store = {}) {
-  const key = (p, w) => `${p}|${w}`
+  const key = (p, d) => `${p}|${d}`
   const tag = async (strings, ...vals) => {
     const q = strings.join(' ').replace(/\s+/g, ' ').toLowerCase()
     if (q.includes('insert into shadowing_assess')) {
-      const [profileId, weekKey, credits] = vals
+      const [profileId, dayKeyValue, credits] = vals
       const limit = vals[vals.length - 1]
-      const k = key(profileId, weekKey)
+      const k = key(profileId, dayKeyValue)
       if (store[k] === undefined) {
         // путь INSERT не проверяет лимит (контракт: вызывающий сам отсекает credits>limit)
         store[k] = credits
@@ -34,14 +36,14 @@ function makeFakeSql(store = {}) {
       return [] // WHERE false → 0 строк → отказ
     }
     if (q.includes('update shadowing_assess')) {
-      const [credits, profileId, weekKey] = vals
-      const k = key(profileId, weekKey)
+      const [credits, profileId, dayKeyValue] = vals
+      const k = key(profileId, dayKeyValue)
       if (store[k] !== undefined) store[k] = Math.max(0, store[k] - credits)
       return []
     }
     if (q.includes('select used from shadowing_assess')) {
-      const [profileId, weekKey] = vals
-      const k = key(profileId, weekKey)
+      const [profileId, dayKeyValue] = vals
+      const k = key(profileId, dayKeyValue)
       return store[k] === undefined ? [] : [{ used: store[k] }]
     }
     return []
@@ -52,7 +54,7 @@ function makeFakeSql(store = {}) {
 
 test.describe('shadowingBudget — константы и стоимость', () => {
   test('лимит 10 кредитов, 30 с на кредит', () => {
-    expect(WEEKLY_LIMIT).toBe(10)
+    expect(DAILY_LIMIT).toBe(10)
     expect(SECONDS_PER_CREDIT).toBe(30)
   })
 
@@ -80,7 +82,30 @@ test.describe('shadowingBudget — константы и стоимость', ()
   })
 })
 
-test.describe('shadowingBudget — ISO-неделя и сброс', () => {
+test.describe('shadowingBudget — сутки и сброс', () => {
+  // Ключ суток и полночь UTC — на них теперь стоит сам лимит Shadowing.
+  test('dayKey: дата UTC, а не локальная', () => {
+    expect(dayKey(new Date('2026-09-18T09:00:00Z'))).toBe('2026-09-18')
+    // Вечер в Алматы (UTC+5) — это ещё те же сутки UTC, а не следующие.
+    expect(dayKey(new Date('2026-09-18T20:00:00Z'))).toBe('2026-09-18')
+    expect(dayKey(new Date('2026-09-18T23:59:59Z'))).toBe('2026-09-18')
+    expect(dayKey(new Date('2026-09-19T00:00:00Z'))).toBe('2026-09-19')
+  })
+
+  test('nextDayResetAt: ближайшая полночь UTC, всегда в будущем', () => {
+    const now = new Date('2026-09-18T09:00:00Z')
+    const reset = new Date(nextDayResetAt(now))
+    expect(reset.toISOString()).toBe('2026-09-19T00:00:00.000Z')
+    expect(reset.getTime()).toBeGreaterThan(now.getTime())
+    // Ровно полночь → СЛЕДУЮЩАЯ, а не «сегодня»: иначе сброс был бы в прошлом.
+    expect(new Date(nextDayResetAt(new Date('2026-09-18T00:00:00Z'))).toISOString())
+      .toBe('2026-09-19T00:00:00.000Z')
+  })
+})
+
+// Недельные помощники Shadowing больше не нужны, но живут в этом же модуле:
+// ими считает бюджет ПИСЬМА и недельная сводка Roadmap. Проверка остаётся.
+test.describe('shadowingBudget — ISO-неделя и сброс (для письма и сводки)', () => {
   test('isoWeekKey: формат и граничные годы (ISO 8601)', () => {
     expect(isoWeekKey(new Date('2026-01-01T12:00:00Z'))).toBe('2026-W01') // чт → W01
     expect(isoWeekKey(new Date('2021-01-01T12:00:00Z'))).toBe('2020-W53') // пт → прошлый год
@@ -104,40 +129,40 @@ test.describe('shadowingBudget — ISO-неделя и сброс', () => {
 
 test.describe('shadowingBudget — consume/refund/getUsed', () => {
   test('без БД (sql=null): consume→null, getUsed→0, refund→no-op', async () => {
-    expect(await consume('user-1', '2026-W31', 1, false, null)).toBeNull()
-    expect(await getUsed('user-1', '2026-W31', null)).toBe(0)
-    await refund('user-1', '2026-W31', 1, null) // не бросает
+    expect(await consume('user-1', '2026-09-18', 1, false, null)).toBeNull()
+    expect(await getUsed('user-1', '2026-09-18', null)).toBe(0)
+    await refund('user-1', '2026-09-18', 1, null) // не бросает
   })
 
   test('списывает по кредиту и отдаёт новое used', async () => {
     const sql = makeFakeSql()
-    expect(await consume('user-1', '2026-W31', 1, false, sql)).toBe(1)
-    expect(await consume('user-1', '2026-W31', 1, false, sql)).toBe(2)
-    expect(await getUsed('user-1', '2026-W31', sql)).toBe(2)
+    expect(await consume('user-1', '2026-09-18', 1, false, sql)).toBe(1)
+    expect(await consume('user-1', '2026-09-18', 1, false, sql)).toBe(2)
+    expect(await getUsed('user-1', '2026-09-18', sql)).toBe(2)
   })
 
   test('доводит до лимита и отклоняет сверх него', async () => {
     const sql = makeFakeSql()
-    for (let i = 1; i <= 10; i++) expect(await consume('u', '2026-W31', 1, false, sql)).toBe(i)
-    expect(await consume('u', '2026-W31', 1, false, sql)).toBeNull() // 11-я — отказ
-    expect(await getUsed('u', '2026-W31', sql)).toBe(10) // не выросло
+    for (let i = 1; i <= 10; i++) expect(await consume('u', '2026-09-18', 1, false, sql)).toBe(i)
+    expect(await consume('u', '2026-09-18', 1, false, sql)).toBeNull() // 11-я — отказ
+    expect(await getUsed('u', '2026-09-18', sql)).toBe(10) // не выросло
   })
 
   test('многокредитная оценка (целиком) не пробивает лимит', async () => {
     const sql = makeFakeSql()
-    expect(await consume('u', '2026-W31', 9, false, sql)).toBe(9)
-    expect(await consume('u', '2026-W31', 2, false, sql)).toBeNull() // 9+2=11 > 10 → отказ
-    expect(await getUsed('u', '2026-W31', sql)).toBe(9)
-    expect(await consume('u', '2026-W31', 1, false, sql)).toBe(10) // ровно до лимита можно
+    expect(await consume('u', '2026-09-18', 9, false, sql)).toBe(9)
+    expect(await consume('u', '2026-09-18', 2, false, sql)).toBeNull() // 9+2=11 > 10 → отказ
+    expect(await getUsed('u', '2026-09-18', sql)).toBe(9)
+    expect(await consume('u', '2026-09-18', 1, false, sql)).toBe(10) // ровно до лимита можно
   })
 
   test('refund возвращает кредиты, не ниже нуля; недели независимы', async () => {
     const sql = makeFakeSql()
-    await consume('u', '2026-W31', 3, false, sql)
-    await refund('u', '2026-W31', 2, sql)
-    expect(await getUsed('u', '2026-W31', sql)).toBe(1)
-    await refund('u', '2026-W31', 5, sql) // не уходит в минус
-    expect(await getUsed('u', '2026-W31', sql)).toBe(0)
+    await consume('u', '2026-09-18', 3, false, sql)
+    await refund('u', '2026-09-18', 2, sql)
+    expect(await getUsed('u', '2026-09-18', sql)).toBe(1)
+    await refund('u', '2026-09-18', 5, sql) // не уходит в минус
+    expect(await getUsed('u', '2026-09-18', sql)).toBe(0)
     // другая неделя — свой счётчик
     expect(await getUsed('u', '2026-W32', sql)).toBe(0)
   })
