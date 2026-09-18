@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, fireEvent, act } from '@testing-library/react'
 import TutorFace from './TutorFace.jsx'
+import { SWAP_MS } from './buddyPose.js'
 
 const shownKey = (container) =>
   [...container.querySelector('.t-face__stack.is-on').classList].find((c) => c.startsWith('t-face--')).slice(8)
@@ -95,5 +96,43 @@ describe('TutorFace', () => {
   it('незнакомые ключи и null в preload пропускаются', () => {
     const { container } = render(<TutorFace emotion="idle" preload={['nope', 'constructor', null]} />)
     expect(container.querySelectorAll('.t-face__stack')).toHaveLength(1)
+  })
+
+  it('без morph смена как раньше: ни позы, ни is-morph, ни is-leaving', () => {
+    const { container, rerender } = render(<TutorFace emotion="idle" preload={['happy']} />)
+    expect(container.querySelector('.t-face').classList.contains('is-morph')).toBe(false)
+    expect(container.querySelector('.t-face--happy').style.transform).toBe('')
+    fireEvent.load(body(container, 'happy'))
+    rerender(<TutorFace emotion="happy" />)
+    expect(container.querySelector('.is-leaving')).toBeNull()
+  })
+
+  it('morph ставит каждый набор в позу видимого', () => {
+    const { container } = render(<TutorFace emotion="talking" preload={['happy']} morph />)
+    expect(container.querySelector('.t-face').classList.contains('is-morph')).toBe(true)
+    const happy = container.querySelector('.t-face--happy')
+    expect(happy.style.transform).toBe('translate(-3.32%, 0.42%) rotate(27.2deg)')
+    expect(happy.style.transformOrigin).toBe('50.01% 50.04%')
+    expect(container.querySelector('.t-face--talking').style.transform).toBe('translate(0%, 0%) rotate(0deg)')
+  })
+
+  it('morph: уходящее лицо доигрывает движение, пока гаснет', () => {
+    vi.useFakeTimers()
+    try {
+      const { container, rerender } = render(<TutorFace emotion="idle" preload={['happy']} morph />)
+      fireEvent.load(body(container, 'happy'))
+      rerender(<TutorFace emotion="happy" morph />)
+      expect(shownKey(container)).toBe('happy')
+      const idle = container.querySelector('.t-face--idle')
+      expect(idle.classList.contains('is-leaving')).toBe(true)
+      // Уходящее уже едет в позу нового: тела совпадут к концу перехода.
+      expect(idle.style.transform).toBe('translate(-0.02%, -0.01%) rotate(-3deg)')
+      act(() => {
+        vi.advanceTimersByTime(SWAP_MS)
+      })
+      expect(idle.classList.contains('is-leaving')).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
