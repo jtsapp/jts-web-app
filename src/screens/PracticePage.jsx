@@ -271,6 +271,47 @@ function WordsBanner({ onAll, onStart }) {
   )
 }
 
+// Баннер «Неправильные глаголы»: вход в главу из трёх частей (урок, таблица,
+// тренажёр на бит). Каркас тот же (.pp-listen), перекраска — .pp-verbs в
+// verbs.css. Уровня у раздела нет одного — глаголы идут A1–B1, поэтому в
+// печати, как у «Слов в картинках», число: сколько глаголов в таблице.
+function VerbsBanner({ onAll, onStart }) {
+  const { t } = useI18n()
+  const noop = () => {}
+  const [headTop, headRest] = t('practice.verbs.heading').split('\n')
+  return (
+    <section id="sec-verbs" className="pp-sec pp-listen pp-verbs">
+      <SectionHead title={t('practice.verbs.title')} onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            {headTop}
+            {headRest && (
+              <>
+                <br />
+                {headRest}
+              </>
+            )}
+          </h3>
+          <p className="pp-listen__desc">{t('practice.verbs.desc')}</p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            {t('practice.verbs.cta')}
+          </button>
+        </div>
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">{t('practice.verbs.hint')}</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level pp-listen__level--num">90</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Баннер «Письмо»: вход в тренажёр Writing (180 жанров + Блокнот). Переиспользует
 // каркас баннера аудирования (.pp-listen), а перекраска — модификатором .pp-write
 // в writing.css. Своего арта у раздела пока нет, поэтому карточка текстовая.
@@ -688,6 +729,7 @@ export default function PracticePage({
     { key: 'writing', label: t('practice.chip.writing') },
     { key: 'reading', label: t('practice.chip.reading') },
     { key: 'words', label: t('practice.chip.words') },
+    { key: 'verbs', label: t('practice.chip.verbs') },
     { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
     { key: 'workbooks', label: t('practice.chip.workbooks') },
@@ -716,6 +758,7 @@ export default function PracticePage({
     { selector: '#sec-writing', title: t('tour.practice.writing.title'), text: t('tour.practice.writing.text') },
     { selector: '#sec-reading', title: t('tour.practice.reading.title'), text: t('tour.practice.reading.text') },
     { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text') },
+    { selector: '#sec-verbs', title: t('tour.practice.verbs.title'), text: t('tour.practice.verbs.text') },
     { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text') },
     { selector: '#sec-situations', title: t('tour.practice.situations.title'), text: t('tour.practice.situations.text') },
     { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
@@ -996,6 +1039,10 @@ export default function PracticePage({
           {/* Слова в картинках — вход в визуальный словарь. Своей сетки у чипа
               нет: каталог секций и сцен живёт на экране раздела. */}
           {show('words') && <WordsBanner onAll={() => onNav?.('words')} onStart={() => onNav?.('words')} />}
+
+          {/* Неправильные глаголы — вход в главу. Своей сетки у чипа нет: урок,
+              таблица и тренажёр живут на экране раздела. */}
+          {show('verbs') && <VerbsBanner onAll={() => onNav?.('verbs')} onStart={() => onNav?.('verbs')} />}
 
           {/* Грамматика — полный каталог (чип «Грамматика») */}
           {filter === 'grammar' &&

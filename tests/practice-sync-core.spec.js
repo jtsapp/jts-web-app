@@ -35,6 +35,16 @@ test.describe('practiceSyncCore — сериализация и применен
     expect(events).toEqual(['grammar-progress', 'listening-progress', 'writing-progress'])
   })
 
+  test('verbs: объект {saved, progress} уходит и приходит целиком', () => {
+    const s = { saved: { go: true }, progress: { 'practice-v4-repeat-3-A1': { go: { done: true, kind: 'manual', attempts: 1 } } } }
+    expect(serializeForPush('verbs', s)).toBe(s)
+    const writes = {}
+    const events = []
+    applyHydratedState({ verbs: s }, { setItem: (k, v) => (writes[k] = v), dispatch: (e) => events.push(e) })
+    expect(JSON.parse(writes.jts_verbs_done)).toEqual(s)
+    expect(events).toEqual(['verbs-progress'])
+  })
+
   test('applyHydratedState: мусорный вход игнорируется', () => {
     let called = false
     applyHydratedState(null, { setItem: () => (called = true), dispatch: () => (called = true) })

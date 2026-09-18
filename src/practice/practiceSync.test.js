@@ -7,7 +7,8 @@
 // его добила, — и дефект стал бы плавающим вместо стабильного.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { pushModule, flushModule, PUSH_DELAY_MS } from './practiceSync.js'
+import { pushModule, flushModule, PUSH_DELAY_MS, clearLocalPractice } from './practiceSync.js'
+import { READING_KEY, WORDS_KEY, VERBS_KEY } from './practiceKeys.js'
 
 // Управляемый fetch: тест сам решает, когда сервер ответит.
 function deferredFetch() {
@@ -104,5 +105,16 @@ describe('flushModule', () => {
     pushModule('workbooks', new Set(['a0']))
     await flushModule('workbooks')
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+// Выход из аккаунта стирает локальный прогресс разделов: на общей машине он
+// иначе достаётся следующему ученику. Новый раздел, забытый в списке, — ровно
+// эта утечка (так было со «Словами в картинках»).
+describe('clearLocalPractice', () => {
+  it('стирает прогресс чтения, «Слов в картинках» и глаголов', () => {
+    for (const k of [READING_KEY, WORDS_KEY, VERBS_KEY]) localStorage.setItem(k, '{"x":1}')
+    clearLocalPractice()
+    for (const k of [READING_KEY, WORDS_KEY, VERBS_KEY]) expect(localStorage.getItem(k)).toBeNull()
   })
 })
