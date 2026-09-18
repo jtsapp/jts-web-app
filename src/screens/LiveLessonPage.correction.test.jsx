@@ -48,6 +48,9 @@ vi.mock('../api.js', () => ({
   setLessonMeetingUrl: vi.fn(async () => ({})),
   getLessonMaterialProgress: vi.fn(async () => ({})),
   saveLessonMaterialProgress: vi.fn(async () => ({})),
+  // Стадии файла спрашиваются у любого открытого материала; здесь урок открыт
+  // шагами разбора, и стадии ему не нужны — пустой список.
+  getLessonViewStages: vi.fn(async () => []),
   startLiveLesson: vi.fn(async () => ({})),
   pauseLiveLesson: vi.fn(async () => ({})),
   resumeLiveLesson: vi.fn(async () => ({})),
