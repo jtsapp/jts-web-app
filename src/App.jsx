@@ -26,6 +26,7 @@ import WritingPage from './screens/WritingPage.jsx'
 import WorkbookPage from './screens/WorkbookPage.jsx'
 import ReadingPage from './screens/ReadingPage.jsx'
 import WordsPage from './screens/WordsPage.jsx'
+import VerbsPage from './screens/VerbsPage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -108,7 +109,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -215,6 +216,13 @@ export default function App() {
       const scene = searchParams.get('scene')
       const sec = searchParams.get('section')
       if (scene || sec) setWordsTarget({ sceneId: scene || null, section: sec || null })
+    }
+    // ?screen=verbs&part=practice — нужная часть «Неправильных глаголов»
+    // (learn | table | practice): без неё экран открывался бы там, где
+    // человек был в прошлый раз, и проверить тренажёр по ссылке было нельзя.
+    if (deepLink === 'verbs') {
+      const part = searchParams.get('part')
+      if (part) setVerbsTarget({ part })
     }
     // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
@@ -453,6 +461,7 @@ export default function App() {
   const [workbookTarget, setWorkbookTarget] = useState(null) // { level } — какой воркбук открыть из Практики
   const [listeningTarget, setListeningTarget] = useState(null) // { level } — какой уровень аудирования открыть из домашки
   const [wordsTarget, setWordsTarget] = useState(null) // { section?, sceneId? } — прыжок из Практики в секцию/сцену «Слов в картинках»
+  const [verbsTarget, setVerbsTarget] = useState(null) // { part? } — нужная часть «Неправильных глаголов»
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -1112,6 +1121,7 @@ export default function App() {
     else if (key === 'workbook') { setWorkbookTarget(payload || null); setScreen('workbook') }
     else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
     else if (key === 'words') { setWordsTarget(payload || null); setScreen('words') }
+    else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -1151,6 +1161,7 @@ export default function App() {
     else if (key === 'workbook') setScreen('workbook')
     else if (key === 'reading') setScreen('reading')
     else if (key === 'words') setScreen('words')
+    else if (key === 'verbs') setScreen('verbs')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -1530,6 +1541,17 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={wordsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'verbs':
+      return (
+        <VerbsPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={verbsTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
