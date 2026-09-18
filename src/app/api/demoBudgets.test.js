@@ -266,7 +266,7 @@ describe('POST /api/writing/translate — списание перевода', ()
 describe('GET /api/shadowing/assess — остаток кредитов', () => {
   it('демо-аккаунту показывается его потолок 3', async () => {
     signedInAs({ demo: true })
-    seedUsed('shadowing_assess', thisWeek(), 1)
+    seedUsed('shadowing_assess', today(), 1)
 
     const body = await (await shadowingStatus(getRequest('/api/shadowing/assess'))).json()
 
@@ -275,7 +275,7 @@ describe('GET /api/shadowing/assess — остаток кредитов', () => 
 
   it('обычному аккаунту — 10', async () => {
     signedInAs({ demo: false })
-    seedUsed('shadowing_assess', thisWeek(), 1)
+    seedUsed('shadowing_assess', today(), 1)
 
     const body = await (await shadowingStatus(getRequest('/api/shadowing/assess'))).json()
 

@@ -104,7 +104,7 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
   const [wholeUrl, setWholeUrl] = useState(null)
   const [wholeResult, setWholeResult] = useState(null) // оценка целого отрывка
   const [wholeAssessing, setWholeAssessing] = useState(false)
-  const [budget, setBudget] = useState(null) // недельный бюджет оценок { limit, used, remaining, resetsAt }
+  const [budget, setBudget] = useState(null) // дневной бюджет оценок { limit, used, remaining, resetsAt }
   const [limitMsg, setLimitMsg] = useState('') // сообщение при исчерпании лимита / слишком длинной записи
   const wholeBlobRef = useRef(null)
   const [denied, setDenied] = useState(false)
