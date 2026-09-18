@@ -69,9 +69,53 @@ const RESPELL = { read: 'reed', close: 'cloze', live: 'liv', tear: 'tare', bow: 
 let voiceWarned = false
 let speakTimer = null
 
+/**
+ * Озвучка сервером — общий выход для ВСЕХ случаев, когда устройство английское
+ * слово прочитать не может.
+ *
+ * Таких случаев три, и молчали они по-разному:
+ *   1. speechSynthesis в браузере нет вовсе — функция выходила первой строкой,
+ *      молча, даже без сообщения;
+ *   2. синтез есть, а список голосов пуст (бывает на Android и в закрытых
+ *      webview) — показывался тост и наступала тишина;
+ *   3. голоса есть, английского среди них нет — этот случай на сервер уже
+ *      уходил (правка 16.09), а два соседних остались по-старому.
+ *
+ * Отсюда и повторная жалоба «в словаре ещё озвучку не сделали»: починили одну
+ * дверь из трёх. Теперь выход один на все.
+ */
+function viaServer(text, { onStart, onEnd, onNoVoice, accent }) {
+  speakListeningAudio(String(text), { onEnd })
+    .then((played) => {
+      if (played === 'none') {
+        // Сервер тоже не настроен — только теперь сознаёмся, что звука не
+        // будет, и один раз за сеанс, а не на каждое слово.
+        if (!voiceWarned) {
+          voiceWarned = true
+          onNoVoice && onNoVoice()
+        }
+        onEnd && onEnd()
+        return
+      }
+      reportAudio({ kind: 'tts', action: 'play', text: String(text), accent: accent === 'gb' ? 'GB' : 'US' })
+    })
+    .catch(() => {
+      onEnd && onEnd()
+    })
+  onStart && onStart()
+}
+
 // onNoVoice — колбэк для тоста «нет английского голоса» (в прототипе toast()).
 export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } = {}) {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return
+  // На сервере (SSR) звука нет и быть не может — ни браузерного, ни сетевого:
+  // играть его некуда и некому.
+  if (typeof window === 'undefined') return
+  // Синтеза в браузере нет вовсе. Раньше здесь был молчаливый return, и до
+  // серверной озвучки дело не доходило.
+  if (!window.speechSynthesis) {
+    viaServer(text, { onStart, onEnd, onNoVoice, accent })
+    return
+  }
   try {
     window.speechSynthesis.cancel()
   } catch {
@@ -84,10 +128,10 @@ export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } =
     speakTimer = setTimeout(() => {
       chooseVoices()
       if (voices.length) speak(text, { accent, rate, onStart, onEnd, onNoVoice })
-      else if (!voiceWarned) {
-        voiceWarned = true
-        onNoVoice && onNoVoice()
-      }
+      // Голосов нет и после повтора — устройство читать не умеет. Раньше
+      // здесь был тост и тишина; отправляем на сервер, как и остальные два
+      // случая.
+      else viaServer(text, { onStart, onEnd, onNoVoice, accent })
     }, 300)
     return
   }
@@ -103,22 +147,7 @@ export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } =
   // вернёт 'none', если не настроена на сервере; только тогда сознаёмся, что
   // звука не будет, и делаем это ОДИН раз за сеанс, а не на каждое слово.
   if (!v || !/^en[-_]/i.test(v.lang || '')) {
-    speakListeningAudio(String(text), { onEnd })
-      .then((played) => {
-        if (played === 'none') {
-          if (!voiceWarned) {
-            voiceWarned = true
-            onNoVoice && onNoVoice()
-          }
-          onEnd && onEnd()
-          return
-        }
-        reportAudio({ kind: 'tts', action: 'play', text: String(text), accent: gb ? 'GB' : 'US' })
-      })
-      .catch(() => {
-        onEnd && onEnd()
-      })
-    onStart && onStart()
+    viaServer(text, { onStart, onEnd, onNoVoice, accent })
     return
   }
   const single = /^[a-z'’-]+$/i.test(String(text).trim())
