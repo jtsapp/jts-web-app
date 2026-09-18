@@ -16,6 +16,7 @@ vi.mock('../../../../lib/usage.js', () => ({
   resetTodayUsage: (...a) => resetTodayUsage(...a),
   isDbConfigured: () => true,
   DAILY_LIMIT_SEC: 1200,
+  MONTH_LIMIT_SEC: 18000,
 }))
 
 const { GET, POST, OPTIONS } = await import('./route.js')
@@ -84,7 +85,12 @@ describe('сброс дневного лимита тьютора', () => {
       headers: { Authorization: 'Bearer TOK' },
     }))
 
-    await expect(res.json()).resolves.toMatchObject({ todaySeconds: 275, dailyLimitSec: 1200 })
+    // Оба потолка по умолчанию: карточка складывает из них и персонального
+    // лимита то, что действует на самом деле. Без месячного она не могла
+    // объяснить «Лимит исчерпан» при нетронутом дневном.
+    await expect(res.json()).resolves.toMatchObject({
+      todaySeconds: 275, dailyLimitSec: 1200, monthLimitSec: 18000,
+    })
     expect(resetTodayUsage).not.toHaveBeenCalled()
   })
 
