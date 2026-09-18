@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { findCatalogLessonId } from './catalogLessonByUrl.js'
+import { findCatalogLessonId, shouldResolveCatalogLesson } from './catalogLessonByUrl.js'
+import { LESSON_EXTRACTOR } from './lessonExtractor.js'
 
 const CATALOG = [
   {
@@ -57,5 +58,31 @@ describe('findCatalogLessonId', () => {
     expect(findCatalogLessonId(CATALOG, 'https://files/uploads/my-homework.pdf')).toBeNull()
     expect(findCatalogLessonId(CATALOG, '')).toBeNull()
     expect(findCatalogLessonId([], 'https://files/a2/lessons/L01.html')).toBeNull()
+  })
+})
+
+// Разбор выключен по умолчанию — и это главное свойство, а не побочный эффект:
+// урок каталога открывается самим файлом, как пробный; шаги не грузятся вовсе.
+describe('shouldResolveCatalogLesson — шаги или файл', () => {
+  const КАТАЛОГ = 'https://files/development/course-catalog/a0/lessons/L05.html'
+  const STANDALONE = 'https://files/development/course-catalog/standalone/a0-l5.html'
+
+  it('по умолчанию разбор выключен', () => {
+    expect(LESSON_EXTRACTOR.enabled).toBe(false)
+  })
+
+  it('при выключенном разборе урок каталога не ищется — будет файл', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ)).toBe(false)
+  })
+
+  it('при включённом разборе урок каталога ищется, а standalone — никогда', () => {
+    LESSON_EXTRACTOR.enabled = true
+    try {
+      expect(shouldResolveCatalogLesson(КАТАЛОГ)).toBe(true)
+      expect(shouldResolveCatalogLesson(STANDALONE)).toBe(false)
+      expect(shouldResolveCatalogLesson('')).toBe(false)
+    } finally {
+      LESSON_EXTRACTOR.enabled = false
+    }
   })
 })

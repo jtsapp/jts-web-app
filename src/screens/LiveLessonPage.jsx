@@ -27,7 +27,7 @@ import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { VOCAB_REVEAL_PREFIX } from './live/vocabReveal.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
-import { catalogLessonIdFor, isStandaloneLessonUrl } from './live/catalogLessonByUrl.js'
+import { catalogLessonIdFor, shouldResolveCatalogLesson } from './live/catalogLessonByUrl.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
@@ -271,9 +271,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    // Пробный урок в каталоге не ищем: его там нет по определению, а поход за
-    // деревом задерживал бы показ файла на старте занятия.
-    Promise.resolve(url && !isStandaloneLessonUrl(url) ? catalogLessonIdFor(url, token) : null)
+    // Разбор выключен (LESSON_EXTRACTOR): материал открывается самим файлом, как
+    // пробный урок, — шаги не ищутся вовсе. Решение «шаги или файл» — в одном
+    // месте, shouldResolveCatalogLesson, чтобы страница и тесты сходились.
+    Promise.resolve(shouldResolveCatalogLesson(url) ? catalogLessonIdFor(url, token) : null)
       .then((id) =>
         id == null
           ? Promise.resolve({ id: null, loaded: null })
