@@ -56,8 +56,16 @@ test.describe('дашборд тьютора — витрина эмоций', (
   test('лицо в орбе листает эмоции по кругу', async ({ page }) => {
     await page.goto('/?screen=tutor-dashboard')
     const first = await shownEmotion(page)
-    // Смена раз в 3 с; запас — на подгрузку картинок следующего набора.
+    // Смена раз в 2 с; запас — на подгрузку картинок следующего набора.
     await expect.poll(() => shownEmotion(page), { timeout: 10_000 }).not.toBe(first)
+  })
+
+  test('смена плавная: уходящее лицо гаснет, а не пропадает', async ({ page }) => {
+    await page.goto('/?screen=tutor-dashboard')
+    await expect(page.locator('.t-dash__face')).toHaveClass(/is-morph/)
+    // На каждой смене уходящий набор ~0.6 с держит is-leaving — за пару шагов
+    // круга он обязан попасться.
+    await expect(page.locator('.t-dash__face .t-face__stack.is-leaving')).toHaveCount(1, { timeout: 6_000 })
   })
 
   test('при «уменьшить движение» лицо стоит на родной эмоции', async ({ page }) => {
