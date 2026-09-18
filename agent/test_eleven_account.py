@@ -21,7 +21,12 @@ import sys
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-from agent import _eleven_key_for, _eleven_model_for  # noqa: E402
+from agent import (  # noqa: E402
+    _eleven_http_only,
+    _eleven_key_for,
+    _eleven_model_for,
+    _eleven_voice_settings_for,
+)
 
 
 def _clear(*names: str) -> None:
@@ -71,4 +76,36 @@ _clear(
     "ELEVENLABS_MODEL", "ELEVENLABS_MODEL_JARVIS", "ELEVENLABS_MODEL_BRO",
 )
 
-print("ElevenLabs: аккаунт и модель по персоне — ок")
+# --- транспорт и настройки под модель ---------------------------------------
+#
+# v3 не обслуживает потоковый WebSocket плагина: рукопожатие отвечает 400 ещё до
+# синтеза, и тьютор молчит. Проверено на живом стенде — ключ был верный, голос
+# найден, падал именно сокет. HTTP её обслуживает, им и говорит кабинет.
+
+_clear("ELEVENLABS_HTTP_ONLY_MODELS")
+
+assert _eleven_http_only("eleven_v3"), "v3 умеет только HTTP"
+assert not _eleven_http_only("eleven_flash_v2_5"), "Flash ходит сокетом, как и ходил"
+assert not _eleven_http_only("eleven_multilingual_v2")
+
+os.environ["ELEVENLABS_HTTP_ONLY_MODELS"] = "eleven_v4,eleven_v3"
+assert _eleven_http_only("eleven_v4"), "список правится переменной, без деплоя"
+assert _eleven_http_only("eleven_v3")
+os.environ["ELEVENLABS_HTTP_ONLY_MODELS"] = ""
+_clear("ELEVENLABS_HTTP_ONLY_MODELS")
+
+# Стабильность у v3 — три ступени, а не ползунок. Остальные поля она не
+# принимает вовсе: отдать ей набор от Flash значит получить отказ.
+flash_settings = {"stability": 0.32, "similarity_boost": 0.75, "style": 0.6, "speed": 1.04}
+assert _eleven_voice_settings_for("eleven_flash_v2_5", flash_settings) == flash_settings, (
+    "у сокетных моделей настройки не трогаем"
+)
+assert _eleven_voice_settings_for("eleven_v3", flash_settings) == {"stability": 0.5}
+assert _eleven_voice_settings_for("eleven_v3", {"stability": 0.9}) == {"stability": 1.0}
+assert _eleven_voice_settings_for("eleven_v3", {"stability": 0.1}) == {"stability": 0.0}
+assert _eleven_voice_settings_for("eleven_v3", {}) == {"stability": 0.5}, "без значения — середина"
+assert _eleven_voice_settings_for("eleven_v3", {"stability": "нет"}) == {"stability": 0.5}, (
+    "мусор вместо числа не должен ронять сессию"
+)
+
+print("ElevenLabs: аккаунт, модель, транспорт и настройки — ок")

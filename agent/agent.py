@@ -3713,6 +3713,51 @@ def _cascade_tts_gemini(profile: LearnerProfile):
     return _GeminiTTS(**kwargs)
 
 
+# Модели ElevenLabs, которые НЕ умеют потоковый WebSocket плагина.
+#
+# Плагин всегда идёт в wss://…/multi-stream-input, а v3 этот эндпойнт не
+# обслуживает — рукопожатие отвечает 400 ещё до синтеза, и тьютор молчит.
+# Проверено на живом стенде: ключ верный, голос найден, падает именно сокет.
+#
+# Зато HTTP v3 обслуживает — им и пользуется плеер в кабинете ElevenLabs, где
+# голос и звучит лучше всего. Поэтому такие модели мы гоним через StreamAdapter:
+# он синтезирует по предложению обычными запросами. Приём не новый, тем же
+# способом здесь уже говорит OpenAI TTS.
+ELEVEN_HTTP_ONLY_MODELS = frozenset({"eleven_v3"})
+
+# Стабильность у v3 — не ползунок, а три ступени. Прислать 0.28 значит получить
+# отказ на ровном месте, поэтому ближайшую из трёх выбираем сами.
+_ELEVEN_V3_STABILITY = (0.0, 0.5, 1.0)
+
+
+def _eleven_http_only(model: str) -> bool:
+    """Этой модели нужен HTTP, а не сокет. Список правится переменной —
+    ElevenLabs добавит v3 в стриминг, и ждать деплоя будет незачем."""
+    env = (os.getenv("ELEVENLABS_HTTP_ONLY_MODELS") or "").strip()
+    known = (
+        {m.strip() for m in env.split(",") if m.strip()}
+        if env
+        else ELEVEN_HTTP_ONLY_MODELS
+    )
+    return model in known
+
+
+def _eleven_voice_settings_for(model: str, settings: dict[str, Any]) -> dict[str, Any]:
+    """Настройки голоса под модель.
+
+    У v3 своя, более узкая ручка: стабильность тремя ступенями, а similarity
+    boost, style и speed она не принимает вовсе. Отдать ей набор от Flash значит
+    получить отказ, и выглядеть это будет как «опять не работает».
+    """
+    if not _eleven_http_only(model):
+        return settings
+    try:
+        current = float(settings.get("stability", 0.5))
+    except (TypeError, ValueError):
+        current = 0.5
+    return {"stability": min(_ELEVEN_V3_STABILITY, key=lambda step: abs(step - current))}
+
+
 def _eleven_key_for(tutor: str) -> str:
     """Ключ ElevenLabs персоны: env ELEVENLABS_API_KEY_<PERSONA> важнее общего.
 
@@ -3775,21 +3820,45 @@ def _cascade_tts_eleven(profile: LearnerProfile):
         or os.getenv("ELEVENLABS_VOICE_ID")
         or _eleven_voice_for(profile.tutor)
     )
-    vs = PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
-    logger.info(
-        "Cascade TTS: ElevenLabs (%s, voice=%s), lang=%s, tutor=%s",
-        model, voice_id, profile.lang, profile.tutor or "<none>",
+    http_only = _eleven_http_only(model)
+    vs = _eleven_voice_settings_for(
+        model, PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
     )
-    return elevenlabs.TTS(
-        model=model,
+    logger.info(
+        "Cascade TTS: ElevenLabs (%s, voice=%s, transport=%s), lang=%s, tutor=%s",
+        model, voice_id, "http" if http_only else "ws", profile.lang, profile.tutor or "<none>",
+    )
+    kwargs: dict[str, Any] = {
+        "model": model,
         # The plugin reads ELEVEN_API_KEY, not ELEVENLABS_API_KEY — relying on
         # its env auto-read fails the session build silently (felix hit this).
-        api_key=key,
-        voice_id=voice_id,
-        voice_settings=elevenlabs.VoiceSettings(**vs),
+        "api_key": key,
+        "voice_id": voice_id,
+        "voice_settings": elevenlabs.VoiceSettings(**vs),
+    }
+    if not http_only:
         # Synthesise as soon as a chunk lands instead of waiting on a chunk
         # schedule — lower time-to-first-audio for sentence-at-a-time LLM output.
-        auto_mode=True,
+        # Параметр сокетный: на HTTP-пути ему нечего делать.
+        kwargs["auto_mode"] = True
+    engine = elevenlabs.TTS(**kwargs)
+    if not http_only:
+        return engine
+
+    # HTTP-путь: синтез по предложению обычными запросами (см. оговорку у
+    # ELEVEN_HTTP_ONLY_MODELS). Короткие предложения склеиваем — просодия живёт
+    # дольше и запросов меньше; плата — задержка до первого звука, поэтому порог
+    # вынесен в переменную, как у OpenAI.
+    try:
+        min_len = int(os.getenv("ELEVENLABS_MIN_SENTENCE", "45"))
+    except ValueError:
+        min_len = 45
+    return lk_tts.StreamAdapter(
+        tts=engine,
+        sentence_tokenizer=tokenize.basic.SentenceTokenizer(
+            min_sentence_len=min_len,
+            retain_format=True,
+        ),
     )
 
 
