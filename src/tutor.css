@@ -1068,6 +1068,28 @@
   opacity: 1;
   transform: none;
 }
+/* Плавная смена — витрина на дашборде (TutorFace с morph), как Smart Animate
+   в записи прототипа: тело одно и доворачивается от позы старой эмоции к позе
+   новой, а глаза и значки перетекают. Каждый набор нарисован со своим телом,
+   поэтому TutorFace ставит ВСЕ наборы в позу видимого (инлайн-transform из
+   buddyPose.js, он же перекрывает scale пружинки), и поза едет у всех одной
+   кривой — тела уходящего и нового совпадают в каждом кадре.
+
+   Новый набор проявляется поверх и быстрее, старый гаснет с задержкой: при
+   встречном кроссфейде посередине два полупрозрачных тела дали бы ≈ 75 %
+   плотности — тело бы просвечивало. Кривая позы — пресет Figma «Ease in and
+   out»; длительность приходит из SWAP_MS переменной --face-swap. */
+.t-face.is-morph .t-face__stack {
+  transition:
+    opacity calc(var(--face-swap) * 0.6) ease-in calc(var(--face-swap) * 0.25),
+    transform var(--face-swap) ease-in-out;
+}
+.t-face.is-morph .t-face__stack.is-on {
+  z-index: 1;
+  transition:
+    opacity calc(var(--face-swap) * 0.5) ease-out,
+    transform var(--face-swap) ease-in-out;
+}
 /* Тело двигается вместе с глазами и значками; у слоёв поверх — свой ход.
    Точка опоры тела — низ формы (центр рамки + половина тела = 67% холста):
    прыжок приземляется на «ноги», а не сжимается к середине. */
@@ -1091,105 +1113,107 @@
 /* ── Движения эмоций ───────────────────────────────────────────────────────
    Базовые движения придуманы под характер эмоции; петли макета (следующий
    блок) идут поверх них, а не вместо. Крутятся только у видимого лица:
-   скрытые наборы висят в DOM ради мгновенной смены и не должны жечь кадры. */
+   скрытые наборы висят в DOM ради мгновенной смены и не должны жечь кадры.
+   Исключение — уходящее лицо плавной смены (is-leaving): пока гаснет, оно
+   доигрывает движение, иначе встало бы рывком в позу покоя. */
 
 /* Дефолт: спокойное дыхание. */
-.is-on.t-face--idle .t-face__rig { animation: buddy-breathe 3.6s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--idle .t-face__rig { animation: buddy-breathe 3.6s ease-in-out infinite; }
 
 /* Слушает: тянется к звуку, дуги расходятся волной. */
-.is-on.t-face--listening .t-face__rig { animation: buddy-lean 2.6s ease-in-out infinite; }
-.is-on.t-face--listening .t-face__layer--arc1,
-.is-on.t-face--listening .t-face__layer--arc2 {
+:is(.is-on, .is-leaving).t-face--listening .t-face__rig { animation: buddy-lean 2.6s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--listening .t-face__layer--arc1,
+:is(.is-on, .is-leaving).t-face--listening .t-face__layer--arc2 {
   transform-origin: 0 50%;
   animation: buddy-wave 1.3s ease-in-out infinite both;
 }
-.is-on.t-face--listening .t-face__layer--arc2 { animation-delay: 0.25s; }
+:is(.is-on, .is-leaving).t-face--listening .t-face__layer--arc2 { animation-delay: 0.25s; }
 
 /* Думает: покачивается, точки загораются по очереди. */
-.is-on.t-face--thinking .t-face__rig { animation: buddy-ponder 3.4s ease-in-out infinite; }
-.is-on.t-face--thinking .t-face__layer--dot1,
-.is-on.t-face--thinking .t-face__layer--dot2,
-.is-on.t-face--thinking .t-face__layer--dot3 { animation: buddy-think-dot 1.5s ease-in-out infinite both; }
-.is-on.t-face--thinking .t-face__layer--dot2 { animation-delay: 0.2s; }
-.is-on.t-face--thinking .t-face__layer--dot3 { animation-delay: 0.4s; }
+:is(.is-on, .is-leaving).t-face--thinking .t-face__rig { animation: buddy-ponder 3.4s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--dot1,
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--dot2,
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--dot3 { animation: buddy-think-dot 1.5s ease-in-out infinite both; }
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--dot2 { animation-delay: 0.2s; }
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--dot3 { animation-delay: 0.4s; }
 
 /* Говорит: мелко кивает в такт, в пузыре «печатают» точки. */
-.is-on.t-face--talking .t-face__rig { animation: buddy-talk 0.5s ease-in-out infinite; }
-.is-on.t-face--talking .t-face__layer--bubble {
+:is(.is-on, .is-leaving).t-face--talking .t-face__rig { animation: buddy-talk 0.5s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--bubble {
   transform-origin: 20% 90%;
   animation: buddy-bubble 0.9s ease-in-out infinite alternate;
 }
-.is-on.t-face--talking .t-face__layer--dot1,
-.is-on.t-face--talking .t-face__layer--dot2,
-.is-on.t-face--talking .t-face__layer--dot3 { animation: buddy-type-dot 0.9s ease-in-out infinite both; }
-.is-on.t-face--talking .t-face__layer--dot2 { animation-delay: 0.15s; }
-.is-on.t-face--talking .t-face__layer--dot3 { animation-delay: 0.3s; }
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--dot1,
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--dot2,
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--dot3 { animation: buddy-type-dot 0.9s ease-in-out infinite both; }
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--dot2 { animation-delay: 0.15s; }
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--dot3 { animation-delay: 0.3s; }
 
 /* Не понимает: склоняет голову, вопрос покачивается. */
-.is-on.t-face--confused .t-face__rig { animation: buddy-puzzle 3.2s ease-in-out infinite; }
-.is-on.t-face--confused .t-face__layer--bubble {
+:is(.is-on, .is-leaving).t-face--confused .t-face__rig { animation: buddy-puzzle 3.2s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--confused .t-face__layer--bubble {
   transform-origin: 20% 90%;
   animation: buddy-ask 1.8s ease-in-out infinite;
 }
 
 /* Счастлив: подпрыгивает, искры мерцают. */
-.is-on.t-face--happy .t-face__rig { animation: buddy-hop 1.4s cubic-bezier(0.34, 1.3, 0.64, 1) infinite; }
-.is-on.t-face--happy .t-face__layer--spark1,
-.is-on.t-face--happy .t-face__layer--spark2 { animation: buddy-spark 0.9s ease-in-out infinite both; }
-.is-on.t-face--happy .t-face__layer--spark2 { animation-delay: 0.3s; }
+:is(.is-on, .is-leaving).t-face--happy .t-face__rig { animation: buddy-hop 1.4s cubic-bezier(0.34, 1.3, 0.64, 1) infinite; }
+:is(.is-on, .is-leaving).t-face--happy .t-face__layer--spark1,
+:is(.is-on, .is-leaving).t-face--happy .t-face__layer--spark2 { animation: buddy-spark 0.9s ease-in-out infinite both; }
+:is(.is-on, .is-leaving).t-face--happy .t-face__layer--spark2 { animation-delay: 0.3s; }
 
 /* Радуется: прыгает выше, звёзды в глазах крутятся. */
-.is-on.t-face--celebrate .t-face__rig { animation: buddy-jump 1s cubic-bezier(0.34, 1.3, 0.64, 1) infinite; }
-.is-on.t-face--celebrate .t-face__layer--star1,
-.is-on.t-face--celebrate .t-face__layer--star2 { animation: buddy-twinkle 0.8s ease-in-out infinite both; }
-.is-on.t-face--celebrate .t-face__layer--star2 { animation-delay: 0.4s; }
-.is-on.t-face--celebrate .t-face__layer--spark1,
-.is-on.t-face--celebrate .t-face__layer--spark2 { animation: buddy-spark 0.7s ease-in-out infinite both; }
-.is-on.t-face--celebrate .t-face__layer--spark2 { animation-delay: 0.2s; }
+:is(.is-on, .is-leaving).t-face--celebrate .t-face__rig { animation: buddy-jump 1s cubic-bezier(0.34, 1.3, 0.64, 1) infinite; }
+:is(.is-on, .is-leaving).t-face--celebrate .t-face__layer--star1,
+:is(.is-on, .is-leaving).t-face--celebrate .t-face__layer--star2 { animation: buddy-twinkle 0.8s ease-in-out infinite both; }
+:is(.is-on, .is-leaving).t-face--celebrate .t-face__layer--star2 { animation-delay: 0.4s; }
+:is(.is-on, .is-leaving).t-face--celebrate .t-face__layer--spark1,
+:is(.is-on, .is-leaving).t-face--celebrate .t-face__layer--spark2 { animation: buddy-spark 0.7s ease-in-out infinite both; }
+:is(.is-on, .is-leaving).t-face--celebrate .t-face__layer--spark2 { animation-delay: 0.2s; }
 
 /* Злится: вздрагивает рывками, венка пульсирует. */
-.is-on.t-face--angry .t-face__rig { animation: buddy-grumble 2.2s ease-in-out infinite; }
-.is-on.t-face--angry .t-face__layer--vein { animation: buddy-vein 1.1s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--angry .t-face__rig { animation: buddy-grumble 2.2s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--angry .t-face__layer--vein { animation: buddy-vein 1.1s ease-in-out infinite; }
 
 /* Ярость: трясётся без остановки, «!!» выстреливают. */
-.is-on.t-face--rage .t-face__rig { animation: buddy-rage 0.28s linear infinite; }
-.is-on.t-face--rage .t-face__layer--bang1,
-.is-on.t-face--rage .t-face__layer--bang2 {
+:is(.is-on, .is-leaving).t-face--rage .t-face__rig { animation: buddy-rage 0.28s linear infinite; }
+:is(.is-on, .is-leaving).t-face--rage .t-face__layer--bang1,
+:is(.is-on, .is-leaving).t-face--rage .t-face__layer--bang2 {
   transform-origin: 50% 100%;
   animation: buddy-bang 0.5s ease-in-out infinite both;
 }
-.is-on.t-face--rage .t-face__layer--bang2 { animation-delay: 0.12s; }
+:is(.is-on, .is-leaving).t-face--rage .t-face__layer--bang2 { animation-delay: 0.12s; }
 
 /* Скука: клюёт носом, «Z» всплывают по одной. */
-.is-on.t-face--sleepy .t-face__rig { animation: buddy-doze 4.4s ease-in-out infinite; }
-.is-on.t-face--sleepy .t-face__layer--z1,
-.is-on.t-face--sleepy .t-face__layer--z2,
-.is-on.t-face--sleepy .t-face__layer--z3 { animation: buddy-z 3s ease-out infinite both; }
-.is-on.t-face--sleepy .t-face__layer--z2 { animation-delay: 0.5s; }
-.is-on.t-face--sleepy .t-face__layer--z3 { animation-delay: 1s; }
+:is(.is-on, .is-leaving).t-face--sleepy .t-face__rig { animation: buddy-doze 4.4s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--sleepy .t-face__layer--z1,
+:is(.is-on, .is-leaving).t-face--sleepy .t-face__layer--z2,
+:is(.is-on, .is-leaving).t-face--sleepy .t-face__layer--z3 { animation: buddy-z 3s ease-out infinite both; }
+:is(.is-on, .is-leaving).t-face--sleepy .t-face__layer--z2 { animation-delay: 0.5s; }
+:is(.is-on, .is-leaving).t-face--sleepy .t-face__layer--z3 { animation-delay: 1s; }
 
 /* Удивление: вздрагивает и замирает, закорючка дрожит. */
-.is-on.t-face--surprised .t-face__rig { animation: buddy-startle 2.6s ease-out infinite; }
-.is-on.t-face--surprised .t-face__layer--squiggle { animation: buddy-squiggle 0.7s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--surprised .t-face__rig { animation: buddy-startle 2.6s ease-out infinite; }
+:is(.is-on, .is-leaving).t-face--surprised .t-face__layer--squiggle { animation: buddy-squiggle 0.7s ease-in-out infinite; }
 
 /* Соркастичен: самодовольно покачивается. */
-.is-on.t-face--gloat .t-face__rig { animation: buddy-smug 3s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--gloat .t-face__rig { animation: buddy-smug 3s ease-in-out infinite; }
 
 /* Сочувствие: медленно, мягко покачивается. */
-.is-on.t-face--sympathy .t-face__rig { animation: buddy-soothe 5s ease-in-out infinite; }
+:is(.is-on, .is-leaving).t-face--sympathy .t-face__rig { animation: buddy-soothe 5s ease-in-out infinite; }
 
 /* Моргание — только у открытых глаз: дуги, «> <» и звёзды моргать не умеют.
    Глаза наклонены вместе с телом (--tilt из карточки), поэтому сплющиваем их
    вдоль собственной оси: повернуть обратно → сжать → вернуть наклон. */
-.is-on.t-face--confused .t-face__layer--eyes,
-.is-on.t-face--talking .t-face__layer--eyes,
-.is-on.t-face--listening .t-face__layer--eyes,
-.is-on.t-face--thinking .t-face__layer--eyes,
-.is-on.t-face--surprised .t-face__layer--eyes {
+:is(.is-on, .is-leaving).t-face--confused .t-face__layer--eyes,
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--eyes,
+:is(.is-on, .is-leaving).t-face--listening .t-face__layer--eyes,
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--eyes,
+:is(.is-on, .is-leaving).t-face--surprised .t-face__layer--eyes {
   animation: buddy-blink 4.2s ease-in-out infinite;
 }
-.is-on.t-face--talking .t-face__layer--eyes { animation-delay: 1.1s; }
-.is-on.t-face--thinking .t-face__layer--eyes { animation-delay: 2s; }
+:is(.is-on, .is-leaving).t-face--talking .t-face__layer--eyes { animation-delay: 1.1s; }
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--eyes { animation-delay: 2s; }
 
 /* ── Петли из макета ──────────────────────────────────────────────────────
    Дизайнер нарисовал четырём эмоциям по два кадра с Smart Animate между
@@ -1208,7 +1232,7 @@
 
 /* Говорит: тело с глазами откачивается 9.18° → 3°, пузырь стоит.
    Пружина mass 1 / stiffness 268 / damping 13.2, 1.1 с. */
-.is-on.t-face--talking .t-face__body {
+:is(.is-on, .is-leaving).t-face--talking .t-face__body {
   transform-origin: 46.69% 50.46%;
   animation: buddy-loop-talk 2.6s infinite;
 }
@@ -1231,11 +1255,11 @@
    подскакивает на 9.5, глаза щурятся 26 → 22. Карточка — гибрид кадров
    (наклон второго, лицо первого), поэтому оба кадра заданы от неё.
    Пружина mass 6 / stiffness 2000 / damping 122, 0.73 с. */
-.is-on.t-face--happy .t-face__body {
+:is(.is-on, .is-leaving).t-face--happy .t-face__body {
   transform-origin: 50.01% 50.04%;
   animation: buddy-loop-happy 2.36s infinite;
 }
-.is-on.t-face--happy .t-face__layer--eyes {
+:is(.is-on, .is-leaving).t-face--happy .t-face__layer--eyes {
   animation: buddy-loop-happy-eyes 2.36s infinite;
 }
 @keyframes buddy-loop-happy {
@@ -1272,11 +1296,11 @@
    10.8 (в осях тела), точки стоят. У глаз уже есть моргание на transform —
    сдвиг идёт отдельным свойством translate, чтобы не перебить его.
    QUICK, 0.74 с; пауза длиннее — задумчивость. */
-.is-on.t-face--thinking .t-face__body {
+:is(.is-on, .is-leaving).t-face--thinking .t-face__body {
   transform-origin: 46.697% 52.249%;
   animation: buddy-loop-think 3.29s infinite;
 }
-.is-on.t-face--thinking .t-face__layer--eyes {
+:is(.is-on, .is-leaving).t-face--thinking .t-face__layer--eyes {
   animation:
     buddy-blink 4.2s ease-in-out 2s infinite,
     buddy-loop-think-eyes 3.29s infinite;
@@ -1313,11 +1337,11 @@
 /* Соркастичен: доворачивается на 1°, бровь над подмигивающим глазом
    взлетает на 8. QUICK, 0.74 с; пауза самая длинная — бровь «играет»
    изредка, а не дёргается. */
-.is-on.t-face--gloat .t-face__body {
+:is(.is-on, .is-leaving).t-face--gloat .t-face__body {
   transform-origin: 49.994% 50.046%;
   animation: buddy-loop-gloat 3.69s infinite;
 }
-.is-on.t-face--gloat .t-face__layer--brow {
+:is(.is-on, .is-leaving).t-face--gloat .t-face__layer--brow {
   animation: buddy-loop-gloat-brow 3.69s infinite;
 }
 @keyframes buddy-loop-gloat {
@@ -1464,8 +1488,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* !important — правила плавной смены (.t-face.is-morph …) специфичнее. */
   .t-face__stack {
-    transition: none;
+    transition: none !important;
   }
   .t-face__rig,
   .t-face__body,
