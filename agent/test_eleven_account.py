@@ -21,7 +21,11 @@ import sys
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-from agent import _eleven_key_for, _eleven_model_for  # noqa: E402
+from agent import (  # noqa: E402
+    _eleven_http_only,
+    _eleven_key_for,
+    _eleven_model_for,
+)
 
 
 def _clear(*names: str) -> None:
@@ -71,4 +75,26 @@ _clear(
     "ELEVENLABS_MODEL", "ELEVENLABS_MODEL_JARVIS", "ELEVENLABS_MODEL_BRO",
 )
 
-print("ElevenLabs: аккаунт и модель по персоне — ок")
+# --- транспорт и настройки под модель ---------------------------------------
+#
+# v3 не обслуживает потоковый WebSocket плагина: рукопожатие отвечает 400 ещё до
+# синтеза, и тьютор молчит. Проверено на живом стенде — ключ был верный, голос
+# найден, падал именно сокет. HTTP её обслуживает, им и говорит кабинет.
+
+_clear("ELEVENLABS_HTTP_ONLY_MODELS")
+
+assert _eleven_http_only("eleven_v3"), "v3 умеет только HTTP"
+assert not _eleven_http_only("eleven_flash_v2_5"), "Flash ходит сокетом, как и ходил"
+assert not _eleven_http_only("eleven_multilingual_v2")
+
+os.environ["ELEVENLABS_HTTP_ONLY_MODELS"] = "eleven_v4,eleven_v3"
+assert _eleven_http_only("eleven_v4"), "список правится переменной, без деплоя"
+assert _eleven_http_only("eleven_v3")
+os.environ["ELEVENLABS_HTTP_ONLY_MODELS"] = ""
+_clear("ELEVENLABS_HTTP_ONLY_MODELS")
+
+# Настройки голоса намеренно НЕ трогаем и здесь их не проверяем: обрезать поля
+# по догадке уже вышло боком — конструктор VoiceSettings требует
+# similarity_boost, и сессия падала ещё до синтеза. Отказ был про транспорт.
+
+print("ElevenLabs: аккаунт, модель и транспорт — ок")

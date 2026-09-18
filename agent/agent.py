@@ -2808,9 +2808,14 @@ def build_standalone_instructions(p: LearnerProfile) -> str:
         parts.append(f"The person you are speaking with is called {p.user_name}.")
     # Язык НЕ добавляем, и это отличие от обычных тьюторов. У них язык зеркалит
     # ученика (см. lang_g в build_instructions), а у персоны со своим промптом он
-    # часть характера: Джарвис говорит по-русски всегда, это секция LANGUAGE в
-    # data/persona-jarvis.md. Стандартная строка «отвечай на языке собеседника»
-    # прямо противоречила бы ей, и модель выбирала бы между двумя приказами.
+    # часть характера и описан в секции LANGUAGE её файла. Стандартная строка
+    # «отвечай на языке собеседника» спорила бы с ней, и модель выбирала бы между
+    # двумя приказами.
+    #
+    # У стенда там сейчас три языка с зеркалированием (kk/ru/en) — в отличие от
+    # Спарка, которому русский запрещён кодом (_RUSSIAN_NOT_MY_LANGUAGE через
+    # _mirror_language_rules). Стенду этот запрет не достаётся именно потому, что
+    # его промпт собирается здесь и обвязки не получает вовсе.
     return "\n\n".join(parts).strip()
 
 
@@ -3713,6 +3718,30 @@ def _cascade_tts_gemini(profile: LearnerProfile):
     return _GeminiTTS(**kwargs)
 
 
+# Модели ElevenLabs, которые НЕ умеют потоковый WebSocket плагина.
+#
+# Плагин всегда идёт в wss://…/multi-stream-input, а v3 этот эндпойнт не
+# обслуживает — рукопожатие отвечает 400 ещё до синтеза, и тьютор молчит.
+# Проверено на живом стенде: ключ верный, голос найден, падает именно сокет.
+#
+# Зато HTTP v3 обслуживает — им и пользуется плеер в кабинете ElevenLabs, где
+# голос и звучит лучше всего. Поэтому такие модели мы гоним через StreamAdapter:
+# он синтезирует по предложению обычными запросами. Приём не новый, тем же
+# способом здесь уже говорит OpenAI TTS.
+ELEVEN_HTTP_ONLY_MODELS = frozenset({"eleven_v3"})
+
+def _eleven_http_only(model: str) -> bool:
+    """Этой модели нужен HTTP, а не сокет. Список правится переменной —
+    ElevenLabs добавит v3 в стриминг, и ждать деплоя будет незачем."""
+    env = (os.getenv("ELEVENLABS_HTTP_ONLY_MODELS") or "").strip()
+    known = (
+        {m.strip() for m in env.split(",") if m.strip()}
+        if env
+        else ELEVEN_HTTP_ONLY_MODELS
+    )
+    return model in known
+
+
 def _eleven_key_for(tutor: str) -> str:
     """Ключ ElevenLabs персоны: env ELEVENLABS_API_KEY_<PERSONA> важнее общего.
 
@@ -3775,21 +3804,47 @@ def _cascade_tts_eleven(profile: LearnerProfile):
         or os.getenv("ELEVENLABS_VOICE_ID")
         or _eleven_voice_for(profile.tutor)
     )
+    http_only = _eleven_http_only(model)
+    # Настройки голоса НЕ трогаем: отказ был про транспорт, а не про них, и
+    # обрезать поля по догадке уже вышло боком — конструктор плагина требует
+    # similarity_boost, и сессия падала ещё до синтеза. Если v3 какое-то поле не
+    # примет, это будет видно в логах, и чинить будем по тексту ошибки.
     vs = PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
     logger.info(
-        "Cascade TTS: ElevenLabs (%s, voice=%s), lang=%s, tutor=%s",
-        model, voice_id, profile.lang, profile.tutor or "<none>",
+        "Cascade TTS: ElevenLabs (%s, voice=%s, transport=%s), lang=%s, tutor=%s",
+        model, voice_id, "http" if http_only else "ws", profile.lang, profile.tutor or "<none>",
     )
-    return elevenlabs.TTS(
-        model=model,
+    kwargs: dict[str, Any] = {
+        "model": model,
         # The plugin reads ELEVEN_API_KEY, not ELEVENLABS_API_KEY — relying on
         # its env auto-read fails the session build silently (felix hit this).
-        api_key=key,
-        voice_id=voice_id,
-        voice_settings=elevenlabs.VoiceSettings(**vs),
+        "api_key": key,
+        "voice_id": voice_id,
+        "voice_settings": elevenlabs.VoiceSettings(**vs),
+    }
+    if not http_only:
         # Synthesise as soon as a chunk lands instead of waiting on a chunk
         # schedule — lower time-to-first-audio for sentence-at-a-time LLM output.
-        auto_mode=True,
+        # Параметр сокетный: на HTTP-пути ему нечего делать.
+        kwargs["auto_mode"] = True
+    engine = elevenlabs.TTS(**kwargs)
+    if not http_only:
+        return engine
+
+    # HTTP-путь: синтез по предложению обычными запросами (см. оговорку у
+    # ELEVEN_HTTP_ONLY_MODELS). Короткие предложения склеиваем — просодия живёт
+    # дольше и запросов меньше; плата — задержка до первого звука, поэтому порог
+    # вынесен в переменную, как у OpenAI.
+    try:
+        min_len = int(os.getenv("ELEVENLABS_MIN_SENTENCE", "45"))
+    except ValueError:
+        min_len = 45
+    return lk_tts.StreamAdapter(
+        tts=engine,
+        sentence_tokenizer=tokenize.basic.SentenceTokenizer(
+            min_sentence_len=min_len,
+            retain_format=True,
+        ),
     )
 
 
