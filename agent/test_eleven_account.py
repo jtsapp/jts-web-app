@@ -25,7 +25,6 @@ from agent import (  # noqa: E402
     _eleven_http_only,
     _eleven_key_for,
     _eleven_model_for,
-    _eleven_voice_settings_for,
 )
 
 
@@ -94,18 +93,8 @@ assert _eleven_http_only("eleven_v3")
 os.environ["ELEVENLABS_HTTP_ONLY_MODELS"] = ""
 _clear("ELEVENLABS_HTTP_ONLY_MODELS")
 
-# Стабильность у v3 — три ступени, а не ползунок. Остальные поля она не
-# принимает вовсе: отдать ей набор от Flash значит получить отказ.
-flash_settings = {"stability": 0.32, "similarity_boost": 0.75, "style": 0.6, "speed": 1.04}
-assert _eleven_voice_settings_for("eleven_flash_v2_5", flash_settings) == flash_settings, (
-    "у сокетных моделей настройки не трогаем"
-)
-assert _eleven_voice_settings_for("eleven_v3", flash_settings) == {"stability": 0.5}
-assert _eleven_voice_settings_for("eleven_v3", {"stability": 0.9}) == {"stability": 1.0}
-assert _eleven_voice_settings_for("eleven_v3", {"stability": 0.1}) == {"stability": 0.0}
-assert _eleven_voice_settings_for("eleven_v3", {}) == {"stability": 0.5}, "без значения — середина"
-assert _eleven_voice_settings_for("eleven_v3", {"stability": "нет"}) == {"stability": 0.5}, (
-    "мусор вместо числа не должен ронять сессию"
-)
+# Настройки голоса намеренно НЕ трогаем и здесь их не проверяем: обрезать поля
+# по догадке уже вышло боком — конструктор VoiceSettings требует
+# similarity_boost, и сессия падала ещё до синтеза. Отказ был про транспорт.
 
-print("ElevenLabs: аккаунт, модель, транспорт и настройки — ок")
+print("ElevenLabs: аккаунт, модель и транспорт — ок")

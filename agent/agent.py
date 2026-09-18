@@ -3725,11 +3725,6 @@ def _cascade_tts_gemini(profile: LearnerProfile):
 # способом здесь уже говорит OpenAI TTS.
 ELEVEN_HTTP_ONLY_MODELS = frozenset({"eleven_v3"})
 
-# Стабильность у v3 — не ползунок, а три ступени. Прислать 0.28 значит получить
-# отказ на ровном месте, поэтому ближайшую из трёх выбираем сами.
-_ELEVEN_V3_STABILITY = (0.0, 0.5, 1.0)
-
-
 def _eleven_http_only(model: str) -> bool:
     """Этой модели нужен HTTP, а не сокет. Список правится переменной —
     ElevenLabs добавит v3 в стриминг, и ждать деплоя будет незачем."""
@@ -3740,22 +3735,6 @@ def _eleven_http_only(model: str) -> bool:
         else ELEVEN_HTTP_ONLY_MODELS
     )
     return model in known
-
-
-def _eleven_voice_settings_for(model: str, settings: dict[str, Any]) -> dict[str, Any]:
-    """Настройки голоса под модель.
-
-    У v3 своя, более узкая ручка: стабильность тремя ступенями, а similarity
-    boost, style и speed она не принимает вовсе. Отдать ей набор от Flash значит
-    получить отказ, и выглядеть это будет как «опять не работает».
-    """
-    if not _eleven_http_only(model):
-        return settings
-    try:
-        current = float(settings.get("stability", 0.5))
-    except (TypeError, ValueError):
-        current = 0.5
-    return {"stability": min(_ELEVEN_V3_STABILITY, key=lambda step: abs(step - current))}
 
 
 def _eleven_key_for(tutor: str) -> str:
@@ -3821,9 +3800,11 @@ def _cascade_tts_eleven(profile: LearnerProfile):
         or _eleven_voice_for(profile.tutor)
     )
     http_only = _eleven_http_only(model)
-    vs = _eleven_voice_settings_for(
-        model, PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
-    )
+    # Настройки голоса НЕ трогаем: отказ был про транспорт, а не про них, и
+    # обрезать поля по догадке уже вышло боком — конструктор плагина требует
+    # similarity_boost, и сессия падала ещё до синтеза. Если v3 какое-то поле не
+    # примет, это будет видно в логах, и чинить будем по тексту ошибки.
+    vs = PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
     logger.info(
         "Cascade TTS: ElevenLabs (%s, voice=%s, transport=%s), lang=%s, tutor=%s",
         model, voice_id, "http" if http_only else "ws", profile.lang, profile.tutor or "<none>",
