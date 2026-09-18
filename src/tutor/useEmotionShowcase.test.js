@@ -14,8 +14,9 @@ describe('useEmotionShowcase', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => {
     vi.useRealTimers()
-    // matchMedia в jsdom нет, а hidden — геттер прототипа: снимаем свои подмены.
-    delete window.matchMedia
+    // matchMedia подменяем через stubGlobal — снятие вернёт то, что было до
+    // теста. hidden — геттер прототипа документа: своя подмена снимается delete.
+    vi.unstubAllGlobals()
     delete document.hidden
   })
 
@@ -35,22 +36,51 @@ describe('useEmotionShowcase', () => {
     expect(result.current.emotion).toBe('happy')
   })
 
-  it('сменился тьютор — круг заново с его родной эмоции', () => {
+  it('сменился тьютор — круг заново с его родной эмоции и с полным шагом', () => {
     const { result, rerender } = renderHook(({ mood }) => useEmotionShowcase(mood), {
       initialProps: { mood: 'happy' },
     })
-    tick(6000)
+    // Смена посреди шага: без перезапуска таймера новая родная эмоция
+    // продержалась бы только остаток чужого шага.
+    tick(7000)
     rerender({ mood: 'idle' })
     expect(result.current.emotion).toBe('idle')
-    tick(3000)
+    tick(2999)
+    expect(result.current.emotion).toBe('idle')
+    tick(1)
     expect(result.current.emotion).toBe('listening')
   })
 
   it('при «уменьшить движение» стоит на родной эмоции и ничего не подгружает', () => {
-    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} })
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
     const { result } = renderHook(() => useEmotionShowcase('angry'))
     tick(9000)
     expect(result.current).toEqual({ emotion: 'angry', next: null })
+  })
+
+  it('«уменьшить движение» на лету: включили — встал на родной, выключили — круг заново с неё', () => {
+    const listeners = new Set()
+    const mq = {
+      matches: false,
+      addEventListener: (_, fn) => listeners.add(fn),
+      removeEventListener: (_, fn) => listeners.delete(fn),
+    }
+    vi.stubGlobal('matchMedia', () => mq)
+    const flip = (on) =>
+      act(() => {
+        mq.matches = on
+        listeners.forEach((fn) => fn())
+      })
+
+    const { result } = renderHook(() => useEmotionShowcase('angry'))
+    tick(6000)
+    expect(result.current.emotion).toBe('sympathy')
+    flip(true)
+    expect(result.current).toEqual({ emotion: 'angry', next: null })
+    flip(false)
+    expect(result.current).toEqual({ emotion: 'angry', next: 'rage' })
+    tick(3000)
+    expect(result.current.emotion).toBe('rage')
   })
 
   it('на скрытой вкладке круг стоит, вернулся — идёт дальше', () => {

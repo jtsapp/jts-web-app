@@ -14,9 +14,12 @@ describe('TutorFace', () => {
     expect(getByRole('img').getAttribute('aria-label')).toBe('Злится')
   })
 
-  it('незнакомый ключ показывает дефолт', () => {
-    const { container } = render(<TutorFace emotion="nope" />)
-    expect(shownKey(container)).toBe('idle')
+  it('незнакомый ключ показывает дефолт, в том числе ключ прототипа', () => {
+    for (const key of ['nope', 'constructor']) {
+      const { container, unmount } = render(<TutorFace emotion={key} />)
+      expect(shownKey(container), key).toBe('idle')
+      unmount()
+    }
   })
 
   it('рисует все слои карточки, а не одну картинку', () => {

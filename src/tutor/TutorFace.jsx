@@ -30,12 +30,14 @@ import { BUDDY_RIG } from './buddyRig.js'
  * @param className класс обёртки: размер задаёт вёрстка (см. .t-voice__face)
  */
 export default function TutorFace({ emotion = 'idle', speaking = false, preload = [], className = 't-voice__face' }) {
-  const known = EMOTIONS[emotion] ? emotion : 'idle'
+  // Ключи проверяем по собственным полям EMOTIONS: у литерала есть прототип, и
+  // 'constructor' прошёл бы проверку, а набора слоёв у него нет — рендер упал бы.
+  const known = Object.hasOwn(EMOTIONS, emotion) ? emotion : 'idle'
   const want = speaking && !EMOTIONS[known].speaks ? 'talking' : known
 
   // Однажды запрошенные наборы не размонтируем: повторная смена на них
-  // мгновенная, файлы уже декодированы. preload проверяем по собственным полям
-  // EMOTIONS: у литерала есть прототип, и 'constructor' прошёл бы проверку.
+  // мгновенная, файлы уже декодированы. preload — наборы, что понадобятся
+  // скоро: монтируем их скрытыми заранее, к смене они уже догружены.
   const [keys, setKeys] = useState([want])
   const missing = [want, ...preload].filter(
     (key, i, all) => Object.hasOwn(EMOTIONS, key) && !keys.includes(key) && all.indexOf(key) === i

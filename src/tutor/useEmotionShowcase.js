@@ -16,12 +16,15 @@ import { showcaseFrom } from './avatarEmotions.js'
  */
 export function useEmotionShowcase(mood, dwellMs = 3000) {
   const reduced = useReducedMotion()
-  // Шаг хранится вместе с тьютором, для которого он считан: профиль может
-  // догрузиться уже на дашборде и сменить тьютора — тогда круг заново с его
-  // родной эмоции, а не с середины чужого.
-  const [pos, setPos] = useState({ mood, step: 0 })
-  if (pos.mood !== mood) setPos({ mood, step: 0 })
+  // Шаг хранится вместе с тем, для чего он считан. Сменился тьютор (профиль
+  // может догрузиться уже на дашборде) — круг заново с его родной эмоции, а не
+  // с середины чужого. Выключили «уменьшить движение» — тоже с родной: она и
+  // стояла на лице, пока круга не было.
+  const [pos, setPos] = useState({ mood, reduced, step: 0 })
+  if (pos.mood !== mood || pos.reduced !== reduced) setPos({ mood, reduced, step: 0 })
 
+  // mood внутри не читается: он в зависимостях, чтобы перезапуск таймера дал
+  // родной эмоции нового тьютора полный шаг, а не остаток чужого.
   useEffect(() => {
     if (reduced) return undefined
     const id = setInterval(() => {
