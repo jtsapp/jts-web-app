@@ -10,11 +10,12 @@ import { showcaseFrom } from './avatarEmotions.js'
  * на родной эмоции, как до витрины, и заранее ничего не грузится.
  *
  * @param mood    родная эмоция тьютора (mood в tutors.js)
- * @param dwellMs сколько держится каждая эмоция
+ * @param dwellMs сколько держится каждая эмоция. 2 с — после показа клиенту:
+ *                3 с на эмоцию оказалось много, круг из 13 тянулся
  * @returns emotion — что показывать сейчас; next — что покажется следующим (его
  *          TutorFace монтирует заранее через preload), null — круга нет
  */
-export function useEmotionShowcase(mood, dwellMs = 3000) {
+export function useEmotionShowcase(mood, dwellMs = 2000) {
   const reduced = useReducedMotion()
   // Шаг хранится вместе с тем, для чего он считан. Сменился тьютор (профиль
   // может догрузиться уже на дашборде) — круг заново с его родной эмоции, а не

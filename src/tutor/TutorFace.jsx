@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { EMOTIONS } from './avatarEmotions.js'
 import { BUDDY_RIG } from './buddyRig.js'
+import { SWAP_MS, poseStyle, rewindMotion, settleMotion } from './buddyPose.js'
 
 /**
  * Лицо тьютора — слои карточек Figma «Speaking Buddy» (см. buddyRig.js): тело
@@ -13,6 +14,12 @@ import { BUDDY_RIG } from './buddyRig.js'
  * Смена эмоции — кроссфейд с пружинкой: в прототипе макета переход между
  * вариантами задан Smart Animate, EASE_OUT_BACK, 200 мс. Послойно картинку не
  * «доморфить», поэтому повторяем длительность и кривую, а не сам морфинг.
+ *
+ * С morph (витрина на дашборде) смена плавная, как в записи прототипа: все
+ * наборы стоят в позе видимого (buddyPose.js), поза едет у всех разом, и тело
+ * на экране одно — доворачивается к новой эмоции, а глаза и значки перетекают.
+ * В звонке остаётся быстрая смена: там эмоция отвечает на реплику и не должна
+ * отставать от неё на полсекунды.
  *
  * Новое лицо показывается только когда догрузилось тело: до этого на экране
  * остаётся прежнее. Иначе первый переход в незнакомую эмоцию мигал бы пустым
@@ -27,9 +34,16 @@ import { BUDDY_RIG } from './buddyRig.js'
  *                  дашборде знает следующую): их наборы монтируются скрытыми
  *                  заранее и к смене уже догружены. Незнакомое и null
  *                  пропускаются
+ * @param morph     плавная смена вместо быстрого кроссфейда (см. выше)
  * @param className класс обёртки: размер задаёт вёрстка (см. .t-voice__face)
  */
-export default function TutorFace({ emotion = 'idle', speaking = false, preload = [], className = 't-voice__face' }) {
+export default function TutorFace({
+  emotion = 'idle',
+  speaking = false,
+  preload = [],
+  morph = false,
+  className = 't-voice__face',
+}) {
   // Ключи проверяем по собственным полям EMOTIONS: у литерала есть прототип, и
   // 'constructor' прошёл бы проверку, а набора слоёв у него нет — рендер упал бы.
   const known = Object.hasOwn(EMOTIONS, emotion) ? emotion : 'idle'
@@ -52,16 +66,55 @@ export default function TutorFace({ emotion = 'idle', speaking = false, preload 
   // На первом кадре показывать ещё нечего — рисуем запрошенное сразу, браузер
   // догрузит его сам. Дальше держим прежнее лицо, пока новое не придёт.
   const [shown, setShown] = useState(null)
+  // Плавная смена, пока идёт: from — уходящее лицо, to — новое. Уходящее
+  // (is-leaving) гаснет, не обрывая своего движения, а тело успокаивает в покой;
+  // новое (is-entering) — неподвижный кадр до конца смены. Так тела обоих стоят
+  // в покое и совпадают, как варианты в макете (подробнее — tutor.css).
+  const [swap, setSwap] = useState(null)
   const visible = shown === null || loaded.has(want) ? want : shown
-  if (visible !== shown) setShown(visible)
+  if (visible !== shown) {
+    setShown(visible)
+    if (morph && shown !== null) setSwap({ from: shown, to: visible })
+  }
+
+  useEffect(() => {
+    if (!swap) return undefined
+    const id = setTimeout(() => setSwap(null), SWAP_MS)
+    return () => clearTimeout(id)
+  }, [swap])
+
+  // До отрисовки: текущее положение тела читается, пока CSS-движение уходящего
+  // ещё идёт (is-leaving держит его). Снятие — в конце смены, когда уходящее уже
+  // погасло. Смена посреди смены (бывает только при смене тьютора) снимает
+  // успокоение с гаснущего раньше срока — его тело может дёрнуться, пока оно
+  // полупрозрачно; ради редкого случая сложность не городили.
+  const faceRef = useRef(null)
+  useLayoutEffect(() => {
+    if (!swap) return undefined
+    const face = faceRef.current
+    rewindMotion(face?.querySelector(`.t-face--${swap.to}`))
+    const settling = settleMotion(face?.querySelector(`.t-face--${swap.from}`))
+    return () => settling.forEach((a) => a.cancel())
+  }, [swap])
+
+  const stateClass = (key) => {
+    if (key === visible) return swap?.to === key ? ' is-on is-entering' : ' is-on'
+    return swap?.from === key ? ' is-leaving' : ''
+  }
 
   return (
-    <div className={className + ' t-face'} role="img" aria-label={EMOTIONS[visible].label}>
+    <div
+      ref={faceRef}
+      className={className + ' t-face' + (morph ? ' is-morph' : '')}
+      style={morph ? { '--face-swap': `${SWAP_MS}ms` } : undefined}
+      role="img"
+      aria-label={EMOTIONS[visible].label}
+    >
       {keys.map((key) => (
         <div
           key={key}
-          className={`t-face__stack t-face--${key}` + (key === visible ? ' is-on' : '')}
-          style={{ '--tilt': `${BUDDY_RIG[key].tilt}deg` }}
+          className={`t-face__stack t-face--${key}` + stateClass(key)}
+          style={{ '--tilt': `${BUDDY_RIG[key].tilt}deg`, ...(morph ? poseStyle(key, visible) : null) }}
         >
           <div className="t-face__rig">
             <div className="t-face__body">
