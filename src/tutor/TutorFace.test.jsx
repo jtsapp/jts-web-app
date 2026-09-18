@@ -73,4 +73,24 @@ describe('TutorFace', () => {
     const { container } = render(<TutorFace emotion="idle" speaking />)
     expect(shownKey(container)).toBe('talking')
   })
+
+  it('preload монтирует набор скрытым, видимое лицо не меняется', () => {
+    const { container } = render(<TutorFace emotion="idle" preload={['happy']} />)
+    expect(shownKey(container)).toBe('idle')
+    const happy = container.querySelector('.t-face__stack.t-face--happy')
+    expect(happy).not.toBeNull()
+    expect(happy.classList.contains('is-on')).toBe(false)
+  })
+
+  it('заранее догруженный набор показывается сразу, без ожидания', () => {
+    const { container, rerender } = render(<TutorFace emotion="idle" preload={['happy']} />)
+    fireEvent.load(body(container, 'happy'))
+    rerender(<TutorFace emotion="happy" />)
+    expect(shownKey(container)).toBe('happy')
+  })
+
+  it('незнакомые ключи и null в preload пропускаются', () => {
+    const { container } = render(<TutorFace emotion="idle" preload={['nope', 'constructor', null]} />)
+    expect(container.querySelectorAll('.t-face__stack')).toHaveLength(1)
+  })
 })

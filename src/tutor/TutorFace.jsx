@@ -16,23 +16,31 @@ import { BUDDY_RIG } from './buddyRig.js'
  *
  * Новое лицо показывается только когда догрузилось тело: до этого на экране
  * остаётся прежнее. Иначе первый переход в незнакомую эмоцию мигал бы пустым
- * местом. Грузим лишь то, что реально просили, — дашборду с одним лицом не
- * нужны все 13 наборов.
+ * местом. Грузим лишь то, что реально просили (эмоцию и preload), а не все 13
+ * наборов разом.
  *
  * @param emotion   ключ из EMOTIONS; незнакомый → idle
  * @param speaking  тьютор озвучивает реплику: на лице «Говорит», если текущая
  *                  эмоция не из тех, что держатся во время речи (speaks в
  *                  EMOTIONS); как только замолчал, возвращается его эмоция
+ * @param preload   ключи эмоций, которые скоро понадобятся (витрина на
+ *                  дашборде знает следующую): их наборы монтируются скрытыми
+ *                  заранее и к смене уже догружены. Незнакомое и null
+ *                  пропускаются
  * @param className класс обёртки: размер задаёт вёрстка (см. .t-voice__face)
  */
-export default function TutorFace({ emotion = 'idle', speaking = false, className = 't-voice__face' }) {
+export default function TutorFace({ emotion = 'idle', speaking = false, preload = [], className = 't-voice__face' }) {
   const known = EMOTIONS[emotion] ? emotion : 'idle'
   const want = speaking && !EMOTIONS[known].speaks ? 'talking' : known
 
   // Однажды запрошенные наборы не размонтируем: повторная смена на них
-  // мгновенная, файлы уже декодированы.
+  // мгновенная, файлы уже декодированы. preload проверяем по собственным полям
+  // EMOTIONS: у литерала есть прототип, и 'constructor' прошёл бы проверку.
   const [keys, setKeys] = useState([want])
-  if (!keys.includes(want)) setKeys([...keys, want])
+  const missing = [want, ...preload].filter(
+    (key, i, all) => Object.hasOwn(EMOTIONS, key) && !keys.includes(key) && all.indexOf(key) === i
+  )
+  if (missing.length) setKeys([...keys, ...missing])
 
   const [loaded, setLoaded] = useState(() => new Set())
   const markLoaded = useCallback((key) => {
