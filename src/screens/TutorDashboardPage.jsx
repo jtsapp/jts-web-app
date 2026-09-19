@@ -4,6 +4,7 @@ import MobileTopBar from '../components/MobileTopBar.jsx'
 import Footer from '../components/Footer.jsx'
 import OnboardingTour from '../tutor/OnboardingTour.jsx'
 import TutorFace from '../tutor/TutorFace.jsx'
+import { useEmotionShowcase } from '../tutor/useEmotionShowcase.js'
 import JarvisOrb from '../tutor/JarvisOrb.jsx'
 import TutorThumb from '../tutor/TutorThumb.jsx'
 import { MenuIcon, ArrowRightIcon } from '../tutor/TutorIcons.jsx'
@@ -101,9 +102,10 @@ export default function TutorDashboardPage({
             </div>
 
             <div className={'t-dash__cta' + (isAssistant ? ' t-dash__cta--solo' : '')}>
-              {/* Орб вместо микрофона: у кнопки лицо выбранного тьютора в его
-                  характере (Декстер злится, Луна спокойна, Спарк радуется) —
-                  то же лицо, что потом ведёт разговор. */}
+              {/* Орб вместо микрофона: у кнопки лицо выбранного тьютора. Круг
+                  эмоций начинается с его характера (Декстер злится, Луна
+                  спокойна, Спарк радуется) и проходит весь спектр — то же лицо,
+                  что потом ведёт разговор. */}
               <button
                 className="t-dash__orb"
                 type="button"
@@ -113,7 +115,7 @@ export default function TutorDashboardPage({
                 {tutor.face === 'orb' ? (
                   <JarvisOrb className="t-dash__face" label={name} />
                 ) : (
-                  <TutorFace className="t-dash__face" emotion={mood} />
+                  <ShowcaseFace mood={mood} />
                 )}
               </button>
               {/* Всё ниже — про урок английского, поэтому у ассистента этого нет.
@@ -224,4 +226,15 @@ export default function TutorDashboardPage({
       )}
     </div>
   )
+}
+
+// Лицо в орбе идёт по кругу всех эмоций с родной (useEmotionShowcase). Круг
+// крутится в своём маленьком компоненте, а не в самом дашборде: раз в 2 с
+// перерисовывается одно лицо, а не страница со списком сценариев, и у Джарвиса
+// (орб вместо лица) таймер не заводится вовсе. В звонке круга нет — там эмоцию
+// задаёт агент. Смена плавная (morph), как в записи прототипа от клиента; в
+// звонке она осталась быстрой — решение по продукту.
+function ShowcaseFace({ mood }) {
+  const { emotion, next } = useEmotionShowcase(mood)
+  return <TutorFace className="t-dash__face" emotion={emotion} preload={[next]} morph />
 }

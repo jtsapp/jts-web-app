@@ -7,7 +7,7 @@
 //   ai_tutor       ← voice_usage(device_id, day, seconds) — та же строка, по
 //                    которой считается лимит 20 мин/день, и она есть даже когда
 //                    агент не дописал звонок в call_log (на проде такое было).
-//   shadowing      ← shadowing_assess(profile_id, week_key, used) — кредиты
+//   shadowing      ← shadowing_assess(profile_id, day_key, used) — кредиты
 //                    оценок. Это ОЦЕНКА СВЕРХУ, а не замер: кредит покрывает до
 //                    30 с аудио, реальную длительность записи мы нигде не храним.
 //   workbooks,
@@ -117,8 +117,12 @@ export async function loadEcosystemWeek(profileId, now = new Date(), sql = getSq
         and day >= ${bounds.weekStart} and day < ${bounds.weekEndExclusive}
     `,
     sql`
-      select used from shadowing_assess
-      where profile_id = ${profileId} and week_key = ${bounds.weekKey}
+      -- Кредиты Shadowing считаются ПО СУТКАМ (миграция 0009), а сводка —
+      -- недельная: складываем дни недели, а не читаем одну строку. Границы те
+      -- же, что у остального запроса, и в UTC — как и сам ключ суток.
+      select coalesce(sum(used), 0)::int as used from shadowing_assess
+      where profile_id = ${profileId}
+        and day_key >= ${bounds.weekStart} and day_key < ${bounds.weekEndExclusive}
     `,
     sql`
       select module, coalesce(sum(seconds), 0)::int as seconds from activity_time

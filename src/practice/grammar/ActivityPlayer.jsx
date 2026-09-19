@@ -369,6 +369,10 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
 function Order({ a, lang, answered, finish, setCanCheck, bind }) {
   const [slots, setSlots] = useState([]) // индексы выбранных слов из банка
   const [wrongShown, setWrongShown] = useState(false)
+  // В b1.json 30 заданий хранят ответ строкой, а не массивом слов, как все
+  // остальные уровни. join у строки падал внутри клика — «Проверить» молчал, и
+  // урок было не закончить. Режем по пробелам: слова задания сами без пробелов.
+  const answerWords = Array.isArray(a.answer) ? a.answer : String(a.answer ?? '').trim().split(/\s+/)
   useEffect(
     () => setCanCheck(slots.length === a.words.length && !answered),
     [slots, a.words.length, answered, setCanCheck],
@@ -377,7 +381,7 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
   const check = () => {
     if (answered || slots.length !== a.words.length) return
     const got = slots.map((i) => a.words[i]).join(' ')
-    const ok = got === a.answer.join(' ')
+    const ok = got === answerWords.join(' ')
     if (!ok) setWrongShown(true)
     finish(ok, a.why)
   }
@@ -386,7 +390,7 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
   const add = (i) => !answered && setSlots((s) => (s.includes(i) ? s : [...s, i]))
   const removeAt = (k) => !answered && setSlots((s) => s.filter((_, j) => j !== k))
 
-  const slotWords = answered && wrongShown ? a.answer : slots.map((i) => a.words[i])
+  const slotWords = answered && wrongShown ? answerWords : slots.map((i) => a.words[i])
   const slotCls = answered ? (wrongShown ? 'wrong' : 'correct') : ''
 
   return (

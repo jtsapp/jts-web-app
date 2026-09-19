@@ -2,7 +2,8 @@
 //
 // Уровень профиль определяет один раз — при регистрации. Законченный прогон
 // закрывает тему: новый не заводится, и роут отвечает 409 с уже определённым
-// уровнем. Незаконченный продолжается (закрыл вкладку на середине — вернулся).
+// уровнем. Незаконченный начинается заново с чистым журналом (закрыл вкладку на
+// середине — вернулся и прошёл с начала).
 //
 // Прогон нужен, чтобы проверка ответов не была оракулом (см.
 // lib/placementSessionLogic.js) и чтобы итоговый уровень считался по тому, что
@@ -75,7 +76,7 @@ export async function POST(request) {
         { status: 409 },
       )
     }
-    return Response.json({ configured: true, token: run.token, resumed: Boolean(run.resumed) })
+    return Response.json({ configured: true, token: run.token, restarted: Boolean(run.restarted) })
   } catch (err) {
     console.error('[placement.session] failed', err)
     return Response.json({ configured: true, token: null, error: 'Session create failed.' }, { status: 500 })

@@ -1275,10 +1275,17 @@ function isSavedVocabRef(lessonId) {
 }
 
 export function openLessonVocab(lessonId, token, onFresh) {
-  const path = isSavedVocabRef(lessonId)
-    ? '/mobile/lesson-vocab/saved'
-    : `/mobile/lesson-vocab/${encodeURIComponent(lessonId)}`
-  return cachedAuthGet(path, token, onFresh)
+  if (!isSavedVocabRef(lessonId)) {
+    return cachedAuthGet(`/mobile/lesson-vocab/${encodeURIComponent(lessonId)}`, token, onFresh)
+  }
+  // Пустой личный словарь бэкенд отдаёт 404 («No saved vocabulary»). Для
+  // ученика это не поломка, а ноль слов: иначе «Мой словарь» не открывался до
+  // первого слова — а добавить его можно только оттуда, — и удаление
+  // последнего слова кончалось тостом об ошибке.
+  return cachedAuthGet('/mobile/lesson-vocab/saved', token, onFresh).catch((err) => {
+    if (err?.status === 404) return { words: [] }
+    throw err
+  })
 }
 
 export function completeLessonVocabCycle(lessonId, cycle, results, token) {

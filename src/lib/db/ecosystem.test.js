@@ -108,6 +108,29 @@ describe('loadEcosystemWeek', () => {
     expect(m.vocabulary_sr.actualMinutes).toBe(5)
   })
 
+  // Кредиты Shadowing с 18.09.2026 считаются ПО СУТКАМ (миграция 0009), а сводка
+  // недельная: она обязана сложить дни недели, а не прочитать одну строку.
+  // Прочитай она строку — в сводку попал бы расход одного дня из семи.
+  it('складывает дневные строки Shadowing за неделю, а не читает одну', async () => {
+    let shadowingQuery = ''
+    const fakeSql = (strings, ...vals) => {
+      const q = strings.join(' ')
+      if (q.includes('shadowing_assess')) {
+        shadowingQuery = q
+        // Так ответил бы Postgres на sum() по диапазону суток.
+        return Promise.resolve([{ used: 2 + 3 + 1, _bounds: vals.slice(1) }])
+      }
+      return Promise.resolve([])
+    }
+    const week = await loadEcosystemWeek('user-1', new Date('2026-09-18T12:00:00Z'), fakeSql)
+
+    expect(week.shadowingCredits).toBe(6)
+    // Суммируем по диапазону, а не выбираем один ключ.
+    expect(shadowingQuery).toContain('sum(used)')
+    expect(shadowingQuery).toContain('day_key >=')
+    expect(shadowingQuery).not.toContain('week_key')
+  })
+
   // lesson_progress в нашей базе — это сценарии тьютора и старый «План уроков»,
   // а не силлабус «Обучения». Сводка не должна его читать: цифра выглядела бы
   // как completed_lessons из ТЗ, а считала бы другое.

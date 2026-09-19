@@ -19,10 +19,10 @@ import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
 import {
   wavSeconds,
   creditsForSeconds,
-  isoWeekKey,
+  dayKey,
   budgetPayload,
-  exceedsWeeklyBudget,
-  weeklyLimitFor,
+  exceedsDailyBudget,
+  dailyLimitFor,
   getUsed,
   consume,
   refund,
@@ -69,7 +69,7 @@ export async function GET(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
   try {
-    const used = await getUsed(resolved.id, isoWeekKey(new Date()))
+    const used = await getUsed(resolved.id, dayKey(new Date()))
     return Response.json({ ...base, budget: budgetPayload(used, resolved.isDemoAccount) })
   } catch (e) {
     console.error('[shadowing.assess] budget status failed', e)
@@ -120,40 +120,40 @@ export async function POST(request) {
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
   const profileId = resolved.id
-  // Демо-аккаунту — свой недельный потолок (3 кредита, см. shadowingBudget.js).
+  // Демо-аккаунту — свой дневной потолок (3 кредита, см. shadowingBudget.js).
   // Флаг приехал тем же /user/me, которым проверялся токен, и решает и отсечку,
   // и списание, и цифру в ответе — одним значением на весь запрос.
   const isDemo = resolved.isDemoAccount
 
-  const weekKey = isoWeekKey(new Date())
+  const today = dayKey(new Date())
   const credits = creditsForSeconds(wavSeconds(file.size))
-  let charged = null // { profileId, weekKey, credits } — если списали (для рефанда)
+  let charged = null // { profileId, day, credits } — если списали (для рефанда)
   let usedNow = null // текущее used для поля budget в ответе
 
   if (isDbConfigured()) {
-    // Запись дороже целого недельного бюджета — оценить нечем, не начинаем.
+    // Запись дороже целого дневного бюджета — оценить нечем, не начинаем.
     // На демо-потолке в 3 кредита сюда попадает уже запись длиннее 90 секунд, и
     // проверка обязательна: путь INSERT в consume() лимит не смотрит.
-    if (exceedsWeeklyBudget(credits, isDemo)) {
-      let used = weeklyLimitFor(isDemo)
-      try { used = await getUsed(profileId, weekKey) } catch { /* показать что есть */ }
+    if (exceedsDailyBudget(credits, isDemo)) {
+      let used = dailyLimitFor(isDemo)
+      try { used = await getUsed(profileId, today) } catch { /* показать что есть */ }
       return Response.json(
         { error: 'recording_too_long', budget: budgetPayload(used, isDemo) },
         { status: 413 },
       )
     }
     try {
-      const after = await consume(profileId, weekKey, credits, isDemo)
+      const after = await consume(profileId, today, credits, isDemo)
       if (after == null) {
         // Лимит на неделю исчерпан.
         let used = weeklyLimitFor(isDemo)
-        try { used = await getUsed(profileId, weekKey) } catch { /* показать что есть */ }
+        try { used = await getUsed(profileId, today) } catch { /* показать что есть */ }
         return Response.json(
           { error: 'weekly_limit_reached', budget: budgetPayload(used, isDemo) },
           { status: 429 },
         )
       }
-      charged = { profileId, weekKey, credits }
+      charged = { profileId, day: today, credits }
       usedNow = after
     } catch (e) {
       // Сбой БД не должен ронять оценку: fail-open. Разовый вызов всё равно
@@ -183,7 +183,7 @@ export async function POST(request) {
   // не было, недельный бюджет тратить не за что.
   if (score.mock && charged) {
     try {
-      await refund(charged.profileId, charged.weekKey, charged.credits)
+      await refund(charged.profileId, charged.day, charged.credits)
       usedNow = Math.max(0, usedNow - charged.credits)
     } catch (e) {
       console.error('[shadowing.assess] budget refund failed', e)

@@ -88,3 +88,36 @@ describe('Свободный ввод — ответ студента остаё
     expect(container.querySelector('.gr-fb__why').textContent.trim()).toBe('Present Simple')
   })
 })
+
+// В b1.json у 30 заданий «Put in order» ответ лежит строкой, а не массивом
+// слов, как во всех остальных уровнях. Плеер звал answer.join — клик
+// «Проверить» падал с TypeError, и урок нельзя было закончить.
+describe('Order — ответ строкой (b1.json)', () => {
+  const activity = {
+    type: 'order',
+    words: ['I', "don't", 'mind', 'waiting'],
+    answer: "I don't mind waiting",
+    why: 'mind + -ing.',
+  }
+  const pick = (container, order) => {
+    const bank = container.querySelectorAll('.gr-word')
+    order.forEach((i) => fireEvent.click(bank[i]))
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+  }
+
+  it('верная сборка засчитывается', () => {
+    const { container } = play(activity)
+    pick(container, [0, 1, 2, 3])
+    expect(container.querySelector('.gr-slots').className).toMatch(/correct/)
+  })
+
+  it('неверная сборка показывает правильный порядок по словам', () => {
+    const { container } = play(activity)
+    pick(container, [3, 2, 1, 0])
+    const slots = container.querySelector('.gr-slots')
+    expect(slots.className).toMatch(/wrong/)
+    expect([...slots.querySelectorAll('.gr-slot-word')].map((b) => b.textContent)).toEqual([
+      'I', "don't", 'mind', 'waiting',
+    ])
+  })
+})

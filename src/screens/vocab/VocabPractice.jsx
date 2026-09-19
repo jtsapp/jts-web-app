@@ -16,7 +16,7 @@ import {
 } from './lessonReview.js'
 import { recordVocabMisses, clearVocabMiss } from './vocabMisses.js'
 import { recordVocabLearned, vocabKey } from './vocabLearned.js'
-import { saveStudentVocab, markVocabLearned } from '../../api.js'
+import { saveStudentVocab } from '../../api.js'
 import {
   IconSpeaker,
   IconCheck,
@@ -114,7 +114,7 @@ function exampleHtml(word) {
 }
 
 /** Карточка «Правильный ответ» при ошибке (слово / IPA / перевод / пример). */
-function CorrectReveal({ word, lang, t, speak, token }) {
+function CorrectReveal({ word, lang, t, speak, token, note }) {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const tr = translationOf(word, lang)
@@ -136,8 +136,10 @@ function CorrectReveal({ word, lang, t, speak, token }) {
       body.translationRu = word.translationRu || word.ru || tr
     }
     if (word.ipa) body.ipa = String(word.ipa).replace(/\//g, '')
+    // Только сохранить: карточка открыта после ошибки, и ученик кладёт слово
+    // в словарь, чтобы его повторить. Отметка «Выучено» тут же прятала его
+    // среди выученных.
     saveStudentVocab(token, body)
-      .then(() => markVocabLearned(token, [word.word]).catch(() => {}))
       .then(() => setSaved(true))
       .catch(() => {})
       .finally(() => setSaving(false))
@@ -185,13 +187,13 @@ function CorrectReveal({ word, lang, t, speak, token }) {
         ) : null}
       </div>
       <div className="vp-fb no">
-        <IconX /> {t('vocab.prac.incorrect')}
+        <IconX /> {note || t('vocab.prac.incorrect')}
       </div>
     </div>
   )
 }
 
-function AnswerFeedback({ ok, word, lang, t, speak, token }) {
+function AnswerFeedback({ ok, note, word, lang, t, speak, token }) {
   if (ok) {
     return (
       <div style={{ textAlign: 'center' }}>
@@ -199,7 +201,7 @@ function AnswerFeedback({ ok, word, lang, t, speak, token }) {
       </div>
     )
   }
-  return <CorrectReveal word={word} lang={lang} t={t} speak={speak} token={token} />
+  return <CorrectReveal word={word} lang={lang} t={t} speak={speak} token={token} note={note} />
 }
 
 export default function VocabPractice({ cards, lang, title, onExit, speak: speakProp, token, scopeId, onLearned }) {
@@ -294,7 +296,10 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
       // висело на главной словаря навсегда.
       for (const k of okKeys) if (!missMap[k]) clearVocabMiss(token, k)
       if (scopeId && okKeys.length) recordVocabLearned(token, scopeId, okKeys)
-      if (okKeys.length) onLearned?.(okKeys)
+      // Наружу — сами слова, а не ключи: у карточек «Моего словаря» ключ — id
+      // записи, а /saved/learned отмечает по слову, и номера там не находились.
+      const okWords = okKeys.map((k) => byKey[k]?.word).filter(Boolean)
+      if (okWords.length) onLearned?.(okWords)
     }
 
     return (
@@ -769,7 +774,14 @@ export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
     setMsg(t('vocab.prac.openMore'))
   }
 
-  const cont = () => onDone([{ key: word.key, ok: checked === true }])
+  // Первая буква открыта даром; всё, что открыто сверх неё, — подсказка
+  // (кнопкой или неверной проверкой). Открытая буква при проверке считается
+  // верной, поэтому слово, собранное подсказками целиком, раньше уходило
+  // «Верно» — в изученные и прочь из «хуже всего запомненных». Буквы на экране
+  // сошлись, но ученик слово не вспомнил: засчитываем ошибку.
+  const helped = opened.some((o, i) => o && i !== firstSlot)
+  const ok = checked === true && !helped
+  const cont = () => onDone([{ key: word.key, ok }])
   const filled = chars.every((c, i) => fixed(i) || c)
 
   // Слова фразы — отдельными группами: перенос строки идёт между словами, а
@@ -838,7 +850,15 @@ export function FillUI({ word, sentence, lang, t, speak, token, onDone }) {
         </div>
       </div>
       {checked != null && (
-        <AnswerFeedback ok={checked === true} word={word} lang={lang} t={t} speak={speak} token={token} />
+        <AnswerFeedback
+          ok={ok}
+          note={checked === true && helped ? t('vocab.prac.withHints') : ''}
+          word={word}
+          lang={lang}
+          t={t}
+          speak={speak}
+          token={token}
+        />
       )}
       <div className="vp-foot">
         {checked == null ? (

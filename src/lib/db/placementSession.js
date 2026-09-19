@@ -21,7 +21,7 @@ export async function latestPlacementSession(profileId) {
   const sql = getSql()
   if (!sql || !profileId) return null
   const rows = await sql`
-    select token, finished, level, updated_at
+    select token, finished, level
     from placement_session
     where profile_id = ${profileId}
     order by finished desc, created_at desc
@@ -32,16 +32,20 @@ export async function latestPlacementSession(profileId) {
     token: rows[0].token,
     finished: Boolean(rows[0].finished),
     level: rows[0].level,
-    // decideRun решает по нему, не брошен ли незаконченный прогон
-    // (ABANDONED_RUN_TTL_MS в placementSessionLogic.js).
-    updatedAt: rows[0].updated_at,
   }
 }
 
 /**
  * Открывает прогон для профиля. Уровень определяется один раз (при
  * регистрации), поэтому законченный прогон новый не заводит.
- * @returns {{token: string|null, blocked?: boolean, level?: string|null, resumed?: boolean}}
+ *
+ * Незаконченный прогон переиспользуется, но с чистым журналом: клиент каждую
+ * попытку начинает с нуля, с новым сидом и в основном с другими заданиями.
+ * Пока журнал брошенной попытки оставался, ответы двух попыток копились в
+ * одном прогоне — упирались в MAX_GRADED_PER_SESSION (409, и сбросить нечем:
+ * тест было не пройти вовсе), а итоговый уровень считался по смеси, и ошибки
+ * брошенной попытки топили удачную.
+ * @returns {{token: string|null, blocked?: boolean, level?: string|null, restarted?: boolean}}
  */
 export async function openPlacementSession({ profileId = null, variant = null } = {}) {
   const sql = getSql()
@@ -49,7 +53,14 @@ export async function openPlacementSession({ profileId = null, variant = null } 
 
   const decision = decideRun(await latestPlacementSession(profileId))
   if (decision.action === 'blocked') return { token: null, blocked: true, level: decision.level }
-  if (decision.action === 'resume') return { token: decision.token, resumed: true }
+  if (decision.action === 'restart') {
+    await sql`
+      update placement_session
+      set answers = ${sql.json([])}::jsonb, variant = ${variant}, updated_at = now()
+      where token = ${decision.token} and finished = false
+    `
+    return { token: decision.token, restarted: true }
+  }
 
   const token = randomUUID()
   await sql`

@@ -29,6 +29,11 @@ export const READING_KEY = 'jts_reading_done'
 // — найденные слова копятся между заходами (сцену проходят не за раз), плюс
 // флаг «дошёл до результата». Семантика replace, как у reading.
 export const WORDS_KEY = 'jts_words_done'
+// Прогресс «Неправильных глаголов»: { saved: { <v1>: true }, progress: {
+// <ключ режима>: { <id задания>: {done, kind, attempts, hits, total, best} } } }
+// — отмеченные «потренировать позже» и результат каждого задания в ключе
+// прототипа. Семантика replace, как у reading/words.
+export const VERBS_KEY = 'jts_verbs_done'
 
 export const GRAMMAR_PROGRESS_EVENT = 'grammar-progress'
 export const LISTENING_PROGRESS_EVENT = 'listening-progress'
@@ -39,6 +44,7 @@ export const WRITING_PROGRESS_EVENT = 'writing-progress'
 export const WORKBOOK_PROGRESS_EVENT = 'workbook-progress'
 export const READING_PROGRESS_EVENT = 'reading-progress'
 export const WORDS_PROGRESS_EVENT = 'words-progress'
+export const VERBS_PROGRESS_EVENT = 'verbs-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
 // плюс стрик по дням. Ключ трека — slug, а не id: карточку в админке могут
 // пересоздать, и прогресс не должен обнуляться вместе с ней.
