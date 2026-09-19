@@ -3,7 +3,7 @@ import { useI18n } from '../i18n.jsx'
 import {
   getLessonById, startLiveLesson, pauseLiveLesson, resumeLiveLesson, completeLiveLesson,
   getLessonSections, getLessonMessages, sendLessonMessage, editLessonMessage, deleteLessonMessage, setLessonMeetingUrl,
-  getLessonMaterialProgress, saveLessonMaterialProgress,
+  getLessonMaterialProgress, saveLessonMaterialProgress, getLessonViewStages,
 } from '../api.js'
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
@@ -27,7 +27,8 @@ import TeacherChat from './workspace/TeacherChat.jsx'
 import { loadCatalogLesson } from './workspace/loadCatalogLesson.js'
 import { VOCAB_REVEAL_PREFIX } from './live/vocabReveal.js'
 import { createProgressSaver } from './workspace/progressSaver.js'
-import { catalogLessonIdFor, isStandaloneLessonUrl } from './live/catalogLessonByUrl.js'
+import { catalogLessonIdFor, shouldResolveCatalogLesson } from './live/catalogLessonByUrl.js'
+import { stageSteps, stageStatusById } from './live/lessonStages.js'
 import { stepProgress } from './workspace/practiceGrading.js'
 import { materialView } from './workspace/materialView.js'
 import { visibleSteps, hiddenBlockKeys } from './workspace/visibleSteps.js'
@@ -39,6 +40,9 @@ import { sameLessonSnapshot, sameMessageSnapshot } from './live/pollSnapshots.js
 
 const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
+// Одна и та же пустота на все рендеры: новый `[]` каждый раз сбрасывал бы
+// мемоизацию маршрута ниже (см. lessonSteps/visibleSteps — та же причина).
+const NO_STAGES = []
 
 /**
  * Ответ приходит строкой: у выбора и пропуска это сам ответ, у сопоставления —
@@ -271,9 +275,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    // Пробный урок в каталоге не ищем: его там нет по определению, а поход за
-    // деревом задерживал бы показ файла на старте занятия.
-    Promise.resolve(url && !isStandaloneLessonUrl(url) ? catalogLessonIdFor(url, token) : null)
+    // Разбор выключен (LESSON_EXTRACTOR): материал открывается самим файлом, как
+    // пробный урок, — шаги не ищутся вовсе. Решение «шаги или файл» — в одном
+    // месте, shouldResolveCatalogLesson, чтобы страница и тесты сходились.
+    Promise.resolve(shouldResolveCatalogLesson(url) ? catalogLessonIdFor(url, token) : null)
       .then((id) =>
         id == null
           ? Promise.resolve({ id: null, loaded: null })
@@ -320,6 +325,38 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       })
     return () => { cancelled = true }
   }, [materialFileUrl, token])
+
+  // Стадии файлового урока — третий источник «Тем» (после шагов разбора и
+  // разделов занятия). Разбор выключен, и без них список тем у ученика — одна
+  // строка «Материал урока», по которой некуда идти. Сервер снимает стадии с
+  // самого файла при импорте ключей (…/lesson-view/stages); позиция приходит от
+  // рамки сообщением `stage`, переход уходит в рамку `goto-stage` — тот же
+  // контракт, что у рабочей области преподавателя в web-admin (lessonStages.js).
+  //
+  // И список, и позиция помнят, чьи они: при смене материала чужие обнуляются
+  // сравнением, а не setState в теле эффекта (это был бы каскад рендеров).
+  const [fileStages, setFileStages] = useState({ materialId: null, stages: NO_STAGES })
+  const [stageAt, setStageAt] = useState({ materialId: null, index: 0 })
+  const activeMaterialKey = activeMaterial?.materialId ?? null
+
+  useEffect(() => {
+    if (activeMaterialKey == null || !token) return undefined
+    let cancelled = false
+    getLessonViewStages(token, lessonId, activeMaterialKey)
+      .then((list) => {
+        if (cancelled) return
+        setFileStages({ materialId: activeMaterialKey, stages: Array.isArray(list) && list.length ? list : NO_STAGES })
+      })
+      // Стадий нет (не файл живого урока, ключи не импортированы, сбой сети) —
+      // список остаётся разделами, как и было до стадий.
+      .catch(() => {
+        if (!cancelled) setFileStages({ materialId: activeMaterialKey, stages: NO_STAGES })
+      })
+    return () => { cancelled = true }
+  }, [activeMaterialKey, lessonId, token])
+
+  const stages = fileStages.materialId === activeMaterialKey ? fileStages.stages : NO_STAGES
+  const currentStage = stageAt.materialId === activeMaterialKey ? stageAt.index : 0
 
   // Упражнения, скрытые преподавателем поштучно («Скрыть это упражнение от ученика»).
   // Вырезать их на сервере нельзя: шаги приезжают из каталога — один и тот же урок на
@@ -375,12 +412,33 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // если материал не из каталога и разбирать нечего. Нумеруем по месту в списке:
   // position из базы считается с нуля («ШАГ 00»).
   const onLessonSteps = lessonSteps.length > 0
+  // Стадии файла ведут маршрут, только пока разбора нет: включат разбор обратно —
+  // шаги важнее, в них задания. Порядок источников: шаги → стадии → разделы.
+  const onFileStages = !onLessonSteps && stages.length > 0
+  const stageRouteSteps = useMemo(() => stageSteps(stages), [stages])
+  const stageStatus = useMemo(() => stageStatusById(stages, currentStage), [stages, currentStage])
   const routeSteps = useMemo(
-    () => (onLessonSteps ? lessonSteps : sections.map((s, i) => ({ id: s.id, order: i + 1, title: s.title }))),
-    [onLessonSteps, lessonSteps, sections]
+    () => (onLessonSteps
+      ? lessonSteps
+      : onFileStages
+        ? stageRouteSteps
+        : sections.map((s, i) => ({ id: s.id, order: i + 1, title: s.title }))),
+    [onLessonSteps, lessonSteps, onFileStages, stageRouteSteps, sections]
   )
-  const routeActiveId = onLessonSteps ? activeStepId : activeSectionId
-  const selectRouteStep = onLessonSteps ? selectLessonStep : selectSection
+  const routeActiveId = onLessonSteps ? activeStepId : onFileStages ? String(currentStage) : activeSectionId
+  const selectRouteStep = onLessonSteps ? selectLessonStep : onFileStages ? selectFileStage : selectSection
+
+  // Переход по стадии — через рамку: скрипт в файле кликает рельс стадий, и тот
+  // же клик зеркалом уходит собеседнику. Своего состояния у позиции нет — она
+  // вернётся сообщением `stage` от рамки (handleFrameStage), как и при переходе
+  // кнопками внутри самого файла.
+  function selectFileStage(id) {
+    materialFrameRef.current?.gotoStage?.(Number(id))
+  }
+
+  function handleFrameStage({ index }) {
+    setStageAt({ materialId: activeMaterialKey, index })
+  }
 
   // Позиция сохраняется вместе с ответами: вернувшись, ученик продолжает там,
   // где остановился, а не с первого шага.
@@ -394,6 +452,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // нет: выдумывать ему позицию значило бы показывать неправду.
   const studentStepId = isStaff ? reviewStepId : activeStepId
   const lessonTeacherStepId = isStaff ? activeStepId : peerStepId
+  // Статусы, метка преподавателя и скрытые темы — по тому же источнику, что и
+  // сам маршрут. На стадиях метки нет: «Внимание на упражнение» без шага несёт
+  // id РАЗДЕЛА, и раздел 3 совпал бы со стадией '3'. Скрытые шаги — только у
+  // разбора: с id стадий они не пересекаются по смыслу, но могут по значению.
+  const routeStatusById = onLessonSteps ? stepStatusById : onFileStages ? stageStatus : sectionStatusById
+  const routeTeacherStepId = onLessonSteps ? lessonTeacherStepId : onFileStages ? null : teacherStepId
+  const routeHiddenIds = isStaff && !onFileStages ? activeMaterial?.hiddenStepIds : null
 
   function handleAnswer(questionId, value) {
     const next = { ...answersRef.current, [questionId]: value }
@@ -1277,12 +1342,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         </button>
                       )}
 
-                      {/* Разделы занятия, когда маршрут слева занят шагами урока.
-                          Без этого они недостижимы вовсе: маршрут показывает либо
-                          шаги, либо разделы, и стоит первому разделу оказаться
-                          уроком каталога — остальные пропадают с экрана вместе с
-                          прикреплёнными к ним материалами. */}
-                      {onLessonSteps && sections.length > 1 && (
+                      {/* Разделы занятия, когда маршрут слева занят шагами урока
+                          или стадиями файла. Без этого они недостижимы вовсе:
+                          маршрут показывает либо шаги, либо разделы, и стоит
+                          первому разделу оказаться уроком каталога — остальные
+                          пропадают с экрана вместе с прикреплёнными к ним
+                          материалами. */}
+                      {(onLessonSteps || onFileStages) && sections.length > 1 && (
                         <div className="ls__tabs lw-material-tabs">
                           {sections.map((s, i) => (
                             <button
@@ -1483,6 +1549,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           presenting={presenting}
                           onMirror={handleBridgeMirror}
                           onPresentEvent={handleBridgePresentEvent}
+                          onStage={handleFrameStage}
                         />
                       )}
 
@@ -1515,10 +1582,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                         <LessonSidePanel
                           steps={routeSteps}
                           activeStepId={routeActiveId}
-                          statusById={onLessonSteps ? stepStatusById : sectionStatusById}
+                          statusById={routeStatusById}
                           onSelect={selectRouteStep}
-                          hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
-                          teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
+                          hiddenIds={routeHiddenIds}
+                          teacherStepId={routeTeacherStepId}
                           teacherId={lesson.teacherId}
                           teacherName={lesson.teacherName}
                           participants={activeParticipants}
@@ -1632,13 +1699,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
             <LessonSidePanel
               steps={routeSteps}
               activeStepId={routeActiveId}
-              statusById={onLessonSteps ? stepStatusById : sectionStatusById}
+              statusById={routeStatusById}
               onSelect={(id) => {
                 selectRouteStep(id)
                 setSheet(null)
               }}
-              hiddenIds={isStaff ? activeMaterial?.hiddenStepIds : null}
-              teacherStepId={onLessonSteps ? lessonTeacherStepId : teacherStepId}
+              hiddenIds={routeHiddenIds}
+              teacherStepId={routeTeacherStepId}
               teacherId={lesson?.teacherId}
               teacherName={lesson?.teacherName}
               participants={activeParticipants}

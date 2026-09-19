@@ -796,6 +796,14 @@ export function saveLessonMaterialProgress(token, lessonId, materialId, eventsJs
   return authPut(`/student/lessons/${lessonId}/materials/${materialId}/progress`, token, { eventsJson }, options)
 }
 
+// Стадии файлового урока (`section.stage` в самом файле, сняты сервером при
+// импорте ключей) — из них собираются «Темы», когда разбор на шаги выключен.
+// Материал не-файла или без ключей отдаёт пустой список. Доступ — как у /render:
+// ученик занятия и его преподаватель (assertLessonAccess).
+export function getLessonViewStages(token, lessonId, materialId) {
+  return authGet(`/student/lessons/${lessonId}/materials/${materialId}/lesson-view/stages`, token)
+}
+
 // «Настройки учеников» доски: начальная загрузка. Живые переключения приходят по
 // STOMP-топику board-settings (см. useLessonBoard).
 export function getBoardSettings(token, id) {

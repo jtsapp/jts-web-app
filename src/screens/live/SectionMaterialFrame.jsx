@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
+import { parseStageMessage, gotoStageMessage } from './lessonStages.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
@@ -16,8 +17,13 @@ const BRIDGE_HOST = 'jts-bridge-host'
 // 'present-event' / 'snapshot' пока идёт «Внимание на упражнение» (проксируем
 // через onPresentEvent). Обратно в iframe шлём { source: 'jts-bridge-host',
 // type: 'present', events } — реплей потока учителя у догоняющего студента.
+//
+// Второй, независимый от бриджа канал — стадии файлового урока (lessonStages.js):
+// скрипт в файле сообщает 'jts-lesson'/'stage' на каждом переходе (→ onStage),
+// а gotoStage просит его перейти на стадию от имени 'jts-workspace'. Ходит
+// мимо BRIDGE_HOST намеренно: это разговор с движком урока, а не с мостом.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
-  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, className = '' },
+  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, onStage, className = '' },
   ref
 ) {
   const { t } = useI18n()
@@ -51,6 +57,12 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       if (!loadedRef.current) return
       post({ type: 'mirror', selector: event.selector, eventType: event.eventType, value: event.value ?? null })
     },
+    // Переход на стадию файлового урока. Скрипт в файле кликает рельс стадий, и
+    // этот клик уходит собеседнику тем же мостом, что и настоящие, — класс идёт
+    // следом сам, здесь ничего досылать не нужно.
+    gotoStage(index) {
+      iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+    },
   }), [])
 
   function post(payload) {
@@ -72,6 +84,13 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   useEffect(() => {
     function handleMessage(e) {
       const data = e.data
+      // Стадия — свой источник и обеим ролям: ученику она двигает «Темы»,
+      // преподавателю (если он ведёт урок отсюда) — то же самое.
+      const stage = parseStageMessage(data)
+      if (stage) {
+        onStage?.(stage)
+        return
+      }
       if (!data || data.source !== BRIDGE) return
       if (!isStaff) {
         if (data.type === 'mirror') {
@@ -91,7 +110,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [isStaff, presenting, onMirror, onPresentEvent])
+  }, [isStaff, presenting, onMirror, onPresentEvent, onStage])
 
   if (!material) {
     return <div className="lw-material-empty">{t('lesson.ws.noMaterial')}</div>
