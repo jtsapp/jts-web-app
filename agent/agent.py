@@ -4340,6 +4340,134 @@ SONIOX_STT_LANGUAGES = ["en", "ru", "kk"]
 SONIOX_STT_STRICT_DEFAULT = True
 
 
+# ── Контекст распознавания: словарь на сессию ────────────────────────────────
+# «Иногда он не понимает меня, некоторые слова разбирает неправильно» — это не
+# про микрофон и не про набор языков в подсказках. Soniox выбирает слово из
+# полного словаря языка, а имя ученика, название грамматической конструкции и
+# слово из вчерашнего урока там либо редкие, либо отсутствуют вовсе. Хуже всего
+# английскому термину посреди казахской или русской фразы: «present perfect»
+# распознаётся как что угодно, только не как present perfect.
+#
+# Лечится штатным механизмом провайдера — context (context_version 2, модели
+# stt-rt-v3-preview и выше; у нас дефолтная stt-rt-v5). Это ПОДСКАЗКА, а не
+# ограничение словаря: ученик по-прежнему может сказать любое слово, просто
+# перечисленные получают вес при разборе неоднозначного звука.
+#
+# Собирается из двух источников, и порядок между ними не случайный:
+#   * профиль ученика — имя, слова на повторении, темы, профессия;
+#   * общий словарь (stt-terms.txt) — тьюторы, уровни, грамматика, города.
+# Личное идёт первым и режется последним: общий список одинаков для всех, а имя
+# ученика больше взять неоткуда.
+STT_TERMS_FILE = "stt-terms.txt"
+# Лимит Soniox — 8000 токенов (~10 000 символов) на весь объект context, и
+# превышение возвращает invalid_request, то есть сессию БЕЗ распознавания вовсе.
+# Поэтому бюджет вдвое меньше лимита: ключи JSON и general тоже считаются, а
+# кириллица токенизируется щедрее латиницы, и оценка «символ ≈ токен» врёт в
+# опасную сторону. Запас дешевле, чем немой урок.
+STT_CONTEXT_CHAR_BUDGET = 4000
+# Длинную строку в terms провайдер трактует как фразу целиком; предложение,
+# случайно попавшее в словарь ученика, только отбирает бюджет.
+STT_TERM_MAX_CHARS = 60
+# Слова на повторении — самое ценное в профиле, но их может накопиться много, а
+# общий словарь нужен каждому уроку. Ограничиваем, чтобы одно не съело другое.
+STT_DUE_VOCAB_LIMIT = 40
+
+
+def _load_terms_file(path: Path) -> list[str]:
+    """Один термин в строке, решётка — комментарий. Тот же формат, что у
+    pronunciation-kk.tsv, и по той же причине: список ведёт человек, который
+    слышит ошибки на звонках, а не тот, кто правит код."""
+    raw = _load_methodology_file(path)
+    out: list[str] = []
+    for line in (raw or "").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            out.append(line)
+    return out
+
+
+_STT_TERMS_PATH = _resolve_methodology(STT_TERMS_FILE)
+STT_STATIC_TERMS = _load_terms_file(_STT_TERMS_PATH)
+logger.info("STT terms: %d entries from %s", len(STT_STATIC_TERMS), _STT_TERMS_PATH)
+
+
+def _dedupe_terms(terms: list[str], budget: int) -> list[str]:
+    """Нормализовать, отсеять повторы и уложиться в бюджет символов.
+
+    Переполнение не прерывает перебор, а пропускает термин: дальше по списку
+    идут слова короче, и место для них ещё есть. Порядок сохраняется — он и
+    есть приоритет."""
+    seen: set[str] = set()
+    out: list[str] = []
+    used = 0
+    for term in terms:
+        term = " ".join((term or "").split())
+        if not term or len(term) > STT_TERM_MAX_CHARS:
+            continue
+        key = term.casefold()
+        if key in seen:
+            continue
+        cost = len(term) + 1  # запятая-разделитель в сериализации
+        if used + cost > budget:
+            continue
+        seen.add(key)
+        out.append(term)
+        used += cost
+    return out
+
+
+def _stt_context_general(profile: LearnerProfile) -> list[tuple[str, str]]:
+    """Короткие пары «ключ-значение» про сам разговор. По документации Soniox
+    они влияют сильнее, чем длинный текст, и их должно быть мало — до десятка.
+
+    Отдаёт обычные кортежи, а не dataclass'ы плагина: сборка контекста — это
+    логика приложения, и проверять её надо там тоже, где плагина нет."""
+    items: list[tuple[str, str]] = []
+
+    def add(key: str, value: str) -> None:
+        value = " ".join((value or "").split())
+        if value:
+            items.append((key, value[:120]))
+
+    add("domain", "online English lessons")
+    # При englishOnly русский и казахский из подсказок уже убраны (см. ниже) —
+    # контекст не должен звать их обратно.
+    add("languages", "English" if profile.english_only else "English, Russian, Kazakh")
+    add("speaker", profile.user_name)
+    add("level", profile.level)
+    add("topic", profile.topics[0] if profile.topics else "")
+    add("occupation", profile.profession)
+    return items
+
+
+def _soniox_stt_context(profile: LearnerProfile):
+    """ContextObject этой сессии или None, если подсказывать нечего.
+
+    SONIOX_STT_CONTEXT=off — рубильник секретом воркера: если окажется, что
+    подсказки перекашивают распознавание, откат не требует пересборки образа."""
+    if (os.getenv("SONIOX_STT_CONTEXT") or "").strip().lower() in ("off", "0", "false", "no"):
+        return None
+    ordered = [
+        profile.user_name,
+        profile.profession,
+        *profile.interests,
+        *profile.topics,
+        *profile.due_vocab[:STT_DUE_VOCAB_LIMIT],
+        *STT_STATIC_TERMS,
+        # Весь накопленный словарь — последним: это сотни слов, и он заполняет
+        # ровно то, что осталось от бюджета, не вытесняя ничего важного.
+        *profile.vocab,
+    ]
+    terms = _dedupe_terms(ordered, STT_CONTEXT_CHAR_BUDGET)
+    general = _stt_context_general(profile)
+    if not terms and not general:
+        return None
+    return soniox.ContextObject(
+        general=[soniox.ContextGeneralItem(key=k, value=v) for k, v in general] or None,
+        terms=terms or None,
+    )
+
+
 def _stt_provider_for(profile: LearnerProfile) -> str:
     """Провайдер STT этой сессии: env персоны → таблица → дефолт."""
     tutor = (profile.tutor or "").strip().lower()
@@ -4600,13 +4728,20 @@ def _cascade_stt_soniox(profile: LearnerProfile):
         langs = ["en"]
     env_strict = (os.getenv("SONIOX_STT_STRICT") or "").strip().lower()
     strict = SONIOX_STT_STRICT_DEFAULT if not env_strict else env_strict not in ("0", "false", "no")
+    context = _soniox_stt_context(profile)
     logger.info(
-        "Cascade STT: Soniox (%s, strict=%s), tutor=%s",
-        "/".join(langs), strict, profile.tutor or "<none>",
+        "Cascade STT: Soniox (%s, strict=%s, context=%s), tutor=%s",
+        "/".join(langs), strict,
+        f"{len(context.terms or [])} terms" if context else "off",
+        profile.tutor or "<none>",
     )
     return soniox.STT(
         api_key=key,
-        params=soniox.STTOptions(language_hints=langs, language_hints_strict=strict),
+        params=soniox.STTOptions(
+            language_hints=langs,
+            language_hints_strict=strict,
+            context=context,
+        ),
     )
 
 

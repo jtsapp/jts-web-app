@@ -229,11 +229,12 @@ export default function TutorDashboardPage({
 }
 
 // Лицо в орбе идёт по кругу всех эмоций с родной (useEmotionShowcase). Круг
-// крутится в своём маленьком компоненте, а не в самом дашборде: раз в 3 с
+// крутится в своём маленьком компоненте, а не в самом дашборде: раз в 2 с
 // перерисовывается одно лицо, а не страница со списком сценариев, и у Джарвиса
 // (орб вместо лица) таймер не заводится вовсе. В звонке круга нет — там эмоцию
-// задаёт агент.
+// задаёт агент. Смена плавная (morph), как в записи прототипа от клиента; в
+// звонке она осталась быстрой — решение по продукту.
 function ShowcaseFace({ mood }) {
   const { emotion, next } = useEmotionShowcase(mood)
-  return <TutorFace className="t-dash__face" emotion={emotion} preload={[next]} />
+  return <TutorFace className="t-dash__face" emotion={emotion} preload={[next]} morph />
 }

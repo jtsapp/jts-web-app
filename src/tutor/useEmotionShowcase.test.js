@@ -25,6 +25,14 @@ describe('useEmotionShowcase', () => {
     expect(result.current).toEqual({ emotion: 'angry', next: 'rage' })
   })
 
+  it('по умолчанию шаг — 2 с', () => {
+    const { result } = renderHook(() => useEmotionShowcase('idle'))
+    tick(1999)
+    expect(result.current.emotion).toBe('idle')
+    tick(1)
+    expect(result.current.emotion).toBe('listening')
+  })
+
   it('шагает раз в dwell и замыкает круг', () => {
     const order = showcaseFrom('happy')
     const { result } = renderHook(() => useEmotionShowcase('happy', 3000))
@@ -42,10 +50,10 @@ describe('useEmotionShowcase', () => {
     })
     // Смена посреди шага: без перезапуска таймера новая родная эмоция
     // продержалась бы только остаток чужого шага.
-    tick(7000)
+    tick(5000)
     rerender({ mood: 'idle' })
     expect(result.current.emotion).toBe('idle')
-    tick(2999)
+    tick(1999)
     expect(result.current.emotion).toBe('idle')
     tick(1)
     expect(result.current.emotion).toBe('listening')
@@ -73,23 +81,24 @@ describe('useEmotionShowcase', () => {
       })
 
     const { result } = renderHook(() => useEmotionShowcase('angry'))
-    tick(6000)
+    tick(4000)
     expect(result.current.emotion).toBe('sympathy')
     flip(true)
     expect(result.current).toEqual({ emotion: 'angry', next: null })
     flip(false)
     expect(result.current).toEqual({ emotion: 'angry', next: 'rage' })
-    tick(3000)
+    tick(2000)
     expect(result.current.emotion).toBe('rage')
   })
 
   it('на скрытой вкладке круг стоит, вернулся — идёт дальше', () => {
     const { result } = renderHook(() => useEmotionShowcase('idle'))
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
-    tick(9000)
+    // Четыре шага вкладка скрыта — ни одного шага; открыли — следующий шаг.
+    tick(8000)
     expect(result.current.emotion).toBe('idle')
     delete document.hidden
-    tick(3000)
+    tick(2000)
     expect(result.current.emotion).toBe('listening')
   })
 })

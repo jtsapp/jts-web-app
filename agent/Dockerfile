@@ -29,6 +29,9 @@ COPY persona-jarvis-harsh.md ./persona-jarvis-harsh.md
 # Словарь произношения казахской речи (Спарк, Джарвис) — правится человеком,
 # читается на старте воркера. См. _PRONUNCIATION_FILES.
 COPY pronunciation-kk.tsv ./pronunciation-kk.tsv
+# Словарь распознавания (data/stt-terms.txt в дев-режиме) — подсказка Soniox по редким словам:
+# имена тьюторов, грамматические термины, города.
+COPY stt-terms.txt ./stt-terms.txt
 # Structured voice scenarios (data/scenarios/*.md in dev). Bundled next to
 # agent.py; the loader's second candidate path (/app/scenarios) finds them.
 COPY scenarios/ ./scenarios/

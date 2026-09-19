@@ -10,6 +10,32 @@ const LEVEL_URL = (code) => `/learning/${code}.json`
 let catalogPromise = null
 const levelCache = new Map() // code -> Promise<{lessons:{}}>
 
+/**
+ * В источнике курса часть строк попала с литеральными JSON-эскейпами
+ * (`caf\\u00e9`, `say \\u2192 said`) — после JSON.parse это всё ещё шесть
+ * символов `\u00e9`, а не «é» / «→». Декодируем один раз при загрузке, чтобы
+ * и экран, и ключи ответов совпадали с тем, что печатает ученик.
+ */
+export function decodeUnicodeEscapes(value) {
+  if (typeof value !== 'string' || !value.includes('\\u')) return value
+  return value.replace(/\\u([0-9a-fA-F]{4})/gi, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  )
+}
+
+export function deepDecodeUnicodeEscapes(value) {
+  if (typeof value === 'string') return decodeUnicodeEscapes(value)
+  if (Array.isArray(value)) return value.map(deepDecodeUnicodeEscapes)
+  if (value && typeof value === 'object') {
+    const out = {}
+    for (const key of Object.keys(value)) {
+      out[key] = deepDecodeUnicodeEscapes(value[key])
+    }
+    return out
+  }
+  return value
+}
+
 // Каталог всех уровней: { levels:[{code,label,lessonCount}], <code>:{lessons:[…]} }
 export function getLessonCatalog() {
   if (!catalogPromise) {
@@ -42,6 +68,7 @@ export function loadLevel(level) {
         if (!r.ok) throw new Error(`level ${code} ${r.status}`)
         return r.json()
       })
+      .then((data) => deepDecodeUnicodeEscapes(data))
       .catch((e) => {
         levelCache.delete(code)
         throw e
@@ -55,4 +82,10 @@ export function loadLevel(level) {
 export async function loadLesson(level, code) {
   const data = await loadLevel(level)
   return (data.lessons && data.lessons[code]) || null
+}
+
+/** Сброс кэша — для тестов. */
+export function clearLessonDataCache() {
+  catalogPromise = null
+  levelCache.clear()
 }

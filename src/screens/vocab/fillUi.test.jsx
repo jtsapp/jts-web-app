@@ -140,3 +140,49 @@ describe('FillUI — набор слова по буквам', () => {
     expect(boxes(container).every((i) => i.className.includes('no'))).toBe(true)
   })
 })
+
+// Каждый неверный «Проверить» открывает букву, а открытая буква при проверке
+// считается верной. Слово в итоге собиралось подсказками и уходило «Верно» —
+// в изученные и прочь из «хуже всего запомненных». Подсказка сверх первой
+// буквы теперь означает ошибку, хоть буквы на экране и сошлись.
+describe('FillUI — слово, собранное подсказками, не засчитывается', () => {
+  const WORD2 = { key: 'go', word: 'go', translationRu: 'идти', example: 'I ___ home.' }
+  const check = () => fireEvent.click(screen.getByRole('button', { name: /Проверить|Check/i }))
+  const cont = () => fireEvent.click(screen.getByRole('button', { name: /Продолжить|Continue/i }))
+
+  it('чепуха + «Проверить» дважды → ошибка, а не «Верно»', () => {
+    const onDone = vi.fn()
+    const { container } = render(<I18nProvider><Harness word={WORD2} sentence="I ________ home." onDone={onDone} /></I18nProvider>)
+
+    fireEvent.change(boxes(container)[1], { target: { value: 'x' } })
+    check() // неверно → открыта «o»
+    check() // все буквы — подсказки
+    cont()
+
+    expect(onDone).toHaveBeenCalledWith([{ key: 'go', ok: false }])
+    expect(screen.queryByText(/^\s*Верно/)).toBeNull()
+  })
+
+  it('только «Открыть букву» до конца → ошибка', () => {
+    const onDone = vi.fn()
+    render(<I18nProvider><Harness onDone={onDone} /></I18nProvider>)
+
+    const open = screen.getByRole('button', { name: /Открыть букву|Reveal/i })
+    for (let i = 0; i < 8; i++) fireEvent.click(open)
+    check()
+    cont()
+
+    expect(onDone).toHaveBeenCalledWith([{ key: 'pleasant', ok: false }])
+  })
+
+  it('без подсказок сверх первой буквы — по-прежнему верно', () => {
+    const onDone = vi.fn()
+    const { container } = render(<I18nProvider><Harness onDone={onDone} /></I18nProvider>)
+
+    напечатать(container, 'pleasant')
+    check()
+    cont()
+
+    expect(onDone).toHaveBeenCalledWith([{ key: 'pleasant', ok: true }])
+  })
+})
