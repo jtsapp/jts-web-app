@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import {
   startMaterialAssignment,
@@ -8,7 +8,8 @@ import {
   removeMaterialAnswer,
 } from '../../api.js'
 import { homeworkStateKey, ALLOWED_EXTENSIONS, isAllowedFile } from './homeworkFormat.js'
-import { isInteractiveMaterial, isLessonCard, needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
+import { isInteractiveMaterial, isLessonCard, isWholeCatalogLesson, needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
+import { catalogLessonIdFor } from '../live/catalogLessonByUrl.js'
 import HomeworkFileList from './HomeworkFileList.jsx'
 
 const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
@@ -37,6 +38,23 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
     ? new Date(card.dueDate).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' })
     : null
 
+  // Урок каталога, заданный целиком, ищем в каталоге по ссылке на его файл —
+  // заранее, а не по нажатию. Не нашёлся — остаётся открыть файл в новой
+  // вкладке, а window.open после await Safari гасит как всплывающее окно:
+  // жест к тому моменту уже сгорел, и кнопка молча не делала бы ничего.
+  const wholeLesson = isWholeCatalogLesson(a)
+  const [lookup, setLookup] = useState({ url: null, id: null })
+  useEffect(() => {
+    if (!wholeLesson || a.catalogLessonId != null) return undefined
+    let alive = true
+    catalogLessonIdFor(a.fileUrl, token).then((id) => {
+      if (alive) setLookup({ url: a.fileUrl, id })
+    })
+    return () => { alive = false }
+  }, [wholeLesson, a.catalogLessonId, a.fileUrl, token])
+  const lessonId = a.catalogLessonId ?? (lookup.url === a.fileUrl ? lookup.id : null)
+  const lookingUp = wholeLesson && a.catalogLessonId == null && lookup.url !== a.fileUrl
+
   const open = async () => {
     setError(null)
     // Задана одна карточка живого урока — открываем сам урок в кабинете, а не
@@ -44,6 +62,13 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
     // картинки из словарной колоды того же урока, вне урока они не работают.
     if (isLessonCard(a)) {
       onOpenCard?.({ catalogLessonId: a.catalogLessonId, cardId: a.cardId })
+      return
+    }
+    // Урок каталога целиком — туда же, с начала урока. Файлом он открывался
+    // мёртвым: скрипта заданий в файле курса нет, и ученик слышал запись, но
+    // не мог нажать ни одного варианта (см. isWholeCatalogLesson).
+    if (wholeLesson && lessonId != null) {
+      onOpenCard?.({ catalogLessonId: lessonId, cardId: null })
       return
     }
     // Обычный файл (PDF/видео/ссылка) открывается как есть. Интерактив идёт
@@ -123,7 +148,7 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.task')}</h3>
-        <button type="button" className="hw-submit" disabled={busy} onClick={open}>
+        <button type="button" className="hw-submit" disabled={busy || lookingUp} onClick={open}>
           {t('homework.open')}
         </button>
         {error && <p className="hw__error">{error}</p>}
