@@ -1130,13 +1130,16 @@ export default function App() {
       } else setScreen('lessons')
     }
     else if (key === 'homework') setScreen('homework')
-    // Карточка урока, заданная на дом: домашка зовёт с адресом урока каталога и
-    // адресом самой карточки. Без урока никуда не идём — экран без id открылся
-    // бы демонстрационным уроком, то есть чужим материалом вместо задания.
+    // Урок, заданный на дом: домашка зовёт с адресом урока каталога и адресом
+    // карточки — или без карточки, если задан весь урок. Без урока никуда не
+    // идём — экран без id открылся бы демонстрационным уроком, то есть чужим
+    // материалом вместо задания. Источник свой, а не 'catalog': урок целиком
+    // карточки не несёт, и «Назад» по одной только карточке уводил бы ученика
+    // в каталог курса вместо домашки, откуда он пришёл.
     else if (key === 'lesson-workspace') {
       if (payload?.catalogLessonId != null) {
         setLiveWorkspaceId(payload.catalogLessonId)
-        setWorkspaceSource('catalog')
+        setWorkspaceSource('homework')
         setWorkspaceCardId(payload.cardId || null)
         setScreen('lesson-workspace')
       }
@@ -2013,11 +2016,16 @@ export default function App() {
           onRetry={() => setScreen('tutor-voice-chat')}
         />
       )
-    // Выход возвращает туда, откуда пришли: с карточки — в домашнюю работу, из
-    // каталога — в каталог. Иначе ученик, открывший задание, уходил бы в чужой
-    // список уроков и искал домашку заново.
-    case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceCardId ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+    // Выход возвращает туда, откуда пришли: из домашки (карточка или урок
+    // целиком) — в домашнюю работу, из каталога — в каталог. Иначе ученик,
+    // открывший задание, уходил бы в чужой список уроков и искал домашку заново.
+    // Карточка из адреса (F5 на ней) приезжает с источником 'catalog' — её
+    // возвращает в домашку сам адрес карточки.
+    case 'lesson-workspace': {
+      const catalogSource = workspaceSource === 'catalog' || workspaceSource === 'self' || workspaceSource === 'homework'
+      const fromHomework = workspaceSource === 'homework' || Boolean(workspaceCardId)
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+    }
     default:
       return null
   }
