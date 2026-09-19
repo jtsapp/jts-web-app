@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { decideRun, mergeGradedAnswers } from './placementSessionLogic.js'
+import { ABANDONED_RUN_TTL_MS, decideRun, mergeGradedAnswers } from './placementSessionLogic.js'
 
 const at = '2026-08-31T12:00:00.000Z'
 const merge = (existing, fresh, max = 5) => mergeGradedAnswers(existing, fresh, { max, at })
@@ -19,6 +19,38 @@ describe('decideRun', () => {
   it('законченный прогон закрывает тему: уровень определяется один раз', () => {
     expect(decideRun({ token: 'run-1', finished: true, level: 'A2' }))
       .toEqual({ action: 'blocked', level: 'A2' })
+  })
+
+  it('без updatedAt TTL не считаем — поведение как раньше (resume)', () => {
+    expect(decideRun({ token: 'run-1', finished: false, level: null, updatedAt: null }, Date.now()))
+      .toEqual({ action: 'resume', token: 'run-1' })
+  })
+
+  it('незаконченный прогон внутри TTL продолжается', () => {
+    const now = Date.parse(at)
+    const updatedAt = new Date(now - ABANDONED_RUN_TTL_MS + 1000).toISOString()
+    expect(decideRun({ token: 'run-1', finished: false, level: null, updatedAt }, now))
+      .toEqual({ action: 'resume', token: 'run-1' })
+  })
+
+  it('брошенный дольше TTL прогон не резюмируется — заводим новый', () => {
+    // Ради этого TTL и есть: mergeGradedAnswers отдаёт на повтор старый
+    // вердикт по каждому заданию, а не проверяет заново (см. её докстринг).
+    // Без TTL случайный клик по разминке в первой попытке залип бы навсегда,
+    // и вторая, уже верная попытка не смогла бы его перебить.
+    const now = Date.parse(at)
+    const updatedAt = new Date(now - ABANDONED_RUN_TTL_MS - 1000).toISOString()
+    expect(decideRun({ token: 'run-1', finished: false, level: null, updatedAt }, now))
+      .toEqual({ action: 'create' })
+  })
+
+  it('законченный прогон блокируется независимо от возраста', () => {
+    // Уровень определяется один раз: TTL — только для БРОШЕННЫХ прогонов,
+    // законченный не резюмируется и не сгорает, а закрывает тему навсегда.
+    const now = Date.parse(at)
+    const updatedAt = new Date(now - ABANDONED_RUN_TTL_MS * 100).toISOString()
+    expect(decideRun({ token: 'run-1', finished: true, level: 'B1', updatedAt }, now))
+      .toEqual({ action: 'blocked', level: 'B1' })
   })
 })
 

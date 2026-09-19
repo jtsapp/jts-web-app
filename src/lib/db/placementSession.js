@@ -21,14 +21,21 @@ export async function latestPlacementSession(profileId) {
   const sql = getSql()
   if (!sql || !profileId) return null
   const rows = await sql`
-    select token, finished, level
+    select token, finished, level, updated_at
     from placement_session
     where profile_id = ${profileId}
     order by finished desc, created_at desc
     limit 1
   `
   if (rows.length === 0) return null
-  return { token: rows[0].token, finished: Boolean(rows[0].finished), level: rows[0].level }
+  return {
+    token: rows[0].token,
+    finished: Boolean(rows[0].finished),
+    level: rows[0].level,
+    // decideRun решает по нему, не брошен ли незаконченный прогон
+    // (ABANDONED_RUN_TTL_MS в placementSessionLogic.js).
+    updatedAt: rows[0].updated_at,
+  }
 }
 
 /**

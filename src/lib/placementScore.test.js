@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { simulateSession } from '../practice/placement/engine.generated.js'
-import { scorePlacementSession, loadFullBank } from './placementScore.js'
+import { gradeAnswers, scoreGradedAnswers, scorePlacementSession, loadFullBank } from './placementScore.js'
+import { ABANDONED_RUN_TTL_MS, decideRun, mergeGradedAnswers } from './placementSessionLogic.js'
 
 // Полный банк = публичная часть (её видит браузер) + ключи, которые остались
 // на сервере. Прогоны движка идут по нему, а пересчёт — из тех же ключей.
@@ -73,5 +74,52 @@ describe('scorePlacementSession', () => {
 
     expect(scored.verified).toBeGreaterThan(0)
     expect(scored.verified + scored.unverified).toBe(session.log.length)
+  })
+})
+
+// Регресс на реальный случай: «тест всегда показывает A0». Причина была не в
+// подсчёте (он проверен выше), а в резюмировании: mergeGradedAnswers отдаёт
+// на повтор СТАРЫЙ вердикт по каждому заданию (см. её докстринг — это защита
+// от подбора ключа), и без TTL брошенная попытка с наспех кликнутой разминкой
+// приклеивалась к профилю навсегда — вторая, уже честная попытка на те же
+// вопросы не могла её перебить. decideRun теперь не резюмирует прогон, если
+// с последнего ответа прошло больше ABANDONED_RUN_TTL_MS.
+describe('брошенный прогон и вторая попытка (интеграционно)', () => {
+  const routingIds = () => source.bank.items.filter((i) => i.block === 'routing').slice(0, 6).map((i) => i.id)
+
+  /** Ответы на разминку: verdict='wrong' — намеренно неверный optIndex,
+   *  verdict='right' — берётся из ключей. */
+  const routingAnswers = (verdict) =>
+    routingIds().map((id) => {
+      const item = source.bank.items.find((i) => i.id === id)
+      const key = source.keys[id]?.key ?? item.key
+      const optIndex = verdict === 'right' ? key : (key + 1) % item.options.length
+      return { id, optIndex }
+    })
+
+  it('без TTL (старое поведение): верная вторая попытка не перебивает старый вердикт', () => {
+    // Тот же сценарий, что уронил живой тест, — сохранён как документация
+    // причины, а не как желаемое поведение.
+    const firstTry = mergeGradedAnswers([], gradeAnswers(routingAnswers('wrong'), source), { max: 60 })
+    const secondTry = mergeGradedAnswers(firstTry.answers, gradeAnswers(routingAnswers('right'), source), { max: 60 })
+
+    expect(secondTry.added).toBe(0) // все id «известны» по первой попытке
+    expect(scoreGradedAnswers(secondTry.answers, null, source).level).toBe('A0')
+  })
+
+  it('с TTL: брошенная попытка не резюмируется, вторая попытка честная', () => {
+    const abandonedAt = Date.now() - ABANDONED_RUN_TTL_MS - 60_000 // на минуту старше TTL
+    const firstTry = mergeGradedAnswers([], gradeAnswers(routingAnswers('wrong'), source), { max: 60 })
+
+    // Открывает тест заново: прогон брошен дольше TTL → decideRun создаёт
+    // новый, а не резюмирует старый с приклеенными неверными вердиктами.
+    const decision = decideRun({ token: 'run-1', finished: false, level: null, updatedAt: abandonedAt })
+    expect(decision.action).toBe('create')
+
+    // Новый прогон начинается с пустого журнала, а не с ответов firstTry.
+    const freshAnswers = mergeGradedAnswers([], gradeAnswers(routingAnswers('right'), source), { max: 60 }).answers
+    expect(scoreGradedAnswers(freshAnswers, null, source).flags).not.toContain('a0_branch')
+
+    void firstTry // firstTry сохраняется в БД, но decideRun('create') его больше не читает
   })
 })

@@ -7,6 +7,20 @@
 // прогона нельзя, а заводить прогон на каждую попытку видно и по счётчику
 // прогонов, и по их пустым журналам.
 
+// Брошенный прогон не резюмируется вечно. mergeGradedAnswers отдаёт на повтор
+// СТАРЫЙ вердикт по каждому заданию (см. её докстринг) — это и защищает от
+// подбора ключа, и, будучи применено к прогону недельной давности, намертво
+// приклеивает первый же случайный клик по разминке: студент отвечает верно
+// заново, а сервер продолжает засчитывать давний промах. Найдено разбором
+// реального случая — «тест всегда показывает A0» — и подтверждено прогоном
+// gradeAnswers/mergeGradedAnswers/scoreGradedAnswers на боевом банке заданий:
+// вторая, уже верная попытка добавляла 0 новых ответов, потому что все id
+// разминки были «известны» по первой.
+// Три часа — не научный подбор, а достаточный запас на «отвлекли, вернулся
+// в тот же день», и заметно меньше, чем нужно на подбор ключа перебором
+// (там счёт на десятки попыток, здесь — на попытку в несколько часов).
+export const ABANDONED_RUN_TTL_MS = 3 * 60 * 60 * 1000
+
 /**
  * Что делать с запросом на новый прогон, если у профиля уже есть прогоны.
  * Уровень определяется один раз — при регистрации: законченный прогон закрывает
@@ -14,12 +28,24 @@
  * дошёл), а если прогонов нет, заводится новый. Без этого правила «один прогон
  * на попытку» позволяло бы и переигрывать результат, и подбирать ключи, открывая
  * прогон за прогоном.
- * @param {{finished: boolean, token: string, level: string|null}|null} existing
+ *
+ * Резюмирование не безусловно: если с последнего ответа прошло больше
+ * ABANDONED_RUN_TTL_MS, прогон считается брошенным и заводится новый —
+ * иначе случайные клики по разминке в первой попытке залипают навсегда
+ * (см. комментарий у ABANDONED_RUN_TTL_MS). `updatedAt` отсутствует у прогонов
+ * без записи ответов и у старых записей без колонки — тогда TTL не считаем,
+ * поведение как раньше (resume).
+ * @param {{finished: boolean, token: string, level: string|null, updatedAt?: string|Date|null}|null} existing
+ * @param {number} [now] — для тестов; по умолчанию текущее время
  * @returns {{action: 'blocked'|'resume'|'create', token?: string, level?: string|null}}
  */
-export function decideRun(existing) {
+export function decideRun(existing, now = Date.now()) {
   if (!existing) return { action: 'create' }
   if (existing.finished) return { action: 'blocked', level: existing.level ?? null }
+  const updatedAt = existing.updatedAt ? new Date(existing.updatedAt).getTime() : null
+  if (Number.isFinite(updatedAt) && now - updatedAt > ABANDONED_RUN_TTL_MS) {
+    return { action: 'create' }
+  }
   return { action: 'resume', token: existing.token }
 }
 
