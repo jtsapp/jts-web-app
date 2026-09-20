@@ -1,0 +1,370 @@
+/* ============================================================
+   Слушай и выбирай (Listen & Choose) — нативный раздел Практики.
+   Классы с префиксом .lc-. Раскладка и палитра — из прототипа
+   data/jtslistenchoose.html (фиолетовый JTS #874BF8, мягкие лавандовые
+   заливки, зелёный/оранжево-красный для верно/неверно), чтобы раздел читался
+   роднёй соседних тренажёров (verbs.css, reading.css). Шрифт — общий (Manrope).
+   Тёмной темы у приложения нет, поэтому у раздела её тоже нет: тумблер темы
+   прототипа не переносился.
+   ============================================================ */
+.lc {
+  --lc-violet: #874bf8;
+  --lc-violet-600: #6f31e8;
+  --lc-violet-700: #6025cf;
+  --lc-accent: #7036dd;
+  --lc-surface: #fff;
+  --lc-surface-2: #f3effa;
+  --lc-soft: #ede4ff;
+  --lc-text: #211934;
+  --lc-muted: #716a81;
+  --lc-line: #e5deef;
+  --lc-ok: #17764e;
+  --lc-ok-bg: #e7f5ec;
+  --lc-error: #b43743;
+  --lc-error-bg: #fff0ef;
+  --lc-shadow: 0 8px 28px #35225509;
+
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 32px calc(48px + env(safe-area-inset-bottom));
+  color: var(--lc-text);
+}
+/* Сброс полей — с нулевой специфичностью (:where), как у .vb: иначе `.lc p`
+   перебивал бы поля любого абзаца с одним классом, и задуманные отступы молча
+   пропадали бы. */
+.lc :where(h1, h2, p) { margin: 0; }
+.lc [hidden] { display: none !important; }
+.lc button { font-family: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+.lc button[aria-disabled='true'] { cursor: not-allowed; }
+.lc button:focus-visible, .lc select:focus-visible, .lc input:focus-visible, .lc h2:focus-visible {
+  outline: 3px solid var(--lc-accent);
+  outline-offset: 3px;
+}
+.lc h2:focus { outline: none; }
+.lc h2:focus-visible { outline: 3px solid var(--lc-accent); }
+.lc select {
+  min-height: 44px;
+  border: 1px solid var(--lc-line);
+  border-radius: 8px;
+  background: var(--lc-surface-2);
+  color: var(--lc-text);
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lc input[type='range'] { accent-color: var(--lc-accent); cursor: pointer; touch-action: pan-y; min-height: 44px; }
+.lc input[type='range']:disabled { cursor: not-allowed; opacity: 0.5; }
+.lc-i { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.lc-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* ── верхняя навигация ── */
+.lc-top { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+/* Кабинет вешает «язык + уведомления» абсолютом в правый верхний угол
+   (.learn__bell) — ровно туда, куда лёг бы край шапки; свои кнопки там мертвы. */
+@media (min-width: 761px) {
+  .lc-top { padding-right: 170px; }
+}
+.lc-back {
+  display: inline-flex; align-items: center; gap: 4px; border: 0;
+  background: var(--lc-violet); color: #fff !important; border-radius: 999px;
+  padding: 9px 16px 9px 12px; font-size: 14px; font-weight: 700;
+}
+.lc-back:hover { filter: brightness(1.05); }
+.lc-crumb { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; flex: 1; }
+.lc-crumb b { color: var(--lc-violet); font-size: 15px; font-weight: 800; }
+
+/* ── шапка раздела и сложность ── */
+.lc-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0 26px; }
+.lc-eyebrow { display: flex; align-items: center; gap: 8px; color: var(--lc-accent); font-weight: 750; font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; margin-bottom: 8px; }
+.lc-eyebrow span { width: 6px; height: 6px; border-radius: 50%; background: var(--lc-accent); }
+.lc-head h1 { font-size: clamp(30px, 4vw, 43px); line-height: 1.1; letter-spacing: -1.8px; margin: 0 0 10px; font-weight: 750; }
+.lc-dot { color: var(--lc-violet); }
+.lc-sub { color: var(--lc-muted); font-size: 14px; }
+.lc-difficulty { text-align: right; }
+.lc-seg { display: inline-flex; border: 1px solid var(--lc-line); border-radius: 100px; padding: 3px; background: var(--lc-surface-2); }
+.lc-seg button {
+  min-height: 44px; min-width: 44px; padding: 0 15px; border: 0; border-radius: 100px;
+  background: transparent; color: var(--lc-muted); font-size: 13px; font-weight: 650;
+}
+.lc-seg button[aria-pressed='true'] { color: var(--lc-accent); background: var(--lc-surface); box-shadow: 0 2px 8px #00000008; }
+.lc-levelhint { margin: 7px 8px 0; color: var(--lc-muted); font-size: 12px; }
+
+/* ── панель набора ── */
+.lc-setup {
+  display: flex; gap: 16px; align-items: center; justify-content: space-between;
+  padding: 15px 18px; background: var(--lc-surface); border: 1px solid var(--lc-line);
+  border-radius: 15px; margin: 0 0 18px;
+}
+.lc-setup__left { display: flex; align-items: center; gap: 20px; }
+.lc-setup__right { display: flex; gap: 10px; align-items: center; }
+.lc-setup label { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
+.lc-setup select { min-width: 82px; }
+.lc-setup input[type='number'] {
+  width: 75px; min-height: 44px; border: 1px solid var(--lc-line); border-radius: 9px;
+  background: var(--lc-surface-2); color: var(--lc-text); padding: 0 9px; font: inherit;
+}
+.lc-setup input[aria-invalid='true'] { border-color: var(--lc-error); }
+.lc-note { font-size: 12px; color: var(--lc-muted); margin: 2px 0 0; }
+
+/* ── карточка упражнения ── */
+.lc-bench { background: var(--lc-surface); border: 1px solid var(--lc-line); border-radius: 24px; box-shadow: var(--lc-shadow); overflow: hidden; }
+.lc-shead { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 26px; border-bottom: 1px solid var(--lc-line); }
+.lc-round { display: flex; align-items: center; gap: 14px; color: var(--lc-muted); font-size: 13px; min-width: 0; flex: 1; }
+.lc-round strong { color: var(--lc-text); font-size: 15px; }
+.lc-progress { width: 120px; max-width: 120px; height: 5px; background: var(--lc-line); border-radius: 20px; overflow: hidden; display: block; }
+.lc-progress > span { display: block; height: 100%; background: var(--lc-accent); border-radius: 20px; transition: width 0.2s; }
+.lc-score { display: flex; gap: 8px; align-items: center; color: var(--lc-ok); font-weight: 650; font-size: 13px; }
+.lc-score .lc-i { width: 17px; }
+.lc-exercise { padding: 24px 26px 20px; }
+.lc-instruction { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.lc-instruction h2 { font-size: 17px; font-weight: 650; letter-spacing: -0.25px; }
+.lc-step { color: var(--lc-muted); font-size: 12px; white-space: nowrap; }
+
+/* ── плеер ── */
+.lc-player { background: var(--lc-surface-2); border: 1px solid var(--lc-line); padding: 18px 20px 12px; border-radius: 17px; margin-bottom: 22px; }
+.lc-player__main { display: flex; gap: 18px; align-items: center; }
+.lc-play {
+  display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--lc-violet-600);
+  border: none; color: #fff !important; border-radius: 12px; min-width: 114px; min-height: 52px; font-weight: 650; font-size: 14px;
+}
+.lc-play .lc-i { width: 19px; }
+.lc-play:hover { background: var(--lc-violet-700); }
+.lc-play:disabled { opacity: 0.5; cursor: not-allowed; }
+.lc-track { flex: 1; min-width: 0; }
+.lc-track__top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--lc-muted); margin-bottom: 1px; font-variant-numeric: tabular-nums; }
+.lc-wave { display: flex; height: 15px; gap: 3px; align-items: center; }
+.lc-wave i { width: 3px; height: 6px; background: var(--lc-accent); border-radius: 4px; }
+.lc-wave i:nth-child(2n) { height: 11px; }
+.lc-wave i:nth-child(3n) { height: 15px; }
+.is-playing .lc-wave i { animation: lc-wave 0.8s ease-in-out infinite alternate; }
+.is-playing .lc-wave i:nth-child(2n) { animation-delay: 0.3s; }
+.is-playing .lc-wave i:nth-child(3n) { animation-delay: 0.5s; }
+.lc-timeline { width: 100%; margin: 0; height: 36px; }
+.lc-player__bottom { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.lc-quiet {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: transparent;
+  border: 0; border-radius: 9px; min-height: 44px; padding: 0 10px; font-size: 12px; font-weight: 600; color: var(--lc-muted) !important;
+}
+.lc-quiet:hover { background: var(--lc-soft); color: var(--lc-accent) !important; }
+.lc-quiet:disabled { opacity: 0.45; cursor: not-allowed; }
+.lc-quiet .lc-i { width: 16px; height: 16px; }
+.lc-seekstep { min-width: 44px; padding: 0 7px; font-variant-numeric: tabular-nums; }
+.lc-divider { width: 1px; height: 18px; background: var(--lc-line); margin: 0 4px; }
+.lc-speed { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--lc-muted); }
+.lc-speed select { border: 0; background: transparent; padding: 0 8px; }
+.lc-volume { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.lc-volume input { width: 78px; height: 44px; margin: 0; }
+.lc-status { font-size: 11px; color: var(--lc-muted); margin: 4px 0 0; min-height: 17px; }
+.lc-error {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--lc-error-bg);
+  padding: 10px 14px; border-radius: 10px; color: var(--lc-error); font-size: 13px; margin: -8px 0 15px;
+}
+.lc-error button { min-height: 44px; flex-shrink: 0; }
+
+/* ── картинки ── */
+.lc-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.lc-opt-wrap { position: relative; min-width: 0; }
+.lc-opt {
+  width: 100%; position: relative; display: block; padding: 0; border: 3px solid transparent; background: var(--lc-surface-2);
+  border-radius: 15px; overflow: hidden; aspect-ratio: 4 / 3; transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+.lc-opt img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s; opacity: 0; }
+.lc-opt.is-loaded img { opacity: 1; }
+.lc-opt:not(.is-loaded):not(.is-failed)::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(100deg, var(--lc-surface-2) 20%, var(--lc-line) 45%, var(--lc-surface-2) 70%);
+  background-size: 200% 100%; animation: lc-shimmer 1.4s infinite;
+}
+.lc-opt:hover img { transform: scale(1.025); }
+.lc-opt.is-correct { border-color: var(--lc-ok); box-shadow: 0 0 0 2px var(--lc-ok-bg); }
+.lc-opt.is-wrong { border-color: var(--lc-error); box-shadow: 0 0 0 2px var(--lc-error-bg); }
+.lc-opt.is-revealed { border-color: var(--lc-ok); }
+.lc-badge {
+  position: absolute; left: 9px; bottom: 9px; background: #ffffffed; border: 1px solid #ffffff6e; backdrop-filter: blur(8px);
+  color: #36283f; border-radius: 8px; min-width: 27px; height: 27px; display: grid; place-items: center; font-size: 12px; font-weight: 750;
+}
+.lc-mark {
+  position: absolute; right: 9px; top: 9px; display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%;
+  background: var(--lc-ok); color: var(--lc-surface); font-weight: 750; font-size: 15px;
+}
+.lc-opt.is-wrong .lc-mark { background: var(--lc-error); }
+.lc-zoom {
+  position: absolute; right: 10px; bottom: 10px; width: 44px; height: 44px; min-height: 44px; border: 0; border-radius: 10px;
+  background: #fffdf0; color: #36283f !important; display: grid; place-items: center; opacity: 0; transition: opacity 0.15s;
+}
+.lc-zoom:disabled { opacity: 0.4; cursor: not-allowed; }
+.lc-opt-wrap:hover .lc-zoom, .lc-zoom:focus-visible { opacity: 1; }
+.lc-imgretry {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px;
+  font-size: 12px; background: var(--lc-surface-2); border-radius: 14px;
+}
+.lc-imgretry button { background: var(--lc-surface); border: 1px solid var(--lc-line); border-radius: 9px; min-height: 44px; padding: 0 15px; }
+.lc-under { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 4px; min-height: 24px; color: var(--lc-muted); font-size: 12px; }
+.lc-gate { display: flex; align-items: center; gap: 7px; }
+.lc-gate .lc-i { width: 14px; height: 14px; }
+.lc-keys { font-size: 11px; color: var(--lc-muted); }
+.lc-keys kbd { display: inline-block; font: inherit; background: var(--lc-surface-2); border: 1px solid var(--lc-line); border-radius: 4px; padding: 0 4px; margin: 0 1px; }
+
+/* ── разбор ── */
+.lc-feedback { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--lc-line); padding: 18px 26px; background: var(--lc-surface); }
+.lc-feedback[data-state='correct'] { background: var(--lc-ok-bg); }
+.lc-feedback[data-state='retry'], .lc-feedback[data-state='failed'] { background: var(--lc-error-bg); }
+.lc-feedback__copy { min-width: 0; }
+.lc-feedback__copy strong { font-size: 14px; display: block; }
+.lc-feedback__copy p { margin: 3px 0 0; font-size: 12px; color: var(--lc-muted); }
+.lc-feedback__actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.lc-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px; background: var(--lc-violet-600); border: 0;
+  color: #fff !important; font-size: 13px; font-weight: 650; min-height: 46px; padding: 0 20px; border-radius: 10px;
+}
+.lc-primary:hover { background: var(--lc-violet-700); }
+.lc-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.lc-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--lc-surface);
+  border: 1px solid var(--lc-line); font-size: 13px; font-weight: 600; min-height: 46px; padding: 0 16px; border-radius: 10px;
+}
+.lc-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+.lc-transcript { padding: 22px 26px; border-top: 1px solid var(--lc-line); }
+.lc-transcript p { max-width: 78ch; margin: 0 0 12px; line-height: 1.7; font-size: 15px; color: var(--lc-text); }
+.lc-transcript p.lc-transcript__key { font-size: 13px; color: var(--lc-accent); margin: 0; }
+
+/* ── итог ── */
+.lc-result { padding: 40px 30px; text-align: center; }
+.lc-result__circle {
+  width: 102px; height: 102px; border: 6px solid var(--lc-soft); border-radius: 50%; display: grid; place-items: center;
+  margin: 0 auto 22px; font-size: 27px; color: var(--lc-accent); font-weight: 750;
+}
+.lc-result h2 { font-size: 26px; margin-bottom: 12px; }
+.lc-result p { color: var(--lc-muted); }
+.lc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 580px; margin: 28px auto; }
+.lc-stats div { background: var(--lc-surface-2); padding: 18px 10px; border-radius: 12px; }
+.lc-stats strong { font-size: 25px; display: block; }
+.lc-stats span { font-size: 12px; color: var(--lc-muted); }
+.lc-result__actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.lc-review { padding: 0; text-align: left; list-style: none; max-width: 680px; margin: 24px auto; }
+.lc-review li { padding: 12px 0; border-bottom: 1px solid var(--lc-line); font-size: 13px; }
+.lc-review li b { color: var(--lc-accent); }
+
+/* ── низ страницы и служебное ── */
+.lc-bottom { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-top: 19px; color: var(--lc-muted); font-size: 12px; }
+.lc-bottom .lc-quiet { padding-right: 0; }
+.lc-storage { color: var(--lc-error); font-size: 12px; margin-top: 12px; }
+.lc-notice { padding: 18px 20px; border-radius: 14px; background: var(--lc-surface-2); color: var(--lc-muted); font-size: 14px; }
+.lc-notice--err { background: var(--lc-error-bg); color: var(--lc-error); }
+
+/* ── окна ── */
+.lc-dialog {
+  background: var(--lc-surface); color: var(--lc-text); border: 1px solid var(--lc-line); border-radius: 20px; padding: 24px;
+  max-width: min(94vw, 850px); max-height: 92dvh; overflow-y: auto; touch-action: pan-y pinch-zoom;
+}
+.lc-dialog::backdrop { background: #171021af; backdrop-filter: blur(4px); }
+.lc-dialog h2 { font-size: 17px; font-weight: 650; margin-bottom: 12px; }
+.lc-dialog p { font-size: 14px; color: var(--lc-muted); margin-bottom: 10px; }
+.lc-dialog__actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.lc-dialog--zoom { padding: 12px; }
+.lc-dialog--zoom img { max-width: 100%; max-height: 72dvh; object-fit: contain; border-radius: 10px; display: block; }
+.lc-dialog--zoom .lc-dialog__actions { margin-top: 9px; }
+.lc-dialog__label { font-size: 13px; margin: 0 auto 0 6px; align-self: center; }
+
+@keyframes lc-wave { to { transform: scaleY(0.45); opacity: 0.65; } }
+@keyframes lc-shimmer { to { background-position: -200% 0; } }
+
+/* ── ширины ── */
+@media (max-width: 900px) {
+  .lc { padding-left: 24px; padding-right: 24px; }
+  .lc-head { align-items: flex-start; }
+  .lc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .lc-zoom { opacity: 1; width: 36px; height: 36px; min-height: 44px; min-width: 44px; background: #ffffffd9; }
+  .lc-keys { display: none; }
+  .lc-badge { left: 10px; bottom: 10px; }
+  .lc-feedback { flex-wrap: wrap; }
+  .lc-feedback__actions { margin-left: auto; }
+}
+@media (max-width: 650px) {
+  .lc-setup { padding: 12px; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .lc-setup__left { gap: 9px; flex: 1; align-items: flex-start; flex-direction: column; }
+  .lc-setup__right { align-self: center; }
+  .lc-setup label { font-size: 12px; gap: 7px; }
+  .lc-note { font-size: 10px; }
+  .lc-setup .lc-primary { padding: 0 12px; font-size: 12px; }
+  .lc-progress { width: 70px; max-width: 70px; }
+  .lc-player__bottom { row-gap: 1px; }
+  .lc-player__bottom .lc-volume { margin-left: auto; }
+  .lc-score { white-space: nowrap; }
+}
+@media (max-width: 580px) {
+  .lc { padding-left: 16px; padding-right: 16px; }
+  .lc-head { display: block; padding-bottom: 20px; }
+  .lc-head h1 { font-size: 34px; letter-spacing: -1.2px; }
+  .lc-eyebrow { font-size: 10px; }
+  .lc-sub { font-size: 13px; }
+  .lc-difficulty { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; gap: 12px; text-align: left; }
+  .lc-seg button { min-width: 70px; padding: 0 13px; }
+  .lc-levelhint { font-size: 11px; max-width: 115px; line-height: 1.35; margin: 0; }
+  .lc-bench { border-radius: 18px; }
+  .lc-shead { padding: 15px; }
+  .lc-round { gap: 10px; }
+  .lc-score { font-size: 11px; gap: 5px; }
+  .lc-exercise { padding: 17px 12px 12px; }
+  .lc-instruction { align-items: flex-start; margin: 0 2px 14px; }
+  .lc-instruction h2 { font-size: 15px; max-width: 245px; line-height: 1.5; }
+  .lc-step { font-size: 10px; padding-top: 3px; }
+  .lc-player { padding: 13px 11px 8px; border-radius: 13px; margin-bottom: 16px; }
+  .lc-player__main { gap: 12px; }
+  .lc-play { min-width: 52px; min-height: 52px; width: 52px; }
+  .lc-play span { display: none; }
+  .lc-player__bottom { gap: 1px; margin-top: 4px; }
+  .lc-quiet { padding: 0 8px; font-size: 11px; }
+  .lc-quiet .lc-i { width: 14px; }
+  .lc-divider { margin: 0 4px; }
+  .lc-speed > span { display: none; }
+  .lc-speed select { font-size: 12px; padding: 0 4px; }
+  .lc-volume { gap: 0; }
+  .lc-volume .lc-quiet { padding: 0 5px; min-width: 34px; }
+  .lc-volume input { width: 48px; }
+  .lc-status { font-size: 10px; margin: 1px 3px 0; }
+  .lc-grid { gap: 9px; }
+  .lc-opt { border-width: 2px; border-radius: 12px; }
+  .lc-badge { left: 6px; bottom: 6px; min-width: 24px; height: 24px; font-size: 11px; }
+  .lc-zoom { bottom: 0; right: 0; background: transparent; color: #fff !important; filter: drop-shadow(0 1px 3px #0008); }
+  .lc-mark { width: 24px; height: 24px; top: 6px; right: 6px; }
+  .lc-under { font-size: 11px; margin: 12px 2px 0; align-items: flex-start; }
+  .lc-feedback { padding: 16px; gap: 12px; display: block; }
+  .lc-feedback__actions { margin-top: 13px; justify-content: flex-end; flex-wrap: wrap; }
+  .lc-feedback__copy strong { font-size: 13px; }
+  .lc-feedback__copy p { font-size: 11px; }
+  .lc-feedback__actions .lc-quiet { padding: 0 9px; }
+  .lc-feedback__actions .lc-primary { flex: 1; max-width: 160px; }
+  .lc-transcript { padding: 18px 16px; }
+  .lc-transcript p { font-size: 14px; }
+  .lc-bottom { font-size: 11px; gap: 10px; padding-top: 10px; }
+  .lc-result { padding: 30px 15px; }
+  .lc-stats { gap: 8px; }
+  .lc-stats span { font-size: 10px; }
+  .lc-result__actions { flex-direction: column; }
+  .lc-error { font-size: 11px; }
+}
+@media (max-width: 380px) {
+  .lc-progress { width: 40px; max-width: 40px; }
+  .lc-score { font-size: 10px; }
+  .lc-player__bottom .lc-volume { width: auto; }
+  .lc-volume input { width: 47px; }
+  .lc-setup__right { width: 100%; }
+  .lc-setup .lc-primary { width: 100%; }
+}
+@media (max-width: 350px) {
+  .lc { padding-left: 10px; padding-right: 10px; }
+  .lc-seg button { min-width: 60px; padding: 0 9px; }
+  .lc-levelhint { max-width: 92px; }
+  .lc-grid { gap: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc *, .lc *::before, .lc *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Карточка раздела на хабе Практики. Каркас — .pp-listen (styles.css), здесь
+   только перекраска: фиолетовый JTS уходит в голубой, как марка прототипа. */
+.pp-lc .pp-listen__card {
+  background: linear-gradient(115deg, #5718c0 0%, #874bf8 50%, #0aafff 100%);
+}
