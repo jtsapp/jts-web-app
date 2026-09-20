@@ -227,7 +227,7 @@ export class ListenChooseSession {
 - [x] **Step 2: `CLAUDE.md`** — абзац раздела после «Неправильных глаголов».
 - [x] **Step 3: полная проверка:** `npx vitest run` (свои файлы), `npx playwright test tests/listenchoose.spec.js tests/practice-*.spec.js` (обёртка `channel: 'chrome'`, `E2E_PORT=3290`), `npm run build`, `npm run lint`, сторожа CSS вручную, ручной прогон на 1280 и 390 px со сверкой со снимками прототипа.
 - [x] **Step 4: финальное ревью ветки** субагентом (`caveman:cavecrew-reviewer` или `superpowers:requesting-code-review`); замечания разбирать по существу.
-- [ ] **Step 5: память** — обновить `listenchoose-practice-port.md` (что готово, ловушки), отчёт владельцу; коммит и PR — только по его просьбе.
+- [x] **Step 5: память** — обновить `listenchoose-practice-port.md` (что готово, ловушки), отчёт владельцу; коммит и PR — только по его просьбе.
 
 ## Self-Review
 
