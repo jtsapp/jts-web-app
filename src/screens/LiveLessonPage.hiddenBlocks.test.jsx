@@ -118,6 +118,13 @@ describe('LiveLessonPage — скрытие вживую', () => {
       expect(el).toBeTruthy()
       return el
     })
+    // setHiddenKeys шлёт немедленно только уже загруженной рамке (задача 8,
+    // ревью «до onLoad сообщение молча теряется») — сценарий этого теста именно
+    // такой: рамка уже открыта и осела, когда прилетает sections-changed.
+    // Настоящий 350мс таймер settle-осадки (см. SectionMaterialFrame.handleLoad) —
+    // без фейковых таймеров, чтобы не задевать остальные таймеры этого дерева.
+    iframe.dispatchEvent(new Event('load'))
+    await new Promise((r) => setTimeout(r, 360))
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
 
     // Преподаватель спрятал задание и карточку — тот же материал, новый список.

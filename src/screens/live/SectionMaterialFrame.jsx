@@ -33,10 +33,26 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   const iframeRef = useRef(null)
   const loadedRef = useRef(false)
   const pendingRef = useRef([])
+  // Последний setHiddenKeys(keys), пришедший до загрузки — не очередь, а
+  // «снимок» (подробности у самого метода ниже). null отдельно от 'нет
+  // ключей': setHiddenKeys всегда зовут с массивом (LiveLessonPage передаёт
+  // hiddenStepIds || []), а null здесь однозначно читается как «нечего
+  // накатывать при следующей загрузке».
+  const pendingHiddenKeysRef = useRef(null)
 
   useEffect(() => {
     loadedRef.current = false
     pendingRef.current = []
+    // pendingHiddenKeysRef сюда намеренно НЕ входит. pendingRef — очередь
+    // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
+    // рамка уже не досмотрит до конца), а тут — последнее известное состояние
+    // «что сейчас скрыто», не привязанное к конкретному циклу загрузки. Если
+    // material/reloadToken сменились раньше, чем успел сработать onLoad
+    // предыдущей рамки, значение всё ещё правда и должно докатиться в
+    // СЛЕДУЮЩУЮ — родитель не обязан звать setHiddenKeys повторно только
+    // потому что рамка перезагрузилась (эффект в LiveLessonPage.jsx висит на
+    // hiddenStepIds, а не на reloadToken). Стереть его здесь — вернуть тот же
+    // баг, который чинит этот ref, просто с другим триггером потери.
   }, [material?.id, reloadToken])
 
   useImperativeHandle(ref, () => ({
@@ -72,8 +88,23 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // keys — список как есть (голые id заданий и ключи `block@s:b` вперемешку,
     // формат см. visibleSteps.js) — здесь его не фильтруют и не переупаковывают,
     // это уже сделано на сервере.
+    //
+    // Как и replay, не постим напрямую, пока рамка не загрузилась: слушателя
+    // на той стороне ещё нет, и postMessage молча теряется без единой ошибки —
+    // тот же класс бага, что уже был у replay. Но, в отличие от replay, копить
+    // очередь не нужно: скрытие — не поток дискретных событий, а всегда ПОЛНОЕ
+    // желаемое состояние целиком («что скрыто прямо сейчас»), и повторная
+    // отправка того же набора уже загруженной рамке идемпотентна на бэкенде
+    // (MaterialBridgeScriptInjector сверяет текущий список и просто добавляет/
+    // снимает класс по разнице — независимо проверено). Значит последний
+    // вызов до загрузки полностью перекрывает все промежуточные, и вместо
+    // массива достаточно хранить один снимок — pendingHiddenKeysRef.
     setHiddenKeys(keys) {
-      post({ type: 'hidden-blocks', keys })
+      if (loadedRef.current) {
+        post({ type: 'hidden-blocks', keys })
+      } else {
+        pendingHiddenKeysRef.current = keys
+      }
     },
   }), [])
 
@@ -89,6 +120,14 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       if (pendingRef.current.length) {
         post({ type: 'present', events: pendingRef.current })
         pendingRef.current = []
+      }
+      // Снимок скрытия, накопленный, пока рамка ещё грузилась — см. комментарий
+      // у setHiddenKeys/pendingHiddenKeysRef. null значит «вызовов не было»,
+      // и тогда слать нечего (совпадает с сегодняшним поведением первой
+      // загрузки без единого setHiddenKeys).
+      if (pendingHiddenKeysRef.current !== null) {
+        post({ type: 'hidden-blocks', keys: pendingHiddenKeysRef.current })
+        pendingHiddenKeysRef.current = null
       }
     }, 350)
   }
