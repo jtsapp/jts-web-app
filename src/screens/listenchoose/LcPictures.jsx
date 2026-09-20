@@ -1,0 +1,120 @@
+'use client'
+
+// Четыре фото задания. Порядок показа — round.order (номер на бейдже — позиция
+// в нём), а не порядок подписей сцены: иначе верное фото всегда лежало бы на
+// одном и том же месте.
+//
+// Выбирать нельзя, пока не дослушано и пока не загрузились ВСЕ четыре картинки
+// (об этом сообщает onReady): иначе студент отвечал бы по видимой части. Кнопка
+// закрытой картинки — aria-disabled, а не disabled: клик по ней всё равно нужен,
+// чтобы вернуть фокус на Play.
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { IMAGE_SIZES, imagePath, imageSrcSet } from '../../practice/listenchoose/data.js'
+import { LcIcon } from './LcIcons.jsx'
+
+function Photo({ scene, index, alt, retry, onStatus }) {
+  const ref = useRef(null)
+  // Картинка из кэша браузера могла загрузиться раньше, чем React повесил
+  // onLoad, — проверяем готовность сами.
+  useEffect(() => {
+    const el = ref.current
+    if (el && el.complete && el.naturalWidth > 0) onStatus(index, 'loaded')
+  }, [onStatus, index, retry])
+  // Повтор дописывает метку в адрес: иначе браузер отдал бы из кэша тот же
+  // битый ответ.
+  const suffix = retry ? `?retry=${retry}` : ''
+  return (
+    <img
+      key={retry}
+      ref={ref}
+      alt={alt}
+      lang="en"
+      width={512}
+      height={384}
+      decoding="async"
+      loading="eager"
+      sizes={IMAGE_SIZES}
+      srcSet={imageSrcSet(scene, index, suffix)}
+      src={`${imagePath(scene, index, 512)}${suffix}`}
+      onLoad={() => onStatus(index, 'loaded')}
+      onError={() => onStatus(index, 'failed')}
+    />
+  )
+}
+
+export default function LcPictures({ question, options, round, heard, imagesReady, t, onPick, onZoom, onReady }) {
+  // { <индекс фото>: 'loaded' | 'failed' }; пусто = ещё грузится.
+  const [status, setStatus] = useState({})
+  const [retries, setRetries] = useState({})
+  // Один стабильный обработчик на все четыре фото: иначе эффект «уже из кэша»
+  // перезапускался бы на каждом рендере.
+  const report = useCallback((oi, s) => setStatus((prev) => (prev[oi] === s ? prev : { ...prev, [oi]: s })), [])
+
+  const allLoaded = [0, 1, 2, 3].every((i) => status[i] === 'loaded')
+  useEffect(() => {
+    onReady(allLoaded)
+  }, [allLoaded, onReady])
+
+  return (
+    <div className="lc-grid" role="group" aria-label="Picture choices">
+      {round.order.map((oi, di) => {
+        const st = status[oi]
+        const isWrong = round.wrong.includes(oi)
+        const isAnswer = oi === question.answer
+        const showMark = isWrong || (round.resolved && isAnswer)
+        const closed = round.resolved || !heard || !imagesReady || isWrong
+        const cls = [
+          'lc-opt',
+          st === 'loaded' && 'is-loaded',
+          st === 'failed' && 'is-failed',
+          round.resolved && round.correct && isAnswer && 'is-correct',
+          round.resolved && !round.correct && isAnswer && 'is-revealed',
+          isWrong && 'is-wrong',
+        ]
+          .filter(Boolean)
+          .join(' ')
+        const label = `${t('listenchoose.picture')} ${di + 1}: ${options[oi]}${isWrong ? ' — incorrect' : round.resolved && isAnswer ? ' — correct' : ''}`
+        return (
+          <div className="lc-opt-wrap" key={oi}>
+            <button
+              type="button"
+              className={cls}
+              data-option={oi}
+              aria-label={label}
+              aria-disabled={closed}
+              aria-busy={st === undefined}
+              aria-keyshortcuts={String(di + 1)}
+              onClick={() => onPick(oi)}
+            >
+              <Photo scene={question.scene} index={oi} alt={options[oi]} retry={retries[oi] || 0} onStatus={report} />
+              <span className="lc-badge" aria-hidden="true">
+                {di + 1}
+              </span>
+              <span className="lc-mark" hidden={!showMark} aria-hidden="true">
+                {isWrong ? '×' : '✓'}
+              </span>
+            </button>
+            <button type="button" className="lc-zoom" aria-label={`${t('listenchoose.zoom')} ${di + 1}`} onClick={() => onZoom(di)}>
+              <LcIcon name="zoom" />
+            </button>
+            {st === 'failed' && (
+              <div className="lc-imgretry">
+                <span>{t('listenchoose.imageError')}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatus((prev) => ({ ...prev, [oi]: undefined }))
+                    setRetries((prev) => ({ ...prev, [oi]: Date.now() }))
+                  }}
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
