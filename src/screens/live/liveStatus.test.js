@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { statusKey, canControl, canJoinLive, contentLocked, contentLockNoteKey } from './liveStatus.js'
+import { statusKey, canControl, contentLocked } from './liveStatus.js'
 
 describe('liveStatus', () => {
   it('maps backend statuses to i18n keys', () => {
@@ -10,30 +10,12 @@ describe('liveStatus', () => {
     expect(statusKey('SCHEDULED')).toBe('scheduled')
     expect(statusKey('WHATEVER')).toBe('scheduled')
   })
-  // Ученик на перерыве получал закрытые кнопки и ни слова о том, почему они
-  // закрыты: баннер перерыва висит наверху страницы, а он смотрит в задание.
-  it('ответы закрыты на перерыве, после урока и у преподавателя', () => {
-    expect(contentLocked('PAUSED', false)).toBe(true)
-    expect(contentLocked('COMPLETED', false)).toBe(true)
-    expect(contentLocked('IN_PROGRESS', true)).toBe(true)
-    expect(contentLocked('IN_PROGRESS', false)).toBe(false)
-    expect(contentLocked('SCHEDULED', false)).toBe(false)
-  })
-
-  it('причина блокировки есть у ученика и молчит у преподавателя', () => {
-    expect(contentLockNoteKey('PAUSED', false)).toBe('lesson.ws.lockedPaused')
-    expect(contentLockNoteKey('COMPLETED', false)).toBe('lesson.ws.lockedFinished')
-    expect(contentLockNoteKey('IN_PROGRESS', false)).toBe('')
-    expect(contentLockNoteKey('PAUSED', true)).toBe('')
-  })
-
-  // Строка объясняет блокировку — значит, есть ровно тогда, когда та есть.
-  it('строка появляется только там, где ответы закрыты', () => {
-    for (const status of ['SCHEDULED', 'IN_PROGRESS', 'PAUSED', 'COMPLETED', 'CANCELLED']) {
-      if (contentLockNoteKey(status, false)) {
-        expect(contentLocked(status, false)).toBe(true)
-      }
-    }
+  // Ответы закрыты ровно у одного — у преподавателя: он читает работу ученика.
+  // Ученику урок не запирается ни в одном состоянии (spec-lesson-always-open).
+  it('закрыто только преподавательское полотно', () => {
+    expect(contentLocked(true)).toBe(true)
+    expect(contentLocked(false)).toBe(false)
+    expect(contentLocked(undefined)).toBe(false)
   })
 
   it('canControl only for staff roles', () => {
@@ -42,10 +24,5 @@ describe('liveStatus', () => {
     expect(canControl('MANAGER')).toBe(true)
     expect(canControl('STUDENT')).toBe(false)
     expect(canControl(null)).toBe(false)
-  })
-  it('canJoinLive only when live/paused', () => {
-    expect(canJoinLive('IN_PROGRESS')).toBe(true)
-    expect(canJoinLive('PAUSED')).toBe(true)
-    expect(canJoinLive('SCHEDULED')).toBe(false)
   })
 })

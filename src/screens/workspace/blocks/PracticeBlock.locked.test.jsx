@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 //
-// Закрытая карточка задания объясняет, почему она закрыта.
+// Закрытая карточка задания выглядит закрытой.
 //
 // Регрессия с видео от ученика: урок на перерыве, ученик пятнадцать секунд жмёт
-// True/False, и ничего не происходит. Кнопки действительно были disabled
-// (contentReadOnly в LiveLessonPage), но на экране об этом не говорило ничего:
-// «Проверить» просто исчезала, а единственное объяснение — баннер перерыва —
-// висит наверху страницы, за пределами экрана телефона.
+// True/False, и ничего не происходит — кнопки disabled, а на экране об этом не
+// говорит ничего. Ученику урок с 20.09.2026 не запирается вовсе
+// (spec-lesson-always-open), и readOnly остался только у преподавателя, который
+// читает чужую работу, — но выключенный вид ему нужен ровно так же.
 import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import { I18nProvider } from '../../../i18n.jsx'
@@ -22,8 +22,6 @@ const БЛОК = {
   ],
 }
 
-const ПРИЧИНА = 'Перерыв — ответы пока не принимаются'
-
 function renderBlock(props = {}) {
   return render(
     <I18nProvider>
@@ -32,43 +30,29 @@ function renderBlock(props = {}) {
   )
 }
 
-describe('PracticeBlock — почему карточка не принимает ответы', () => {
-  it('на живом уроке есть «Проверить» и нет строки о блокировке', () => {
+describe('PracticeBlock — открытая и закрытая карточка', () => {
+  it('открытая карточка даёт «Проверить»', () => {
     const { container } = renderBlock()
     expect(container.querySelector('.lw-practice__check')).not.toBeNull()
-    expect(container.querySelector('.lw-practice__locked')).toBeNull()
   })
 
-  it('на закрытом уроке вместо «Проверить» написана причина', () => {
-    const { container } = renderBlock({ readOnly: true, lockNote: ПРИЧИНА })
-    expect(container.querySelector('.lw-practice__check')).toBeNull()
-    expect(container.querySelector('.lw-practice__locked')?.textContent).toBe(ПРИЧИНА)
-  })
-
-  // Причина стоит ДО списка вопросов: в задании на восемь пунктов строка под
-  // ними оказалась бы там же, где и баннер урока, — за краем экрана.
-  it('причина написана выше вопросов, а не под ними', () => {
-    const { container } = renderBlock({ readOnly: true, lockNote: ПРИЧИНА })
-    const note = container.querySelector('.lw-practice__locked')
-    const list = container.querySelector('.lw-practice__list')
-    expect(note.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
-  // Преподавателю причину не пишут (у него урок закрыт всё занятие), и карточка
-  // не должна показывать пустую полосу вместо текста.
-  it('без причины строки нет вовсе', () => {
+  // У преподавателя «Проверить» пропадает: карточка чужая, проверять её он
+  // будет глазами, а не кнопкой за ученика.
+  it('закрытая карточка «Проверить» не показывает', () => {
     const { container } = renderBlock({ readOnly: true })
-    expect(container.querySelector('.lw-practice__locked')).toBeNull()
+    expect(container.querySelector('.lw-practice__check')).toBeNull()
   })
 
-  // Карточке без вопросов закрывать нечего — строка там была бы шумом.
-  it('в карточке без заданий строки нет', () => {
-    const { container } = renderBlock({
-      block: { type: 'practice', title: 'Просто текст', html: '<p>Read this.</p>' },
-      readOnly: true,
-      lockNote: ПРИЧИНА,
-    })
-    expect(container.querySelector('.lw-practice__locked')).toBeNull()
+  // Варианты ответа должны ВЫГЛЯДЕТЬ закрытыми, а не просто не нажиматься:
+  // на телефоне курсора нет, и немая пилюля неотличима от живой.
+  it('закрытые варианты помечены классом, а не только disabled', () => {
+    const { container } = renderBlock({ readOnly: true })
+    const opts = container.querySelectorAll('.lw-opt')
+    expect(opts.length).toBeGreaterThan(0)
+    for (const opt of opts) {
+      expect(opt.disabled).toBe(true)
+      expect(opt.classList.contains('is-locked')).toBe(true)
+    }
   })
 })
 

@@ -1,6 +1,6 @@
 import { useI18n } from '../../i18n.jsx'
 import { ChevronRightIcon } from '../../components/icons.jsx'
-import { canJoin, dayLabelKey, lessonTimeRange, parseLessonDate } from './lessonFormat.js'
+import { isLessonLive, canOpenLesson, dayLabelKey, lessonTimeRange, parseLessonDate } from './lessonFormat.js'
 import MeetLink from './MeetLink.jsx'
 
 // Инициалы вместо фото: фотографии преподавателя бэкенд в расписании не отдаёт,
@@ -34,7 +34,11 @@ export default function NextLessonCard({ occ, topic, card, onOpenLesson }) {
     )
   }
 
-  const live = canJoin(occ.lessonStatus)
+  // Чип состояния и кнопка отвечают на разные вопросы: «урок уже идёт» и
+  // «войти можно». До 20.09.2026 это было одно и то же, и кнопка на карточке
+  // стояла выключенной, пока преподаватель не нажмёт «Начать».
+  const live = isLessonLive(occ.lessonStatus)
+  const openable = canOpenLesson(occ.lessonStatus)
   const date = parseLessonDate(occ.scheduledAt)
   const labelKey = dayLabelKey(date)
   const dayLabel = labelKey
@@ -74,12 +78,12 @@ export default function NextLessonCard({ occ, topic, card, onOpenLesson }) {
           </div>
         </div>
 
-        {/* Кнопка остаётся на месте и до начала урока — так видно, что вход
-            именно здесь; неактивна, пока преподаватель не открыл класс. */}
+        {/* Вход открыт и до начала урока: ученик заходит и делает задания, не
+            дожидаясь, пока преподаватель откроет класс. */}
         <button
           type="button"
           className="lesson-card__join"
-          disabled={!live}
+          disabled={!openable}
           onClick={() => onOpenLesson(occ.lessonId)}
         >
           {t('schedule.joinLesson')}
