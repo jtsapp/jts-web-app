@@ -2,8 +2,11 @@
 // Регрессии «кнопка есть, а нажатие ничего не делает» в Shadowing:
 //  1. строка «моя запись» показывалась по СЕРВЕРНОЙ отметке о прохождении,
 //     хотя blob лежит только в IndexedDB устройства;
-//  2. «★ Оценить» у соседних фраз оставалась живой, пока идёт чужой разбор;
-//  3. упавший rec.start() запирал микрофоны всего экрана до ухода с экрана.
+//  2. «★ Оценить» у соседних фраз оставалась живой, пока идёт чужой разбор.
+//
+// Третья правка той же ветки — снятие recTargetRef в catch у startRec —
+// закрыта ниже отдельным блоком: он подменяет MediaRecorder падающим на
+// start().
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
@@ -93,8 +96,9 @@ describe('Shadowing — строка «моя запись»', () => {
   })
 
   it('показывается, когда у фразы есть локальный балл — запись лежит в IndexedDB', async () => {
+    // Без doneIds: с ним тест проходил и на старом коде — строку показывал
+    // старый `|| isDone`, и утверждение ничего не различало.
     const segId = segmentId(LID, 0)
-    doneIds.add(segId)
     lessonScores = new Map([[segId, 72]])
     renderPage()
     await showAllPhrases()
@@ -130,5 +134,46 @@ describe('Shadowing — «★ Оценить» во время чужого ра
     // Первая ушла в спиннер (её строка сменилась на PhraseScore), вторая —
     // честно закрыта, а не «живая и молчит».
     await waitFor(() => expect(assessBtn(1).disabled).toBe(true))
+  })
+})
+
+describe('Shadowing — упавший rec.start() не запирает микрофоны', () => {
+  // recTargetRef чистился ТОЛЬКО в rec.onstop, а упавший старт до onstop не
+  // доходит. Оставленная цель уводила каждый следующий тап в
+  // `if (recTargetRef.current) { stopRec(); return }`, stopRec видел
+  // inactive-рекордер и не делал ничего — и так до ухода с экрана.
+  const micButtons = () =>
+    [...document.querySelectorAll('.sh-seg__act')].filter(
+      (b) => b.getAttribute('aria-label') === 'Записать фразу',
+    )
+
+  it('второй тап снова доходит до записи, а не уходит в молчание', async () => {
+    const getUserMedia = vi.fn(() => Promise.resolve({ active: true, getTracks: () => [] }))
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia } })
+    // Поток дали, а старт записи упал — гарнитуру выдернули, mime не поддержан.
+    let built = 0
+    class FailingRecorder {
+      constructor() {
+        built += 1
+        this.state = 'inactive'
+      }
+      start() { throw new Error('start failed') }
+      stop() {}
+    }
+    FailingRecorder.isTypeSupported = () => true
+    vi.stubGlobal('MediaRecorder', FailingRecorder)
+
+    renderPage()
+    await showAllPhrases()
+    expect(micButtons().length).toBeGreaterThan(0)
+
+    fireEvent.click(micButtons()[0])
+    await waitFor(() => expect(built).toBe(1))
+
+    // Поток уже закэширован в streamRef, так что getUserMedia второй раз и не
+    // нужен — признак «дошли до записи» это НОВЫЙ рекордер. Залипшая цель
+    // оставляла счётчик на единице.
+    fireEvent.click(micButtons()[0])
+    await waitFor(() => expect(built).toBe(2))
   })
 })
