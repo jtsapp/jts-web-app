@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  parseLessonDate, canJoin, canOpen, lessonStateKey, dayKey,
+  parseLessonDate, isLessonLive, canOpenLesson, lessonStateKey, dayKey,
   buildMonthMatrix, occurrencesByDayKey, monthShift, dateFromKey,
   lessonTimeRange, lessonTopicFromSections,
 } from './lessonFormat.js'
@@ -15,19 +15,34 @@ describe('lessonFormat', () => {
     expect(d.getMinutes()).toBe(30)
   })
 
-  it('canJoin is true only for IN_PROGRESS and PAUSED', () => {
-    expect(canJoin('IN_PROGRESS')).toBe(true)
-    expect(canJoin('PAUSED')).toBe(true)
-    expect(canJoin('SCHEDULED')).toBe(false)
-    expect(canJoin('COMPLETED')).toBe(false)
-    expect(canJoin('CANCELLED')).toBe(false)
+  // «Идёт сейчас» — только запущенный преподавателем урок. Отдельно от доступа:
+  // войти можно и в тот, что начнётся через неделю, но идущим он не является.
+  it('isLessonLive is true only for IN_PROGRESS and PAUSED', () => {
+    expect(isLessonLive('IN_PROGRESS')).toBe(true)
+    expect(isLessonLive('PAUSED')).toBe(true)
+    expect(isLessonLive('SCHEDULED')).toBe(false)
+    expect(isLessonLive('COMPLETED')).toBe(false)
+    expect(isLessonLive('CANCELLED')).toBe(false)
   })
 
-  it('canOpen lets a student reopen a completed lesson in view-only', () => {
-    expect(canOpen('COMPLETED')).toBe(true)
-    expect(canOpen('IN_PROGRESS')).toBe(true)
-    expect(canOpen('SCHEDULED')).toBe(false)
-    expect(canOpen('CANCELLED')).toBe(false)
+  // Ученик заходит в урок в любом состоянии и делает задания: до «Начать», на
+  // перерыве и после «Завершить» (spec-lesson-always-open, 20.09.2026).
+  it('canOpenLesson открыт всегда, кроме отменённого занятия', () => {
+    expect(canOpenLesson('SCHEDULED')).toBe(true)
+    expect(canOpenLesson('IN_PROGRESS')).toBe(true)
+    expect(canOpenLesson('PAUSED')).toBe(true)
+    expect(canOpenLesson('COMPLETED')).toBe(true)
+    expect(canOpenLesson('CANCELLED')).toBe(false)
+  })
+
+  // Просроченный урок — тот же SCHEDULED: преподаватель забыл нажать «Начать»,
+  // а заданиям это мешать не должно. Именно этот случай чаще всего и оставлял
+  // ученика с пустым экраном.
+  it('просроченный SCHEDULED открыт и при этом не считается идущим', () => {
+    const occ = { scheduledAt: '2026-08-10T11:30:00', durationMinutes: 60, lessonStatus: 'SCHEDULED' }
+    expect(lessonStateKey(occ, new Date('2026-08-10T13:00:00'))).toBe('overdue')
+    expect(canOpenLesson(occ.lessonStatus)).toBe(true)
+    expect(isLessonLive(occ.lessonStatus)).toBe(false)
   })
 
   it('lessonStateKey marks a SCHEDULED lesson whose end has passed as overdue', () => {
