@@ -17,6 +17,9 @@ const BRIDGE_HOST = 'jts-bridge-host'
 // 'present-event' / 'snapshot' пока идёт «Внимание на упражнение» (проксируем
 // через onPresentEvent). Обратно в iframe шлём { source: 'jts-bridge-host',
 // type: 'present', events } — реплей потока учителя у догоняющего студента.
+// Тем же каналом уходит { type: 'hidden-blocks', keys } (setHiddenKeys) — сервер
+// прячет CSS'ом только то, что скрыто на момент рендера файла, а этим сообщением
+// уже открытая рамка узнаёт о скрытии/возврате без полной перезагрузки.
 //
 // Второй, независимый от бриджа канал — стадии файлового урока (lessonStages.js):
 // скрипт в файле сообщает 'jts-lesson'/'stage' на каждом переходе (→ onStage),
@@ -62,6 +65,15 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // следом сам, здесь ничего досылать не нужно.
     gotoStage(index) {
       iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+    },
+    // Скрытие вживую: преподаватель прячет задание/блок PATCH'ом .../visibility,
+    // но CSS для этого вшивается только при рендере файла на сервере — уже
+    // открытая рамка ученика ничего не знает до следующей полной перезагрузки.
+    // keys — список как есть (голые id заданий и ключи `block@s:b` вперемешку,
+    // формат см. visibleSteps.js) — здесь его не фильтруют и не переупаковывают,
+    // это уже сделано на сервере.
+    setHiddenKeys(keys) {
+      post({ type: 'hidden-blocks', keys })
     },
   }), [])
 

@@ -380,6 +380,26 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // блок не вырезается, а пропускается на рендере: `blockIndex` — позиция в сыром
   // `step.blocks`, и удаление сдвинуло бы её у всех следующих (см. hiddenBlockKeys).
   const hiddenBlocks = useMemo(() => hiddenBlockKeys(hiddenStepIds), [hiddenStepIds])
+
+  // Скрытие вживую (третий потребитель hiddenStepIds — не разбор, а файловая
+  // рамка). Преподаватель прячет задание PATCH'ом .../visibility; бэкенд вшивает
+  // CSS только при рендере файла, а sections-changed («уже приходит» — прим. к
+  // задаче) лишь обновляет `sections`, ни разу не перезагружая iframe. Без этого
+  // эффекта скрытие доезжало бы только со следующей полной перезагрузкой рамки.
+  //
+  // Эффект на hiddenStepIds, а не вызов внутри loadSections().then(): activeMaterial
+  // — производная от sectionMaterials/activeMaterialId на РЕНДЕРЕ, а loadSections
+  // не обёрнут в useCallback и пересоздаётся каждый рендер — какой именно замыкание
+  // достанется подписке onSectionsChanged, заранее не известно, и чтение
+  // activeMaterial внутри чужого .then() рисковало бы читать устаревшие
+  // sectionMaterials/activeMaterialId. Здесь то же самое ловится иначе: hiddenStepIds
+  // пересчитывается на каждом рендере из актуального state, а сервер отдаёт новый
+  // массив при каждом ответе — sections-changed → loadSections → setSections меняет
+  // его ссылку, и эффект гарантированно видит свежее значение.
+  useEffect(() => {
+    if (isStaff) return
+    materialFrameRef.current?.setHiddenKeys?.(hiddenStepIds || [])
+  }, [isStaff, hiddenStepIds])
   // Преподаватель может скрыть шаг, на котором ученик прямо сейчас стоит (или на
   // который сам же и указал «Вниманием на упражнение» минутой раньше). Тогда ученик
   // остался бы на пустом месте: в маршруте шага больше нет, показывать нечего.
