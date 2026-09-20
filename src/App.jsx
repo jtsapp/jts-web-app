@@ -27,6 +27,7 @@ import WorkbookPage from './screens/WorkbookPage.jsx'
 import ReadingPage from './screens/ReadingPage.jsx'
 import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
+import SituationsPage from './screens/SituationsPage.jsx'
 import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
@@ -208,6 +209,16 @@ export default function App() {
       // …и нужный уровень «Чтения» (?screen=reading&level=b1): каталог там
       // стартует с уровня пользователя, и проверить чужой уровень иначе никак.
       if (deepLink === 'reading') setReadingTarget({ level: levelParam.toLowerCase() })
+      // …и уровень «Ситуаций» (?screen=situations&level=b1&item=3). Уровень
+      // тут не «удобнее», а обязателен: экран открывается ровно на том уровне,
+      // который выдала Практика, переключателя внутри нет.
+      if (deepLink === 'situations') {
+        const item = Number(searchParams.get('item'))
+        setSituationsTarget({
+          level: levelParam.toLowerCase(),
+          id: Number.isFinite(item) && item > 0 ? item : null,
+        })
+      }
     }
     // ?screen=words&scene=farm — конкретная сцена «Слов в картинках».
     // Уровня у сцен нет вовсе (материал разбит по темам), поэтому адресуемся
@@ -470,6 +481,10 @@ export default function App() {
   const [listeningTarget, setListeningTarget] = useState(null) // { level } — какой уровень аудирования открыть из домашки
   const [wordsTarget, setWordsTarget] = useState(null) // { section?, sceneId? } — прыжок из Практики в секцию/сцену «Слов в картинках»
   const [verbsTarget, setVerbsTarget] = useState(null) // { part? } — нужная часть «Неправильных глаголов»
+  // { level, id? } — уровень «Ситуаций» и, по желанию, номер сценария. Уровень
+  // обязателен: переключателя внутри экрана нет (он единица квоты), поэтому
+  // без него открывать нечего.
+  const [situationsTarget, setSituationsTarget] = useState(null)
   const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
@@ -1131,6 +1146,8 @@ export default function App() {
     else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
     else if (key === 'words') { setWordsTarget(payload || null); setScreen('words') }
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
+    // Уровень приносит карточка Практики — она же и списала квоту.
+    else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
     else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
@@ -1566,6 +1583,17 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={verbsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'situations':
+      return (
+        <SituationsPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={situationsTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />

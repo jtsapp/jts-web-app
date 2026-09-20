@@ -9,6 +9,13 @@ export const SHADOWING_KEY = 'jts_shadowing_done'
 // Открытые уровни статического «Speaking Practice A1–C1» — единица прохождения
 // для квоты PRACTICE_SITUATIONS (см. practiceContract.js).
 export const SITUATIONS_KEY = 'jts_situations_done'
+// Пройденные СЦЕНАРИИ внутри уровней: { a1: [1,3,7], … }. Отдельно от
+// SITUATIONS_KEY намеренно: там единица — уровень, и против неё считается
+// квота PRACTICE_SITUATIONS из админки. Смешать их значит списать студенту,
+// прошедшему 10 сценариев A1, десять уровней из квоты. Серверного синка у
+// этого ключа нет: контракт practiceContract.js ждёт от модуля 'situations'
+// список уровней, а не карту сценариев.
+export const SITUATIONS_ITEMS_KEY = 'jts_situations_items'
 // Комиксы — не «пройдено», а закладка: { <comicId>: номер страницы }. Читалка
 // открывает комикс с неё, карточка каталога показывает «стр. 12 / 214».
 export const COMICS_POS_KEY = 'jts_comics_pos'
