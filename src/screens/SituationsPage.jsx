@@ -78,6 +78,11 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
       markItemDone(level, id)
       // Сценарий засчитан — это говорение, и в сводке навыков он должен быть
       // виден: раздел до этого в skillStats не попадал вовсе.
+      //
+      // Вторым аргументом `true`, то есть как выполненное задание, а не как
+      // «ответил верно» (так же считает дочитанная книга в BookDetail).
+      // Оценивать нечем: разбор платный и необязательный — студент может
+      // записаться и уйти, и трактовать это как ошибку было бы враньём.
       recordSkill('speaking', true)
       setDone(readDoneItems(level))
     },
