@@ -1,9 +1,12 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
 import { scanDisabledControls, gapKey, resolveVariableClasses, stripInterpolations } from './disabled-controls.js'
 
-const ROOT = new URL('../../src', import.meta.url).pathname
+// fileURLToPath, а не .pathname: на Windows тот отдаёт '/C:/…', и join()
+// склеивал его в 'C:\C:\…' — сторож падал на сборе, не начав работу.
+const ROOT = fileURLToPath(new URL('../../src', import.meta.url))
 const BASELINE = JSON.parse(readFileSync(new URL('./disabled-controls-baseline.json', import.meta.url), 'utf8'))
 
 function collect(dir, ext, out = []) {
@@ -11,7 +14,11 @@ function collect(dir, ext, out = []) {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) collect(full, ext, out)
     else if (entry.name.endsWith(ext) && !entry.name.includes('.test.')) {
-      out.push({ path: full.slice(ROOT.length - 3), text: readFileSync(full, 'utf8') })
+      // Ключ всегда на прямых слэшах: на Windows join() даёт 'src\screens\…',
+      // и baseline не сходился НИ ОДНОЙ строкой — сторож разом объявлял все
+      // дыры новыми и все протухшими.
+      const key = full.slice(ROOT.length - 3).split(sep).join('/')
+      out.push({ path: key, text: readFileSync(full, 'utf8') })
     }
   }
   return out
