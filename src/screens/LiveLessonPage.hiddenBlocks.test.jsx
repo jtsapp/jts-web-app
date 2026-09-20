@@ -14,6 +14,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, act, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
+// Настоящая константа осадки рамки (не мок — SectionMaterialFrame.jsx здесь
+// не подменяется), а не отдельное магическое число: разъедутся — тест сам
+// укажет на источник правды вместо того, чтобы тихо проверить не то окно.
+import { LOAD_SETTLE_MS } from './live/SectionMaterialFrame.jsx'
 
 let socketHandlers = {}
 let sectionsFixture = []
@@ -118,13 +122,14 @@ describe('LiveLessonPage — скрытие вживую', () => {
       expect(el).toBeTruthy()
       return el
     })
-    // setHiddenKeys шлёт немедленно только уже загруженной рамке (задача 8,
-    // ревью «до onLoad сообщение молча теряется») — сценарий этого теста именно
-    // такой: рамка уже открыта и осела, когда прилетает sections-changed.
-    // Настоящий 350мс таймер settle-осадки (см. SectionMaterialFrame.handleLoad) —
-    // без фейковых таймеров, чтобы не задевать остальные таймеры этого дерева.
+    // setHiddenKeys шлёт немедленно только уже загруженной и осевшей рамке
+    // (задача 8, ревью «до onLoad сообщение молча теряется») — сценарий этого
+    // теста именно такой: рамка уже открыта и осела, когда прилетает
+    // sections-changed. Настоящий таймер settle-осадки (LOAD_SETTLE_MS, см.
+    // SectionMaterialFrame.handleLoad) — без фейковых таймеров, чтобы не
+    // задевать остальные таймеры этого дерева.
     iframe.dispatchEvent(new Event('load'))
-    await new Promise((r) => setTimeout(r, 360))
+    await new Promise((r) => setTimeout(r, LOAD_SETTLE_MS + 10))
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
 
     // Преподаватель спрятал задание и карточку — тот же материал, новый список.
@@ -154,13 +159,23 @@ describe('LiveLessonPage — скрытие вживую', () => {
       expect(el).toBeTruthy()
       return el
     })
+    // Спай ставим ДО load, а не после: guard isStaff (LiveLessonPage.jsx) —
+    // единственное, что мешает учительской рамке получить hidden-blocks, а у
+    // самой рамки очередь до осадки (pendingHiddenKeysRef) разряжается прямо
+    // в settle-таймауте onLoad. Спай, поставленный уже ПОСЛЕ load+осадки, эту
+    // утечку просто не увидит — ровно так исходный тест был слеп к обеим
+    // мутациям (см. ревью всей ветки).
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    iframe.dispatchEvent(new Event('load'))
+    await new Promise((r) => setTimeout(r, LOAD_SETTLE_MS + 10))
 
     sectionsFixture = [{ id: 3, title: 'Материал урока', materials: [materialWithHidden(['t1', 't2'])] }]
     await act(async () => {
       await socketHandlers.onSectionsChanged?.()
     })
 
+    // «Ни разу за всю последовательность» — не только после sections-changed,
+    // но и в окне settle-осадки выше, где утекла бы затея до загрузки.
     expect(post).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: 'hidden-blocks' }),
       '*'

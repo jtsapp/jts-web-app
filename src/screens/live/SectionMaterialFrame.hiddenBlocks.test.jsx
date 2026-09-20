@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRef } from 'react'
 import { render, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
-import SectionMaterialFrame from './SectionMaterialFrame.jsx'
+import SectionMaterialFrame, { LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
 
 const MATERIAL = { id: 1, materialId: 11, title: 'A0 · Урок 05', materialType: 'INTERACTIVE_HTML', fileUrl: 'https://files/L05.html' }
 
@@ -23,13 +23,14 @@ function renderFrame(props = {}) {
   return { ...view, ref, iframe: view.container.querySelector('iframe') }
 }
 
-// Рамка считается загруженной только после onLoad И тех же 350мс осадки, что
-// берёт сам handleLoad перед тем, как разобрать накопленное (см. компонент,
-// комментарий про Angular) — без второго шага таймер ещё не сработал.
+// Рамка считается загруженной только после onLoad И тех же LOAD_SETTLE_MS
+// осадки, что берёт сам handleLoad перед тем, как разобрать накопленное (см.
+// компонент, комментарий про Angular) — без второго шага таймер ещё не
+// сработал.
 function loadFrame(iframe) {
   act(() => {
     iframe.dispatchEvent(new Event('load'))
-    vi.advanceTimersByTime(350)
+    vi.advanceTimersByTime(LOAD_SETTLE_MS)
   })
 }
 
@@ -113,6 +114,34 @@ describe('SectionMaterialFrame — скрытие вживую', () => {
     expect(post).toHaveBeenCalledTimes(1)
     expect(post).toHaveBeenCalledWith(
       { source: 'jts-bridge-host', type: 'hidden-blocks', keys: ['t3'] },
+      '*'
+    )
+  })
+
+  // Ревью всей ветки: setHiddenKeys раньше проверял loadedRef, который onLoad
+  // ставит СРАЗУ — до того, как скрипт внутри файла успевает закончить свой
+  // разбор блоков за оставшееся окно осадки. Вызов, попавший ровно в это окно,
+  // уходил немедленно и рисковал не найти цель внутри документа — без единой
+  // ошибки и без повторной попытки. Теперь его держит settledRef, который
+  // выставляется только по концу той же осадки, что и у replay/present.
+  it('вызов внутри окна осадки (после onLoad, до конца LOAD_SETTLE_MS) не уходит немедленно', () => {
+    const { ref, iframe } = renderFrame()
+    act(() => {
+      iframe.dispatchEvent(new Event('load'))
+    })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+    act(() => {
+      vi.advanceTimersByTime(LOAD_SETTLE_MS - 50)
+      ref.current.setHiddenKeys(['t1'])
+    })
+    expect(post).not.toHaveBeenCalled()
+
+    act(() => {
+      vi.advanceTimersByTime(50)
+    })
+    expect(post).toHaveBeenCalledWith(
+      { source: 'jts-bridge-host', type: 'hidden-blocks', keys: ['t1'] },
       '*'
     )
   })

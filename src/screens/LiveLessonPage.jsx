@@ -396,9 +396,22 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // пересчитывается на каждом рендере из актуального state, а сервер отдаёт новый
   // массив при каждом ответе — sections-changed → loadSections → setSections меняет
   // его ссылку, и эффект гарантированно видит свежее значение.
+  // Сервер отдаёт новый массив при каждом ответе (см. абзац выше), поэтому
+  // ссылка меняется даже тогда, когда набор скрытого не поменялся — например,
+  // sections-changed от переименования соседнего раздела точно так же
+  // пересоздаёт hiddenStepIds. Обработчик на стороне рамки идемпотентен (см.
+  // комментарий у setHiddenKeys в SectionMaterialFrame.jsx), так что лишний
+  // postMessage не ломает ничего, но и слать его незачем. Сверяем набор как
+  // строку — тем же приёмом, что и useLessonDetails.js (ключ не зависит от
+  // порядка, а массив как зависимость эффекта сравнивался бы по ссылке).
+  const lastHiddenSignatureRef = useRef(null)
   useEffect(() => {
     if (isStaff) return
-    materialFrameRef.current?.setHiddenKeys?.(hiddenStepIds || [])
+    const keys = hiddenStepIds || []
+    const signature = keys.map(String).sort().join(',')
+    if (lastHiddenSignatureRef.current === signature) return
+    lastHiddenSignatureRef.current = signature
+    materialFrameRef.current?.setHiddenKeys?.(keys)
   }, [isStaff, hiddenStepIds])
   // Преподаватель может скрыть шаг, на котором ученик прямо сейчас стоит (или на
   // который сам же и указал «Вниманием на упражнение» минутой раньше). Тогда ученик

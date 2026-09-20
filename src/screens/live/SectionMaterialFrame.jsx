@@ -5,6 +5,12 @@ import { parseStageMessage, gotoStageMessage } from './lessonStages.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
+// Дать собственной инициализации страницы (и восстановлению бриджа) чуть
+// осесть перед реплеем накопленного — как в Angular. Экспортируется, чтобы
+// тесты ждали то же самое число, а не дублировали его отдельной магической
+// константой (см. LiveLessonPage.hiddenBlocks.test.jsx и
+// SectionMaterialFrame.hiddenBlocks.test.jsx).
+export const LOAD_SETTLE_MS = 350
 
 // Встраивает активный материал раздела прямо в страницу (никогда в новую
 // вкладку) — как web-admin. INTERACTIVE_HTML идёт через рендер-эндпоинт с
@@ -32,6 +38,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   const { t } = useI18n()
   const iframeRef = useRef(null)
   const loadedRef = useRef(false)
+  // true только ПОСЛЕ окна осадки (LOAD_SETTLE_MS), в отличие от loadedRef —
+  // см. использование в setHiddenKeys ниже про то, зачем это разделение.
+  const settledRef = useRef(false)
   const pendingRef = useRef([])
   // Последний setHiddenKeys(keys), пришедший до загрузки — не очередь, а
   // «снимок» (подробности у самого метода ниже). null отдельно от 'нет
@@ -42,6 +51,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   useEffect(() => {
     loadedRef.current = false
+    settledRef.current = false
     pendingRef.current = []
     // pendingHiddenKeysRef сюда намеренно НЕ входит. pendingRef — очередь
     // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
@@ -89,18 +99,33 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // формат см. visibleSteps.js) — здесь его не фильтруют и не переупаковывают,
     // это уже сделано на сервере.
     //
-    // Как и replay, не постим напрямую, пока рамка не загрузилась: слушателя
-    // на той стороне ещё нет, и postMessage молча теряется без единой ошибки —
-    // тот же класс бага, что уже был у replay. Но, в отличие от replay, копить
+    // Как и replay, не постим напрямую, пока рамка не осела: слушателя на той
+    // стороне ещё нет, и postMessage молча теряется без единой ошибки — тот же
+    // класс бага, что уже был у replay. Но, в отличие от replay, копить
     // очередь не нужно: скрытие — не поток дискретных событий, а всегда ПОЛНОЕ
     // желаемое состояние целиком («что скрыто прямо сейчас»), и повторная
     // отправка того же набора уже загруженной рамке идемпотентна на бэкенде
     // (MaterialBridgeScriptInjector сверяет текущий список и просто добавляет/
     // снимает класс по разнице — независимо проверено). Значит последний
-    // вызов до загрузки полностью перекрывает все промежуточные, и вместо
+    // вызов до осадки полностью перекрывает все промежуточные, и вместо
     // массива достаточно хранить один снимок — pendingHiddenKeysRef.
+    //
+    // Проверяем settledRef, а не loadedRef: между onLoad и концом осадки
+    // (LOAD_SETTLE_MS) скрипт внутри файла может ещё не закончить свой разбор
+    // блоков, и «рамка загрузилась» не значит «внутри уже есть кого искать по
+    // ключам» — вызов, попавший в это окно, рисковал молча найти пустое
+    // множество целей и потеряться без единого сигнала об ошибке, вплоть до
+    // следующего случайного sections-changed.
+    //
+    // Если рамки нет вовсе (materialFrameRef.current === null — view ещё
+    // 'loading'/'denied'/'hidden', или активного материала нет) и вызов гаснет
+    // опциональной цепочкой в LiveLessonPage.jsx, даже не добравшись до этого
+    // метода, — это тоже безопасно: когда рамка всё же смонтируется, она
+    // начнёт с настоящего GET /render, а он уже несёт актуальный список
+    // скрытого в вшитом на сервере CSS. Событие не потеряно, а перекрыто
+    // свежим полным состоянием.
     setHiddenKeys(keys) {
-      if (loadedRef.current) {
+      if (settledRef.current) {
         post({ type: 'hidden-blocks', keys })
       } else {
         pendingHiddenKeysRef.current = keys
@@ -114,22 +139,21 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   function handleLoad() {
     loadedRef.current = true
-    // Дать собственной инициализации страницы (и восстановлению бриджа) чуть
-    // осесть перед реплеем накопленного — как в Angular (350мс).
     setTimeout(() => {
+      settledRef.current = true
       if (pendingRef.current.length) {
         post({ type: 'present', events: pendingRef.current })
         pendingRef.current = []
       }
-      // Снимок скрытия, накопленный, пока рамка ещё грузилась — см. комментарий
-      // у setHiddenKeys/pendingHiddenKeysRef. null значит «вызовов не было»,
-      // и тогда слать нечего (совпадает с сегодняшним поведением первой
-      // загрузки без единого setHiddenKeys).
+      // Снимок скрытия, накопленный, пока рамка ещё грузилась или не осела —
+      // см. комментарий у setHiddenKeys/pendingHiddenKeysRef. null значит
+      // «вызовов не было», и тогда слать нечего (совпадает с сегодняшним
+      // поведением первой загрузки без единого setHiddenKeys).
       if (pendingHiddenKeysRef.current !== null) {
         post({ type: 'hidden-blocks', keys: pendingHiddenKeysRef.current })
         pendingHiddenKeysRef.current = null
       }
-    }, 350)
+    }, LOAD_SETTLE_MS)
   }
 
   useEffect(() => {
