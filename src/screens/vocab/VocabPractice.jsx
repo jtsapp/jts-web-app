@@ -218,6 +218,24 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
   const [toast, setToast] = useState('')
   const recordedRef = useRef(false)
 
+  // Слова текущего задания считаем ОДИН раз на задание. Пока массив собирался
+  // инлайном у самого рендера, он был новым на КАЖДЫЙ рендер экрана — а
+  // «Соедините» тасует по нему обе колонки (`useMemo(..., [items])` в MatchUI).
+  // Любой посторонний рендер (тост «нет голоса», снятие flash-сообщения через
+  // 2200 мс, поздний ответ getVocabScope) пересдавал колонки прямо под пальцем:
+  // ученик тапал слово слева, колонки перетасовывались, второй тап попадал в
+  // другое слово — и ОБА уходили в ошибки, хотя знал он их оба.
+  //
+  // Хук стоит здесь, выше ранних return'ов по phase: ниже они бы меняли число
+  // хуков между рендерами.
+  // `tasks` заморожен useState'ом, `byKey` мемоизирован по cards — зависимости
+  // честные, а не «лишь бы не пересчитывалось».
+  const curTask = tasks[idx]
+  const itemWords = useMemo(
+    () => uniqueByKey((curTask?.wordKeys || []).map((k) => byKey[k]).filter(Boolean)),
+    [curTask, byKey],
+  )
+
   const speak = (text, opts) => {
     initVoices()
     ttsSpeak(text, {
@@ -367,8 +385,7 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
     )
   }
 
-  const task = tasks[idx]
-  const itemWords = uniqueByKey((task?.wordKeys || []).map((k) => byKey[k]).filter(Boolean))
+  const task = curTask
   const qLabel = t('vocab.prac.questionOf', { n: Math.min(answeredQ + 1, totalQ), total: totalQ })
 
   return (
