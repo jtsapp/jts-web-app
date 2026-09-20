@@ -20,7 +20,7 @@ import {
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
-import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
+import { readSituationsDone } from '../practice/situations/situationsProgress.js'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
 import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
@@ -517,13 +517,13 @@ export default function PracticePage({
     }
   }, [token, userLevel])
 
-  // Тяжёлые оверлеи (мир сказок ~3 МБ, разговорные ситуации) подгружаем на
-  // простое после первого рендера: первый клик открывает их мгновенно и
-  // загрузка не конкурирует с каталогами выше.
+  // Тяжёлый оверлей мира сказок (~3 МБ) подгружаем на простое после первого
+  // рендера: первый клик открывает его мгновенно и загрузка не конкурирует с
+  // каталогами выше. Ситуации отсюда ушли вместе со своим оверлеем — у них
+  // теперь свой экран, и грузить заранее там нечего.
   useEffect(() => {
     const load = () => {
       import('../practice/fairytale/taleWorld.js').catch(() => {})
-      import('../practice/situations/situationsOverlay.js').catch(() => {})
     }
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(load, { timeout: 4000 })
@@ -695,12 +695,12 @@ export default function PracticePage({
   /**
    * Пришли из домашней работы за уровнем разговорной практики.
    *
-   * Своего экрана у раздела нет — это оверлей поверх «Практики», и открыть его
-   * можно только отсюда. Ждём загрузки страницы: до неё не известны
-   * заблокированные уровни, и открытие сорвалось бы молча.
+   * Экран у раздела теперь свой, но вход в уровень по-прежнему только отсюда:
+   * здесь живёт проверка квоты. Ждём загрузки страницы — до неё не известны
+   * заблокированные уровни, и переход сорвался бы молча.
    *
-   * Цель отрабатывается один раз по своему ключу, как и у грамматики: закрыл
-   * оверлей — не должен тут же открыться снова.
+   * Цель отрабатывается один раз по своему ключу, как и у грамматики: вернулся
+   * из раздела — не должен тут же уехать в него снова.
    */
   const openedSituationsRef = useRef(null)
   useEffect(() => {
@@ -836,8 +836,14 @@ export default function PracticePage({
 
   // Разговорная практика (Speaking A1–C1): оверлей с уровневыми страницами
   // (src/practice/situations/), открывается на выбранном уровне.
-  const openSituationsLevel = async (level) => {
-    if (taleLoadingRef.current) return
+  // Разговорная практика A1–C1 живёт на своём экране (?screen=situations):
+  // каталог уровня и сценарий с записью ответа. Оверлея с iframe больше нет —
+  // вместе с ним ушла и загрузка standalone-html из public (тот же ход, что
+  // раньше сделали воркбуки).
+  //
+  // Уровень в квоте отмечает уже сам экран, когда он открылся: так
+  // сорвавшийся переход не списывает уровень впустую.
+  const openSituationsLevel = (level) => {
     // Карточка заблокированного уровня скрыта (см. рендер ниже) — это доп.
     // защита на случай прямого вызова (deep link и т.п.).
     if (levelLocked.has(level)) return
@@ -849,18 +855,7 @@ export default function PracticePage({
       setSituationsBlocked(true)
       return
     }
-    taleLoadingRef.current = true
-    try {
-      const mod = await loadModule(() => import('../practice/situations/situationsOverlay.js'))
-      // Уровень отмечаем пройденным только когда он правда открылся: иначе
-      // сорвавшаяся загрузка списала бы его из квоты впустую.
-      if (mod) {
-        mod.openSituations(level)
-        if (!seen.includes(level)) markSituationLevelDone(level)
-      }
-    } finally {
-      taleLoadingRef.current = false
-    }
+    onNav?.('situations', { level })
   }
 
   // Воркбуки. Все уровни A0–B2 живут на нативном экране (?screen=workbook):

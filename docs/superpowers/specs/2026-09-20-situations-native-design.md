@@ -35,7 +35,28 @@ Iframe — последний в Практике: «Воркбук», «Чте�
 Источник — те самые уровневые страницы `public/practice/situations/<level>.html`
 (остаются в репо: исходного `ситуаций.html` на 62 МБ в репозитории нет, и если
 выкинуть страницы, материал будет негде взять). Внутри каждой — литерал
-`const SITUATIONS = [...]` на 10 элементов:
+`const SITUATIONS = [...]` на 10 элементов.
+
+**Схемы уровней разные** — прототипы писались в разное время, и это главная
+работа экстрактора:
+
+| уровень | чем описан сценарий |
+| --- | --- |
+| A1 | `desc`, `dialogue[{sp,…}]`, `questions`, `vocab` |
+| A2 | `setup`, `mission`, `scenario[{who,label,…}]`, `react`, `vocab` |
+| B1 | `desc`, `mission`, `scenario`, `questions`, `phrases`, `connectors`, `hasAudio` |
+| B2, C1 | `setup`, `mission`, `scenario`, `react`, `critical`, `roleplay`, `followup`, `vocab`, `phrases`, `linkers` |
+
+Экстрактор сводит их к одной форме: `intro` (`desc` или `setup`), `scene`
+(`{kind: dialogue|scenario, lines: [{who, label, en, kz, ru}]}`) и остальные
+блоки как есть; `connectors` и `linkers` — одно и то же. Экран рисует то, что
+пришло, и уровня не спрашивает.
+
+Ещё одна особенность: **у C1 страница пререндеренная**, в данных вместо путей
+стоит `video: 1`, а настоящие mp4/jpg прописаны атрибутами в разметке — их
+экстрактор и берёт, по порядку документа.
+
+Поля одного сценария:
 
 | поле | что | судьба |
 | --- | --- | --- |
@@ -58,13 +79,19 @@ Iframe — последний в Практике: «Воркбук», «Чте�
   не внутри `extract-situations.js`: тот ходит в исходный 62-мегабайтный html,
   которого на машине обычно нет, а этот работает по тому, что лежит в репо.
 - `public/practice/situations/{a1,a2,b1,b2,c1}.json` — данные уровня.
-- `src/practice/situations/__fixtures__/oracle-a1.json` — эталон разбора A1.
-- `src/practice/situations/situationsData.js` — загрузка JSON уровня + нормализация.
+- `src/practice/situations/data.test.js` — сторож данных (оракул-фикстура не
+  понадобилась: результат экстрактора и есть тот файл, который читает экран,
+  поэтому проверяем прямо его).
+- `src/practice/situations/situationsData.js` — загрузка JSON уровня.
 - `src/practice/situations/itemsProgress.js` — прохождение отдельных сценариев.
-- `src/practice/situations/score.js` — сборка итогового балла из осей.
-- `src/practice/situations/recordings.js` — хранение записи в IndexedDB.
-- `src/lib/db/situationsBudget.js` — дневной лимит разборов (по образцу
-  `writingBudget.js` / `shadowingBudget.js`).
+- `src/practice/situations/recordings.js` — запись в IndexedDB.
+- `src/practice/situations/assessClient.js` — транспорт разбора.
+- `src/lib/situations/score.js` — сборка итогового балла из осей.
+- `src/lib/situations/assessPrompt.js` — промпт и схема грейдера (на сервере,
+  рядом с остальными серверными утилитами, а не в `practice/`).
+- `src/lib/idbStore.js` — общий key-value поверх IndexedDB.
+- `src/lib/db/situationsBudget.js` + `src/lib/migrations/0010_situations_daily.sql`
+  — дневной лимит разборов (по образцу `writingBudget.js` / `shadowingBudget.js`).
 - `src/screens/SituationsPage.jsx` — каталог уровня.
 - `src/screens/situations/SituationView.jsx` — экран одного сценария.
 - `src/screens/situations/SpeakingRecorder.jsx` — запись/воспроизведение/удаление.
@@ -175,28 +202,47 @@ Iframe — последний в Практике: «Воркбук», «Чте�
 
 ## Проверка
 
-**Юниты (vitest, рядом с кодом):**
+**Юниты (vitest, рядом с кодом) — 70 тестов:**
 
-- экстрактор: разбор A1 совпадает с оракул-фикстурой; `higgsfield` вырезан;
 - сторож данных: на каждом уровне 10 сценариев, у каждого существуют video и
-  poster, `en/kz/ru` непусты во всех полях (ловит «забыли прогнать экстрактор»);
+  poster, `en/kz/ru` непусты во всех полях, `higgsfield` вырезан, реплики
+  размечены ролью (ловит «забыли прогнать экстрактор»);
 - сборка балла из осей, нормировка весов без произношения, пороги меток
   (`Excellent`/`Great`/…);
 - прогресс сценариев: идемпотентность, отсутствие localStorage не роняет;
 - лимит: 21-й разбор за сутки отказывает, демо упирается в 5, сутки считаются
-  по серверному времени, `getSql() === null` не роняет роут;
-- отсечка мусора: короткий/пустой ответ не доходит до грейдера.
+  по UTC, возврат не уводит счётчик ниже нуля, `getSql() === null` не роняет роут;
+- промпт грейдера: язык вывода задан и в system, и в user; `kz` и `kk` оба
+  ведут в казахский; уровень попадает в промпт меркой; произношения в схеме нет.
 
-**E2E (`tests/situations.spec.js`, mobile + desktop):** каталог уровня →
-открытие сценария → постер и кнопка play → тумблеры KZ/RU → запись с
-подменёнными `getUserMedia`/`MediaRecorder` → карточка разбора на
-замоканном ответе `/assess` → отметка «Пройдено» в каталоге и в прогресс-баре →
-возврат назад. Запуск — `E2E_PORT=3300` против своего dev-стенда
-`web-situations`, обёрткой-конфигом со `channel: 'chrome'` (Playwright-Chromium
-на машине не стоит).
+Два теста поймали одну и ту же ошибку в двух местах: `Number(null)` — это ноль,
+и «оси нет» превращалось в «ноль баллов за произношение», а битая запись в
+прогрессе — в «сценарий №0». Оба места теперь отсекают пустые значения ДО
+`Number()`.
 
-**Сборка:** `npm run build`, `npm run lint`, ручной прогон уровня A1 и одного
-сценария C1 в браузере (`?screen=situations&level=a1`).
+**E2E (`tests/situations.spec.js`, mobile + desktop) — 15 сценариев × 2:**
+каталог уровня → открытие сценария → видео и разметка сцены → тумблеры KZ/RU →
+запись с подменёнными `getUserMedia`/`MediaRecorder` → отметка «Пройдено» в
+каталоге и прогресс-баре → карточка разбора на замоканном ответе `/assess`,
+включая ось-прочерк, тишину и исчерпанный лимит.
+
+Две ловушки подмены микрофона: `navigator.mediaDevices` — геттер прототипа, и
+простое присваивание Chrome молча проглатывает (нужен `defineProperty`), а
+запись должна быть НАСТОЯЩИМ WAV — перед отправкой экран гонит blob через
+`blobToWav16kMono` → `decodeAudioData`, и пара байтов падает раньше разбора.
+
+Запуск — `E2E_PORT=3300` против своего dev-стенда `web-situations`,
+обёрткой-конфигом со `channel: 'chrome'` (Playwright-Chromium на машине не
+стоит). Соседние спеки Практики (contract, gate, route, mobile, i18n) —
+53 зелёных, 9 пропусков.
+
+**Сборка:** `npm run build`, `npm run lint` (6 ошибок в `practice/vocab` —
+известный pre-existing baseline), ручной прогон A1 и C1 в браузере, включая
+телефонную ширину.
+
+Два сторожа (`src/textCollapse.test.js`, `scripts/lib/disabled-controls.test.js`)
+на Windows падают на `URL.pathname` — их логику гонять вручную скриптом-сканером
+по `src/`; в обоих списках моих классов нет.
 
 Vitest из worktree гонять с `--exclude '.claude/**'`, иначе подхватит чужие
 деревья.
