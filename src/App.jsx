@@ -28,6 +28,7 @@ import ReadingPage from './screens/ReadingPage.jsx'
 import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
 import SituationsPage from './screens/SituationsPage.jsx'
+import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -110,7 +111,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -234,6 +235,13 @@ export default function App() {
     if (deepLink === 'verbs') {
       const part = searchParams.get('part')
       if (part) setVerbsTarget({ part })
+    }
+    // ?screen=listenchoose&difficulty=hard — сложность «Слушай и выбирай»
+    // (easy | medium | hard): без неё экран открывался бы на той, где человек
+    // был в прошлый раз, и проверить сложность по ссылке было нельзя.
+    if (deepLink === 'listenchoose') {
+      const difficulty = searchParams.get('difficulty')
+      if (difficulty) setListenChooseTarget({ difficulty })
     }
     // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
@@ -477,6 +485,7 @@ export default function App() {
   // обязателен: переключателя внутри экрана нет (он единица квоты), поэтому
   // без него открывать нечего.
   const [situationsTarget, setSituationsTarget] = useState(null)
+  const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -1139,6 +1148,7 @@ export default function App() {
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
     // Уровень приносит карточка Практики — она же и списала квоту.
     else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
+    else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -1182,6 +1192,7 @@ export default function App() {
     else if (key === 'reading') setScreen('reading')
     else if (key === 'words') setScreen('words')
     else if (key === 'verbs') setScreen('verbs')
+    else if (key === 'listenchoose') setScreen('listenchoose')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -1583,6 +1594,17 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={situationsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'listenchoose':
+      return (
+        <ListenChoosePage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={listenChooseTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />

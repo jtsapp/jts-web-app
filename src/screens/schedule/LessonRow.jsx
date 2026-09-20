@@ -1,12 +1,12 @@
 import { useI18n } from '../../i18n.jsx'
-import { lessonStateKey, lessonTimeRange, canJoin, canOpen } from './lessonFormat.js'
+import { lessonStateKey, lessonTimeRange, isLessonLive, canOpenLesson } from './lessonFormat.js'
 import MeetLink from './MeetLink.jsx'
 
 export default function LessonRow({ occ, card, onOpenLesson }) {
   const { t, lang } = useI18n()
   const stateKey = lessonStateKey(occ)
-  const joinable = canJoin(occ.lessonStatus)
-  const openable = canOpen(occ.lessonStatus)
+  const live = isLessonLive(occ.lessonStatus)
+  const openable = canOpenLesson(occ.lessonStatus)
   const format = (occ.format || 'ONLINE').toLowerCase()
   const meetingUrl = card?.meetingUrl
   // Тип занятия приезжает догрузкой урока и может ещё не приехать (или не
@@ -43,7 +43,7 @@ export default function LessonRow({ occ, card, onOpenLesson }) {
       </div>
       {openable && (
         <button type="button" className="sch-row__join" onClick={() => onOpenLesson(occ.lessonId)}>
-          {joinable ? t('schedule.join') : t('schedule.viewLesson')}
+          {live ? t('schedule.join') : t('schedule.openLesson')}
         </button>
       )}
     </div>

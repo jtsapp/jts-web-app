@@ -41,6 +41,14 @@ export const WORDS_KEY = 'jts_words_done'
 // — отмеченные «потренировать позже» и результат каждого задания в ключе
 // прототипа. Семантика replace, как у reading/words.
 export const VERBS_KEY = 'jts_verbs_done'
+// Прогресс «Слушай и выбирай»: { seen: { easy: [id…], medium: […], hard: […] } }
+// — какие задания выборка уже показывала на каждой сложности (без этого набор
+// после перезахода начинался бы с тех же заданий). Семантика replace, как у verbs.
+export const LISTENCHOOSE_KEY = 'jts_listenchoose_done'
+// Недоигранный набор и настройки этого УСТРОЙСТВА (сложность, размер набора,
+// темп, громкость). Не синкается — это свойство устройства, а не ученика; но
+// чистится вместе с прогрессом: следующий аккаунт не должен продолжить чужой набор.
+export const LISTENCHOOSE_RUN_KEY = 'jts_listenchoose_run'
 
 export const GRAMMAR_PROGRESS_EVENT = 'grammar-progress'
 export const LISTENING_PROGRESS_EVENT = 'listening-progress'
@@ -52,6 +60,7 @@ export const WORKBOOK_PROGRESS_EVENT = 'workbook-progress'
 export const READING_PROGRESS_EVENT = 'reading-progress'
 export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
+export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
 // плюс стрик по дням. Ключ трека — slug, а не id: карточку в админке могут
 // пересоздать, и прогресс не должен обнуляться вместе с ней.

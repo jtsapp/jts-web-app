@@ -22,12 +22,42 @@ describe('DayPanel', () => {
     expect(container.querySelectorAll('.sch-row')).toHaveLength(2)
   })
 
-  it('lets a student reopen a completed lesson in view-only', () => {
+  // В завершённый урок ученик возвращается доделывать задания, а не смотреть,
+  // — отсюда и подпись на кнопке (spec-lesson-always-open).
+  it('в завершённый урок можно войти', () => {
     const items = [
       { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
     ]
     const { getByRole } = renderPanel({ items })
-    expect(getByRole('button', { name: 'Смотреть' })).toBeTruthy()
+    expect(getByRole('button', { name: 'Открыть урок' })).toBeTruthy()
+  })
+
+  // Главное, ради чего всё затевалось: преподаватель не нажал «Начать» — урок
+  // всё равно открывается. Раньше кнопки не было вовсе.
+  it('в ещё не начатый урок тоже можно войти', () => {
+    const items = [
+      { lessonId: 2, participantId: 12, scheduledAt: '2026-08-04T21:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'SCHEDULED', format: 'ONLINE' },
+    ]
+    const { getByRole } = renderPanel({ items })
+    expect(getByRole('button', { name: 'Открыть урок' })).toBeTruthy()
+  })
+
+  // Идущий урок зовёт в класс, а не «открыть»: там преподаватель и звонок.
+  it('идущий урок зовёт в класс', () => {
+    const items = [
+      { lessonId: 3, participantId: 13, scheduledAt: '2026-08-04T21:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'IN_PROGRESS', format: 'ONLINE' },
+    ]
+    const { getByRole } = renderPanel({ items })
+    expect(getByRole('button', { name: 'Войти в класс' })).toBeTruthy()
+  })
+
+  // Отменённого занятия не было — входить некуда.
+  it('у отменённого урока кнопки нет', () => {
+    const items = [
+      { lessonId: 4, participantId: 14, scheduledAt: '2026-08-04T21:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'CANCELLED', format: 'ONLINE' },
+    ]
+    const { container } = renderPanel({ items })
+    expect(container.querySelector('.sch-row__join')).toBeNull()
   })
 
   // Карточка дня в макете разводит групповое и индивидуальное занятие цветом и
