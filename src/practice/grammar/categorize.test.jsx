@@ -80,6 +80,20 @@ describe('Grammar categorize — раскладку можно исправит�
     expect(placedChip('rarely')).toBeTruthy()
   })
 
+  it('тап по САМОЙ разложенной фишке с выбранным словом кладёт, а не вынимает', () => {
+    // Прицельно по guard'у `sel !== null` в onClick фишки: клик по корзине
+    // мимо фишек его не задевает вовсе, и без этого теста правку можно было
+    // снять, не уронив ни одного теста.
+    play()
+    put('usually', 0)
+    fireEvent.click(poolItem('rarely'))
+    fireEvent.click(placedChip('usually')) // тап именно по фишке в корзине
+
+    expect(placedChip('usually')).toBeTruthy() // не выдернулась
+    expect(placedChip('rarely')).toBeTruthy() // и rarely легла в ту же корзину
+    expect(poolItem('rarely')).toBeUndefined()
+  })
+
   it('само по себе упражнение больше не закрывается', () => {
     play()
     put('usually', 1)
@@ -87,5 +101,25 @@ describe('Grammar categorize — раскладку можно исправит�
     // Всё разложено неверно, но вердикта нет — ждём «Проверить».
     expect(screen.queryByText(/Некоторые слова не в той группе/)).toBeNull()
     expect(checkBtn()).toBeTruthy()
+  })
+})
+
+describe('Grammar — «Проверить» не рисуется там, где её нельзя нажать', () => {
+  const checkBtns = () => [...document.querySelectorAll('.gr-check')]
+
+  // matching / truefalse / timeline не берут setCanCheck и доигрывают сами —
+  // их «Проверить» была серой ВСЕГДА.
+  it.each([
+    ['matching', { type: 'matching', typeLabel: 'matching', prompt: 'p', pairs: [{ l: 'a', r: '1' }, { l: 'b', r: '2' }] }],
+    ['truefalse', { type: 'truefalse', typeLabel: 'truefalse', prompt: 'p', items: [{ s: 'x', v: true }] }],
+    ['timeline', { type: 'timeline', typeLabel: 'timeline', prompt: 'p', zones: [{ z: 'past' }, { z: 'now' }], answer: 'past' }],
+  ])('%s — кнопки нет', (_name, activity) => {
+    play(activity)
+    expect(checkBtns()).toHaveLength(0)
+  })
+
+  it('categorize — кнопка есть: он теперь ждёт нажатия', () => {
+    play()
+    expect(checkBtns()).toHaveLength(1)
   })
 })

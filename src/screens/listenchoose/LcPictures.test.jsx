@@ -54,16 +54,45 @@ describe('LcPictures — ворота выбора', () => {
     expect(onReady).not.toHaveBeenCalledWith(true)
   })
 
-  it('«Try again» снова закрывает ворота до ответа фото', () => {
+  it('«Try again» НЕ закрывает ворота обратно', () => {
+    // Сброс статуса запирал все четыре плитки и уносил с собой саму карточку
+    // «Try again»: повтор, не ответивший ни load, ни error, делал задание
+    // тупиком — тем самым, который эта правка убирает.
     const onReady = vi.fn()
     const view = renderPics(onReady)
     photos().forEach((img) => fireEvent.load(img))
-    expect(onReady).toHaveBeenLastCalledWith(true)
-
     fireEvent.error(photos()[1])
     expect(onReady).toHaveBeenLastCalledWith(true) // «не смогло» — тоже ответ
 
     fireEvent.click(view.container.querySelector('.lc-imgretry button'))
-    expect(onReady).toHaveBeenLastCalledWith(false)
+    expect(onReady).toHaveBeenLastCalledWith(true)
+    // Карточка повтора на месте — второй раз нажать есть на что.
+    expect(view.container.querySelector('.lc-imgretry')).toBeTruthy()
+  })
+
+  it('плитку с битым файлом можно выбрать: она не закрыта', () => {
+    // Рисунка на ней нет (img прозрачна до is-loaded), поверх лежит карточка
+    // «Try again» — и если бы та не была сквозной для кликов, открытый гейт
+    // делал бы такую плитку гарантированной ошибкой.
+    const onPick = vi.fn()
+    const view = render(
+      <LcPictures
+        question={QUESTION}
+        options={OPTIONS}
+        round={ROUND}
+        heard
+        imagesReady
+        t={(k) => k}
+        onPick={onPick}
+        onZoom={() => {}}
+        onReady={() => {}}
+      />,
+    )
+    photos().forEach((img, i) => (i === 2 ? fireEvent.error(img) : fireEvent.load(img)))
+
+    const broken = view.container.querySelector('.lc-opt[data-option="2"]')
+    expect(broken.getAttribute('aria-disabled')).toBe('false')
+    fireEvent.click(broken)
+    expect(onPick).toHaveBeenCalledWith(2)
   })
 })

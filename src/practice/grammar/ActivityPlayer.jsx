@@ -9,6 +9,13 @@ import { normAnswer } from '../../lib/answer-match.js'
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
 
+// Типы, которые закрываются САМИ и кнопки «Проверить» не ждут: диалог,
+// говорение и флэш-карточка отвечают своими кнопками, а matching/truefalse/
+// timeline доигрывают по последнему ходу (авто-проверка внутри самого тела).
+// Ни один из трёх последних не берёт setCanCheck, так что общая «Проверить»
+// у них оставалась серой всегда — её тут и не рисуем.
+const AUTO_FINISH_TYPES = ['dialogue', 'speaking', 'flashcard', 'matching', 'truefalse', 'timeline']
+
 // Плеер упражнений урока — нативный порт движка грамматика_практика.html
 // (renderActivity + check-функции). Логика проверки каждого типа сохранена
 // 1-в-1: norm() + alts, авто-проверка categorize/matching по заполнении, и т.д.
@@ -192,7 +199,13 @@ function Activity({ a, idx, total, lang, onResult, onNext }) {
             {t('btn_iknew')}
           </button>
         )}
-        {!feedback && !['dialogue', 'speaking', 'flashcard'].includes(a.type) && (
+        {/* Кнопка — только у типов, которые ждут её нажатия. matching,
+            truefalse и timeline доигрывают сами (авто-проверка по последнему
+            ходу) и setCanCheck не берут вовсе, поэтому «Проверить» у них была
+            серой ВСЕГДА — мёртвый контрол на экране рядом с живым заданием.
+            categorize из этого списка ушёл: у него авто-проверку сняли, теперь
+            он проверяется кнопкой, как mc/gap/order/error. */}
+        {!feedback && !AUTO_FINISH_TYPES.includes(a.type) && (
           <button
             className="gr-check"
             disabled={!canCheck}
