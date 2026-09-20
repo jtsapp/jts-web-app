@@ -51,10 +51,17 @@ export default function LcPictures({ question, options, round, heard, imagesRead
   // перезапускался бы на каждом рендере.
   const report = useCallback((oi, s) => setStatus((prev) => (prev[oi] === s ? prev : { ...prev, [oi]: s })), [])
 
-  const allLoaded = [0, 1, 2, 3].every((i) => status[i] === 'loaded')
+  // Ждём, пока каждое фото ОТВЕТИТ — загрузилось или не смогло. Пока ждали
+  // ровно 'loaded', один отсутствующий файл держал ворота закрытыми навсегда:
+  // все четыре варианта оставались aria-disabled, под ними висело «картинка
+  // грузится», а «Try again» дёргал тот же несуществующий адрес — задание
+  // превращалось в тупик, и набор нельзя было закончить. Битую плитку всё
+  // равно видно (у неё показывается alt — своя же подпись), так что смысла
+  // держать её в ожидании нет.
+  const allSettled = [0, 1, 2, 3].every((i) => status[i] === 'loaded' || status[i] === 'failed')
   useEffect(() => {
-    onReady(allLoaded)
-  }, [allLoaded, onReady])
+    onReady(allSettled)
+  }, [allSettled, onReady])
 
   return (
     <div className="lc-grid" role="group" aria-label="Picture choices">
