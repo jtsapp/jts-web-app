@@ -11,6 +11,7 @@ import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
 import TapText from '../screens/workspace/TapText.jsx'
 import TappableHtml from '../screens/workspace/TappableHtml.jsx'
 import TranslatePopover from '../screens/workspace/TranslatePopover.jsx'
+import { readResume, saveResume, clearResume } from '../lib/lessonResume.js'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
 //
@@ -163,7 +164,10 @@ function shuffle(arr, seed) {
   return a
 }
 
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, catalogLessonId, onExit, onVocab, onDone }) {
+// resumeKey — адрес урока для памяти «где остановился» (см. lib/lessonResume.js).
+// Передаёт только тропа «Обучения»: там урок длинный и проходится в одиночку;
+// каталог и живой урок ведёт преподаватель, и позицию там помнить незачем.
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, catalogLessonId, resumeKey, onExit, onVocab, onDone }) {
   const { t, lang } = useI18n()
   const { pop, openWord, openLimit, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}`, catalogLessonId })
   const [idx, setIdx] = useState(0)
@@ -171,6 +175,10 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   const [wrong, setWrong] = useState(0)
   const [points, setPoints] = useState(0)
   const endedRef = useRef(false)
+  // Незаконченная попытка этого урока: перезагрузка страницы раньше
+  // отбрасывала на первый из 40–90 экранов. Предлагаем, а не прыгаем сами:
+  // ученик мог вернуться именно затем, чтобы пройти урок заново.
+  const [resume, setResume] = useState(() => (resumeKey ? readResume(token, resumeKey, steps.length) : null))
   // Лист словаря по макету («Обучение», кадр 4108:1689): null — закрыт,
   // иначе открытая вкладка.
   const [dict, setDict] = useState(null)
@@ -181,6 +189,27 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
 
   const total = steps.length
   const step = steps[idx]
+
+  // Позицию пишем на входе в шаг — со счётом, набранным до него. Ответ внутри
+  // шага при перезагрузке теряется вместе с шагом: его проходят заново, и
+  // счёт тогда не задваивается.
+  useEffect(() => {
+    if (!resumeKey || endedRef.current || idx === 0) return
+    saveResume(token, resumeKey, total, { idx, correct, wrong, points })
+    // Счёт в зависимостях не нужен: он меняется внутри шага, а пишем на входе.
+  }, [idx, resumeKey, token, total]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const continueFromResume = () => {
+    setIdx(resume.idx)
+    setCorrect(resume.correct)
+    setWrong(resume.wrong)
+    setPoints(resume.points)
+    setResume(null)
+  }
+  const restartLesson = () => {
+    clearResume(token, resumeKey)
+    setResume(null)
+  }
 
   // Слова урока для листа словаря — те же карточки, что показывает стадия
   // Vocabulary; ничего нового не собираем и никуда не ходим. Повторы убираем:
@@ -210,6 +239,8 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   const reportDone = () => {
     if (endedRef.current) return
     endedRef.current = true
+    // Урок пройден — продолжать нечего.
+    if (resumeKey) clearResume(token, resumeKey)
     const answered = correct + wrong
     const acc = answered ? Math.round((correct / answered) * 100) : 100
     onDone?.({
@@ -293,6 +324,22 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           if (raw.trim()) close()
         }}
       >
+        {/* Плашка висит, пока ученик не выбрал: ушёл с первого шага сам —
+            значит, проходит заново, и предложение уже не к месту. */}
+        {resume && idx === 0 && (
+          <div className="cp-resume" role="status">
+            <span>{t('lesson.resume.text', { n: String(resume.idx + 1), total: String(total) })}</span>
+            <div className="cp-resume__acts">
+              <button type="button" className="cp-resume__go" onClick={continueFromResume}>
+                {t('lesson.resume.continue', { n: String(resume.idx + 1) })}
+              </button>
+              <button type="button" className="cp-resume__restart" onClick={restartLesson}>
+                {t('lesson.resume.restart')}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="cp-hud">
           <div className="cp-hud__track">
             <div className="cp-hud__fill" style={{ width: `${Math.round((idx / Math.max(1, total)) * 100)}%` }} />
