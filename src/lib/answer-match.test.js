@@ -130,3 +130,15 @@ describe('answerMatches — разновидности тире в ответе-
     expect(answerMatches('.', ['-'])).toBe(false)
   })
 })
+
+// Задание A1 «Add '» (That's the students_ classroom): эталон — один прямой
+// апостроф. Клавиатура iOS по умолчанию ставит типографский — ответ верный.
+describe('answerMatches — ответ-апостроф', () => {
+  it('типографские апострофы засчитываются за прямой', () => {
+    for (const v of ["'", '’', '‘', 'ʼ', '`']) expect(answerMatches(v, ["'"])).toBe(true)
+  })
+
+  it('прочерк и другие знаки за апостроф не идут', () => {
+    for (const v of ['-', '—', '.', '?', ',']) expect(answerMatches(v, ["'"])).toBe(false)
+  })
+})
