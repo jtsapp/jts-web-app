@@ -8,6 +8,9 @@ const assignment = (over = {}) => ({
   materialTitle: 'Present Perfect · practice test',
   materialType: 'INTERACTIVE_HTML',
   isGraded: true,
+  // Статус и просрочку считает сервер — карточка их только переносит.
+  status: 'ASSIGNED',
+  isOverdue: false,
   fileUrl: 'https://files.example/m.html',
   dueDate: '2026-08-25',
   teacherScore: null,
@@ -27,16 +30,30 @@ describe('materialCard', () => {
   })
 
   it('оценённое назначение читается как проверенная работа', () => {
-    const card = materialCard(assignment({ teacherScore: 5, gradedAt: '2026-08-20T10:00:00' }))
+    const card = materialCard(assignment({ status: 'COMPLETED', teacherScore: 5, gradedAt: '2026-08-20T10:00:00' }))
     expect(card.status).toBe('COMPLETED')
     expect(card.grade).toBe(5)
     expect(homeworkStateKey(card)).toBe('completed')
   })
 
-  // Просрочка по dueDate считается тем же правилом, что у обычной работы.
-  it('непроверенное назначение с прошедшим дедлайном — просрочено', () => {
-    const card = materialCard(assignment({ dueDate: '2026-08-01' }))
-    expect(homeworkStateKey(card, new Date(2026, 7, 20))).toBe('overdue')
+  /* Главное: статус и просрочку СЧИТАЕТ СЕРВЕР, карточка их только переносит.
+     Раньше их выводили здесь («есть вложения — значит сдана»), и по работе,
+     которая решается прямо в уроке, сдача не наступала никогда. */
+  it('статус берётся с сервера, а не выводится из полей', () => {
+    const сданнаяБезВложений = materialCard(assignment({ status: 'SUBMITTED', files: [] }))
+    expect(сданнаяБезВложений.status).toBe('SUBMITTED')
+
+    const свложениемНоНеСданная = materialCard(assignment({ status: 'ASSIGNED', files: [{ id: 1 }] }))
+    expect(свложениемНоНеСданная.status).toBe('ASSIGNED')
+  })
+
+  it('просрочку тоже решает сервер, а не часы клиента', () => {
+    // Срок прошёл, но сервер сказал «не просрочена» — верим ему.
+    const card = materialCard(assignment({ dueDate: '2026-08-01', isOverdue: false }))
+    expect(homeworkStateKey(card, new Date(2026, 7, 20))).toBe('assigned')
+
+    const просрочена = materialCard(assignment({ dueDate: '2026-08-01', isOverdue: true }))
+    expect(homeworkStateKey(просрочена, new Date(2026, 7, 20))).toBe('overdue')
   })
 })
 
@@ -148,8 +165,8 @@ describe('Ответ на выданный материал файлом', () =>
   /** ГЛАВНОЕ: приложенный файл снимает вечную просрочку. */
   it('приложенный файл переводит карточку в «на проверке» и снимает просрочку', () => {
     const просроченнаяДата = '2020-01-01'
-    const без = materialCard(карточкаУрока({ dueDate: просроченнаяДата }))
-    const с = materialCard(карточкаУрока({ dueDate: просроченнаяДата, files: [{ id: 1, fileName: 'answer.pdf' }] }))
+    const без = materialCard(карточкаУрока({ dueDate: просроченнаяДата, status: 'ASSIGNED', isOverdue: true }))
+    const с = materialCard(карточкаУрока({ dueDate: просроченнаяДата, files: [{ id: 1, fileName: 'answer.pdf' }], status: 'SUBMITTED', isOverdue: false }))
 
     expect(без.status).toBe('ASSIGNED')
     expect(homeworkStateKey(без)).toBe('overdue')
@@ -160,7 +177,7 @@ describe('Ответ на выданный материал файлом', () =>
 
   /** Оценка весомее вложения: проверенная работа проверена. */
   it('оценка перебивает вложение', () => {
-    const проверено = materialCard(карточкаУрока({ files: [{ id: 1 }], teacherScore: 5, gradedAt: '2026-09-11T10:00:00' }))
+    const проверено = materialCard(карточкаУрока({ files: [{ id: 1 }], teacherScore: 5, gradedAt: '2026-09-11T10:00:00', status: 'COMPLETED' }))
     expect(проверено.status).toBe('COMPLETED')
   })
 })

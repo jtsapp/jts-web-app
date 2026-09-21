@@ -6,6 +6,7 @@ import {
   uploadMedia,
   attachMaterialAnswer,
   removeMaterialAnswer,
+  submitMaterialAssignment,
 } from '../../api.js'
 import { homeworkStateKey, ALLOWED_EXTENSIONS, isAllowedFile } from './homeworkFormat.js'
 import { isInteractiveMaterial, isLessonCard, needsAnswerFile, isMaterialGraded } from './materialAssignments.js'
@@ -16,11 +17,13 @@ const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
 /**
  * Задание с живого урока, открытое в «Домашней работе».
  *
- * Кнопки «Отправить на проверку» здесь нет: у назначенного материала нет
- * статусной машины домашки — ни сдачи, ни возврата на доработку. Интерактив
- * шлёт ответы сам через bridge-скрипт, а балл ставит преподаватель в админке.
+ * Сдача у выданной работы ЕСТЬ (ASSIGNED → SUBMITTED → COMPLETED, считает сервер), но
+ * возврата на доработку нет: повторной попытки и версий ответа у материала не бывает —
+ * преподаватель ставит балл и комментарий. Ответы по заданиям уходят сами, мостом из
+ * рамки урока; «Сдать» — это отдельное слово ученика «я закончил», без него работа
+ * висела бы заданной навсегда.
  *
- * А вот ВЛОЖЕНИЕ есть, и только у выданной карточки урока (needsAnswerFile):
+ * А ВЛОЖЕНИЕ есть только у выданной карточки урока (needsAnswerFile):
  * закрыть её иначе нечем — проверяемых заданий в теории нет, сессии она не
  * заводит, и со сроком по умолчанию такая работа краснела бы просроченной
  * навсегда. Приложенный файл и есть «я сделал».
@@ -104,6 +107,28 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
       }
     } catch {
       setError(t('homework.uploadFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /**
+   * «Сдать работу» — ученик говорит, что закончил.
+   *
+   * <p>Можно ли сдавать (решено ли хоть что-то из заданного), решает сервер: здесь
+   * нельзя даже узнать, какие задания ему выдали и что он в них натыкал — ответы
+   * живут в рамке урока, а не на этом экране.
+   */
+  const submit = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      onSaved?.(await submitMaterialAssignment(token, a.id))
+    } catch (e) {
+      // 400 у этой ручки один: сдавать нечего. Текст сюда не доезжает (authPost
+      // тело отказа не разбирает), поэтому подписываем по коду — решает по-прежнему
+      // сервер, здесь только перевод его «нет» на человеческий.
+      setError(t(e?.status === 400 ? 'homework.submitNothingDone' : 'homework.submitWorkFailed'))
     } finally {
       setBusy(false)
     }
@@ -194,6 +219,20 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
             </div>
           )}
         </section>
+      )}
+
+      {/* Сдача. Показываем, пока работа у ученика: сданную и проверённую сдавать
+          заново нечем — попытка у материала одна (см. javadoc компонента). */}
+      {a.status === 'ASSIGNED' && (
+        <section className="hw-block">
+          <button type="button" className="hw-submit" disabled={busy} onClick={submit}>
+            {busy ? t('homework.submitting') : t('homework.submitWork')}
+          </button>
+          <p className="hw__hint">{t('homework.submitHint')}</p>
+        </section>
+      )}
+      {a.status === 'SUBMITTED' && (
+        <p className="hw__hint">{t('homework.submittedWaiting')}</p>
       )}
 
       {(card.grade != null || a.teacherFeedback) && (
