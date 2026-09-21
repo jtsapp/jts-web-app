@@ -1,0 +1,2140 @@
+{
+  "level": "b1",
+  "items": [
+    {
+      "id": 1,
+      "video": "/practice/situations/media/b1-v01.mp4",
+      "poster": "/practice/situations/media/b1-p01.jpg",
+      "hasAudio": false,
+      "title": {
+        "en": "The Gate That Changed",
+        "kz": "Ұшу қақпасы өзгерді",
+        "ru": "Гейт изменился"
+      },
+      "intro": {
+        "en": "You're relaxing at the airport when you suddenly notice your flight has moved to a different gate — far away, on the other side of the terminal. The final call is playing and the doors are closing. You have to run, stay calm, and convince the staff to let you board.",
+        "kz": "Әуежайда тыныш отырғанда, рейсіңіз басқа гейтке — терминалдың арғы шетіне ауысып кеткенін кенет байқайсыз. Соңғы шақыру жарияланып, есік жабылып барады. Жүгіріп, сабыр сақтап, қызметкерлерді ұшаққа отырғызуға көндіруіңіз керек.",
+        "ru": "Вы спокойно ждёте рейс в аэропорту и вдруг замечаете, что выход на посадку перенесли — далеко, в другой конец терминала. Звучит последний вызов, двери закрываются. Нужно бежать, сохранять спокойствие и убедить сотрудников пустить вас на борт."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You hear your name on the speakers. The board now shows a different gate — far across the terminal. You start running.",
+            "kz": "Динамиктен есіміңізді естисіз. Таблода енді басқа қақпа көрсетілген — терминалдың арғы шетінде. Сіз жүгіре бастайсыз.",
+            "ru": "Из динамиков звучит ваше имя. На табло теперь другой выход — на другом конце терминала. Вы срываетесь на бег."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You arrive breathless. A gate agent stands by a half-closed door, checking her watch.",
+            "kz": "Ентігіп жетесіз. Қызметкер жартылай жабылған есіктің қасында тұрып, сағатына қарайды.",
+            "ru": "Вы добегаете, едва дыша. Сотрудница стоит у полузакрытой двери и смотрит на часы."
+          },
+          {
+            "who": "them",
+            "label": "Gate agent",
+            "en": "I'm sorry, we've started final boarding. Are you on the Istanbul flight?",
+            "kz": "Кешіріңіз, біз соңғы отырғызуды бастадық. Сіз Стамбул рейсінде ме едіңіз?",
+            "ru": "Извините, мы уже начали финальную посадку. Вы на рейс в Стамбул?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Greet her, say yes, and explain quickly why you're late: the gate changed and you had to run from the other side.",
+            "kz": "Амандасып, иә деңіз де, неге кешіккеніңізді тез түсіндіріңіз: қақпа ауысып, арғы жақтан жүгіруге тура келді.",
+            "ru": "Поздоровайтесь, скажите «да» и быстро объясните, почему опоздали: гейт изменили, и пришлось бежать с другого конца."
+          },
+          {
+            "who": "them",
+            "label": "Gate agent",
+            "en": "Let me check… The doors are closing in about a minute. Do you have your boarding pass ready?",
+            "kz": "Тексеріп көрейін… Есік шамамен бір минуттан кейін жабылады. Отырғызу талоныңыз дайын ба?",
+            "ru": "Сейчас проверю… Двери закрываются примерно через минуту. Посадочный талон готов?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Confirm you're ready, ask if you can still board, and reassure her you'll be quick.",
+            "kz": "Дайын екеніңізді растап, әлі де отыруға бола ма деп сұраңыз және тез боласыз деп сендіріңіз.",
+            "ru": "Подтвердите, что готовы, спросите, можно ли ещё пройти, и заверьте её, что вы быстро."
+          },
+          {
+            "who": "them",
+            "label": "Gate agent",
+            "en": "Okay — go straight down, seat 24B. Next time, please keep an eye on the screens. Have a good flight!",
+            "kz": "Жарайды — тура төмен өтіңіз, 24B орын. Келесіде экрандарды бақылап жүріңіз. Ұшуыңыз сәтті болсын!",
+            "ru": "Хорошо — проходите прямо, место 24B. В следующий раз следите за экранами. Хорошего полёта!"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Thank her warmly and apologise for the rush before you board.",
+            "kz": "Ұшаққа кірмес бұрын оған шын жүректен алғыс айтып, асыққаныңыз үшін кешірім сұраңыз.",
+            "ru": "Тепло поблагодарите её и извинитесь за спешку, прежде чем подняться на борт."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Explain calmly to the gate agent that your gate changed and you've been running.",
+          "kz": "Әуежай қызметкеріне ұшу қақпаңыз ауысқанын және сіз жүгіріп келгеніңізді сабырмен түсіндіріңіз.",
+          "ru": "Спокойно объясните сотруднику выхода, что ваш гейт изменился и вы бежали через весь терминал."
+        },
+        {
+          "en": "Ask whether the doors are still open and what your options are if you miss this flight.",
+          "kz": "Есік әлі ашық па және осы рейске үлгермесеңіз қандай нұсқалар бар екенін сұраңыз.",
+          "ru": "Спросите, открыты ли ещё двери и какие у вас варианты, если вы не успеете на этот рейс."
+        },
+        {
+          "en": "Persuade the staff to let you board — politely but firmly.",
+          "kz": "Қызметкерлерді сізді ұшаққа жіберуге көндіріңіз — сыпайы, бірақ табанды түрде.",
+          "ru": "Убедите персонал пустить вас на посадку — вежливо, но настойчиво."
+        }
+      ],
+      "questions": [
+        {
+          "en": "What would you say to the gate agent to let you board?",
+          "kz": "Сізді ұшаққа отырғызуы үшін қызметкерге не айтар едіңіз?",
+          "ru": "Что бы вы сказали сотруднику, чтобы вас пустили на борт?"
+        },
+        {
+          "en": "How would you explain why you were late?",
+          "kz": "Неге кешіккеніңізді қалай түсіндірер едіңіз?",
+          "ru": "Как бы вы объяснили, почему опоздали?"
+        },
+        {
+          "en": "How would you stay calm under pressure?",
+          "kz": "Қысым кезінде қалай сабыр сақтар едіңіз?",
+          "ru": "Как бы вы сохраняли спокойствие в стрессовой ситуации?"
+        },
+        {
+          "en": "What would you do if the gate is already closed?",
+          "kz": "Егер гейт жабылып қалса, не істер едіңіз?",
+          "ru": "Что бы вы сделали, если выход уже закрыт?"
+        },
+        {
+          "en": "Have you ever almost missed a flight? What happened?",
+          "kz": "Сіз ұшаққа кешігіп қала жаздаған кезіңіз болды ма? Не болды?",
+          "ru": "Вы когда-нибудь почти опаздывали на самолёт? Что случилось?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "Excuse me, could you help me, please?",
+          "kz": "Кешіріңіз, маған көмектесе аласыз ба?",
+          "ru": "Извините, не могли бы вы мне помочь?"
+        },
+        {
+          "en": "Sorry, I'm a bit confused — could you explain that again?",
+          "kz": "Кешіріңіз, сәл шатастым — қайта түсіндіре аласыз ба?",
+          "ru": "Простите, я немного запутался — можете объяснить ещё раз?"
+        },
+        {
+          "en": "I think there's been a mistake with my gate.",
+          "kz": "Менің ұшу қақпамда қателік болған сияқты.",
+          "ru": "Кажется, произошла ошибка с моим выходом на посадку."
+        },
+        {
+          "en": "Is there any way I can still catch my flight?",
+          "kz": "Рейсіме әлі де үлгерудің жолы бар ма?",
+          "ru": "Есть ли возможность всё-таки успеть на рейс?"
+        },
+        {
+          "en": "Could you tell me exactly which gate I need?",
+          "kz": "Маған қай қақпа керек екенін дәл айта аласыз ба?",
+          "ru": "Не могли бы вы сказать, какой именно выход мне нужен?"
+        },
+        {
+          "en": "I'd really appreciate it if you could check for me.",
+          "kz": "Тексеріп берсеңіз, шын ризашылығымды білдіремін.",
+          "ru": "Я был бы очень благодарен, если бы вы проверили для меня."
+        },
+        {
+          "en": "In my opinion, the board is showing the wrong information.",
+          "kz": "Менің ойымша, табло қате ақпарат көрсетіп тұр.",
+          "ru": "По-моему, на табло неверная информация."
+        },
+        {
+          "en": "What do you suggest I do now?",
+          "kz": "Қазір не істеуге кеңес бересіз?",
+          "ru": "Что вы посоветуете мне делать?"
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "however (to contrast)",
+          "kz": "алайда (қарама-қарсылық)",
+          "ru": "однако (противопоставление)"
+        },
+        {
+          "en": "first … then … after that (sequence)",
+          "kz": "алдымен … содан кейін … одан кейін",
+          "ru": "сначала … потом … после этого"
+        },
+        {
+          "en": "as a result (consequence)",
+          "kz": "нәтижесінде",
+          "ru": "в результате"
+        },
+        {
+          "en": "therefore (formal result)",
+          "kz": "сондықтан / демек",
+          "ru": "следовательно"
+        },
+        {
+          "en": "in my opinion (to give a view)",
+          "kz": "менің ойымша",
+          "ru": "по моему мнению"
+        },
+        {
+          "en": "finally (last point)",
+          "kz": "ақыры / соңында",
+          "ru": "наконец"
+        }
+      ],
+      "task": {
+        "en": "You're the passenger. Act out the whole scene out loud: explain the gate change, ask to board, and thank the agent. Use because, so, and however.",
+        "kz": "Сіз — жолаушысыз. Бүкіл көріністі дауыстап ойнаңыз: қақпаның ауысқанын түсіндіріп, отыруды сұрап, қызметкерге алғыс айтыңыз. because, so, however қолданыңыз.",
+        "ru": "Вы — пассажир. Разыграйте всю сцену вслух: объясните смену гейта, попросите пустить на посадку и поблагодарите сотрудника. Используйте because, so и however."
+      }
+    },
+    {
+      "id": 2,
+      "video": "/practice/situations/media/b1-v02.mp4",
+      "poster": "/practice/situations/media/b1-p02.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Can You Watch My Bag?",
+        "kz": "Сөмкеме қарап тұрасыз ба?",
+        "ru": "Присмотрите за моей сумкой?"
+      },
+      "intro": {
+        "en": "You're waiting at a quiet airport gate when a friendly stranger asks you to watch their backpack for 'just two minutes' and walks off before you can answer. Minutes pass and they don't come back. The bag sits there alone — and a security officer notices it, looking from the bag to you.",
+        "kz": "Сіз тыныш ұшу қақпасында күтіп отырғанда, бір сыпайы бейтаныс адам рюкзагына «бар болғаны екі минут» қарап тұруды өтініп, жауап беруге үлгертпей кетіп қалады. Минуттар өтеді, ал ол қайтып келмейді. Сөмке жалғыз тұр — ал қауіпсіздік қызметкері оны байқап, сөмкеден сізге қарайды.",
+        "ru": "Вы ждёте у тихого выхода на посадку, когда приветливый незнакомец просит присмотреть за его рюкзаком «всего две минуты» и уходит, прежде чем вы успеваете ответить. Минуты идут, а он не возвращается. Сумка стоит одна — и сотрудник службы безопасности замечает её, переводя взгляд с сумки на вас."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "A friendly stranger asked you to watch his backpack for 'two minutes' and walked off. Fifteen minutes have passed. The bag sits alone.",
+            "kz": "Жылы шырайлы бейтаныс адам сізден рюкзагын 'екі минут' қарап тұруды өтініп, кетіп қалды. Он бес минут өтті. Сөмке жалғыз тұр.",
+            "ru": "Приветливый незнакомец попросил вас присмотреть за рюкзаком «две минуты» и ушёл. Прошло пятнадцать минут. Сумка стоит одна."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "A security officer walks over, looking from the bag to you.",
+            "kz": "Қауіпсіздік қызметкері жақындап, сөмкеден сізге қарайды.",
+            "ru": "Подходит сотрудник охраны, переводя взгляд с сумки на вас."
+          },
+          {
+            "who": "them",
+            "label": "Officer",
+            "en": "Excuse me. Is this your bag? It's been unattended for a while.",
+            "kz": "Кешіріңіз. Бұл сіздің сөмкеңіз бе? Ол біраздан бері иесіз тұр.",
+            "ru": "Извините. Это ваша сумка? Она уже какое-то время стоит без присмотра."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Say honestly that it isn't yours, and explain that a stranger asked you to watch it and didn't come back.",
+            "kz": "Оның сіздікі емес екенін шынайы айтып, бейтаныс адам оны қарап тұруды өтініп, қайтып келмегенін түсіндіріңіз.",
+            "ru": "Честно скажите, что она не ваша, и объясните, что незнакомец попросил присмотреть за ней и не вернулся."
+          },
+          {
+            "who": "them",
+            "label": "Officer",
+            "en": "I see. Can you describe the person? When exactly did they leave?",
+            "kz": "Түсінікті. Сол адамды сипаттай аласыз ба? Олар дәл қашан кетті?",
+            "ru": "Понятно. Вы можете описать этого человека? Когда именно он ушёл?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Describe what he looked like and roughly when he left. Stay calm and cooperative.",
+            "kz": "Оның сыртқы келбетін және шамамен қашан кеткенін сипаттаңыз. Сабырлы әрі ынтымақты болыңыз.",
+            "ru": "Опишите, как он выглядел и примерно когда ушёл. Будьте спокойны и готовы помочь."
+          },
+          {
+            "who": "them",
+            "label": "Officer",
+            "en": "Thank you. We'll handle the bag. In future, please don't agree to watch strangers' luggage — it can be risky.",
+            "kz": "Рахмет. Сөмкемен біз айналысамыз. Болашақта бейтаныс адамдардың жүгін қарап тұруға келіспеңіз — бұл қауіпті болуы мүмкін.",
+            "ru": "Спасибо. Сумкой мы займёмся. На будущее: не соглашайтесь присматривать за чужим багажом — это может быть рискованно."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Thank the officer, agree it won't happen again, and ask if you're free to go.",
+            "kz": "Қызметкерге алғыс айтып, мұның қайталанбайтынымен келісіп, кете беруге бола ма деп сұраңыз.",
+            "ru": "Поблагодарите сотрудника, согласитесь, что это не повторится, и спросите, можете ли вы идти."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Explain to the security officer that the bag is not yours and how it got there.",
+          "kz": "Қауіпсіздік қызметкеріне сөмке сіздікі емес екенін және оның қалай пайда болғанын түсіндіріңіз.",
+          "ru": "Объясните сотруднику охраны, что сумка не ваша и как она там оказалась."
+        },
+        {
+          "en": "Describe the stranger and stay calm while you're questioned.",
+          "kz": "Бейтаныс адамды сипаттап, сұрақ қойылып жатқанда сабырлы болыңыз.",
+          "ru": "Опишите незнакомца и сохраняйте спокойствие, пока вас расспрашивают."
+        },
+        {
+          "en": "Make clear you acted in good faith and ask what you should do now.",
+          "kz": "Сіз адал ниетпен әрекет еткеніңізді анық айтып, енді не істеу керектігін сұраңыз.",
+          "ru": "Дайте понять, что вы действовали без злого умысла, и спросите, что вам теперь делать."
+        }
+      ],
+      "questions": [
+        {
+          "en": "What would you say to the security officer about the bag?",
+          "kz": "Қауіпсіздік қызметкеріне бұл сөмке туралы не айтар едіңіз?",
+          "ru": "Что бы вы сказали сотруднику службы безопасности об этой сумке?"
+        },
+        {
+          "en": "How would you explain that the bag isn't yours?",
+          "kz": "Сөмкенің сіздікі емес екенін қалай түсіндірер едіңіз?",
+          "ru": "Как бы вы объяснили, что сумка не ваша?"
+        },
+        {
+          "en": "Should you have agreed at the start? How would you refuse politely?",
+          "kz": "Басында келісу керек пе еді? Қалай сыпайы түрде бас тартар едіңіз?",
+          "ru": "Стоило ли соглашаться вначале? Как бы вы вежливо отказались?"
+        },
+        {
+          "en": "What would you do if the stranger suddenly came back?",
+          "kz": "Егер бейтаныс адам кенет қайтып келсе, не істер едіңіз?",
+          "ru": "Что бы вы сделали, если бы незнакомец вдруг вернулся?"
+        },
+        {
+          "en": "Have you ever been asked to watch a stranger's things? What did you do?",
+          "kz": "Сізден бөтен адамның заттарына қарап тұруды сұраған кезі болды ма? Не істедіңіз?",
+          "ru": "Вас когда-нибудь просили присмотреть за чужими вещами? Что вы сделали?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "Excuse me, would you mind watching my bag for a minute?",
+          "kz": "Кешіріңіз, бір минут сөмкеме қарап тұрасыз ба?",
+          "ru": "Извините, вы не присмотрите за моей сумкой минутку?"
+        },
+        {
+          "en": "I'll be right back, I promise.",
+          "kz": "Қазір қайтып келемін, уәде беремін.",
+          "ru": "Я сейчас вернусь, обещаю."
+        },
+        {
+          "en": "Of course, no problem at all.",
+          "kz": "Әрине, ешқандай мәселе жоқ.",
+          "ru": "Конечно, без проблем."
+        },
+        {
+          "en": "Sorry, I'd rather not — I'm about to leave.",
+          "kz": "Кешіріңіз, жөн болмас — мен кетейін деп тұрмын.",
+          "ru": "Извините, лучше не надо — я скоро ухожу."
+        },
+        {
+          "en": "How long will you be?",
+          "kz": "Қанша уақытқа кетесіз?",
+          "ru": "Как долго вас не будет?"
+        },
+        {
+          "en": "I'm not sure that's a good idea, to be honest.",
+          "kz": "Шынымды айтсам, бұл жақсы ой деп ойламаймын.",
+          "ru": "Честно говоря, не уверен, что это хорошая идея."
+        },
+        {
+          "en": "Could you keep an eye on it for me?",
+          "kz": "Оны бақылап тұра аласыз ба?",
+          "ru": "Не могли бы вы за ней присмотреть?"
+        },
+        {
+          "en": "Thanks so much, I really appreciate it.",
+          "kz": "Көп рахмет, шын ризамын.",
+          "ru": "Большое спасибо, я очень благодарен."
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "but (to contrast)",
+          "kz": "бірақ (қарама-қарсылық)",
+          "ru": "но (противопоставление)"
+        },
+        {
+          "en": "however (to contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        },
+        {
+          "en": "while (at the same time)",
+          "kz": "… кезде / … уақытта",
+          "ru": "пока / в то время как"
+        },
+        {
+          "en": "unless (except if)",
+          "kz": "егер … болмаса",
+          "ru": "если только не"
+        },
+        {
+          "en": "for example (to give an example)",
+          "kz": "мысалы",
+          "ru": "например"
+        },
+        {
+          "en": "in my opinion (to give a view)",
+          "kz": "менің ойымша",
+          "ru": "по моему мнению"
+        }
+      ],
+      "task": {
+        "en": "You're the traveller. Act out the conversation out loud: explain the situation, describe the stranger, and show you meant no harm. Use because, however, and as a result.",
+        "kz": "Сіз — жолаушысыз. Әңгімені дауыстап ойнаңыз: жағдайды түсіндіріп, бейтаныс адамды сипаттап, ешқандай жаман ниетіңіз болмағанын көрсетіңіз. because, however, as a result қолданыңыз.",
+        "ru": "Вы — путешественник. Разыграйте разговор вслух: объясните ситуацию, опишите незнакомца и покажите, что не имели злого умысла. Используйте because, however и as a result."
+      }
+    },
+    {
+      "id": 3,
+      "video": "/practice/situations/media/b1-v03.mp4",
+      "poster": "/practice/situations/media/b1-p03.jpg",
+      "hasAudio": false,
+      "title": {
+        "en": "The Suspicious Taxi Route",
+        "kz": "Күдікті такси бағыты",
+        "ru": "Подозрительный маршрут такси"
+      },
+      "intro": {
+        "en": "It's late at night and your taxi seems to be going the wrong way. The meter keeps climbing, the same building passes twice, and your map shows the hotel is now behind you. The driver only says “shortcut”. You need to stay calm but firm and reach your hotel safely.",
+        "kz": "Түн ортасы, таксиіңіз қате бағытпен бара жатқан сияқты. Есептегіш өсіп барады, бір ғимарат екі рет көрінеді, ал картада қонақүй артта қалғаны көрінеді. Жүргізуші тек «shortcut» («қысқа жол») деп қайталайды. Сабырлы, бірақ табанды болып, қонақүйге аман жетуіңіз керек.",
+        "ru": "Поздняя ночь, и ваше такси, кажется, едет не туда. Счётчик растёт, одно и то же здание проезжает дважды, а карта показывает, что отель уже позади. Водитель повторяет лишь «shortcut» («короткий путь»). Нужно сохранять спокойствие, но твёрдость и добраться до отеля безопасно."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "It's late at night. The meter keeps climbing and you pass the same building twice. Your map shows the hotel is now behind you.",
+            "kz": "Түн ортасы. Есептегіш үнемі өсіп барады, сіз бір ғимаратты екі рет аралап өтесіз. Картаңызда қонақ үй енді артта қалғанын көрсетеді.",
+            "ru": "Поздняя ночь. Счётчик растёт, и вы дважды проезжаете одно и то же здание. Карта показывает, что отель теперь позади вас."
+          },
+          {
+            "who": "them",
+            "label": "Driver",
+            "en": "Don't worry, my friend. This way is faster. Big traffic on the main road. Shortcut, shortcut.",
+            "kz": "Уайымдамаңыз, досым. Бұл жол жылдамырақ. Басты жолда үлкен кептеліс. Қысқа жол, қысқа жол.",
+            "ru": "Не волнуйтесь, друг. Так быстрее. На главной дороге большая пробка. Короткий путь, короткий путь."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Stay polite but firm: say your map shows a different way and you'd prefer to go directly.",
+            "kz": "Сыпайы, бірақ табанды болыңыз: картаңыз басқа жолды көрсетіп тұрғанын және тура жүргіңіз келетінін айтыңыз.",
+            "ru": "Будьте вежливы, но твёрды: скажите, что ваша карта показывает другой путь и вы предпочли бы ехать напрямую."
+          },
+          {
+            "who": "them",
+            "label": "Driver",
+            "en": "My way is better, trust me. GPS is wrong here at night.",
+            "kz": "Менің жолым жақсырақ, маған сеніңіз. Түнде мұнда GPS қателеседі.",
+            "ru": "Мой путь лучше, поверьте. Ночью тут GPS ошибается."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Hold your ground. Ask him clearly to turn around and take you straight to the hotel address.",
+            "kz": "Өз дегеніңізде тұрыңыз. Кері бұрылып, сізді қонақ үй мекенжайына тура апаруды нақты сұраңыз.",
+            "ru": "Не уступайте. Чётко попросите развернуться и отвезти вас прямо по адресу отеля."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "He sighs, slows down, and finally turns toward your hotel. The lights of the entrance appear ahead.",
+            "kz": "Ол күрсініп, жылдамдығын баяулатып, ақыры қонақ үйіңізге қарай бұрылады. Алда кіреберістің шамдары көрінеді.",
+            "ru": "Он вздыхает, сбавляет скорость и наконец поворачивает к вашему отелю. Впереди появляются огни входа."
+          },
+          {
+            "who": "them",
+            "label": "Driver",
+            "en": "Okay, okay. Here is your hotel. That's 4,500.",
+            "kz": "Жарайды, жарайды. Міне сіздің қонақ үйіңіз. 4500 болады.",
+            "ru": "Ладно, ладно. Вот ваш отель. С вас 4500."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Check the fare against the normal price, pay or question it calmly, and get out safely.",
+            "kz": "Бағаны қалыпты бағамен салыстырып, төлеңіз немесе сабырмен сұрақ қойып, аман-есен шығыңыз.",
+            "ru": "Сверьте сумму с обычной ценой, оплатите или спокойно уточните её и безопасно выйдите."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Tell the driver calmly that the route looks wrong and you'd like to follow the map.",
+          "kz": "Жүргізушіге бағыт қате сияқты екенін және картамен жүргіңіз келетінін сабырмен айтыңыз.",
+          "ru": "Спокойно скажите водителю, что маршрут выглядит неправильным и вы хотите ехать по карте."
+        },
+        {
+          "en": "Stay firm and ask him to take the direct way to your hotel.",
+          "kz": "Табанды болып, қонақ үйге тура жолмен баруды сұраңыз.",
+          "ru": "Держитесь твёрдо и попросите ехать к отелю прямой дорогой."
+        },
+        {
+          "en": "Protect yourself: be ready to stop, get out, or call someone if needed.",
+          "kz": "Өзіңізді қорғаңыз: қажет болса тоқтауға, шығуға немесе біреуге қоңырау шалуға дайын болыңыз.",
+          "ru": "Обезопасьте себя: будьте готовы остановиться, выйти или позвонить кому-то при необходимости."
+        }
+      ],
+      "questions": [
+        {
+          "en": "How would you ask the driver to follow your map?",
+          "kz": "Жүргізушіден сіздің картаңызбен жүруді қалай сұрар едіңіз?",
+          "ru": "Как бы вы попросили водителя ехать по вашей карте?"
+        },
+        {
+          "en": "What would you say if the final price seems too high?",
+          "kz": "Соңғы баға тым жоғары болса, не айтар едіңіз?",
+          "ru": "Что бы вы сказали, если итоговая цена кажется слишком высокой?"
+        },
+        {
+          "en": "How would you stay calm but firm with the driver?",
+          "kz": "Жүргізушімен сабырлы, бірақ табанды болуды қалай сақтар едіңіз?",
+          "ru": "Как бы вы оставались спокойным, но твёрдым с водителем?"
+        },
+        {
+          "en": "What would you do if you felt unsafe?",
+          "kz": "Өзіңізді қауіпсіз сезінбесеңіз, не істер едіңіз?",
+          "ru": "Что бы вы сделали, если бы почувствовали себя небезопасно?"
+        },
+        {
+          "en": "Have you ever had a problem with a taxi or ride-share? What happened?",
+          "kz": "Таксиде қиындық болған кезіңіз бар ма? Не болды?",
+          "ru": "У вас были проблемы с такси? Что произошло?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "Excuse me, why are we going this way?",
+          "kz": "Кешіріңіз, неге осы жолмен барамыз?",
+          "ru": "Извините, почему мы едем этой дорогой?"
+        },
+        {
+          "en": "I think this isn't the usual route.",
+          "kz": "Бұл әдеттегі бағыт емес сияқты.",
+          "ru": "Кажется, это не обычный маршрут."
+        },
+        {
+          "en": "Could you use the GPS, please?",
+          "kz": "GPS-ті қоса аласыз ба?",
+          "ru": "Не могли бы вы включить навигатор?"
+        },
+        {
+          "en": "I'd prefer to take the main road.",
+          "kz": "Мен негізгі жолмен жүргенді қалаймын.",
+          "ru": "Я бы предпочёл ехать по главной дороге."
+        },
+        {
+          "en": "Are you sure this is faster?",
+          "kz": "Бұл жылдамырақ екеніне сенімдісіз бе?",
+          "ru": "Вы уверены, что так быстрее?"
+        },
+        {
+          "en": "I don't think this is right.",
+          "kz": "Бұл дұрыс емес сияқты.",
+          "ru": "Мне кажется, это неправильно."
+        },
+        {
+          "en": "Could you stop here, please?",
+          "kz": "Осы жерде тоқтай аласыз ба?",
+          "ru": "Не могли бы вы остановиться здесь?"
+        },
+        {
+          "en": "How much will it cost in total?",
+          "kz": "Барлығы қанша тұрады?",
+          "ru": "Сколько это будет стоить в итоге?"
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "however (to contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        },
+        {
+          "en": "although (despite the fact)",
+          "kz": "… болса да",
+          "ru": "хотя"
+        },
+        {
+          "en": "therefore (formal result)",
+          "kz": "демек / сондықтан",
+          "ru": "следовательно"
+        },
+        {
+          "en": "that's why (to explain a result)",
+          "kz": "сол себепті",
+          "ru": "вот почему"
+        },
+        {
+          "en": "in my opinion (to give a view)",
+          "kz": "менің ойымша",
+          "ru": "по моему мнению"
+        },
+        {
+          "en": "as a result (consequence)",
+          "kz": "нәтижесінде",
+          "ru": "в результате"
+        }
+      ],
+      "task": {
+        "en": "You're the passenger. Act out the scene out loud: question the route, insist on the direct way, and handle the fare. Use however, therefore, and in my opinion.",
+        "kz": "Сіз — жолаушысыз. Көріністі дауыстап ойнаңыз: бағытқа қатысты сұрақ қойып, тура жолды талап етіп, ақы төлеуді реттеңіз. however, therefore, in my opinion қолданыңыз.",
+        "ru": "Вы — пассажир. Разыграйте сцену вслух: усомнитесь в маршруте, настойте на прямой дороге и разберитесь с оплатой. Используйте however, therefore и in my opinion."
+      }
+    },
+    {
+      "id": 4,
+      "video": "/practice/situations/media/b1-v04.mp4",
+      "poster": "/practice/situations/media/b1-p04.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Passport Left Behind",
+        "kz": "Ұмыт қалған төлқұжат",
+        "ru": "Забытый паспорт"
+      },
+      "intro": {
+        "en": "You're already past security, heading to your gate, when your hand reaches for your passport — and it's gone. You left it in the tray at the security check. The area is far behind you, full of people, and your flight boards in minutes. You have to find airport staff fast and explain the emergency calmly.",
+        "kz": "Сіз қауіпсіздік тексерісінен өтіп, ұшу қақпасына бара жатқанда, төлқұжатыңызды іздеп қол созасыз — ал ол жоқ. Оны тексеру кезіндегі науаға қалдырып кетіпсіз. Тексеру аймағы әлдеқашан артта қалды, айналаңыз адамға толы, ал отырғызу бірнеше минуттан кейін басталады. Тез әуежай қызметкерін тауып, жағдайды сабырмен түсіндіруіңіз керек.",
+        "ru": "Вы уже прошли досмотр и идёте к выходу на посадку, как вдруг тянетесь за паспортом — а его нет. Вы оставили его в лотке на контроле безопасности. Зона досмотра далеко позади, вокруг толпа, а посадка начинается через несколько минут. Нужно быстро найти сотрудника аэропорта и спокойно объяснить ситуацию."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "Past security, heading to your gate, you reach for your passport — and it's gone. You left it in the tray.",
+            "kz": "Қауіпсіздіктен өтіп, қақпаға бара жатып, паспортыңызды іздейсіз — ол жоқ. Сіз оны науада қалдырыпсыз.",
+            "ru": "Пройдя досмотр и направляясь к выходу, вы тянетесь за паспортом — а его нет. Вы оставили его в лотке."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You hurry back toward an information desk. A staff member looks up.",
+            "kz": "Сіз анықтама бюросына қарай асығасыз. Қызметкер басын көтереді.",
+            "ru": "Вы спешите обратно к стойке информации. Сотрудник поднимает взгляд."
+          },
+          {
+            "who": "them",
+            "label": "Staff",
+            "en": "Hello, can I help you? You look worried.",
+            "kz": "Сәлеметсіз бе, көмектесе аламын ба? Сіз уайымды көрінесіз.",
+            "ru": "Здравствуйте, чем могу помочь? Вы выглядите взволнованно."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Explain the emergency calmly: you left your passport in the tray at security, and your flight is boarding soon.",
+            "kz": "Жағдайды сабырмен түсіндіріңіз: паспортыңызды қауіпсіздіктегі науада қалдырдыңыз, ал рейсіңіз жақында отырғызуға басталады.",
+            "ru": "Спокойно объясните срочность: вы оставили паспорт в лотке на досмотре, а ваш рейс скоро на посадку."
+          },
+          {
+            "who": "them",
+            "label": "Staff",
+            "en": "Okay, stay calm. Which security lane did you use? Do you remember the time?",
+            "kz": "Жарайды, сабыр сақтаңыз. Қай қауіпсіздік жолағын қолдандыңыз? Уақытын есіңізде ме?",
+            "ru": "Хорошо, не волнуйтесь. Какой полосой досмотра вы пользовались? Время помните?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Give the details you remember and politely ask if they can call the security team right away.",
+            "kz": "Есіңізде қалған мәліметтерді беріп, қауіпсіздік тобына дереу хабарласа алатын-алмайтынын сыпайы сұраңыз.",
+            "ru": "Сообщите детали, которые помните, и вежливо попросите сразу же связаться со службой досмотра."
+          },
+          {
+            "who": "them",
+            "label": "Staff",
+            "en": "I'll call them now. Please wait here. If they have it, I'll have someone bring it to your gate.",
+            "kz": "Қазір оларға хабарласамын. Осында күте тұрыңыз. Олар тапса, біреумен қақпаңызға жеткіземін.",
+            "ru": "Сейчас позвоню им. Подождите здесь. Если он у них, я попрошу кого-нибудь принести его к вашему выходу."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Thank the staff, confirm your gate and flight number, and ask roughly how long it will take.",
+            "kz": "Қызметкерге алғыс айтып, қақпаңыз бен рейс нөміріңізді растап, шамамен қанша уақыт алатынын сұраңыз.",
+            "ru": "Поблагодарите сотрудника, подтвердите выход и номер рейса и спросите, сколько примерно это займёт."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Find airport staff fast and explain that you left your passport at the security check.",
+          "kz": "Әуежай қызметкерлерін тез тауып, паспортыңызды қауіпсіздік тексерісінде ұмытып кеткеніңізді түсіндіріңіз.",
+          "ru": "Быстро найдите сотрудника аэропорта и объясните, что оставили паспорт на досмотре."
+        },
+        {
+          "en": "Stay calm, describe exactly where you think it is, and ask for the quickest way to get it back.",
+          "kz": "Сабыр сақтап, оның қайда екенін нақты сипаттап, оны тез қайтарудың ең жылдам жолын сұраңыз.",
+          "ru": "Сохраняйте спокойствие, точно опишите, где он, по-вашему, и спросите самый быстрый способ его вернуть."
+        },
+        {
+          "en": "Make clear your flight boards very soon and ask for help to avoid missing it.",
+          "kz": "Рейсіңіз көп ұзамай отырғызуға басталатынын анық айтып, оған кешікпеу үшін көмек сұраңыз.",
+          "ru": "Дайте понять, что ваш рейс скоро на посадку, и попросите помощи, чтобы не опоздать."
+        }
+      ],
+      "questions": [
+        {
+          "en": "Who would you ask for help first, and what would you say?",
+          "kz": "Алдымен кімнен көмек сұрар едіңіз және не айтар едіңіз?",
+          "ru": "У кого бы вы попросили помощи первым и что бы вы сказали?"
+        },
+        {
+          "en": "How would you explain the situation clearly and quickly?",
+          "kz": "Жағдайды нақты әрі тез қалай түсіндірер едіңіз?",
+          "ru": "Как бы вы объяснили ситуацию чётко и быстро?"
+        },
+        {
+          "en": "How would you prove the passport is yours?",
+          "kz": "Төлқұжаттың сізге тиесілі екенін қалай дәлелдер едіңіз?",
+          "ru": "Как бы вы доказали, что паспорт ваш?"
+        },
+        {
+          "en": "What would you do if they say you can't go back through security?",
+          "kz": "Егер тексерістен кері өтуге болмайды десе, не істер едіңіз?",
+          "ru": "Что бы вы сделали, если бы вам сказали, что вернуться через досмотр нельзя?"
+        },
+        {
+          "en": "Have you ever lost an important document while travelling? What happened?",
+          "kz": "Сапарда маңызды құжатты жоғалтқан кезіңіз болды ма? Не болды?",
+          "ru": "Вы когда-нибудь теряли важный документ в поездке? Что случилось?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "I think I've left my passport at the hotel.",
+          "kz": "Төлқұжатымды қонақ үйде қалдырып кеткен сияқтымын.",
+          "ru": "Кажется, я оставил паспорт в отеле."
+        },
+        {
+          "en": "What should I do now?",
+          "kz": "Қазір не істеуім керек?",
+          "ru": "Что мне теперь делать?"
+        },
+        {
+          "en": "Is there any way to get it back in time?",
+          "kz": "Оны уақытында қайтарудың жолы бар ма?",
+          "ru": "Есть ли способ вернуть его вовремя?"
+        },
+        {
+          "en": "Could you possibly help me?",
+          "kz": "Маған көмектесе аласыз ба?",
+          "ru": "Не могли бы вы мне помочь?"
+        },
+        {
+          "en": "I'm really sorry, this is my fault.",
+          "kz": "Кешіріңіз, бұл менің кінәм.",
+          "ru": "Мне очень жаль, это моя вина."
+        },
+        {
+          "en": "Do you think there's enough time?",
+          "kz": "Уақыт жетеді деп ойлайсыз ба?",
+          "ru": "Как думаете, времени хватит?"
+        },
+        {
+          "en": "Would it be possible to send it by taxi?",
+          "kz": "Оны таксимен жіберуге бола ма?",
+          "ru": "Можно ли прислать его на такси?"
+        },
+        {
+          "en": "I'd really appreciate any help.",
+          "kz": "Кез келген көмекке ризамын.",
+          "ru": "Я буду благодарен за любую помощь."
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "therefore (formal result)",
+          "kz": "демек / сондықтан",
+          "ru": "следовательно"
+        },
+        {
+          "en": "first … then … after that (sequence)",
+          "kz": "алдымен … содан кейін … одан кейін",
+          "ru": "сначала … потом … после этого"
+        },
+        {
+          "en": "finally (last point)",
+          "kz": "ақыры / соңында",
+          "ru": "наконец"
+        },
+        {
+          "en": "as a result (consequence)",
+          "kz": "нәтижесінде",
+          "ru": "в результате"
+        },
+        {
+          "en": "unless (except if)",
+          "kz": "егер … болмаса",
+          "ru": "если только не"
+        },
+        {
+          "en": "that's why (to explain a result)",
+          "kz": "сол себепті",
+          "ru": "вот почему"
+        }
+      ],
+      "task": {
+        "en": "You're the traveller. Act out the scene out loud: report the lost passport, give the details, and ask for fast help. Use because, so, and as a result.",
+        "kz": "Сіз — жолаушысыз. Көріністі дауыстап ойнаңыз: жоғалған паспорт туралы хабарлап, мәліметтерді беріп, жедел көмек сұраңыз. because, so, as a result қолданыңыз.",
+        "ru": "Вы — путешественник. Разыграйте сцену вслух: сообщите о потерянном паспорте, дайте детали и попросите быстрой помощи. Используйте because, so и as a result."
+      }
+    },
+    {
+      "id": 5,
+      "video": "/practice/situations/media/b1-v05.mp4",
+      "poster": "/practice/situations/media/b1-p05.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "The Awkward First Date",
+        "kz": "Ыңғайсыз бірінші кездесу",
+        "ru": "Неловкое первое свидание"
+      },
+      "intro": {
+        "en": "You're on a first date at a nice restaurant. The conversation started well, but now there are long silences. Your date seems pleasant but a little different from their photos, and you're not sure if there's a real connection. The waiter is bringing the bill, and you don't know who should pay — or whether you'd even want a second date.",
+        "kz": "Сіз жақсы мейрамханада бірінші кездесудесіз. Әңгіме жақсы басталды, бірақ енді ұзақ үнсіздік орнайды. Серіктесіңіз жағымды, бірақ суреттерінен сәл өзгеше көрінеді, ал арада нағыз ұшқын бар-жоғын білмейсіз. Даяшы шот әкеле жатыр, ал сіз кім төлеу керегін — және екінші кездесу қалайтын-қаламайтыныңызды білмейсіз.",
+        "ru": "Вы на первом свидании в хорошем ресторане. Разговор начался неплохо, но теперь возникают долгие паузы. Спутник кажется приятным, но немного отличается от своих фото, и вы не уверены, есть ли настоящая искра. Официант несёт счёт, а вы не знаете, кто должен платить — и хотите ли вы второго свидания."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "The restaurant is nice, but the conversation has slowed. A long silence sits between you. Your date smiles politely.",
+            "kz": "Мейрамхана әдемі, бірақ әңгіме баяулады. Араларыңызда ұзақ үнсіздік орнады. Серіктесіңіз сыпайы жымияды.",
+            "ru": "Ресторан приятный, но разговор затих. Между вами повисла долгая пауза. Ваш собеседник вежливо улыбается."
+          },
+          {
+            "who": "them",
+            "label": "Your date",
+            "en": "So… yeah. This place is nice, isn't it?",
+            "kz": "Сонымен… иә. Бұл жер жақсы екен, солай ма?",
+            "ru": "Ну… да. Хорошее место, правда?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Pick up the thread: agree warmly and ask an open question about their interests or week.",
+            "kz": "Әңгімені іліп әкетіңіз: жылы келісіп, олардың қызығушылықтары немесе аптасы туралы ашық сұрақ қойыңыз.",
+            "ru": "Подхватите нить: тепло согласитесь и задайте открытый вопрос об их увлечениях или о том, как прошла неделя."
+          },
+          {
+            "who": "them",
+            "label": "Your date",
+            "en": "Oh, I love hiking actually. I went to the mountains last weekend. What about you?",
+            "kz": "О, мен шынында жаяу серуенді жақсы көремін. Өткен демалыста тауға барып келдім. Сіз ше?",
+            "ru": "О, я вообще-то люблю походы. На выходных был в горах. А вы?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Respond, share something about yourself, and keep the energy friendly and curious.",
+            "kz": "Жауап беріп, өзіңіз туралы бірдеңе айтып, әңгіменің жылы әрі қызық болуын сақтаңыз.",
+            "ru": "Ответьте, расскажите что-то о себе и сохраняйте дружелюбный, заинтересованный тон."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "The waiter approaches and places the bill in the middle of the table. A small awkward pause.",
+            "kz": "Даяшы жақындап, шотты үстелдің ортасына қояды. Шағын ыңғайсыз үзіліс.",
+            "ru": "Подходит официант и кладёт счёт в центр стола. Небольшая неловкая пауза."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Handle the bill: offer to split it or pay, in a relaxed and polite way.",
+            "kz": "Шотты реттеңіз: оны бөлуді немесе төлеуді сабырлы әрі сыпайы түрде ұсыныңыз.",
+            "ru": "Разберитесь со счётом: предложите разделить его или оплатить — спокойно и вежливо."
+          },
+          {
+            "who": "them",
+            "label": "Your date",
+            "en": "This was lovely. Maybe we could do it again sometime?",
+            "kz": "Бұл тамаша болды. Мүмкін бір кезде тағы да кездесерміз?",
+            "ru": "Это было здорово. Может, как-нибудь повторим?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Answer honestly but kindly — whether you'd like a second date or would rather leave it here.",
+            "kz": "Шынайы, бірақ жылы жауап беріңіз — екінші кездесуді қалайсыз ба, әлде осымен аяқтағыңыз келе ме.",
+            "ru": "Ответьте честно, но по-доброму — хотите ли вы второго свидания или предпочли бы оставить всё как есть."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Keep the conversation going by asking open, friendly questions during the silences.",
+          "kz": "Үнсіздік кезінде ашық, жылы сұрақтар қойып, әңгімені жалғастырыңыз.",
+          "ru": "Поддержите разговор, задавая открытые дружелюбные вопросы во время пауз."
+        },
+        {
+          "en": "Handle the bill gracefully when the waiter brings it.",
+          "kz": "Даяшы шот әкелгенде, оны әдептілікпен реттеңіз.",
+          "ru": "Тактично разберитесь со счётом, когда официант его принесёт."
+        },
+        {
+          "en": "End the date kindly and be honest with yourself about a second date.",
+          "kz": "Кездесуді жылы аяқтап, екінші кездесу туралы өзіңізге адал болыңыз.",
+          "ru": "Завершите свидание по-доброму и будьте честны с собой насчёт второй встречи."
+        }
+      ],
+      "questions": [
+        {
+          "en": "How would you fill the awkward silences?",
+          "kz": "Ыңғайсыз үнсіздікті қалай толтырар едіңіз?",
+          "ru": "Как бы вы заполнили неловкие паузы?"
+        },
+        {
+          "en": "How would you handle the question of who pays?",
+          "kz": "Кім төлейді деген мәселені қалай шешер едіңіз?",
+          "ru": "Как бы вы решили вопрос о том, кто платит?"
+        },
+        {
+          "en": "How would you end the date kindly, whatever you feel?",
+          "kz": "Не сезінсеңіз де, кездесуді қалай сыпайы аяқтар едіңіз?",
+          "ru": "Как бы вы вежливо завершили свидание, что бы вы ни чувствовали?"
+        },
+        {
+          "en": "What would you say about a possible second date, honestly?",
+          "kz": "Болуы мүмкін екінші кездесу туралы шынайы не айтар едіңіз?",
+          "ru": "Что бы вы честно сказали о возможном втором свидании?"
+        },
+        {
+          "en": "Have you ever had an awkward first meeting? What happened?",
+          "kz": "Сізде ыңғайсыз алғашқы танысу болды ма? Не болды?",
+          "ru": "У вас было неловкое первое знакомство? Что произошло?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "So, what do you like doing in your free time?",
+          "kz": "Сонымен, бос уақытыңда немен айналысқанды ұнатасың?",
+          "ru": "Итак, чем ты любишь заниматься в свободное время?"
+        },
+        {
+          "en": "Shall we get something to eat?",
+          "kz": "Бірдеңе жеп алайық па?",
+          "ru": "Может, перекусим?"
+        },
+        {
+          "en": "To be honest, I'm a little nervous.",
+          "kz": "Шынымды айтсам, сәл толқып тұрмын.",
+          "ru": "Честно говоря, я немного волнуюсь."
+        },
+        {
+          "en": "That sounds great!",
+          "kz": "Тамаша екен!",
+          "ru": "Звучит здорово!"
+        },
+        {
+          "en": "I'd rather talk about something else, if that's okay.",
+          "kz": "Болса, басқа нәрсе туралы сөйлескім келеді.",
+          "ru": "Если можно, я бы лучше поговорил о чём-то другом."
+        },
+        {
+          "en": "What kind of music are you into?",
+          "kz": "Қандай музыканы ұнатасың?",
+          "ru": "Какую музыку ты любишь?"
+        },
+        {
+          "en": "Maybe we could go somewhere quieter?",
+          "kz": "Тынышырақ жерге барсақ па?",
+          "ru": "Может, пойдём в место потише?"
+        },
+        {
+          "en": "I've really enjoyed talking to you.",
+          "kz": "Сенімен сөйлескенім ұнады.",
+          "ru": "Мне очень понравилось с тобой разговаривать."
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "but (to contrast)",
+          "kz": "бірақ",
+          "ru": "но"
+        },
+        {
+          "en": "although (despite the fact)",
+          "kz": "… болса да",
+          "ru": "хотя"
+        },
+        {
+          "en": "for example (to give an example)",
+          "kz": "мысалы",
+          "ru": "например"
+        },
+        {
+          "en": "on the one hand … on the other hand",
+          "kz": "бір жағынан … екінші жағынан",
+          "ru": "с одной стороны … с другой стороны"
+        },
+        {
+          "en": "in my opinion (to give a view)",
+          "kz": "менің ойымша",
+          "ru": "по моему мнению"
+        },
+        {
+          "en": "also / besides (to add)",
+          "kz": "сондай-ақ / оның үстіне",
+          "ru": "также / кроме того"
+        }
+      ],
+      "task": {
+        "en": "You're on the date. Act out the scene out loud: break the silence, handle the bill, and answer about a second date honestly. Use because, although, and on the one hand … on the other hand.",
+        "kz": "Сіз — кездесудесіз. Көріністі дауыстап ойнаңыз: үнсіздікті бұзып, шотты реттеп, екінші кездесу туралы шынайы жауап беріңіз. because, although, on the one hand … on the other hand қолданыңыз.",
+        "ru": "Вы на свидании. Разыграйте сцену вслух: прервите молчание, разберитесь со счётом и честно ответьте про второе свидание. Используйте because, although и on the one hand … on the other hand."
+      }
+    },
+    {
+      "id": 6,
+      "video": "/practice/situations/media/b1-v06.mp4",
+      "poster": "/practice/situations/media/b1-p06.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "The Friend Who's Always Late",
+        "kz": "Үнемі кешігетін дос",
+        "ru": "Друг, который вечно опаздывает"
+      },
+      "intro": {
+        "en": "You planned to meet your friend at 7 for a film. It's now 7:40, the film has started, and she's still not here — again. Your phone is full of past 'running late' messages. When she finally arrives, smiling and breezy with 'Sorry, traffic!', you have to decide whether to bring up this pattern honestly without ruining the evening.",
+        "kz": "Сіз досыңызбен фильмге сағат 7-де кездесуге уағдаласқансыз. Қазір 7:40, фильм басталып кетті, ал ол әлі жоқ — тағы да. Телефоныңыз бұрынғы «кешігіп жатырмын» хабарламаларына толы. Ол ақыры күлімсіреп, жайбарақат «Кешір, кептеліс!» деп келгенде, кешті бұзбай, осы әдетті шынайы көтеру керек пе екенін шешуіңіз керек.",
+        "ru": "Вы договорились встретиться с подругой в 7 на фильм. Сейчас 7:40, фильм уже начался, а её всё нет — снова. Телефон полон прошлых сообщений «опаздываю». Когда она наконец появляется, с улыбкой и беспечным «Извини, пробки!», вам нужно решить, стоит ли честно поднять эту тему, не испортив вечер."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "It's 7:40. The film started ten minutes ago. Your phone is full of old 'running late' messages. Finally, your friend appears, smiling.",
+            "kz": "Сағат 7:40. Фильм он минут бұрын басталды. Телефоныңыз ескі 'кешігіп келемін' хабарламаларына толы. Ақыры досыңыз жымиып келеді.",
+            "ru": "7:40. Фильм начался десять минут назад. Телефон полон старых сообщений «уже бегу». Наконец появляется подруга, улыбаясь."
+          },
+          {
+            "who": "them",
+            "label": "Your friend",
+            "en": "Heyyy! Sorry, sorry — traffic was crazy. Did we miss much?",
+            "kz": "Сәлееем! Кешір, кешір — кептеліс ақылдан адастырды. Көп нәрсені жіберіп алдық па?",
+            "ru": "Приве-е-ет! Прости, прости — пробки были жуткие. Мы много пропустили?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Greet her, but gently say you've been waiting a while and the film has already started.",
+            "kz": "Онымен амандасыңыз, бірақ біраздан бері күтіп тұрғаныңызды және фильм басталып кеткенін жұмсақ айтыңыз.",
+            "ru": "Поздоровайтесь, но мягко скажите, что ждёте уже какое-то время и фильм уже начался."
+          },
+          {
+            "who": "them",
+            "label": "Your friend",
+            "en": "I know, I know. I'm so sorry. You know how I am with time!",
+            "kz": "Білемін, білемін. Қатты кешірім сұраймын. Уақытпен қалай екенімді білесің ғой!",
+            "ru": "Знаю, знаю. Мне правда жаль. Ты же знаешь меня с этим временем!"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Name the pattern kindly: this has happened several times, and it makes you feel unimportant. Use 'I' statements.",
+            "kz": "Үлгіні жұмсақ атаңыз: бұл бірнеше рет болды және бұл сізді маңызды емес сезіндіреді. 'Мен' тұжырымдарын қолданыңыз.",
+            "ru": "По-доброму назовите закономерность: это случалось несколько раз, и из-за этого вы чувствуете себя неважным. Говорите от «я»."
+          },
+          {
+            "who": "them",
+            "label": "Your friend",
+            "en": "Oh… I didn't realise it bothered you that much. I really don't mean to.",
+            "kz": "О… бұл сені сонша мазалайтынын білмеппін. Мен шынымен әдейі емес.",
+            "ru": "Ой… я не думала, что это тебя так задевает. Я правда не нарочно."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Suggest a small, fair fix — for example, a clear meeting time or a message if she's running late.",
+            "kz": "Шағын, әділ шешім ұсыныңыз — мысалы, нақты кездесу уақыты немесе кешігіп жатса хабарлама.",
+            "ru": "Предложите небольшое справедливое решение — например, чёткое время встречи или сообщение, если она опаздывает."
+          },
+          {
+            "who": "them",
+            "label": "Your friend",
+            "en": "That's fair. I'll really try. Let's still enjoy tonight, okay?",
+            "kz": "Бұл әділ. Шынымен тырысамын. Бүгінгі кешті бәрібір тамаша өткізейік, жарай ма?",
+            "ru": "Это справедливо. Я правда постараюсь. Давай всё равно насладимся вечером, хорошо?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Accept warmly, agree to enjoy the evening, and move on without dragging it out.",
+            "kz": "Жылы қабылдап, кешті тамаша өткізуге келісіп, мәселені созбай әрі қарай жалғастырыңыз.",
+            "ru": "Тепло примите это, согласитесь насладиться вечером и двигайтесь дальше, не затягивая."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Greet your friend without exploding, even though you're frustrated.",
+          "kz": "Ашулансаңыз да, досыңызбен жарылып кетпей амандасыңыз.",
+          "ru": "Поздоровайтесь с подругой, не взрываясь, хотя вы раздражены."
+        },
+        {
+          "en": "Name the pattern honestly — that this keeps happening — without attacking her.",
+          "kz": "Үлгіні шынайы атаңыз — мұның қайталанып жатқанын — оны кінәламай.",
+          "ru": "Честно назовите закономерность — что это повторяется — не нападая на неё."
+        },
+        {
+          "en": "Ask for a small, fair change so your evenings work better.",
+          "kz": "Кештеріңіз жақсырақ өтуі үшін шағын, әділ өзгеріс сұраңыз.",
+          "ru": "Попросите небольшое справедливое изменение, чтобы ваши встречи проходили лучше."
+        }
+      ],
+      "questions": [
+        {
+          "en": "How would you bring up the pattern, not just today?",
+          "kz": "Тек бүгінгі емес, осы әдет туралы қалай сөз бастар едіңіз?",
+          "ru": "Как бы вы заговорили о привычке, а не только о сегодняшнем дне?"
+        },
+        {
+          "en": "How would you explain how it makes you feel?",
+          "kz": "Бұл сізге қалай әсер ететінін қалай түсіндірер едіңіз?",
+          "ru": "Как бы вы объяснили, что вы при этом чувствуете?"
+        },
+        {
+          "en": "What would you ask her to do differently?",
+          "kz": "Одан келесіде нені басқаша істеуді сұрар едіңіз?",
+          "ru": "О чём бы вы попросили её в следующий раз?"
+        },
+        {
+          "en": "How would you keep the friendship strong while being honest?",
+          "kz": "Шыншыл бола отырып, достықты қалай сақтар едіңіз?",
+          "ru": "Как бы вы сохранили дружбу, оставаясь честным?"
+        },
+        {
+          "en": "Do you know someone who is always late? How do you handle it?",
+          "kz": "Үнемі кешігетін біреуді білесіз бе? Мұны қалай шешесіз?",
+          "ru": "Вы знаете кого-то, кто вечно опаздывает? Как вы с этим справляетесь?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "Can I be honest with you about something?",
+          "kz": "Саған бір нәрсені шынымен айтсам бола ма?",
+          "ru": "Можно я буду с тобой честен?"
+        },
+        {
+          "en": "It really bothers me when you're late.",
+          "kz": "Кешігіп қалғаныңда мені шынымен мазалайды.",
+          "ru": "Меня правда расстраивает, когда ты опаздываешь."
+        },
+        {
+          "en": "I'd appreciate it if you let me know in advance.",
+          "kz": "Алдын ала ескертсең, ризашылығымды білдірер едім.",
+          "ru": "Я был бы признателен, если бы ты предупреждал заранее."
+        },
+        {
+          "en": "I don't want to argue, but this keeps happening.",
+          "kz": "Дауласқым келмейді, бірақ бұл қайталанып жатыр.",
+          "ru": "Не хочу спорить, но это повторяется."
+        },
+        {
+          "en": "Maybe you could set an alarm?",
+          "kz": "Оятқыш қойсаң қайтеді?",
+          "ru": "Может, поставишь будильник?"
+        },
+        {
+          "en": "I understand things come up, however…",
+          "kz": "Кенеттен жұмыс шығатынын түсінемін, алайда…",
+          "ru": "Я понимаю, что бывают непредвиденные дела, однако…"
+        },
+        {
+          "en": "Can we agree on a time and stick to it?",
+          "kz": "Уақытты келісіп, соны ұстана аламыз ба?",
+          "ru": "Можем договориться о времени и придерживаться его?"
+        },
+        {
+          "en": "It's not a big deal, but it matters to me.",
+          "kz": "Үлкен мәселе емес, бірақ маған маңызды.",
+          "ru": "Это не страшно, но для меня важно."
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "although (despite the fact)",
+          "kz": "… болса да",
+          "ru": "хотя"
+        },
+        {
+          "en": "however (to contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        },
+        {
+          "en": "therefore (formal result)",
+          "kz": "демек / сондықтан",
+          "ru": "следовательно"
+        },
+        {
+          "en": "that's why (to explain a result)",
+          "kz": "сол себепті",
+          "ru": "вот почему"
+        },
+        {
+          "en": "besides (to add a point)",
+          "kz": "оның үстіне",
+          "ru": "кроме того"
+        },
+        {
+          "en": "in my opinion (to give a view)",
+          "kz": "менің ойымша",
+          "ru": "по моему мнению"
+        }
+      ],
+      "task": {
+        "en": "You're the friend who waited. Act out the scene out loud: greet her, raise the pattern honestly, and ask for a fair change. Use because, however, and for example.",
+        "kz": "Сіз — күткен досысыз. Көріністі дауыстап ойнаңыз: онымен амандасып, үлгіні шынайы көтеріп, әділ өзгеріс сұраңыз. because, however, for example қолданыңыз.",
+        "ru": "Вы — тот, кто ждал. Разыграйте сцену вслух: поздоровайтесь, честно поднимите тему, попросите справедливого изменения. Используйте because, however и for example."
+      }
+    },
+    {
+      "id": 7,
+      "video": "/practice/situations/media/b1-v07.mp4",
+      "poster": "/practice/situations/media/b1-p07.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "The Party Where You Know No One",
+        "kz": "Ешкімді танымайтын кеш",
+        "ru": "Вечеринка, где вы никого не знаете"
+      },
+      "intro": {
+        "en": "A colleague invited you to a party 'to meet new people'. You arrive and immediately feel out of place — everyone is in tight groups, laughing, and you don't know a single person except the host, who is busy in the kitchen. You could stand alone and leave early, or push yourself to start a conversation with strangers.",
+        "kz": "Әріптесіңіз сізді «жаңа адамдармен танысуға» кешке шақырды. Сіз келісімен өзіңізді ыңғайсыз сезінесіз — бәрі топ-топ болып күлісіп тұр, ал сіз ас үйде жүрген үй иесінен басқа ешкімді танымайсыз. Жалғыз тұрып, ерте кетуіңізге де болады — немесе батылдық танытып, бейтаныстармен әңгіме бастауыңызға да болады.",
+        "ru": "Коллега пригласил вас на вечеринку «познакомиться с новыми людьми». Вы приходите и сразу чувствуете себя не в своей тарелке — все собрались в тесные компании и смеются, а вы не знаете никого, кроме хозяина, который занят на кухне. Можно стоять в стороне и уйти пораньше — или решиться и заговорить с незнакомцами."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You arrive at the party. Everyone is in tight groups, laughing. You don't know a single person except the host, who is busy in the kitchen.",
+            "kz": "Сіз кешке келесіз. Барлығы тығыз топтарда күліп тұр. Ас үйде жұмыспен әбігер болып жүрген үй иесінен басқа бірде-бір адамды танымайсыз.",
+            "ru": "Вы приходите на вечеринку. Все стоят тесными группами и смеются. Вы не знаете ни одного человека, кроме хозяина, который занят на кухне."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You take a drink and stand near a small group. One person near you smiles and catches your eye.",
+            "kz": "Сіз сусын алып, шағын топтың қасында тұрасыз. Қасыңыздағы біреу жымиып, көзіңізге қарайды.",
+            "ru": "Вы берёте напиток и встаёте рядом с небольшой группой. Один человек рядом улыбается и ловит ваш взгляд."
+          },
+          {
+            "who": "them",
+            "label": "Guest",
+            "en": "Hi! I don't think we've met. Are you a friend of Dana's?",
+            "kz": "Сәлем! Біз танысқан жоқ сияқтымыз. Сіз Дананың досысыз ба?",
+            "ru": "Привет! Кажется, мы не знакомы. Вы друг Даны?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Introduce yourself warmly, say how you know the host, and ask how they know her.",
+            "kz": "Өзіңізді жылы таныстырып, үй иесін қайдан білетініңізді айтып, олардың оны қайдан білетінін сұраңыз.",
+            "ru": "Тепло представьтесь, расскажите, откуда знаете хозяйку, и спросите, откуда её знают они."
+          },
+          {
+            "who": "them",
+            "label": "Guest",
+            "en": "Oh nice! We work together. So what do you do?",
+            "kz": "О, тамаша! Біз бірге жұмыс істейміз. Ал сіз немен айналысасыз?",
+            "ru": "О, здорово! Мы вместе работаем. А чем вы занимаетесь?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Answer, then keep the conversation going by asking an open question and finding something in common.",
+            "kz": "Жауап беріп, содан кейін ашық сұрақ қойып, ортақ бірдеңе тауып, әңгімені жалғастырыңыз.",
+            "ru": "Ответьте, а затем поддержите беседу: задайте открытый вопрос и найдите что-то общее."
+          },
+          {
+            "who": "them",
+            "label": "Guest",
+            "en": "Come on, let me introduce you to the others — they're really friendly.",
+            "kz": "Жүріңіз, сізді басқаларға таныстырайын — олар өте достық.",
+            "ru": "Пойдёмте, я познакомлю вас с остальными — они очень дружелюбные."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Accept happily, join the group, and greet the others naturally.",
+            "kz": "Қуана келісіп, топқа қосылып, басқалармен табиғи түрде амандасыңыз.",
+            "ru": "С радостью согласитесь, присоединитесь к компании и естественно поздоровайтесь с остальными."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Push yourself to start one friendly conversation instead of leaving early.",
+          "kz": "Ерте кетудің орнына бір жылы әңгіме бастауға өзіңізді жұмылдырыңыз.",
+          "ru": "Заставьте себя начать одну дружелюбную беседу вместо того, чтобы уйти пораньше."
+        },
+        {
+          "en": "Introduce yourself and find something you have in common with a stranger.",
+          "kz": "Өзіңізді таныстырып, бейтаныс адаммен ортақ бірдеңе табыңыз.",
+          "ru": "Представьтесь и найдите что-то общее с незнакомцем."
+        },
+        {
+          "en": "Keep the conversation alive and join the group naturally.",
+          "kz": "Әңгімені тірі ұстап, топқа табиғи түрде қосылыңыз.",
+          "ru": "Поддержите беседу и естественно влейтесь в компанию."
+        }
+      ],
+      "questions": [
+        {
+          "en": "How would you approach a group of strangers?",
+          "kz": "Бейтаныстар тобына қалай жақындар едіңіз?",
+          "ru": "Как бы вы подошли к группе незнакомцев?"
+        },
+        {
+          "en": "How would you introduce yourself naturally?",
+          "kz": "Өзіңізді қалай табиғи түрде таныстырар едіңіз?",
+          "ru": "Как бы вы естественно представились?"
+        },
+        {
+          "en": "What questions would you ask to keep the conversation going?",
+          "kz": "Әңгімені жалғастыру үшін қандай сұрақтар қояр едіңіз?",
+          "ru": "Какие вопросы вы бы задали, чтобы поддержать разговор?"
+        },
+        {
+          "en": "How would you handle an awkward silence?",
+          "kz": "Ыңғайсыз үнсіздікті қалай шешер едіңіз?",
+          "ru": "Как бы вы справились с неловкой паузой?"
+        },
+        {
+          "en": "Do you find it easy or hard to meet new people? Why?",
+          "kz": "Жаңа адамдармен танысу сізге оңай ма, әлде қиын ба? Неге?",
+          "ru": "Вам легко или сложно знакомиться с новыми людьми? Почему?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "Hi, I don't think we've met — I'm…",
+          "kz": "Сәлем, біз танысқан жоқ сияқтымыз — мен…",
+          "ru": "Привет, кажется, мы не знакомы — я…"
+        },
+        {
+          "en": "How do you know the host?",
+          "kz": "Үй иесін қайдан танисың?",
+          "ru": "Откуда ты знаешь хозяина?"
+        },
+        {
+          "en": "Is it okay if I join you?",
+          "kz": "Сендерге қосылсам бола ма?",
+          "ru": "Можно к вам присоединиться?"
+        },
+        {
+          "en": "What do you do for a living?",
+          "kz": "Немен айналысасың?",
+          "ru": "Чем ты занимаешься?"
+        },
+        {
+          "en": "This music is great, isn't it?",
+          "kz": "Музыка тамаша емес пе?",
+          "ru": "Классная музыка, правда?"
+        },
+        {
+          "en": "Do you fancy getting a drink?",
+          "kz": "Бірдеңе ішкің келе ме?",
+          "ru": "Не хочешь что-нибудь выпить?"
+        },
+        {
+          "en": "I'm actually new here, so I don't know many people.",
+          "kz": "Мен мұнда жаңамын, көп адамды танымаймын.",
+          "ru": "Я вообще-то здесь впервые, мало кого знаю."
+        },
+        {
+          "en": "It was really nice to meet you.",
+          "kz": "Танысқаныма қуаныштымын.",
+          "ru": "Было очень приятно познакомиться."
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "also (to add)",
+          "kz": "сондай-ақ",
+          "ru": "также"
+        },
+        {
+          "en": "in addition (to add)",
+          "kz": "оған қоса",
+          "ru": "кроме того / вдобавок"
+        },
+        {
+          "en": "for example (to give an example)",
+          "kz": "мысалы",
+          "ru": "например"
+        },
+        {
+          "en": "by the way (to change topic)",
+          "kz": "айтпақшы",
+          "ru": "кстати"
+        },
+        {
+          "en": "in my opinion (to give a view)",
+          "kz": "менің ойымша",
+          "ru": "по моему мнению"
+        },
+        {
+          "en": "besides (to add a point)",
+          "kz": "оның үстіне",
+          "ru": "к тому же"
+        }
+      ],
+      "task": {
+        "en": "You're the new guest. Act out the scene out loud: introduce yourself, keep the conversation going, and join the group. Use because, also, and for example.",
+        "kz": "Сіз — жаңа қонақсыз. Көріністі дауыстап ойнаңыз: өзіңізді таныстырып, әңгімені жалғастырып, топқа қосылыңыз. because, also, for example қолданыңыз.",
+        "ru": "Вы — новый гость. Разыграйте сцену вслух: представьтесь, поддержите беседу и присоединитесь к компании. Используйте because, also и for example."
+      }
+    },
+    {
+      "id": 8,
+      "video": "/practice/situations/media/b1-v08.mp4",
+      "poster": "/practice/situations/media/b1-p08.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Can You Lend Me Money?",
+        "kz": "Маған ақша қарызға бере аласың ба?",
+        "ru": "Можешь одолжить денег?"
+      },
+      "intro": {
+        "en": "A close friend pulls you aside in a quiet cafe, looking embarrassed. 'I'm really sorry to ask, but could you lend me some money? Just until next month.' It's a fairly large amount. You care about your friend, but lending money can strain a friendship. You want to help if you can — while protecting yourself and the relationship.",
+        "kz": "Жақын досыңыз тыныш кафеде сізді шетке шақырып, ұялыңқырап: «Сұрағаныма кешір, бірақ маған біраз ақша қарызға бере аласың ба? Тек келесі айға дейін» дейді. Сома едәуір көп. Сіз досыңызды бағалайсыз, бірақ ақша достықты бұзуы мүмкін. Мүмкіндігінше көмектескіңіз келеді — әрі өзіңізді де, қарым-қатынасты да қорғағыңыз келеді.",
+        "ru": "Близкий друг отводит вас в сторону в тихом кафе, смущённо: «Извини, что прошу, но можешь одолжить денег? Всего до следующего месяца». Сумма довольно большая. Вы дорожите дружбой, но деньги способны её испортить. Вы хотите помочь, если можете — но при этом защитить и себя, и отношения."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "In a quiet cafe, your close friend pulls you aside. He looks embarrassed and lowers his voice.",
+            "kz": "Тыныш кафеде жақын досыңыз сізді шетке шақырады. Ол ұялған сияқты, дауысын бәсеңдетеді.",
+            "ru": "В тихом кафе близкий друг отводит вас в сторону. Он смущён и понижает голос."
+          },
+          {
+            "who": "them",
+            "label": "Friend",
+            "en": "I'm really sorry to ask… but could you lend me some money? Just until next month. Things are tight right now.",
+            "kz": "Сұрағаныма қатты кешірім сұраймын… бірақ маған біраз ақша қарызға бере аласың ба? Тек келесі айға дейін. Қазір жағдай қиын.",
+            "ru": "Мне очень неловко просить… но не мог бы ты одолжить мне немного денег? Только до следующего месяца. Сейчас туго."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Show you care: acknowledge it was hard for him to ask, and ask gently what's going on.",
+            "kz": "Қамқорлық танытыңыз: сұрау оған қиын болғанын мойындап, не болып жатқанын жұмсақ сұраңыз.",
+            "ru": "Проявите участие: признайте, что ему было нелегко просить, и мягко спросите, что случилось."
+          },
+          {
+            "who": "them",
+            "label": "Friend",
+            "en": "Some unexpected bills came up. I'll pay you back, I promise. You're the only person I trust with this.",
+            "kz": "Күтпеген төлемдер шықты. Қайтарамын, уәде беремін. Бұл мәселеде сенетін жалғыз адамым сенсің.",
+            "ru": "Возникли непредвиденные счета. Я верну, обещаю. Ты единственный, кому я могу это доверить."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Be honest about your limit: say how much (if any) you can manage, and be clear about what you can't do.",
+            "kz": "Шегіңіз туралы шынайы болыңыз: қанша көтере алатыныңызды (егер болса) айтып, не істей алмайтыныңызды анық жеткізіңіз.",
+            "ru": "Будьте честны о своём пределе: скажите, какую сумму (если вообще) можете осилить, и ясно обозначьте, чего не можете."
+          },
+          {
+            "who": "them",
+            "label": "Friend",
+            "en": "That… actually really helps. Thank you. How do you want to do this?",
+            "kz": "Бұл… шынында көп көмек. Рахмет. Мұны қалай реттегің келеді?",
+            "ru": "Это… правда очень помогает. Спасибо. Как ты хочешь это оформить?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Set a fair, clear arrangement: agree on the amount and a simple plan for paying it back.",
+            "kz": "Әділ, нақты келісім жасаңыз: соманы және оны қайтарудың қарапайым жоспарын келісіңіз.",
+            "ru": "Договоритесь о справедливых, ясных условиях: согласуйте сумму и простой план возврата."
+          },
+          {
+            "who": "them",
+            "label": "Friend",
+            "en": "Agreed. And honestly — thank you for not making me feel bad about it.",
+            "kz": "Келістік. Әрі шынымды айтсам — бұл үшін мені ұят сезіндірмегеніңе рахмет.",
+            "ru": "Договорились. И, честно — спасибо, что не дал мне почувствовать себя плохо из-за этого."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Reassure him the friendship matters more than the money, and keep things warm.",
+            "kz": "Достық ақшадан маңыздырақ екеніне оны сендіріп, қарым-қатынасты жылы сақтаңыз.",
+            "ru": "Заверьте его, что дружба важнее денег, и сохраните тёплый тон."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Listen with care and show your friend you take the request seriously.",
+          "kz": "Мұқият тыңдап, досыңызға өтінішті байыппен қабылдайтыныңызды көрсетіңіз.",
+          "ru": "Выслушайте с участием и покажите другу, что относитесь к просьбе серьёзно."
+        },
+        {
+          "en": "Be honest about what you can or can't do, and set a clear boundary.",
+          "kz": "Не істей алатыныңыз бен алмайтыныңыз туралы шынайы болып, нақты шек қойыңыз.",
+          "ru": "Будьте честны в том, что вы можете и не можете, и установите чёткую границу."
+        },
+        {
+          "en": "Protect the friendship while protecting yourself.",
+          "kz": "Өзіңізді қорғай отырып, достықты да сақтаңыз.",
+          "ru": "Сохраните дружбу, защищая при этом себя."
+        }
+      ],
+      "questions": [
+        {
+          "en": "What questions would you ask before deciding?",
+          "kz": "Шешім қабылдамас бұрын қандай сұрақтар қояр едіңіз?",
+          "ru": "Какие вопросы вы бы задали, прежде чем решить?"
+        },
+        {
+          "en": "How would you say yes with clear conditions, if you agree?",
+          "kz": "Келісетін болсаңыз, нақты шарттармен қалай келісер едіңіз?",
+          "ru": "Как бы вы согласились, обозначив чёткие условия?"
+        },
+        {
+          "en": "How would you say no kindly, if you can't?",
+          "kz": "Көмектесе алмасаңыз, қалай сыпайы түрде бас тартар едіңіз?",
+          "ru": "Как бы вы мягко отказали, если не можете помочь?"
+        },
+        {
+          "en": "How would you protect the friendship either way?",
+          "kz": "Қалай болғанда да достықты қалай сақтар едіңіз?",
+          "ru": "Как бы вы сохранили дружбу в любом случае?"
+        },
+        {
+          "en": "Do you think lending money to friends is a good idea? Why?",
+          "kz": "Достарға ақша қарызға беру жақсы ой деп ойлайсыз ба? Неге?",
+          "ru": "Считаете ли вы, что одалживать деньги друзьям — хорошая идея? Почему?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "Would it be possible to borrow some money?",
+          "kz": "Біраз ақша қарызға алуға бола ма?",
+          "ru": "Можно ли занять немного денег?"
+        },
+        {
+          "en": "I'll pay you back by Friday, I promise.",
+          "kz": "Жұмаға дейін қайтарамын, уәде беремін.",
+          "ru": "Я верну до пятницы, обещаю."
+        },
+        {
+          "en": "Can I ask why you need it?",
+          "kz": "Неге керек екенін сұрасам бола ма?",
+          "ru": "Можно спросить, зачем тебе это?"
+        },
+        {
+          "en": "I'm sorry, but I can't right now.",
+          "kz": "Кешір, бірақ қазір мүмкін емес.",
+          "ru": "Извини, но сейчас я не могу."
+        },
+        {
+          "en": "To be honest, I'd rather not lend money.",
+          "kz": "Шынымды айтсам, ақша қарызға бергім келмейді.",
+          "ru": "Честно говоря, я предпочитаю не одалживать деньги."
+        },
+        {
+          "en": "How much do you need exactly?",
+          "kz": "Саған нақты қанша керек?",
+          "ru": "Сколько именно тебе нужно?"
+        },
+        {
+          "en": "Let's try to find another solution.",
+          "kz": "Басқа шешім табуға тырысайық.",
+          "ru": "Давай попробуем найти другое решение."
+        },
+        {
+          "en": "I understand, but money and friends can be tricky.",
+          "kz": "Түсінемін, бірақ ақша мен достық — қиын нәрсе.",
+          "ru": "Понимаю, но деньги и дружба — вещи непростые."
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "however (to contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        },
+        {
+          "en": "although (despite the fact)",
+          "kz": "… болса да",
+          "ru": "хотя"
+        },
+        {
+          "en": "unless (except if)",
+          "kz": "егер … болмаса",
+          "ru": "если только не"
+        },
+        {
+          "en": "that's why (to explain a result)",
+          "kz": "сол себепті",
+          "ru": "вот почему"
+        },
+        {
+          "en": "on the other hand (to contrast)",
+          "kz": "екінші жағынан",
+          "ru": "с другой стороны"
+        },
+        {
+          "en": "therefore (formal result)",
+          "kz": "демек / сондықтан",
+          "ru": "следовательно"
+        }
+      ],
+      "task": {
+        "en": "You're the friend being asked. Act out the scene out loud: show you care, set an honest boundary, and protect the friendship. Use because, however, and on the other hand.",
+        "kz": "Сіз — өтініш жасалған доссыз. Көріністі дауыстап ойнаңыз: қамқорлық танытып, шынайы шек қойып, достықты сақтаңыз. because, however, on the other hand қолданыңыз.",
+        "ru": "Вы — друг, к которому обратились. Разыграйте сцену вслух: проявите участие, установите честную границу и сохраните дружбу. Используйте because, however и on the other hand."
+      }
+    },
+    {
+      "id": 9,
+      "video": "/practice/situations/media/b1-v09.mp4",
+      "poster": "/practice/situations/media/b1-p09.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Missed the Deadline",
+        "kz": "Өткізіп алған мерзім",
+        "ru": "Пропущенный дедлайн"
+      },
+      "intro": {
+        "en": "You missed an important assignment deadline because you were sick, but you didn't tell your professor in time. Now you're standing outside her office, typing an unsent apology on your phone. She's strict, and you don't want to seem irresponsible. You need to take responsibility, explain the real reason, and politely ask for another chance.",
+        "kz": "Сіз ауырып қалғандықтан маңызды тапсырманың мерзімін өткізіп алдыңыз, бірақ оқытушыға уақытында айтпадыңыз. Енді оның кабинетінің алдында тұрып, телефоныңызда жіберілмеген кешірім хатын тересіз. Ол қатал, ал сіз жауапсыз болып көрінгіңіз келмейді. Жауапкершілікті мойындап, нақты себепті түсіндіріп, тағы бір мүмкіндік сұрауыңыз керек.",
+        "ru": "Вы пропустили важный дедлайн по заданию из-за болезни, но не предупредили преподавателя вовремя. Теперь вы стоите у её кабинета и набираете на телефоне неотправленное извинение. Она строгая, и вы не хотите выглядеть безответственным. Нужно взять на себя ответственность, объяснить настоящую причину и вежливо попросить ещё один шанс."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You stand outside your professor's office, deleting and rewriting an apology on your phone. You missed the deadline because you were ill — but you didn't tell her in time.",
+            "kz": "Сіз профессордың кабинетінің сыртында тұрып, телефоныңызда кешірім сөзін өшіріп, қайта жазып жатырсыз. Ауырғандықтан мерзімді өткізіп алдыңыз — бірақ оған уақытында айтпадыңыз.",
+            "ru": "Вы стоите у кабинета профессора, удаляя и переписывая извинение в телефоне. Вы пропустили дедлайн из-за болезни — но не сказали ей вовремя."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You knock. She looks up from her desk.",
+            "kz": "Сіз есік қағасыз. Ол үстелінен басын көтереді.",
+            "ru": "Вы стучите. Она поднимает взгляд от стола."
+          },
+          {
+            "who": "them",
+            "label": "Professor",
+            "en": "Come in. I noticed your assignment wasn't submitted. I'd like to hear what happened.",
+            "kz": "Кіріңіз. Тапсырмаңыз тапсырылмағанын байқадым. Не болғанын естігім келеді.",
+            "ru": "Войдите. Я заметила, что ваша работа не сдана. Хотела бы услышать, что случилось."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Take responsibility first: don't blame anyone, and say you understand the deadline was missed.",
+            "kz": "Алдымен жауапкершілікті мойныңызға алыңыз: ешкімді кінәламай, мерзімді өткізіп алғаныңызды түсінетіңізді айтыңыз.",
+            "ru": "Сначала возьмите ответственность: никого не вините и скажите, что понимаете — дедлайн был пропущен."
+          },
+          {
+            "who": "them",
+            "label": "Professor",
+            "en": "I appreciate that. But why didn't you contact me before the deadline?",
+            "kz": "Мұны бағалаймын. Бірақ неге мерзімнен бұрын маған хабарласпадыңыз?",
+            "ru": "Это похвально. Но почему вы не связались со мной до дедлайна?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Explain the real reason honestly — you were ill — and apologise for not letting her know in time.",
+            "kz": "Шынайы себепті адал түсіндіріңіз — ауырдыңыз — әрі оған уақытында хабарламағаныңыз үшін кешірім сұраңыз.",
+            "ru": "Честно объясните настоящую причину — вы болели — и извинитесь, что не сообщили вовремя."
+          },
+          {
+            "who": "them",
+            "label": "Professor",
+            "en": "I see. Thank you for being honest. What are you proposing now?",
+            "kz": "Түсінікті. Адал болғаныңызға рахмет. Қазір не ұсынасыз?",
+            "ru": "Понятно. Спасибо за честность. Что вы предлагаете теперь?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Politely ask for another chance and suggest a realistic new deadline you can meet.",
+            "kz": "Тағы бір мүмкіндік сұрап, орындай алатын нақты жаңа мерзім ұсыныңыз.",
+            "ru": "Вежливо попросите ещё один шанс и предложите реалистичный новый срок, который вы сможете соблюсти."
+          },
+          {
+            "who": "them",
+            "label": "Professor",
+            "en": "Alright. Submit it by Friday, and next time, email me as soon as a problem comes up.",
+            "kz": "Жарайды. Жұмаға дейін тапсырыңыз, әрі келесіде мәселе туындағанда бірден маған жазыңыз.",
+            "ru": "Хорошо. Сдайте к пятнице, и в следующий раз пишите мне сразу, как только возникнет проблема."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Thank her sincerely, confirm the new deadline, and promise to communicate earlier next time.",
+            "kz": "Оған шын жүректен алғыс айтып, жаңа мерзімді растап, келесіде ертерек хабарласуға уәде беріңіз.",
+            "ru": "Искренне поблагодарите её, подтвердите новый срок и пообещайте сообщать раньше в следующий раз."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Take responsibility instead of making excuses.",
+          "kz": "Сылтау айтудың орнына жауапкершілікті мойныңызға алыңыз.",
+          "ru": "Возьмите ответственность на себя, а не оправдывайтесь."
+        },
+        {
+          "en": "Explain the real reason honestly and apologise for not telling her sooner.",
+          "kz": "Шынайы себепті адал түсіндіріп, ертерек айтпағаныңыз үшін кешірім сұраңыз.",
+          "ru": "Честно объясните настоящую причину и извинитесь, что не сказали ей раньше."
+        },
+        {
+          "en": "Politely ask for another chance and suggest a fair next step.",
+          "kz": "Тағы бір мүмкіндік сұрап, әділ келесі қадам ұсыныңыз.",
+          "ru": "Вежливо попросите ещё один шанс и предложите справедливый следующий шаг."
+        }
+      ],
+      "questions": [
+        {
+          "en": "How would you explain what happened honestly?",
+          "kz": "Не болғанын қалай шынайы түсіндірер едіңіз?",
+          "ru": "Как бы вы честно объяснили, что произошло?"
+        },
+        {
+          "en": "How would you take responsibility for your part?",
+          "kz": "Өз тарапыңыздан жауапкершілікті қалай мойныңызға алар едіңіз?",
+          "ru": "Как бы вы взяли на себя ответственность за свою часть?"
+        },
+        {
+          "en": "How would you make a polite request for an extension?",
+          "kz": "Мерзімді ұзартуды қалай сыпайы сұрар едіңіз?",
+          "ru": "Как бы вы вежливо попросили продлить срок?"
+        },
+        {
+          "en": "What would you do if she says no?",
+          "kz": "Егер ол бас тартса, не істер едіңіз?",
+          "ru": "Что бы вы сделали, если она откажет?"
+        },
+        {
+          "en": "Have you ever had to apologise for missing something important?",
+          "kz": "Маңызды нәрсені өткізіп алғаныңыз үшін кешірім сұрауға тура келді ме?",
+          "ru": "Вам приходилось извиняться за то, что вы что-то важное пропустили?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "I'm really sorry, I missed the deadline.",
+          "kz": "Кешіріңіз, мерзімге үлгермедім.",
+          "ru": "Мне очень жаль, я не уложился в срок."
+        },
+        {
+          "en": "Let me explain what happened.",
+          "kz": "Не болғанын түсіндіріп берейін.",
+          "ru": "Позвольте объяснить, что случилось."
+        },
+        {
+          "en": "Is there any chance of an extension?",
+          "kz": "Мерзімді ұзартуға мүмкіндік бар ма?",
+          "ru": "Есть ли возможность продлить срок?"
+        },
+        {
+          "en": "It won't happen again, I promise.",
+          "kz": "Бұл қайталанбайды, уәде беремін.",
+          "ru": "Это больше не повторится, обещаю."
+        },
+        {
+          "en": "I take full responsibility.",
+          "kz": "Толық жауапкершілікті өзіме аламын.",
+          "ru": "Я беру на себя полную ответственность."
+        },
+        {
+          "en": "Would it be possible to hand it in tomorrow?",
+          "kz": "Оны ертең тапсыруға бола ма?",
+          "ru": "Можно ли сдать это завтра?"
+        },
+        {
+          "en": "I should have started earlier.",
+          "kz": "Ертерек бастауым керек еді.",
+          "ru": "Мне следовало начать раньше."
+        },
+        {
+          "en": "What can I do to make up for it?",
+          "kz": "Оны түзету үшін не істей аламын?",
+          "ru": "Что я могу сделать, чтобы это исправить?"
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "however (to contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        },
+        {
+          "en": "therefore (formal result)",
+          "kz": "демек / сондықтан",
+          "ru": "следовательно"
+        },
+        {
+          "en": "as a result (consequence)",
+          "kz": "нәтижесінде",
+          "ru": "в результате"
+        },
+        {
+          "en": "that's why (to explain a result)",
+          "kz": "сол себепті",
+          "ru": "вот почему"
+        },
+        {
+          "en": "although (despite the fact)",
+          "kz": "… болса да",
+          "ru": "хотя"
+        },
+        {
+          "en": "finally (last point)",
+          "kz": "ақыры / соңында",
+          "ru": "наконец"
+        }
+      ],
+      "task": {
+        "en": "You're the student. Act out the conversation out loud: take responsibility, explain honestly, and ask for another chance. Use because, however, and therefore.",
+        "kz": "Сіз — студентсіз. Әңгімені дауыстап ойнаңыз: жауапкершілікті мойныңызға алып, адал түсіндіріп, тағы бір мүмкіндік сұраңыз. because, however, therefore қолданыңыз.",
+        "ru": "Вы — студент. Разыграйте разговор вслух: возьмите ответственность, честно объясните и попросите ещё один шанс. Используйте because, however и therefore."
+      }
+    },
+    {
+      "id": 10,
+      "video": "/practice/situations/media/b1-v10.mp4",
+      "poster": "/practice/situations/media/b1-p10.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "The Roommate Rules",
+        "kz": "Бөлмелес ережелері",
+        "ru": "Правила с соседом по комнате"
+      },
+      "intro": {
+        "en": "Your dorm roommate keeps doing things that bother you: loud music late at night, dishes left for days, and friends invited over without asking. You've stayed quiet, but it's affecting your sleep and study. The roommate is sitting nearby, relaxed. You need an honest, fair conversation to agree on a few simple shared rules — without ruining the relationship.",
+        "kz": "Жатақханадағы бөлмелесіңіз сізді мазалайтын нәрселерді үнемі істейді: түнде қатты музыка, бірнеше күн жуылмаған ыдыс, рұқсат сұрамай шақырылатын достар. Сіз үндемей жүрдіңіз, бірақ бұл ұйқыңыз бен оқуыңызға кедергі келтіруде. Бөлмелес жанында жайбарақат отыр. Қарым-қатынасты бұзбай, бірнеше қарапайым ортақ ережеге келісу үшін шынайы әрі әділ әңгіме қажет.",
+        "ru": "Ваш сосед по комнате в общежитии постоянно делает то, что вас раздражает: громкая музыка поздно ночью, посуда, которую не моют днями, и друзья, которых зовут без предупреждения. Вы молчали, но это мешает спать и учиться. Сосед сидит рядом, расслабленный. Нужен честный и справедливый разговор, чтобы договориться о нескольких простых общих правилах — не испортив отношения."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "Your roommate keeps you awake with loud music, leaves dishes for days, and invites friends without asking. He's sitting nearby now, relaxed and scrolling on his phone.",
+            "kz": "Бөлмелесіңіз қатты музыкамен ұйықтатпайды, ыдысты күндеп қалдырады және сұрамай достарын шақырады. Ол қазір жақын жерде отыр, рахаттанып телефонын ақтарып.",
+            "ru": "Сосед не даёт вам спать громкой музыкой, оставляет посуду на дни и зовёт друзей, не спрашивая. Сейчас он сидит рядом, расслабленно листая телефон."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Open gently: ask if he has a minute to talk about how you share the room.",
+            "kz": "Жұмсақ бастаңыз: бөлмені қалай бөлісетіндеріңіз туралы сөйлесуге уақыты бар-жоғын сұраңыз.",
+            "ru": "Начните мягко: спросите, есть ли у него минута поговорить о том, как вы делите комнату."
+          },
+          {
+            "who": "them",
+            "label": "Roommate",
+            "en": "Yeah, sure. Is something wrong?",
+            "kz": "Иә, әрине. Бірдеңе болды ма?",
+            "ru": "Да, конечно. Что-то не так?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Describe the issues calmly, using 'I' statements — how the late music and dishes affect your sleep and study.",
+            "kz": "Мәселелерді сабырмен сипаттаңыз, 'мен' тұжырымдарын қолданып — кешкі музыка мен ыдыс ұйқыңыз бен оқуыңызға қалай әсер ететінін.",
+            "ru": "Спокойно опишите проблемы, говоря от «я» — как поздняя музыка и посуда влияют на ваш сон и учёбу."
+          },
+          {
+            "who": "them",
+            "label": "Roommate",
+            "en": "Oh. I honestly didn't think it was a big deal. You should've said something earlier.",
+            "kz": "О. Шынымды айтсам, мұны үлкен мәселе деп ойламаппын. Ертерек айту керек еді.",
+            "ru": "О. Честно, я не думал, что это серьёзно. Мог бы сказать раньше."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Acknowledge his point, then suggest a few simple shared rules — quiet hours, washing dishes, asking before guests.",
+            "kz": "Оның пікірін мойындап, бірнеше қарапайым ортақ ереже ұсыныңыз — тыныштық сағаттары, ыдыс жуу, қонақтардан бұрын сұрау.",
+            "ru": "Признайте его правоту, затем предложите несколько простых общих правил — часы тишины, мытьё посуды, спрашивать перед гостями."
+          },
+          {
+            "who": "them",
+            "label": "Roommate",
+            "en": "That sounds fair. I can do quiet after eleven. And I'll text you before people come over.",
+            "kz": "Бұл әділ сияқты. Он бірден кейін тыныштық сақтай аламын. Әрі адамдар келмес бұрын саған жазамын.",
+            "ru": "Звучит справедливо. После одиннадцати могу потише. И буду писать тебе, прежде чем кто-то придёт."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Agree warmly, confirm the rules together, and thank him for being open about it.",
+            "kz": "Жылы келісіп, ережелерді бірге растап, оған ашық болғаны үшін алғыс айтыңыз.",
+            "ru": "Тепло согласитесь, вместе подтвердите правила и поблагодарите его за открытость."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Open the conversation calmly, without blaming your roommate.",
+          "kz": "Бөлмелесіңізді кінәламай, әңгімені сабырмен бастаңыз.",
+          "ru": "Начните разговор спокойно, не обвиняя соседа."
+        },
+        {
+          "en": "Describe how the behaviour affects your sleep and study, using 'I' statements.",
+          "kz": "Мінез-құлықтың ұйқыңыз бен оқуыңызға қалай әсер ететінін 'мен' тұжырымдарымен сипаттаңыз.",
+          "ru": "Опишите, как поведение влияет на ваш сон и учёбу, говоря от «я»."
+        },
+        {
+          "en": "Agree together on a few simple, fair shared rules.",
+          "kz": "Бірнеше қарапайым, әділ ортақ ережелерді бірге келісіңіз.",
+          "ru": "Договоритесь вместе о нескольких простых, справедливых общих правилах."
+        }
+      ],
+      "questions": [
+        {
+          "en": "How would you start the conversation calmly?",
+          "kz": "Әңгімені қалай сабырлы бастар едіңіз?",
+          "ru": "Как бы вы спокойно начали разговор?"
+        },
+        {
+          "en": "How would you explain what bothers you without attacking?",
+          "kz": "Шабуылдамай, сізді не мазалайтынын қалай түсіндірер едіңіз?",
+          "ru": "Как бы вы объяснили, что вас беспокоит, не нападая?"
+        },
+        {
+          "en": "How would you invite their side and find fair rules?",
+          "kz": "Оның пікірін тыңдап, әділ ережелерді қалай табар едіңіз?",
+          "ru": "Как бы вы выслушали его сторону и нашли справедливые правила?"
+        },
+        {
+          "en": "What simple agreements would you suggest?",
+          "kz": "Қандай қарапайым уағдаластықтар ұсынар едіңіз?",
+          "ru": "Какие простые договорённости вы бы предложили?"
+        },
+        {
+          "en": "Have you ever shared a room or home? What was hard about it?",
+          "kz": "Бөлмені немесе үйді біреумен бөлісіп көрдіңіз бе? Қиыны не болды?",
+          "ru": "Вы когда-нибудь делили комнату или жильё? Что было сложным?"
+        }
+      ],
+      "phrases": [
+        {
+          "en": "Can we talk about the house rules?",
+          "kz": "Үй ережелері туралы сөйлессек бола ма?",
+          "ru": "Можем обсудить правила в квартире?"
+        },
+        {
+          "en": "I think we should share the cleaning.",
+          "kz": "Менің ойымша, тазалықты бөлісуіміз керек.",
+          "ru": "Думаю, нам стоит делить уборку."
+        },
+        {
+          "en": "How about we make a schedule?",
+          "kz": "Кесте жасасақ қайтеді?",
+          "ru": "Может, составим график?"
+        },
+        {
+          "en": "I see your point, but…",
+          "kz": "Сені түсінемін, бірақ…",
+          "ru": "Я понимаю тебя, но…"
+        },
+        {
+          "en": "Would you mind keeping the noise down at night?",
+          "kz": "Түнде шуды азайта аласың ба?",
+          "ru": "Не мог бы ты потише по ночам?"
+        },
+        {
+          "en": "Let's split the bills equally.",
+          "kz": "Шоттарды тең бөлейік.",
+          "ru": "Давай делить счета поровну."
+        },
+        {
+          "en": "I'm happy to compromise.",
+          "kz": "Ымыраға келуге дайынмын.",
+          "ru": "Я готов пойти на компромисс."
+        },
+        {
+          "en": "It's only fair if we both help.",
+          "kz": "Екеуміз де көмектессек, әділ болады.",
+          "ru": "Будет честно, если мы оба будем помогать."
+        }
+      ],
+      "linkers": [
+        {
+          "en": "because (to give a reason)",
+          "kz": "өйткені (себеп)",
+          "ru": "потому что (причина)"
+        },
+        {
+          "en": "so (to show a result)",
+          "kz": "сондықтан (нәтиже)",
+          "ru": "поэтому (результат)"
+        },
+        {
+          "en": "however (to contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        },
+        {
+          "en": "although (despite the fact)",
+          "kz": "… болса да",
+          "ru": "хотя"
+        },
+        {
+          "en": "in addition (to add)",
+          "kz": "оған қоса",
+          "ru": "кроме того"
+        },
+        {
+          "en": "besides (to add a point)",
+          "kz": "оның үстіне",
+          "ru": "к тому же"
+        },
+        {
+          "en": "on the one hand … on the other hand",
+          "kz": "бір жағынан … екінші жағынан",
+          "ru": "с одной стороны … с другой стороны"
+        },
+        {
+          "en": "first … next … finally (sequence)",
+          "kz": "алдымен … одан кейін … соңында",
+          "ru": "сначала … затем … наконец"
+        }
+      ],
+      "task": {
+        "en": "You're the roommate raising the issue. Act out the conversation out loud: open calmly, explain the impact, and agree on fair rules. Use because, so, and also.",
+        "kz": "Сіз — мәселе көтеріп отырған бөлмелессіз. Әңгімені дауыстап ойнаңыз: сабырмен бастап, әсерін түсіндіріп, әділ ережелерге келісіңіз. because, so, also қолданыңыз.",
+        "ru": "Вы — сосед, поднимающий вопрос. Разыграйте разговор вслух: начните спокойно, объясните последствия и договоритесь о справедливых правилах. Используйте because, so и also."
+      }
+    }
+  ]
+}

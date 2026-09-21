@@ -9,6 +9,13 @@ import { normAnswer } from '../../lib/answer-match.js'
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
 
+// Типы, которые закрываются САМИ и кнопки «Проверить» не ждут: диалог,
+// говорение и флэш-карточка отвечают своими кнопками, а matching/truefalse/
+// timeline доигрывают по последнему ходу (авто-проверка внутри самого тела).
+// Ни один из трёх последних не берёт setCanCheck, так что общая «Проверить»
+// у них оставалась серой всегда — её тут и не рисуем.
+const AUTO_FINISH_TYPES = ['dialogue', 'speaking', 'flashcard', 'matching', 'truefalse', 'timeline']
+
 // Плеер упражнений урока — нативный порт движка грамматика_практика.html
 // (renderActivity + check-функции). Логика проверки каждого типа сохранена
 // 1-в-1: norm() + alts, авто-проверка categorize/matching по заполнении, и т.д.
@@ -192,7 +199,13 @@ function Activity({ a, idx, total, lang, onResult, onNext }) {
             {t('btn_iknew')}
           </button>
         )}
-        {!feedback && !['dialogue', 'speaking', 'flashcard'].includes(a.type) && (
+        {/* Кнопка — только у типов, которые ждут её нажатия. matching,
+            truefalse и timeline доигрывают сами (авто-проверка по последнему
+            ходу) и setCanCheck не берут вовсе, поэтому «Проверить» у них была
+            серой ВСЕГДА — мёртвый контрол на экране рядом с живым заданием.
+            categorize из этого списка ушёл: у него авто-проверку сняли, теперь
+            он проверяется кнопкой, как mc/gap/order/error. */}
+        {!feedback && !AUTO_FINISH_TYPES.includes(a.type) && (
           <button
             className="gr-check"
             disabled={!canCheck}
@@ -369,6 +382,10 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
 function Order({ a, lang, answered, finish, setCanCheck, bind }) {
   const [slots, setSlots] = useState([]) // индексы выбранных слов из банка
   const [wrongShown, setWrongShown] = useState(false)
+  // В b1.json 30 заданий хранят ответ строкой, а не массивом слов, как все
+  // остальные уровни. join у строки падал внутри клика — «Проверить» молчал, и
+  // урок было не закончить. Режем по пробелам: слова задания сами без пробелов.
+  const answerWords = Array.isArray(a.answer) ? a.answer : String(a.answer ?? '').trim().split(/\s+/)
   useEffect(
     () => setCanCheck(slots.length === a.words.length && !answered),
     [slots, a.words.length, answered, setCanCheck],
@@ -377,7 +394,7 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
   const check = () => {
     if (answered || slots.length !== a.words.length) return
     const got = slots.map((i) => a.words[i]).join(' ')
-    const ok = got === a.answer.join(' ')
+    const ok = got === answerWords.join(' ')
     if (!ok) setWrongShown(true)
     finish(ok, a.why)
   }
@@ -386,7 +403,7 @@ function Order({ a, lang, answered, finish, setCanCheck, bind }) {
   const add = (i) => !answered && setSlots((s) => (s.includes(i) ? s : [...s, i]))
   const removeAt = (k) => !answered && setSlots((s) => s.filter((_, j) => j !== k))
 
-  const slotWords = answered && wrongShown ? a.answer : slots.map((i) => a.words[i])
+  const slotWords = answered && wrongShown ? answerWords : slots.map((i) => a.words[i])
   const slotCls = answered ? (wrongShown ? 'wrong' : 'correct') : ''
 
   return (
@@ -448,23 +465,30 @@ function ErrorPick({ a, lang, answered, finish, setCanCheck, bind }) {
 }
 
 // ——— categorize ———
-function Categorize({ a, lang, answered, finish }) {
+function Categorize({ a, lang, answered, finish, setCanCheck, bind }) {
   const [placed, setPlaced] = useState({}) // itemIndex -> bucketIndex
   const [sel, setSel] = useState(null)
   const [marked, setMarked] = useState(false)
 
   const placedCount = Object.keys(placed).length
-  useEffect(() => {
-    if (placedCount === a.items.length && !answered && !marked) {
-      const id = setTimeout(() => {
-        setMarked(true)
-        const allOk = a.items.every((it, i) => placed[i] === it.b)
-        finish(allOk, allOk ? uiStr(lang, 'cat_ok') : uiStr(lang, 'cat_no'))
-      }, 250)
-      return () => clearTimeout(id)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [placedCount])
+  // Раньше упражнение проверялось само через 250 мс после последней фишки, а
+  // «Проверить» оставалась серой навсегда: Categorize не брал ни setCanCheck,
+  // ни bind. Вместе с тем, что фишку из корзины было нечем достать обратно
+  // (она рисовалась span'ом без обработчика), ошибка в раскладке становилась
+  // неисправимой — оставалось доложить остальные и получить неверный ответ.
+  // Теперь как у остальных типов: разложил — жми «Проверить».
+  useEffect(
+    () => setCanCheck(placedCount === a.items.length && !answered),
+    [placedCount, a.items.length, answered, setCanCheck],
+  )
+
+  const check = () => {
+    if (answered || marked) return
+    setMarked(true)
+    const allOk = a.items.every((it, i) => placed[i] === it.b)
+    finish(allOk, allOk ? uiStr(lang, 'cat_ok') : uiStr(lang, 'cat_no'))
+  }
+  bind(check)
 
   const pool = a.items.map((it, i) => ({ it, i })).filter((x) => placed[x.i] === undefined)
   const pick = (i) => !answered && setSel((s) => (s === i ? null : i))
@@ -472,6 +496,17 @@ function Categorize({ a, lang, answered, finish }) {
     if (answered || sel === null) return
     setPlaced((p) => ({ ...p, [sel]: bi }))
     setSel(null)
+  }
+  // Возврат фишки в пул — тап по ней, когда в руках ничего нет. Если фишка
+  // выбрана, клик по корзине (в том числе по её содержимому) остаётся
+  // раскладкой, иначе выбранное слово было бы некуда положить.
+  const back = (i) => {
+    if (answered || marked) return
+    setPlaced((p) => {
+      const next = { ...p }
+      delete next[i]
+      return next
+    })
   }
 
   return (
@@ -487,8 +522,8 @@ function Categorize({ a, lang, answered, finish }) {
             {x.it.t}
           </button>
         ))}
-        {/* пул пуст, но ответ ещё не отмечен — идёт авто-проверка */}
-        {!pool.length && !marked && <span className="gr-cat-checking">Проверяем…</span>}
+        {/* пул пуст — всё разложено, ждём «Проверить» */}
+        {!pool.length && !marked && <span className="gr-cat-checking">{uiStr(lang, 'cat_ready')}</span>}
       </div>
       <div className="gr-cat-buckets">
         {a.buckets.map((b, bi) => {
@@ -501,9 +536,19 @@ function Categorize({ a, lang, answered, finish }) {
                   let cls = 'gr-chip-in'
                   if (marked) cls += placed[c.i] === c.it.b ? ' ok' : ' no'
                   return (
-                    <span key={c.i} className={cls}>
+                    <button
+                      key={c.i}
+                      type="button"
+                      className={cls}
+                      disabled={answered || marked}
+                      onClick={(e) => {
+                        if (sel !== null) return
+                        e.stopPropagation()
+                        back(c.i)
+                      }}
+                    >
                       {c.it.t}
-                    </span>
+                    </button>
                   )
                 })}
               </div>

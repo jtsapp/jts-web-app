@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs'
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
@@ -108,6 +110,28 @@ describe('Докупить минуты', () => {
     const { container } = await renderLoaded()
     const rows = [...container.querySelectorAll('.tu-how__row b')].map((el) => el.textContent)
     expect(rows).toEqual(['Сначала тратится суточный лимит', 'Не сгорают'])
+  })
+
+  /*
+     Предвыбор пакета обязан считаться ПРИ РЕНДЕРЕ, а не эффектом после него.
+
+     Пока его ставил useEffect, между появлением пакетов на экране и его
+     срабатыванием было окно: нажал в этот момент — эффект досрабатывал со
+     старым pickedCode === null и возвращал выбор к самому маленькому. Человек
+     видел «60 минут» под курсором, а в заказ уходило «20 минут»: чужой пакет
+     и чужая сумма. Так и упал CI 21.09.2026.
+
+     Проверка по ИСХОДНИКУ, а не по поведению: в jsdom эффект всегда успевает
+     отработать раньше клика, и поведенческий тест на старом коде честно
+     проходит — сторожить им нечего. Гонка видна только на медленной машине,
+     а вот её причина — запись выбора из эффекта — видна в тексте всегда.
+  */
+  it('выбор пакета не пишется из эффекта — иначе он затрёт нажатие', () => {
+    const src = readFileSync('src/screens/MinutesTopUpPage.jsx', 'utf8')
+    // Тело каждого useEffect(...) до его закрывающей скобки с зависимостями.
+    const effects = src.match(/useEffect\(\(\) => \{[\s\S]*?\n  \}, \[[^\]]*\]\)/g) || []
+    const guilty = effects.filter((body) => /setPickedCode\s*\(/.test(body))
+    expect(guilty).toEqual([])
   })
 
   it('в заказ уходит код выбранного пакета, без цены', async () => {

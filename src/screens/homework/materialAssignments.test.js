@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { materialCard, isMaterialGraded, isInteractiveMaterial, isCatalogHtmlLink, isLessonCard, hasAnswerFiles, needsAnswerFile } from './materialAssignments.js'
+import {
+  materialCard, isMaterialGraded, isInteractiveMaterial, isCatalogHtmlLink, isLessonCard,
+  hasAnswerFiles, needsAnswerFile, isWholeCatalogLesson,
+} from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
 
 const assignment = (over = {}) => ({
@@ -87,6 +90,29 @@ describe('isMaterialGraded / isInteractiveMaterial', () => {
     expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: 'https://youtube.com/watch?v=x' }))).toBe(false)
     expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: 'https://files.example/course-catalog/notes.pdf' }))).toBe(false)
     expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: null }))).toBe(false)
+  })
+
+  /**
+   * Стык с открытием урока каталога ЦЕЛИКОМ (оно приехало из develop).
+   *
+   * Приметы у обоих путей общие — ссылка на файл каталога, — и без этого
+   * различения выданный блок уводило бы в разобранный на шаги урок: тот
+   * открывается с начала, без моста, без серверной проверки и без автоуказки
+   * на выданное место. Ровно та жалоба, с которой всё начиналось.
+   */
+  it('выданный кусок урока — не «урок целиком», даже со всеми приметами каталога', () => {
+    const кусок = (over) => isWholeCatalogLesson(assignment({
+      materialType: 'LINK',
+      cardId: null,
+      catalogLessonId: 314,
+      fileUrl: 'https://f.kz/course-catalog/a0-lesson-1.html',
+      ...over,
+    }))
+    expect(кусок({ blockKeys: ['block@4:2'] })).toBe(false)
+    expect(кусок({ taskTids: ['lis-tick'] })).toBe(false)
+    expect(кусок({ stageIndexes: [4] })).toBe(false)
+    // Ничего не адресовано — это и правда урок целиком.
+    expect(кусок({})).toBe(true)
   })
 
   // Адрес каталога бывает с якорем или запросом — .html там не в конце строки.
@@ -179,5 +205,47 @@ describe('Ответ на выданный материал файлом', () =>
   it('оценка перебивает вложение', () => {
     const проверено = materialCard(карточкаУрока({ files: [{ id: 1 }], teacherScore: 5, gradedAt: '2026-09-11T10:00:00', status: 'COMPLETED' }))
     expect(проверено.status).toBe('COMPLETED')
+  })
+})
+
+/**
+ * Урок каталога, заданный ЦЕЛИКОМ («В домашнюю работу» → весь урок).
+ *
+ * Такое назначение приходит ссылкой на файл урока, и раньше ученик открывал
+ * именно файл — в новой вкладке. В файле курса скрипта заданий нет вовсе (он
+ * только переключает режим и переворачивает карточки слов): запись играет, а
+ * варианты ответа не нажимаются. Ровно это и прислали с урока — «аудиозапись
+ * воспроизводится, но сами задания не нажимаются». Такой урок открывается в
+ * кабинете, как заданная карточка, — там задания живые.
+ */
+describe('урок каталога целиком', () => {
+  const FILE = 'https://files.justtostudy.kz/production/course-catalog/a1/lessons/L01.html?mode=solo'
+  const урокЦеликом = (over = {}) => assignment({
+    materialType: 'LINK', isGraded: false, fileUrl: FILE, catalogLessonId: null, cardId: null, ...over,
+  })
+
+  it('ссылка на файл урока каталога — это урок, а не файл', () => {
+    expect(isWholeCatalogLesson(урокЦеликом())).toBe(true)
+    // Преподаватель выбрал урок в каталоге окна назначения — id приходит прямо.
+    expect(isWholeCatalogLesson(урокЦеликом({ catalogLessonId: 77 }))).toBe(true)
+  })
+
+  it('заданная карточка идёт своим путём', () => {
+    expect(isWholeCatalogLesson(урокЦеликом({ catalogLessonId: 77, cardId: 'c2b5954ea' }))).toBe(false)
+  })
+
+  // Пробный урок и диагностика лежат рядом с каталожными, но уроками каталога
+  // не являются: на шаги они не разбираются и ведут занятие сами.
+  it('самодостаточный урок остаётся файлом', () => {
+    expect(isWholeCatalogLesson(урокЦеликом({
+      fileUrl: 'https://files.justtostudy.kz/production/course-catalog/standalone/trial-a1.html',
+    }))).toBe(false)
+  })
+
+  it('чужая ссылка, PDF и загруженный интерактив — не урок каталога', () => {
+    expect(isWholeCatalogLesson(урокЦеликом({ fileUrl: 'https://example.com/lesson.html' }))).toBe(false)
+    expect(isWholeCatalogLesson(урокЦеликом({ materialType: 'PDF', fileUrl: 'https://files.example/course-catalog/a1/x.pdf' }))).toBe(false)
+    expect(isWholeCatalogLesson(assignment())).toBe(false)
+    expect(isWholeCatalogLesson(null)).toBe(false)
   })
 })

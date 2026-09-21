@@ -426,6 +426,15 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
         rec.start()
         return true
       } catch {
+        // Снимаем цель ЗДЕСЬ: `recTargetRef` чистится только в `rec.onstop`, а
+        // упавший `rec.start()` (стрим успел уйти в inactive — выдернули
+        // гарнитуру, микрофон забрало другое приложение; неподдержанный mime)
+        // до onstop не доходит вовсе. Оставленная цель запирала ВСЕ микрофоны
+        // экрана: `if (recTargetRef.current) { stopRec(); return }` у segRecord
+        // и wholeRecord уходил в stopRec, тот видел inactive-рекордер и ничего
+        // не делал, onstop не случался — и так до ухода с экрана.
+        recTargetRef.current = null
+        recorderRef.current = null
         setDenied(true)
         return false
       }
@@ -845,7 +854,16 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
               const isDone = done.has(segId)
               const bestScore = scores.get(segId)
               const mastered = isPhraseMastered(bestScore)
-              const hasTake = !!takesRef.current[i] || isDone
+              // «Есть моя запись» — это наличие BLOB'а, а не отметки о
+              // прохождении. `done` синкается с сервером (pushModule), а blob
+              // лежит только в IndexedDB этого устройства: зайдя со второго,
+              // студент видел строку с тремя живыми кнопками, и все три молча
+              // выходили по `if (!blob)` / `if (!url) return` — ни звука, ни
+              // сообщения. `scores` приезжает из той же IndexedDB
+              // (getLessonScores) и пополняется при оценке, так что это и есть
+              // честный признак локальной записи. Сверяем типом: балл 0 —
+              // нормальный балл.
+              const hasTake = !!takesRef.current[i] || typeof bestScore === 'number'
               const active = i === activeIdx
               const recording = recSeg === i
               const result = results[i]
@@ -876,7 +894,11 @@ export default function ShadowingPage({ userLevel, userName, token, onNav, onPro
                             <button
                               type="button"
                               className="sh-seg__assess"
-                              disabled={!!budget && budget.remaining <= 0}
+                              // Оценка идёт по одной: assessSeg выходит, пока
+                              // занят ЛЮБОЙ разбор. Кнопка об этом молчала —
+                              // нажатие на соседнюю фразу во время round-trip к
+                              // Azure просто не давало ничего, и её жали ещё раз.
+                              disabled={(!!budget && budget.remaining <= 0) || assessingIdx !== -1}
                               onClick={(e) => { e.stopPropagation(); assessSeg(i) }}
                             >
                               ★ {t('shadowing.assess')}

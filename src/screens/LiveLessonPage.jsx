@@ -8,7 +8,7 @@ import {
 import { serializeStepProgress, parseStepProgress } from './workspace/stepProgress.js'
 import { roleFromToken, userIdFromToken } from '../lib/jwt.js'
 import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '../lib/lessonKind.js'
-import { canControl, contentLocked, contentLockNoteKey } from './live/liveStatus.js'
+import { canControl, contentLocked } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
 import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroadcastAudio } from './live/audioReport.js'
@@ -160,6 +160,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // instead of blindly overwriting — see both effects below.
   const restoredStepRef = useRef({ materialId: null, stepId: null })
   const restoredForRef = useRef(null)
+  // Материал, которому принадлежит текущее содержимое answers/checkedSteps.
+  // Отдельно от restoredForRef: тот отмечает «за этот материал GET уже
+  // ходил», а этот — «состояние уже про этот материал».
+  const materialForStateRef = useRef(null)
   const flushProgressRef = useRef(false)
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
@@ -958,6 +962,43 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   useEffect(() => {
     if (!stepMaterialId) return undefined
     let cancelled = false
+    // Ответы и отметки «проверено» — СВОИ у каждого материала: и пишутся они
+    // отдельной строкой прогресса (saveLessonMaterialProgress по materialId).
+    // А id шагов сквозные внутри урока — s1, s2…, карточки s1:0. Пока смена
+    // вкладки материала состояние не трогала, материал B открывался уже
+    // «проверенным»: первая карточка помечена done, все варианты в ней
+    // выключены до того, как ученик их увидел, а под совпавшими id подставлены
+    // ответы материала A. Восстановление это не чинило — оно намеренно
+    // уступает тому, что уже в состоянии (`{ ...restored.answers, ...prev }`,
+    // `prev.size ? prev : …`), и сохранённый прогресс B просто отбрасывался.
+    // Дальше persistProgress записывал мешанину в строку самого B.
+    //
+    // Сбрасываем ровно при СМЕНЕ материала: повторный заход эффекта по тому же
+    // материалу (сменился token) состояние трогать не должен — ради этого и
+    // живёт guard `already` ниже. Пишущего здесь нет: persistProgress молчит,
+    // пока progressLoadedFor не совпал с новым материалом, а отложенная запись
+    // предыдущего досылается сама (progressSaver помнит свой materialId).
+    const materialChanged = materialForStateRef.current !== stepMaterialId
+    if (materialChanged) {
+      materialForStateRef.current = stepMaterialId
+      if (!isStaff) {
+        setAnswers({})
+        answersRef.current = {}
+        setCheckedSteps(new Set())
+        flushProgressRef.current = false
+      } else if (reviewStudentId != null) {
+        // У преподавателя работа участника живёт в studentLiveState и тоже
+        // ключуется сквозными id шагов — на смене материала он видел бы
+        // чужую карточку «готово» с выключенными вариантами и ответы из
+        // прошлого материала, выданные за работу этого ученика. Пишущего
+        // здесь нет: persistProgress для staff молчит всегда.
+        setStudentLiveState((prev) => {
+          const cur = prev[reviewStudentId]
+          if (!cur) return prev
+          return { ...prev, [reviewStudentId]: { ...cur, answers: {}, checkedSteps: new Set() } }
+        })
+      }
+    }
     // Преподаватель читает работу участника, ученик — свою (сервер и так не
     // отдаст чужую, см. assertAccess).
     getLessonMaterialProgress(token, lessonId, stepMaterialId, isStaff ? reviewStudentId : undefined)
@@ -1190,11 +1231,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   const status = lesson?.status
-  // Урок идёт, стоит на паузе или уже закончился — экран собран одинаково,
-  // разница в том, можно ли отвечать. Раньше ветка была только под «идёт» и
-  // «пауза», и после «Завершить» ученик оставался с пустым экраном: ни ленты,
-  // ни ответов, ни итога (спека §3.4 описывает совсем другое).
-  const lessonOpen = status === 'IN_PROGRESS' || status === 'PAUSED' || status === 'COMPLETED' || followMode
+  // Урок открыт в любом состоянии, кроме отменённого: ученик заходит и делает
+  // задания до того, как преподаватель нажал «Начать», на перерыве и после
+  // «Завершить» (решение владельца 20.09.2026, spec-lesson-always-open).
+  // Отменённого занятия не было — там вместо урока стоит баннер.
+  const lessonOpen = status !== 'CANCELLED' || followMode
 
   // Урок сеанса дошёл до терминального статуса — сообщаем об этом наружу ОДИН
   // раз. Проп необязательный и приходит только у аккаунта класса преподавателя
@@ -1250,12 +1291,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // заданиями, и на рамку файлового материала — что из них на экране, зависит
   // от вида урока, а состояние одно.
   const stageFlags = `${calledBy != null ? ' is-called' : ''}${watchedBy != null ? ' is-watched' : ''}`
-  // Признак блокировки и её причина считаются парой в liveStatus.js — врозь они
-  // разъезжаются, и ученик получает закрытые кнопки без единого слова о том,
-  // почему они закрыты.
-  const contentReadOnly = contentLocked(status, isStaff)
-  const lockNoteKey = contentLockNoteKey(status, isStaff)
-  const contentLockNote = lockNoteKey ? t(lockNoteKey) : ''
+  const contentReadOnly = contentLocked(isStaff)
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
   // Шапка урока считает задания открытой темы теми же карточками, что лента их
   // и нумерует, — иначе «Задание 3 из 7» разъедется с цифрой на карточке.
@@ -1336,6 +1372,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               <SystemBanner
                 text={`${t('live.finished')}${lesson.durationMinutes ? ` · ${t('live.finishedDuration', { minutes: lesson.durationMinutes })}` : ''}`}
               />
+            )}
+
+            {/* Единственное состояние, в котором урока на экране нет вовсе:
+                занятие не состоялось. Без этой строки ученик, пришедший по
+                прямой ссылке, получил бы пустую страницу. */}
+            {status === 'CANCELLED' && !followMode && (
+              <SystemBanner tone="attention" text={t('live.cancelled')} />
             )}
 
             {lessonOpen && (
@@ -1533,7 +1576,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               onAnswer={handleAnswer}
                               onCheck={handleCheckStep}
                               readOnly={contentReadOnly}
-                              lockNote={contentLockNote}
                               liveQuestionId={isStaff ? reviewLiveQuestionId : (followMode ? focusTargetId : null)}
                               liveFocusNonce={isStaff ? 0 : focusNonce}
                               token={token}

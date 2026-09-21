@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 
 vi.mock('../../api.js', () => ({
@@ -149,151 +149,53 @@ describe('LessonSchedule container', () => {
   })
 })
 
-// Человек, зарегистрировавшийся на сайте сам, приходит без преподавателя и без
-// расписания и видел пустой календарь без единого объяснения. Вместо него —
-// карточка «скоро с вами свяжется менеджер» с заявкой на пробный урок.
-describe('LessonSchedule — заявка на пробный урок', () => {
-  // Состояние с бэкенда (TrialRequestResponse): преподавателя нет, остальное
-  // задаёт конкретный тест.
-  const noTeacher = (over) => ({
-    requested: false, requestedAt: null, teacherAssigned: false, managerAssigned: false, ...over,
-  })
-
+// Экран «Уроки» — всегда расписание, подменить его нечем.
+//
+// Раньше на его месте могла встать карточка «Скоро с вами свяжется менеджер» с
+// заявкой на пробный урок: она выходила при нуле занятий И отсутствии
+// преподавателя у группы ученика (teacherAssigned бэкенд считает по группе).
+// Оба условия выполняются и при поломанных данных — у оплатившего ученика,
+// которого посадили в группу без преподавателя или забыли вписать в её
+// занятия. Он видел предложение записаться на пробный урок вместо своего
+// расписания, без календаря и счётчиков, по которым видно, что занятия были.
+describe('LessonSchedule — расписание ничем не подменяется', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
-    // Адресат карточки — человек без расписания. Дефолтный мок файла отдаёт
-    // одно занятие, а карточка теперь требует пустого календаря: занятие,
-    // о котором ученик иначе не узнает, дороже предложения записаться.
+    // Худший случай: занятий нет вовсе — раньше ровно тут экран и подменялся.
     const api = await import('../../api.js')
     api.getMyLessonOccurrences.mockResolvedValue([])
   })
 
-  // Ключевой случай регрессии: календарь бывает пустым и у ученика с
-  // преподавателем, поэтому решает признак бэкенда, а не пустота расписания.
-  it('у ученика с преподавателем экран остаётся расписанием', async () => {
-    const api = await import('../../api.js')
-    api.getMyLessonOccurrences.mockResolvedValue([
-      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
-    ])
+  it('без занятий показывает пустое расписание, а не предложение записаться', async () => {
     const { container } = renderSchedule()
 
     await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    expect(api.getTrialRequestState).toHaveBeenCalledWith(STUDENT)
     expect(container.querySelector('.sch-trial')).toBeNull()
+    expect(screen.queryByText(/свяжется менеджер/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /пробный урок/ })).toBeNull()
+    // То, что стоит вместо карточки: честная пустота и счётчики с календарём.
+    expect(screen.getByText('Ближайших уроков нет')).toBeTruthy()
     expect(container.querySelectorAll('.sch-tile')).toHaveLength(4)
   })
 
-  it('без преподавателя и без заявки — карточка с активной кнопкой вместо календаря', async () => {
+  // Ручка осталась ради блока на главной у демо-аккаунта, но этому экрану она
+  // больше не нужна: лишний запрос при каждом открытии «Уроков» — это запрос
+  // в никуда.
+  it('состояние заявки на пробный урок экран не запрашивает вовсе', async () => {
     const api = await import('../../api.js')
-    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
-    const { container } = renderSchedule()
-
-    await waitFor(() => expect(container.querySelector('.sch-trial')).not.toBeNull())
-    expect(screen.getByText('Скоро с вами свяжется менеджер')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Записаться на пробный урок' }).disabled).toBe(false)
-    expect(container.querySelector('.cal')).toBeNull()
-  })
-
-  it('после успешной заявки карточка подтверждает приём и кнопки больше нет', async () => {
-    const api = await import('../../api.js')
-    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
     renderSchedule()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Записаться на пробный урок' }))
-
-    expect(await screen.findByText('Заявка принята')).toBeTruthy()
-    expect(api.requestTrialLesson).toHaveBeenCalledWith(STUDENT)
-    expect(screen.queryByRole('button', { name: 'Записаться на пробный урок' })).toBeNull()
+    await waitFor(() => expect(api.getLessonsSummary).toHaveBeenCalled())
+    expect(api.getTrialRequestState).not.toHaveBeenCalled()
   })
 
-  // Два клика в ОДНОМ тике: перерисовки между ними нет, значит disabled ещё не
-  // проставлен и второй клик доходит до обработчика — его держит только гард в
-  // ref. Бэкенд идемпотентен, но лишний запрос всё равно уходить не должен.
-  it('двойной клик по кнопке шлёт одну заявку', async () => {
-    const api = await import('../../api.js')
-    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
-    let resolve
-    api.requestTrialLesson.mockImplementationOnce(() => new Promise((r) => { resolve = r }))
-    renderSchedule()
-
-    const btn = await screen.findByRole('button', { name: 'Записаться на пробный урок' })
-    await act(async () => {
-      btn.click()
-      btn.click()
-    })
-    await act(async () => { resolve(noTeacher({ requested: true })) })
-
-    expect(api.requestTrialLesson).toHaveBeenCalledTimes(1)
-    expect(await screen.findByText('Заявка принята')).toBeTruthy()
-  })
-
-  // Менеджер уже взял человека себе — обещание «свяжемся» перестало висеть в
-  // пустоте, и ждущему полезно это знать.
-  it('заявка оставлена и человека ведёт менеджер — карточка говорит и об этом', async () => {
-    const api = await import('../../api.js')
-    api.getTrialRequestState.mockResolvedValueOnce(noTeacher({ requested: true, managerAssigned: true }))
-    renderSchedule()
-
-    expect(await screen.findByText(/За вами уже закреплён менеджер/)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Записаться на пробный урок' })).toBeNull()
-  })
-
-  // Состояние неизвестно — обещать звонок нельзя (вдруг преподаватель есть), но
-  // и ронять экран не за что: остаётся расписание, каким было до правки.
-  it('упавший запрос состояния не ломает экран — остаётся расписание', async () => {
-    const api = await import('../../api.js')
-    api.getTrialRequestState.mockRejectedValueOnce(new Error('boom'))
-    api.getMyLessonOccurrences.mockResolvedValue([
-      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
-    ])
-    const { container } = renderSchedule()
-
-    await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    expect(api.getTrialRequestState).toHaveBeenCalledWith(STUDENT)
-    expect(container.querySelector('.sch-trial')).toBeNull()
-    expect(container.querySelector('.sch__status--error')).toBeNull()
-  })
-
-  // Признак teacherAssigned бэкенд считает по группе ученика, а у преподавателя
-  // группы нет вовсе — он получал false и терял ВЕСЬ экран «Уроки» вместе с
-  // единственной кнопкой «Войти в класс», без выхода: F5 возвращал то же самое.
-  it('преподавателю карточка не показывается — у него своё расписание', async () => {
-    const api = await import('../../api.js')
-    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
-    api.getMyLessonOccurrences.mockResolvedValue([
-      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
-    ])
+  // Преподаватель получал teacherAssigned=false всегда (группы у него нет
+  // вовсе) и терял ВЕСЬ экран вместе с единственной кнопкой «Войти в класс».
+  it('у преподавателя экран тоже остаётся расписанием', async () => {
     const { container } = renderSchedule(TEACHER)
 
     await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
     expect(container.querySelector('.sch-trial')).toBeNull()
-  })
-
-  // teacherAssigned бывает false и при непустом расписании: у группы
-  // преподаватель необязателен, а после его смены остаётся история занятий.
-  // Спрятать занятие дороже, чем не показать предложение записаться.
-  it('непустое расписание карточка не прячет, даже когда преподавателя нет', async () => {
-    const api = await import('../../api.js')
-    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
-    api.getMyLessonOccurrences.mockResolvedValue([
-      { lessonId: 1, participantId: 11, scheduledAt: '2026-08-04T20:00:00', durationMinutes: 60, teacherName: 'Demo', lessonStatus: 'COMPLETED', format: 'ONLINE' },
-    ])
-    const { container } = renderSchedule()
-
-    await waitFor(() => expect(container.querySelector('.cal')).not.toBeNull())
-    expect(container.querySelector('.sch-trial')).toBeNull()
-  })
-
-  it('упавшая заявка объясняет ошибку и оставляет кнопку рабочей', async () => {
-    const api = await import('../../api.js')
-    api.getTrialRequestState.mockResolvedValueOnce(noTeacher())
-    api.requestTrialLesson.mockRejectedValueOnce(new Error('boom'))
-    renderSchedule()
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Записаться на пробный урок' }))
-
-    expect(await screen.findByText(/Не удалось отправить заявку/)).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Записаться на пробный урок' }).disabled).toBe(false)
   })
 })
 

@@ -24,6 +24,9 @@
 // 'verbs' — стейт-объект {saved, progress} «Неправильных глаголов»: отмеченные
 // глаголы и результат каждого задания по ключу режима. Replace, как у reading.
 // Area 'verbs' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
+// 'listenchoose' — стейт-объект {seen: {easy, medium, hard}} «Слушай и выбирай»:
+// какие задания выборка уже показывала на каждой сложности. Replace, как у verbs.
+// Area 'listenchoose' бэкенду неизвестна — в домашнюю работу раздел не отчитывается.
 export const PRACTICE_MODULES = [
   'vocab',
   'grammar',
@@ -36,6 +39,7 @@ export const PRACTICE_MODULES = [
   'reading',
   'words',
   'verbs',
+  'listenchoose',
 ]
 
 // Модули, чей state — это растущее множество пройденных id: прохождение нельзя

@@ -46,12 +46,16 @@ describe('NextLessonCard', () => {
     expect(opened).toEqual([42])
   })
 
-  // Кнопка остаётся на месте, но не работает: класс ещё не открыт, и щелчок
-  // по ней увёл бы ученика на пустой экран урока.
-  it('запланированный урок: вход выключен, видно почему', () => {
-    renderCard()
-    expect(screen.getByRole('button', { name: /присоединиться к уроку/i }).disabled).toBe(true)
+  // Класс ещё не открыт, но задания уже доступны — кнопка работает, а чип
+  // честно говорит, что преподаватель урок не начинал.
+  it('запланированный урок: вход работает, состояние видно', () => {
+    const opened = []
+    renderCard({ onOpenLesson: (id) => opened.push(id) })
+    const button = screen.getByRole('button', { name: /присоединиться к уроку/i })
+    expect(button.disabled).toBe(false)
     expect(screen.getByText('Преподаватель ещё не начал урок')).toBeTruthy()
+    fireEvent.click(button)
+    expect(opened).toEqual([42])
   })
 
   it('без темы в шапке строки — день и время урока', () => {

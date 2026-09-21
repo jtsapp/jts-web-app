@@ -9,6 +9,13 @@ export const SHADOWING_KEY = 'jts_shadowing_done'
 // Открытые уровни статического «Speaking Practice A1–C1» — единица прохождения
 // для квоты PRACTICE_SITUATIONS (см. practiceContract.js).
 export const SITUATIONS_KEY = 'jts_situations_done'
+// Пройденные СЦЕНАРИИ внутри уровней: { a1: [1,3,7], … }. Отдельно от
+// SITUATIONS_KEY намеренно: там единица — уровень, и против неё считается
+// квота PRACTICE_SITUATIONS из админки. Смешать их значит списать студенту,
+// прошедшему 10 сценариев A1, десять уровней из квоты. Серверного синка у
+// этого ключа нет: контракт practiceContract.js ждёт от модуля 'situations'
+// список уровней, а не карту сценариев.
+export const SITUATIONS_ITEMS_KEY = 'jts_situations_items'
 // Комиксы — не «пройдено», а закладка: { <comicId>: номер страницы }. Читалка
 // открывает комикс с неё, карточка каталога показывает «стр. 12 / 214».
 export const COMICS_POS_KEY = 'jts_comics_pos'
@@ -34,6 +41,14 @@ export const WORDS_KEY = 'jts_words_done'
 // — отмеченные «потренировать позже» и результат каждого задания в ключе
 // прототипа. Семантика replace, как у reading/words.
 export const VERBS_KEY = 'jts_verbs_done'
+// Прогресс «Слушай и выбирай»: { seen: { easy: [id…], medium: […], hard: […] } }
+// — какие задания выборка уже показывала на каждой сложности (без этого набор
+// после перезахода начинался бы с тех же заданий). Семантика replace, как у verbs.
+export const LISTENCHOOSE_KEY = 'jts_listenchoose_done'
+// Недоигранный набор и настройки этого УСТРОЙСТВА (сложность, размер набора,
+// темп, громкость). Не синкается — это свойство устройства, а не ученика; но
+// чистится вместе с прогрессом: следующий аккаунт не должен продолжить чужой набор.
+export const LISTENCHOOSE_RUN_KEY = 'jts_listenchoose_run'
 
 export const GRAMMAR_PROGRESS_EVENT = 'grammar-progress'
 export const LISTENING_PROGRESS_EVENT = 'listening-progress'
@@ -45,6 +60,7 @@ export const WORKBOOK_PROGRESS_EVENT = 'workbook-progress'
 export const READING_PROGRESS_EVENT = 'reading-progress'
 export const WORDS_PROGRESS_EVENT = 'words-progress'
 export const VERBS_PROGRESS_EVENT = 'verbs-progress'
+export const LISTENCHOOSE_PROGRESS_EVENT = 'listenchoose-progress'
 // Караоке — не «пройдено», а результаты: { <slug>: { stars, best, attempts } }
 // плюс стрик по дням. Ключ трека — slug, а не id: карточку в админке могут
 // пересоздать, и прогресс не должен обнуляться вместе с ней.

@@ -1,0 +1,1932 @@
+{
+  "level": "a2",
+  "items": [
+    {
+      "id": 1,
+      "video": "/practice/situations/media/a2-v01.mp4",
+      "poster": "/practice/situations/media/a2-p01.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "You Missed Your Train",
+        "kz": "Сіз пойызға кешігіп қалдыңыз",
+        "ru": "Вы опоздали на поезд"
+      },
+      "intro": {
+        "en": "You're at the station and you see your train leaving without you. You have an important meeting in another city this evening, and this was the last cheap ticket. Your heart is racing. You need to find another way to get there — fast.",
+        "kz": "Сіз вокзалдасыз және пойызыңыз сізсіз кетіп бара жатқанын көресіз. Бүгін кешке басқа қалада маңызды кездесуіңіз бар, ал бұл соңғы арзан билет еді. Жүрегіңіз дүрсілдеп тұр. Сізге жетудің басқа жолын тез табу керек.",
+        "ru": "Вы на вокзале и видите, как ваш поезд уходит без вас. Сегодня вечером у вас важная встреча в другом городе, а это был последний дешёвый билет. Сердце колотится. Вам нужно срочно найти другой способ добраться."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You reach the information desk, out of breath. The agent smiles.",
+            "kz": "Сіз ентігіп анықтама бюросына жетесіз. Қызметкер жымияды.",
+            "ru": "Вы добегаете до справочной, запыхавшись. Сотрудница улыбается."
+          },
+          {
+            "who": "them",
+            "label": "Agent",
+            "en": "Hi there. You look stressed — how can I help you?",
+            "kz": "Сәлеметсіз бе. Сіз қобалжыған сияқтысыз — қалай көмектесе аламын?",
+            "ru": "Здравствуйте. Вы выглядите взволнованно — чем могу помочь?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Greet her and explain your problem: you just missed the train and you need to be in the city by tonight.",
+            "kz": "Сәлемдесіп, мәселеңізді түсіндіріңіз: пойызға жаңа ғана кешігіп қалдыңыз және бүгін кешке қалада болуыңыз керек.",
+            "ru": "Поздоровайтесь и объясните проблему: вы только что опоздали на поезд и вам нужно быть в городе к вечеру."
+          },
+          {
+            "who": "them",
+            "label": "Agent",
+            "en": "I see. There's another train at 10:40, but it's a bit more expensive. There's also a bus that takes longer but costs less.",
+            "kz": "Түсінікті. 10:40-та тағы бір пойыз бар, бірақ сәл қымбатырақ. Сондай-ақ ұзағырақ, бірақ арзанырақ автобус бар.",
+            "ru": "Понятно. Есть поезд в 10:40, но чуть дороже. Есть и автобус — дольше, но дешевле."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Ask which one arrives in time for your meeting, and ask if your old ticket gives you a discount.",
+            "kz": "Кездесуге қайсысы уақытында жететінін сұраңыз және ескі билетіңіз жеңілдік бере ме деп сұраңыз.",
+            "ru": "Спросите, какой вариант успевает к встрече, и даёт ли старый билет скидку."
+          },
+          {
+            "who": "them",
+            "label": "Agent",
+            "en": "The train arrives at six, so you'll make it. And yes — bring your old ticket to the counter and you only pay the difference.",
+            "kz": "Пойыз алтыда келеді, сондықтан үлгересіз. Иә — ескі билетіңізді кассаға апарыңыз, тек айырманы төлейсіз.",
+            "ru": "Поезд приходит в шесть, так что успеете. И да — отнесите старый билет в кассу, доплатите только разницу."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Thank her, repeat the plan in your own words (which train, which counter), and say goodbye.",
+            "kz": "Алғыс айтып, жоспарды өз сөзіңізбен қайталаңыз (қай пойыз, қай касса) және қоштасыңыз.",
+            "ru": "Поблагодарите, повторите план своими словами (какой поезд, какая касса) и попрощайтесь."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Explain calmly to the station agent that you missed your train.",
+          "kz": "Қызметкерге пойызға кешігіп қалғаныңызды сабырмен түсіндіріңіз.",
+          "ru": "Спокойно объясните сотруднику, что вы опоздали на поезд."
+        },
+        {
+          "en": "Ask about the next train and whether your ticket still works.",
+          "kz": "Келесі пойыз және билетіңіздің жарамдылығы туралы сұраңыз.",
+          "ru": "Спросите о следующем поезде и действует ли ваш билет."
+        },
+        {
+          "en": "Decide what to do so you still arrive on time.",
+          "kz": "Уақытында жету үшін не істеу керектігін шешіңіз.",
+          "ru": "Решите, что делать, чтобы успеть вовремя."
+        }
+      ],
+      "react": [
+        {
+          "en": "How do you feel in the first seconds after the train leaves? What do you do first?",
+          "kz": "Пойыз кеткеннен кейінгі алғашқы секундтарда өзіңізді қалай сезінесіз? Алдымен не істейсіз?",
+          "ru": "Что вы чувствуете в первые секунды после ухода поезда? Что делаете первым?"
+        },
+        {
+          "en": "The train is faster but costs more; the bus is cheaper but slower. Which do you choose, and why?",
+          "kz": "Пойыз жылдамырақ, бірақ қымбат; автобус арзан, бірақ баяу. Қайсысын таңдайсыз және неге?",
+          "ru": "Поезд быстрее, но дороже; автобус дешевле, но медленнее. Что выберете и почему?"
+        },
+        {
+          "en": "What will you say if the agent tells you there are no more trains today?",
+          "kz": "Қызметкер бүгін басқа пойыз жоқ десе, не айтасыз?",
+          "ru": "Что скажете, если сотрудница ответит, что поездов сегодня больше нет?"
+        },
+        {
+          "en": "How can you stay polite and calm when you feel stressed?",
+          "kz": "Қобалжыған кезде қалай сыпайы әрі сабырлы бола аласыз?",
+          "ru": "Как оставаться вежливым и спокойным, когда нервничаешь?"
+        },
+        {
+          "en": "Tell about a time you missed a train, bus, or flight. What did you do?",
+          "kz": "Пойызға, автобусқа немесе ұшаққа кешігіп қалған кезіңізді айтыңыз. Не істедіңіз?",
+          "ru": "Расскажите, когда вы опаздывали на поезд, автобус или самолёт. Что вы сделали?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "to miss a train",
+          "kz": "пойызға кешігіп қалу",
+          "ru": "опоздать на поезд"
+        },
+        {
+          "en": "the next train / departure",
+          "kz": "келесі пойыз / кету",
+          "ru": "следующий поезд / отправление"
+        },
+        {
+          "en": "ticket counter",
+          "kz": "билет кассасы",
+          "ru": "билетная касса"
+        },
+        {
+          "en": "to pay the difference",
+          "kz": "айырманы төлеу",
+          "ru": "доплатить разницу"
+        },
+        {
+          "en": "on time",
+          "kz": "уақытында",
+          "ru": "вовремя"
+        },
+        {
+          "en": "Excuse me, I missed my train.",
+          "kz": "Кешіріңіз, пойызыма кешігіп қалдым.",
+          "ru": "Извините, я опоздал на поезд."
+        },
+        {
+          "en": "What are my options?",
+          "kz": "Менің қандай нұсқаларым бар?",
+          "ru": "Какие у меня варианты?"
+        },
+        {
+          "en": "Which one arrives sooner?",
+          "kz": "Қайсысы ертерек жетеді?",
+          "ru": "Какой приедет раньше?"
+        },
+        {
+          "en": "Can I use my old ticket?",
+          "kz": "Ескі билетімді пайдалана аламын ба?",
+          "ru": "Могу я использовать старый билет?"
+        },
+        {
+          "en": "because (reason)",
+          "kz": "өйткені",
+          "ru": "потому что"
+        },
+        {
+          "en": "so (result)",
+          "kz": "сондықтан",
+          "ru": "поэтому"
+        },
+        {
+          "en": "after that (sequence)",
+          "kz": "содан кейін",
+          "ru": "после этого"
+        }
+      ],
+      "task": {
+        "en": "You're the traveller. Act out the whole scene out loud: explain your problem, ask about your options, choose one, and confirm the plan. Use because, so, and after that.",
+        "kz": "Сіз — жолаушысыз. Бүкіл көріністі дауыстап ойнаңыз: мәселеңізді түсіндіріп, нұсқаларды сұрап, біреуін таңдап, жоспарды растаңыз. because, so, after that қолданыңыз.",
+        "ru": "Вы — путешественник. Разыграйте всю сцену вслух: объясните проблему, спросите варианты, выберите один и подтвердите план. Используйте because, so и after that."
+      }
+    },
+    {
+      "id": 2,
+      "video": "/practice/situations/media/a2-v02.mp4",
+      "poster": "/practice/situations/media/a2-p02.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Your GPS Just Died",
+        "kz": "GPS-іңіз сөніп қалды",
+        "ru": "Ваш GPS только что отключился"
+      },
+      "intro": {
+        "en": "You're alone in a foreign city at night. Your phone battery hits 1%… then the screen goes black. The map is gone, you don't speak the local language well, and you're not sure where your hotel is. You'll have to ask real people for help.",
+        "kz": "Сіз түнде бейтаныс қалада жалғызсыз. Телефон батареясы 1%-ке жетеді… содан кейін экран сөнеді. Карта жоқ, жергілікті тілді жақсы білмейсіз, ал қонақ үйіңіздің қайда екенін білмейсіз. Нағыз адамдардан көмек сұрауға тура келеді.",
+        "ru": "Вы одни ночью в чужом городе. Заряд телефона падает до 1%… и экран гаснет. Карты нет, местный язык вы знаете плохо, и вы не уверены, где ваш отель. Придётся просить помощи у живых людей."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "It's getting dark. You see someone walking slowly with a coffee. You take a breath and walk up.",
+            "kz": "Қараңғы түсіп келеді. Кофесімен баяу жүрген біреуді көресіз. Дем алып, жақындайсыз.",
+            "ru": "Темнеет. Вы видите человека, медленно идущего с кофе. Делаете вдох и подходите."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Get the stranger's attention politely and apologise for stopping them.",
+            "kz": "Бейтаныстың назарын сыпайы аударып, тоқтатқаныңыз үшін кешірім сұраңыз.",
+            "ru": "Вежливо привлеките внимание прохожего и извинитесь, что остановили его."
+          },
+          {
+            "who": "them",
+            "label": "Stranger",
+            "en": "Sure, no problem. What do you need?",
+            "kz": "Әрине, мәселе жоқ. Сізге не керек?",
+            "ru": "Конечно, без проблем. Что вам нужно?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Explain that your phone is dead, you're a little lost, and you're looking for the Grand Park Hotel.",
+            "kz": "Телефоныңыз сөнгенін, сәл адасқаныңызды және Grand Park қонақ үйін іздеп жүргеніңізді түсіндіріңіз.",
+            "ru": "Объясните, что телефон сел, вы немного заблудились и ищете отель «Гранд Парк»."
+          },
+          {
+            "who": "them",
+            "label": "Stranger",
+            "en": "Ah, it's not far. Go straight, then turn left at the bank. It's next to a pharmacy.",
+            "kz": "Аһ, ол алыс емес. Тура жүріңіз, содан кейін банктің жанынан солға бұрылыңыз. Ол дәріхананың қасында.",
+            "ru": "А, это недалеко. Идите прямо, потом поверните налево у банка. Он рядом с аптекой."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Repeat the directions back to make sure you understood, and ask how many minutes it takes.",
+            "kz": "Дұрыс түсінгеніңізге көз жеткізу үшін бағытты қайталап, неше минут алатынын сұраңыз.",
+            "ru": "Повторите направления, чтобы убедиться, что поняли, и спросите, сколько минут идти."
+          },
+          {
+            "who": "them",
+            "label": "Stranger",
+            "en": "About five minutes. Stay on the main street — it's brighter and safer at night.",
+            "kz": "Шамамен бес минут. Негізгі көшеде жүріңіз — түнде ол жарықтырақ әрі қауіпсіз.",
+            "ru": "Минут пять. Идите по главной улице — ночью там светлее и безопаснее."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Thank the stranger warmly and say goodbye.",
+            "kz": "Бейтанысқа жылы алғыс айтып, қоштасыңыз.",
+            "ru": "Тепло поблагодарите прохожего и попрощайтесь."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Stop a friendly-looking stranger and ask for help politely.",
+          "kz": "Достық көрінетін бейтанысты тоқтатып, сыпайы көмек сұраңыз.",
+          "ru": "Остановите доброжелательного прохожего и вежливо попросите помощи."
+        },
+        {
+          "en": "Explain your problem and the name of your hotel.",
+          "kz": "Мәселеңізді және қонақ үйіңіздің атын түсіндіріңіз.",
+          "ru": "Объясните проблему и название вашего отеля."
+        },
+        {
+          "en": "Understand and repeat the directions so you don't get lost again.",
+          "kz": "Бағытты түсініп, қайталаңыз, сонда қайта адаспайсыз.",
+          "ru": "Поймите и повторите направления, чтобы снова не заблудиться."
+        }
+      ],
+      "react": [
+        {
+          "en": "Why is it harder to ask for help when your phone is dead and it's dark?",
+          "kz": "Телефоныңыз сөнгенде және қараңғыда көмек сұрау неге қиынырақ?",
+          "ru": "Почему труднее просить помощи, когда телефон сел и темно?"
+        },
+        {
+          "en": "How do you choose who to ask on the street? What makes someone look friendly?",
+          "kz": "Көшеде кімнен сұрауды қалай таңдайсыз? Адам неден достық көрінеді?",
+          "ru": "Как вы выбираете, у кого спросить на улице? Что делает человека приветливым?"
+        },
+        {
+          "en": "What will you do if you still can't find the hotel after the directions?",
+          "kz": "Бағыттан кейін де қонақ үйді таппасаңыз, не істейсіз?",
+          "ru": "Что сделаете, если после подсказки всё равно не найдёте отель?"
+        },
+        {
+          "en": "Why does the stranger say to stay on the main street?",
+          "kz": "Бейтаныс неге негізгі көшеде жүруді айтады?",
+          "ru": "Почему прохожий советует идти по главной улице?"
+        },
+        {
+          "en": "What do you usually do when your phone battery dies while you're out?",
+          "kz": "Сыртта жүргенде телефоныңыз отырып қалса, әдетте не істейсіз?",
+          "ru": "Что вы обычно делаете, когда телефон садится, пока вы на улице?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "battery is dead",
+          "kz": "батарея отырып қалды",
+          "ru": "батарея села"
+        },
+        {
+          "en": "to be lost",
+          "kz": "адасып қалу",
+          "ru": "заблудиться"
+        },
+        {
+          "en": "go straight",
+          "kz": "тура жүру",
+          "ru": "идти прямо"
+        },
+        {
+          "en": "turn left / right",
+          "kz": "солға / оңға бұрылу",
+          "ru": "повернуть налево / направо"
+        },
+        {
+          "en": "next to",
+          "kz": "қасында",
+          "ru": "рядом с"
+        },
+        {
+          "en": "the main street",
+          "kz": "негізгі көше",
+          "ru": "главная улица"
+        },
+        {
+          "en": "Sorry to bother you.",
+          "kz": "Мазалағаным үшін кешіріңіз.",
+          "ru": "Простите за беспокойство."
+        },
+        {
+          "en": "My phone is dead.",
+          "kz": "Телефоным сөніп қалды.",
+          "ru": "У меня сел телефон."
+        },
+        {
+          "en": "Could you help me, please?",
+          "kz": "Маған көмектесе аласыз ба?",
+          "ru": "Не могли бы вы помочь?"
+        },
+        {
+          "en": "How long does it take?",
+          "kz": "Қанша уақыт алады?",
+          "ru": "Сколько это займёт?"
+        },
+        {
+          "en": "first (sequence)",
+          "kz": "алдымен",
+          "ru": "сначала"
+        },
+        {
+          "en": "then (sequence)",
+          "kz": "содан кейін",
+          "ru": "потом"
+        },
+        {
+          "en": "so (result)",
+          "kz": "сондықтан",
+          "ru": "поэтому"
+        }
+      ],
+      "task": {
+        "en": "You're lost with a dead phone. Act it out: stop a stranger, ask for directions to a place, repeat the directions, and thank them. Use first, then, after that, and so.",
+        "kz": "Сіз телефоныңыз сөніп, адасып қалдыңыз. Ойнаңыз: бейтанысты тоқтатып, бір жерге бағыт сұраңыз, бағытты қайталаңыз және алғыс айтыңыз. first, then, after that, so қолданыңыз.",
+        "ru": "Вы заблудились с разряженным телефоном. Разыграйте: остановите прохожего, спросите дорогу, повторите её и поблагодарите. Используйте first, then, after that и so."
+      }
+    },
+    {
+      "id": 3,
+      "video": "/practice/situations/media/a2-v03.mp4",
+      "poster": "/practice/situations/media/a2-p03.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Make a Friend on the Road",
+        "kz": "Жолда дос тап",
+        "ru": "Найди друга в дороге"
+      },
+      "intro": {
+        "en": "You're travelling alone and tonight you're in a hostel full of strangers. Tomorrow there's an amazing day trip, but going alone feels lonely. In the common kitchen you notice someone who looks friendly. This is your chance — break the ice and find a travel buddy for tomorrow.",
+        "kz": "Сіз жалғыз саяхаттап жүрсіз, ал бүгін кешке бейтаныс адамдарға толы хостелдесіз. Ертең керемет бір күндік сапар бар, бірақ жалғыз бару жалғыздық сезімін тудырады. Ортақ ас үйде достық көрінетін біреуді байқайсыз. Бұл сіздің мүмкіндігіңіз — мұзды бұзып, ертеңге саяхат серігін табыңыз.",
+        "ru": "Вы путешествуете в одиночку, а сегодня ночуете в хостеле, полном незнакомцев. Завтра потрясающая однодневная поездка, но ехать одному одиноко. На общей кухне вы замечаете кого-то с приветливым видом. Это ваш шанс — растопите лёд и найдите спутника на завтра."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "The kitchen smells of coffee. The other traveller looks up from a map and gives you a small smile.",
+            "kz": "Ас үй кофе иісіне толы. Басқа саяхатшы картадан басын көтеріп, сізге сәл жымияды.",
+            "ru": "На кухне пахнет кофе. Другой путешественник поднимает взгляд от карты и слегка улыбается вам."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Say hello, introduce yourself, and ask if they're travelling alone too.",
+            "kz": "Сәлемдесіп, өзіңізді таныстырып, олардың да жалғыз саяхаттап жүргенін сұраңыз.",
+            "ru": "Поздоровайтесь, представьтесь и спросите, путешествуют ли они тоже одни."
+          },
+          {
+            "who": "them",
+            "label": "Traveller",
+            "en": "Hey! Yeah, I am. I got here this morning. I'm still deciding what to do tomorrow.",
+            "kz": "Сәлем! Иә, солай. Бүгін таңертең келдім. Ертең не істейтінімді әлі шешкенім жоқ.",
+            "ru": "Привет! Да. Приехал сегодня утром. Всё ещё решаю, чем заняться завтра."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "React with interest, and ask where they've travelled so far.",
+            "kz": "Қызығушылықпен жауап беріп, олардың осы уақытқа дейін қайда болғанын сұраңыз.",
+            "ru": "Отреагируйте с интересом и спросите, где они уже побывали."
+          },
+          {
+            "who": "them",
+            "label": "Traveller",
+            "en": "Italy, then Greece, and now here. Honestly, travelling alone is great, but some days I miss having company.",
+            "kz": "Италия, содан кейін Грекия, ал қазір осында. Шынымды айтсам, жалғыз саяхаттау тамаша, бірақ кейбір күндері серік болғанын сағынамын.",
+            "ru": "Италия, потом Греция, а теперь здесь. Честно, путешествовать одному классно, но иногда не хватает компании."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Tell them about the day trip tomorrow and invite them to come with you.",
+            "kz": "Оларға ертеңгі сапар туралы айтып, өзіңізбен бірге баруға шақырыңыз.",
+            "ru": "Расскажите им о завтрашней поездке и пригласите поехать с вами."
+          },
+          {
+            "who": "them",
+            "label": "Traveller",
+            "en": "That sounds perfect! Let's do it. What time should we meet, and where?",
+            "kz": "Бұл тамаша! Келістік. Қашан және қайда кездесейік?",
+            "ru": "Звучит отлично! Давай. Во сколько и где встретимся?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Agree on a time and place to meet, and suggest finding breakfast together first.",
+            "kz": "Кездесетін уақыт пен орынды келісіп, алдымен бірге таңғы ас ішуді ұсыныңыз.",
+            "ru": "Договоритесь о времени и месте встречи и предложите сначала вместе позавтракать."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Start a friendly conversation with the other traveller.",
+          "kz": "Басқа саяхатшымен достық әңгіме бастаңыз.",
+          "ru": "Начните дружеский разговор с другим путешественником."
+        },
+        {
+          "en": "Find something you have in common.",
+          "kz": "Ортақ бір нәрсе табыңыз.",
+          "ru": "Найдите что-то общее."
+        },
+        {
+          "en": "Invite them to join you on the day trip tomorrow.",
+          "kz": "Оларды ертеңгі сапарға бірге баруға шақырыңыз.",
+          "ru": "Пригласите их присоединиться к поездке завтра."
+        }
+      ],
+      "react": [
+        {
+          "en": "Why can it feel hard to start a conversation with a stranger?",
+          "kz": "Бейтаныс адаммен әңгіме бастау неге қиын болуы мүмкін?",
+          "ru": "Почему бывает трудно начать разговор с незнакомцем?"
+        },
+        {
+          "en": "What is a good, natural way to start? What would you say first?",
+          "kz": "Бастаудың жақсы, табиғи жолы қандай? Алдымен не айтар едіңіз?",
+          "ru": "Как хорошо и естественно начать? Что бы вы сказали первым?"
+        },
+        {
+          "en": "How do you find things in common with a new person?",
+          "kz": "Жаңа адаммен ортақ нәрсені қалай табасыз?",
+          "ru": "Как найти общее с новым человеком?"
+        },
+        {
+          "en": "What will you say if the person says 'no thanks' to your invitation?",
+          "kz": "Адам шақыруыңызға «жоқ, рахмет» десе, не айтасыз?",
+          "ru": "Что скажете, если человек ответит «нет, спасибо» на ваше приглашение?"
+        },
+        {
+          "en": "Do you find it easy or hard to meet new people when you travel? Why?",
+          "kz": "Саяхаттағанда жаңа адамдармен танысу сізге оңай ма, әлде қиын ба? Неге?",
+          "ru": "Вам легко или трудно знакомиться в путешествиях? Почему?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "to travel alone",
+          "kz": "жалғыз саяхаттау",
+          "ru": "путешествовать в одиночку"
+        },
+        {
+          "en": "to break the ice",
+          "kz": "мұзды бұзу (танысу)",
+          "ru": "растопить лёд (познакомиться)"
+        },
+        {
+          "en": "to have something in common",
+          "kz": "ортақ нәрсенің болуы",
+          "ru": "иметь что-то общее"
+        },
+        {
+          "en": "a day trip",
+          "kz": "бір күндік сапар",
+          "ru": "однодневная поездка"
+        },
+        {
+          "en": "company (people with you)",
+          "kz": "серіктестік / қасыңдағылар",
+          "ru": "компания / спутники"
+        },
+        {
+          "en": "Are you travelling alone too?",
+          "kz": "Сіз де жалғыз саяхаттап жүрсіз бе?",
+          "ru": "Вы тоже путешествуете один?"
+        },
+        {
+          "en": "Do you want to join me?",
+          "kz": "Маған қосылғың келе ме?",
+          "ru": "Хочешь присоединиться ко мне?"
+        },
+        {
+          "en": "That sounds perfect.",
+          "kz": "Бұл тамаша сияқты.",
+          "ru": "Звучит отлично."
+        },
+        {
+          "en": "Where have you been so far?",
+          "kz": "Қазірге дейін қайда болдың?",
+          "ru": "Где ты уже побывал?"
+        },
+        {
+          "en": "also (adding)",
+          "kz": "сондай-ақ",
+          "ru": "также"
+        },
+        {
+          "en": "so (result)",
+          "kz": "сондықтан",
+          "ru": "поэтому"
+        },
+        {
+          "en": "finally (last point)",
+          "kz": "соңында",
+          "ru": "наконец"
+        }
+      ],
+      "task": {
+        "en": "You want a travel buddy for tomorrow. Act it out: introduce yourself, make small talk, find something in common, and invite the person on a day trip. Use also, so, and finally.",
+        "kz": "Сізге ертеңге саяхат серігі керек. Ойнаңыз: өзіңізді таныстырып, әңгіме бастап, ортақ нәрсе тауып, адамды бір күндік сапарға шақырыңыз. also, so, finally қолданыңыз.",
+        "ru": "Вам нужен спутник на завтра. Разыграйте: представьтесь, поболтайте, найдите общее и пригласите человека в поездку. Используйте also, so и finally."
+      }
+    },
+    {
+      "id": 4,
+      "video": "/practice/situations/media/a2-v04.mp4",
+      "poster": "/practice/situations/media/a2-p04.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Return It… With No Receipt",
+        "kz": "Оны қайтар… түбіртексіз",
+        "ru": "Вернуть… без чека"
+      },
+      "intro": {
+        "en": "You bought expensive headphones as a gift, but they don't work. You go back to the shop to return them — and then you realise you've lost the receipt. The assistant looks doubtful. You really need your money back. Time to explain your case and stay calm.",
+        "kz": "Сіз сыйлыққа қымбат құлаққап сатып алдыңыз, бірақ ол жұмыс істемейді. Оны қайтару үшін дүкенге барасыз — содан кейін түбіртекті жоғалтқаныңызды түсінесіз. Сатушы күмәнмен қарайды. Ақшаңыз шынымен қажет. Жағдайды түсіндіріп, сабырлы болатын кез келді.",
+        "ru": "Вы купили дорогие наушники в подарок, но они не работают. Вы возвращаетесь в магазин, чтобы их вернуть, — и понимаете, что потеряли чек. Продавец смотрит с сомнением. Вам очень нужны деньги назад. Пора объяснить ситуацию и сохранять спокойствие."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You put the box on the counter. The assistant opens it and looks at you.",
+            "kz": "Сіз қорапты сөреге қоясыз. Сатушы оны ашып, сізге қарайды.",
+            "ru": "Вы кладёте коробку на стойку. Продавец открывает её и смотрит на вас."
+          },
+          {
+            "who": "them",
+            "label": "Assistant",
+            "en": "Hi, how can I help? Is there a problem with these?",
+            "kz": "Сәлеметсіз бе, қалай көмектесе аламын? Мұнымен бір мәселе бар ма?",
+            "ru": "Здравствуйте, чем помочь? С ними что-то не так?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Explain that the headphones don't work — one side is silent — and you'd like to return them.",
+            "kz": "Құлаққап жұмыс істемейтінін — бір жағы үнсіз екенін — түсіндіріп, оны қайтарғыңыз келетінін айтыңыз.",
+            "ru": "Объясните, что наушники не работают — одна сторона молчит — и вы хотите их вернуть."
+          },
+          {
+            "who": "them",
+            "label": "Assistant",
+            "en": "Okay. Do you have the receipt?",
+            "kz": "Жарайды. Түбіртегіңіз бар ма?",
+            "ru": "Хорошо. У вас есть чек?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Apologise — you can't find the receipt. Offer your bank statement or the box and warranty card instead.",
+            "kz": "Кешірім сұраңыз — түбіртекті таба алмайсыз. Оның орнына банк үзіндісін немесе қорап пен кепілдік картасын ұсыныңыз.",
+            "ru": "Извинитесь — чек вы не нашли. Предложите вместо него выписку из банка или коробку с гарантийным талоном."
+          },
+          {
+            "who": "them",
+            "label": "Assistant",
+            "en": "Hmm, without a receipt it's difficult. But if you paid by card, I can look it up. What was the date?",
+            "kz": "Хм, түбіртексіз бұл қиын. Бірақ картамен төлесеңіз, оны таба аламын. Қай күні болды?",
+            "ru": "Хм, без чека это сложно. Но если вы платили картой, я могу найти. Какая была дата?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Tell her the date and that you paid by card. Stay calm and ask if a refund is possible.",
+            "kz": "Оған күнді және картамен төлегеніңізді айтыңыз. Сабырлы болып, ақшаны қайтару мүмкін бе деп сұраңыз.",
+            "ru": "Назовите дату и что платили картой. Сохраняйте спокойствие и спросите, возможен ли возврат."
+          },
+          {
+            "who": "them",
+            "label": "Assistant",
+            "en": "Found it! Great. I can give you a refund or a new pair — which would you prefer?",
+            "kz": "Таптым! Тамаша. Сізге ақшаны немесе жаңа жұпты бере аламын — қайсысын қалайсыз?",
+            "ru": "Нашла! Отлично. Могу вернуть деньги или дать новую пару — что предпочитаете?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Make your choice and explain why, then thank her.",
+            "kz": "Таңдауыңызды жасап, неге екенін түсіндіріп, алғыс айтыңыз.",
+            "ru": "Сделайте выбор, объясните почему и поблагодарите её."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Explain the problem: the headphones don't work.",
+          "kz": "Мәселені түсіндіріңіз: құлаққап жұмыс істемейді.",
+          "ru": "Объясните проблему: наушники не работают."
+        },
+        {
+          "en": "Admit you don't have the receipt, and offer other proof.",
+          "kz": "Түбіртегіңіз жоқ екенін мойындап, басқа дәлел ұсыныңыз.",
+          "ru": "Признайте, что чека нет, и предложите другое доказательство."
+        },
+        {
+          "en": "Politely ask for a refund or a replacement.",
+          "kz": "Ақшаны қайтаруды немесе ауыстыруды сыпайы сұраңыз.",
+          "ru": "Вежливо попросите возврат денег или замену."
+        }
+      ],
+      "react": [
+        {
+          "en": "How do you feel when you realise you lost the receipt?",
+          "kz": "Түбіртекті жоғалтқаныңызды түсінгенде өзіңізді қалай сезінесіз?",
+          "ru": "Что вы чувствуете, поняв, что потеряли чек?"
+        },
+        {
+          "en": "What proof can you offer if you don't have a receipt?",
+          "kz": "Түбіртегіңіз болмаса, қандай дәлел ұсына аласыз?",
+          "ru": "Какое доказательство можно предложить без чека?"
+        },
+        {
+          "en": "The assistant says 'no refund without a receipt.' What do you say next?",
+          "kz": "Сатушы «түбіртексіз ақша қайтарылмайды» дейді. Енді не айтасыз?",
+          "ru": "Продавец говорит «без чека возврата нет». Что вы скажете дальше?"
+        },
+        {
+          "en": "Would you choose a refund or a new pair? Why?",
+          "kz": "Ақшаны ма, әлде жаңа жұпты ма таңдар едіңіз? Неге?",
+          "ru": "Вы бы выбрали возврат денег или новую пару? Почему?"
+        },
+        {
+          "en": "Have you ever returned something difficult? What happened?",
+          "kz": "Сіз ешқашан қиын затты қайтардыңыз ба? Не болды?",
+          "ru": "Вы когда-нибудь возвращали что-то сложное? Что произошло?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "to return (something)",
+          "kz": "(бірдеңені) қайтару",
+          "ru": "вернуть (что-либо)"
+        },
+        {
+          "en": "It doesn't work.",
+          "kz": "Ол жұмыс істемейді.",
+          "ru": "Это не работает."
+        },
+        {
+          "en": "receipt",
+          "kz": "түбіртек",
+          "ru": "чек"
+        },
+        {
+          "en": "refund",
+          "kz": "ақшаны қайтару",
+          "ru": "возврат денег"
+        },
+        {
+          "en": "replacement / a new one",
+          "kz": "ауыстыру / жаңасы",
+          "ru": "замена / новый"
+        },
+        {
+          "en": "to pay by card",
+          "kz": "картамен төлеу",
+          "ru": "платить картой"
+        },
+        {
+          "en": "warranty card",
+          "kz": "кепілдік картасы",
+          "ru": "гарантийный талон"
+        },
+        {
+          "en": "I'm afraid I lost the receipt.",
+          "kz": "Өкінішке орай, түбіртекті жоғалттым.",
+          "ru": "К сожалению, я потерял чек."
+        },
+        {
+          "en": "Is a refund possible?",
+          "kz": "Ақшаны қайтару мүмкін бе?",
+          "ru": "Возможен ли возврат?"
+        },
+        {
+          "en": "Which would you prefer?",
+          "kz": "Қайсысын қалайсыз?",
+          "ru": "Что предпочитаете?"
+        },
+        {
+          "en": "but (contrast)",
+          "kz": "бірақ",
+          "ru": "но"
+        },
+        {
+          "en": "because (reason)",
+          "kz": "өйткені",
+          "ru": "потому что"
+        },
+        {
+          "en": "however (contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        }
+      ],
+      "task": {
+        "en": "You're returning broken headphones with no receipt. Act it out: explain the fault, offer other proof, stay polite, and ask for a refund or replacement. Use but, because, and however.",
+        "kz": "Сіз түбіртексіз бұзылған құлаққапты қайтарып жатырсыз. Ойнаңыз: ақауды түсіндіріп, басқа дәлел ұсынып, сыпайы болып, ақша қайтаруды немесе ауыстыруды сұраңыз. but, because, however қолданыңыз.",
+        "ru": "Вы возвращаете сломанные наушники без чека. Разыграйте: объясните неисправность, предложите другое доказательство, будьте вежливы и попросите возврат или замену. Используйте but, because и however."
+      }
+    },
+    {
+      "id": 5,
+      "video": "/practice/situations/media/a2-v05.mp4",
+      "poster": "/practice/situations/media/a2-p05.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Plan the Trip — and Agree!",
+        "kz": "Сапарды жоспарла — әрі келіс!",
+        "ru": "Спланируй поездку — и договорись!"
+      },
+      "intro": {
+        "en": "You and your friend have one free weekend and a small budget. You want the mountains; your friend wants the beach. You both feel strongly about it! You have to talk it through, make a deal, and book everything before the cheap tickets are gone.",
+        "kz": "Сізде және досыңызда бір бос демалыс және шағын бюджет бар. Сіз тауларды қалайсыз; досыңыз теңіз жағасын қалайды. Екеуіңіз де өз пікіріңізде беріксіздер! Мұны талқылап, келісімге келіп, арзан билеттер біткенше бәрін брондауыңыз керек.",
+        "ru": "У вас с другом одни свободные выходные и небольшой бюджет. Вы хотите в горы; друг хочет на пляж. Каждый стоит на своём! Нужно всё обсудить, договориться и забронировать, пока дешёвые билеты не кончились."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "Your friend turns the laptop to you, eyes shining. 'I found cheap flights to the beach!'",
+            "kz": "Досыңыз ноутбукты сізге бұрады, көзі жайнайды. «Теңіз жағасына арзан билеттер таптым!»",
+            "ru": "Друг разворачивает к вам ноутбук, глаза горят. «Я нашёл дешёвые билеты на пляж!»"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Say you'd actually prefer the mountains, and give one good reason why.",
+            "kz": "Шын мәнінде тауларды қалайтыныңызды айтып, бір жақсы себебін келтіріңіз.",
+            "ru": "Скажите, что предпочли бы горы, и приведите одну вескую причину."
+          },
+          {
+            "who": "them",
+            "label": "Friend",
+            "en": "Hmm, but the beach is warmer, and we can just relax. The mountains are cold this time of year.",
+            "kz": "Хм, бірақ теңіз жағасы жылырақ, және біз жай демала аламыз. Таулар жылдың бұл мезгілінде суық.",
+            "ru": "Хм, но на пляже теплее, и можно просто отдохнуть. В горах в это время года холодно."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Acknowledge the good point, but explain what you'd lose at the beach (crowds, cost). Suggest a compromise — maybe a lake?",
+            "kz": "Жақсы пікірді мойындаңыз, бірақ теңіз жағасында не жоғалтатыныңызды (адамдар, шығын) түсіндіріңіз. Ымыраны ұсыныңыз — мүмкін көл?",
+            "ru": "Признайте, что аргумент хорош, но объясните минусы пляжа (толпы, цена). Предложите компромисс — например, озеро?"
+          },
+          {
+            "who": "them",
+            "label": "Friend",
+            "en": "A lake? Actually, that's a great idea. It's quiet, cheaper, and we can swim. How do we get there?",
+            "kz": "Көл ме? Шынында да, тамаша идея. Тыныш, арзанырақ, әрі жүзе аламыз. Ол жерге қалай жетеміз?",
+            "ru": "Озеро? А это отличная идея. Тихо, дешевле, и можно купаться. Как туда добраться?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Suggest a transport option and say why it's better (cheaper / faster). Then bring up where to sleep.",
+            "kz": "Көлік нұсқасын ұсынып, неге жақсырақ екенін (арзан / жылдам) айтыңыз. Содан кейін қайда ұйықтайтынын қозғаңыз.",
+            "ru": "Предложите транспорт и объясните, почему он лучше (дешевле / быстрее). Затем поднимите вопрос ночлега."
+          },
+          {
+            "who": "them",
+            "label": "Friend",
+            "en": "Okay, the bus it is. So, hotel or guesthouse? We don't have much money.",
+            "kz": "Жарайды, автобус болсын. Олай болса, қонақ үй ме, әлде шағын үй ме? Бізде ақша көп емес.",
+            "ru": "Ладно, едем автобусом. Тогда отель или гостевой дом? У нас мало денег."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Make the final decision together and agree who books what.",
+            "kz": "Соңғы шешімді бірге қабылдап, кім нені брондайтынын келісіңіз.",
+            "ru": "Примите финальное решение вместе и договоритесь, кто что бронирует."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Say where you want to go and give a reason.",
+          "kz": "Қайда барғыңыз келетінін айтып, себебін келтіріңіз.",
+          "ru": "Скажите, куда хотите поехать, и объясните почему."
+        },
+        {
+          "en": "Listen to your friend, disagree politely, and suggest a compromise.",
+          "kz": "Досыңызды тыңдап, сыпайы келіспей, ымыраға келуді ұсыныңыз.",
+          "ru": "Выслушайте друга, вежливо не согласитесь и предложите компромисс."
+        },
+        {
+          "en": "Agree on a final plan: place, transport, and where to stay.",
+          "kz": "Соңғы жоспарды келісіңіз: орын, көлік және қайда тұру.",
+          "ru": "Договоритесь об окончательном плане: место, транспорт и где остановиться."
+        }
+      ],
+      "react": [
+        {
+          "en": "You want the mountains, your friend wants the beach. How do you stay friends and still decide?",
+          "kz": "Сіз тауларды, досыңыз теңізді қалайды. Дос болып қала отырып, қалай шешесіздер?",
+          "ru": "Вы хотите в горы, друг — на пляж. Как остаться друзьями и всё-таки решить?"
+        },
+        {
+          "en": "What is a 'compromise'? Give an example from your own life.",
+          "kz": "«Ымыра» дегеніміз не? Өз өміріңізден мысал келтіріңіз.",
+          "ru": "Что такое «компромисс»? Приведите пример из своей жизни."
+        },
+        {
+          "en": "Why might the bus be better than the train for this trip?",
+          "kz": "Бұл сапар үшін автобус неге пойыздан жақсырақ болуы мүмкін?",
+          "ru": "Почему автобус может быть лучше поезда для этой поездки?"
+        },
+        {
+          "en": "How do you politely disagree with a friend in English?",
+          "kz": "Ағылшынша досыңызбен қалай сыпайы келіспейсіз?",
+          "ru": "Как вежливо не согласиться с другом по-английски?"
+        },
+        {
+          "en": "Where would you really like to go this weekend, and who with?",
+          "kz": "Осы демалыста шынымен қайда барғыңыз келеді және кіммен?",
+          "ru": "Куда бы вы на самом деле хотели поехать на выходных и с кем?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "budget",
+          "kz": "бюджет",
+          "ru": "бюджет"
+        },
+        {
+          "en": "compromise",
+          "kz": "ымыра / келісім",
+          "ru": "компромисс"
+        },
+        {
+          "en": "to relax",
+          "kz": "демалу",
+          "ru": "отдыхать / расслабляться"
+        },
+        {
+          "en": "to book",
+          "kz": "брондау",
+          "ru": "бронировать"
+        },
+        {
+          "en": "guesthouse",
+          "kz": "шағын қонақ үй",
+          "ru": "гостевой дом"
+        },
+        {
+          "en": "cheaper than",
+          "kz": "... қарағанда арзан",
+          "ru": "дешевле, чем"
+        },
+        {
+          "en": "How about ... ? / What about ... ?",
+          "kz": "... не дейсің? / ... ше?",
+          "ru": "Как насчёт ... ? / А ... ?"
+        },
+        {
+          "en": "I'd prefer ...",
+          "kz": "Мен ... қалар едім",
+          "ru": "Я бы предпочёл ..."
+        },
+        {
+          "en": "Good point, but ...",
+          "kz": "Дұрыс айтасың, бірақ ...",
+          "ru": "Верно, но ..."
+        },
+        {
+          "en": "Let's agree on ...",
+          "kz": "... келісейік",
+          "ru": "Давай договоримся о ..."
+        },
+        {
+          "en": "but (contrast)",
+          "kz": "бірақ",
+          "ru": "но"
+        },
+        {
+          "en": "so (result)",
+          "kz": "сондықтан",
+          "ru": "поэтому"
+        },
+        {
+          "en": "for example",
+          "kz": "мысалы",
+          "ru": "например"
+        }
+      ],
+      "task": {
+        "en": "You and a friend disagree about the trip. Act it out: state your choice, disagree politely, find a compromise, and finalise the plan. Use how about, what about, but, so, and for example.",
+        "kz": "Сіз бен досыңыз сапар туралы келіспейсіздер. Ойнаңыз: таңдауыңызды айтып, сыпайы келіспей, ымыра тауып, жоспарды аяқтаңыз. how about, what about, but, so, for example қолданыңыз.",
+        "ru": "Вы с другом не согласны насчёт поездки. Разыграйте: назовите свой выбор, вежливо возразите, найдите компромисс и завершите план. Используйте how about, what about, but, so и for example."
+      }
+    },
+    {
+      "id": 6,
+      "video": "/practice/situations/media/a2-v06.mp4",
+      "poster": "/practice/situations/media/a2-p06.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "The Hotel Can't Find Your Booking",
+        "kz": "Қонақ үй броныңызды таппайды",
+        "ru": "Отель не может найти вашу бронь"
+      },
+      "intro": {
+        "en": "It's almost midnight. You've travelled all day and you finally reach your hotel. But the receptionist frowns at the screen: there's no reservation under your name. You have the confirmation somewhere on your phone. You're exhausted, but you need a room tonight. Sort it out.",
+        "kz": "Түн ортасы таяп қалды. Күні бойы жол жүрдіңіз және ақыры қонақ үйге жеттіңіз. Бірақ әкімші экранға қабағын түйеді: сіздің атыңызға брондау жоқ. Растау телефоныңызда бір жерде. Қалжырадыңыз, бірақ бүгін бөлме керек. Мәселені шешіңіз.",
+        "ru": "Почти полночь. Вы ехали весь день и наконец добрались до отеля. Но администратор хмурится, глядя в экран: брони на ваше имя нет. Подтверждение где-то у вас в телефоне. Вы измотаны, но номер нужен сегодня. Разберитесь."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You set your suitcase down. The receptionist types, then pauses with a worried look.",
+            "kz": "Шабаданыңызды қоясыз. Әкімші теріп, содан кейін уайымды жүзбен тоқтайды.",
+            "ru": "Вы ставите чемодан. Администратор печатает, затем замирает с обеспокоенным видом."
+          },
+          {
+            "who": "them",
+            "label": "Receptionist",
+            "en": "I'm sorry… I can't find a booking under that name. Are you sure it was this hotel?",
+            "kz": "Кешіріңіз… мұндай атпен брондау таба алмай тұрмын. Бұл дәл осы қонақ үй болғанына сенімдісіз бе?",
+            "ru": "Извините… я не нахожу бронь на это имя. Вы уверены, что это был этот отель?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Stay calm. Confirm your name and say you booked online two weeks ago and got a confirmation email.",
+            "kz": "Сабырлы болыңыз. Атыңызды растап, екі апта бұрын интернеттен брондап, растау хатын алғаныңызды айтыңыз.",
+            "ru": "Сохраняйте спокойствие. Подтвердите имя и скажите, что бронировали онлайн две недели назад и получили письмо."
+          },
+          {
+            "who": "them",
+            "label": "Receptionist",
+            "en": "Could you show me the email? Maybe there's a booking number I can search.",
+            "kz": "Хатты көрсете аласыз ба? Мүмкін мен іздей алатын брондау нөмірі бар шығар.",
+            "ru": "Можете показать письмо? Возможно, там есть номер брони, который я могу найти."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Find the email and read out the booking number and the dates. Then ask her to check again.",
+            "kz": "Хатты тауып, брондау нөмірі мен күндерді оқыңыз. Содан кейін қайта тексеруін сұраңыз.",
+            "ru": "Найдите письмо, прочитайте номер брони и даты. Затем попросите проверить ещё раз."
+          },
+          {
+            "who": "them",
+            "label": "Receptionist",
+            "en": "Ah — I see the problem. The booking is for tomorrow night, not tonight.",
+            "kz": "Аһ — мәселені түсіндім. Брондау бүгінге емес, ертеңгі түнге.",
+            "ru": "А — вижу проблему. Бронь на завтрашнюю ночь, а не на сегодня."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "React, explain that you really need a room tonight because you're exhausted, and ask if there's anything free.",
+            "kz": "Жауап беріп, бүгін шынымен бөлме керек екенін, себебі қалжырағаныңызды түсіндіріп, бос бөлме бар ма деп сұраңыз.",
+            "ru": "Отреагируйте, объясните, что номер очень нужен сегодня, ведь вы измотаны, и спросите, есть ли что-то свободное."
+          },
+          {
+            "who": "them",
+            "label": "Receptionist",
+            "en": "Let me check… We have one room left, but it's a little more expensive. Shall I book it for you?",
+            "kz": "Қарап көрейін… Бір бөлме қалды, бірақ сәл қымбатырақ. Сізге брондайын ба?",
+            "ru": "Сейчас посмотрю… Остался один номер, но чуть дороже. Забронировать для вас?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Make your decision and confirm it politely.",
+            "kz": "Шешіміңізді қабылдап, оны сыпайы растаңыз.",
+            "ru": "Примите решение и вежливо подтвердите его."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Give your name and say you have a reservation.",
+          "kz": "Атыңызды айтып, броныңыз бар екенін айтыңыз.",
+          "ru": "Назовите имя и скажите, что у вас есть бронь."
+        },
+        {
+          "en": "Show your confirmation and help the receptionist find it.",
+          "kz": "Растауыңызды көрсетіп, әкімшіге оны табуға көмектесіңіз.",
+          "ru": "Покажите подтверждение и помогите администратору найти бронь."
+        },
+        {
+          "en": "Stay calm and make sure you get a room tonight.",
+          "kz": "Сабырлы болып, бүгін бөлме алатыныңызға көз жеткізіңіз.",
+          "ru": "Сохраняйте спокойствие и убедитесь, что получите номер сегодня."
+        }
+      ],
+      "react": [
+        {
+          "en": "How do you feel arriving tired and hearing 'there's no booking'?",
+          "kz": "Шаршап келіп, «брондау жоқ» дегенді естігенде өзіңізді қалай сезінесіз?",
+          "ru": "Что вы чувствуете, приехав усталым и услышав «брони нет»?"
+        },
+        {
+          "en": "Why is it useful to keep your confirmation email on your phone?",
+          "kz": "Растау хатын телефоныңызда сақтау неге пайдалы?",
+          "ru": "Почему полезно хранить письмо-подтверждение в телефоне?"
+        },
+        {
+          "en": "What was the real mistake with the booking?",
+          "kz": "Брондаудағы нақты қателік қандай болды?",
+          "ru": "В чём была настоящая ошибка с бронью?"
+        },
+        {
+          "en": "The hotel says it's completely full. What do you do next?",
+          "kz": "Қонақ үй толығымен толы дейді. Енді не істейсіз?",
+          "ru": "Отель говорит, что полностью заполнен. Что вы делаете дальше?"
+        },
+        {
+          "en": "How do you stay polite with staff even when you're tired and upset?",
+          "kz": "Шаршаған әрі ренжіген кезде де қызметкерлермен қалай сыпайы боласыз?",
+          "ru": "Как оставаться вежливым с персоналом, даже когда устал и расстроен?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "reservation / booking",
+          "kz": "брондау",
+          "ru": "бронь"
+        },
+        {
+          "en": "under the name ...",
+          "kz": "... деген атпен",
+          "ru": "на имя ..."
+        },
+        {
+          "en": "confirmation email",
+          "kz": "растау хаты",
+          "ru": "письмо-подтверждение"
+        },
+        {
+          "en": "booking number",
+          "kz": "брондау нөмірі",
+          "ru": "номер брони"
+        },
+        {
+          "en": "a room is free",
+          "kz": "бос бөлме бар",
+          "ru": "свободный номер"
+        },
+        {
+          "en": "to solve a problem",
+          "kz": "мәселені шешу",
+          "ru": "решить проблему"
+        },
+        {
+          "en": "I have a reservation under ...",
+          "kz": "Менде ... деген атпен брондау бар",
+          "ru": "У меня бронь на имя ..."
+        },
+        {
+          "en": "Could you check again, please?",
+          "kz": "Қайта тексере аласыз ба?",
+          "ru": "Можете проверить ещё раз?"
+        },
+        {
+          "en": "I really need a room tonight.",
+          "kz": "Маған бүгін шынымен бөлме керек.",
+          "ru": "Мне очень нужен номер сегодня."
+        },
+        {
+          "en": "I'll take it.",
+          "kz": "Аламын.",
+          "ru": "Я его беру."
+        },
+        {
+          "en": "because (reason)",
+          "kz": "себебі",
+          "ru": "потому что"
+        },
+        {
+          "en": "however (contrast)",
+          "kz": "алайда",
+          "ru": "однако"
+        },
+        {
+          "en": "so (result)",
+          "kz": "сондықтан",
+          "ru": "поэтому"
+        }
+      ],
+      "task": {
+        "en": "You arrive late and the hotel can't find your booking. Act it out: give your name, show proof, react to the mistake, and get a room. Use because, however, and so.",
+        "kz": "Сіз кеш келдіңіз, ал қонақ үй броныңызды таппайды. Ойнаңыз: атыңызды айтып, дәлел көрсетіп, қатеге жауап беріп, бөлме алыңыз. because, however, so қолданыңыз.",
+        "ru": "Вы приезжаете поздно, и отель не находит бронь. Разыграйте: назовите имя, покажите подтверждение, отреагируйте на ошибку и получите номер. Используйте because, however и so."
+      }
+    },
+    {
+      "id": 7,
+      "video": "/practice/situations/media/a2-v07.mp4",
+      "poster": "/practice/situations/media/a2-p07.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "You Forgot Your Wallet!",
+        "kz": "Әмияныңызды ұмытып кеттіңіз!",
+        "ru": "Вы забыли кошелёк!"
+      },
+      "intro": {
+        "en": "You've just finished a lovely dinner. The waiter brings the bill — and your stomach drops. Your wallet isn't in your bag. No cash, no card. Your phone is at 2%. Everyone around you is happily eating. You have to explain this to the waiter without panicking and find a solution.",
+        "kz": "Сіз жаңа ғана тамаша кешкі асты аяқтадыңыз. Даяшы шот әкеледі — және жүрегіңіз дауалап кетеді. Әмияныңыз сөмкеңізде жоқ. Ақша жоқ, карта жоқ. Телефоныңыз 2%-те. Айналаңыздағылар көңілді тамақтанып отыр. Бұны абыржымай даяшыға түсіндіріп, шешім табуыңыз керек.",
+        "ru": "Вы только что закончили прекрасный ужин. Официант приносит счёт — и у вас всё обрывается. Кошелька в сумке нет. Ни наличных, ни карты. Телефон на 2%. Все вокруг спокойно едят. Нужно объяснить это официанту, не паникуя, и найти выход."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "The waiter smiles and places the bill on the table. You open your bag — and your wallet isn't there.",
+            "kz": "Даяшы жымиып, шотты үстелге қояды. Сіз сөмкеңізді ашасыз — әмиян жоқ.",
+            "ru": "Официант с улыбкой кладёт счёт на стол. Вы открываете сумку — а кошелька нет."
+          },
+          {
+            "who": "them",
+            "label": "Waiter",
+            "en": "Here's your bill. No rush — whenever you're ready.",
+            "kz": "Міне, сіздің шотыңыз. Асықпаңыз — дайын болғанда.",
+            "ru": "Вот ваш счёт. Не торопитесь — когда будете готовы."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Get the waiter's attention quietly and explain, calmly, that you can't find your wallet.",
+            "kz": "Даяшының назарын тыныш аударып, әмияныңызды таппай жатқаныңызды сабырмен түсіндіріңіз.",
+            "ru": "Тихо привлеките внимание официанта и спокойно объясните, что не можете найти кошелёк."
+          },
+          {
+            "who": "them",
+            "label": "Waiter",
+            "en": "Oh… okay. Don't worry. Do you have any way to pay — maybe a phone app?",
+            "kz": "О… жарайды. Уайымдамаңыз. Төлеудің бір жолы бар ма — мүмкін телефон қосымшасы?",
+            "ru": "О… ладно. Не волнуйтесь. У вас есть чем заплатить — может, приложение в телефоне?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Explain your phone is almost dead, but offer a solution: a friend can transfer money, or you can come back in an hour.",
+            "kz": "Телефоныңыз сөнуге жақын екенін түсіндіріп, шешім ұсыныңыз: досыңыз ақша аудара алады немесе бір сағаттан соң қайта келе аласыз.",
+            "ru": "Объясните, что телефон почти разрядился, но предложите решение: друг может перевести деньги или вы вернётесь через час."
+          },
+          {
+            "who": "them",
+            "label": "Waiter",
+            "en": "I understand. Let me ask my manager… Okay, you can come back tomorrow and pay. Just leave your name and number.",
+            "kz": "Түсінемін. Менеджерден сұрайын… Жарайды, ертең қайтып келіп төлей аласыз. Атыңыз бен нөміріңізді қалдырыңыз.",
+            "ru": "Понимаю. Спрошу у менеджера… Хорошо, можете прийти завтра и заплатить. Оставьте имя и номер."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Thank him sincerely, apologise for the trouble, and confirm when you'll come back.",
+            "kz": "Оған шын жүректен алғыс айтып, мазалағаныңыз үшін кешірім сұрап, қашан қайтып келетініңізді растаңыз.",
+            "ru": "Искренне поблагодарите его, извинитесь за беспокойство и подтвердите, когда вернётесь."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Quietly and politely tell the waiter you can't find your wallet.",
+          "kz": "Даяшыға әмияныңызды таппай жатқаныңызды тыныш әрі сыпайы айтыңыз.",
+          "ru": "Тихо и вежливо скажите официанту, что не можете найти кошелёк."
+        },
+        {
+          "en": "Stay calm and offer a real solution.",
+          "kz": "Сабырлы болып, нақты шешім ұсыныңыз.",
+          "ru": "Сохраняйте спокойствие и предложите реальное решение."
+        },
+        {
+          "en": "Agree on what to do and apologise.",
+          "kz": "Не істейтінін келісіп, кешірім сұраңыз.",
+          "ru": "Договоритесь, что делать, и извинитесь."
+        }
+      ],
+      "react": [
+        {
+          "en": "What is the very first thing you say when you notice your wallet is gone?",
+          "kz": "Әмияныңыздың жоғын байқағанда ең алдымен не айтасыз?",
+          "ru": "Что вы говорите в первую очередь, заметив пропажу кошелька?"
+        },
+        {
+          "en": "Why is it important to stay calm and quiet in this situation?",
+          "kz": "Бұл жағдайда сабырлы әрі тыныш болу неге маңызды?",
+          "ru": "Почему важно сохранять спокойствие и не шуметь в этой ситуации?"
+        },
+        {
+          "en": "Name three solutions you could offer the waiter.",
+          "kz": "Даяшыға ұсына алатын үш шешімді атаңыз.",
+          "ru": "Назовите три решения, которые можно предложить официанту."
+        },
+        {
+          "en": "What will you say if the waiter says you must pay right now?",
+          "kz": "Даяшы дәл қазір төлеу керек десе, не айтасыз?",
+          "ru": "Что скажете, если официант ответит, что платить нужно прямо сейчас?"
+        },
+        {
+          "en": "Has anything embarrassing ever happened to you in public? How did you handle it?",
+          "kz": "Сізге көпшілік алдында ыңғайсыз жағдай болды ма? Оны қалай шештіңіз?",
+          "ru": "Случалось ли с вами что-то неловкое на людях? Как вы справились?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "the bill / the check",
+          "kz": "шот",
+          "ru": "счёт"
+        },
+        {
+          "en": "wallet",
+          "kz": "әмиян",
+          "ru": "кошелёк"
+        },
+        {
+          "en": "cash",
+          "kz": "қолма-қол ақша",
+          "ru": "наличные"
+        },
+        {
+          "en": "to pay",
+          "kz": "төлеу",
+          "ru": "платить"
+        },
+        {
+          "en": "to transfer money",
+          "kz": "ақша аудару",
+          "ru": "перевести деньги"
+        },
+        {
+          "en": "manager",
+          "kz": "менеджер",
+          "ru": "менеджер"
+        },
+        {
+          "en": "I'm so sorry, but ...",
+          "kz": "Кешіріңіз, бірақ ...",
+          "ru": "Мне очень жаль, но ..."
+        },
+        {
+          "en": "I can't find my wallet.",
+          "kz": "Әмиянымды таба алмай тұрмын.",
+          "ru": "Я не могу найти кошелёк."
+        },
+        {
+          "en": "Can I come back and pay?",
+          "kz": "Қайтып келіп төлей аламын ба?",
+          "ru": "Можно я вернусь и заплачу?"
+        },
+        {
+          "en": "Don't worry.",
+          "kz": "Уайымдамаңыз.",
+          "ru": "Не волнуйтесь."
+        },
+        {
+          "en": "because (reason)",
+          "kz": "өйткені",
+          "ru": "потому что"
+        },
+        {
+          "en": "but (contrast)",
+          "kz": "бірақ",
+          "ru": "но"
+        },
+        {
+          "en": "so (result)",
+          "kz": "сондықтан",
+          "ru": "поэтому"
+        }
+      ],
+      "task": {
+        "en": "You forgot your wallet at a restaurant. Act it out: tell the waiter calmly, explain, offer a solution, agree on a plan, and apologise. Use because, but, so, and also.",
+        "kz": "Сіз мейрамханада әмияныңызды ұмыттыңыз. Ойнаңыз: даяшыға сабырмен айтып, түсіндіріп, шешім ұсынып, жоспарды келісіп, кешірім сұраңыз. because, but, so, also қолданыңыз.",
+        "ru": "Вы забыли кошелёк в ресторане. Разыграйте: спокойно скажите официанту, объясните, предложите решение, договоритесь о плане и извинитесь. Используйте because, but, so и also."
+      }
+    },
+    {
+      "id": 8,
+      "video": "/practice/situations/media/a2-v08.mp4",
+      "poster": "/practice/situations/media/a2-p08.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Your Friend Is Lost in the Mall",
+        "kz": "Досыңыз сауда орталығында жоғалып кетті",
+        "ru": "Ваш друг потерялся в торговом центре"
+      },
+      "intro": {
+        "en": "You're at a huge, crowded shopping mall. You turn around to look at a shop — and when you look back, your friend is gone. They don't answer their phone. The mall is enormous and closing soon. You need help from the staff to find your friend quickly.",
+        "kz": "Сіз үлкен, адамға толы сауда орталығындасыз. Дүкенге қарау үшін бұрылдыңыз — артыңызға қарасаңыз, досыңыз жоқ. Телефонына жауап бермейді. Сауда орталығы орасан зор әрі жақында жабылады. Досыңызды тез табу үшін қызметкерлерден көмек керек.",
+        "ru": "Вы в огромном, переполненном торговом центре. Вы повернулись посмотреть на витрину — а обернувшись, не видите друга. Он не отвечает на телефон. Центр огромный и скоро закроется. Вам нужна помощь сотрудников, чтобы быстро найти друга."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You rush to the information desk, heart pounding. The staff member looks up calmly.",
+            "kz": "Жүрегіңіз дүрсілдеп, анықтама бюросына асығасыз. Қызметкер сабырмен басын көтереді.",
+            "ru": "Вы спешите к стойке информации, сердце колотится. Сотрудник спокойно поднимает взгляд."
+          },
+          {
+            "who": "them",
+            "label": "Staff",
+            "en": "Hi, are you okay? You look worried.",
+            "kz": "Сәлеметсіз бе, бәрі дұрыс па? Сіз уайымдаған сияқтысыз.",
+            "ru": "Здравствуйте, всё в порядке? Вы выглядите встревоженной."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Explain quickly: your friend is lost in the mall and isn't answering the phone.",
+            "kz": "Тез түсіндіріңіз: досыңыз сауда орталығында жоғалды және телефонға жауап бермейді.",
+            "ru": "Быстро объясните: друг потерялся в центре и не отвечает на телефон."
+          },
+          {
+            "who": "them",
+            "label": "Staff",
+            "en": "Don't worry, this happens a lot. Can you describe your friend for me?",
+            "kz": "Уайымдамаңыз, бұл жиі болады. Досыңызды сипаттай аласыз ба?",
+            "ru": "Не волнуйтесь, такое часто бывает. Можете описать вашего друга?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Describe your friend: age, hair, clothes, and anything they're carrying.",
+            "kz": "Досыңызды сипаттаңыз: жасы, шашы, киімі және қолындағы заттар.",
+            "ru": "Опишите друга: возраст, волосы, одежда и что у него с собой."
+          },
+          {
+            "who": "them",
+            "label": "Staff",
+            "en": "Got it. I'll make an announcement now. Where should they meet you?",
+            "kz": "Түсіндім. Қазір хабарландыру жасаймын. Олар сізбен қайда кездесуі керек?",
+            "ru": "Поняла. Сейчас сделаю объявление. Где им вас встретить?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Choose a clear, easy meeting point and ask the staff to say it in the announcement.",
+            "kz": "Нақты әрі оңай кездесу орнын таңдап, қызметкерден оны хабарландыруда айтуын сұраңыз.",
+            "ru": "Выберите чёткое и простое место встречи и попросите сотрудника назвать его в объявлении."
+          },
+          {
+            "who": "scene",
+            "label": "",
+            "en": "The staff lifts the microphone and starts speaking. You wait by the desk, hopeful.",
+            "kz": "Қызметкер микрофонды көтеріп, сөйлей бастайды. Сіз үмітпен бюро жанында күтесіз.",
+            "ru": "Сотрудник поднимает микрофон и начинает говорить. Вы с надеждой ждёте у стойки."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Tell the staff your friend is lost and you can't reach them.",
+          "kz": "Қызметкерге досыңыздың жоғалғанын және оған хабарласа алмайтыныңызды айтыңыз.",
+          "ru": "Скажите сотруднику, что друг потерялся и вы не можете дозвониться."
+        },
+        {
+          "en": "Describe your friend so the staff can help.",
+          "kz": "Қызметкер көмектесе алатындай досыңызды сипаттаңыз.",
+          "ru": "Опишите друга, чтобы сотрудник мог помочь."
+        },
+        {
+          "en": "Ask them to make an announcement and arrange a meeting point.",
+          "kz": "Хабарландыру жасап, кездесу орнын белгілеуін сұраңыз.",
+          "ru": "Попросите сделать объявление и назначить место встречи."
+        }
+      ],
+      "react": [
+        {
+          "en": "What is the first thing you do when you realise your friend is gone?",
+          "kz": "Досыңыздың жоғалғанын түсінгенде ең алдымен не істейсіз?",
+          "ru": "Что вы делаете в первую очередь, поняв, что друг пропал?"
+        },
+        {
+          "en": "Describe a friend of yours in detail (hair, clothes, height).",
+          "kz": "Досыңызды толық сипаттаңыз (шашы, киімі, бойы).",
+          "ru": "Подробно опишите своего друга (волосы, одежда, рост)."
+        },
+        {
+          "en": "Why is choosing a clear meeting point so important?",
+          "kz": "Нақты кездесу орнын таңдау неге өте маңызды?",
+          "ru": "Почему так важно выбрать чёткое место встречи?"
+        },
+        {
+          "en": "What will you do if the mall is about to close and your friend still hasn't come?",
+          "kz": "Сауда орталығы жабылғалы тұр, ал досыңыз әлі келмесе, не істейсіз?",
+          "ru": "Что сделаете, если центр вот-вот закроется, а друг всё ещё не пришёл?"
+        },
+        {
+          "en": "Have you ever lost someone in a crowd, or been lost yourself? What happened?",
+          "kz": "Сіз ешқашан көпшілік ішінде біреуді жоғалттыңыз ба немесе өзіңіз адастыңыз ба? Не болды?",
+          "ru": "Вы когда-нибудь теряли кого-то в толпе или терялись сами? Что произошло?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "to be lost",
+          "kz": "жоғалып кету",
+          "ru": "потеряться"
+        },
+        {
+          "en": "to describe (a person)",
+          "kz": "(адамды) сипаттау",
+          "ru": "описывать (человека)"
+        },
+        {
+          "en": "an announcement",
+          "kz": "хабарландыру",
+          "ru": "объявление"
+        },
+        {
+          "en": "a meeting point",
+          "kz": "кездесу орны",
+          "ru": "место встречи"
+        },
+        {
+          "en": "crowded",
+          "kz": "адамға толы",
+          "ru": "переполненный"
+        },
+        {
+          "en": "to reach someone (by phone)",
+          "kz": "(телефонмен) хабарласу",
+          "ru": "дозвониться до кого-то"
+        },
+        {
+          "en": "My friend is lost.",
+          "kz": "Досым жоғалып кетті.",
+          "ru": "Мой друг потерялся."
+        },
+        {
+          "en": "Can you make an announcement?",
+          "kz": "Хабарландыру жасай аласыз ба?",
+          "ru": "Можете сделать объявление?"
+        },
+        {
+          "en": "She has long brown hair.",
+          "kz": "Оның ұзын қоңыр шашы бар.",
+          "ru": "У неё длинные каштановые волосы."
+        },
+        {
+          "en": "Let's meet at ...",
+          "kz": "... жерде кездесейік",
+          "ru": "Давайте встретимся у ..."
+        },
+        {
+          "en": "first (sequence)",
+          "kz": "алдымен",
+          "ru": "сначала"
+        },
+        {
+          "en": "then (sequence)",
+          "kz": "содан кейін",
+          "ru": "потом"
+        },
+        {
+          "en": "because (reason)",
+          "kz": "өйткені",
+          "ru": "потому что"
+        }
+      ],
+      "task": {
+        "en": "Your friend is lost in a mall. Act it out: explain the problem, describe your friend clearly, and arrange an announcement and a meeting point. Use first, then, because, and so.",
+        "kz": "Досыңыз сауда орталығында жоғалды. Ойнаңыз: мәселені түсіндіріп, досыңызды анық сипаттап, хабарландыру мен кездесу орнын ұйымдастырыңыз. first, then, because, so қолданыңыз.",
+        "ru": "Ваш друг потерялся в центре. Разыграйте: объясните проблему, чётко опишите друга и организуйте объявление и место встречи. Используйте first, then, because и so."
+      }
+    },
+    {
+      "id": 9,
+      "video": "/practice/situations/media/a2-v09.mp4",
+      "poster": "/practice/situations/media/a2-p09.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "Find the Perfect Gift Book",
+        "kz": "Тамаша сыйлық кітабын тап",
+        "ru": "Найди идеальную книгу в подарок"
+      },
+      "intro": {
+        "en": "Your friend's birthday is tomorrow and you have nothing. You walk into a bookshop with no idea what to buy. You know your friend loves true adventure stories and hates anything scary — but you've never chosen a book for someone else. The bookseller can help, if you can explain what you need.",
+        "kz": "Досыңыздың туған күні ертең, ал сізде ештеңе жоқ. Не сатып аларыңызды білмей кітап дүкеніне кіресіз. Досыңыз шынайы шытырман оқиғаларды жақсы көретінін, ал қорқынышты дүниелерді жек көретінін білесіз — бірақ басқа адамға ешқашан кітап таңдап көрмегенсіз. Не керек екенін түсіндіре алсаңыз, сатушы көмектесе алады.",
+        "ru": "День рождения вашего друга завтра, а у вас ничего нет. Вы заходите в книжный, не зная, что купить. Вы знаете, что друг любит реальные истории о приключениях и ненавидит всё страшное, — но никогда не выбирали книгу для кого-то ещё. Продавец поможет, если вы объясните, что вам нужно."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "The bookseller notices you looking a little lost among the shelves and comes over.",
+            "kz": "Сатушы сөрелердің арасында сәл сасқалақтап тұрғаныңызды байқап, жаныңызға келеді.",
+            "ru": "Продавец замечает, что вы немного растерянно стоите у полок, и подходит."
+          },
+          {
+            "who": "them",
+            "label": "Bookseller",
+            "en": "Hi! Can I help you find something?",
+            "kz": "Сәлеметсіз бе! Бір нәрсе табуға көмектесейін бе?",
+            "ru": "Здравствуйте! Помочь вам что-нибудь найти?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Explain that you need a birthday gift for a friend, but you don't know what to choose.",
+            "kz": "Досыңызға туған күн сыйлығы керек екенін, бірақ нені таңдауды білмейтініңізді түсіндіріңіз.",
+            "ru": "Объясните, что вам нужен подарок другу на день рождения, но вы не знаете, что выбрать."
+          },
+          {
+            "who": "them",
+            "label": "Bookseller",
+            "en": "No problem! Tell me about your friend. What kind of stories do they enjoy?",
+            "kz": "Мәселе жоқ! Досыңыз туралы айтыңыз. Қандай оқиғаларды ұнатады?",
+            "ru": "Без проблем! Расскажите о друге. Какие истории ему нравятся?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Describe your friend: they love true adventure stories, but they don't like horror.",
+            "kz": "Досыңызды сипаттаңыз: ол шынайы шытырман оқиғаларды жақсы көреді, бірақ қорқынышты нәрселерді ұнатпайды.",
+            "ru": "Опишите друга: он любит реальные истории о приключениях, но не любит ужасы."
+          },
+          {
+            "who": "them",
+            "label": "Bookseller",
+            "en": "Then this is perfect — a true story about a sailor who crossed the ocean alone. Exciting, but not scary.",
+            "kz": "Олай болса мынау тамаша — мұхитты жалғыз кесіп өткен теңізші туралы шынайы оқиға. Қызықты, бірақ қорқынышты емес.",
+            "ru": "Тогда вот идеально — реальная история о моряке, который в одиночку пересёк океан. Захватывающе, но не страшно."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Ask one or two questions about the book (is it long? is the language easy?) and then decide.",
+            "kz": "Кітап туралы бір-екі сұрақ қойыңыз (ұзын ба? тілі оңай ма?) және шешім қабылдаңыз.",
+            "ru": "Задайте один-два вопроса о книге (длинная ли? лёгкий ли язык?) и примите решение."
+          },
+          {
+            "who": "them",
+            "label": "Bookseller",
+            "en": "Great choice! Would you like me to gift-wrap it for the birthday?",
+            "kz": "Тамаша таңдау! Туған күнге сыйлыққа орап берейін бе?",
+            "ru": "Отличный выбор! Завернуть её как подарок к дню рождения?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Say yes, thank the bookseller, and ask how much it costs.",
+            "kz": "Иә деп, сатушыға алғыс айтып, бағасын сұраңыз.",
+            "ru": "Скажите да, поблагодарите продавца и спросите цену."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Ask the bookseller for help choosing a gift.",
+          "kz": "Сатушыдан сыйлық таңдауға көмек сұраңыз.",
+          "ru": "Попросите продавца помочь выбрать подарок."
+        },
+        {
+          "en": "Describe your friend's taste — what they love and hate.",
+          "kz": "Досыңыздың талғамын сипаттаңыз — нені жақсы көреді, нені жек көреді.",
+          "ru": "Опишите вкус друга — что любит и что ненавидит."
+        },
+        {
+          "en": "Choose a book and ask them to gift-wrap it.",
+          "kz": "Кітап таңдап, оны сыйлыққа орауын сұраңыз.",
+          "ru": "Выберите книгу и попросите упаковать её как подарок."
+        }
+      ],
+      "react": [
+        {
+          "en": "Why can choosing a gift for someone else be difficult?",
+          "kz": "Басқа біреуге сыйлық таңдау неге қиын болуы мүмкін?",
+          "ru": "Почему выбрать подарок другому бывает сложно?"
+        },
+        {
+          "en": "How would you describe your best friend's taste in books, films, or music?",
+          "kz": "Жақын досыңыздың кітапқа, фильмге немесе музыкаға деген талғамын қалай сипаттар едіңіз?",
+          "ru": "Как бы вы описали вкус лучшего друга в книгах, фильмах или музыке?"
+        },
+        {
+          "en": "What questions are useful to ask before you buy a book?",
+          "kz": "Кітап сатып алмас бұрын қандай сұрақтар қою пайдалы?",
+          "ru": "Какие вопросы полезно задать перед покупкой книги?"
+        },
+        {
+          "en": "The bookseller recommends a book your friend already has. What do you say?",
+          "kz": "Сатушы досыңызда бар кітапты ұсынады. Не айтасыз?",
+          "ru": "Продавец советует книгу, которая у друга уже есть. Что вы скажете?"
+        },
+        {
+          "en": "What was the best gift you ever gave or received? Tell the story.",
+          "kz": "Сіз берген немесе алған ең жақсы сыйлық қандай болды? Әңгімелеп беріңіз.",
+          "ru": "Какой лучший подарок вы дарили или получали? Расскажите историю."
+        }
+      ],
+      "vocab": [
+        {
+          "en": "a gift",
+          "kz": "сыйлық",
+          "ru": "подарок"
+        },
+        {
+          "en": "to recommend",
+          "kz": "ұсыну",
+          "ru": "рекомендовать"
+        },
+        {
+          "en": "a true story",
+          "kz": "шынайы оқиға",
+          "ru": "реальная история"
+        },
+        {
+          "en": "adventure",
+          "kz": "шытырман оқиға",
+          "ru": "приключение"
+        },
+        {
+          "en": "easy to read",
+          "kz": "оқуға оңай",
+          "ru": "легко читать"
+        },
+        {
+          "en": "to gift-wrap",
+          "kz": "сыйлыққа орау",
+          "ru": "упаковать как подарок"
+        },
+        {
+          "en": "What kind of ... does he like?",
+          "kz": "Ол қандай ... ұнатады?",
+          "ru": "Какие ... ему нравятся?"
+        },
+        {
+          "en": "Can you recommend something?",
+          "kz": "Бірдеңе ұсына аласыз ба?",
+          "ru": "Можете что-нибудь порекомендовать?"
+        },
+        {
+          "en": "He doesn't like ...",
+          "kz": "Ол ... ұнатпайды",
+          "ru": "Он не любит ..."
+        },
+        {
+          "en": "I'll take it.",
+          "kz": "Аламын.",
+          "ru": "Я возьму."
+        },
+        {
+          "en": "because (reason)",
+          "kz": "өйткені",
+          "ru": "потому что"
+        },
+        {
+          "en": "but (contrast)",
+          "kz": "бірақ",
+          "ru": "но"
+        },
+        {
+          "en": "also (adding)",
+          "kz": "сондай-ақ",
+          "ru": "также"
+        }
+      ],
+      "task": {
+        "en": "You're buying a gift book for a friend. Act it out: ask for help, describe your friend's taste, ask questions about a book, choose one, and ask to wrap it. Use because, but, also, and so.",
+        "kz": "Сіз досыңызға сыйлық кітабын сатып алып жатырсыз. Ойнаңыз: көмек сұрап, досыңыздың талғамын сипаттап, кітап туралы сұрақ қойып, біреуін таңдап, орауын сұраңыз. because, but, also, so қолданыңыз.",
+        "ru": "Вы покупаете книгу в подарок другу. Разыграйте: попросите помощи, опишите вкус друга, задайте вопросы о книге, выберите одну и попросите упаковать. Используйте because, but, also и so."
+      }
+    },
+    {
+      "id": 10,
+      "video": "/practice/situations/media/a2-v10.mp4",
+      "poster": "/practice/situations/media/a2-p10.jpg",
+      "hasAudio": true,
+      "title": {
+        "en": "A Party Where You Know No One",
+        "kz": "Ешкімді танымайтын кеш",
+        "ru": "Вечеринка, где вы никого не знаете"
+      },
+      "intro": {
+        "en": "A new coworker invited you to their birthday party. You said yes to be friendly — but now you're standing at the door, and you realise you don't know a single person inside. Everyone is laughing in groups. You could leave… or you could walk in, introduce yourself, and turn strangers into friends.",
+        "kz": "Жаңа әріптесіңіз сізді туған күн кешіне шақырды. Сыпайылық үшін келістіңіз — бірақ қазір есік алдында тұрсыз және іштегі бірде-бір адамды танымайтыныңызды түсінесіз. Барлығы топтасып күліп тұр. Кетіп қалуыңызға болады… немесе кіріп, өзіңізді таныстырып, бейтаныстарды дос қыла аласыз.",
+        "ru": "Новый коллега пригласил вас на свой день рождения. Вы согласились из вежливости — но теперь стоите у двери и понимаете, что внутри не знаете ни одного человека. Все смеются группами. Можно уйти… а можно войти, представиться и превратить незнакомцев в друзей."
+      },
+      "scene": {
+        "kind": "scenario",
+        "lines": [
+          {
+            "who": "scene",
+            "label": "",
+            "en": "You step inside. A friendly guest near the snacks catches your eye and smiles.",
+            "kz": "Сіз ішке кіресіз. Тамақ жанындағы достық қонақ көзіңізге түсіп, жымияды.",
+            "ru": "Вы заходите. Приветливый гость у закусок ловит ваш взгляд и улыбается."
+          },
+          {
+            "who": "them",
+            "label": "Guest",
+            "en": "Hey! I don't think we've met. Are you a friend of the birthday boy?",
+            "kz": "Сәлем! Біз танысқан жоқ сияқтымыз. Туған күн иесінің досысыз ба?",
+            "ru": "Привет! Кажется, мы не знакомы. Вы друг именинника?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Introduce yourself, say how you know the host (a new coworker), and admit you don't know many people here.",
+            "kz": "Өзіңізді таныстырып, кешті ұйымдастырушыны қайдан танитыныңызды (жаңа әріптес) айтып, мұнда көп адамды танымайтыныңызды мойындаңыз.",
+            "ru": "Представьтесь, скажите, откуда знаете хозяина (новый коллега), и признайтесь, что почти никого тут не знаете."
+          },
+          {
+            "who": "them",
+            "label": "Guest",
+            "en": "Oh, nice! I work with him too. So, what do you do? And how do you like the new job?",
+            "kz": "О, тамаша! Мен де онымен жұмыс істеймін. Сонымен, немен айналысасыз? Жаңа жұмыс ұнай ма?",
+            "ru": "О, здорово! Я тоже с ним работаю. Так чем вы занимаетесь? И как вам новая работа?"
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Answer the small-talk questions, then ask one back to keep the conversation going.",
+            "kz": "Әңгіме сұрақтарына жауап беріп, әңгімені жалғастыру үшін бір сұрақ қойыңыз.",
+            "ru": "Ответьте на вопросы и задайте встречный вопрос, чтобы продолжить разговор."
+          },
+          {
+            "who": "them",
+            "label": "Guest",
+            "en": "Same here, I love hiking too! There's a group of us by the window — come and meet them.",
+            "kz": "Мен де солай, мен де серуендеуді жақсы көремін! Терезенің жанында біздің топ бар — кел, танысайық.",
+            "ru": "И я тоже, я тоже люблю походы! У окна наша компания — пойдём, познакомлю."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Accept the invitation, and when you meet the group, greet everyone and join their conversation.",
+            "kz": "Шақыруды қабылдап, топпен танысқанда бәрімен амандасып, әңгімелеріне қосылыңыз.",
+            "ru": "Примите приглашение и, познакомившись с компанией, поздоровайтесь со всеми и вступите в разговор."
+          },
+          {
+            "who": "you",
+            "label": "",
+            "en": "Before the night ends, suggest staying in touch — for example, swapping numbers or joining the next hike.",
+            "kz": "Кеш аяқталмай тұрып, байланыста болуды ұсыныңыз — мысалы, нөмір алмасу немесе келесі серуенге қосылу.",
+            "ru": "Пока вечер не закончился, предложите оставаться на связи — например, обменяться номерами или сходить вместе в следующий поход."
+          }
+        ]
+      },
+      "mission": [
+        {
+          "en": "Walk in and introduce yourself to someone.",
+          "kz": "Кіріп, біреуге өзіңізді таныстырыңыз.",
+          "ru": "Войдите и представьтесь кому-нибудь."
+        },
+        {
+          "en": "Make small talk and join a conversation.",
+          "kz": "Әңгіме бастап, сұхбатқа қосылыңыз.",
+          "ru": "Поболтайте и присоединитесь к разговору."
+        },
+        {
+          "en": "Find a connection and make a plan to stay in touch.",
+          "kz": "Ортақтық тауып, байланыста болу жоспарын жасаңыз.",
+          "ru": "Найдите общее и договоритесь оставаться на связи."
+        }
+      ],
+      "react": [
+        {
+          "en": "How do you feel standing in the doorway of a party full of strangers?",
+          "kz": "Бейтаныс адамдарға толы кештің есік алдында тұрғанда өзіңізді қалай сезінесіз?",
+          "ru": "Что вы чувствуете, стоя в дверях вечеринки, полной незнакомцев?"
+        },
+        {
+          "en": "What is a good first sentence to say to someone new at a party?",
+          "kz": "Кеште жаңа адамға айтатын жақсы алғашқы сөйлем қандай?",
+          "ru": "Какая хорошая первая фраза для нового человека на вечеринке?"
+        },
+        {
+          "en": "Which small-talk questions are safe and friendly? Give three.",
+          "kz": "Қандай әңгіме сұрақтары қауіпсіз әрі достық? Үшеуін атаңыз.",
+          "ru": "Какие вопросы для small talk безопасны и дружелюбны? Назовите три."
+        },
+        {
+          "en": "What do you do if a conversation goes quiet and feels awkward?",
+          "kz": "Әңгіме тыныштанып, ыңғайсыз болса не істейсіз?",
+          "ru": "Что делать, если разговор затихает и становится неловко?"
+        },
+        {
+          "en": "Do you enjoy parties where you don't know anyone? How do you make friends?",
+          "kz": "Ешкімді танымайтын кештерді ұнатасыз ба? Қалай дос табасыз?",
+          "ru": "Вам нравятся вечеринки, где вы никого не знаете? Как вы заводите друзей?"
+        }
+      ],
+      "vocab": [
+        {
+          "en": "to introduce yourself",
+          "kz": "өзіңізді таныстыру",
+          "ru": "представиться"
+        },
+        {
+          "en": "small talk",
+          "kz": "жеңіл әңгіме",
+          "ru": "светская беседа / small talk"
+        },
+        {
+          "en": "to join (a conversation)",
+          "kz": "(әңгімеге) қосылу",
+          "ru": "присоединиться (к разговору)"
+        },
+        {
+          "en": "coworker",
+          "kz": "әріптес",
+          "ru": "коллега"
+        },
+        {
+          "en": "to have something in common",
+          "kz": "ортақ нәрсенің болуы",
+          "ru": "иметь что-то общее"
+        },
+        {
+          "en": "to stay in touch",
+          "kz": "байланыста болу",
+          "ru": "оставаться на связи"
+        },
+        {
+          "en": "I don't think we've met.",
+          "kz": "Біз танысқан жоқ сияқтымыз.",
+          "ru": "Кажется, мы не знакомы."
+        },
+        {
+          "en": "How do you know the host?",
+          "kz": "Үй иесін қайдан танисың?",
+          "ru": "Откуда ты знаешь хозяина?"
+        },
+        {
+          "en": "What do you do?",
+          "kz": "Немен айналысасың?",
+          "ru": "Чем ты занимаешься?"
+        },
+        {
+          "en": "Let's stay in touch!",
+          "kz": "Байланыста болайық!",
+          "ru": "Давай оставаться на связи!"
+        },
+        {
+          "en": "so (result)",
+          "kz": "сондықтан",
+          "ru": "поэтому"
+        },
+        {
+          "en": "also (adding)",
+          "kz": "сондай-ақ",
+          "ru": "также"
+        },
+        {
+          "en": "finally (last point)",
+          "kz": "соңында",
+          "ru": "наконец"
+        }
+      ],
+      "task": {
+        "en": "You're at a party where you know no one. Act it out: walk in, introduce yourself, make small talk, join a group, and arrange to stay in touch. Use so, also, because, and finally.",
+        "kz": "Сіз ешкімді танымайтын кештесіз. Ойнаңыз: кіріп, өзіңізді таныстырып, әңгіме бастап, топқа қосылып, байланыста болуды келісіңіз. so, also, because, finally қолданыңыз.",
+        "ru": "Вы на вечеринке, где никого не знаете. Разыграйте: войдите, представьтесь, поболтайте, присоединитесь к группе и договоритесь оставаться на связи. Используйте so, also, because и finally."
+      }
+    }
+  ]
+}

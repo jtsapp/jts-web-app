@@ -1,4 +1,4 @@
-import { canJoin, lessonEnd, parseLessonDate } from './lessonFormat.js'
+import { isLessonLive, lessonEnd, parseLessonDate } from './lessonFormat.js'
 
 // Идущий прямо сейчас урок — среди всех занятий, а не только выбранного дня.
 //
@@ -9,7 +9,7 @@ import { canJoin, lessonEnd, parseLessonDate } from './lessonFormat.js'
 // и ждёт его. Поэтому идущий урок ищется по всему списку и показывается поверх
 // календаря.
 export function findLiveOccurrence(occurrences) {
-  const live = (occurrences || []).filter((o) => canJoin(o.lessonStatus))
+  const live = (occurrences || []).filter((o) => isLessonLive(o.lessonStatus))
   if (live.length === 0) return null
   // Если почему-то идут два — берём тот, что начался раньше: он и есть текущий.
   return live.slice().sort((a, b) => String(a.scheduledAt).localeCompare(String(b.scheduledAt)))[0]

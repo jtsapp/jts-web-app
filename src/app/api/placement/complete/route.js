@@ -6,7 +6,7 @@
 
 import { isDbConfigured } from '@/lib/db/sql.js'
 import { upsertProfile } from '@/lib/db/profile.js'
-import { resolveProfileId } from '@/lib/auth-server.js'
+import { BACKEND_URL, bearerFromRequest, resolveProfileId } from '@/lib/auth-server.js'
 import { profileLevel, sanitizePlacementRecord } from '@/lib/placement.js'
 import { scoreGradedAnswers, scorePlacementSession } from '@/lib/placementScore.js'
 import { loadPlacementSession, finishPlacementSession } from '@/lib/db/placementSession.js'
@@ -17,6 +17,47 @@ export const runtime = 'nodejs'
 // на A0 отдельно от θ, и без этого уровня результат новичка молча отбраковывался
 // четырёхсоткой — на бэкенде enum LanguageLevel A0 знает давно.
 const VALID_LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+
+// Снимок прохождения (θ, SE, флаги качества) уезжает в Neon-профиль этого
+// приложения, но там его не видит никто из персонала: web-admin (Angular)
+// ходит только в backend, к jts-web-app у неё доступа нет. Backend уже пишет
+// СВОЮ букву уровня через PUT /user/language-level (см. saveLanguageLevel в
+// src/lib/tutorPrefs.js) — этот вызов её не трогает и не дублирует, только
+// докладывает то, чего там никогда не было: флаги и θ/SE, отдельной строкой
+// (POST /placement-test/report, backend: PlacementTestResult).
+//
+// Best-effort и не блокирует ответ студенту: backend может быть недоступен
+// (дев-стенд, сетевой сбой) — placement уже сохранён в jts-web-app, это лишь
+// вторичная витрина для менеджера, а не источник истины.
+//
+// Только для вошедших: у анонимного прогона (deviceId) на backend нет
+// аккаунта, и слать нечего.
+async function reportToBackend(request, snapshot) {
+  const token = bearerFromRequest(request)
+  if (!token || !snapshot) return
+  try {
+    const res = await fetch(`${BACKEND_URL}/placement-test/report`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      // measured (snapshot.level), а не смягчённый profileLevel: менеджеру
+      // нужен именно намеренный A0, ради которого весь список и заводится —
+      // мягкий A1 уже и так лежит в language-level.
+      body: JSON.stringify({
+        level: snapshot.level,
+        theta: snapshot.theta,
+        se: snapshot.se,
+        flags: snapshot.flags,
+        variant: snapshot.variant,
+        answered: snapshot.answered,
+      }),
+    })
+    if (!res.ok) {
+      console.warn('[placement.complete] backend report failed: %s', res.status)
+    }
+  } catch (err) {
+    console.warn('[placement.complete] backend report failed:', err)
+  }
+}
 
 export async function POST(request) {
   let body = {}
@@ -79,6 +120,9 @@ export async function POST(request) {
 
   try {
     await upsertProfile(resolved.id, snapshot ? { level, placement: snapshot } : { level })
+    // После успешной записи здесь — не раньше: если jts-web-app вообще не
+    // сохранил результат, докладывать backend'у нечего и незачем.
+    await reportToBackend(request, snapshot)
     return Response.json({ configured: true, ok: true, level, measured })
   } catch (err) {
     console.error('[placement.complete] failed', err)

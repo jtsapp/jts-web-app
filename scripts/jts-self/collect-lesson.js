@@ -9,6 +9,13 @@ const { DROP } = require('./normalize-task')
 
 const MODE = 'self'
 
+/** Литеральные `\u00e9` / `\u2192` из HTML-источника → настоящие символы. */
+function decodeUnicodeEscapes(s) {
+  return String(s).replace(/\\u([0-9a-fA-F]{4})/gi, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16)),
+  )
+}
+
 function pruneToMode(root) {
   for (const el of [...root.querySelectorAll('[data-only]')]) {
     const modes = (el.getAttribute('data-only') || '').split(/\s+/).filter(Boolean)
@@ -20,7 +27,7 @@ function pruneToMode(root) {
   }
 }
 
-const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim()
+const clean = (s) => decodeUnicodeEscapes(String(s || '').replace(/\s+/g, ' ').trim())
 
 /** Текст строки без содержимого интерактивных элементов. */
 function promptOf(row, ...drop) {
@@ -470,7 +477,7 @@ function pushInfo(node, blocks) {
     for (const el of [...copy.querySelectorAll('[data-say]')]) el.removeAttribute('data-say')
     stripEmptyContainers(copy)
     if (hasContent(copy)) {
-      const html = copy.outerHTML.trim()
+      const html = decodeUnicodeEscapes(copy.outerHTML.trim())
       blocks.push(say ? { kind: 'info', html, say } : { kind: 'info', html })
       return
     }
