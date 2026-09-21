@@ -42,8 +42,14 @@ export async function shrinkImage(file, { max = 256, quality = 0.85 } = {}) {
   if (!ctx) throw new Error('no canvas context')
   ctx.drawImage(src, 0, 0, size.width, size.height)
   src.close?.()
-  // Safari старше 14 молча отдаёт PNG вместо WebP — тогда берём JPEG: PNG
-  // фотографии весил бы в разы больше.
+  // Не каждый браузер кодирует WebP из canvas (Safari — нет): вместо ошибки он
+  // молча отдаёт PNG. Тогда берём JPEG — PNG фотографии весил бы в разы больше.
   const webp = canvas.toDataURL('image/webp', quality)
-  return webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', quality)
+  if (webp.startsWith('data:image/webp')) return webp
+  // У JPEG нет прозрачности: прозрачные места (логотип, вырезанный портрет)
+  // стали бы чёрными. Подкладываем белый ПОД уже нарисованное.
+  ctx.globalCompositeOperation = 'destination-over'
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, size.width, size.height)
+  return canvas.toDataURL('image/jpeg', quality)
 }
