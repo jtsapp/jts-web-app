@@ -55,6 +55,7 @@ import {
 } from '../practice/comics/comicsData.js'
 import { loadKaraokeIndex, trackProgress as karaokeProgress } from '../practice/karaoke/karaokeData.js'
 import { usePracticeEntitlement } from '../practice/usePracticeEntitlement.js'
+import { canOpenSeen, markSeen } from '../practice/overlaySeen.js'
 import PracticeLimitScreen from '../components/PracticeLimitScreen.jsx'
 import OnboardingTour, { useScreenTour } from '../tutor/OnboardingTour.jsx'
 import { loadModule } from '../lib/lazyModule.js'
@@ -858,16 +859,19 @@ export default function PracticePage({
   // Сказки и мемы открываются оверлеем, не уходя со страницы, поэтому ответ
   // квоты, снятый при её открытии, дальше не обновлялся: демо-ученик после
   // первой сказки листал сколько угодно. Перед стартом спрашиваем заново
-  // (check), как Listening и Shadowing, и решаем по свежему ответу.
+  // (check), как Listening и Shadowing, и решаем по свежему ответу. Сервер
+  // открытых сказок и мемов не считает (completed у них всегда 0), поэтому
+  // сам счёт — по своему списку открытого (overlaySeen.js).
   const tryOpenTale = async (tale) => {
     if (taleLoadingRef.current) return
     taleLoadingRef.current = true
     try {
       const fresh = await talesEntitlement.check()
-      if (!fresh.allowed) {
+      if (!fresh.allowed || !canOpenSeen('tales', tale.id, fresh.limit)) {
         setTalesBlocked(true)
         return
       }
+      markSeen('tales', tale.id)
       // loadModule, а не голый import: без catch отказ загрузки уходил в
       // никуда — нажатие на карточку не делало ровно ничего, ни экрана, ни
       // ошибки. Чаще всего так ломается вкладка, открытая до выката; она сама
@@ -879,13 +883,24 @@ export default function PracticePage({
     }
   }
 
+  // Ref-страж, как у сказок: два быстрых клика по разным мемам иначе
+  // открывали тот, чей ответ квоты пришёл позже.
+  const reelLoadingRef = useRef(false)
   const tryOpenReel = async (index) => {
-    const fresh = await memesEntitlement.check()
-    if (!fresh.allowed) {
-      setMemesBlocked(true)
-      return
+    if (reelLoadingRef.current) return
+    reelLoadingRef.current = true
+    try {
+      const id = clips[index]?.id ?? index
+      const fresh = await memesEntitlement.check()
+      if (!fresh.allowed || !canOpenSeen('memes', id, fresh.limit)) {
+        setMemesBlocked(true)
+        return
+      }
+      markSeen('memes', id)
+      setOpenReel(index)
+    } finally {
+      reelLoadingRef.current = false
     }
-    setOpenReel(index)
   }
 
   // Книги ограничивает сервер, а не этот экран: квота PRACTICE_BOOKS означает
