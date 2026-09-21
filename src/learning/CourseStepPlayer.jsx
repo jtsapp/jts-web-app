@@ -190,14 +190,21 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   const total = steps.length
   const step = steps[idx]
 
+  // Предложение «продолжить» в силе, пока ученик его не решил и сам не дошёл
+  // до сохранённого шага. На экране две кнопки «Продолжить» — в плашке и внизу
+  // шага, и нижняя заметнее: нажавший её уходил на шаг 2, а позиция «шаг 31»
+  // тут же затиралась. Поэтому плашка остаётся на следующих шагах, а запись
+  // всё это время не трогаем.
+  const offer = resume && idx < resume.idx ? resume : null
+
   // Позицию пишем на входе в шаг — со счётом, набранным до него. Ответ внутри
   // шага при перезагрузке теряется вместе с шагом: его проходят заново, и
   // счёт тогда не задваивается.
   useEffect(() => {
-    if (!resumeKey || endedRef.current || idx === 0) return
+    if (!resumeKey || endedRef.current || idx === 0 || offer) return
     saveResume(token, resumeKey, total, { idx, correct, wrong, points })
     // Счёт в зависимостях не нужен: он меняется внутри шага, а пишем на входе.
-  }, [idx, resumeKey, token, total]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [idx, resumeKey, token, total, offer]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const continueFromResume = () => {
     setIdx(resume.idx)
@@ -206,6 +213,8 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
     setPoints(resume.points)
     setResume(null)
   }
+  // «Начать сначала» — отказ от предложения: старую позицию забываем, дальше
+  // пишется текущая. Сам шаг не меняем: ученик уже там, откуда хочет идти.
   const restartLesson = () => {
     clearResume(token, resumeKey)
     setResume(null)
@@ -324,14 +333,14 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           if (raw.trim()) close()
         }}
       >
-        {/* Плашка висит, пока ученик не выбрал: ушёл с первого шага сам —
-            значит, проходит заново, и предложение уже не к месту. */}
-        {resume && idx === 0 && (
+        {/* Плашка висит, пока предложение в силе (см. offer выше) — не только
+            на первом шаге: иначе промах мимо неё стоил бы сохранённой позиции. */}
+        {offer && (
           <div className="cp-resume" role="status">
-            <span>{t('lesson.resume.text', { n: String(resume.idx + 1), total: String(total) })}</span>
+            <span>{t('lesson.resume.text', { n: String(offer.idx + 1), total: String(total) })}</span>
             <div className="cp-resume__acts">
               <button type="button" className="cp-resume__go" onClick={continueFromResume}>
-                {t('lesson.resume.continue', { n: String(resume.idx + 1) })}
+                {t('lesson.resume.continue', { n: String(offer.idx + 1) })}
               </button>
               <button type="button" className="cp-resume__restart" onClick={restartLesson}>
                 {t('lesson.resume.restart')}

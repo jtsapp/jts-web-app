@@ -54,6 +54,49 @@ describe('CourseStepPlayer — продолжение урока после пе
     expect(readResume(TOKEN, 'a2:L7', 5)).toBeNull()
   })
 
+  // На экране две «Продолжить»: в плашке и внизу шага, и нижняя заметнее.
+  // Промах мимо плашки не должен стоить сохранённой позиции.
+  it('нижняя «Продолжить» вместо плашки позицию не затирает — плашка остаётся', () => {
+    play()
+    next()
+    next()
+    next() // на четвёртом шаге
+    cleanup()
+
+    play()
+    next() // промах: ушли на второй шаг обычной кнопкой
+    expect(stepTitle()).toBe('Правило 2')
+    expect(readResume(TOKEN, 'a2:L7', 5)).toMatchObject({ idx: 3 })
+    fireEvent.click(screen.getByRole('button', { name: /продолжить с шага 4/i }))
+    expect(stepTitle()).toBe('Правило 4')
+  })
+
+  it('сам дошёл до сохранённого шага — предложение снимается, позиция пишется дальше', () => {
+    play()
+    next()
+    cleanup() // остановились на втором шаге
+
+    play()
+    next() // своим ходом на второй — догнали сохранённую позицию
+    expect(screen.queryByRole('button', { name: /продолжить с шага/i })).toBeNull()
+    next()
+    expect(readResume(TOKEN, 'a2:L7', 5)).toMatchObject({ idx: 2 })
+  })
+
+  it('«Начать сначала» посреди урока запоминает уже текущий шаг', () => {
+    play()
+    next()
+    next()
+    next()
+    cleanup()
+
+    play()
+    next()
+    fireEvent.click(screen.getByRole('button', { name: /начать сначала/i }))
+    expect(stepTitle()).toBe('Правило 2')
+    expect(readResume(TOKEN, 'a2:L7', 5)).toMatchObject({ idx: 1 })
+  })
+
   it('законченный урок продолжить не предлагает', () => {
     play()
     for (let i = 0; i < 5; i++) next()

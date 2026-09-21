@@ -4644,7 +4644,7 @@ const dict = {
     'kingdom.comingSoon': 'Жақында',
     'kingdom.currentLevel': 'Ағымдағы деңгей: ',
     'kingdom.title': '{name} корольдігі',
-    'lesson.resume.text': 'Сіз {total} қадамның {n}-інде тоқтадыңыз',
+    'lesson.resume.text': 'Сіз {n}-қадамда тоқтадыңыз (барлығы {total})',
     'lesson.resume.continue': '{n}-қадамнан жалғастыру',
     'lesson.resume.restart': 'Басынан бастау',
     'kingdom.king': 'Король: {name}',
