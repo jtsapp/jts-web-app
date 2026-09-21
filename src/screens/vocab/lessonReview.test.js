@@ -255,8 +255,19 @@ describe('answersMatch — сокращения с точками', () => {
     expect(answersMatch('US', 'U.S.')).toBe(true)
   })
 
-  it('точка в конце фразы по-прежнему не мешает', () => {
+  // Эти варианты засчитывались и до правки («p.m.» и «p m» нормализовались
+  // одинаково). Первая версия правки клеила точки в normalizeAnswer и этим
+  // ломала «p m» — поэтому правило переехало в answersMatch и стало только
+  // расширяющим: что сходилось раньше, сходится и теперь.
+  it('прежние написания не отвалились: «p m», «p.m» без последней точки', () => {
+    expect(answersMatch('p m', 'p.m.')).toBe(true)
+    expect(answersMatch('p.m', 'p.m.')).toBe(true)
+    expect(answersMatch('p.m.', 'p.m.')).toBe(true)
+  })
+
+  it('точка в конце фразы по-прежнему не мешает, а слова фразы не склеиваются', () => {
     expect(answersMatch('I like it', 'I like it.')).toBe(true)
+    expect(answersMatch('Ilikeit', 'I like it.')).toBe(false)
   })
 
   it('другие слова не склеиваются', () => {

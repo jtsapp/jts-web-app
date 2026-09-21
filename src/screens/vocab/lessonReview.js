@@ -144,9 +144,6 @@ export function normalizeAnswer(s) {
     .replace(APOSTROPHES, "'")
     // «партнер» вместо «партнёр» — не ошибка, так пишет почти каждый.
     .replace(/ё/g, 'е')
-    // Точки внутри сокращений не слышны на слух: «p.m.» и «pm» — одно и то же.
-    // Склеиваем только точку между буквами, фразовая точка ниже уйдёт сама.
-    .replace(/(\p{L})\.(?=\p{L})/gu, '$1')
     // Знак между словами — граница слова, а не пустое место: «страна/страны»
     // иначе склеивалось в «странастраны» и не сходилось с «страна / страны».
     // Дефис туда же: на слух «full-time» от «full time» не отличить.
@@ -277,6 +274,9 @@ export function buildChoiceOptions(word, bank, lang, rng = Math.random) {
   )
 }
 
+// Точка между буквами — признак сокращения (p.m., U.S., e.g.).
+const DOTTED = /\p{L}\.\p{L}/u
+
 /** Набранное английское слово против ожидаемого (диктант, набор по буквам). */
 export function answersMatch(given, expected) {
   const a = normalizeAnswer(latinLookalikes(given))
@@ -284,8 +284,13 @@ export function answersMatch(given, expected) {
   if (!a || !b) return false
   if (a === b) return true
   // Слово через дефис пишут и раздельно, и слитно: T-shirt, t shirt, tshirt.
-  // Только для дефисных — «alot» вместо «a lot» остаётся ошибкой.
-  return /-/.test(String(expected)) && a.replace(/ /g, '') === b.replace(/ /g, '')
+  // То же с сокращениями через точку: точек на слух не слышно, и «p.m.»
+  // набирают как «pm», «p.m» или «p m» — в любую сторону. Правило живёт здесь,
+  // а не в normalizeAnswer: та общая с переводами, и склейка точек в ней
+  // ломала уже засчитывавшееся «p m». Для остальных слов пробел значим —
+  // «alot» вместо «a lot» остаётся ошибкой.
+  const loose = /-/.test(String(expected)) || DOTTED.test(String(expected)) || DOTTED.test(String(given))
+  return loose && a.replace(/ /g, '') === b.replace(/ /g, '')
 }
 
 export function writeTranslationOk(given, word) {
