@@ -113,6 +113,41 @@ describe('MaterialAssignmentDetail — задание делается прям�
     expect(кнопкаОткрыть()).toBeTruthy()
   })
 
+  /**
+   * Работу вернули на доработку.
+   *
+   * <p>Без этого экран был тупиком: статус сервер уже присылал, а ученик видел
+   * «На доработке» без кнопки — сдать заново было нечем, и доработка ни к чему
+   * не вела.
+   */
+  describe('возврат на доработку', () => {
+    const возвращена = () => карточка({
+      status: 'NEEDS_REVISION',
+      teacherFeedback: 'Последние два слова перепутаны — переделай',
+    })
+
+    it('что исправить видно сразу, и не вторым экземпляром внизу', () => {
+      const { container } = показать(возвращена())
+      const тексты = [...container.querySelectorAll('.hw-comment')].map((e) => e.textContent)
+      expect(тексты).toEqual(['Последние два слова перепутаны — переделай'])
+      expect(screen.getByText(/вернули на доработку/i)).toBeTruthy()
+    })
+
+    it('сдать можно снова — кнопка есть и зовёт пересдать', () => {
+      показать(возвращена())
+      expect(screen.getByRole('button', { name: /сдать ещё раз/i })).toBeTruthy()
+    })
+
+    it('у сданной и взятой в проверку кнопки сдачи нет — работа у преподавателя', () => {
+      for (const status of ['SUBMITTED', 'IN_REVIEW']) {
+        const { unmount } = показать(карточка({ status }))
+        expect(screen.queryByRole('button', { name: /сдать/i })).toBeNull()
+        expect(screen.getByText(/ждёт проверки/i)).toBeTruthy()
+        unmount()
+      }
+    })
+  })
+
   // Чужую ссылку встроить нечем: её сайт отдаст рамке X-Frame-Options.
   it('обычный файл по-прежнему уходит в новую вкладку', () => {
     const { container } = показать(карточка({ materialType: 'PDF', fileUrl: 'https://files.example/task.pdf' }))

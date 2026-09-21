@@ -17,11 +17,15 @@ const ACCEPT = ALLOWED_EXTENSIONS.map((e) => `.${e}`).join(',')
 /**
  * Задание с живого урока, открытое в «Домашней работе».
  *
- * Сдача у выданной работы ЕСТЬ (ASSIGNED → SUBMITTED → COMPLETED, считает сервер), но
- * возврата на доработку нет: повторной попытки и версий ответа у материала не бывает —
- * преподаватель ставит балл и комментарий. Ответы по заданиям уходят сами, мостом из
- * рамки урока; «Сдать» — это отдельное слово ученика «я закончил», без него работа
- * висела бы заданной навсегда.
+ * Цикл тот же, что у обычной домашки, и считает его СЕРВЕР: ASSIGNED → SUBMITTED →
+ * (IN_REVIEW) → COMPLETED, а с доработкой — обратно в NEEDS_REVISION и снова на сдачу.
+ * Ответы по заданиям уходят сами, мостом из рамки урока; «Сдать» — это отдельное слово
+ * ученика «я закончил», без него работа висела бы заданной навсегда.
+ *
+ * <p>Возвращённая работа открывается там же, где ученик её бросил: ответы прошлой
+ * попытки не стираются, он видит свои ошибки и правит их (прежний счёт у преподавателя
+ * лежит снимком попытки). «Сдана» и «взята в проверку» для ученика — одно и то же
+ * «работа у преподавателя»: делать ему нечего, и разделять их незачем.
  *
  * А ВЛОЖЕНИЕ есть только у выданной карточки урока (needsAnswerFile):
  * закрыть её иначе нечем — проверяемых заданий в теории нет, сессии она не
@@ -221,21 +225,39 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
         </section>
       )}
 
-      {/* Сдача. Показываем, пока работа у ученика: сданную и проверённую сдавать
-          заново нечем — попытка у материала одна (см. javadoc компонента). */}
-      {a.status === 'ASSIGNED' && (
+      {/* Работу вернули: что именно исправить — первое, что ученик должен увидеть,
+          поэтому отдельной рамкой и ВЫШЕ кнопки, а не в общем «Отзыве» внизу, где
+          она читается как оценка уже закрытой работы. */}
+      {a.status === 'NEEDS_REVISION' && (
+        <section className="hw-block hw-returned">
+          <h3 className="hw-block__title">{t('homework.returnedTitle')}</h3>
+          {a.teacherFeedback && <p className="hw-comment">{a.teacherFeedback}</p>}
+          <p className="hw__hint">{t('homework.returnedHint')}</p>
+        </section>
+      )}
+
+      {/* Сдача. Показываем, пока работа у ученика: и в первый раз, и после
+          возврата — иначе доработка ни к чему не ведёт. У преподавателя
+          (сдана / взята в проверку) и у проверенной сдавать нечего. */}
+      {(a.status === 'ASSIGNED' || a.status === 'NEEDS_REVISION') && (
         <section className="hw-block">
           <button type="button" className="hw-submit" disabled={busy} onClick={submit}>
-            {busy ? t('homework.submitting') : t('homework.submitWork')}
+            {busy ? t('homework.submitting')
+              : t(a.status === 'NEEDS_REVISION' ? 'homework.resubmitWork' : 'homework.submitWork')}
           </button>
           <p className="hw__hint">{t('homework.submitHint')}</p>
         </section>
       )}
-      {a.status === 'SUBMITTED' && (
+      {/* Взята в проверку — для ученика то же самое «работа у преподавателя»:
+          делать ему нечего, и разделять эти два состояния незачем. */}
+      {(a.status === 'SUBMITTED' || a.status === 'IN_REVIEW') && (
         <p className="hw__hint">{t('homework.submittedWaiting')}</p>
       )}
 
-      {(card.grade != null || a.teacherFeedback) && (
+      {/* Отзыв проверенной работы. Возвращённую сюда НЕ пускаем: её комментарий —
+          это «что исправить», он уже стоит рамкой выше, и вторым разом внизу
+          читался бы как оценка закрытой работы. */}
+      {a.status !== 'NEEDS_REVISION' && (card.grade != null || a.teacherFeedback) && (
         <section className="hw-block hw-block--review">
           <h3 className="hw-block__title">{t(card.grade != null ? 'homework.review' : 'homework.feedback')}</h3>
           {card.grade != null && (

@@ -9235,3 +9235,12 @@ textarea {
 .booth__spinner { margin: 0 auto 18px; }
 .booth__cta { align-self: center; margin-top: 20px; }
 
+
+/* Возврат на доработку: что исправить — не «отзыв о работе», а задача на сейчас,
+   поэтому рамка заметна и стоит выше кнопки сдачи. */
+.hw-returned {
+  border: 1px solid var(--warn-line, #f0c36d);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: var(--warn-bg, #fff8e8);
+}
