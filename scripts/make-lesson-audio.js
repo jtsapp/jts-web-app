@@ -453,4 +453,7 @@ if (require.main === module) {
   })
 }
 
-module.exports = { narrationsOf }
+// synthesizeSoniox/sleep/loadEnv нужны и озвучке «Слушай и выбирай»
+// (scripts/make-listenchoose-audio.js): повтор, паузы под лимит провайдера и
+// разбор .env с BOM тем же кодом, а не второй копией.
+module.exports = { narrationsOf, synthesizeSoniox, sleep, loadEnv, SONIOX_GAP_MS }

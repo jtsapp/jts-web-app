@@ -20,7 +20,7 @@ import {
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
-import { readSituationsDone, markSituationLevelDone } from '../practice/situations/situationsProgress.js'
+import { readSituationsDone } from '../practice/situations/situationsProgress.js'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
 import { readWorkbooksDone } from '../practice/workbooks/workbooksProgress.js'
 import { WorkbookCard } from '../practice/workbooks/WorkbookCard.jsx'
@@ -312,6 +312,47 @@ function VerbsBanner({ onAll, onStart }) {
   )
 }
 
+// Баннер «Слушай и выбирай»: вход в упражнение «услышь описание — выбери из
+// четырёх фото». Каркас тот же (.pp-listen), перекраска — .pp-lc в
+// listenchoose.css. Уровня у раздела нет одного (три сложности вместо CEFR), поэтому
+// в печати число заданий, как у «Слов в картинках» и «Неправильных глаголов».
+function ListenChooseBanner({ onAll, onStart }) {
+  const { t } = useI18n()
+  const noop = () => {}
+  const [headTop, headRest] = t('practice.listenchoose.heading').split('\n')
+  return (
+    <section id="sec-listenchoose" className="pp-sec pp-listen pp-lc">
+      <SectionHead title={t('practice.listenchoose.title')} onAll={onAll || noop} />
+      <div className="pp-listen__card">
+        <div className="pp-listen__body">
+          <h3 className="pp-listen__title">
+            {headTop}
+            {headRest && (
+              <>
+                <br />
+                {headRest}
+              </>
+            )}
+          </h3>
+          <p className="pp-listen__desc">{t('practice.listenchoose.desc')}</p>
+          <button type="button" className="pp-listen__cta" onClick={onStart || noop}>
+            {t('practice.listenchoose.cta')}
+          </button>
+        </div>
+        <div className="pp-listen__aside">
+          <span className="pp-listen__hint">{t('practice.listenchoose.hint')}</span>
+          <div className="pp-listen__seal">
+            <svg className="pp-listen__seal-bg" viewBox="0 0 100 100" aria-hidden="true">
+              <path d={SEAL_PATH} fill="#fff" />
+            </svg>
+            <span className="pp-listen__level pp-listen__level--num">150</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // Баннер «Письмо»: вход в тренажёр Writing (180 жанров + Блокнот). Переиспользует
 // каркас баннера аудирования (.pp-listen), а перекраска — модификатором .pp-write
 // в writing.css. Своего арта у раздела пока нет, поэтому карточка текстовая.
@@ -517,13 +558,13 @@ export default function PracticePage({
     }
   }, [token, userLevel])
 
-  // Тяжёлые оверлеи (мир сказок ~3 МБ, разговорные ситуации) подгружаем на
-  // простое после первого рендера: первый клик открывает их мгновенно и
-  // загрузка не конкурирует с каталогами выше.
+  // Тяжёлый оверлей мира сказок (~3 МБ) подгружаем на простое после первого
+  // рендера: первый клик открывает его мгновенно и загрузка не конкурирует с
+  // каталогами выше. Ситуации отсюда ушли вместе со своим оверлеем — у них
+  // теперь свой экран, и грузить заранее там нечего.
   useEffect(() => {
     const load = () => {
       import('../practice/fairytale/taleWorld.js').catch(() => {})
-      import('../practice/situations/situationsOverlay.js').catch(() => {})
     }
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(load, { timeout: 4000 })
@@ -695,12 +736,12 @@ export default function PracticePage({
   /**
    * Пришли из домашней работы за уровнем разговорной практики.
    *
-   * Своего экрана у раздела нет — это оверлей поверх «Практики», и открыть его
-   * можно только отсюда. Ждём загрузки страницы: до неё не известны
-   * заблокированные уровни, и открытие сорвалось бы молча.
+   * Экран у раздела теперь свой, но вход в уровень по-прежнему только отсюда:
+   * здесь живёт проверка квоты. Ждём загрузки страницы — до неё не известны
+   * заблокированные уровни, и переход сорвался бы молча.
    *
-   * Цель отрабатывается один раз по своему ключу, как и у грамматики: закрыл
-   * оверлей — не должен тут же открыться снова.
+   * Цель отрабатывается один раз по своему ключу, как и у грамматики: вернулся
+   * из раздела — не должен тут же уехать в него снова.
    */
   const openedSituationsRef = useRef(null)
   useEffect(() => {
@@ -730,6 +771,7 @@ export default function PracticePage({
     { key: 'reading', label: t('practice.chip.reading') },
     { key: 'words', label: t('practice.chip.words') },
     { key: 'verbs', label: t('practice.chip.verbs') },
+    { key: 'listenchoose', label: t('practice.chip.listenchoose') },
     { key: 'shadowing', label: t('practice.chip.shadowing') },
     { key: 'situations', label: t('practice.chip.situations') },
     { key: 'workbooks', label: t('practice.chip.workbooks') },
@@ -759,6 +801,7 @@ export default function PracticePage({
     { selector: '#sec-reading', title: t('tour.practice.reading.title'), text: t('tour.practice.reading.text') },
     { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text') },
     { selector: '#sec-verbs', title: t('tour.practice.verbs.title'), text: t('tour.practice.verbs.text') },
+    { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text') },
     { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text') },
     { selector: '#sec-situations', title: t('tour.practice.situations.title'), text: t('tour.practice.situations.text') },
     { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
@@ -836,8 +879,14 @@ export default function PracticePage({
 
   // Разговорная практика (Speaking A1–C1): оверлей с уровневыми страницами
   // (src/practice/situations/), открывается на выбранном уровне.
-  const openSituationsLevel = async (level) => {
-    if (taleLoadingRef.current) return
+  // Разговорная практика A1–C1 живёт на своём экране (?screen=situations):
+  // каталог уровня и сценарий с записью ответа. Оверлея с iframe больше нет —
+  // вместе с ним ушла и загрузка standalone-html из public (тот же ход, что
+  // раньше сделали воркбуки).
+  //
+  // Уровень в квоте отмечает уже сам экран, когда он открылся: так
+  // сорвавшийся переход не списывает уровень впустую.
+  const openSituationsLevel = (level) => {
     // Карточка заблокированного уровня скрыта (см. рендер ниже) — это доп.
     // защита на случай прямого вызова (deep link и т.п.).
     if (levelLocked.has(level)) return
@@ -849,18 +898,7 @@ export default function PracticePage({
       setSituationsBlocked(true)
       return
     }
-    taleLoadingRef.current = true
-    try {
-      const mod = await loadModule(() => import('../practice/situations/situationsOverlay.js'))
-      // Уровень отмечаем пройденным только когда он правда открылся: иначе
-      // сорвавшаяся загрузка списала бы его из квоты впустую.
-      if (mod) {
-        mod.openSituations(level)
-        if (!seen.includes(level)) markSituationLevelDone(level)
-      }
-    } finally {
-      taleLoadingRef.current = false
-    }
+    onNav?.('situations', { level })
   }
 
   // Воркбуки. Все уровни A0–B2 живут на нативном экране (?screen=workbook):
@@ -1043,6 +1081,12 @@ export default function PracticePage({
           {/* Неправильные глаголы — вход в главу. Своей сетки у чипа нет: урок,
               таблица и тренажёр живут на экране раздела. */}
           {show('verbs') && <VerbsBanner onAll={() => onNav?.('verbs')} onStart={() => onNav?.('verbs')} />}
+
+          {/* Слушай и выбирай — вход в упражнение с картинками. Своей сетки у чипа нет:
+              сложности, набор и сам тренажёр живут на экране раздела. */}
+          {show('listenchoose') && (
+            <ListenChooseBanner onAll={() => onNav?.('listenchoose')} onStart={() => onNav?.('listenchoose')} />
+          )}
 
           {/* Грамматика — полный каталог (чип «Грамматика») */}
           {filter === 'grammar' &&

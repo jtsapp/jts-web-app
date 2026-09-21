@@ -45,6 +45,16 @@ test.describe('practiceSyncCore — сериализация и применен
     expect(events).toEqual(['verbs-progress'])
   })
 
+  test('listenchoose: объект {seen} уходит и приходит целиком', () => {
+    const s = { seen: { easy: ['bus-easy', 'desk-easy-1'], medium: [], hard: ['art-hard-0'] } }
+    expect(serializeForPush('listenchoose', s)).toBe(s)
+    const writes = {}
+    const events = []
+    applyHydratedState({ listenchoose: s }, { setItem: (k, v) => (writes[k] = v), dispatch: (e) => events.push(e) })
+    expect(JSON.parse(writes.jts_listenchoose_done)).toEqual(s)
+    expect(events).toEqual(['listenchoose-progress'])
+  })
+
   test('applyHydratedState: мусорный вход игнорируется', () => {
     let called = false
     applyHydratedState(null, { setItem: () => (called = true), dispatch: () => (called = true) })

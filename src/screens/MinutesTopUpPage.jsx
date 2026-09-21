@@ -38,16 +38,22 @@ export default function MinutesTopUpPage({ token, onBack, onDone }) {
   const [hidNote, setHidNote] = useState(false)
 
   const packs = useMemo(() => splitOffers(offers || []).minutes, [offers])
-  const picked = packs.find((p) => p.code === pickedCode) || packs[0] || null
 
   // Предвыбран самый маленький пакет — как в макете: заказ справа не должен
   // быть пустым, иначе непонятно, что вообще произойдёт по кнопке.
-  useEffect(() => {
-    if (pickedCode === null && packs.length) {
-      const smallest = packs.reduce((a, b) => ((a.minutes || 0) <= (b.minutes || 0) ? a : b))
-      setPickedCode(smallest.code)
-    }
-  }, [pickedCode, packs])
+  //
+  // Считаем это ПРИ РЕНДЕРЕ, а не эффектом после него. Раньше выбор
+  // подставлял useEffect, и между появлением пакетов на экране и его
+  // срабатыванием было окно: успел нажать на пакет в этот момент — эффект
+  // досрабатывал со своим старым pickedCode === null и молча возвращал выбор
+  // к самому маленькому. Человек видел «60 минут» под курсором, а в заказ
+  // уходило «20 минут» — то есть чужой пакет и чужая сумма. На быстрой машине
+  // окно не поймать, в CI поймалось (упал MinutesTopUpPage.test.jsx 21.09.2026).
+  const smallest = useMemo(
+    () => (packs.length ? packs.reduce((a, b) => ((a.minutes || 0) <= (b.minutes || 0) ? a : b)) : null),
+    [packs],
+  )
+  const picked = packs.find((p) => p.code === pickedCode) || smallest
 
   const minutesLabel = (n) => plural(t, lang, 'topup.minutes', n)
 
