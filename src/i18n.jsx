@@ -628,12 +628,10 @@ const dict = {
     'schedule.error': 'Не удалось загрузить график',
     'schedule.needAuth': 'Войдите в аккаунт, чтобы увидеть расписание уроков',
     'schedule.back': 'Назад',
-    // Карточка вместо расписания у того, кому преподаватель ещё не назначен
-    // (TrialRequestCard). Заявка урок не создаёт и время преподавателя не
-    // занимает — тексты обещают ровно звонок менеджера и ничего сверх этого.
-    'trial.title': 'Скоро с вами свяжется менеджер',
-    'trial.text': 'У вас пока нет преподавателя и расписания. Их подбирает менеджер — он свяжется с вами и обо всём договорится.',
-    'trial.cta': 'Записаться на пробный урок',
+    // Заявка на пробный урок — блок на главной у демо-аккаунта (HomePage).
+    // Заявка урока не создаёт и время преподавателя не занимает — тексты
+    // обещают ровно звонок менеджера и ничего сверх этого. Экран «Уроки» эти
+    // тексты больше не показывает: там всегда расписание.
     'trial.sending': 'Отправляем…',
     'trial.doneTitle': 'Заявка принята',
     'trial.doneText': 'Менеджер видит вашу заявку на пробный урок и свяжется с вами, чтобы договориться о времени.',
@@ -2789,9 +2787,6 @@ const dict = {
     'schedule.error': 'Could not load the schedule',
     'schedule.needAuth': 'Sign in to see your lesson schedule',
     'schedule.back': 'Back',
-    'trial.title': 'A manager will contact you soon',
-    'trial.text': 'You do not have a teacher or a schedule yet. A manager picks them for you and will get in touch to arrange everything.',
-    'trial.cta': 'Sign up for a trial lesson',
     'trial.sending': 'Sending…',
     'trial.doneTitle': 'Request received',
     'trial.doneText': 'The manager can see your trial lesson request and will contact you to agree on a time.',
@@ -4932,9 +4927,6 @@ const dict = {
     'schedule.error': 'Кестені жүктеу мүмкін болмады',
     'schedule.needAuth': 'Сабақ кестесін көру үшін аккаунтқа кіріңіз',
     'schedule.back': 'Артқа',
-    'trial.title': 'Жақында сізбен менеджер байланысады',
-    'trial.text': 'Сізде әзірге оқытушы да, кесте де жоқ. Оларды менеджер таңдайды — ол сізбен байланысып, бәрін келіседі.',
-    'trial.cta': 'Сынақ сабағына жазылу',
     'trial.sending': 'Жіберілуде…',
     'trial.doneTitle': 'Өтініш қабылданды',
     'trial.doneText': 'Менеджер сынақ сабағына өтінішіңізді көреді және уақытын келісу үшін сізбен байланысады.',
