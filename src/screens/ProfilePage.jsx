@@ -16,10 +16,9 @@ import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 import { shrinkImage } from '../lib/shrinkImage.js'
+import { isSoundEnabled, setSoundEnabled } from '../lib/notifySound.js'
 
-// Ключ localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
 // Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
-const NOTIF_KEY = 'jts_notifications_enabled'
 
 // Палитра фонов аватара (как cosmetics-фоны мобилки, но без лутбокса).
 const AVATAR_BGS = ['#f0ebff', '#dbeafe', '#dcfce7', '#fef3c7', '#ffe4e6', '#e0e7ff', '#fae8ff', '#f1f5f9']
@@ -79,6 +78,9 @@ export default function ProfilePage({
 
   const [avatar, setAvatar] = useState(null)
   const [avatarBg, setAvatarBg] = useState(AVATAR_BGS[0])
+  // «Уведомления» — звук сигналов кабинета (lib/notifySound.js, тот же, что
+  // у колокольчика). Раньше тут был «Push-уведомления» со своим флагом,
+  // который никто не читал: пушей у веба нет, переключатель ничего не менял.
   const [notifEnabled, setNotifEnabled] = useState(true)
   const [streak, setStreak] = useState(0)
   const [lessons, setLessons] = useState(0)
@@ -114,8 +116,7 @@ export default function ProfilePage({
 
   useEffect(() => {
     try {
-      const n = localStorage.getItem(NOTIF_KEY)
-      if (n != null) setNotifEnabled(n === '1')
+      setNotifEnabled(isSoundEnabled())
     } catch {}
   }, [])
 
@@ -198,13 +199,9 @@ export default function ProfilePage({
   }
 
   function toggleNotif() {
-    setNotifEnabled((v) => {
-      const nv = !v
-      try {
-        localStorage.setItem(NOTIF_KEY, nv ? '1' : '0')
-      } catch {}
-      return nv
-    })
+    const next = !notifEnabled
+    setNotifEnabled(next)
+    setSoundEnabled(next)
   }
 
   function openEdit() {
@@ -285,7 +282,6 @@ export default function ProfilePage({
 
   const settings = [
     { key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: () => setNotifOpen(true) },
-    { key: 'rate', icon: <PfStarIcon />, title: t('profile.rateApp'), onClick: shareApp },
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
     { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open('https://justtostudy.kz/privacy', '_blank') },
@@ -362,11 +358,6 @@ export default function ProfilePage({
                 <span className="pf-stat__glyph"><PfCapIcon /></span>
                 <b>{lessons}</b>
                 <span>{t('profile.statLessons')}</span>
-              </div>
-              <div className="pf-stat">
-                <span className="pf-stat__glyph pf-stat__glyph--gold"><PfGroupIcon /></span>
-                <b>0</b>
-                <span>{t('profile.statClubs')}</span>
               </div>
             </div>
           </div>
@@ -490,7 +481,7 @@ export default function ProfilePage({
       {notifOpen && (
         <Modal onClose={() => setNotifOpen(false)} title={t('profile.notifTitle')}>
           <button className="pf-toggle-row" onClick={toggleNotif}>
-            <span>{t('profile.notifPush')}</span>
+            <span>{t('profile.notifSound')}</span>
             <span className={`pf-switch ${notifEnabled ? 'pf-switch--on' : ''}`}>
               <span className="pf-switch__knob" />
             </span>
@@ -589,15 +580,6 @@ function PfCapIcon() {
     </svg>
   )
 }
-function PfGroupIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" {...S}>
-      <circle cx="9" cy="9" r="3" />
-      <path d="M3 19c0-3 2.7-5 6-5s6 2 6 5" />
-      <path d="M16 6.5a3 3 0 0 1 0 5.5M18 19c0-2-.8-3.6-2.2-4.6" />
-    </svg>
-  )
-}
 function PfEditIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" {...S}>
@@ -627,13 +609,6 @@ function PfBellIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
       <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
       <path d="M10 20a2 2 0 0 0 4 0" />
-    </svg>
-  )
-}
-function PfStarIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
     </svg>
   )
 }
