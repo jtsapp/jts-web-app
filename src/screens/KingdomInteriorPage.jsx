@@ -67,6 +67,10 @@ function CheckIcon() {
   )
 }
 
+// Сколько «Следующий урок» ждёт ответа сервера о засчитанном уроке (см. onDone).
+// Обычный ответ — доли секунды; восемь секунд — это уже «сеть молчит».
+const SAVE_WAIT_MS = 8000
+
 // Горизонтальное смещение узла в «лесенке» юнита. В макете колонка узлов
 // шириной 200 при узле 100, а сами узлы идут центр → влево → вправо → центр
 // (Figma «Обучение», Screen 4005:30480, кадр List).
@@ -298,6 +302,18 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       setRestricted(false)
       if (stats.outcome !== 'success' || !open) return
       setSaving(true)
+      const code = open.code
+      const wasDone = done.has(code)
+      // У fetch нет своего таймаута: на «зависшей» мобильной сети ответ идёт и
+      // минуту, и всё это время «Следующий урок» стояла бы неактивной — для
+      // ученика это сломанная кнопка. Дольше SAVE_WAIT_MS не держим: отмечаем
+      // урок пройденным на экране (так же markDone поступает при сбое сети) и
+      // отпускаем кнопку. Ответ сервера, когда придёт, поправит done сам, а
+      // отказ по квоте снимет эту отметку (см. ниже).
+      const giveUp = setTimeout(() => {
+        setDone((d) => new Set(d).add(code))
+        setSaving(false)
+      }, SAVE_WAIT_MS)
       try {
         // Отмечаем урок пройденным (бэкенд + локально). Монеты/XP/стрик начисляет
         // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
@@ -326,6 +342,15 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           // исключение просто гасилось внутри markDone, урок падал в localStorage
           // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
           if (e instanceof ContentRestrictedError) {
+            // Отметку, выставленную в ожидании ответа, снимаем: урок не
+            // засчитан. Пройденный раньше урок при этом не трогаем.
+            if (!wasDone) {
+              setDone((d) => {
+                const kept = new Set(d)
+                kept.delete(code)
+                return kept
+              })
+            }
             setRestricted(true)
             return
           }
@@ -336,10 +361,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           completeLessonModule(token, stats.points).catch(() => {})
         }
       } finally {
+        clearTimeout(giveUp)
         setSaving(false)
       }
     },
-    [open, level, token, moduleId, modulesUnavailable],
+    [open, level, token, moduleId, modulesUnavailable, done],
   )
 
   // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
