@@ -5462,29 +5462,6 @@ textarea {
   background: #f6f6f8;
   color: #8b8a97;
 }
-.pf-seg {
-  display: flex;
-  gap: 10px;
-}
-.pf-seg__opt {
-  flex: 1;
-  padding: 12px 0;
-  border: 1px solid #e6e6ec;
-  border-radius: 12px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: #8b8a97;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.pf-seg__opt--active {
-  background: #f0ebff;
-  border-color: #9047ff;
-  color: #9047ff;
-  font-weight: 600;
-}
 .pf-err {
   margin: 4px 0 12px;
   color: #e5484d;

@@ -92,7 +92,9 @@ export default function ProfilePage({
   const [customOpen, setCustomOpen] = useState(false)
 
   // Форма редактирования профиля
-  const [form, setForm] = useState({ name: '', email: '', city: '', gender: '', birthDate: '' })
+  // Пола в форме нет намеренно: у бэкенда нет такого поля ни в /user/me, ни в
+  // UpdateUserRequest — выбор молча выбрасывался, а тост писал «Сохранено».
+  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '' })
   const [saving, setSaving] = useState(false)
   const [editErr, setEditErr] = useState('')
 
@@ -203,15 +205,22 @@ export default function ProfilePage({
 
   function openEdit() {
     setEditErr('')
-    setForm({ name: name || '', email: '', city: '', gender: '', birthDate: '' })
+    setForm({ name: name || '', email: '', city: '', birthDate: '' })
     setEditOpen(true)
-    // Дату рождения подтягиваем из профиля: она обязательна при регистрации,
-    // и пустое поле читалось бы как «не указана», хотя она уже есть. Осечка
-    // сети не мешает править остальное — просто останется пустым.
+    // Сохранённое подтягиваем из профиля: пустое поле читалось бы как «не
+    // указано» — ученик вводил email заново, думая, что он пропал. Уже
+    // начатую правку не затираем: ответ может прийти, когда человек печатает.
+    // Осечка сети не мешает править остальное — поля просто останутся пустыми.
     if (token) {
       getCurrentUser(token)
         .then((me) => {
-          if (me?.birthDate) setForm((f) => ({ ...f, birthDate: String(me.birthDate).slice(0, 10) }))
+          if (!me) return
+          setForm((f) => ({
+            ...f,
+            email: f.email || me.email || '',
+            city: f.city || me.city || '',
+            birthDate: f.birthDate || (me.birthDate ? String(me.birthDate).slice(0, 10) : ''),
+          }))
         })
         .catch(() => {})
     }
@@ -238,7 +247,6 @@ export default function ProfilePage({
         name: trimmed,
         email: form.email.trim(),
         city: form.city.trim(),
-        gender: form.gender,
         birthDate: form.birthDate,
       })
       setName(trimmed)
@@ -455,24 +463,6 @@ export default function ProfilePage({
               onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
             />
           </label>
-          <div className="pf-field">
-            <span>{t('profile.editGender')}</span>
-            <div className="pf-seg">
-              {[
-                ['MALE', t('profile.genderMale')],
-                ['FEMALE', t('profile.genderFemale')],
-                ['OTHER', t('profile.genderOther')],
-              ].map(([v, label]) => (
-                <button
-                  key={v}
-                  className={`pf-seg__opt ${form.gender === v ? 'pf-seg__opt--active' : ''}`}
-                  onClick={() => setForm((f) => ({ ...f, gender: v }))}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
           {editErr && <div className="pf-err">{editErr}</div>}
           <button className="pf-save" disabled={saving} onClick={saveProfile}>
             {saving ? t('profile.editSaving') : t('profile.editSave')}

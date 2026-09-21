@@ -490,6 +490,12 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
   )
 }
 
+// Срок задания для сортировки; нет срока или он нечитаем — «когда-нибудь».
+function dueTime(h) {
+  const t = h.dueDate ? new Date(h.dueDate).getTime() : NaN
+  return Number.isNaN(t) ? Infinity : t
+}
+
 /** Незакрытые домашние задания: сначала те, у которых срок ближе. */
 function HomeworkCard({ t, lang, items, onNav }) {
   const locale = lang === 'kk' ? 'kk-KZ' : 'ru-RU'
@@ -499,7 +505,10 @@ function HomeworkCard({ t, lang, items, onNav }) {
     const done = new Set(['SUBMITTED', 'CHECKED', 'COMPLETED', 'GRADED'])
     return (items || [])
       .filter((h) => !done.has(String(h.status || '').toUpperCase()))
-      .sort((a, b) => new Date(a.dueDate || 0) - new Date(b.dueDate || 0))
+      // Без срока — в конец. Раньше пустой срок читался как 0, то есть как
+      // 1970 год, и бессрочные задания вытесняли из тройки то, что сдавать
+      // завтра.
+      .sort((a, b) => dueTime(a) - dueTime(b))
       .slice(0, 3)
   }, [items])
 
