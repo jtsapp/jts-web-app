@@ -31,6 +31,12 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
   const a = card.assignment
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  // Адрес встроенной рамки — null, пока ученик не открыл задание. Держим именно
+  // адрес, а не флаг: у материала с проверкой в него входит id стартованной
+  // сессии, и пересобрать его из пропсов потом нечем. При выборе другой выдачи
+  // состояние не сбрасывается здесь — экран монтирует компонент с key по её id
+  // (см. HomeworkPage.jsx), и рамка уходит вместе с прежней карточкой.
+  const [frameSrc, setFrameSrc] = useState(null)
 
   const stateKey = homeworkStateKey(card)
   const due = card.dueDate
@@ -46,18 +52,23 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
       onOpenCard?.({ catalogLessonId: a.catalogLessonId, cardId: a.cardId })
       return
     }
-    // Обычный файл (PDF/видео/ссылка) открывается как есть. Интерактив идёт
-    // через render-эндпоинт: там в страницу внедряется bridge-скрипт, а для
-    // материала с проверкой сначала стартует сессия — иначе ответы ученика
-    // не дойдут до преподавателя. Повторный старт возвращает ту же сессию.
+    // Обычный файл (PDF/видео/ссылка) открывается как есть: встроить чужую
+    // ссылку нельзя — X-Frame-Options чужого сайта отдаст пустую рамку.
     if (!isInteractiveMaterial(a)) {
       if (a.fileUrl) window.open(a.fileUrl, '_blank', 'noopener')
       return
     }
+    // Интерактив — ПРЯМО ЗДЕСЬ, рамкой на этой же странице, а не новой вкладкой:
+    // домашнюю работу ученик должен делать в своём кабинете. Render-эндпоинт под
+    // это и сделан (см. его javadoc: «for display inside an iframe», и токен там
+    // принимается запросом именно потому, что обычный GET рамки заголовков не
+    // несёт), а мост внутри уже умеет и сохранять ответы, и показывать выданный
+    // блок. Для материала с проверкой сначала стартует сессия — иначе ответы не
+    // дойдут до преподавателя; повторный старт возвращает ту же.
     setBusy(true)
     try {
       const session = a.isGraded ? await startMaterialAssignment(token, a.id) : null
-      window.open(materialAssignmentRenderUrl(a.materialId, a.id, token, session?.id), '_blank', 'noopener')
+      setFrameSrc(materialAssignmentRenderUrl(a.materialId, a.id, token, session?.id))
     } catch {
       setError(t('homework.openFailed'))
     } finally {
@@ -128,9 +139,28 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
             стадию, и ученику неоткуда узнать какой, пока он не откроет и не
             пролистает урок. Ту же строку видит преподаватель в форме оценки. */}
         {a.stageTitlesSnapshot && <p className="hw-assigned">{a.stageTitlesSnapshot}</p>}
-        <button type="button" className="hw-submit" disabled={busy} onClick={open}>
-          {t('homework.open')}
-        </button>
+        {frameSrc ? (
+          <div className="hw-frame">
+            {/* allow="autoplay" — по той же причине, что и у рамки живого урока:
+                разрешение выдаётся документу, а материал живёт в своём iframe;
+                у заданий на слух без этого молчала бы запись. */}
+            <iframe
+              src={frameSrc}
+              title={card.title}
+              className="hw-frame__iframe"
+              allow="autoplay"
+            />
+            {/* Урок — страница со своими стадиями, и в колонке кабинета ему тесно.
+                Кому нужно во всю ширину — прежний путь никуда не делся. */}
+            <a className="hw-frame__full" href={frameSrc} target="_blank" rel="noopener noreferrer">
+              {t('homework.openFullScreen')}
+            </a>
+          </div>
+        ) : (
+          <button type="button" className="hw-submit" disabled={busy} onClick={open}>
+            {busy ? t('homework.opening') : t('homework.open')}
+          </button>
+        )}
         {error && <p className="hw__error">{error}</p>}
       </section>
 

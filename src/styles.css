@@ -7759,6 +7759,26 @@ textarea {
    что говорит ученику, какую часть урока ему делать. */
 .hw-assigned { margin: 0 0 12px; color: var(--ink); font-size: 15px; line-height: 1.5; }
 
+/* Материал, встроенный прямо в домашнюю работу: ученик делает задание здесь, не
+   уходя из кабинета. Высота тем же приёмом, что у рамки урока
+   (lessonWorkspace.css, .lw-material-frame) — занять экран, а не стоять
+   фиксированной карточкой; нижняя граница держит урок читаемым на ноутбуке. */
+.hw-frame { display: flex; flex-direction: column; gap: 8px; }
+.hw-frame__iframe {
+  display: block;
+  width: 100%;
+  height: clamp(420px, calc(100vh - 320px), 1200px);
+  border: 1px solid var(--line, #e6e6ef);
+  border-radius: 14px;
+  background: #fff;
+}
+.hw-frame__full { align-self: flex-start; color: var(--purple); font-size: 14px; text-decoration: underline; }
+
+@media (max-width: 900px) {
+  /* В одну колонку рамке достаётся вся высота экрана минус шапка со списком. */
+  .hw-frame__iframe { height: clamp(360px, calc(100vh - 220px), 900px); }
+}
+
 @media (max-width: 900px) {
   .hw__layout { grid-template-columns: 1fr; }
 }

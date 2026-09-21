@@ -180,7 +180,11 @@ describe('HomeworkPage', () => {
     expect(screen.getAllByText('Unit 3 · Present Perfect').length).toBeGreaterThan(0)
   })
 
-  it('интерактив открывается через сессию: start, затем render в новой вкладке', async () => {
+  /* Домашку с урока ученик делает В КАБИНЕТЕ: материал встраивается рамкой на
+     этом же экране, а не уезжает новой вкладкой (раньше было именно так, и
+     ученик уходил из домашней работы). Сессия при этом стартует как и стартовала
+     — без неё ответы по проверяемому материалу не дойдут до преподавателя. */
+  it('интерактив открывается через сессию: start, затем render рамкой на странице', async () => {
     api.getMyMaterialAssignments.mockResolvedValueOnce([MATERIAL])
     const opened = []
     vi.stubGlobal('open', (url) => { opened.push(url); return null })
@@ -192,9 +196,15 @@ describe('HomeworkPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Открыть задание' }))
 
     await waitFor(() => expect(api.startMaterialAssignment).toHaveBeenCalledWith('TOK', 5))
-    expect(opened).toHaveLength(1)
-    expect(opened[0]).toContain('/student/materials/12/render')
-    expect(opened[0]).toContain('sessionId=77')
+    const frame = await waitFor(() => {
+      const el = container.querySelector('.hw-frame__iframe')
+      expect(el).not.toBeNull()
+      return el
+    })
+    expect(frame.getAttribute('src')).toContain('/student/materials/12/render')
+    expect(frame.getAttribute('src')).toContain('sessionId=77')
+    // Главное: ученик остался на экране домашней работы.
+    expect(opened).toHaveLength(0)
     vi.unstubAllGlobals()
   })
 
