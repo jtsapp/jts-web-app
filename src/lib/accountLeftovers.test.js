@@ -4,7 +4,7 @@
 // только модули практики, а прогресс уроков, навыки и недельный снимок жили
 // мимо него.
 import { describe, it, expect, beforeEach } from 'vitest'
-import { clearAccountLeftovers } from './accountLeftovers.js'
+import { clearAccountLeftovers, forgetExpiredSession } from './accountLeftovers.js'
 
 beforeEach(() => localStorage.clear())
 
@@ -37,5 +37,21 @@ describe('clearAccountLeftovers', () => {
     expect(localStorage.getItem('jts_device_id')).toBe('dev-1')
     expect(localStorage.getItem('jts-lang')).toBe('kk')
     expect(localStorage.getItem('jts-tutor-1-done')).toBe('x')
+  })
+})
+
+// Сессия протухла без «Выйти» (ушёл с общего компьютера): хвосты стираются
+// так же, как при выходе, — вместе с практикой.
+describe('forgetExpiredSession', () => {
+  it('стирает и хвосты аккаунта, и практику', () => {
+    localStorage.setItem('jts-a1-done', '["L1"]')
+    localStorage.setItem('jts_skill_stats_pending', '{"grammar":{"done":1,"firstTry":1}}')
+    localStorage.setItem('jts_grammar_done', '["g1"]')
+    localStorage.setItem('jts_device_id', 'dev-1')
+    forgetExpiredSession()
+    expect(localStorage.getItem('jts-a1-done')).toBeNull()
+    expect(localStorage.getItem('jts_skill_stats_pending')).toBeNull()
+    expect(localStorage.getItem('jts_grammar_done')).toBeNull()
+    expect(localStorage.getItem('jts_device_id')).toBe('dev-1')
   })
 })

@@ -10,9 +10,20 @@
 import { clearLocalLessonProgress } from '../learning/lessonProgress.js'
 import { clearLocalSkillStats } from '../practice/skillStats.js'
 import { clearWeeklySnapshot } from './levelProgress.js'
+import { clearLocalPractice } from '../practice/practiceSync.js'
 
 export function clearAccountLeftovers() {
   clearLocalLessonProgress()
   clearLocalSkillStats()
   clearWeeklySnapshot()
+}
+
+// Сессия умерла сама (restoreSession: 401 и рефреш не прошёл) — это тот же
+// выход, только без кнопки. Ученик, ушедший из-за общего компьютера не нажав
+// «Выйти», иначе оставлял следующему свою тропу, навыки и — хуже всего —
+// неотправленные дельты навыков, которые первый флаш увёз бы под чужим
+// токеном. Флашить их некуда: токен уже мёртв.
+export function forgetExpiredSession() {
+  clearLocalPractice()
+  clearAccountLeftovers()
 }
