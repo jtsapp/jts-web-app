@@ -1110,6 +1110,17 @@ function pickRecordMime() {
   return candidates.find((m) => window.MediaRecorder?.isTypeSupported?.(m)) || ''
 }
 
+// Образец шага record — строка или { text, src }. Строкой он был всегда, и
+// записи прописать было некуда: образец читал только браузерный синтез —
+// чужой голос посреди урока, а на Android без английского голоса тишина.
+// Объект появляется там, где запись есть (её ставит сборщик шагов или
+// scripts/voice-step-cards.js); строки остаются как были, поэтому старые
+// данные менять не нужно. Экспортируется ради теста и тех, кто читает шаги.
+export function recordLine(item) {
+  if (item && typeof item === 'object') return { text: String(item.text ?? ''), src: item.src || null }
+  return { text: String(item ?? ''), src: null }
+}
+
 function RecordBoard({ items, t }) {
   const [state, setState] = useState('idle') // idle | live | done | denied
   const [url, setUrl] = useState('')
@@ -1157,9 +1168,9 @@ function RecordBoard({ items, t }) {
 
   return (
     <div className="cp-rec">
-      {(items || []).map((line, i) => (
-        <button key={i} type="button" className="cp-rec__line" onClick={() => speakEnglish(line)}>
-          {line}
+      {(items || []).map(recordLine).map((line, i) => (
+        <button key={i} type="button" className="cp-rec__line" onClick={() => speakEnglish(line.text, { src: line.src })}>
+          {line.text}
         </button>
       ))}
       <button type="button" className={`cp-rec__btn ${state === 'live' ? 'is-live' : ''}`} onClick={toggle}>
