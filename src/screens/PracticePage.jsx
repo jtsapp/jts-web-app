@@ -843,14 +843,20 @@ export default function PracticePage({
   // поверх Практики (deep-link на конкретную сказку). Модуль ~3 МБ (base64-
   // музыка и арт), поэтому грузим его лениво при первом клике.
   const taleLoadingRef = useRef(false)
+  //
+  // Сказки и мемы открываются оверлеем, не уходя со страницы, поэтому ответ
+  // квоты, снятый при её открытии, дальше не обновлялся: демо-ученик после
+  // первой сказки листал сколько угодно. Перед стартом спрашиваем заново
+  // (check), как Listening и Shadowing, и решаем по свежему ответу.
   const tryOpenTale = async (tale) => {
     if (taleLoadingRef.current) return
-    if (!talesEntitlement.loading && !talesEntitlement.allowed) {
-      setTalesBlocked(true)
-      return
-    }
     taleLoadingRef.current = true
     try {
+      const fresh = await talesEntitlement.check()
+      if (!fresh.allowed) {
+        setTalesBlocked(true)
+        return
+      }
       // loadModule, а не голый import: без catch отказ загрузки уходил в
       // никуда — нажатие на карточку не делало ровно ничего, ни экрана, ни
       // ошибки. Чаще всего так ломается вкладка, открытая до выката; она сама
@@ -862,8 +868,9 @@ export default function PracticePage({
     }
   }
 
-  const tryOpenReel = (index) => {
-    if (!memesEntitlement.loading && !memesEntitlement.allowed) {
+  const tryOpenReel = async (index) => {
+    const fresh = await memesEntitlement.check()
+    if (!fresh.allowed) {
       setMemesBlocked(true)
       return
     }
