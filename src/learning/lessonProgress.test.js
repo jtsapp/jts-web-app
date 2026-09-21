@@ -83,6 +83,48 @@ describe('lessonProgress — досылка урока, не дошедшего 
     expect(completeLesson).toHaveBeenCalledTimes(1)
   })
 
+  // 404: модуль или урок удалили, пока запись ждала. От повтора такой запрос
+  // верным не станет — без выхода из очереди он дёргал бы бэкенд при каждом
+  // открытии тропы, вечно.
+  it('навсегда неверный запрос (404) уходит из очереди, а урок с тропы — нет', async () => {
+    completeLesson.mockImplementationOnce(offline)
+    await markDone('a1', A, 7, 'L3', 40)
+
+    completeLesson.mockImplementationOnce(() => Promise.reject(Object.assign(new Error('404'), { status: 404 })))
+    getLessonProgress.mockResolvedValue({ done: [] })
+    const done = await loadDone('a1', A, 7)
+    expect(done.has('L3')).toBe(true)
+
+    await loadDone('a1', A, 7)
+    expect(completeLesson).toHaveBeenCalledTimes(2) // исходная попытка + одна досылка, третьей нет
+  })
+
+  it('протухший токен (401) — не приговор: запись ждёт следующего раза', async () => {
+    completeLesson.mockImplementationOnce(offline)
+    await markDone('a1', A, 7, 'L3', 40)
+
+    completeLesson.mockImplementationOnce(() => Promise.reject(Object.assign(new Error('401'), { status: 401 })))
+    getLessonProgress.mockResolvedValue({ done: [] })
+    await loadDone('a1', A, 7)
+
+    completeLesson.mockResolvedValueOnce({ done: ['L3'] })
+    await loadDone('a1', A, 7)
+    expect(completeLesson).toHaveBeenCalledTimes(3)
+  })
+
+  // Офлайн и две записи в очереди: после первой неудачи вторая ждала бы того
+  // же, а тропа всё это время не открывается.
+  it('сеть молчит — остальные записи не перебираем', async () => {
+    completeLesson.mockImplementation(offline)
+    getLessonProgress.mockImplementation(offline)
+    await markDone('a1', A, 7, 'L3', 40)
+    await markDone('a1', A, 7, 'L4', 40)
+    expect(completeLesson).toHaveBeenCalledTimes(2)
+
+    await loadDone('a1', A, 7)
+    expect(completeLesson).toHaveBeenCalledTimes(3) // одна попытка досылки, не две
+  })
+
   it('отказ по квоте при прохождении в очередь не попадает', async () => {
     completeLesson.mockImplementationOnce(refused)
     await expect(markDone('a1', A, 7, 'L3', 40)).rejects.toBeInstanceOf(ContentRestrictedError)
