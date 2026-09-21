@@ -51,10 +51,22 @@ export default function LcPictures({ question, options, round, heard, imagesRead
   // перезапускался бы на каждом рендере.
   const report = useCallback((oi, s) => setStatus((prev) => (prev[oi] === s ? prev : { ...prev, [oi]: s })), [])
 
-  const allLoaded = [0, 1, 2, 3].every((i) => status[i] === 'loaded')
+  // Ждём, пока каждое фото ОТВЕТИТ — загрузилось или не смогло. Пока ждали
+  // ровно 'loaded', один отсутствующий файл держал ворота закрытыми навсегда:
+  // все четыре варианта оставались aria-disabled, под ними висело «картинка
+  // грузится», а «Try again» дёргал тот же несуществующий адрес — задание
+  // превращалось в тупик, и набор нельзя было закончить.
+  //
+  // Плитку с битым файлом при этом ОБЯЗАНО быть можно выбрать: рисунка на ней
+  // нет (`.lc-opt img` прозрачна до `is-loaded`), поверх лежит карточка
+  // «Try again», и пока та не стала сквозной для кликов, открытый гейт
+  // превращал такую плитку в гарантированную ошибку — если верный ответ
+  // именно она, нажать было физически нечем. См. `pointer-events` у
+  // `.lc-imgretry` в listenchoose.css.
+  const allSettled = [0, 1, 2, 3].every((i) => status[i] === 'loaded' || status[i] === 'failed')
   useEffect(() => {
-    onReady(allLoaded)
-  }, [allLoaded, onReady])
+    onReady(allSettled)
+  }, [allSettled, onReady])
 
   return (
     <div className="lc-grid" role="group" aria-label="Picture choices">
@@ -103,10 +115,15 @@ export default function LcPictures({ question, options, round, heard, imagesRead
                 <span>{t('listenchoose.imageError')}</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    setStatus((prev) => ({ ...prev, [oi]: undefined }))
-                    setRetries((prev) => ({ ...prev, [oi]: Date.now() }))
-                  }}
+                  // Статус НЕ сбрасываем: 'failed' — такой же «ответ», как и
+                  // 'loaded'. Сбрасывали в undefined — и гейт закрывался
+                  // обратно на все четыре плитки, а карточка «Try again»
+                  // вместе с ним исчезала (`st === 'failed'` переставал быть
+                  // истиной). Повтор, который не ответил ни load, ни error
+                  // (офлайн, висящий прокси), запирал задание насмерть — ровно
+                  // тот тупик, который эта правка и убирает. Перезагрузку
+                  // картинки делает смена ключа `retry` у <Photo>.
+                  onClick={() => setRetries((prev) => ({ ...prev, [oi]: Date.now() }))}
                 >
                   Try again
                 </button>

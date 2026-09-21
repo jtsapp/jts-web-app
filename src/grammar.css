@@ -892,7 +892,10 @@
 .gr-bucket { border: 2px dashed var(--line); border-radius: 16px; padding: 12px; min-height: 110px; background: var(--cloud); cursor: pointer; }
 .gr-bucket__h { font-weight: 800; text-align: center; color: var(--violet-ink); font-size: 15px; margin-bottom: 8px; }
 .gr-bucket__drop { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; }
-.gr-chip-in { padding: 7px 11px; border-radius: 10px; background: var(--violet-100); color: var(--violet-100-tx); font-weight: 700; font-size: 14px; }
+/* Разложенная фишка — кнопка, а не подпись: тапом по ней слово возвращается
+   в пул. Пока это был span, ошибку в раскладке нечем было исправить. */
+.gr-chip-in { padding: 7px 11px; border: 0; border-radius: 10px; background: var(--violet-100); color: var(--violet-100-tx); font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
+.gr-chip-in:disabled { cursor: default; }
 .gr-chip-in.ok { background: var(--correct-bg); color: var(--correct); }
 .gr-chip-in.no { background: var(--incorrect-bg); color: var(--incorrect); }
 

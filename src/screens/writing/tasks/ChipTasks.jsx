@@ -97,7 +97,29 @@ export function ConnectorsTask({ genre, task, onFirstTry }) {
   const { t } = useI18n()
   const ctl = useTaskCtl(genre, task, { onFirstTry })
   const bank = useMemo(() => shuffle(task.bank, task.id), [task.bank, task.id])
-  const [used, setUsed] = useState({}) // слово → потрачено верным ответом
+  // Вместимость фишки — сколько пропусков её просят. Банк собирается из
+  // УНИКАЛЬНЫХ ответов (engine.js: `if (conBank.indexOf(c.answer) < 0)`), а
+  // пропусков восемь, и связки в них повторяются: в a1 на 8 пропусков всего 6
+  // разных связок. Пока фишка гасла после первого верного ответа, второму
+  // пропуску с тем же «because» брать было нечего — задание нельзя было
+  // закрыть чисто ни на одном уровне. Считаем по norm: в банк попадают и
+  // ответы с заглавной («Then»), и добивка из bank.conn.
+  const capacity = useMemo(() => {
+    const cap = {}
+    ;(task.items || []).forEach((it) => {
+      const k = norm(it.answer)
+      cap[k] = (cap[k] || 0) + 1
+    })
+    return cap
+  }, [task.items])
+  const [spent, setSpent] = useState({}) // norm(слово) → сколько раз потрачено верным ответом
+  // Фишка-дистрактор (вместимость 0) не гаснет никогда: иначе серый цвет сам
+  // показывал бы, какие варианты заведомо неверные.
+  const usedUp = (w) => {
+    const k = norm(w)
+    const cap = capacity[k] || 0
+    return cap > 0 && (spent[k] || 0) >= cap
+  }
   const [sel, setSel] = useState(null)
   const [gaps, setGaps] = useState({}) // itemId → {word, ok} | null
   const [fbs, setFbs] = useState({})
@@ -116,8 +138,9 @@ export function ConnectorsTask({ genre, task, onFirstTry }) {
       return
     }
     setGaps({ ...gaps, [item.id]: { word: w, ok } })
-    // Слово тратится только верным ответом — как chips[..].used в прототипе.
-    if (ok) setUsed({ ...used, [w]: true })
+    // Слово тратится только верным ответом — как chips[..].used в прототипе,
+    // но ровно столько раз, сколько пропусков его просят (см. capacity).
+    if (ok) setSpent((s) => ({ ...s, [norm(w)]: (s[norm(w)] || 0) + 1 }))
   }
 
   return (
@@ -127,8 +150,8 @@ export function ConnectorsTask({ genre, task, onFirstTry }) {
           <button
             key={w}
             type="button"
-            className={'wr-chip wr-chip--task' + (used[w] ? ' is-used' : '') + (sel === w ? ' is-sel' : '')}
-            disabled={!!used[w]}
+            className={'wr-chip wr-chip--task' + (usedUp(w) ? ' is-used' : '') + (sel === w ? ' is-sel' : '')}
+            disabled={usedUp(w)}
             onClick={() => setSel(sel === w ? null : w)}
           >
             {w}
