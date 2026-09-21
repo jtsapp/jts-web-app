@@ -137,6 +137,14 @@ const STAGE_KEY = {
   Говорение: 'speaking',
   Wrap: 'wrap',
   Итоги: 'wrap',
+  // Казахские подписи — на случай выгрузки курса с lang=kk: названия те же,
+  // что печёт сам сборщик (STAGE_NAMES в scripts/selfstudy/steps.js).
+  Қыздыру: 'warmup',
+  Сөздер: 'vocab',
+  Тәжірибе: 'practice',
+  Тыңдалым: 'listening',
+  Сөйлеу: 'speaking',
+  Қорытынды: 'wrap',
 }
 
 export function stageLabel(stage, t) {

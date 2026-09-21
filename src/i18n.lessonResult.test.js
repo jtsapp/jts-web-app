@@ -53,6 +53,23 @@ describe('stageLabel', () => {
     expect(stageLabel('Итоги', t)).toBe('<lesson.stage.wrap>')
   })
 
+  // Сборщик шагов печёт подпись на языке выгрузки, и казахская возможна тоже
+  // (STAGE_NAMES в scripts/selfstudy/steps.js). Названия в словаре и в сборщике
+  // обязаны совпадать — иначе один и тот же экран назывался бы по-разному в
+  // зависимости от того, откуда пришла подпись.
+  it('казахская подпись из данных тоже ведёт на ключ, а словарь зовёт стадии так же, как сборщик', async () => {
+    expect(stageLabel('Тәжірибе', t)).toBe('<lesson.stage.practice>')
+    expect(stageLabel('Қыздыру', t)).toBe('<lesson.stage.warmup>')
+
+    const { createRequire } = await import('node:module')
+    const { STAGE_NAMES } = createRequire(import.meta.url)('../scripts/selfstudy/steps.js')
+    const kk = keysOf('kk')
+    const pairs = { warm: 'warmup', vocab: 'vocab', gram: 'grammar', prac: 'practice', lisrd: 'listening', freer: 'speaking', wrap: 'wrap' }
+    for (const [stage, key] of Object.entries(pairs)) {
+      expect(kk[`lesson.stage.${key}`], stage).toBe(STAGE_NAMES[stage].kk)
+    }
+  })
+
   it('незнакомая подпись показывается как есть', () => {
     expect(stageLabel('Bonus', t)).toBe('Bonus')
   })
