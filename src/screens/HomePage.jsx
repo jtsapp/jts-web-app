@@ -490,6 +490,12 @@ function ScheduleCard({ t, lang, occurrences, onOpenLesson, onNav }) {
   )
 }
 
+// Срок задания для сортировки; нет срока или он нечитаем — «когда-нибудь».
+function dueTime(h) {
+  const t = h.dueDate ? new Date(h.dueDate).getTime() : NaN
+  return Number.isNaN(t) ? Infinity : t
+}
+
 /** Незакрытые домашние задания: сначала те, у которых срок ближе. */
 function HomeworkCard({ t, lang, items, onNav }) {
   const locale = lang === 'kk' ? 'kk-KZ' : 'ru-RU'
@@ -499,7 +505,10 @@ function HomeworkCard({ t, lang, items, onNav }) {
     const done = new Set(['SUBMITTED', 'CHECKED', 'COMPLETED', 'GRADED'])
     return (items || [])
       .filter((h) => !done.has(String(h.status || '').toUpperCase()))
-      .sort((a, b) => new Date(a.dueDate || 0) - new Date(b.dueDate || 0))
+      // Без срока — в конец. Раньше пустой срок читался как 0, то есть как
+      // 1970 год, и бессрочные задания вытесняли из тройки то, что сдавать
+      // завтра.
+      .sort((a, b) => dueTime(a) - dueTime(b))
       .slice(0, 3)
   }, [items])
 
@@ -543,10 +552,13 @@ function HomeworkCard({ t, lang, items, onNav }) {
  * не обещают того, чего система не знает.
  */
 function PracticeToday({ t, onNav }) {
+  // Плитка ведёт в свой раздел, а не в общую ленту: раньше «Книги» и
+  // «Аудирование» открывали «Практику» целиком, и нажавший на книги искал их
+  // заново. Аудирование — отдельный экран, книги — фильтр «Практики».
   const tiles = [
-    { key: 'books', emoji: '📚', to: 'practice' },
+    { key: 'books', emoji: '📚', to: 'practice', payload: { filter: 'books' } },
     { key: 'tutor', emoji: '🖥️', to: 'tutor' },
-    { key: 'listening', emoji: '🎧', to: 'practice' },
+    { key: 'listening', emoji: '🎧', to: 'listening' },
     { key: 'vocab', emoji: '📖', to: 'vocab' },
   ]
   return (
@@ -558,7 +570,7 @@ function PracticeToday({ t, onNav }) {
             type="button"
             className="hm-prac__tile"
             key={tile.key}
-            onClick={() => onNav?.(tile.to)}
+            onClick={() => (tile.payload ? onNav?.(tile.to, tile.payload) : onNav?.(tile.to))}
           >
             <span className="hm-prac__text">
               <b>{t(`home.practice.${tile.key}.title`)}</b>

@@ -4429,6 +4429,13 @@ textarea {
 .le-btn:hover {
   background: #7f2fee;
 }
+/* Пока урок засчитывается, «Следующий урок» ждёт ответа сервера — без
+   приглушения клик по ней выглядел бы сломанным. */
+.le-btn:disabled {
+  background: #9047ff;
+  opacity: 0.55;
+  cursor: progress;
+}
 .le-again {
   border: none;
   background: none;
@@ -5151,9 +5158,11 @@ textarea {
 }
 
 /* Статистика */
+/* Две плитки — серия и уроки. Третьей были «разговорные клубы», которых нет:
+   счётчик всегда показывал 0, и плитку убрали вместе с ним. */
 .pf-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-top: 12px;
 }
@@ -5174,9 +5183,6 @@ textarea {
 .pf-stat__glyph {
   color: #9047ff;
   display: flex;
-}
-.pf-stat__glyph--gold {
-  color: #f0a500;
 }
 .pf-stat b {
   font-size: 20px;
@@ -5461,29 +5467,6 @@ textarea {
 .pf-input--disabled {
   background: #f6f6f8;
   color: #8b8a97;
-}
-.pf-seg {
-  display: flex;
-  gap: 10px;
-}
-.pf-seg__opt {
-  flex: 1;
-  padding: 12px 0;
-  border: 1px solid #e6e6ec;
-  border-radius: 12px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: #8b8a97;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.pf-seg__opt--active {
-  background: #f0ebff;
-  border-color: #9047ff;
-  color: #9047ff;
-  font-weight: 600;
 }
 .pf-err {
   margin: 4px 0 12px;

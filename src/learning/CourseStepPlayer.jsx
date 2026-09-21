@@ -11,6 +11,7 @@ import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
 import TapText from '../screens/workspace/TapText.jsx'
 import TappableHtml from '../screens/workspace/TappableHtml.jsx'
 import TranslatePopover from '../screens/workspace/TranslatePopover.jsx'
+import { readResume, saveResume, clearResume } from '../lib/lessonResume.js'
 
 // Пошаговый плеер урока (макет Figma «Обучение», секции Warm-up … Wrap).
 //
@@ -36,8 +37,12 @@ const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
 // проверяемым безусловно, «Проверить» на таком экране не включалась никогда
 // (picked навсегда null) и урок вставал намертво — тот самый фидбек «не смог
 // продолжить, не понятно, что надо проверить».
+//
+// Записи у шага тоже может не быть: в A0 два вопроса на слух выгрузились с
+// src: null. Проверять такой шаг значит засчитывать угадайку, поэтому без
+// записи он идёт как неоцениваемый — вопрос виден, но в зачёт не идёт.
 export function isGraded(step) {
-  if (step.type === 'listen') return !!step.answer && (step.options || []).length > 0
+  if (step.type === 'listen') return !!listenSrc(step, '') && !!step.answer && (step.options || []).length > 0
   if (step.type === 'match') return (step.pairs || []).length > 0
   if (step.type === 'group' || step.type === 'rows') return (step.items || []).length > 0
   if (step.type === 'mistake') return (step.tokens || []).length > 0
@@ -112,19 +117,40 @@ function stopSpeaking() {
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
 const PROMPT_FIRST = new Set(['pick', 'write', 'checklist'])
 
-// scripts/selfstudy/steps.js печёт подпись стадии («Practice», «Vocabulary»…)
-// в JSON один раз при выгрузке курса, и до этой правки — всегда на английском,
-// при любом lang. У уже выгруженных public/course/*/steps-*.json это так и
-// останется, пока кто-то не прогонит экстрактор заново на файле уровня (сотни
-// МБ, не в репозитории) — переводим тут, на экране, а не в данных.
-const STAGE_LABEL_RU = {
-  'Warm-up': 'Разминка',
-  Vocabulary: 'Слова',
-  Grammar: 'Грамматика',
-  Practice: 'Практика',
-  Listening: 'Аудирование',
-  Speaking: 'Говорение',
-  Wrap: 'Итоги',
+// scripts/selfstudy/steps.js печёт подпись стадии в JSON один раз при выгрузке
+// курса: у A1–B2 она английская («Practice»), у A0 — уже русская
+// («Практика»). Перегонять экстрактор ради подписи незачем (файлы уровня —
+// сотни МБ, не в репозитории), поэтому переводим на экране. Раньше здесь была
+// карта только на русский, и казахский или английский интерфейс всё равно
+// видел «Практика» — теперь оба варианта из данных ведут на ключ словаря.
+const STAGE_KEY = {
+  'Warm-up': 'warmup',
+  Разминка: 'warmup',
+  Vocabulary: 'vocab',
+  Слова: 'vocab',
+  Grammar: 'grammar',
+  Грамматика: 'grammar',
+  Practice: 'practice',
+  Практика: 'practice',
+  Listening: 'listening',
+  Аудирование: 'listening',
+  Speaking: 'speaking',
+  Говорение: 'speaking',
+  Wrap: 'wrap',
+  Итоги: 'wrap',
+  // Казахские подписи — на случай выгрузки курса с lang=kk: названия те же,
+  // что печёт сам сборщик (STAGE_NAMES в scripts/selfstudy/steps.js).
+  Қыздыру: 'warmup',
+  Сөздер: 'vocab',
+  Тәжірибе: 'practice',
+  Тыңдалым: 'listening',
+  Сөйлеу: 'speaking',
+  Қорытынды: 'wrap',
+}
+
+export function stageLabel(stage, t) {
+  const key = STAGE_KEY[stage]
+  return key ? t(`lesson.stage.${key}`) : stage
 }
 
 
@@ -150,6 +176,14 @@ function trackSrc(step, level) {
   return step.track ? `/course/${String(level).toLowerCase()}/audio/${step.track}` : ''
 }
 
+// Запись шага listen. Отдельно от trackSrc, потому что у listen нет поля
+// audio, а пустой ответ тут значит «записи нет»: раньше адрес собирался
+// безусловно, и шаг с src: null получал /course/a0/audio/undefined — 404.
+function listenSrc(step, level) {
+  if (step.src) return step.src
+  return step.track ? `/course/${String(level).toLowerCase()}/audio/${step.track}` : ''
+}
+
 function shuffle(arr, seed) {
   // Порядок вариантов фиксирован для шага: без seed React перемешивал бы их на
   // каждый ререндер (например, после выбора ответа).
@@ -163,7 +197,10 @@ function shuffle(arr, seed) {
   return a
 }
 
-export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, catalogLessonId, onExit, onVocab, onDone }) {
+// resumeKey — адрес урока для памяти «где остановился» (см. lib/lessonResume.js).
+// Передаёт только тропа «Обучения»: там урок длинный и проходится в одиночку;
+// каталог и живой урок ведёт преподаватель, и позицию там помнить незачем.
+export default function CourseStepPlayer({ steps, title, subtitle, level, passRatio = null, token, catalogLessonId, resumeKey, onExit, onVocab, onDone }) {
   const { t, lang } = useI18n()
   const { pop, openWord, openLimit, close, onSave } = useTapTranslate({ token, lang, source: `course:${level}`, catalogLessonId })
   const [idx, setIdx] = useState(0)
@@ -171,6 +208,10 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   const [wrong, setWrong] = useState(0)
   const [points, setPoints] = useState(0)
   const endedRef = useRef(false)
+  // Незаконченная попытка этого урока: перезагрузка страницы раньше
+  // отбрасывала на первый из 40–90 экранов. Предлагаем, а не прыгаем сами:
+  // ученик мог вернуться именно затем, чтобы пройти урок заново.
+  const [resume, setResume] = useState(() => (resumeKey ? readResume(token, resumeKey, steps.length) : null))
   // Лист словаря по макету («Обучение», кадр 4108:1689): null — закрыт,
   // иначе открытая вкладка.
   const [dict, setDict] = useState(null)
@@ -181,6 +222,36 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
 
   const total = steps.length
   const step = steps[idx]
+
+  // Предложение «продолжить» в силе, пока ученик его не решил и сам не дошёл
+  // до сохранённого шага. На экране две кнопки «Продолжить» — в плашке и внизу
+  // шага, и нижняя заметнее: нажавший её уходил на шаг 2, а позиция «шаг 31»
+  // тут же затиралась. Поэтому плашка остаётся на следующих шагах, а запись
+  // всё это время не трогаем.
+  const offer = resume && idx < resume.idx ? resume : null
+
+  // Позицию пишем на входе в шаг — со счётом, набранным до него. Ответ внутри
+  // шага при перезагрузке теряется вместе с шагом: его проходят заново, и
+  // счёт тогда не задваивается.
+  useEffect(() => {
+    if (!resumeKey || endedRef.current || idx === 0 || offer) return
+    saveResume(token, resumeKey, total, { idx, correct, wrong, points })
+    // Счёт в зависимостях не нужен: он меняется внутри шага, а пишем на входе.
+  }, [idx, resumeKey, token, total, offer]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const continueFromResume = () => {
+    setIdx(resume.idx)
+    setCorrect(resume.correct)
+    setWrong(resume.wrong)
+    setPoints(resume.points)
+    setResume(null)
+  }
+  // «Начать сначала» — отказ от предложения: старую позицию забываем, дальше
+  // пишется текущая. Сам шаг не меняем: ученик уже там, откуда хочет идти.
+  const restartLesson = () => {
+    clearResume(token, resumeKey)
+    setResume(null)
+  }
 
   // Слова урока для листа словаря — те же карточки, что показывает стадия
   // Vocabulary; ничего нового не собираем и никуда не ходим. Повторы убираем:
@@ -210,6 +281,8 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
   const reportDone = () => {
     if (endedRef.current) return
     endedRef.current = true
+    // Урок пройден — продолжать нечего.
+    if (resumeKey) clearResume(token, resumeKey)
     const answered = correct + wrong
     const acc = answered ? Math.round((correct / answered) * 100) : 100
     onDone?.({
@@ -246,7 +319,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           <span className="cp-bar__label">{t('lesson.exitLesson')}</span>
         </button>
         <div className="cp-bar__place">
-          <b>{STAGE_LABEL_RU[step.stage] || step.stage}</b>
+          <b>{stageLabel(step.stage, t)}</b>
           <span>{title}</span>
         </div>
         {/* Язык интерфейса прямо в уроке: в макете «Обучение» пилюля с флагом
@@ -293,6 +366,22 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           if (raw.trim()) close()
         }}
       >
+        {/* Плашка висит, пока предложение в силе (см. offer выше) — не только
+            на первом шаге: иначе промах мимо неё стоил бы сохранённой позиции. */}
+        {offer && (
+          <div className="cp-resume" role="status">
+            <span>{t('lesson.resume.text', { n: String(offer.idx + 1), total: String(total) })}</span>
+            <div className="cp-resume__acts">
+              <button type="button" className="cp-resume__go" onClick={continueFromResume}>
+                {t('lesson.resume.continue', { n: String(offer.idx + 1) })}
+              </button>
+              <button type="button" className="cp-resume__restart" onClick={restartLesson}>
+                {t('lesson.resume.restart')}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="cp-hud">
           <div className="cp-hud__track">
             <div className="cp-hud__fill" style={{ width: `${Math.round((idx / Math.max(1, total)) * 100)}%` }} />
@@ -522,7 +611,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
   // тёмная строка — инструкция. Крупной фиолетовой на этом экране нет.
   // У cols инструкция в данных («Put the words in the correct column.») —
   // авторский текст курса, а не UI-строка, и в источнике он английский без
-  // ru/kk (см. STAGE_LABEL_RU выше — тот же баг). Заголовки колонок (was/were
+  // ru/kk (см. stageLabel выше — тот же баг). Заголовки колонок (was/were
   // и т.п.) и так называют, что куда класть, поэтому вместо содержимого
   // экрана — общая переведённая инструкция; title экрана в cols не показываем
   // вовсе, чтобы английский не просочился второй строкой.
@@ -789,7 +878,13 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
         <>
           {/* У курса (A2/B1) дорожка лежит рядом с уроком и известна по имени,
               у A0/A1 в задании сразу абсолютный URL на files-dev. */}
-          <AudioButton src={step.src || `/course/${String(level).toLowerCase()}/audio/${step.track}`} t={t} />
+          {/* Без записи заголовок «Послушайте…» висел бы над пустотой — экран
+              читался как поломка. Говорим прямо, что шаг можно пропустить. */}
+          {listenSrc(step, level) ? (
+            <AudioButton src={listenSrc(step, level)} t={t} />
+          ) : (
+            <p className="cp-audio__err cp-audio__err--soft">{t('lesson.noRecording')}</p>
+          )}
           {/* Материал для чтения вслух: у части заданий A1 сам текст и есть
               задание («Read each script — and play it out loud»), поэтому он
               стоит под плеером, а не прячется. */}
@@ -800,7 +895,11 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           )}
           {/* На слух варианты в макете лежат в две колонки: слово короткое,
               и колонкой во всю высоту экрана оно смотрелось бы пусто. */}
-          <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+          {/* Без записи варианты не рисуем: выбрать среди них честно нечем, а
+              неоцениваемый шаг всё равно пропустил бы любой выбор. */}
+          {listenSrc(step, level) && (
+            <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+          )}
         </>
       )
 
@@ -1678,13 +1777,23 @@ function useStageAudio(src) {
 // Аудио стадии слушания: пауза/продолжение, замедленно и «сначала».
 function AudioButton({ src, t }) {
   const { playing, started } = useStageAudio(src)
+  const [failed, setFailed] = useState(false)
 
   const play = (rate, fromStart) => {
     const a = getStageAudio(src)
     a.playbackRate = rate
     // Доиграла до конца — следующий тап начинает заново, иначе кнопка молчала бы.
     if (fromStart || a.ended) a.currentTime = 0
-    a.play().catch(() => {})
+    // Отказ раньше гасился молча: на 404 или обрыве сети кнопка выглядела
+    // живой, а звука не было — ученик крутил громкость и отвечал наугад.
+    // AbortError — не сбой: это пауза, прервавшая ещё не начатый play().
+    a.play()
+      .then(() => setFailed(false))
+      .catch((e) => {
+        if (e?.name === 'AbortError') return
+        console.warn('[lesson] запись не проиграла:', src, e?.name || e)
+        setFailed(true)
+      })
   }
 
   const toggle = () => {
@@ -1721,6 +1830,11 @@ function AudioButton({ src, t }) {
         <button className="cp-audio__restart" onClick={() => play(1, true)}>
           {t('lesson.playAgain')}
         </button>
+      )}
+      {failed && (
+        <p className="cp-audio__err" role="alert">
+          {t('lesson.audioFailed')}
+        </p>
       )}
     </div>
   )

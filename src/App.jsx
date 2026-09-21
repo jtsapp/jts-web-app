@@ -77,7 +77,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
+import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
@@ -86,6 +86,8 @@ import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendin
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
+import { flushSkillStats } from './practice/skillStats.js'
+import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel } from './lib/levelSave.js'
 import { placementSummary } from './lib/placement.js'
@@ -260,8 +262,14 @@ export default function App() {
 
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
+    const hadToken = Boolean(loadToken())
     restoreSession()
       .then(async (session) => {
+        // Токен был, а сессии нет — restoreSession уже стёр мёртвый токен
+        // (401 и рефреш не прошёл). Чистим хвосты прежнего ученика так же, как
+        // «Выйти»: иначе следующий, кто войдёт на этом компьютере, получит его
+        // тропу и навыки. До проверки cancelled — это уборка, не стейт.
+        if (!session && hadToken) forgetExpiredSession()
         if (cancelled) return
         if (session) {
           setToken(session.token)
@@ -947,8 +955,15 @@ export default function App() {
   }
 
   function handleLogout() {
+    // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
+    // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
+    // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
+    flushSkillStats()
     clearToken()
     clearLocalPractice()
+    // Прогресс уроков, навыки и недельный снимок не привязаны к аккаунту и
+    // иначе доставались следующему ученику на этом же компьютере.
+    clearAccountLeftovers()
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()
