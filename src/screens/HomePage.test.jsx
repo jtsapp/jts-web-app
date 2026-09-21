@@ -333,4 +333,3 @@ describe('Карточка пробного урока', () => {
     await waitFor(() => expect(screen.getByText('Записаться')).toBeTruthy())
   })
 })
-
