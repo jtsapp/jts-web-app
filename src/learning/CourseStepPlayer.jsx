@@ -1121,6 +1121,14 @@ export function recordLine(item) {
   return { text: String(item ?? ''), src: null }
 }
 
+// Строка без записи на кириллице — не образец, а задание («Ответьте вслух: кто
+// ваш самый давний друг?»); у B1 таких больше половины строк record. Кнопкой
+// «послушать» она была зря: синтез с английским голосом читал кириллицу
+// мусором, а говорить здесь должен студент. Записи у задания не будет —
+// scripts/voice-step-cards.js озвучивает только английские строки.
+const CYRILLIC = /\p{Script=Cyrillic}/u
+const isRecordTask = (line) => !line.src && CYRILLIC.test(line.text)
+
 function RecordBoard({ items, t }) {
   const [state, setState] = useState('idle') // idle | live | done | denied
   const [url, setUrl] = useState('')
@@ -1168,11 +1176,17 @@ function RecordBoard({ items, t }) {
 
   return (
     <div className="cp-rec">
-      {(items || []).map(recordLine).map((line, i) => (
-        <button key={i} type="button" className="cp-rec__line" onClick={() => speakEnglish(line.text, { src: line.src })}>
-          {line.text}
-        </button>
-      ))}
+      {(items || []).map(recordLine).map((line, i) =>
+        isRecordTask(line) ? (
+          <p key={i} className="cp-rec__line cp-rec__line--task">
+            {line.text}
+          </p>
+        ) : (
+          <button key={i} type="button" className="cp-rec__line" onClick={() => speakEnglish(line.text, { src: line.src })}>
+            {line.text}
+          </button>
+        ),
+      )}
       <button type="button" className={`cp-rec__btn ${state === 'live' ? 'is-live' : ''}`} onClick={toggle}>
         {t(state === 'live' ? 'lesson.recordStop' : state === 'done' ? 'lesson.recordAgain' : 'lesson.record')}
       </button>

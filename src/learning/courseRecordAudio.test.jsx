@@ -79,4 +79,18 @@ describe('CourseStepPlayer — образцы в шаге record', () => {
     expect(screen.getByRole('button', { name: 'Two.' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Three.' })).toBeTruthy()
   })
+
+  // Половина строк record у B1 — не образцы, а задания по-русски («Ответьте
+  // вслух: кто ваш самый давний друг?»). Кнопкой «послушать» они были зря:
+  // синтез с английским голосом читал кириллицу мусором, а записи у задания
+  // нет и не будет — говорит здесь студент.
+  it('задание по-русски — текст, а не кнопка «послушать»', () => {
+    const task = 'Кто ваш самый давний друг? Как давно вы знакомы?'
+    play([task, 'My closest friend is … .'])
+    expect(screen.queryByRole('button', { name: task })).toBeNull()
+    fireEvent.click(screen.getByText(task))
+    expect(spoken).toEqual([])
+    expect(played).toEqual([])
+    expect(screen.getByRole('button', { name: 'My closest friend is … .' })).toBeTruthy()
+  })
 })
