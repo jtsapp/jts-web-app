@@ -5158,9 +5158,11 @@ textarea {
 }
 
 /* Статистика */
+/* Две плитки — серия и уроки. Третьей были «разговорные клубы», которых нет:
+   счётчик всегда показывал 0, и плитку убрали вместе с ним. */
 .pf-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-top: 12px;
 }
@@ -5181,9 +5183,6 @@ textarea {
 .pf-stat__glyph {
   color: #9047ff;
   display: flex;
-}
-.pf-stat__glyph--gold {
-  color: #f0a500;
 }
 .pf-stat b {
   font-size: 20px;
