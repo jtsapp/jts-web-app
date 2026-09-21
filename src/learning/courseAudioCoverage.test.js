@@ -31,12 +31,10 @@ const onDisk = (url) => !url || /^https?:/.test(url) || fs.existsSync(path.join(
 const CYRILLIC = /\p{Script=Cyrillic}/u
 const LATIN = /\p{Script=Latin}/u
 
-// Строки шагов record в одном виде: строка или { text, src } → { text, src }.
+// Строки шагов record → { text, src }: текст из items, запись из itemAudio.
 function recordLines(steps) {
   return steps.flatMap(({ s, where }) =>
-    s.type === 'record'
-      ? (s.items || []).map((it) => ({ where, line: typeof it === 'string' ? { text: it, src: null } : { text: String(it.text ?? ''), src: it.src || null } }))
-      : [],
+    s.type === 'record' ? (s.items || []).map((it, i) => ({ where, line: { text: String(it ?? ''), src: s.itemAudio?.[i] || null } })) : [],
   )
 }
 
@@ -78,7 +76,17 @@ describe.each(levels)('озвучка шагов %s', (level) => {
 
   // Образцы «послушайте, затем запишите себя» были строками, и записи
   // прописать было некуда — их читал браузерный синтез. Теперь образец с
-  // записью — { text, src } (recordLine в CourseStepPlayer.jsx).
+  // запись — в itemAudio (recordLine в CourseStepPlayer.jsx).
+  // Старый плеер рендерит образец как есть: объект в items — белый экран у
+  // вкладки, открытой до выкатки. Записи живут только в itemAudio.
+  it('образцы record — строки, itemAudio — той же длины', () => {
+    const bad = steps
+      .filter(({ s }) => s.type === 'record')
+      .filter(({ s }) => (s.items || []).some((it) => typeof it !== 'string') || (s.itemAudio && s.itemAudio.length !== s.items.length))
+      .map(({ where }) => where)
+    expect(bad).toEqual([])
+  })
+
   it('у каждого английского образца record есть запись, и файл на месте', () => {
     const bad = recordLines(steps)
       .filter(({ line }) => !CYRILLIC.test(line.text))

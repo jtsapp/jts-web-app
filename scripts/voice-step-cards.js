@@ -59,16 +59,17 @@ const speakable = (text) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-// Образцы шага record («послушайте, затем запишите себя») в данных — строки, и
-// запись к строке не приложить: после озвучки образец становится объектом
-// { text, src }. Плеер без recordLine на объекте ПАДАЕТ («Objects are not
-// valid as a React child»), поэтому, пока в дереве старый плеер, образцы не
-// трогаем вовсе — ни в плане, ни при простановке ссылок.
-const PLAYER = path.join(ROOT, 'src/learning/CourseStepPlayer.jsx')
-const RECORD_OBJECTS_OK = fs.existsSync(PLAYER) && fs.readFileSync(PLAYER, 'utf8').includes('export function recordLine')
+// Образцы шага record («послушайте, затем запишите себя») — строки, и
+// записи к ним кладутся параллельным массивом s.itemAudio (тот же индекс,
+// null — записи нет). Не объектом { text, src } в items: плеер до recordLine
+// на объекте ПАДАЕТ («Objects are not valid as a React child»), а вкладка со
+// старым бандлом качает свежие шаги. Объекты, которыми данные недолго
+// писались, при простановке ссылок разворачиваются обратно в строки.
 
-/** Образец record: строка или { text, src } → всегда { text, src }. */
-const recordLine = (it) => (it && typeof it === 'object' ? { text: String(it.text ?? ''), src: it.src || null } : { text: String(it ?? ''), src: null })
+/** Образец record → { text, src } с учётом itemAudio. */
+const recordLine = (it, audio = null) =>
+  it && typeof it === 'object' ? { text: String(it.text ?? ''), src: it.src || audio || null } : { text: String(it ?? ''), src: audio || null }
+const recordLines = (s) => (s.items || []).map((it, i) => recordLine(it, s.itemAudio?.[i]))
 
 // Строки record у B1 больше чем наполовину — не образцы, а задания по-русски
 // («Одно в Present Simple: как часто вы встречаетесь с друзьями»): студент их
@@ -120,8 +121,8 @@ function plan(level) {
       if (s.type === 'cards') for (const w of s.words || []) if (!w.audio && w.en) texts.set(sayAudioFile(w.en), w.en)
       if (s.type === 'choice' && s.say && !s.sayTrack) texts.set(sayAudioFile(s.say), s.say)
       if (s.type === 'phrases') for (const it of s.items || []) if (!it.src && it.text) texts.set(sayAudioFile(it.text), it.text)
-      if (s.type === 'record' && RECORD_OBJECTS_OK) {
-        for (const line of (s.items || []).map(recordLine)) if (!line.src && isSample(line.text)) texts.set(sayAudioFile(line.text), line.text)
+      if (s.type === 'record') {
+        for (const line of recordLines(s)) if (!line.src && isSample(line.text)) texts.set(sayAudioFile(line.text), line.text)
       }
     }
   }
@@ -161,14 +162,18 @@ function link(level) {
           }
         }
       }
-      if (s.type === 'record' && RECORD_OBJECTS_OK) {
-        s.items = (s.items || []).map((it) => {
-          const line = recordLine(it)
-          if (line.src || !isSample(line.text) || !onDisk(line.text)) return it
+      if (s.type === 'record') {
+        const lines = recordLines(s)
+        const audio = lines.map((line) => line.src || (isSample(line.text) && onDisk(line.text) ? sayAudioUrl(level, line.text) : null))
+        const wasObjects = (s.items || []).some((it) => it && typeof it === 'object')
+        const added = audio.filter((a, i) => a && a !== (s.itemAudio?.[i] ?? null)).length
+        if (wasObjects || added) {
+          s.items = lines.map((line) => line.text)
+          if (audio.some(Boolean)) s.itemAudio = audio
+          else delete s.itemAudio
           touched = true
-          changed++
-          return { text: line.text, src: sayAudioUrl(level, line.text) }
-        })
+          changed += added
+        }
       }
     }
     // Форматирование файла сохраняем как было: иначе дифф на весь файл.
@@ -186,7 +191,6 @@ function link(level) {
 
 async function run() {
   loadEnv()
-  if (!RECORD_OBJECTS_OK) console.log('образцы record пропущены: плеер в этом дереве ещё не понимает { text, src }')
   const levels = fs.readdirSync(COURSE).filter((d) => fs.statSync(path.join(COURSE, d)).isDirectory())
   for (const level of levels.filter((l) => !ONLY || l === ONLY)) {
     const todo = plan(level)

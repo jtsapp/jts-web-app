@@ -1,18 +1,18 @@
 // @vitest-environment jsdom
 // Шаг «послушайте, затем запишите себя». Образец был строкой, и записи
 // прописать было некуда — его читал только браузерный синтез: чужой голос
-// посреди урока, а на Android без английского голоса — тишина. Теперь образец
-// может быть объектом { text, src }; строки работают как раньше.
+// посреди урока, а на Android без английского голоса — тишина. Теперь запись
+// лежит рядом, в step.itemAudio; строки без записи работают как раньше.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import CourseStepPlayer from './CourseStepPlayer.jsx'
 
-function play(items) {
+function play(items, extra = {}) {
   return render(
     <I18nProvider>
       <CourseStepPlayer
-        steps={[{ stage: 'Speaking', type: 'record', title: 'Произнесите предложения.', sub: '', items }]}
+        steps={[{ stage: 'Speaking', type: 'record', title: 'Произнесите предложения.', sub: '', items, ...extra }]}
         title="Weather"
         level="A0"
         onExit={() => {}}
@@ -52,6 +52,14 @@ afterEach(() => {
 })
 
 describe('CourseStepPlayer — образцы в шаге record', () => {
+  it('запись из itemAudio играет файл, а не синтез', () => {
+    play(["What's the weather like?", 'No audio.'], { itemAudio: ['/learning/audio/a0/abc.mp3', null] })
+    fireEvent.click(screen.getByRole('button', { name: "What's the weather like?" }))
+    fireEvent.click(screen.getByRole('button', { name: 'No audio.' }))
+    expect(played).toEqual(['/learning/audio/a0/abc.mp3'])
+    expect(spoken).toEqual(['No audio.'])
+  })
+
   it('образец с записью играет файл, а не синтез', () => {
     play([{ text: "What's the weather like?", src: '/learning/audio/a0/abc.mp3' }])
     fireEvent.click(screen.getByRole('button', { name: "What's the weather like?" }))
