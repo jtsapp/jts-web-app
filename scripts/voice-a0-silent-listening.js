@@ -43,6 +43,18 @@ const CLIPS = [
   },
 ]
 
+// Каждый ответ Soniox начинается с ID3v2-тега (44 байта: «TSSE Lavf…»).
+// Склеенные как есть, реплики несли по тегу посреди потока — проверка кадров
+// показала 132 байта мусора между ними. Браузеры обычно такое проглатывают,
+// но плеер вправе споткнуться; поэтому тег оставляем только у первой реплики.
+function stripId3(buf) {
+  if (buf.length < 10 || buf.toString('latin1', 0, 3) !== 'ID3') return buf
+  // Размер тега — synchsafe-число: по 7 бит в каждом из четырёх байтов.
+  const size = (buf[6] << 21) | (buf[7] << 14) | (buf[8] << 7) | buf[9]
+  const footer = buf[5] & 0x10 ? 10 : 0
+  return buf.subarray(10 + size + footer)
+}
+
 // Файлы шагов однострочные — пишем тем же видом, чтобы дифф был в одно поле.
 function patchStep(file, index, src) {
   const p = path.join(ROOT, 'public/course', LEVEL, file)
@@ -63,7 +75,8 @@ async function run() {
     if (!fs.existsSync(out)) {
       const parts = []
       for (const [voice, line] of clip.lines) {
-        parts.push(await synthesizeSoniox(line, { voice, speed: 0.85 }))
+        const mp3 = await synthesizeSoniox(line, { voice, speed: 0.85 })
+        parts.push(parts.length ? stripId3(mp3) : mp3)
         await sleep(SONIOX_GAP_MS)
       }
       // MP3 одного кодировщика склеивается побайтно: кадры независимы.
@@ -74,6 +87,8 @@ async function run() {
   }
   console.log('шаги прописаны')
 }
+
+module.exports = { stripId3 }
 
 if (require.main === module) {
   run().catch((e) => {

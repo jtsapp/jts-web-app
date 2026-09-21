@@ -1,6 +1,7 @@
 // Сторож озвучки шагов курса (public/course/<level>/steps-*.json).
 //
-// 331 карточка слов и четыре шага «Аудирования» A0 были немыми: карточку читал
+// 331 карточка слов, 624 фразы «послушайте и повторите» и четыре шага
+// «Аудирования» A0 были немыми: карточку и фразу читал
 // браузерный синтез (на Android без английского голоса — тишина), а вопрос на
 // слух без записи засчитывался наугад. Записи сгенерированы
 // (scripts/voice-step-cards.js, scripts/voice-a0-silent-listening.js), но
@@ -41,6 +42,16 @@ describe.each(levels)('озвучка шагов %s', (level) => {
       .filter(({ s }) => s.type === 'listen' && (s.options || []).length && s.answer)
       .filter(({ s }) => !(s.src || s.track) || !onDisk(s.src))
       .map(({ where }) => where)
+    expect(bad).toEqual([])
+  })
+
+  // «Послушайте и повторите»: 624 фразы A0–B1 читал браузерный синтез —
+  // на слух чужой голос посреди урока, а на Android без английского голоса
+  // тишина.
+  it('у каждой фразы «послушайте и повторите» есть запись', () => {
+    const bad = steps.flatMap(({ s, where }) =>
+      s.type === 'phrases' ? (s.items || []).filter((it) => !it.src || !onDisk(it.src)).map((it) => `${where} ${it.text}`) : [],
+    )
     expect(bad).toEqual([])
   })
 

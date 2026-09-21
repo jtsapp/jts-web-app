@@ -1,5 +1,6 @@
-// Озвучка немых карточек и слов «Listen. Choose the word you hear» в готовых
-// шагах курса (public/course/<level>/steps-*.json).
+// Озвучка немых карточек, слов «Listen. Choose the word you hear» и фраз
+// «Послушайте и повторите» в готовых шагах курса
+// (public/course/<level>/steps-*.json).
 //
 // make-lesson-audio.js собирает слова из ИСХОДНИКА курса (VOCAB в lesson-<n>.json
 // и public/learning/<level>.json), а шаги A0–B2 теперь режет экстрактор нового
@@ -23,6 +24,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 const { synthesizeSoniox, sleep, loadEnv, SONIOX_GAP_MS } = require('./make-lesson-audio')
+const { strip } = require('./lib/html-text.js')
 
 const ROOT = path.join(__dirname, '..')
 const COURSE = path.join(ROOT, 'public/course')
@@ -39,7 +41,16 @@ const stepFiles = (level) =>
 // «employer — employee»), и синтез читал бы «slash» — вслух это пауза между
 // словами. Имя файла при этом остаётся хэшем ИСХОДНОГО текста: по нему
 // карточку находят плеер и экстрактор.
-const speakable = (text) => String(text).replace(/\s*[/—–]\s*/g, ', ')
+//
+// Фразы B1 бывают размечены («<b>On the phone:</b> I understand that… · Could
+// you tell me…?»): теги синтез прочитал бы вслух, а «·» — граница реплик, то
+// есть пауза. Точку добавляем, только если реплика не закончилась своим знаком.
+const speakable = (text) =>
+  strip(String(text))
+    .replace(/([.!?…])?\s*·\s*/g, (m, end) => (end ? `${end} ` : '. '))
+    .replace(/\s*[/—–]\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 /** Что озвучить на уровне: немые карточки и say без записи. */
 function plan(level) {
@@ -49,6 +60,7 @@ function plan(level) {
     for (const s of steps) {
       if (s.type === 'cards') for (const w of s.words || []) if (!w.audio && w.en) texts.set(sayAudioFile(w.en), w.en)
       if (s.type === 'choice' && s.say && !s.sayTrack) texts.set(sayAudioFile(s.say), s.say)
+      if (s.type === 'phrases') for (const it of s.items || []) if (!it.src && it.text) texts.set(sayAudioFile(it.text), it.text)
     }
   }
   return [...texts].map(([file, text]) => ({ file, text, have: fs.existsSync(path.join(AUDIO, level, file)) }))
@@ -77,6 +89,15 @@ function link(level) {
         s.sayTrack = sayAudioUrl(level, s.say)
         touched = true
         changed++
+      }
+      if (s.type === 'phrases') {
+        for (const it of s.items || []) {
+          if (!it.src && it.text && onDisk(it.text)) {
+            it.src = sayAudioUrl(level, it.text)
+            touched = true
+            changed++
+          }
+        }
       }
     }
     // Форматирование файла сохраняем как было: иначе дифф на весь файл.
