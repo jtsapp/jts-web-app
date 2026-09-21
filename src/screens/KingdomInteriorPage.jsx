@@ -347,7 +347,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const { loading, error } = state
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="learning" onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
       {/* Верхняя навигация — только для состояний без шапки-баннера (загрузка/
           ошибка/пусто). В основном виде «Назад» живёт в самой шапке. */}
       {(loading || !!error) && (

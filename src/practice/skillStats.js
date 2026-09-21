@@ -54,6 +54,11 @@ export function flushSkillStats() {
   if (!hasPending(pending)) return
   // Оптимистично очищаем буфер перед отправкой; при сбое возвращаем.
   writeJson(PENDING_KEY, emptyStats())
+  // Ответ приходит позже, и за это время ученик мог выйти, а за ним войти
+  // другой (общий компьютер класса). Тогда ни чужое зеркало, ни возврат чужих
+  // дельт в буфер писать нельзя: следующий флаш отправил бы их под новым
+  // токеном — в рейтинг навыков другого человека.
+  const sameUser = () => loadToken() === token
   fetch('/api/skills', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -64,13 +69,32 @@ export function flushSkillStats() {
       return res.json()
     })
     .then((data) => {
-      if (data?.stats) writeJson(MIRROR_KEY, data.stats) // сервер — источник истины
+      if (data?.stats && sameUser()) writeJson(MIRROR_KEY, data.stats) // сервер — источник истины
     })
     .catch((e) => {
       console.warn('[skill.sync] flush failed', e)
       // вернуть дельты в буфер, чтобы не потерять при следующем флаше
-      writeJson(PENDING_KEY, mergeDeltas(readJson(PENDING_KEY, emptyStats()), pending))
+      if (sameUser()) writeJson(PENDING_KEY, mergeDeltas(readJson(PENDING_KEY, emptyStats()), pending))
     })
+}
+
+/**
+ * Забыть навыки этого устройства — при выходе из аккаунта.
+ *
+ * Не при входе: гость копит навыки локально, и первый флаш после входа
+ * законно уносит их в его новый аккаунт. А вот оставшееся от вышедшего
+ * ученика ушло бы тем же флашем следующему — поэтому чистим на выходе.
+ */
+export function clearLocalSkillStats() {
+  clearTimeout(timer)
+  timer = null
+  for (const k of [MIRROR_KEY, PENDING_KEY]) {
+    try {
+      localStorage.removeItem(k)
+    } catch {
+      /* приватный режим — чистить нечего */
+    }
+  }
 }
 
 export async function loadSkillStatsRemote(token) {

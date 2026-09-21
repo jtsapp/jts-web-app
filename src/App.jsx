@@ -86,6 +86,8 @@ import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendin
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
+import { flushSkillStats } from './practice/skillStats.js'
+import { clearAccountLeftovers } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel } from './lib/levelSave.js'
 import { placementSummary } from './lib/placement.js'
@@ -947,8 +949,15 @@ export default function App() {
   }
 
   function handleLogout() {
+    // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
+    // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
+    // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
+    flushSkillStats()
     clearToken()
     clearLocalPractice()
+    // Прогресс уроков, навыки и недельный снимок не привязаны к аккаунту и
+    // иначе доставались следующему ученику на этом же компьютере.
+    clearAccountLeftovers()
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()

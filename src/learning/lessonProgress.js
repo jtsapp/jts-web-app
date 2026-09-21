@@ -6,6 +6,33 @@ import { getLessonProgress, completeLesson } from '../api.js'
 
 const localKey = (level) => 'jts-' + String(level || '').toLowerCase() + '-done'
 
+// Ключ зеркала — только уровни CEFR: 'jts-<что-то>-done' встречается и у других
+// разделов, и чужое при выходе стирать нельзя.
+const LOCAL_KEY_RE = /^jts-(a0|a1|a2|b1|b2|c1|c2)-done$/
+
+/**
+ * Забыть зеркало прогресса уроков — при выходе из аккаунта.
+ *
+ * Ключ не привязан к пользователю, а loadDone объединяет его с серверным
+ * прогрессом: без очистки следующий ученик на том же компьютере получал
+ * тропу, открытую на чужие уроки. Серверный прогресс вышедшего не страдает —
+ * он вернётся при следующем входе.
+ */
+export function clearLocalLessonProgress() {
+  if (typeof window === 'undefined') return
+  try {
+    const ls = window.localStorage
+    const keys = []
+    for (let i = 0; i < ls.length; i++) {
+      const k = ls.key(i)
+      if (k && LOCAL_KEY_RE.test(k)) keys.push(k)
+    }
+    for (const k of keys) ls.removeItem(k)
+  } catch {
+    /* приватный режим — чистить нечего */
+  }
+}
+
 function readLocal(level) {
   if (typeof window === 'undefined') return []
   try {

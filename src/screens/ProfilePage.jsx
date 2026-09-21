@@ -14,10 +14,10 @@ import { getBalance, getLearningPath, countProgress, updateUser, getCurrentUser 
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
+import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
 
-// Ключи localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
-const AVATAR_KEY = 'jts_profile_avatar'
-const AVATAR_BG_KEY = 'jts_avatar_bg'
+// Ключ localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
+// Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
 const NOTIF_KEY = 'jts_notifications_enabled'
 
 // Палитра фонов аватара (как cosmetics-фоны мобилки, но без лутбокса).
@@ -104,13 +104,15 @@ export default function ProfilePage({
   const initial = trimmedName ? trimmedName.charAt(0).toUpperCase() : null
   const phone = formatPhone(userPhone)
 
-  // Персистентные настройки из localStorage.
+  // Персистентные настройки из localStorage. Аватар читается под токеном:
+  // сменился аккаунт — показываем его фото, а не оставшееся от прошлого.
+  useEffect(() => {
+    setAvatar(readAvatar(token))
+    setAvatarBg(readAvatarBg(token) || AVATAR_BGS[0])
+  }, [token])
+
   useEffect(() => {
     try {
-      const a = localStorage.getItem(AVATAR_KEY)
-      if (a) setAvatar(a)
-      const bg = localStorage.getItem(AVATAR_BG_KEY)
-      if (bg) setAvatarBg(bg)
       const n = localStorage.getItem(NOTIF_KEY)
       if (n != null) setNotifEnabled(n === '1')
     } catch {}
@@ -169,9 +171,7 @@ export default function ProfilePage({
     reader.onload = () => {
       const url = String(reader.result)
       setAvatar(url)
-      try {
-        localStorage.setItem(AVATAR_KEY, url)
-      } catch {}
+      saveAvatar(token, url)
     }
     reader.readAsDataURL(file)
     e.target.value = ''
@@ -179,16 +179,12 @@ export default function ProfilePage({
 
   function resetAvatar() {
     setAvatar(null)
-    try {
-      localStorage.removeItem(AVATAR_KEY)
-    } catch {}
+    removeAvatar(token)
   }
 
   function chooseBg(c) {
     setAvatarBg(c)
-    try {
-      localStorage.setItem(AVATAR_BG_KEY, c)
-    } catch {}
+    saveAvatarBg(token, c)
   }
 
   function toggleNotif() {
@@ -287,7 +283,7 @@ export default function ProfilePage({
   ]
 
   return (
-    <LearningLayout userName={name} userLevel={userLevel} active="" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={name} userLevel={userLevel} active="" token={token} onNav={onNav} onProfile={() => {}}>
       <div className="pf">
         {/* ── Hero ── */}
         <section className="pf-hero">
