@@ -1994,3 +1994,43 @@
   font-weight: 700;
   color: #6b6b76;
 }
+/* Плашка «Вы остановились на шаге N»: над полосой прогресса, в её же ширину —
+   это вопрос про весь урок, а не про текущий экран. */
+.cp-resume {
+  width: 542px;
+  max-width: 100%;
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #17171c;
+}
+.cp-resume__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cp-resume__go,
+.cp-resume__restart {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cp-resume__go {
+  background: #9047ff;
+  color: #fff;
+}
+.cp-resume__restart {
+  background: #ebdeff;
+  color: #9047ff;
+}
