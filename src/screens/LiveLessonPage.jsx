@@ -156,6 +156,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // instead of blindly overwriting — see both effects below.
   const restoredStepRef = useRef({ materialId: null, stepId: null })
   const restoredForRef = useRef(null)
+  // Материал, которому принадлежит текущее содержимое answers/checkedSteps.
+  // Отдельно от restoredForRef: тот отмечает «за этот материал GET уже
+  // ходил», а этот — «состояние уже про этот материал».
+  const materialForStateRef = useRef(null)
   const flushProgressRef = useRef(false)
 
   const activeSection = sections.find((s) => s.id === activeSectionId) || null
@@ -860,6 +864,43 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   useEffect(() => {
     if (!stepMaterialId) return undefined
     let cancelled = false
+    // Ответы и отметки «проверено» — СВОИ у каждого материала: и пишутся они
+    // отдельной строкой прогресса (saveLessonMaterialProgress по materialId).
+    // А id шагов сквозные внутри урока — s1, s2…, карточки s1:0. Пока смена
+    // вкладки материала состояние не трогала, материал B открывался уже
+    // «проверенным»: первая карточка помечена done, все варианты в ней
+    // выключены до того, как ученик их увидел, а под совпавшими id подставлены
+    // ответы материала A. Восстановление это не чинило — оно намеренно
+    // уступает тому, что уже в состоянии (`{ ...restored.answers, ...prev }`,
+    // `prev.size ? prev : …`), и сохранённый прогресс B просто отбрасывался.
+    // Дальше persistProgress записывал мешанину в строку самого B.
+    //
+    // Сбрасываем ровно при СМЕНЕ материала: повторный заход эффекта по тому же
+    // материалу (сменился token) состояние трогать не должен — ради этого и
+    // живёт guard `already` ниже. Пишущего здесь нет: persistProgress молчит,
+    // пока progressLoadedFor не совпал с новым материалом, а отложенная запись
+    // предыдущего досылается сама (progressSaver помнит свой materialId).
+    const materialChanged = materialForStateRef.current !== stepMaterialId
+    if (materialChanged) {
+      materialForStateRef.current = stepMaterialId
+      if (!isStaff) {
+        setAnswers({})
+        answersRef.current = {}
+        setCheckedSteps(new Set())
+        flushProgressRef.current = false
+      } else if (reviewStudentId != null) {
+        // У преподавателя работа участника живёт в studentLiveState и тоже
+        // ключуется сквозными id шагов — на смене материала он видел бы
+        // чужую карточку «готово» с выключенными вариантами и ответы из
+        // прошлого материала, выданные за работу этого ученика. Пишущего
+        // здесь нет: persistProgress для staff молчит всегда.
+        setStudentLiveState((prev) => {
+          const cur = prev[reviewStudentId]
+          if (!cur) return prev
+          return { ...prev, [reviewStudentId]: { ...cur, answers: {}, checkedSteps: new Set() } }
+        })
+      }
+    }
     // Преподаватель читает работу участника, ученик — свою (сервер и так не
     // отдаст чужую, см. assertAccess).
     getLessonMaterialProgress(token, lessonId, stepMaterialId, isStaff ? reviewStudentId : undefined)

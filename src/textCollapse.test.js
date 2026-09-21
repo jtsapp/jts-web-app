@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
 
 /**
@@ -24,7 +25,9 @@ import { describe, it, expect } from 'vitest'
  * обязано быть осознанным и объявленным здесь.
  */
 
-const CSS_DIR = new URL('.', import.meta.url).pathname
+// fileURLToPath, а не .pathname: на Windows тот отдаёт '/C:/…', и join()
+// склеивал его в 'C:\C:\…'.
+const CSS_DIR = fileURLToPath(new URL('.', import.meta.url))
 const COLLAPSING = /overflow-wrap:\s*anywhere|word-break:\s*(break-all|break-word)/
 
 /**

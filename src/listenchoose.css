@@ -195,11 +195,17 @@
 }
 .lc-zoom:disabled { opacity: 0.4; cursor: not-allowed; }
 .lc-opt-wrap:hover .lc-zoom, .lc-zoom:focus-visible { opacity: 1; }
+/* Непрозрачная карточка «картинка не загрузилась» лежит поверх ВСЕЙ плитки.
+   Сквозная для кликов: под ней — сама кнопка варианта, и без этого выбрать
+   вариант с битым файлом нельзя вовсе. Раньше это скрывал закрытый гейт
+   (ждали 'loaded' у всех четырёх и никого не пускали); теперь гейт открывается
+   по «ответили все четыре», и мёртвая плитка стала бы гарантированной ошибкой,
+   если верный ответ — как раз она. Сама кнопка «Try again» клики принимает. */
 .lc-imgretry {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px;
-  font-size: 12px; background: var(--lc-surface-2); border-radius: 14px;
+  font-size: 12px; background: var(--lc-surface-2); border-radius: 14px; pointer-events: none;
 }
-.lc-imgretry button { background: var(--lc-surface); border: 1px solid var(--lc-line); border-radius: 9px; min-height: 44px; padding: 0 15px; }
+.lc-imgretry button { background: var(--lc-surface); border: 1px solid var(--lc-line); border-radius: 9px; min-height: 44px; padding: 0 15px; pointer-events: auto; }
 .lc-under { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 4px; min-height: 24px; color: var(--lc-muted); font-size: 12px; }
 .lc-gate { display: flex; align-items: center; gap: 7px; }
 .lc-gate .lc-i { width: 14px; height: 14px; }

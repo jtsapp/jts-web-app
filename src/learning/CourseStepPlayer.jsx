@@ -1232,8 +1232,32 @@ function Choices({ options, picked, setPicked, checked, answer, grid = false }) 
 // вариантов в каждом.
 function MatchBoard({ step, options, links, setLinks, checked, t }) {
   const [active, setActive] = useState(null)
-  const used = new Set(Object.values(links))
   const pairs = step.pairs || []
+
+  // Банк — инвентарь: одинаковых вариантов в нём может быть несколько, и
+  // каждая копия расходуется отдельно. Занятость по ЗНАЧЕНИЮ (`used.has(o)`)
+  // гасила все копии разом: у b1 `steps-T12` банк ["of","in","on","on","of"],
+  // и первая же пара depend→on выключала оба «on» — соединить пять пар было
+  // нечем, «Проверить» оставалась серой без кнопки пропуска, а вместе с
+  // непройденным тестом юнита запиралась вся остальная тропа уровня.
+  const taken = {}
+  Object.values(links).forEach((v) => {
+    taken[v] = (taken[v] || 0) + 1
+  })
+  const bankCount = {}
+  options.forEach((o) => {
+    bankCount[o] = (bankCount[o] || 0) + 1
+  })
+  const isFull = (value) => (taken[value] || 0) >= (bankCount[value] || 0)
+  // Гаснут ПЕРВЫЕ по счёту копии значения — столько, сколько ушло в пары:
+  // иначе после соединения банк выглядел бы нетронутым.
+  const spentChip = (() => {
+    const seen = {}
+    return options.map((o) => {
+      seen[o] = (seen[o] || 0) + 1
+      return seen[o] <= (taken[o] || 0)
+    })
+  })()
 
   const tapLeft = (i) => {
     if (checked) return
@@ -1252,7 +1276,7 @@ function MatchBoard({ step, options, links, setLinks, checked, t }) {
   }
 
   const tapRight = (value) => {
-    if (checked || used.has(value)) return
+    if (checked || isFull(value)) return
     const target = active !== null ? active : pairs.findIndex((_, i) => links[i] === undefined)
     if (target < 0) return
     setLinks((s) => ({ ...s, [target]: value }))
@@ -1280,7 +1304,7 @@ function MatchBoard({ step, options, links, setLinks, checked, t }) {
       </div>
       <div className="cp-match__bank" aria-label={t('lesson.matchBank')}>
         {options.map((o, i) => (
-          <button key={i} className="cp-chip" disabled={checked || used.has(o)} onClick={() => tapRight(o)}>
+          <button key={i} className="cp-chip" disabled={checked || spentChip[i]} onClick={() => tapRight(o)}>
             {o}
           </button>
         ))}
