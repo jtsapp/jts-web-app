@@ -66,3 +66,14 @@ describe('profileAvatar', () => {
     expect(readAvatar(A)).toBe('big')
   })
 })
+
+describe('profileAvatar — нехватка места', () => {
+  it('сообщает, что фото не сохранилось, вместо молчаливого отката', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    expect(saveAvatar(A, 'data:image/png;base64,AAA')).toBe(false)
+    spy.mockRestore()
+    expect(saveAvatar(A, 'x')).toBe(true)
+  })
+})

@@ -942,6 +942,7 @@ const dict = {
     'profile.customTitle': 'Кастомизация',
     'profile.customSubtitle': 'Цвет фона аватара',
     'profile.customReset': 'Сбросить фото',
+    'profile.avatarFailed': 'Не удалось сохранить фото — попробуйте другое',
 
     // Практика (названия разделов — официальные строки из ARB мобилки)
     'practice.title': 'Практика',
@@ -3097,6 +3098,7 @@ const dict = {
     'profile.customTitle': 'Customization',
     'profile.customSubtitle': 'Avatar background color',
     'profile.customReset': 'Remove photo',
+    'profile.avatarFailed': 'Could not save the photo — try another one',
 
     // Practice (section names — official strings from the mobile app ARB)
     'practice.title': 'Practice',
@@ -5238,6 +5240,7 @@ const dict = {
     'profile.customTitle': 'Кастомизация',
     'profile.customSubtitle': 'Аватар фонының түсі',
     'profile.customReset': 'Фотоны жою',
+    'profile.avatarFailed': 'Суретті сақтау мүмкін болмады — басқасын көріңіз',
 
     // Практика (бөлім атаулары — мобилка ARB-ының ресми жолдары)
     'practice.title': 'Тәжірибе',
