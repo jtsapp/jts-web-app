@@ -747,11 +747,15 @@ export default function PracticePage({
   useEffect(() => {
     if (openTarget?.area !== 'situations' || !openTarget?.level) return
     const key = `situations:${openTarget.level}`
-    if (openedSituationsRef.current === key || situationsEntitlement.loading) return
+    // Ждём и каталог ситуативок (state.loading): из него levelLocked узнаёт, что
+    // админ закрыл уровень. Квота отвечала раньше каталога, levelLocked был
+    // ещё пуст — и переход из домашки открывал закрытый уровень, а ключ уже
+    // стоял в ref, так что второй проверки не было.
+    if (openedSituationsRef.current === key || situationsEntitlement.loading || state.loading) return
     openedSituationsRef.current = key
     setFilter('situations')
     openSituationsLevel(String(openTarget.level).toLowerCase())
-  }, [openTarget, situationsEntitlement.loading])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [openTarget, situationsEntitlement.loading, state.loading])   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setGrammarLevel(levelToCourse(userLevel))
