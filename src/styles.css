@@ -4429,6 +4429,13 @@ textarea {
 .le-btn:hover {
   background: #7f2fee;
 }
+/* Пока урок засчитывается, «Следующий урок» ждёт ответа сервера — без
+   приглушения клик по ней выглядел бы сломанным. */
+.le-btn:disabled {
+  background: #9047ff;
+  opacity: 0.55;
+  cursor: progress;
+}
 .le-again {
   border: none;
   background: none;

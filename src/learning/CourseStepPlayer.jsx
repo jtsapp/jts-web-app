@@ -36,8 +36,12 @@ const GRADED = new Set(['choice', 'listen', 'gap', 'order'])
 // проверяемым безусловно, «Проверить» на таком экране не включалась никогда
 // (picked навсегда null) и урок вставал намертво — тот самый фидбек «не смог
 // продолжить, не понятно, что надо проверить».
+//
+// Записи у шага тоже может не быть: в A0 два вопроса на слух выгрузились с
+// src: null. Проверять такой шаг значит засчитывать угадайку, поэтому без
+// записи он идёт как неоцениваемый — вопрос виден, но в зачёт не идёт.
 export function isGraded(step) {
-  if (step.type === 'listen') return !!step.answer && (step.options || []).length > 0
+  if (step.type === 'listen') return !!listenSrc(step, '') && !!step.answer && (step.options || []).length > 0
   if (step.type === 'match') return (step.pairs || []).length > 0
   if (step.type === 'group' || step.type === 'rows') return (step.items || []).length > 0
   if (step.type === 'mistake') return (step.tokens || []).length > 0
@@ -146,6 +150,14 @@ function gapSentence(step) {
 // или src), у перенесённого курса — имя файла рядом с уроком.
 function trackSrc(step, level) {
   if (step.audio) return step.audio
+  if (step.src) return step.src
+  return step.track ? `/course/${String(level).toLowerCase()}/audio/${step.track}` : ''
+}
+
+// Запись шага listen. Отдельно от trackSrc, потому что у listen нет поля
+// audio, а пустой ответ тут значит «записи нет»: раньше адрес собирался
+// безусловно, и шаг с src: null получал /course/a0/audio/undefined — 404.
+function listenSrc(step, level) {
   if (step.src) return step.src
   return step.track ? `/course/${String(level).toLowerCase()}/audio/${step.track}` : ''
 }
@@ -789,7 +801,13 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
         <>
           {/* У курса (A2/B1) дорожка лежит рядом с уроком и известна по имени,
               у A0/A1 в задании сразу абсолютный URL на files-dev. */}
-          <AudioButton src={step.src || `/course/${String(level).toLowerCase()}/audio/${step.track}`} t={t} />
+          {/* Без записи заголовок «Послушайте…» висел бы над пустотой — экран
+              читался как поломка. Говорим прямо, что шаг можно пропустить. */}
+          {listenSrc(step, level) ? (
+            <AudioButton src={listenSrc(step, level)} t={t} />
+          ) : (
+            <p className="cp-audio__err cp-audio__err--soft">{t('lesson.noRecording')}</p>
+          )}
           {/* Материал для чтения вслух: у части заданий A1 сам текст и есть
               задание («Read each script — and play it out loud»), поэтому он
               стоит под плеером, а не прячется. */}
@@ -800,7 +818,11 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           )}
           {/* На слух варианты в макете лежат в две колонки: слово короткое,
               и колонкой во всю высоту экрана оно смотрелось бы пусто. */}
-          <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+          {/* Без записи варианты не рисуем: выбрать среди них честно нечем, а
+              неоцениваемый шаг всё равно пропустил бы любой выбор. */}
+          {listenSrc(step, level) && (
+            <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+          )}
         </>
       )
 
@@ -1653,13 +1675,23 @@ function useStageAudio(src) {
 // Аудио стадии слушания: пауза/продолжение, замедленно и «сначала».
 function AudioButton({ src, t }) {
   const { playing, started } = useStageAudio(src)
+  const [failed, setFailed] = useState(false)
 
   const play = (rate, fromStart) => {
     const a = getStageAudio(src)
     a.playbackRate = rate
     // Доиграла до конца — следующий тап начинает заново, иначе кнопка молчала бы.
     if (fromStart || a.ended) a.currentTime = 0
-    a.play().catch(() => {})
+    // Отказ раньше гасился молча: на 404 или обрыве сети кнопка выглядела
+    // живой, а звука не было — ученик крутил громкость и отвечал наугад.
+    // AbortError — не сбой: это пауза, прервавшая ещё не начатый play().
+    a.play()
+      .then(() => setFailed(false))
+      .catch((e) => {
+        if (e?.name === 'AbortError') return
+        console.warn('[lesson] запись не проиграла:', src, e?.name || e)
+        setFailed(true)
+      })
   }
 
   const toggle = () => {
@@ -1696,6 +1728,11 @@ function AudioButton({ src, t }) {
         <button className="cp-audio__restart" onClick={() => play(1, true)}>
           {t('lesson.playAgain')}
         </button>
+      )}
+      {failed && (
+        <p className="cp-audio__err" role="alert">
+          {t('lesson.audioFailed')}
+        </p>
       )}
     </div>
   )

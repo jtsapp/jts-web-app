@@ -67,6 +67,10 @@ function CheckIcon() {
   )
 }
 
+// Сколько «Следующий урок» ждёт ответа сервера о засчитанном уроке (см. onDone).
+// Обычный ответ — доли секунды; восемь секунд — это уже «сеть молчит».
+const SAVE_WAIT_MS = 8000
+
 // Горизонтальное смещение узла в «лесенке» юнита. В макете колонка узлов
 // шириной 200 при узле 100, а сами узлы идут центр → влево → вправо → центр
 // (Figma «Обучение», Screen 4005:30480, кадр List).
@@ -111,6 +115,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const [open, setOpen] = useState(null) // { code, data, attempt } — открытый урок
   const [busy, setBusy] = useState(false) // грузим данные урока
   const [end, setEnd] = useState(null) // { outcome, correct, wrong, accuracy, points }
+  // Урок засчитывается: итоги уже на экране, а markDone ещё в сети. До его
+  // ответа следующий узел тропы заперт — и goNext принимал это за исчерпанную
+  // квоту: ученик, быстро нажавший «Следующий урок», видел «🔒 лимит», а демо —
+  // окно подписки, хотя урок был засчитан.
+  const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
 
   useEffect(() => {
@@ -271,6 +280,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   }
 
   const goNext = () => {
+    if (saving) return
     const i = lessons.findIndex((l) => l.code === open?.code)
     const next = i >= 0 ? lessons[i + 1] : null
     // Квота исчерпана ровно на границе (только что прошли последний доступный
@@ -291,44 +301,71 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       setEnd(stats)
       setRestricted(false)
       if (stats.outcome !== 'success' || !open) return
-      // Отмечаем урок пройденным (бэкенд + локально). Монеты/XP/стрик начисляет
-      // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
-      // найден (moduleId=null), падаем на модульный complete, чтобы награда не
-      // пропала; двойного начисления нет — ветки взаимоисключающие.
-      // Модуля нет по одной из двух причин, и они требуют разного: его правда
-      // нет для этого уровня — или список не загрузился при входе. Во втором
-      // случае переспрашиваем ЗДЕСЬ, иначе урок засчитается мимо серверной
-      // проверки квоты, а прогресс не уйдёт на бэкенд вовсе: одна сетевая
-      // осечка при входе снимала главный демо-лимит на весь визит.
-      const resolved = await resolveModuleId({
-        moduleId,
-        modulesUnavailable,
-        level,
-        fetchModules: () => getLessonModules(authTokenRef.current),
-      })
-      const mid = resolved.moduleId
-      if (mid !== moduleId) setModuleId(mid)
-      if (resolved.modulesUnavailable !== modulesUnavailable) setModulesUnavailable(resolved.modulesUnavailable)
-
-      let next
+      setSaving(true)
+      const code = open.code
+      const wasDone = done.has(code)
+      // У fetch нет своего таймаута: на «зависшей» мобильной сети ответ идёт и
+      // минуту, и всё это время «Следующий урок» стояла бы неактивной — для
+      // ученика это сломанная кнопка. Дольше SAVE_WAIT_MS не держим: отмечаем
+      // урок пройденным на экране (так же markDone поступает при сбое сети) и
+      // отпускаем кнопку. Ответ сервера, когда придёт, поправит done сам, а
+      // отказ по квоте снимет эту отметку (см. ниже).
+      const giveUp = setTimeout(() => {
+        setDone((d) => new Set(d).add(code))
+        setSaving(false)
+      }, SAVE_WAIT_MS)
       try {
-        next = await markDone(level, token, mid, open.code, stats.points)
-      } catch (e) {
-        // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
-        // исключение просто гасилось внутри markDone, урок падал в localStorage
-        // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
-        if (e instanceof ContentRestrictedError) {
-          setRestricted(true)
-          return
+        // Отмечаем урок пройденным (бэкенд + локально). Монеты/XP/стрик начисляет
+        // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
+        // найден (moduleId=null), падаем на модульный complete, чтобы награда не
+        // пропала; двойного начисления нет — ветки взаимоисключающие.
+        // Модуля нет по одной из двух причин, и они требуют разного: его правда
+        // нет для этого уровня — или список не загрузился при входе. Во втором
+        // случае переспрашиваем ЗДЕСЬ, иначе урок засчитается мимо серверной
+        // проверки квоты, а прогресс не уйдёт на бэкенд вовсе: одна сетевая
+        // осечка при входе снимала главный демо-лимит на весь визит.
+        const resolved = await resolveModuleId({
+          moduleId,
+          modulesUnavailable,
+          level,
+          fetchModules: () => getLessonModules(authTokenRef.current),
+        })
+        const mid = resolved.moduleId
+        if (mid !== moduleId) setModuleId(mid)
+        if (resolved.modulesUnavailable !== modulesUnavailable) setModulesUnavailable(resolved.modulesUnavailable)
+
+        let next
+        try {
+          next = await markDone(level, token, mid, open.code, stats.points)
+        } catch (e) {
+          // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
+          // исключение просто гасилось внутри markDone, урок падал в localStorage
+          // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
+          if (e instanceof ContentRestrictedError) {
+            // Отметку, выставленную в ожидании ответа, снимаем: урок не
+            // засчитан. Пройденный раньше урок при этом не трогаем.
+            if (!wasDone) {
+              setDone((d) => {
+                const kept = new Set(d)
+                kept.delete(code)
+                return kept
+              })
+            }
+            setRestricted(true)
+            return
+          }
+          throw e
         }
-        throw e
-      }
-      setDone(new Set(next))
-      if (mid == null && token && stats.points > 0) {
-        completeLessonModule(token, stats.points).catch(() => {})
+        setDone(new Set(next))
+        if (mid == null && token && stats.points > 0) {
+          completeLessonModule(token, stats.points).catch(() => {})
+        }
+      } finally {
+        clearTimeout(giveUp)
+        setSaving(false)
       }
     },
-    [open, level, token, moduleId, modulesUnavailable],
+    [open, level, token, moduleId, modulesUnavailable, done],
   )
 
   // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
@@ -577,7 +614,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                   </div>
                 ) : (
                   <div className="le-acts">
-                    <button className="le-btn" onClick={goNext}>
+                    <button className="le-btn" onClick={goNext} disabled={saving} aria-busy={saving}>
                       Перейти на следующий урок
                     </button>
                     <button className="le-again" onClick={retry}>
