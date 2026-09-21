@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { isSample, speakable } = require('./voice-step-cards.js')
+const { isSample, speakable, tooLong } = require('./voice-step-cards.js')
 
 describe('voice-step-cards — что озвучивать в шаге record', () => {
   it('английская строка — образец', () => {
@@ -21,6 +21,22 @@ describe('voice-step-cards — что озвучивать в шаге record', 
   it('пустая строка — не образец', () => {
     expect(isSample('')).toBe(false)
     expect(isSample(null)).toBe(false)
+  })
+})
+
+// Синтез не детерминирован и изредка срывается в бормотание: рамка из 11 слов
+// однажды вышла записью на 23 с, тот же текст повторно — 5 с.
+describe('voice-step-cards — сорвавшийся синтез', () => {
+  const frame = 'The school I went to … . There was a … , and the … was … .'
+
+  it('запись в разы длиннее текста — сорвалась', () => {
+    expect(tooLong(frame, 23.1)).toBe(true)
+  })
+
+  it('обычная запись и рамка с паузами — нет', () => {
+    expect(tooLong(frame, 5.2)).toBe(false)
+    expect(tooLong('First, …', 0.8)).toBe(false)
+    expect(tooLong('My phone number is 07700 900 461.', 6.6)).toBe(false)
   })
 })
 

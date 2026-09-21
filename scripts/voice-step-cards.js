@@ -25,6 +25,7 @@ const path = require('node:path')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 const { synthesizeSoniox, sleep, loadEnv, SONIOX_GAP_MS } = require('./make-lesson-audio')
 const { strip } = require('./lib/html-text.js')
+const { mp3Frames } = require('./selfstudy/cut-clip')
 
 const ROOT = path.join(__dirname, '..')
 const COURSE = path.join(ROOT, 'public/course')
@@ -75,6 +76,28 @@ const recordLine = (it) => (it && typeof it === 'object' ? { text: String(it.tex
 // озвучиваются только английские строки, а задание плеер показывает текстом.
 const CYRILLIC = /\p{Script=Cyrillic}/u
 const isSample = (text) => !!text && !CYRILLIC.test(String(text))
+
+// Синтез не детерминирован и изредка срывается в бормотание: рамка B1 из 11
+// слов «The school I went to … . There was a … , and the … was … .» вышла
+// записью на 23 с («…there was a—was a—was was—om. NTC»), а тот же текст
+// повторно — на 5 с. Живая речь Owen на 0.85 — около 0.4 с на слово, рамки с
+// паузами — до 1 с, поэтому запись длиннее «1.2 с на слово + 4 с» — брак:
+// такую переспрашиваем, а не кладём в урок.
+const MAX_TRIES = 3
+const wordCount = (text) => String(text).split(/\s+/).filter((w) => /[a-z0-9]/i.test(w)).length
+const tooLong = (text, seconds) => seconds > wordCount(text) * 1.2 + 4
+
+/** Запись текста — или null, если синтез срывался все попытки подряд. */
+async function synthesizeChecked(text) {
+  for (let i = 1; i <= MAX_TRIES; i++) {
+    const buf = await synthesizeSoniox(speakable(text))
+    const { duration } = mp3Frames(buf)
+    if (!tooLong(text, duration)) return buf
+    console.warn(`  ! ${duration.toFixed(1)} с на «${text}» — синтез сорвался, попытка ${i}/${MAX_TRIES}`)
+    await sleep(SONIOX_GAP_MS)
+  }
+  return null
+}
 
 /** Что озвучить на уровне: немые карточки, say, фразы и образцы record без записи. */
 function plan(level) {
@@ -163,7 +186,13 @@ async function run() {
     }
     fs.mkdirSync(path.join(AUDIO, level), { recursive: true })
     for (const [i, t] of missing.entries()) {
-      const buf = await synthesizeSoniox(speakable(t.text))
+      const buf = await synthesizeChecked(t.text)
+      // Файла нет — нет и ссылки: образец останется на синтезе браузера, а
+      // сторож courseAudioCoverage.test.js покажет его в списке.
+      if (!buf) {
+        console.warn(`  [${i + 1}/${missing.length}] ПРОПУЩЕНО ${t.file}  ${t.text}`)
+        continue
+      }
       fs.writeFileSync(path.join(AUDIO, level, t.file), buf)
       console.log(`  [${i + 1}/${missing.length}] ${t.file}  ${t.text}  ${buf.length} Б`)
       await sleep(SONIOX_GAP_MS)
@@ -179,4 +208,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { plan, link, isSample, speakable }
+module.exports = { plan, link, isSample, speakable, tooLong }
