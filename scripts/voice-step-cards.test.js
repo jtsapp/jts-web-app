@@ -1,8 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { isSample, speakable, tooLong } = require('./voice-step-cards.js')
+const { isSample, speakable, tooLong, tooShort, synthesizeChecked } = require('./voice-step-cards.js')
+
+// MP3 заданной длины: кадры MPEG-1 Layer III, 128 кбит/с, 44,1 кГц — 417 байт
+// и ≈26,1 мс каждый (как в selfstudy/cut-clip.test.js).
+function mp3Of(seconds) {
+  const frame = Buffer.alloc(417)
+  frame.set([0xff, 0xfb, 0x90, 0x00])
+  return Buffer.concat(Array.from({ length: Math.round(seconds / (1152 / 44100)) }, () => frame))
+}
 
 describe('voice-step-cards — что озвучивать в шаге record', () => {
   it('английская строка — образец', () => {
@@ -37,6 +45,44 @@ describe('voice-step-cards — сорвавшийся синтез', () => {
     expect(tooLong(frame, 5.2)).toBe(false)
     expect(tooLong('First, …', 0.8)).toBe(false)
     expect(tooLong('My phone number is 07700 900 461.', 6.6)).toBe(false)
+  })
+
+  // Живая речь — от 0.2 с на слово; меньше 0.1 — тишина или обрезок.
+  it('запись короче 0.1 с на слово — обрезана', () => {
+    expect(tooShort(frame, 0.5)).toBe(true)
+    expect(tooShort(frame, 5.2)).toBe(false)
+    expect(tooShort('First, …', 0.74)).toBe(false)
+  })
+
+  describe('synthesizeChecked', () => {
+    beforeEach(() => vi.spyOn(console, 'warn').mockImplementation(() => {}))
+    afterEach(() => vi.restoreAllMocks())
+
+    it('сорвавшийся синтез переспрашивает и берёт первую годную запись', async () => {
+      const takes = [mp3Of(23), mp3Of(5)]
+      const synth = vi.fn(async () => takes.shift())
+      const buf = await synthesizeChecked(frame, { synth, gapMs: 0 })
+      expect(synth).toHaveBeenCalledTimes(2)
+      expect(buf.length).toBe(mp3Of(5).length)
+    })
+
+    it('три срыва подряд — записи нет', async () => {
+      const synth = vi.fn(async () => mp3Of(30))
+      expect(await synthesizeChecked(frame, { synth, gapMs: 0 })).toBeNull()
+      expect(synth).toHaveBeenCalledTimes(3)
+    })
+
+    it('ответ не MP3 — неудачная попытка, а не падение прогона', async () => {
+      const takes = [Buffer.from('not an mp3 at all'), mp3Of(5)]
+      const synth = vi.fn(async () => takes.shift())
+      expect((await synthesizeChecked(frame, { synth, gapMs: 0 })).length).toBe(mp3Of(5).length)
+    })
+
+    it('синтез получает текст для произношения', async () => {
+      const synth = vi.fn(async () => mp3Of(3))
+      await synthesizeChecked('What time? → Could you tell me…?', { synth, gapMs: 0 })
+      expect(synth).toHaveBeenCalledWith('What time? Could you tell me…?')
+    })
   })
 })
 

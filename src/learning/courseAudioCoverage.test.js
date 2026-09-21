@@ -29,6 +29,7 @@ function stepsOf(level) {
 const onDisk = (url) => !url || /^https?:/.test(url) || fs.existsSync(path.join(ROOT, 'public', decodeURI(url)))
 
 const CYRILLIC = /\p{Script=Cyrillic}/u
+const LATIN = /\p{Script=Latin}/u
 
 // Строки шагов record в одном виде: строка или { text, src } → { text, src }.
 function recordLines(steps) {
@@ -94,5 +95,15 @@ describe.each(levels)('озвучка шагов %s', (level) => {
       .map(({ line, where }) => `${where} ${line.text}`)
     expect(bad).toEqual([])
   })
-})
 
+  // Задание от образца отличает кириллица — и одна кириллическая «о» или «с»
+  // в английской строке молча сделала бы её неозвучиваемым заданием, а оба
+  // теста выше её бы пропустили. В живом тексте слова из двух алфавитов нет:
+  // такое слово — буква-двойник.
+  it('в строках record нет слов из смешанных алфавитов', () => {
+    const bad = recordLines(steps)
+      .filter(({ line }) => line.text.split(/\s+/).some((w) => LATIN.test(w) && CYRILLIC.test(w)))
+      .map(({ line, where }) => `${where} ${line.text}`)
+    expect(bad).toEqual([])
+  })
+})

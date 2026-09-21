@@ -82,19 +82,31 @@ const isSample = (text) => !!text && !CYRILLIC.test(String(text))
 // записью на 23 с («…there was a—was a—was was—om. NTC»), а тот же текст
 // повторно — на 5 с. Живая речь Owen на 0.85 — около 0.4 с на слово, рамки с
 // паузами — до 1 с, поэтому запись длиннее «1.2 с на слово + 4 с» — брак:
-// такую переспрашиваем, а не кладём в урок.
+// такую переспрашиваем, а не кладём в урок. Короче 0.1 с на слово — тоже брак
+// (тишина или обрезок): у 435 записей образцов меньше 0.21 не бывает.
 const MAX_TRIES = 3
 const wordCount = (text) => String(text).split(/\s+/).filter((w) => /[a-z0-9]/i.test(w)).length
 const tooLong = (text, seconds) => seconds > wordCount(text) * 1.2 + 4
+const tooShort = (text, seconds) => seconds < wordCount(text) * 0.1
 
-/** Запись текста — или null, если синтез срывался все попытки подряд. */
-async function synthesizeChecked(text) {
+/**
+ * Запись текста — или null, если синтез срывался все попытки подряд.
+ * synth и gapMs подменяются в тесте.
+ */
+async function synthesizeChecked(text, { synth = synthesizeSoniox, gapMs = SONIOX_GAP_MS } = {}) {
   for (let i = 1; i <= MAX_TRIES; i++) {
-    const buf = await synthesizeSoniox(speakable(text))
-    const { duration } = mp3Frames(buf)
-    if (!tooLong(text, duration)) return buf
-    console.warn(`  ! ${duration.toFixed(1)} с на «${text}» — синтез сорвался, попытка ${i}/${MAX_TRIES}`)
-    await sleep(SONIOX_GAP_MS)
+    const buf = await synth(speakable(text))
+    let seconds = null
+    try {
+      seconds = mp3Frames(buf).duration
+    } catch {
+      // Ответ не разобрался как MP3 — та же неудачная попытка, а не падение
+      // всего прогона на середине уровня.
+    }
+    if (seconds !== null && !tooLong(text, seconds) && !tooShort(text, seconds)) return buf
+    const what = seconds === null ? 'не MP3' : `${seconds.toFixed(1)} с`
+    console.warn(`  ! ${what} на «${text}» — синтез сорвался, попытка ${i}/${MAX_TRIES}`)
+    if (i < MAX_TRIES) await sleep(gapMs)
   }
   return null
 }
@@ -185,11 +197,13 @@ async function run() {
       continue
     }
     fs.mkdirSync(path.join(AUDIO, level), { recursive: true })
+    let skipped = 0
     for (const [i, t] of missing.entries()) {
       const buf = await synthesizeChecked(t.text)
       // Файла нет — нет и ссылки: образец останется на синтезе браузера, а
       // сторож courseAudioCoverage.test.js покажет его в списке.
       if (!buf) {
+        skipped++
         console.warn(`  [${i + 1}/${missing.length}] ПРОПУЩЕНО ${t.file}  ${t.text}`)
         continue
       }
@@ -197,7 +211,7 @@ async function run() {
       console.log(`  [${i + 1}/${missing.length}] ${t.file}  ${t.text}  ${buf.length} Б`)
       await sleep(SONIOX_GAP_MS)
     }
-    console.log(`${level}: прописано ссылок ${link(level)}`)
+    console.log(`${level}: прописано ссылок ${link(level)}${skipped ? `, пропущено ${skipped} — синтез срывался` : ''}`)
   }
 }
 
@@ -208,4 +222,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { plan, link, isSample, speakable, tooLong }
+module.exports = { plan, link, isSample, speakable, tooLong, tooShort, synthesizeChecked }

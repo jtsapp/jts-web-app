@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { sayAudioUrl } from '../scripts/jts-self/say-audio.js'
 
 // Шаг «послушайте, затем запишите себя» в настоящем плеере на настоящих
 // данных. Образцы были строками и звучали браузерным синтезом (на Android без
@@ -15,24 +16,37 @@ async function openRecordSteps(page, level) {
     const data = await res.json()
     await route.fulfill({ response: res, json: { ...data, steps: data.steps.filter((s) => s.type === 'record') } })
   })
-  // Синтез браузера считаем: образцу с записью он не нужен вовсе.
+  // Считаем и синтез, и проигрывание: «файл отдался» ещё не значит «файл
+  // заиграл» — битая запись тоже приходит 200 audio/mpeg, и плеер откатывается
+  // на синтез уже после, когда play() отклонён.
   await page.addInitScript(() => {
     window.__spoken = []
+    window.__played = []
     if (window.speechSynthesis) window.speechSynthesis.speak = (u) => window.__spoken.push(u.text)
+    const play = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function () {
+      const rec = { src: this.src, state: 'pending' }
+      window.__played.push(rec)
+      const p = play.call(this)
+      p.then(
+        () => (rec.state = 'playing'),
+        (e) => (rec.state = `error ${e?.name || e}`),
+      )
+      return p
+    }
   })
   await page.goto(`/?screen=kingdom-interior&level=${level}&unlock=1`)
   await page.locator('.kt-step:not([disabled])').first().click()
   await expect(page.locator('.cp-rec')).toBeVisible({ timeout: 20000 })
 }
 
-// Тап по образцу → запрос его mp3 и ни слова синтеза.
+// Тап по образцу → заиграла ИМЕННО его запись (имя файла — хэш текста), и ни
+// слова синтеза.
 async function tapPlaysRecording(page, level, text) {
-  const [res] = await Promise.all([
-    page.waitForResponse((r) => new RegExp(`/learning/audio/${level}/[0-9a-f]{12}\\.mp3$`).test(r.url())),
-    page.locator('.cp-rec button.cp-rec__line', { hasText: text }).click(),
-  ])
-  expect(res.ok()).toBe(true)
-  expect(res.headers()['content-type']).toContain('audio/mpeg')
+  await page.locator('.cp-rec button.cp-rec__line', { hasText: text }).click()
+  await expect
+    .poll(() => page.evaluate(() => window.__played.map((p) => `${new URL(p.src).pathname} ${p.state}`)))
+    .toEqual([`${sayAudioUrl(level, text)} playing`])
   expect(await page.evaluate(() => window.__spoken)).toEqual([])
 }
 
@@ -52,5 +66,5 @@ test('B1: задание по-русски — текст, рамка ответ
   }
   // Третий — рамки ответа по-английски, и у каждой своя запись.
   await expect(page.locator('.cp-rec button.cp-rec__line')).toHaveCount(3)
-  await tapPlaysRecording(page, 'b1', 'My closest friend is')
+  await tapPlaysRecording(page, 'b1', "My closest friend is … . We've known each other for/since … .")
 })
