@@ -1,6 +1,6 @@
-// Озвучка немых карточек, слов «Listen. Choose the word you hear» и фраз
-// «Послушайте и повторите» в готовых шагах курса
-// (public/course/<level>/steps-*.json).
+// Озвучка немых карточек, слов «Listen. Choose the word you hear», фраз
+// «Послушайте и повторите» и образцов «послушайте, затем запишите себя»
+// (шаг record) в готовых шагах курса (public/course/<level>/steps-*.json).
 //
 // make-lesson-audio.js собирает слова из ИСХОДНИКА курса (VOCAB в lesson-<n>.json
 // и public/learning/<level>.json), а шаги A0–B2 теперь режет экстрактор нового
@@ -45,9 +45,15 @@ const stepFiles = (level) =>
 // Фразы B1 бывают размечены («<b>On the phone:</b> I understand that… · Could
 // you tell me…?»): теги синтез прочитал бы вслух, а «·» — граница реплик, то
 // есть пауза. Точку добавляем, только если реплика не закончилась своим знаком.
+//
+// Образцы record у B1 — рамки для своего ответа, и в них то же самое: «→»
+// разделяет вопрос и начало его косвенной формы («What time does the museum
+// close? → Could you tell me…?»), а «(pause)» — ремарка «помолчите», а не
+// слово.
 const speakable = (text) =>
   strip(String(text))
-    .replace(/([.!?…])?\s*·\s*/g, (m, end) => (end ? `${end} ` : '. '))
+    .replace(/\(pause\)/gi, '…')
+    .replace(/([.!?…])?\s*[·→]\s*/g, (m, end) => (end ? `${end} ` : '. '))
     .replace(/\s*[/—–]\s*/g, ', ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -63,6 +69,13 @@ const RECORD_OBJECTS_OK = fs.existsSync(PLAYER) && fs.readFileSync(PLAYER, 'utf8
 /** Образец record: строка или { text, src } → всегда { text, src }. */
 const recordLine = (it) => (it && typeof it === 'object' ? { text: String(it.text ?? ''), src: it.src || null } : { text: String(it ?? ''), src: null })
 
+// Строки record у B1 больше чем наполовину — не образцы, а задания по-русски
+// («Одно в Present Simple: как часто вы встречаетесь с друзьями»): студент их
+// читает, а говорит своё. Английский голос прочёл бы кириллицу мусором, поэтому
+// озвучиваются только английские строки, а задание плеер показывает текстом.
+const CYRILLIC = /\p{Script=Cyrillic}/u
+const isSample = (text) => !!text && !CYRILLIC.test(String(text))
+
 /** Что озвучить на уровне: немые карточки, say, фразы и образцы record без записи. */
 function plan(level) {
   const texts = new Map()
@@ -73,7 +86,7 @@ function plan(level) {
       if (s.type === 'choice' && s.say && !s.sayTrack) texts.set(sayAudioFile(s.say), s.say)
       if (s.type === 'phrases') for (const it of s.items || []) if (!it.src && it.text) texts.set(sayAudioFile(it.text), it.text)
       if (s.type === 'record' && RECORD_OBJECTS_OK) {
-        for (const line of (s.items || []).map(recordLine)) if (!line.src && line.text) texts.set(sayAudioFile(line.text), line.text)
+        for (const line of (s.items || []).map(recordLine)) if (!line.src && isSample(line.text)) texts.set(sayAudioFile(line.text), line.text)
       }
     }
   }
@@ -116,7 +129,7 @@ function link(level) {
       if (s.type === 'record' && RECORD_OBJECTS_OK) {
         s.items = (s.items || []).map((it) => {
           const line = recordLine(it)
-          if (line.src || !line.text || !onDisk(line.text)) return it
+          if (line.src || !isSample(line.text) || !onDisk(line.text)) return it
           touched = true
           changed++
           return { text: line.text, src: sayAudioUrl(level, line.text) }
@@ -166,4 +179,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { plan, link }
+module.exports = { plan, link, isSample, speakable }
