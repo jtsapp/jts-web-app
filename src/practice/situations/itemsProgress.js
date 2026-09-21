@@ -14,10 +14,13 @@
 // уровней (см. practiceContract.js), карту сценариев он не примет.
 
 import { SITUATIONS_ITEMS_KEY as KEY, SITUATIONS_PROGRESS_EVENT as EVENT } from '../practiceKeys.js'
+// Ключ свой у каждого ученика: серверной копии нет, и под общим ключом
+// следующий на том же компьютере видел чужие пройденные сценарии.
+import { userScopedKey } from '../../lib/userScopedKey.js'
 
 function read() {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(userScopedKey(KEY))
     const val = raw ? JSON.parse(raw) : null
     if (val && typeof val === 'object' && !Array.isArray(val)) return val
   } catch {
@@ -28,7 +31,7 @@ function read() {
 
 function write(state) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(state))
+    localStorage.setItem(userScopedKey(KEY), JSON.stringify(state))
   } catch {
     /* нет квоты — прогресс просто не переживёт перезагрузку */
   }
