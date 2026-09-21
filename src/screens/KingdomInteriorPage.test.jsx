@@ -64,7 +64,8 @@ vi.mock('../learning/courseData.js', () => ({
   loadCourseSteps: vi.fn(async () => null),
 }))
 
-import { markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
+import { markDone, loadDone, ContentRestrictedError } from '../learning/lessonProgress.js'
+import { getContentQuota } from '../api.js'
 import KingdomInteriorPage from './KingdomInteriorPage.jsx'
 
 const kingdom = { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'B1', ring: '#fff' }
@@ -152,6 +153,34 @@ describe('KingdomInteriorPage — демо-лимит на тропе показ
     await waitFor(() => expect(view.container.querySelector('.le-over')).toBe(null))
     expect(view.container.querySelector('.ds-over')).toBe(null)
     expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length)
+  })
+
+  // Итоги показываются сразу, а засчитывание урока (resolveModuleId + markDone)
+  // идёт по сети следом. Пока оно не вернулось, следующий узел на тропе ещё
+  // заперт — и быстрый клик «Перейти на следующий урок» читал это как
+  // исчерпанную квоту: обычный ученик видел «🔒 лимит», демо — окно подписки.
+  it('клик «Следующий урок» до ответа сервера не рисует ложный замок квоты', async () => {
+    loadDone.mockImplementationOnce(async () => new Set())
+    getContentQuota.mockImplementationOnce(async () => null)
+    let settle
+    markDone.mockImplementationOnce(() => new Promise((resolve) => { settle = resolve }))
+
+    const view = renderPage({ isDemoAccount: true })
+    await waitFor(() => expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length))
+    fireEvent.click(view.container.querySelector('.kt-step'))
+    fireEvent.click(await screen.findByText('сдать урок'))
+
+    const next = await screen.findByText('Перейти на следующий урок')
+    fireEvent.click(next)
+    expect(screen.queryByText(PAYWALL)).toBe(null)
+    expect(view.container.querySelector('.le-restricted')).toBe(null)
+
+    // Сервер засчитал урок — следующий открывается, а не упирается в замок.
+    settle(new Set(['l0']))
+    await waitFor(() => expect(screen.getByText('Перейти на следующий урок').disabled).toBe(false))
+    fireEvent.click(screen.getByText('Перейти на следующий урок'))
+    await screen.findByText('сдать урок')
+    expect(screen.queryByText(PAYWALL)).toBe(null)
   })
 
   it('Esc уводит туда же, куда «Вернуться»', async () => {
