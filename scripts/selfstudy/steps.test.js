@@ -118,6 +118,42 @@ describe('selfstudy/steps — типы заданий', () => {
     ])
   })
 
+  // Записи в файле курса есть не у всех фраз — остальные озвучены отдельно
+  // (public/learning/audio/<level>/<хэш текста>.mp3, scripts/voice-step-cards.js).
+  // Без запасного пути через wordAudio следующая выгрузка курса молча вернула
+  // бы им src: null, и фразу снова читал бы браузерный синтез.
+  describe('сгенерированная озвучка подхватывается по тексту', () => {
+    const voiced = { 'I dont like rain.': '/learning/audio/a0/aaa.mp3', 'Say it.': '/learning/audio/a0/bbb.mp3' }
+    const voicedCtx = { ...ctx, wordAudio: (text) => voiced[text] || null }
+    const build = (groups) => lessonSteps({ key: '1', no: 1, groups }, PER_ITEM, voicedCtx)
+
+    it('фраза без записи курса берёт сгенерированную, запись курса важнее', () => {
+      const [phrases] = build([
+        { t: 'chunk', stage: 'gram', ins: { en: 'Listen' }, items: [{ s: 'I like coffee.', clip: 'c1' }, { s: 'I dont like rain.' }, 'Say it.', { s: 'No audio.' }] },
+      ])
+      expect(phrases.items).toEqual([
+        { text: 'I like coffee.', src: '/course/a0/audio/c1.mp3' },
+        { text: 'I dont like rain.', src: '/learning/audio/a0/aaa.mp3' },
+        { text: 'Say it.', src: '/learning/audio/a0/bbb.mp3' },
+        { text: 'No audio.', src: null },
+      ])
+    })
+
+    // «Послушайте, затем запишите себя»: образец раньше был строкой, и записи
+    // прописать было некуда — его читал только браузерный синтез. С записью
+    // строка становится объектом; без записи остаётся строкой, как была.
+    it('образец для записи голоса несёт запись, когда она есть', () => {
+      const [rec] = build([{ t: 'record', stage: 'speak', ins: { en: 'Say' }, lines: ['Say it.', 'No audio.'] }])
+      expect(rec.type).toBe('record')
+      expect(rec.items).toEqual([{ text: 'Say it.', src: '/learning/audio/a0/bbb.mp3' }, 'No audio.'])
+    })
+
+    it('«скажи вслух» (B1 say) — так же', () => {
+      const [rec] = build([{ t: 'say', stage: 'speak', ins: { en: 'Say' }, prompts: ['Say it.', 'No audio.'] }])
+      expect(rec.items).toEqual([{ text: 'Say it.', src: '/learning/audio/a0/bbb.mp3' }, 'No audio.'])
+    })
+  })
+
   it('таблица правила уходит в заметку разметкой', () => {
     const [note] = steps([
       {
