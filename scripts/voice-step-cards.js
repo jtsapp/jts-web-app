@@ -1,6 +1,6 @@
-// Озвучка немых карточек, слов «Listen. Choose the word you hear» и фраз
-// «Послушайте и повторите» в готовых шагах курса
-// (public/course/<level>/steps-*.json).
+// Озвучка немых карточек, слов «Listen. Choose the word you hear», фраз
+// «Послушайте и повторите» и образцов «послушайте, затем запишите себя»
+// (шаг record) в готовых шагах курса (public/course/<level>/steps-*.json).
 //
 // make-lesson-audio.js собирает слова из ИСХОДНИКА курса (VOCAB в lesson-<n>.json
 // и public/learning/<level>.json), а шаги A0–B2 теперь режет экстрактор нового
@@ -25,6 +25,7 @@ const path = require('node:path')
 const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 const { synthesizeSoniox, sleep, loadEnv, SONIOX_GAP_MS } = require('./make-lesson-audio')
 const { strip } = require('./lib/html-text.js')
+const { mp3Frames } = require('./selfstudy/cut-clip')
 
 const ROOT = path.join(__dirname, '..')
 const COURSE = path.join(ROOT, 'public/course')
@@ -45,23 +46,71 @@ const stepFiles = (level) =>
 // Фразы B1 бывают размечены («<b>On the phone:</b> I understand that… · Could
 // you tell me…?»): теги синтез прочитал бы вслух, а «·» — граница реплик, то
 // есть пауза. Точку добавляем, только если реплика не закончилась своим знаком.
+//
+// Образцы record у B1 — рамки для своего ответа, и в них то же самое: «→»
+// разделяет вопрос и начало его косвенной формы («What time does the museum
+// close? → Could you tell me…?»), а «(pause)» — ремарка «помолчите», а не
+// слово.
 const speakable = (text) =>
   strip(String(text))
-    .replace(/([.!?…])?\s*·\s*/g, (m, end) => (end ? `${end} ` : '. '))
+    .replace(/\(pause\)/gi, '…')
+    .replace(/([.!?…])?\s*[·→]\s*/g, (m, end) => (end ? `${end} ` : '. '))
     .replace(/\s*[/—–]\s*/g, ', ')
     .replace(/\s+/g, ' ')
     .trim()
 
-// Образцы шага record («послушайте, затем запишите себя») в данных — строки, и
-// запись к строке не приложить: после озвучки образец становится объектом
-// { text, src }. Плеер без recordLine на объекте ПАДАЕТ («Objects are not
-// valid as a React child»), поэтому, пока в дереве старый плеер, образцы не
-// трогаем вовсе — ни в плане, ни при простановке ссылок.
-const PLAYER = path.join(ROOT, 'src/learning/CourseStepPlayer.jsx')
-const RECORD_OBJECTS_OK = fs.existsSync(PLAYER) && fs.readFileSync(PLAYER, 'utf8').includes('export function recordLine')
+// Образцы шага record («послушайте, затем запишите себя») — строки, и
+// записи к ним кладутся параллельным массивом s.itemAudio (тот же индекс,
+// null — записи нет). Не объектом { text, src } в items: плеер до recordLine
+// на объекте ПАДАЕТ («Objects are not valid as a React child»), а вкладка со
+// старым бандлом качает свежие шаги. Объекты, которыми данные недолго
+// писались, при простановке ссылок разворачиваются обратно в строки.
 
-/** Образец record: строка или { text, src } → всегда { text, src }. */
-const recordLine = (it) => (it && typeof it === 'object' ? { text: String(it.text ?? ''), src: it.src || null } : { text: String(it ?? ''), src: null })
+/** Образец record → { text, src } с учётом itemAudio. */
+const recordLine = (it, audio = null) =>
+  it && typeof it === 'object' ? { text: String(it.text ?? ''), src: it.src || audio || null } : { text: String(it ?? ''), src: audio || null }
+const recordLines = (s) => (s.items || []).map((it, i) => recordLine(it, s.itemAudio?.[i]))
+
+// Строки record у B1 больше чем наполовину — не образцы, а задания по-русски
+// («Одно в Present Simple: как часто вы встречаетесь с друзьями»): студент их
+// читает, а говорит своё. Английский голос прочёл бы кириллицу мусором, поэтому
+// озвучиваются только английские строки, а задание плеер показывает текстом.
+const CYRILLIC = /\p{Script=Cyrillic}/u
+const isSample = (text) => !!text && !CYRILLIC.test(String(text))
+
+// Синтез не детерминирован и изредка срывается в бормотание: рамка B1 из 11
+// слов «The school I went to … . There was a … , and the … was … .» вышла
+// записью на 23 с («…there was a—was a—was was—om. NTC»), а тот же текст
+// повторно — на 5 с. Живая речь Owen на 0.85 — около 0.4 с на слово, рамки с
+// паузами — до 1 с, поэтому запись длиннее «1.2 с на слово + 4 с» — брак:
+// такую переспрашиваем, а не кладём в урок. Короче 0.1 с на слово — тоже брак
+// (тишина или обрезок): у 435 записей образцов меньше 0.21 не бывает.
+const MAX_TRIES = 3
+const wordCount = (text) => String(text).split(/\s+/).filter((w) => /[a-z0-9]/i.test(w)).length
+const tooLong = (text, seconds) => seconds > wordCount(text) * 1.2 + 4
+const tooShort = (text, seconds) => seconds < wordCount(text) * 0.1
+
+/**
+ * Запись текста — или null, если синтез срывался все попытки подряд.
+ * synth и gapMs подменяются в тесте.
+ */
+async function synthesizeChecked(text, { synth = synthesizeSoniox, gapMs = SONIOX_GAP_MS } = {}) {
+  for (let i = 1; i <= MAX_TRIES; i++) {
+    const buf = await synth(speakable(text))
+    let seconds = null
+    try {
+      seconds = mp3Frames(buf).duration
+    } catch {
+      // Ответ не разобрался как MP3 — та же неудачная попытка, а не падение
+      // всего прогона на середине уровня.
+    }
+    if (seconds !== null && !tooLong(text, seconds) && !tooShort(text, seconds)) return buf
+    const what = seconds === null ? 'не MP3' : `${seconds.toFixed(1)} с`
+    console.warn(`  ! ${what} на «${text}» — синтез сорвался, попытка ${i}/${MAX_TRIES}`)
+    if (i < MAX_TRIES) await sleep(gapMs)
+  }
+  return null
+}
 
 /** Что озвучить на уровне: немые карточки, say, фразы и образцы record без записи. */
 function plan(level) {
@@ -72,8 +121,8 @@ function plan(level) {
       if (s.type === 'cards') for (const w of s.words || []) if (!w.audio && w.en) texts.set(sayAudioFile(w.en), w.en)
       if (s.type === 'choice' && s.say && !s.sayTrack) texts.set(sayAudioFile(s.say), s.say)
       if (s.type === 'phrases') for (const it of s.items || []) if (!it.src && it.text) texts.set(sayAudioFile(it.text), it.text)
-      if (s.type === 'record' && RECORD_OBJECTS_OK) {
-        for (const line of (s.items || []).map(recordLine)) if (!line.src && line.text) texts.set(sayAudioFile(line.text), line.text)
+      if (s.type === 'record') {
+        for (const line of recordLines(s)) if (!line.src && isSample(line.text)) texts.set(sayAudioFile(line.text), line.text)
       }
     }
   }
@@ -113,14 +162,18 @@ function link(level) {
           }
         }
       }
-      if (s.type === 'record' && RECORD_OBJECTS_OK) {
-        s.items = (s.items || []).map((it) => {
-          const line = recordLine(it)
-          if (line.src || !line.text || !onDisk(line.text)) return it
+      if (s.type === 'record') {
+        const lines = recordLines(s)
+        const audio = lines.map((line) => line.src || (isSample(line.text) && onDisk(line.text) ? sayAudioUrl(level, line.text) : null))
+        const wasObjects = (s.items || []).some((it) => it && typeof it === 'object')
+        const added = audio.filter((a, i) => a && a !== (s.itemAudio?.[i] ?? null)).length
+        if (wasObjects || added) {
+          s.items = lines.map((line) => line.text)
+          if (audio.some(Boolean)) s.itemAudio = audio
+          else delete s.itemAudio
           touched = true
-          changed++
-          return { text: line.text, src: sayAudioUrl(level, line.text) }
-        })
+          changed += added
+        }
       }
     }
     // Форматирование файла сохраняем как было: иначе дифф на весь файл.
@@ -138,7 +191,6 @@ function link(level) {
 
 async function run() {
   loadEnv()
-  if (!RECORD_OBJECTS_OK) console.log('образцы record пропущены: плеер в этом дереве ещё не понимает { text, src }')
   const levels = fs.readdirSync(COURSE).filter((d) => fs.statSync(path.join(COURSE, d)).isDirectory())
   for (const level of levels.filter((l) => !ONLY || l === ONLY)) {
     const todo = plan(level)
@@ -149,13 +201,21 @@ async function run() {
       continue
     }
     fs.mkdirSync(path.join(AUDIO, level), { recursive: true })
+    let skipped = 0
     for (const [i, t] of missing.entries()) {
-      const buf = await synthesizeSoniox(speakable(t.text))
+      const buf = await synthesizeChecked(t.text)
+      // Файла нет — нет и ссылки: образец останется на синтезе браузера, а
+      // сторож courseAudioCoverage.test.js покажет его в списке.
+      if (!buf) {
+        skipped++
+        console.warn(`  [${i + 1}/${missing.length}] ПРОПУЩЕНО ${t.file}  ${t.text}`)
+        continue
+      }
       fs.writeFileSync(path.join(AUDIO, level, t.file), buf)
       console.log(`  [${i + 1}/${missing.length}] ${t.file}  ${t.text}  ${buf.length} Б`)
       await sleep(SONIOX_GAP_MS)
     }
-    console.log(`${level}: прописано ссылок ${link(level)}`)
+    console.log(`${level}: прописано ссылок ${link(level)}${skipped ? `, пропущено ${skipped} — синтез срывался` : ''}`)
   }
 }
 
@@ -166,4 +226,4 @@ if (require.main === module) {
   })
 }
 
-module.exports = { plan, link }
+module.exports = { plan, link, isSample, speakable, tooLong, tooShort, synthesizeChecked }

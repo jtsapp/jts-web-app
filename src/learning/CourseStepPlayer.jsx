@@ -990,7 +990,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
       return <PhraseList items={step.items} onWord={onWord} />
 
     case 'record':
-      return <RecordBoard items={step.items} t={t} />
+      return <RecordBoard items={step.items} audio={step.itemAudio} t={t} />
 
     default:
       return null
@@ -1209,18 +1209,32 @@ function pickRecordMime() {
   return candidates.find((m) => window.MediaRecorder?.isTypeSupported?.(m)) || ''
 }
 
-// Образец шага record — строка или { text, src }. Строкой он был всегда, и
-// записи прописать было некуда: образец читал только браузерный синтез —
+// Образец шага record — строка, запись к нему — в параллельном массиве
+// step.itemAudio (тот же индекс, null — записи нет). Строкой образец был
+// всегда, и записи прописать было некуда: его читал только браузерный синтез —
 // чужой голос посреди урока, а на Android без английского голоса тишина.
-// Объект появляется там, где запись есть (её ставит сборщик шагов или
-// scripts/voice-step-cards.js); строки остаются как были, поэтому старые
-// данные менять не нужно. Экспортируется ради теста и тех, кто читает шаги.
-export function recordLine(item) {
-  if (item && typeof item === 'object') return { text: String(item.text ?? ''), src: item.src || null }
-  return { text: String(item ?? ''), src: null }
+//
+// Почему не объект { text, src } прямо в items: плеер до этой правки рендерит
+// образец как есть, и на объекте ПАДАЕТ («Objects are not valid as a React
+// child») — белый экран. Вкладка, открытая до выкатки, держит старый бандл,
+// а шаги урока качает свежие, поэтому новые данные обязаны читаться старым
+// плеером. Лишнее поле он просто не видит. Объект здесь всё равно понимаем —
+// им недолго писали данные (ветка content/voice-record-samples).
+// Экспортируется ради теста и тех, кто читает шаги.
+export function recordLine(item, audio = null) {
+  if (item && typeof item === 'object') return { text: String(item.text ?? ''), src: item.src || audio || null }
+  return { text: String(item ?? ''), src: audio || null }
 }
 
-function RecordBoard({ items, t }) {
+// Строка без записи на кириллице — не образец, а задание («Ответьте вслух: кто
+// ваш самый давний друг?»); у B1 таких больше половины строк record. Кнопкой
+// «послушать» она была зря: синтез с английским голосом читал кириллицу
+// мусором, а говорить здесь должен студент. Записи у задания не будет —
+// scripts/voice-step-cards.js озвучивает только английские строки.
+const CYRILLIC = /\p{Script=Cyrillic}/u
+const isRecordTask = (line) => !line.src && CYRILLIC.test(line.text)
+
+function RecordBoard({ items, audio, t }) {
   const [state, setState] = useState('idle') // idle | live | done | denied
   const [url, setUrl] = useState('')
   const recRef = useRef(null)
@@ -1267,11 +1281,17 @@ function RecordBoard({ items, t }) {
 
   return (
     <div className="cp-rec">
-      {(items || []).map(recordLine).map((line, i) => (
-        <button key={i} type="button" className="cp-rec__line" onClick={() => speakEnglish(line.text, { src: line.src })}>
-          {line.text}
-        </button>
-      ))}
+      {(items || []).map((it, i) => recordLine(it, audio?.[i])).map((line, i) =>
+        isRecordTask(line) ? (
+          <p key={i} className="cp-rec__line cp-rec__line--task">
+            {line.text}
+          </p>
+        ) : (
+          <button key={i} type="button" className="cp-rec__line" onClick={() => speakEnglish(line.text, { src: line.src })}>
+            {line.text}
+          </button>
+        ),
+      )}
       <button type="button" className={`cp-rec__btn ${state === 'live' ? 'is-live' : ''}`} onClick={toggle}>
         {t(state === 'live' ? 'lesson.recordStop' : state === 'done' ? 'lesson.recordAgain' : 'lesson.record')}
       </button>

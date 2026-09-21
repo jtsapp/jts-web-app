@@ -1870,6 +1870,10 @@
   text-align: left;
   cursor: pointer;
 }
+/* Задание по-русски среди образцов: читается, но не звучит — говорит студент. */
+.cp-rec__line--task {
+  cursor: default;
+}
 .cp-rec__btn {
   align-self: center;
   height: 56px;
