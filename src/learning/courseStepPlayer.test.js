@@ -7,7 +7,15 @@ import { isGraded } from './CourseStepPlayer.jsx'
 // вынесена отдельной функцией и закрыта тестами.
 describe('CourseStepPlayer — что считается проверяемым шагом', () => {
   it('слушание с вариантами проверяется', () => {
-    expect(isGraded({ type: 'listen', options: ['a', 'b'], answer: 'a' })).toBe(true)
+    expect(isGraded({ type: 'listen', options: ['a', 'b'], answer: 'a', src: '/learning/audio/a0/x.mp3' })).toBe(true)
+    expect(isGraded({ type: 'listen', options: ['a', 'b'], answer: 'a', track: 'u1.mp3' })).toBe(true)
+  })
+
+  it('слушание без записи НЕ проверяется: ответ был бы угадайкой', () => {
+    // В A0 два таких шага (steps-21 #26, steps-24 #28): src: null, а плеер
+    // строил адрес /course/a0/audio/undefined — кнопка молчала, и вопрос
+    // «что происходит?» шёл в зачёт наугад.
+    expect(isGraded({ type: 'listen', src: null, options: ['a', 'b'], answer: 'a' })).toBe(false)
   })
 
   it('слушание без вариантов НЕ проверяется: отвечать нечем', () => {

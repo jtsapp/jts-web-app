@@ -3,8 +3,36 @@
 // сохраняем как офлайн-зеркало и для обратной совместимости (кольцо прогресса
 // KingdomInteriorPage/LearningPage читало его же).
 import { getLessonProgress, completeLesson } from '../api.js'
+import { userIdFromToken } from '../lib/jwt.js'
 
 const localKey = (level) => 'jts-' + String(level || '').toLowerCase() + '-done'
+
+// Ключ зеркала — только уровни CEFR: 'jts-<что-то>-done' встречается и у других
+// разделов, и чужое при выходе стирать нельзя.
+const LOCAL_KEY_RE = /^jts-(a0|a1|a2|b1|b2|c1|c2)-done$/
+
+/**
+ * Забыть зеркало прогресса уроков — при выходе из аккаунта.
+ *
+ * Ключ не привязан к пользователю, а loadDone объединяет его с серверным
+ * прогрессом: без очистки следующий ученик на том же компьютере получал
+ * тропу, открытую на чужие уроки. Серверный прогресс вышедшего не страдает —
+ * он вернётся при следующем входе.
+ */
+export function clearLocalLessonProgress() {
+  if (typeof window === 'undefined') return
+  try {
+    const ls = window.localStorage
+    const keys = []
+    for (let i = 0; i < ls.length; i++) {
+      const k = ls.key(i)
+      if (k && LOCAL_KEY_RE.test(k)) keys.push(k)
+    }
+    for (const k of keys) ls.removeItem(k)
+  } catch {
+    /* приватный режим — чистить нечего */
+  }
+}
 
 function readLocal(level) {
   if (typeof window === 'undefined') return []
@@ -25,10 +53,87 @@ function writeLocal(level, codes) {
   }
 }
 
+// Уроки, не дошедшие до сервера (офлайн/5xx на complete). Раньше markDone
+// обещал «синхронизируется позже», а досылки не было: урок жил только в
+// зеркале — без монет и XP, непройденным на мобилке и другом устройстве.
+// Бэкенд засчитывает урок идемпотентно (монеты — только за первое
+// прохождение), поэтому повторная отправка безопасна. В записи — userId:
+// общий компьютер, и чужой урок под токеном следующего ученика уйти не должен.
+const PENDING_KEY = 'jts_lesson_pending'
+const pendingId = (e) => `${e.uid}|${e.moduleId}|${e.code}`
+
+function readPending() {
+  if (typeof window === 'undefined') return []
+  try {
+    const a = JSON.parse(window.localStorage.getItem(PENDING_KEY) || '[]')
+    return Array.isArray(a) ? a : []
+  } catch {
+    return []
+  }
+}
+
+function writePending(list) {
+  if (typeof window === 'undefined') return
+  try {
+    if (list.length) window.localStorage.setItem(PENDING_KEY, JSON.stringify(list))
+    else window.localStorage.removeItem(PENDING_KEY)
+  } catch {
+    /* приватный режим — досылки не будет, как и раньше */
+  }
+}
+
+function queuePending(entry) {
+  const id = pendingId(entry)
+  writePending([...readPending().filter((e) => pendingId(e) !== id), entry])
+}
+
+// Коды, после которых повтор имеет смысл: токен протух (401), таймаут (408),
+// лимит запросов (429). Остальные 4xx говорят, что неверен сам запрос — урока
+// или модуля больше нет (404), код не тот (400) — и от повтора он верным не
+// станет: такая запись висела бы в очереди вечно, дёргая бэкенд при каждом
+// открытии тропы.
+const RETRY_LATER = new Set([401, 408, 429])
+
+// Досылаем свои недошедшие уроки модуля. Отказ 403 — урок не засчитан
+// (квота/блокировка появилась, пока он ждал): убираем его и из очереди, и с
+// тропы. Сеть снова молчит — оставляем до следующей загрузки.
+async function resendPending(level, token, moduleId) {
+  const uid = userIdFromToken(token)
+  if (!uid) return
+  const mine = readPending().filter((e) => e.uid === uid && e.moduleId === moduleId)
+  if (!mine.length) return
+  const settled = new Set()
+  const refused = []
+  for (const e of mine) {
+    try {
+      await completeLesson(token, moduleId, e.code, e.xp)
+      settled.add(pendingId(e))
+    } catch (err) {
+      const status = err?.status
+      if (status === 403) {
+        settled.add(pendingId(e))
+        refused.push(e.code)
+      } else if (status >= 400 && status < 500 && !RETRY_LATER.has(status)) {
+        // Запрос неверен навсегда — из очереди убираем, а с тропы нет: ученик
+        // урок прошёл, и отнимать его из-за переезда модуля незачем.
+        settled.add(pendingId(e))
+      } else if (status == null) {
+        // Сеть не ответила. Остальные записи ждала бы та же судьба, а тропа
+        // всё это время не открывается — выходим, дошлём в следующий раз.
+        break
+      }
+    }
+  }
+  // Перечитываем очередь: пока шли запросы, markDone мог добавить новое.
+  writePending(readPending().filter((e) => !settled.has(pendingId(e))))
+  if (refused.length) writeLocal(level, readLocal(level).filter((c) => !refused.includes(c)))
+}
+
 // Множество пройденных кодов уроков уровня. Берём бэкенд, объединяем с локальным
 // (на случай прогресса, ещё не долетевшего на сервер); при недоступном бэкенде —
 // только локальный кэш, чтобы тропа не сбрасывалась.
 export async function loadDone(level, token, moduleId) {
+  if (token && moduleId != null) await resendPending(level, token, moduleId)
   const local = new Set(readLocal(level))
   if (token && moduleId != null) {
     try {
@@ -66,7 +171,10 @@ export async function markDone(level, token, moduleId, code, xp = 0) {
       await completeLesson(token, moduleId, code, xp)
     } catch (e) {
       if (e?.status === 403) throw new ContentRestrictedError()
-      /* офлайн/5xx — синхронизируется позже */
+      // Офлайн/5xx: урок засчитываем локально и ставим в очередь — loadDone
+      // дошлёт его при следующем открытии тропы.
+      const uid = userIdFromToken(token)
+      if (uid) queuePending({ uid, moduleId, code, xp })
     }
   }
   codes.add(code)

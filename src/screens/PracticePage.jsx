@@ -747,11 +747,15 @@ export default function PracticePage({
   useEffect(() => {
     if (openTarget?.area !== 'situations' || !openTarget?.level) return
     const key = `situations:${openTarget.level}`
-    if (openedSituationsRef.current === key || situationsEntitlement.loading) return
+    // Ждём и каталог ситуативок (state.loading): из него levelLocked узнаёт, что
+    // админ закрыл уровень. Квота отвечала раньше каталога, levelLocked был
+    // ещё пуст — и переход из домашки открывал закрытый уровень, а ключ уже
+    // стоял в ref, так что второй проверки не было.
+    if (openedSituationsRef.current === key || situationsEntitlement.loading || state.loading) return
     openedSituationsRef.current = key
     setFilter('situations')
     openSituationsLevel(String(openTarget.level).toLowerCase())
-  }, [openTarget, situationsEntitlement.loading])   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [openTarget, situationsEntitlement.loading, state.loading])   // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setGrammarLevel(levelToCourse(userLevel))
@@ -785,7 +789,14 @@ export default function PracticePage({
   ]
   // Активный фильтр: null = показываем все секции (лентами). Иначе — только
   // выбранный тип, сеткой. Меняется и чипами сверху, и «Посмотреть все».
-  const [filter, setFilter] = useState(null)
+  //
+  // Переход может нести раздел (плитка «Книги» на «Главной») — тогда экран
+  // открывается сразу на нём. Берём начальным значением: «Практика»
+  // монтируется заново при каждом переходе, а дальше выбор за учеником.
+  // Незнакомый ключ игнорируем — лента «Все» лучше пустого экрана.
+  const [filter, setFilter] = useState(() =>
+    chips.some((c) => c.key && c.key === openTarget?.filter) ? openTarget.filter : null,
+  )
 
   // Онбординг-тур: сам выходит при первом заходе, дальше — по кнопке «?» в углу.
   // Шаги идут сверху вниз по странице, чтобы прожектор не прыгал; секции, которых

@@ -4,7 +4,7 @@ import { completeLessonModule } from '../../api.js'
 import { markUnitDone } from './grammarProgress.js'
 import { recordSkill } from '../skillStats.js'
 import TrainerResult from '../../components/TrainerResult.jsx'
-import { normAnswer } from '../../lib/answer-match.js'
+import { normAnswer, answerMatches } from '../../lib/answer-match.js'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
@@ -299,8 +299,17 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
 
   const check = () => {
     if (answered || !value.trim()) return
-    const good = [a.answer, ...(a.alts || [])].map(norm)
-    const ok = good.includes(norm(value))
+    // Через answerMatches, а не сравнение нормализованных строк: у заданий
+    // «the or nothing?» ответ — прочерк, он нормализуется в пустую строку, и
+    // в пустоту же уходил любой знак препинания — «?» засчитывался за «нет
+    // артикля». Прочерк там сверяется как есть.
+    //
+    // Пустой эталон — «ничего не ставить» (6 заданий a2/c1, в разборе «leave it
+    // blank»). Пустое поле отправить нельзя, поэтому прочерк там тоже верен:
+    // раньше его засчитывала та же дыра с пунктуацией, и терять это нельзя.
+    const accepted = [a.answer, ...(a.alts || [])]
+    if (!String(a.answer ?? '').trim()) accepted.push('-')
+    const ok = answerMatches(value, accepted)
     // Ответ студента в поле не подменяем: человек видел в своём поле чужой
     // текст, покрашенный красным, и не понимал, что именно он написал.
     // Но верный вариант ему нужен, а разбор (a.why) называет его не всегда —

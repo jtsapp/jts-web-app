@@ -121,3 +121,78 @@ describe('Order — ответ строкой (b1.json)', () => {
     ])
   })
 })
+
+// «the or nothing?»: верный ответ — прочерк («type – if none»), и нормализация
+// превращает его в пустую строку. Любой набранный знак препинания тоже
+// нормализуется в пустоту — и засчитывался: «?» или «.» проходили за «нет
+// артикля». Прочерк сверяется как есть, но разные тире — это один прочерк.
+describe('Свободный ввод — ответ-прочерк', () => {
+  const activity = { type: 'gap', before: 'I love ', after: ' music.', answer: '-', alts: ['nothing', 'no'], why: 'no article' }
+
+  function check(value) {
+    const { container, unmount } = play(activity)
+    fireEvent.change(container.querySelector('.gr-gap-input'), { target: { value } })
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    const wrong = /wrong/.test(container.querySelector('.gr-gap-input').className)
+    unmount()
+    return !wrong
+  }
+
+  it('случайный знак препинания не засчитывается', () => {
+    expect(check('?')).toBe(false)
+    expect(check('.')).toBe(false)
+  })
+
+  it('дефис, тире и слово-альтернатива засчитываются', () => {
+    expect(check('-')).toBe(true)
+    expect(check('–')).toBe(true)
+    expect(check('—')).toBe(true)
+    expect(check('nothing')).toBe(true)
+  })
+
+  it('обычный неверный ответ остаётся неверным', () => {
+    expect(check('the')).toBe(false)
+  })
+})
+
+// Эталон пустой — «ничего не ставить» (c1: «zero article (leave it blank)»).
+// Пустое поле не отправить, поэтому прочерк и слово-альтернатива верны, а
+// случайный знак — нет.
+describe('Свободный ввод — пустой эталон', () => {
+  const activity = { type: 'gap', before: 'They emigrated to ', after: ' Canada.', answer: '', alts: ['zero'], why: 'zero article' }
+
+  function check(value) {
+    const { container, unmount } = play(activity)
+    fireEvent.change(container.querySelector('.gr-gap-input'), { target: { value } })
+    fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+    const wrong = /wrong/.test(container.querySelector('.gr-gap-input').className)
+    unmount()
+    return !wrong
+  }
+
+  it('прочерк и «zero» засчитываются, «?» и «the» — нет', () => {
+    expect(check('-')).toBe(true)
+    expect(check('—')).toBe(true)
+    expect(check('Zero')).toBe(true)
+    expect(check('?')).toBe(false)
+    expect(check('the')).toBe(false)
+  })
+})
+
+// «Add the right mark»: ответ — сам знак «?». Точка вместо него раньше тоже
+// проходила — всё знаковое нормализовалось в пустоту.
+describe('Свободный ввод — ответ-знак', () => {
+  it('засчитывается только нужный знак', () => {
+    const activity = { type: 'gap', before: 'Where do you live', after: '', answer: '?', alts: [], why: 'a question' }
+    const run = (value) => {
+      const { container, unmount } = play(activity)
+      fireEvent.change(container.querySelector('.gr-gap-input'), { target: { value } })
+      fireEvent.click(screen.getByRole('button', { name: /проверить/i }))
+      const ok = !/wrong/.test(container.querySelector('.gr-gap-input').className)
+      unmount()
+      return ok
+    }
+    expect(run('?')).toBe(true)
+    expect(run('.')).toBe(false)
+  })
+})
