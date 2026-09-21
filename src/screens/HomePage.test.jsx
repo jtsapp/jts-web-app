@@ -230,6 +230,23 @@ describe('Главная демо-аккаунта', () => {
   })
 })
 
+// «Практика на сегодня»: плитки «Книги» и «Аудирование» вели на общий экран
+// «Практики» — ученик искал раздел заново, хотя нажал ровно на него.
+describe('Практика на сегодня — плитки ведут в свой раздел', () => {
+  it('«Аудирование» открывает экран аудирования, «Книги» — «Практику» на книгах', () => {
+    const onNav = vi.fn()
+    renderHome({ isDemoAccount: false, onNav })
+    const tiles = [...document.querySelectorAll('.hm-prac__tile')]
+    const byTitle = (re) => tiles.find((b) => re.test(b.textContent))
+
+    fireEvent.click(byTitle(/аудирован/i))
+    expect(onNav).toHaveBeenLastCalledWith('listening')
+
+    fireEvent.click(byTitle(/книг/i))
+    expect(onNav).toHaveBeenLastCalledWith('practice', { filter: 'books' })
+  })
+})
+
 describe('Карточка пробного урока', () => {
   beforeEach(() => {
     trialState.value = { requested: false, managerAssigned: false }

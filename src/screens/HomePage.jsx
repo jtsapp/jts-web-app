@@ -552,10 +552,13 @@ function HomeworkCard({ t, lang, items, onNav }) {
  * не обещают того, чего система не знает.
  */
 function PracticeToday({ t, onNav }) {
+  // Плитка ведёт в свой раздел, а не в общую ленту: раньше «Книги» и
+  // «Аудирование» открывали «Практику» целиком, и нажавший на книги искал их
+  // заново. Аудирование — отдельный экран, книги — фильтр «Практики».
   const tiles = [
-    { key: 'books', emoji: '📚', to: 'practice' },
+    { key: 'books', emoji: '📚', to: 'practice', payload: { filter: 'books' } },
     { key: 'tutor', emoji: '🖥️', to: 'tutor' },
-    { key: 'listening', emoji: '🎧', to: 'practice' },
+    { key: 'listening', emoji: '🎧', to: 'listening' },
     { key: 'vocab', emoji: '📖', to: 'vocab' },
   ]
   return (
@@ -567,7 +570,7 @@ function PracticeToday({ t, onNav }) {
             type="button"
             className="hm-prac__tile"
             key={tile.key}
-            onClick={() => onNav?.(tile.to)}
+            onClick={() => (tile.payload ? onNav?.(tile.to, tile.payload) : onNav?.(tile.to))}
           >
             <span className="hm-prac__text">
               <b>{t(`home.practice.${tile.key}.title`)}</b>
