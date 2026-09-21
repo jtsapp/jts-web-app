@@ -3,7 +3,7 @@
 // «Выйти» следующий ученик на том же компьютере видел чужое фото в своём
 // профиле. Стирать на выходе нельзя — владелец терял бы фото при каждом
 // повторном входе, — поэтому ключ привязан к пользователю.
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from './profileAvatar.js'
 
 // Токен с payload {"userId": N}: разбор payload'а — lib/jwt.js.
@@ -47,5 +47,16 @@ describe('profileAvatar', () => {
     saveAvatar(null, 'x')
     expect(readAvatar(null)).toBeNull()
     expect(localStorage.length).toBe(0)
+  })
+})
+
+describe('profileAvatar — нехватка места', () => {
+  it('сообщает, что фото не сохранилось, вместо молчаливого отката', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    expect(saveAvatar(A, 'data:image/png;base64,AAA')).toBe(false)
+    spy.mockRestore()
+    expect(saveAvatar(A, 'x')).toBe(true)
   })
 })

@@ -32,14 +32,17 @@ function read(base, token) {
   }
 }
 
+// true — записано. false — нет (квота, приватный режим): экран обязан сказать
+// об этом, иначе фото молча исчезало после перезагрузки.
 function write(base, token, value) {
   const key = keyFor(base, token)
-  if (!key) return
+  if (!key) return false
   try {
     if (value == null) localStorage.removeItem(key)
     else localStorage.setItem(key, value)
+    return true
   } catch {
-    /* квота или приватный режим — фото проживёт до перезагрузки */
+    return false
   }
 }
 

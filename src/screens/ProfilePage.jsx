@@ -15,6 +15,7 @@ import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
+import { shrinkImage } from '../lib/shrinkImage.js'
 
 // Ключ localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
 // Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
@@ -164,17 +165,26 @@ export default function ProfilePage({
     setTimeout(() => setToast(''), 2200)
   }
 
-  function pickAvatar(e) {
+  // Фото ужимаем до 256px (см. lib/shrinkImage.js): как есть оно в квоту
+  // localStorage не влезало и молча пропадало после перезагрузки. Не вышло
+  // прочитать или сохранить — говорим об этом, а не показываем фото, которого
+  // после перезагрузки не будет.
+  async function pickAvatar(e) {
     const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const url = String(reader.result)
-      setAvatar(url)
-      saveAvatar(token, url)
-    }
-    reader.readAsDataURL(file)
     e.target.value = ''
+    if (!file) return
+    let url
+    try {
+      url = await shrinkImage(file)
+    } catch {
+      showToast(t('profile.avatarFailed'))
+      return
+    }
+    if (!saveAvatar(token, url)) {
+      showToast(t('profile.avatarFailed'))
+      return
+    }
+    setAvatar(url)
   }
 
   function resetAvatar() {
