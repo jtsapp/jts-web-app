@@ -52,7 +52,18 @@ const speakable = (text) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-/** Что озвучить на уровне: немые карточки и say без записи. */
+// Образцы шага record («послушайте, затем запишите себя») в данных — строки, и
+// запись к строке не приложить: после озвучки образец становится объектом
+// { text, src }. Плеер без recordLine на объекте ПАДАЕТ («Objects are not
+// valid as a React child»), поэтому, пока в дереве старый плеер, образцы не
+// трогаем вовсе — ни в плане, ни при простановке ссылок.
+const PLAYER = path.join(ROOT, 'src/learning/CourseStepPlayer.jsx')
+const RECORD_OBJECTS_OK = fs.existsSync(PLAYER) && fs.readFileSync(PLAYER, 'utf8').includes('export function recordLine')
+
+/** Образец record: строка или { text, src } → всегда { text, src }. */
+const recordLine = (it) => (it && typeof it === 'object' ? { text: String(it.text ?? ''), src: it.src || null } : { text: String(it ?? ''), src: null })
+
+/** Что озвучить на уровне: немые карточки, say, фразы и образцы record без записи. */
 function plan(level) {
   const texts = new Map()
   for (const f of stepFiles(level)) {
@@ -61,6 +72,9 @@ function plan(level) {
       if (s.type === 'cards') for (const w of s.words || []) if (!w.audio && w.en) texts.set(sayAudioFile(w.en), w.en)
       if (s.type === 'choice' && s.say && !s.sayTrack) texts.set(sayAudioFile(s.say), s.say)
       if (s.type === 'phrases') for (const it of s.items || []) if (!it.src && it.text) texts.set(sayAudioFile(it.text), it.text)
+      if (s.type === 'record' && RECORD_OBJECTS_OK) {
+        for (const line of (s.items || []).map(recordLine)) if (!line.src && line.text) texts.set(sayAudioFile(line.text), line.text)
+      }
     }
   }
   return [...texts].map(([file, text]) => ({ file, text, have: fs.existsSync(path.join(AUDIO, level, file)) }))
@@ -99,6 +113,15 @@ function link(level) {
           }
         }
       }
+      if (s.type === 'record' && RECORD_OBJECTS_OK) {
+        s.items = (s.items || []).map((it) => {
+          const line = recordLine(it)
+          if (line.src || !line.text || !onDisk(line.text)) return it
+          touched = true
+          changed++
+          return { text: line.text, src: sayAudioUrl(level, line.text) }
+        })
+      }
     }
     // Форматирование файла сохраняем как было: иначе дифф на весь файл.
     if (touched) {
@@ -115,6 +138,7 @@ function link(level) {
 
 async function run() {
   loadEnv()
+  if (!RECORD_OBJECTS_OK) console.log('образцы record пропущены: плеер в этом дереве ещё не понимает { text, src }')
   const levels = fs.readdirSync(COURSE).filter((d) => fs.statSync(path.join(COURSE, d)).isDirectory())
   for (const level of levels.filter((l) => !ONLY || l === ONLY)) {
     const todo = plan(level)
