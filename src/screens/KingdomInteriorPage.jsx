@@ -14,6 +14,7 @@ import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
 import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
+import LessonErrorBoundary from '../components/LessonErrorBoundary.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
@@ -530,6 +531,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           показанными поверх уже закрытого урока. */}
       {!loading && open && !end && (
         <div className="km-lesson">
+          {/* key — тот же, что у плеера: новый урок или новая попытка
+              начинают с чистого листа, а не с экрана падения. */}
+          <LessonErrorBoundary key={`${open.code}-${open.attempt}`} onExit={handleBack}>
           {open.steps ? (
             <CourseStepPlayer
               key={`${open.code}-${open.attempt}`}
@@ -556,6 +560,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               onDone={onDone}
             />
           )}
+          </LessonErrorBoundary>
         </div>
       )}
 

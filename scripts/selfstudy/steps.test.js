@@ -141,16 +141,25 @@ describe('selfstudy/steps — типы заданий', () => {
 
     // «Послушайте, затем запишите себя»: образец раньше был строкой, и записи
     // прописать было некуда — его читал только браузерный синтез. С записью
-    // строка становится объектом; без записи остаётся строкой, как была.
+    // строки остаются строками (их читает и старый плеер), записи — рядом,
+    // параллельным itemAudio.
     it('образец для записи голоса несёт запись, когда она есть', () => {
       const [rec] = build([{ t: 'record', stage: 'speak', ins: { en: 'Say' }, lines: ['Say it.', 'No audio.'] }])
       expect(rec.type).toBe('record')
-      expect(rec.items).toEqual([{ text: 'Say it.', src: '/learning/audio/a0/bbb.mp3' }, 'No audio.'])
+      expect(rec.items).toEqual(['Say it.', 'No audio.'])
+      expect(rec.itemAudio).toEqual(['/learning/audio/a0/bbb.mp3', null])
     })
 
     it('«скажи вслух» (B1 say) — так же', () => {
       const [rec] = build([{ t: 'say', stage: 'speak', ins: { en: 'Say' }, prompts: ['Say it.', 'No audio.'] }])
-      expect(rec.items).toEqual([{ text: 'Say it.', src: '/learning/audio/a0/bbb.mp3' }, 'No audio.'])
+      expect(rec.items).toEqual(['Say it.', 'No audio.'])
+      expect(rec.itemAudio).toEqual(['/learning/audio/a0/bbb.mp3', null])
+    })
+
+    it('без единой записи itemAudio нет вовсе', () => {
+      const [rec] = build([{ t: 'record', stage: 'speak', ins: { en: 'Say' }, lines: ['No audio.'] }])
+      expect(rec.items).toEqual(['No audio.'])
+      expect(rec).not.toHaveProperty('itemAudio')
     })
   })
 

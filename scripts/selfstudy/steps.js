@@ -192,12 +192,14 @@ function tableHtml(sc, lang) {
 // курса молча возвращала фразам src: null, и их снова читал браузерный синтез.
 const voiced = (ctx, text) => (text && ctx.wordAudio ? ctx.wordAudio(text) : null) || null
 
-// Образец шага record. Строкой он был всегда; объектом { text, src } становится
-// только там, где запись есть, — плеер понимает оба вида (recordLine в
-// CourseStepPlayer.jsx), и без записей данные остаются прежними.
-function recordItem(ctx, text) {
-  const src = voiced(ctx, text)
-  return src ? { text, src } : text
+// Образцы шага record: сами строки остаются строками, записи — параллельным
+// массивом itemAudio (тот же индекс, null — нет записи), и только если есть
+// хоть одна. Объект { text, src } в items старый плеер рендерит как есть и
+// падает белым экраном, а вкладка со старым бандлом качает свежие шаги — см.
+// recordLine в CourseStepPlayer.jsx.
+function recordFields(ctx, texts) {
+  const audio = texts.map((text) => voiced(ctx, text))
+  return audio.some(Boolean) ? { items: texts, itemAudio: audio } : { items: texts }
 }
 
 /**
@@ -599,7 +601,7 @@ function screenToStep(sc, ctx) {
       return {
         ...base,
         type: 'record',
-        items: (sc.prompts || sc.lines || []).map((x) => recordItem(ctx, plain(x, lang))),
+        ...recordFields(ctx, (sc.prompts || sc.lines || []).map((x) => plain(x, lang))),
       }
 
     // Соединение пар B2: слева слово, справа его значение.
@@ -731,7 +733,7 @@ function screenToStep(sc, ctx) {
       return {
         ...base,
         type: 'record',
-        items: (sc.lines || sc.items || []).map((l) => recordItem(ctx, typeof l === 'string' ? l : plain(l.s, lang))),
+        ...recordFields(ctx, (sc.lines || sc.items || []).map((l) => (typeof l === 'string' ? l : plain(l.s, lang)))),
       }
 
     case 'wrap':
