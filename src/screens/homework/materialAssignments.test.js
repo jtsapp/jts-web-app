@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { materialCard, isMaterialGraded, isInteractiveMaterial, isLessonCard, hasAnswerFiles, needsAnswerFile } from './materialAssignments.js'
+import { materialCard, isMaterialGraded, isInteractiveMaterial, isCatalogHtmlLink, isLessonCard, hasAnswerFiles, needsAnswerFile } from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
 
 const assignment = (over = {}) => ({
@@ -50,6 +50,33 @@ describe('isMaterialGraded / isInteractiveMaterial', () => {
   it('интерактив отличается от обычного файла', () => {
     expect(isInteractiveMaterial(assignment())).toBe(true)
     expect(isInteractiveMaterial(assignment({ materialType: 'PDF' }))).toBe(false)
+  })
+
+  /**
+   * Главное в этой спеке: у выданного блока живого урока materialType — LINK,
+   * и ученик открывал сырой файл мимо render-эндпоинта: без моста и с начала
+   * урока, не зная, какой блок ему задали. Адрес — настоящий, со стенда.
+   */
+  it('урок каталога ссылкой — тоже через render-эндпоинт, а не сырым файлом', () => {
+    const урокКаталога = assignment({
+      materialType: 'LINK',
+      fileUrl: 'https://files-dev.justtostudy.kz/development/course-catalog/standalone/a0-lesson-1-1789678276662.html',
+    })
+    expect(isInteractiveMaterial(урокКаталога)).toBe(true)
+    expect(isCatalogHtmlLink(урокКаталога)).toBe(true)
+  })
+
+  it('ссылка вне каталога остаётся обычным файлом — её сервер не тянет', () => {
+    expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: 'https://youtube.com/watch?v=x' }))).toBe(false)
+    expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: 'https://files.example/course-catalog/notes.pdf' }))).toBe(false)
+    expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: null }))).toBe(false)
+  })
+
+  // Адрес каталога бывает с якорем или запросом — .html там не в конце строки.
+  it('каталожный адрес с запросом и якорем опознаётся', () => {
+    const c = (fileUrl) => isCatalogHtmlLink(assignment({ materialType: 'LINK', fileUrl }))
+    expect(c('https://f.kz/course-catalog/a0.html?v=2')).toBe(true)
+    expect(c('https://f.kz/course-catalog/a0.htm#stage-3')).toBe(true)
   })
 })
 

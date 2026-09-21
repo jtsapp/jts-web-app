@@ -7755,6 +7755,9 @@ textarea {
 .hw-grade__num { font-size: 32px; font-weight: 800; color: var(--purple); line-height: 1; }
 .hw-grade__label { color: var(--muted); font-size: 14px; }
 .hw-comment { margin-top: 10px; color: var(--ink); font-size: 15px; line-height: 1.5; }
+/* Что задано с урока — читаемый текст, а не подпись: это единственное на экране,
+   что говорит ученику, какую часть урока ему делать. */
+.hw-assigned { margin: 0 0 12px; color: var(--ink); font-size: 15px; line-height: 1.5; }
 
 @media (max-width: 900px) {
   .hw__layout { grid-template-columns: 1fr; }

@@ -123,6 +123,11 @@ export default function MaterialAssignmentDetail({ card, token, onOpenCard, onSa
 
       <section className="hw-block">
         <h3 className="hw-block__title">{t('homework.task')}</h3>
+        {/* Что именно задали. Без этой строки на экране одна кнопка: заголовок —
+            название материала ЦЕЛИКОМ, а задают из него обычно один блок или одну
+            стадию, и ученику неоткуда узнать какой, пока он не откроет и не
+            пролистает урок. Ту же строку видит преподаватель в форме оценки. */}
+        {a.stageTitlesSnapshot && <p className="hw-assigned">{a.stageTitlesSnapshot}</p>}
         <button type="button" className="hw-submit" disabled={busy} onClick={open}>
           {t('homework.open')}
         </button>
