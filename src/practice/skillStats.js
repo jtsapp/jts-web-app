@@ -5,6 +5,7 @@
 // инкрементами; без токена — только локально (на сервер не пишем, как pushModule).
 
 import { loadToken } from '../lib/session.js'
+import { userIdFromToken } from '../lib/jwt.js'
 import { addDelta, mergeDeltas, emptyStats, SKILLS } from './skillStatsCore.js'
 
 const MIRROR_KEY = 'jts_skill_stats'
@@ -58,7 +59,17 @@ export function flushSkillStats() {
   // другой (общий компьютер класса). Тогда ни чужое зеркало, ни возврат чужих
   // дельт в буфер писать нельзя: следующий флаш отправил бы их под новым
   // токеном — в рейтинг навыков другого человека.
-  const sameUser = () => loadToken() === token
+  //
+  // Сверяем по id из токена, а не по самой строке: access-токен того же
+  // ученика может смениться по refresh (lib/session.js), и сравнение строк
+  // приняло бы его за чужого — ответ сервера и возврат дельт терялись бы.
+  // Строки сравниваем только там, где id из токена не достать.
+  const uid = userIdFromToken(token)
+  const sameUser = () => {
+    const now = loadToken()
+    if (!now) return false
+    return uid != null ? userIdFromToken(now) === uid : now === token
+  }
   fetch('/api/skills', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

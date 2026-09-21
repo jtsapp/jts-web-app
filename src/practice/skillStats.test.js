@@ -58,6 +58,56 @@ describe('skillStats — смена пользователя во время о�
     expect(localStorage.getItem('jts_skill_stats_pending')).toBeNull()
   })
 
+  // Access-токен того же ученика может смениться по refresh, пока запрос в
+  // пути. Это не смена пользователя: ответ сервера обязан лечь в зеркало, а
+  // при сбое дельты — вернуться в буфер. Сравнение строк токенов теряло бы и
+  // то и другое.
+  const jwtFor = (userId, salt) => `h.${btoa(JSON.stringify({ userId, salt })).replace(/=+$/, '')}.s`
+
+  it('обновлённый токен того же ученика — не смена пользователя', async () => {
+    localStorage.setItem(TOKEN_KEY, jwtFor(41, 'old'))
+    const fetchMock = deferredFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    recordSkill('grammar', true)
+    flushSkillStats()
+
+    localStorage.setItem(TOKEN_KEY, jwtFor(41, 'refreshed'))
+    fetchMock.settle().resolve({ ok: true, json: async () => ({ stats: { grammar: { done: 7, firstTry: 5 } } }) })
+    await vi.runAllTimersAsync()
+    expect(JSON.parse(localStorage.getItem('jts_skill_stats')).grammar.done).toBe(7)
+  })
+
+  it('сбой при обновлённом токене того же ученика возвращает дельты в буфер', async () => {
+    localStorage.setItem(TOKEN_KEY, jwtFor(41, 'old'))
+    const fetchMock = deferredFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    recordSkill('grammar', true)
+    flushSkillStats()
+
+    localStorage.setItem(TOKEN_KEY, jwtFor(41, 'refreshed'))
+    fetchMock.settle().reject(new Error('offline'))
+    // Только микрозадачи, без таймеров: через 800 мс отложенный флаш из
+    // recordSkill заберёт возвращённые дельты в новую отправку, и буфер снова
+    // окажется пуст — уже законно.
+    await vi.advanceTimersByTimeAsync(0)
+    expect(JSON.parse(localStorage.getItem('jts_skill_stats_pending')).grammar.done).toBe(1)
+  })
+
+  it('другой ученик с настоящим токеном — смена пользователя', async () => {
+    localStorage.setItem(TOKEN_KEY, jwtFor(41, 'a'))
+    const fetchMock = deferredFetch()
+    vi.stubGlobal('fetch', fetchMock)
+    recordSkill('grammar', true)
+    flushSkillStats()
+
+    clearLocalSkillStats()
+    localStorage.setItem(TOKEN_KEY, jwtFor(42, 'b'))
+    fetchMock.settle().resolve({ ok: true, json: async () => ({ stats: { grammar: { done: 99, firstTry: 99 } } }) })
+    await vi.runAllTimersAsync()
+    expect(localStorage.getItem('jts_skill_stats')).toBeNull()
+  })
+
   it('отложенная отправка после выхода не уходит вовсе', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
