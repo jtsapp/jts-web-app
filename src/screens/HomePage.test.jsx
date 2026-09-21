@@ -230,6 +230,23 @@ describe('Главная демо-аккаунта', () => {
   })
 })
 
+// «Практика на сегодня»: плитки «Книги» и «Аудирование» вели на общий экран
+// «Практики» — ученик искал раздел заново, хотя нажал ровно на него.
+describe('Практика на сегодня — плитки ведут в свой раздел', () => {
+  it('«Аудирование» открывает экран аудирования, «Книги» — «Практику» на книгах', () => {
+    const onNav = vi.fn()
+    renderHome({ isDemoAccount: false, onNav })
+    const tiles = [...document.querySelectorAll('.hm-prac__tile')]
+    const byTitle = (re) => tiles.find((b) => re.test(b.textContent))
+
+    fireEvent.click(byTitle(/аудирован/i))
+    expect(onNav).toHaveBeenLastCalledWith('listening')
+
+    fireEvent.click(byTitle(/книг/i))
+    expect(onNav).toHaveBeenLastCalledWith('practice', { filter: 'books' })
+  })
+})
+
 describe('Карточка пробного урока', () => {
   beforeEach(() => {
     trialState.value = { requested: false, managerAssigned: false }
@@ -314,5 +331,30 @@ describe('Карточка пробного урока', () => {
   it('без токена в сеть не ходит и остаётся приглашением', async () => {
     renderHome()
     await waitFor(() => expect(screen.getByText('Записаться')).toBeTruthy())
+  })
+})
+
+describe('Карточка домашки у ученика', () => {
+  beforeEach(() => {
+    homework.value = []
+  })
+
+  // Сортировка шла по new Date(dueDate || 0): задание без срока становилось
+  // «сроком 1970 года» и вставало первым. Три бессрочных вытесняли из тройки
+  // то, что сдавать завтра, — ровно то, ради чего карточка на «Главной».
+  it('задание со сроком идёт раньше бессрочных и не вытесняется ими', async () => {
+    const tomorrow = new Date(Date.now() + 86400000).toISOString()
+    homework.value = [
+      { id: 1, title: 'Без срока 1', status: 'ASSIGNED' },
+      { id: 2, title: 'Без срока 2', status: 'ASSIGNED' },
+      { id: 3, title: 'Без срока 3', status: 'ASSIGNED' },
+      { id: 4, title: 'Сдать завтра', status: 'ASSIGNED', dueDate: tomorrow },
+    ]
+    const { container } = renderHome({ token: 'T', isDemoAccount: false })
+
+    await screen.findByText('Сдать завтра')
+    const titles = [...container.querySelectorAll('.hm-hw__item b')].map((b) => b.textContent)
+    expect(titles[0]).toBe('Сдать завтра')
+    expect(titles).toHaveLength(3)
   })
 })

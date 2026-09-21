@@ -14,11 +14,11 @@ import { getBalance, getLearningPath, countProgress, updateUser, getCurrentUser 
 import { birthDateProblem } from '../lib/birthDate.js'
 import BirthDateInput from '../components/BirthDateInput.jsx'
 import { loadSkillStatsRemote, readLocalSkillStats } from '../practice/skillStats.js'
+import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from '../lib/profileAvatar.js'
+import { shrinkImage } from '../lib/shrinkImage.js'
+import { isSoundEnabled, setSoundEnabled, playCue } from '../lib/notifySound.js'
 
-// Ключи localStorage — веб-аналог AppCustomizationCubit / настроек мобилки.
-const AVATAR_KEY = 'jts_profile_avatar'
-const AVATAR_BG_KEY = 'jts_avatar_bg'
-const NOTIF_KEY = 'jts_notifications_enabled'
+// Фото и фон аватара хранит lib/profileAvatar.js: у них ключ свой на аккаунт.
 
 // Палитра фонов аватара (как cosmetics-фоны мобилки, но без лутбокса).
 const AVATAR_BGS = ['#f0ebff', '#dbeafe', '#dcfce7', '#fef3c7', '#ffe4e6', '#e0e7ff', '#fae8ff', '#f1f5f9']
@@ -78,6 +78,9 @@ export default function ProfilePage({
 
   const [avatar, setAvatar] = useState(null)
   const [avatarBg, setAvatarBg] = useState(AVATAR_BGS[0])
+  // «Уведомления» — звук сигналов кабинета (lib/notifySound.js, тот же, что
+  // у колокольчика). Раньше тут был «Push-уведомления» со своим флагом,
+  // который никто не читал: пушей у веба нет, переключатель ничего не менял.
   const [notifEnabled, setNotifEnabled] = useState(true)
   const [streak, setStreak] = useState(0)
   const [lessons, setLessons] = useState(0)
@@ -92,7 +95,9 @@ export default function ProfilePage({
   const [customOpen, setCustomOpen] = useState(false)
 
   // Форма редактирования профиля
-  const [form, setForm] = useState({ name: '', email: '', city: '', gender: '', birthDate: '' })
+  // Пола в форме нет намеренно: у бэкенда нет такого поля ни в /user/me, ни в
+  // UpdateUserRequest — выбор молча выбрасывался, а тост писал «Сохранено».
+  const [form, setForm] = useState({ name: '', email: '', city: '', birthDate: '' })
   const [saving, setSaving] = useState(false)
   const [editErr, setEditErr] = useState('')
 
@@ -104,15 +109,16 @@ export default function ProfilePage({
   const initial = trimmedName ? trimmedName.charAt(0).toUpperCase() : null
   const phone = formatPhone(userPhone)
 
-  // Персистентные настройки из localStorage.
+  // Персистентные настройки из localStorage. Аватар читается под токеном:
+  // сменился аккаунт — показываем его фото, а не оставшееся от прошлого.
+  useEffect(() => {
+    setAvatar(readAvatar(token))
+    setAvatarBg(readAvatarBg(token) || AVATAR_BGS[0])
+  }, [token])
+
   useEffect(() => {
     try {
-      const a = localStorage.getItem(AVATAR_KEY)
-      if (a) setAvatar(a)
-      const bg = localStorage.getItem(AVATAR_BG_KEY)
-      if (bg) setAvatarBg(bg)
-      const n = localStorage.getItem(NOTIF_KEY)
-      if (n != null) setNotifEnabled(n === '1')
+      setNotifEnabled(isSoundEnabled())
     } catch {}
   }, [])
 
@@ -162,56 +168,71 @@ export default function ProfilePage({
     setTimeout(() => setToast(''), 2200)
   }
 
-  function pickAvatar(e) {
+  // Фото ужимаем до 256px (см. lib/shrinkImage.js): как есть оно в квоту
+  // localStorage не влезало и молча пропадало после перезагрузки. Не вышло
+  // прочитать или сохранить — говорим об этом, а не показываем фото, которого
+  // после перезагрузки не будет.
+  async function pickAvatar(e) {
     const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const url = String(reader.result)
-      setAvatar(url)
-      try {
-        localStorage.setItem(AVATAR_KEY, url)
-      } catch {}
-    }
-    reader.readAsDataURL(file)
     e.target.value = ''
+    if (!file) return
+    let url
+    try {
+      url = await shrinkImage(file)
+    } catch {
+      showToast(t('profile.avatarFailed'))
+      return
+    }
+    if (!saveAvatar(token, url)) {
+      showToast(t('profile.avatarFailed'))
+      return
+    }
+    setAvatar(url)
   }
 
   function resetAvatar() {
     setAvatar(null)
-    try {
-      localStorage.removeItem(AVATAR_KEY)
-    } catch {}
+    removeAvatar(token)
   }
 
   function chooseBg(c) {
     setAvatarBg(c)
-    try {
-      localStorage.setItem(AVATAR_BG_KEY, c)
-    } catch {}
+    saveAvatarBg(token, c)
   }
 
   function toggleNotif() {
-    setNotifEnabled((v) => {
-      const nv = !v
-      try {
-        localStorage.setItem(NOTIF_KEY, nv ? '1' : '0')
-      } catch {}
-      return nv
-    })
+    const next = !notifEnabled
+    setNotifEnabled(next)
+    setSoundEnabled(next)
+    // Сразу проигрываем — как колокольчик: иначе непонятно, что именно включили.
+    if (next) playCue('notification')
+  }
+
+  // Ту же настройку переключает и колокольчик в углу экрана — к открытию окна
+  // она могла измениться, поэтому перечитываем, а не верим своему состоянию.
+  function openNotif() {
+    setNotifEnabled(isSoundEnabled())
+    setNotifOpen(true)
   }
 
   function openEdit() {
     setEditErr('')
-    setForm({ name: name || '', email: '', city: '', gender: '', birthDate: '' })
+    setForm({ name: name || '', email: '', city: '', birthDate: '' })
     setEditOpen(true)
-    // Дату рождения подтягиваем из профиля: она обязательна при регистрации,
-    // и пустое поле читалось бы как «не указана», хотя она уже есть. Осечка
-    // сети не мешает править остальное — просто останется пустым.
+    // Сохранённое подтягиваем из профиля: пустое поле читалось бы как «не
+    // указано» — ученик вводил email заново, думая, что он пропал. Уже
+    // начатую правку не затираем: ответ может прийти, когда человек печатает.
+    // Осечка сети не мешает править остальное — поля просто останутся пустыми.
     if (token) {
       getCurrentUser(token)
         .then((me) => {
-          if (me?.birthDate) setForm((f) => ({ ...f, birthDate: String(me.birthDate).slice(0, 10) }))
+          if (!me) return
+          setForm((f) => ({
+            ...f,
+            email: f.email || me.email || '',
+            city: f.city || me.city || '',
+            birthDate: f.birthDate || (me.birthDate ? String(me.birthDate).slice(0, 10) : ''),
+          }))
         })
         .catch(() => {})
     }
@@ -238,7 +259,6 @@ export default function ProfilePage({
         name: trimmed,
         email: form.email.trim(),
         city: form.city.trim(),
-        gender: form.gender,
         birthDate: form.birthDate,
       })
       setName(trimmed)
@@ -278,8 +298,7 @@ export default function ProfilePage({
   ]
 
   const settings = [
-    { key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: () => setNotifOpen(true) },
-    { key: 'rate', icon: <PfStarIcon />, title: t('profile.rateApp'), onClick: shareApp },
+    { key: 'notif', icon: <PfBellIcon />, title: t('profile.notifications'), trailing: notifEnabled ? t('profile.notifOn') : t('profile.notifOff'), onClick: openNotif },
     { key: 'share', icon: <PfShareIcon />, title: t('profile.shareApp'), onClick: shareApp },
     { key: 'support', icon: <PfSupportIcon />, title: t('profile.support'), onClick: () => { window.location.href = 'mailto:support@justtostudy.kz' } },
     { key: 'privacy', icon: <PfShieldIcon />, title: t('profile.privacy'), onClick: () => window.open('https://justtostudy.kz/privacy', '_blank') },
@@ -287,7 +306,7 @@ export default function ProfilePage({
   ]
 
   return (
-    <LearningLayout userName={name} userLevel={userLevel} active="" onNav={onNav} onProfile={() => {}}>
+    <LearningLayout userName={name} userLevel={userLevel} active="" token={token} onNav={onNav} onProfile={() => {}}>
       <div className="pf">
         {/* ── Hero ── */}
         <section className="pf-hero">
@@ -356,11 +375,6 @@ export default function ProfilePage({
                 <span className="pf-stat__glyph"><PfCapIcon /></span>
                 <b>{lessons}</b>
                 <span>{t('profile.statLessons')}</span>
-              </div>
-              <div className="pf-stat">
-                <span className="pf-stat__glyph pf-stat__glyph--gold"><PfGroupIcon /></span>
-                <b>0</b>
-                <span>{t('profile.statClubs')}</span>
               </div>
             </div>
           </div>
@@ -455,24 +469,6 @@ export default function ProfilePage({
               onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
             />
           </label>
-          <div className="pf-field">
-            <span>{t('profile.editGender')}</span>
-            <div className="pf-seg">
-              {[
-                ['MALE', t('profile.genderMale')],
-                ['FEMALE', t('profile.genderFemale')],
-                ['OTHER', t('profile.genderOther')],
-              ].map(([v, label]) => (
-                <button
-                  key={v}
-                  className={`pf-seg__opt ${form.gender === v ? 'pf-seg__opt--active' : ''}`}
-                  onClick={() => setForm((f) => ({ ...f, gender: v }))}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
           {editErr && <div className="pf-err">{editErr}</div>}
           <button className="pf-save" disabled={saving} onClick={saveProfile}>
             {saving ? t('profile.editSaving') : t('profile.editSave')}
@@ -484,7 +480,7 @@ export default function ProfilePage({
       {notifOpen && (
         <Modal onClose={() => setNotifOpen(false)} title={t('profile.notifTitle')}>
           <button className="pf-toggle-row" onClick={toggleNotif}>
-            <span>{t('profile.notifPush')}</span>
+            <span>{t('profile.notifSound')}</span>
             <span className={`pf-switch ${notifEnabled ? 'pf-switch--on' : ''}`}>
               <span className="pf-switch__knob" />
             </span>
@@ -583,15 +579,6 @@ function PfCapIcon() {
     </svg>
   )
 }
-function PfGroupIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" {...S}>
-      <circle cx="9" cy="9" r="3" />
-      <path d="M3 19c0-3 2.7-5 6-5s6 2 6 5" />
-      <path d="M16 6.5a3 3 0 0 1 0 5.5M18 19c0-2-.8-3.6-2.2-4.6" />
-    </svg>
-  )
-}
 function PfEditIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" {...S}>
@@ -621,13 +608,6 @@ function PfBellIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
       <path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
       <path d="M10 20a2 2 0 0 0 4 0" />
-    </svg>
-  )
-}
-function PfStarIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" {...S}>
-      <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
     </svg>
   )
 }

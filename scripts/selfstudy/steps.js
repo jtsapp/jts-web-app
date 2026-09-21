@@ -185,6 +185,21 @@ function tableHtml(sc, lang) {
   return `<table class="cp-table">${headRow ? `<tr>${headRow}</tr>` : ''}${rows}</table>${explain}${fwd}`
 }
 
+// Сгенерированная озвучка текста, если она есть. ctx.wordAudio ищет файл по
+// хэшу самого текста (public/learning/audio/<level>/), и годится он не только
+// для слов: тем же именем scripts/voice-step-cards.js озвучивает фразы и
+// образцы для записи голоса. Без этого запасного пути следующая выгрузка
+// курса молча возвращала фразам src: null, и их снова читал браузерный синтез.
+const voiced = (ctx, text) => (text && ctx.wordAudio ? ctx.wordAudio(text) : null) || null
+
+// Образец шага record. Строкой он был всегда; объектом { text, src } становится
+// только там, где запись есть, — плеер понимает оба вида (recordLine в
+// CourseStepPlayer.jsx), и без записей данные остаются прежними.
+function recordItem(ctx, text) {
+  const src = voiced(ctx, text)
+  return src ? { text, src } : text
+}
+
 /**
  * Экран курса → шаг плеера.
  * @param {object} sc экран (после flattenGroups)
@@ -462,11 +477,13 @@ function screenToStep(sc, ctx) {
         ...base,
         title: title || plain(sc.title, lang),
         type: 'phrases',
-        items: (sc.items || []).map((it) =>
-          typeof it === 'string'
-            ? { text: it, src: null }
-            : { text: plain(it.s, lang), src: it.clip ? ctx.clip(it.clip) : null },
-        ),
+        // Запись курса важнее: её читал диктор учебника. Сгенерированная —
+        // запасной путь для фраз, у которых записи в файле курса нет.
+        items: (sc.items || []).map((it) => {
+          if (typeof it === 'string') return { text: it, src: voiced(ctx, it) }
+          const text = plain(it.s, lang)
+          return { text, src: (it.clip && ctx.clip(it.clip)) || voiced(ctx, text) }
+        }),
       }
 
     case 'table':
@@ -479,7 +496,10 @@ function screenToStep(sc, ctx) {
         return {
           ...base,
           type: 'phrases',
-          items: (sc.items || []).map((it) => ({ text: plain(it.s, lang), src: it.clip ? ctx.clip(it.clip) : null })),
+          items: (sc.items || []).map((it) => {
+            const text = plain(it.s, lang)
+            return { text, src: (it.clip && ctx.clip(it.clip)) || voiced(ctx, text) }
+          }),
         }
       }
       return {
@@ -579,7 +599,7 @@ function screenToStep(sc, ctx) {
       return {
         ...base,
         type: 'record',
-        items: (sc.prompts || sc.lines || []).map((x) => plain(x, lang)),
+        items: (sc.prompts || sc.lines || []).map((x) => recordItem(ctx, plain(x, lang))),
       }
 
     // Соединение пар B2: слева слово, справа его значение.
@@ -711,7 +731,7 @@ function screenToStep(sc, ctx) {
       return {
         ...base,
         type: 'record',
-        items: (sc.lines || sc.items || []).map((l) => (typeof l === 'string' ? l : plain(l.s, lang))),
+        items: (sc.lines || sc.items || []).map((l) => recordItem(ctx, typeof l === 'string' ? l : plain(l.s, lang))),
       }
 
     case 'wrap':

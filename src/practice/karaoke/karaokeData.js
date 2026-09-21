@@ -12,6 +12,9 @@
 
 import { getKaraokeTracks, getKaraokeTrack } from '../../api.js'
 import { KARAOKE_KEY as KEY } from '../practiceKeys.js'
+// Результаты исполнения — свои у каждого ученика: серверной копии нет, и под
+// общим ключом следующий на том же компьютере видел чужие звёзды и серию.
+import { userScopedKey } from '../../lib/userScopedKey.js'
 import { normalizeTracks, normalizeTrack, normalizeLyrics } from './karaokeShape.js'
 
 let _indexPromise = null
@@ -68,7 +71,7 @@ export async function loadLyrics(track, token) {
 
 function read() {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || '{}')
+    const raw = JSON.parse(localStorage.getItem(userScopedKey(KEY)) || '{}')
     if (!raw || typeof raw !== 'object') return { version: 1, tracks: {} }
     return { version: 1, streak: raw.streak, tracks: raw.tracks || {} }
   } catch {
@@ -78,7 +81,7 @@ function read() {
 
 function write(state) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(state))
+    localStorage.setItem(userScopedKey(KEY), JSON.stringify(state))
   } catch {
     /* нет квоты — прогресс просто не переживёт перезагрузку */
   }
