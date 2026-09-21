@@ -115,3 +115,18 @@ describe('нераскрытая сущность апострофа в этал
     expect(answerMatches('I like rain', ['I don&#x27;t like rain.'])).toBe(false)
   })
 })
+
+// Тире в данных и на клавиатуре разные: курс пишет прочерк «—», а ученик
+// набирает дефис — «Проверить» браковала верный ответ.
+describe('answerMatches — разновидности тире в ответе-прочерке', () => {
+  it('дефис, короткое и длинное тире — один прочерк', () => {
+    expect(answerMatches('-', ['—'])).toBe(true)
+    expect(answerMatches('–', ['-'])).toBe(true)
+    expect(answerMatches('—', ['-'])).toBe(true)
+  })
+
+  it('другие знаки прочерком не становятся', () => {
+    expect(answerMatches('?', ['—'])).toBe(false)
+    expect(answerMatches('.', ['-'])).toBe(false)
+  })
+})
