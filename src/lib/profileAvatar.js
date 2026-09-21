@@ -24,8 +24,16 @@ function read(base, token) {
     if (own != null) return own
     const legacy = localStorage.getItem(base)
     if (legacy == null) return null
-    localStorage.setItem(key, legacy)
+    // Сначала стираем общий ключ, потом пишем свой: фото в пару мегабайт в
+    // двух копиях не влезало в квоту, setItem бросал — владелец терял фото, а
+    // старая копия так и занимала место навсегда.
     localStorage.removeItem(base)
+    try {
+      localStorage.setItem(key, legacy)
+    } catch {
+      // Не влезло и одно — вернём общий ключ на место, пусть фото не пропадёт.
+      try { localStorage.setItem(base, legacy) } catch { /* ignore */ }
+    }
     return legacy
   } catch {
     return null

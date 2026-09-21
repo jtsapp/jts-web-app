@@ -3,7 +3,7 @@
 // «Выйти» следующий ученик на том же компьютере видел чужое фото в своём
 // профиле. Стирать на выходе нельзя — владелец терял бы фото при каждом
 // повторном входе, — поэтому ключ привязан к пользователю.
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readAvatar, saveAvatar, removeAvatar, readAvatarBg, saveAvatarBg } from './profileAvatar.js'
 
 // Токен с payload {"userId": N}: разбор payload'а — lib/jwt.js.
@@ -47,5 +47,22 @@ describe('profileAvatar', () => {
     saveAvatar(null, 'x')
     expect(readAvatar(null)).toBeNull()
     expect(localStorage.length).toBe(0)
+  })
+
+  it('большое фото из общего ключа переезжает, даже если две копии не влезли бы в квоту', () => {
+    localStorage.setItem('jts_profile_avatar', 'big')
+    // Квота на одну копию: запись второй бросает, как в браузере.
+    const real = Storage.prototype.setItem
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (k, v) {
+      if (this.getItem('jts_profile_avatar') != null) throw new DOMException('full', 'QuotaExceededError')
+      return real.call(this, k, v)
+    })
+    try {
+      expect(readAvatar(A)).toBe('big')
+    } finally {
+      spy.mockRestore()
+    }
+    expect(localStorage.getItem('jts_profile_avatar')).toBeNull()
+    expect(readAvatar(A)).toBe('big')
   })
 })
