@@ -116,19 +116,40 @@ function stopSpeaking() {
 // («Pick anything you like» / «I can …»), у проверяемых — под инструкцией.
 const PROMPT_FIRST = new Set(['pick', 'write', 'checklist'])
 
-// scripts/selfstudy/steps.js печёт подпись стадии («Practice», «Vocabulary»…)
-// в JSON один раз при выгрузке курса, и до этой правки — всегда на английском,
-// при любом lang. У уже выгруженных public/course/*/steps-*.json это так и
-// останется, пока кто-то не прогонит экстрактор заново на файле уровня (сотни
-// МБ, не в репозитории) — переводим тут, на экране, а не в данных.
-const STAGE_LABEL_RU = {
-  'Warm-up': 'Разминка',
-  Vocabulary: 'Слова',
-  Grammar: 'Грамматика',
-  Practice: 'Практика',
-  Listening: 'Аудирование',
-  Speaking: 'Говорение',
-  Wrap: 'Итоги',
+// scripts/selfstudy/steps.js печёт подпись стадии в JSON один раз при выгрузке
+// курса: у A1–B2 она английская («Practice»), у A0 — уже русская
+// («Практика»). Перегонять экстрактор ради подписи незачем (файлы уровня —
+// сотни МБ, не в репозитории), поэтому переводим на экране. Раньше здесь была
+// карта только на русский, и казахский или английский интерфейс всё равно
+// видел «Практика» — теперь оба варианта из данных ведут на ключ словаря.
+const STAGE_KEY = {
+  'Warm-up': 'warmup',
+  Разминка: 'warmup',
+  Vocabulary: 'vocab',
+  Слова: 'vocab',
+  Grammar: 'grammar',
+  Грамматика: 'grammar',
+  Practice: 'practice',
+  Практика: 'practice',
+  Listening: 'listening',
+  Аудирование: 'listening',
+  Speaking: 'speaking',
+  Говорение: 'speaking',
+  Wrap: 'wrap',
+  Итоги: 'wrap',
+  // Казахские подписи — на случай выгрузки курса с lang=kk: названия те же,
+  // что печёт сам сборщик (STAGE_NAMES в scripts/selfstudy/steps.js).
+  Қыздыру: 'warmup',
+  Сөздер: 'vocab',
+  Тәжірибе: 'practice',
+  Тыңдалым: 'listening',
+  Сөйлеу: 'speaking',
+  Қорытынды: 'wrap',
+}
+
+export function stageLabel(stage, t) {
+  const key = STAGE_KEY[stage]
+  return key ? t(`lesson.stage.${key}`) : stage
 }
 
 
@@ -258,7 +279,7 @@ export default function CourseStepPlayer({ steps, title, subtitle, level, passRa
           <span className="cp-bar__label">{t('lesson.exitLesson')}</span>
         </button>
         <div className="cp-bar__place">
-          <b>{STAGE_LABEL_RU[step.stage] || step.stage}</b>
+          <b>{stageLabel(step.stage, t)}</b>
           <span>{title}</span>
         </div>
         {/* Язык интерфейса прямо в уроке: в макете «Обучение» пилюля с флагом
@@ -534,7 +555,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
   // тёмная строка — инструкция. Крупной фиолетовой на этом экране нет.
   // У cols инструкция в данных («Put the words in the correct column.») —
   // авторский текст курса, а не UI-строка, и в источнике он английский без
-  // ru/kk (см. STAGE_LABEL_RU выше — тот же баг). Заголовки колонок (was/were
+  // ru/kk (см. stageLabel выше — тот же баг). Заголовки колонок (was/were
   // и т.п.) и так называют, что куда класть, поэтому вместо содержимого
   // экрана — общая переведённая инструкция; title экрана в cols не показываем
   // вовсе, чтобы английский не просочился второй строкой.

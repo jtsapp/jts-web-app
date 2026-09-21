@@ -568,9 +568,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               <div className="le-pct">{end.accuracy ?? 100}%</div>
               <div className="le-head">
                 <h2 className="le-title">
-                  {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
+                  {t((end.accuracy ?? 100) >= 80 ? 'lesson.result.great' : (end.accuracy ?? 100) >= 50 ? 'lesson.result.good' : 'lesson.result.passed')}
                 </h2>
-                <p className="le-sub">{open?.steps?.title || t('learn.done')} — пройден</p>
+                <p className="le-sub">{t('lesson.result.titleDone', { title: open?.steps?.title || t('learn.done') })}</p>
               </div>
               <div className="le-bottom">
                 <div className="le-stats">
@@ -581,7 +581,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                       </span>
                       <b>{end.wrong ?? 0}</b>
                     </div>
-                    <span>Неверных ответов</span>
+                    <span>{t('lesson.result.wrong')}</span>
                   </div>
                   <div className="le-stat le-stat--right">
                     <div className="le-stat__row">
@@ -590,7 +590,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                       </span>
                       <b>{end.correct ?? 0}</b>
                     </div>
-                    <span>Верных ответов</span>
+                    <span>{t('lesson.result.right')}</span>
                   </div>
                 </div>
                 {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
@@ -615,10 +615,10 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                 ) : (
                   <div className="le-acts">
                     <button className="le-btn" onClick={goNext} disabled={saving} aria-busy={saving}>
-                      Перейти на следующий урок
+                      {t('lesson.result.next')}
                     </button>
                     <button className="le-again" onClick={retry}>
-                      Пройти снова
+                      {t('lesson.result.again')}
                     </button>
                   </div>
                 )}
@@ -641,12 +641,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               <div className="le-fail">
                 <div className="le-pct">{end.accuracy ?? 0}%</div>
                 <div className="le-head">
-                  <h2 className="le-title">Тест не сдан</h2>
-                  <p className="le-sub le-sub--bold">Верных ответов пока мало — попробуйте ещё раз</p>
+                  <h2 className="le-title">{t('lesson.result.failTitle')}</h2>
+                  <p className="le-sub le-sub--bold">{t('lesson.result.failSub')}</p>
                 </div>
               </div>
               <button className="le-btn" onClick={retry}>
-                Попробовать еще раз
+                {t('lesson.result.retry')}
               </button>
             </div>
           </div>
