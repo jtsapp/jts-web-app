@@ -14,7 +14,6 @@
     "src/screens/KaraokeTrack.jsx <button> .kk__opt",
     "src/screens/LevelTestPage.jsx <button> .option--correct.option--selected.option--wrong",
     "src/screens/ShadowingPage.jsx <button> .sh-seg__assess",
-    "src/screens/ShadowingPage.jsx <button> .sh-whole-assess",
     "src/screens/SpeakingTestPage.jsx <button> .t-pill.t-pill--lg.t-pill--primary",
     "src/screens/TutorInterestsPage.jsx <button> .t-pill.t-pill--primary",
     "src/screens/TutorProfessionPage.jsx <button> .t-pill.t-pill--primary",
