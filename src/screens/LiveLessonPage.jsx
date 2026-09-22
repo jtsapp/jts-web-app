@@ -276,13 +276,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   useEffect(() => {
     let cancelled = false
+    // Занятие ещё не загружено — решать «шаги или файл» нечем (spec §6.2): FILE-занятие
+    // не должно мигнуть шагами, пока ждём ответ. Эффект перезапустится, когда придёт lesson.
+    if (!lesson) return undefined
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    // Разбор выключен (LESSON_EXTRACTOR): материал открывается самим файлом, как
-    // пробный урок, — шаги не ищутся вовсе. Решение «шаги или файл» — в одном
-    // месте, shouldResolveCatalogLesson, чтобы страница и тесты сходились.
-    Promise.resolve(shouldResolveCatalogLesson(url) ? catalogLessonIdFor(url, token) : null)
+    // Шаги или файл решает движок занятия — в одном месте, shouldResolveCatalogLesson,
+    // чтобы страница и тесты сходились.
+    Promise.resolve(shouldResolveCatalogLesson(url, lesson) ? catalogLessonIdFor(url, token) : null)
       .then((id) =>
         id == null
           ? Promise.resolve({ id: null, loaded: null })
@@ -328,7 +330,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         setCatalogResolvedFor(url)
       })
     return () => { cancelled = true }
-  }, [materialFileUrl, token])
+  }, [materialFileUrl, token, lesson?.engine])
 
   // Стадии файлового урока — третий источник «Тем» (после шагов разбора и
   // разделов занятия). Разбор выключен, и без них список тем у ученика — одна
