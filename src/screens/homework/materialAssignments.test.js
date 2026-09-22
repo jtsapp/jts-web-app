@@ -4,6 +4,7 @@ import {
   hasAnswerFiles, needsAnswerFile, isWholeCatalogLesson,
 } from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
+import { LESSON_EXTRACTOR } from '../live/lessonExtractor.js'
 
 const assignment = (over = {}) => ({
   id: 5,
@@ -249,6 +250,20 @@ describe('урок каталога целиком', () => {
     expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'STEPS' }))).toBe(true)
     // Без занятия или под старым бэкендом — как раньше.
     expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: null }))).toBe(true)
+  })
+
+  // Регрессия финального ревью ветки: раньше здесь сравнивали lessonEngine
+  // напрямую со строкой 'FILE', мимо engineOf — аварийный рубильник
+  // LESSON_EXTRACTOR.enabled (spec §2, §9: «одна строка возвращает всё к
+  // разбору») эту проверку не видел вовсе, и выдача из FILE-занятия осталась бы
+  // рамкой, пока все остальные занятия уже откатились на STEPS.
+  it('рубильник LESSON_EXTRACTOR.enabled возвращает «урок целиком» и выдаче из FILE-занятия', () => {
+    LESSON_EXTRACTOR.enabled = true
+    try {
+      expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE' }))).toBe(true)
+    } finally {
+      LESSON_EXTRACTOR.enabled = false
+    }
   })
 
   it('чужая ссылка, PDF и загруженный интерактив — не урок каталога', () => {
