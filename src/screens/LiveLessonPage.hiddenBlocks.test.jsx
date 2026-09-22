@@ -26,6 +26,7 @@ vi.mock('../api.js', () => ({
   getLessonById: vi.fn(async () => ({
     id: 14,
     status: 'IN_PROGRESS',
+    engine: 'FILE',
     lessonType: 'INDIVIDUAL',
     topic: 'The family group chat',
     teacherId: 6,
@@ -77,9 +78,10 @@ vi.mock('./workspace/LessonContent.jsx', () => ({
 }))
 vi.mock('./live/LiveBoard.jsx', () => ({ default: () => <div data-testid="board" /> }))
 
-// Материал — файл каталога (не разобранный, LESSON_EXTRACTOR выключен),
-// открывается через рендер-эндпоинт с мостом — тот самый iframe, которому
-// адресован hidden-blocks. hiddenStepIds стартует пустым: ничего не скрыто.
+// Материал — файл каталога занятия с движком FILE (per-lesson engine, см.
+// lessonExtractor.js), поэтому разбора на шаги нет и он открывается через
+// рендер-эндпоинт с мостом — тот самый iframe, которому адресован
+// hidden-blocks. hiddenStepIds стартует пустым: ничего не скрыто.
 const MATERIAL_ID = 11
 function materialWithHidden(hiddenStepIds) {
   return {
