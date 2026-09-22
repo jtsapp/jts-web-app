@@ -64,8 +64,8 @@ export async function getUsed(profileId, dayKeyValue, sql = getSql()) {
 //
 // Путь INSERT (первый разбор за сутки) потолок не проверяет — и не должен:
 // единица списания здесь единица, а потолок минимум 5, так что первая строка
-// за сутки его переполнить не может (в отличие от Shadowing, где одна длинная
-// запись стоит четыре кредита при демо-потолке в три).
+// за сутки его переполнить не может (в отличие от бывшего лимита Shadowing, где
+// одна длинная запись стоила четыре кредита при демо-потолке в три).
 export async function consume(profileId, dayKeyValue, isDemoAccount = false, sql = getSql()) {
   if (!sql) return null
   const rows = await sql`

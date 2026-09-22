@@ -3,7 +3,8 @@
 //
 // Azure Pronunciation Assessment в эталон-режиме (assessAgainstReference); без
 // ключей или при сбое — mock (200, mock:true), чтобы тренажёр работал всегда.
-// Совет Claude — best-effort и ТОЛЬКО по реальным баллам. Гость работает.
+// Совет Claude — best-effort и ТОЛЬКО по реальным баллам. Гостю оценка закрыта,
+// лимита на количество оценок нет (см. lib/db/shadowingBudget.js).
 
 import {
   assessAgainstReference,
@@ -13,20 +14,9 @@ import {
 } from '@/lib/ielts/azure-pronunciation.js'
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { buildTipPrompt } from '@/lib/shadowing/tipPrompt.js'
-import { isDbConfigured } from '@/lib/db/sql.js'
 import { resolveProfileId } from '@/lib/auth-server.js'
 import { unauthorizedIfNoBearer } from '@/lib/practiceContract.js'
-import {
-  wavSeconds,
-  creditsForSeconds,
-  dayKey,
-  budgetPayload,
-  exceedsDailyBudget,
-  dailyLimitFor,
-  getUsed,
-  consume,
-  refund,
-} from '@/lib/db/shadowingBudget.js'
+import { wavSeconds, creditsForSeconds, dayKey, recordCredits } from '@/lib/db/shadowingBudget.js'
 
 export const runtime = 'nodejs'
 
@@ -56,30 +46,9 @@ async function makeTip(score, refText, lang) {
   return String(raw?.tip || '').trim().slice(0, 300)
 }
 
-// Статус для клиента: настроена ли оценка и остаток недельного бюджета. Гостю
-// (без Bearer) budget = null — кнопку «Оценить» клиент прячет. Для залогиненного
-// с настроенной БД отдаём used/remaining, чтобы показать «осталось N/10» — и
-// N/3 демо-аккаунту: показывать общий потолок тому, кого отсекут на своём,
-// значит гарантированно получить его в поддержке.
-export async function GET(request) {
-  const base = { configured: isAzureSpeechConfigured() }
-  const denied = unauthorizedIfNoBearer(request)
-  if (denied) return Response.json({ ...base, budget: null })
-  if (!isDbConfigured()) return Response.json({ ...base, budget: null })
-  const resolved = await resolveProfileId(request, '')
-  if ('error' in resolved) return resolved.error
-  try {
-    const used = await getUsed(resolved.id, dayKey(new Date()))
-    return Response.json({ ...base, budget: budgetPayload(used, resolved.isDemoAccount) })
-  } catch (e) {
-    console.error('[shadowing.assess] budget status failed', e)
-    return Response.json({ ...base, budget: null })
-  }
-}
-
 export async function POST(request) {
-  // Оценка — только для залогиненных: Azure+Claude платные, лимит считаем на
-  // аккаунт. Гость отсекается здесь (клиент кнопку «Оценить» ему и не показывает).
+  // Оценка — только для залогиненных: Azure+Claude платные, и учёт кредитов ведём
+  // на аккаунт. Гость отсекается здесь (клиент кнопку «Оценить» ему и не показывает).
   const denied = unauthorizedIfNoBearer(request)
   if (denied) return denied
 
@@ -113,54 +82,10 @@ export async function POST(request) {
     )
   }
 
-  // Идентичность и недельный лимит. Гость уже отсечён выше; здесь резолвим
-  // profile-id и списываем кредиты ДО платного вызова — так недельный потолок не
-  // пробить даже при гонке. Без БД (dev/preview) метрирования нет (мягкая
-  // деградация, как в остальных db-модулях).
+  // Токен проверяем у бэкенда ДО платного вызова: одного заголовка Bearer мало,
+  // иначе Azure жёг бы любой выдуманный токен. Отсюда же profile-id для учёта.
   const resolved = await resolveProfileId(request, '')
   if ('error' in resolved) return resolved.error
-  const profileId = resolved.id
-  // Демо-аккаунту — свой дневной потолок (3 кредита, см. shadowingBudget.js).
-  // Флаг приехал тем же /user/me, которым проверялся токен, и решает и отсечку,
-  // и списание, и цифру в ответе — одним значением на весь запрос.
-  const isDemo = resolved.isDemoAccount
-
-  const today = dayKey(new Date())
-  const credits = creditsForSeconds(wavSeconds(file.size))
-  let charged = null // { profileId, day, credits } — если списали (для рефанда)
-  let usedNow = null // текущее used для поля budget в ответе
-
-  if (isDbConfigured()) {
-    // Запись дороже целого дневного бюджета — оценить нечем, не начинаем.
-    // На демо-потолке в 3 кредита сюда попадает уже запись длиннее 90 секунд, и
-    // проверка обязательна: путь INSERT в consume() лимит не смотрит.
-    if (exceedsDailyBudget(credits, isDemo)) {
-      let used = dailyLimitFor(isDemo)
-      try { used = await getUsed(profileId, today) } catch { /* показать что есть */ }
-      return Response.json(
-        { error: 'recording_too_long', budget: budgetPayload(used, isDemo) },
-        { status: 413 },
-      )
-    }
-    try {
-      const after = await consume(profileId, today, credits, isDemo)
-      if (after == null) {
-        // Лимит на неделю исчерпан.
-        let used = weeklyLimitFor(isDemo)
-        try { used = await getUsed(profileId, today) } catch { /* показать что есть */ }
-        return Response.json(
-          { error: 'weekly_limit_reached', budget: budgetPayload(used, isDemo) },
-          { status: 429 },
-        )
-      }
-      charged = { profileId, day: today, credits }
-      usedNow = after
-    } catch (e) {
-      // Сбой БД не должен ронять оценку: fail-open. Разовый вызов всё равно
-      // ограничен длиной аудио, так что риск перерасхода мал. Логируем.
-      console.error('[shadowing.assess] budget consume failed', e)
-    }
-  }
 
   // Оценка: реальная Azure, иначе mock (без падения).
   let score = null
@@ -179,14 +104,16 @@ export async function POST(request) {
     score = { ...mockPronunciation(), words: [], transcript: '' }
   }
 
-  // Оценка не состоялась (Azure не настроен/сбой → mock) — вернём кредиты: платы
-  // не было, недельный бюджет тратить не за что.
-  if (score.mock && charged) {
+  // Учёт — только за состоявшуюся оценку: mock (Azure не настроен/сбой) ничего не
+  // стоил, и минутами шэдоуинга в Roadmap он не считается. Пишем ПОСЛЕ вызова:
+  // списывать заранее имело смысл, пока гонка могла пробить потолок, а потолка
+  // больше нет. Без БД учёта нет; сбой БД оценку не роняет — теряется лишь
+  // строка учёта, студент своё получает.
+  if (!score.mock) {
     try {
-      await refund(charged.profileId, charged.day, charged.credits)
-      usedNow = Math.max(0, usedNow - charged.credits)
+      await recordCredits(resolved.id, dayKey(new Date()), creditsForSeconds(wavSeconds(file.size)))
     } catch (e) {
-      console.error('[shadowing.assess] budget refund failed', e)
+      console.error('[shadowing.assess] usage record failed', e)
     }
   }
 
@@ -200,5 +127,5 @@ export async function POST(request) {
     }
   }
 
-  return Response.json({ ...score, tip, budget: budgetPayload(usedNow, isDemo) })
+  return Response.json({ ...score, tip })
 }

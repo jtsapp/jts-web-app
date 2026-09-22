@@ -1,52 +1,24 @@
-// Демо-бюджет оценок Shadowing: у демо-аккаунта свой дневной потолок, и один
-// и тот же выбор лимита обязан решать показ остатка, отсечку слишком дорогой
-// записи и само списание. Базовая математика модуля (ключ суток, кредиты по
-// длине wav) покрыта в tests/shadowing-budget.spec.js — здесь только то, что
-// зависит от демо-статуса.
+// Учёт оценок Shadowing: кредиты пишутся без потолка (лимит снят 22.09.2026),
+// но пишутся — из них недельная сводка Roadmap считает минуты шэдоуинга.
+// Базовая математика модуля (ключ суток, кредиты по длине wav) покрыта в
+// tests/shadowing-budget.spec.js.
 
 import { describe, it, expect } from 'vitest'
-import {
-  DAILY_LIMIT,
-  DEMO_DAILY_LIMIT,
-  dailyLimitFor,
-  budgetPayload,
-  exceedsDailyBudget,
-  creditsForSeconds,
-  getUsed,
-  consume,
-  refund,
-} from './shadowingBudget.js'
+import { recordCredits } from './shadowingBudget.js'
 
-// Фейковый sql-таг: та же семантика, что в tests/shadowing-budget.spec.js —
-// атомарный consume в памяти, включая то, что путь INSERT лимит не смотрит.
+// Фейковый sql-таг с семантикой upsert в памяти. Потолок (where в ветке on
+// conflict) соблюдает, как настоящий Postgres, — если он в запросе появится.
 function makeFakeSql(store = {}) {
-  const key = (p, w) => `${p}|${w}`
   const tag = async (strings, ...vals) => {
     const q = strings.join(' ').replace(/\s+/g, ' ').toLowerCase()
     if (q.includes('insert into shadowing_assess')) {
-      const [profileId, weekKey, credits] = vals
-      const limit = vals[vals.length - 1]
-      const k = key(profileId, weekKey)
-      if (store[k] === undefined) {
-        store[k] = credits // контракт: слишком дорогую запись отсекает вызывающий
-        return [{ used: store[k] }]
-      }
-      if (store[k] + credits <= limit) {
-        store[k] += credits
-        return [{ used: store[k] }]
-      }
-      return []
-    }
-    if (q.includes('update shadowing_assess')) {
-      const [credits, profileId, weekKey] = vals
-      const k = key(profileId, weekKey)
-      if (store[k] !== undefined) store[k] = Math.max(0, store[k] - credits)
-      return []
-    }
-    if (q.includes('select used from shadowing_assess')) {
-      const [profileId, weekKey] = vals
-      const k = key(profileId, weekKey)
-      return store[k] === undefined ? [] : [{ used: store[k] }]
+      const [profileId, day, credits] = vals
+      const k = `${profileId}|${day}`
+      const next = (store[k] ?? 0) + credits
+      const ceiling = /do update .* where /.test(q) ? vals[vals.length - 1] : Infinity
+      if (store[k] !== undefined && next > ceiling) return []
+      store[k] = next
+      return [{ used: next }]
     }
     return []
   }
@@ -54,89 +26,27 @@ function makeFakeSql(store = {}) {
   return tag
 }
 
-describe('выбор лимита по демо-статусу', () => {
-  it('10 кредитов в сутки обычному, 3 демо', () => {
-    expect(DAILY_LIMIT).toBe(10)
-    expect(DEMO_DAILY_LIMIT).toBe(3)
-    expect(dailyLimitFor(false)).toBe(10)
-    expect(dailyLimitFor(true)).toBe(3)
-  })
-
-  it('отсутствие флага — обычный потолок (аноним демо-аккаунтом не бывает)', () => {
-    expect(dailyLimitFor(undefined)).toBe(10)
-  })
-})
-
-describe('клиенту отдаётся ВЫБРАННЫЙ лимит', () => {
-  it('демо видит свою тройку и остаток по ней', () => {
-    expect(budgetPayload(1, true)).toMatchObject({ limit: 3, used: 1, remaining: 2 })
-  })
-
-  it('обычный аккаунт видит десятку', () => {
-    expect(budgetPayload(1, false)).toMatchObject({ limit: 10, used: 1, remaining: 9 })
-  })
-
-  it('остаток не уходит в минус', () => {
-    expect(budgetPayload(5, true).remaining).toBe(0)
-  })
-
-  it('без метрирования (used == null) — null, а не нули', () => {
-    expect(budgetPayload(null, true)).toBeNull()
-  })
-})
-
-describe('exceedsDailyBudget — страховка INSERT-пути', () => {
-  it('демо: запись дороже трёх кредитов не начинаем', () => {
-    // Путь INSERT в consume() лимит не проверяет, поэтому первая же запись
-    // суток на 2 минуты (4 кредита) иначе списалась бы поверх потолка.
-    expect(exceedsDailyBudget(4, true)).toBe(true)
-    expect(exceedsDailyBudget(creditsForSeconds(120), true)).toBe(true)
-    expect(exceedsDailyBudget(3, true)).toBe(false)
-    expect(exceedsDailyBudget(creditsForSeconds(90), true)).toBe(false)
-  })
-
-  it('обычному аккаунту те же 4 кредита проходят, 11 — нет', () => {
-    expect(exceedsDailyBudget(4, false)).toBe(false)
-    expect(exceedsDailyBudget(11, false)).toBe(true)
-  })
-})
-
-describe('списание отсекает по тому же лимиту', () => {
-  it('демо: три оценки проходят, четвёртая — отказ', async () => {
+describe('recordCredits — учёт без потолка', () => {
+  it('пишет кредиты и отдаёт новое used', async () => {
     const sql = makeFakeSql()
-    for (let i = 1; i <= 3; i++) expect(await consume('user-1', '2026-W35', 1, true, sql)).toBe(i)
-    expect(await consume('user-1', '2026-W35', 1, true, sql)).toBeNull()
-    expect(await getUsed('user-1', '2026-W35', sql)).toBe(3) // не выросло
-    // Показанный остаток совпадает с тем, по чему отсекли.
-    expect(budgetPayload(await getUsed('user-1', '2026-W35', sql), true)).toMatchObject({
-      limit: 3,
-      remaining: 0,
-    })
+    expect(await recordCredits('user-1', '2026-09-22', 1, sql)).toBe(1)
+    expect(await recordCredits('user-1', '2026-09-22', 2, sql)).toBe(3)
+    expect(sql.store['user-1|2026-09-22']).toBe(3)
   })
 
-  it('многокредитная запись «целиком» не пробивает демо-потолок', async () => {
-    const sql = makeFakeSql()
-    expect(await consume('user-2', '2026-W35', 2, true, sql)).toBe(2)
-    expect(await consume('user-2', '2026-W35', 2, true, sql)).toBeNull() // 2+2=4 > 3
-    expect(await consume('user-2', '2026-W35', 1, true, sql)).toBe(3) // ровно до потолка можно
+  it('прежние 10 кредитов в сутки — не стена: запись идёт дальше', async () => {
+    const sql = makeFakeSql({ 'user-1|2026-09-22': 10 })
+    expect(await recordCredits('user-1', '2026-09-22', 1, sql)).toBe(11)
+    // Запись «целиком» на 15 минут — 30 кредитов разом.
+    expect(await recordCredits('user-1', '2026-09-22', 30, sql)).toBe(41)
   })
 
-  it('обычному аккаунту те же три оценки лимит не закрывают', async () => {
-    const sql = makeFakeSql()
-    for (let i = 1; i <= 10; i++) expect(await consume('user-3', '2026-W35', 1, false, sql)).toBe(i)
-    expect(await consume('user-3', '2026-W35', 1, false, sql)).toBeNull() // 11-я
+  it('сутки независимы', async () => {
+    const sql = makeFakeSql({ 'user-1|2026-09-21': 7 })
+    expect(await recordCredits('user-1', '2026-09-22', 1, sql)).toBe(1)
   })
 
-  it('рефанд освобождает кредит и на демо-потолке', async () => {
-    const sql = makeFakeSql()
-    await consume('user-4', '2026-W35', 3, true, sql)
-    expect(await consume('user-4', '2026-W35', 1, true, sql)).toBeNull()
-    await refund('user-4', '2026-W35', 1, sql)
-    expect(await consume('user-4', '2026-W35', 1, true, sql)).toBe(3)
-  })
-
-  it('без БД (sql=null) — метрирования нет, а не отказ', async () => {
-    expect(await consume('user-1', '2026-W35', 1, true, null)).toBeNull()
-    expect(await getUsed('user-1', '2026-W35', null)).toBe(0)
+  it('без БД (sql=null) — учёта нет, и это не ошибка', async () => {
+    expect(await recordCredits('user-1', '2026-09-22', 1, null)).toBeNull()
   })
 })
