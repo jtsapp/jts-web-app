@@ -242,6 +242,15 @@ describe('урок каталога целиком', () => {
     }))).toBe(false)
   })
 
+  // Домашка наследует движок занятия (spec §2): выдача целиком из FILE-занятия — это
+  // файл во фрейме с мостом и серверной проверкой, а не плеер разбора.
+  it('выдача из FILE-занятия — не «урок целиком», откроется рамкой', () => {
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE' }))).toBe(false)
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'STEPS' }))).toBe(true)
+    // Без занятия или под старым бэкендом — как раньше.
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: null }))).toBe(true)
+  })
+
   it('чужая ссылка, PDF и загруженный интерактив — не урок каталога', () => {
     expect(isWholeCatalogLesson(урокЦеликом({ fileUrl: 'https://example.com/lesson.html' }))).toBe(false)
     expect(isWholeCatalogLesson(урокЦеликом({ materialType: 'PDF', fileUrl: 'https://files.example/course-catalog/a1/x.pdf' }))).toBe(false)

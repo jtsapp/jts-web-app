@@ -143,6 +143,9 @@ export function isWholeCatalogLesson(a) {
   // автоуказка на выданное место, а разобранный на шаги урок всего этого не
   // знает и открылся бы с начала — ровно та жалоба, с которой всё начиналось.
   if (isAddressedPart(a)) return false
+  // Домашка наследует движок занятия (spec §2): у FILE-занятия «целиком» — это файл во
+  // фрейме (isInteractiveMaterial → рамка), а плеер разбора остаётся STEPS-занятиям.
+  if (a.lessonEngine === 'FILE') return false
   if (a.catalogLessonId != null) return true
   const url = String(a.fileUrl || '')
   return a.materialType === 'LINK' && CATALOG_LESSON_FILE.test(url) && !isStandaloneLessonUrl(url)
