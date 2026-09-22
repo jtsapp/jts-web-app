@@ -1,4 +1,4 @@
-import { LESSON_EXTRACTOR } from './lessonExtractor.js'
+import { engineOf } from './lessonExtractor.js'
 import { getCourseCatalog } from '../../api.js'
 
 // Материал раздела ссылается на файл урока каталога, а не на сам урок: раздел
@@ -27,13 +27,13 @@ export function isStandaloneLessonUrl(url) {
 
 /**
  * Искать ли материал в каталоге, чтобы открыть его шагами. Одна точка решения
- * «шаги или файл» на стороне ученика: разбор выключен (LESSON_EXTRACTOR) —
- * любой материал открывается файлом во фрейме; standalone-файл в каталоге не
- * ищется никогда — его там нет по определению, а поход за деревом задерживал
- * бы показ на старте занятия.
+ * «шаги или файл» на стороне ученика: решает движок ЗАНЯТИЯ (engineOf) — STEPS
+ * ищет разбор, как на проде до выката, FILE открывает файл во фрейме;
+ * standalone-файл в каталоге не ищется никогда — его там нет по определению, а
+ * поход за деревом задерживал бы показ на старте занятия.
  */
-export function shouldResolveCatalogLesson(url) {
-  return Boolean(url) && LESSON_EXTRACTOR.enabled && !isStandaloneLessonUrl(url)
+export function shouldResolveCatalogLesson(url, lesson) {
+  return Boolean(url) && engineOf(lesson) === 'STEPS' && !isStandaloneLessonUrl(url)
 }
 
 /** Ссылка без якоря. */
