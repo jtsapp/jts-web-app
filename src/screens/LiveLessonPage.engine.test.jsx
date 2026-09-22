@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
+import { getLessonById } from '../api.js'
 
 let СТАТУС = 'IN_PROGRESS'
 let ДВИЖОК = 'FILE'
@@ -111,5 +112,36 @@ describe('LiveLessonPage — движок занятия', () => {
     await renderLesson()
 
     await waitFor(() => expect(resolveSpy).toHaveBeenCalledWith('https://cdn/lesson-1.html', expect.objectContaining({ engine: 'STEPS' })))
+  })
+
+  // Регрессия финального ревью ветки: разделы (materialFileUrl) приезжают
+  // ПРЕЖДЕ занятия (задерживаем именно getLessonById), а когда занятие всё же
+  // приходит — в его ответе поля engine нет вовсе (старый бэкенд или стенд на
+  // старом API, приёмочный критерий спеки §2). До и после загрузки занятия
+  // `lesson?.engine` — одинаковый `undefined`, и с зависимостью эффекта по
+  // ОДНОМУ engine это давало React решить, что зависимости не поменялись, —
+  // resolveSpy не звался никогда, а страница стояла на 'loading' вечно.
+  // Заодно проверяем аргумент: в резолюцию обязано уйти уже ЗАГРУЖЕННОЕ занятие
+  // (лишний повод убедиться, что эффект не сорвался раньше срока на null lesson).
+  it('решение доезжает, даже если материалы пришли раньше занятия без engine (старый бэкенд)', async () => {
+    getLessonById.mockImplementationOnce(() => new Promise((resolve) => {
+      setTimeout(() => resolve({
+        id: 5,
+        status: 'IN_PROGRESS',
+        // engine отсутствует вовсе — как отдаёт старый бэкенд.
+        lessonType: 'INDIVIDUAL_STANDARD',
+        groupName: null,
+        topic: 'Present Perfect',
+        teacherId: 7,
+        teacherName: 'Адильжан Алимжанов',
+        meetingUrl: null,
+        durationMinutes: 60,
+        participants: [{ studentId: 10, studentName: 'Данияр Серіков', status: 'SCHEDULED' }],
+      }), 30)
+    }))
+    await renderLesson()
+
+    await waitFor(() => expect(resolveSpy).toHaveBeenCalled())
+    expect(resolveSpy).toHaveBeenCalledWith('https://cdn/lesson-1.html', expect.objectContaining({ id: 5 }))
   })
 })
