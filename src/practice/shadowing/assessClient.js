@@ -4,10 +4,9 @@
 // /api/shadowing/assess, нормализует ответ. Вся тяжёлая логика (Azure/Claude) —
 // на сервере; здесь только транспорт и приведение формы.
 //
-// Оценка платная и лимитируется на аккаунт (недельный бюджет), поэтому запросы
-// идут с Bearer-токеном. Ответ несёт budget { limit, used, remaining, resetsAt };
-// исчерпание/слишком длинная запись приходят как 429/413 — пробрасываем как
-// ошибку с полями code/status/budget, чтобы UI показал понятное сообщение.
+// Оценка платная и доступна только залогиненным, поэтому запросы идут с
+// Bearer-токеном. Лимита на число оценок нет (снят 22.09.2026, см.
+// lib/db/shadowingBudget.js); отказ сервера пробрасываем ошибкой с code/status.
 
 import { trimSilenceWav } from './trimWav.js'
 
@@ -21,22 +20,6 @@ async function readJson(res) {
     return await res.json()
   } catch {
     return {}
-  }
-}
-
-// Текущий недельный бюджет (для показа «осталось N/10» на входе). null — гость,
-// БД не настроена или сбой; тогда UI просто не показывает счётчик.
-export async function fetchBudget(token) {
-  if (!token) return null
-  try {
-    const res = await fetch('/api/shadowing/assess', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) return null
-    const d = await readJson(res)
-    return d.budget || null
-  } catch {
-    return null
   }
 }
 
@@ -62,8 +45,7 @@ export async function assessTake(wavBlob, refText, lang = 'ru', mode = 'phrase',
   if (!res.ok) {
     const err = new Error(d.error || `assess failed ${res.status}`)
     err.status = res.status
-    err.code = d.error || null // 'weekly_limit_reached' | 'recording_too_long' | ...
-    err.budget = d.budget || null
+    err.code = d.error || null
     throw err
   }
 
@@ -83,6 +65,5 @@ export async function assessTake(wavBlob, refText, lang = 'ru', mode = 'phrase',
     transcript: typeof d.transcript === 'string' ? d.transcript : '',
     tip: typeof d.tip === 'string' ? d.tip : '',
     mock: !!d.mock,
-    budget: d.budget || null,
   }
 }

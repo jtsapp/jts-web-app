@@ -1,57 +1,27 @@
-// ДНЕВНОЙ лимит платных оценок Shadowing. Оценка вызывает Azure Pronunciation
-// Assessment + Claude-совет (см. app/api/shadowing/assess/route.js) — это деньги,
-// поэтому на аккаунт даём фиксированный бюджет «кредитов» в сутки.
-//
-// Был недельным, и это не работало: десять кредитов на неделю — две оценки в
-// день и стена к четвергу, при том что в раздел заходят каждый день. Те же
-// десять, но в сутки (решение владельца 18.09.2026, миграция 0009).
-//
+// Учёт платных оценок Shadowing. Оценка вызывает Azure Pronunciation Assessment
+// + Claude-совет (см. app/api/shadowing/assess/route.js) и меряется «кредитами»:
 // 1 кредит ≈ до 30 с аудио (худшая цена ~$0.0091: 30/3600·$1 Azure + ~$0.0008
-// Claude). Лимит 10 кредитов → потолок ~$0.09 в день на пользователя. Пофразная
-// оценка = 1 кредит; «целиком» = ceil(сек/30) кредитов, так что и длинная запись
-// не пробивает дневной потолок.
+// Claude). Пофразная оценка = 1 кредит; «целиком» = ceil(сек/30) кредитов.
 //
-// Демо-аккаунту — свой, меньший бюджет. Демо живёт 7–14 дней (demoExpiresAt на
-// бэкенде), и три кредита в сутки — это потолок ~$0.03 в день на человека,
-// который никогда не заплатит. Демо-квота самого раздела — 12 фраз, так что
-// упирается он всё равно в неё, а не в кредиты.
+// Лимита у оценок НЕТ. Сначала было 10 кредитов в неделю, 18.09.2026 — 10 в сутки
+// (демо — 3), 22.09.2026 владелец снял потолок совсем: оценивать можно сколько
+// угодно, демо-аккаунту тоже. Считать кредиты при этом не перестали — из
+// shadowing_assess недельная сводка Roadmap берёт минуты шэдоуинга
+// (ecosystem.js), без учёта у студента обнулился бы норматив по речи. Демо
+// упирается только в квоту самого раздела из админки (PRACTICE_SHADOWING, см.
+// /api/practice/entitlement) — это отдельный рубильник, не здесь.
 //
 // profile_id = 'user-<id>' из resolveProfileId (только залогиненные). Ключ суток —
-// дата UTC ('2026-09-18'). Мягкая деградация: getSql()===null → метрирования нет,
+// дата UTC ('2026-09-18'). Мягкая деградация: getSql()===null → учёта нет,
 // как в остальных db-модулях (dev/preview без БД).
+//
+// Имя модуля осталось от лимита: его помощниками (ключи суток и недели, длина
+// wav) считают бюджеты письма и ситуаций и та же сводка — переименование ради
+// одного слова задело бы четыре чужих импорта.
 
 import { getSql } from './sql.js'
 
-export const DAILY_LIMIT = 10 // кредитов в сутки на аккаунт
-export const DEMO_DAILY_LIMIT = 3 // кредитов в сутки демо-аккаунту
 export const SECONDS_PER_CREDIT = 30 // 1 кредит ≈ до 30 с аудио
-
-// Потолок этого аккаунта. Один и тот же вызов обязан решать и показ остатка, и
-// списание: покажи клиенту 10, а спиши по 3 — и «осталось 7» ничего не значит.
-export function dailyLimitFor(isDemoAccount) {
-  return isDemoAccount ? DEMO_DAILY_LIMIT : DAILY_LIMIT
-}
-
-// Бюджет для ответа клиенту: used/remaining по ЕГО потолку, resetsAt — ближайшая
-// полночь UTC. used == null → метрирования нет (БД не настроена), budget = null.
-export function budgetPayload(used, isDemoAccount) {
-  if (used == null) return null
-  const limit = dailyLimitFor(isDemoAccount)
-  return {
-    limit,
-    used,
-    remaining: Math.max(0, limit - used),
-    resetsAt: nextDayResetAt(new Date()),
-  }
-}
-
-// Запись дороже целого дневного бюджета — оценить нечем, начинать не за что.
-// Проверять ОБЯЗАН вызывающий: путь INSERT в consume() лимит не смотрит (см.
-// там же), и на демо-потолке в 3 кредита одна запись «целиком» на 2 минуты
-// (4 кредита) прошла бы мимо него, если она первая за сутки.
-export function exceedsDailyBudget(credits, isDemoAccount) {
-  return credits > dailyLimitFor(isDemoAccount)
-}
 
 // Длительность 16кГц mono 16-bit PCM WAV по размеру буфера: data ≈ всё минус
 // 44-байтный заголовок. Считаем по реальным байтам файла, а не по клиентскому
@@ -90,7 +60,8 @@ export function dayKey(date) {
   return date.toISOString().slice(0, 10)
 }
 
-// Момент сброса дневного лимита: ближайшая полночь UTC.
+// Момент сброса дневного лимита: ближайшая полночь UTC. У Shadowing лимита больше
+// нет — этим живёт дневной бюджет ситуаций (situationsBudget.js).
 export function nextDayResetAt(date) {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
   d.setUTCDate(d.getUTCDate() + 1)
@@ -110,42 +81,17 @@ export function nextWeekResetAt(date) {
   return d.toISOString()
 }
 
-// Сколько кредитов уже потрачено сегодня (0, если строки нет или нет БД).
-export async function getUsed(profileId, dayKeyValue, sql = getSql()) {
-  if (!sql) return 0
-  const rows = await sql`
-    select used from shadowing_assess
-    where profile_id = ${profileId} and day_key = ${dayKeyValue}
-  `
-  return rows[0]?.used ?? 0
-}
-
-// Атомарно списать credits — только если не превышаем потолок ЭТОГО аккаунта
-// (dailyLimitFor). Возвращает новое used при успехе, либо null при отказе
-// (лимит исчерпан) или без БД. Гонки безопасны: инкремент и проверка лимита —
-// одним UPDATE под PK-локом. ВАЖНО: путь INSERT (первая запись за сутки) не
-// проверяет лимит, поэтому вызывающий обязан сам отсечь слишком дорогую запись
-// — см. exceedsDailyBudget.
-export async function consume(profileId, dayKeyValue, credits, isDemoAccount = false, sql = getSql()) {
+// Записать credits в учёт суток. Потолка нет намеренно (см. шапку): upsert
+// просто прибавляет, одним запросом — параллельные оценки не теряют друг друга.
+// Возвращает новое used, либо null без БД.
+export async function recordCredits(profileId, dayKeyValue, credits, sql = getSql()) {
   if (!sql) return null
   const rows = await sql`
     insert into shadowing_assess (profile_id, day_key, used)
     values (${profileId}, ${dayKeyValue}, ${credits})
     on conflict (profile_id, day_key) do update
       set used = shadowing_assess.used + ${credits}, updated_at = now()
-      where shadowing_assess.used + ${credits} <= ${dailyLimitFor(isDemoAccount)}
     returning used
   `
   return rows[0]?.used ?? null
-}
-
-// Вернуть credits обратно, если списали заранее, а оценка не состоялась
-// (Azure отдал mock / сбой). used не уходит ниже нуля.
-export async function refund(profileId, dayKeyValue, credits, sql = getSql()) {
-  if (!sql) return
-  await sql`
-    update shadowing_assess
-      set used = greatest(0, used - ${credits}), updated_at = now()
-    where profile_id = ${profileId} and day_key = ${dayKeyValue}
-  `
 }

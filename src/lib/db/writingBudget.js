@@ -17,9 +17,9 @@
 //   и выдают;
 // - 20 переводов в день: на одно задание письма хватает с большим запасом.
 //
-// Модель — shadowingBudget.js: profile_id = 'user-<id>' из resolveProfileId
-// (только залогиненные), мягкая деградация getSql()===null → метрирования нет
-// (dev/preview без БД), списание атомарно и ДО платного вызова.
+// Модель — бывший лимит Shadowing (снят 22.09.2026): profile_id = 'user-<id>'
+// из resolveProfileId (только залогиненные), мягкая деградация getSql()===null →
+// метрирования нет (dev/preview без БД), списание атомарно и ДО платного вызова.
 
 import { getSql } from './sql.js'
 import { isoWeekKey, nextWeekResetAt } from './shadowingBudget.js'
@@ -104,7 +104,7 @@ export async function checkBudget(profileId, isDemoAccount = false, sql = getSql
 // аккаунта (checkLimitFor). Возвращает новое used при успехе, либо null при
 // отказе (лимит исчерпан) или без БД. Гонки безопасны: инкремент и проверка
 // лимита — одним UPDATE под PK-локом. ВАЖНО: путь INSERT (первая запись недели)
-// лимит не проверяет — как и в shadowing — но здесь это безопасно само по себе:
+// лимит не проверяет, но здесь это безопасно само по себе:
 // списывается всегда ровно 1, а 1 <= любого нашего потолка, включая демо-3.
 export async function consumeCheck(profileId, isDemoAccount = false, sql = getSql()) {
   if (!sql) return null

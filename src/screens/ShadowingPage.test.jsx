@@ -44,7 +44,6 @@ vi.mock('../practice/usePracticeEntitlement.js', () => ({
 const assessTake = vi.fn()
 vi.mock('../practice/shadowing/assessClient.js', () => ({
   assessTake: (...a) => assessTake(...a),
-  fetchBudget: vi.fn(() => Promise.resolve({ remaining: 10, limit: 10 })),
 }))
 vi.mock('../practice/skillStats.js', () => ({ recordSkill: vi.fn() }))
 vi.mock('../practice/practiceHomework.js', () => ({ countUnitTowardsHomework: vi.fn() }))
@@ -134,6 +133,19 @@ describe('Shadowing — «★ Оценить» во время чужого ра
     // Первая ушла в спиннер (её строка сменилась на PhraseScore), вторая —
     // честно закрыта, а не «живая и молчит».
     await waitFor(() => expect(assessBtn(1).disabled).toBe(true))
+  })
+})
+
+describe('Shadowing — оценка без лимита', () => {
+  it('счётчика «Оценок осталось» нет, «★ Оценить» не заперта', async () => {
+    lessonScores = new Map([[segmentId(LID, 0), 60]])
+    storedBlobs = new Set([segmentId(LID, 0)])
+    renderPage()
+    await showAllPhrases()
+    await waitFor(() => expect(assessBtn(0)).toBeTruthy())
+
+    expect(document.body.textContent).not.toMatch(/Оценок осталось/)
+    expect(assessBtn(0).disabled).toBe(false)
   })
 })
 
