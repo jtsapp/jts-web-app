@@ -4429,6 +4429,38 @@ textarea {
 .le-btn:hover {
   background: #7f2fee;
 }
+/* Пока урок засчитывается, «Следующий урок» ждёт ответа сервера — без
+   приглушения клик по ней выглядел бы сломанным. */
+.le-btn:disabled {
+  background: #9047ff;
+  opacity: 0.55;
+  cursor: progress;
+}
+/* Урок упал (LessonErrorBoundary): вместо белого экрана — просьба обновить
+   страницу и выход из урока. */
+.le-crash {
+  max-width: 420px;
+  margin: 64px auto;
+  padding: 0 16px;
+  text-align: center;
+}
+.le-crash__text {
+  margin: 0 0 20px;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #1f1f1f;
+}
+.le-crash__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.le-btn--ghost,
+.le-btn--ghost:hover {
+  background: transparent;
+  color: #9047ff;
+  box-shadow: inset 0 0 0 2px #9047ff;
+}
 .le-again {
   border: none;
   background: none;
@@ -5151,9 +5183,11 @@ textarea {
 }
 
 /* Статистика */
+/* Две плитки — серия и уроки. Третьей были «разговорные клубы», которых нет:
+   счётчик всегда показывал 0, и плитку убрали вместе с ним. */
 .pf-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-top: 12px;
 }
@@ -5174,9 +5208,6 @@ textarea {
 .pf-stat__glyph {
   color: #9047ff;
   display: flex;
-}
-.pf-stat__glyph--gold {
-  color: #f0a500;
 }
 .pf-stat b {
   font-size: 20px;
@@ -5461,29 +5492,6 @@ textarea {
 .pf-input--disabled {
   background: #f6f6f8;
   color: #8b8a97;
-}
-.pf-seg {
-  display: flex;
-  gap: 10px;
-}
-.pf-seg__opt {
-  flex: 1;
-  padding: 12px 0;
-  border: 1px solid #e6e6ec;
-  border-radius: 12px;
-  background: #fff;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: #8b8a97;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.pf-seg__opt--active {
-  background: #f0ebff;
-  border-color: #9047ff;
-  color: #9047ff;
-  font-weight: 600;
 }
 .pf-err {
   margin: 4px 0 12px;
@@ -6945,61 +6953,12 @@ textarea {
 .meet-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 .meet-link__icon { flex: none; }
 
-/* Карточка «Скоро с вами свяжется менеджер» — стоит вместо всего расписания у
-   человека без преподавателя. Форма та же, что у карточки урока (белый блок с
-   радиусом 20 и фиолетовой кнопкой-пилюлей), чтобы она читалась как часть
-   экрана «Уроки», а не как вставка из другого продукта.
-
-   Имя класса — из семьи расписания (.sch-row/.sch-tile), а НЕ .trial-card: тот
-   давно занят экраном пробного урока по ссылке (trial.css), стили обоих файлов
-   глобальные, и общее имя перекроило бы чужой экран (там .trial-card — блок с
-   рамкой и max-width, а не флекс-колонка по центру).
-
-   Иллюстрации нет намеренно: единственная картинка раздела — «страница в
-   разработке» у Клубов, и здесь она сказала бы неправду. */
-.sch-trial {
-  background: #fff;
-  border-radius: 20px;
-  padding: 40px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  text-align: center;
-}
-.sch-trial__body { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.sch-trial__title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.2; color: var(--ink); }
-.sch-trial__title--done { color: #2c8a45; }
-/* Ширина текста ограничена, чтобы на широком экране строка не растягивалась на
-   всю страницу и оставалась читаемой. */
-.sch-trial__text { max-width: 460px; font-size: 15px; line-height: 1.45; color: var(--muted); }
-.sch-trial__cta {
-  flex: none;
-  background: var(--purple);
-  color: #fff;
-  border: 0;
-  border-radius: 999px;
-  padding: 12px 26px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.sch-trial__cta:hover:enabled { background: #7d34f5; }
-.sch-trial__cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.sch-trial__cta:disabled { background: #ece9f5; color: #8b8a97; cursor: default; }
-.sch-trial__error { margin: 0; color: #c0392b; font-size: 14px; }
-
 @media (max-width: 900px) {
   .sch__top { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
   .lesson-card__foot { align-items: stretch; }
   .lesson-card__join { width: 100%; justify-content: center; }
-  /* На узком экране кнопка во всю ширину карточки: подпись длинная и в пилюлю
-     по контенту переносится в две строки. */
-  .sch-trial { padding: 28px 16px; }
-  .sch-trial__cta { width: 100%; }
 }
 
 /* Lessons calendar */

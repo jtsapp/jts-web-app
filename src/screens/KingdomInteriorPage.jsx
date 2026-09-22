@@ -14,6 +14,7 @@ import { kingdomAvatar } from '../kingdoms.js'
 import { getCourseIndex, courseTrail, loadCourseSteps } from '../learning/courseData.js'
 import { isStepLevel, tasksToSteps, stripStageTail } from '../learning/nativeSteps.js'
 import CourseStepPlayer from '../learning/CourseStepPlayer.jsx'
+import LessonErrorBoundary from '../components/LessonErrorBoundary.jsx'
 
 // Кольцо общего прогресса королевства (пройдено/всего уроков) — по шапке
 // мобильного приложения (Figma node 903-3033).
@@ -67,6 +68,10 @@ function CheckIcon() {
   )
 }
 
+// Сколько «Следующий урок» ждёт ответа сервера о засчитанном уроке (см. onDone).
+// Обычный ответ — доли секунды; восемь секунд — это уже «сеть молчит».
+const SAVE_WAIT_MS = 8000
+
 // Горизонтальное смещение узла в «лесенке» юнита. В макете колонка узлов
 // шириной 200 при узле 100, а сами узлы идут центр → влево → вправо → центр
 // (Figma «Обучение», Screen 4005:30480, кадр List).
@@ -111,6 +116,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const [open, setOpen] = useState(null) // { code, data, attempt } — открытый урок
   const [busy, setBusy] = useState(false) // грузим данные урока
   const [end, setEnd] = useState(null) // { outcome, correct, wrong, accuracy, points }
+  // Урок засчитывается: итоги уже на экране, а markDone ещё в сети. До его
+  // ответа следующий узел тропы заперт — и goNext принимал это за исчерпанную
+  // квоту: ученик, быстро нажавший «Следующий урок», видел «🔒 лимит», а демо —
+  // окно подписки, хотя урок был засчитан.
+  const [saving, setSaving] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
 
   useEffect(() => {
@@ -271,6 +281,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   }
 
   const goNext = () => {
+    if (saving) return
     const i = lessons.findIndex((l) => l.code === open?.code)
     const next = i >= 0 ? lessons[i + 1] : null
     // Квота исчерпана ровно на границе (только что прошли последний доступный
@@ -291,44 +302,71 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
       setEnd(stats)
       setRestricted(false)
       if (stats.outcome !== 'success' || !open) return
-      // Отмечаем урок пройденным (бэкенд + локально). Монеты/XP/стрик начисляет
-      // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
-      // найден (moduleId=null), падаем на модульный complete, чтобы награда не
-      // пропала; двойного начисления нет — ветки взаимоисключающие.
-      // Модуля нет по одной из двух причин, и они требуют разного: его правда
-      // нет для этого уровня — или список не загрузился при входе. Во втором
-      // случае переспрашиваем ЗДЕСЬ, иначе урок засчитается мимо серверной
-      // проверки квоты, а прогресс не уйдёт на бэкенд вовсе: одна сетевая
-      // осечка при входе снимала главный демо-лимит на весь визит.
-      const resolved = await resolveModuleId({
-        moduleId,
-        modulesUnavailable,
-        level,
-        fetchModules: () => getLessonModules(authTokenRef.current),
-      })
-      const mid = resolved.moduleId
-      if (mid !== moduleId) setModuleId(mid)
-      if (resolved.modulesUnavailable !== modulesUnavailable) setModulesUnavailable(resolved.modulesUnavailable)
-
-      let next
+      setSaving(true)
+      const code = open.code
+      const wasDone = done.has(code)
+      // У fetch нет своего таймаута: на «зависшей» мобильной сети ответ идёт и
+      // минуту, и всё это время «Следующий урок» стояла бы неактивной — для
+      // ученика это сломанная кнопка. Дольше SAVE_WAIT_MS не держим: отмечаем
+      // урок пройденным на экране (так же markDone поступает при сбое сети) и
+      // отпускаем кнопку. Ответ сервера, когда придёт, поправит done сам, а
+      // отказ по квоте снимет эту отметку (см. ниже).
+      const giveUp = setTimeout(() => {
+        setDone((d) => new Set(d).add(code))
+        setSaving(false)
+      }, SAVE_WAIT_MS)
       try {
-        next = await markDone(level, token, mid, open.code, stats.points)
-      } catch (e) {
-        // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
-        // исключение просто гасилось внутри markDone, урок падал в localStorage
-        // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
-        if (e instanceof ContentRestrictedError) {
-          setRestricted(true)
-          return
+        // Отмечаем урок пройденным (бэкенд + локально). Монеты/XP/стрик начисляет
+        // сам per-lesson complete (в markDone) — один раз за урок. Если модуль не
+        // найден (moduleId=null), падаем на модульный complete, чтобы награда не
+        // пропала; двойного начисления нет — ветки взаимоисключающие.
+        // Модуля нет по одной из двух причин, и они требуют разного: его правда
+        // нет для этого уровня — или список не загрузился при входе. Во втором
+        // случае переспрашиваем ЗДЕСЬ, иначе урок засчитается мимо серверной
+        // проверки квоты, а прогресс не уйдёт на бэкенд вовсе: одна сетевая
+        // осечка при входе снимала главный демо-лимит на весь визит.
+        const resolved = await resolveModuleId({
+          moduleId,
+          modulesUnavailable,
+          level,
+          fetchModules: () => getLessonModules(authTokenRef.current),
+        })
+        const mid = resolved.moduleId
+        if (mid !== moduleId) setModuleId(mid)
+        if (resolved.modulesUnavailable !== modulesUnavailable) setModulesUnavailable(resolved.modulesUnavailable)
+
+        let next
+        try {
+          next = await markDone(level, token, mid, open.code, stats.points)
+        } catch (e) {
+          // Квота исчерпана / модуль закрыт: урок НЕ засчитан. Раньше это
+          // исключение просто гасилось внутри markDone, урок падал в localStorage
+          // и тропа ехала дальше — ограничение из админки не срабатывало вовсе.
+          if (e instanceof ContentRestrictedError) {
+            // Отметку, выставленную в ожидании ответа, снимаем: урок не
+            // засчитан. Пройденный раньше урок при этом не трогаем.
+            if (!wasDone) {
+              setDone((d) => {
+                const kept = new Set(d)
+                kept.delete(code)
+                return kept
+              })
+            }
+            setRestricted(true)
+            return
+          }
+          throw e
         }
-        throw e
-      }
-      setDone(new Set(next))
-      if (mid == null && token && stats.points > 0) {
-        completeLessonModule(token, stats.points).catch(() => {})
+        setDone(new Set(next))
+        if (mid == null && token && stats.points > 0) {
+          completeLessonModule(token, stats.points).catch(() => {})
+        }
+      } finally {
+        clearTimeout(giveUp)
+        setSaving(false)
       }
     },
-    [open, level, token, moduleId, modulesUnavailable],
+    [open, level, token, moduleId, modulesUnavailable, done],
   )
 
   // «Назад»: из незаконченного урока — подтверждение; с экрана итогов — уходим
@@ -347,7 +385,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
   const { loading, error } = state
 
   return (
-    <LearningLayout userName={userName} userLevel={userLevel} active="learning" onNav={onNav} onProfile={onProfile}>
+    <LearningLayout userName={userName} userLevel={userLevel} active="learning" token={token} onNav={onNav} onProfile={onProfile}>
       {/* Верхняя навигация — только для состояний без шапки-баннера (загрузка/
           ошибка/пусто). В основном виде «Назад» живёт в самой шапке. */}
       {(loading || !!error) && (
@@ -493,6 +531,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
           показанными поверх уже закрытого урока. */}
       {!loading && open && !end && (
         <div className="km-lesson">
+          {/* key — тот же, что у плеера: новый урок или новая попытка
+              начинают с чистого листа, а не с экрана падения. */}
+          <LessonErrorBoundary key={`${open.code}-${open.attempt}`} onExit={handleBack}>
           {open.steps ? (
             <CourseStepPlayer
               key={`${open.code}-${open.attempt}`}
@@ -502,6 +543,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               title={open.steps.title}
               subtitle={open.steps.blurb}
               passRatio={open.steps.passRatio ?? null}
+              // Память «где остановился» — по уровню и коду урока, и только на
+              // первой попытке: «Пройти снова» начинает с нуля осознанно.
+              resumeKey={open.attempt === 0 ? `${level}:${open.code}` : undefined}
               onExit={handleBack}
               onVocab={onNav ? () => onNav('vocab') : null}
               onDone={onDone}
@@ -516,6 +560,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               onDone={onDone}
             />
           )}
+          </LessonErrorBoundary>
         </div>
       )}
 
@@ -531,9 +576,9 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               <div className="le-pct">{end.accuracy ?? 100}%</div>
               <div className="le-head">
                 <h2 className="le-title">
-                  {(end.accuracy ?? 100) >= 80 ? 'Отличный результат' : (end.accuracy ?? 100) >= 50 ? 'Хорошая работа' : 'Урок пройден'}
+                  {t((end.accuracy ?? 100) >= 80 ? 'lesson.result.great' : (end.accuracy ?? 100) >= 50 ? 'lesson.result.good' : 'lesson.result.passed')}
                 </h2>
-                <p className="le-sub">{open?.steps?.title || t('learn.done')} — пройден</p>
+                <p className="le-sub">{t('lesson.result.titleDone', { title: open?.steps?.title || t('learn.done') })}</p>
               </div>
               <div className="le-bottom">
                 <div className="le-stats">
@@ -544,7 +589,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                       </span>
                       <b>{end.wrong ?? 0}</b>
                     </div>
-                    <span>Неверных ответов</span>
+                    <span>{t('lesson.result.wrong')}</span>
                   </div>
                   <div className="le-stat le-stat--right">
                     <div className="le-stat__row">
@@ -553,7 +598,7 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                       </span>
                       <b>{end.correct ?? 0}</b>
                     </div>
-                    <span>Верных ответов</span>
+                    <span>{t('lesson.result.right')}</span>
                   </div>
                 </div>
                 {/* Урок решён верно, но не засчитан: лимит от админа. Прячем
@@ -577,11 +622,11 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
                   </div>
                 ) : (
                   <div className="le-acts">
-                    <button className="le-btn" onClick={goNext}>
-                      Перейти на следующий урок
+                    <button className="le-btn" onClick={goNext} disabled={saving} aria-busy={saving}>
+                      {t('lesson.result.next')}
                     </button>
                     <button className="le-again" onClick={retry}>
-                      Пройти снова
+                      {t('lesson.result.again')}
                     </button>
                   </div>
                 )}
@@ -604,12 +649,12 @@ export default function KingdomInteriorPage({ kingdom, userName, userLevel, toke
               <div className="le-fail">
                 <div className="le-pct">{end.accuracy ?? 0}%</div>
                 <div className="le-head">
-                  <h2 className="le-title">Тест не сдан</h2>
-                  <p className="le-sub le-sub--bold">Верных ответов пока мало — попробуйте ещё раз</p>
+                  <h2 className="le-title">{t('lesson.result.failTitle')}</h2>
+                  <p className="le-sub le-sub--bold">{t('lesson.result.failSub')}</p>
                 </div>
               </div>
               <button className="le-btn" onClick={retry}>
-                Попробовать еще раз
+                {t('lesson.result.retry')}
               </button>
             </div>
           </div>

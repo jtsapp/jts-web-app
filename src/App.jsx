@@ -27,6 +27,8 @@ import WorkbookPage from './screens/WorkbookPage.jsx'
 import ReadingPage from './screens/ReadingPage.jsx'
 import WordsPage from './screens/WordsPage.jsx'
 import VerbsPage from './screens/VerbsPage.jsx'
+import SituationsPage from './screens/SituationsPage.jsx'
+import ListenChoosePage from './screens/ListenChoosePage.jsx'
 import LessonsPage from './screens/LessonsPage.jsx'
 import HomeworkPage from './screens/HomeworkPage.jsx'
 import LiveLessonPage from './screens/LiveLessonPage.jsx'
@@ -75,7 +77,7 @@ import { tourKeyFor, isTourSeen } from './tutor/OnboardingTour.jsx'
 // getDemoAccess, а не getIsDemoAccount: «Главной» нужен не только признак
 // демо, но и срок — по нему рисуется обратный отсчёт в шапке.
 import { sendRegistrationOtp, verifyRegistrationOtp, requestLoginOtp, verifyLoginOtp, loginWithGoogle, loginWithPassword, setPassword, getLanguageLevel, getDemoAccess, getIsBoothAccount, getCurrentUser, updateUser, isEmailIdentifier } from './api.js'
-import { saveToken, clearToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
+import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgress, saveUserSnapshot, patchBoothAccount, saveBoothLessonId, loadBoothLessonId } from './lib/session.js'
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
@@ -84,6 +86,8 @@ import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendin
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
 import { practiceUnitTarget } from './lib/studentDeepLink.js'
 import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
+import { flushSkillStats } from './practice/skillStats.js'
+import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
 import { persistPlacementLevel, syncProfileLevel } from './lib/levelSave.js'
 import { placementSummary } from './lib/placement.js'
@@ -109,7 +113,7 @@ function phoneErrorKey(e) {
 // shadowing) сюда намеренно не входят: без своего параметра (?lesson=,
 // ?level=…) в URL они открылись бы пустыми, а не тем же самым местом.
 const PERSISTABLE_SCREENS = new Set([
-  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'homework', 'lessons',
+  'home', 'pricing', 'minutes', 'kingdom', 'practice', 'listening', 'writing', 'workbook', 'reading', 'words', 'verbs', 'listenchoose', 'homework', 'lessons',
   'ielts', 'vocab', 'course-catalog', 'profile',
 ])
 
@@ -207,6 +211,16 @@ export default function App() {
       // …и нужный уровень «Чтения» (?screen=reading&level=b1): каталог там
       // стартует с уровня пользователя, и проверить чужой уровень иначе никак.
       if (deepLink === 'reading') setReadingTarget({ level: levelParam.toLowerCase() })
+      // …и уровень «Ситуаций» (?screen=situations&level=b1&item=3). Уровень
+      // тут не «удобнее», а обязателен: экран открывается ровно на том уровне,
+      // который выдала Практика, переключателя внутри нет.
+      if (deepLink === 'situations') {
+        const item = Number(searchParams.get('item'))
+        setSituationsTarget({
+          level: levelParam.toLowerCase(),
+          id: Number.isFinite(item) && item > 0 ? item : null,
+        })
+      }
     }
     // ?screen=words&scene=farm — конкретная сцена «Слов в картинках».
     // Уровня у сцен нет вовсе (материал разбит по темам), поэтому адресуемся
@@ -223,6 +237,13 @@ export default function App() {
     if (deepLink === 'verbs') {
       const part = searchParams.get('part')
       if (part) setVerbsTarget({ part })
+    }
+    // ?screen=listenchoose&difficulty=hard — сложность «Слушай и выбирай»
+    // (easy | medium | hard): без неё экран открывался бы на той, где человек
+    // был в прошлый раз, и проверить сложность по ссылке было нельзя.
+    if (deepLink === 'listenchoose') {
+      const difficulty = searchParams.get('difficulty')
+      if (difficulty) setListenChooseTarget({ difficulty })
     }
     // ?screen=practice&level=a2&unit=3 — конкретный юнит «Практики». Ссылку
     // строит админка: преподаватель выдал юнит на дом и должен уметь открыть
@@ -241,8 +262,14 @@ export default function App() {
 
     // Без токена в localStorage restoreSession() не ходит в сеть и отдаёт null
     // синхронно — аноним не видит заметной паузы.
+    const hadToken = Boolean(loadToken())
     restoreSession()
       .then(async (session) => {
+        // Токен был, а сессии нет — restoreSession уже стёр мёртвый токен
+        // (401 и рефреш не прошёл). Чистим хвосты прежнего ученика так же, как
+        // «Выйти»: иначе следующий, кто войдёт на этом компьютере, получит его
+        // тропу и навыки. До проверки cancelled — это уборка, не стейт.
+        if (!session && hadToken) forgetExpiredSession()
         if (cancelled) return
         if (session) {
           setToken(session.token)
@@ -462,6 +489,11 @@ export default function App() {
   const [listeningTarget, setListeningTarget] = useState(null) // { level } — какой уровень аудирования открыть из домашки
   const [wordsTarget, setWordsTarget] = useState(null) // { section?, sceneId? } — прыжок из Практики в секцию/сцену «Слов в картинках»
   const [verbsTarget, setVerbsTarget] = useState(null) // { part? } — нужная часть «Неправильных глаголов»
+  // { level, id? } — уровень «Ситуаций» и, по желанию, номер сценария. Уровень
+  // обязателен: переключателя внутри экрана нет (он единица квоты), поэтому
+  // без него открывать нечего.
+  const [situationsTarget, setSituationsTarget] = useState(null)
+  const [listenChooseTarget, setListenChooseTarget] = useState(null) // { difficulty? } — сложность «Слушай и выбирай»
   const [readingTarget, setReadingTarget] = useState(null) // { level?, textId? } — прыжок из Практики в уровень/текст «Чтения»
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -928,8 +960,15 @@ export default function App() {
   }
 
   function handleLogout() {
+    // Последние ответы уходящего ученика ещё могут ждать отправки (флаш через
+    // 800 мс) — отправляем их под его токеном, пока токен не стёрт. Ниже
+    // clearAccountLeftovers снимет таймер, и под чужим токеном они не уйдут.
+    flushSkillStats()
     clearToken()
     clearLocalPractice()
+    // Прогресс уроков, навыки и недельный снимок не привязаны к аккаунту и
+    // иначе доставались следующему ученику на этом же компьютере.
+    clearAccountLeftovers()
     // Намерение принадлежит тому, кто пришёл по ссылке. Не сняв его, следующий
     // вход в этой же вкладке увёл бы другого человека на чужой текст.
     clearPendingScreen()
@@ -1127,6 +1166,9 @@ export default function App() {
     else if (key === 'reading') { setReadingTarget(payload || null); setScreen('reading') }
     else if (key === 'words') { setWordsTarget(payload || null); setScreen('words') }
     else if (key === 'verbs') { setVerbsTarget(payload || null); setScreen('verbs') }
+    // Уровень приносит карточка Практики — она же и списала квоту.
+    else if (key === 'situations') { setSituationsTarget(payload || null); setScreen('situations') }
+    else if (key === 'listenchoose') { setListenChooseTarget(payload || null); setScreen('listenchoose') }
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') {
       if (payload && payload.lessonId) {
@@ -1135,13 +1177,16 @@ export default function App() {
       } else setScreen('lessons')
     }
     else if (key === 'homework') setScreen('homework')
-    // Карточка урока, заданная на дом: домашка зовёт с адресом урока каталога и
-    // адресом самой карточки. Без урока никуда не идём — экран без id открылся
-    // бы демонстрационным уроком, то есть чужим материалом вместо задания.
+    // Урок, заданный на дом: домашка зовёт с адресом урока каталога и адресом
+    // карточки — или без карточки, если задан весь урок. Без урока никуда не
+    // идём — экран без id открылся бы демонстрационным уроком, то есть чужим
+    // материалом вместо задания. Источник свой, а не 'catalog': урок целиком
+    // карточки не несёт, и «Назад» по одной только карточке уводил бы ученика
+    // в каталог курса вместо домашки, откуда он пришёл.
     else if (key === 'lesson-workspace') {
       if (payload?.catalogLessonId != null) {
         setLiveWorkspaceId(payload.catalogLessonId)
-        setWorkspaceSource('catalog')
+        setWorkspaceSource('homework')
         setWorkspaceCardId(payload.cardId || null)
         setScreen('lesson-workspace')
       }
@@ -1167,6 +1212,7 @@ export default function App() {
     else if (key === 'reading') setScreen('reading')
     else if (key === 'words') setScreen('words')
     else if (key === 'verbs') setScreen('verbs')
+    else if (key === 'listenchoose') setScreen('listenchoose')
     else if (key === 'tutor') setScreen(tutorHome)
     else if (key === 'lessons') setScreen('lessons')
     else if (key === 'homework') setScreen('homework')
@@ -1557,6 +1603,28 @@ export default function App() {
           userName={name}
           token={token}
           initialTarget={verbsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'situations':
+      return (
+        <SituationsPage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={situationsTarget}
+          onNav={handleNav}
+          onProfile={() => setScreen('profile')}
+        />
+      )
+    case 'listenchoose':
+      return (
+        <ListenChoosePage
+          userLevel={userLevel}
+          userName={name}
+          token={token}
+          initialTarget={listenChooseTarget}
           onNav={handleNav}
           onProfile={() => setScreen('profile')}
         />
@@ -2018,11 +2086,16 @@ export default function App() {
           onRetry={() => setScreen('tutor-voice-chat')}
         />
       )
-    // Выход возвращает туда, откуда пришли: с карточки — в домашнюю работу, из
-    // каталога — в каталог. Иначе ученик, открывший задание, уходил бы в чужой
-    // список уроков и искал домашку заново.
-    case 'lesson-workspace':
-      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={(workspaceSource === 'catalog' || workspaceSource === 'self') && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={workspaceSource === 'catalog' || workspaceSource === 'self' ? loadCatalogLesson : undefined} onExit={() => setScreen(workspaceCardId ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+    // Выход возвращает туда, откуда пришли: из домашки (карточка или урок
+    // целиком) — в домашнюю работу, из каталога — в каталог. Иначе ученик,
+    // открывший задание, уходил бы в чужой список уроков и искал домашку заново.
+    // Карточка из адреса (F5 на ней) приезжает с источником 'catalog' — её
+    // возвращает в домашку сам адрес карточки.
+    case 'lesson-workspace': {
+      const catalogSource = workspaceSource === 'catalog' || workspaceSource === 'self' || workspaceSource === 'homework'
+      const fromHomework = workspaceSource === 'homework' || Boolean(workspaceCardId)
+      return <LessonWorkspacePage lessonId={liveWorkspaceId} cardId={workspaceCardId} token={token} userName={name} userLevel={userLevel} onNav={handleNav} onProfile={() => setScreen('profile')} onVocab={() => setScreen('vocab')} catalogLessonId={catalogSource && liveWorkspaceId != null ? Number(liveWorkspaceId) : undefined} loadLesson={catalogSource ? loadCatalogLesson : undefined} onExit={() => setScreen(fromHomework ? 'homework' : workspaceSource === 'catalog' ? 'course-catalog' : 'lessons')} />
+    }
     default:
       return null
   }

@@ -243,3 +243,38 @@ describe('lesson vocab cycles', () => {
     expect(tasks.some((t) => t.type === 'match')).toBe(false)
   })
 })
+
+// Сокращения с точками: в словаре «p.m.», ученик набирает «pm» — буквы те же,
+// а точки на слух не слышны. Раньше точка резалась в пробел, и «p m» не
+// сходилось с «pm».
+describe('answersMatch — сокращения с точками', () => {
+  it('p.m. == pm, a.m. == am, U.S. == US', () => {
+    expect(answersMatch('pm', 'p.m.')).toBe(true)
+    expect(answersMatch('p.m.', 'pm')).toBe(true)
+    expect(answersMatch('am', 'a.m.')).toBe(true)
+    expect(answersMatch('US', 'U.S.')).toBe(true)
+  })
+
+  // Эти варианты засчитывались и до правки («p.m.» и «p m» нормализовались
+  // одинаково). Первая версия правки клеила точки в normalizeAnswer и этим
+  // ломала «p m» — поэтому правило переехало в answersMatch и стало только
+  // расширяющим: что сходилось раньше, сходится и теперь.
+  it('прежние написания не отвалились: «p m», «p.m» без последней точки', () => {
+    expect(answersMatch('p m', 'p.m.')).toBe(true)
+    expect(answersMatch('p.m', 'p.m.')).toBe(true)
+    expect(answersMatch('p.m.', 'p.m.')).toBe(true)
+  })
+
+  it('точка в конце фразы по-прежнему не мешает, а слова фразы не склеиваются', () => {
+    expect(answersMatch('I like it', 'I like it.')).toBe(true)
+    expect(answersMatch('Ilikeit', 'I like it.')).toBe(false)
+  })
+
+  it('другие слова не склеиваются', () => {
+    expect(answersMatch('alot', 'a lot')).toBe(false)
+    // Склейка — только вокруг точки: буква «p» и соседние символы без точки
+    // остаются как были.
+    expect(answersMatch('pen', 'p en')).toBe(false)
+    expect(answersMatch('top', 'to')).toBe(false)
+  })
+})

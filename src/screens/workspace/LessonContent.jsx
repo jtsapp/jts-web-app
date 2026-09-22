@@ -125,7 +125,6 @@ export function practiceCardStats(step, checkedKeys, hiddenBlocks) {
 /** Info-карточка с word-bank: кнопка «Проверить» и счёт, как в HTML-курсе. */
 function InfoWordBankCard({
   group, step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, openWord, showAnswerKey = true,
-  lockNote = '',
 }) {
   const { t } = useI18n()
   const cardRef = useRef(null)
@@ -186,13 +185,6 @@ function InfoWordBankCard({
           {t('lesson.ws.check')}
         </button>
       )}
-      {/* Та же причина, что в PracticeBlock: закрытая карточка должна сказать,
-          почему она закрыта, — «Проверить» здесь тоже просто исчезает. */}
-      {readOnly && hasCheckable && lockNote && (
-        <p className="lw-practice__locked" role="status">
-          {lockNote}
-        </p>
-      )}
       {checked && wbScore && wbScore.total > 0 && (
         <div className="lw-practice__wb-score" role="status">
           {wbScore.correct} / {wbScore.total} {t('lesson.ws.correctCount')}
@@ -227,7 +219,7 @@ function InfoWordBankCard({
 // удалив блок, мы сдвинули бы якоря `block-N` и ключи practice-карточек у
 // ученика относительно преподавательских. У преподавателя множество пустое —
 // скрытую карточку он видит помеченной и может вернуть.
-export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, lockNote = '', liveQuestionId, focusCardId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
+export default function LessonContent({ step, answers, checkedKeys, onAnswer, onCheck, readOnly, liveQuestionId, focusCardId, liveFocusNonce, token, source, catalogLessonId, hiddenBlocks, hideStepTitle, revealedCards, showAnswerKey = true }) {
   const groups = groupBlocks(step?.blocks)
   const cards = practiceCardStats(step, checkedKeys, hiddenBlocks)
   const { lang } = useI18n()
@@ -349,7 +341,6 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
               onAnswer={onAnswer}
               onCheck={onCheck}
               readOnly={readOnly}
-              lockNote={lockNote}
               liveQuestionId={liveQuestionId}
               focusCardId={focusCardId}
               openWord={openWord}
@@ -411,7 +402,6 @@ export default function LessonContent({ step, answers, checkedKeys, onAnswer, on
                 onAnswer={onAnswer}
                 onCheck={(gapIds = []) => onCheck(key, [...(block.questions || []).map((q) => q.id), ...gapIds])}
                 readOnly={readOnly}
-                lockNote={lockNote}
                 liveQuestionId={liveQuestionId}
                 onWord={openWord}
                 gapPrefix={wordBankGapPrefix(step, anchorId)}

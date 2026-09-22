@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 
 // Тропа из 21 узла (индексы 0–20), первые 20 (l0..l19) уже пройдены — как у
@@ -64,7 +64,8 @@ vi.mock('../learning/courseData.js', () => ({
   loadCourseSteps: vi.fn(async () => null),
 }))
 
-import { markDone, ContentRestrictedError } from '../learning/lessonProgress.js'
+import { markDone, loadDone, ContentRestrictedError } from '../learning/lessonProgress.js'
+import { getContentQuota } from '../api.js'
 import KingdomInteriorPage from './KingdomInteriorPage.jsx'
 
 const kingdom = { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'B1', ring: '#fff' }
@@ -152,6 +153,99 @@ describe('KingdomInteriorPage — демо-лимит на тропе показ
     await waitFor(() => expect(view.container.querySelector('.le-over')).toBe(null))
     expect(view.container.querySelector('.ds-over')).toBe(null)
     expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length)
+  })
+
+  // Итоги показываются сразу, а засчитывание урока (resolveModuleId + markDone)
+  // идёт по сети следом. Пока оно не вернулось, следующий узел на тропе ещё
+  // заперт — и быстрый клик «Перейти на следующий урок» читал это как
+  // исчерпанную квоту: обычный ученик видел «🔒 лимит», демо — окно подписки.
+  it('клик «Следующий урок» до ответа сервера не рисует ложный замок квоты', async () => {
+    loadDone.mockImplementationOnce(async () => new Set())
+    getContentQuota.mockImplementationOnce(async () => null)
+    let settle
+    markDone.mockImplementationOnce(() => new Promise((resolve) => { settle = resolve }))
+
+    const view = renderPage({ isDemoAccount: true })
+    await waitFor(() => expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length))
+    fireEvent.click(view.container.querySelector('.kt-step'))
+    fireEvent.click(await screen.findByText('сдать урок'))
+
+    const next = await screen.findByText('Перейти на следующий урок')
+    fireEvent.click(next)
+    expect(screen.queryByText(PAYWALL)).toBe(null)
+    expect(view.container.querySelector('.le-restricted')).toBe(null)
+
+    // Сервер засчитал урок — следующий открывается, а не упирается в замок.
+    settle(new Set(['l0']))
+    await waitFor(() => expect(screen.getByText('Перейти на следующий урок').disabled).toBe(false))
+    fireEvent.click(screen.getByText('Перейти на следующий урок'))
+    await screen.findByText('сдать урок')
+    expect(screen.queryByText(PAYWALL)).toBe(null)
+  })
+
+  // У fetch нет своего таймаута: на «зависшей» мобильной сети ответ идёт и
+  // минуту. Ждать его у неактивной кнопки ученик не должен — для него это
+  // сломанная кнопка. Через 8 с урок считается пройденным на экране, и путь
+  // дальше открыт.
+  it('сервер молчит — кнопка отпускается сама, и следующий урок открывается', async () => {
+    loadDone.mockImplementationOnce(async () => new Set())
+    getContentQuota.mockImplementationOnce(async () => null)
+    markDone.mockImplementationOnce(() => new Promise(() => {})) // не ответит никогда
+
+    const view = renderPage({ isDemoAccount: true })
+    await waitFor(() => expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length))
+    fireEvent.click(view.container.querySelector('.kt-step'))
+    const finish = await screen.findByText('сдать урок')
+
+    // Таймеры подменяем только на время ожидания: findBy*/waitFor под
+    // подменёнными таймерами не работают, поэтому дальше — прямые проверки.
+    vi.useFakeTimers()
+    try {
+      fireEvent.click(finish)
+      await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+      expect(screen.getByText('Перейти на следующий урок').disabled).toBe(true)
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(8000) })
+      expect(screen.getByText('Перейти на следующий урок').disabled).toBe(false)
+
+      fireEvent.click(screen.getByText('Перейти на следующий урок'))
+      await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+      expect(screen.getByText('сдать урок')).toBeTruthy()
+      expect(screen.queryByText(PAYWALL)).toBe(null)
+      expect(view.container.querySelector('.le-restricted')).toBe(null)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // Отметка «пройдено», выставленная в ожидании, не должна пережить отказ по
+  // квоте: урок не засчитан, и узел тропы обязан остаться непройденным.
+  it('отказ по квоте после долгого ожидания снимает временную отметку', async () => {
+    loadDone.mockImplementationOnce(async () => new Set())
+    getContentQuota.mockImplementationOnce(async () => null)
+    let refuse
+    markDone.mockImplementationOnce(() => new Promise((_, reject) => { refuse = reject }))
+
+    const view = renderPage({ isDemoAccount: false })
+    await waitFor(() => expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length))
+    fireEvent.click(view.container.querySelector('.kt-step'))
+    const finish = await screen.findByText('сдать урок')
+
+    vi.useFakeTimers()
+    try {
+      fireEvent.click(finish)
+      await act(async () => { await vi.advanceTimersByTimeAsync(8100) })
+      await act(async () => {
+        refuse(new ContentRestrictedError())
+        await vi.advanceTimersByTimeAsync(100)
+      })
+      expect(view.container.querySelector('.le-restricted')).toBeTruthy()
+      fireEvent.click(screen.getByText('Назад'))
+      await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+      expect(view.container.querySelector('.kt-step').className).not.toMatch(/is-complete/)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('Esc уводит туда же, куда «Вернуться»', async () => {

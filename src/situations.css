@@ -1,0 +1,687 @@
+/* ============================================================
+   Ситуации (Speaking A1–C1) — нативный раздел Практики.
+   Классы с префиксом .sit-. Палитра — брендбук JTS, та же, что у «Чтения»
+   и воркбука: раздел должен читаться роднёй соседних тренажёров, а не
+   отдельным сайтом (прототип жил в iframe и выглядел чужим именно из-за
+   собственной оболочки).
+   ============================================================ */
+.sit {
+  --sit-purple: #874bf8;
+  --sit-purple-dark: #5718c0;
+  --sit-cyan: #0aafff;
+  --sit-green: #03832c;
+  --sit-green-bg: #e6fbec;
+  --sit-red: #c43d00;
+  --sit-red-bg: #fff0e9;
+  --sit-line: #edeaf5;
+  --sit-soft: #f4f1fc;
+  --sit-ink-2: #4a4458;
+  --sit-ink-3: #8a849a;
+
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 8px 0 64px;
+  color: #16131f;
+}
+
+.sit-loading,
+.sit-error {
+  padding: 32px 4px;
+  color: var(--sit-ink-2);
+}
+.sit-error {
+  color: var(--sit-red);
+}
+
+/* ── Шапка экрана ─────────────────────────────────────────── */
+.sit-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.sit-back {
+  border: none;
+  background: none;
+  padding: 8px 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--sit-purple-dark);
+  cursor: pointer;
+}
+.sit-back:hover {
+  color: var(--sit-purple);
+}
+.sit-level {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--sit-soft);
+  color: var(--sit-purple-dark);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+/* ── Каталог уровня ───────────────────────────────────────── */
+.sit-cat__title {
+  margin: 0 0 6px;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+.sit-cat__sub {
+  margin: 0 0 20px;
+  color: var(--sit-ink-2);
+}
+
+.sit-prog {
+  padding: 16px 18px;
+  border: 1px solid var(--sit-line);
+  border-radius: 18px;
+  background: #fff;
+  margin-bottom: 22px;
+}
+.sit-prog__top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--sit-ink-2);
+  margin-bottom: 10px;
+}
+.sit-prog__count b {
+  color: var(--sit-purple-dark);
+}
+.sit-prog__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sit-soft);
+  overflow: hidden;
+}
+.sit-prog__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sit-purple), var(--sit-cyan));
+  transition: width 0.3s ease;
+}
+
+.sit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+}
+.sit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 12px;
+  border: 1px solid var(--sit-line);
+  border-radius: 18px;
+  background: #fff;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.sit-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -18px rgba(87, 24, 192, 0.55);
+}
+.sit-card__thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  background: var(--sit-soft);
+}
+.sit-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sit-card__seq {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(22, 19, 31, 0.72);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+}
+.sit-card__check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--sit-green);
+  color: #fff;
+  font-size: 15px;
+}
+.sit-card__title {
+  padding: 0 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.sit-card__flag {
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--sit-ink-3);
+}
+.sit-card.is-done .sit-card__flag {
+  color: var(--sit-green);
+  font-weight: 700;
+}
+
+/* ── Экран сценария ───────────────────────────────────────── */
+.sit-view__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sit-ml__title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+.sit-view__flag {
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--sit-green-bg);
+  color: var(--sit-green);
+  font-size: 12px;
+  font-weight: 700;
+}
+.sit-view__intro {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--sit-soft);
+  margin-bottom: 18px;
+}
+.sit-view__youtag {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--sit-purple-dark);
+}
+
+.sit-video {
+  margin-bottom: 22px;
+}
+.sit-video video {
+  width: 100%;
+  max-height: 70vh;
+  border-radius: 18px;
+  background: #000;
+  display: block;
+}
+.sit-video__note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--sit-ink-3);
+}
+
+/* ── Материал: реплики, списки ────────────────────────────── */
+.sit-block {
+  margin-bottom: 22px;
+}
+.sit-block__head {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 800;
+}
+.sit-block__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.sit-block__list > li {
+  padding: 12px 14px;
+  border: 1px solid var(--sit-line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.sit-scene {
+  display: grid;
+  gap: 10px;
+}
+.sit-beat {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--sit-line);
+  background: #fff;
+}
+.sit-beat--scene {
+  background: var(--sit-soft);
+  border-color: transparent;
+}
+.sit-beat--you {
+  border-color: var(--sit-cyan);
+  background: #f0faff;
+}
+.sit-beat--them.is-alt {
+  background: #fbfafe;
+}
+.sit-beat__tag {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--sit-purple-dark);
+}
+.sit-beat__who {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-weight: 800;
+  color: var(--sit-purple-dark);
+}
+
+.sit-ml__main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sit-ml__num {
+  font-weight: 800;
+  color: var(--sit-ink-3);
+}
+.sit-ml__toggles {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.sit-ml__toggle {
+  border: 1px solid var(--sit-line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 2px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--sit-ink-3);
+  cursor: pointer;
+}
+.sit-ml__toggle:hover {
+  border-color: var(--sit-purple);
+  color: var(--sit-purple-dark);
+}
+.sit-ml__toggle.is-on {
+  background: var(--sit-purple);
+  border-color: var(--sit-purple);
+  color: #fff;
+}
+.sit-ml__toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sit-ml__tr {
+  margin-top: 8px;
+  padding-left: 2px;
+  color: var(--sit-ink-2);
+  font-size: 15px;
+}
+.sit-ml__lab {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--sit-ink-3);
+}
+
+.sit-task {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 2px solid var(--sit-purple);
+  background: #fff;
+  margin-bottom: 22px;
+}
+.sit-task__label {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--sit-purple-dark);
+}
+
+/* ── Рекордер ─────────────────────────────────────────────── */
+.sit-rec {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--sit-line);
+  background: #fff;
+  margin-bottom: 24px;
+}
+.sit-rec__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.sit-rec__hint {
+  margin: 0 0 14px;
+  color: var(--sit-ink-2);
+  font-size: 14px;
+}
+.sit-rec__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--sit-soft);
+  margin-bottom: 14px;
+}
+.sit-rec__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--sit-ink-2);
+}
+.sit-rec__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sit-ink-3);
+}
+.sit-rec__state.is-live {
+  color: var(--sit-red);
+  font-weight: 700;
+}
+.sit-rec__state.is-live .sit-rec__dot {
+  background: var(--sit-red);
+  animation: sit-pulse 1.1s ease-in-out infinite;
+}
+@keyframes sit-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sit-rec__state.is-live .sit-rec__dot {
+    animation: none;
+  }
+}
+.sit-rec__timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+.sit-rec__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.sit-rec__mic {
+  min-width: 140px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--sit-purple);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.sit-rec__mic:hover {
+  background: var(--sit-purple-dark);
+}
+.sit-rec__mic.is-live {
+  background: var(--sit-red);
+}
+.sit-rec__tool {
+  padding: 10px 16px;
+  border: 1px solid var(--sit-line);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  color: var(--sit-ink-2);
+  cursor: pointer;
+}
+.sit-rec__tool:hover:not(:disabled) {
+  border-color: var(--sit-purple);
+  color: var(--sit-purple-dark);
+}
+.sit-rec__tool:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sit-rec__tool--danger:hover:not(:disabled) {
+  border-color: var(--sit-red);
+  color: var(--sit-red);
+}
+.sit-rec__assess {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.sit-rec__go {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--sit-cyan);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.sit-rec__go:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sit-rec__budget {
+  font-size: 13px;
+  color: var(--sit-ink-3);
+}
+.sit-rec__guest,
+.sit-rec__error {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--sit-ink-2);
+}
+.sit-rec__error {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--sit-red-bg);
+  color: var(--sit-red);
+}
+
+/* ── Карточка разбора ─────────────────────────────────────── */
+.sit-fb {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--sit-soft);
+}
+.sit-fb__top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.sit-fb__ring {
+  width: 78px;
+  height: 78px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--sit-purple) calc(var(--p) * 1%), #e3dcf6 0);
+}
+.sit-fb__ring span {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  font-weight: 800;
+  font-size: 20px;
+}
+.sit-fb__top h5 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+.sit-fb__top p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sit-ink-2);
+}
+.sit-fb__axes {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.sit-fb__axis {
+  display: grid;
+  grid-template-columns: 116px 1fr 36px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.sit-fb__axis-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #e3dcf6;
+  overflow: hidden;
+}
+.sit-fb__axis-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sit-purple);
+}
+.sit-fb__axis-bar.is-warn i {
+  background: #ff9800;
+}
+.sit-fb__axis-val {
+  text-align: right;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.sit-fb__block {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.sit-fb__block h6 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+.sit-fb__transcript {
+  margin: 0;
+  color: var(--sit-ink-2);
+  font-style: italic;
+}
+.sit-fb__issue {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sit-fb__issue:last-child {
+  margin-bottom: 0;
+}
+.sit-fb__bad {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--sit-red-bg);
+  color: var(--sit-red);
+  font-weight: 700;
+}
+.sit-fb__good {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--sit-green-bg);
+  color: var(--sit-green);
+  font-weight: 700;
+}
+.sit-fb__arrow {
+  color: var(--sit-ink-3);
+}
+.sit-fb__note {
+  color: var(--sit-ink-2);
+  font-size: 14px;
+}
+.sit-fb__recs {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--sit-ink-2);
+}
+.sit-fb__summary {
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+.sit-fb__note-small {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--sit-ink-3);
+}
+
+/* ── Телефон ──────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .sit {
+    padding: 4px 0 48px;
+  }
+  .sit-cat__title {
+    font-size: 24px;
+  }
+  .sit-ml__title {
+    font-size: 21px;
+  }
+  .sit-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .sit-video video {
+    max-height: 62vh;
+  }
+  .sit-rec__controls {
+    gap: 10px;
+  }
+  .sit-rec__mic {
+    min-width: 120px;
+    padding: 12px 16px;
+  }
+  .sit-fb__axis {
+    grid-template-columns: 96px 1fr 30px;
+    font-size: 13px;
+  }
+}

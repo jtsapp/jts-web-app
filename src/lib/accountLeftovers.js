@@ -1,0 +1,29 @@
+// Что стереть с устройства при выходе из аккаунта, кроме практики.
+//
+// clearLocalPractice (practice/practiceSync.js) зовётся и на входе, и на
+// выходе, поэтому в нём только то, что после входа снова приезжает с сервера.
+// Здесь — то, что нельзя трогать на входе: навыки гостя законно уезжают в его
+// новый аккаунт первым флашем, а прогресс уроков и недельный снимок общие на
+// браузер. Оставленные после выхода, они доставались следующему ученику на
+// том же компьютере (класс, семья) — открытой чужой тропой, чужими навыками и
+// «+N% за неделю» от чужого процента.
+import { clearLocalLessonProgress } from '../learning/lessonProgress.js'
+import { clearLocalSkillStats } from '../practice/skillStats.js'
+import { clearWeeklySnapshot } from './levelProgress.js'
+import { clearLocalPractice } from '../practice/practiceSync.js'
+
+export function clearAccountLeftovers() {
+  clearLocalLessonProgress()
+  clearLocalSkillStats()
+  clearWeeklySnapshot()
+}
+
+// Сессия умерла сама (restoreSession: 401 и рефреш не прошёл) — это тот же
+// выход, только без кнопки. Ученик, ушедший из-за общего компьютера не нажав
+// «Выйти», иначе оставлял следующему свою тропу, навыки и — хуже всего —
+// неотправленные дельты навыков, которые первый флаш увёз бы под чужим
+// токеном. Флашить их некуда: токен уже мёртв.
+export function forgetExpiredSession() {
+  clearLocalPractice()
+  clearAccountLeftovers()
+}

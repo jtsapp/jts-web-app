@@ -8,7 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { pushModule, flushModule, PUSH_DELAY_MS, clearLocalPractice } from './practiceSync.js'
-import { READING_KEY, WORDS_KEY, VERBS_KEY } from './practiceKeys.js'
+import { READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY } from './practiceKeys.js'
 
 // Управляемый fetch: тест сам решает, когда сервер ответит.
 function deferredFetch() {
@@ -112,9 +112,10 @@ describe('flushModule', () => {
 // иначе достаётся следующему ученику. Новый раздел, забытый в списке, — ровно
 // эта утечка (так было со «Словами в картинках»).
 describe('clearLocalPractice', () => {
-  it('стирает прогресс чтения, «Слов в картинках» и глаголов', () => {
-    for (const k of [READING_KEY, WORDS_KEY, VERBS_KEY]) localStorage.setItem(k, '{"x":1}')
+  it('стирает прогресс чтения, «Слов в картинках», глаголов и «Слушай и выбирай»', () => {
+    const keys = [READING_KEY, WORDS_KEY, VERBS_KEY, LISTENCHOOSE_KEY, LISTENCHOOSE_RUN_KEY]
+    for (const k of keys) localStorage.setItem(k, '{"x":1}')
     clearLocalPractice()
-    for (const k of [READING_KEY, WORDS_KEY, VERBS_KEY]) expect(localStorage.getItem(k)).toBeNull()
+    for (const k of keys) expect(localStorage.getItem(k)).toBeNull()
   })
 })

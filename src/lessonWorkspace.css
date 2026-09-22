@@ -2088,18 +2088,6 @@
 }
 
 /* Кнопка «Проверить» — здесь проверка по кнопке (спека §4.4). */
-/* Причина, по которой карточка не принимает ответы. Стоит на месте пропавшей
-   кнопки «Проверить» по смыслу, но выше — до списка вопросов, чтобы её было
-   видно там же, где ученик жмёт варианты. */
-.lw-practice__locked {
-  margin: 12px 0 0;
-  padding: 10px 14px;
-  border-radius: var(--lw-r-inner);
-  background: var(--lw-tint-3);
-  color: var(--lw-ink-2);
-  font-size: calc(14px * var(--lw-text-scale, 1));
-}
-
 .lw-practice__check {
   align-self: flex-start;
   margin-top: 16px;

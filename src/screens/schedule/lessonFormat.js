@@ -49,15 +49,21 @@ export function lessonTopicFromSections(sections) {
   return null
 }
 
-export function canJoin(lessonStatus) {
+// «Урок идёт прямо сейчас» — преподаватель его запустил и не закрыл. Отвечает
+// за плашку идущего урока и за подсветку ближайшего занятия, и НИЧЕГО не
+// решает о доступе: занятие, до которого ещё неделя, открыть можно, но идущим
+// оно не является.
+export function isLessonLive(lessonStatus) {
   return lessonStatus === 'IN_PROGRESS' || lessonStatus === 'PAUSED'
 }
 
-// Прошедший урок ученик может открыть, но только смотреть: LiveLessonPage
-// уже ставит contentReadOnly на COMPLETED. Без этой кнопки занятие пропадает
-// из расписания сразу после «Завершить».
-export function canOpen(lessonStatus) {
-  return canJoin(lessonStatus) || lessonStatus === 'COMPLETED'
+// «В урок можно войти» — всегда, кроме отменённого занятия. Ученик заходит в
+// урок и выполняет задания в любом его состоянии: пока преподаватель ещё не
+// нажал «Начать», на перерыве и после «Завершить» (решение владельца
+// 20.09.2026, spec-lesson-always-open). Отменённый урок не состоялся — там
+// ученику делать нечего.
+export function canOpenLesson(lessonStatus) {
+  return lessonStatus !== 'CANCELLED'
 }
 
 // Maps backend lessonStatus (+ wall-clock) to an i18n suffix under schedule.status.*.

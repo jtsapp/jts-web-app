@@ -109,6 +109,18 @@ export function weeklyDelta(percent, snapshot, now = Date.now()) {
 }
 
 /**
+ * Забыть недельный снимок — при выходе. Он общий на браузер, и следующий
+ * ученик видел бы «+N% за неделю», отсчитанные от чужого процента.
+ */
+export function clearWeeklySnapshot() {
+  try {
+    localStorage.removeItem(SNAPSHOT_KEY)
+  } catch {
+    /* приватный режим — чистить нечего */
+  }
+}
+
+/**
  * Читает снимок и обновляет его, когда он старше недели. Возвращает прирост.
  * Единственное место модуля, которое трогает localStorage.
  */

@@ -223,8 +223,8 @@ export async function fetchContentQuota(token, contentType) {
  * cost no extra request. It is derived from the token, never from the client
  * body: a caller cannot claim someone else's name.
  *
- * `isDemoAccount` едет тем же ответом /user/me — недельные бюджеты платных
- * вызовов (writingBudget/shadowingBudget) режутся по нему, и отдельный поход на
+ * `isDemoAccount` едет тем же ответом /user/me — бюджеты платных вызовов
+ * (writingBudget/situationsBudget) режутся по нему, и отдельный поход на
  * бэкенд ради одного флага стоил бы каждой проверке письма лишний round-trip.
  * Аноним демо-аккаунтом быть не может: у него вообще нет аккаунта.
  */

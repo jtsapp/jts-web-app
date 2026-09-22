@@ -30,6 +30,7 @@ test.describe('practiceContract — валидация и merge', () => {
       'reading',
       'words',
       'verbs',
+      'listenchoose',
     ])
     expect(isValidModule('grammar')).toBe(true)
     expect(isValidModule('situations')).toBe(true)
@@ -39,6 +40,7 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(isValidModule('reading')).toBe(true)
     expect(isValidModule('words')).toBe(true)
     expect(isValidModule('verbs')).toBe(true)
+    expect(isValidModule('listenchoose')).toBe(true)
     expect(isValidModule('tutor')).toBe(false)
     expect(isValidModule(undefined)).toBe(false)
   })
@@ -58,6 +60,7 @@ test.describe('practiceContract — валидация и merge', () => {
     expect(emptyState('workbook')).toEqual({})
     expect(emptyState('reading')).toEqual({})
     expect(emptyState('verbs')).toEqual({})
+    expect(emptyState('listenchoose')).toEqual({})
   })
 
   test('mergeModuleState: situations объединяет открытые уровни', () => {

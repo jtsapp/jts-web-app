@@ -218,6 +218,32 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
   const [toast, setToast] = useState('')
   const recordedRef = useRef(false)
 
+  // Слова текущего задания считаем ОДИН раз на задание. Пока массив собирался
+  // инлайном у самого рендера, он был новым на КАЖДЫЙ рендер экрана — а
+  // «Соедините» тасует по нему обе колонки (`useMemo(..., [items])` в MatchUI).
+  // Тогда посторонний рендер пересдавал колонки прямо под пальцем: ученик тапал
+  // слово слева, колонки перетасовывались, второй тап попадал в другое слово —
+  // и ОБА уходили в ошибки, хотя знал он их оба.
+  //
+  // Посторонний рендер здесь ровно один, и он не в этом файле: VocabularyPage
+  // держит экран практики за ранним return (`screen === 'practice'`), поэтому
+  // её собственный setState перерисовывает и нас — а у неё в полёте висит
+  // `getVocabScope(token, id, fresh)`, чей onFresh приходит уже после начала
+  // практики. (Тоста «нет голоса» тут быть не может: `speak` в MatchUI не
+  // передаётся вовсе; её flash на 2200 мс во время практики тоже не зовётся —
+  // проверено по всем его вызовам.)
+  //
+  // Хук стоит здесь, выше ранних return'ов по phase: ниже они бы меняли число
+  // хуков между рендерами.
+  // `tasks` заморожен useState'ом, `byKey` мемоизирован по cards, а сам `cards`
+  // — useState в VocabularyPage, меняется только из startPractice. Зависимости
+  // честные, а не «лишь бы не пересчитывалось».
+  const curTask = tasks[idx]
+  const itemWords = useMemo(
+    () => uniqueByKey((curTask?.wordKeys || []).map((k) => byKey[k]).filter(Boolean)),
+    [curTask, byKey],
+  )
+
   const speak = (text, opts) => {
     initVoices()
     ttsSpeak(text, {
@@ -367,8 +393,6 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
     )
   }
 
-  const task = tasks[idx]
-  const itemWords = uniqueByKey((task?.wordKeys || []).map((k) => byKey[k]).filter(Boolean))
   const qLabel = t('vocab.prac.questionOf', { n: Math.min(answeredQ + 1, totalQ), total: totalQ })
 
   return (
@@ -390,19 +414,19 @@ export default function VocabPractice({ cards, lang, title, onExit, speak: speak
         </div>
       </div>
 
-      {task?.type === 'choice' && itemWords[0] && (
+      {curTask?.type === 'choice' && itemWords[0] && (
         <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
-      {task?.type === 'match' && itemWords.length >= 3 && (
+      {curTask?.type === 'match' && itemWords.length >= 3 && (
         <MatchUI key={idx} words={itemWords} lang={lang} t={t} onDone={onDone} />
       )}
-      {task?.type === 'match' && itemWords.length < 3 && itemWords[0] && (
+      {curTask?.type === 'match' && itemWords.length < 3 && itemWords[0] && (
         <ChoiceUI key={idx} word={itemWords[0]} bank={words} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
-      {task?.type === 'dictation' && itemWords[0] && (
+      {curTask?.type === 'dictation' && itemWords[0] && (
         <DictationUI key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
-      {task?.type === 'write' && itemWords[0] && (
+      {curTask?.type === 'write' && itemWords[0] && (
         <WriteTask key={idx} word={itemWords[0]} lang={lang} t={t} speak={speak} token={token} onDone={onDone} />
       )}
       {toast ? <p className="vp-state">{toast}</p> : null}
