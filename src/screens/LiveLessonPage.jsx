@@ -330,6 +330,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         setCatalogResolvedFor(url)
       })
     return () => { cancelled = true }
+    // lesson?.engine, а не весь lesson: движок не меняется после создания
+    // занятия, а полный объект приходит заново на каждом опросе (5с) — им в
+    // зависимостях эффект пересчитывал бы указку урока каталога без всякого
+    // повода, на каждый тик.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [materialFileUrl, token, lesson?.engine])
 
   // Стадии файлового урока — третий источник «Тем» (после шагов разбора и
