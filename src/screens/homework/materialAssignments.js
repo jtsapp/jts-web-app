@@ -7,6 +7,7 @@
 // одно и то же. Ни сети, ни React — под юнит-тесты.
 
 import { isStandaloneLessonUrl } from '../live/catalogLessonByUrl.js'
+import { engineOf } from '../live/lessonExtractor.js'
 
 /** Оценено ли назначение преподавателем (у него нет статусной машины ДЗ). */
 export function isMaterialGraded(a) {
@@ -51,11 +52,13 @@ export function materialCard(a) {
     // одну карточку из тридцати не сообщает ученику ничего: он не поймёт, что
     // именно ему задали, пока не откроет урок и не пролистает его целиком.
     title: a.cardTitle || a.materialTitle,
-    // Приложенный файл переводит работу в «на проверке» — и тем снимает
-    // просрочку: isOverdue считает её только для ASSIGNED. Без этого карточка,
-    // которую ученик сделал и прислал, оставалась бы у него красной, пока
-    // преподаватель не дойдёт до оценки.
-    status: isMaterialGraded(a) ? 'COMPLETED' : hasAnswerFiles(a) ? 'SUBMITTED' : 'ASSIGNED',
+    // Статус и просрочку считает СЕРВЕР (MaterialAssignmentService.statusOf) — здесь
+    // их больше не выводят. Раньше выводили: «есть вложения — значит сдана», своей
+    // копией правила в каждом клиенте. Копии успели разойтись, а по работе, которая
+    // решается прямо в уроке, вложений не бывает вовсе — она не становилась сданной
+    // никогда.
+    status: a.status,
+    isOverdue: a.isOverdue,
     dueDate: a.dueDate ?? null,
     grade: a.teacherScore ?? null,
     assignment: a,
@@ -64,7 +67,28 @@ export function materialCard(a) {
 
 /** Интерактив открывается через render-эндпоинт (с bridge-скриптом), остальное — прямой файл. */
 export function isInteractiveMaterial(a) {
-  return a?.materialType === 'INTERACTIVE_HTML'
+  return a?.materialType === 'INTERACTIVE_HTML' || isCatalogHtmlLink(a)
+}
+
+/**
+ * Урок каталога, выданный ссылкой, — тоже через render-эндпоинт, а не файлом.
+ *
+ * <p>Поймано на стенде: у выданного блока живого урока materialType — LINK, а не
+ * INTERACTIVE_HTML, и ученик получал сырой файл в новой вкладке. Это значит: без
+ * моста (ответы никуда не уходили, преподаватель не видел работу) и с начала
+ * урока, без единого намёка, какой из тридцати блоков ему задали. Сервер такой
+ * материал рисовать умеет давно — getRawHtmlForRender тянет ссылки своего
+ * хранилища каталога и вклеивает мост с автоуказкой на выданный блок, — просто
+ * клиент его об этом не спрашивал.
+ *
+ * <p>Эвристика МАРШРУТИЗАЦИИ, а не проверка доступа: настоящий сторож — бэкенд,
+ * он тянет только адреса своего каталога (защита от SSRF), поэтому вольное
+ * совпадение здесь дырой стать не может. Тот же приём и та же причина, что у
+ * админки (lesson-workspace.component.ts#isCatalogHtmlLink).
+ */
+export function isCatalogHtmlLink(a) {
+  return a?.materialType === 'LINK'
+    && /\/course-catalog\/.*\.html?(?:[?#]|$)/i.test(a?.fileUrl ?? '')
 }
 
 /**
@@ -81,6 +105,19 @@ export function isLessonCard(a) {
 
 /** Файл урока каталога — та же примета, по которой его узнаёт живой урок (SectionMaterialFrame). */
 const CATALOG_LESSON_FILE = /\/course-catalog\/.*\.html?(?:[?#]|$)/i
+
+/**
+ * Выдан конкретный кусок материала, а не он весь.
+ *
+ * <p>Три способа адресации, все считает сервер и присылает готовыми: блоки
+ * (blockKeys), отдельные задания (taskTids) и стадии (stageIndexes). Пусто во
+ * всех трёх — задан материал целиком.
+ */
+export function isAddressedPart(a) {
+  return (a?.blockKeys?.length ?? 0) > 0
+    || (a?.taskTids?.length ?? 0) > 0
+    || (a?.stageIndexes?.length ?? 0) > 0
+}
 
 /**
  * Задан урок каталога ЦЕЛИКОМ, а не одна его карточка.
@@ -101,6 +138,21 @@ const CATALOG_LESSON_FILE = /\/course-catalog\/.*\.html?(?:[?#]|$)/i
  */
 export function isWholeCatalogLesson(a) {
   if (!a || a.cardId) return false
+  // Задан КУСОК урока (блок, задание или стадия) — это не «целиком», сколько бы
+  // примет урока каталога ни совпало. Такую выдачу ученику нужно открыть самим
+  // файлом через render-эндпоинт: там мост, серверная проверка ответов и
+  // автоуказка на выданное место, а разобранный на шаги урок всего этого не
+  // знает и открылся бы с начала — ровно та жалоба, с которой всё начиналось.
+  if (isAddressedPart(a)) return false
+  // Домашка наследует движок занятия (spec §2): у FILE-занятия «целиком» — это файл во
+  // фрейме (isInteractiveMaterial → рамка), а плеер разбора остаётся STEPS-занятиям.
+  // Через engineOf, а не сырое сравнение с 'FILE': аварийный рубильник LESSON_EXTRACTOR
+  // (lessonExtractor.js) обязан возвращать к разбору ВСЁ одной строкой, а сырое
+  // сравнение его не видит вовсе — если рубильник дёрнут, потому что FILE сломался в
+  // проде, именно эта домашка осталась бы сломанной единственной (расхождение,
+  // пойманное финальным ревью ветки: та же спека §9 обещает рубильнику вернуть
+  // разбор всем занятиям, а не всем-кроме-этой-домашки).
+  if (engineOf({ engine: a.lessonEngine }) === 'FILE') return false
   if (a.catalogLessonId != null) return true
   const url = String(a.fileUrl || '')
   return a.materialType === 'LINK' && CATALOG_LESSON_FILE.test(url) && !isStandaloneLessonUrl(url)

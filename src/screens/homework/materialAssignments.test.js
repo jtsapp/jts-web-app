@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { materialCard, isMaterialGraded, isInteractiveMaterial, isLessonCard, hasAnswerFiles, needsAnswerFile, isWholeCatalogLesson } from './materialAssignments.js'
+import {
+  materialCard, isMaterialGraded, isInteractiveMaterial, isCatalogHtmlLink, isLessonCard,
+  hasAnswerFiles, needsAnswerFile, isWholeCatalogLesson,
+} from './materialAssignments.js'
 import { homeworkStateKey } from './homeworkFormat.js'
+import { LESSON_EXTRACTOR } from '../live/lessonExtractor.js'
 
 const assignment = (over = {}) => ({
   id: 5,
@@ -8,6 +12,9 @@ const assignment = (over = {}) => ({
   materialTitle: 'Present Perfect · practice test',
   materialType: 'INTERACTIVE_HTML',
   isGraded: true,
+  // Статус и просрочку считает сервер — карточка их только переносит.
+  status: 'ASSIGNED',
+  isOverdue: false,
   fileUrl: 'https://files.example/m.html',
   dueDate: '2026-08-25',
   teacherScore: null,
@@ -27,16 +34,30 @@ describe('materialCard', () => {
   })
 
   it('оценённое назначение читается как проверенная работа', () => {
-    const card = materialCard(assignment({ teacherScore: 5, gradedAt: '2026-08-20T10:00:00' }))
+    const card = materialCard(assignment({ status: 'COMPLETED', teacherScore: 5, gradedAt: '2026-08-20T10:00:00' }))
     expect(card.status).toBe('COMPLETED')
     expect(card.grade).toBe(5)
     expect(homeworkStateKey(card)).toBe('completed')
   })
 
-  // Просрочка по dueDate считается тем же правилом, что у обычной работы.
-  it('непроверенное назначение с прошедшим дедлайном — просрочено', () => {
-    const card = materialCard(assignment({ dueDate: '2026-08-01' }))
-    expect(homeworkStateKey(card, new Date(2026, 7, 20))).toBe('overdue')
+  /* Главное: статус и просрочку СЧИТАЕТ СЕРВЕР, карточка их только переносит.
+     Раньше их выводили здесь («есть вложения — значит сдана»), и по работе,
+     которая решается прямо в уроке, сдача не наступала никогда. */
+  it('статус берётся с сервера, а не выводится из полей', () => {
+    const сданнаяБезВложений = materialCard(assignment({ status: 'SUBMITTED', files: [] }))
+    expect(сданнаяБезВложений.status).toBe('SUBMITTED')
+
+    const свложениемНоНеСданная = materialCard(assignment({ status: 'ASSIGNED', files: [{ id: 1 }] }))
+    expect(свложениемНоНеСданная.status).toBe('ASSIGNED')
+  })
+
+  it('просрочку тоже решает сервер, а не часы клиента', () => {
+    // Срок прошёл, но сервер сказал «не просрочена» — верим ему.
+    const card = materialCard(assignment({ dueDate: '2026-08-01', isOverdue: false }))
+    expect(homeworkStateKey(card, new Date(2026, 7, 20))).toBe('assigned')
+
+    const просрочена = materialCard(assignment({ dueDate: '2026-08-01', isOverdue: true }))
+    expect(homeworkStateKey(просрочена, new Date(2026, 7, 20))).toBe('overdue')
   })
 })
 
@@ -50,6 +71,56 @@ describe('isMaterialGraded / isInteractiveMaterial', () => {
   it('интерактив отличается от обычного файла', () => {
     expect(isInteractiveMaterial(assignment())).toBe(true)
     expect(isInteractiveMaterial(assignment({ materialType: 'PDF' }))).toBe(false)
+  })
+
+  /**
+   * Главное в этой спеке: у выданного блока живого урока materialType — LINK,
+   * и ученик открывал сырой файл мимо render-эндпоинта: без моста и с начала
+   * урока, не зная, какой блок ему задали. Адрес — настоящий, со стенда.
+   */
+  it('урок каталога ссылкой — тоже через render-эндпоинт, а не сырым файлом', () => {
+    const урокКаталога = assignment({
+      materialType: 'LINK',
+      fileUrl: 'https://files-dev.justtostudy.kz/development/course-catalog/standalone/a0-lesson-1-1789678276662.html',
+    })
+    expect(isInteractiveMaterial(урокКаталога)).toBe(true)
+    expect(isCatalogHtmlLink(урокКаталога)).toBe(true)
+  })
+
+  it('ссылка вне каталога остаётся обычным файлом — её сервер не тянет', () => {
+    expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: 'https://youtube.com/watch?v=x' }))).toBe(false)
+    expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: 'https://files.example/course-catalog/notes.pdf' }))).toBe(false)
+    expect(isInteractiveMaterial(assignment({ materialType: 'LINK', fileUrl: null }))).toBe(false)
+  })
+
+  /**
+   * Стык с открытием урока каталога ЦЕЛИКОМ (оно приехало из develop).
+   *
+   * Приметы у обоих путей общие — ссылка на файл каталога, — и без этого
+   * различения выданный блок уводило бы в разобранный на шаги урок: тот
+   * открывается с начала, без моста, без серверной проверки и без автоуказки
+   * на выданное место. Ровно та жалоба, с которой всё начиналось.
+   */
+  it('выданный кусок урока — не «урок целиком», даже со всеми приметами каталога', () => {
+    const кусок = (over) => isWholeCatalogLesson(assignment({
+      materialType: 'LINK',
+      cardId: null,
+      catalogLessonId: 314,
+      fileUrl: 'https://f.kz/course-catalog/a0-lesson-1.html',
+      ...over,
+    }))
+    expect(кусок({ blockKeys: ['block@4:2'] })).toBe(false)
+    expect(кусок({ taskTids: ['lis-tick'] })).toBe(false)
+    expect(кусок({ stageIndexes: [4] })).toBe(false)
+    // Ничего не адресовано — это и правда урок целиком.
+    expect(кусок({})).toBe(true)
+  })
+
+  // Адрес каталога бывает с якорем или запросом — .html там не в конце строки.
+  it('каталожный адрес с запросом и якорем опознаётся', () => {
+    const c = (fileUrl) => isCatalogHtmlLink(assignment({ materialType: 'LINK', fileUrl }))
+    expect(c('https://f.kz/course-catalog/a0.html?v=2')).toBe(true)
+    expect(c('https://f.kz/course-catalog/a0.htm#stage-3')).toBe(true)
   })
 })
 
@@ -121,8 +192,8 @@ describe('Ответ на выданный материал файлом', () =>
   /** ГЛАВНОЕ: приложенный файл снимает вечную просрочку. */
   it('приложенный файл переводит карточку в «на проверке» и снимает просрочку', () => {
     const просроченнаяДата = '2020-01-01'
-    const без = materialCard(карточкаУрока({ dueDate: просроченнаяДата }))
-    const с = materialCard(карточкаУрока({ dueDate: просроченнаяДата, files: [{ id: 1, fileName: 'answer.pdf' }] }))
+    const без = materialCard(карточкаУрока({ dueDate: просроченнаяДата, status: 'ASSIGNED', isOverdue: true }))
+    const с = materialCard(карточкаУрока({ dueDate: просроченнаяДата, files: [{ id: 1, fileName: 'answer.pdf' }], status: 'SUBMITTED', isOverdue: false }))
 
     expect(без.status).toBe('ASSIGNED')
     expect(homeworkStateKey(без)).toBe('overdue')
@@ -133,7 +204,7 @@ describe('Ответ на выданный материал файлом', () =>
 
   /** Оценка весомее вложения: проверенная работа проверена. */
   it('оценка перебивает вложение', () => {
-    const проверено = materialCard(карточкаУрока({ files: [{ id: 1 }], teacherScore: 5, gradedAt: '2026-09-11T10:00:00' }))
+    const проверено = materialCard(карточкаУрока({ files: [{ id: 1 }], teacherScore: 5, gradedAt: '2026-09-11T10:00:00', status: 'COMPLETED' }))
     expect(проверено.status).toBe('COMPLETED')
   })
 })
@@ -170,6 +241,29 @@ describe('урок каталога целиком', () => {
     expect(isWholeCatalogLesson(урокЦеликом({
       fileUrl: 'https://files.justtostudy.kz/production/course-catalog/standalone/trial-a1.html',
     }))).toBe(false)
+  })
+
+  // Домашка наследует движок занятия (spec §2): выдача целиком из FILE-занятия — это
+  // файл во фрейме с мостом и серверной проверкой, а не плеер разбора.
+  it('выдача из FILE-занятия — не «урок целиком», откроется рамкой', () => {
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE' }))).toBe(false)
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'STEPS' }))).toBe(true)
+    // Без занятия или под старым бэкендом — как раньше.
+    expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: null }))).toBe(true)
+  })
+
+  // Регрессия финального ревью ветки: раньше здесь сравнивали lessonEngine
+  // напрямую со строкой 'FILE', мимо engineOf — аварийный рубильник
+  // LESSON_EXTRACTOR.enabled (spec §2, §9: «одна строка возвращает всё к
+  // разбору») эту проверку не видел вовсе, и выдача из FILE-занятия осталась бы
+  // рамкой, пока все остальные занятия уже откатились на STEPS.
+  it('рубильник LESSON_EXTRACTOR.enabled возвращает «урок целиком» и выдаче из FILE-занятия', () => {
+    LESSON_EXTRACTOR.enabled = true
+    try {
+      expect(isWholeCatalogLesson(урокЦеликом({ lessonEngine: 'FILE' }))).toBe(true)
+    } finally {
+      LESSON_EXTRACTOR.enabled = false
+    }
   })
 
   it('чужая ссылка, PDF и загруженный интерактив — не урок каталога', () => {

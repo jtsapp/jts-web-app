@@ -7714,6 +7714,29 @@ textarea {
 .hw-grade__num { font-size: 32px; font-weight: 800; color: var(--purple); line-height: 1; }
 .hw-grade__label { color: var(--muted); font-size: 14px; }
 .hw-comment { margin-top: 10px; color: var(--ink); font-size: 15px; line-height: 1.5; }
+/* Что задано с урока — читаемый текст, а не подпись: это единственное на экране,
+   что говорит ученику, какую часть урока ему делать. */
+.hw-assigned { margin: 0 0 12px; color: var(--ink); font-size: 15px; line-height: 1.5; }
+
+/* Материал, встроенный прямо в домашнюю работу: ученик делает задание здесь, не
+   уходя из кабинета. Высота тем же приёмом, что у рамки урока
+   (lessonWorkspace.css, .lw-material-frame) — занять экран, а не стоять
+   фиксированной карточкой; нижняя граница держит урок читаемым на ноутбуке. */
+.hw-frame { display: flex; flex-direction: column; gap: 8px; }
+.hw-frame__iframe {
+  display: block;
+  width: 100%;
+  height: clamp(420px, calc(100vh - 320px), 1200px);
+  border: 1px solid var(--line, #e6e6ef);
+  border-radius: 14px;
+  background: #fff;
+}
+.hw-frame__full { align-self: flex-start; color: var(--purple); font-size: 14px; text-decoration: underline; }
+
+@media (max-width: 900px) {
+  /* В одну колонку рамке достаётся вся высота экрана минус шапка со списком. */
+  .hw-frame__iframe { height: clamp(360px, calc(100vh - 220px), 900px); }
+}
 
 @media (max-width: 900px) {
   .hw__layout { grid-template-columns: 1fr; }
@@ -9176,3 +9199,12 @@ textarea {
 .booth__spinner { margin: 0 auto 18px; }
 .booth__cta { align-self: center; margin-top: 20px; }
 
+
+/* Возврат на доработку: что исправить — не «отзыв о работе», а задача на сейчас,
+   поэтому рамка заметна и стоит выше кнопки сдачи. */
+.hw-returned {
+  border: 1px solid var(--warn-line, #f0c36d);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: var(--warn-bg, #fff8e8);
+}

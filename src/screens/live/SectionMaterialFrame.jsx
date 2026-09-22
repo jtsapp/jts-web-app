@@ -1,9 +1,16 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
+import { parseStageMessage, gotoStageMessage } from './lessonStages.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
+// Дать собственной инициализации страницы (и восстановлению бриджа) чуть
+// осесть перед реплеем накопленного — как в Angular. Экспортируется, чтобы
+// тесты ждали то же самое число, а не дублировали его отдельной магической
+// константой (см. LiveLessonPage.hiddenBlocks.test.jsx и
+// SectionMaterialFrame.hiddenBlocks.test.jsx).
+export const LOAD_SETTLE_MS = 350
 
 // Встраивает активный материал раздела прямо в страницу (никогда в новую
 // вкладку) — как web-admin. INTERACTIVE_HTML идёт через рендер-эндпоинт с
@@ -16,18 +23,46 @@ const BRIDGE_HOST = 'jts-bridge-host'
 // 'present-event' / 'snapshot' пока идёт «Внимание на упражнение» (проксируем
 // через onPresentEvent). Обратно в iframe шлём { source: 'jts-bridge-host',
 // type: 'present', events } — реплей потока учителя у догоняющего студента.
+// Тем же каналом уходит { type: 'hidden-blocks', keys } (setHiddenKeys) — сервер
+// прячет CSS'ом только то, что скрыто на момент рендера файла, а этим сообщением
+// уже открытая рамка узнаёт о скрытии/возврате без полной перезагрузки.
+//
+// Второй, независимый от бриджа канал — стадии файлового урока (lessonStages.js):
+// скрипт в файле сообщает 'jts-lesson'/'stage' на каждом переходе (→ onStage),
+// а gotoStage просит его перейти на стадию от имени 'jts-workspace'. Ходит
+// мимо BRIDGE_HOST намеренно: это разговор с движком урока, а не с мостом.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
-  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, className = '' },
+  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, onStage, className = '' },
   ref
 ) {
   const { t } = useI18n()
   const iframeRef = useRef(null)
   const loadedRef = useRef(false)
+  // true только ПОСЛЕ окна осадки (LOAD_SETTLE_MS), в отличие от loadedRef —
+  // см. использование в setHiddenKeys ниже про то, зачем это разделение.
+  const settledRef = useRef(false)
   const pendingRef = useRef([])
+  // Последний setHiddenKeys(keys), пришедший до загрузки — не очередь, а
+  // «снимок» (подробности у самого метода ниже). null отдельно от 'нет
+  // ключей': setHiddenKeys всегда зовут с массивом (LiveLessonPage передаёт
+  // hiddenStepIds || []), а null здесь однозначно читается как «нечего
+  // накатывать при следующей загрузке».
+  const pendingHiddenKeysRef = useRef(null)
 
   useEffect(() => {
     loadedRef.current = false
+    settledRef.current = false
     pendingRef.current = []
+    // pendingHiddenKeysRef сюда намеренно НЕ входит. pendingRef — очередь
+    // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
+    // рамка уже не досмотрит до конца), а тут — последнее известное состояние
+    // «что сейчас скрыто», не привязанное к конкретному циклу загрузки. Если
+    // material/reloadToken сменились раньше, чем успел сработать onLoad
+    // предыдущей рамки, значение всё ещё правда и должно докатиться в
+    // СЛЕДУЮЩУЮ — родитель не обязан звать setHiddenKeys повторно только
+    // потому что рамка перезагрузилась (эффект в LiveLessonPage.jsx висит на
+    // hiddenStepIds, а не на reloadToken). Стереть его здесь — вернуть тот же
+    // баг, который чинит этот ref, просто с другим триггером потери.
   }, [material?.id, reloadToken])
 
   useImperativeHandle(ref, () => ({
@@ -51,6 +86,51 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       if (!loadedRef.current) return
       post({ type: 'mirror', selector: event.selector, eventType: event.eventType, value: event.value ?? null })
     },
+    // Переход на стадию файлового урока. Скрипт в файле кликает рельс стадий, и
+    // этот клик уходит собеседнику тем же мостом, что и настоящие, — класс идёт
+    // следом сам, здесь ничего досылать не нужно.
+    gotoStage(index) {
+      iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+    },
+    // Скрытие вживую: преподаватель прячет задание/блок PATCH'ом .../visibility,
+    // но CSS для этого вшивается только при рендере файла на сервере — уже
+    // открытая рамка ученика ничего не знает до следующей полной перезагрузки.
+    // keys — список как есть (голые id заданий и ключи `block@s:b` вперемешку,
+    // формат см. visibleSteps.js) — здесь его не фильтруют и не переупаковывают,
+    // это уже сделано на сервере.
+    //
+    // Как и replay, не постим напрямую, пока рамка не осела: слушателя на той
+    // стороне ещё нет, и postMessage молча теряется без единой ошибки — тот же
+    // класс бага, что уже был у replay. Но, в отличие от replay, копить
+    // очередь не нужно: скрытие — не поток дискретных событий, а всегда ПОЛНОЕ
+    // желаемое состояние целиком («что скрыто прямо сейчас»), и повторная
+    // отправка того же набора уже загруженной рамке идемпотентна на бэкенде
+    // (MaterialBridgeScriptInjector сверяет текущий список и просто добавляет/
+    // снимает класс по разнице — независимо проверено). Значит последний
+    // вызов до осадки полностью перекрывает все промежуточные, и вместо
+    // массива достаточно хранить один снимок — pendingHiddenKeysRef.
+    //
+    // Проверяем settledRef, а не loadedRef: между onLoad и концом осадки
+    // (LOAD_SETTLE_MS) скрипт внутри файла может ещё не закончить свой разбор
+    // блоков, и «рамка загрузилась» не значит «внутри уже есть кого искать по
+    // ключам» — вызов, попавший в это окно, рисковал молча найти пустое
+    // множество целей и потеряться без единого сигнала об ошибке, вплоть до
+    // следующего случайного sections-changed.
+    //
+    // Если рамки нет вовсе (materialFrameRef.current === null — view ещё
+    // 'loading'/'denied'/'hidden', или активного материала нет) и вызов гаснет
+    // опциональной цепочкой в LiveLessonPage.jsx, даже не добравшись до этого
+    // метода, — это тоже безопасно: когда рамка всё же смонтируется, она
+    // начнёт с настоящего GET /render, а он уже несёт актуальный список
+    // скрытого в вшитом на сервере CSS. Событие не потеряно, а перекрыто
+    // свежим полным состоянием.
+    setHiddenKeys(keys) {
+      if (settledRef.current) {
+        post({ type: 'hidden-blocks', keys })
+      } else {
+        pendingHiddenKeysRef.current = keys
+      }
+    },
   }), [])
 
   function post(payload) {
@@ -59,19 +139,33 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
 
   function handleLoad() {
     loadedRef.current = true
-    // Дать собственной инициализации страницы (и восстановлению бриджа) чуть
-    // осесть перед реплеем накопленного — как в Angular (350мс).
     setTimeout(() => {
+      settledRef.current = true
       if (pendingRef.current.length) {
         post({ type: 'present', events: pendingRef.current })
         pendingRef.current = []
       }
-    }, 350)
+      // Снимок скрытия, накопленный, пока рамка ещё грузилась или не осела —
+      // см. комментарий у setHiddenKeys/pendingHiddenKeysRef. null значит
+      // «вызовов не было», и тогда слать нечего (совпадает с сегодняшним
+      // поведением первой загрузки без единого setHiddenKeys).
+      if (pendingHiddenKeysRef.current !== null) {
+        post({ type: 'hidden-blocks', keys: pendingHiddenKeysRef.current })
+        pendingHiddenKeysRef.current = null
+      }
+    }, LOAD_SETTLE_MS)
   }
 
   useEffect(() => {
     function handleMessage(e) {
       const data = e.data
+      // Стадия — свой источник и обеим ролям: ученику она двигает «Темы»,
+      // преподавателю (если он ведёт урок отсюда) — то же самое.
+      const stage = parseStageMessage(data)
+      if (stage) {
+        onStage?.(stage)
+        return
+      }
       if (!data || data.source !== BRIDGE) return
       if (!isStaff) {
         if (data.type === 'mirror') {
@@ -91,7 +185,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [isStaff, presenting, onMirror, onPresentEvent])
+  }, [isStaff, presenting, onMirror, onPresentEvent, onStage])
 
   if (!material) {
     return <div className="lw-material-empty">{t('lesson.ws.noMaterial')}</div>
