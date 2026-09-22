@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const saveLanguageLevel = vi.fn()
 const getLanguageLevel = vi.fn()
 const savePlacementLevel = vi.fn()
+const saveTutorPrefs = vi.fn()
 
 vi.mock('../api.js', () => ({
   saveLanguageLevel: (...a) => saveLanguageLevel(...a),
@@ -10,9 +11,10 @@ vi.mock('../api.js', () => ({
 }))
 vi.mock('./tutorPrefs.js', () => ({
   savePlacementLevel: (...a) => savePlacementLevel(...a),
+  saveTutorPrefs: (...a) => saveTutorPrefs(...a),
 }))
 
-import { persistPlacementLevel } from './levelSave.js'
+import { persistPlacementLevel, syncProfileLevel } from './levelSave.js'
 
 const noSleep = { sleep: async () => {} }
 
@@ -114,5 +116,37 @@ describe('persistPlacementLevel', () => {
     expect(res).toEqual({ ok: true, anonymous: true, level: 'A2' })
     expect(savePlacementLevel).toHaveBeenCalledWith(null, 'A2', undefined, undefined, undefined)
     expect(saveLanguageLevel).not.toHaveBeenCalled()
+  })
+})
+
+describe('syncProfileLevel', () => {
+  beforeEach(() => {
+    saveTutorPrefs.mockReset().mockResolvedValue(null)
+  })
+
+  it('переносит уровень бэкенда в свой профиль — иначе тьютор не узнает о правке', () => {
+    // Менеджер исправил ученику уровень в админке: бэкенд знает B1, а копия
+    // этого приложения (её читает голосовой тьютор) осталась с уровнем теста.
+    syncProfileLevel('TOK', 'B1')
+
+    expect(saveTutorPrefs).toHaveBeenCalledWith('TOK', { level: 'B1' })
+  })
+
+  it('A0 не уезжает в профиль: у агента для него нет методички', () => {
+    // cefr_guidance_for отдаёт на неизвестный уровень указания B1 — новичок
+    // получил бы тьютора, говорящего с ним на B1. То же правило, что и у
+    // записи результата теста (profileLevel).
+    syncProfileLevel('TOK', 'A0')
+
+    expect(saveTutorPrefs).toHaveBeenCalledWith('TOK', { level: 'A1' })
+  })
+
+  it('без токена или без уровня не трогает профиль', () => {
+    // Аноним: бэкенд-профиля у него нет, переносить нечего. Пустой уровень —
+    // тест не пройден, и записать null значило бы стереть то, что уже есть.
+    syncProfileLevel(null, 'B1')
+    syncProfileLevel('TOK', null)
+
+    expect(saveTutorPrefs).not.toHaveBeenCalled()
   })
 })

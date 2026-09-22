@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Shell from '../components/Shell.jsx'
 import { loadPlacementBank, createPlacementSession } from '../practice/placement/engine.js'
-import { vocabDraw } from '../practice/placement/engine.generated.js'
+import { vocabDraw, CUTS, levelFromTheta } from '../practice/placement/engine.generated.js'
 import { T } from '../practice/placement/strings.js'
 import { placementText } from '../practice/placement/uiOverrides.js'
 import { IDK_DRAFT, isItemAnswered } from '../practice/placement/answers.js'
@@ -728,10 +728,25 @@ export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave,
   // прогоном скрипта), поэтому сообщение о сохранении берём из словаря
   // приложения.
   const { t: appT } = useI18n()
-  const LEVELS = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
   const pos = (x) => Math.max(0, Math.min(100, ((x + 3.5) / 6) * 100))
   const lo = pos(result.theta - result.se)
   const hi = pos(result.theta + result.se)
+  // Подписи стоят на СВОИХ границах, а не разложены поровну. Раньше семь
+  // подписей раскладывал `justify-content: space-between`, то есть через
+  // 16.7% каждая, — а настоящие границы по θ неравномерные (A1 с 16.7%, A2 с
+  // 28.3%, B1 с 41.7%). Полоса рисуется по θ и потому всегда указывала мимо
+  // своей подписи: у B1 она не доходила до отметки «B1» почти на четверть шкалы.
+  const ticks = CUTS.bounds.map(([bound, name]) => ({
+    name,
+    // Нижняя граница A0 — -Infinity: это левый край шкалы.
+    left: Number.isFinite(bound) ? pos(bound) : 0,
+  }))
+  // A0 по ветвлению — не измерение, а правило: разминка провалена и мост не
+  // пройден, поэтому уровень ставится в обход θ. Полоса же рисуется по самой θ
+  // и может стоять в районе A2 — на экране это читалось как «крупная A0 против
+  // шкалы, которая показывает другое». Показываем полосу только когда она
+  // согласуется с заголовком; в остальных случаях объясняем словами.
+  const bandMatchesLevel = levelFromTheta(result.theta) === result.level
   const rows = [
     ['blockRouting', result.skills.routing],
     ['blockMinpair', result.skills.minpair],
@@ -750,10 +765,18 @@ export function PlacementResult({ result, lang, saveState = 'idle', onRetrySave,
           <p className="plc-hint">{t('congratsLevel')}</p>
           <div className="plc-level">{result.level}</div>
 
-          <div className="plc-band">
-            <div className="plc-band__fill" style={{ left: `${lo}%`, width: `${Math.max(3, hi - lo)}%` }} />
-            <div className="plc-band__ticks">{LEVELS.map((l) => <span key={l}>{l}</span>)}</div>
-          </div>
+          {bandMatchesLevel ? (
+            <div className="plc-band">
+              <div className="plc-band__fill" style={{ left: `${lo}%`, width: `${Math.max(3, hi - lo)}%` }} />
+              <div className="plc-band__ticks">
+                {ticks.map((tick) => (
+                  <span key={tick.name} style={{ left: `${tick.left}%` }}>{tick.name}</span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="plc-note">{appT('placement.a0ByRouting')}</p>
+          )}
 
           {/* Движок сам сообщает, чего стоит его оценка: шкала уровней ещё не
               откалибрована (у заданий банка нет IRT-параметров), а `unresolved`

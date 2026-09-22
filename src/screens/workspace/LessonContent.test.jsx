@@ -223,6 +223,33 @@ describe('LessonContent — карточки шага', () => {
     expect(container.querySelectorAll('.lw-vcard')).toHaveLength(2)
   })
 
+  it('в vocab не показывает теги <b> и чинит IPA/English в слотах KZ/RU', () => {
+    const { container } = renderContent([
+      {
+        type: 'vocab',
+        cards: [
+          {
+            word: 'ukulele',
+            pos: 'n',
+            definition: 'Is the <b>ukulele</b> as popular in Spain as it is here?',
+          },
+          {
+            word: 'ages',
+            pos: 'n',
+            definition: '<b>ages</b> since we were in touch.',
+            translationKz: 'a very long time',
+            translationRu: 'ˈeɪdʒɪz',
+          },
+        ],
+      },
+    ])
+    expect(container.textContent).not.toContain('<b>')
+    expect(container.querySelector('.lw-vcard__def strong')?.textContent).toBe('ukulele')
+    expect(container.textContent).toContain('/ˈeɪdʒɪz/')
+    expect(container.textContent).not.toMatch(/KZ\s*a very long time/)
+    expect(container.textContent).not.toMatch(/RU\s*ˈeɪdʒɪz/)
+  })
+
   it('склеивает инструкцию, аудио и вопрос в одну practice-карточку', () => {
     const { container } = renderContent([
       {

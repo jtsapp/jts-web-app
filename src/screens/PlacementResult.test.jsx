@@ -51,6 +51,50 @@ describe('PlacementResult — честность оценки', () => {
   })
 })
 
+describe('PlacementResult — шкала не спорит с заголовком', () => {
+  /** Инлайновый left подписи уровня на шкале, в процентах. */
+  const tickLeft = (name) => {
+    const span = [...document.querySelectorAll('.plc-band__ticks span')]
+      .find((el) => el.textContent === name)
+    return span ? parseFloat(span.style.left) : null
+  }
+
+  it('подписи стоят на своих границах по θ, а не через равные промежутки', () => {
+    // Границы из CUTS: A1 с θ=-2.5, A2 с -1.8, B1 с -1.0, B2 с 0. В шкале
+    // от -3.5 до 2.5 это 16.7 / 28.3 / 41.7 / 58.3 %. Разложенные поровну
+    // (space-between) они стояли бы через 16.7% — и B1 промахивался почти
+    // на четверть шкалы.
+    renderResult()
+
+    expect(tickLeft('A0')).toBeCloseTo(0, 1)
+    expect(tickLeft('A1')).toBeCloseTo(16.7, 1)
+    expect(tickLeft('A2')).toBeCloseTo(28.3, 1)
+    expect(tickLeft('B1')).toBeCloseTo(41.7, 1)
+    expect(tickLeft('B2')).toBeCloseTo(58.3, 1)
+    expect(tickLeft('C1')).toBeCloseTo(75, 1)
+    expect(tickLeft('C2')).toBeCloseTo(91.7, 1)
+  })
+
+  it('A0 по разминке шкалу не рисует — она показывала бы другой уровень', () => {
+    // Жалоба с экрана: крупная «A0», а полоса под ней дотянута до A2. A0 тут
+    // ставится ПРАВИЛОМ (провалена разминка, не пройден мост), а полоса
+    // рисуется по θ, которая правилом не затронута.
+    renderResult({ result: { ...result, level: 'A0', flags: ['a0_branch'] } })
+
+    expect(document.querySelector('.plc-level').textContent).toBe('A0')
+    expect(document.querySelector('.plc-band')).toBeNull()
+    expect(screen.getByText(/по разминке, а не по шкале/)).toBeTruthy()
+  })
+
+  it('когда шкала согласуется с уровнем — она на месте', () => {
+    // θ=-0.2 это B1, заголовок тоже B1: противоречия нет, прятать нечего.
+    renderResult()
+
+    expect(document.querySelector('.plc-band')).toBeTruthy()
+    expect(screen.queryByText(/по разминке, а не по шкале/)).toBeNull()
+  })
+})
+
 describe('PlacementResult — сохранение уровня', () => {
   it('молчит, когда уровень сохранён', () => {
     renderResult({ saveState: 'saved' })

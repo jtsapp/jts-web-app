@@ -89,7 +89,7 @@ import { hydratePractice, clearLocalPractice } from './practice/practiceSync.js'
 import { flushSkillStats } from './practice/skillStats.js'
 import { clearAccountLeftovers, forgetExpiredSession } from './lib/accountLeftovers.js'
 import { loadTutorProfile, saveTutorPrefs } from './lib/tutorPrefs.js'
-import { persistPlacementLevel } from './lib/levelSave.js'
+import { persistPlacementLevel, syncProfileLevel } from './lib/levelSave.js'
 import { placementSummary } from './lib/placement.js'
 import { useI18n } from './i18n.jsx'
 import { TUTOR_ONLY, TUTOR_ONLY_SECTIONS } from './config.js'
@@ -647,6 +647,9 @@ export default function App() {
         }
       }
       if (lvl) setUserLevel(lvl)
+      // Профиль на бэкенде — истина: там же лежит ручная правка менеджера.
+      // Переносим её в свою копию, из которой читает тьютор (syncProfileLevel).
+      syncProfileLevel(tok, lvl)
       if (tok) applyDemoAccess(tok)
       if (tok) applyBoothAccount(tok)
       // При входе (в отличие от регистрации) даты рождения в стейте нет, а от
@@ -758,6 +761,7 @@ export default function App() {
         // не пристаём, чтобы сетевая осечка не гоняла студента по кругу.
         const lvl = await getLanguageLevel(tok)
         if (lvl) setUserLevel(lvl)
+        syncProfileLevel(tok, lvl)
         setNeedsLevelTest(!lvl)
       } catch (e) {
         console.warn('Не удалось получить уровень из профиля:', e)
@@ -801,6 +805,7 @@ export default function App() {
     try {
       const lvl = await getLanguageLevel(tok)
       if (lvl) setUserLevel(lvl)
+      syncProfileLevel(tok, lvl)
       setNeedsLevelTest(!lvl)
     } catch (e) {
       console.warn('Не удалось получить уровень из профиля:', e)

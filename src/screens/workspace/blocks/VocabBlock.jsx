@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useI18n } from '../../../i18n.jsx'
 import { speak } from '../../../practice/vocab/audio.js'
+import { inlineBold } from '../inlineBold.jsx'
 
 /**
  * Колода карточек словаря из урока каталога (`block.type === 'vocab'`).
@@ -9,17 +10,57 @@ import { speak } from '../../../practice/vocab/audio.js'
  * должен открываться кликом. LessonContent раньше не знал этот тип и молча
  * выкидывал блок — у преподавателя карточки были, у ученика оставались
  * только инструкция «нажми карточку» и matching.
- */
-/**
- * `revealed` — карточки, которые открыл преподаватель.
  *
- * Он нажимает карточку, чтобы показать классу перевод, — а видел его до этого
- * только сам: переворот был чисто местным состоянием на обеих сторонах. Ключ —
- * само слово: у преподавателя карточки те же, но порядковый номер у него свой.
+ * `revealed` — карточки, которые открыл преподаватель. Он нажимает карточку,
+ * чтобы показать классу перевод; ключ — само слово (у преподавателя свой порядок).
+ *
+ * Некоторые B2-колоды положили колонки DICT в VOCAB: IPA под RU, английский
+ * gloss под KZ. `sanitizeVocabCard` это чинит на отображении до переимпорта.
  */
+function looksLikeIpa(value) {
+  const t = String(value ?? '').trim()
+  if (!t) return false
+  return /[ˈˌɪʊəɔʌæθðŋʃʒː]/.test(t) || /^\/[^/]+\/$/.test(t)
+}
+
+function looksLikeEnglishGloss(value) {
+  const t = String(value ?? '').trim()
+  if (!t || /[а-яёәіңғүұқөһ]/i.test(t)) return false
+  return /^[a-z][a-z\s,',.\-]{6,}$/i.test(t)
+}
+
+function looksLikeCyrillicTranslation(value) {
+  return /[а-яёәіңғүұқөһ]/i.test(String(value ?? ''))
+}
+
+/** Repair mis-mapped KZ/RU so IPA shows as IPA and English gloss as definition. */
+function sanitizeVocabCard(card) {
+  let definition = card.definition
+  let kz = card.translationKz
+  let ru = card.translationRu
+  let ipa = card.ipa
+
+  if (looksLikeIpa(ru) || looksLikeEnglishGloss(kz)) {
+    if (looksLikeIpa(ru)) {
+      if (!ipa) ipa = String(ru).replace(/^\/|\/$/g, '')
+      ru = ''
+    } else if (ru && !looksLikeCyrillicTranslation(ru)) {
+      ru = ''
+    }
+    if (looksLikeEnglishGloss(kz)) {
+      if (!definition) definition = kz
+      kz = ''
+    }
+  }
+
+  return { ...card, definition, translationKz: kz, translationRu: ru, ipa }
+}
+
 export default function VocabBlock({ block, revealed }) {
   const { t } = useI18n()
-  const cards = Array.isArray(block?.cards) ? block.cards.filter((card) => card?.word) : []
+  const cards = Array.isArray(block?.cards)
+    ? block.cards.filter((card) => card?.word).map(sanitizeVocabCard)
+    : []
   const [flipped, setFlipped] = useState(() => new Set())
   // Картинка есть в данных, но файл не грузится (битая ссылка, 404) — так же
   // считаем карточку безкартиночной: иначе .lw-vcard остаётся на 3:4 (место
@@ -77,7 +118,9 @@ export default function VocabBlock({ block, revealed }) {
                       {card.ipa && <div className="lw-vcard__ipa">/{card.ipa}/</div>}
                     </div>
                     <div className="lw-vcard__bbody">
-                      {card.definition && <div className="lw-vcard__def">{card.definition}</div>}
+                      {card.definition && (
+                        <div className="lw-vcard__def">{inlineBold(card.definition)}</div>
+                      )}
                       {(card.translationKz || card.translationRu) && (
                         <div className="lw-vcard__trs">
                           {card.translationKz && (
