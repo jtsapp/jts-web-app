@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import AssetImage from '../components/AssetImage.jsx'
+import AskAssistantButton from '../components/AskAssistantButton.jsx'
 import LangSelector from '../components/LangSelector.jsx'
 import { addVocabWords } from '../lib/vocabBank.js'
 import { saveWord } from '../api.js'
@@ -703,6 +704,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
           <b>
             {isRight ? t('lesson.correct') : t('lesson.wrong')}
             {step.why && <span className="cp-fb__why">{step.why}</span>}
+            {!isRight && <AskAssistantButton />}
           </b>
           {isRight && (
             <span className="cp-fb__coin">

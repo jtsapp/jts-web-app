@@ -83,7 +83,8 @@ function toRichMessages(turns) {
  *   { type: "tool_call", toolCall }    — one complete tool call on block stop
  *
  * @param {{ systemPrompt: string, messages: any[], tools?: any[],
- *           temperature?: number, model?: string, maxOutputTokens?: number }} args
+ *           temperature?: number, model?: string, maxOutputTokens?: number,
+ *           task?: string }} args  task — метка в строке llm_cost (по умолчанию voice_brain)
  */
 export async function* chatStreamRich(args) {
   const client = getClient();
@@ -182,7 +183,7 @@ export async function* chatStreamRich(args) {
     console.log(
       JSON.stringify({
         kind: "llm_cost",
-        task: "voice_brain",
+        task: args.task || "voice_brain",
         model,
         inputTokens: u.input_tokens ?? null,
         outputTokens: u.output_tokens ?? null,
