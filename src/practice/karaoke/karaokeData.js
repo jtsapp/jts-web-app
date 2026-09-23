@@ -94,7 +94,6 @@ export function trackProgress(slug) {
     best: t?.best || {},
     attempts: t?.attempts || 0,
     weakLines: t?.weakLines || [],
-    warmupDone: Boolean(t?.warmupDone),
   }
 }
 
@@ -127,15 +126,6 @@ export function starsFor(best) {
   if ((best?.full || 0) >= 60) stars = 1
   if ((best?.full || 0) >= 75) stars = 2
   return stars
-}
-
-export function saveWarmup(slug) {
-  if (!slug) return
-  const state = read()
-  const t = (state.tracks[slug] = state.tracks[slug] || {})
-  t.warmupDone = true
-  state.streak = bumpStreak(state.streak)
-  write(state)
 }
 
 /** Результат Full Karaoke. Лучший балл только растёт. */

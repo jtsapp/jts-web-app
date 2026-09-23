@@ -2,7 +2,7 @@
 // Сборка разметки караоке из LRC.
 //
 //   node scripts/make-karaoke-lyrics.js --lrc song.lrc --audio song.mp3 \
-//        [--ru song.ru.txt] [--vocab song.vocab.txt] [--slug rainy-monday] \
+//        [--vocab song.vocab.txt] [--slug rainy-monday] \
 //        [--out build/karaoke/rainy-monday.json]
 //
 // Что делает и почему именно так:
@@ -57,7 +57,6 @@ if (arg('text')) {
     console.log(`  собранный lrc: ${arg('save-lrc')}`)
   }
 }
-const ru = arg('ru') ? readFileSync(arg('ru'), 'utf8').split(/\r?\n/).map((s) => s.trim()).filter(Boolean) : []
 const vocab = arg('vocab') ? parseVocabFile(readFileSync(arg('vocab'), 'utf8')) : []
 
 let duration = Number(arg('duration', 0))
@@ -76,7 +75,7 @@ const out = arg('out') || `build/karaoke/${slug}.json`
 
 let doc
 try {
-  doc = buildLyrics({ lrc, duration, ru, vocab, slug, maxLineSec: Number(arg('max-line', 12)) })
+  doc = buildLyrics({ lrc, duration, vocab, slug, maxLineSec: Number(arg('max-line', 12)) })
 } catch (e) {
   fail(e.message)
 }

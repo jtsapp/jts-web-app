@@ -12,6 +12,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { audioUrl } from './engine.js'
 import { seededShuffle } from './engine.generated.js'
 import { T } from './strings.js'
+import { playTts, unlockSpeech } from '../../lib/speech.js'
+import { VOICE } from '../../lib/ttsShared.js'
 
 // Слова для сборки предложения: эталон — ответ без финальной точки (так его
 // сравнивает scoreOrderWords в движке).
@@ -408,22 +410,33 @@ function Clip({ item, media, draft, setDraft, order, lang }) {
 
 // Минимальные пары: два слова, одно прозвучало. Порядок пары перемешан —
 // иначе правильный ответ всегда стоял бы первой кнопкой и блок можно было бы
-// закрыть не слушая. Файлов озвучки в бандле пока нет — как и он, падаем на
-// синтез речи браузера.
+// закрыть не слушая. Файлов озвучки в бандле пока нет — читает Soniox
+// британским голосом (прототип просил en-GB), а синтез речи браузера остаётся
+// на случай, когда не ответил и сервер.
 export function MinPair({ item, draft, setDraft, lang }) {
   const opts = useMemo(() => seededShuffle([item.word, item.distractor], Math.random), [item])
   const say = () => {
+    // Запись отказывает уже после нажатия (асинхронно), и на iPhone Soniox
+    // тогда молчал бы — разрешение на звук берём сейчас, пока жест жив.
+    unlockSpeech()
     const a = new Audio(audioUrl(item.file))
     a.play().catch(() => {
-      try {
-        const u = new SpeechSynthesisUtterance(item.sentence || item.word)
-        u.lang = 'en-GB'
-        speechSynthesis.cancel()
-        speechSynthesis.speak(u)
-      } catch {
-        /* нет синтеза — студент отвечает по написанию */
-      }
+      playTts(item.sentence || item.word, {
+        voice: VOICE.gb,
+        speed: 0.9,
+        onFail: (why) => why !== 'empty' && sayDevice(),
+      })
     })
+  }
+  const sayDevice = () => {
+    try {
+      const u = new SpeechSynthesisUtterance(item.sentence || item.word)
+      u.lang = 'en-GB'
+      speechSynthesis.cancel()
+      speechSynthesis.speak(u)
+    } catch {
+      /* нет синтеза — студент отвечает по написанию */
+    }
   }
   return (
     <>

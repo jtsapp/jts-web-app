@@ -5,6 +5,8 @@ import { markUnitDone } from './grammarProgress.js'
 import { recordSkill } from '../skillStats.js'
 import TrainerResult from '../../components/TrainerResult.jsx'
 import { normAnswer, answerMatches } from '../../lib/answer-match.js'
+import { playTts } from '../../lib/speech.js'
+import { VOICE } from '../../lib/ttsShared.js'
 
 // Монеты за верный ответ (порт RewardPill.coins(10) из мобилки).
 const REWARD = 10
@@ -326,7 +328,11 @@ function TextInput({ a, lang, answered, finish, setCanCheck, bind }) {
   }, [])
 
   const okCls = answered ? (wrong ? 'wrong' : 'correct') : ''
-  const speakText = () => {
+  // Soniox, а голос устройства — только если сервер не ответил: браузерный
+  // синтез на Windows и Android часто робот, а то и без английского голоса.
+  const speakText = () =>
+    playTts(a.text, { voice: VOICE.us, speed: 0.9, onFail: (why) => why !== 'empty' && speakDevice() })
+  const speakDevice = () => {
     try {
       const u = new SpeechSynthesisUtterance(a.text)
       u.lang = 'en-US'

@@ -97,6 +97,13 @@ describe('разметка', () => {
     expect(doc.hotspots).toHaveLength(1) // второй попадал внутрь строки
   })
 
+  it('перевод строки не берёт, даже если он лежит в разметке — в плеере его нет', () => {
+    const doc = normalizeLyrics(RAW_LYRICS)
+    expect(doc.lines[0]).not.toHaveProperty('ru')
+    // Перевод слов словаря — другое: на нём стоит «Разогрев».
+    expect(doc.vocab[0].ru).toBe('зонт')
+  })
+
   it('пересекающиеся строки делают трек непроигрываемым', () => {
     const broken = { ...RAW_LYRICS, lines: [
       { id: 1, start: 1, end: 5, text: 'one' },

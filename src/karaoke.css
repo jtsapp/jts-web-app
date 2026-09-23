@@ -1,4 +1,4 @@
-/* Раздел «Караоке» Практики: карточка трека, разогрев, экран исполнения и
+/* Раздел «Караоке» Практики: карточка трека, экран исполнения и
    результат. Префикс kk__ — как cr__ у читалки комиксов.
 
    Экран исполнения — тёмный: текст на нём крупный (ТЗ требует 36–44 px, на
@@ -151,13 +151,9 @@
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
-.kk__mode:hover:not(:disabled) {
+.kk__mode:hover {
   border-color: var(--purple);
   transform: translateY(-1px);
-}
-.kk__mode:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 .kk__modeIcon {
   font-size: 22px;
@@ -196,68 +192,8 @@
   color: #d1425c;
 }
 
-/* ── Разогрев ───────────────────────────────────────────────────────────── */
+/* ── Кнопки ──────────────────────────────────────────────────────────────── */
 
-.kk__warm {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.kk__warmHead {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.kk__warmStep {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.kk__warmCount {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-}
-.kk__warmExit {
-  margin-left: auto;
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-  cursor: pointer;
-}
-.kk__card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 28px 20px;
-  border-radius: 20px;
-  background: #fff;
-  border: 1px solid #ece9f5;
-  text-align: center;
-}
-.kk__cardWord {
-  font-size: 30px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.kk__cardTr {
-  font-size: 16px;
-  color: var(--muted);
-}
-.kk__cardLine {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #5b5768;
-  max-width: 460px;
-}
-.kk__listen,
-.kk__next,
-.kk__opt,
 .kk__start,
 .kk__ghost,
 .kk__choiceBtn {
@@ -266,19 +202,6 @@
   border-radius: 999px;
   border: 1px solid transparent;
 }
-.kk__listen {
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--purple);
-  background: #f1eaff;
-  border-color: #e2d6ff;
-}
-.kk__listen--big {
-  padding: 14px 26px;
-  font-size: 15px;
-}
-.kk__next,
 .kk__start {
   padding: 12px 26px;
   font-size: 14px;
@@ -292,31 +215,6 @@
   font-weight: 700;
   color: var(--muted);
   background: none;
-}
-.kk__opts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  width: 100%;
-  max-width: 480px;
-}
-.kk__opt {
-  padding: 12px 14px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  background: #f6f4fb;
-  border-color: #ece9f5;
-}
-.kk__opt--ok {
-  background: #e4f8ec;
-  border-color: #74d69b;
-  color: #1c7a45;
-}
-.kk__opt--bad {
-  background: #fdeaee;
-  border-color: #f0a6b5;
-  color: #a52440;
 }
 
 /* ── Исполнение ─────────────────────────────────────────────────────────── */
@@ -419,10 +317,6 @@
   font-size: 36px;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.45);
-}
-.kk__lineRu {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.6);
 }
 /* Спетая часть строки — белым, остальное приглушено: взгляд сам идёт по
    границе, и не надо искать, где ты. */
@@ -613,8 +507,5 @@
   }
   .kk__stage {
     padding: 18px 14px calc(18px + var(--safe-bottom));
-  }
-  .kk__opts {
-    grid-template-columns: 1fr;
   }
 }

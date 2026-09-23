@@ -121,7 +121,6 @@ export function normalizeLyrics(raw) {
       start,
       end,
       text,
-      ru: str(l.ru),
       words,
       focus: Array.isArray(l.focus) ? l.focus.map(str).filter(Boolean) : [],
       gaps: Array.isArray(l.gaps) ? l.gaps.map(num).filter((n) => n !== null) : [],

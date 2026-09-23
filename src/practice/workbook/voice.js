@@ -2,7 +2,12 @@
 
 // Озвучка воркбука — порт VE/speak/playTrack из data/jtsworkbook-a0.html
 // (:5110–5330). Прототип не возит аудио с собой: у задания есть id трека, и
-// если mp3 не нашлось, реплики читает браузерный синтез.
+// если mp3 не нашлось, реплики читает браузерный синтез. У нас вместо него
+// читает Soniox (/api/tts) двумя голосами — диктор A и диктор B, — а синтез
+// устройства остался запасным, если сервер не ответил.
+
+import { playTts, prefetchTts, stopTts, unlockSpeech } from '../../lib/speech.js'
+import { VOICE } from '../../lib/ttsShared.js'
 //
 // Почему тут столько кода на подбор голоса: в Windows и Android в списке
 // лежат и eSpeak, и «Bahh/Zarvox», и выбор первого попавшегося en-голоса
@@ -243,6 +248,8 @@ function withVoices(cb) {
 
 /** Пустая реплика в том же тике, что и тап: iOS выдаёт разрешение на синтез жесту. */
 function primeSpeech() {
+  // Элемент Soniox разрешается отдельно от синтеза и тоже только жестом.
+  unlockSpeech()
   const sy = synth()
   if (!sy) return
   try {
@@ -262,6 +269,7 @@ function primeSpeech() {
 function stopPlayback({ cancelSpeech = true } = {}) {
   token++
   clearKeep()
+  stopTts()
   try {
     if (curAudio) {
       curAudio.pause()
@@ -290,7 +298,124 @@ export function stopAudio() {
   stopPlayback({ cancelSpeech: true })
 }
 
+/* ── Soniox ─────────────────────────────────────────────────────────── */
+// Голоса дикторов: прототип предпочитал британские (en-GB) и делил реплики на
+// женский A и мужской B — так и оставляем, только голоса теперь одни на всех
+// устройствах.
+const SONIOX_VOICE = { A: VOICE.gb, B: VOICE.gbMale }
+// Один запрос — не больше этого: у роута свой потолок, а длинный абзац лучше
+// резать по предложениям, чем обрывать посередине.
+const CHUNK_MAX = 600
+
+function packSentences(text) {
+  if (text.length <= CHUNK_MAX) return [text]
+  const out = []
+  let buf = ''
+  for (const s of sentences(text)) {
+    if (buf && (buf + ' ' + s).length > CHUNK_MAX) {
+      out.push(buf)
+      buf = s
+    } else buf = buf ? buf + ' ' + s : s
+  }
+  if (buf) out.push(buf)
+  return out
+}
+
+/**
+ * План для Soniox: целая реплика говорящего, а не смысловые группы. Группы
+ * были нужны синтезу устройства, чтобы тот не читал длинную фразу по словам;
+ * нейронный голос интонирует фразу сам, а каждый лишний кусок — это ещё один
+ * поход в сеть и пауза перед ним.
+ */
+export function sonioxPlan(lines) {
+  const q = []
+  for (const raw of lines) {
+    let txt = raw
+    let who = 'A'
+    if (raw && typeof raw === 'object') {
+      txt = raw.t != null ? raw.t : raw.s
+      who = raw.v || (raw.w ? 'B' : 'A')
+    }
+    for (const tn of turns(txt, who)) {
+      for (const part of packSentences(tn.t)) {
+        if (!part) continue
+        q.push({ t: part, v: tn.v, one: part.split(' ').length <= 2 && !/[.!?]$/.test(part) })
+      }
+    }
+    if (q.length) q[q.length - 1].line = true
+  }
+  return q
+}
+
+function sonioxOpts(c, slow) {
+  // Одиночное слово — чуть медленнее, чтобы было разборчиво (как в прототипе).
+  const speed = c.one ? (slow ? 0.7 : 0.9) : slow ? 0.75 : 0.95
+  return { voice: SONIOX_VOICE[c.v] || SONIOX_VOICE.A, lang: 'en', speed }
+}
+
+/** Пауза после реплики: смена говорящего, новый пункт, продолжение. */
+export function turnGap(c, next, slow) {
+  let base
+  if (next && next.v !== c.v) base = 430
+  else if (c.line) base = 520
+  else base = 280
+  return Math.round(slow ? base * 1.7 : base)
+}
+
+/**
+ * Заказать запись заранее — для тех, кто читает по кусочку и знает, что
+ * будет следующим (Чтение: следующее предложение, пока звучит текущее).
+ */
+export function prefetch(lines, { slow = false } = {}) {
+  if (!lines || !lines.length) return
+  for (const c of sonioxPlan(lines)) prefetchTts(c.t, sonioxOpts(c, slow))
+}
+
 export function speak(lines, { slow = false, keepPrime = false } = {}, cb) {
+  if (!lines || !lines.length) {
+    if (cb) cb()
+    return
+  }
+  if (keepPrime) {
+    // mp3 уже не нашёл файл: cancel() здесь снял бы разрешение, выданное
+    // primeSpeech() в том же тапе, и iPhone снова остался бы без звука.
+    stopPlayback({ cancelSpeech: false })
+  } else {
+    stopAudio()
+    primeSpeech()
+  }
+  const my = token
+  const q = sonioxPlan(lines)
+  let i = 0
+  const step = () => {
+    if (my !== token) return
+    if (i >= q.length) {
+      if (cb) cb()
+      return
+    }
+    const c = q[i++]
+    const next = q[i]
+    // Следующую реплику заказываем, пока звучит эта, — иначе перед каждой
+    // была бы лишняя секунда тишины на синтез.
+    if (next) prefetchTts(next.t, sonioxOpts(next, slow))
+    playTts(c.t, {
+      ...sonioxOpts(c, slow),
+      onEnd: () => {
+        if (my === token) setTimeout(step, turnGap(c, next, slow))
+      },
+      onFail: () => {
+        if (my !== token) return
+        // Soniox не ответил — остаток задания дочитывает синтез устройства,
+        // с той же реплики. keepPrime: разрешение, выданное тапом, не снимаем.
+        speakDevice(q.slice(i - 1).map((x) => ({ t: x.t, v: x.v })), { slow, keepPrime: true }, cb)
+      },
+    })
+  }
+  step()
+}
+
+/** Прежний синтез устройства — запасной путь, логика прототипа без изменений. */
+function speakDevice(lines, { slow = false, keepPrime = false } = {}, cb) {
   const sy = synth()
   if (!sy || !lines || !lines.length) {
     if (cb) cb()
@@ -405,18 +530,22 @@ export function playTrack(sources, lines, { slow = false, onState } = {}) {
     const a = new Audio(paths[k++])
     a.playbackRate = slow ? 0.75 : 1
     a.onended = done
-    a.onerror = () => {
+    // Не нашёлся файл — браузер сообщает дважды: событием error и отказом
+    // play(). Раньше каждый из двух звал tryNext, кандидаты перескакивались, а
+    // реплики заказывались по два-три раза — с Soniox это два-три платных
+    // синтеза одной и той же фразы. Переход — один на кандидата, и только
+    // пока этот кандидат ещё текущий: после «стоп» дальше не идём.
+    let failed = false
+    const fail = () => {
+      if (failed || curAudio !== a) return
+      failed = true
       curAudio = null
       tryNext()
     }
+    a.onerror = fail
     curAudio = a
     const p = a.play()
-    if (p && p.catch) {
-      p.catch(() => {
-        curAudio = null
-        tryNext()
-      })
-    }
+    if (p && p.catch) p.catch(fail)
   }
   tryNext()
 }
