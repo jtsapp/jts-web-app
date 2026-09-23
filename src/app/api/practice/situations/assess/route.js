@@ -5,15 +5,23 @@
 //   1. отсечь мусор (короткая запись) — БЕСПЛАТНО и до любых вызовов;
 //   2. списать разбор из дневного лимита — ДО платных вызовов, иначе потолок
 //      не держится при гонке;
-//   3. STT (Azure, фолбэк Soniox) → если распознавать нечего, вернуть разбор в
-//      бюджет: студент не виноват, что микрофон записал тишину;
-//   4. произношение (Azure, по аудио) + четыре оси (грейдер) — параллельно.
+//   3. произношение (Azure, по аудио) стартует сразу, а параллельно с ним идёт
+//      текст (Azure Fast Transcription, фолбэк Soniox) → четыре оси (грейдер).
+//      Если распознавать нечего — вернуть разбор в бюджет: студент не виноват,
+//      что микрофон записал тишину.
+//
+// Почему звенья параллельно, а не друг за другом. Прод стоит за Cloudflare,
+// который рвёт запрос (524), если сервер молчит дольше 100 секунд. Замер на
+// пяти минутах речи (23.09.2026): потоковое распознавание 109 с, Fast
+// Transcription 21 с, оценка произношения 57 с. Цепочкой «потоковый текст →
+// произношение» такой ответ шёл ~3 минуты и до студента не доезжал, хотя
+// разбор уже был списан. Теперь время ответа ≈ самое долгое звено.
 //
 // Гостю разбор не положен: по device-id дневной лимит обходится одним
 // рестартом браузера. Записывать себя и слушать он может — это клиентская
 // часть, сюда она не ходит.
 
-import { assessPronunciation, isAzureSpeechConfigured, transcribeWav } from '@/lib/ielts/azure-pronunciation.js'
+import { assessPronunciationChunked, isAzureSpeechConfigured, transcribeWavFast } from '@/lib/ielts/azure-pronunciation.js'
 import { transcribeWavSoniox, isSonioxConfigured } from '@/lib/soniox-stt.js'
 import { hasAnthropicKey, structured } from '@/lib/anthropic.js'
 import { buildAssessPrompt, ASSESS_SCHEMA } from '@/lib/situations/assessPrompt.js'
@@ -28,11 +36,14 @@ import { budgetPayload, consume, dayKey, getUsed, refund } from '@/lib/db/situat
 
 export const runtime = 'nodejs'
 
-// 16кГц mono WAV = ~32 КБ/с, значит 6 МБ ≈ 3 минуты. Ответ на задание — это
-// 20–60 секунд даже на C1; три минуты дают запас на «проиграю всю сцену», но
-// не дают залить в грейдер подкаст. Лимит обязан оставаться НИЖЕ
-// client_max_body_size на nginx (там 32m), иначе прокси отдаёт голый 413.
-const MAX_BYTES = 6 * 1024 * 1024
+// 16кГц mono WAV = ~32 КБ/с, значит 10 МБ ≈ 5.4 минуты. Клиент останавливает
+// запись на пяти минутах (SpeakingRecorder, MAX_SECONDS) — запас здесь на
+// заголовок и округления, а не на шестую минуту. Пять минут дают сыграть вслух
+// всю сцену C1, но не дают залить в грейдер подкаст. Потолок держит и время:
+// разбор пяти минут ≈ 1 минута, а за 100 секунд молчания Cloudflare на проде
+// рвёт запрос. Лимит обязан оставаться НИЖЕ client_max_body_size на nginx
+// (там 32m), иначе прокси отдаёт голый 413.
+const MAX_BYTES = 10 * 1024 * 1024
 
 // Короче этого разбирать нечего: «эээ» и случайное касание кнопки. Не списываем
 // и не зовём платное — иначе промах пальцем стоит студенту попытки.
@@ -44,21 +55,32 @@ function isSttConfigured() {
 
 // Приоритет Azure, как в /api/transcribe: на том же ключе сидит оценка
 // произношения, и два провайдера на один экран не нужны. Soniox — фолбэк.
-async function transcribe(buf) {
+//
+// Потокового распознавания (transcribeWav) здесь нет намеренно: оно в пять раз
+// медленнее Fast Transcription, а там, где быстрого пути нет (регион ключа его
+// не умеет — centralus), тот же текст уже распознаёт оценка произношения —
+// отдельный третий вызов Azure был бы и дольше, и дороже.
+//
+// Возвращает { text, stt }: stt — чем реально распознали ('azure-fast' |
+// 'azure' | 'soniox' | null). Уходит в ответ и в лог, иначе молча отвалившийся
+// Azure не отличить от работающего: разбор просто приходит без произношения.
+async function transcribe(buf, pronP) {
   if (isAzureSpeechConfigured()) {
-    const text = await transcribeWav(buf).catch((e) => {
-      console.error('[situations.assess] azure stt failed', e)
-      return ''
-    })
-    if (text) return text
+    // null — «этим путём нельзя», '' — «сработало, речи нет».
+    const fast = await transcribeWavFast(buf)
+    if (fast != null) return { text: fast.trim(), stt: 'azure-fast' }
+    const pron = await pronP
+    const text = String(pron?.transcript || '').trim()
+    if (text) return { text, stt: 'azure' }
   }
   if (isSonioxConfigured()) {
-    return await transcribeWavSoniox(buf, { lang: 'en' }).catch((e) => {
+    const text = await transcribeWavSoniox(buf, { lang: 'en' }).catch((e) => {
       console.error('[situations.assess] soniox stt failed', e)
       return ''
     })
+    return { text: text.trim(), stt: 'soniox' }
   }
-  return ''
+  return { text: '', stt: null }
 }
 
 function clampList(list, cap, mapper) {
@@ -67,8 +89,12 @@ function clampList(list, cap, mapper) {
 
 // Статус для клиента: есть ли чем разбирать и остаток дневного лимита. Гостю
 // budget = null — клиент прячет кнопку «Разобрать ответ».
+//
+// azure — заданы ли ключи Azure на стенде. configured его не выдаёт: он true и
+// на одном Soniox, а тогда разбор идёт без произношения. Это проверка стенда
+// без входа; работает ли сам ключ, говорит engines в ответе POST.
 export async function GET(request) {
-  const base = { configured: isSttConfigured() && hasAnthropicKey() }
+  const base = { configured: isSttConfigured() && hasAnthropicKey(), azure: isAzureSpeechConfigured() }
   const denied = unauthorizedIfNoBearer(request)
   if (denied) return Response.json({ ...base, budget: null })
   if (!isDbConfigured()) return Response.json({ ...base, budget: null })
@@ -165,24 +191,32 @@ export async function POST(request) {
   }
 
   const buf = Buffer.from(await file.arrayBuffer())
-  const transcript = (await transcribe(buf)).trim()
+  const startedAt = Date.now()
+
+  // Произношение считает Azure по аудио и не ждёт текста — это самое долгое
+  // звено, поэтому стартует первым, а длинный ответ идёт кусками по минуте
+  // параллельно (assessPronunciationChunked). На тишине оно тоже отработает
+  // впустую; это дешевле, чем ждать его после текста на каждом ответе.
+  const pronP = isAzureSpeechConfigured()
+    ? assessPronunciationChunked(buf).catch((e) => {
+        console.error('[situations.assess] azure pronunciation failed', e)
+        return null
+      })
+    : Promise.resolve(null)
+
+  const { text: transcript, stt } = await transcribe(buf, pronP)
   if (!transcript) {
-    // Распознавать нечего: тишина, шум, слишком далеко от микрофона. Платного
-    // разбора не было — возвращаем попытку.
+    // Распознавать нечего: тишина, шум, слишком далеко от микрофона. Разбора
+    // не было — возвращаем попытку.
     await giveBack()
     return Response.json({ empty: true, seconds, budget: budgetPayload(usedNow, isDemo) })
   }
 
-  // Произношение считает Azure по аудио; берём именно accuracy, а не его
-  // overall: в overall подмешаны беглость и полнота, а их отдельно оценивает
-  // грейдер — иначе одна и та же характеристика попала бы в итог дважды.
+  // Берём у Azure именно accuracy, а не его overall: в overall подмешаны
+  // беглость и полнота, а их отдельно оценивает грейдер — иначе одна и та же
+  // характеристика попала бы в итог дважды.
   const [pron, graded] = await Promise.all([
-    isAzureSpeechConfigured()
-      ? assessPronunciation(buf).catch((e) => {
-          console.error('[situations.assess] azure pronunciation failed', e)
-          return null
-        })
-      : Promise.resolve(null),
+    pronP,
     structured({
       ...buildAssessPrompt({ level, task, transcript, seconds, lang, title }),
       schema: ASSESS_SCHEMA,
@@ -192,6 +226,20 @@ export async function POST(request) {
       return null
     }),
   ])
+
+  // Чем реально разбирали — в ответ и в лог стенда. Без этого отказ Azure не
+  // виден: грейдер отвечает, оценка приходит, просто без произношения.
+  const pronOk = Boolean(pron && !pron.mock)
+  const engines = { stt, pronunciation: pronOk ? 'azure' : null }
+  console.log(
+    JSON.stringify({
+      kind: 'situations_assess',
+      ...engines,
+      graded: Boolean(graded),
+      seconds: Math.round(seconds),
+      ms: Date.now() - startedAt,
+    }),
+  )
 
   if (!graded) {
     // Грейдер — сердце разбора: без него показывать нечего, и брать за это
@@ -205,7 +253,7 @@ export async function POST(request) {
     vocabulary: graded.vocabulary,
     fluency: graded.fluency,
     coherence: graded.coherence,
-    pronunciation: pron && !pron.mock ? pron.accuracy : null,
+    pronunciation: pronOk ? pron.accuracy : null,
   })
 
   return Response.json({
@@ -223,6 +271,7 @@ export async function POST(request) {
       typeof r === 'string' && r.trim() ? r.trim().slice(0, 240) : null,
     ),
     summary: String(graded.summary || '').trim().slice(0, 600),
+    engines,
     budget: budgetPayload(usedNow, isDemo),
   })
 }
