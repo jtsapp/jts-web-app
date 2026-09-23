@@ -1348,6 +1348,45 @@ function playClip(url, fbText, fbWho, fbEm){
 }
 /* deterministic index so a character always maps to the same fallback voice */
 function voiceIndexFor(who){ let h=0; for(let i=0;i<who.length;i++) h=(h*31+who.charCodeAt(i))>>>0; return h; }
+/* ---- Soniox: голос каждого персонажа без записи ----
+   Реплику без записанного клипа раньше читал синтез устройства — на Windows и
+   Android это часто робот, и персонажи различались только высотой тона. Теперь
+   её читает Soniox (/api/tts, тот же роут, что у остального приложения), и у
+   каждого персонажа свой голос: раздаём по полу и по высоте из VOICE_PROFILE
+   (p >= 1.1 — молодой, p <= 0.9 — низкий), без повторов внутри сказки, пока
+   голоса не кончатся. Не ответил сервер (лимит, сеть, нет ключа) — playClip сам
+   откатывается на прежний синтез (speakTTS), так что тишины не будет.
+   Имена голосов обязаны быть в белом списке роута (TALE_VOICES в
+   src/lib/ttsShared.js), иначе роут ответит 400. */
+const SONIOX_CAST={ narrator:"Alistair",
+  f:{ young:["Poppy","Isla","Piper","Nora"], low:["Cordelia","Victoria","Juliet"], mid:["Freya","Iris","Colleen","Grace","Imogen"] },
+  m:{ young:["Freddie","Mateo","Nigel"], low:["Arthur","Sebastian","Wesley","Daniel"], mid:["Oliver","Adrian","Elliot","Owen"] } };
+let sonioxAssign={};
+function assignSonioxVoices(){
+  sonioxAssign={}; if(!VOICE_PROFILE) return;
+  const used=new Set([SONIOX_CAST.narrator]);
+  Object.keys(VOICE_PROFILE).forEach(k=>{
+    if(k==="narrator"){ sonioxAssign[k]=SONIOX_CAST.narrator; return; }
+    const prof=VOICE_PROFILE[k]||{}; const p=prof.p||1;
+    const band=p>=1.1?"young":p<=0.9?"low":"mid";
+    const pools=prof.g==="m"?SONIOX_CAST.m:SONIOX_CAST.f;
+    const order=[pools[band],pools.mid,pools.young,pools.low].flat();
+    const v=order.find(x=>!used.has(x)) || order[voiceIndexFor(k)%order.length];
+    used.add(v); sonioxAssign[k]=v; });
+}
+/* адрес записи — в том же каноническом виде, что ttsUrl() в src/lib/ttsShared.js:
+   одинаковый текст обязан давать одинаковый адрес, на этом держится кэш */
+function sonioxUrl(text, who, em){
+  const clean=String(text==null?"":text).replace(/\*/g,"").replace(/\s+/g," ").trim().slice(0,1000);
+  if(!clean) return null;
+  const prof=(VOICE_PROFILE&&VOICE_PROFILE[who])||{r:1,g:"u"};
+  const e=EM[em]||EM.resolve;
+  const pace=who==="narrator"?0.93:0.98;             // та же подача, что у speakTTS
+  const s=Math.round(Math.max(0.7,Math.min(1.3,(prof.r||1)*e.r*pace))*20)/20;
+  const v=sonioxAssign[who]||(prof.g==="m"?"Oliver":"Freya");
+  const l=lang==="kk"?"kk":lang==="ru"?"ru":"en";
+  return "/api/tts?v="+v+"&l="+l+"&s="+s+"&t="+encodeURIComponent(clean);
+}
 function speak(text, who, em, key){
   // Any path that will NOT actually start audio must release the talking-mouth now.
   if(!S||!S.voice){ endTalking(); return; }
@@ -1371,6 +1410,10 @@ function speak(text, who, em, key){
   } else if(narrClip && T && T.urlVoices){
     playClip(narrClip, text, who, em); return;       // hosted per-character clip (opt-in tales, e.g. Ayaz Bi)
   }
+  // Записи нет — читает Soniox голосом персонажа; playClip при отказе сервера
+  // договорит синтезом устройства.
+  const su=sonioxUrl(text, who, em);
+  if(su){ playClip(su, text, who, em); return; }
   if(window.speechSynthesis){ speakTTS(text, who, em); return; }
   if(narrClip){ playClip(narrClip, text, who, em); return; }
   endTalking();
@@ -2648,7 +2691,7 @@ function useTale(p){ T=p; SCENES=p.scenes;NAME=p.names;RELICS=p.relics;STORY=p.s
   try{ document.getElementById("app").setAttribute("data-tale", p.id); }catch(e){}
   try{ const th=(p.theme||{}); const r=document.documentElement.style;
     ["--frost","--frost-dim","--amber","--amber-deep","--midnight","--deep"].forEach(k=>{ if(th[k]) r.setProperty(k,th[k]); else r.removeProperty(k); }); }catch(e){}
-  try{assignVoices();}catch(e){} }
+  try{assignVoices();}catch(e){} try{assignSonioxVoices();}catch(e){} }
 /* ================= ALDAR KÖSE content pack (Kazakh steppe trickster tales) ================= */
 const ALDAR_SCENES = {
   aul:{ label:L("The Aul","Аул","Ауыл"), fx:"pollen", grad:["#8fc36e","#33562f"] },
