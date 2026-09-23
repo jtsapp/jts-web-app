@@ -123,21 +123,27 @@ function build(file) {
 
   // Видео B2 в файл курса не вшито — оно ссылается на внешний ролик
   // (videos/nav_B2_report_unit7_olb.mp4). Те же ролики уже лежат в репозитории
-  // с прошлой выгрузки как video/v<юнит>.mp4, поэтому связываем их по номеру
-  // юнита в имени, а не тащим заново.
-  const videoUrl = (file) => {
-    const m = /unit(\d+)/i.exec(String(file || ''))
-    if (!m) return null
-    const name = `v${m[1]}.mp4`
+  // с прошлой выгрузки как video/v<юнит>.mp4, и <юнит> там — юнит КУРСА, а не
+  // учебника. Номер в ссылке — юнит Navigate, а курс свои юниты переставил:
+  // урок «Against the Law?» (юнит 2 курса) ссылается на unit7, и по этому
+  // номеру ему доставался v7 — репортаж про Прекрасную эпоху. Так разъехались
+  // 9 роликов из 12 (сверено распознаванием речи роликов с вопросами к ним).
+  // Поэтому ролик берётся по юниту урока, а ссылка курса только говорит, что
+  // видео в уроке есть.
+  const videoUrl = (unit) => (file) => {
+    if (!file || !unit) return null
+    const name = `v${unit}.mp4`
     return fs.existsSync(path.join(outDir, 'video', name)) ? `/course/${course.level}/video/${name}` : null
   }
 
-  const makeCtx = (lessonKey) => ({
+  const makeCtx = ({ key: lessonKey, unit }) => ({
     lang: 'ru',
     level: course.level,
-    video: videoUrl,
-    clip: (key) => fixes.clip(lessonKey, key),
+    video: videoUrl(unit),
+    clip: (key, role) => fixes.clip(lessonKey, key, role),
     img: (word) => imgs.get(imgKey(word)) || null,
+    // Картинки вариантов «выберите картинку» — иконки самого курса.
+    icon: (name) => course.icons[name] || null,
     wordAudio,
   })
 
@@ -149,7 +155,7 @@ function build(file) {
   const lessons = []
   let stepCount = 0
   for (const lesson of course.lessons) {
-    const steps = lessonSteps(lesson, course.perItem, makeCtx(lesson.key))
+    const steps = lessonSteps(lesson, course.perItem, makeCtx(lesson))
     stepCount += steps.length
     const name = `steps-${lesson.no}.json`
     // Подпись урока у A0 в меню курса трёхъязычная, у A1/A2 — строкой. Плеер
@@ -170,7 +176,7 @@ function build(file) {
 
   const tests = []
   for (const test of course.tests) {
-    const steps = lessonSteps(test, course.perItem, makeCtx(test.key))
+    const steps = lessonSteps(test, course.perItem, makeCtx(test))
     const graded = steps.filter((s) => GRADED.includes(s.type)).length
     const declaredPass = test.pass || (test.groups || []).reduce((p, g) => p || (g && g.pass) || 0, 0)
     const pass = passMark(declaredPass, graded)

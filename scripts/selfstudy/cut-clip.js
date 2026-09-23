@@ -104,7 +104,60 @@ function cutMp3(buf, from, to) {
   return Buffer.concat(picked.map((f) => buf.subarray(f.at, f.at + f.size)))
 }
 
-if (require.main === module) {
+// Формат потока: версия, слой, частота и режим каналов. Битрейт не в счёт —
+// у VBR он меняется от кадра к кадру и в одном файле.
+const formatOf = (buf, at) => [buf[at + 1] & 0xfe, (buf[at + 2] >> 2) & 3, buf[at + 3] >> 6].join('/')
+
+/**
+ * Склейка кусков в один клип через паузу из тихих кадров.
+ *
+ * Тихий кадр — заголовок первого кадра (без CRC и паддинга) и нули: side info
+ * из нулей значит «ни одного бита звука», и декодер отыгрывает тишину. Куски
+ * обязаны быть одного формата: кадры разной частоты в одном потоке браузер
+ * вправе не сыграть.
+ */
+function joinMp3(buffers, gapSeconds = 0.3) {
+  const parts = buffers.map((buf) => ({ buf, ...mp3Frames(buf) }))
+  const first = parts[0].frames[0]
+  const format = formatOf(parts[0].buf, first.at)
+  for (const p of parts) {
+    const f = formatOf(p.buf, p.frames[0].at)
+    if (f !== format) throw new Error(`формат кусков разный: ${format} и ${f}`)
+  }
+  const hdr = Buffer.from(parts[0].buf.subarray(first.at, first.at + 4))
+  hdr[1] |= 1
+  hdr[2] &= ~2
+  const { size, seconds } = header(hdr, 0)
+  const silent = Buffer.alloc(size)
+  hdr.copy(silent, 0)
+  const gap = Array(Math.ceil(gapSeconds / seconds - 1e-9)).fill(silent)
+  const out = []
+  parts.forEach((p, i) => {
+    if (i) out.push(...gap)
+    out.push(...p.frames.map((f) => p.buf.subarray(f.at, f.at + f.size)))
+  })
+  return Buffer.concat(out)
+}
+
+if (require.main === module && process.argv[2] === '--join') {
+  // node scripts/selfstudy/cut-clip.js --join <кусок.mp3>[@от-до] … <выход.mp3> [--gap <с>] [--force]
+  const rest = process.argv.slice(3).filter((a) => a !== '--force')
+  const gapAt = rest.indexOf('--gap')
+  const gapSeconds = gapAt >= 0 ? Number(rest.splice(gapAt, 2)[1]) : 0.3
+  const out = rest.pop()
+  if (fs.existsSync(out) && !process.argv.includes('--force')) {
+    console.error(`${out} уже есть — перезапись только с --force`)
+    process.exit(1)
+  }
+  const pieces = rest.map((spec) => {
+    const m = /^(.*)@([\d.]+)-([\d.]+)$/.exec(spec)
+    const buf = fs.readFileSync(m ? m[1] : spec)
+    return m ? cutMp3(buf, Number(m[2]), Number(m[3])) : buf
+  })
+  const clip = joinMp3(pieces, gapSeconds)
+  fs.writeFileSync(out, clip)
+  console.log(`${out}: ${mp3Frames(clip).duration.toFixed(2)} с, ${clip.length} байт`)
+} else if (require.main === module) {
   const args = process.argv.slice(2).filter((a) => a !== '--force')
   const [src, from, to, out] = args
   if (!out) {
@@ -122,4 +175,4 @@ if (require.main === module) {
   console.log(`${out}: ${mp3Frames(clip).duration.toFixed(2)} с, ${clip.length} байт`)
 }
 
-module.exports = { mp3Frames, cutMp3 }
+module.exports = { mp3Frames, cutMp3, joinMp3 }

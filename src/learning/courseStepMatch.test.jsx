@@ -96,3 +96,36 @@ describe('CourseStepPlayer — банк матчинга с повторяющи
     expect(checkBtn().disabled).toBe(false)
   })
 })
+
+// «Соедините слова и картинки» (A0): справа — иконки курса, а не слова.
+// Имя иконки остаётся значением пары: по нему плеер и сверяет.
+describe('CourseStepPlayer — соединение слов и картинок', () => {
+  const PIC_MATCH = {
+    type: 'match',
+    title: 'Соедините слова и картинки.',
+    pairs: [
+      { left: 'listen', right: 'listen' },
+      { left: 'look at', right: 'look' },
+    ],
+    options: ['look', 'listen'],
+    rightIcons: { listen: '<path d="M1 1"/>', look: '<circle r="3"/>' },
+  }
+
+  it('в банке — картинки без подписи, пара засчитывается по картинке', () => {
+    playMatch(PIC_MATCH)
+    for (const c of chips()) {
+      expect(c.querySelector('svg.cp-match__icon')).toBeTruthy()
+      expect(c.textContent).toBe('')
+    }
+    const pick = (left, icon) => {
+      fireEvent.click([...document.querySelectorAll('.cp-match__item')].find((b) => b.querySelector('.cp-match__left')?.textContent === left))
+      fireEvent.click(chips().find((c) => c.querySelector('svg').getAttribute('aria-label') === icon))
+    }
+    pick('listen', 'listen')
+    pick('look at', 'look')
+    // Выбранная картинка встаёт рядом со словом.
+    expect(document.querySelectorAll('.cp-match__pick svg')).toHaveLength(2)
+    fireEvent.click(checkBtn())
+    expect(document.querySelectorAll('.cp-match__fix')).toHaveLength(0)
+  })
+})
