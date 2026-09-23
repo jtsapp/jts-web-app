@@ -246,6 +246,26 @@ describe('selfstudy/steps — типы заданий', () => {
     expect(order.words.slice().sort()).toEqual(['I', 'like', 'tea'])
   })
 
+  // Рамки с пропуском («Would you mind …ing?») синтез читает кашей — такие
+  // строки не получают сгенерированной записи. Запись диктора курса остаётся.
+  it('рамка с пропуском не получает синтезированной записи', () => {
+    const tts = (t) => `/learning/audio/a2/${t.length}.mp3`
+    const [ph, rec] = lessonSteps(
+      {
+        key: '12',
+        no: 12,
+        groups: [
+          { t: 'useful', stage: 'freer', items: [{ s: 'Do you fancy …ing?' }, { s: 'Good idea!' }, { s: 'How about …?', clip: 'c1' }] },
+          { t: 'say', stage: 'freer', prompts: ['My closest friend is … .', 'We met at school.'] },
+        ],
+      },
+      { ...PER_ITEM },
+      { ...ctx, wordAudio: tts },
+    )
+    expect(ph.items.map((it) => it.src)).toEqual([null, tts('Good idea!'), '/course/a0/audio/c1.mp3'])
+    expect(rec.itemAudio).toEqual([null, tts('We met at school.')])
+  })
+
   it('фразы для повтора собирают запись, где она есть', () => {
     const [phrases] = steps([
       { t: 'chunk', stage: 'gram', ins: { en: 'Listen' }, items: [{ s: 'I like coffee.', clip: 'c1' }, { s: 'I dont like rain.' }] },

@@ -94,11 +94,11 @@ describe('CourseStepPlayer — образцы в шаге record', () => {
   // нет и не будет — говорит здесь студент.
   it('задание по-русски — текст, а не кнопка «послушать»', () => {
     const task = 'Кто ваш самый давний друг? Как давно вы знакомы?'
-    play([task, 'My closest friend is … .'])
+    play([task, 'We met at school.'])
     expect(screen.queryByRole('button', { name: task })).toBeNull()
     fireEvent.click(screen.getByText(task))
     expect(spoken).toEqual([])
     expect(played).toEqual([])
-    expect(screen.getByRole('button', { name: 'My closest friend is … .' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'We met at school.' })).toBeTruthy()
   })
 })

@@ -13,6 +13,8 @@
 // ctx.lang в screenToStep. Раньше здесь лежали голые английские строки, и
 // подпись стадии («Practice» и т.п.) не переводилась вообще ни при каком
 // lang — единственное место в файле, которое не проходило через line()/plain().
+const { isFrame } = require('../lib/course-frame')
+
 const STAGE_NAMES = {
   warm: { en: 'Warm-up', ru: 'Разминка', kk: 'Қыздыру' },
   vocab: { en: 'Vocabulary', ru: 'Слова', kk: 'Сөздер' },
@@ -190,7 +192,9 @@ function tableHtml(sc, lang) {
 // для слов: тем же именем scripts/voice-step-cards.js озвучивает фразы и
 // образцы для записи голоса. Без этого запасного пути следующая выгрузка
 // курса молча возвращала фразам src: null, и их снова читал браузерный синтез.
-const voiced = (ctx, text) => (text && ctx.wordAudio ? ctx.wordAudio(text) : null) || null
+// Рамки («Would you mind …ing?») синтезом не озвучиваются: пропуск он
+// читает кашей (scripts/lib/course-frame.js).
+const voiced = (ctx, text) => (text && ctx.wordAudio && !isFrame(text) ? ctx.wordAudio(text) : null) || null
 
 // Картинки вариантов: в файле курса вариант задания «выберите картинку» — имя
 // иконки из его набора (door, sun, clock), и движок курса рисует их без
@@ -313,7 +317,7 @@ function screenToStep(sc, ctx) {
           // у каждого: движок курса рисует её на карточке. Нет фото — иконка.
           ...cardIcon(ctx, it),
           // Роль word: правка клипа для задания (only: 'task') карточку не трогает.
-          audio: (it.wordClip && ctx.clip(it.wordClip, 'word')) || ctx.wordAudio(it.w),
+          audio: (it.wordClip && ctx.clip(it.wordClip, 'word')) || voiced(ctx, it.w),
         })),
       }
 

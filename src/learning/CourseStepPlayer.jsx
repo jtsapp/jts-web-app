@@ -1180,11 +1180,24 @@ function ColumnsBoard({ step, fills, setFills, checked }) {
 
 // Фразы «послушай и повтори»: у части строк есть запись курса, у остальных
 // читает синтез — тот же порядок, что и в исходном движке (say()).
+// Рамка — строка с пропуском «…» («Would you mind …ing?»). Синтез читает
+// пропуск кашей, поэтому записи у рамки нет намеренно (то же правило —
+// scripts/lib/course-frame.js), и браузерным синтезом её тоже не читаем:
+// рамка без записи — просто текст, без кнопки «послушать».
+const FRAME = /…|\.\.\./
+const isFrame = (text) => FRAME.test(String(text ?? '').replace(/<[^>]+>/g, ''))
+const silentFrame = (text, src) => !src && isFrame(text)
+
 function PhraseList({ items, onWord }) {
   useEffect(() => stopSpeaking, [])
   return (
     <div className="cp-phrases">
-      {(items || []).map((it, i) => (
+      {(items || []).map((it, i) =>
+        silentFrame(it.text, it.src) ? (
+          <div key={i} className="cp-phrases__row is-frame">
+            <TapText as="span" className="cp-phrases__text" text={it.text} onWord={onWord} />
+          </div>
+        ) : (
         <button
           key={i}
           type="button"
@@ -1199,7 +1212,8 @@ function PhraseList({ items, onWord }) {
             </svg>
           </span>
         </button>
-      ))}
+        ),
+      )}
     </div>
   )
 }
@@ -1242,9 +1256,10 @@ export function recordLine(item, audio = null) {
 // ваш самый давний друг?»); у B1 таких больше половины строк record. Кнопкой
 // «послушать» она была зря: синтез с английским голосом читал кириллицу
 // мусором, а говорить здесь должен студент. Записи у задания не будет —
-// scripts/voice-step-cards.js озвучивает только английские строки.
+// scripts/voice-step-cards.js озвучивает только английские строки. Рамка с
+// пропуском («My closest friend is … .») без записи — тоже текст: см. isFrame.
 const CYRILLIC = /\p{Script=Cyrillic}/u
-const isRecordTask = (line) => !line.src && CYRILLIC.test(line.text)
+const isRecordTask = (line) => !line.src && (CYRILLIC.test(line.text) || isFrame(line.text))
 
 function RecordBoard({ items, audio, t }) {
   const [state, setState] = useState('idle') // idle | live | done | denied
@@ -1634,7 +1649,7 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
           <button
             className="cp-word__flip"
             onClick={() => {
-              speakEnglish(w.en, { src: w.audio || null })
+              if (!silentFrame(w.en, w.audio)) speakEnglish(w.en, { src: w.audio || null })
               setOpen((s) => ({ ...s, [i]: true }))
             }}
             aria-label={t('lesson.hearWord', { word: w.en })}
@@ -1698,17 +1713,19 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
                 >
                   {saved[i] ? t('lesson.savedVocab') : t('lesson.toVocab')}
                 </button>
-                <button
-                  className="cp-word__say"
-                  type="button"
-                  aria-label={t('lesson.hearWord', { word: w.en })}
-                  onClick={() => speakEnglish(w.en, { src: w.audio || null })}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
-                    <path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </button>
+                {!silentFrame(w.en, w.audio) && (
+                  <button
+                    className="cp-word__say"
+                    type="button"
+                    aria-label={t('lesson.hearWord', { word: w.en })}
+                    onClick={() => speakEnglish(w.en, { src: w.audio || null })}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                      <path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                )}
               </span>
             </div>
           )}

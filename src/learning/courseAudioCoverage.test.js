@@ -29,6 +29,11 @@ function stepsOf(level) {
 const onDisk = (url) => !url || /^https?:/.test(url) || fs.existsSync(path.join(ROOT, 'public', decodeURI(url)))
 
 const CYRILLIC = /\p{Script=Cyrillic}/u
+// Рамка с пропуском «…» синтезом не озвучивается намеренно
+// (scripts/lib/course-frame.js): пропуск он читает кашей.
+const FRAME = /…|\.\.\./
+const isFrame = (text) => FRAME.test(String(text ?? '').replace(/<[^>]+>/g, ''))
+const isTts = (url) => /^\/learning\/audio\//.test(String(url || ''))
 const LATIN = /\p{Script=Latin}/u
 
 // Строки шагов record → { text, src }: текст из items, запись из itemAudio.
@@ -43,7 +48,7 @@ describe.each(levels)('озвучка шагов %s', (level) => {
 
   it('у каждой карточки слова есть запись, и файл на месте', () => {
     const bad = steps.flatMap(({ s, where }) =>
-      s.type === 'cards' ? (s.words || []).filter((w) => !w.audio || !onDisk(w.audio)).map((w) => `${where} ${w.en}`) : [],
+      s.type === 'cards' ? (s.words || []).filter((w) => (!w.audio && !isFrame(w.en)) || !onDisk(w.audio)).map((w) => `${where} ${w.en}`) : [],
     )
     expect(bad).toEqual([])
   })
@@ -61,7 +66,7 @@ describe.each(levels)('озвучка шагов %s', (level) => {
   // тишина.
   it('у каждой фразы «послушайте и повторите» есть запись', () => {
     const bad = steps.flatMap(({ s, where }) =>
-      s.type === 'phrases' ? (s.items || []).filter((it) => !it.src || !onDisk(it.src)).map((it) => `${where} ${it.text}`) : [],
+      s.type === 'phrases' ? (s.items || []).filter((it) => (!it.src && !isFrame(it.text)) || !onDisk(it.src)).map((it) => `${where} ${it.text}`) : [],
     )
     expect(bad).toEqual([])
   })
@@ -89,9 +94,20 @@ describe.each(levels)('озвучка шагов %s', (level) => {
 
   it('у каждого английского образца record есть запись, и файл на месте', () => {
     const bad = recordLines(steps)
-      .filter(({ line }) => !CYRILLIC.test(line.text))
+      .filter(({ line }) => !CYRILLIC.test(line.text) && !isFrame(line.text))
       .filter(({ line }) => !line.src || !onDisk(line.src))
       .map(({ line, where }) => `${where} ${line.text}`)
+    expect(bad).toEqual([])
+  })
+
+  // «Would you mind …ing?» синтез читал как «Would you mind, De Qing?», а «I'll
+  // … to …» — как «All 2»: рамка с пропуском озвучиваться синтезом не должна.
+  it('рамки с пропуском не озвучены синтезом', () => {
+    const bad = [
+      ...steps.flatMap(({ s, where }) => (s.type === 'cards' ? (s.words || []).filter((w) => isFrame(w.en) && isTts(w.audio)).map((w) => `${where} ${w.en}`) : [])),
+      ...steps.flatMap(({ s, where }) => (s.type === 'phrases' ? (s.items || []).filter((it) => isFrame(it.text) && isTts(it.src)).map((it) => `${where} ${it.text}`) : [])),
+      ...recordLines(steps).filter(({ line }) => isFrame(line.text) && isTts(line.src)).map(({ line, where }) => `${where} ${line.text}`),
+    ]
     expect(bad).toEqual([])
   })
 
