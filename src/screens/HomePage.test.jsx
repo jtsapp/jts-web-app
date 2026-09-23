@@ -358,3 +358,63 @@ describe('Карточка домашки у ученика', () => {
     expect(titles).toHaveLength(3)
   })
 })
+// «Что сделать сегодня»: рекомендация по реальным данным экрана, без сети и
+// без вызова помощника (см. lib/assistant/recommend.js).
+describe('Карточка «Что сделать сегодня»', () => {
+  beforeEach(() => {
+    homework.value = []
+    occurrences.value = []
+    localStats.value = FULL_STATS
+  })
+
+  it('нет у демо-аккаунта', () => {
+    renderHome({ isDemoAccount: true })
+    expect(document.querySelector('.hm-recommend__cta')).toBeNull()
+  })
+
+  it('по слабому навыку (writing — 40% в FULL_STATS) ведёт в «Письмо»', async () => {
+    const onNav = vi.fn()
+    renderHome({ isDemoAccount: false, onNav })
+    const cta = await screen.findByText('Потренировать')
+    expect(cta.closest('.hm-recommend__cta').textContent).toContain('Письмо')
+    fireEvent.click(cta)
+    expect(onNav).toHaveBeenLastCalledWith('writing')
+  })
+
+  it('горящая домашка перекрывает слабый навык и ведёт в «Домашняя работа»', async () => {
+    homework.value = [{ id: 1, status: 'ASSIGNED', dueDate: new Date(Date.now() - 3600_000).toISOString() }]
+    const onNav = vi.fn()
+    renderHome({ token: 'T', isDemoAccount: false, onNav })
+    const cta = await screen.findByText('Открыть домашку')
+    fireEvent.click(cta)
+    expect(onNav).toHaveBeenLastCalledWith('homework')
+  })
+
+  it('слабый навык с полезной нагрузкой (grammar) идёт в «Практику» с фильтром', async () => {
+    localStats.value = {
+      speaking: { done: 25, firstTry: 20 },
+      listening: { done: 25, firstTry: 20 },
+      vocab: { done: 25, firstTry: 20 },
+      grammar: { done: 25, firstTry: 5 },
+      writing: { done: 25, firstTry: 20 },
+      reading: { done: 25, firstTry: 20 },
+    }
+    const onNav = vi.fn()
+    renderHome({ isDemoAccount: false, onNav })
+    fireEvent.click(await screen.findByText('Потренировать'))
+    expect(onNav).toHaveBeenLastCalledWith('practice', { filter: 'grammar' })
+  })
+
+  it('ровные навыки и никаких сигналов — карточки нет вовсе, не выдумывает повод', () => {
+    localStats.value = {
+      speaking: { done: 25, firstTry: 20 },
+      listening: { done: 25, firstTry: 20 },
+      vocab: { done: 25, firstTry: 20 },
+      grammar: { done: 25, firstTry: 20 },
+      writing: { done: 25, firstTry: 20 },
+      reading: { done: 25, firstTry: 20 },
+    }
+    renderHome({ isDemoAccount: false })
+    expect(document.querySelector('.hm-recommend__cta')).toBeNull()
+  })
+})

@@ -316,6 +316,34 @@
 .hm-hw__item span { display: flex; flex-wrap: wrap; gap: 10px; }
 .hm-hw__item i { font-style: normal; font-size: 11.5px; color: #8b8a97; }
 
+/* --- что сделать сегодня: одна карточка-рекомендация по реальным данным
+   (lib/assistant/recommend.js) --- */
+.hm-recommend__cta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 14px;
+  background: #f7f6fb;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hm-recommend__cta:hover { background: #f0edfb; }
+.hm-recommend__reason { font-size: 14px; line-height: 19px; font-weight: 500; color: #171326; }
+.hm-recommend__go {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #9047ff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* --- практика на сегодня --- */
 .hm-prac__grid {
   display: grid;
