@@ -27,6 +27,14 @@ vi.mock('../api.js', () => ({
   // Квота модуля: 3 — новый лимит, введённый уже ПОСЛЕ того, как демо-ученик
   // прошёл 20 узлов.
   getContentQuota: vi.fn(async () => 3),
+  // Юнит «Повторения» открывается по каталогу (lib/reviewUnlock.js). Вся
+  // тропа этого теста лежит в одном юните (unit: 1, см. TRAIL) — открываем
+  // его целиком, чтобы тесты квоты и последовательности проверяли то же, что
+  // и раньше, а не упирались в новый замок первым делом.
+  getCourseCatalog: vi.fn(async () => [
+    { code: 'B1', separateAccess: false, units: [{ lessons: [{ id: 1 }] }] },
+  ]),
+  getCatalogProgress: vi.fn(async () => ({ completedLessonIds: [1] })),
 }))
 
 vi.mock('../learning/lessonData.js', () => ({
@@ -65,7 +73,8 @@ vi.mock('../learning/courseData.js', () => ({
 }))
 
 import { markDone, loadDone, ContentRestrictedError } from '../learning/lessonProgress.js'
-import { getContentQuota } from '../api.js'
+import { getContentQuota, getCourseCatalog, getCatalogProgress, getLessonModules } from '../api.js'
+import { getLevelLessons } from '../learning/lessonData.js'
 import KingdomInteriorPage from './KingdomInteriorPage.jsx'
 
 const kingdom = { id: 'sunhaven', name: 'Sunhaven', king: 'Майкл Флот', level: 'B1', ring: '#fff' }
@@ -256,5 +265,102 @@ describe('KingdomInteriorPage — демо-лимит на тропе показ
     await waitFor(() => expect(view.container.querySelector('.le-over')).toBe(null))
     expect(view.container.querySelector('.ds-over')).toBe(null)
     expect(view.container.querySelectorAll('.kt-step').length).toBe(TRAIL.length)
+  })
+})
+
+// «Прохожу юнит 1 в уроках → юнит 1 доступен в Повторении; юнит 2 — так же».
+// В отличие от блоков выше, тропа тут в ДВУХ юнитах: замок по каталогу виден
+// только на границе юнитов, а не внутри одного.
+describe('KingdomInteriorPage — юниты открываются по каталогу (живой урок или «Самостоятельно»)', () => {
+  const MULTI_UNIT_TRAIL = [
+    { code: 'm0', order: 0, title: 'Юнит 1 · шаг 1', unit: 1 },
+    { code: 'm1', order: 1, title: 'Юнит 1 · шаг 2', unit: 1 },
+    { code: 'm2', order: 2, title: 'Юнит 2 · шаг 1', unit: 2 },
+    { code: 'm3', order: 3, title: 'Юнит 2 · шаг 2', unit: 2 },
+  ]
+  const generalCourse = () => [
+    { code: 'B1', separateAccess: false, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
+  ]
+  const progress = (ids) => ({ completedLessonIds: ids })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getLevelLessons.mockResolvedValue(MULTI_UNIT_TRAIL)
+    loadDone.mockResolvedValue(new Set()) // локально в разделе ещё ничего не пройдено
+    getContentQuota.mockResolvedValue(null) // без лимита модуля — квота тут не при чём
+  })
+
+  it('новый ученик (в каталоге ничего не пройдено) — заперты оба юнита целиком', async () => {
+    getCourseCatalog.mockResolvedValue(generalCourse())
+    getCatalogProgress.mockResolvedValue(progress([]))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons.every((b) => b.disabled)).toBe(true)
+    expect(buttons[0].title).toBe('Сначала пройдите этот материал в «Уроках»')
+  })
+
+  it('юнит 1 пройден в каталоге — открыт юнит 1, юнит 2 всё ещё заперт', async () => {
+    getCourseCatalog.mockResolvedValue(generalCourse())
+    getCatalogProgress.mockResolvedValue(progress([1]))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons[0].disabled).toBe(false) // юнит 1, шаг 1 — открыт
+    expect(buttons[1].disabled).toBe(true) // юнит 1, шаг 2 — обычный порядок внутри юнита: шаг 1 ещё не сдан
+    expect(buttons[2].disabled).toBe(true) // юнит 2 — заперт каталогом
+    expect(buttons[2].title).toBe('Сначала пройдите этот материал в «Уроках»')
+  })
+
+  it('оба юнита пройдены в каталоге — юнит 2 тоже открыт', async () => {
+    getCourseCatalog.mockResolvedValue(generalCourse())
+    getCatalogProgress.mockResolvedValue(progress([1, 2]))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    const buttons = [...container.querySelectorAll('.kt-step')]
+
+    expect(buttons[0].disabled).toBe(false)
+    expect(buttons[2].disabled).toBe(false) // первый шаг юнита 2 не ждёт соседа из юнита 1
+  })
+
+  it('на уровне только курс с отдельным доступом — общего нет, ничего не открыто даже при «пройдено»', async () => {
+    getCourseCatalog.mockResolvedValue([
+      { code: 'B1', separateAccess: true, units: [{ lessons: [{ id: 1 }] }, { lessons: [{ id: 2 }] }] },
+    ])
+    getCatalogProgress.mockResolvedValue(progress([1, 2]))
+
+    const { container } = renderPage()
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    expect([...container.querySelectorAll('.kt-step')].every((b) => b.disabled)).toBe(true)
+  })
+
+  it('unlockAll (?unlock=1, только dev) снимает и замок по каталогу — тропу можно посмотреть целиком', async () => {
+    getCourseCatalog.mockResolvedValue(generalCourse())
+    getCatalogProgress.mockResolvedValue(progress([]))
+
+    const { container } = renderPage({ unlockAll: true })
+    await waitFor(() => expect(container.querySelectorAll('.kt-step')).toHaveLength(MULTI_UNIT_TRAIL.length))
+    expect([...container.querySelectorAll('.kt-step')].every((b) => !b.disabled)).toBe(true)
+  })
+
+  it('unlockAll не снимает блокировку модуля админом — это не «посмотреть контент», а запрет', async () => {
+    getLessonModules.mockResolvedValue([{ id: 'mod-1', level: 'B1', orderIndex: 0, locked: true }])
+    getCourseCatalog.mockResolvedValue(generalCourse())
+    getCatalogProgress.mockResolvedValue(progress([1, 2]))
+
+    const { container } = renderPage({ unlockAll: true })
+
+    // Заблокированный админом модуль тропу вообще не рисует — экран
+    // показывает отдельное сообщение вместо узлов (см. moduleLocked ниже).
+    // Эмодзи и текст — соседние текстовые узлы одного div, поэтому сверяем
+    // textContent элемента, а не ищем строку по всему документу.
+    await waitFor(() => expect(container.querySelector('.li-empty__title')).toBeTruthy())
+    expect(container.querySelector('.li-empty__title').textContent).toContain('Доступ к этому модулю закрыт')
+    expect(container.querySelectorAll('.kt-step')).toHaveLength(0)
   })
 })
