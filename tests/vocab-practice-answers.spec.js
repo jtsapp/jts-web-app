@@ -31,8 +31,8 @@ const json = (body) => ({ status: 200, contentType: 'application/json', body: JS
 async function boot(page, { level = 'B2', saved = [] } = {}) {
   await page.addInitScript((token) => {
     localStorage.setItem('jts_access_token', token)
-    // Синтез заглушён, но «английский голос» есть: так диктант зовёт именно
-    // speechSynthesis, и тест слышит, какое слово прозвучало.
+    // Синтез заглушён, но «английский голос» есть: если Soniox не ответит,
+    // диктант дочитает speechSynthesis, и тест всё равно услышит слово.
     // Присваиванием свойство окна в Chromium не подменить — только defineProperty.
     window.__spoken = []
     const voice = { name: 'Samantha', lang: 'en-US', localService: true, default: true }
@@ -51,7 +51,23 @@ async function boot(page, { level = 'B2', saved = [] } = {}) {
         this.text = text
       },
     })
+    // С 23.09.2026 слово первым читает Soniox: запись — это адрес /api/tts с
+    // текстом в параметре t, по нему тест и слышит слово. play() не ждёт сети:
+    // «зазвучало» и «кончилось» приходят сразу, как у настоящей короткой записи.
+    const realPlay = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function () {
+      const src = String(this.src || '')
+      if (!src.includes('/api/tts?')) return realPlay.call(this)
+      window.__spoken.push(new URL(src).searchParams.get('t'))
+      setTimeout(() => {
+        this.dispatchEvent(new Event('playing'))
+        this.dispatchEvent(new Event('ended'))
+      }, 0)
+      return Promise.resolve()
+    }
   }, jwt())
+  // Настоящий Soniox тестам не нужен: он платный и с общим лимитом в минуту.
+  await page.route('**/api/tts?**', (r) => r.fulfill({ status: 200, contentType: 'audio/mpeg', body: '' }))
   await page.route('**/api/auth/me', (r) =>
     r.fulfill(json({ user: { userId: 1, name: 'Test', role: 'USER', languageLevel: level } })),
   )

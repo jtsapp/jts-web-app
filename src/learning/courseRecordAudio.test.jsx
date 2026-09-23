@@ -2,11 +2,25 @@
 // Шаг «послушайте, затем запишите себя». Образец был строкой, и записи
 // прописать было некуда — его читал только браузерный синтез: чужой голос
 // посреди урока, а на Android без английского голоса — тишина. Теперь запись
-// лежит рядом, в step.itemAudio; строки без записи работают как раньше.
+// лежит рядом, в step.itemAudio; строки без записи читает Soniox (с
+// 23.09.2026), а синтез — только если Soniox не ответил.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import CourseStepPlayer from './CourseStepPlayer.jsx'
+
+// Что ушло в Soniox. sonioxUp = false — сервер «не ответил», и плеер обязан
+// договорить синтезом.
+let said
+let sonioxUp
+vi.mock('../lib/speech.js', () => ({
+  playTts: (text, o) => {
+    said.push({ text, ...o })
+    if (!sonioxUp) o.onFail?.('error')
+    return true
+  },
+  stopTts: () => {},
+}))
 
 function play(items, extra = {}) {
   return render(
@@ -29,6 +43,8 @@ let spoken
 beforeEach(() => {
   played = []
   spoken = []
+  said = []
+  sonioxUp = true
   vi.stubGlobal(
     'Audio',
     class {
@@ -57,7 +73,8 @@ describe('CourseStepPlayer — образцы в шаге record', () => {
     fireEvent.click(screen.getByRole('button', { name: "What's the weather like?" }))
     fireEvent.click(screen.getByRole('button', { name: 'No audio.' }))
     expect(played).toEqual(['/learning/audio/a0/abc.mp3'])
-    expect(spoken).toEqual(['No audio.'])
+    expect(said.map((x) => x.text)).toEqual(['No audio.'])
+    expect(spoken).toEqual([])
   })
 
   it('образец с записью играет файл, а не синтез', () => {
@@ -67,18 +84,27 @@ describe('CourseStepPlayer — образцы в шаге record', () => {
     expect(spoken).toEqual([])
   })
 
-  it('образец-строка работает как раньше — через синтез', () => {
+  it('образец-строка без записи — Soniox голосом записей курса', () => {
     play(["It's sunny and warm."])
     fireEvent.click(screen.getByRole('button', { name: "It's sunny and warm." }))
     expect(played).toEqual([])
+    expect(said).toHaveLength(1)
+    expect(said[0]).toMatchObject({ text: "It's sunny and warm.", voice: 'Owen', speed: 0.85 })
+    expect(spoken).toEqual([])
+  })
+
+  it('Soniox не ответил — договаривает синтез, кнопка не молчит', () => {
+    sonioxUp = false
+    play(["It's sunny and warm."])
+    fireEvent.click(screen.getByRole('button', { name: "It's sunny and warm." }))
     expect(spoken).toEqual(["It's sunny and warm."])
   })
 
-  it('объект без записи — тоже синтез, а не падение', () => {
+  it('объект без записи — тоже Soniox, а не падение', () => {
     play([{ text: 'Look! It is raining.', src: null }])
     fireEvent.click(screen.getByRole('button', { name: 'Look! It is raining.' }))
     expect(played).toEqual([])
-    expect(spoken).toEqual(['Look! It is raining.'])
+    expect(said.map((x) => x.text)).toEqual(['Look! It is raining.'])
   })
 
   it('вперемешку — каждый образец показан своим текстом', () => {
@@ -98,6 +124,7 @@ describe('CourseStepPlayer — образцы в шаге record', () => {
     expect(screen.queryByRole('button', { name: task })).toBeNull()
     fireEvent.click(screen.getByText(task))
     expect(spoken).toEqual([])
+    expect(said).toEqual([])
     expect(played).toEqual([])
     expect(screen.getByRole('button', { name: 'We met at school.' })).toBeTruthy()
   })

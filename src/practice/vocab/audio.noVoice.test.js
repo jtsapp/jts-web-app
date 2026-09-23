@@ -11,11 +11,22 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 //
 // Теперь такой случай уходит на серверную озвучку — ту же, что читает тексты
 // Listening.
+//
+// С 23.09.2026 первым слово читает Soniox (/api/tts), и всё ниже — про
+// запасной путь, когда Soniox не ответил: подставной playTts по умолчанию
+// сразу сообщает о провале.
 const speakListeningAudio = vi.fn()
 vi.mock('../../lib/ielts-audio.js', () => ({
   speakListeningAudio: (...args) => speakListeningAudio(...args),
 }))
-vi.mock('../../screens/live/audioReport.js', () => ({ reportAudio: () => {} }))
+const reportAudio = vi.fn()
+vi.mock('../../screens/live/audioReport.js', () => ({ reportAudio: (...args) => reportAudio(...args) }))
+const playTts = vi.fn()
+vi.mock('../../lib/speech.js', () => ({ playTts: (...args) => playTts(...args) }))
+const sonioxDown = (text, o) => {
+  o.onFail?.('error')
+  return true
+}
 
 function withVoices(voices) {
   window.speechSynthesis = {
@@ -37,6 +48,9 @@ describe('озвучка слова на устройстве без англи�
     vi.resetModules()
     speakListeningAudio.mockReset()
     speakListeningAudio.mockResolvedValue('eleven')
+    playTts.mockReset()
+    playTts.mockImplementation(sonioxDown)
+    reportAudio.mockReset()
     vi.useFakeTimers()
   })
 
@@ -105,6 +119,9 @@ describe('устройство не умеет говорить вовсе', () 
     vi.resetModules()
     speakListeningAudio.mockReset()
     speakListeningAudio.mockResolvedValue('eleven')
+    playTts.mockReset()
+    playTts.mockImplementation(sonioxDown)
+    reportAudio.mockReset()
     vi.useFakeTimers()
   })
 
@@ -152,5 +169,68 @@ describe('устройство не умеет говорить вовсе', () 
     await vi.advanceTimersByTimeAsync(0)
 
     expect(onNoVoice).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Soniox читает первым', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    speakListeningAudio.mockReset()
+    playTts.mockReset()
+    playTts.mockReturnValue(true) // сервер принял — звук пойдёт
+    reportAudio.mockReset()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('даже с английским голосом на устройстве слово читает Soniox', async () => {
+    const synth = withVoices([{ name: 'Samantha', lang: 'en-US' }])
+    const { speak } = await import('./audio.js')
+
+    speak('answer')
+    vi.advanceTimersByTime(500)
+
+    expect(playTts).toHaveBeenCalledOnce()
+    expect(playTts.mock.calls[0][0]).toBe('answer')
+    expect(playTts.mock.calls[0][1]).toMatchObject({ voice: 'Grace', speed: 0.9 })
+    // Голос устройства — только запасной.
+    expect(synth.speak).not.toHaveBeenCalled()
+    expect(speakListeningAudio).not.toHaveBeenCalled()
+  })
+
+  it('британский акцент — британский голос, «медленно» — свой темп', async () => {
+    withVoices([])
+    const { speak } = await import('./audio.js')
+
+    speak('water', { accent: 'gb', rate: 0.65 })
+
+    expect(playTts.mock.calls[0][1]).toMatchObject({ voice: 'Freya', speed: 0.65 })
+  })
+
+  it('омограф одиночным словом читается в нужном смысле, фраза — как есть', async () => {
+    withVoices([])
+    const { speak } = await import('./audio.js')
+
+    speak('read')
+    speak('I read books')
+
+    expect(playTts.mock.calls[0][0]).toBe('reed')
+    expect(playTts.mock.calls[1][0]).toBe('I read books')
+  })
+
+  it('на живом уроке о прослушивании сообщаем один раз, даже если дочитал запасной голос', async () => {
+    const synth = withVoices([{ name: 'Samantha', lang: 'en-US' }])
+    playTts.mockImplementation(sonioxDown)
+    const { speak } = await import('./audio.js')
+
+    speak('answer')
+    vi.advanceTimersByTime(100)
+
+    expect(synth.speak).toHaveBeenCalledOnce()
+    expect(reportAudio).toHaveBeenCalledOnce()
+    expect(reportAudio.mock.calls[0][0]).toMatchObject({ kind: 'tts', text: 'answer', accent: 'US' })
   })
 })
