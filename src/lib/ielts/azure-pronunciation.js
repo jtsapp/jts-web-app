@@ -181,6 +181,102 @@ export async function assessPronunciation(wav) {
   })
 }
 
+// Оценка длинной записи кусками ПАРАЛЛЕЛЬНО. Потоковая оценка идёт примерно
+// 0.2 от длины аудио даже без троттлинга (замер 23.09.2026: 5 минут речи —
+// 57 с), а прод стоит за Cloudflare, который рвёт запрос после 100 секунд
+// молчания сервера. Куски по минуте оцениваются за ~13 с каждый, и время
+// перестаёт расти с длиной ответа.
+//
+// Режем по паузам, а не ровно по минуте: слово, разрезанное пополам, Azure
+// засчитал бы как ошибку произношения в обоих кусках. Итог взвешен по словам —
+// так же, как assessPronunciation сводит свои фразы внутри одной сессии.
+//
+// assess — инъекция для тестов; по умолчанию настоящая assessPronunciation.
+export async function assessPronunciationChunked(wav, { maxChunkSec = 60, assess = assessPronunciation } = {}) {
+  const parsed = extractPcm(wav)
+  if (!parsed || parsed.pcm.length === 0) return null
+  const cuts = quietCuts(parsed.pcm, parsed.sampleRate, { maxChunkSec })
+  if (cuts.length === 1) return assess(wav)
+
+  const parts = await Promise.all(
+    cuts.map(([a, b]) => assess(pcmToWav(parsed.pcm.subarray(a, b), parsed.sampleRate)).catch(() => null)),
+  )
+
+  let words = 0
+  const sum = { accuracy: 0, fluency: 0, completeness: 0, prosody: 0, overall: 0 }
+  const texts = []
+  for (const r of parts) {
+    const text = String(r?.transcript || '').trim()
+    if (!r || r.mock || !text) continue
+    const w = text.split(/\s+/).length
+    words += w
+    for (const k of Object.keys(sum)) sum[k] += (Number(r[k]) || 0) * w
+    texts.push(text)
+  }
+  if (words === 0) return null
+  const out = { mock: false, transcript: texts.join(' ') }
+  for (const k of Object.keys(sum)) out[k] = Math.round(sum[k] / words)
+  return out
+}
+
+// Где резать PCM (16 бит mono) на куски не длиннее maxChunkSec: возвращает
+// диапазоны байтов [начало, конец) подряд и без дыр. Кусков столько, чтобы
+// каждый уложился в потолок, длина — поровну; каждую границу двигаем в самый
+// тихий кадр (100 мс) в пределах ±searchSec от цели. Пауз нет вовсе — режем в
+// наименее громком месте окна, кусок при этом не длиннее потолка + 2×searchSec.
+export function quietCuts(pcm, sampleRate, { maxChunkSec = 60, searchSec = 5, frameMs = 100 } = {}) {
+  const rate = sampleRate || 16000
+  const samples = Math.floor(pcm.length / 2)
+  const total = samples / rate
+  if (total <= maxChunkSec) return [[0, pcm.length]]
+
+  const chunks = Math.ceil(total / maxChunkSec)
+  const frame = Math.max(1, Math.round((rate * frameMs) / 1000))
+  const bounds = [0]
+  for (let i = 1; i < chunks; i++) {
+    const target = Math.round((samples * i) / chunks)
+    const from = Math.max(bounds.at(-1) + frame, target - searchSec * rate)
+    const to = Math.min(samples - frame, target + searchSec * rate)
+    let best = target
+    let bestEnergy = Infinity
+    for (let s = from; s + frame <= to; s += frame) {
+      let energy = 0
+      for (let j = s; j < s + frame; j++) energy += Math.abs(pcm.readInt16LE(j * 2))
+      if (energy < bestEnergy) {
+        bestEnergy = energy
+        best = s + Math.floor(frame / 2)
+      }
+    }
+    bounds.push(best)
+  }
+  bounds.push(samples)
+  const cuts = []
+  for (let i = 1; i < bounds.length; i++) cuts.push([bounds[i - 1] * 2, bounds[i] * 2])
+  // Хвост нечётного байта (битый файл) достаётся последнему куску.
+  cuts.at(-1)[1] = pcm.length
+  return cuts
+}
+
+// PCM 16 бит mono → WAV с 44-байтным заголовком, который понимает extractPcm.
+export function pcmToWav(pcm, sampleRate) {
+  const rate = sampleRate || 16000
+  const header = Buffer.alloc(44)
+  header.write('RIFF', 0, 'ascii')
+  header.writeUInt32LE(36 + pcm.length, 4)
+  header.write('WAVE', 8, 'ascii')
+  header.write('fmt ', 12, 'ascii')
+  header.writeUInt32LE(16, 16)
+  header.writeUInt16LE(1, 20) // PCM
+  header.writeUInt16LE(1, 22) // mono
+  header.writeUInt32LE(rate, 24)
+  header.writeUInt32LE(rate * 2, 28)
+  header.writeUInt16LE(2, 32)
+  header.writeUInt16LE(16, 34)
+  header.write('data', 36, 'ascii')
+  header.writeUInt32LE(pcm.length, 40)
+  return Buffer.concat([header, pcm])
+}
+
 // Сколько ждать потоковое распознавание. НЕ константа: SDK шлёт аудио в сервис
 // со скоростью примерно ×2 от реального времени (после первых 5 с включается
 // троттлинг, см. ServiceRecognizerBase.sendAudio), поэтому ответ на 3 минуты
