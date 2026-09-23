@@ -4,6 +4,8 @@
 
 import { reportAudio } from '../../screens/live/audioReport.js'
 import { speakListeningAudio } from '../../lib/ielts-audio.js'
+import { playTts } from '../../lib/speech.js'
+import { VOICE as SONIOX_VOICE } from '../../lib/ttsShared.js'
 
 /* ─────────────── TTS ───────────────
    Качество Web Speech API зависит от голосов устройства: ранжируем все
@@ -84,7 +86,7 @@ let speakTimer = null
  * Отсюда и повторная жалоба «в словаре ещё озвучку не сделали»: починили одну
  * дверь из трёх. Теперь выход один на все.
  */
-function viaServer(text, { onStart, onEnd, onNoVoice, accent }) {
+function viaServer(text, { onStart, onEnd, onNoVoice }) {
   speakListeningAudio(String(text), { onEnd })
     .then((played) => {
       if (played === 'none') {
@@ -95,9 +97,7 @@ function viaServer(text, { onStart, onEnd, onNoVoice, accent }) {
           onNoVoice && onNoVoice()
         }
         onEnd && onEnd()
-        return
       }
-      reportAudio({ kind: 'tts', action: 'play', text: String(text), accent: accent === 'gb' ? 'GB' : 'US' })
     })
     .catch(() => {
       onEnd && onEnd()
@@ -105,15 +105,53 @@ function viaServer(text, { onStart, onEnd, onNoVoice, accent }) {
   onStart && onStart()
 }
 
+// Одиночное слово — через RESPELL (омографы), фраза — как есть: Soniox без
+// контекста ошибается в тех же словах, что и синтез устройства.
+function spokenForm(text) {
+  const s = String(text).trim()
+  return /^[a-z'’-]+$/i.test(s) ? RESPELL[s.toLowerCase()] || text : text
+}
+
 // onNoVoice — колбэк для тоста «нет английского голоса» (в прототипе toast()).
-export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } = {}) {
+//
+// Первым читает Soniox (/api/tts): голос один и тот же на любом устройстве, а
+// синтез устройства на Windows и Android — часто робот. Синтез остаётся
+// запасным, если сервер не ответил (лимит, сеть, ключ) — молчащая кнопка на
+// задании «услышь слово» хуже роботного голоса.
+export function speak(text, opts = {}) {
   // На сервере (SSR) звука нет и быть не может — ни браузерного, ни сетевого:
   // играть его некуда и некому.
   if (typeof window === 'undefined') return
+  const { accent = 'us', rate, onStart, onEnd } = opts
+  const gb = accent === 'gb'
+  clearTimeout(speakTimer)
+  try {
+    window.speechSynthesis?.cancel()
+  } catch {
+    /* синтеза нет — гасить нечего */
+  }
+  const started = playTts(spokenForm(text), {
+    voice: gb ? SONIOX_VOICE.gb : SONIOX_VOICE.us,
+    // 0.96 синтеза устройства на слух — это 0.9 Soniox; «медленно» (0.65) упрётся
+    // в нижнюю границу провайдера 0.7.
+    speed: typeof rate === 'number' ? rate : 0.9,
+    onStart,
+    onEnd,
+    onFail: (why) => {
+      if (why !== 'empty') speakDevice(text, opts)
+    },
+  })
+  // На живом уроке преподаватель следует за тем же звуком — вне урока
+  // репортёр не подписан (см. audioReport.js), и вызов ничего не делает.
+  if (started) reportAudio({ kind: 'tts', action: 'play', text: String(text), accent: gb ? 'GB' : 'US' })
+}
+
+// Запасной путь — прежний синтез устройства, логика прототипа без изменений.
+function speakDevice(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } = {}) {
   // Синтеза в браузере нет вовсе. Раньше здесь был молчаливый return, и до
   // серверной озвучки дело не доходило.
   if (!window.speechSynthesis) {
-    viaServer(text, { onStart, onEnd, onNoVoice, accent })
+    viaServer(text, { onStart, onEnd, onNoVoice })
     return
   }
   try {
@@ -127,11 +165,11 @@ export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } =
     // Chrome отдаёт список голосов асинхронно — одна повторная попытка
     speakTimer = setTimeout(() => {
       chooseVoices()
-      if (voices.length) speak(text, { accent, rate, onStart, onEnd, onNoVoice })
+      if (voices.length) speakDevice(text, { accent, rate, onStart, onEnd, onNoVoice })
       // Голосов нет и после повтора — устройство читать не умеет. Раньше
       // здесь был тост и тишина; отправляем на сервер, как и остальные два
       // случая.
-      else viaServer(text, { onStart, onEnd, onNoVoice, accent })
+      else viaServer(text, { onStart, onEnd, onNoVoice })
     }, 300)
     return
   }
@@ -147,7 +185,7 @@ export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } =
   // вернёт 'none', если не настроена на сервере; только тогда сознаёмся, что
   // звука не будет, и делаем это ОДИН раз за сеанс, а не на каждое слово.
   if (!v || !/^en[-_]/i.test(v.lang || '')) {
-    viaServer(text, { onStart, onEnd, onNoVoice, accent })
+    viaServer(text, { onStart, onEnd, onNoVoice })
     return
   }
   const single = /^[a-z'’-]+$/i.test(String(text).trim())
@@ -167,10 +205,8 @@ export function speak(text, { accent = 'us', rate, onStart, onEnd, onNoVoice } =
   // Пауза после cancel(): Chrome иногда «глотает» реплику сразу за отменой.
   speakTimer = setTimeout(() => {
     try {
+      // О прослушивании уже сообщил speak() — запасной путь второй раз не шлёт.
       window.speechSynthesis.speak(u)
-      // На живом уроке преподаватель следует за тем же звуком — вне урока
-      // репортёр не подписан (см. audioReport.js), и вызов ничего не делает.
-      reportAudio({ kind: 'tts', action: 'play', text: String(text), accent: gb ? 'GB' : 'US' })
     } catch {
       onEnd && onEnd()
     }

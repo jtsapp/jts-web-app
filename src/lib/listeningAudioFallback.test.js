@@ -2,6 +2,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { speakListeningAudio } from './ielts-audio.js'
 
+// Между ElevenLabs и синтезом с 23.09.2026 стоит Soniox (src/lib/speech.js).
+// Этот файл — про цепочку до синтеза, поэтому Soniox здесь «не отвечает»:
+// подставной playTts сразу сообщает о провале.
+const soniox = { up: false, calls: [] }
+vi.mock('./speech.js', () => ({
+  playTts: (text, o) => {
+    soniox.calls.push({ text, ...o })
+    if (soniox.up) o.onStart?.()
+    else o.onFail?.('error')
+    return true
+  },
+  stopTts: () => {},
+  unlockSpeech: () => {},
+}))
+
 // Контракт: 'fallback' — это «синтез заговорил», а не «текст принят в очередь».
 // На iOS speak() без жеста молчит и НЕ бросает; поверив ему, экран Listening
 // уходил в «Играет…» навсегда и списывал одно из двух прослушиваний.
@@ -100,5 +115,20 @@ describe('speakListeningAudio → браузерный фолбэк', () => {
     await p
     utterances[0].onend()
     expect(onEnd).toHaveBeenCalledTimes(1)
+  })
+})
+describe('speakListeningAudio → Soniox перед синтезом', () => {
+  it('ElevenLabs недоступен — читает Soniox, синтез не трогаем', async () => {
+    soniox.up = true
+    soniox.calls.length = 0
+    try {
+      const p = speakListeningAudio('Section one.', { volume: 0.9 })
+      await vi.advanceTimersByTimeAsync(0)
+      await expect(p).resolves.toBe('soniox')
+      expect(soniox.calls[0]).toMatchObject({ text: 'Section one.', volume: 0.9 })
+      expect(synth.speak).not.toHaveBeenCalled()
+    } finally {
+      soniox.up = false
+    }
   })
 })
