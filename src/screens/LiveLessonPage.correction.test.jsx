@@ -48,6 +48,9 @@ vi.mock('../api.js', () => ({
   setLessonMeetingUrl: vi.fn(async () => ({})),
   getLessonMaterialProgress: vi.fn(async () => ({})),
   saveLessonMaterialProgress: vi.fn(async () => ({})),
+  // Стадии файла спрашиваются у любого открытого материала; здесь урок открыт
+  // шагами разбора, и стадии ему не нужны — пустой список.
+  getLessonViewStages: vi.fn(async () => []),
   startLiveLesson: vi.fn(async () => ({})),
   pauseLiveLesson: vi.fn(async () => ({})),
   resumeLiveLesson: vi.fn(async () => ({})),
@@ -78,6 +81,9 @@ vi.mock('./workspace/loadCatalogLesson.js', () => ({ loadCatalogLesson: vi.fn(as
 vi.mock('./live/catalogLessonByUrl.js', () => ({
   catalogLessonIdFor: vi.fn(async () => catalogFixture?.id ?? null),
   isStandaloneLessonUrl: () => false,
+  // Спека про путь разбора: «шаги или файл» здесь отвечает «шаги», иначе
+  // страница откроет файл и правкам преподавателя будет некуда лечь.
+  shouldResolveCatalogLesson: () => true,
 }))
 vi.mock('./workspace/LessonContent.jsx', () => ({
   default: (props) => { contentProps = props; return <div data-testid="content" /> },

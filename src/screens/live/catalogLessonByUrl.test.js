@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { findCatalogLessonId } from './catalogLessonByUrl.js'
+import { findCatalogLessonId, shouldResolveCatalogLesson } from './catalogLessonByUrl.js'
+import { LESSON_EXTRACTOR, engineOf } from './lessonExtractor.js'
 
 const CATALOG = [
   {
@@ -57,5 +58,51 @@ describe('findCatalogLessonId', () => {
     expect(findCatalogLessonId(CATALOG, 'https://files/uploads/my-homework.pdf')).toBeNull()
     expect(findCatalogLessonId(CATALOG, '')).toBeNull()
     expect(findCatalogLessonId([], 'https://files/a2/lessons/L01.html')).toBeNull()
+  })
+})
+
+// Решает движок занятия (spec-lesson-engine-coexistence §2): STEPS — шаги, как на проде
+// до выката, FILE — файл во фрейме. Пустое поле — STEPS; рубильник — STEPS для всех.
+describe('shouldResolveCatalogLesson — шаги или файл', () => {
+  const КАТАЛОГ = 'https://files/development/course-catalog/a0/lessons/L05.html'
+  const STANDALONE = 'https://files/development/course-catalog/standalone/a0-l5.html'
+
+  it('по умолчанию рубильник выключен', () => {
+    expect(LESSON_EXTRACTOR.enabled).toBe(false)
+  })
+
+  it('FILE-занятие открывается файлом', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(false)
+  })
+
+  it('STEPS-занятие ищет разбор; standalone — никогда; пустая ссылка — нет', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'STEPS' })).toBe(true)
+    expect(shouldResolveCatalogLesson(STANDALONE, { engine: 'STEPS' })).toBe(false)
+    expect(shouldResolveCatalogLesson('', { engine: 'STEPS' })).toBe(false)
+  })
+
+  it('поля нет (старый бэкенд) или занятия нет — STEPS, как на проде', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, {})).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, null)).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ)).toBe(true)
+  })
+
+  it('рубильник LESSON_EXTRACTOR.enabled возвращает разбор и FILE-занятию', () => {
+    LESSON_EXTRACTOR.enabled = true
+    try {
+      expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(true)
+    } finally {
+      LESSON_EXTRACTOR.enabled = false
+    }
+  })
+})
+
+describe('engineOf', () => {
+  it('читает поле, пусто — STEPS', () => {
+    expect(engineOf({ engine: 'FILE' })).toBe('FILE')
+    expect(engineOf({ engine: 'STEPS' })).toBe('STEPS')
+    expect(engineOf({})).toBe('STEPS')
+    expect(engineOf(null)).toBe('STEPS')
+    expect(engineOf(undefined)).toBe('STEPS')
   })
 })
