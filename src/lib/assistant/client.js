@@ -1,7 +1,7 @@
 // Клиент помощника: один вопрос → потоковый ответ кусками через onDelta.
 
 export class AssistantError extends Error {
-  /** @param {'auth'|'rate'|'unavailable'|'network'} kind */
+  /** @param {'auth'|'rate'|'cooldown'|'unavailable'|'network'} kind */
   constructor(kind, { retryAfterSec } = {}) {
     super(kind)
     this.kind = kind
@@ -13,7 +13,8 @@ export class AssistantError extends Error {
  * @param {{ token: string, messages: {role: string, content: string}[],
  *           screen: {id: string|null, text: string}, lang: string,
  *           onDelta: (text: string) => void, signal?: AbortSignal }} args
- * @returns {Promise<string>} весь ответ
+ * @returns {Promise<{ text: string, offtopic: boolean }>} весь ответ; offtopic —
+ *   сервер ответил стандартным отказом на вопрос не по теме
  */
 export async function askAssistant({ token, messages, screen, lang, onDelta, signal }) {
   let res
@@ -32,9 +33,12 @@ export async function askAssistant({ token, messages, screen, lang, onDelta, sig
   if (res.status === 401) throw new AssistantError('auth')
   if (res.status === 429) {
     const body = await res.json().catch(() => ({}))
-    throw new AssistantError('rate', { retryAfterSec: body.retryAfterSec })
+    throw new AssistantError(body.error === 'offtopic_cooldown' ? 'cooldown' : 'rate', {
+      retryAfterSec: body.retryAfterSec,
+    })
   }
   if (!res.ok || !res.body) throw new AssistantError('unavailable')
+  const offtopic = res.headers.get('x-assistant-offtopic') === '1'
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
@@ -58,5 +62,5 @@ export async function askAssistant({ token, messages, screen, lang, onDelta, sig
     full += tail
     onDelta?.(tail)
   }
-  return full
+  return { text: full, offtopic }
 }

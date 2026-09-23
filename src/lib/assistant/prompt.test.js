@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest'
 import {
   AssistantRequestError,
   MAX_MESSAGE_CHARS,
+  OFFTOPIC_MARKER,
+  OFFTOPIC_REPLY,
+  classifyStart,
   MAX_SCREEN_CHARS,
   MAX_TURNS,
   SCREEN_NAMES,
@@ -155,5 +158,32 @@ describe('база знаний', () => {
   // это обещание, которое школа не давала.
   it('не называет цен', () => {
     expect(knowledgeText()).not.toMatch(/\d[\d\s]*₸|тенге|\$\s?\d/)
+  })
+})
+
+describe('вопросы не по теме', () => {
+  it.each([
+    ['[[OFFTOPIC]]', 'offtopic'],
+    ['  \n[[OFFTOPIC]] лишнее', 'offtopic'],
+    ['', 'undecided'],
+    ['   ', 'undecided'],
+    ['[[OFF', 'undecided'],
+    ['[', 'undecided'],
+    ['Опечатка в имени', 'normal'],
+    ['[пример] ответа', 'normal'],
+    ['[[OFFICE', 'normal'],
+  ])('%j → %s', (text, expected) => {
+    expect(classifyStart(text)).toBe(expected)
+  })
+
+  it('правила учат модель ставить именно эту метку', () => {
+    expect(buildSystemPrompt()).toContain(`ровно строкой ${OFFTOPIC_MARKER}`)
+  })
+
+  it('отказ есть на всех трёх языках и сам метку не содержит', () => {
+    for (const lang of ['ru', 'kk', 'en']) {
+      expect(OFFTOPIC_REPLY[lang]).toBeTruthy()
+      expect(OFFTOPIC_REPLY[lang]).not.toContain(OFFTOPIC_MARKER)
+    }
   })
 })

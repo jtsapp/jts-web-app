@@ -6,7 +6,7 @@ import AssistantWidget from './AssistantWidget.jsx'
 import AskAssistantButton from './AskAssistantButton.jsx'
 
 // Ответ сервера кусками — как настоящий стрим.
-function streamResponse(chunks, { status = 200 } = {}) {
+function streamResponse(chunks, { status = 200, headers = {} } = {}) {
   const enc = new TextEncoder()
   const body = new ReadableStream({
     start(c) {
@@ -14,7 +14,7 @@ function streamResponse(chunks, { status = 200 } = {}) {
       c.close()
     },
   })
-  return new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } })
+  return new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8', ...headers } })
 }
 
 const renderApp = ({ enabled = true, token = 'tok' } = {}) =>
@@ -140,6 +140,38 @@ describe('помощник по сайту', () => {
     await screen.findByText('Опечатка: «Cleare» → «Clare».', {}, WAIT)
     const body = JSON.parse(fetchMock.mock.calls[1][1].body)
     expect(body.messages).toHaveLength(1)
+  })
+
+  it('отказ «не по теме» виден ученику, но в следующий запрос не идёт', async () => {
+    const REFUSAL = 'Я помогаю только с английским и с сайтом JTS.'
+    fetchMock.mockImplementationOnce(async () => streamResponse([REFUSAL], { headers: { 'x-assistant-offtopic': '1' } }))
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
+    const box = screen.getByPlaceholderText('Спросите о сайте или задании…')
+    fireEvent.change(box, { target: { value: 'напиши сочинение по истории' } })
+    fireEvent.keyDown(box, { key: 'Enter' })
+    await screen.findByText(REFUSAL, {}, WAIT)
+
+    fireEvent.change(box, { target: { value: 'почему неверно?' } })
+    fireEvent.keyDown(box, { key: 'Enter' })
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), WAIT)
+    const body = JSON.parse(fetchMock.mock.calls[1][1].body)
+    expect(body.messages).toStrictEqual([{ role: 'user', content: 'почему неверно?' }])
+    // На экране разговор целиком.
+    expect(screen.getByText('напиши сочинение по истории')).toBeTruthy()
+  })
+
+  it('пауза после вопросов не по теме — своё сообщение и без «Повторить»', async () => {
+    fetchMock.mockImplementationOnce(async () =>
+      new Response(JSON.stringify({ error: 'offtopic_cooldown', retryAfterSec: 1700 }), { status: 429 }),
+    )
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Почему мой ответ неверный?' }))
+    const alert = await screen.findByRole('alert', {}, WAIT)
+    expect(alert.textContent).toContain('через 29 мин')
+    expect(alert.textContent).toContain('не по теме')
+    expect(screen.queryByRole('button', { name: 'Повторить' })).toBeNull()
   })
 
   it('разметка ответа: **жирный** и списки, без HTML', async () => {

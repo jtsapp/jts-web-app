@@ -115,6 +115,9 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
 
     const history = [...cur.messages, { role: 'user', content: text }]
     setMessages([...history, { role: 'assistant', content: '' }])
+    // Пары «вопрос не по теме — отказ» модели не нужны: они только удлиняют
+    // каждый следующий запрос. На экране остаются, в запрос не идут.
+    const toSend = history.filter((m) => !m.offtopic).map(({ role, content }) => ({ role, content }))
     setInput('')
     setError(null)
     setBusy(true)
@@ -123,9 +126,9 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
     abortRef.current = controller
     const root = typeof document !== 'undefined' ? document.querySelector(SCREEN_ROOT) : null
     try {
-      await askAssistant({
+      const reply = await askAssistant({
         token: cur.token,
-        messages: history,
+        messages: toSend,
         screen: { id: cur.screen || null, text: snapshotScreen(root) },
         lang: cur.lang,
         signal: controller.signal,
@@ -137,6 +140,14 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
             return next
           }),
       })
+      if (reply.offtopic) {
+        setMessages((prev) => {
+          const next = prev.slice()
+          next[next.length - 2] = { ...next[next.length - 2], offtopic: true }
+          next[next.length - 1] = { ...next[next.length - 1], offtopic: true }
+          return next
+        })
+      }
     } catch (err) {
       if (err?.name === 'AbortError') return
       // Неудачный вопрос убираем из разговора вместе с недописанным ответом:
@@ -145,12 +156,15 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
       const kind = err instanceof AssistantError ? err.kind : 'unavailable'
       setError({
         text:
-          kind === 'rate'
-            ? t('assistant.err.rate', { min: Math.max(1, Math.ceil((err.retryAfterSec || 60) / 60)) })
+          kind === 'rate' || kind === 'cooldown'
+            ? t(kind === 'rate' ? 'assistant.err.rate' : 'assistant.err.cooldown', {
+                min: Math.max(1, Math.ceil((err.retryAfterSec || 60) / 60)),
+              })
             : kind === 'auth'
               ? t('assistant.err.auth')
               : t('assistant.err.generic'),
-        retry: kind === 'auth' ? null : text,
+        // Повтор сразу после паузы или лимита снова упрётся в них — кнопки нет.
+        retry: kind === 'auth' || kind === 'cooldown' ? null : text,
       })
     } finally {
       if (abortRef.current === controller) {

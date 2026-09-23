@@ -118,4 +118,88 @@ describe('POST /api/assistant/chat', () => {
     await expect(res.text()).rejects.toThrow()
     errSpy.mockRestore()
   })
+  describe('вопросы не по теме', () => {
+    const offtopicStream = () => {
+      let closed = false
+      streamImpl = async function* () {
+        try {
+          yield { type: 'text', text: '[[OFF' }
+          yield { type: 'text', text: 'TOPIC]]' }
+          yield { type: 'text', text: ' а вот и лишний текст' }
+        } finally {
+          closed = true
+        }
+      }
+      return () => closed
+    }
+
+    it('метка → стандартный отказ на языке ученика, генерация закрыта', async () => {
+      const wasClosed = offtopicStream()
+      const res = await post({ ...question(201), lang: 'en' })
+      expect(res.status).toBe(200)
+      expect(res.headers.get('x-assistant-offtopic')).toBe('1')
+      expect(await res.text()).toBe('I can only help with English and with the JTS site. Ask me, for example, why an answer was not accepted, what rule an exercise uses, or how a section works.')
+      expect(wasClosed()).toBe(true)
+    })
+
+    it('не тратит основной лимит, но после пяти за сутки — пауза', async () => {
+      const body = question(202)
+      for (let i = 0; i < 4; i += 1) {
+        offtopicStream()
+        expect((await post(body)).headers.get('x-assistant-offtopic')).toBe('1')
+      }
+      offtopicStream()
+      await post(body)
+      const paused = await post(body)
+      expect(paused.status).toBe(429)
+      expect((await paused.json()).error).toBe('offtopic_cooldown')
+    })
+
+    it('отказы не съедают основной лимит', async () => {
+      const body = question(203)
+      for (let i = 0; i < 4; i += 1) {
+        offtopicStream()
+        await post(body)
+      }
+      streamImpl = async function* () {
+        yield { type: 'text', text: 'ok' }
+      }
+      for (let i = 0; i < 20; i += 1) expect((await post(body)).status).toBe(200)
+    })
+
+    it('обрыв на куске метки — тоже отказ, а не «[[OFF» ученику', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: '[[OFF' }
+      }
+      const res = await post(question(204))
+      expect(res.headers.get('x-assistant-offtopic')).toBe('1')
+    })
+
+    it('ответ, который просто начинается со скобки, идёт как есть', async () => {
+      streamImpl = async function* () {
+        yield { type: 'text', text: '[' }
+        yield { type: 'text', text: 'пример] Is Clare reading?' }
+      }
+      const res = await post(question(205))
+      expect(res.headers.get('x-assistant-offtopic')).toBeNull()
+      expect(await res.text()).toBe('[пример] Is Clare reading?')
+    })
+  })
+
+  it('модель упала до первого слова — 502, и лимит не потрачен', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    streamImpl = async function* () {
+      throw new Error('overloaded')
+    }
+    const body = question(206)
+    for (let i = 0; i < 25; i += 1) expect((await post(body)).status).toBe(502)
+    errSpy.mockRestore()
+  })
+
+  it('пустой ответ модели — 502, а не пустой пузырь', async () => {
+    streamImpl = async function* () {
+      yield { type: 'done', stopReason: 'end_turn' }
+    }
+    expect((await post(question(207))).status).toBe(502)
+  })
 })
