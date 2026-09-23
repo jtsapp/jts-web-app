@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import path from 'node:path'
 
 // Раздел «Караоке» в Практике. Бэкенд подставной: проверяем то, что зависит от
 // клиента — раздел появляется только с контентом, разметка доспрашивается
@@ -31,6 +32,7 @@ const LYRICS = {
     { w: 'bus', ru: 'автобус', line: 2 },
   ],
   lines: [
+    // ru у строк плеер больше не показывает, но в старых разметках он лежит.
     { id: 1, start: 1, end: 4, text: 'I woke up on a rainy Monday', ru: 'Я проснулся дождливым понедельником' },
     { id: 2, start: 5, end: 8, text: 'And the bus was late again', ru: 'И автобус снова опоздал' },
   ],
@@ -107,6 +109,30 @@ test('разогрев показывает слова из песни', async (
   await expect(page.locator('.kk__cardWord')).toHaveText('umbrella')
   await expect(page.locator('.kk__cardTr')).toHaveText('зонт')
   await expect(page.locator('.kk__cardLine')).toContainText('rainy Monday')
+})
+
+test('в исполнении нет перевода — ни кнопки, ни строки', async ({ page }) => {
+  // Перевод строк убран: в залитых разметках его нет, кнопка показывала
+  // пустоту и только снимала 5% балла. Режим «без оценки» — чтобы дойти до экрана
+  // исполнения без микрофона; вместо фонограммы — любой настоящий mp3.
+  await signIn(page, [TRACK])
+  await page.route('**/rainy.mp3', (r) =>
+    r.fulfill({
+      path: path.join(__dirname, '..', 'public', 'course', 'a0', 'audio', '08a84be563dc.mp3'),
+      contentType: 'audio/mpeg',
+    }))
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await page.getByText('Спеть целиком').click()
+  await page.getByText('Без оценки — просто караоке').click()
+  await page.getByRole('button', { name: 'Включить трек' }).click()
+
+  await expect(page.locator('.kk__clock')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /перевод/i })).toHaveCount(0)
+  // Первая строка идёт с 1-й секунды — дождаться её, иначе проверять нечего.
+  await expect(page.locator('.kk__line--cur')).toContainText('rainy Monday')
+  await expect(page.getByText('Я проснулся дождливым понедельником')).toHaveCount(0)
 })
 
 test('трек без разметки помечается недоступным, а не грузится вечно', async ({ page }) => {

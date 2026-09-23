@@ -102,12 +102,11 @@ export function parseLrc(text) {
  * @param {object} opts
  * @param {string} opts.lrc            содержимое .lrc
  * @param {number} opts.duration       длительность фонограммы в секундах
- * @param {string[]} [opts.ru]         переводы строк, по строке на строку
  * @param {{w:string,ru?:string,line?:number}[]} [opts.vocab]
  * @param {string} [opts.slug]
  * @param {number} [opts.maxLineSec]   потолок длительности строки (по умолчанию 12)
  */
-export function buildLyrics({ lrc, duration, ru = [], vocab = [], slug, maxLineSec = 12 }) {
+export function buildLyrics({ lrc, duration, vocab = [], slug, maxLineSec = 12 }) {
   const { meta, entries } = parseLrc(lrc)
   // offset в LRC — это сдвиг воспроизведения в миллисекундах, причём с обратным
   // знаком: положительный означает «показывать раньше».
@@ -122,9 +121,6 @@ export function buildLyrics({ lrc, duration, ru = [], vocab = [], slug, maxLineS
   if (sung.length === 0) {
     throw new Error('В LRC нет ни одной строки с текстом')
   }
-  if (ru.length && ru.length !== sung.length) {
-    throw new Error(`Переводов ${ru.length}, а строк ${sung.length} — должно совпадать`)
-  }
 
   const lines = sung.map((entry, i) => {
     // Конец строки — начало следующей записи, включая пустые маркеры пауз.
@@ -136,7 +132,6 @@ export function buildLyrics({ lrc, duration, ru = [], vocab = [], slug, maxLineS
       end: round(Math.max(entry.start + 0.3, end)),
       text: entry.text,
     }
-    if (ru[i]) line.ru = ru[i]
     if (entry.words.length) {
       line.words = entry.words
         .filter((w) => w.t >= line.start && w.t <= line.end)
