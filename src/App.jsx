@@ -81,6 +81,8 @@ import { saveToken, clearToken, loadToken, restoreSession, mergeAnonymousProgres
 import { getDeviceId, authHeaders } from './lib/identity.js'
 import { homeScreenFor } from './lib/homeScreen.js'
 import { isTeacher } from './lib/jwt.js'
+import AssistantWidget from './components/AssistantWidget.jsx'
+import { assistantAllowedOn } from './lib/assistant/visibility.js'
 import { isStudentOnlyScreen } from './lib/screenAccess.js'
 import { rememberPendingScreen, consumePendingScreen, clearPendingScreen, pendingScreenAfterLogin } from './lib/pendingScreen.js'
 import { screenUrlParams, applyScreenUrlParams } from './lib/screenUrlParams.js'
@@ -1299,6 +1301,12 @@ export default function App() {
       {/* Поздравление живёт вне обёртки с key: иначе смена экрана
           перемонтировала бы его и окно моргало бы анимацией входа. */}
       {celebrate && <PurchaseSuccessModal onClose={() => setCelebrate(false)} />}
+      {/* Помощник по сайту — тоже вне обёртки с key: разговор переживает
+          переходы между экранами. Смонтирован для любого ученика, а на
+          экзаменах, живом уроке и звонке тьютора только скрыт (enabled). */}
+      {token && !boothAccount && !isTeacher(token) && (
+        <AssistantWidget token={token} screen={view} enabled={assistantAllowedOn(view, { token })} />
+      )}
     </>
   )
 
