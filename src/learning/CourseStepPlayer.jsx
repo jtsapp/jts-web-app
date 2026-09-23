@@ -528,6 +528,14 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
     () => (step.options ? (step.keep ? step.options : shuffle(step.options, seed * 7919)) : []),
     [step, seed],
   )
+  // Иконки вариантов лежат в шаге параллельно options в ИСХОДНОМ порядке, а
+  // варианты на экране перемешаны: связываем по значению варианта, иначе
+  // «sun» получил бы картинку двери.
+  const optionIcons = useMemo(() => {
+    if (!Array.isArray(step.optionIcons) || !step.options) return null
+    const byOption = new Map(step.options.map((o, i) => [o, step.optionIcons[i]]))
+    return options.map((o) => byOption.get(o) || null)
+  }, [step, options])
   // Собранная фраза шага «порядок слов».
   const [seq, setSeq] = useState([])
   // Соединение пар: левый пункт → выбранный правый.
@@ -658,6 +666,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
         <StepBody
           step={step}
           options={options}
+          optionIcons={optionIcons}
           picked={picked}
           setPicked={setPicked}
           checked={checked}
@@ -724,7 +733,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
   )
 }
 
-function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t, onWord, token, catalogLessonId }) {
+function StepBody({ step, options, optionIcons, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t, onWord, token, catalogLessonId }) {
   switch (step.type) {
     // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
@@ -900,7 +909,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           {/* Без записи варианты не рисуем: выбрать среди них честно нечем, а
               неоцениваемый шаг всё равно пропустил бы любой выбор. */}
           {listenSrc(step, level) && (
-            <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+            <Choices options={options} icons={optionIcons} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
           )}
         </>
       )
@@ -922,6 +931,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           )}
           <Choices
             options={options}
+            icons={optionIcons}
             picked={picked}
             setPicked={setPicked}
             checked={checked}
@@ -1336,19 +1346,32 @@ function ExampleCarousel({ items, onWord }) {
 // последний оставался один в ряду: сетка выглядела сломанной, а не короткой.
 const inTwoColumns = (options) => (options || []).length % 2 === 0
 
-function Choices({ options, picked, setPicked, checked, answer, grid = false }) {
+// «Послушайте. Выберите картинку.»: варианты — иконки курса (optionIcons,
+// тот же порядок, что и options), и подписи под ними нет, как в самом курсе:
+// слово под картинкой превратило бы задание в «найди услышанное слово».
+// Ответ по-прежнему сверяется по options.
+const hasPics = (icons, options) => Array.isArray(icons) && icons.length === options.length && icons.every(Boolean)
+
+function Choices({ options, icons, picked, setPicked, checked, answer, grid = false }) {
+  const pics = hasPics(icons, options)
   return (
-    <div className={`cp-choices ${grid ? 'is-grid' : ''}`}>
+    <div className={`cp-choices ${pics ? 'is-pics' : grid ? 'is-grid' : ''}`}>
       {options.map((o, i) => {
         // Подсвечиваем только выбранный вариант: в макете после неверного
         // ответа правильный не раскрывается — остальные кнопки остаются белыми.
-        let cls = 'cp-choice'
+        let cls = pics ? 'cp-choice cp-choice--pic' : 'cp-choice'
         if (checked) {
           if (i === picked) cls += o === answer ? ' is-right' : ' is-wrong'
         } else if (i === picked) cls += ' is-sel'
         return (
-          <button key={i} className={cls} disabled={checked} onClick={() => setPicked(i)}>
-            {o}
+          <button key={i} className={cls} disabled={checked} onClick={() => setPicked(i)} aria-label={pics ? o : undefined}>
+            {pics ? (
+              // Разметка иконки — из файла курса, отфильтрована экстрактором
+              // (scripts/selfstudy/read-course.js, courseIcons).
+              <svg className="cp-choice__icon" viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icons[i] }} />
+            ) : (
+              o
+            )}
           </button>
         )
       })}

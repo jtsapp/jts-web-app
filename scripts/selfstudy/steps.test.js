@@ -30,6 +30,30 @@ describe('selfstudy/steps — раскладка по экранам', () => {
 })
 
 describe('selfstudy/steps — типы заданий', () => {
+  // Запись слова (карточка, «выберите картинку») и материал задания могут
+  // быть одним клипом — правка клипа для задания карточку трогать не должна
+  // (clip-fixes.js, only: 'task'). Поэтому экстрактор говорит, зачем клип.
+  it('запись слова просит клип с ролью word, задание — без роли', () => {
+    const asked = []
+    const c = { ...ctx, clip: (k, role) => (asked.push([k, role || 'task']), `/course/a0/audio/${k}.mp3`) }
+    lessonSteps(
+      {
+        key: '6',
+        no: 6,
+        groups: [
+          { t: 'cards', stage: 'vocab', items: [{ w: 'How are you?', wordClip: 'how' }] },
+          { t: 'listen', stage: 'lisrd', items: [{ clip: 'how', q: { ru: 'Первый ответ:' }, opts: ['a', 'b'], a: 0 }] },
+        ],
+      },
+      PER_ITEM,
+      c,
+    )
+    expect(asked).toEqual([
+      ['how', 'word'],
+      ['how', 'task'],
+    ])
+  })
+
   it('карточки слов несут перевод, пример и озвучку', () => {
     const [card] = steps([
       { t: 'cards', stage: 'vocab', items: [{ w: 'like', ru: 'нравится', kk: 'ұнайды', use: 'I <em>like</em> tea.', wordClip: 'w1' }] },
@@ -78,6 +102,85 @@ describe('selfstudy/steps — типы заданий', () => {
     const [a1] = steps([{ t: 'mistake', stage: 'prac', ins: { en: 'Tap' }, items: [{ words: ['I', 'were', 'here'], bad: 1, fix: 'was' }] }])
     expect(a0).toMatchObject({ type: 'mistake', tokens: ['I', 'are', 'happy'], bad: 1, answer: 'am' })
     expect(a1).toMatchObject({ type: 'mistake', tokens: ['I', 'were', 'here'], bad: 1, answer: 'was' })
+  })
+
+  // «Послушайте. Выберите картинку.»: варианты в файле курса — имена иконок
+  // (door, sun, clock). Без самих иконок студент видел слова «sun / door» под
+  // записью «Good morning» — задание теряло смысл, а у урока 1 превращалось в
+  // «выбери услышанное слово» (listen среди look/listen/answer).
+  describe('«выберите картинку» (pic)', () => {
+    const ICONS = { door: '<path d="M1"/>', sun: '<circle r="4"/>', clock: '<path d="M2"/>' }
+    const icon = (name) => ICONS[name] || null
+    const picSteps = (groups, extra = {}) =>
+      lessonSteps({ key: '2', no: 2, groups }, { ...PER_ITEM, pic: 'pic' }, { ...ctx, icon, ...extra })
+    const group = {
+      t: 'pic',
+      stage: 'lisrd',
+      ins: { ru: 'Послушайте. Выберите картинку.' },
+      items: [{ clip: 'h2_good_morning', w: 'Good morning.', opts: ['door', 'sun', 'clock'], a: 1 }],
+    }
+
+    it('несёт иконку каждого варианта в том же порядке', () => {
+      const [s] = picSteps([group])
+      expect(s).toMatchObject({ type: 'choice', options: ['door', 'sun', 'clock'], answer: 'sun' })
+      expect(s.optionIcons).toEqual([ICONS.door, ICONS.sun, ICONS.clock])
+    })
+
+    // Движок курса у pic играет только слово (R.pic зовёт speak(sc.w)), а
+    // клип на экране — запись того же слова. Клип как дорожка шага давал
+    // вторую кнопку «послушать» над SayButton.
+    it('звучит одной записью: клип слова уходит в sayTrack, дорожки нет', () => {
+      const [s] = picSteps([group])
+      expect(s.src).toBeUndefined()
+      expect(s).toMatchObject({ say: 'Good morning.', sayTrack: '/course/a0/audio/h2_good_morning.mp3' })
+    })
+
+    it('без клипа берёт озвучку слова', () => {
+      const [s] = picSteps([{ ...group, items: [{ w: 'listen', opts: ['door', 'sun', 'clock'], a: 1 }] }], {
+        wordAudio: (w) => `/learning/audio/a0/${w}.mp3`,
+      })
+      expect(s.sayTrack).toBe('/learning/audio/a0/listen.mp3')
+    })
+
+    // Хоть одной иконки нет — картинки не рисуем вовсе: смесь картинок и
+    // слов подсказала бы ответ.
+    it('неполный набор иконок — без картинок', () => {
+      const [s] = picSteps([{ ...group, items: [{ w: 'x', opts: ['door', 'moon', 'clock'], a: 0 }] }])
+      expect(s.optionIcons).toBeUndefined()
+    })
+  })
+
+  // У A0 (уроки 21 и 24) задание ссылается на клип, которого в банке курса
+  // нет («AI-generated» дорожка), и несёт fallback — текст, который движок
+  // курса в этом случае читает синтезом. Без него шаг выходил немым.
+  it('нет клипа в банке — звучит озвучка fallback-текста', () => {
+    const fallback = "Look outside. It's raining right now."
+    const [s] = lessonSteps(
+      { key: '21', no: 21, groups: [{ t: 'listen', stage: 'lisrd', items: [{ clip: 'pc_now', fallback, q: { ru: 'Что сейчас?' }, opts: ["It's raining.", "It's snowing."], a: 0 }] }] },
+      PER_ITEM,
+      { ...ctx, clip: () => null, wordAudio: (t) => (t === fallback ? '/learning/audio/a0/fb.mp3' : null) },
+    )
+    expect(s).toMatchObject({ type: 'listen', src: '/learning/audio/a0/fb.mp3' })
+  })
+
+  it('клип в банке важнее fallback-текста', () => {
+    const [s] = lessonSteps(
+      { key: '21', no: 21, groups: [{ t: 'listen', stage: 'lisrd', items: [{ clip: 'real', fallback: 'x', q: { ru: '?' }, opts: ['a', 'b'], a: 0 }] }] },
+      PER_ITEM,
+      { ...ctx, wordAudio: () => '/learning/audio/a0/fb.mp3' },
+    )
+    expect(s.src).toBe('/course/a0/audio/real.mp3')
+  })
+
+  it('вопрос на слух с картинками-вариантами несёт иконки', () => {
+    const icon = (n) => ({ coffee: '<path d="C"/>', tea: '<path d="T"/>', water: '<path d="W"/>' })[n] || null
+    const [s] = lessonSteps(
+      { key: '1', no: 1, groups: [{ t: 'listen', stage: 'lisrd', items: [{ clip: 'l1', q: { ru: 'Что хочет мужчина?' }, pics: ['coffee', 'water', 'tea'], a: 0 }] }] },
+      PER_ITEM,
+      { ...ctx, icon },
+    )
+    expect(s).toMatchObject({ type: 'listen', options: ['coffee', 'water', 'tea'], answer: 'coffee' })
+    expect(s.optionIcons).toEqual(['<path d="C"/>', '<path d="W"/>', '<path d="T"/>'])
   })
 
   it('колонки читаются и строкой, и объектом с иконкой', () => {

@@ -192,6 +192,18 @@ function tableHtml(sc, lang) {
 // курса молча возвращала фразам src: null, и их снова читал браузерный синтез.
 const voiced = (ctx, text) => (text && ctx.wordAudio ? ctx.wordAudio(text) : null) || null
 
+// Картинки вариантов: в файле курса вариант задания «выберите картинку» — имя
+// иконки из его набора (door, sun, clock), и движок курса рисует их без
+// подписи. Плееру отдаём саму разметку иконки параллельным массивом, а
+// options остаются словами — по ним сверяется ответ, и старый плеер,
+// не знающий optionIcons, рисует те же слова, что и раньше. Нет хоть одной
+// иконки — не отдаём ни одной: смесь картинок со словами подсказала бы ответ.
+function optionIcons(ctx, names) {
+  if (!ctx.icon || !names.length) return {}
+  const icons = names.map((n) => ctx.icon(n))
+  return icons.every(Boolean) ? { optionIcons: icons } : {}
+}
+
 // Образцы шага record: сами строки остаются строками, записи — параллельным
 // массивом itemAudio (тот же индекс, null — нет записи), и только если есть
 // хоть одна. Объект { text, src } в items старый плеер рендерит как есть и
@@ -214,7 +226,11 @@ function screenToStep(sc, ctx) {
   const title = plain(sc.ins, lang)
   const sub = plain(sc.sub, lang)
   const seed = hashSeed(`${ctx.seedBase || ''}:${sc.t}:${title}:${JSON.stringify(sc.opts || sc.a || sc.w || '')}`)
-  const src = sc.clip ? ctx.clip(sc.clip) : null
+  // Клипа нет в банке курса, а у задания есть fallback — текст, который движок
+  // курса в этом случае читает синтезом устройства (A0, уроки 21 и 24:
+  // «AI-generated» дорожки так и не записали). Берём его озвучку по тексту,
+  // как у фраз (scripts/voice-course-dialogs.js), иначе шаг выходит немым.
+  const src = (sc.clip ? ctx.clip(sc.clip) : null) || (sc.fallback ? voiced(ctx, sc.fallback) : null)
   // Запись кладём в базу шага: клип висит на группе, и её наследуют не только
   // вопросы, но и соединение пар и разбор по колонкам — у B2 таких экранов
   // шестнадцать, и без этого они оставались немыми.
@@ -272,7 +288,8 @@ function screenToStep(sc, ctx) {
           kk: it.kk || '',
           def: plain(it.def || it.use || '', 'en'),
           img: ctx.img(it.w),
-          audio: (it.wordClip && ctx.clip(it.wordClip)) || ctx.wordAudio(it.w),
+          // Роль word: правка клипа для задания (only: 'task') карточку не трогает.
+          audio: (it.wordClip && ctx.clip(it.wordClip, 'word')) || ctx.wordAudio(it.w),
         })),
       }
 
@@ -301,16 +318,25 @@ function screenToStep(sc, ctx) {
     // сгенерированная озвучка слова. Иначе одно и то же слово звучало бы на
     // карточке записью, а через два экрана — синтезом, и задание проверяло бы
     // способность узнать чужой голос.
-    case 'pic':
+    //
+    // Движок курса у pic играет только слово (R.pic → speak(sc.w)) и клип
+    // экрана не трогает, а клип там — запись того же слова («h2_good_morning»).
+    // Поэтому клип идёт в sayTrack, а не дорожкой шага: дорожка давала вторую
+    // кнопку «послушать» над кнопкой слова.
+    case 'pic': {
+      const { src: _track, ...rest } = base
+      const opts = (sc.opts || []).map((o) => plain(o, lang))
       return {
-        ...base,
+        ...rest,
         type: 'choice',
         say: sc.w || '',
-        sayTrack: (sc.wordClip && ctx.clip(sc.wordClip)) || ctx.wordAudio(sc.w) || null,
-        options: (sc.opts || []).map((o) => plain(o, lang)),
-        answer: plain((sc.opts || [])[sc.a], lang),
+        sayTrack: ((sc.wordClip || sc.clip) && ctx.clip(sc.wordClip || sc.clip, 'word')) || ctx.wordAudio(sc.w) || null,
+        options: opts,
+        ...optionIcons(ctx, opts),
+        answer: opts[sc.a],
         why: plain(sc.why, lang) || '',
       }
+    }
 
     case 'listen': {
       if (sc.mode === 'gap') {
@@ -324,6 +350,8 @@ function screenToStep(sc, ctx) {
         prompt: plain(sc.q, lang),
         src,
         options: opts,
+        // pics — варианты-картинки (coffee / water / tea), как у pic.
+        ...(sc.pics ? optionIcons(ctx, opts) : {}),
         answer: opts[sc.a],
         html: materialHtml(sc, ctx),
       }

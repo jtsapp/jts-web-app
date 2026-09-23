@@ -207,6 +207,37 @@
   border-radius: 100px;
   text-align: center;
 }
+/* «Выберите картинку»: варианты — иконки курса без подписи, плитками в ряд
+   (как .opts.pics в самом курсе). Состояния — те же цвета, что у пилюль:
+   иконка рисуется currentColor и белеет вместе с текстом. */
+.cp-choices.is-pics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 12px;
+}
+.cp-choice.cp-choice--pic {
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 16px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  color: #9047ff;
+}
+.cp-choice.cp-choice--pic.is-sel,
+.cp-choice.cp-choice--pic.is-right,
+.cp-choice.cp-choice--pic.is-wrong {
+  color: #fff;
+}
+.cp-choice__icon {
+  width: 56px;
+  height: 56px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 /* Карточки «выбери что ближе» */
 /* Ширину гридам задаём явно: .cp-step центрирует детей по поперечной оси, и

@@ -82,6 +82,22 @@ describe('selfstudy/read-course', () => {
     expect(course.audio.c1).toBe('QUJD')
   })
 
+  // Варианты «выберите картинку» — имена иконок из набора курса I. Сам набор
+  // — разметка SVG строками; что-то другое под этим именем (у уровня без
+  // иконок) иконкой не считается.
+  it('отдаёт набор иконок курса', () => {
+    const html = fixture().replace(
+      'const INS =',
+      `const I = { sun: '<circle cx="12" cy="12" r="4"/>', door: '<path d="M14 3H6"/>', bad: 42, text: 'hello', evil: '<path onload="x()"/>' };\nconst INS =`,
+    )
+    const course = withFile(html, readSelfStudyCourse)
+    expect(course.icons).toEqual({ sun: '<circle cx="12" cy="12" r="4"/>', door: '<path d="M14 3H6"/>' })
+  })
+
+  it('курс без набора иконок отдаёт пустой набор', () => {
+    expect(withFile(fixture(), readSelfStudyCourse).icons).toEqual({})
+  })
+
   it('файл без LESSONS падает, а не отдаёт пустой курс', () => {
     const html = '<html><head><title>Just To Study · A0 · English course</title></head><body><script>var x = 1;</script></body></html>'
     expect(() => withFile(html, readSelfStudyCourse)).toThrow(/LESSONS/)
