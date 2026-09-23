@@ -25,6 +25,7 @@ import {
   parseChatRequest,
 } from '@/lib/assistant/prompt.js'
 import { createOfftopicGuard, createRateLimiter } from '@/lib/assistant/rateLimit.js'
+import { loadStudentContext } from '@/lib/assistant/studentContext.js'
 
 export const runtime = 'nodejs'
 
@@ -48,7 +49,8 @@ const TEXT_HEADERS = {
 }
 
 export async function POST(request) {
-  const auth = await verifyTokenStatus(bearerFromRequest(request))
+  const bearer = bearerFromRequest(request)
+  const auth = await verifyTokenStatus(bearer)
   if (auth.status === 'unavailable') return json(503, { error: 'backend_unavailable' })
   if (auth.status !== 'ok') return json(401, { error: 'unauthorized' })
   if (!hasAnthropicKey()) return json(503, { error: 'assistant_unavailable' })
@@ -75,9 +77,14 @@ export async function POST(request) {
     })
   }
 
+  // Профиль ученика — для плана и советов. Сам модуль отказоустойчив и
+  // кэширует на несколько минут; если и он вдруг бросит исключение, чат не
+  // должен из-за этого падать — план останется без персонализации.
+  const studentContext = await loadStudentContext(bearer, auth.user).catch(() => null)
+
   const gen = chatStreamRich({
     systemPrompt: buildSystemPrompt(),
-    messages: buildTurns({ ...parsed, user: auth.user }),
+    messages: buildTurns({ ...parsed, user: auth.user, studentContext }),
     model: MODEL,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     task: 'site_assistant',

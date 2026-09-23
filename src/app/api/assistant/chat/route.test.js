@@ -19,6 +19,19 @@ vi.mock('@/lib/auth-server.js', () => ({
   verifyTokenStatus: async () => authResult,
 }))
 
+// Профиль ученика — отдельный модуль (studentContext.js), сам отказоустойчив
+// и кэширует; здесь только проверяем, что роут его зовёт с бэрер-токеном и
+// не падает, если он бросит исключение.
+let studentContextResult
+let studentContextThrows = false
+vi.mock('@/lib/assistant/studentContext.js', () => ({
+  loadStudentContext: vi.fn(async (bearer) => {
+    if (studentContextThrows) throw new Error('backend недоступен')
+    return studentContextResult
+  }),
+}))
+const { loadStudentContext } = await import('@/lib/assistant/studentContext.js')
+
 const { POST } = await import('./route.js')
 
 const post = (body, token = 'student-token') =>
@@ -43,6 +56,9 @@ describe('POST /api/assistant/chat', () => {
   beforeEach(() => {
     calls.length = 0
     process.env.ANTHROPIC_API_KEY = 'k'
+    studentContextResult = null
+    studentContextThrows = false
+    loadStudentContext.mockClear()
     streamImpl = async function* () {
       yield { type: 'text', text: 'Опечатка: ' }
       yield { type: 'text', text: '«Cleare» → «Clare».' }
@@ -71,6 +87,29 @@ describe('POST /api/assistant/chat', () => {
     // Снимок экрана не должен попадать в системный промпт: тот кэшируется и
     // обязан быть одинаковым для всех учеников.
     expect(systemPrompt).not.toContain('Is Cleare reading?')
+  })
+
+  it('зовёт loadStudentContext с бэрер-токеном ученика и кладёт результат в вопрос', async () => {
+    studentContextResult = 'Домашка (1 к сроку на этой неделе): «Эссе» — до 2026-09-25.'
+    await (await post(question(108), 'my-bearer')).text()
+    expect(loadStudentContext).toHaveBeenCalledWith('my-bearer', expect.objectContaining({ userId: 108 }))
+    const last = calls[0].messages.at(-1).content
+    expect(last).toContain('Профиль ученика')
+    expect(last).toContain('«Эссе» — до 2026-09-25.')
+  })
+
+  it('без профиля (студент новый / ничего не собралось) блока просто нет', async () => {
+    studentContextResult = null
+    await (await post(question(109))).text()
+    expect(calls[0].messages.at(-1).content).not.toContain('Профиль ученика')
+  })
+
+  it('упавший studentContext не роняет чат — план остаётся без персонализации', async () => {
+    studentContextThrows = true
+    const res = await post(question(110))
+    expect(res.status).toBe(200)
+    expect(await res.text()).toBe('Опечатка: «Cleare» → «Clare».')
+    expect(calls[0].messages.at(-1).content).not.toContain('Профиль ученика')
   })
 
   it('без токена — 401, модель не зовём', async () => {

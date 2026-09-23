@@ -206,6 +206,7 @@ export default function AssistantWidget({ token, screen, enabled = true }) {
   }
 
   const suggestions = [
+    t('assistant.suggest.plan'),
     t('assistant.suggest.whyWrong'),
     t('assistant.suggest.rule'),
     t('assistant.suggest.page'),
