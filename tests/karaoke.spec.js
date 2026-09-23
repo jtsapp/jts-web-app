@@ -79,7 +79,9 @@ test('каталог показывает трек, а карточка — ре
 
   // Разметка приезжает отдельным запросом — до неё экран показывает загрузку.
   await expect(page.getByText('Спеть целиком')).toBeVisible()
-  await expect(page.getByText('Разогрев')).toBeVisible()
+  // Разогрев убран: режим один — спеть целиком. Словарь в разметке (он тут
+  // есть) кнопку не возвращает.
+  await expect(page.getByText('Разогрев')).toHaveCount(0)
   await expect(page.locator('.kk__facts')).toContainText('строк: 2')
   // Обещание про микрофон обязано быть на экране до запроса разрешения.
   await expect(page.locator('.kk__privacy')).toContainText('никуда не сохраняется')
@@ -98,17 +100,6 @@ test('битая разметка не роняет экран', async ({ page }
   await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
 
   await expect(page.locator('.kk__empty')).toContainText('битая разметка')
-})
-
-test('разогрев показывает слова из песни', async ({ page }) => {
-  await signIn(page, [TRACK])
-  await page.goto('/?screen=practice')
-  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
-
-  await page.getByText('Разогрев').click()
-  await expect(page.locator('.kk__cardWord')).toHaveText('umbrella')
-  await expect(page.locator('.kk__cardTr')).toHaveText('зонт')
-  await expect(page.locator('.kk__cardLine')).toContainText('rainy Monday')
 })
 
 test('в исполнении нет перевода — ни кнопки, ни строки', async ({ page }) => {
