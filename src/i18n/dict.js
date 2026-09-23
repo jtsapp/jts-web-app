@@ -8,7 +8,7 @@ export const DEFAULT_LANG = 'ru'
 export const DICT = {
   ru: {
     // Общее / навигация / оболочка
-    'nav.learn': 'Обучение',
+    'nav.learn': 'Повторение',
     'nav.practice': 'Практика',
     'nav.tutor': 'Тьютор',
     'nav.lessons': 'Уроки',
@@ -415,7 +415,7 @@ export const DICT = {
   },
 
   kz: {
-    'nav.learn': 'Оқыту',
+    'nav.learn': 'Қайталау',
     'nav.practice': 'Практика',
     'nav.tutor': 'Тьютор',
     'nav.lessons': 'Сабақтар',
@@ -789,7 +789,7 @@ export const DICT = {
   },
 
   en: {
-    'nav.learn': 'Learning',
+    'nav.learn': 'Review',
     'nav.practice': 'Practice',
     'nav.tutor': 'Tutor',
     'nav.lessons': 'Lessons',
