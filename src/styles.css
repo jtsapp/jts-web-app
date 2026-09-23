@@ -3373,34 +3373,832 @@ textarea {
 }
 
 /* ═══════════════ Практика ═══════════════ */
-.pp {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 30px;
-  padding: 26px 34px 40px;
-  align-items: start;
+/* Экран «Практика» по макету Figma «Макеты» (5316:1548): шапка с уровнем,
+   четыре карточки навыков, секции навыка. Числа сняты с узлов макета, а не
+   на глаз: контент 1168 при окне 1440, поля 32/40/48/40, между блоками 40.
+   Шрифт в макете местами PT Root UI — здесь Manrope (общее решение
+   приложения, см. tutor.css), кегли, начертания и интерлиньяж из макета;
+   интерлиньяж — в целых px, как строки макета: Figma округляет строку до
+   пикселя (Manrope 14 «auto» = 19, 140% от 16 = 22), а line-height: normal
+   даёт дробные 19.1 и 22.4, и к низу экрана набегало 3px.
+
+   Обводки «внутрь» из Figma переведены с поправкой на border: у рамки 1px и
+   отступа 8/12 в макете здесь padding 7/11 — иначе элемент выходит на 2px
+   выше макета. */
+.pk {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 32px 40px 48px;
+  /* Ленты уходят в правое поле до края контента (как в макете, где рамка
+     обрезает их по краю экрана), поэтому горизонтальный вылет режем здесь. */
+  overflow: hidden;
+  overflow: clip;
 }
+/* На этом экране угол «? / язык / колокольчик» стоял бы ровно на месте
+   переключателя уровня: в макете его нет, и на десктопе группу прячем.
+   В мобильной шапке она остаётся (MobileTopBar). */
+@media (min-width: 761px) {
+  .learn__main:has(.pk) .learn__bell {
+    display: none;
+  }
+}
+
+.pk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 44px;
+}
+.pk-head__title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 44px;
+  color: #181818;
+}
+
+/* LevelSegmented: капсула #f4f4f4, пилюли 56×36 через 2px. */
+.pk-levels {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #f4f4f4;
+}
+.pk-levels__btn {
+  width: 56px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  color: #181818;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.pk-levels__btn:hover { background: #e9e9e9; }
+.pk-levels__btn.is-on {
+  background: #9047ff;
+  color: #fff;
+  font-weight: 700;
+}
+.pk-levels__btn:focus-visible { outline: 2px solid #b79cf5; outline-offset: 1px; }
+
+/* Карточки навыков 260×136, r20. Неактивная — вся карточка на 60%. Арт — экспорт
+   фигур из макета. Обводка активной — «внутрь» 0/4/6/4: рисуем её поверх
+   (::after), а не border самой кнопки, иначе нижние 6px сдвигали бы текст. */
+.pk-skills {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.pk-skill {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  height: 136px;
+  padding: 40px 20px;
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--sk-bg) var(--sk-art) center / cover no-repeat;
+  opacity: 0.6;
+  text-align: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.pk-skill:hover { opacity: 0.8; }
+.pk-skill.is-on { opacity: 1; }
+.pk-skill.is-on::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: solid var(--sk-line);
+  border-width: 0 4px 6px;
+  pointer-events: none;
+}
+.pk-skill:focus-visible { outline: 2px solid #b79cf5; outline-offset: 2px; }
+.pk-skill__title,
+.pk-skill__count {
+  position: relative;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 700;
+}
+.pk-skill__title { font-size: 24px; line-height: 33px; color: #181818; }
+.pk-skill__count { font-size: 14px; line-height: 19px; color: var(--sk-ink); }
+.pk-skill--listening {
+  --sk-bg: #f4f8ff;
+  --sk-art: url('/practice/skills/listening.svg');
+  --sk-ink: #2f6fd6;
+  --sk-line: #bdcbe0;
+}
+.pk-skill--reading {
+  --sk-bg: #fff2e2;
+  --sk-art: url('/practice/skills/reading.svg');
+  --sk-ink: #c9750a;
+  --sk-line: #ddcaaa;
+}
+.pk-skill--writing {
+  --sk-bg: #faf6ff;
+  --sk-art: url('/practice/skills/writing.svg');
+  --sk-ink: #7a2ef0;
+  --sk-line: #ae9bce;
+}
+.pk-skill--speaking {
+  --sk-bg: #edf9f2;
+  --sk-art: url('/practice/skills/speaking.svg');
+  --sk-ink: #1e9e5a;
+  --sk-line: #8ebfa4;
+}
+
+/* Секция: шапка 32 + 16 + лента. */
+.pk-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.pk-sec__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  min-height: 32px;
+}
+.pk-sec__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 26px;
+  color: #181818;
+}
+/* «Караоке» и «Ситуации» в макете 18px — сверено по узлам. */
+.pk-sec__title--sm { font-size: 18px; line-height: 20px; }
+.pk-sec__tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* «Посмотреть все»: пилюля 32 с обводкой #d6bcff и стрелкой в кружке… */
+.pk-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 32px;
+  padding: 7px 11px;
+  border: 1px solid #d6bcff;
+  border-radius: 30px;
+  background: none;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 15px;
+  color: #9047ff;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.pk-all:hover { background: #faf6ff; }
+.pk-all svg { flex: none; transition: transform 0.2s ease; }
+/* …или простая ссылка 13/700 с шевроном 16. */
+.pk-all--link {
+  gap: 4px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  line-height: 18px;
+}
+.pk-all--link:hover { background: none; opacity: 0.8; }
+.pk-all.is-back svg { transform: rotate(180deg); }
+.pk-all:focus-visible { outline: 2px solid #b79cf5; outline-offset: 2px; }
+
+/* Лента: карточки фиксированной ширины, вылет вправо до края контента. Полосы
+   прокрутки нет (в макете её нет): тачпад и палец листают, а весь список — по
+   «Посмотреть все». */
+.pk-rail {
+  display: flex;
+  gap: 10px;
+  margin-right: -40px;
+  padding-right: 40px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.pk-rail::-webkit-scrollbar { display: none; }
+.pk-rail > * { flex: none; }
+.pk-rail--songs,
+.pk-rail--tiles { gap: 16px; }
+.pk-rail--memes { gap: 4px; }
+.pk-rail--books { gap: 12px; }
+.pk-rail--situ { gap: 6px; }
+/* Полный список — сетка с переносом, тем же шагом по горизонтали. */
+.pk-rail--grid {
+  flex-wrap: wrap;
+  row-gap: 24px;
+  margin-right: 0;
+  padding-right: 0;
+  overflow: visible;
+}
+.pk-rail--grid.pk-rail--memes { row-gap: 4px; }
+
+/* Картинка карточки: подложка, пока грузится или если адреса нет. */
+.pk-pic {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: #efedf6;
+}
+.pk-pic img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Сказка 358: обложка 358×201 r12, заголовок 16/140%, описание 14/140% в две
+   строки, «чипы» — белые пилюли с отступом 12 (на белом фоне их видно только
+   по отступу, как и в макете). */
+.pk-tale {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 358px;
+  color: inherit;
+  text-decoration: none;
+}
+.pk-tale__cover {
+  width: 100%;
+  height: 201px;
+  border-radius: 12px;
+}
+.pk-tale__cover--ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+}
+.pk-tale__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pk-tale__title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+  color: #181818;
+}
+.pk-tale__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 20px;
+  color: #181818;
+}
+.pk-tale__meta {
+  display: flex;
+  gap: 8px;
+}
+.pk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 40px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #181818;
+  white-space: nowrap;
+}
+.pk-chip b { font-weight: 700; color: #9047ff; }
+
+/* Кнопки-карточки: сброс стилей кнопки. */
+.pk-video,
+.pk-song,
+.pk-meme,
+.pk-book,
+.pk-tile,
+.pk-wb,
+.pk-situ {
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.pk-video,
+.pk-song,
+.pk-book,
+.pk-situ {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* Шэдоуинг 358: превью 358×201 r12, заголовок 16/140% в две строки, счёт 14/140%. */
+.pk-video {
+  gap: 8px;
+  width: 358px;
+}
+.pk-video__cover {
+  width: 100%;
+  height: 201px;
+  border-radius: 12px;
+}
+.pk-video__body,
+.pk-song__body,
+.pk-book__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pk-video__title,
+.pk-song__title,
+.pk-book__title,
+.pk-comic__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+  color: #181818;
+}
+.pk-video__count,
+.pk-song__lines,
+.pk-comic__pages {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  color: #707070;
+}
+.pk-video__count--mastered { color: #9047ff; }
+
+/* Караоке 160: обложка 160×160 r20 с тенью 0 4 4 25%, до текста 14. */
+.pk-song {
+  gap: 14px;
+  width: 160px;
+}
+.pk-song__cover {
+  width: 160px;
+  height: 160px;
+  border-radius: 20px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+.pk-song__sub,
+.pk-comic__sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #707070;
+}
+
+/* Точки сложности 8px через 4, подпись 14/700, у караоке — ещё уровень. */
+.pk-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+}
+.pk-dots b { font-weight: 700; color: #181818; }
+.pk-dots em { font-style: normal; color: #9047ff; }
+.pk-dots__row {
+  display: inline-flex;
+  gap: 4px;
+}
+.pk-dots__row i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(144, 71, 255, 0.28);
+}
+.pk-dots__row i.on { background: #9047ff; }
+
+/* Мем 136×220 r12, просмотры 14/110% белым в углу (8 от края). */
+.pk-meme {
+  position: relative;
+  width: 136px;
+  height: 220px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #efedf6;
+}
+.pk-meme__cover {
+  position: absolute;
+  inset: 0;
+}
+.pk-meme__views {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 15px;
+  color: #fff;
+}
+.pk-meme__views svg { flex: none; }
+
+/* Книжка и комикс 183: обложка 183×270 r12, до текста 8. */
+.pk-book {
+  position: relative;
+  gap: 8px;
+  width: 183px;
+}
+.pk-book__cover {
+  width: 183px;
+  height: 270px;
+  border-radius: 12px;
+}
+.pk-book__cover--ph {
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fff;
+}
+/* Значок озвучки на обложке — плотная тёмная плашка: контраст к белой иконке
+   держится на любой картинке. */
+.pk-book__audio {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(20, 19, 28, 0.72);
+  color: #fff;
+}
+.pk-comic__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pk-comic__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Юнит грамматики 260×156: белая плитка r16 с обводкой 2px #f8f8f8,
+   поля 20 (18 + рамка), между бейджем и текстом 24, текст прижат вниз. */
+.pk-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 260px;
+  padding: 18px;
+  border: 2px solid #f8f8f8;
+  border-radius: 16px;
+  background: #fff;
+  transition: border-color 0.15s ease;
+}
+.pk-tile:hover { border-color: #efe4ff; }
+.pk-tile__badge {
+  align-self: flex-start;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f1ebff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: #9047ff;
+}
+.pk-tile__text {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.pk-tile__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  height: 44px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
+  color: #181818;
+}
+/* Время: часы 16 #c1c1c1 + 12/700 #8a8a8a через 4. */
+.pk-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: #8a8a8a;
+}
+.pk-meta svg { flex: none; color: #c1c1c1; }
+
+/* Воркбук 260×179: рамка 1px #ece8f5 r24, обложка 78 (77 + рамка) цвета
+   уровня, бейдж 38×38 r11 на 12/14 от края; тело — поля 16 от края. */
+.pk-wb {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  padding: 0;
+  border: 1px solid #ece8f5;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #fff;
+}
+.pk-wb__cover {
+  display: flex;
+  height: 77px;
+  padding: 11px 13px;
+  background: var(--wb-bg);
+}
+.pk-wb__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 20px;
+  letter-spacing: 0.03em;
+  color: var(--wb-ink);
+}
+.pk-wb__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 15px 15px;
+}
+.pk-wb__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pk-wb__desc {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  letter-spacing: 0.08em;
+  color: var(--wb-ink);
+}
+.pk-wb__sum {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 19px;
+  color: #15131a;
+}
+
+/* Сценарий «Ситуаций» 183: постер 183×183 r12, подпись 14/120% шириной 174. */
+.pk-situ {
+  gap: 8px;
+  width: 183px;
+}
+.pk-situ__pic {
+  position: relative;
+  width: 183px;
+  height: 183px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.pk-situ__cover {
+  width: 100%;
+  height: 100%;
+}
+.pk-situ__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #29b96b;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.pk-situ__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  width: 174px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 17px;
+  color: #181818;
+}
+
+/* Промо-баннеры: пара через 32 (528×195) или один во всю ширину (1088×176).
+   Поля 24, между текстом и кнопкой 24. Градиенты — ручки из макета,
+   пересчитанные в угол и позиции стопов CSS (у пары 110.8° 15.5–94.2%, у
+   широкого 99.4° 17–95.5%). */
+.pk-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+.pk-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  min-width: 0;
+  padding: 24px;
+  border-radius: 20px;
+  color: #fff;
+}
+.pk-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+}
+.pk-banner__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 33px;
+  color: #fff;
+}
+.pk-banner__desc {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 19px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.pk-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 19px;
+  color: #9047ff;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pk-banner__cta svg { flex: none; }
+.pk-banner__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(20, 10, 60, 0.18);
+}
+.pk-banner__cta:active { transform: translateY(0); }
+.pk-banner__cta:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pk-banner--listening { background: linear-gradient(110.8deg, #9047ff 15.5%, #6932bb 94.2%); }
+.pk-banner--lc { background: linear-gradient(110.8deg, #4756ff 15.5%, #4a48aa 94.2%); }
+.pk-banner--writing { background: linear-gradient(110.8deg, #6990e9 15.5%, #7048aa 94.2%); }
+.pk-banner--verbs { background: linear-gradient(110.8deg, #9047ff 15.5%, #a732bb 94.2%); }
+.pk-banner--reading { background: linear-gradient(99.4deg, #8c45ff 17%, #1a94ff 95.5%); }
+/* «Слов в картинках» в макете нет — цвета их прежнего баннера, геометрия
+   широкого баннера «Чтения». */
+.pk-banner--words { background: linear-gradient(99.4deg, #00d441 17%, #0aafff 95.5%); }
+
+/* Скелетоны загрузки — в габаритах карточек макета. */
+.pk-skel__item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pk-skel__thumb,
+.pk-skel__line {
+  background: #efedf6;
+  animation: pp-skel-pulse 1.1s ease-in-out infinite;
+}
+.pk-skel__thumb { border-radius: 12px; }
+.pk-skel__line {
+  height: 11px;
+  border-radius: 6px;
+  width: 90%;
+}
+.pk-skel__line--short { width: 55%; }
+.pk-skel--meme { gap: 4px; }
+.pk-skel--meme .pk-skel__thumb { width: 136px; height: 220px; }
+.pk-skel--book { gap: 12px; }
+.pk-skel--book .pk-skel__item { width: 183px; }
+.pk-skel--book .pk-skel__thumb { height: 270px; }
+.pk-skel--situation { gap: 6px; }
+.pk-skel--situation .pk-skel__thumb { width: 183px; height: 183px; }
+@media (prefers-reduced-motion: reduce) {
+  .pk-skel__thumb,
+  .pk-skel__line { animation: none; }
+}
+
+/* ── Узкие экраны. Отдельного макета нет — раскладка десктопа, сложенная в
+   колонку: карточки навыков 2×2, баннеры друг под другом, ленты от края до
+   края экрана. ── */
+@media (max-width: 1100px) {
+  .pk-skill__title { font-size: 20px; line-height: 27px; }
+}
+@media (max-width: 760px) {
+  .pk {
+    gap: 28px;
+    padding: 16px 16px 32px;
+  }
+  /* Заголовок раздела в мобильной оболочке уже стоит в шапке. */
+  .pk-head__title { display: none; }
+  .pk-levels {
+    display: flex;
+    width: 100%;
+  }
+  .pk-levels__btn { flex: 1; width: auto; }
+  .pk-skills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .pk-skill {
+    height: 96px;
+    padding: 20px 12px;
+  }
+  .pk-skill__title { font-size: 18px; line-height: 25px; }
+  .pk-skill__count { font-size: 13px; line-height: 18px; }
+  .pk-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .pk-banner { padding: 20px; }
+  .pk-banner__title { font-size: 21px; line-height: 29px; }
+  .pk-sec__title { font-size: 22px; line-height: 24px; }
+  .pk-sec__title--sm { font-size: 18px; line-height: 20px; }
+  .pk-rail {
+    margin: 0 -16px;
+    padding: 0 16px;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 16px;
+  }
+  .pk-rail > * { scroll-snap-align: start; }
+  .pk-rail--grid {
+    margin: 0;
+    padding: 0;
+    row-gap: 16px;
+  }
+  .pk-tale,
+  .pk-video { width: 280px; }
+  .pk-tale__cover,
+  .pk-video__cover { height: 158px; }
+  .pk-sec__head .pp-search {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
 /* Вход списка Практики — то же семейство, что у остальных переходов
    (см. блок «Анимации переходов» в конце файла). Отдельный класс нужен,
    чтобы анимация проигрывалась и при возврате из читалки/рилсов —
    внутренние переключения не меняют key={screen} обёртки. */
 .pp--enter {
   animation: scr-in 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-.pp__title {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-  margin-bottom: 16px;
-}
-
-/* Фильтр-чипсы */
-.pp-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 22px;
 }
 .pp-chip {
   border: 1px solid #ececf3;
@@ -3433,152 +4231,6 @@ textarea {
   font-size: 19px;
   font-weight: 800;
   color: var(--ink);
-}
-.pp-all {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid #ececf3;
-  background: #fff;
-  border-radius: 999px;
-  padding: 6px 8px 6px 14px;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #6c6b78;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.pp-all:hover { color: var(--purple); border-color: #d9d2f7; }
-.pp-all svg { color: var(--purple); }
-
-/* ───── Баннер «Аудирование» (промо мини-игры listening) ───── */
-.pp-listen__card {
-  position: relative;
-  overflow: hidden;
-  min-height: 150px;
-  border-radius: 24px;
-  padding: 20px 44px;
-  display: flex;
-  align-items: center;
-  background: linear-gradient(135deg, #7b46f0 0%, #6a2fd6 100%);
-  box-shadow: 0 18px 40px rgba(94, 47, 194, 0.28);
-}
-.pp-listen__body {
-  position: relative;
-  z-index: 3;
-  max-width: 460px;
-}
-.pp-listen__title {
-  margin: 0;
-  color: #fff;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.5px;
-}
-.pp-listen__desc {
-  margin: 8px 0 0;
-  max-width: 400px;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 14px;
-  line-height: 1.4;
-}
-.pp-listen__cta {
-  margin-top: 14px;
-  display: inline-flex;
-  align-items: center;
-  border: 0;
-  background: #fff;
-  color: var(--purple);
-  border-radius: 999px;
-  padding: 11px 30px;
-  font-family: inherit;
-  font-size: 14.5px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(23, 19, 38, 0.16);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.pp-listen__cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 26px rgba(23, 19, 38, 0.22);
-}
-.pp-listen__cta:active { transform: translateY(0); }
-.pp-listen__cta:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.7);
-  outline-offset: 2px;
-}
-.pp-listen__art {
-  position: absolute;
-  right: 88px;
-  top: 50%;
-  transform: translateY(-42%) rotate(10deg);
-  height: 296px;
-  width: auto;
-  z-index: 2;
-  pointer-events: none;
-  filter: drop-shadow(0 14px 24px rgba(23, 19, 38, 0.3));
-}
-.pp-listen__aside {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  right: 40px;
-  z-index: 3;
-  width: 150px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  text-align: center;
-}
-.pp-listen__hint {
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.25;
-  max-width: 132px;
-}
-.pp-listen__seal {
-  position: relative;
-  width: 118px;
-  height: 118px;
-  display: grid;
-  place-items: center;
-}
-.pp-listen__seal-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 6px 14px rgba(23, 19, 38, 0.22));
-}
-.pp-listen__level {
-  position: relative;
-  z-index: 1;
-  color: var(--purple);
-  font-size: 42px;
-  font-weight: 800;
-  letter-spacing: -1px;
-}
-
-/* Узкие вьюпорты десктопа: убираем наложение маскота на текст */
-@media (max-width: 1120px) {
-  .pp-listen__art { right: 150px; height: 216px; }
-}
-@media (max-width: 960px) {
-  .pp-listen__art { display: none; }
-  .pp-listen__body { max-width: none; }
-}
-
-/* Инструменты справа в шапке секции (поиск + «Посмотреть все») */
-.pp-sec__tools {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 /* Поиск по книжкам: пилюля в одном семействе с .pp-all/.pp-chip.
@@ -3680,149 +4332,9 @@ textarea {
   .pp-seg { order: 2; flex-basis: 100%; }
   .pp-seg__btn { flex: 1; justify-content: center; padding: 6px 8px; }
 }
-
-/* Горизонтальная лента */
-.pp-rail {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 6px;
-  scrollbar-width: thin;
-}
-.pp-rail::-webkit-scrollbar { height: 6px; }
-.pp-rail::-webkit-scrollbar-thumb { background: #e3e0ee; border-radius: 999px; }
-
-/* Плитка-обёртка изображения */
-.pp-thumb {
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  background: linear-gradient(135deg, #d9d2f7, #b9a9ef);
-}
-.pp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.pp-thumb__ph { width: 100%; height: 100%; }
-.pp-thumb--portrait { aspect-ratio: 3 / 4; }
-.pp-thumb--situation { aspect-ratio: 3 / 4; }
-.pp-play {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.pp-scard:hover .pp-play,
-.pp-scard:focus-visible .pp-play { opacity: 1; }
-
-/* Точки сложности */
-.pp-dots { display: inline-flex; align-items: center; gap: 6px; }
-.pp-dots__row { display: inline-flex; gap: 3px; }
-.pp-dots__row i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d7d4e2;
-}
-.pp-dots__row i.on { background: var(--purple); }
-
-/* Карточка мема/рилса */
-.pp-mcard {
-  position: relative;
-  flex: 0 0 150px;
-  text-decoration: none;
-}
-.pp-mcard__views {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-.pp-mcard__views svg { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
-
-/* Карточка ситуации */
-.pp-scard {
-  flex: 0 0 165px;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-/* Пройденная ситуативка — галочка поверх обложки. */
-.pp-scard__check {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #29b96b;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.pp-scard--done .pp-thumb--situation {
-  position: relative;
-}
-.pp-scard__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #6c6b78;
-  margin-top: 8px;
-  line-height: 1.3;
-}
-
-/* Скелетоны загрузки: форма будущих карточек, мягкая пульсация. Цвет — тот же
-   нейтральный, что у разделителей (#efeef4-семейство), без шиммер-градиентов. */
-.pp-skel {
-  flex: 0 0 150px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pp-skel__thumb {
-  aspect-ratio: 3 / 4;
-  border-radius: 14px;
-  background: #efedf6;
-  animation: pp-skel-pulse 1.1s ease-in-out infinite;
-}
-.pp-skel__line {
-  height: 11px;
-  border-radius: 6px;
-  background: #efedf6;
-  width: 90%;
-  animation: pp-skel-pulse 1.1s ease-in-out infinite;
-}
-.pp-skel__line--short { width: 55%; }
 @keyframes pp-skel-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
-}
-.pp-voc__skel { display: flex; flex-direction: column; }
-.pp-voc__skelrow {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f3f2f8;
-}
-@media (prefers-reduced-motion: reduce) {
-  .pp-skel__thumb,
-  .pp-skel__line { animation: none; }
 }
 
 /* Пустые состояния */
@@ -3837,168 +4349,9 @@ textarea {
 .pp-note { border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
 .pp-note--err { background: #fdecec; color: #c0392b; }
 
-/* ── Правая колонка: Словарь ── */
-.pp__side {
-  position: sticky;
-  top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.pp-voc__title { font-size: 20px; font-weight: 800; color: var(--ink); }
-.pp-voc__tabs { display: flex; gap: 22px; border-bottom: 1px solid #efeef4; }
-.pp-voc__tab {
-  border: none;
-  background: none;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--muted);
-  padding: 0 0 10px;
-  cursor: pointer;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.pp-voc__tab b {
-  font-size: 11px;
-  background: #f1eefb;
-  color: #7c6ba8;
-  border-radius: 999px;
-  padding: 2px 7px;
-  font-weight: 800;
-}
-.pp-voc__tab.on { color: var(--ink); }
-.pp-voc__tab.on b { background: var(--purple); color: #fff; }
-.pp-voc__tab.on::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 2px;
-  background: var(--purple);
-  border-radius: 2px;
-}
-.pp-voc__list { display: flex; flex-direction: column; }
-.pp-word {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 11px 2px;
-  border-bottom: 1px solid #f3f2f7;
-}
-.pp-word__text { flex: 1; display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
-.pp-word__text b { font-size: 14px; font-weight: 700; color: var(--ink); }
-.pp-word__text span { font-size: 12.5px; color: var(--muted); }
-.pp-word__say {
-  border: none;
-  background: none;
-  color: #b3aec6;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.pp-word__say:hover { color: var(--purple); background: #f5f2fe; }
-.pp-word__del {
-  border: none;
-  background: none;
-  color: #c9c4d6;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.pp-word__del:hover { color: #d95a55; background: #fbe8e7; }
-/* Счётчик «Сохранено N» вместо вкладок Сохранено/Изучено */
-.pp-voc__count {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink);
-  padding-bottom: 12px;
-  border-bottom: 1px solid #efeef4;
-}
-.pp-voc__count b {
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--purple);
-  color: #fff;
-  font-size: 12px;
-}
-.pp-voc__empty { padding: 20px 0; font-size: 13px; color: var(--muted); text-align: center; }
-.pp-voc__cta {
-  margin-top: 6px;
-  border: none;
-  border-radius: 14px;
-  padding: 14px;
-  background: #9047ff;
-  color: #fff;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.28);
-  transition: filter 0.15s ease;
-}
-.pp-voc__cta:hover { filter: brightness(1.05); }
-
-@media (max-width: 1000px) {
-  /* minmax(0, …), а не просто 1fr: иначе min-content нераскрытых лент
-     (чипсы nowrap, рейлы карточек) распирает колонку шире экрана и
-     внутренняя прокрутка лент перестаёт работать. */
-  .pp { grid-template-columns: minmax(0, 1fr); }
-  /* Словарь — вторичный контент: на узких экранах уходит под ленты (раньше
-     order: -1 ставил его первым, и длинный список выталкивал Практику вниз). */
-  .pp__side {
-    position: static;
-    border-top: 1px solid #efeef4;
-    padding-top: 20px;
-  }
-}
-
 /* ── Мобильная Практика (брейкпоинт оболочки — 760px, см. .mtop) ── */
 @media (max-width: 760px) {
-  .pp { padding: 16px 16px 32px; gap: 24px; }
-  .pp__title { font-size: 22px; margin-bottom: 12px; }
-
-  /* Чипсы-фильтры: одна строка с прокруткой от края до края экрана вместо
-     переноса на 2–3 ряда; последний чип выглядывает — это и есть аффорданс. */
-  .pp-chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 8px;
-    margin: 0 -16px 16px;
-    padding: 2px 16px 6px;
-    scrollbar-width: none;
-  }
-  .pp-chips::-webkit-scrollbar { display: none; }
   .pp-chip { flex: none; padding: 9px 16px; }
-
-  /* Ленты уезжают «под край» экрана; скроллбар не нужен — палец. */
-  .pp-rail {
-    margin: 0 -16px;
-    padding: 0 16px 4px;
-    scrollbar-width: none;
-    scroll-snap-type: x proximity;
-    scroll-padding-left: 16px;
-  }
-  .pp-rail::-webkit-scrollbar { display: none; }
-  .pp-rail > * { scroll-snap-align: start; }
-  /* Сеточный режим (включён чип-фильтр) — обычная вертикальная сетка */
-  .pp-rail--grid { margin: 0; padding: 0; gap: 12px; }
 
   .pp-sec { margin-bottom: 22px; }
 
@@ -4009,56 +4362,6 @@ textarea {
   .pp-search { order: 3; flex-basis: 100%; padding: 9px 14px; }
   .pp-search input,
   .pp-search input:focus { width: 100%; flex: 1; }
-
-  /* Баннер «Аудирование»: колонка — текст, CTA на всю ширину, внизу строка
-     «Собран по вашему уровню» + печать уровня за разделителем. */
-  .pp-listen__card {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 20px;
-    border-radius: 20px;
-  }
-  .pp-listen__body { max-width: none; }
-  .pp-listen__title { font-size: 21px; }
-  .pp-listen__desc { font-size: 13.5px; max-width: none; }
-  .pp-listen__cta {
-    width: 100%;
-    justify-content: center;
-    margin-top: 16px;
-    padding: 13px 20px;
-  }
-  .pp-listen__aside {
-    position: static;
-    transform: none;
-    width: auto;
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.22);
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    text-align: left;
-    gap: 14px;
-  }
-  .pp-listen__hint { max-width: 190px; font-size: 13px; }
-  .pp-listen__seal { width: 62px; height: 62px; flex: none; }
-  .pp-listen__level { font-size: 22px; letter-spacing: -0.5px; }
-
-  /* Словарь: кнопкам прослушивания/удаления — тач-размер */
-  .pp-word { padding: 12px 2px; }
-  .pp-word__say,
-  .pp-word__del { padding: 10px; }
-}
-
-/* Тач-устройства: hover-состояний нет — кнопка Play на карточках ситуаций
-   видна всегда, а «подъём» карточек по hover не залипает после тапа. */
-@media (hover: none) {
-  .pp-play { opacity: 1; background: rgba(0, 0, 0, 0.38); }
-  .pp-bcard:hover .pp-bcard__cover,
-  .pp-tcard:hover .pp-tcard__cover {
-    transform: none;
-    box-shadow: 0 6px 16px rgba(23, 19, 38, 0.18);
-  }
 }
 
 /* ===== Hosted-уроки в королевствах (#11): арт-шапка, iframe-сцена,
@@ -5613,215 +5916,6 @@ textarea {
   cursor: pointer;
 }
 
-/* ── Практика: карточки Книжек (books.html) ── */
-.pp-bcard {
-  position: relative;
-  flex: 0 0 150px;
-  width: 150px;
-  text-decoration: none;
-  color: inherit;
-}
-/* Значок озвучки поверх обложки. Обложки бывают и светлые, и тёмные, поэтому
-   не полупрозрачная плашка, а плотная тёмная — контраст к белой иконке
-   держится на любой картинке. */
-.pp-bcard__audio {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(20, 19, 28, 0.72);
-  color: #fff;
-}
-.pp-bcard__cover {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  height: 210px;
-  border-radius: 14px;
-  padding: 14px 12px;
-  color: #fff;
-  overflow: hidden;
-  box-shadow: 0 6px 16px rgba(23, 19, 38, 0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.pp-bcard__cover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.16), transparent 55%),
-    linear-gradient(0deg, rgba(0,0,0,.42), transparent 55%);
-}
-.pp-bcard__motif {
-  position: absolute;
-  right: -8px;
-  top: -6px;
-  font-size: 84px;
-  line-height: 1;
-  opacity: 0.28;
-  transform: rotate(-8deg);
-  filter: drop-shadow(0 3px 6px rgba(0,0,0,.35));
-  pointer-events: none;
-}
-.pp-bcard__coverTitle { position: relative; z-index: 1; }
-.pp-bcard__cover--img {
-  padding: 0;
-  align-items: stretch;
-}
-.pp-bcard__cover--img::after { display: none; }
-.pp-bcard__cover--img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.pp-bcard__author {
-  margin-top: 2px;
-  font-size: 12px;
-  color: #a6a5b2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.pp-bcard:hover .pp-bcard__cover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(23, 19, 38, 0.26);
-}
-.pp-bcard__coverTitle {
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.15;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.pp-bcard__title {
-  margin-top: 9px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.pp-bcard__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 6px;
-}
-.pp-bcard__cefr {
-  font-size: 11px;
-  font-weight: 800;
-  color: #9047ff;
-}
-
-/* ── Практика: карточки Сказок (fairytales.html) ── */
-.pp-tcard {
-  flex: 0 0 300px;
-  width: 300px;
-  text-decoration: none;
-  color: inherit;
-}
-.pp-tcard__cover {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  height: 150px;
-  border-radius: 16px;
-  padding: 14px 16px;
-  color: #fff;
-  overflow: hidden;
-  box-shadow: 0 6px 16px rgba(23, 19, 38, 0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.pp-tcard__cover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(90% 120% at 82% 20%, rgba(255,255,255,.18), transparent 55%),
-    linear-gradient(0deg, rgba(0,0,0,.4), transparent 60%);
-}
-.pp-tcard__motif {
-  position: absolute;
-  right: 8px;
-  top: -10px;
-  font-size: 96px;
-  line-height: 1;
-  opacity: 0.3;
-  transform: rotate(-6deg);
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,.35));
-  pointer-events: none;
-}
-.pp-tcard__coverTitle { position: relative; z-index: 1; }
-.pp-tcard__cover--img {
-  padding: 0;
-  overflow: hidden;
-}
-.pp-tcard__cover--img::after { display: none; }
-.pp-tcard__cover--img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.pp-tcard:hover .pp-tcard__cover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(23, 19, 38, 0.26);
-}
-.pp-tcard__coverTitle {
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.15;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.pp-tcard__title {
-  margin-top: 10px;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--ink);
-}
-.pp-tcard__desc {
-  margin: 4px 0 0;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.pp-tcard__meta {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-.pp-chip-meta {
-  font-size: 12px;
-  color: var(--muted);
-  background: #f4f2fa;
-  border-radius: 8px;
-  padding: 5px 10px;
-}
-.pp-chip-meta b {
-  color: #9047ff;
-  font-weight: 700;
-}
-
 /* ── Сайдбар: стрик + монеты (данные из бэкенда /mobile/balance/info) ── */
 .sb__balance {
   display: flex;
@@ -5857,38 +5951,6 @@ textarea {
 .sb__stat-num--hot,
 .sb__stat-num--coin {
   color: #ea4f4f;
-}
-
-/* Практика: при фильтре по типу — карточки сеткой на всю ширину.
-   Узкие карточки — плотная авто-раскладка, широкие сказки — от 300px;
-   repeat(3) ниже — фолбэк для браузеров без :has(). */
-.pp-rail--grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  overflow-x: visible;
-  padding-bottom: 0;
-}
-.pp-rail--grid > * {
-  width: auto;
-  min-width: 0;
-  flex: initial;
-  max-width: none;
-}
-/* Портретные/узкие карточки — плотнее */
-.pp-rail--grid:has(.pp-mcard),
-.pp-rail--grid:has(.pp-bcard),
-.pp-rail--grid:has(.pp-scard) {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-}
-/* Широкие карточки сказок */
-.pp-rail--grid:has(.pp-tcard) {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-@media (max-width: 1100px) {
-  .pp-rail--grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* ── Практика: шапка детальных страниц (книжки, рилсы) ── */
@@ -6264,34 +6326,6 @@ textarea {
   .bk-ov__cover { display: block; width: min(220px, 62%); margin: 0 auto; }
   .bk-ov__title { font-size: 22px; }
   .bk-read { gap: 24px; }
-}
-
-/* Сброс дефолтных стилей <button> у карточек-кнопок практики
-   (мемы/книги/ситуации) — убираем рамку, фон, паддинг и обводку фокуса. */
-.pp-mcard,
-.pp-scard,
-.pp-bcard {
-  appearance: none;
-  border: none;
-  background: transparent;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.pp-mcard:focus,
-.pp-scard:focus,
-.pp-bcard:focus {
-  outline: none;
-}
-.pp-mcard:focus-visible,
-.pp-scard:focus-visible,
-.pp-bcard:focus-visible {
-  outline: 2px solid #b79cf5;
-  outline-offset: 2px;
-  border-radius: 12px;
 }
 
 /* ── Анимации переходов ──────────────────────────────────────────────────────
@@ -8154,12 +8188,6 @@ textarea {
     overflow: visible;
   }
 
-  /* Заголовка «Практика» над чипами в кадре 4254:2188 нет — сразу строка
-     фильтров под шапкой. */
-  .pp__title {
-    display: none;
-  }
-
   /* Заголовок секции — 24/700 тёмным (в кадре «Аудирование», «Грамматика»). */
   .pp-sec__head h2 {
     font-size: 24px;
@@ -8182,18 +8210,6 @@ textarea {
   .pp-chip--on {
     background: #9047ff;
     color: #fff;
-  }
-
-  /* «Посмотреть все» — прозрачная пилюля 32 с сиреневой обводкой и фиолетовой
-     подписью 14/700, а не серая на белом. */
-  .pp-all {
-    height: 32px;
-    padding: 6px 6px 6px 16px;
-    border: 1px solid #d6bcff;
-    border-radius: 30px;
-    background: none;
-    font-size: 14px;
-    color: #9047ff;
   }
 }
 
@@ -8343,21 +8359,6 @@ textarea {
     color: #181818;
   }
 
-  /* Карточка книжки в сетке: пропорция и радиус из кадра. */
-  .pp-rail--grid .pp-bcard__cover {
-    height: auto;
-    aspect-ratio: 198 / 292;
-    border-radius: 10px;
-  }
-  .pp-rail--grid .pp-bcard__title {
-    margin-top: 8px;
-    font-size: 16px;
-    line-height: 22px;
-  }
-  .pp-bcard__meta {
-    margin-top: 4px;
-  }
-
   /* Поиск по книжкам — тот же прямоугольник r20, что и в грамматике. */
   .pp-search {
     border-radius: 20px;
@@ -8370,22 +8371,6 @@ textarea {
   .pp-search input::placeholder {
     color: #afafaf;
     font-weight: 500;
-  }
-
-  /* Карточка мема: пропорция 198×320 и радиус 10, значок просмотров 14/700. */
-  .pp-thumb--portrait {
-    aspect-ratio: 99 / 160;
-    border-radius: 10px;
-  }
-  .pp-mcard__views {
-    gap: 8px;
-    font-size: 14px;
-  }
-
-  /* В режиме фильтра над сеткой в кадре только чипы — «Посмотреть все»
-     дублирует уже открытый раздел. */
-  .pp-sec:has(.pp-rail--grid) .pp-all {
-    display: none;
   }
 
   /* Плеер рилсов: шапка — белый бар НАД видео (в кадре), а не полупрозрачный
@@ -8646,77 +8631,6 @@ textarea {
    ответе сервера нет (см. /api/books/[id]). */
 .bk-chapter--locked { opacity: 0.55; cursor: not-allowed; }
 .bk-ov__preview { margin: 8px 0 0; font-size: 13px; color: #6b6480; }
-
-/* ── Практика: карточки Комиксов ── */
-/* Обложка портретная и «как книжная»: тот же ритм, что у .pp-bcard, но без
-   градиентного фолбэка — у комикса обложка всегда есть (первая страница). */
-/* Карточка — <button>, а браузер центрирует его содержимое по вертикали.
-   В ряду сетки кнопки растягиваются на высоту самой высокой карточки, и у
-   остальных обложка съезжала вниз на полразницы (ряд «шёл не ровно»).
-   Колоночный флекс отключает это центрирование, а счётчик страниц прижат
-   к низу — тогда и обложки, и нижняя строка стоят на одной линии. */
-.pp-ccard {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 150px;
-  width: 150px;
-  text-align: left;
-  border: 0;
-  padding: 0;
-  background: none;
-  font-family: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-.pp-ccard__cover {
-  aspect-ratio: 2 / 3;
-  box-shadow: 0 6px 16px rgba(23, 19, 38, 0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.pp-ccard:hover .pp-ccard__cover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(23, 19, 38, 0.26);
-}
-.pp-ccard__title {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-top: 9px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  line-height: 1.25;
-}
-.pp-ccard__author {
-  margin-top: 2px;
-  font-size: 12px;
-  color: #a6a5b2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.pp-ccard__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 6px;
-}
-.pp-ccard__cefr {
-  font-size: 11px;
-  font-weight: 800;
-  color: #9047ff;
-}
-.pp-ccard__pages {
-  margin-top: auto;
-  padding-top: 4px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #8b8a97;
-}
-.pp-rail--grid:has(.pp-ccard) {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-}
 
 /* ── Читалка комикса ── */
 /* Страница вписывается по высоте, а не по ширине: у комикса важна вся

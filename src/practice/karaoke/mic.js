@@ -147,14 +147,21 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
   const mask = new Uint8Array(maskLength(durationSec, stepMs))
   const window5 = []
   let level = 0
+  let voicedNow = false
+  // Пауза дубля: трек стоит, а микрофон слышит, как студент что-то говорит
+  // соседу. В маску это легло бы на одну и ту же клетку (позиция не движется),
+  // но в запись — целиком, и распознавание приписало бы болтовню к песне.
+  let paused = false
 
   const timer = setInterval(() => {
+    if (paused) return
     const rms = rmsOf(analyser, buf)
     // Сглаживание по 5 окнам (ТЗ 8.1): решает большинство, поэтому одиночный
     // щелчок не создаёт «спел», а вдох посреди строки не создаёт паузу.
     window5.push(rms > threshold ? 1 : 0)
     if (window5.length > 5) window5.shift()
     const voiced = window5.reduce((a, b) => a + b, 0) >= 3
+    voicedNow = voiced
     level = Math.min(1, rms / (threshold * 4))
     const pos = positionSec()
     const idx = Math.floor((pos * 1000) / stepMs)
@@ -179,7 +186,29 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
 
   return {
     level: () => level,
+    voiced: () => voicedNow,
     threshold,
+    pause() {
+      paused = true
+      level = 0
+      voicedNow = false
+      try {
+        if (recorder?.state === 'recording') recorder.pause()
+      } catch {
+        /* Safari до 14.5 паузы не умеет — запишется и болтовня, не страшно */
+      }
+    },
+    resume() {
+      // Окно сглаживания — с чистого листа: иначе решение «поёт» тянулось бы
+      // из того, что было до паузы.
+      window5.length = 0
+      paused = false
+      try {
+        if (recorder?.state === 'paused') recorder.resume()
+      } catch {
+        /* см. pause() */
+      }
+    },
     async stop() {
       clearInterval(timer)
       const blob = await new Promise((resolve) => {

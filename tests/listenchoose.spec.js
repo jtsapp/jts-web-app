@@ -388,14 +388,12 @@ test.describe('раскладка', () => {
 })
 
 test.describe('хаб Практики', () => {
-  test('баннер и чип ведут в раздел', async ({ page }) => {
+  test('баннер во вкладке «Аудирование» ведёт в раздел', async ({ page }) => {
     await page.goto('/?screen=practice')
     const banner = page.locator('#sec-listenchoose')
     await expect(banner).toBeVisible({ timeout: 30000 })
-    await expect(banner).toContainText('Слушай и выбирай')
-    await page.locator('.pp-chip', { hasText: 'Слушай и выбирай' }).click()
-    await expect(page.locator('#sec-reading')).toHaveCount(0)
-    await banner.locator('.pp-listen__cta').click()
+    await expect(banner).toContainText('Услышь детали')
+    await banner.locator('.pk-banner__cta').click()
     await expect(page.locator('.lc-head h1')).toContainText('Слушай и выбирай')
   })
 })

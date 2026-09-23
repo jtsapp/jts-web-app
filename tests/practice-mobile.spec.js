@@ -1,21 +1,15 @@
 import { test, expect } from '@playwright/test'
 
 // Мобильная адаптация Практики (вьюпорт 390×844, см. playwright.config.js):
-//   — страница не шире экрана, чипсы-фильтры одной строкой с прокруткой;
-//   — Словарь уходит ПОД ленты (раньше order: -1 ставил его первым);
-//   — баннер «Аудирование» складывается в колонку: CTA на всю ширину,
-//     печать уровня в нижней строке и не перекрывает текст;
-//   — рилсы переключаются вертикальным тач-свайпом;
-//   — кнопки в списке слов дотягивают до тач-размера.
-// Данные и авторизация замоканы — как в practice-vocab.spec.js.
+//   — страница не шире экрана, карточки навыков — сетка 2×2;
+//   — переключатель уровня во всю ширину, выбран уровень ученика;
+//   — пара баннеров складывается в колонку, ленты листаются вбок;
+//   — рилсы переключаются вертикальным тач-свайпом.
+// Данные и авторизация замоканы.
 
 const CLIPS = [
   { id: 1, title: 'Reel A', mediaUrl: '/practice/reel-a.mp4', thumbnailUrl: '', views: 100 },
   { id: 2, title: 'Reel B', mediaUrl: '/practice/reel-b.mp4', thumbnailUrl: '', views: 200 },
-]
-const WORDS = [
-  { id: 1, word: 'window', translation: 'окно', learned: false },
-  { id: 2, word: 'green', translation: 'зелёный', learned: false },
 ]
 const BOOKS = [
   { id: 1, title: 'Alice in Wonderland', author: 'Lewis Carroll', level: 'A2', coverImageUrl: '' },
@@ -33,7 +27,6 @@ async function mockPracticeApi(page) {
   await page.route('**/mobile/media-clips', (route) => route.fulfill(json(CLIPS)))
   await page.route('**/mobile/situativki*', (route) => route.fulfill(json([])))
   await page.route('**/mobile/audio-lessons', (route) => route.fulfill(json(BOOKS)))
-  await page.route('**/mobile/saved-words', (route) => route.fulfill(json(WORDS)))
   await page.route('**/mobile/balance/info', (route) => route.fulfill(json({ coins: 0, streak: 0 })))
 }
 
@@ -42,13 +35,13 @@ async function openPractice(page) {
   await page.goto('/')
   await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
   await page.goto('/?screen=practice')
-  await expect(page.locator('.pp')).toBeVisible({ timeout: 15000 })
+  await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
 }
 
 test.describe('Практика — мобильная адаптация', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) > 760, 'только узкий вьюпорт')
 
-  test('страница не шире экрана; чипсы — одна строка с прокруткой', async ({ page }) => {
+  test('страница не шире экрана; навыки — сетка 2×2', async ({ page }) => {
     await openPractice(page)
 
     // Нет горизонтального скролла всей страницы.
@@ -57,47 +50,35 @@ test.describe('Практика — мобильная адаптация', () =
     )
     expect(overflow).toBeLessThanOrEqual(1)
 
-    // Чипсы не переносятся (высота одной строки), а прокручиваются.
-    const chips = page.locator('.pp-chips')
-    const box = await chips.boundingBox()
-    expect(box.height).toBeLessThan(60)
-    const scrollable = await chips.evaluate((el) => el.scrollWidth > el.clientWidth)
+    const cards = page.locator('.pk-skill')
+    await expect(cards).toHaveCount(4)
+    const [a, b, c] = await Promise.all([0, 1, 2].map((i) => cards.nth(i).boundingBox()))
+    expect(Math.abs(a.y - b.y)).toBeLessThan(1)
+    expect(c.y).toBeGreaterThan(a.y + a.height)
+  })
+
+  test('переключатель уровня во всю ширину, выбран уровень ученика', async ({ page }) => {
+    await openPractice(page)
+    const vp = page.viewportSize()
+    const box = await page.locator('.pk-levels').boundingBox()
+    expect(box.width).toBeGreaterThan(vp.width - 34)
+    await expect(page.locator('.pk-levels__btn[aria-checked="true"]')).toHaveText('A2')
+  })
+
+  test('пара баннеров — колонкой, лента сказок листается вбок', async ({ page }) => {
+    await openPractice(page)
+    const first = await page.locator('#sec-listening').boundingBox()
+    const second = await page.locator('#sec-listenchoose').boundingBox()
+    expect(second.y).toBeGreaterThanOrEqual(first.y + first.height)
+    const scrollable = await page
+      .locator('#sec-tales .pk-rail')
+      .evaluate((el) => el.scrollWidth > el.clientWidth)
     expect(scrollable).toBeTruthy()
-  })
-
-  test('Словарь идёт после лент контента, кнопки слов — тач-размера', async ({ page }) => {
-    await openPractice(page)
-
-    // Баннер «Письмо» переиспользует классы .pp-listen — селекторы прижаты
-    // к секции аудирования, иначе strict mode ловит два баннера.
-    const banner = await page.locator('#sec-listening .pp-listen__card').boundingBox()
-    const side = await page.locator('.pp__side').boundingBox()
-    expect(side.y).toBeGreaterThan(banner.y + banner.height)
-
-    await expect(page.locator('.pp-word')).toHaveCount(2, { timeout: 10000 })
-    const say = await page.locator('.pp-word__say').first().boundingBox()
-    expect(say.height).toBeGreaterThanOrEqual(36)
-  })
-
-  test('баннер аудирования: CTA на всю ширину, печать уровня ниже текста', async ({ page }) => {
-    await openPractice(page)
-
-    // Те же классы теперь и у баннера «Письмо» — берём именно аудирование.
-    const listen = page.locator('#sec-listening')
-    const card = await listen.locator('.pp-listen__card').boundingBox()
-    const cta = await listen.locator('.pp-listen__cta').boundingBox()
-    const aside = await listen.locator('.pp-listen__aside').boundingBox()
-
-    // CTA растянута почти на всю карточку (карточка минус паддинги).
-    expect(cta.width).toBeGreaterThan(card.width * 0.8)
-    // Строка с печатью уровня — под кнопкой, а не поверх текста.
-    expect(aside.y).toBeGreaterThan(cta.y + cta.height)
-    await expect(listen.locator('.pp-listen__level')).toHaveText('A2')
   })
 
   test('рилсы: полноэкранная TikTok-лента со snap-скроллом, без стрелок', async ({ page }) => {
     await openPractice(page)
-    await page.locator('.pp-mcard').first().click()
+    await page.locator('.pk-meme').first().click()
 
     // Ждём конца входной анимации (scr-in двигает .rl по Y) — иначе замер
     // геометрии попадает в середину transform-а.
@@ -189,19 +170,19 @@ test.describe('Письмо — мобильная адаптация', () => {
 test.describe('Практика — десктоп не пострадал', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) <= 760, 'только широкий вьюпорт')
 
-  test('Словарь — правая колонка рядом с контентом', async ({ page }) => {
+  test('навыки — четыре в ряд, баннеры аудирования — парой', async ({ page }) => {
     await openPractice(page)
-
-    const center = await page.locator('.pp__center').boundingBox()
-    const side = await page.locator('.pp__side').boundingBox()
-    // Колонки стоят рядом: словарь правее контента и на той же высоте.
-    expect(side.x).toBeGreaterThan(center.x + center.width - 10)
-    expect(Math.abs(side.y - center.y)).toBeLessThan(120)
+    const cards = page.locator('.pk-skill')
+    const boxes = await Promise.all([0, 1, 2, 3].map((i) => cards.nth(i).boundingBox()))
+    for (const b of boxes) expect(Math.abs(b.y - boxes[0].y)).toBeLessThan(1)
+    const first = await page.locator('#sec-listening').boundingBox()
+    const second = await page.locator('#sec-listenchoose').boundingBox()
+    expect(Math.abs(first.y - second.y)).toBeLessThan(1)
   })
 
   test('рилсы: кнопки вверх/вниз остались и листают ленту', async ({ page }) => {
     await openPractice(page)
-    await page.locator('.pp-mcard').first().click()
+    await page.locator('.pk-meme').first().click()
 
     // На десктопе лента в кадре 9:16 (не оверлей), стрелки видны.
     await expect(page.locator('.rl__nav')).toBeVisible()

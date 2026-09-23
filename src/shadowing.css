@@ -294,22 +294,8 @@
 .sh-dev__area:focus { border-color: var(--sh-border); outline: none; }
 .sh-dev__row { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 12px; }
 
-/* карточка урока в ленте Практики (рендерится в PracticePage; классы .sh-lcard,
-   чтобы все стили Shadowing жили здесь и styles.css не трогать) */
-.sh-lcard { flex: 0 0 220px; text-decoration: none; color: inherit; display: block; text-align: left; border: 0; background: none; padding: 0; cursor: pointer; }
-.sh-lcard__thumb { aspect-ratio: 16 / 9; border-radius: 14px; }
-.sh-lcard:hover .pp-play,
-.sh-lcard:focus-visible .pp-play { opacity: 1; }
-.sh-lcard__title { font-size: 14px; font-weight: 700; color: var(--ink, #171326); margin-top: 8px; line-height: 1.3; }
-.sh-lcard__meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
-.sh-lcard__speaker { font-size: 12.5px; color: var(--sh-ink-sub); }
-.sh-lcard__count { font-size: 12px; font-weight: 700; color: var(--sh-purple); background: var(--sh-soft); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
-.sh-lcard__count--mastered { color: #8a6d00; background: #fbf1c9; }
-.pp-rail--grid .sh-lcard { flex: none; width: 100%; }
-
 /* мобильная вёрстка */
 @media (max-width: 480px) {
-  .sh-lcard { flex: 0 0 200px; }
   .sh { padding: 6px 14px 44px; }
   .sh-card { padding: 14px; border-radius: 18px; }
   .sh-seg__txt { font-size: 15px; }

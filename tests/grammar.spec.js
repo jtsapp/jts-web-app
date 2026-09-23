@@ -10,7 +10,9 @@ import { test, expect } from '@playwright/test'
 
 const openCatalog = async (page) => {
   await page.goto('/?screen=practice')
-  await page.locator('.pp-chip', { hasText: 'Грамматика' }).click()
+  // Грамматика живёт во вкладке «Письмо»; полный каталог — по «Посмотреть все».
+  await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
+  await page.locator('#sec-grammar .pk-all').click()
   await expect(page.locator('.gr-catalog .gr-gcard').first()).toBeVisible()
 }
 
@@ -162,11 +164,12 @@ test.describe('Грамматика — каталог', () => {
     await expect(page.locator('.gr-act')).toBeVisible()
   })
 
-  test('рейл «Грамматика» в общем виде ведёт в каталог', async ({ page }) => {
+  test('лента юнитов во вкладке «Письмо» ведёт в каталог', async ({ page }) => {
     await page.goto('/?screen=practice')
-    const rail = page.locator('.pp-sec', { has: page.locator('h2:text("Грамматика")') })
-    await expect(rail.locator('.gr-levelpill')).toContainText('Уровень')
-    await rail.locator('.pp-all').click()
+    await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
+    const rail = page.locator('#sec-grammar')
+    await expect(rail.locator('.pk-tile').first()).toContainText('Unit 1')
+    await rail.locator('.pk-all').click()
     await expect(page.locator('.gr-catalog .gr-levels')).toBeVisible()
   })
 })
