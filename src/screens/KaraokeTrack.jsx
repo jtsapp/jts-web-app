@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { ChevronLeftIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import { saveWord } from '../api.js'
-import { loadLyrics, trackProgress, saveWarmup, saveKaraokeResult } from '../practice/karaoke/karaokeData.js'
+import { loadLyrics, trackProgress, saveKaraokeResult } from '../practice/karaoke/karaokeData.js'
 import { sungSeconds, fullText } from '../practice/karaoke/karaokeShape.js'
 import {
   referenceMask,
@@ -28,19 +28,16 @@ import {
 
 // Экран одного караоке-трека: карточка → режим → результат.
 //
-// Режимов в первой версии два — Warm-up (лексика, без микрофона) и Full Karaoke
-// (цельное исполнение с оценкой). Остальные пять из ТЗ данными уже обеспечены
-// (hotspots/gaps/focus лежат в той же разметке), но экранов у них пока нет.
+// Режим один — Full Karaoke (цельное исполнение с оценкой). Warm-up (лексика
+// по словарю трека) был, но его убрали 23.09.2026 по решению продукта.
+// Остальные пять из ТЗ данными уже обеспечены (hotspots/gaps/focus лежат в той
+// же разметке), но экранов у них пока нет.
 //
 // Почему один компонент, а не экран на режим: у всех стадий общие подсветка
 // строк, аудио-элемент и разметка, и держать их в одном месте дешевле, чем
 // прокидывать через props в три стороны.
 
-const STAGE = { OVERVIEW: 'overview', WARMUP: 'warmup', SING: 'sing', RESULT: 'result' }
-
-// Сколько слов берём в разогрев. ТЗ просит 8–10; если в словаре трека меньше —
-// работаем с тем, что есть, а не прячем режим.
-const WARMUP_LIMIT = 10
+const STAGE = { OVERVIEW: 'overview', SING: 'sing', RESULT: 'result' }
 
 function fmtTime(sec) {
   if (!Number.isFinite(sec)) return '0:00'
@@ -64,25 +61,12 @@ function nextLineIndex(lines, t) {
   return -1
 }
 
-function shuffle(arr, seed = 1) {
-  // Свой генератор, а не Math.random: порядок вариантов не должен меняться на
-  // каждом ре-рендере, иначе кнопки прыгают под пальцем.
-  const a = [...arr]
-  let s = seed
-  for (let i = a.length - 1; i > 0; i--) {
-    s = (s * 1103515245 + 12345) % 2147483648
-    const j = s % (i + 1)
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
 export default function KaraokeTrack({ track, token, onBack, onWordSaved }) {
   const { t, lang } = useI18n()
   const [doc, setDoc] = useState(null)
   const [failed, setFailed] = useState(false)
   const [stage, setStage] = useState(STAGE.OVERVIEW)
-  const [progress, setProgress] = useState(() => ({ stars: 0, best: {}, attempts: 0, warmupDone: false }))
+  const [progress, setProgress] = useState(() => ({ stars: 0, best: {}, attempts: 0 }))
 
   useEffect(() => {
     let alive = true
@@ -138,20 +122,7 @@ export default function KaraokeTrack({ track, token, onBack, onWordSaved }) {
           track={track}
           doc={doc}
           progress={progress}
-          onWarmup={() => setStage(STAGE.WARMUP)}
           onSing={() => setStage(STAGE.SING)}
-        />
-      )}
-      {stage === STAGE.WARMUP && (
-        <Warmup
-          track={track}
-          doc={doc}
-          onDone={() => {
-            saveWarmup(track.slug)
-            setProgress(trackProgress(track.slug))
-            setStage(STAGE.OVERVIEW)
-          }}
-          onExit={() => setStage(STAGE.OVERVIEW)}
         />
       )}
       {stage === STAGE.SING && (
@@ -184,9 +155,8 @@ function Stars({ n }) {
   )
 }
 
-function Overview({ track, doc, progress, onWarmup, onSing }) {
+function Overview({ track, doc, progress, onSing }) {
   const { t } = useI18n()
-  const hasVocab = doc.vocab.length > 0
   return (
     <div className="kk__overview">
       <div className="kk__head">
@@ -218,23 +188,6 @@ function Overview({ track, doc, progress, onWarmup, onSing }) {
       </div>
 
       <div className="kk__modes">
-        <button
-          type="button"
-          className="kk__mode"
-          onClick={onWarmup}
-          disabled={!hasVocab}
-          title={hasVocab ? '' : t('karaoke.warmupUnavailable')}
-        >
-          <span className="kk__modeIcon">📖</span>
-          <span className="kk__modeBody">
-            <span className="kk__modeName">{t('karaoke.warmup')}</span>
-            <span className="kk__modeDesc">
-              {hasVocab ? t('karaoke.warmupDesc', { n: doc.vocab.length }) : t('karaoke.warmupUnavailable')}
-            </span>
-          </span>
-          <span className="kk__modeState">{progress.warmupDone ? '✓' : ''}</span>
-        </button>
-
         <button type="button" className="kk__mode" onClick={onSing}>
           <span className="kk__modeIcon">🎤</span>
           <span className="kk__modeBody">
@@ -252,141 +205,6 @@ function Overview({ track, doc, progress, onWarmup, onSing }) {
   )
 }
 
-// ── Warm-up ─────────────────────────────────────────────────────────────────
-
-/**
- * Разогрев: три шага по ТЗ 7.1 — знакомство, сопоставление, выбор на слух.
- *
- * Третий шаг в ТЗ описан как «выбрать слово на слух из четырёх», но
- * отдельной озвучки слов у трека нет и синтезировать её ради разогрева
- * незачем: играем фрагмент строки из самой песни и спрашиваем, какое из
- * четырёх слов в ней прозвучало. Задача та же (аудирование), материал —
- * настоящая связная речь, и это ещё и бесплатно.
- */
-function Warmup({ track, doc, onDone, onExit }) {
-  const { t } = useI18n()
-  const [step, setStep] = useState(0) // 0 — знакомство, 1 — пары, 2 — на слух
-  const [i, setI] = useState(0)
-  const [picked, setPicked] = useState(null)
-  const audioRef = useRef(null)
-  const stopAtRef = useRef(0)
-
-  const words = useMemo(() => doc.vocab.slice(0, WARMUP_LIMIT), [doc])
-  const byLine = useMemo(() => new Map(doc.lines.map((l) => [l.id, l])), [doc])
-
-  // Фрагмент строки, в которой слово встретилось. Останавливаем по таймеру
-  // rAF, а не по setTimeout: пауза должна попасть в конец строки, а не через
-  // «примерно столько же» после старта.
-  const playLine = useCallback((word) => {
-    const line = byLine.get(word.line)
-    const audio = audioRef.current
-    if (!line || !audio) return
-    audio.currentTime = Math.max(0, line.start - 0.15)
-    stopAtRef.current = line.end + 0.1
-    audio.play().catch(() => {})
-    const tick = () => {
-      if (!audioRef.current) return
-      if (audioRef.current.currentTime >= stopAtRef.current) {
-        audioRef.current.pause()
-        return
-      }
-      requestAnimationFrame(tick)
-    }
-    requestAnimationFrame(tick)
-  }, [byLine])
-
-  useEffect(() => () => audioRef.current?.pause(), [])
-
-  const current = words[i]
-  const options = useMemo(() => {
-    if (!current) return []
-    const others = words.filter((w) => w.w !== current.w)
-    return shuffle([current, ...shuffle(others, i + 7).slice(0, 3)], i + 1)
-  }, [current, words, i])
-
-  const advance = () => {
-    setPicked(null)
-    if (i + 1 < words.length) {
-      setI(i + 1)
-      return
-    }
-    setI(0)
-    if (step + 1 <= 2) setStep(step + 1)
-    else onDone()
-  }
-
-  if (!current) return <div className="kk__empty">{t('karaoke.warmupUnavailable')}</div>
-
-  const answerKey = step === 1 ? 'ru' : 'w'
-  const correct = picked && picked.w === current.w
-
-  return (
-    <div className="kk__warm">
-      <audio ref={audioRef} src={track.audioUrl} preload="auto" />
-      <div className="kk__warmHead">
-        <span className="kk__warmStep">{t(`karaoke.warmStep${step + 1}`)}</span>
-        <span className="kk__warmCount">
-          {i + 1} / {words.length}
-        </span>
-        <button type="button" className="kk__warmExit" onClick={onExit}>
-          {t('karaoke.exit')}
-        </button>
-      </div>
-
-      {step === 0 && (
-        <div className="kk__card">
-          <div className="kk__cardWord">{current.w}</div>
-          {current.ru && <div className="kk__cardTr">{current.ru}</div>}
-          {byLine.get(current.line) && (
-            <>
-              <div className="kk__cardLine">{byLine.get(current.line).text}</div>
-              <button type="button" className="kk__listen" onClick={() => playLine(current)}>
-                ▶ {t('karaoke.listenLine')}
-              </button>
-            </>
-          )}
-          <button type="button" className="kk__next" onClick={advance}>
-            {t('karaoke.next')}
-          </button>
-        </div>
-      )}
-
-      {step > 0 && (
-        <div className="kk__card">
-          {step === 1 ? (
-            <div className="kk__cardWord">{current.w}</div>
-          ) : (
-            <button type="button" className="kk__listen kk__listen--big" onClick={() => playLine(current)}>
-              ▶ {t('karaoke.listenAgain')}
-            </button>
-          )}
-          <div className="kk__opts">
-            {options.map((o) => {
-              const state = !picked ? '' : o.w === current.w ? ' kk__opt--ok' : o.w === picked.w ? ' kk__opt--bad' : ''
-              return (
-                <button
-                  key={o.w}
-                  type="button"
-                  className={`kk__opt${state}`}
-                  disabled={Boolean(picked)}
-                  onClick={() => setPicked(o)}
-                >
-                  {o[answerKey] || o.w}
-                </button>
-              )
-            })}
-          </div>
-          {picked && (
-            <button type="button" className="kk__next" onClick={advance}>
-              {correct ? t('karaoke.right') : t('karaoke.wrong')} — {t('karaoke.next')}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Full Karaoke ────────────────────────────────────────────────────────────
 
 function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
@@ -399,8 +217,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
   const [micError, setMicError] = useState('')
   const [pos, setPos] = useState(0)
   const [level, setLevel] = useState(0)
-  const [showTranslation, setShowTranslation] = useState(false)
-  const [translationUsed, setTranslationUsed] = useState(false)
   const [result, setResult] = useState(null)
 
   const audioRef = useRef(null)
@@ -463,7 +279,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
       pace,
       hasLyrics: Boolean(text),
       instrumental: useInstrumental && Boolean(track.instrumentalUrl),
-      translationShown: translationUsed,
     })
     const weak = weakestLines(perLine, lines)
     const res = {
@@ -480,7 +295,7 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
     setResult(res)
     setPhase('result')
     onScored({ score, weakLines: weak.map((w) => w.id) })
-  }, [doc, lines, onExit, onScored, stopAll, track.instrumentalUrl, translationUsed, useInstrumental])
+  }, [doc, lines, onExit, onScored, stopAll, track.instrumentalUrl, useInstrumental])
 
   const start = async () => {
     setMicError('')
@@ -637,7 +452,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
           {cur ? <LineText line={cur} pos={pos} /> : countdown > 0 ? '· · ·' : ''}
         </div>
         <div className="kk__line kk__line--next">{next?.text || ''}</div>
-        {showTranslation && <div className="kk__lineRu">{cur?.ru || ''}</div>}
       </div>
 
       <div className="kk__controls">
@@ -646,19 +460,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
             <div className="kk__micFill" style={{ width: `${Math.round(level * 100)}%` }} />
           </div>
         )}
-        <button
-          type="button"
-          className="kk__ghost"
-          onClick={() => {
-            setShowTranslation((v) => !v)
-            // Штраф ×0.95 ставим за сам факт подсматривания, поэтому флаг
-            // одноразовый: выключить перевод обратно и «отменить» его нельзя.
-            if (!showTranslation) setTranslationUsed(true)
-          }}
-          aria-pressed={showTranslation}
-        >
-          {showTranslation ? t('karaoke.hideTranslation') : t('karaoke.showTranslation')}
-        </button>
         <button type="button" className="kk__ghost" onClick={finish}>
           {noScore ? t('karaoke.exit') : t('karaoke.finish')}
         </button>
