@@ -19,6 +19,8 @@ import {
   deleteSavedWord,
 } from '../api.js'
 import { TALES } from '../data/practiceLibrary.js'
+import { playTts } from '../lib/speech.js'
+import { VOICE } from '../lib/ttsShared.js'
 import { SITUATION_LEVELS } from '../practice/situations/levels.js'
 import { readSituationsDone } from '../practice/situations/situationsProgress.js'
 import { WORKBOOK_LEVELS } from '../practice/workbooks/levels.js'
@@ -395,8 +397,13 @@ function WritingBanner({ userLevel = 'A1', onAll, onStart }) {
   )
 }
 
-// Проговаривание слова браузером (бэкенд не отдаёт аудио для словаря)
+// Проговаривание слова: бэкенд не отдаёт аудио для словаря, поэтому читает
+// Soniox (/api/tts), а голос устройства — только если сервер не ответил.
 function speak(word) {
+  playTts(word, { voice: VOICE.us, speed: 0.9, onFail: (why) => why !== 'empty' && speakDevice(word) })
+}
+
+function speakDevice(word) {
   try {
     const u = new SpeechSynthesisUtterance(word)
     u.lang = 'en-US'

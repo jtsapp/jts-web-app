@@ -81,3 +81,73 @@ describe('трансляция аудио классу', () => {
     expect(onBlocked).not.toHaveBeenCalled()
   })
 })
+
+// Слово, которое учитель транслирует классу, читает Soniox тем же элементом
+// трансляции (с 23.09.2026); синтез устройства — только если сервер не ответил.
+describe('трансляция слова классу', () => {
+  function stubSynth() {
+    const spoken = []
+    vi.stubGlobal('SpeechSynthesisUtterance', class { constructor(text) { this.text = text } })
+    window.speechSynthesis = { speak: (u) => spoken.push(u), cancel: vi.fn() }
+    return spoken
+  }
+  afterEach(() => { delete window.speechSynthesis })
+
+  it('играет запись Soniox в разблокированном элементе, синтез молчит', async () => {
+    const created = stubAudio(() => Promise.resolve())
+    const spoken = stubSynth()
+    const { unlockBroadcastAudio, playBroadcastAudio } = await import('./audioReport.js')
+    const onStarted = vi.fn()
+
+    unlockBroadcastAudio()
+    playBroadcastAudio({ kind: 'tts', text: 'water', accent: 'GB' }, { onStarted })
+    await Promise.resolve(); await Promise.resolve()
+
+    expect(created).toHaveLength(1)
+    expect(created[0].src).toBe('/api/tts?v=Freya&l=en&s=0.9&t=water')
+    expect(onStarted).toHaveBeenCalledOnce()
+    expect(spoken.filter((u) => u.text.trim())).toHaveLength(0)
+  })
+
+  it('Soniox не ответил — слово читает синтез устройства', async () => {
+    stubAudio(function () {
+      if (String(this.src).startsWith('/api/tts')) return Promise.reject(new DOMException('503', 'NotSupportedError'))
+      return Promise.resolve()
+    })
+    const spoken = stubSynth()
+    const { playBroadcastAudio } = await import('./audioReport.js')
+    const onBlocked = vi.fn()
+
+    playBroadcastAudio({ kind: 'tts', text: 'water' }, { onBlocked })
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
+
+    expect(spoken.map((u) => u.text)).toEqual(['water'])
+    expect(spoken[0].lang).toBe('en-US')
+  })
+
+  it('нет жеста — просим «Включить звук», а не читаем синтезом', async () => {
+    stubAudio(() => Promise.reject(new DOMException('gesture', 'NotAllowedError')))
+    const spoken = stubSynth()
+    const { playBroadcastAudio } = await import('./audioReport.js')
+    const onBlocked = vi.fn()
+    const evt = { kind: 'tts', text: 'water' }
+
+    playBroadcastAudio(evt, { onBlocked })
+    await Promise.resolve(); await Promise.resolve(); await Promise.resolve()
+
+    expect(onBlocked).toHaveBeenCalledWith(evt)
+    expect(spoken).toHaveLength(0)
+  })
+
+  it('после слова дорожка-файл меняет источник, а не продолжает слово', async () => {
+    const created = stubAudio(() => Promise.resolve())
+    stubSynth()
+    const { playBroadcastAudio } = await import('./audioReport.js')
+
+    playBroadcastAudio({ kind: 'tts', text: 'water' })
+    playBroadcastAudio({ kind: 'file', url: '/course/a1/audio/x.mp3' })
+
+    expect(created).toHaveLength(1)
+    expect(created[0].src).toBe('/course/a1/audio/x.mp3')
+  })
+})

@@ -6,6 +6,8 @@ import { saveWord } from '../api.js'
 import { useI18n } from '../i18n.jsx'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
 import { reportAudio } from '../screens/live/audioReport.js'
+import { playTts, stopTts } from '../lib/speech.js'
+import { VOICE } from '../lib/ttsShared.js'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../lib/wordTranslate.js'
 import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
 import TapText from '../screens/workspace/TapText.jsx'
@@ -60,8 +62,9 @@ const gapIsRight = (item, value) => answerMatches(value, item.answers, gapCue(it
 const gapCue = (item) => `${item.before || ''} ${item.after || ''}`
 
 // Английское слово вслух. Сначала — записанный файл (scripts/make-lesson-audio.js),
-// и только если записи нет — синтез браузера, каким слово произносил исходный
-// курс (sayWord / sayText).
+// если записи нет — Soniox тем же голосом, каким сделаны записи (Owen), и
+// только если сервер не ответил — синтез браузера, каким слово произносил
+// исходный курс (sayWord / sayText).
 //
 // Порядок именно такой, потому что браузерный синтез — лотерея: голос и
 // качество зависят от того, что стоит в системе, а на Android для en-US его
@@ -85,12 +88,26 @@ function speakEnglish(text, { src = null, rate = 1 } = {}) {
     // разбирательства «на телефоне голос хороший, на компьютере роботный» —
     // там браузер держал в кэше старую копию данных, где записи ещё не было.
     liveAudio.play().catch((e) => {
-      console.warn('[lesson] запись не проиграла, читаю синтезом:', src, e?.name || e)
-      speakSynth(text, rate)
+      console.warn('[lesson] запись не проиграла, читаю Soniox:', src, e?.name || e)
+      speakSoniox(text, rate)
     })
     return
   }
-  speakSynth(text, rate)
+  speakSoniox(text, rate)
+}
+
+// Темп записей курса — 0.85 (make-lesson-audio.js); «медленно» у Soniox упирается
+// в нижнюю границу провайдера 0.7, как ни проси 0.6.
+function speakSoniox(text, rate) {
+  playTts(text, {
+    voice: VOICE.course,
+    speed: rate < 1 ? 0.7 : 0.85,
+    onFail: (why) => {
+      if (why === 'empty') return
+      console.warn('[lesson] Soniox не ответил, читаю синтезом:', why)
+      speakSynth(text, rate)
+    },
+  })
 }
 
 function speakSynth(text, rate) {
@@ -106,6 +123,7 @@ function speakSynth(text, rate) {
 // копится — слово звучит через несколько секунд после тапа, уже не своё.
 function stopSpeaking() {
   if (typeof window === 'undefined') return
+  stopTts()
   window.speechSynthesis?.cancel()
   if (liveAudio) {
     liveAudio.pause()

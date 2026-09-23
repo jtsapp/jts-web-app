@@ -6,7 +6,12 @@
 //
 // Ported from the relevant slice of felix lib/voice.ts. The server-voice
 // (Gemini TTS) leg of speakListeningAudio is dropped — this app has no Gemini
-// key — so the fallback chain is ElevenLabs → browser SpeechSynthesis.
+// key. Цепочка: ElevenLabs → Soniox (/api/tts) → браузерный синтез. Soniox
+// встал перед синтезом 23.09.2026: голос устройства на Windows и Android —
+// лотерея, а без ключа ElevenLabs Listening читал именно он.
+
+import { playTts, stopTts, unlockSpeech } from './speech.js'
+import { VOICE } from './ttsShared.js'
 
 function getAudioContextCtor() {
   if (typeof window === 'undefined') return null
@@ -108,6 +113,7 @@ function stopServerAudio() {
 export function cancelSpeech() {
   if (typeof window === 'undefined') return
   if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+  stopTts()
   stopServerAudio()
 }
 
@@ -147,6 +153,22 @@ function createGestureUnlockedAudio() {
 // фолбэк несработавшим. С запасом больше старта локального голоса и холодного
 // старта сетевых голосов Chrome — чтобы не отбирать звук у десктопа, где он есть.
 const SPEECH_START_TIMEOUT_MS = 2000
+
+// Soniox — первый запасной голос. Промис решается на СТАРТЕ звука (true) или
+// на провале (false): экран Listening списывает прослушивание только за
+// зазвучавший звук, поэтому ждать конца реплики тут нельзя.
+function speakSoniox(text, opts) {
+  return new Promise((resolve) => {
+    playTts(text, {
+      voice: VOICE.us,
+      speed: 0.95,
+      volume: opts.volume,
+      onStart: () => resolve(true),
+      onEnd: () => opts.onEnd?.(),
+      onFail: () => resolve(false),
+    })
+  })
+}
 
 // Browser SpeechSynthesis fallback, so a learner without ElevenLabs configured
 // still hears the clip.
@@ -204,14 +226,15 @@ async function speakBrowser(text, opts) {
 
 /**
  * Play a Listening clip via the low-latency ElevenLabs route
- * (/api/listening-audio), falling back to browser TTS so the learner always
- * hears the prompt. Returns which path played, or "none" if nothing did.
+ * (/api/listening-audio), falling back to Soniox and then browser TTS so the
+ * learner always hears the prompt. Returns which path played, or "none" if
+ * nothing did.
  *
  * "fallback" означает, что браузерный синтез ПОДТВЕРДИЛ начало речи (см.
  * speakBrowser), а не просто принял её в очередь. На это опирается экран
  * Listening: он списывает прослушивание только за звук, который зазвучал.
  *
- * @returns {Promise<"eleven" | "fallback" | "none">}
+ * @returns {Promise<"eleven" | "soniox" | "fallback" | "none">}
  */
 export async function speakListeningAudio(text, opts = {}) {
   if (!text.trim()) return 'none'
@@ -224,6 +247,11 @@ export async function speakListeningAudio(text, opts = {}) {
     // webview), сбой обязан уйти в общий catch и вернуть код возврата, а не
     // отклонённый промис — вызывающий его не ловит и кнопка залипнет.
     const audio = createGestureUnlockedAudio()
+    // Запасной Soniox играет своим элементом (src/lib/speech.js) — его тоже
+    // разблокируем сейчас, после похода в сеть жеста уже не будет. Прежнюю
+    // его реплику гасим: иначе она звучала бы поверх новой.
+    stopTts()
+    unlockSpeech()
     // Под общее владение модуля сразу, а не только когда придёт звук: если
     // сеть не ответит, элемент с тишиной погасит хвост функции или следующее
     // нажатие, а не «как-нибудь сам».
@@ -261,6 +289,7 @@ export async function speakListeningAudio(text, opts = {}) {
   // Ни один серверный путь не сыграл — гасим разблокированную тишину, иначе
   // она осталась бы висеть в currentAudio до следующего нажатия.
   stopServerAudio()
+  if (await speakSoniox(text, opts)) return 'soniox'
   return (await speakBrowser(text, opts)) ? 'fallback' : 'none'
 }
 
@@ -333,7 +362,7 @@ export async function playTutorSample(tutor, opts = {}) {
  * @param {'luna'|'dexter'|'spark'} tutor
  * @param {string} text
  * @param {{ lang?: 'en'|'ru'|'kz', volume?: number, onEnd?: () => void }} [opts]
- * @returns {Promise<"tutor" | "fallback" | "none">}
+ * @returns {Promise<"tutor" | "soniox" | "fallback" | "none">}
  */
 export async function speakTutorVoice(tutor, text, opts = {}) {
   if (!text.trim()) return 'none'
@@ -346,6 +375,11 @@ export async function speakTutorVoice(tutor, text, opts = {}) {
     // webview), сбой обязан уйти в общий catch и вернуть код возврата, а не
     // отклонённый промис — вызывающий его не ловит и кнопка залипнет.
     const audio = createGestureUnlockedAudio()
+    // Запасной Soniox играет своим элементом (src/lib/speech.js) — его тоже
+    // разблокируем сейчас, после похода в сеть жеста уже не будет. Прежнюю
+    // его реплику гасим: иначе она звучала бы поверх новой.
+    stopTts()
+    unlockSpeech()
     // Под общее владение модуля сразу, а не только когда придёт звук: если
     // сеть не ответит, элемент с тишиной погасит хвост функции или следующее
     // нажатие, а не «как-нибудь сам».
@@ -383,5 +417,6 @@ export async function speakTutorVoice(tutor, text, opts = {}) {
   // Ни один серверный путь не сыграл — гасим разблокированную тишину, иначе
   // она осталась бы висеть в currentAudio до следующего нажатия.
   stopServerAudio()
+  if (await speakSoniox(text, opts)) return 'soniox'
   return (await speakBrowser(text, opts)) ? 'fallback' : 'none'
 }
