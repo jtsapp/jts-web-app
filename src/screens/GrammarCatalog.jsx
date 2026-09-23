@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { SearchIcon, ChevronRightCircleIcon } from '../components/icons.jsx'
+import { SearchIcon } from '../components/icons.jsx'
 import { useI18n } from '../i18n.jsx'
 import {
   GRAMMAR_LEVELS,
@@ -86,34 +86,6 @@ export function GrammarCard({ unit, done = false, picked = false, pickMode = fal
         </span>
       )}
     </button>
-  )
-}
-
-// Горизонтальный рейл «Грамматика» для вида «Все» Практики: заголовок + пилюля
-// уровня + «Посмотреть все» + карточки юнитов курса пользователя.
-export function GrammarRail({ index, courseCode, levelLabel, onOpen, onSeeAll }) {
-  const { t } = useI18n()
-  const level = index && index[courseCode]
-  const units = level ? level.units.slice(0, 12) : []
-  const done = useDoneUnits(courseCode)
-  if (!units.length) return null
-  return (
-    <section className="pp-sec">
-      <div className="pp-sec__head">
-        <h2>{t('practice.chip.grammar')}</h2>
-        <div className="pp-sec__tools">
-          <span className="gr-levelpill">{t('practice.grammar.level', { label: levelLabel })}</span>
-          <button className="pp-all" onClick={onSeeAll}>
-            {t('practice.seeAll')} <ChevronRightCircleIcon size={18} />
-          </button>
-        </div>
-      </div>
-      <div className="pp-rail">
-        {units.map((u) => (
-          <GrammarCard key={u.id} unit={u} done={done.has(u.id)} onOpen={onOpen} />
-        ))}
-      </div>
-    </section>
   )
 }
 
