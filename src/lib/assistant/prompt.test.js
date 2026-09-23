@@ -96,6 +96,22 @@ describe('контекст вопроса', () => {
     expect(buildContextBlock({ user: {}, screen: { id: null, text: '' }, lang: 'ru' })).toContain('экран не удалось прочитать')
   })
 
+  it('без профиля ученика блока с ним просто нет — не выдумывает пустоту', () => {
+    const block = buildContextBlock({ user: {}, screen: { id: null, text: '' }, lang: 'ru' })
+    expect(block).not.toContain('Профиль ученика')
+  })
+
+  it('профиль ученика едет отдельной подписанной строкой', () => {
+    const block = buildContextBlock({
+      user: {},
+      screen: { id: null, text: '' },
+      lang: 'ru',
+      studentContext: 'Домашка (1 к сроку на этой неделе): «Эссе» — до 2026-09-25.',
+    })
+    expect(block).toContain('Профиль ученика (для плана и советов; чего здесь нет, того не знаешь):')
+    expect(block).toContain('«Эссе» — до 2026-09-25.')
+  })
+
   // Контекст только у последнего вопроса: снимки прошлых ходов не копятся в
   // истории, и модель видит текущий экран, а не тот, что был три вопроса назад.
   it('приклеивается только к последнему вопросу', () => {
@@ -118,6 +134,17 @@ describe('контекст вопроса', () => {
     const messages = [{ role: 'user', content: 'q' }]
     buildTurns({ messages, user: {}, screen: { text: '' }, lang: 'ru' })
     expect(messages[0].content).toBe('q')
+  })
+
+  it('studentContext доезжает через buildTurns до вопроса', () => {
+    const turns = buildTurns({
+      messages: [{ role: 'user', content: 'дай план' }],
+      user: {},
+      screen: { text: '' },
+      lang: 'ru',
+      studentContext: 'Уровень курса: B1, цель B2.',
+    })
+    expect(turns[0].content).toContain('Уровень курса: B1, цель B2.')
   })
 })
 

@@ -56,6 +56,7 @@ describe('помощник по сайту', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Помощник' }))
     expect(screen.getByRole('dialog', { name: 'Помощник JTS' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Почему мой ответ неверный?' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Дай план на неделю' })).toBeTruthy()
   })
 
   it('отправляет вопрос со снимком экрана и стримит ответ', async () => {
