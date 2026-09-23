@@ -399,8 +399,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
   const [micError, setMicError] = useState('')
   const [pos, setPos] = useState(0)
   const [level, setLevel] = useState(0)
-  const [showTranslation, setShowTranslation] = useState(false)
-  const [translationUsed, setTranslationUsed] = useState(false)
   const [result, setResult] = useState(null)
 
   const audioRef = useRef(null)
@@ -463,7 +461,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
       pace,
       hasLyrics: Boolean(text),
       instrumental: useInstrumental && Boolean(track.instrumentalUrl),
-      translationShown: translationUsed,
     })
     const weak = weakestLines(perLine, lines)
     const res = {
@@ -480,7 +477,7 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
     setResult(res)
     setPhase('result')
     onScored({ score, weakLines: weak.map((w) => w.id) })
-  }, [doc, lines, onExit, onScored, stopAll, track.instrumentalUrl, translationUsed, useInstrumental])
+  }, [doc, lines, onExit, onScored, stopAll, track.instrumentalUrl, useInstrumental])
 
   const start = async () => {
     setMicError('')
@@ -637,7 +634,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
           {cur ? <LineText line={cur} pos={pos} /> : countdown > 0 ? '· · ·' : ''}
         </div>
         <div className="kk__line kk__line--next">{next?.text || ''}</div>
-        {showTranslation && <div className="kk__lineRu">{cur?.ru || ''}</div>}
       </div>
 
       <div className="kk__controls">
@@ -646,19 +642,6 @@ function Sing({ track, doc, token, onExit, onScored, onWordSaved }) {
             <div className="kk__micFill" style={{ width: `${Math.round(level * 100)}%` }} />
           </div>
         )}
-        <button
-          type="button"
-          className="kk__ghost"
-          onClick={() => {
-            setShowTranslation((v) => !v)
-            // Штраф ×0.95 ставим за сам факт подсматривания, поэтому флаг
-            // одноразовый: выключить перевод обратно и «отменить» его нельзя.
-            if (!showTranslation) setTranslationUsed(true)
-          }}
-          aria-pressed={showTranslation}
-        >
-          {showTranslation ? t('karaoke.hideTranslation') : t('karaoke.showTranslation')}
-        </button>
         <button type="button" className="kk__ghost" onClick={finish}>
           {noScore ? t('karaoke.exit') : t('karaoke.finish')}
         </button>

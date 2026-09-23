@@ -263,14 +263,12 @@ export function medalFor(score) {
  * ноль за слова (спел не то) и отсутствие оценки — разные вещи, и на экране
  * результата они выглядят по-разному.
  */
-export function finalScore({ lyrics, rhythm, coverage, pace, hasLyrics, instrumental, translationShown }) {
+export function finalScore({ lyrics, rhythm, coverage, pace, hasLyrics, instrumental }) {
   const w = hasLyrics ? WEIGHTS_FULL : WEIGHTS_NO_STT
   let score = w.rhythm * rhythm + w.coverage * coverage + w.pace * pace
   if (hasLyrics) score += w.lyrics * lyrics
-  // Минусовка сложнее: вести мелодию не за кем. Показанный перевод, наоборот,
-  // подсказка — небольшой штраф, чтобы не читать с экрана вместо слушания.
+  // Минусовка сложнее: вести мелодию не за кем.
   if (instrumental) score *= 1.15
-  if (translationShown) score *= 0.95
   // Медаль считаем от того же числа, которое увидит студент. От исходного 89.6
   // экран показывал бы 90 и серебро, хотя золото начинается с 90 — обидно
   // ровно там, где в результат и всматриваются.

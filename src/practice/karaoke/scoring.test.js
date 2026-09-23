@@ -138,12 +138,10 @@ describe('итоговый балл', () => {
     expect(without.score).toBe(100) // слова просто не участвуют
   })
 
-  it('минус поднимает балл, показанный перевод — опускает', () => {
+  it('минус поднимает балл', () => {
     const plain = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false })
     const inst = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false, instrumental: true })
-    const peeked = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false, translationShown: true })
     expect(inst.score).toBeGreaterThan(plain.score)
-    expect(peeked.score).toBeLessThan(plain.score)
   })
 
   it('балл не выходит за 100 даже с множителем', () => {
