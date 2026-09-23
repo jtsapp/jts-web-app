@@ -628,10 +628,3 @@
 @media (prefers-reduced-motion: reduce) {
   .vb *, .vb *::before, .vb *::after { animation: none !important; transition: none !important; }
 }
-
-/* Карточка раздела на хабе Практики. Каркас — .pp-listen (styles.css),
-   здесь только перекраска, как .pp-read и .pp-words: три баннера подряд не
-   должны сливаться в один блок. */
-.pp-verbs .pp-listen__card {
-  background: linear-gradient(115deg, #5718c0 0%, #874bf8 55%, #ff7ac0 100%);
-}

@@ -10,7 +10,6 @@
     "src/screens/BookDetail.jsx <button> .bk-chapter",
     "src/screens/HomePage.jsx <button> .hm-trial__cta",
     "src/screens/IeltsSectionShared.jsx <label> .ie-opt",
-    "src/screens/KaraokeTrack.jsx <button> .kk__chip.kk__chip--saved",
     "src/screens/LevelTestPage.jsx <button> .option--correct.option--selected.option--wrong",
     "src/screens/ShadowingPage.jsx <button> .sh-seg__assess",
     "src/screens/SpeakingTestPage.jsx <button> .t-pill.t-pill--lg.t-pill--primary",

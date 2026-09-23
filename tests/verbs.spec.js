@@ -313,14 +313,13 @@ test.describe('практика: раскладка', () => {
 })
 
 test.describe('хаб Практики', () => {
-  test('баннер и чип ведут в раздел', async ({ page }) => {
+  test('баннер во вкладке «Письмо» ведёт в раздел', async ({ page }) => {
     await page.goto('/?screen=practice')
+    await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
     const banner = page.locator('#sec-verbs')
     await expect(banner).toBeVisible({ timeout: 15000 })
-    await expect(banner).toContainText('Неправильные глаголы')
-    await page.locator('.pp-chip', { hasText: 'Глаголы' }).click()
-    await expect(page.locator('#sec-reading')).toHaveCount(0)
-    await banner.locator('.pp-listen__cta').click()
+    await expect(banner).toContainText('Три формы глагола')
+    await banner.locator('.pk-banner__cta').click()
     await expect(page.locator('.vb-head h1')).toHaveText('Неправильные глаголы')
   })
 })

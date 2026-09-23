@@ -249,10 +249,16 @@ export function paceScore({ refSyllables, refSungSec, userSyllables, userSungSec
 export const WEIGHTS_FULL = { lyrics: 0.35, rhythm: 0.3, coverage: 0.2, pace: 0.15 }
 export const WEIGHTS_NO_STT = { rhythm: 0.55, coverage: 0.3, pace: 0.15 }
 
+// Пороги медалей. Отдельной таблицей, потому что экран результата пишет их
+// словами («от 60 баллов», «до золота — 7 баллов») — числа в тексте обязаны
+// совпадать с теми, по которым медаль выдаётся.
+export const MEDAL_MIN = { bronze: 60, silver: 75, gold: 90 }
+export const MEDALS = ['bronze', 'silver', 'gold']
+
 export function medalFor(score) {
-  if (score >= 90) return 'gold'
-  if (score >= 75) return 'silver'
-  if (score >= 60) return 'bronze'
+  if (score >= MEDAL_MIN.gold) return 'gold'
+  if (score >= MEDAL_MIN.silver) return 'silver'
+  if (score >= MEDAL_MIN.bronze) return 'bronze'
   return null
 }
 
@@ -284,4 +290,134 @@ export function weakestLines(perLine, lines, limit = 3) {
     .sort((a, b) => a.ratio - b.ratio)
     .slice(0, limit)
     .map((l) => ({ ...l, text: byId.get(l.id)?.text || '', start: byId.get(l.id)?.start ?? 0 }))
+}
+
+// ── Слова по строкам ────────────────────────────────────────────────────────
+
+/**
+ * Какие слова каждой строки прозвучали.
+ *
+ * Распознавание возвращает один текст на весь дубль, без таймкодов, поэтому
+ * разложить его по строкам можно только выравниванием. Выравниваем по
+ * наибольшей общей подпоследовательности (LCS), а не обратным ходом
+ * Левенштейна, как у WER: у Левенштейна при равной цене «замена» и «вставка +
+ * совпадение» равноправны, и когда услышано больше слов, чем в эталоне
+ * (перепетая строка с разгоном, бубнёж между строками), он честно
+ * прозвучавшие слова уводил в замены — строка из семи слов, спетая целиком,
+ * получала 43%. LCS по определению находит максимум совпавших слов по порядку.
+ *
+ * Весь текст песни выравниваем разом, а не строку за строкой: границы строк
+ * в распознанном тексте неизвестны, и построчное сравнение засчитывало бы
+ * слово из соседней строки.
+ *
+ * Возвращает по строке `{ id, ratio, missed }`: доля совпавших слов и слова,
+ * которые не прозвучали (короче трёх букв не берём — артикли и предлоги
+ * распознавание глотает у всех, «сложным» такое слово не назовёшь).
+ */
+export function lineWordMatches(lines, recognizedText) {
+  const ref = []
+  const lineOf = []
+  ;(lines || []).forEach((line, li) => {
+    for (const w of normalizeWords(line.text)) {
+      ref.push(w)
+      lineOf.push(li)
+    }
+  })
+  const hyp = normalizeWords(recognizedText)
+  const n = ref.length
+  const m = hyp.length
+  const hit = new Uint8Array(n)
+  if (n && m) {
+    // Полная матрица, а не две строки, как в wordDistance: обратному ходу она
+    // нужна целиком. Песня — это сотни слов, так что это сотни килобайт.
+    const w = m + 1
+    const L = new Uint32Array((n + 1) * w)
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= m; j++) {
+        L[i * w + j] =
+          ref[i - 1] === hyp[j - 1] ? L[(i - 1) * w + j - 1] + 1 : Math.max(L[(i - 1) * w + j], L[i * w + j - 1])
+      }
+    }
+    let i = n
+    let j = m
+    while (i > 0 && j > 0) {
+      if (ref[i - 1] === hyp[j - 1]) {
+        hit[i - 1] = 1
+        i--
+        j--
+      } else if (L[(i - 1) * w + j] >= L[i * w + j - 1]) {
+        i--
+      } else {
+        j--
+      }
+    }
+  }
+  return (lines || []).map((line, li) => {
+    let total = 0
+    let got = 0
+    const missed = []
+    for (let k = 0; k < n; k++) {
+      if (lineOf[k] !== li) continue
+      total++
+      if (hit[k]) got++
+      else if (ref[k].length > 2 && !missed.includes(ref[k])) missed.push(ref[k])
+    }
+    return { id: line.id, ratio: total ? got / total : 1, missed }
+  })
+}
+
+// Ниже этой доли совпавших слов строку предлагаем повторить. Три четверти, а не
+// «хоть одно пропущенное»: распознавание пения само теряет слово-другое, и
+// список из половины песни ничему бы не учил.
+const REPEAT_BELOW = 0.75
+
+/**
+ * Строки, которые стоит повторить, — худшие сначала.
+ *
+ * Со словами (`matches` от lineWordMatches) судим по ним: это и есть
+ * «совпадение» строки, а «сложное слово» — самое длинное из непрозвучавших.
+ * Без распознавания остаётся только голос по маске: строка, где студент
+ * молчал, — та же слабая строка, но сложного слова у неё нет.
+ */
+export function linesToRepeat({ lines, perLine, matches, limit = 3 }) {
+  const byId = new Map((lines || []).map((l) => [l.id, l]))
+  const rows = matches
+    ? matches
+        .filter((m) => m.ratio < REPEAT_BELOW)
+        .map((m) => ({
+          id: m.id,
+          ratio: m.ratio,
+          hard: [...m.missed].sort((a, b) => b.length - a.length)[0] || null,
+        }))
+    : (perLine || []).filter((l) => !l.sung).map((l) => ({ id: l.id, ratio: l.ratio, hard: null }))
+  return rows
+    .sort((a, b) => a.ratio - b.ratio || (byId.get(a.id)?.start ?? 0) - (byId.get(b.id)?.start ?? 0))
+    .slice(0, limit)
+    .map((r) => {
+      const line = byId.get(r.id)
+      return { ...r, text: line?.text || '', start: line?.start ?? 0, end: line?.end ?? 0 }
+    })
+}
+
+/**
+ * Пропущенные строки одним куском: `{ count, from, to }`, где from/to — время
+ * отрезка, если все пропуски идут подряд. Разбросанные пропуски одним
+ * отрезком не описать: «на 0:12–2:45» звучало бы как «молчал две с половиной
+ * минуты», — тогда from/to нет.
+ */
+export function missedSpan(perLine, lines) {
+  const missed = []
+  ;(perLine || []).forEach((l, i) => {
+    if (!l.sung) missed.push(i)
+  })
+  if (missed.length === 0) return { count: 0 }
+  // Пропущена вся песня — «на 0:03–2:58» ничего не добавило бы к «32 строки».
+  if (missed.length === perLine.length) return { count: missed.length }
+  const contiguous = missed.every((v, k) => k === 0 || v === missed[k - 1] + 1)
+  if (!contiguous) return { count: missed.length }
+  return {
+    count: missed.length,
+    from: lines[missed[0]]?.start ?? 0,
+    to: lines[missed[missed.length - 1]]?.end ?? 0,
+  }
 }

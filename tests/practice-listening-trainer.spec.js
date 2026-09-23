@@ -41,7 +41,7 @@ test.describe('Практика — тренажёр «Аудирование»'
     await boot(page)
     await page.goto('/?screen=practice')
     await page.locator('#sec-listening').waitFor({ state: 'visible', timeout: 15000 })
-    await page.locator('#sec-listening .pp-listen__cta').click()
+    await page.locator('#sec-listening .pk-banner__cta').click()
     await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10000 })
   })
 

@@ -68,9 +68,8 @@
 }
 .gr-levelchip:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
 
-/* Пилюли рядом с заголовками: «Unit 1-9» в каталоге, «Уровень A1» на рейле */
-.gr-unitpill,
-.gr-levelpill {
+/* Пилюля рядом с заголовком секции каталога: «Unit 1-9» */
+.gr-unitpill {
   display: inline-block;
   vertical-align: middle;
   margin-left: 10px;
@@ -81,18 +80,15 @@
   font-size: 12.5px;
   font-weight: 700;
 }
-.gr-levelpill { margin-left: 0; background: #e4f3fb; }
 
 /* ===== Карточка юнита — перенос обложек курса (premium-redesign) ===== */
 
-/* В каталоге секции раскладываются сеткой, как в исходном курсе; в рейле
-   «Все» карточки живут лентой и получают фиксированную ширину. */
+/* В каталоге секции раскладываются сеткой, как в исходном курсе. */
 .gr-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
   gap: 18px;
 }
-.pp-rail .gr-gcard { flex: 0 0 272px; width: 272px; }
 
 .gr-gcard {
   display: flex;
@@ -1185,7 +1181,6 @@
      фиолетовой подписью — та же пара, что у кнопки «Проверить» в уроке. */
   .gr-levelchip,
   .gr-unitpill,
-  .gr-levelpill,
   .gr-tab {
     background: #b7f0ff;
     color: #9047ff;
