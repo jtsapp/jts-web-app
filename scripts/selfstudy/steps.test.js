@@ -193,6 +193,42 @@ describe('selfstudy/steps — типы заданий', () => {
   // У A0 правая половина пары — картинка, а картинок в источнике нет вовсе.
   // Перевод из карточек того же урока спасает упражнение; без него экран
   // выродился бы в «listen ↔ listen», и его лучше не показывать.
+  // Фото слов есть только у 51 карточки A0 из 266, а иконка — у каждой: курс
+  // рисует её на своей карточке. Без неё карточка была пустой плашкой.
+  it('карточка без фото берёт иконку курса, с фото — только фото', () => {
+    const icon = (n) => ({ sun: '<circle r="4"/>', door: '<path d="M1"/>' })[n] || null
+    const [card] = lessonSteps(
+      { key: '2', no: 2, groups: [{ t: 'cards', stage: 'vocab', items: [{ w: 'Good morning.', icon: 'sun' }, { w: 'Goodbye.', icon: 'door' }, { w: 'Hi.', icon: 'nope' }] }] },
+      PER_ITEM,
+      { ...ctx, icon, img: (w) => (w === 'Goodbye.' ? '/course/a0/img/bye.webp' : null) },
+    )
+    expect(card.words[0]).toMatchObject({ img: null, icon: '<circle r="4"/>' })
+    expect(card.words[1].icon).toBeUndefined()
+    expect(card.words[2].icon).toBeUndefined()
+  })
+
+  // «Match the words and the pictures» (A0): правая половина пары — иконка.
+  // Раньше иконок не было, и пары переделывались в «слово — перевод».
+  it('соединение слов и картинок несёт иконки, если они есть у всех пар', () => {
+    const icon = (n) => ({ listen: '<path d="L"/>', repeat: '<path d="R"/>' })[n] || null
+    const [m] = lessonSteps(
+      { key: '1', no: 1, groups: [{ t: 'match', stage: 'vocab', ins: { en: 'Match the words and the pictures.', ru: 'Соедините слова и картинки.' }, pairs: [{ w: 'listen', icon: 'listen' }, { w: 'repeat', icon: 'repeat' }] }] },
+      PER_ITEM,
+      { ...ctx, icon },
+    )
+    expect(m).toMatchObject({ type: 'match', title: 'Соедините слова и картинки.', pairs: [{ left: 'listen', right: 'listen' }, { left: 'repeat', right: 'repeat' }] })
+    expect(m.rightIcons).toEqual({ listen: '<path d="L"/>', repeat: '<path d="R"/>' })
+    expect(m.options.slice().sort()).toEqual(['listen', 'repeat'])
+
+    // Инструкция не про картинки — иконки у пар случайны, картинками не рисуем.
+    const other = lessonSteps(
+      { key: '4', no: 4, groups: [{ t: 'match', stage: 'vocab', ins: { en: 'Match the country and the nationality.' }, pairs: [{ w: 'Spain — Spanish', icon: 'listen' }] }] },
+      PER_ITEM,
+      { ...ctx, icon },
+    )
+    expect(other).toEqual([])
+  })
+
   it('соединение достраивает правую половину переводом из карточек урока', () => {
     const withCards = steps([
       { t: 'cards', stage: 'vocab', items: [{ w: 'listen', ru: 'слушать' }, { w: 'repeat', ru: 'повторять' }] },

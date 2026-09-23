@@ -204,6 +204,27 @@ function optionIcons(ctx, names) {
   return icons.every(Boolean) ? { optionIcons: icons } : {}
 }
 
+function cardIcon(ctx, it) {
+  if (!ctx.icon || !it.icon || ctx.img(it.w)) return {}
+  const icon = ctx.icon(it.icon)
+  return icon ? { icon } : {}
+}
+
+// Пары «слово — картинка»: правая половина — имя иконки, разметка — в
+// rightIcons. Имена обязаны быть разными: по ним плеер сверяет пару.
+//
+// Только там, где сам курс просит картинки («Match the words and the
+// pictures»): у A0 урока 4 «Match the country and the nationality» тоже несёт
+// иконки (паспорт, глобус), но к стране и национальности они случайны.
+function pictureMatch(sc, ctx, lang) {
+  const list = sc.pairs || []
+  if (!/picture/i.test(plain(sc.ins, 'en'))) return null
+  if (!ctx.icon || !list.length || !list.every((p) => p.icon && ctx.icon(p.icon))) return null
+  if (new Set(list.map((p) => p.icon)).size !== list.length) return null
+  const pairs = list.map((p) => ({ left: plain(p.w || p.l || '', lang), right: p.icon }))
+  return { pairs, rightIcons: Object.fromEntries(list.map((p) => [p.icon, ctx.icon(p.icon)])) }
+}
+
 // Образцы шага record: сами строки остаются строками, записи — параллельным
 // массивом itemAudio (тот же индекс, null — нет записи), и только если есть
 // хоть одна. Объект { text, src } в items старый плеер рендерит как есть и
@@ -288,6 +309,9 @@ function screenToStep(sc, ctx) {
           kk: it.kk || '',
           def: plain(it.def || it.use || '', 'en'),
           img: ctx.img(it.w),
+          // Фото есть у малой части слов (A0 — 51 из 266), а иконка курса —
+          // у каждого: движок курса рисует её на карточке. Нет фото — иконка.
+          ...cardIcon(ctx, it),
           // Роль word: правка клипа для задания (only: 'task') карточку не трогает.
           audio: (it.wordClip && ctx.clip(it.wordClip, 'word')) || ctx.wordAudio(it.w),
         })),
@@ -483,6 +507,11 @@ function screenToStep(sc, ctx) {
     // же урока — упражнение остаётся упражнением; нет перевода — экран не
     // переносим (лучше без задания, чем задание без вопроса).
     case 'match': {
+      // «Match the words and the pictures» (A0): правая половина — иконка
+      // курса. Есть у всех пар — соединяем слово с картинкой, как у автора;
+      // иначе — перевод из карточек урока (ниже).
+      const pics = pictureMatch(sc, ctx, lang)
+      if (pics) return { ...base, type: 'match', ...pics, options: shuffle(pics.pairs.map((p) => p.right), seed) }
       const pairs = []
       let translated = false
       for (const p of sc.pairs || []) {

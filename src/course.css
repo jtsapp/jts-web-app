@@ -389,6 +389,37 @@
 .cp-word.is-noimg .cp-word__label {
   display: none;
 }
+/* Иконка курса на карточке без фото (A0): на той же сиреневой плашке, что и
+   карточка без картинки, но слово остаётся подписью снизу — как у фото. */
+.cp-word__art {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: linear-gradient(160deg, #f3ecff 0%, #e6dbff 100%);
+  color: #6f2fd6;
+}
+.cp-word__icon,
+.cp-match__icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cp-word__icon {
+  width: 72px;
+  height: 72px;
+  stroke-width: 1.4;
+}
+/* Картинка вместо слова в паре и в банке «Соедините слова и картинки». */
+.cp-match__icon {
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.6;
+  vertical-align: middle;
+}
+.cp-chip.cp-chip--pic {
+  color: #9047ff;
+}
 /* Оборот накрывает лицевую сторону: он живёт отдельным блоком рядом с кнопкой
    переворота, потому что внутри него свои кнопки — «В словарь» и звук. */
 .cp-word__back {

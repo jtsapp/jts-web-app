@@ -1388,6 +1388,11 @@ function Choices({ options, icons, picked, setPicked, checked, answer, grid = fa
 function MatchBoard({ step, options, links, setLinks, checked, t }) {
   const [active, setActive] = useState(null)
   const pairs = step.pairs || []
+  // «Соедините слова и картинки» (A0): правая половина — имя иконки курса, на
+  // экране — сама иконка. Сверка пар по-прежнему по имени.
+  const icons = step.rightIcons || null
+  const face = (o) =>
+    icons && icons[o] ? <svg className="cp-match__icon" viewBox="0 0 24 24" role="img" aria-label={o} dangerouslySetInnerHTML={{ __html: icons[o] }} /> : o
 
   // Банк — инвентарь: одинаковых вариантов в нём может быть несколько, и
   // каждая копия расходуется отдельно. Занятость по ЗНАЧЕНИЮ (`used.has(o)`)
@@ -1451,16 +1456,16 @@ function MatchBoard({ step, options, links, setLinks, checked, t }) {
               <span className="cp-match__left">{p.left}</span>
               {/* Выбранная пара показывается прямо в пункте: тянуть линии между
                   колонками на узком экране некуда. */}
-              {links[i] !== undefined && <span className="cp-match__pick">{links[i]}</span>}
-              {checked && links[i] !== p.right && <span className="cp-match__fix">{p.right}</span>}
+              {links[i] !== undefined && <span className="cp-match__pick">{face(links[i])}</span>}
+              {checked && links[i] !== p.right && <span className="cp-match__fix">{face(p.right)}</span>}
             </button>
           )
         })}
       </div>
       <div className="cp-match__bank" aria-label={t('lesson.matchBank')}>
         {options.map((o, i) => (
-          <button key={i} className="cp-chip" disabled={checked || spentChip[i]} onClick={() => tapRight(o)}>
-            {o}
+          <button key={i} className={`cp-chip ${icons && icons[o] ? 'cp-chip--pic' : ''}`} disabled={checked || spentChip[i]} onClick={() => tapRight(o)}>
+            {face(o)}
           </button>
         ))}
       </div>
@@ -1620,7 +1625,7 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
         // карточка тогда печатала слово ДВАЖДЫ: крупно на пустой плашке и
         // подписью под ней. Модификатор снимает дубль и делает лицо карточки
         // типографским.
-        <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''} ${w.img ? '' : 'is-noimg'}`}>
+        <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''} ${w.img || w.icon ? '' : 'is-noimg'}`}>
           {/* Тап по карточке произносит слово и переворачивает её — ровно то,
               что обещает инструкция стадии («Look and listen. Tap a picture to
               hear the word»). Без озвучки презентация слов была немой: студент
@@ -1637,7 +1642,17 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
             <span className="cp-word__face">
               {/* alt называет слово: картинка иллюстрирует значение, а не
                   украшает экран. */}
-              {w.img ? <AssetImage src={w.img} alt={w.en} loading="lazy" hideOnError /> : <span className="cp-word__noimg">{w.en}</span>}
+              {w.img ? (
+                <AssetImage src={w.img} alt={w.en} loading="lazy" hideOnError />
+              ) : w.icon ? (
+                // Фото нет — иконка самого курса (A0): та же картинка, что на
+                // карточке исходника. Разметка отфильтрована экстрактором.
+                <span className="cp-word__art">
+                  <svg className="cp-word__icon" viewBox="0 0 24 24" role="img" aria-label={w.en} dangerouslySetInnerHTML={{ __html: w.icon }} />
+                </span>
+              ) : (
+                <span className="cp-word__noimg">{w.en}</span>
+              )}
             </span>
           </button>
           {/* Оборот карточки по макету: сверху слово с определением, под ним
