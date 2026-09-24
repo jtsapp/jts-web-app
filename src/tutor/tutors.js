@@ -6,7 +6,11 @@
 // дашборде (useEmotionShowcase). Ключ из EMOTIONS (avatarEmotions.js). Это
 // ЛИЦО ПЕРСОНАЖА, а не реакция на реплику: внутри разговора эмоция всё так же
 // приходит тегом от агента.
-import { JARVIS_ENABLED } from '../config.js'
+// figure — фигурка во весь рост для экрана выбора (макет «Speaking Buddy»,
+// frame 5316:1238). Это экспорт из Figma как есть, а не avatar: у аватарки свой
+// круглый фон под маленькие места (шапка звонка, дашборд), а на выборе персонаж
+// стоит на карточке и частью выступает над ней.
+import { JARVIS_ENABLED, AIZERE_ENABLED } from '../config.js'
 
 // Нрав (ось 18+) — второй характер у того же тьютора: тот же голос, тот же язык,
 // та же картинка, другой характер. У Спарка 'harsh' — матерящийся казах, у
@@ -22,6 +26,7 @@ const BASE_TUTORS = [
     key: 'luna',
     name: 'Луна',
     avatar: '/tutor/tutor-luna.png',
+    figure: '/tutor/pick/luna.webp',
     traitColors: ['#ba29e2', '#21b398', '#c3c032'],
     mood: 'idle', // спокойная
   },
@@ -29,6 +34,7 @@ const BASE_TUTORS = [
     key: 'dexter',
     name: 'Декстер',
     avatar: '/tutor/tutor-dexter.png',
+    figure: '/tutor/pick/dexter.webp',
     traitColors: ['#2cbf45', '#4a40c3', '#c39520'],
     mood: 'angry', // злой
     tempers: TEMPERS,
@@ -41,6 +47,7 @@ const BASE_TUTORS = [
     key: 'spark',
     name: 'Спарк',
     avatar: '/tutor/tutor-spark.png',
+    figure: '/tutor/pick/spark.webp',
     traitColors: ['#ffa200', '#f12929', '#51a41e'],
     mood: 'happy', // радостный
     tempers: TEMPERS,
@@ -52,8 +59,8 @@ const BASE_TUTORS = [
 //
 //  - face: 'orb' вместо avatar-картинки. Лица у него нет, есть светящаяся сфера
 //    (src/tutor/orbEngine.js), и карточка рисует её живой канвой. Поле читают
-//    TutorChoosePage/TutorCarousel/TutorVoiceChatPage/TutorDashboardPage;
-//    у остальных троих поля нет, и они по-прежнему идут через avatar.
+//    TutorChoosePage/TutorVoiceChatPage/TutorDashboardPage (через TutorThumb);
+//    у остальных троих поля нет, и они по-прежнему идут через avatar/figure.
 //  - traitColors — палитра самого орба (тыл → фронт), чтобы чипы не выпадали
 //    из карточки.
 //  - mood здесь не используется: записи 'jarvis' нет в TUTOR_MOODS агента,
@@ -94,12 +101,42 @@ const JARVIS = {
 
 export const TUTORS = JARVIS_ENABLED ? [...BASE_TUTORS, JARVIS] : BASE_TUTORS
 
+// Айзере — место под новую тьюторшу. Голоса и персоны у агента для неё ещё нет,
+// поэтому в TUTORS она НЕ входит: TUTORS читают «Управление тьютором», дашборд,
+// звонок и getTutor, и там она стала бы выбираемой, а звонок ушёл бы в агент с
+// неизвестным ему ключом. Её видит только экран выбора, и то с comingSoon:
+// карточку можно выделить, а «Начать обучение» с ней не нажимается.
+// Цвета черт — из макета (5316:1427), тексты — tutor.aizere.trait* в dict.js.
+const AIZERE = {
+  key: 'aizere',
+  name: 'Айзере',
+  figure: '/tutor/pick/aizere.webp',
+  traitColors: ['#2f6fd6', '#3aa66b'],
+  comingSoon: true,
+}
+
+// Карточки экрана выбора. Порядок — из макета (Декстер, Луна, Спарк, Айзере) и
+// с порядком TUTORS не совпадает; TUTORS не трогаем, на его порядок завязаны
+// мини-карусель в MascotCard и дефолты. Dev-only тьюторы идут в хвосте: на
+// проде их нет, и ряд из трёх просто встаёт по центру.
+const PICK_ORDER = ['dexter', 'luna', 'spark']
+
+export const PICK_TUTORS = [
+  ...PICK_ORDER.map((key) => TUTORS.find((t) => t.key === key)),
+  ...(AIZERE_ENABLED ? [AIZERE] : []),
+  ...TUTORS.filter((t) => !PICK_ORDER.includes(t.key)),
+]
+
 // Визитка тьютора — образец голоса на экране выбора («Послушать голос X»).
 //
 // Это ИСХОДНИК для озвучки, а не текст для показа: сама кнопка играет готовый
 // файл public/tutor/voice/<key>.mp3, который генерируется отсюда скриптом
 // scripts/make-tutor-voice-samples.js. Правишь текст — перегенерируй файл,
 // иначе текст и звук разъедутся.
+//
+// С 24.09.2026 кнопки на экране выбора нет — её убрал макет «Speaking Buddy».
+// Тексты, файлы и генератор оставлены: вернуть кнопку дешевле, чем заново
+// собирать и озвучивать визитки.
 //
 // Язык у каждого свой и это НАМЕРЕННО: раньше все трое здоровались
 // по-английски (тембр важнее смысла), но визитка должна сразу показывать, с кем

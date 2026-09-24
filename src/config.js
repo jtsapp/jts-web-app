@@ -42,3 +42,13 @@ export const TUTOR_ONLY_SECTIONS = ['tutor', 'practice', 'vocab', 'listening', '
 // вшивается в бандл на этапе сборки). В прод-окружении переменной нет → false,
 // и карточка не попадает даже в бандл.
 export const JARVIS_ENABLED = process.env.NEXT_PUBLIC_ENABLE_JARVIS === '1'
+
+// AIZERE_ENABLED — карточка новой тьюторши «Айзере» на экране выбора. Пока у
+// агента нет ни её голоса, ни персоны, это только место под неё: карточка видна
+// на dev-стенде, но выбрать её нельзя (comingSoon в src/tutor/tutors.js).
+//
+// Своей переменной сборки у флага нет намеренно: dev-стенд уже собирается с
+// NEXT_PUBLIC_ENABLE_JARVIS=1, а новая переменная потребовала бы ещё строк в
+// GitLab CI, Dockerfile и compose-app.yaml — ради гейта, который живёт ровно до
+// того дня, когда Айзере заговорит. Тогда гейт снимается целиком.
+export const AIZERE_ENABLED = JARVIS_ENABLED
