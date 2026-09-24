@@ -26,6 +26,7 @@ const { sayAudioFile, sayAudioUrl } = require('./jts-self/say-audio')
 const { synthesizeSoniox, sleep, loadEnv, SONIOX_GAP_MS } = require('./make-lesson-audio')
 const { strip } = require('./lib/html-text.js')
 const { mp3Frames } = require('./selfstudy/cut-clip')
+const { isFrame } = require('./lib/course-frame')
 
 const ROOT = path.join(__dirname, '..')
 const COURSE = path.join(ROOT, 'public/course')
@@ -112,17 +113,22 @@ async function synthesizeChecked(text, { synth = synthesizeSoniox, gapMs = SONIO
   return null
 }
 
-/** Что озвучить на уровне: немые карточки, say, фразы и образцы record без записи. */
+/**
+ * Что озвучить на уровне: немые карточки, say, фразы и образцы record без
+ * записи. Рамки с пропуском «…» — нет: синтез читает их кашей
+ * (lib/course-frame.js), и немота у них намеренная.
+ */
 function plan(level) {
   const texts = new Map()
+  const want = (text) => text && !isFrame(text)
   for (const f of stepFiles(level)) {
     const { steps = [] } = JSON.parse(fs.readFileSync(path.join(COURSE, level, f), 'utf8'))
     for (const s of steps) {
-      if (s.type === 'cards') for (const w of s.words || []) if (!w.audio && w.en) texts.set(sayAudioFile(w.en), w.en)
-      if (s.type === 'choice' && s.say && !s.sayTrack) texts.set(sayAudioFile(s.say), s.say)
-      if (s.type === 'phrases') for (const it of s.items || []) if (!it.src && it.text) texts.set(sayAudioFile(it.text), it.text)
+      if (s.type === 'cards') for (const w of s.words || []) if (!w.audio && want(w.en)) texts.set(sayAudioFile(w.en), w.en)
+      if (s.type === 'choice' && s.say && !s.sayTrack && want(s.say)) texts.set(sayAudioFile(s.say), s.say)
+      if (s.type === 'phrases') for (const it of s.items || []) if (!it.src && want(it.text)) texts.set(sayAudioFile(it.text), it.text)
       if (s.type === 'record') {
-        for (const line of recordLines(s)) if (!line.src && isSample(line.text)) texts.set(sayAudioFile(line.text), line.text)
+        for (const line of recordLines(s)) if (!line.src && isSample(line.text) && want(line.text)) texts.set(sayAudioFile(line.text), line.text)
       }
     }
   }
@@ -137,7 +143,8 @@ function link(level) {
     const raw = fs.readFileSync(p, 'utf8')
     const data = JSON.parse(raw)
     let touched = false
-    const onDisk = (text) => fs.existsSync(path.join(AUDIO, level, sayAudioFile(text)))
+    // Рамку не пропишем, даже если файл где-то остался: её немота намеренная.
+    const onDisk = (text) => !isFrame(text) && fs.existsSync(path.join(AUDIO, level, sayAudioFile(text)))
     for (const s of data.steps || []) {
       if (s.type === 'cards') {
         for (const w of s.words || []) {

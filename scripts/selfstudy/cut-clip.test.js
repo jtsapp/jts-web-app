@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { mp3Frames, cutMp3 } = require('./cut-clip.js')
+const { mp3Frames, cutMp3, joinMp3 } = require('./cut-clip.js')
 
 // MPEG-1 Layer III, 128 кбит/с, 44,1 кГц, без CRC и паддинга: кадр 417 байт и
 // 1152 сэмпла (≈26,1 мс). В теле кадра — его номер, чтобы видеть, какие кадры
@@ -77,5 +77,33 @@ describe('cutMp3', () => {
   it('отрезок за концом файла — ошибка, а не пустой файл', () => {
     expect(() => cutMp3(mp3(plain(10)), 5, 6)).toThrow(/пуст/)
     expect(() => cutMp3(mp3(plain(10)), 0.2, 0.1)).toThrow()
+  })
+})
+
+// Склейка нужна, когда фраза задания в курсе нарезана на два соседних клипа
+// (A1: «I opened the door.» + «I've opened the door.»), а задание звучит одним.
+describe('joinMp3', () => {
+  it('склеивает кадры кусков через паузу из тихих кадров', () => {
+    const out = joinMp3([mp3(plain(3), id3()), mp3([frame(7), frame(8)])], 0.1)
+    const { frames } = mp3Frames(out)
+    // 0,1 с — 4 кадра по 26 мс (с округлением вверх).
+    expect(frames).toHaveLength(3 + 4 + 2)
+    const got = frames.map((f) => out.readUInt32BE(f.at + ID_AT))
+    expect(got.slice(0, 3)).toEqual([0, 1, 2])
+    expect(got.slice(7)).toEqual([7, 8])
+    // Тихий кадр — заголовок первого кадра и нули: декодер отыграет тишину.
+    const gap = frames[3]
+    expect(out.subarray(gap.at, gap.at + 4)).toEqual(Buffer.from([0xff, 0xfb, 0x90, 0x00]))
+    expect(out.subarray(gap.at + 4, gap.at + FRAME).every((b) => b === 0)).toBe(true)
+  })
+
+  // Кадры разной частоты или битрейта в одном потоке браузер вправе не
+  // сыграть: склейка из клипа курса (24 кГц) и старого трека (44,1 кГц) —
+  // ошибка, а не тихо испорченный файл.
+  it('куски разного формата не склеивает', () => {
+    // 48 кГц при том же битрейте: кадр 384 байта.
+    const other = Buffer.alloc(384)
+    other.set([0xff, 0xfb, 0x94, 0x00])
+    expect(() => joinMp3([mp3(plain(2)), mp3([other, other])], 0)).toThrow(/формат/)
   })
 })

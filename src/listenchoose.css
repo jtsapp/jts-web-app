@@ -368,9 +368,3 @@
 @media (prefers-reduced-motion: reduce) {
   .lc *, .lc *::before, .lc *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
-
-/* Карточка раздела на хабе Практики. Каркас — .pp-listen (styles.css), здесь
-   только перекраска: фиолетовый JTS уходит в голубой, как марка прототипа. */
-.pp-lc .pp-listen__card {
-  background: linear-gradient(115deg, #5718c0 0%, #874bf8 50%, #0aafff 100%);
-}

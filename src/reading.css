@@ -438,9 +438,3 @@
   .rd-opts--row { grid-auto-flow: row; }
   .rd-actions .rd-btn { width: 100%; }
 }
-
-/* Баннер «Чтение» на хабе Практики: каркас .pp-listen общий с аудированием и
-   письмом, заливка своя — три баннера подряд не должны сливаться в один блок. */
-.pp-read .pp-listen__card {
-  background: linear-gradient(115deg, #874bf8 0%, #0aafff 100%);
-}

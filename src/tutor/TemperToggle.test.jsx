@@ -27,24 +27,13 @@ function setup(props = {}) {
 }
 
 describe('кнопка 18+', () => {
-  it('обычная кнопка переключает нрав', () => {
+  // Возрастного замка нет (снят 24.09.2026): кнопка жмётся всегда и ничем не
+  // помечена как недоступная.
+  it('кнопка переключает нрав без замка', () => {
     const { onToggle, btn } = setup()
     fireEvent.click(btn)
     expect(onToggle).toHaveBeenCalledWith(withTempers.key)
-    expect(btn.getAttribute('aria-disabled')).toBe('false')
-  })
-
-  it('заперта возрастом — клик ничего не включает', () => {
-    const { onToggle, btn } = setup({ locked: true })
-    fireEvent.click(btn)
-    expect(onToggle).not.toHaveBeenCalled()
-    expect(btn.getAttribute('aria-disabled')).toBe('true')
-    expect(btn.className).toContain('t-adult--locked')
-  })
-
-  it('заперта — подсказка объясняет причину', () => {
-    const { btn } = setup({ locked: true })
-    expect(btn.getAttribute('title')).toMatch(/18/)
+    expect(btn.hasAttribute('aria-disabled')).toBe(false)
   })
 
   // Кнопка живёт внутри кликабельной карточки тьютора: её клик не должен
@@ -53,7 +42,7 @@ describe('кнопка 18+', () => {
     const onCard = vi.fn()
     const { container } = wrap(
       <div onClick={onCard}>
-        <TemperToggle tutor={withTempers} temper="calm" onToggle={() => {}} locked />
+        <TemperToggle tutor={withTempers} temper="calm" onToggle={() => {}} />
       </div>
     )
     fireEvent.click(container.querySelector('button'))

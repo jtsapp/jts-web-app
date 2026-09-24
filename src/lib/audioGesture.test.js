@@ -7,6 +7,21 @@ import {
   cancelSpeech,
 } from './ielts-audio.js'
 
+// Между ElevenLabs и синтезом с 23.09.2026 стоит Soniox (src/lib/speech.js).
+// Этот файл — про цепочку до синтеза, поэтому Soniox здесь «не отвечает»:
+// подставной playTts сразу сообщает о провале.
+const soniox = { up: false, calls: [] }
+vi.mock('./speech.js', () => ({
+  playTts: (text, o) => {
+    soniox.calls.push({ text, ...o })
+    if (soniox.up) o.onStart?.()
+    else o.onFail?.('error')
+    return true
+  },
+  stopTts: () => {},
+  unlockSpeech: () => {},
+}))
+
 // Контракт кнопки «озвучить» на iOS: разрешение играть звук выдаётся ЖЕСТУ и
 // сгорает к концу задачи, в которой жест обработан. Любой await между нажатием
 // и play() (сходить в сеть, получить blob) означает, что play() зовётся уже в

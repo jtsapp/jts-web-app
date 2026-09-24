@@ -94,7 +94,10 @@ export function trackProgress(slug) {
     best: t?.best || {},
     attempts: t?.attempts || 0,
     weakLines: t?.weakLines || [],
-    warmupDone: Boolean(t?.warmupDone),
+    // Балл прошлой попытки — для «+12 к прошлой попытке» на экране результата.
+    // У записей до 24.09.2026 его нет: тогда сравнивать не с чем, и экран
+    // сравнение не показывает, а не выдумывает его из лучшего балла.
+    last: Number.isFinite(t?.last) ? t.last : null,
   }
 }
 
@@ -129,15 +132,6 @@ export function starsFor(best) {
   return stars
 }
 
-export function saveWarmup(slug) {
-  if (!slug) return
-  const state = read()
-  const t = (state.tracks[slug] = state.tracks[slug] || {})
-  t.warmupDone = true
-  state.streak = bumpStreak(state.streak)
-  write(state)
-}
-
 /** Результат Full Karaoke. Лучший балл только растёт. */
 export function saveKaraokeResult(slug, { score, weakLines }) {
   if (!slug) return trackProgress(slug)
@@ -146,6 +140,7 @@ export function saveKaraokeResult(slug, { score, weakLines }) {
   t.best = t.best || {}
   t.best.full = Math.max(t.best.full || 0, Math.round(score) || 0)
   t.attempts = (t.attempts || 0) + 1
+  t.last = Math.round(score) || 0
   if (Array.isArray(weakLines)) t.weakLines = weakLines.slice(0, 5)
   t.stars = starsFor(t.best)
   state.streak = bumpStreak(state.streak)

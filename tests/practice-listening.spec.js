@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test'
 
 // Баннер «Аудирование» на странице Практики: промо мини-игры listening.
-// Проверяем, что баннер рендерится и бейдж уровня синхронизирован с уровнем
-// пользователя (languageLevel из /api/auth/me). Кнопки пока заглушки.
+// Проверяем, что баннер рендерится во вкладке «Аудирование», а переключатель
+// уровня в шапке синхронизирован с уровнем пользователя (languageLevel из
+// /api/auth/me).
 
 function mockAuth(page, languageLevel) {
   return page.route('**/api/auth/me', (route) =>
@@ -19,45 +20,38 @@ function mockAuth(page, languageLevel) {
 test.describe('Практика — баннер «Аудирование»', () => {
   test.skip(({ viewport }) => (viewport?.width ?? 0) < 760, 'баннер — десктопный дизайн')
 
-  test('бейдж уровня совпадает с уровнем пользователя', async ({ page }) => {
+  const level = (page) => page.locator('.pk-levels__btn[aria-checked="true"]')
+
+  test('уровень в шапке совпадает с уровнем пользователя', async ({ page }) => {
     await mockAuth(page, 'B1')
     await page.goto('/')
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    // Класс .pp-listen носит и баннер «Письмо» (pp-sec pp-listen pp-write),
-    // поэтому баннер аудирования ищем по его секции — иначе селектор находит
-    // два элемента и падает на strict mode.
     const banner = page.locator('#sec-listening')
     await expect(banner).toBeVisible({ timeout: 15000 })
 
     // Заголовок, описание, CTA — контент баннера.
-    await expect(banner.locator('.pp-listen__title')).toContainText('Тренируй Listening')
-    await expect(banner.locator('.pp-listen__cta')).toHaveText('Перейти к тренировке')
-    await expect(banner).toContainText('Собран по вашему уровню')
+    await expect(banner.locator('.pk-banner__title')).toContainText('Тренируй Listening')
+    await expect(banner.locator('.pk-banner__cta')).toHaveText('Перейти к тренировке')
 
     // Уровень синхронизирован с пользователем (B1, не дефолтный A1).
-    await expect(banner.locator('.pp-listen__level')).toHaveText('B1')
+    await expect(level(page)).toHaveText('B1')
   })
 
-  test('баннер только на вкладке «Все»: при выборе «Грамматика» скрыт', async ({ page }) => {
+  test('баннер только во вкладке «Аудирование»: во «Письме» скрыт', async ({ page }) => {
     await mockAuth(page, 'A2')
     await page.goto('/')
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    // Класс .pp-listen носит и баннер «Письмо» (pp-sec pp-listen pp-write),
-    // поэтому баннер аудирования ищем по его секции — иначе селектор находит
-    // два элемента и падает на strict mode.
     const banner = page.locator('#sec-listening')
     await expect(banner).toBeVisible({ timeout: 15000 })
 
-    // Переключаемся на фильтр «Грамматика» — баннер должен исчезнуть.
-    await page.getByRole('button', { name: 'Грамматика', exact: true }).click()
+    await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
     await expect(banner).toHaveCount(0)
 
-    // Возврат на «Все» — баннер снова виден.
-    await page.getByRole('button', { name: 'Все', exact: true }).click()
+    await page.locator('.pk-skill', { hasText: 'Аудирование' }).click()
     await expect(banner).toBeVisible()
   })
 
@@ -67,8 +61,7 @@ test.describe('Практика — баннер «Аудирование»', ()
     await page.evaluate(() => localStorage.setItem('jts_access_token', 'faketoken'))
     await page.goto('/?screen=practice')
 
-    const level = page.locator('#sec-listening .pp-listen__level')
-    await expect(level).toBeVisible({ timeout: 15000 })
-    await expect(level).toHaveText('A1')
+    await expect(level(page)).toBeVisible({ timeout: 15000 })
+    await expect(level(page)).toHaveText('A1')
   })
 })

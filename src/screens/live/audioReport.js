@@ -1,3 +1,5 @@
+import { ttsUrl, VOICE } from '../../lib/ttsShared.js'
+
 // Единая точка «преподаватель сейчас слушает эфир живого урока» — и словарные
 // карточки/вопросы на слух (practice/vocab/audio.js), и плеер уроков
 // (learning/CourseStepPlayer.jsx), и настоящие <audio> из разметки (InfoBlock)
@@ -16,11 +18,12 @@ export function reportAudio(payload) {
 }
 
 // Обратное направление: преподаватель транслирует аудио всему классу
-// ("Транслировать классу"), ученик проигрывает у себя. Синтез — напрямую
-// через speechSynthesis, а не через practice/vocab/audio.js speak(): тот сам
-// зовёт reportAudio при каждом произнесении, и трансляция учителя вернулась
-// бы обратно как «ученик тоже слушает» — тот самый цикл, которого тут не
-// должно быть (см. reportAudio выше).
+// ("Транслировать классу"), ученик проигрывает у себя. Слово читает Soniox
+// (/api/tts) через тот же элемент трансляции, а голос устройства — только
+// если сервер не ответил. Напрямую, а не через practice/vocab/audio.js
+// speak(): тот сам зовёт reportAudio при каждом произнесении, и трансляция
+// учителя вернулась бы обратно как «ученик тоже слушает» — тот самый цикл,
+// которого тут не должно быть (см. reportAudio выше).
 let broadcastAudioEl = null
 // Поколение трансляции — тот же приём, что sampleSeq в lib/ielts-audio.js:
 // элемент один на все трансляции, и вторая, ставя паузу первой, получает от неё
@@ -99,26 +102,31 @@ export function playBroadcastAudio(evt, { onStarted, onBlocked } = {}) {
   const stale = () => seq !== broadcastSeq
   if (evt.kind === 'tts' && evt.text) {
     stopBroadcastAudio()
-    if (typeof window === 'undefined' || !window.speechSynthesis) return
-    const u = new SpeechSynthesisUtterance(evt.text)
-    u.lang = evt.accent === 'GB' ? 'en-GB' : 'en-US'
-    u.onstart = () => {
-      if (stale()) return
-      clearTimeout(ttsWatchdog)
-      onStarted?.()
-    }
-    u.onerror = () => {
-      if (stale()) return
-      clearTimeout(ttsWatchdog)
-      onBlocked?.(evt)
-    }
-    clearTimeout(ttsWatchdog)
-    ttsWatchdog = setTimeout(() => {
-      if (stale()) return
-      window.speechSynthesis?.cancel()
-      onBlocked?.(evt)
-    }, TTS_START_GRACE_MS)
-    window.speechSynthesis.speak(u)
+    const url = typeof window === 'undefined' ? null : ttsUrl({
+      text: evt.text,
+      voice: evt.accent === 'GB' ? VOICE.gb : VOICE.us,
+      speed: 0.9,
+    })
+    if (!url) return
+    // Элемент тот же, что у дорожек: разрешение на iOS выдано ему
+    // (unlockBroadcastAudio), свежий Audio() молчал бы намертво.
+    if (!broadcastAudioEl) broadcastAudioEl = new Audio()
+    const el = broadcastAudioEl
+    el.src = url
+    // Следующая дорожка-файл должна сменить источник, а не продолжить слово.
+    el.dataset.url = url
+    el
+      .play()
+      .then(() => {
+        if (!stale()) onStarted?.()
+      })
+      .catch((e) => {
+        if (stale()) return
+        // Нет жеста — просим «Включить звук»; остальное (сеть, 429/503) —
+        // договариваем голосом устройства, чтобы класс услышал слово.
+        if (e && e.name === 'NotAllowedError') onBlocked?.(evt)
+        else speakBroadcastSynth(evt, { onStarted, onBlocked }, stale)
+      })
   } else if (evt.kind === 'file' && evt.url) {
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
     // Ту же дорожку НЕ перематываем в начало: «слушать вместе» — это
@@ -146,6 +154,33 @@ export function playBroadcastAudio(evt, { onStarted, onBlocked } = {}) {
         if (!stale()) onBlocked?.(evt)
       })
   }
+}
+
+// Запасной путь трансляции слова — прежний синтез устройства.
+function speakBroadcastSynth(evt, { onStarted, onBlocked } = {}, stale) {
+  if (typeof window === 'undefined' || !window.speechSynthesis) {
+    onBlocked?.(evt)
+    return
+  }
+  const u = new SpeechSynthesisUtterance(evt.text)
+  u.lang = evt.accent === 'GB' ? 'en-GB' : 'en-US'
+  u.onstart = () => {
+    if (stale()) return
+    clearTimeout(ttsWatchdog)
+    onStarted?.()
+  }
+  u.onerror = () => {
+    if (stale()) return
+    clearTimeout(ttsWatchdog)
+    onBlocked?.(evt)
+  }
+  clearTimeout(ttsWatchdog)
+  ttsWatchdog = setTimeout(() => {
+    if (stale()) return
+    window.speechSynthesis?.cancel()
+    onBlocked?.(evt)
+  }, TTS_START_GRACE_MS)
+  window.speechSynthesis.speak(u)
 }
 
 /**

@@ -13,6 +13,8 @@
 // ctx.lang в screenToStep. Раньше здесь лежали голые английские строки, и
 // подпись стадии («Practice» и т.п.) не переводилась вообще ни при каком
 // lang — единственное место в файле, которое не проходило через line()/plain().
+const { isFrame } = require('../lib/course-frame')
+
 const STAGE_NAMES = {
   warm: { en: 'Warm-up', ru: 'Разминка', kk: 'Қыздыру' },
   vocab: { en: 'Vocabulary', ru: 'Слова', kk: 'Сөздер' },
@@ -190,7 +192,42 @@ function tableHtml(sc, lang) {
 // для слов: тем же именем scripts/voice-step-cards.js озвучивает фразы и
 // образцы для записи голоса. Без этого запасного пути следующая выгрузка
 // курса молча возвращала фразам src: null, и их снова читал браузерный синтез.
-const voiced = (ctx, text) => (text && ctx.wordAudio ? ctx.wordAudio(text) : null) || null
+// Рамки («Would you mind …ing?») синтезом не озвучиваются: пропуск он
+// читает кашей (scripts/lib/course-frame.js).
+const voiced = (ctx, text) => (text && ctx.wordAudio && !isFrame(text) ? ctx.wordAudio(text) : null) || null
+
+// Картинки вариантов: в файле курса вариант задания «выберите картинку» — имя
+// иконки из его набора (door, sun, clock), и движок курса рисует их без
+// подписи. Плееру отдаём саму разметку иконки параллельным массивом, а
+// options остаются словами — по ним сверяется ответ, и старый плеер,
+// не знающий optionIcons, рисует те же слова, что и раньше. Нет хоть одной
+// иконки — не отдаём ни одной: смесь картинок со словами подсказала бы ответ.
+function optionIcons(ctx, names) {
+  if (!ctx.icon || !names.length) return {}
+  const icons = names.map((n) => ctx.icon(n))
+  return icons.every(Boolean) ? { optionIcons: icons } : {}
+}
+
+function cardIcon(ctx, it) {
+  if (!ctx.icon || !it.icon || ctx.img(it.w)) return {}
+  const icon = ctx.icon(it.icon)
+  return icon ? { icon } : {}
+}
+
+// Пары «слово — картинка»: правая половина — имя иконки, разметка — в
+// rightIcons. Имена обязаны быть разными: по ним плеер сверяет пару.
+//
+// Только там, где сам курс просит картинки («Match the words and the
+// pictures»): у A0 урока 4 «Match the country and the nationality» тоже несёт
+// иконки (паспорт, глобус), но к стране и национальности они случайны.
+function pictureMatch(sc, ctx, lang) {
+  const list = sc.pairs || []
+  if (!/picture/i.test(plain(sc.ins, 'en'))) return null
+  if (!ctx.icon || !list.length || !list.every((p) => p.icon && ctx.icon(p.icon))) return null
+  if (new Set(list.map((p) => p.icon)).size !== list.length) return null
+  const pairs = list.map((p) => ({ left: plain(p.w || p.l || '', lang), right: p.icon }))
+  return { pairs, rightIcons: Object.fromEntries(list.map((p) => [p.icon, ctx.icon(p.icon)])) }
+}
 
 // Образцы шага record: сами строки остаются строками, записи — параллельным
 // массивом itemAudio (тот же индекс, null — нет записи), и только если есть
@@ -214,7 +251,11 @@ function screenToStep(sc, ctx) {
   const title = plain(sc.ins, lang)
   const sub = plain(sc.sub, lang)
   const seed = hashSeed(`${ctx.seedBase || ''}:${sc.t}:${title}:${JSON.stringify(sc.opts || sc.a || sc.w || '')}`)
-  const src = sc.clip ? ctx.clip(sc.clip) : null
+  // Клипа нет в банке курса, а у задания есть fallback — текст, который движок
+  // курса в этом случае читает синтезом устройства (A0, уроки 21 и 24:
+  // «AI-generated» дорожки так и не записали). Берём его озвучку по тексту,
+  // как у фраз (scripts/voice-course-dialogs.js), иначе шаг выходит немым.
+  const src = (sc.clip ? ctx.clip(sc.clip) : null) || (sc.fallback ? voiced(ctx, sc.fallback) : null)
   // Запись кладём в базу шага: клип висит на группе, и её наследуют не только
   // вопросы, но и соединение пар и разбор по колонкам — у B2 таких экранов
   // шестнадцать, и без этого они оставались немыми.
@@ -272,7 +313,11 @@ function screenToStep(sc, ctx) {
           kk: it.kk || '',
           def: plain(it.def || it.use || '', 'en'),
           img: ctx.img(it.w),
-          audio: (it.wordClip && ctx.clip(it.wordClip)) || ctx.wordAudio(it.w),
+          // Фото есть у малой части слов (A0 — 51 из 266), а иконка курса —
+          // у каждого: движок курса рисует её на карточке. Нет фото — иконка.
+          ...cardIcon(ctx, it),
+          // Роль word: правка клипа для задания (only: 'task') карточку не трогает.
+          audio: (it.wordClip && ctx.clip(it.wordClip, 'word')) || voiced(ctx, it.w),
         })),
       }
 
@@ -301,16 +346,25 @@ function screenToStep(sc, ctx) {
     // сгенерированная озвучка слова. Иначе одно и то же слово звучало бы на
     // карточке записью, а через два экрана — синтезом, и задание проверяло бы
     // способность узнать чужой голос.
-    case 'pic':
+    //
+    // Движок курса у pic играет только слово (R.pic → speak(sc.w)) и клип
+    // экрана не трогает, а клип там — запись того же слова («h2_good_morning»).
+    // Поэтому клип идёт в sayTrack, а не дорожкой шага: дорожка давала вторую
+    // кнопку «послушать» над кнопкой слова.
+    case 'pic': {
+      const { src: _track, ...rest } = base
+      const opts = (sc.opts || []).map((o) => plain(o, lang))
       return {
-        ...base,
+        ...rest,
         type: 'choice',
         say: sc.w || '',
-        sayTrack: (sc.wordClip && ctx.clip(sc.wordClip)) || ctx.wordAudio(sc.w) || null,
-        options: (sc.opts || []).map((o) => plain(o, lang)),
-        answer: plain((sc.opts || [])[sc.a], lang),
+        sayTrack: ((sc.wordClip || sc.clip) && ctx.clip(sc.wordClip || sc.clip, 'word')) || ctx.wordAudio(sc.w) || null,
+        options: opts,
+        ...optionIcons(ctx, opts),
+        answer: opts[sc.a],
         why: plain(sc.why, lang) || '',
       }
+    }
 
     case 'listen': {
       if (sc.mode === 'gap') {
@@ -324,6 +378,8 @@ function screenToStep(sc, ctx) {
         prompt: plain(sc.q, lang),
         src,
         options: opts,
+        // pics — варианты-картинки (coffee / water / tea), как у pic.
+        ...(sc.pics ? optionIcons(ctx, opts) : {}),
         answer: opts[sc.a],
         html: materialHtml(sc, ctx),
       }
@@ -455,6 +511,11 @@ function screenToStep(sc, ctx) {
     // же урока — упражнение остаётся упражнением; нет перевода — экран не
     // переносим (лучше без задания, чем задание без вопроса).
     case 'match': {
+      // «Match the words and the pictures» (A0): правая половина — иконка
+      // курса. Есть у всех пар — соединяем слово с картинкой, как у автора;
+      // иначе — перевод из карточек урока (ниже).
+      const pics = pictureMatch(sc, ctx, lang)
+      if (pics) return { ...base, type: 'match', ...pics, options: shuffle(pics.pairs.map((p) => p.right), seed) }
       const pairs = []
       let translated = false
       for (const p of sc.pairs || []) {

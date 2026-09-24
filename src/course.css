@@ -207,6 +207,37 @@
   border-radius: 100px;
   text-align: center;
 }
+/* «Выберите картинку»: варианты — иконки курса без подписи, плитками в ряд
+   (как .opts.pics в самом курсе). Состояния — те же цвета, что у пилюль:
+   иконка рисуется currentColor и белеет вместе с текстом. */
+.cp-choices.is-pics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 12px;
+}
+.cp-choice.cp-choice--pic {
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 16px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  color: #9047ff;
+}
+.cp-choice.cp-choice--pic.is-sel,
+.cp-choice.cp-choice--pic.is-right,
+.cp-choice.cp-choice--pic.is-wrong {
+  color: #fff;
+}
+.cp-choice__icon {
+  width: 56px;
+  height: 56px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 /* Карточки «выбери что ближе» */
 /* Ширину гридам задаём явно: .cp-step центрирует детей по поперечной оси, и
@@ -357,6 +388,37 @@
 }
 .cp-word.is-noimg .cp-word__label {
   display: none;
+}
+/* Иконка курса на карточке без фото (A0): на той же сиреневой плашке, что и
+   карточка без картинки, но слово остаётся подписью снизу — как у фото. */
+.cp-word__art {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: linear-gradient(160deg, #f3ecff 0%, #e6dbff 100%);
+  color: #6f2fd6;
+}
+.cp-word__icon,
+.cp-match__icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cp-word__icon {
+  width: 72px;
+  height: 72px;
+  stroke-width: 1.4;
+}
+/* Картинка вместо слова в паре и в банке «Соедините слова и картинки». */
+.cp-match__icon {
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.6;
+  vertical-align: middle;
+}
+.cp-chip.cp-chip--pic {
+  color: #9047ff;
 }
 /* Оборот накрывает лицевую сторону: он живёт отдельным блоком рядом с кнопкой
    переворота, потому что внутри него свои кнопки — «В словарь» и звук. */
@@ -1849,6 +1911,11 @@
 .cp-phrases__spk {
   flex: none;
   color: #9047ff;
+}
+/* Рамка с пропуском («Would you mind …ing?») — без записи и без кнопки
+   звука: синтез читает пропуск кашей. Строка остаётся текстом урока. */
+.cp-phrases__row.is-frame {
+  cursor: default;
 }
 
 /* Говорение: строки-образцы и запись своего ответа. */

@@ -7,7 +7,8 @@ import { FRESH_PROFILE, walkTour } from './tour-helper.js'
 //   — при первом заходе тур выходит сам, второй раз уже нет;
 //   — карточка целиком в экране и НЕ накрывает подсветку (высокие секции
 //     ленты обрезаются прожектором, иначе поповеру негде встать);
-//   — кнопка «?» в углу открывает тур заново.
+//   — кнопка «?» открывает тур заново (у «Практики» — только в мобильной шапке:
+//     на десктопе угол занят переключателем уровня, см. .learn__bell).
 
 // Тур должен выйти — значит, профиль чистый (прогон целиком идёт с погашенными).
 test.use(FRESH_PROFILE)
@@ -15,7 +16,7 @@ test.use(FRESH_PROFILE)
 test.describe('онбординг-тур «Практики»', () => {
   test('выходит сам, проходится целиком и второй раз не выходит', async ({ page, viewport }) => {
     await page.goto('/?screen=practice')
-    await expect(page.locator('.pp')).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
 
     const total = await walkTour(page, viewport)
     // Шагов ровно столько, сколько секций нашлось на экране: тур сам
@@ -23,27 +24,39 @@ test.describe('онбординг-тур «Практики»', () => {
     expect(total).toBeGreaterThanOrEqual(5)
 
     await page.goto('/?screen=practice')
-    await expect(page.locator('.pp')).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
     await page.waitForTimeout(700)
     await expect(page.locator('.t-tour__pop')).toHaveCount(0)
   })
 
-  test('кнопка «?» открывает тур заново и возвращает ленту в «Все»', async ({ page }) => {
+  test('«?» в мобильной шапке открывает тур заново и возвращает «Аудирование»', async ({ page, viewport }) => {
+    test.skip((viewport?.width ?? 0) > 760, 'на десктопе «?» на этом экране нет')
     await page.goto('/?screen=practice')
-    await expect(page.locator('.pp')).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
     await page.locator('.t-tour__skip').click()
     await expect(page.locator('.t-tour__pop')).toHaveCount(0)
 
-    // Под выбранным чипом остальных секций в DOM нет — «?» обязан вернуть «Все»,
-    // иначе тур из семи шагов свёлся бы к одному.
-    await page.locator('.pp-chip').nth(3).click()
-    await expect(page.locator('.pp-chip--on')).not.toHaveText(/^(Все|All|Барлығы)$/)
+    // Под другой вкладкой шагов тура в DOM нет — «?» обязан вернуть
+    // «Аудирование», иначе тур свёлся бы к двум шагам.
+    await page.locator('.pk-skill', { hasText: 'Письмо' }).click()
+    await expect(page.locator('.pk-skill[aria-selected="true"]')).toContainText('Письмо')
 
-    // Кнопок «?» в DOM две — в мобильной шапке и в углу кабинета; на каждом
-    // вьюпорте видна ровно одна (см. .learn__bell / .mtop в styles.css).
     await page.locator('.tour-help:visible').click()
     await expect(page.locator('.t-tour__pop')).toBeVisible()
-    await expect(page.locator('.pp-chip--on')).toHaveText(/^(Все|All|Барлығы)$/)
+    await expect(page.locator('.pk-skill[aria-selected="true"]')).toContainText('Аудирование')
+  })
+
+  // Регрессия-ловушка: группа «? / язык / колокольчик» висит абсолютом в правом
+  // верхнем углу кабинета и перехватывает клики у всего, что там стоит. На
+  // «Практике» там по макету переключатель уровня — группа обязана уйти.
+  test('на десктопе угол не перекрывает переключатель уровня', async ({ page, viewport }) => {
+    test.skip((viewport?.width ?? 0) <= 760, 'угол «? / язык» — только десктоп')
+    await page.goto('/?screen=practice')
+    await expect(page.locator('.pk')).toBeVisible({ timeout: 15000 })
+    await page.locator('.t-tour__skip').click()
+    await expect(page.locator('.learn__bell')).toBeHidden()
+    await page.locator('.pk-levels__btn', { hasText: 'C2' }).click()
+    await expect(page.locator('.pk-levels__btn[aria-checked="true"]')).toHaveText('C2')
   })
 })
 
