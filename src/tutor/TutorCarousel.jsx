@@ -18,7 +18,6 @@ export default function TutorCarousel({
   onListen,
   tempers = {},
   onToggleTemper,
-  adultLocked = false,
 }) {
   const { t } = useLang()
   const n = TUTORS.length
@@ -108,7 +107,6 @@ export default function TutorCarousel({
             tutor={cur}
             temper={tempers[cur.key]}
             onToggle={onToggleTemper}
-            locked={adultLocked}
           />
         </div>
         <div className="t-car__chips">
