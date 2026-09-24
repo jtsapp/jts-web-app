@@ -3571,6 +3571,22 @@ def _eleven_voice_for(tutor: str) -> str:
             return env
     return ELEVEN_VOICE.get(tutor, DEFAULT_ELEVEN_VOICE)
 
+
+def _eleven_session_voice(profile: LearnerProfile) -> str:
+    """Voice id этой сессии: override ученика → персона → глобальный фолбэк.
+
+    ELEVENLABS_VOICE_ID здесь ПОСЛЕДНИЙ: на деплое он занят IELTS Listening
+    и не должен подменять клон тьютора.
+    """
+    override = (getattr(profile, "eleven_voice_id", None) or "").strip()
+    if override:
+        return override
+    if profile.tutor:
+        persona = _eleven_voice_for(profile.tutor)
+        if persona:
+            return persona
+    return (os.getenv("ELEVENLABS_VOICE_ID") or "").strip() or DEFAULT_ELEVEN_VOICE
+
 DEFAULT_GEMINI_TTS_VOICE = "Puck"
 DEFAULT_GEMINI_TTS_MODEL = "gemini-2.5-flash-tts"
 
@@ -3812,13 +3828,10 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     # too. Set ELEVENLABS_MODEL=eleven_multilingual_v2 to trade headroom for
     # fidelity.
     model = _eleven_model_for(profile.tutor)
-    # profile.eleven_voice_id stays "" in this app (the token route never sends
-    # elevenLabsVoiceId) — kept first so a future per-learner override just works.
-    voice_id = (
-        profile.eleven_voice_id
-        or os.getenv("ELEVENLABS_VOICE_ID")
-        or _eleven_voice_for(profile.tutor)
-    )
+    # Голос персоны важнее глобального ELEVENLABS_VOICE_ID: та переменная —
+    # голос IELTS Listening («Lily» и кто угодно ещё на деплое), а не тьютора.
+    # Раньше она перебивала таблицу, и KZ-стенд уезжал на чужой id → 401.
+    voice_id = _eleven_session_voice(profile)
     http_only = _eleven_http_only(model)
     # Настройки голоса НЕ трогаем: отказ был про транспорт, а не про них, и
     # обрезать поля по догадке уже вышло боком — конструктор плагина требует

@@ -22,9 +22,11 @@ import sys
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from agent import (  # noqa: E402
+    LearnerProfile,
     _eleven_http_only,
     _eleven_key_for,
     _eleven_model_for,
+    _eleven_session_voice,
     _eleven_voice_for,
 )
 
@@ -62,6 +64,13 @@ os.environ["ELEVEN_VOICE_ID_JARVIS"] = "override-kz"
 assert _eleven_voice_for("jarvis") == "override-kz", "env важнее таблицы"
 assert _eleven_voice_for("bro") != "override-kz", "чужой голос Декстера не касается"
 _clear("ELEVEN_VOICE_ID_JARVIS", "ELEVEN_VOICE_ID_BRO")
+
+os.environ["ELEVENLABS_VOICE_ID"] = "ExpLt85FtBvm8QN4m6rB"
+assert _eleven_session_voice(LearnerProfile(tutor="jarvis")) == "2ZqnRUaCU5IaXJ45uakV", (
+    "глобальный ELEVENLABS_VOICE_ID не должен перебивать клон стенда"
+)
+assert _eleven_session_voice(LearnerProfile(tutor="bro")) == "rHWSYoq8UlV0YIBKMryp"
+_clear("ELEVENLABS_VOICE_ID")
 
 # --- модель -----------------------------------------------------------------
 
