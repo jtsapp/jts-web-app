@@ -22,6 +22,7 @@ from agent import (  # noqa: E402
     PERSONA_OVERRIDE,
     SONIOX_TTS_VOICE,
     TUTOR_MOODS,
+    _brain_model_for,
     _eleven_http_only,
     _eleven_model_for,
     _eleven_session_voice,
@@ -45,7 +46,7 @@ def _aizere(**kw):
 
 for name in (
     "ELEVEN_VOICE_ID_AIZERE", "ELEVENLABS_MODEL_AIZERE", "ELEVENLABS_MODEL",
-    "TTS_PROVIDER_AIZERE", "ELEVENLABS_VOICE_ID",
+    "TTS_PROVIDER_AIZERE", "ELEVENLABS_VOICE_ID", "BRAIN_MODEL_AIZERE", "BRAIN_MODEL_HYPE",
 ):
     os.environ.pop(name, None)
 
@@ -89,10 +90,27 @@ assert "KAZAKH AND ENGLISH, NOTHING ELSE" in persona
 # заговорить по-русски (урок злого Спарка). Казахские примеры реплик — можно.
 for ru_word in ("ученик", "объясни", "Спокойн", "Мудрая"):
     assert ru_word not in persona, ru_word
+# Правила письма: текст уходит в синтез, и написание решает, как это прозвучит.
+# На скриншоте 24.09.2026 было «англис тілін», «прошлое время» и «練習».
+assert "Latin letters" in persona, "английское — латиницей"
+assert "ағылшын тілі" in persona, "язык по-казахски называется так, а не «англис»"
+assert "Never Chinese" in persona, "никаких других алфавитов"
+assert "өткен шақ" in persona, "казахские названия времён вместо русских"
+assert "retell them in Kazakh" in persona, "заметки памяти по-русски пересказывать, а не цитировать"
 assert AIZERE in PERSONA_OPENER
 assert "Сәлем" in PERSONA_OPENER[AIZERE]
 assert persona_key(AIZERE, "harsh") == AIZERE, "нрава 18+ у неё нет — остаётся базовая персона"
 assert TUTOR_MOODS[AIZERE], "эмоции аватара разрешены"
+
+# --- мозг -------------------------------------------------------------------
+# Haiku ломает казахскую морфологию и роняет иероглифы; Sonnet 5 — чистый
+# казахский (замер 24.09.2026). Только ей: Спарку и остальным — дефолт роута.
+assert _brain_model_for(AIZERE) == "claude-sonnet-5"
+assert _brain_model_for("hype") == "jts-voice-router", "Спарк остаётся на дефолте роута"
+assert _brain_model_for("") == "jts-voice-router"
+os.environ["BRAIN_MODEL_AIZERE"] = "claude-haiku-4-5"
+assert _brain_model_for(AIZERE) == "claude-haiku-4-5", "откат без деплоя кода"
+os.environ.pop("BRAIN_MODEL_AIZERE", None)
 
 # --- голос ------------------------------------------------------------------
 p = _aizere(lang="kz")
