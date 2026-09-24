@@ -37,6 +37,6 @@ test('после входа открывается тьютор-зона, а н�
 
   // SuccessPage сам уводит дальше через ~1.8с: тьютор без анкеты → онбординг
   // (там и голосовой тест уровня), и никаких королевств.
-  await expect(page.locator('.t-welcome__title')).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.t-pick__title')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('.learn__body')).toHaveCount(0)
 })
