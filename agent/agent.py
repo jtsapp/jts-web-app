@@ -416,7 +416,7 @@ STYLE_GUIDANCE = {
 #
 # ЖЕЛЕЗНОЕ ПРАВИЛО. Голос и язык читают БАЗОВЫЙ id (p.tutor): TUTOR_TTS_PROVIDER,
 # ELEVEN_VOICE, SONIOX_TTS_VOICE, PERSONA_VOICE_SETTINGS, TUTOR_VOICE и
-# KZ_TUTOR_PERSONA/tutor_session_lang. Текст и тон читают persona_key(): сам
+# KZ_TEACHING_TUTORS/tutor_session_lang. Текст и тон читают persona_key(): сам
 # PERSONA_OVERRIDE, TONE_SELF_DEFINED_PERSONAS, methodology_for,
 # cefr_guidance_for, slim_prompt_for_persona, PERSONA_TEMPERATURE. Смешаешь —
 # злой Спарк потеряет казахский голос, а спокойный Декстер уедет с ElevenLabs.
@@ -541,12 +541,25 @@ _MIRROR_LEARNER_LANGUAGE = (
 # к Спарку полезнее для ученика, чем ломаный казахский.
 KZ_TUTOR_PERSONA = "hype"  # Спарк
 
-# Кто РЕАЛЬНО говорит по-казахски. Шире, чем KZ_TUTOR_PERSONA, и это не одно и
-# то же: KZ_TUTOR_PERSONA сидит в ветках промпта, которые про Спарка лично
-# («скажи, что твой казахский слабый, и отправь к Спарку») — Джарвису они не
+# Тьюторы, которые УЧАТ на казахском и английском, — у всех одни ветки промпта:
+# казахское зеркало, «русский не мой язык», казахская подпорка на A1/A2. Спарк
+# был первым и единственным, поэтому ветки сравнивали id с KZ_TUTOR_PERSONA
+# строкой; Айзере (24.09.2026, пока dev-only) учит на тех же двух языках, и
+# сравнение одной строкой отдало бы ей русские ветки Луны.
+# Джарвиса здесь нет: у него свой файл персоны целиком, эти ветки ему не нужны.
+KZ_TEACHING_TUTORS = frozenset({KZ_TUTOR_PERSONA, "aizere"})
+
+
+def _teaches_in_kazakh(tutor: str) -> bool:
+    return (tutor or "").strip().lower() in KZ_TEACHING_TUTORS
+
+
+# Кто РЕАЛЬНО говорит по-казахски. Шире, чем KZ_TEACHING_TUTORS, и это не одно и
+# то же: KZ_TEACHING_TUTORS сидит в ветках промпта про тьютора, который учит
+# («скажи, что русский не твой язык, и отправь к Луне») — Джарвису они не
 # нужны, у него свой файл персоны целиком. А вот озвучке разница видна: язык
-# ПРОИЗНОШЕНИЯ у обоих казахский, и он не зависит от языка интерфейса.
-KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis"})
+# ПРОИЗНОШЕНИЯ у всех троих казахский, и он не зависит от языка интерфейса.
+KZ_SPEAKING_TUTORS = frozenset({"hype", "jarvis", "aizere"})
 
 # KZ-стенд («KZ тест» на карточке, ключ прежний). Dev-only: на проде карточки
 # нет вовсе (JARVIS_ENABLED в src/config.js), поэтому там, где прод-тьюторов
@@ -595,8 +608,8 @@ _RUSSIAN_NOT_MY_LANGUAGE = (
 
 def _mirror_language_rules(tutor: str) -> str:
     """MIRROR + честность про язык, которого у персоны нет: у Луны с Декстером
-    это казахский, у Спарка — русский."""
-    if (tutor or "").strip().lower() == KZ_TUTOR_PERSONA:
+    это казахский, у Спарка и Айзере — русский."""
+    if _teaches_in_kazakh(tutor):
         return _MIRROR_LEARNER_LANGUAGE_KZ + _RUSSIAN_NOT_MY_LANGUAGE
     return _MIRROR_LEARNER_LANGUAGE + _KAZAKH_NOT_MY_LANGUAGE
 
@@ -610,7 +623,7 @@ def tutor_session_lang(tutor: str, lang: str) -> str:
     Обратное направление (kz-интерфейс у неказахскоязычных Луны/Декстера) тут
     НЕ трогаем: там подпорка на русский уже сделана точечно по месту."""
     lang = (lang or "en").strip().lower()
-    if (tutor or "").strip().lower() == KZ_TUTOR_PERSONA and lang == "ru":
+    if _teaches_in_kazakh(tutor) and lang == "ru":
         return "kz"
     return lang
 
@@ -675,11 +688,11 @@ _ENGLISH_ONLY_BLOCK = (
 def explanation_language_block(exp: str, tutor: str = "", english_only: bool = False) -> str:
     """Directive for the language the tutor EXPLAINS in (the student's choice,
     independent of the UI / what they speak). English always stays the target.
-    `tutor` — persona id: казахский умеет только Спарк (см. KZ_TUTOR_PERSONA).
+    `tutor` — persona id: по-казахски учат Спарк и Айзере (см. KZ_TEACHING_TUTORS).
     `english_only` — тумблер ученика: короткое замыкание на английский."""
     if english_only:
         return _ENGLISH_ONLY_BLOCK
-    speaks_kz = (tutor or "").strip().lower() == KZ_TUTOR_PERSONA
+    speaks_kz = _teaches_in_kazakh(tutor)
     mirror = _mirror_language_rules(tutor)
     # Настройку «объясняй по-казахски» может выставить кто угодно, включая ученика,
     # выбравшего Луну/Декстера. Им казахскую ветку не отдаём — иначе промпт велит
@@ -1254,6 +1267,37 @@ PERSONA_OVERRIDE = {
         "  Learner: (silence)\n"
         "  You: 'take all the time you need.'"
     ),
+    # Айзере — ЧЕРНОВИК (24.09.2026). Собран по чертам карточки («Мудрая»,
+    # «Заботливая») только затем, чтобы с ней можно было созвониться на
+    # dev-стенде; настоящий промпт и свою методичку пишут отдельно, и этот текст
+    # целиком заменяется ими. Языки — как у Спарка: казахский и английский, русский
+    # понимает, но не говорит (ветки промпта — KZ_TEACHING_TUTORS). Инструкции
+    # по-английски по той же причине, что у злого Спарка: русские слова в тексте
+    # персоны тянут модель заговорить по-русски.
+    "aizere": (
+        "Persona 'Aizere' (Айзере) — a wise, caring young woman who teaches English "
+        "(wise, caring, calm). For learners who want patience and a clear explanation.\n"
+        "Essence: sees WHY the learner made the mistake and explains that reason in one "
+        "simple sentence, then lets them try again. Cares about the person, not only the answer.\n"
+        "LANGUAGES — KAZAKH AND ENGLISH, NOTHING ELSE. You are a Kazakh-speaking tutor: learners "
+        "pick you to study English in Kazakh. You understand Russian perfectly and you never "
+        "speak it — not a sentence, not a filler word, not when the interface is Russian. "
+        "Russian in comes back as Kazakh out. Your Kazakh is modern and spoken, with Kazakh "
+        "grammar terms (етістік, зат есім, шақ, септік). English is the target you are training.\n"
+        "Vibe: warm, steady, unhurried, like a kind older sister who knows the answer. "
+        "Short spoken sentences.\n"
+        "Shape: notice the attempt → one clear reason → the correct form → invite one more try.\n"
+        "BANNED: lectures longer than two sentences, pressure, sarcasm, and ANY Russian in your "
+        "own speech.\n"
+        "HARD RULE: every sentence you speak is Kazakh or English. Total reply ≤ 3 sentences.\n"
+        "EXAMPLES:\n"
+        "  Learner: 'she go to school'\n"
+        "  You: 'Жақсы талпыныс. She goes — he, she, it кезінде етістікке -s қосамыз. Тағы бір рет?'\n"
+        "  Learner: 'а как будет вчера по-английски?'\n"
+        "  You: 'Yesterday. Енді yesterday сөзімен бір сөйлем құрап көрші.'\n"
+        "  Learner: (silence)\n"
+        "  You: 'Асықпа, мен тыңдап отырмын.'"
+    ),
 }
 
 # Пример первой фразы звонка — на персону.
@@ -1270,6 +1314,7 @@ PERSONA_OVERRIDE = {
 PERSONA_OPENER = {
     "gentle": '''"Hi, it's so nice to see you."''',
     "hype": '''"Сәлем! LET'S GO — great to see you!"''',
+    "aizere": '''"Сәлем! Қайта көргеніме қуаныштымын. How are you today?"''',
     "bro_calm": '"Yo, чё каво? Good to see you, бро."',
     "coach": '"Hi! I am so glad you are here."',
     "professor": '"Good day. It is a pleasure to see you."',
@@ -1313,6 +1358,9 @@ PERSONA_TEMPERATURE = {
     "coach": 0.7,
     "sage": 0.6,
     "gentle": 0.55,
+    # Айзере спокойная, как Луна, но объясняет — разброс чуть выше, иначе на
+    # черновой персоне все ответы съезжают в одну формулу из примеров.
+    "aizere": 0.6,
     "edge": 0.55,
     "professor": 0.45,
     # KZ-стенд: ниже разброс — меньше воды и меньше театра в казахском.
@@ -1342,6 +1390,9 @@ TUTOR_VOICE = {
     "gentle": "Aoede",
     "edge": "Charon",
     "velvet": "Leda",
+    # Айзере говорит клоном ElevenLabs (TUTOR_TTS_PROVIDER); строка — чтобы
+    # gemini-путь, если его включат ей env'ом, не озвучил её мужским Puck.
+    "aizere": "Kore",
 }
 
 
@@ -1524,6 +1575,7 @@ TUTOR_MOODS: dict[str, frozenset[str]] = {
     "bro": frozenset(MOOD_NAMES),  # Декстер — весь набор, злость это его фишка
     "gentle": _LESSON_MOODS,       # Луна
     "hype": _LESSON_MOODS,         # Спарк
+    "aizere": _LESSON_MOODS,       # Айзере
 }
 
 # Префикс «mood:» необязателен: на живых прогонах модель писала тег и как
@@ -2393,15 +2445,15 @@ def language_mode_block(
         return _ENGLISH_ONLY_BLOCK
     native = "Russian" if lang == "ru" else "Kazakh" if lang == "kz" else None
     # Казахский интерфейс ещё не значит казахскоязычный тьютор: у Луны и Декстера
-    # его нет (см. KZ_TUTOR_PERSONA). Иначе этот блок велел бы им подсказывать и
+    # его нет (см. KZ_TEACHING_TUTORS). Иначе этот блок велел бы им подсказывать и
     # переводить на казахском — ровно то, чего они делать не умеют. Подпираем
     # русским, на котором оба и объясняют.
-    if native == "Kazakh" and (tutor or "").strip().lower() != KZ_TUTOR_PERSONA:
+    if native == "Kazakh" and not _teaches_in_kazakh(tutor):
         native = "Russian"
     # И наоборот: русский интерфейс у Спарка не значит русскую подпорку. Этот
     # блок — самый «языковой» из всех (велит переспрашивать и переводить на
     # родном), поэтому на A1/A2 он и делал из Спарка русскоязычного тьютора.
-    if native == "Russian" and (tutor or "").strip().lower() == KZ_TUTOR_PERSONA:
+    if native == "Russian" and _teaches_in_kazakh(tutor):
         native = "Kazakh"
     low = level in {"A1", "A2"}
     if native and low:
@@ -2853,7 +2905,7 @@ def build_instructions(p: LearnerProfile) -> str:
     # в казахскую ветку, иначе она бы прямым текстом велела ему говорить
     # по-русски и перебила бы _RUSSIAN_NOT_MY_LANGUAGE (см. tutor_session_lang).
     ui_lang = tutor_session_lang(p.tutor, p.lang)
-    speaks_kz_only = (p.tutor or "").strip().lower() == KZ_TUTOR_PERSONA
+    speaks_kz_only = _teaches_in_kazakh(p.tutor)
     if ui_lang == "kz":
         # Спарк заходит сюда и с русским интерфейсом, поэтому первая строка у
         # него другая: ученик может обратиться по-русски, слышит он это
@@ -3512,7 +3564,7 @@ DEFAULT_AZURE_VOICE = "en-US-AndrewMultilingualNeural"
 # Azure kk-KZ has DauletNeural (M) / AigulNeural (F). Pick by tutor gender.
 AZURE_KZ_MALE = "kk-KZ-DauletNeural"
 AZURE_KZ_FEMALE = "kk-KZ-AigulNeural"
-FEMALE_TUTORS = {"gentle", "coach"}
+FEMALE_TUTORS = {"gentle", "coach", "aizere"}
 
 
 def _cascade_tts_azure(profile: LearnerProfile):
@@ -3563,6 +3615,12 @@ ELEVEN_VOICE = {
     "velvet": "Xb7hH8MSUJpSbSDYk0k2",
     # KZ-стенд. Клон из кабинета ElevenLabs; env ELEVEN_VOICE_ID_JARVIS важнее.
     "jarvis": "2ZqnRUaCU5IaXJ45uakV",
+    # Айзере. Это ТОТ ЖЕ клон, что у KZ-стенда: стенд обкатывал её голос раньше,
+    # чем появилась она сама. Id зашит, а не только в env: в .env.local он
+    # записан как ELEVEN_VOICE_ID_Aizere, а _eleven_voice_for ищет
+    # ELEVEN_VOICE_ID_AIZERE — на Windows регистр не важен, на Linux-воркере env
+    # молча не нашёлся бы, и Айзере заговорила бы голосом Декстера.
+    "aizere": "2ZqnRUaCU5IaXJ45uakV",
 }
 DEFAULT_ELEVEN_VOICE = ELEVEN_VOICE["bro"]
 
@@ -3613,6 +3671,9 @@ SONIOX_TTS_VOICE = {
     # фразе; Owen намеренно НЕ взят — это тембр Спарка, а стенд должен звучать
     # отдельным человеком, а не его двойником.
     "jarvis": "Daniel",
+    # Айзере — только откат, когда ElevenLabs на деплое не настроен. Женский
+    # голос, иначе дефолтный Owen сделал бы из неё Спарка. На слух не подбирали.
+    "aizere": "Maya",
 }
 DEFAULT_SONIOX_TTS_VOICE = "Owen"
 DEFAULT_SONIOX_TTS_MODEL = "tts-rt-v1-preview"
@@ -3753,10 +3814,12 @@ def _cascade_tts_gemini(profile: LearnerProfile):
 #
 # HTTP у плагина — это /v1/text-to-speech/{id}/stream плюс apply_text_normalization
 # и voice_settings: null. На клоне v3 кабинет отвечает 400 (тело плагин глотает).
-# Тот же голос в кабинете и в /api/tutor-tts говорит через convert без /stream
-# и без этих полей. Поэтому http-only модели идут в _ElevenConvertTTS, а
-# StreamAdapter режет реплику по предложениям — как OpenAI TTS.
-ELEVEN_HTTP_ONLY_MODELS = frozenset({"eleven_v3"})
+# Виноваты поля, а не /stream: без них тот же /stream отвечает 200. Поэтому
+# http-only модели идут в свой _ElevenConvertTTS (голое тело, /stream — см.
+# _eleven_convert_url), а StreamAdapter режет реплику по предложениям — как
+# OpenAI TTS.
+# Разговорная v3 — туда же: stream-input на ней закрывается 1006 сразу.
+ELEVEN_HTTP_ONLY_MODELS = frozenset({"eleven_v3", "eleven_v3_conversational"})
 ELEVEN_CONVERT_ENCODING = "mp3_44100_128"
 
 def _eleven_http_only(model: str) -> bool:
@@ -3794,6 +3857,11 @@ def _eleven_key_for(tutor: str) -> str:
 # молча уехал бы на глобальный Flash и заговорил бы не тем языком.
 ELEVEN_MODEL = {
     "jarvis": "eleven_v3",
+    # Айзере учит по-казахски — та же причина, но на РАЗГОВОРНОЙ v3. Казахский
+    # у неё есть (74 языка, как у v3), цена ×0.5 против ×1 у v3, первый звук через
+    # /stream 0.27–0.29 с против 0.9–1.25 с у v3 (замер 24.09.2026, её же клон);
+    # на слух владелец выбрал её — звучит даже лучше. Сокета, как и у v3, нет.
+    "aizere": "eleven_v3_conversational",
 }
 DEFAULT_ELEVEN_MODEL = "eleven_flash_v2_5"
 
@@ -3845,12 +3913,32 @@ def _eleven_convert_encoding() -> str:
 
 
 def _eleven_convert_url(voice_id: str, encoding: str | None = None) -> str:
-    """Convert, не /stream: тот же URL, что /api/tutor-tts и кабинет."""
+    """HTTP-синтез v3 — /stream, а не convert.
+
+    convert отдаёт первый байт, только когда готов ВЕСЬ файл: у клона короткая
+    фраза шла 2.0–2.7 с до первого звука, девять секунд речи — 5.2 с. /stream
+    тот же текст начинает отдавать через 0.9–1.2 с и генерирует быстрее
+    реального времени (~1.8×), так что звук не догоняет синтез (замер 24.09.2026).
+    Сокета у v3 нет (stream-input закрывается 1006), optimize_streaming_latency
+    на v3 — 400 unsupported_model; других ручек задержки не осталось.
+
+    С /stream раньше уходили из-за 400, но его давали поля ПЛАГИНА, а не сам
+    эндпойнт — тело здесь голое (_eleven_http_payload). Откат на convert без
+    деплоя кода: ELEVENLABS_V3_STREAM=0.
+    """
     enc = encoding or _eleven_convert_encoding()
+    stream = (os.getenv("ELEVENLABS_V3_STREAM") or "1").strip() != "0"
     return (
         f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-        f"?output_format={enc}"
+        f"{'/stream' if stream else ''}?output_format={enc}"
     )
+
+
+def _eleven_http_payload(text: str, model: str) -> dict[str, Any]:
+    """Тело HTTP-синтеза: только текст и модель. apply_text_normalization и
+    voice_settings: null, которые шлёт плагин, клон на v3 отбивает 400 —
+    сюда их не добавлять."""
+    return {"text": text, "model_id": model}
 
 
 def _eleven_sample_rate(encoding: str) -> int:
@@ -3924,7 +4012,7 @@ class _ElevenConvertStream(lk_tts.ChunkedStream):
             return
 
         url = _eleven_convert_url(tts._voice_id, tts._encoding)
-        payload = {"text": text, "model_id": tts._model_id}
+        payload = _eleven_http_payload(text, tts._model_id)
         try:
             async with tts._http().stream(
                 "POST",
@@ -4014,7 +4102,8 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     # HTTP-путь: синтез по предложению обычными запросами (см. оговорку у
     # ELEVEN_HTTP_ONLY_MODELS). Короткие предложения склеиваем — просодия живёт
     # дольше и запросов меньше; плата — задержка до первого звука, поэтому порог
-    # вынесен в переменную, как у OpenAI.
+    # вынесен в переменную, как у OpenAI. С /stream плата небольшая: первый байт
+    # почти не зависит от длины куска (0.9 с на короткой фразе, 1.2 с на 9 с речи).
     try:
         min_len = int(os.getenv("ELEVENLABS_MIN_SENTENCE", "45"))
     except ValueError:
@@ -4386,6 +4475,7 @@ TUTOR_TTS_PROVIDER = {
     # KZ-стенд — клон ElevenLabs (v3, иначе казахского в модели нет).
     # Пути "soniox" / "openai" / "fish" рабочие: вернуть — TTS_PROVIDER_JARVIS.
     "jarvis": "eleven",
+    "aizere": "eleven",  # Айзере — тот же клон, что у KZ-стенда, но разговорная v3
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
@@ -4398,8 +4488,8 @@ TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure", "fish", "openai")
 # их нет, но агент их знает) и для пустого tutor. CASCADE_TTS сохранён как имя
 # переменной, но сменил смысл: это ДЕФОЛТ для нераспределённых, не рубильник.
 DEFAULT_TTS_PROVIDER = "gemini"
-# Казахского правила здесь НЕТ намеренно. По-казахски говорят Спарк (Soniox)
-# и KZ-стенд (ElevenLabs v3) — оба уже на своём провайдере.
+# Казахского правила здесь НЕТ намеренно. По-казахски говорят Спарк (Soniox),
+# KZ-стенд и Айзере (ElevenLabs v3) — все уже на своём провайдере.
 # У Луны и Декстера "kz" — это язык ИНТЕРФЕЙСА: сами они русскоязычные (см.
 # tutor.*.trait1 в src/i18n/dict.js), говорят по-английски и объясняют по-русски,
 # казахского текста в их репликах не бывает. Раньше kz перекидывал на TTS всех

@@ -13,6 +13,10 @@
 //            есть только у неё). Свой ключ — ELEVENLABS_API_KEY_JARVIS, если
 //            клон живёт в другом кабинете. Пути soniox/openai/fish рабочие:
 //            вернуть — TTS_PROVIDER_JARVIS. Тьютор dev-only (JARVIS_ENABLED).
+//   Aizere → ElevenLabs, ТОТ ЖЕ клон, что у Jarvis (стенд обкатывал её
+//            голос), но модель eleven_v3_conversational — казахский есть, вдвое
+//            дешевле v3. Свой ключ — ELEVENLABS_API_KEY_AIZERE, иначе общий.
+//            Пока dev-only (AIZERE_ENABLED).
 // Язык сессии на выбор провайдера НЕ влияет: у Луны и Декстера "kz" — это язык
 // интерфейса, сами они русскоязычные и казахского текста не произносят.
 // Azure тут нет: аккаунта Azure Speech у проекта нет (см. TUTOR_TTS_PROVIDER).
@@ -46,6 +50,8 @@ const SONIOX_VOICE = {
   'spark-harsh': 'Owen',
   jarvis: 'Daniel',
   'jarvis-harsh': 'Daniel',
+  // Айзере — только откат: женский голос, иначе дефолтный Owen сделал бы из неё Спарка.
+  aizere: 'Maya',
 }
 const SONIOX_MODEL = process.env.SONIOX_TTS_MODEL || 'tts-rt-v1'
 const SONIOX_LANG = { kz: 'kk' } // app "kz" → Soniox ISO "kk"; en/ru pass through
@@ -65,6 +71,7 @@ const TUTOR_PROVIDER = {
   'dexter-harsh': 'eleven',
   'spark-harsh': 'soniox',
   'jarvis-harsh': 'eleven',
+  aizere: 'eleven', // клон KZ-стенда, разговорная v3
 }
 const DEFAULT_PROVIDER = 'gemini'
 const FALLBACK_PROVIDER = 'soniox'
@@ -74,17 +81,22 @@ const FALLBACK_PROVIDER = 'soniox'
 // что зашит в agent.py.
 const DEXTER_VOICE_ID = process.env.ELEVEN_VOICE_ID_DEXTER || 'rHWSYoq8UlV0YIBKMryp'
 const JARVIS_VOICE_ID = process.env.ELEVEN_VOICE_ID_JARVIS || '2ZqnRUaCU5IaXJ45uakV'
+// Зеркало ELEVEN_VOICE["aizere"] в agent.py: тот же клон, что у стенда.
+const AIZERE_VOICE_ID = process.env.ELEVEN_VOICE_ID_AIZERE || '2ZqnRUaCU5IaXJ45uakV'
 const ELEVEN_VOICE = {
   dexter: DEXTER_VOICE_ID,
   'dexter-harsh': DEXTER_VOICE_ID,
   jarvis: JARVIS_VOICE_ID,
   'jarvis-harsh': JARVIS_VOICE_ID,
+  aizere: AIZERE_VOICE_ID,
 }
 const ELEVEN_MODEL = {
   dexter: process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5',
   'dexter-harsh': process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5',
   jarvis: process.env.ELEVENLABS_MODEL_JARVIS || 'eleven_v3',
   'jarvis-harsh': process.env.ELEVENLABS_MODEL_JARVIS || 'eleven_v3',
+  // Разговорная v3 — зеркало ELEVEN_MODEL["aizere"] в agent.py.
+  aizere: process.env.ELEVENLABS_MODEL_AIZERE || 'eleven_v3_conversational',
 }
 const DEFAULT_ELEVEN_MODEL = process.env.ELEVENLABS_MODEL || 'eleven_flash_v2_5'
 // Совпадает с PERSONA_VOICE_SETTINGS["bro"] в agent.py: низкая stability +
@@ -114,6 +126,9 @@ function elevenKey(tutor) {
   const base = String(tutor || '').replace(/-harsh$/, '')
   if (base === 'jarvis') {
     return process.env.ELEVENLABS_API_KEY_JARVIS || process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY
+  }
+  if (base === 'aizere') {
+    return process.env.ELEVENLABS_API_KEY_AIZERE || process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY
   }
   return process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_API_KEY
 }

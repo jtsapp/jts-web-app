@@ -24,13 +24,24 @@ describe('PICK_TUTORS — карточки экрана выбора', () => {
     expect(PICK_TUTORS.map((t) => t.key)).toEqual(['dexter', 'luna', 'spark', 'aizere', 'jarvis'])
   })
 
-  // Голоса и персоны у агента для Айзере нет: попади она в TUTORS, её можно
-  // было бы выбрать в «Управлении тьютором» и позвонить с ключом, которого
-  // агент не знает.
-  it('Айзере — только место: comingSoon и вне TUTORS', async () => {
-    const { PICK_TUTORS, TUTORS, getTutor, DEFAULT_TUTOR } = await load(true)
-    const aizere = PICK_TUTORS.find((t) => t.key === 'aizere')
-    expect(aizere.comingSoon).toBe(true)
+  // С 24.09.2026 Айзере говорит: на dev-стенде она полноценный тьютор — её
+  // можно выбрать, позвонить, увидеть в шапке звонка. Кнопка «Скоро» ей больше
+  // не нужна.
+  it('dev-стенд: Айзере — выбираемый тьютор с аватаркой', async () => {
+    const { PICK_TUTORS, TUTORS, getTutor, temperFor } = await load(true)
+    const aizere = getTutor('aizere')
+    expect(aizere.key).toBe('aizere')
+    expect(PICK_TUTORS.find((t) => t.key === 'aizere').comingSoon).toBeFalsy()
+    expect(TUTORS.map((t) => t.key)).toEqual(['luna', 'dexter', 'spark', 'aizere', 'jarvis'])
+    expect(aizere.avatar).toMatch(/^\/tutor\/.+\.png$/)
+    // Нрава 18+ нет, как у Луны: наверх уходит null, агент берёт базовую персону.
+    expect(temperFor('aizere', 'harsh')).toBeNull()
+  })
+
+  // Своих промпта и методички у неё ещё нет — на проде её нет нигде, а старый
+  // сохранённый выбор падает на тьютора по умолчанию.
+  it('прод: Айзере нет ни в TUTORS, ни в getTutor', async () => {
+    const { TUTORS, getTutor, DEFAULT_TUTOR } = await load(false)
     expect(TUTORS.some((t) => t.key === 'aizere')).toBe(false)
     expect(getTutor('aizere')).toBe(DEFAULT_TUTOR)
   })

@@ -26,6 +26,7 @@ from agent import (  # noqa: E402
     _ElevenConvertTTS,
     _eleven_convert_url,
     _eleven_engine_kwargs,
+    _eleven_http_payload,
     _eleven_http_only,
     _eleven_key_for,
     _eleven_model_for,
@@ -125,10 +126,22 @@ assert "voice_settings" in flash
 assert flash.get("auto_mode") is True
 assert "encoding" not in flash
 
-# Convert, не /stream: плагин бьёт в stream + apply_text_normalization и ловит 400.
+# /stream, а не convert: convert отдаёт первый байт только когда готов весь файл
+# (замер 24.09.2026 на клоне: короткая фраза 2.0–2.7 с против 0.9 с у /stream).
+# 400, из-за которого с /stream уходили, давали поля ПЛАГИНА
+# (apply_text_normalization, voice_settings: null) — тело здесь голое.
+_clear("ELEVENLABS_V3_STREAM")
 url = _eleven_convert_url("2ZqnRUaCU5IaXJ45uakV")
-assert "/stream" not in url, "v3 идёт в convert, как кабинет и /api/tutor-tts"
+assert url.startswith("https://api.elevenlabs.io/v1/text-to-speech/2ZqnRUaCU5IaXJ45uakV/stream?"), url
 assert url.endswith("?output_format=mp3_44100_128")
+assert _eleven_http_payload("Сәлем.", "eleven_v3") == {"text": "Сәлем.", "model_id": "eleven_v3"}, (
+    "никаких apply_text_normalization / voice_settings — на них v3 и отвечал 400"
+)
+# Откат на convert — переменной, без деплоя кода.
+os.environ["ELEVENLABS_V3_STREAM"] = "0"
+url = _eleven_convert_url("2ZqnRUaCU5IaXJ45uakV")
+assert "/stream" not in url and url.endswith("?output_format=mp3_44100_128"), url
+_clear("ELEVENLABS_V3_STREAM")
 convert = _ElevenConvertTTS(
     model="eleven_v3", api_key="k", voice_id="2ZqnRUaCU5IaXJ45uakV"
 )

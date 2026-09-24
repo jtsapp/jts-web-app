@@ -99,31 +99,41 @@ const JARVIS = {
   defaultTemper: 'calm',
 }
 
-export const TUTORS = JARVIS_ENABLED ? [...BASE_TUTORS, JARVIS] : BASE_TUTORS
-
-// Айзере — место под новую тьюторшу. Голоса и персоны у агента для неё ещё нет,
-// поэтому в TUTORS она НЕ входит: TUTORS читают «Управление тьютором», дашборд,
-// звонок и getTutor, и там она стала бы выбираемой, а звонок ушёл бы в агент с
-// неизвестным ему ключом. Её видит только экран выбора, и то с comingSoon:
-// карточку можно выделить, а «Начать обучение» с ней не нажимается.
+// Айзере — казахскоязычная тьюторша (учит на казахском и английском, как Спарк;
+// у агента она в KZ_TEACHING_TUTORS). С 24.09.2026 говорит: голос — клон
+// KZ-стенда на разговорной ElevenLabs v3, характер — ЧЕРНОВИК по чертам
+// карточки (PERSONA_OVERRIDE["aizere"] в agent.py), свои промпт и методичку
+// пишут отдельно. До тех пор она dev-only (AIZERE_ENABLED): на проде её нет ни
+// в TUTORS, ни на экране выбора, и getTutor('aizere') там вернёт DEFAULT_TUTOR.
+// Нрава 18+ нет (tempers не заведены) — как у Луны.
+// avatar — ВРЕМЕННЫЙ: круг вырезан из фигурки выбора (тот же экспорт из Figma),
+// отдельного аватара в макете «Speaking Buddy» у неё нет. Заменить экспортом,
+// когда появится.
 // Цвета черт — из макета (5316:1427), тексты — tutor.aizere.trait* в dict.js.
 const AIZERE = {
   key: 'aizere',
   name: 'Айзере',
+  avatar: '/tutor/tutor-aizere.png',
   figure: '/tutor/pick/aizere.webp',
   traitColors: ['#2f6fd6', '#3aa66b'],
-  comingSoon: true,
+  mood: 'idle', // спокойная
 }
 
+// Dev-only тьюторы идут в хвосте: на порядок BASE_TUTORS завязаны мини-карусель
+// в MascotCard и дефолты.
+export const TUTORS = [
+  ...BASE_TUTORS,
+  ...(AIZERE_ENABLED ? [AIZERE] : []),
+  ...(JARVIS_ENABLED ? [JARVIS] : []),
+]
+
 // Карточки экрана выбора. Порядок — из макета (Декстер, Луна, Спарк, Айзере) и
-// с порядком TUTORS не совпадает; TUTORS не трогаем, на его порядок завязаны
-// мини-карусель в MascotCard и дефолты. Dev-only тьюторы идут в хвосте: на
-// проде их нет, и ряд из трёх просто встаёт по центру.
+// с порядком TUTORS не совпадает; TUTORS не трогаем. Dev-only тьюторы идут в
+// хвосте в порядке TUTORS: на проде их нет, и ряд из трёх просто встаёт по центру.
 const PICK_ORDER = ['dexter', 'luna', 'spark']
 
 export const PICK_TUTORS = [
   ...PICK_ORDER.map((key) => TUTORS.find((t) => t.key === key)),
-  ...(AIZERE_ENABLED ? [AIZERE] : []),
   ...TUTORS.filter((t) => !PICK_ORDER.includes(t.key)),
 ]
 
