@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Мозг зовёт только голосовой агент, поэтому мокаем Anthropic целиком: тест
 // про транспорт (как ответ доезжает), а не про то, что скажет модель.
+const calls = []
 vi.mock('@/lib/anthropic.js', () => ({
   hasAnthropicKey: () => true,
-  async *chatStreamRich() {
+  async *chatStreamRich(args) {
+    calls.push(args)
     yield { type: 'text', text: 'Hi' }
     yield { type: 'text', text: ' there' }
   },
@@ -12,14 +14,20 @@ vi.mock('@/lib/anthropic.js', () => ({
 
 const { POST } = await import('./route.js')
 
-const call = () =>
+const call = (extra = {}) =>
   POST(
     new Request('http://localhost/api/voice/brain/chat/completions', {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: 'Bearer test-key' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }] }),
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'hello' }], ...extra }),
     }),
   )
+
+// Дочитать поток до конца: chatStreamRich зовётся внутри start() потока.
+const drain = async (res) => {
+  const reader = res.body.getReader()
+  while (!(await reader.read()).done) { /* до конца */ }
+}
 
 describe('POST /api/voice/brain/chat/completions', () => {
   beforeEach(() => {
@@ -56,6 +64,24 @@ describe('POST /api/voice/brain/chat/completions', () => {
       }
     }
     expect(sawText).toBe(true)
+  })
+
+  // Модель выбирает агент по тьютору (TUTOR_BRAIN_MODEL в agent.py): Айзере
+  // учит по-казахски, а Haiku ломает казахскую морфологию и роняет в речь
+  // иероглифы (замер 24.09.2026). Белый список — чтобы общий секрет агента не
+  // открывал любую, в том числе самую дорогую, модель.
+  it('модель из белого списка уходит в Anthropic', async () => {
+    calls.length = 0
+    await drain(await call({ model: 'claude-sonnet-5' }))
+    expect(calls.at(-1).model).toBe('claude-sonnet-5')
+  })
+
+  it('служебное имя и чужая модель — дефолт роута', async () => {
+    calls.length = 0
+    await drain(await call({ model: 'jts-voice-router' }))
+    await drain(await call({ model: 'claude-opus-5' }))
+    await drain(await call())
+    expect(calls.map((c) => c.model)).toEqual([undefined, undefined, undefined])
   })
 
   it('без верного ключа отвечает 401', async () => {

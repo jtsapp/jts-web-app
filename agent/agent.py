@@ -1270,29 +1270,31 @@ PERSONA_OVERRIDE = {
     # Айзере — ЧЕРНОВИК (24.09.2026). Собран по чертам карточки («Мудрая»,
     # «Заботливая») только затем, чтобы с ней можно было созвониться на
     # dev-стенде; настоящий промпт и свою методичку пишут отдельно, и этот текст
-    # целиком заменяется ими. Языки — как у Спарка: казахский и английский, русский
+    # целиком заменяется ими. Блок HOW YOU WRITE при замене СОХРАНИТЬ: текст идёт
+    # прямо в синтез, и на первом звонке было «англис тілін», «прошлое время» из
+    # русской памяти ученика и «練習» посреди фразы. Замер (n=22 на ячейку, судья
+    # вслепую): на Haiku блок убрал английское кириллицей (3 → 0), на Sonnet 5 —
+    # ничья; главное лечит модель, см. TUTOR_BRAIN_MODEL. Языки — как у Спарка: казахский и английский, русский
     # понимает, но не говорит (ветки промпта — KZ_TEACHING_TUTORS). Инструкции
     # по-английски по той же причине, что у злого Спарка: русские слова в тексте
     # персоны тянут модель заговорить по-русски.
     "aizere": (
-        "Persona 'Aizere' (Айзере) — a wise, caring young woman who teaches English "
-        "(wise, caring, calm). For learners who want patience and a clear explanation.\n"
-        "Essence: sees WHY the learner made the mistake and explains that reason in one "
-        "simple sentence, then lets them try again. Cares about the person, not only the answer.\n"
-        "LANGUAGES — KAZAKH AND ENGLISH, NOTHING ELSE. You are a Kazakh-speaking tutor: learners "
-        "pick you to study English in Kazakh. You understand Russian perfectly and you never "
-        "speak it — not a sentence, not a filler word, not when the interface is Russian. "
-        "Russian in comes back as Kazakh out. Your Kazakh is modern and spoken, with Kazakh "
-        "grammar terms (етістік, зат есім, шақ, септік). English is the target you are training.\n"
-        "Vibe: warm, steady, unhurried, like a kind older sister who knows the answer. "
-        "Short spoken sentences.\n"
+        "Persona 'Aizere' (Айзере) — a wise, caring young woman who teaches English (wise, caring, calm). For learners who want patience and a clear explanation.\n"
+        "Essence: sees WHY the learner made the mistake and explains that reason in one simple sentence, then lets them try again. Cares about the person, not only the answer.\n"
+        "LANGUAGES — KAZAKH AND ENGLISH, NOTHING ELSE. You are a Kazakh-speaking tutor: learners pick you to study English in Kazakh. You understand Russian perfectly and you never speak it. Russian in comes back as Kazakh out.\n"
+        "HOW YOU WRITE (your text goes straight to a speech engine — spelling decides how it sounds):\n"
+        "- Kazakh words in Kazakh Cyrillic. EVERY English word in Latin letters, spelled exactly as in English: target words, examples, and English names of tenses (Past Simple, Present Perfect). Never write English in Cyrillic («пэст симпл», «инглиш» are wrong).\n"
+        "- The English language in Kazakh is «ағылшын тілі» («англис», «английский» are wrong).\n"
+        "- Only these two scripts. Never Chinese, Japanese or any other characters.\n"
+        "- No Russian words, not even grammar terms. Say it in Kazakh: өткен шақ (past tense), осы шақ (present tense), келер шақ (future tense), етістік (verb), зат есім (noun), сын есім (adjective), сөйлем (sentence), жаттығу (practice). If the learner's notes below are written in Russian, retell them in Kazakh — never quote the Russian.\n"
+        "- Use only Kazakh word forms you are sure of. Short, simple, spoken sentences are better than long ones.\n"
+        "Vibe: warm, steady, unhurried, like a kind older sister who knows the answer.\n"
         "Shape: notice the attempt → one clear reason → the correct form → invite one more try.\n"
-        "BANNED: lectures longer than two sentences, pressure, sarcasm, and ANY Russian in your "
-        "own speech.\n"
+        "BANNED: lectures longer than two sentences, pressure, sarcasm.\n"
         "HARD RULE: every sentence you speak is Kazakh or English. Total reply ≤ 3 sentences.\n"
         "EXAMPLES:\n"
         "  Learner: 'she go to school'\n"
-        "  You: 'Жақсы талпыныс. She goes — he, she, it кезінде етістікке -s қосамыз. Тағы бір рет?'\n"
+        "  You: 'Жақсы талпыныс. She goes — he, she, it кезінде етістікке -s қосамыз. Тағы бір рет айтып көрші?'\n"
         "  Learner: 'а как будет вчера по-английски?'\n"
         "  You: 'Yesterday. Енді yesterday сөзімен бір сөйлем құрап көрші.'\n"
         "  Learner: (silence)\n"
@@ -4516,6 +4518,40 @@ def _tts_provider_for(profile: LearnerProfile) -> str:
     return (os.getenv("CASCADE_TTS") or DEFAULT_TTS_PROVIDER).strip().lower()
 
 
+# ── Модель мозга по тьютору ──────────────────────────────────────────────────
+# Мозг — шим /api/voice/brain над Anthropic, дефолт у него VOICE_BRAIN_MODEL
+# (Haiku 4.5). Модель уходит OpenAI-полем `model`; роут пропускает только свой
+# белый список, всё остальное — его дефолт, и "jts-voice-router" как раз значит
+# «дефолт роута». Старый роут поле игнорирует — тьютор тогда просто остаётся на
+# Haiku, так что порядок выкатки агента и роута не важен.
+#
+# Айзере на Sonnet 5, потому что Haiku не держит казахский. Замер 24.09.2026
+# (её промпт, 22 реплики на ячейку, судья claude-opus-5 вслепую): на Haiku
+# ошибки в казахских формах в 17 ответах из 22 (~4 на ответ), естественность
+# 2.45 из 5, иероглифы и вязь посреди фразы в 4 из 22; на Sonnet 5 — 0.7 ошибки
+# на ответ, естественность 4.2, чужих алфавитов 0. Цена: вход/выход ×2 к Haiku
+# и первый токен медианой 1.3 с против 0.7 с — отчасти это съедает разговорная
+# v3 в озвучке. Спарк остаётся на Haiku: переводить живого тьютора без его
+# собственного замера нельзя.
+TUTOR_BRAIN_MODEL = {
+    "aizere": "claude-sonnet-5",
+}
+DEFAULT_BRAIN_MODEL = "jts-voice-router"
+
+
+def _brain_model_for(tutor: str) -> str:
+    """Модель мозга по БАЗОВОМУ id: env BRAIN_MODEL_<PERSONA> → таблица → дефолт
+    роута. Env — откат без деплоя кода (BRAIN_MODEL_AIZERE=claude-haiku-4-5)."""
+    tutor = (tutor or "").strip().lower()
+    if tutor:
+        env = (os.getenv(f"BRAIN_MODEL_{tutor.upper()}") or "").strip()
+        if env:
+            return env
+        if tutor in TUTOR_BRAIN_MODEL:
+            return TUTOR_BRAIN_MODEL[tutor]
+    return DEFAULT_BRAIN_MODEL
+
+
 def _cascade_tts(profile: LearnerProfile):
     """TTS одной сессии. Провайдер выбирается ПО ТЬЮТОРУ (_tts_provider_for).
 
@@ -5120,10 +5156,13 @@ def build_cascade_session(
     # write-back памяти адресный — он остаётся на api_url, то есть на том стенде,
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
+    brain_model = _brain_model_for(profile.tutor)
+    if brain_model != DEFAULT_BRAIN_MODEL:
+        logger.info("[brain] model %s for tutor=%s", brain_model, profile.tutor)
     llm = lk_openai.LLM(
         base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
         api_key=brain_key or "unset",
-        model="jts-voice-router",
+        model=brain_model,
         temperature=persona_temperature,
     )
     tts = _cascade_tts(profile)
