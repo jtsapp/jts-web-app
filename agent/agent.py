@@ -1315,6 +1315,10 @@ PERSONA_TEMPERATURE = {
     "gentle": 0.55,
     "edge": 0.55,
     "professor": 0.45,
+    # KZ-стенд: ниже разброс — меньше воды и меньше театра в казахском.
+    # Выше 0.6 модель снова расползается в ритуал Спарка, хотя промпт уже короткий.
+    "jarvis": 0.5,
+    "jarvis_harsh": 0.55,
 }
 
 # Gemini voice per persona. Written for the Live API, but _cascade_tts_gemini
