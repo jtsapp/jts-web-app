@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { findCatalogLessonId, shouldResolveCatalogLesson } from './catalogLessonByUrl.js'
-import { engineOf } from './lessonExtractor.js'
+import { LESSON_EXTRACTOR, engineOf } from './lessonExtractor.js'
 
 const CATALOG = [
   {
@@ -61,33 +61,39 @@ describe('findCatalogLessonId', () => {
   })
 })
 
-// 23.09.2026: движок занятия (STEPS/FILE) на это решение больше не влияет —
-// нашёлся реальный сценарий, где он его портил (см. javadoc функции): занятие,
-// заведённое после переключения на FILE по умолчанию, но с обычным уроком
-// каталога вместо живого файла (Запуск/Правка урока такое разрешают) — раньше
-// показывало голый файл с одной «Section 1» вместо тем урока, хотя разбор для
-// него есть. Решает только форма ссылки: живой/пробный урок (standalone) в
-// каталоге не лежит по определению, всё остальное — кандидат на разбор.
-describe('shouldResolveCatalogLesson — искать ли материал в каталоге', () => {
+// Решает движок занятия (spec-lesson-engine-coexistence §2): STEPS — шаги, как на проде
+// до выката, FILE — файл во фрейме. Пустое поле — STEPS; рубильник — STEPS для всех.
+describe('shouldResolveCatalogLesson — шаги или файл', () => {
   const КАТАЛОГ = 'https://files/development/course-catalog/a0/lessons/L05.html'
   const STANDALONE = 'https://files/development/course-catalog/standalone/a0-l5.html'
 
-  it('урок каталога ищет разбор — независимо от движка занятия', () => {
-    expect(shouldResolveCatalogLesson(КАТАЛОГ)).toBe(true)
-    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(true)
+  it('по умолчанию рубильник выключен', () => {
+    expect(LESSON_EXTRACTOR.enabled).toBe(false)
+  })
+
+  it('FILE-занятие открывается файлом', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(false)
+  })
+
+  it('STEPS-занятие ищет разбор; standalone — никогда; пустая ссылка — нет', () => {
     expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'STEPS' })).toBe(true)
-  })
-
-  it('живой/пробный урок (standalone) разбор не ищет никогда', () => {
-    expect(shouldResolveCatalogLesson(STANDALONE)).toBe(false)
-    expect(shouldResolveCatalogLesson(STANDALONE, { engine: 'FILE' })).toBe(false)
     expect(shouldResolveCatalogLesson(STANDALONE, { engine: 'STEPS' })).toBe(false)
+    expect(shouldResolveCatalogLesson('', { engine: 'STEPS' })).toBe(false)
   })
 
-  it('пустая ссылка — нет', () => {
-    expect(shouldResolveCatalogLesson('')).toBe(false)
-    expect(shouldResolveCatalogLesson(null)).toBe(false)
-    expect(shouldResolveCatalogLesson(undefined)).toBe(false)
+  it('поля нет (старый бэкенд) или занятия нет — STEPS, как на проде', () => {
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, {})).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ, null)).toBe(true)
+    expect(shouldResolveCatalogLesson(КАТАЛОГ)).toBe(true)
+  })
+
+  it('рубильник LESSON_EXTRACTOR.enabled возвращает разбор и FILE-занятию', () => {
+    LESSON_EXTRACTOR.enabled = true
+    try {
+      expect(shouldResolveCatalogLesson(КАТАЛОГ, { engine: 'FILE' })).toBe(true)
+    } finally {
+      LESSON_EXTRACTOR.enabled = false
+    }
   })
 })
 

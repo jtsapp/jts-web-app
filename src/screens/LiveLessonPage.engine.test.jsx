@@ -1,21 +1,17 @@
 // @vitest-environment jsdom
 //
-// Резолюция «урок каталога или файл» (shouldResolveCatalogLesson) не должна
-// решать ничего, пока занятие не загружено, — иначе страница мигнула бы одним
-// исходом и тут же поехала на другой. До 23.09.2026 в это решение шёл ещё и
-// движок занятия (STEPS/FILE); движок оказался НЕ тем, что отличает урок
-// каталога от файла (обычный урок каталога можно поставить и на FILE-занятие
-// — Запуск/Правка урока это разрешают), и участвовать в решении перестал (см.
-// javadoc shouldResolveCatalogLesson, catalogLessonByUrl.js) — здесь остаётся
-// проверять только порядок: резолюция обязана дождаться ЗАГРУЖЕННОГО занятия.
-// Тот же набор моков, что и у LiveLessonPage.open.test.jsx (см. его шапку), но
-// со шпионом вместо настоящего shouldResolveCatalogLesson.
+// Движок занятия решает «шаги или файл» (spec-lesson-engine-coexistence §6.2):
+// страница передаёт в решение ЗАГРУЖЕННОЕ занятие и не решает ничего, пока его
+// нет, — иначе FILE-занятие мигнуло бы шагами. Тот же набор моков, что и у
+// LiveLessonPage.open.test.jsx (см. его шапку), но с движком занятия
+// параметризуемым тестом и шпионом вместо настоящего shouldResolveCatalogLesson.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
 import { getLessonById } from '../api.js'
 
 let СТАТУС = 'IN_PROGRESS'
+let ДВИЖОК = 'FILE'
 
 // vi.hoisted — фабрика мока поднимается выше импортов, обычная const там ещё не создана.
 const { resolveSpy } = vi.hoisted(() => ({ resolveSpy: vi.fn(() => false) }))
@@ -25,7 +21,7 @@ vi.mock('../api.js', () => ({
   getLessonById: vi.fn(async () => ({
     id: 5,
     status: СТАТУС,
-    engine: 'FILE',
+    engine: ДВИЖОК,
     lessonType: 'INDIVIDUAL_STANDARD',
     groupName: null,
     topic: 'Present Perfect',
@@ -99,29 +95,40 @@ async function renderLesson() {
   await waitFor(() => expect(screen.getByText('Present Perfect')).toBeTruthy())
 }
 
-describe('LiveLessonPage — резолюция урока каталога ждёт загруженное занятие', () => {
+describe('LiveLessonPage — движок занятия', () => {
   beforeEach(() => { СТАТУС = 'IN_PROGRESS'; resolveSpy.mockClear() })
 
-  it('резолюция зовётся адресом материала, когда занятие загружено', async () => {
+  it('решение принимается по загруженному занятию с его движком', async () => {
+    ДВИЖОК = 'FILE'
     await renderLesson()
 
-    await waitFor(() => expect(resolveSpy).toHaveBeenCalledWith('https://cdn/lesson-1.html'))
+    await waitFor(() => expect(resolveSpy).toHaveBeenCalled())
+    expect(resolveSpy).toHaveBeenCalledWith('https://cdn/lesson-1.html', expect.objectContaining({ engine: 'FILE' }))
+    expect(resolveSpy.mock.calls.every(([, lesson]) => lesson != null)).toBe(true)
+  })
+
+  it('STEPS-занятие доезжает до решения как STEPS', async () => {
+    ДВИЖОК = 'STEPS'
+    await renderLesson()
+
+    await waitFor(() => expect(resolveSpy).toHaveBeenCalledWith('https://cdn/lesson-1.html', expect.objectContaining({ engine: 'STEPS' })))
   })
 
   // Регрессия финального ревью ветки: разделы (materialFileUrl) приезжают
-  // ПРЕЖДЕ занятия (задерживаем именно getLessonById). Раньше зависимость
-  // эффекта была по lesson?.engine, и у занятия без этого поля в ответе
-  // (старый бэкенд) значение до и после загрузки — одинаковый `undefined`:
-  // React решал, что зависимости не поменялись, resolveSpy не звался никогда,
-  // а страница стояла на 'loading' вечно. lesson?.id в зависимостях (движок
-  // из них с 23.09.2026 убран вовсе — см. shouldResolveCatalogLesson) чинит
-  // это структурно: id всегда меняется с «занятия ещё нет» на «занятие есть»,
-  // какой бы ни была остальная форма ответа.
-  it('резолюция доезжает, даже если материалы пришли раньше занятия', async () => {
+  // ПРЕЖДЕ занятия (задерживаем именно getLessonById), а когда занятие всё же
+  // приходит — в его ответе поля engine нет вовсе (старый бэкенд или стенд на
+  // старом API, приёмочный критерий спеки §2). До и после загрузки занятия
+  // `lesson?.engine` — одинаковый `undefined`, и с зависимостью эффекта по
+  // ОДНОМУ engine это давало React решить, что зависимости не поменялись, —
+  // resolveSpy не звался никогда, а страница стояла на 'loading' вечно.
+  // Заодно проверяем аргумент: в резолюцию обязано уйти уже ЗАГРУЖЕННОЕ занятие
+  // (лишний повод убедиться, что эффект не сорвался раньше срока на null lesson).
+  it('решение доезжает, даже если материалы пришли раньше занятия без engine (старый бэкенд)', async () => {
     getLessonById.mockImplementationOnce(() => new Promise((resolve) => {
       setTimeout(() => resolve({
         id: 5,
         status: 'IN_PROGRESS',
+        // engine отсутствует вовсе — как отдаёт старый бэкенд.
         lessonType: 'INDIVIDUAL_STANDARD',
         groupName: null,
         topic: 'Present Perfect',
@@ -134,6 +141,7 @@ describe('LiveLessonPage — резолюция урока каталога жд
     }))
     await renderLesson()
 
-    await waitFor(() => expect(resolveSpy).toHaveBeenCalledWith('https://cdn/lesson-1.html'))
+    await waitFor(() => expect(resolveSpy).toHaveBeenCalled())
+    expect(resolveSpy).toHaveBeenCalledWith('https://cdn/lesson-1.html', expect.objectContaining({ id: 5 }))
   })
 })

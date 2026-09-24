@@ -50,10 +50,10 @@ describe('sameLessonSnapshot', () => {
     expect(sameLessonSnapshot(lesson, cancelled)).toBe(false)
   })
 
-  // Движок занятия читают другие части страницы (бридж-фичи FILE-занятия —
-  // не резолюция урока каталога, та с 23.09.2026 от движка не зависит, см.
-  // shouldResolveCatalogLesson). Не сравнивай это поле — и первый ответ без
-  // engine (старый снимок), а следом настоящий с опроса тихо отбрасывался бы.
+  // Движок решает «шаги или файл» (shouldResolveCatalogLesson). Не сравнивай это
+  // поле — и первый ответ без engine (старый снимок), а следом настоящий с
+  // engine с опроса тихо отбрасывался бы: shouldResolveCatalogLesson навсегда
+  // остался бы при устаревшем значении по умолчанию (spec-lesson-engine-coexistence §6.2).
   it('замечает появление и смену движка занятия', () => {
     expect(sameLessonSnapshot({ ...lesson, engine: undefined }, { ...lesson, engine: 'STEPS' })).toBe(false)
     expect(sameLessonSnapshot({ ...lesson, engine: 'STEPS' }, { ...lesson, engine: 'FILE' })).toBe(false)
