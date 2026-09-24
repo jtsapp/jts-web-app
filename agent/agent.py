@@ -4651,12 +4651,15 @@ SONIOX_STT_STRICT_DEFAULT = True
 # ограничение словаря: ученик по-прежнему может сказать любое слово, просто
 # перечисленные получают вес при разборе неоднозначного звука.
 #
-# Собирается из двух источников, и порядок между ними не случайный:
+# Собирается из трёх источников, и порядок между ними не случайный:
 #   * профиль ученика — имя, слова на повторении, темы, профессия;
+#   * казахская добавка (stt-terms-kk.txt) — только сессиям казахоязычных
+#     тьюторов, см. _stt_kazakh_session;
 #   * общий словарь (stt-terms.txt) — тьюторы, уровни, грамматика, города.
 # Личное идёт первым и режется последним: общий список одинаков для всех, а имя
 # ученика больше взять неоткуда.
 STT_TERMS_FILE = "stt-terms.txt"
+STT_TERMS_KK_FILE = "stt-terms-kk.txt"
 # Лимит Soniox — 8000 токенов (~10 000 символов) на весь объект context, и
 # превышение возвращает invalid_request, то есть сессию БЕЗ распознавания вовсе.
 # Поэтому бюджет вдвое меньше лимита: ключи JSON и general тоже считаются, а
@@ -4687,6 +4690,33 @@ def _load_terms_file(path: Path) -> list[str]:
 _STT_TERMS_PATH = _resolve_methodology(STT_TERMS_FILE)
 STT_STATIC_TERMS = _load_terms_file(_STT_TERMS_PATH)
 logger.info("STT terms: %d entries from %s", len(STT_STATIC_TERMS), _STT_TERMS_PATH)
+_STT_TERMS_KK_PATH = _resolve_methodology(STT_TERMS_KK_FILE)
+STT_KAZAKH_TERMS = _load_terms_file(_STT_TERMS_KK_PATH)
+logger.info("STT terms kk: %d entries from %s", len(STT_KAZAKH_TERMS), _STT_TERMS_KK_PATH)
+
+
+def _stt_kazakh_session(profile: LearnerProfile) -> bool:
+    """Ждём ли от ученика казахскую речь — и, значит, казахскую добавку к
+    контексту распознавания.
+
+    Жалоба тестера 24.09.2026: «атыңыз» распознаётся как «аты». Казахский
+    агглютинативный, и на неоднозначном звуке Soniox выбирает короткую частую
+    форму, срезая суффикс. Общий контекст про это молчал: он описывает урок
+    английского, и казахских форм в нём нет.
+
+    Решает тьютор, а не язык интерфейса: с Айзере и Спарком говорят по-казахски
+    при любом интерфейсе (KZ_SPEAKING_TUTORS), а Луна и Декстер казахского не
+    знают — у их ученика с kz-интерфейсом подсказки тянули бы русскую речь в
+    казахскую. «Только английский» сужает распознавание до en, и добавка не
+    должна звать казахский обратно.
+
+    SONIOX_STT_CONTEXT_KK=off — откат одной добавки секретом воркера: имя
+    ученика и общий словарь при этом остаются."""
+    if profile.english_only:
+        return False
+    if (os.getenv("SONIOX_STT_CONTEXT_KK") or "").strip().lower() in ("off", "0", "false", "no"):
+        return False
+    return (profile.tutor or "").strip().lower() in KZ_SPEAKING_TUTORS
 
 
 def _dedupe_terms(terms: list[str], budget: int) -> list[str]:
@@ -4727,14 +4757,26 @@ def _stt_context_general(profile: LearnerProfile) -> list[tuple[str, str]]:
         if value:
             items.append((key, value[:120]))
 
-    add("domain", "online English lessons")
+    kazakh = _stt_kazakh_session(profile)
+    # Казахская сессия называет язык разговора прямо и казахский — первым:
+    # иначе general описывает урок английского, и неоднозначный звук тянет туда.
+    add("domain", "English lessons taught in Kazakh" if kazakh else "online English lessons")
     # При englishOnly русский и казахский из подсказок уже убраны (см. ниже) —
     # контекст не должен звать их обратно.
-    add("languages", "English" if profile.english_only else "English, Russian, Kazakh")
+    if profile.english_only:
+        add("languages", "English")
+    elif kazakh:
+        add("languages", "Kazakh, English, Russian")
+    else:
+        add("languages", "English, Russian, Kazakh")
     add("speaker", profile.user_name)
     add("level", profile.level)
     add("topic", profile.topics[0] if profile.topics else "")
     add("occupation", profile.profession)
+    if kazakh:
+        # Срезались как раз окончания вежливого «сіз» — называем этот регистр
+        # прямо, с примерами форм; сами слова лежат ещё и в terms.
+        add("register", "polite spoken Kazakh with сіз forms: атыңыз, есіміңіз, қалайсыз, айтыңызшы")
     return items
 
 
@@ -4751,6 +4793,9 @@ def _soniox_stt_context(profile: LearnerProfile):
         *profile.interests,
         *profile.topics,
         *profile.due_vocab[:STT_DUE_VOCAB_LIMIT],
+        # Казахская добавка — после личного, но до общего словаря: в казахской
+        # сессии формы на «сіз» нужнее списка городов, а переполнение режет хвост.
+        *(STT_KAZAKH_TERMS if _stt_kazakh_session(profile) else ()),
         *STT_STATIC_TERMS,
         # Весь накопленный словарь — последним: это сотни слов, и он заполняет
         # ровно то, что осталось от бюджета, не вытесняя ничего важного.
@@ -5030,7 +5075,10 @@ def _cascade_stt_soniox(profile: LearnerProfile):
     logger.info(
         "Cascade STT: Soniox (%s, strict=%s, context=%s), tutor=%s",
         "/".join(langs), strict,
-        f"{len(context.terms or [])} terms" if context else "off",
+        # «+kk» — казахская добавка в этой сессии: после выкатки по логу видно,
+        # доехал ли словарь и кому он достался.
+        (f"{len(context.terms or [])} terms" + (" +kk" if _stt_kazakh_session(profile) else ""))
+        if context else "off",
         profile.tutor or "<none>",
     )
     return soniox.STT(
