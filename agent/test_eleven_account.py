@@ -23,6 +23,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from agent import (  # noqa: E402
     LearnerProfile,
+    _eleven_engine_kwargs,
     _eleven_http_only,
     _eleven_key_for,
     _eleven_model_for,
@@ -113,8 +114,13 @@ assert _eleven_http_only("eleven_v3")
 os.environ["ELEVENLABS_HTTP_ONLY_MODELS"] = ""
 _clear("ELEVENLABS_HTTP_ONLY_MODELS")
 
-# Настройки голоса намеренно НЕ трогаем и здесь их не проверяем: обрезать поля
-# по догадке уже вышло боком — конструктор VoiceSettings требует
-# similarity_boost, и сессия падала ещё до синтеза. Отказ был про транспорт.
+v3 = _eleven_engine_kwargs("eleven_v3", "k", "2ZqnRUaCU5IaXJ45uakV", "jarvis", True)
+assert "voice_settings" not in v3, "v3: speaker boost/style в теле дают 400"
+assert v3["encoding"] == "mp3_44100_128", "v3: тот же формат, что в кабинете"
+assert v3["model"] == "eleven_v3"
+flash = _eleven_engine_kwargs("eleven_flash_v2_5", "k", "rHWSYoq8UlV0YIBKMryp", "bro", False)
+assert "voice_settings" in flash
+assert flash.get("auto_mode") is True
+assert "encoding" not in flash
 
 print("ElevenLabs: аккаунт, модель и транспорт — ок")

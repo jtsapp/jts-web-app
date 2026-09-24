@@ -3810,6 +3810,26 @@ def _eleven_model_for(tutor: str) -> str:
     return os.getenv("ELEVENLABS_MODEL", DEFAULT_ELEVEN_MODEL)
 
 
+def _eleven_engine_kwargs(
+    model: str, key: str, voice_id: str, tutor: str, http_only: bool
+) -> dict[str, Any]:
+    """Аргументы elevenlabs.TTS. v3 не принимает speaker boost / style / speed
+    и дефолтный mp3_22050_32 плагина — кабинет отвечает 400. Там клон уже
+    говорил на convert + mp3_44100_128 без этих полей."""
+    kwargs: dict[str, Any] = {
+        "model": model,
+        "api_key": key,
+        "voice_id": voice_id,
+    }
+    if http_only:
+        kwargs["encoding"] = os.getenv("ELEVENLABS_ENCODING_V3", "mp3_44100_128")
+        return kwargs
+    vs = PERSONA_VOICE_SETTINGS.get(tutor, DEFAULT_VOICE_SETTINGS)
+    kwargs["voice_settings"] = elevenlabs.VoiceSettings(**vs) if elevenlabs else vs
+    kwargs["auto_mode"] = True
+    return kwargs
+
+
 def _cascade_tts_eleven(profile: LearnerProfile):
     """ElevenLabs TTS. Ported from felix agent/_cascade_tts.
 
@@ -3833,28 +3853,11 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     # Раньше она перебивала таблицу, и KZ-стенд уезжал на чужой id → 401.
     voice_id = _eleven_session_voice(profile)
     http_only = _eleven_http_only(model)
-    # Настройки голоса НЕ трогаем: отказ был про транспорт, а не про них, и
-    # обрезать поля по догадке уже вышло боком — конструктор плагина требует
-    # similarity_boost, и сессия падала ещё до синтеза. Если v3 какое-то поле не
-    # примет, это будет видно в логах, и чинить будем по тексту ошибки.
-    vs = PERSONA_VOICE_SETTINGS.get(profile.tutor, DEFAULT_VOICE_SETTINGS)
+    kwargs = _eleven_engine_kwargs(model, key, voice_id, profile.tutor, http_only)
     logger.info(
         "Cascade TTS: ElevenLabs (%s, voice=%s, transport=%s), lang=%s, tutor=%s",
         model, voice_id, "http" if http_only else "ws", profile.lang, profile.tutor or "<none>",
     )
-    kwargs: dict[str, Any] = {
-        "model": model,
-        # The plugin reads ELEVEN_API_KEY, not ELEVENLABS_API_KEY — relying on
-        # its env auto-read fails the session build silently (felix hit this).
-        "api_key": key,
-        "voice_id": voice_id,
-        "voice_settings": elevenlabs.VoiceSettings(**vs),
-    }
-    if not http_only:
-        # Synthesise as soon as a chunk lands instead of waiting on a chunk
-        # schedule — lower time-to-first-audio for sentence-at-a-time LLM output.
-        # Параметр сокетный: на HTTP-пути ему нечего делать.
-        kwargs["auto_mode"] = True
     engine = elevenlabs.TTS(**kwargs)
     if not http_only:
         return engine
