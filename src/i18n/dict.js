@@ -27,14 +27,21 @@ export const DICT = {
     'welcome.title': 'Добро пожаловать\nна обучение с твоим\nличным тьютором',
     'welcome.sub':
       'Здесь мы будем закреплять пройденное и болтать вживую — без учебников и зубрёжки',
+    'welcome.start': 'Начать обучение',
 
     // Выбор языка
     'lang.title': 'Первым делом,\nвыбери язык\nразговора с тьютором',
 
     // Выбор тьютора
-    'choose.title': 'Теперь необходимо выбрать себе тьютора',
-    'choose.langUi': 'Язык интерфейса',
-    'choose.langExplain': 'Язык объяснения',
+    'choose.title': 'Выбери подходящего тьютора',
+    // Надпись на «Начать обучение», когда выделен тьютор, у которого ещё нет
+    // голоса (comingSoon в tutors.js, сейчас Айзере на dev-стенде).
+    'choose.soon': 'Скоро',
+    // Айзере — место под новую тьюторшу, только на dev-стенде (AIZERE_ENABLED).
+    // Черты — с макета; описания и кнопок у неё пока нет: экран выбора их не
+    // рисует, а в «Управлении тьютором» её нет.
+    'tutor.aizere.trait1': 'Мудрая',
+    'tutor.aizere.trait2': 'Заботливая',
     'tutor.luna.trait1': 'Русскоязычная',
     'tutor.luna.trait2': 'Чуткая',
     'tutor.luna.trait3': 'Спокойная',
@@ -432,12 +439,14 @@ export const DICT = {
     'welcome.title': 'Жеке тьюторыңмен\nоқуға қош\nкелдің',
     'welcome.sub':
       'Мұнда өткенді бекітіп, оқулықсыз әрі жаттаусыз тірі сөйлесеміз',
+    'welcome.start': 'Оқуды бастау',
 
     'lang.title': 'Ең алдымен,\nтьютормен сөйлесу\nтілін таңда',
 
-    'choose.title': 'Енді өзіңе тьютор таңдау керек',
-    'choose.langUi': 'Интерфейс тілі',
-    'choose.langExplain': 'Түсіндіру тілі',
+    'choose.title': 'Өзіңе лайық тьюторды таңда',
+    'choose.soon': 'Жақында',
+    'tutor.aizere.trait1': 'Дана',
+    'tutor.aizere.trait2': 'Қамқор',
     'tutor.luna.trait1': 'Орысша',
     'tutor.luna.trait2': 'Сезімтал',
     'tutor.luna.trait3': 'Байсалды',
@@ -805,12 +814,14 @@ export const DICT = {
     'welcome.title': 'Welcome to learning\nwith your personal\ntutor',
     'welcome.sub':
       'Here we reinforce what you have learned and chat live — no textbooks, no cramming',
+    'welcome.start': 'Start learning',
 
     'lang.title': 'First of all,\nchoose the language\nto talk with your tutor',
 
-    'choose.title': 'Now you need to choose a tutor',
-    'choose.langUi': 'Interface language',
-    'choose.langExplain': 'Explanation language',
+    'choose.title': 'Choose the right tutor',
+    'choose.soon': 'Coming soon',
+    'tutor.aizere.trait1': 'Wise',
+    'tutor.aizere.trait2': 'Caring',
     'tutor.luna.trait1': 'Russian-speaking',
     'tutor.luna.trait2': 'Sensitive',
     'tutor.luna.trait3': 'Calm',

@@ -43,7 +43,7 @@ test.describe('адаптивная оболочка — мобилка', () => 
   test('контент экрана виден и не перекрыт сайдбаром', async ({ page }) => {
     await page.goto('/?screen=tutor-welcome')
     // Заголовок приветствия должен попадать во вьюпорт (раньше уезжал за экран).
-    await expect(page.locator('.t-welcome__title')).toBeInViewport()
+    await expect(page.locator('.t-pick__title')).toBeInViewport()
   })
 })
 
