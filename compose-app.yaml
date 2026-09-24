@@ -46,6 +46,10 @@ services:
       ELEVENLABS_API_KEY_JARVIS: ${ELEVENLABS_API_KEY_JARVIS:-}
       ELEVEN_VOICE_ID_JARVIS: ${ELEVEN_VOICE_ID_JARVIS:-}
       ELEVENLABS_MODEL_JARVIS: ${ELEVENLABS_MODEL_JARVIS:-}
+      # Айзере (dev-only) — тот же клон, что у стенда; пусто → общий ключ и
+      # зашитый в роут id.
+      ELEVENLABS_API_KEY_AIZERE: ${ELEVENLABS_API_KEY_AIZERE:-}
+      ELEVEN_VOICE_ID_AIZERE: ${ELEVEN_VOICE_ID_AIZERE:-}
       # Fish Audio — голос Джарвиса (dev-only тьютор). Пусто → его карточки на
       # прод-сборке и так нет, роут просто не отдаст fish-провайдера.
       FISH_AUDIO_API_KEY: ${FISH_AUDIO_API_KEY:-}
