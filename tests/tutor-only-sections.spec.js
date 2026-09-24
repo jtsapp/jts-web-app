@@ -38,7 +38,7 @@ async function loginToTutorZone(page) {
   await boxes.first().click()
   await page.keyboard.type('1234')
   await page.locator('.form-primary').click()
-  await expect(page.locator('.t-welcome__title')).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('.t-pick__title')).toBeVisible({ timeout: 10_000 })
 }
 
 // На мобилке сайдбар — drawer за гамбургером; на десктопе — статичная колонка.

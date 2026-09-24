@@ -41,7 +41,6 @@ import IeltsProgressPage from './screens/IeltsProgressPage.jsx'
 import SpeakingTestPage from './screens/SpeakingTestPage.jsx'
 import VocabularyPage from './screens/VocabularyPage.jsx'
 import KingdomInteriorPage from './screens/KingdomInteriorPage.jsx'
-import TutorWelcomePage from './screens/TutorWelcomePage.jsx'
 import TutorLanguagePage from './screens/TutorLanguagePage.jsx'
 import TutorChoosePage from './screens/TutorChoosePage.jsx'
 import TutorLoadingPage from './screens/TutorLoadingPage.jsx'
@@ -67,7 +66,6 @@ import CourseCatalogPage from './screens/CourseCatalogPage.jsx'
 import BoothEntryPage from './screens/BoothEntryPage.jsx'
 import { loadCatalogLesson } from './screens/workspace/loadCatalogLesson.js'
 import { getTutor, temperFor } from './tutor/tutors.js'
-import { playTutorSample } from './lib/ielts-audio.js'
 // Звук трансляции учителя разрешается ЗАРАНЕЕ, на жесте входа в урок: на iOS
 // сокет-событие такого разрешения уже не получит (см. live/audioReport.js).
 import { unlockBroadcastAudio } from './screens/live/audioReport.js'
@@ -1706,13 +1704,34 @@ export default function App() {
           isDemoAccount={isDemoAccount}
         />
       )
+    // Приветствие и выбор тьютора — один экран (макет «Speaking Buddy»,
+    // сентябрь 2026). Имя tutor-welcome осталось живым: на него смотрят
+    // tutorHome, диплинки и тесты, и вести оба имени в одно место дешевле, чем
+    // выискивать все ссылки.
     case 'tutor-welcome':
+    case 'tutor-choose':
       return (
-        <TutorWelcomePage
+        <TutorChoosePage
           user={{ name, level: userLevel }}
           onNavigate={(key) => handleTutorNav(key, tutorHome)}
           onProfile={() => setScreen('profile')}
-          onContinue={() => setScreen('tutor-lang')}
+          onBack={() => goAfterTutorEdit('home')}
+          tutorKey={tutorKey}
+          temper={temper}
+          selected={tutorEditFrom === 'manage' ? tutorKey : ''}
+          onChoose={(key, chosenTemper = null) => {
+            setTutorKey(key)
+            setTemper(chosenTemper)
+            // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
+            setTutorOnboarded(true)
+            // Тьютор и нрав пишутся ОДНИМ патчем: разними их — и при осечке сети
+            // в профиле останется тьютор с чужим характером.
+            saveTutorPrefs(token, { tutor: key, tutorTemper: chosenTemper })
+            // Язык спрашиваем только в первый проход. Смена тьютора из
+            // «Управления» идёт сразу в загрузку: язык уже выбран, а флаг
+            // tutorEditFrom должен дожить до конца цепочки (goAfterTutorEdit).
+            setScreen(tutorEditFrom === 'manage' ? 'tutor-loading' : 'tutor-lang')
+          }}
         />
       )
     case 'tutor-lang':
@@ -1723,32 +1742,8 @@ export default function App() {
           onProfile={() => setScreen('profile')}
           onSelect={() => {
             setTutorEditFrom(null)
-            setScreen('tutor-choose')
-          }}
-        />
-      )
-    case 'tutor-choose':
-      return (
-        <TutorChoosePage
-          user={{ name, level: userLevel }}
-          onNavigate={(key) => handleTutorNav(key, tutorHome)}
-          onProfile={() => setScreen('profile')}
-          onBack={() => goAfterTutorEdit('tutor-lang')}
-          tutorKey={tutorKey}
-          temper={temper}
-          onChoose={(key, chosenTemper = null) => {
-            setTutorKey(key)
-            setTemper(chosenTemper)
-            // Выбор сразу в профиль: перезагрузка не должна заставлять выбирать заново.
-            setTutorOnboarded(true)
-            // Тьютор и нрав пишутся ОДНИМ патчем: разними их — и при осечке сети
-            // в профиле останется тьютор с чужим характером.
-            saveTutorPrefs(token, { tutor: key, tutorTemper: chosenTemper })
             setScreen('tutor-loading')
           }}
-          // Образец голоса — готовый файл, а не живой синтез: фраза одна и та
-          // же у всех, платить за неё провайдеру на каждое нажатие незачем.
-          onListen={(key) => playTutorSample(key)}
         />
       )
     case 'tutor-loading':
