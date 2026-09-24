@@ -30,7 +30,6 @@
     "src/screens/workbook/acts/TapActs.jsx <button> .is-.wb-fixw",
     "src/screens/workbook/acts/TapActs.jsx <button> .is-no.is-ok.is-rev.wb-ew",
     "src/screens/workbook/acts/TapActs.jsx <button> .is-no.is-ok.is-rev.wb-seqrow",
-    "src/screens/writing/tasks/ChoiceTask.jsx <button> .is-no.is-ok.wr-opt",
-    "src/tutor/TemperToggle.jsx <button> .t-adult"
+    "src/screens/writing/tasks/ChoiceTask.jsx <button> .is-no.is-ok.wr-opt"
   ]
 }
