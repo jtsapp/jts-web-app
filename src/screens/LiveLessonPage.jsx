@@ -276,15 +276,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   useEffect(() => {
     let cancelled = false
-    // Занятие ещё не загружено — решать «шаги или файл» нечем (spec §6.2): FILE-занятие
-    // не должно мигнуть шагами, пока ждём ответ. Эффект перезапустится, когда придёт lesson.
+    // Занятие ещё не загружено — резолвить рано (spec §6.2): страница не должна
+    // мигнуть шагами или файлом до ответа. Эффект перезапустится, когда придёт lesson.
     if (!lesson) return undefined
     const url = materialFileUrl
     // Сброс идёт той же промисной веткой, что и загрузка: setState прямо в теле
     // эффекта запускает каскад рендеров (и на это ругается линтер).
-    // Шаги или файл решает движок занятия — в одном месте, shouldResolveCatalogLesson,
-    // чтобы страница и тесты сходились.
-    Promise.resolve(shouldResolveCatalogLesson(url, lesson) ? catalogLessonIdFor(url, token) : null)
+    // Шаги или файл решает НАЙДЕННЫЙ разбор, а не движок занятия (23.09.2026,
+    // см. shouldResolveCatalogLesson) — занятие FILE по умолчанию не значит,
+    // что материал не урок каталога.
+    Promise.resolve(shouldResolveCatalogLesson(url) ? catalogLessonIdFor(url, token) : null)
       .then((id) =>
         id == null
           ? Promise.resolve({ id: null, loaded: null })
@@ -330,22 +331,18 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         setCatalogResolvedFor(url)
       })
     return () => { cancelled = true }
-    // lesson?.engine, а не весь lesson: движок не меняется после создания
-    // занятия, а полный объект приходит заново на каждом опросе (5с) — им в
-    // зависимостях эффект пересчитывал бы указку урока каталога без всякого
-    // повода, на каждый тик.
-    //
-    // lesson?.id добавлен отдельно: и ДО загрузки занятия, и ПОСЛЕ — если
-    // бэкенд старый и поля engine в ответе нет вовсе — lesson?.engine остаётся
-    // тем же undefined, и без id в зависимостях React не видел бы разницы между
-    // «занятие ещё не пришло» и «пришло без engine»: эффект так и оставался бы
-    // на первом `if (!lesson) return`, catalogResolvedFor не выставлялся бы
-    // никогда, а материал стоял бы на 'loading' насовсем (нашла финальная
-    // ревизия ветки). id занятия при этом не плавает на опросе — sameLessonSnapshot
-    // возвращает тот же объект, пока занятие то же самое, — так что лишних
-    // перезапусков эффекта это не добавляет.
+    // lesson?.id, а не весь lesson: полный объект приходит заново на каждом
+    // опросе (5с), и в зависимостях эффект пересчитывал бы указку урока
+    // каталога без всякого повода, на каждый тик — id занятия при этом не
+    // плавает, sameLessonSnapshot возвращает тот же объект, пока занятие то же
+    // самое. Именно id, не просто truthy-факт наличия lesson: до загрузки
+    // занятия и сразу после эффект должен увидеть РАЗНОЕ значение зависимости,
+    // иначе React решит, что зависимости не поменялись, и застрянет на первом
+    // `if (!lesson) return` навсегда — 'engine' раньше стоял тут же для той же
+    // цели, но с 23.09.2026 сама резолюция от движка не зависит (см.
+    // shouldResolveCatalogLesson), и он остался лишним.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [materialFileUrl, token, lesson?.id, lesson?.engine])
+  }, [materialFileUrl, token, lesson?.id])
 
   // Стадии файлового урока — третий источник «Тем» (после шагов разбора и
   // разделов занятия). У FILE-занятия (per-lesson engine, не глобальный
