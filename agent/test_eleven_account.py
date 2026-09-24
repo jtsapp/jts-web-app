@@ -25,6 +25,7 @@ from agent import (  # noqa: E402
     _eleven_http_only,
     _eleven_key_for,
     _eleven_model_for,
+    _eleven_voice_for,
 )
 
 
@@ -53,12 +54,22 @@ _clear("ELEVENLABS_API_KEY")
 assert _eleven_key_for("bro") == "", "ключа нет вовсе — пусто, и вызывающий скажет об этом вслух"
 assert _eleven_key_for("jarvis") == "kz-stand", "а у стенда свой остаётся"
 
+# --- голос ------------------------------------------------------------------
+
+_clear("ELEVEN_VOICE_ID_JARVIS", "ELEVEN_VOICE_ID_BRO")
+assert _eleven_voice_for("jarvis") == "2ZqnRUaCU5IaXJ45uakV", "KZ-стенд — зашитый клон"
+os.environ["ELEVEN_VOICE_ID_JARVIS"] = "override-kz"
+assert _eleven_voice_for("jarvis") == "override-kz", "env важнее таблицы"
+assert _eleven_voice_for("bro") != "override-kz", "чужой голос Декстера не касается"
+_clear("ELEVEN_VOICE_ID_JARVIS", "ELEVEN_VOICE_ID_BRO")
+
 # --- модель -----------------------------------------------------------------
 
 _clear("ELEVENLABS_MODEL", "ELEVENLABS_MODEL_JARVIS", "ELEVENLABS_MODEL_BRO")
 
 assert _eleven_model_for("bro") == "eleven_flash_v2_5", "дефолт — Flash: он выбран за скорость"
 assert _eleven_model_for("") == "eleven_flash_v2_5"
+assert _eleven_model_for("jarvis") == "eleven_v3", "казахский стенд по умолчанию на v3"
 
 os.environ["ELEVENLABS_MODEL_JARVIS"] = "eleven_v3"
 assert _eleven_model_for("jarvis") == "eleven_v3", "казахскому стенду нужна v3"

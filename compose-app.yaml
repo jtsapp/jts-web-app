@@ -43,6 +43,9 @@ services:
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
       ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID}
       ELEVEN_VOICE_ID_DEXTER: ${ELEVEN_VOICE_ID_DEXTER}
+      ELEVENLABS_API_KEY_JARVIS: ${ELEVENLABS_API_KEY_JARVIS:-}
+      ELEVEN_VOICE_ID_JARVIS: ${ELEVEN_VOICE_ID_JARVIS:-}
+      ELEVENLABS_MODEL_JARVIS: ${ELEVENLABS_MODEL_JARVIS:-}
       # Fish Audio — голос Джарвиса (dev-only тьютор). Пусто → его карточки на
       # прод-сборке и так нет, роут просто не отдаст fish-провайдера.
       FISH_AUDIO_API_KEY: ${FISH_AUDIO_API_KEY:-}

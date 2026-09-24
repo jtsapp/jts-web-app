@@ -3485,6 +3485,9 @@ PERSONA_VOICE_SETTINGS: dict[str, dict[str, Any]] = {
     "professor": {"stability": 0.72, "similarity_boost": 0.78, "style": 0.15, "speed": 0.95},
     # Luna — calm, soft, zero pressure.
     "gentle": {"stability": 0.78, "similarity_boost": 0.80, "style": 0.10, "speed": 0.90},
+    # KZ-стенд — клон тьютора, спокойная подача. Style 0: v3 и так эмоциональна,
+    # лишний style делает казахский театральным.
+    "jarvis": {"stability": 0.50, "similarity_boost": 0.75, "style": 0.0, "speed": 1.0, "use_speaker_boost": True},
 }
 # Fallback for an unknown/blank tutor — neutral, balanced delivery.
 DEFAULT_VOICE_SETTINGS: dict[str, Any] = {"stability": 0.50, "similarity_boost": 0.75, "speed": 1.0}
@@ -3552,6 +3555,8 @@ ELEVEN_VOICE = {
     "gentle": "AXdMgz6evoL7OPd7eU12",    # Luna
     "edge": "N2lVS1w4EtoT3dr4eOWO",
     "velvet": "Xb7hH8MSUJpSbSDYk0k2",
+    # KZ-стенд. Клон из кабинета ElevenLabs; env ELEVEN_VOICE_ID_JARVIS важнее.
+    "jarvis": "2ZqnRUaCU5IaXJ45uakV",
 }
 DEFAULT_ELEVEN_VOICE = ELEVEN_VOICE["bro"]
 
@@ -3761,6 +3766,14 @@ def _eleven_key_for(tutor: str) -> str:
     return (os.getenv("ELEVENLABS_API_KEY") or "").strip()
 
 
+# Модель по персоне. Казахский есть только у v3 — без этой строки стенд
+# молча уехал бы на глобальный Flash и заговорил бы не тем языком.
+ELEVEN_MODEL = {
+    "jarvis": "eleven_v3",
+}
+DEFAULT_ELEVEN_MODEL = "eleven_flash_v2_5"
+
+
 def _eleven_model_for(tutor: str) -> str:
     """Модель ElevenLabs персоны: env ELEVENLABS_MODEL_<PERSONA> важнее общей.
 
@@ -3776,7 +3789,9 @@ def _eleven_model_for(tutor: str) -> str:
         env = (os.getenv(f"ELEVENLABS_MODEL_{tutor.upper()}") or "").strip()
         if env:
             return env
-    return os.getenv("ELEVENLABS_MODEL", "eleven_flash_v2_5")
+        if tutor in ELEVEN_MODEL:
+            return ELEVEN_MODEL[tutor]
+    return os.getenv("ELEVENLABS_MODEL", DEFAULT_ELEVEN_MODEL)
 
 
 def _cascade_tts_eleven(profile: LearnerProfile):
@@ -4203,17 +4218,9 @@ TUTOR_TTS_PROVIDER = {
     "bro": "eleven",     # Декстер — клиентский голос выбран в ElevenLabs
     "gentle": "gemini",  # Луна    — лучшее качество на en/ru, один голос на оба
     "hype": "soniox",    # Спарк   — один тембр на всех 60+ языках, включая kk
-    # KZ-стенд — dev-only, здесь и перебираем голоса. Сейчас Soniox (Daniel):
-    # он единственный реально произносит казахский, и на слух выиграл у OpenAI.
-    # Пути "openai" (ash + instructions) и "fish" (клон) рабочие и на месте —
-    # вернуть можно этой строкой или TTS_PROVIDER_JARVIS=openai, без редеплоя.
-    #
-    # ЧТО ТЕРЯЕТСЯ НА SONIOX, если возвращаться: у провайдера нет instructions,
-    # поэтому OPENAI_TTS_PERSONA_STYLE / _LIVENESS / _PRONUNCIATION для стенда
-    # больше не звучат — характер задаёт только промпт персоны, а фонетику
-    # провайдер знает сам. Плюс отключается словарь произношения: гейт в
-    # _pronunciation_lang стоит по провайдеру openai.
-    "jarvis": "soniox",
+    # KZ-стенд — клон ElevenLabs (v3, иначе казахского в модели нет).
+    # Пути "soniox" / "openai" / "fish" рабочие: вернуть — TTS_PROVIDER_JARVIS.
+    "jarvis": "eleven",
 }
 # Azure в таблице нет НАМЕРЕННО, хотя ключи AZURE_SPEECH_* теперь на деплое есть
 # (их завели под STT Декстера, см. TUTOR_STT_PROVIDER): голоса подобраны, и
@@ -4226,8 +4233,8 @@ TTS_PROVIDERS = ("soniox", "gemini", "eleven", "azure", "fish", "openai")
 # их нет, но агент их знает) и для пустого tutor. CASCADE_TTS сохранён как имя
 # переменной, но сменил смысл: это ДЕФОЛТ для нераспределённых, не рубильник.
 DEFAULT_TTS_PROVIDER = "gemini"
-# Казахского правила здесь НЕТ намеренно. По-казахски говорит только Спарк, и он
-# уже на Soniox — единственном провайдере, который реально произносит kk.
+# Казахского правила здесь НЕТ намеренно. По-казахски говорят Спарк (Soniox)
+# и KZ-стенд (ElevenLabs v3) — оба уже на своём провайдере.
 # У Луны и Декстера "kz" — это язык ИНТЕРФЕЙСА: сами они русскоязычные (см.
 # tutor.*.trait1 в src/i18n/dict.js), говорят по-английски и объясняют по-русски,
 # казахского текста в их репликах не бывает. Раньше kz перекидывал на TTS всех
