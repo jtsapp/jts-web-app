@@ -33,6 +33,8 @@ from livekit.agents import (
     Agent,
     AgentSession,
     APIConnectOptions,
+    APIError,
+    APIStatusError,
     DEFAULT_API_CONNECT_OPTIONS,
     JobContext,
     JobExecutorType,
@@ -3745,11 +3747,13 @@ def _cascade_tts_gemini(profile: LearnerProfile):
 # обслуживает — рукопожатие отвечает 400 ещё до синтеза, и тьютор молчит.
 # Проверено на живом стенде: ключ верный, голос найден, падает именно сокет.
 #
-# Зато HTTP v3 обслуживает — им и пользуется плеер в кабинете ElevenLabs, где
-# голос и звучит лучше всего. Поэтому такие модели мы гоним через StreamAdapter:
-# он синтезирует по предложению обычными запросами. Приём не новый, тем же
-# способом здесь уже говорит OpenAI TTS.
+# HTTP у плагина — это /v1/text-to-speech/{id}/stream плюс apply_text_normalization
+# и voice_settings: null. На клоне v3 кабинет отвечает 400 (тело плагин глотает).
+# Тот же голос в кабинете и в /api/tutor-tts говорит через convert без /stream
+# и без этих полей. Поэтому http-only модели идут в _ElevenConvertTTS, а
+# StreamAdapter режет реплику по предложениям — как OpenAI TTS.
 ELEVEN_HTTP_ONLY_MODELS = frozenset({"eleven_v3"})
+ELEVEN_CONVERT_ENCODING = "mp3_44100_128"
 
 def _eleven_http_only(model: str) -> bool:
     """Этой модели нужен HTTP, а не сокет. Список правится переменной —
@@ -3813,21 +3817,154 @@ def _eleven_model_for(tutor: str) -> str:
 def _eleven_engine_kwargs(
     model: str, key: str, voice_id: str, tutor: str, http_only: bool
 ) -> dict[str, Any]:
-    """Аргументы elevenlabs.TTS. v3 не принимает speaker boost / style / speed
-    и дефолтный mp3_22050_32 плагина — кабинет отвечает 400. Там клон уже
-    говорил на convert + mp3_44100_128 без этих полей."""
+    """Аргументы elevenlabs.TTS для сокетного пути (Flash / multilingual).
+
+    http_only модели в этот словарь больше не ходят: их синтезирует
+    _ElevenConvertTTS. Поля оставлены, чтобы тест ловил регресс, если кто-то
+    снова прокинет v3 в плагин."""
     kwargs: dict[str, Any] = {
         "model": model,
         "api_key": key,
         "voice_id": voice_id,
     }
     if http_only:
-        kwargs["encoding"] = os.getenv("ELEVENLABS_ENCODING_V3", "mp3_44100_128")
+        kwargs["encoding"] = os.getenv("ELEVENLABS_ENCODING_V3", ELEVEN_CONVERT_ENCODING)
         return kwargs
     vs = PERSONA_VOICE_SETTINGS.get(tutor, DEFAULT_VOICE_SETTINGS)
     kwargs["voice_settings"] = elevenlabs.VoiceSettings(**vs) if elevenlabs else vs
     kwargs["auto_mode"] = True
     return kwargs
+
+
+def _eleven_convert_encoding() -> str:
+    return os.getenv("ELEVENLABS_ENCODING_V3", ELEVEN_CONVERT_ENCODING)
+
+
+def _eleven_convert_url(voice_id: str, encoding: str | None = None) -> str:
+    """Convert, не /stream: тот же URL, что /api/tutor-tts и кабинет."""
+    enc = encoding or _eleven_convert_encoding()
+    return (
+        f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+        f"?output_format={enc}"
+    )
+
+
+def _eleven_sample_rate(encoding: str) -> int:
+    parts = encoding.split("_")
+    try:
+        return int(parts[1])
+    except (IndexError, ValueError):
+        return 44100
+
+
+class _ElevenConvertTTS(lk_tts.TTS):
+    """HTTP convert ElevenLabs — без /stream и без полей, на которых v3 даёт 400."""
+
+    def __init__(
+        self,
+        *,
+        model: str,
+        api_key: str,
+        voice_id: str,
+        encoding: str | None = None,
+    ) -> None:
+        enc = encoding or _eleven_convert_encoding()
+        super().__init__(
+            capabilities=lk_tts.TTSCapabilities(streaming=False),
+            sample_rate=_eleven_sample_rate(enc),
+            num_channels=1,
+        )
+        self._model_id = model
+        self._api_key = api_key
+        self._voice_id = voice_id
+        self._encoding = enc
+        self._client: httpx.AsyncClient | None = None
+
+    @property
+    def model(self) -> str:
+        return self._model_id
+
+    @property
+    def provider(self) -> str:
+        return "ElevenLabs"
+
+    def _http(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=30.0)
+        return self._client
+
+    def synthesize(
+        self, text: str, *, conn_options: APIConnectOptions = DEFAULT_API_CONNECT_OPTIONS
+    ) -> lk_tts.ChunkedStream:
+        return _ElevenConvertStream(tts=self, input_text=text, conn_options=conn_options)
+
+    async def aclose(self) -> None:
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
+
+
+class _ElevenConvertStream(lk_tts.ChunkedStream):
+    async def _run(self, output_emitter: lk_tts.AudioEmitter) -> None:
+        tts: _ElevenConvertTTS = self._tts
+        text = (self._input_text or "").strip()
+        if not text:
+            logger.warning("ElevenLabs convert skipped empty text")
+            output_emitter.initialize(
+                request_id="eleven-convert-empty",
+                sample_rate=tts.sample_rate,
+                num_channels=1,
+                mime_type="audio/mp3",
+            )
+            output_emitter.flush()
+            return
+
+        url = _eleven_convert_url(tts._voice_id, tts._encoding)
+        payload = {"text": text, "model_id": tts._model_id}
+        try:
+            async with tts._http().stream(
+                "POST",
+                url,
+                headers={"xi-api-key": tts._api_key, "accept": "audio/mpeg"},
+                json=payload,
+            ) as resp:
+                if resp.status_code != 200:
+                    raw = await resp.aread()
+                    detail = raw.decode("utf-8", errors="replace")[:400]
+                    logger.error(
+                        "ElevenLabs convert %s voice=%s model=%s chars=%s: %s",
+                        resp.status_code,
+                        tts._voice_id,
+                        tts._model_id,
+                        len(text),
+                        detail,
+                    )
+                    raise APIStatusError(
+                        message=detail or resp.reason_phrase or "Bad Request",
+                        status_code=resp.status_code,
+                        request_id=resp.headers.get("request-id")
+                        or resp.headers.get("x-request-id"),
+                        body=detail,
+                        retryable=resp.status_code >= 500,
+                    )
+                output_emitter.initialize(
+                    request_id=resp.headers.get("request-id")
+                    or resp.headers.get("x-request-id")
+                    or "eleven-convert",
+                    sample_rate=tts.sample_rate,
+                    num_channels=1,
+                    mime_type="audio/mp3",
+                )
+                async for chunk in resp.aiter_bytes():
+                    if chunk:
+                        output_emitter.push(chunk)
+                output_emitter.flush()
+        except APIStatusError:
+            raise
+        except httpx.TimeoutException as e:
+            raise APIError(f"ElevenLabs convert timed out: {e}") from e
+        except Exception as e:
+            raise APIError(f"ElevenLabs convert failed: {e}") from e
 
 
 def _cascade_tts_eleven(profile: LearnerProfile):
@@ -3838,8 +3975,6 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     Pick ELEVENLABS_MODEL with that in mind — the quality/headroom trade is real,
     not theoretical.
     """
-    if elevenlabs is None:
-        raise RuntimeError("TTS eleven needs livekit-plugins-elevenlabs")
     key = _eleven_key_for(profile.tutor)
     if not key:
         raise RuntimeError("TTS eleven needs ELEVENLABS_API_KEY")
@@ -3853,13 +3988,23 @@ def _cascade_tts_eleven(profile: LearnerProfile):
     # Раньше она перебивала таблицу, и KZ-стенд уезжал на чужой id → 401.
     voice_id = _eleven_session_voice(profile)
     http_only = _eleven_http_only(model)
-    kwargs = _eleven_engine_kwargs(model, key, voice_id, profile.tutor, http_only)
     logger.info(
         "Cascade TTS: ElevenLabs (%s, voice=%s, transport=%s), lang=%s, tutor=%s",
         model, voice_id, "http" if http_only else "ws", profile.lang, profile.tutor or "<none>",
     )
-    engine = elevenlabs.TTS(**kwargs)
-    if not http_only:
+    if http_only:
+        engine: lk_tts.TTS = _ElevenConvertTTS(
+            model=model,
+            api_key=key,
+            voice_id=voice_id,
+            encoding=_eleven_convert_encoding(),
+        )
+    else:
+        if elevenlabs is None:
+            raise RuntimeError("TTS eleven needs livekit-plugins-elevenlabs")
+        engine = elevenlabs.TTS(
+            **_eleven_engine_kwargs(model, key, voice_id, profile.tutor, False)
+        )
         return engine
 
     # HTTP-путь: синтез по предложению обычными запросами (см. оговорку у

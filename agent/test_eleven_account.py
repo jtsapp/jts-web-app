@@ -23,6 +23,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 from agent import (  # noqa: E402
     LearnerProfile,
+    _ElevenConvertTTS,
+    _eleven_convert_url,
     _eleven_engine_kwargs,
     _eleven_http_only,
     _eleven_key_for,
@@ -122,5 +124,16 @@ flash = _eleven_engine_kwargs("eleven_flash_v2_5", "k", "rHWSYoq8UlV0YIBKMryp", 
 assert "voice_settings" in flash
 assert flash.get("auto_mode") is True
 assert "encoding" not in flash
+
+# Convert, не /stream: плагин бьёт в stream + apply_text_normalization и ловит 400.
+url = _eleven_convert_url("2ZqnRUaCU5IaXJ45uakV")
+assert "/stream" not in url, "v3 идёт в convert, как кабинет и /api/tutor-tts"
+assert url.endswith("?output_format=mp3_44100_128")
+convert = _ElevenConvertTTS(
+    model="eleven_v3", api_key="k", voice_id="2ZqnRUaCU5IaXJ45uakV"
+)
+assert convert.model == "eleven_v3"
+assert convert.sample_rate == 44100
+assert convert.provider == "ElevenLabs"
 
 print("ElevenLabs: аккаунт, модель и транспорт — ок")
