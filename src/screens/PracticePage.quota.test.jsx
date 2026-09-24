@@ -32,6 +32,7 @@ import PracticePage from './PracticePage.jsx'
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
+  sessionStorage.clear()
 })
 
 describe('PracticePage — квота сказок проверяется в момент открытия', () => {
@@ -42,7 +43,7 @@ describe('PracticePage — квота сказок проверяется в м�
       </I18nProvider>,
     )
     const cards = await waitFor(() => {
-      const els = container.querySelectorAll('.pp-tcard')
+      const els = container.querySelectorAll('.pk-tale')
       expect(els.length).toBeGreaterThan(1)
       return els
     })
@@ -63,7 +64,7 @@ describe('PracticePage — квота сказок проверяется в м�
       </I18nProvider>,
     )
     const card = await waitFor(() => {
-      const el = container.querySelector('.pp-tcard')
+      const el = container.querySelector('.pk-tale')
       expect(el).toBeTruthy()
       return el
     })

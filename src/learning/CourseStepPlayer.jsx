@@ -6,6 +6,8 @@ import { saveWord } from '../api.js'
 import { useI18n } from '../i18n.jsx'
 import { answerMatches, normAnswer } from '../lib/answer-match.js'
 import { reportAudio } from '../screens/live/audioReport.js'
+import { playTts, stopTts } from '../lib/speech.js'
+import { VOICE } from '../lib/ttsShared.js'
 import { isTapSelection, isPhraseSelection, isOversizedPhrase } from '../lib/wordTranslate.js'
 import { useTapTranslate } from '../screens/workspace/useTapTranslate.js'
 import TapText from '../screens/workspace/TapText.jsx'
@@ -60,8 +62,9 @@ const gapIsRight = (item, value) => answerMatches(value, item.answers, gapCue(it
 const gapCue = (item) => `${item.before || ''} ${item.after || ''}`
 
 // Английское слово вслух. Сначала — записанный файл (scripts/make-lesson-audio.js),
-// и только если записи нет — синтез браузера, каким слово произносил исходный
-// курс (sayWord / sayText).
+// если записи нет — Soniox тем же голосом, каким сделаны записи (Owen), и
+// только если сервер не ответил — синтез браузера, каким слово произносил
+// исходный курс (sayWord / sayText).
 //
 // Порядок именно такой, потому что браузерный синтез — лотерея: голос и
 // качество зависят от того, что стоит в системе, а на Android для en-US его
@@ -85,12 +88,26 @@ function speakEnglish(text, { src = null, rate = 1 } = {}) {
     // разбирательства «на телефоне голос хороший, на компьютере роботный» —
     // там браузер держал в кэше старую копию данных, где записи ещё не было.
     liveAudio.play().catch((e) => {
-      console.warn('[lesson] запись не проиграла, читаю синтезом:', src, e?.name || e)
-      speakSynth(text, rate)
+      console.warn('[lesson] запись не проиграла, читаю Soniox:', src, e?.name || e)
+      speakSoniox(text, rate)
     })
     return
   }
-  speakSynth(text, rate)
+  speakSoniox(text, rate)
+}
+
+// Темп записей курса — 0.85 (make-lesson-audio.js); «медленно» у Soniox упирается
+// в нижнюю границу провайдера 0.7, как ни проси 0.6.
+function speakSoniox(text, rate) {
+  playTts(text, {
+    voice: VOICE.course,
+    speed: rate < 1 ? 0.7 : 0.85,
+    onFail: (why) => {
+      if (why === 'empty') return
+      console.warn('[lesson] Soniox не ответил, читаю синтезом:', why)
+      speakSynth(text, rate)
+    },
+  })
 }
 
 function speakSynth(text, rate) {
@@ -106,6 +123,7 @@ function speakSynth(text, rate) {
 // копится — слово звучит через несколько секунд после тапа, уже не своё.
 function stopSpeaking() {
   if (typeof window === 'undefined') return
+  stopTts()
   window.speechSynthesis?.cancel()
   if (liveAudio) {
     liveAudio.pause()
@@ -527,6 +545,14 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
     () => (step.options ? (step.keep ? step.options : shuffle(step.options, seed * 7919)) : []),
     [step, seed],
   )
+  // Иконки вариантов лежат в шаге параллельно options в ИСХОДНОМ порядке, а
+  // варианты на экране перемешаны: связываем по значению варианта, иначе
+  // «sun» получил бы картинку двери.
+  const optionIcons = useMemo(() => {
+    if (!Array.isArray(step.optionIcons) || !step.options) return null
+    const byOption = new Map(step.options.map((o, i) => [o, step.optionIcons[i]]))
+    return options.map((o) => byOption.get(o) || null)
+  }, [step, options])
   // Собранная фраза шага «порядок слов».
   const [seq, setSeq] = useState([])
   // Соединение пар: левый пункт → выбранный правый.
@@ -657,6 +683,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
         <StepBody
           step={step}
           options={options}
+          optionIcons={optionIcons}
           picked={picked}
           setPicked={setPicked}
           checked={checked}
@@ -722,7 +749,7 @@ function Step({ step, seed, level, onAdvance, onGraded, t, onWord, token, catalo
   )
 }
 
-function StepBody({ step, options, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t, onWord, token, catalogLessonId }) {
+function StepBody({ step, options, optionIcons, picked, setPicked, checked, text, setText, seq, setSeq, links, setLinks, fills, setFills, picks, setPicks, isRight, revealed, level, t, onWord, token, catalogLessonId }) {
   switch (step.type) {
     // Впиши пропущенное: само предложение ушло в вопрос, здесь только поле.
     case 'gap':
@@ -898,7 +925,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           {/* Без записи варианты не рисуем: выбрать среди них честно нечем, а
               неоцениваемый шаг всё равно пропустил бы любой выбор. */}
           {listenSrc(step, level) && (
-            <Choices options={options} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
+            <Choices options={options} icons={optionIcons} picked={picked} setPicked={setPicked} checked={checked} answer={step.answer} grid={inTwoColumns(options)} />
           )}
         </>
       )
@@ -920,6 +947,7 @@ function StepBody({ step, options, picked, setPicked, checked, text, setText, se
           )}
           <Choices
             options={options}
+            icons={optionIcons}
             picked={picked}
             setPicked={setPicked}
             checked={checked}
@@ -1168,11 +1196,24 @@ function ColumnsBoard({ step, fills, setFills, checked }) {
 
 // Фразы «послушай и повтори»: у части строк есть запись курса, у остальных
 // читает синтез — тот же порядок, что и в исходном движке (say()).
+// Рамка — строка с пропуском «…» («Would you mind …ing?»). Синтез читает
+// пропуск кашей, поэтому записи у рамки нет намеренно (то же правило —
+// scripts/lib/course-frame.js), и браузерным синтезом её тоже не читаем:
+// рамка без записи — просто текст, без кнопки «послушать».
+const FRAME = /…|\.\.\./
+const isFrame = (text) => FRAME.test(String(text ?? '').replace(/<[^>]+>/g, ''))
+const silentFrame = (text, src) => !src && isFrame(text)
+
 function PhraseList({ items, onWord }) {
   useEffect(() => stopSpeaking, [])
   return (
     <div className="cp-phrases">
-      {(items || []).map((it, i) => (
+      {(items || []).map((it, i) =>
+        silentFrame(it.text, it.src) ? (
+          <div key={i} className="cp-phrases__row is-frame">
+            <TapText as="span" className="cp-phrases__text" text={it.text} onWord={onWord} />
+          </div>
+        ) : (
         <button
           key={i}
           type="button"
@@ -1187,7 +1228,8 @@ function PhraseList({ items, onWord }) {
             </svg>
           </span>
         </button>
-      ))}
+        ),
+      )}
     </div>
   )
 }
@@ -1230,9 +1272,10 @@ export function recordLine(item, audio = null) {
 // ваш самый давний друг?»); у B1 таких больше половины строк record. Кнопкой
 // «послушать» она была зря: синтез с английским голосом читал кириллицу
 // мусором, а говорить здесь должен студент. Записи у задания не будет —
-// scripts/voice-step-cards.js озвучивает только английские строки.
+// scripts/voice-step-cards.js озвучивает только английские строки. Рамка с
+// пропуском («My closest friend is … .») без записи — тоже текст: см. isFrame.
 const CYRILLIC = /\p{Script=Cyrillic}/u
-const isRecordTask = (line) => !line.src && CYRILLIC.test(line.text)
+const isRecordTask = (line) => !line.src && (CYRILLIC.test(line.text) || isFrame(line.text))
 
 function RecordBoard({ items, audio, t }) {
   const [state, setState] = useState('idle') // idle | live | done | denied
@@ -1334,19 +1377,32 @@ function ExampleCarousel({ items, onWord }) {
 // последний оставался один в ряду: сетка выглядела сломанной, а не короткой.
 const inTwoColumns = (options) => (options || []).length % 2 === 0
 
-function Choices({ options, picked, setPicked, checked, answer, grid = false }) {
+// «Послушайте. Выберите картинку.»: варианты — иконки курса (optionIcons,
+// тот же порядок, что и options), и подписи под ними нет, как в самом курсе:
+// слово под картинкой превратило бы задание в «найди услышанное слово».
+// Ответ по-прежнему сверяется по options.
+const hasPics = (icons, options) => Array.isArray(icons) && icons.length === options.length && icons.every(Boolean)
+
+function Choices({ options, icons, picked, setPicked, checked, answer, grid = false }) {
+  const pics = hasPics(icons, options)
   return (
-    <div className={`cp-choices ${grid ? 'is-grid' : ''}`}>
+    <div className={`cp-choices ${pics ? 'is-pics' : grid ? 'is-grid' : ''}`}>
       {options.map((o, i) => {
         // Подсвечиваем только выбранный вариант: в макете после неверного
         // ответа правильный не раскрывается — остальные кнопки остаются белыми.
-        let cls = 'cp-choice'
+        let cls = pics ? 'cp-choice cp-choice--pic' : 'cp-choice'
         if (checked) {
           if (i === picked) cls += o === answer ? ' is-right' : ' is-wrong'
         } else if (i === picked) cls += ' is-sel'
         return (
-          <button key={i} className={cls} disabled={checked} onClick={() => setPicked(i)}>
-            {o}
+          <button key={i} className={cls} disabled={checked} onClick={() => setPicked(i)} aria-label={pics ? o : undefined}>
+            {pics ? (
+              // Разметка иконки — из файла курса, отфильтрована экстрактором
+              // (scripts/selfstudy/read-course.js, courseIcons).
+              <svg className="cp-choice__icon" viewBox="0 0 24 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icons[i] }} />
+            ) : (
+              o
+            )}
           </button>
         )
       })}
@@ -1363,6 +1419,11 @@ function Choices({ options, picked, setPicked, checked, answer, grid = false }) 
 function MatchBoard({ step, options, links, setLinks, checked, t }) {
   const [active, setActive] = useState(null)
   const pairs = step.pairs || []
+  // «Соедините слова и картинки» (A0): правая половина — имя иконки курса, на
+  // экране — сама иконка. Сверка пар по-прежнему по имени.
+  const icons = step.rightIcons || null
+  const face = (o) =>
+    icons && icons[o] ? <svg className="cp-match__icon" viewBox="0 0 24 24" role="img" aria-label={o} dangerouslySetInnerHTML={{ __html: icons[o] }} /> : o
 
   // Банк — инвентарь: одинаковых вариантов в нём может быть несколько, и
   // каждая копия расходуется отдельно. Занятость по ЗНАЧЕНИЮ (`used.has(o)`)
@@ -1426,16 +1487,16 @@ function MatchBoard({ step, options, links, setLinks, checked, t }) {
               <span className="cp-match__left">{p.left}</span>
               {/* Выбранная пара показывается прямо в пункте: тянуть линии между
                   колонками на узком экране некуда. */}
-              {links[i] !== undefined && <span className="cp-match__pick">{links[i]}</span>}
-              {checked && links[i] !== p.right && <span className="cp-match__fix">{p.right}</span>}
+              {links[i] !== undefined && <span className="cp-match__pick">{face(links[i])}</span>}
+              {checked && links[i] !== p.right && <span className="cp-match__fix">{face(p.right)}</span>}
             </button>
           )
         })}
       </div>
       <div className="cp-match__bank" aria-label={t('lesson.matchBank')}>
         {options.map((o, i) => (
-          <button key={i} className="cp-chip" disabled={checked || spentChip[i]} onClick={() => tapRight(o)}>
-            {o}
+          <button key={i} className={`cp-chip ${icons && icons[o] ? 'cp-chip--pic' : ''}`} disabled={checked || spentChip[i]} onClick={() => tapRight(o)}>
+            {face(o)}
           </button>
         ))}
       </div>
@@ -1595,7 +1656,7 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
         // карточка тогда печатала слово ДВАЖДЫ: крупно на пустой плашке и
         // подписью под ней. Модификатор снимает дубль и делает лицо карточки
         // типографским.
-        <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''} ${w.img ? '' : 'is-noimg'}`}>
+        <div key={i} className={`cp-word ${open[i] ? 'is-open' : ''} ${w.img || w.icon ? '' : 'is-noimg'}`}>
           {/* Тап по карточке произносит слово и переворачивает её — ровно то,
               что обещает инструкция стадии («Look and listen. Tap a picture to
               hear the word»). Без озвучки презентация слов была немой: студент
@@ -1604,7 +1665,7 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
           <button
             className="cp-word__flip"
             onClick={() => {
-              speakEnglish(w.en, { src: w.audio || null })
+              if (!silentFrame(w.en, w.audio)) speakEnglish(w.en, { src: w.audio || null })
               setOpen((s) => ({ ...s, [i]: true }))
             }}
             aria-label={t('lesson.hearWord', { word: w.en })}
@@ -1612,7 +1673,17 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
             <span className="cp-word__face">
               {/* alt называет слово: картинка иллюстрирует значение, а не
                   украшает экран. */}
-              {w.img ? <AssetImage src={w.img} alt={w.en} loading="lazy" hideOnError /> : <span className="cp-word__noimg">{w.en}</span>}
+              {w.img ? (
+                <AssetImage src={w.img} alt={w.en} loading="lazy" hideOnError />
+              ) : w.icon ? (
+                // Фото нет — иконка самого курса (A0): та же картинка, что на
+                // карточке исходника. Разметка отфильтрована экстрактором.
+                <span className="cp-word__art">
+                  <svg className="cp-word__icon" viewBox="0 0 24 24" role="img" aria-label={w.en} dangerouslySetInnerHTML={{ __html: w.icon }} />
+                </span>
+              ) : (
+                <span className="cp-word__noimg">{w.en}</span>
+              )}
             </span>
           </button>
           {/* Оборот карточки по макету: сверху слово с определением, под ним
@@ -1658,17 +1729,19 @@ function WordCards({ words, t, token, catalogLessonId, source }) {
                 >
                   {saved[i] ? t('lesson.savedVocab') : t('lesson.toVocab')}
                 </button>
-                <button
-                  className="cp-word__say"
-                  type="button"
-                  aria-label={t('lesson.hearWord', { word: w.en })}
-                  onClick={() => speakEnglish(w.en, { src: w.audio || null })}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
-                    <path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </button>
+                {!silentFrame(w.en, w.audio) && (
+                  <button
+                    className="cp-word__say"
+                    type="button"
+                    aria-label={t('lesson.hearWord', { word: w.en })}
+                    onClick={() => speakEnglish(w.en, { src: w.audio || null })}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" />
+                      <path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                )}
               </span>
             </div>
           )}

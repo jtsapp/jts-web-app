@@ -33,7 +33,7 @@ test.describe('Тьютор — единый язык приложения', () 
     expect((await readStore(page)).lang).toBe('kk')
     // …и раздел вне тьютора тоже на казахском.
     await page.goto('/?screen=practice')
-    await expect(page.locator('.pp__title')).toHaveText('Тәжірибе')
+    await expect(page.locator('.pk-head__title')).toHaveText('Тәжірибе')
   })
 
   test('миграция: старый jts.lang=kz переносится в общий lang=kk', async ({ page }) => {

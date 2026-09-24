@@ -113,7 +113,9 @@ export default function SituationsPage({ userName, userLevel, token, initialTarg
               setOpenId(id)
               window.scrollTo({ top: 0 })
             }}
-            onBack={() => onNav?.('practice')}
+            // «Ситуации» в Практике живут во вкладке «Говорение»: без навыка
+            // возврат вёл бы на вкладку по умолчанию, где раздела нет.
+            onBack={() => onNav?.('practice', { skill: 'speaking' })}
           />
         )}
 

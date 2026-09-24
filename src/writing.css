@@ -227,12 +227,6 @@
 .wr-gncard__bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--wr-purple), var(--wr-cyan)); }
 .wr-gncard--done { outline: 2px solid var(--wr-green); outline-offset: -2px; }
 
-/* Баннер «Письмо» на хабе Практики: тот же каркас .pp-listen, своя заливка,
-   чтобы два баннера не сливались в один раздел. */
-.pp-write .pp-listen__card {
-  background: linear-gradient(115deg, #2b6cb0 0%, #9047ff 100%);
-}
-
 /* ── мобайл: конвенции хаба (см. styles.css @760) ── */
 @media (max-width: 760px) {
   .wr { padding: 4px 16px 32px; }

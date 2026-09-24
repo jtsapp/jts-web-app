@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import path from 'node:path'
 
 // Раздел «Караоке» в Практике. Бэкенд подставной: проверяем то, что зависит от
 // клиента — раздел появляется только с контентом, разметка доспрашивается
@@ -7,6 +8,26 @@ import { test, expect } from '@playwright/test'
 // Контракт: docs/superpowers/specs/2026-09-03-karaoke-api-contract.md
 
 const json = (body, status = 200) => ({ status, contentType: 'application/json', body: JSON.stringify(body) })
+
+// Тихая фонограмма нужной длины: записи из курса короче секунды, и песня
+// кончалась раньше, чем тест успевал нажать паузу.
+function silentWav(sec, rate = 8000) {
+  const n = rate * sec
+  const buf = Buffer.alloc(44 + n * 2)
+  buf.write('RIFF', 0)
+  buf.writeUInt32LE(36 + n * 2, 4)
+  buf.write('WAVEfmt ', 8)
+  buf.writeUInt32LE(16, 16)
+  buf.writeUInt16LE(1, 20)
+  buf.writeUInt16LE(1, 22)
+  buf.writeUInt32LE(rate, 24)
+  buf.writeUInt32LE(rate * 2, 28)
+  buf.writeUInt16LE(2, 32)
+  buf.writeUInt16LE(16, 34)
+  buf.write('data', 36)
+  buf.writeUInt32LE(n * 2, 40)
+  return buf
+}
 
 const TRACK = {
   id: 1,
@@ -31,6 +52,7 @@ const LYRICS = {
     { w: 'bus', ru: 'автобус', line: 2 },
   ],
   lines: [
+    // ru у строк плеер больше не показывает, но в старых разметках он лежит.
     { id: 1, start: 1, end: 4, text: 'I woke up on a rainy Monday', ru: 'Я проснулся дождливым понедельником' },
     { id: 2, start: 5, end: 8, text: 'And the bus was late again', ru: 'И автобус снова опоздал' },
   ],
@@ -64,7 +86,7 @@ test('раздел появляется только вместе с конте�
   await expect(page.getByRole('button', { name: 'Караоке', exact: true })).toHaveCount(0)
 })
 
-test('каталог показывает трек, а карточка — режимы', async ({ page }) => {
+test('трек из каталога открывает сцену сразу, без карточки режимов', async ({ page }) => {
   await signIn(page, [TRACK])
   await page.goto('/?screen=practice')
 
@@ -75,12 +97,19 @@ test('каталог показывает трек, а карточка — ре
 
   await section.getByText('Rainy Monday').click()
 
-  // Разметка приезжает отдельным запросом — до неё экран показывает загрузку.
-  await expect(page.getByText('Спеть целиком')).toBeVisible()
-  await expect(page.getByText('Разогрев')).toBeVisible()
-  await expect(page.locator('.kk__facts')).toContainText('строк: 2')
+  // По макету «Караоке» (24.09.2026) карточки трека с выбором режима нет:
+  // клик по песне — сразу сцена, первая строка уже в центре.
+  const stage = page.locator('.kk-play')
+  await expect(stage).toBeVisible()
+  await expect(stage.locator('.kk-top__title')).toHaveText('Rainy Monday')
+  await expect(stage.locator('.kk-lyr__cur')).toContainText('rainy Monday')
+  // Разогрев убран: режим один — спеть целиком. Словарь в разметке (он тут
+  // есть) кнопку не возвращает.
+  await expect(page.getByText('Разогрев')).toHaveCount(0)
   // Обещание про микрофон обязано быть на экране до запроса разрешения.
-  await expect(page.locator('.kk__privacy')).toContainText('никуда не сохраняется')
+  await expect(stage.locator('.kk-stage__note')).toContainText('никуда не сохраняется')
+  // Минуса у трека нет — нет и тумблера.
+  await expect(stage.locator('.kk-top__minus')).toHaveCount(0)
 })
 
 test('битая разметка не роняет экран', async ({ page }) => {
@@ -95,18 +124,58 @@ test('битая разметка не роняет экран', async ({ page }
   await page.goto('/?screen=practice')
   await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
 
-  await expect(page.locator('.kk__empty')).toContainText('битая разметка')
+  await expect(page.locator('.kk-play__msg')).toContainText('битая разметка')
+  // Выйти со сломанного трека можно — сцена не запирает студента.
+  await page.getByRole('button', { name: 'Выйти' }).click()
+  await expect(page.locator('.kk-play')).toHaveCount(0)
+  await expect(page.locator('#sec-karaoke')).toBeVisible()
 })
 
-test('разогрев показывает слова из песни', async ({ page }) => {
+test('в исполнении нет перевода — ни кнопки, ни строки', async ({ page }) => {
+  // Перевод строк убран: в залитых разметках его нет, кнопка показывала
+  // пустоту и только снимала 5% балла. Режим «без оценки» — чтобы дойти до экрана
+  // исполнения без микрофона; вместо фонограммы — любой настоящий mp3.
   await signIn(page, [TRACK])
+  await page.route('**/rainy.mp3', (r) =>
+    r.fulfill({
+      path: path.join(__dirname, '..', 'public', 'course', 'a0', 'audio', '08a84be563dc.mp3'),
+      contentType: 'audio/mpeg',
+    }))
   await page.goto('/?screen=practice')
   await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  // «Микрофон» выключен — петь без оценки, разрешение не спрашивается.
+  await page.getByRole('switch', { name: 'Микрофон' }).click()
+  await expect(page.locator('.kk-live')).toContainText('Без оценки')
+  await page.getByRole('button', { name: 'Играть' }).click()
 
-  await page.getByText('Разогрев').click()
-  await expect(page.locator('.kk__cardWord')).toHaveText('umbrella')
-  await expect(page.locator('.kk__cardTr')).toHaveText('зонт')
-  await expect(page.locator('.kk__cardLine')).toContainText('rainy Monday')
+  await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'run')
+  await expect(page.getByRole('button', { name: 'Выйти' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /перевод/i })).toHaveCount(0)
+  // Первая строка идёт с 1-й секунды — дождаться, пока в ней загорится слово.
+  await expect(page.locator('.kk-lyr__cur .is-sung, .kk-lyr__cur .is-now').first()).toBeVisible()
+  await expect(page.locator('.kk-lyr__cur')).toContainText('rainy Monday')
+  await expect(page.getByText('Я проснулся дождливым понедельником')).toHaveCount(0)
+})
+
+test('пауза: окно с прогрессом, выход без результата возвращает в каталог', async ({ page }) => {
+  await signIn(page, [TRACK])
+  await page.route('**/rainy.mp3', (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(20) }))
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+  await page.getByRole('switch', { name: 'Микрофон' }).click()
+  await page.getByRole('button', { name: 'Играть' }).click()
+  await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'run')
+
+  // «Выйти» посреди песни не бросает дубль молча — сначала пауза.
+  await page.getByRole('button', { name: 'Выйти' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Пауза' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('из 2')
+  await expect(dialog.getByRole('button', { name: 'Продолжить' })).toBeFocused()
+
+  await dialog.getByRole('button', { name: 'Выйти без результата' }).click()
+  await expect(page.locator('.kk-play')).toHaveCount(0)
+  await expect(page.locator('#sec-karaoke')).toBeVisible()
 })
 
 test('трек без разметки помечается недоступным, а не грузится вечно', async ({ page }) => {
@@ -114,5 +183,5 @@ test('трек без разметки помечается недоступны
   await page.goto('/?screen=practice')
   await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
 
-  await expect(page.locator('.kk__empty')).toContainText('битая разметка')
+  await expect(page.locator('.kk-play__msg')).toContainText('битая разметка')
 })

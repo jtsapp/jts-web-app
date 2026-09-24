@@ -64,11 +64,11 @@ test('Практика открывается из сайдбара, банне�
 
   await page.locator('.sb__nav .sb__item', { hasText: 'Практика' }).click()
   // Хаб практики: секции на месте, включая новый баннер «Аудирование».
-  await expect(page.locator('.pp-listen')).toBeVisible({ timeout: 10_000 })
+  await expect(page.locator('#sec-listening')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('#sec-tales')).toBeVisible()
 
   // Баннер уводит на внутренний экран тренажёра (case 'listening' в App.jsx).
-  await page.locator('.pp-listen__cta').click()
+  await page.locator('#sec-listening .pk-banner__cta').click()
   await expect(page.locator('.lt-intro')).toBeVisible({ timeout: 10_000 })
 })
 

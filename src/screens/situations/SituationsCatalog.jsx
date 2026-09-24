@@ -9,10 +9,12 @@ import { useI18n } from '../../i18n.jsx'
 // Каталог грузит один постер на карточку, а видео — только то, в которое
 // студент вошёл.
 
-// Заголовок берём на языке интерфейса; 'kz' в данных именно 'kz'.
+// Заголовок берём на языке интерфейса. Казахский в данных лежит под 'kz', а
+// язык интерфейса называется 'kk' (i18n.jsx) — без сопоставления казахский
+// интерфейс молча получал русские названия.
 export function pickLang(node, lang) {
   if (!node) return ''
-  return node[lang] || node.ru || node.en || ''
+  return node[lang] || (lang === 'kk' ? node.kz : '') || node.ru || node.en || ''
 }
 
 export default function SituationsCatalog({ level, items, done, onOpen, onBack }) {

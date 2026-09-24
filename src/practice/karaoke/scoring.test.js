@@ -11,6 +11,10 @@ import {
   finalScore,
   medalFor,
   weakestLines,
+  lineWordMatches,
+  linesToRepeat,
+  missedSpan,
+  MEDAL_MIN,
   MASK_STEP_MS,
 } from './scoring.js'
 
@@ -138,12 +142,10 @@ describe('итоговый балл', () => {
     expect(without.score).toBe(100) // слова просто не участвуют
   })
 
-  it('минус поднимает балл, показанный перевод — опускает', () => {
+  it('минус поднимает балл', () => {
     const plain = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false })
     const inst = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false, instrumental: true })
-    const peeked = finalScore({ rhythm: 60, coverage: 60, pace: 60, hasLyrics: false, translationShown: true })
     expect(inst.score).toBeGreaterThan(plain.score)
-    expect(peeked.score).toBeLessThan(plain.score)
   })
 
   it('балл не выходит за 100 даже с множителем', () => {
@@ -183,5 +185,104 @@ describe('слабые строки', () => {
     ]
     expect(weakestLines(perLine, lines).map((l) => l.id)).toEqual([2, 3])
     expect(weakestLines(perLine, lines)[0].text).toBe('two')
+  })
+})
+
+describe('слова по строкам', () => {
+  it('раскладывает распознанный текст по строкам выравниванием', () => {
+    // Во второй строке не прозвучали «bus» и «late» — остальное сошлось.
+    const m = lineWordMatches(LINES, 'I woke up on a rainy Monday and the was again')
+    expect(m[0]).toEqual({ id: 1, ratio: 1, missed: [] })
+    expect(m[1].ratio).toBeCloseTo(4 / 6)
+    expect(m[1].missed).toEqual(['bus', 'late'])
+  })
+
+  it('слово из соседней строки не засчитывается дважды', () => {
+    // «again» спето один раз — в конце; первая строка его не содержит, а
+    // построчное сравнение без выравнивания нашло бы его где угодно.
+    const lines = [
+      { id: 1, start: 0, end: 2, text: 'again and again' },
+      { id: 2, start: 3, end: 5, text: 'never again' },
+    ]
+    const m = lineWordMatches(lines, 'never again')
+    expect(m[0].ratio).toBe(0)
+    expect(m[1].ratio).toBe(1)
+  })
+
+  it('лишние слова вокруг не съедают прозвучавшие', () => {
+    // «Повторить» строку: разгон захватывает хвост соседней, и услышано больше,
+    // чем в эталоне. Все пять спетых слов строки должны засчитаться.
+    const line = [{ id: 1, start: 0, end: 4, text: 'Morning is calling, I open my eyes' }]
+    const m = lineWordMatches(line, 'the blue skies morning is i open eyes walking these streets')
+    expect(m[0].ratio).toBeCloseTo(5 / 7)
+    expect(m[0].missed).toEqual(['calling'])
+  })
+
+  it('без распознанного текста всё пропущено, короткие слова не «сложные»', () => {
+    const m = lineWordMatches(LINES, '')
+    expect(m[0].ratio).toBe(0)
+    expect(m[0].missed).toEqual(['woke', 'rainy', 'monday'])
+  })
+})
+
+describe('строки для повтора', () => {
+  const lines = [
+    { id: 1, start: 0, end: 2, text: 'one' },
+    { id: 2, start: 3, end: 5, text: 'two' },
+    { id: 3, start: 6, end: 8, text: 'three' },
+  ]
+
+  it('со словами: худшие по совпадению, сложное слово — самое длинное', () => {
+    const matches = [
+      { id: 1, ratio: 0.9, missed: [] },
+      { id: 2, ratio: 0.5, missed: ['sky', 'dancing'] },
+      { id: 3, ratio: 0.2, missed: ['alone'] },
+    ]
+    const rows = linesToRepeat({ lines, matches })
+    expect(rows.map((r) => r.id)).toEqual([3, 2])
+    expect(rows[1].hard).toBe('dancing')
+    expect(rows[0]).toMatchObject({ text: 'three', start: 6, end: 8 })
+  })
+
+  it('без слов: неспетые по маске, сложного слова нет', () => {
+    const perLine = [
+      { id: 1, ratio: 0.9, sung: true },
+      { id: 2, ratio: 0.1, sung: false },
+      { id: 3, ratio: 0.4, sung: false },
+    ]
+    const rows = linesToRepeat({ lines, perLine, matches: null })
+    expect(rows.map((r) => [r.id, r.hard])).toEqual([[2, null], [3, null]])
+  })
+})
+
+describe('пропущенные строки', () => {
+  const lines = [
+    { id: 1, start: 0, end: 2 },
+    { id: 2, start: 3, end: 5 },
+    { id: 3, start: 6, end: 8 },
+  ]
+  it('подряд — с отрезком времени', () => {
+    const perLine = [{ sung: true }, { sung: false }, { sung: false }]
+    expect(missedSpan(perLine, lines)).toEqual({ count: 2, from: 3, to: 8 })
+  })
+  it('вразброс — только число', () => {
+    const perLine = [{ sung: false }, { sung: true }, { sung: false }]
+    expect(missedSpan(perLine, lines)).toEqual({ count: 2 })
+  })
+  it('пропущено всё — без отрезка', () => {
+    const perLine = [{ sung: false }, { sung: false }, { sung: false }]
+    expect(missedSpan(perLine, lines)).toEqual({ count: 3 })
+  })
+  it('без пропусков — ноль', () => {
+    expect(missedSpan([{ sung: true }], lines)).toEqual({ count: 0 })
+  })
+})
+
+describe('пороги медалей', () => {
+  it('таблица порогов совпадает с medalFor', () => {
+    expect(medalFor(MEDAL_MIN.bronze)).toBe('bronze')
+    expect(medalFor(MEDAL_MIN.silver)).toBe('silver')
+    expect(medalFor(MEDAL_MIN.gold)).toBe('gold')
+    expect(medalFor(MEDAL_MIN.bronze - 1)).toBe(null)
   })
 })

@@ -247,7 +247,7 @@ test.describe('вход из Практики', () => {
     await page.goto('/?screen=practice')
     const banner = page.locator('#sec-words')
     await expect(banner).toBeVisible({ timeout: 15000 })
-    await banner.locator('.pp-listen__cta').click()
+    await banner.locator('.pk-banner__cta').click()
     await expect(page.locator('.wd-hero h1')).toHaveText('Слова в картинках')
   })
 })

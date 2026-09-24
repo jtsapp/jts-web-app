@@ -31,6 +31,8 @@ const EXPORTS = [
   'STAGES',
   'TOTAL_LESSONS',
   'TESTS',
+  // Набор иконок курса: варианты «выберите картинку» — имена из него.
+  'I',
   // Аудио B1 разложено по банкам юнитов: BANK1…BANK12.
   ...Array.from({ length: 12 }, (_, i) => `BANK${i + 1}`),
 ]
@@ -202,6 +204,20 @@ function collectAudio(out, audioTags, lessons) {
  * Читает курс.
  * @returns {{level:string, menu:object, lessons:Array, tests:Array, audio:object, perItem:object}}
  */
+// Иконки курса — внутренности <svg viewBox="0 0 24 24"> строками (path,
+// circle, rect…). Имя I короткое, и у уровня без набора им может оказаться
+// что угодно, поэтому берём только значения, похожие на разметку фигур.
+// Плеер вставляет разметку как есть (innerHTML), поэтому скрипт и обработчики
+// событий отсекаются уже здесь, на входе.
+const SVG_SHAPE = /^\s*<(path|circle|rect|line|polyline|polygon|ellipse|g)\b/
+const UNSAFE = /<script|<foreignObject|\son\w+\s*=|javascript:/i
+function courseIcons(set) {
+  if (!set || typeof set !== 'object') return {}
+  return Object.fromEntries(
+    Object.entries(set).filter(([, v]) => typeof v === 'string' && SVG_SHAPE.test(v) && !UNSAFE.test(v)),
+  )
+}
+
 function readSelfStudyCourse(file) {
   const html = fs.readFileSync(file, 'utf8')
   const level = readLevel(html, file)
@@ -318,6 +334,7 @@ function readSelfStudyCourse(file) {
     lessons,
     tests,
     audio: collectAudio(out, audioTags, [...lessons, ...tests]),
+    icons: courseIcons(out.I),
     perItem: out.PER_ITEM || {},
     stages: out.STAGES || [],
   }

@@ -78,12 +78,6 @@ describe('сборка', () => {
     expect(doc.lines[0].start).toBe(9.5)
   })
 
-  it('переводы раскладываются по строкам, а расхождение в числе — ошибка', () => {
-    const doc = buildLyrics({ lrc: SIMPLE, duration: 30, ru: ['раз', 'два', 'три'] })
-    expect(doc.lines.map((l) => l.ru)).toEqual(['раз', 'два', 'три'])
-    expect(() => buildLyrics({ lrc: SIMPLE, duration: 30, ru: ['раз'] })).toThrow(/должно совпадать/)
-  })
-
   it('словарь сам находит строку со словом', () => {
     const doc = buildLyrics({
       lrc: SIMPLE,

@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const require = createRequire(import.meta.url)
-const { FIXES, FIX_ROOT, clipFixer, clipFixFiles, clipFixTexts } = require('./clip-fixes.js')
+const { FIXES, FIX_ROOT, clipFixer, clipFixFiles, clipFixTexts, clipFixDialogs, dialogText } = require('./clip-fixes.js')
 const { sayAudioFile } = require('../jts-self/say-audio.js')
 
 const ROOT = path.join(import.meta.dirname, '..', '..')
@@ -79,6 +79,33 @@ describe('clipFixer', () => {
     expect(() => f.clip('12', 'm12')).toThrow(/make-lesson-audio\.js --level a0/)
   })
 
+  // Записи ответа нет нигде (A0, урок 2: «Gary says: Nice to meet you,
+  // Sally», а клип кончается на «Hi, I'm Sally»): диалог озвучивается по ролям
+  // двумя голосами, и файл ищется по тексту всех реплик разом.
+  it('lines подставляет озвучку диалога по тексту всех реплик', () => {
+    const lines = [['Noah', "Hello, I'm Gary."], ['Grace', "Hi, I'm Sally."]]
+    expect(dialogText(lines)).toBe("Hello, I'm Gary. Hi, I'm Sally.")
+    const f = fixer({ 12: { z1: { was: 'cccccccccc01', lines } } }, { ...media, sayUrl: (t) => (t === dialogText(lines) ? '/learning/audio/a0/dlg.mp3' : null) })
+    expect(f.clip('12', 'z1')).toBe('/learning/audio/a0/dlg.mp3')
+  })
+
+  it('нет озвучки диалога — ошибка с командой, которая её сделает', () => {
+    const f = fixer({ 12: { z1: { was: 'cccccccccc01', lines: [['Noah', 'Hi.']] } } }, { ...media, sayUrl: () => null })
+    expect(() => f.clip('12', 'z1')).toThrow(/voice-course-dialogs\.js/)
+  })
+
+  // Один клип урока бывает и записью слова на карточке, и материалом задания
+  // (A0, урок 6: «How are you?» — карточка и «первый/второй ответ» к нему).
+  // Диалог вместо клипа нужен заданию, а карточке — нет.
+  it('only: task не трогает запись слова на карточке', () => {
+    const lines = [['Noah', 'Hi! How are you?'], ['Grace', 'Fine, thanks.']]
+    const table = { 12: { z1: { was: 'cccccccccc01', only: 'task', lines } } }
+    const f = fixer(table, { ...media, sayUrl: () => '/learning/audio/a0/dlg.mp3' })
+    expect(f.clip('12', 'z1', 'word')).toBe(BANK['12:z1'])
+    expect(f.clip('12', 'z1')).toBe('/learning/audio/a0/dlg.mp3')
+    expect(f.report().applied).toEqual(['12:z1'])
+  })
+
   it('use на клип, которого в уроке нет, — ошибка, а не тишина', () => {
     const f = fixer({ 12: { z1: { was: 'cccccccccc01', use: 'nope' } } })
     expect(() => f.clip('12', 'z1')).toThrow(/нет клипа nope/)
@@ -92,13 +119,43 @@ describe('таблица правок', () => {
 
   it.each(entries.map((e) => [e.id, e]))('%s: одна замена и хэш текущего клипа', (_, { fix }) => {
     expect(fix.was).toMatch(/^[0-9a-f]{12}$/)
-    expect(['use', 'file', 'say'].filter((k) => fix[k])).toHaveLength(1)
+    expect(['use', 'file', 'say', 'lines'].filter((k) => fix[k])).toHaveLength(1)
+    if (fix.lines) for (const [voice, text] of fix.lines) expect(voice && text).toBeTruthy()
+    if (fix.only) expect(fix.only).toBe('task')
   })
 
   it('вырезки лежат в data/course-clips', () => {
     const missing = Object.keys(FIXES)
       .flatMap((level) => clipFixFiles(level))
       .filter((rel) => !fs.existsSync(path.join(FIX_ROOT, rel)))
+    expect(missing).toEqual([])
+  })
+
+  // Шаги пересобраны с правками: каждая вырезка и каждый диалог стоят в
+  // данных своего уровня. Упадёт, если уровень пересоберут без таблицы.
+  it.each(Object.keys(FIXES))('%s: вырезки и диалоги правок стоят в шагах', (level) => {
+    const dir = path.join(ROOT, 'public/course', level)
+    const data = fs
+      .readdirSync(dir)
+      .filter((f) => /^steps-.*\.json$/.test(f))
+      .map((f) => fs.readFileSync(path.join(dir, f), 'utf8'))
+      .join('\n')
+    const cutUrl = (rel) => `/course/${level}/audio/${crypto.createHash('sha1').update(fs.readFileSync(path.join(FIX_ROOT, rel))).digest('hex').slice(0, 12)}.mp3`
+    const missing = [
+      ...clipFixFiles(level).filter((rel) => !data.includes(cutUrl(rel))),
+      ...clipFixDialogs(level)
+        .map((lines) => `/learning/audio/${level}/${sayAudioFile(dialogText(lines))}`)
+        .filter((url) => !data.includes(url)),
+    ]
+    expect(missing).toEqual([])
+  })
+
+  it('озвучка диалогов правок сгенерирована', () => {
+    const missing = Object.keys(FIXES).flatMap((level) =>
+      clipFixDialogs(level)
+        .map((lines) => dialogText(lines))
+        .filter((text) => !fs.existsSync(path.join(ROOT, 'public/learning/audio', level, sayAudioFile(text)))),
+    )
     expect(missing).toEqual([])
   })
 
