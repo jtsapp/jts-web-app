@@ -57,7 +57,11 @@ export default function KaraokeTrack({ track, token, onBack }) {
         onResult={(res) => {
           // Прошлый балл читаем ДО записи нового — иначе сравнивали бы с собой.
           setPrev(trackProgress(track.slug).last)
-          saveKaraokeResult(track.slug, { score: res.score, weakLines: res.repeat.map((r) => r.id) })
+          // Дубль на нестандартной скорости разбираем и показываем, но в
+          // прогресс не пишем: замедлившись, петь заметно легче, и «Лучший»
+          // в каталоге перестал бы сравниваться с чужими и со своими же
+          // прошлыми попытками.
+          if (!res.offRate) saveKaraokeResult(track.slug, { score: res.score, weakLines: res.repeat.map((r) => r.id) })
           setRepeats({})
           setResult(res)
         }}

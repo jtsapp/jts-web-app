@@ -178,6 +178,55 @@ test('пауза: окно с прогрессом, выход без резул
   await expect(page.locator('#sec-karaoke')).toBeVisible()
 })
 
+test('режим без оценки не трогает микрофон и не спрашивает разрешения', async ({ page }) => {
+  await signIn(page, [TRACK])
+  await page.route('**/rainy.mp3', (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(20) }))
+  // Если микрофон всё-таки запросят — тест должен упасть, а не зависнуть на
+  // системном окне: подменяем getUserMedia на отказ и ловим его по подписи.
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error('no'))
+  })
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+
+  const free = page.getByRole('switch', { name: 'Без оценки' })
+  await expect(free).toHaveAttribute('aria-checked', 'false')
+  await free.click()
+  // Тумблер микрофона гаснет следом: обещать запись там, где её нет, нельзя.
+  const mic = page.getByRole('switch', { name: 'Микрофон' })
+  await expect(mic).toHaveAttribute('aria-checked', 'false')
+  await expect(mic).toBeDisabled()
+  // И обещание про запись со сцены уходит — записывать нечего.
+  await expect(page.locator('.kk-stage__note')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Играть' }).click()
+  await expect(page.locator('.kk-play')).toHaveAttribute('data-phase', 'run')
+  await expect(page.locator('.kk-live')).toContainText('Без оценки')
+  await expect(page.getByText('Микрофон не разрешён')).toHaveCount(0)
+})
+
+test('скорость переключается ступенями и переживает смену фонограммы', async ({ page }) => {
+  await signIn(page, [{ ...TRACK, instrumentalUrl: 'https://files.example/rainy-minus.mp3' }])
+  await page.route(/rainy(-minus)?\.mp3/, (r) => r.fulfill({ contentType: 'audio/wav', body: silentWav(20) }))
+  await page.goto('/?screen=practice')
+  await page.locator('#sec-karaoke').getByText('Rainy Monday').click()
+
+  const speed = page.locator('.kk-speed')
+  await expect(speed).toHaveText('1×')
+  await speed.click()
+  await expect(speed).toHaveText('1,25×')
+  await speed.click()
+  await expect(speed).toHaveText('0,75×')
+
+  const rate = () => page.locator('.kk-play audio').evaluate((a) => a.playbackRate)
+  expect(await rate()).toBe(0.75)
+
+  // Смена фонограммы грузит другой файл, а браузер сбрасывает playbackRate в
+  // единицу на каждый новый src — скорость обязана вернуться сама.
+  await page.getByRole('switch', { name: 'Минус' }).click()
+  await expect(page.locator('.kk-play audio')).toHaveJSProperty('playbackRate', 0.75)
+})
+
 test('трек без разметки помечается недоступным, а не грузится вечно', async ({ page }) => {
   await signIn(page, [TRACK], null)
   await page.goto('/?screen=practice')
