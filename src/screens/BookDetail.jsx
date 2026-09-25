@@ -149,7 +149,7 @@ function fmtTime(sec) {
 }
 
 export default function BookDetail({ book, token, onBack, onWordSaved }) {
-  const [mode, setMode] = useState('overview') // overview | read | audio | pdf
+  const [mode, setMode] = useState('overview') // overview | read | audio
   const [ch, setCh] = useState(0)
   const [visited, setVisited] = useState(() => new Set())
   const readCountedRef = useRef(false)
@@ -207,23 +207,6 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
     setMode(m)
   }
 
-  if (mode === 'pdf' && book.bookFileUrl) {
-    return (
-      <div className="bk">
-        <div className="vd__head">
-          <button className="vd__back" onClick={() => setMode('overview')}>
-            <ChevronLeftIcon size={18} /> Назад
-          </button>
-          <div className="vd__headtitle">
-            <b>{book.title}</b>
-            <span>Книга</span>
-          </div>
-        </div>
-        <iframe className="bk-pdf" title={book.title} src={book.bookFileUrl} />
-      </div>
-    )
-  }
-
   // ── Обзор книги ─────────────────────────────────────────────────────────
   if (mode === 'overview') {
     return (
@@ -246,15 +229,9 @@ export default function BookDetail({ book, token, onBack, onWordSaved }) {
               <div className="bk-ov__cover bk-ov__cover--ph">{book.title}</div>
             )}
             <div className="bk-ov__actions">
-              {book.bookFileUrl ? (
-                <button className="bk-btn bk-btn--primary" onClick={() => setMode('pdf')}>
-                  Читать книгу
-                </button>
-              ) : (
-                <button className="bk-btn bk-btn--primary" onClick={() => openChapter(0, 'read')}>
-                  Начать чтение
-                </button>
-              )}
+              <button className="bk-btn bk-btn--primary" onClick={() => openChapter(0, 'read')}>
+                Начать чтение
+              </button>
               {tracks.some((t) => t.audioUrl) && (
                 <button className="bk-btn bk-btn--ghost" onClick={() => openChapter(0, 'audio')}>
                   🎧 Аудио
