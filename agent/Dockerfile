@@ -31,6 +31,10 @@ COPY persona-jarvis-harsh.md ./persona-jarvis-harsh.md
 # требует оба файла. См. build_buddy_instructions.
 COPY persona-buddy-dexter.md ./persona-buddy-dexter.md
 COPY methodology-reference.md ./methodology-reference.md
+# Пакеты уровня A0–B2 (Part 20 методичек Speaking Buddy, режет
+# scripts/extract-buddy-level-packs.js). Без них KZ TEST на любом уровне молча
+# останется на справочнике — в логе будет «level pack … missing».
+COPY level-packs/ ./level-packs/
 # Словарь произношения казахской речи (Спарк, Джарвис) — правится человеком,
 # читается на старте воркера. См. _PRONUNCIATION_FILES.
 COPY pronunciation-kk.tsv ./pronunciation-kk.tsv

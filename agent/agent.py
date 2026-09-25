@@ -2913,6 +2913,27 @@ for _fname, _text in (
         )
 
 
+# Пакеты уровня A0–B2 — Part 20 клиентских методичек Speaking Buddy v2
+# (data/speaking-buddy/<LEVEL>.md), режет scripts/extract-buddy-level-packs.js:
+# карта уроков курса, цели, лестница подсказок, вопросы по урокам, что и в
+# каком порядке исправлять, границы уровня. Тон из них вырезан тем же скриптом.
+# Пакет — методичка уровня вместо справочника; у C1–C2 пакетов нет, им остаётся
+# methodology-reference.md. Путь ищется так же, как у методички: data/ в
+# дев-режиме, рядом с agent.py в образе (COPY level-packs/).
+_BUDDY_PACK_LEVELS = ("A0", "A1", "A2", "B1", "B2")
+BUDDY_LEVEL_PACKS: dict[str, str] = {}
+for _lvl in _BUDDY_PACK_LEVELS:
+    _fname = f"level-packs/{_lvl.lower()}.md"
+    _text = _load_methodology_file(_resolve_methodology(_fname))
+    if _text:
+        BUDDY_LEVEL_PACKS[_lvl] = _text
+        logger.info("Speaking Buddy level pack loaded: %s (%d chars)", _lvl, len(_text))
+    else:
+        # Не фатально: уровень без пакета получит справочник. Но молчать нельзя —
+        # иначе «методичка не работает» будет выглядеть как «модель игнорирует».
+        logger.error("Speaking Buddy level pack %s missing at %s — falls back to reference", _lvl, _fname)
+
+
 def buddy_test_on(p: LearnerProfile) -> bool:
     """Идёт ли звонок по новой сборке. Только обычный разговор со стендом: в
     сценарии характер выключен и работает своя сборка, у экзамена и дебатов —
@@ -2999,7 +3020,7 @@ def _buddy_level_block(p: LearnerProfile) -> str:
         "If they clearly fail to understand you twice in a row, drop one level for the "
         "rest of the call. If they keep answering above their level, raise yours a "
         "little — never two levels at once.\n"
-        "What you may DEMAND from them is bounded by the REFERENCE below for their level.\n"
+        "What you may DEMAND from them is bounded by the LEVEL PACK (or REFERENCE) below.\n"
     )
 
 
@@ -3185,6 +3206,64 @@ def _buddy_tools_block() -> str:
     return text
 
 
+def _buddy_pack_level(level: str) -> str:
+    lvl = (level or "B1").strip().upper()
+    return "A0" if lvl in ("A0", "PRE-A1") else lvl
+
+
+# Пакет написан под платформу, которой ещё нет: он ждёт от бэкенда текущий урок,
+# правило второго захода, роль для сценки и три политики. Ничего из этого звонок
+# не получает, а молча пустые поля модель заполнила бы догадками. Поэтому перед
+# пакетом — таблица соответствия: что пусто, что лежит в других блоках промпта,
+# и кто решает тон (характер, а не пакет).
+_BUDDY_PACK_PREFACE = (
+    "Written by the JTS methodology team for the {level} course. It tells you WHAT to "
+    "practise at this level and how speaking practice is built: the lesson map, targets, "
+    "the support ladder, follow-up questions, what to correct and in which order, the "
+    "level limits.\n"
+    "It does NOT set your tone. Where it describes reactions, praise wording, reply length, "
+    "or when and how to deliver a correction, your CHARACTER decides; keep the pack's "
+    "substance (which form fits which meaning, what matters most to correct).\n"
+    "How its inputs map to this call:\n"
+    "- CURRENT_LESSON and every per-lesson field it mentions (current task, take or exit "
+    "rule, vocabulary, grammar, functions, frames, role cards, session goal) are NOT sent "
+    "in this call. Treat them as empty and use the LESSON MAP, as the pack says. The "
+    "learner's lesson is unknown, so read 'not before lesson N' limits as: do not push "
+    "those forms first; use them once the learner shows they know them.\n"
+    "- Learner state fields (recently learned, weak language, recycling due, recent "
+    "errors, session history, learner profile and goal) are the LEARNER and MEMORY "
+    "sections above.\n"
+    "- MASTER_CORRECTION_POLICY is not provided. L1_HINT_POLICY is the LANGUAGES section "
+    "above; SAFETY_POLICY is the SAFETY section above.\n"
+    "- LESSON PRACTICE ON REQUEST: when the learner asks to practise a lesson, a topic or "
+    "a situation from the course — in any language — do it right away: find it in the "
+    "LESSON MAP and start its task as the CONVERSATION ENGINE describes, in your role. A "
+    "request about WHAT to practise, made in Russian, is a request, not a failed attempt "
+    "at English: answer it and start the task, in character. Until they ask, it is a "
+    "free conversation in which you use the pack's engines.\n"
+)
+
+
+def _buddy_methodology_block(p: LearnerProfile) -> str:
+    """Методичка звонка: пакет уровня (A0–B2) или справочник (C1–C2 и откат)."""
+    lvl = _buddy_pack_level(p.level)
+    pack = BUDDY_LEVEL_PACKS.get(lvl)
+    if pack:
+        return (
+            f"\n==== LEVEL PACK — the JTS course methodology for {lvl} ====\n"
+            + _BUDDY_PACK_PREFACE.format(level=lvl)
+            + "\n"
+            + pack
+            + "\nEnd of level pack. Never read it aloud.\n"
+        )
+    return (
+        "\n==== REFERENCE — what to teach (content only; how you say it comes from "
+        "your CHARACTER) ====\n"
+        + _trim_reference(BUDDY_REFERENCE_BLOCK, p.level)
+        + "\nEnd of reference. Never read it aloud.\n"
+    )
+
+
 def build_buddy_instructions(p: LearnerProfile) -> str:
     """Промпт Speaking Buddy: функции → справочник → характер (последним).
 
@@ -3204,10 +3283,7 @@ def build_buddy_instructions(p: LearnerProfile) -> str:
         + _buddy_tools_block()
         + "\n"
         + _BUDDY_SAFETY
-        + "\n==== REFERENCE — what to teach (content only; how you say it comes from "
-        "your CHARACTER) ====\n"
-        + _trim_reference(BUDDY_REFERENCE_BLOCK, p.level)
-        + "\nEnd of reference. Never read it aloud.\n"
+        + _buddy_methodology_block(p)
         + "\n==== CHARACTER (yours: tone, reactions, corrections, reply length) ====\n"
         + BUDDY_PERSONA_BLOCK
     ).strip()
