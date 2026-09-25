@@ -60,6 +60,15 @@ export function LevelSwitch({ value, onChange }) {
   const { t } = useI18n()
   return (
     <div className="pk-levels" role="radiogroup" aria-label={t('practice.levels')}>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === 'all'}
+        className={`pk-levels__btn${value === 'all' ? ' is-on' : ''}`}
+        onClick={() => onChange('all')}
+      >
+        {t('practice.levelAll')}
+      </button>
       {PRACTICE_LEVELS.map((l) => (
         <button
           key={l}

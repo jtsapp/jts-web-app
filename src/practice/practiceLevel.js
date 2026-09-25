@@ -30,6 +30,7 @@ export function practiceLevelFor(userLevel) {
  * его бы не показал.
  */
 export function matchesLevel(itemLevel, level) {
+  if (level == null || level === 'all') return true
   const c = cefrOf(itemLevel)
   return !c || c === level
 }

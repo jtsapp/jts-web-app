@@ -74,12 +74,12 @@ describe('PracticePage — навыки и уровень', () => {
     expect(container.querySelector('#sec-writing')).toBeTruthy()
   })
 
-  it('уровень по умолчанию — уровень ученика', () => {
-    expect(activeLevel(renderWith(null, 'B2').container)).toBe('B2')
+  it('по умолчанию видны все уровни, а не только уровень ученика', () => {
+    expect(activeLevel(renderWith(null, 'B2').container)).toBe('Все')
   })
 
-  it('A0 — A1 в переключателе', () => {
-    expect(activeLevel(renderWith(null, 'A0').container)).toBe('A1')
+  it('A0 тоже открывается на всех уровнях', () => {
+    expect(activeLevel(renderWith(null, 'A0').container)).toBe('Все')
   })
 
   it('выбранные вкладка и уровень переживают перемонтирование', async () => {

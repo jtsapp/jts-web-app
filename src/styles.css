@@ -6107,6 +6107,14 @@ textarea {
 
 /* ── Практика: детальная страница книги (обзор / чтение / аудио) ── */
 .bk { padding: 22px 34px 40px; }
+.bk-pdf {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 120px);
+  border: 0;
+  border-radius: 12px;
+  background: #1c1a22;
+}
 
 /* Обзор */
 .bk-ov {
