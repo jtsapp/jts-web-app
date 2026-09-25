@@ -51,6 +51,10 @@ def profile(**kw) -> LearnerProfile:
 p = profile()
 text = build_buddy_instructions(p)
 wrapper, _, character = text.partition(CHARACTER_HEADER)
+# Платформенная часть — до методички. Методичку (пакет уровня клиента) на тон не
+# проверяем словарём: в ней ролевые примеры вроде «I'm your friend» — это
+# содержание сценки, а не тон тьютора. Её тон проверяется отдельно ниже.
+platform = wrapper.split("\n==== LEVEL PACK")[0].split("\n==== REFERENCE")[0]
 
 # ── Кто включается ───────────────────────────────────────────────────────────
 assert buddy_test_on(p)
@@ -82,7 +86,7 @@ TONE_WORDS = (
     "you're doing great", "you've got this", "take your time", "no worries",
     "real human", "celebrate the", "genuine cheer", "playful", "felix",
 )
-low = wrapper.lower()
+low = platform.lower()
 for w in TONE_WORDS:
     assert w not in low, f"тон в обвязке: {w!r}"
 
@@ -102,9 +106,24 @@ assert "anger" in wrapper and "gloat" in wrapper
 assert "One question per turn" in wrapper
 assert "Never answer your own question" in wrapper
 assert "is NOT an answer" in wrapper  # тишина и каша распознавания
-assert "==== REFERENCE" in wrapper
-assert "A2 Level" in wrapper and "B2 Level" not in wrapper, "справочник урезан до уровня ученика"
-assert "Frequent errors" in wrapper
+
+# ── Методичка уровня: пакет клиента (A0–B2), у C1–C2 — справочник ────────────
+assert "==== LEVEL PACK — the JTS course methodology for A2" in wrapper
+assert "# A2 LEVEL PACK" in wrapper and "# B1 LEVEL PACK" not in wrapper
+assert "Street life" in wrapper, "карта уроков нашего курса A2"
+assert "CORRECTION ENGINE" in wrapper and "LEVEL GOVERNANCE" in wrapper
+assert "NOT sent in this call" in wrapper, "таблица соответствия пустых полей"
+# Из пакета вырезано то, что решает характер или чего нет у платформы.
+for cut in ("## 1. IDENTITY", "NATURALNESS ENGINE", "PROGRESS EVIDENCE", "That's fantastic",
+            "do not speak Russian or Kazakh", "{{", "move on warmly"):
+    assert cut not in wrapper, f"в пакете осталось: {cut!r}"
+assert "L1 use: follow the LANGUAGES section" in wrapper
+assert "==== REFERENCE" not in wrapper, "при пакете справочник не дублируется"
+c1 = build_buddy_instructions(profile(level="C1"))
+assert "==== REFERENCE" in c1 and "==== LEVEL PACK" not in c1, "у C1 пакета нет — справочник"
+assert "C1 Level" in c1 and "B2 Level" not in c1, "справочник урезан до уровня ученика"
+a0 = build_buddy_instructions(profile(level="A0"))
+assert "# A0 LEVEL PACK" in a0 and "<your name>" in a0
 
 # ── Язык: русский и английский, за казахским — к Айзере ──────────────────────
 assert "Aizere" in wrapper and "Spark" not in wrapper
@@ -117,12 +136,12 @@ kz = build_buddy_instructions(profile(lang="kz", explanation_lang="kz"))
 assert "EXPLANATION LANGUAGE for this learner: Russian" in kz.partition(CHARACTER_HEADER)[0]
 
 # ── Порядок блоков: функции → справочник → характер ──────────────────────────
-assert text.index("==== LEARNER") < text.index("==== MEMORY") < text.index("==== REFERENCE") < text.index(CHARACTER_HEADER)
+assert text.index("==== LEARNER") < text.index("==== MEMORY") < text.index("==== LEVEL PACK") < text.index(CHARACTER_HEADER)
 
 # ── Без памяти промпт не врёт про прошлое ────────────────────────────────────
 fresh = build_buddy_instructions(LearnerProfile(tutor="jarvis", level="B1", lang="ru"))
 assert "First call with this learner" in fresh
-assert "B1 Level" in fresh and "A2 Level" not in fresh
+assert "# B1 LEVEL PACK" in fresh and "# A2 LEVEL PACK" not in fresh
 
 # ── Эмоции: набор Декстера без «подбодрить», блок без тона злого Декстера ────
 assert TUTOR_MOODS["jarvis"] and "encourage" not in TUTOR_MOODS["jarvis"]
