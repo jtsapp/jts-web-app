@@ -26,6 +26,11 @@ COPY persona-jarvis.md ./persona-jarvis.md
 # промолчит про ошибку только в логе, а злой Джарвис выйдет в звонок вообще
 # без характера.
 COPY persona-jarvis-harsh.md ./persona-jarvis-harsh.md
+# Speaking Buddy на стенде KZ TEST: характер и справочник «что учить». Без этих
+# строк образ соберётся, а стенд молча останется на старой персоне — buddy_test_on
+# требует оба файла. См. build_buddy_instructions.
+COPY persona-buddy-dexter.md ./persona-buddy-dexter.md
+COPY methodology-reference.md ./methodology-reference.md
 # Словарь произношения казахской речи (Спарк, Джарвис) — правится человеком,
 # читается на старте воркера. См. _PRONUNCIATION_FILES.
 COPY pronunciation-kk.tsv ./pronunciation-kk.tsv
