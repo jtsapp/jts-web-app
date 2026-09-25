@@ -1819,7 +1819,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               onCall={sendCall}
             />
           ) : sheet === 'vocab' ? (
-            <LessonDictionary token={token} defaultOpen />
+            <LessonDictionary token={token} defaultOpen incoming={savedWord ? { ...savedWord, n: savedWordNonce } : null} />
           ) : (
             <TeacherChat
               messages={chatMessages}
