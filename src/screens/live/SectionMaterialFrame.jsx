@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { useI18n } from '../../i18n.jsx'
 import { lessonMaterialRenderUrl } from '../../api.js'
-import { parseStageMessage, gotoStageMessage } from './lessonStages.js'
+import { parseStageMessage, parseStageListMessage, gotoStageMessage } from './lessonStages.js'
 
 const BRIDGE = 'jts-bridge'
 const BRIDGE_HOST = 'jts-bridge-host'
@@ -32,7 +32,7 @@ export const LOAD_SETTLE_MS = 350
 // а gotoStage просит его перейти на стадию от имени 'jts-workspace'. Ходит
 // мимо BRIDGE_HOST намеренно: это разговор с движком урока, а не с мостом.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
-  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, onStage, className = '' },
+  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, onStage, onStageList, className = '' },
   ref
 ) {
   const { t } = useI18n()
@@ -161,6 +161,11 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       const data = e.data
       // Стадия — свой источник и обеим ролям: ученику она двигает «Темы»,
       // преподавателю (если он ведёт урок отсюда) — то же самое.
+      const stageList = parseStageListMessage(data)
+      if (stageList) {
+        onStageList?.(stageList)
+        return
+      }
       const stage = parseStageMessage(data)
       if (stage) {
         onStage?.(stage)
@@ -185,7 +190,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [isStaff, presenting, onMirror, onPresentEvent, onStage])
+  }, [isStaff, presenting, onMirror, onPresentEvent, onStage, onStageList])
 
   if (!material) {
     return <div className="lw-material-empty">{t('lesson.ws.noMaterial')}</div>

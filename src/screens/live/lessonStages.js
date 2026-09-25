@@ -43,6 +43,14 @@ export function stageStatusById(stages, currentIndex) {
  * быть целым и неотрицательным: им адресуется строка списка. `total` рамка
  * может не прислать — позиция от этого не теряется.
  */
+/** Названия разделов, которые рамка прочитала из открытого урока. */
+export function parseStageListMessage(data) {
+  if (!data || data.source !== LESSON_SOURCE || data.type !== 'stage-list') return null
+  if (!Array.isArray(data.titles)) return null
+  const titles = data.titles.filter((title) => typeof title === 'string' && title.trim())
+  return titles.length ? titles : null
+}
+
 export function parseStageMessage(data) {
   if (!data || data.source !== LESSON_SOURCE || data.type !== 'stage') return null
   const index = Number(data.index)
