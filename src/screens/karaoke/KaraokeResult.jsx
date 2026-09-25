@@ -127,6 +127,7 @@ export default function KaraokeResult({ track, result, prev, repeats, onRepeat, 
             <span>/ 100</span>
           </p>
           {deltaPill}
+          {result.offRate && <p className="kk-res__offRate">{t('karaoke.res.offRate')}</p>}
         </div>
         <span className="kk-res__divider" aria-hidden="true" />
         <div className="kk-res__medals">

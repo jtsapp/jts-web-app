@@ -130,9 +130,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* «Без оценки» и «Минус» — плашки одного вида: обе про то, как пройдёт песня. */
+.kk-top__free,
 .kk-top__minus {
   gap: 10px;
   padding: 6px 8px 6px 16px;
+}
+.kk-top__free b {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 19px;
+}
+.kk-top__freeSub {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  color: #b8a9e0;
+}
+.kk-top__free:disabled {
+  opacity: 0.6;
 }
 .kk-top__minus b {
   font-size: 14px;
@@ -432,6 +448,13 @@
   align-items: center;
   gap: 16px;
 }
+/* Кнопка скорости встала слева от перемотки, и ▶ уехала бы из центра панели —
+   уравновешиваем её пустым местом той же ширины справа. */
+.kk-ctl__center::after {
+  content: '';
+  flex: none;
+  width: 48px;
+}
 
 .kk-live {
   display: flex;
@@ -493,6 +516,19 @@
 .kk-round:disabled {
   opacity: 0.4;
   cursor: default;
+}
+/* Скорость — та же круглая кнопка, но с числом вместо значка: «0,75×» в 12 px
+   помещается в круг, и ряд транспорта остаётся ровным. */
+.kk-speed {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+/* Ступень не единица — видно, не вчитываясь: иначе легко забыть, что поёшь
+   медленнее, и удивиться пометке в результате. */
+.kk-speed.is-off {
+  border-color: rgba(167, 139, 250, 0.7);
+  color: #a78bfa;
 }
 .kk-main {
   width: 64px;
@@ -779,6 +815,16 @@
 .kk-res__delta--up {
   background: #ecfdf3;
   color: #15803d;
+}
+/* Балл на нестандартной скорости: в рекорд он не пойдёт, и сказать об этом
+   надо рядом с самим баллом, а не в подвале экрана. */
+.kk-res__offRate {
+  max-width: 260px;
+  margin: 0;
+  color: #7c7a8e;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
 }
 .kk-res__divider {
   flex: none;
@@ -1127,6 +1173,7 @@
     flex-basis: 100%;
     margin-right: 0;
   }
+  .kk-top__freeSub,
   .kk-top__minusSub,
   .kk-top__micLabel {
     display: none;
@@ -1174,7 +1221,21 @@
   }
   .kk-ctl__center {
     grid-area: center;
-    gap: 12px;
+    gap: 10px;
+  }
+  /* На телефоне транспорт делит строку с «Закончить» и по центру панели не
+     стоит — уравновешивать нечего, а 48 px тут на счету. */
+  .kk-ctl__center::after {
+    display: none;
+  }
+  /* Кнопок в ряду стало четыре, и в 390 px «Закончить» уезжала за край —
+     круги ужимаем уже здесь, не дожидаясь брейкпоинта совсем узких. */
+  .kk-round {
+    width: 44px;
+    height: 44px;
+  }
+  .kk-speed {
+    font-size: 11px;
   }
   .kk-ctl__right {
     grid-area: right;
@@ -1264,6 +1325,32 @@
     padding: 16px 24px;
     font-size: 16px;
     line-height: 22px;
+  }
+}
+
+/* Кнопок в транспорте стало четыре, и в одну строку с «Закончить» они больше
+   не ложатся: на 390 px ряду нужно 360 px, а панель даёт 324. Разводим по
+   своим строкам — «Закончить» заодно становится кнопкой во всю ширину, по
+   которой на телефоне проще попасть. */
+@media (max-width: 440px) {
+  .kk-ctl__row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'left'
+      'center'
+      'right';
+  }
+  .kk-ctl__center {
+    justify-self: center;
+  }
+  .kk-ctl__right {
+    justify-self: stretch;
+  }
+  .kk-finish {
+    width: 100%;
+    /* Глобального border-box у кнопок нет, и 100% + падинги вылезали за панель
+       ровно на ширину падингов. */
+    box-sizing: border-box;
   }
 }
 
