@@ -103,6 +103,12 @@ assert "«орыс тілі»" in persona and "«орысша»" in persona, "р
 assert "«бірақ»" in persona and "(not «но»)" in persona, "казахские связки вместо русских"
 assert "Learner: 'можешь говорить по-русски?'" in persona, "образец ответа на просьбу о русском"
 assert "Орысша керек болса" in persona
+# Правила Спарка, которых у черновой персоны не было: запрет слов-паразитов и
+# «ни слова по-русски даже из вежливости».
+spark = PERSONA_OVERRIDE["hype"]
+for rule in ("'давай', 'ну', 'короче', 'молодец'", "not a word of filler", "Zero exceptions"):
+    assert rule in spark, f"у Спарка правило поменялось: {rule}"
+    assert rule in persona, f"у Айзере нет правила Спарка: {rule}"
 assert AIZERE in PERSONA_OPENER
 assert "Сәлем" in PERSONA_OPENER[AIZERE]
 assert persona_key(AIZERE, "harsh") == AIZERE, "нрава 18+ у неё нет — остаётся базовая персона"
