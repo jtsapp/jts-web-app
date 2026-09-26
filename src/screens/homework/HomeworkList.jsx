@@ -24,6 +24,11 @@ export default function HomeworkList({ items, selectedId, onSelect }) {
               onClick={() => onSelect(hw.id)}
             >
               <span className="hw-card__title">{hw.title}</span>
+              {/* Что именно задано («Урок целиком», «Practice · Задание 1, …»). Тот же
+                  класс, что в детали (MaterialAssignmentDetail): заголовок — название
+                  материала, и без снимка две выдачи по одному файлу уровня в списке
+                  неотличимы. span, а не p: внутри button блочная разметка недопустима. */}
+              {hw.stageTitlesSnapshot && <span className="hw-assigned">{hw.stageTitlesSnapshot}</span>}
               <span className="hw-card__meta">
                 <span className={`hw-badge hw-badge--${stateKey}`}>{t(`homework.status.${stateKey}`)}</span>
                 {/* Задание с живого урока (назначенный материал) помечается отдельно:
