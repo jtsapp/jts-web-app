@@ -477,14 +477,36 @@ export async function transcribeWav(wav) {
 // фразе он выходит за стенку и без этой ветки получает 56 вместо 100.
 const REF_SINGLE_SHOT_MAX_SEC = 25
 
+// Время слова в секундах от начала аудио. Azure отдаёт Offset/Duration в
+// тиках по 100 нс, и в continuous-режиме отсчёт идёт от начала ПОТОКА, а не
+// реплики, — поэтому сумма реплик сама собой выходит в одной шкале. У
+// пропущенного слова (Omission) времени нет: звука не было.
+function wordTiming(w) {
+  const offset = Number(w?.Offset)
+  const duration = Number(w?.Duration)
+  if (!Number.isFinite(offset) || !(duration > 0)) return { start: null, end: null }
+  return { start: offset / 1e7, end: (offset + duration) / 1e7 }
+}
+
 // Reference-based pronunciation assessment for ONE phrase (Shadowing). В
 // отличие от assessPronunciation (без сценария) здесь известен целевой
 // текст: передаём его эталоном → Azure возвращает послово accuracy + errorType
 // (Mispronunciation/Omission/Insertion), из чего строится тепловая карта.
 // Короткая фраза — recognizeOnce (быстрее), длинная — continuous с тем же
 // эталоном (см. assessRefContinuous).
+//
+// `continuous` — сразу continuous, даже для короткого куска. Нужно караоке: в
+// его куске между строками стоит проигрыш, а recognizeOnce заканчивает слушать
+// на первой же паузе — остаток эталона ушёл бы в Omission. `prosody: false` —
+// без оценки интонации: в песне её задаёт мелодия, а не говорящий.
+// `strict` (только с continuous) — тишина даёт пустую оценку `{ empty: true }`,
+// а null остаётся только за сбоем сервиса, в том числе частичным.
 // Возвращает null при неконфигурации/сбое/тишине — вызывающий подставит mock.
-export async function assessAgainstReference(wav, refText) {
+export async function assessAgainstReference(
+  wav,
+  refText,
+  { continuous = false, prosody = true, strict = false } = {},
+) {
   const key = process.env.AZURE_SPEECH_KEY
   const region = process.env.AZURE_SPEECH_REGION
   if (!key || !region) return null
@@ -501,8 +523,8 @@ export async function assessAgainstReference(wav, refText) {
   }
 
   const durationSec = pcmDurationSec(parsed)
-  if (durationSec > REF_SINGLE_SHOT_MAX_SEC) {
-    return assessRefContinuous(sdk, { key, region, parsed, refText })
+  if (continuous || durationSec > REF_SINGLE_SHOT_MAX_SEC) {
+    return assessRefContinuous(sdk, { key, region, parsed, refText, prosody, strict })
   }
 
   return new Promise((resolve) => {
@@ -533,7 +555,7 @@ export async function assessAgainstReference(wav, refText) {
         sdk.PronunciationAssessmentGranularity.Phoneme,
         true, // enableMiscue: штрафует пропуски/вставки относительно эталона
       )
-      paConfig.enableProsodyAssessment = true
+      paConfig.enableProsodyAssessment = prosody
 
       const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig)
       paConfig.applyTo(recognizer)
@@ -554,6 +576,7 @@ export async function assessAgainstReference(wav, refText) {
                 word: w.Word,
                 accuracy: Math.round(w.PronunciationAssessment?.AccuracyScore ?? 0),
                 error: w.PronunciationAssessment?.ErrorType || 'None',
+                ...wordTiming(w),
               }))
             } catch {
               /* карта слов не построится — числа всё равно вернём */
@@ -607,7 +630,19 @@ export async function assessAgainstReference(wav, refText) {
 // single-shot. Azure отдаёт результат по каждой реплике, поэтому баллы
 // взвешиваем по числу слов (как в assessPronunciation), а послово-карту
 // склеиваем по порядку реплик.
-function assessRefContinuous(sdk, { key, region, parsed, refText }) {
+// Пустая оценка — «звук был, речи не было». Отдаётся только в строгом режиме.
+const EMPTY_ASSESSMENT = {
+  overall: 0,
+  accuracy: 0,
+  fluency: 0,
+  completeness: 0,
+  prosody: 0,
+  transcript: '',
+  mock: false,
+  empty: true,
+}
+
+function assessRefContinuous(sdk, { key, region, parsed, refText, prosody = true, strict = false }) {
   const durationSec = pcmDurationSec(parsed)
   const budgetMs = recognitionBudgetMs(durationSec)
 
@@ -638,7 +673,7 @@ function assessRefContinuous(sdk, { key, region, parsed, refText }) {
         sdk.PronunciationAssessmentGranularity.Phoneme,
         true, // enableMiscue
       )
-      paConfig.enableProsodyAssessment = true
+      paConfig.enableProsodyAssessment = prosody
 
       const recognizer = new sdk.SpeechRecognizer(
         speechConfig,
@@ -678,6 +713,7 @@ function assessRefContinuous(sdk, { key, region, parsed, refText }) {
               word: it.Word,
               accuracy: Math.round(it.PronunciationAssessment?.AccuracyScore ?? 0),
               error: it.PronunciationAssessment?.ErrorType || 'None',
+              ...wordTiming(it),
             })
           }
         } catch {
@@ -686,6 +722,10 @@ function assessRefContinuous(sdk, { key, region, parsed, refText }) {
       }
 
       let valve = null
+      // Сбой сервиса (отмена с ошибкой, исчерпанный бюджет) — это не то же,
+      // что тишина: караоке на сбой откатывается на другую оценку, а тишину
+      // честно засчитывает нулём (см. `strict`).
+      let broken = false
       const finish = () => {
         if (valve) clearTimeout(valve)
         valve = null
@@ -694,7 +734,8 @@ function assessRefContinuous(sdk, { key, region, parsed, refText }) {
         } catch {
           /* ignore */
         }
-        if (weight === 0) return done(null)
+        if (strict && broken) return done(null)
+        if (weight === 0) return done(strict ? { ...EMPTY_ASSESSMENT, words: [] } : null)
         done({
           overall: Math.round(pron / weight),
           accuracy: Math.round(acc / weight),
@@ -710,6 +751,7 @@ function assessRefContinuous(sdk, { key, region, parsed, refText }) {
       recognizer.canceled = (_s, e) => {
         if (e.reason === sdk.CancellationReason.Error) {
           console.error('[azure-pa-ref] canceled', e.errorDetails)
+          broken = true
         }
         finish()
       }
@@ -723,6 +765,7 @@ function assessRefContinuous(sdk, { key, region, parsed, refText }) {
       )
       valve = setTimeout(() => {
         valve = null
+        broken = true
         console.warn(
           `[azure-pa-ref] бюджет ${Math.round(budgetMs / 1000)}с исчерпан на ${Math.round(durationSec)}с аудио — оценка может быть неполной`,
         )

@@ -5,12 +5,14 @@
 // Две задачи решаются одним потоком с микрофона:
 //  • живая полоска уровня и маска пения — считаются в браузере из AnalyserNode,
 //    никуда не уходят;
-//  • запись всего исполнения — уходит один раз в конце в собственный STT
-//    приложения (/api/transcribe), чтобы оценить слова.
+//  • запись всего исполнения — уходит один раз в конце: залогиненного — на
+//    оценку по эталону (/api/karaoke/assess: слова, произношение, время слов
+//    для ритма), гостя — в собственный STT приложения (/api/transcribe, только
+//    слова).
 //
 // Аудио НИГДЕ не сохраняется: ни на диск, ни на JTS-бэкенд. Единственный
-// сетевой вызов — распознавание, и его результат — текст. Это обещание
-// написано на экране запроса разрешения, поэтому нарушать его нельзя.
+// сетевой вызов — распознавание и оценка, и их результат — текст и баллы. Это
+// обещание написано на экране запроса разрешения, поэтому нарушать его нельзя.
 
 import { blobToWav16kMono } from '../../lib/ielts-audio.js'
 import { MASK_STEP_MS, maskLength, markSpan } from './scoring.js'
@@ -156,6 +158,14 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
   // успел пройти между замерами (на скорости ≠ 1× это больше одной клетки).
   // −1 — «предыдущей клетки нет»: старт, пауза, перемотка.
   let lastIdx = -1
+  // Карта «секунда записи → секунда трека». Azure отдаст время слов от начала
+  // АУДИО, а разметка — от начала трека; между ними калибровка, паузы,
+  // перемотки и скорость, и ни одно не пересчитать задним числом. Часы записи
+  // — стенные минус паузы, в которые MediaRecorder действительно стоял.
+  const timeMap = []
+  let recT0 = null
+  let pausedMs = 0
+  let pausedAt = null
 
   const timer = setInterval(() => {
     if (paused) return
@@ -171,6 +181,7 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
     const idx = Math.floor((pos * 1000) / stepMs)
     if (voiced) markSpan(mask, lastIdx, idx)
     lastIdx = idx
+    if (recT0 !== null) timeMap.push({ rec: (performance.now() - recT0 - pausedMs) / 1000, track: pos })
   }, stepMs)
 
   // Запись всего дубля. Битрейт занижен намеренно: 16 кГц моно WAV после
@@ -185,6 +196,7 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
     recorder = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 32000 } : undefined)
     recorder.ondataavailable = (e) => e.data?.size && chunks.push(e.data)
     recorder.start(1000)
+    recT0 = performance.now()
   } catch {
     recorder = null // без записи — просто не будет оценки слов
   }
@@ -205,12 +217,19 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
       } catch {
         /* Safari до 14.5 паузы не умеет — запишется и болтовня, не страшно */
       }
+      // Часы записи останавливаем, только если запись правда встала: там, где
+      // пауза не сработала, болтовня в аудио есть, и время должно её учесть.
+      if (recorder?.state === 'paused') pausedAt = performance.now()
     },
     resume() {
       // Окно сглаживания — с чистого листа: иначе решение «поёт» тянулось бы
       // из того, что было до паузы.
       window5.length = 0
       paused = false
+      if (pausedAt !== null) {
+        pausedMs += performance.now() - pausedAt
+        pausedAt = null
+      }
       try {
         if (recorder?.state === 'paused') recorder.resume()
       } catch {
@@ -238,8 +257,47 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
       }
       let sung = 0
       for (let i = 0; i < mask.length; i++) if (mask[i]) sung++
-      return { mask, sungSec: (sung * stepMs) / 1000, blob }
+      return { mask, sungSec: (sung * stepMs) / 1000, blob, timeMap }
     },
+  }
+}
+
+/** Запись дубля → 16 кГц mono WAV, один раз на оба возможных пути отправки. */
+export async function takeToWav(blob) {
+  if (!blob || blob.size === 0) return null
+  try {
+    return await blobToWav16kMono(blob)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Оценка дубля по эталону: WAV и куски записи (см. planSegments) уходят в
+ * /api/karaoke/assess. Ответ роута как есть — `{ mode: 'assessed' | 'transcript'
+ * | 'none', … }` — либо `null` при сетевом сбое.
+ *
+ * Повторной отправки нет ни здесь, ни у вызывающего: на экране обещана одна.
+ * Запасное распознавание при сбое Azure делает сам сервер по тому же WAV.
+ */
+export async function assessTake(wav, segments, token) {
+  if (!wav || !segments?.length || !token) return null
+  try {
+    const form = new FormData()
+    form.append('audio', wav, 'take.wav')
+    form.append(
+      'segments',
+      JSON.stringify(segments.map(({ id, from, to, text }) => ({ id, from: +from.toFixed(3), to: +to.toFixed(3), text }))),
+    )
+    const res = await fetch('/api/karaoke/assess', {
+      method: 'POST',
+      body: form,
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
   }
 }
 
@@ -252,9 +310,13 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
  * итоговом балле (см. finalScore).
  */
 export async function transcribeTake(blob) {
-  if (!blob || blob.size === 0) return null
+  return transcribeTakeWav(await takeToWav(blob))
+}
+
+/** То же по уже готовому WAV — чтобы не декодировать запись второй раз. */
+export async function transcribeTakeWav(wav) {
+  if (!wav) return null
   try {
-    const wav = await blobToWav16kMono(blob)
     const form = new FormData()
     form.append('audio', wav, 'take.wav')
     const res = await fetch('/api/transcribe', { method: 'POST', body: form })

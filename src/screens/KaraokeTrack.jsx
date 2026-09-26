@@ -53,6 +53,9 @@ export default function KaraokeTrack({ track, token, onBack }) {
         track={track}
         doc={doc}
         failed={failed}
+        // Токен — для платной оценки произношения: роут сверяет его с
+        // бэкендом до вызова Azure. Без него (гость) слова оценит обычный STT.
+        token={token}
         onExit={onBack}
         onResult={(res) => {
           // Прошлый балл читаем ДО записи нового — иначе сравнивали бы с собой.
