@@ -4379,6 +4379,11 @@ def _eleven_engine_kwargs(
     vs = PERSONA_VOICE_SETTINGS.get(tutor, DEFAULT_VOICE_SETTINGS)
     kwargs["voice_settings"] = elevenlabs.VoiceSettings(**vs) if elevenlabs else vs
     kwargs["auto_mode"] = True
+    # Слова субтитров плагин собирает из выравнивания ElevenLabs. «normalized» —
+    # дефолт для всего, кроме CJK, — это текст ПОСЛЕ их нормализации: «25»
+    # приехало бы на экран как «twenty five». «original» — ровно то, что сказал
+    # LLM, с теми же таймингами.
+    kwargs["preferred_alignment"] = "original"
     return kwargs
 
 
@@ -5644,12 +5649,14 @@ def build_cascade_session(
         )
     push_to_talk = _push_to_talk_for(profile)
     logger.info(
-        "Session stack: CASCADE (%s STT / %s endpointing / lib/llm brain / %s TTS)",
+        "Session stack: CASCADE (%s STT / %s endpointing / lib/llm brain / %s TTS, "
+        "subtitles %s)",
         _stt_provider_for(profile),
         "рация (ручной ход)"
         if push_to_talk
         else _turn_detector_mode_for(profile).replace("off", "Silero VAD"),
         _tts_provider_for(profile),
+        "tts-aligned" if _aligned_transcript_for(profile) else "estimated",
     )
 
     stt = _cascade_stt(profile)
@@ -5707,6 +5714,8 @@ def build_cascade_session(
         # Ответ начинает генерироваться на предварительном транскрипте, пока
         # идёт эндпойнтинг — срезает воспринимаемую задержку.
         "turn_handling": turn_handling,
+        # Подпись по таймингам самого TTS, где он их отдаёт (см. _aligned_transcript_for).
+        "use_tts_aligned_transcript": _aligned_transcript_for(profile),
     }
     if vad is not None:
         kwargs["vad"] = vad
@@ -5848,44 +5857,195 @@ def _attach_latency_logging(session: AgentSession) -> None:
             _flush("tts")
 
 
-# Скорость субтитров тьютора. По умолчанию livekit-agents выдаёт их СИНХРОННО
-# со звуком: синхронизатор сыплет слова по одному, засыпая между ними, а темп
-# берёт из STANDARD_SPEECH_RATE = 3.83 слога/сек (livekit.agents
-# voice/transcription/synchronizer.py). Речь TTS обычно быстрее, поэтому подпись
-# отстаёт всё сильнее к концу реплики — ученик глазами догоняет то, что уже
-# отзвучало. Это и зовут «субтитры тормозят»; клиент тут ни при чём, подбор
-# кегля стоит полмиллисекунды на обновление.
+# ── Субтитры тьютора: откуда время слова ─────────────────────────────────────
+# livekit-agents выдаёт подпись тьютора СИНХРОННО со звуком: сыплет слова по
+# одному, засыпая между ними. Время слова он берёт одним из двух способов.
 #
-# Множитель > 1 пускает текст вперёд голоса, не разрывая пару «слышу–вижу».
-# 0 или меньше выключает синхронизацию совсем: реплика появляется целиком, как
-# только её выдал LLM, ещё до озвучки. Читать удобно, но аудирование как
-# упражнение это убивает — поэтому не дефолт.
+# 1. Тайминги от самого TTS. ElevenLabs по сокету (Декстер) отдаёт время каждого
+#    слова, StreamAdapter (Айзере, KZ-стенд) — начало каждого предложения. Этим
+#    путём подпись идёт по настоящему звуку, но только при
+#    use_tts_aligned_transcript — а он по умолчанию ВЫКЛЮЧЕН
+#    (см. _aligned_transcript_for).
+# 2. Угадывание: слоги / темп. Так работают Луна (Gemini) и Спарк (Soniox) — их
+#    потоковые движки таймингов не отдают. Сверить темп с реальной длиной звука
+#    синхронизатор умеет, только когда реплика озвучена ЦЕЛИКОМ, а звук уходит в
+#    комнату в реальном времени (очередь AudioSource — 200 мс), то есть почти в
+#    самом конце. Весь ответ идёт по угаданному темпу.
 #
-# Через env, как языки STT и прочие ручки агента: подкрутить можно перезапуском
-# воркера, без пересборки образа.
-TRANSCRIPT_SPEED_DEFAULT = 1.5
+# Угадывание было сломано дважды — жалоба 27.09.2026 «показывает текст намного
+# дальше, чем дошла озвучка». Слоги считает английский алгоритм переносов
+# (Liang), а правил для кириллицы у него нет: любое русское или казахское слово
+# для него ОДИН слог («поговорим» = 1). Сверху стоял множитель 1.5 от прошлой
+# жалобы «подпись отстаёт» (она была про английский). Итог замера на озвучке:
+# русская реплика бежала примерно в 2.5 раза быстрее голоса.
+
+_CYRILLIC_VOWELS = frozenset("аеёиоуыэюяәіөұү")
+_LATIN_WORD = _re.compile(r"[A-Za-z]+(?:'[A-Za-z]+)?")
+_LATIN_VOWEL_GROUP = _re.compile(r"[aeiouy]+")
+_SENTENCE_END = tuple(".!?…")
+_CLAUSE_END = tuple(",;:—–")
+# Пауза на знаке в тех же «слогах»: сколько успел бы сказать голос, пока молчит.
+# Без неё подпись проскакивает паузы между фразами и к концу длинной реплики
+# уходит вперёд. Числа подобраны замером (см. TRANSCRIPT_RATE).
+SENTENCE_PAUSE_UNITS = 2
+CLAUSE_PAUSE_UNITS = 1
 
 
-def _transcript_output_options() -> RoomOutputOptions | None:
-    """None = оставить дефолты livekit-agents (множитель ровно 1.0)."""
+def _latin_syllables(word: str) -> int:
+    # Группы гласных минус немая «e» на конце (make, some), но не -le/-ee
+    # (table, free). На замере это точнее переносов livekit: у тех
+    # «countable» — два куска, а слогов три.
+    w = word.lower()
+    n = len(_LATIN_VOWEL_GROUP.findall(w))
+    if n > 1 and w.endswith("e") and not w.endswith(("le", "ee")):
+        n -= 1
+    return max(1, n)
+
+
+def speech_units(word: str) -> int:
+    """Сколько «слогов» займёт токен в речи — мерка темпа синхронизатора.
+
+    Кириллица (ru и kk) — по гласным: у казахского «у»/«и» бывают полугласными,
+    но это ошибка в проценты, а не в разы. Латиница — по группам гласных.
+    Цифры читаются словами — по два слога на знак, в среднем."""
+    w = word.strip()
+    if not w:
+        return 0
+    n = sum(1 for ch in w.lower() if ch in _CYRILLIC_VOWELS)
+    for part in _LATIN_WORD.findall(w):
+        n += _latin_syllables(part)
+    n += 2 * sum(ch.isdigit() for ch in w)
+    tail = w.rstrip("»\"')]")
+    if tail.endswith(_SENTENCE_END):
+        n += SENTENCE_PAUSE_UNITS
+    elif tail.endswith(_CLAUSE_END):
+        n += CLAUSE_PAUSE_UNITS
+    return n
+
+
+def _speech_pieces(word: str) -> list[str]:
+    # Синхронизатор берёт от hyphenate_word только длину списка.
+    return ["·"] * speech_units(word)
+
+
+def _install_syllable_counter() -> bool:
+    """Подсунуть синхронизатору субтитров свой счётчик слогов.
+
+    Параметр hyphenate_word у TranscriptSynchronizer есть, но RoomIO создаёт его
+    сам и передаёт только speed — снаружи до параметра не дотянуться. Поэтому
+    подменяем имя класса в модуле room_io на наследника с нашим счётчиком. Это
+    внутренности livekit-agents, но версия закреплена (requirements.txt, 1.6.7),
+    а entrypoint пишет в лог, сработала ли подмена, — после обновления пакета
+    проверять там.
+    """
+    try:
+        from livekit.agents.voice.room_io import room_io as _room_io
+    except ImportError:
+        return False
+    base = getattr(_room_io, "TranscriptSynchronizer", None)
+    if base is None:
+        return False
+    if getattr(base, "_jts_syllables", False):
+        return True
+
+    class _SyllableSynchronizer(base):  # type: ignore[misc, valid-type]
+        _jts_syllables = True
+
+        def __init__(self, **kwargs: Any) -> None:
+            kwargs.setdefault("hyphenate_word", _speech_pieces)
+            super().__init__(**kwargs)
+
+    _room_io.TranscriptSynchronizer = _SyllableSynchronizer
+    return True
+
+
+try:
+    from livekit.agents.voice.transcription.synchronizer import STANDARD_SPEECH_RATE
+except ImportError:
+    STANDARD_SPEECH_RATE = 3.83
+
+SYLLABLE_COUNTER_INSTALLED = _install_syllable_counter()
+
+
+# Темп голоса в «слогах» speech_units в секунду — вместе с паузами на знаках.
+# Замер 27.09.2026 (docs/superpowers/specs/2026-09-27-tutor-subtitle-sync-design.md):
+# 10 реплик тьютора en/ru/kk озвучены этими же движками потоковым путём, время
+# звучания слов — Soniox STT, темп подобран так, чтобы подпись шла вровень с
+# голосом. Было (Liang + ×1.5): Луна впереди голоса на 2.9 с в середине реплики
+# и на 5 с к концу, Спарк — на 1.3 и 2.9 с. Стало: около нуля, 90% слов в
+# пределах 0.7 с.
+# Нужен только угадыванию: у Декстера и Айзере тайминги от TTS, темп им —
+# запасной, как и всем провайдерам вне таблицы.
+TRANSCRIPT_RATE = {
+    "gemini": 4.4,  # Луна, Aoede
+    "soniox": 5.8,  # Спарк, Owen
+}
+DEFAULT_TRANSCRIPT_RATE = 5.0
+
+
+def _transcript_rate_for(provider: str) -> float:
+    """Темп подписи для TTS сессии: env TRANSCRIPT_RATE_<PROVIDER> важнее таблицы
+    — подкрутить можно секретом воркера, без пересборки образа."""
+    provider = (provider or "").strip().lower()
+    raw = (os.getenv(f"TRANSCRIPT_RATE_{provider.upper()}") or "").strip() if provider else ""
+    if raw:
+        try:
+            rate = float(raw)
+            if rate > 0:
+                return rate
+        except ValueError:
+            pass
+        logger.warning("TRANSCRIPT_RATE_%s=%r — не положительное число, беру таблицу", provider.upper(), raw)
+    return TRANSCRIPT_RATE.get(provider, DEFAULT_TRANSCRIPT_RATE)
+
+
+def _transcript_output_options(tts_provider: str = "") -> RoomOutputOptions:
+    """Темп синхронизатора для этой сессии.
+
+    livekit умножает свой STANDARD_SPEECH_RATE на transcription_speed_factor,
+    поэтому темп голоса переводим в множитель. TRANSCRIPT_SPEED — прежняя ручка
+    «множитель как есть» — остаётся аварийной: задан — перебивает таблицу; 0 или
+    меньше выключает синхронизацию совсем, и реплика появляется целиком, как
+    только её выдал LLM, ещё до озвучки. Читать удобно, но аудирование как
+    упражнение это убивает — поэтому не дефолт.
+    """
     raw = (os.getenv("TRANSCRIPT_SPEED") or "").strip()
-    if not raw:
-        factor = TRANSCRIPT_SPEED_DEFAULT
-    else:
+    if raw:
         try:
             factor = float(raw)
         except ValueError:
-            logger.warning(
-                "TRANSCRIPT_SPEED=%r не число — беру %s", raw, TRANSCRIPT_SPEED_DEFAULT
-            )
-            factor = TRANSCRIPT_SPEED_DEFAULT
-    if factor <= 0:
-        logger.info("Субтитры: синхронизация со звуком выключена (TRANSCRIPT_SPEED=%s)", raw)
-        return RoomOutputOptions(sync_transcription=False)
-    if factor == 1.0:
-        return None
-    logger.info("Субтитры: множитель скорости %.2f", factor)
+            logger.warning("TRANSCRIPT_SPEED=%r не число — игнорирую", raw)
+        else:
+            if factor <= 0:
+                logger.info("Субтитры: синхронизация со звуком выключена (TRANSCRIPT_SPEED=%s)", raw)
+                return RoomOutputOptions(sync_transcription=False)
+            logger.info("Субтитры: множитель %.2f из TRANSCRIPT_SPEED", factor)
+            return RoomOutputOptions(transcription_speed_factor=factor)
+    rate = _transcript_rate_for(tts_provider)
+    factor = rate / STANDARD_SPEECH_RATE
+    logger.info(
+        "Субтитры: темп %.2f слог/с (tts=%s, множитель %.2f), свой счётчик слогов: %s",
+        rate, tts_provider or "<none>", factor,
+        "да" if SYLLABLE_COUNTER_INSTALLED else "НЕТ — кириллица снова 1 слог на слово",
+    )
     return RoomOutputOptions(transcription_speed_factor=factor)
+
+
+def _aligned_transcript_for(profile: LearnerProfile) -> bool:
+    """Брать ли время слов у самого TTS (где он его отдаёт).
+
+    livekit применяет флаг только к движкам с таймингами, у Луны и Спарка он
+    просто ничего не меняет. Исключение — сессии со словарём произношения:
+    tts_node правит написание ДО синтеза, а тайминги движок отдаёт по тому
+    тексту, что получил, — и на экран уехало бы «исправленное» написание вместо
+    нормального. Таким сессиям остаётся угадывание.
+
+    TRANSCRIPT_ALIGNED=off — рубильник на случай, если тайминги движка где-то
+    окажутся хуже угадывания.
+    """
+    if (os.getenv("TRANSCRIPT_ALIGNED") or "").strip().lower() in ("0", "off", "false", "no"):
+        return False
+    return not _pronunciation_lang(profile)
 
 
 async def entrypoint(ctx: JobContext):
@@ -6113,9 +6273,11 @@ async def entrypoint(ctx: JobContext):
     start_kwargs: dict[str, Any] = {"agent": agent, "room": ctx.room}
     if room_input_options is not None:
         start_kwargs["room_input_options"] = room_input_options
-    output_options = _transcript_output_options()
-    if output_options is not None:
-        start_kwargs["room_output_options"] = output_options
+    # Темп подписи — по TTS, которым говорит сессия. У Gemini Live отдельного
+    # TTS нет — ему средний DEFAULT_TRANSCRIPT_RATE.
+    start_kwargs["room_output_options"] = _transcript_output_options(
+        _tts_provider_for(buddy_voice_profile(profile)) if voice_stack == "cascade" else ""
+    )
     await session.start(**start_kwargs)
 
     # ── Рация: ход открывает и закрывает ученик ──────────────────────────────

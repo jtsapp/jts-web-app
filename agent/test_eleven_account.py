@@ -125,6 +125,9 @@ flash = _eleven_engine_kwargs("eleven_flash_v2_5", "k", "rHWSYoq8UlV0YIBKMryp", 
 assert "voice_settings" in flash
 assert flash.get("auto_mode") is True
 assert "encoding" not in flash
+# Субтитры — из выравнивания ElevenLabs: «normalized» вынес бы на экран «25»
+# как «twenty five».
+assert flash.get("preferred_alignment") == "original"
 
 # /stream, а не convert: convert отдаёт первый байт только когда готов весь файл
 # (замер 24.09.2026 на клоне: короткая фраза 2.0–2.7 с против 0.9 с у /stream).
