@@ -21,7 +21,9 @@ vi.mock('@/lib/ielts/azure-pronunciation.js', async (importOriginal) => {
         azure.failOnce.delete(text)
         return null
       }
-      if (text === 'silent line') return { words: [], transcript: '', empty: true }
+      // Так живой Azure отвечает на тишину (замер 27.09.2026): «реплика» из
+      // точки, без слов и с нулями.
+      if (text === 'silent line') return { overall: 0, accuracy: 0, words: [], transcript: '.' }
       const words = text.split(' ').map((w, i) => ({ word: w, accuracy: 80, error: 'None', start: 0.5 * i, end: 0.5 * i + 0.4 }))
       return { words, transcript: text }
     },
@@ -123,7 +125,8 @@ describe('POST /api/karaoke/assess', () => {
     )
     const body = await res.json()
     expect(body.mode).toBe('assessed')
-    expect(body.segments.find((s) => s.id === 1).words).toEqual([])
+    expect(body.segments.find((s) => s.id === 1)).toEqual({ id: 1, transcript: '', words: [] })
+    expect(body.transcript).toBe('we were good we were gold')
   })
 
   it('единичный обрыв лечится повтором', async () => {

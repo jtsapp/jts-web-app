@@ -149,16 +149,26 @@ function buildResult({ lines, duration, mask, sungSec, text, detail, instrumenta
 
 /**
  * Разбор дубля для калибровки порогов: включается ключом `jts_karaoke_debug`
- * = '1' в localStorage и кладёт всё, из чего собран балл, в
- * `window.__jtsKaraoke` — в консоли его забирают `copy(window.__jtsKaraoke)`.
- * Пороги ритма и произношения подбираются по живым дублям, а слушать чужие
- * записи незачем: хватает цифр.
+ * = '1' в localStorage. Всё, из чего собран балл, кладётся в
+ * `window.__jtsKaraoke` и скачивается тем же файлом
+ * `karaoke-<трек>-<время>.json`: из консоли стометровый JSON не скопировать,
+ * а из «Загрузок» его забрать просто.
+ *
+ * Пороги ритма и произношения подбираются по живым дублям, и слушать записи
+ * для этого незачем — хватает цифр. Поэтому аудио в файле НЕТ: только текст,
+ * время слов и баллы, обещание про запись в силе.
  */
 function debugTake(data) {
   try {
     if (localStorage.getItem('jts_karaoke_debug') !== '1') return
     window.__jtsKaraoke = data
-    console.info('[karaoke] разбор дубля — copy(window.__jtsKaraoke)', data)
+    console.info('[karaoke] разбор дубля', data)
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `karaoke-${data.track || 'take'}-${new Date().toTimeString().slice(0, 8).replace(/:/g, '')}.json`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
   } catch {
     /* localStorage закрыт (приватное окно) — калибровать всё равно нечем */
   }
@@ -347,7 +357,20 @@ export default function KaraokePlayer({ track, doc, failed, range, token, onResu
       instrumental: Boolean(track.instrumentalUrl) && !vocalUsedRef.current,
       offRate: offRateRef.current,
     })
-    debugTake({ plan, response, detail, result, timeMap: timeMap?.length || 0 })
+    debugTake({
+      track: track.slug,
+      rate,
+      instrumental,
+      lines: lines.map(({ id, start, end, text, words }) => ({ id, start, end, text, words })),
+      // Карта и маска — чтобы пересчитать ритм с другими порогами без нового
+      // дубля. Карта в [секунда записи, секунда трека], по миллисекундам.
+      timeMap: (timeMap || []).map((s) => [+s.rec.toFixed(3), +s.track.toFixed(3)]),
+      mask: Array.from(mask || []).join(''),
+      plan,
+      response,
+      detail,
+      result,
+    })
     onResult(result)
   }
 

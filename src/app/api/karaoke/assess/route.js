@@ -115,7 +115,9 @@ async function assessSegments(parsed, segments) {
       if (r) {
         return {
           id: s.id,
-          transcript: r.transcript || '',
+          // На чистой тишине Azure отдаёт «реплику» из одной точки (замер
+          // 27.09.2026) — текстом она не считается.
+          transcript: /[a-z]/i.test(r.transcript || '') ? r.transcript : '',
           // Время — в секундах всей записи, а не куска: так клиент сразу
           // переводит его во время трека по своей карте.
           words: (r.words || []).map((w) => ({
