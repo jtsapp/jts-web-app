@@ -359,6 +359,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // сравнением, а не setState в теле эффекта (это был бы каскад рендеров).
   const [fileStages, setFileStages] = useState({ materialId: null, stages: NO_STAGES })
   const [stageAt, setStageAt] = useState({ materialId: null, index: 0 })
+  // Разделы, которые рамка прочитала из открытого урока. У файла уровня они
+  // сидят в JS, сервер их не отдаёт — без этого списка у ученика остаётся «Section 1».
+  const [liveStageTitles, setLiveStageTitles] = useState({ materialId: null, titles: [] })
   const activeMaterialKey = activeMaterial?.materialId ?? null
 
   useEffect(() => {
@@ -377,7 +380,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     return () => { cancelled = true }
   }, [activeMaterialKey, lessonId, token])
 
-  const stages = fileStages.materialId === activeMaterialKey ? fileStages.stages : NO_STAGES
+  const serverStages = fileStages.materialId === activeMaterialKey ? fileStages.stages : NO_STAGES
+  const liveTitles = liveStageTitles.materialId === activeMaterialKey ? liveStageTitles.titles : []
+  const stages = liveTitles.length
+    ? liveTitles.map((title, index) => ({ index, title, taskCount: 0 }))
+    : serverStages
   const currentStage = stageAt.materialId === activeMaterialKey ? stageAt.index : 0
 
   // Упражнения, скрытые преподавателем поштучно («Скрыть это упражнение от ученика»).
@@ -493,6 +500,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   function handleFrameStage({ index }) {
     setStageAt({ materialId: activeMaterialKey, index })
+  }
+
+  function handleFrameStageList(titles) {
+    setLiveStageTitles({ materialId: activeMaterialKey, titles })
   }
 
   // Позиция сохраняется вместе с ответами: вернувшись, ученик продолжает там,
@@ -1643,6 +1654,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           onMirror={handleBridgeMirror}
                           onPresentEvent={handleBridgePresentEvent}
                           onStage={handleFrameStage}
+                          onStageList={handleFrameStageList}
                         />
                       )}
 
@@ -1810,7 +1822,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               onCall={sendCall}
             />
           ) : sheet === 'vocab' ? (
-            <LessonDictionary token={token} defaultOpen />
+            <LessonDictionary token={token} defaultOpen incoming={savedWord ? { ...savedWord, n: savedWordNonce } : null} />
           ) : (
             <TeacherChat
               messages={chatMessages}
