@@ -97,6 +97,12 @@ assert "ағылшын тілі" in persona, "язык по-казахски н�
 assert "Never Chinese" in persona, "никаких других алфавитов"
 assert "өткен шақ" in persona, "казахские названия времён вместо русских"
 assert "retell them in Kazakh" in persona, "заметки памяти по-русски пересказывать, а не цитировать"
+# 27.09.2026: «Но мы бара аламыз…», «русский тілі» — русский тёк на ходе, где
+# ученик просит по-русски: казахского слова для языка и связок в персоне не было.
+assert "«орыс тілі»" in persona and "«орысша»" in persona, "русский язык называть по-казахски"
+assert "«бірақ»" in persona and "(not «но»)" in persona, "казахские связки вместо русских"
+assert "Learner: 'можешь говорить по-русски?'" in persona, "образец ответа на просьбу о русском"
+assert "Орысша керек болса" in persona
 assert AIZERE in PERSONA_OPENER
 assert "Сәлем" in PERSONA_OPENER[AIZERE]
 assert persona_key(AIZERE, "harsh") == AIZERE, "нрава 18+ у неё нет — остаётся базовая персона"
