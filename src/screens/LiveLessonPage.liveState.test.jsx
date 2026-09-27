@@ -31,6 +31,8 @@ const TWO_MATERIALS = [
   { ...SECTIONS[0], materials: [...SECTIONS[0].materials, { materialId: 13, title: 'A0 · Урок 05b', materialType: 'LINK', fileUrl: 'https://files/course-catalog/a0/L05b.html' }] },
   SECTIONS[1],
 ]
+// Раздел, прикреплённый уже после входа ученика, — его нет в первом списке.
+const LATE_SECTION = { id: 5, title: 'Новый', materials: [{ materialId: 15, title: 'A0 · Урок 07', materialType: 'LINK', fileUrl: 'https://files/course-catalog/a0/L07.html' }] }
 let sections = SECTIONS
 
 vi.mock('../api.js', () => ({
@@ -560,6 +562,24 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
     expect(sendCatchUp).not.toHaveBeenCalled()
   })
 
+  // Ушёл сам — снимка не получает вовсе: ни сразу, ни когда сам вернулся на
+  // материал класса.
+  it('ушёл сам — просьба не уходит, даже когда сам вернулся на материал класса', async () => {
+    sections = TWO_MATERIALS
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'A0 · Урок 05b' }))
+    await flush()
+    sendCatchUp.mockClear()
+
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'A0 · Урок 05' }))
+    await flush()
+
+    expect(frameMaterial(container)).toBe(11)
+    expect(sendCatchUp).not.toHaveBeenCalled()
+  })
+
   it('выключил следование — после переподключения не просит', async () => {
     const { container } = await renderAsStudent()
     await connectWith(leadingAt(3, 11))
@@ -891,5 +911,70 @@ describe('LiveLessonPage — преподаватель', () => {
 
       expect(sendPresent).not.toHaveBeenCalled()
     })
+  })
+})
+
+// Ручной уход (спека §4.3): другой раздел или другой материал раздела. Он
+// снимает следование и отменяет переходы с классом, которые ещё ждут.
+describe('LiveLessonPage — ученик уходит сам', () => {
+  it('выбрал другой материал раздела — своя страница, стадия класса не тянет', async () => {
+    sections = TWO_MATERIALS
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11, { stageIndex: 1 }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'A0 · Урок 05b' }))
+    await flush()
+    expect(frameMaterial(container)).toBe(13)
+    expect(frameOf(container).getAttribute('src')).toContain('follow=0')
+
+    await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
+    expect(frameMaterial(container)).toBe(13)
+  })
+
+  // Нажатая своя же вкладка — не выбор другого материала.
+  it('нажал вкладку открытого материала — следует дальше', async () => {
+    sections = TWO_MATERIALS
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11, { stageIndex: 1 }))
+    fireEvent.click(screen.getByRole('button', { name: 'A0 · Урок 05' }))
+    await flush()
+    const post = await loadFrame(container)
+    post.mockClear()
+
+    await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
+
+    expect(post).toHaveBeenCalledWith(...gotoStage(2))
+  })
+
+  // Раздел класса ещё не знаком — страница перечитывает разделы. Пока ответа
+  // нет, ученик ушёл сам: пришедший ответ не должен уводить его обратно.
+  it('ушёл сам, пока перечитывались разделы, — класс его не уводит', async () => {
+    const { container } = await renderAsStudent()
+    let answerSections
+    api.getLessonSections.mockImplementationOnce(() => new Promise((resolve) => { answerSections = resolve }))
+    await connectWith(leadingAt(5, 15))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    await act(async () => { answerSections([...SECTIONS, LATE_SECTION]) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(12)
+  })
+
+  // Новая указка пришла, пока перечитывались разделы для старой: продолжение
+  // старой указки ученика с новой позиции не уводит.
+  it('новая указка, пока перечитывались разделы, — старое продолжение не срабатывает', async () => {
+    const { container } = await renderAsStudent()
+    let answerSections
+    api.getLessonSections.mockImplementationOnce(() => new Promise((resolve) => { answerSections = resolve }))
+    await connectWith(leadingAt(5, 15))
+
+    await push(leadingAt(4, 12, { version: 2, focusSeq: 2 }))
+    expect(frameMaterial(container)).toBe(12)
+    await act(async () => { answerSections([...SECTIONS, LATE_SECTION]) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(12)
   })
 })

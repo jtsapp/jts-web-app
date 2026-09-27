@@ -283,11 +283,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // Материал выбирается заново: id из прошлого раздела в новом не найдётся,
     // и без сброса первый рендер сваливался бы на «первый по списку» молча.
     setActiveMaterialId(null)
-    setFollowMode(false)
-    followModeRef.current = false
-    // Ушёл сам — смена стадии класса его больше не тянет, тянет только новая
-    // указка (§4.3 п.5).
-    stopFollowingClass()
+    leaveClass()
     if (isStaff) {
       // Ушёл с раздела — перестал вести. Сервер должен это знать: иначе
       // вошедший ученик шёл бы к позиции, от которой преподаватель ушёл.
@@ -295,6 +291,23 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       setPresenting(false)
       snapshotQueue.reset()
     }
+  }
+
+  // Другой материал внутри раздела — такой же ручной уход, как другой раздел
+  // (решение владельца 27.09). Своя же вкладка — не выбор другого.
+  function selectMaterial(materialId) {
+    if (materialId === activeMaterial?.materialId) return
+    setActiveMaterialId(materialId)
+    leaveClass()
+  }
+
+  // Ушёл сам (§4.3): смена позиции или стадии класса его больше не тянет,
+  // тянет только новая указка. Рамка снова своя, а не страница следования: на
+  // ней ученик работает, и ответы сохраняются.
+  function leaveClass() {
+    setFollowMode(false)
+    followModeRef.current = false
+    stopFollowingClass()
   }
 
   function stopFollowingClass() {
@@ -816,7 +829,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     if (!knowsFocusTarget(sections, target)) {
       // Раздел могли прикрепить после входа — перечитываем. Нет его и после
       // этого (удалили посреди занятия) — ученик остаётся на месте (спека §9).
+      // Пока ответа не было, ученик мог уйти сам или прийти новая указка — тогда
+      // этот переход уже устарел.
+      const { focusSeq } = followRef.current
       loadSections().then((list) => {
+        const follow = followRef.current
+        if (!follow.following || follow.focusSeq !== focusSeq) return
         if (list?.some((s) => String(s.id) === String(target.sectionId))) run()
       })
       return
@@ -1747,7 +1765,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                               key={m.materialId}
                               type="button"
                               className={`ls-tab ${m.materialId === activeMaterial?.materialId ? 'ls-tab--active' : ''}`}
-                              onClick={() => setActiveMaterialId(m.materialId)}
+                              onClick={() => selectMaterial(m.materialId)}
                             >
                               {m.title || t('live.materialTab', { n: i + 1 })}
                             </button>
