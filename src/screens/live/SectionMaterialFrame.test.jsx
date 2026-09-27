@@ -42,27 +42,7 @@ describe('SectionMaterialFrame — стадии файлового урока', 
     const onStage = vi.fn()
     renderFrame({ onStage })
     await message({ source: 'jts-lesson', type: 'stage', index: 3, total: 7 })
-    expect(onStage).toHaveBeenCalledWith({ index: 3, total: 7 }, { opening: true })
-  })
-
-  // Мост сам сообщает стадию, на которой страница открылась, — это не переход.
-  // Отправь его ведущий в состояние занятия — и после F5 или «Внимания» весь
-  // класс уехал бы на стадию 0.
-  it('первая стадия после загрузки — отчёт об открытии, следующие — переходы', async () => {
-    const onStage = vi.fn()
-    const { rerender } = renderFrame({ onStage })
-    const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
-
-    await stage(0)
-    await stage(2)
-    expect(onStage.mock.calls).toEqual([
-      [{ index: 0, total: 7 }, { opening: true }],
-      [{ index: 2, total: 7 }, { opening: false }],
-    ])
-
-    rerender(frame({ onStage, reloadToken: 1 }))
-    await stage(0)
-    expect(onStage).toHaveBeenLastCalledWith({ index: 0, total: 7 }, { opening: true })
+    expect(onStage).toHaveBeenCalledWith({ index: 3, total: 7 }, { own: false })
   })
 
   it('за стадию не принимаются чужие сообщения, а мост работает как раньше', async () => {
@@ -83,6 +63,89 @@ describe('SectionMaterialFrame — стадии файлового урока', 
       ref.current.gotoStage(4)
     })
     expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')
+  })
+})
+
+// Стадию в рамке преподавателя двигает не только он: мост проигрывает
+// сохранённую работу ученика и зеркалит его клики, а страница сама сообщает,
+// где открылась. Переходом преподавателя стадия считается, только если в этом
+// документе он действовал сам: доверенный клик или ввод (present-event) или
+// свой переход по стадиям (gotoStage).
+describe('SectionMaterialFrame — стадия как действие преподавателя', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
+  const presentEvent = (eventType = 'click') => message({ source: 'jts-bridge', type: 'present-event', selector: '#rail > button', eventType })
+  const ownFlags = (onStage) => onStage.mock.calls.map(([, { own }]) => own)
+
+  it('проигрывание и зеркало меняют стадию — не его действие; доверенный клик — его', async () => {
+    const onStage = vi.fn()
+    renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+
+    await stage(0)
+    await stage(2)
+    await presentEvent()
+    await stage(3)
+
+    expect(ownFlags(onStage)).toEqual([false, false, true])
+  })
+
+  // isTrusted прокрутку не отличает от программной (её роняют и переходы,
+  // проигранные мостом), поэтому она действием не считается.
+  it('прокрутка — не действие преподавателя', async () => {
+    const onStage = vi.fn()
+    renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+
+    await presentEvent('scroll')
+    await stage(2)
+
+    expect(ownFlags(onStage)).toEqual([false])
+  })
+
+  it('свой переход по стадиям — действие преподавателя', async () => {
+    const onStage = vi.fn()
+    const { ref } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+
+    act(() => { ref.current.gotoStage(4) })
+    await stage(4)
+
+    expect(ownFlags(onStage)).toEqual([true])
+  })
+
+  it('новый документ в рамке — признак сброшен', async () => {
+    const onStage = vi.fn()
+    const { rerender } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+    await presentEvent()
+    await stage(2)
+
+    rerender(frame({ isStaff: true, reviewStudentId: 7, reloadToken: 1, onStage }))
+    await stage(0)
+    await stage(4)
+
+    expect(ownFlags(onStage)).toEqual([true, false, false])
+  })
+
+  // Доводка до стадии (класса после F5, своей после «Внимания») — не действие
+  // преподавателя. Мост передаёт её синтетический клик по рельсу наверх тем же
+  // present-event, и этот отголосок признак не ставит.
+  it('доводка ждёт осадки рамки, её отголосок не считается действием', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const { ref, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+    act(() => { ref.current.restoreStage(3) })
+    expect(post).not.toHaveBeenCalled()
+    await settle(iframe)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 3 }, '*')
+
+    await stage(3)
+    await presentEvent()
+    await stage(5)
+    await presentEvent()
+    await stage(6)
+
+    expect(ownFlags(onStage)).toEqual([false, false, true])
   })
 })
 
@@ -190,16 +253,16 @@ describe('SectionMaterialFrame — новый документ в рамке', (
 
   const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
 
-  it('сменился ученик для просмотра — первая стадия снова отчёт об открытии', async () => {
+  it('сменился ученик для просмотра — стадия новой страницы не действие преподавателя', async () => {
     const onStage = vi.fn()
     const { rerender } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
-    await stage(0)
+    await message({ source: 'jts-bridge', type: 'present-event', selector: '#a', eventType: 'click' })
     await stage(2)
 
     rerender(frame({ isStaff: true, reviewStudentId: 8, onStage }))
     await stage(0)
 
-    expect(onStage).toHaveBeenLastCalledWith({ index: 0, total: 7 }, { opening: true })
+    expect(onStage).toHaveBeenLastCalledWith({ index: 0, total: 7 }, { own: false })
   })
 
   // Поздний вход ученика включает страницу следования без перезагрузки: ответ

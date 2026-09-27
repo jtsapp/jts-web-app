@@ -776,24 +776,61 @@ describe('LiveLessonPage — преподаватель', () => {
     await connectWith(leadingAt(3, 11))
     await frameStage(0)
 
+    await bridge(presentEvent)
     await frameStage(2)
 
     expect(sendStage).toHaveBeenCalledWith(11, 2)
   })
 
-  // Мост сам сообщает, на какой стадии открылась страница. После F5 ведущего
-  // (ведение восстановлено раньше, чем рамка загрузилась) это стадия 0, и в
-  // состоянии она увела бы весь класс назад.
-  it('после загрузки рамки первая стадия серверу не уходит, следующая уходит', async () => {
+  // Рамка преподавателя — просмотр работы ученика: мост проигрывает его
+  // сохранённый поток и зеркалит клики, и стадия в ней меняется без участия
+  // преподавателя. Классу уходит только стадия после его собственного действия.
+  it('стадия рамки уходит серверу только после собственного действия преподавателя', async () => {
     await renderAsTeacher()
-    await connectWith(leadingAt(3, 11, { stageIndex: 3 }))
+    await connectWith(leadingAt(3, 11))
 
     await frameStage(0)
+    await frameStage(4)
     expect(sendStage).not.toHaveBeenCalled()
 
-    await frameStage(4)
+    await bridge(presentEvent)
+    await frameStage(5)
     expect(sendStage).toHaveBeenCalledTimes(1)
-    expect(sendStage).toHaveBeenCalledWith(11, 4)
+    expect(sendStage).toHaveBeenCalledWith(11, 5)
+  })
+
+  // Свой переход по стадиям из «Тем» — тоже его действие.
+  it('переход по стадии из «Тем» уходит серверу', async () => {
+    const { container } = await renderAsTeacher()
+    await connectWith(leadingAt(3, 11))
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage-list', titles: ['Warm-up', 'Words', 'Practice'] } }))
+    })
+    await frameStage(0)
+
+    const post = vi.spyOn(frameOf(container).contentWindow, 'postMessage')
+    fireEvent.click(screen.getByRole('button', { name: 'Practice' }))
+    expect(post).toHaveBeenCalledWith(...gotoStage(2))
+    await frameStage(2)
+
+    expect(sendStage).toHaveBeenCalledWith(11, 2)
+  })
+
+  // После F5 ведущий доводит свою рамку до стадии класса. Это не его действие:
+  // ни сама доводка, ни её отголосок из моста, ни то, что потом придёт зеркалом,
+  // класс не двигают.
+  it('после F5 рамка ведущего доводится до стадии класса, и это классу не уходит', async () => {
+    const { container } = await renderAsTeacher()
+    await connectWith(leadingAt(3, 11, { stageIndex: 3 }))
+
+    const post = await loadFrame(container)
+    expect(post).toHaveBeenCalledWith(...gotoStage(3))
+    await frameStage(0)
+    await frameStage(3)
+    await bridge(presentEvent)
+    await frameStage(5)
+
+    expect(sendStage).not.toHaveBeenCalled()
   })
 
   // «Внимание» перезагружает рамку ведущего — новая страница снова открывается
@@ -812,14 +849,16 @@ describe('LiveLessonPage — преподаватель', () => {
     expect(sendStage).not.toHaveBeenCalled()
   })
 
-  // «Смотреть экран» другого ученика открывает в рамке его страницу, и она тоже
-  // сообщает стадию, на которой открылась. Прими её за переход — весь класс
-  // уехал бы на стадию 0.
-  it('ведёт и сменил ученика для просмотра — стадия открытия серверу не уходит', async () => {
+  // «Смотреть экран» другого ученика открывает в рамке новую страницу: она
+  // сообщает, где открылась, и проигрывает его работу. Действие преподавателя
+  // на прошлой странице этой не засчитывается — иначе класс уехал бы на
+  // стадию 0 или туда, где остановился этот ученик.
+  it('ведёт и сменил ученика для просмотра — стадии новой страницы серверу не уходят', async () => {
     participants = [STUDENT, { studentId: 8, studentName: 'Второй', status: 'SCHEDULED' }]
     const { container } = await renderAsTeacher()
     await connectWith(leadingAt(3, 11))
     await frameStage(0)
+    await bridge(presentEvent)
     await frameStage(2)
     sendStage.mockClear()
 
@@ -828,6 +867,7 @@ describe('LiveLessonPage — преподаватель', () => {
     await flush()
     expect(frameOf(container).getAttribute('src')).toContain('studentId=8')
     await frameStage(0)
+    await frameStage(4)
 
     expect(sendStage).not.toHaveBeenCalled()
   })
@@ -848,10 +888,11 @@ describe('LiveLessonPage — преподаватель', () => {
 
     it('рамка ведущего возвращается на свою стадию, сервер получает её на эхо указки', async () => {
       const container = await focusAtStage(3, 5)
-      const post = vi.spyOn(frameOf(container).contentWindow, 'postMessage')
 
-      await frameStage(0)
+      const post = await loadFrame(container)
       expect(post).toHaveBeenCalledWith(...gotoStage(5))
+      await frameStage(0)
+      await frameStage(5)
 
       await push(leadingAt(3, 11, { version: 2, focusSeq: 2, stageIndex: 3 }))
       expect(sendStage).toHaveBeenCalledTimes(1)

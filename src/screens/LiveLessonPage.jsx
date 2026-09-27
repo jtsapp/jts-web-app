@@ -458,12 +458,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     ? liveTitles.map((title, index) => ({ index, title, taskCount: 0 }))
     : serverStages
   const currentStage = stageAt.materialId === activeMaterialKey ? stageAt.index : 0
-  // Стадия, на которой ведущий нажал «Внимание». Оно перезагружает его рамку, и
-  // новая страница открывается на стадии 0, а сервер на том же материале стадию
-  // класса не сбрасывает: класс и ведущий разошлись бы. Рамка возвращается на
-  // неё, сервер получает её на эхо своей указки (как сверка в web-admin). Две
-  // отметки, потому что эхо приходит и раньше, и позже открытия рамки.
-  const stageToRestoreRef = useRef(null)
+  // Стадия, до которой рамку преподавателя довести после загрузки: после F5 —
+  // стадия класса, после «Внимания» — та, на которой его нажали. «Внимание»
+  // перезагружает рамку, и новая страница открывается на стадии 0, а сервер на
+  // том же материале стадию класса не сбрасывает: без доводки класс и ведущий
+  // разошлись бы. Доводка — не действие преподавателя и классу не уходит
+  // (SectionMaterialFrame), поэтому стадию «Внимания» сервер получает на эхо
+  // своей указки (stageToShareRef, как сверка в web-admin).
+  const [stageRestore, setStageRestore] = useState(null)
   const stageToShareRef = useRef(null)
 
   // Упражнения, скрытые преподавателем поштучно («Скрыть это упражнение от ученика»).
@@ -577,27 +579,16 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     materialFrameRef.current?.gotoStage?.(Number(id))
   }
 
-  function handleFrameStage({ index }, { opening }) {
+  function handleFrameStage({ index }, { own }) {
     setStageAt({ materialId: activeMaterialKey, index })
     // Ведущий преподаватель сообщает стадию своей рамки серверу — за ней идут
-    // следующие ученики. Только переход: где страница открылась после загрузки,
-    // классу не указ (после «Внимания» рамка сама вернётся на свою стадию). И
-    // только на материале класса: рамка другого материала говорит о своём, а не
-    // о том, что видит класс.
-    if (opening) {
-      restoreStageAfterFocus(index)
-      return
-    }
+    // следующие ученики. Только после собственного действия: стадию в рамке
+    // двигают и открытие страницы, и работа просматриваемого ученика (см.
+    // SectionMaterialFrame). И только на материале класса: рамка другого
+    // материала говорит о своём, а не о том, что видит класс.
+    if (!own) return
     if (isStaff && presenting && liveState?.materialId != null && liveState.materialId === activeMaterialKey) {
       sendStage(activeMaterialKey, index)
-    }
-  }
-
-  function restoreStageAfterFocus(openedAt) {
-    const stage = stageToRestoreRef.current
-    stageToRestoreRef.current = null
-    if (stage?.materialId === activeMaterialKey && stage.index !== openedAt) {
-      materialFrameRef.current?.gotoStage?.(stage.index)
     }
   }
 
@@ -883,7 +874,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   function applyStaffLiveState(next, prev) {
     if (prev === null) {
       setPresenting(Boolean(next.leading))
-      restoreClassPosition(next)
+      const placed = restoreClassPosition(next)
+      // Ведущий после F5 доводит свою рамку до стадии класса — это не его
+      // действие, и классу оно не уходит (handleFrameStage).
+      if (placed && next.leading && next.materialId != null && next.stageIndex != null) {
+        setStageRestore({ materialId: next.materialId, index: next.stageIndex })
+      }
       return
     }
     if (prev.leading && !next.leading) {
@@ -902,9 +898,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Раздел и материал, на которых преподаватель вёл класс, — если раздел ещё
   // существует. Разделы могут не успеть загрузиться к первому состоянию: тогда
   // раздел ставится как есть, а loadSections оставит его, только если найдёт.
+  // true — вкладка встала на место класса.
   function restoreClassPosition(live) {
-    if (live.sectionId == null) return
-    if (sections.length && !sections.some((s) => String(s.id) === String(live.sectionId))) return
+    if (live.sectionId == null) return false
+    if (sections.length && !sections.some((s) => String(s.id) === String(live.sectionId))) return false
     setActiveSectionId(live.sectionId)
     if (live.materialId != null) setActiveMaterialId(live.materialId)
     if (live.stepId != null) {
@@ -912,6 +909,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       setActiveStepId(live.stepId)
     }
     setTeacherStepId(live.stepId ?? live.sectionId)
+    return true
   }
 
   // Снимок состояния — точка «только что вошёл или переподключился». Если класс
@@ -1471,7 +1469,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const stageAtFocus = !onLessonSteps && stageAt.materialId === activeMaterialKey
       ? { materialId: activeMaterialKey, index: stageAt.index }
       : null
-    stageToRestoreRef.current = stageAtFocus
+    if (stageAtFocus) setStageRestore(stageAtFocus)
     stageToShareRef.current = stageAtFocus
     // На шагах каталога iframe нет — достаточно focus (+ stepId внутри него).
     if (onLessonSteps && activeStepId) {
@@ -1672,6 +1670,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     pendingPresentRef.current = []
     sendCatchUp(catchUp.materialId)
   }, [catchUp, frameOnScreen, followMode, activeMaterialKey, sendCatchUp])
+
+  // Доводка уходит в рамку того материала, для которого заведена, — после
+  // перерисовки: «Внимание» и восстановление места меняют документ рамки, и
+  // вызов до неё достался бы закрывающейся странице. Рамка сама дождётся
+  // осадки новой. Одна доводка — один вызов; отмечается, а не стирается, по
+  // той же причине, что и просьба догнать класс выше.
+  const stageRestoreSentRef = useRef(null)
+  useEffect(() => {
+    if (!stageRestore || stageRestoreSentRef.current === stageRestore) return
+    if (!frameOnScreen || activeMaterialKey !== stageRestore.materialId || !materialFrameRef.current) return
+    stageRestoreSentRef.current = stageRestore
+    materialFrameRef.current.restoreStage(stageRestore.index)
+  }, [stageRestore, frameOnScreen, activeMaterialKey])
 
   return (
     // Урок занимает экран целиком: в макете сайдбара приложения на нём нет,
