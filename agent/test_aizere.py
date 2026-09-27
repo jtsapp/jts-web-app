@@ -22,7 +22,9 @@ from agent import (  # noqa: E402
     PERSONA_OVERRIDE,
     SONIOX_TTS_VOICE,
     TUTOR_MOODS,
+    OPENAI_BRAIN_FALLBACK,
     _brain_model_for,
+    _is_openai_brain,
     _eleven_http_only,
     _eleven_model_for,
     _eleven_session_voice,
@@ -116,8 +118,12 @@ assert TUTOR_MOODS[AIZERE], "эмоции аватара разрешены"
 
 # --- мозг -------------------------------------------------------------------
 # Haiku ломает казахскую морфологию и роняет иероглифы; Sonnet 5 — чистый
-# казахский (замер 24.09.2026). Только ей: Спарку и остальным — дефолт роута.
-assert _brain_model_for(AIZERE) == "claude-sonnet-5"
+# казахский (замер 24.09.2026), GPT-6 Sol — ещё чище (27.09.2026). Только ей:
+# Спарку и остальным — дефолт роута.
+assert _brain_model_for(AIZERE) == "gpt-6-sol"
+assert _is_openai_brain(_brain_model_for(AIZERE)), "GPT агент зовёт напрямую, шим его не знает"
+assert not _is_openai_brain("claude-sonnet-5") and not _is_openai_brain("jts-voice-router")
+assert not _is_openai_brain(OPENAI_BRAIN_FALLBACK), "откат без ключа OpenAI должен уйти в шим"
 assert _brain_model_for("hype") == "jts-voice-router", "Спарк остаётся на дефолте роута"
 assert _brain_model_for("") == "jts-voice-router"
 os.environ["BRAIN_MODEL_AIZERE"] = "claude-haiku-4-5"
