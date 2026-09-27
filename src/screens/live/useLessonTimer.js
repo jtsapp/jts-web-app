@@ -1,18 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { playCue } from '../../lib/notifySound.js'
 
 /**
  * Таймер урока на стороне ученика.
  *
- * Преподаватель включает отсчёт у себя, событие уходит всему классу
- * (`/topic/lesson/{id}/timer`), и то же время идёт у ученика. Раньше таймер был
- * личным секундомером преподавателя: «две минуты на задание» ученик не видел
- * вовсе и узнавал о конце времени на слух.
+ * Преподаватель включает отсчёт, сервер запоминает время окончания в состоянии
+ * занятия (спека live-lesson-server-state §6.2), и каждый клиент считает
+ * остаток до него сам. Раньше отсчёт шёл от момента, когда событие дошло до
+ * вкладки: вошедший позже или перезагрузивший страницу ученик таймера не видел
+ * вовсе, а преподаватель, закрывший панель таймера, останавливал его у всех.
  *
- * Считаем от МОМЕНТА ПОЛУЧЕНИЯ события, а не до присланного дедлайна: часы
- * браузеров расходятся, и абсолютное время пришлось бы синхронизировать. Ошибка
- * здесь — сетевая задержка, доли секунды на двухминутном таймере.
+ * `timer`: `undefined` — состояния ещё нет; `null` — таймер не идёт;
+ * `{endsAtMs, durationSeconds}` — идёт до `endsAtMs` по часам сервера.
+ * `offset` — поправка часов (`serverNowMs − Date.now()`, useLessonLiveState):
+ * часы ученика могут отставать на минуты, и без неё остаток был бы чужим.
  *
  * Тик берёт время у `Date.now()`, а не вычитает по секунде: вкладка в фоне
  * подмораживает `setInterval`, и вычитание отстало бы ровно на столько, сколько
@@ -22,35 +24,47 @@ import { playCue } from '../../lib/notifySound.js'
  * пока преподаватель не выключит таймер или не запустит новый. Исчезнувший
  * таймер ученик прочитал бы как «сломалось», а не как «всё».
  */
-export function useLessonTimer() {
-  const [remaining, setRemaining] = useState(null)
-  const endsAtRef = useRef(0)
-
-  /** Событие из сокета: `{ action: 'start' | 'stop', durationSeconds }`. */
-  const onTimer = useCallback((evt) => {
-    if (evt?.action === 'start' && evt.durationSeconds > 0) {
-      endsAtRef.current = Date.now() + evt.durationSeconds * 1000
-      setRemaining(evt.durationSeconds)
-      // Отсчёт пошёл. Сигнал именно на старте: ученик мог смотреть в задание, а
-      // не в правый верхний угол, и «две минуты» начинались бы для него позже.
-      playCue('timerStart')
-      return
-    }
-    endsAtRef.current = 0
-    setRemaining(null)
-  }, [])
+export function useLessonTimer(timer, offset = 0) {
+  const endsAtMs = Number.isFinite(timer?.endsAtMs) ? timer.endsAtMs : null
+  // Остаток помнит, до какого окончания он посчитан: число от прежнего таймера
+  // новому не принадлежит.
+  const [left, setLeft] = useState({ endsAtMs: null, seconds: null })
 
   // Тикаем, только пока есть что отсчитывать: на нуле интервал снимается сам,
   // иначе он бесконечно перерисовывал бы «00:00».
-  const ticking = remaining !== null && remaining > 0
   useEffect(() => {
-    if (!ticking) return undefined
-    const id = setInterval(() => {
-      const left = Math.round((endsAtRef.current - Date.now()) / 1000)
-      setRemaining(left > 0 ? left : 0)
-    }, 250)
+    if (endsAtMs == null) return undefined
+    const tick = () => {
+      const seconds = Math.max(0, Math.round((endsAtMs - (Date.now() + offset)) / 1000))
+      setLeft((prev) => (prev.endsAtMs === endsAtMs && prev.seconds === seconds ? prev : { endsAtMs, seconds }))
+      return seconds
+    }
+    // Первое чтение — сразу, а не через четверть секунды: иначе новый таймер
+    // успевал бы показать пустое место.
+    if (tick() === 0) return undefined
+    const id = setInterval(() => { if (tick() === 0) clearInterval(id) }, 250)
     return () => clearInterval(id)
-  }, [ticking])
+  }, [endsAtMs, offset])
+
+  const remaining = endsAtMs != null && left.endsAtMs === endsAtMs ? left.seconds : null
+
+  // Отсчёт пошёл. Сигнал именно на старте: ученик мог смотреть в задание, а не
+  // в правый верхний угол, и «две минуты» начинались бы для него позже. Но
+  // только на НОВОМ таймере: вход в уже идущий — не старт, отсчёт начался без
+  // этого ученика. Любое изменение состояния (стадия, указка) приносит тот же
+  // таймер заново — по времени окончания его и узнаём.
+  const known = timer !== undefined
+  const seenEndsAtRef = useRef(undefined)
+  useEffect(() => {
+    if (!known) {
+      seenEndsAtRef.current = undefined
+      return
+    }
+    const seen = seenEndsAtRef.current
+    seenEndsAtRef.current = endsAtMs
+    if (seen === undefined || endsAtMs == null || endsAtMs === seen) return
+    playCue('timerStart')
+  }, [known, endsAtMs])
 
   // Время вышло. Отдельным эффектом на ПЕРЕХОД в ноль, а не внутри тика: тик
   // идёт четыре раза в секунду и на нуле сыграл бы очередью. `expired` держится,
@@ -67,7 +81,7 @@ export function useLessonTimer() {
     playCue('timerEnd')
   }, [expired])
 
-  return { remaining, expired, onTimer }
+  return { remaining, expired }
 }
 
 /** `95` → `01:35`. */

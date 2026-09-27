@@ -11,6 +11,7 @@ import { isGroupLesson, isTrialLesson, activeParticipants as activeOf } from '..
 import { canControl, contentLocked } from './live/liveStatus.js'
 import { useLessonPresence } from './live/useLessonPresence.js'
 import { useLessonLiveSocket } from './live/useLessonLiveSocket.js'
+import { useLessonLiveState } from './live/useLessonLiveState.js'
 import { setAudioReporter, playBroadcastAudio, releaseBroadcastAudio, unlockBroadcastAudio } from './live/audioReport.js'
 import { useActiveQuestionTracker } from './live/useActiveQuestionTracker.js'
 import { useWatchAnnounce } from './live/useWatchAnnounce.js'
@@ -700,12 +701,19 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // --- Живая синхронизация (follow-me + зеркалирование) -------------------
+  // Состояние занятия хранит сервер (спека live-lesson-server-state): снимок
+  // берётся на каждом подключении сокета, дальше приходит каналом state.
+  const { state: liveState, offset: liveOffset, onState: acceptLiveState, onConnect: syncLiveState } = useLessonLiveState(lessonId, token)
   // Таймер преподавателя идёт и у ученика: «две минуты на задание» работает,
-  // когда время видят обе стороны.
-  const { remaining: timerLeft, expired: timerExpired, onTimer } = useLessonTimer()
+  // когда время видят обе стороны. Время окончания — из состояния, поэтому
+  // вошедший позже ученик видит остаток, а не пустое место. Пока состояния нет,
+  // таймер «неизвестен» (undefined), а не «не идёт»: вход в идущий отсчёт не
+  // должен звучать как его старт.
+  const { remaining: timerLeft, expired: timerExpired } = useLessonTimer(liveState ? (liveState.timer ?? null) : undefined, liveOffset)
 
   const { connected: liveConnected, sendFocus, sendMirror, sendPresent, sendStepProgress, sendAudio, sendCall, sendWatch } = useLessonLiveSocket(lessonId, token, selfUserId, {
-    onTimer,
+    onConnect: syncLiveState,
+    onState: acceptLiveState,
     // Учитель нажал «Транслировать классу» — играем у себя тем же каналом,
     // которым уже следуем за самим учителем (focus/present).
     //
