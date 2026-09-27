@@ -920,6 +920,18 @@ describe('LiveLessonPage — преподаватель', () => {
     expect(sendStage).toHaveBeenCalledWith(11, 5)
   })
 
+  // Стадия, которая уже в состоянии занятия, — не новость: второй раз её не шлём.
+  it('своя стадия, уже стоящая в состоянии занятия, серверу повторно не уходит', async () => {
+    await renderAsTeacher()
+    await connectWith(leadingAt(3, 11, { stageIndex: 3 }))
+    await frameStage(0)
+
+    await bridge(presentEvent)
+    await frameStage(3)
+
+    expect(sendStage).not.toHaveBeenCalled()
+  })
+
   // Свой переход по стадиям из «Тем» — тоже его действие.
   it('переход по стадии из «Тем» уходит серверу', async () => {
     const { container } = await renderAsTeacher()
@@ -1017,6 +1029,19 @@ describe('LiveLessonPage — преподаватель', () => {
       await frameStage(5)
 
       await push(leadingAt(3, 11, { version: 2, focusSeq: 2, stageIndex: 3 }))
+      expect(sendStage).toHaveBeenCalledTimes(1)
+      expect(sendStage).toHaveBeenCalledWith(11, 5)
+    })
+
+    // Эхо указки из другой вкладки (ведёт класс в другое место) стадию своего
+    // «Внимания» не забирает: она уходит на эхо своей указки.
+    it('эхо чужой указки — стадия «Внимания» ждёт эха своей', async () => {
+      await focusAtStage(3, 5)
+
+      await push(leadingAt(4, 12, { version: 2, focusSeq: 2 }))
+      expect(sendStage).not.toHaveBeenCalled()
+
+      await push(leadingAt(3, 11, { version: 3, focusSeq: 3, stageIndex: 3 }))
       expect(sendStage).toHaveBeenCalledTimes(1)
       expect(sendStage).toHaveBeenCalledWith(11, 5)
     })

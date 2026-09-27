@@ -576,9 +576,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const routeActiveId = onLessonSteps ? activeStepId : onFileStages ? String(currentStage) : activeSectionId
   const selectRouteStep = onLessonSteps ? selectLessonStep : onFileStages ? selectFileStage : selectSection
 
-  // Переход по стадии — через рамку: скрипт в файле кликает рельс стадий, и тот
-  // же клик зеркалом уходит собеседнику. Своего состояния у позиции нет — она
-  // вернётся сообщением `stage` от рамки (handleFrameStage), как и при переходе
+  // Переход по стадии — через рамку: скрипт в файле кликает рельс стадий. У
+  // ученика этот клик зеркалом уходит преподавателю, у ведущего классу уходит
+  // сама стадия (handleFrameStage → состояние занятия). Своего состояния у
+  // позиции нет — она вернётся сообщением `stage` от рамки, как и при переходе
   // кнопками внутри самого файла.
   function selectFileStage(id) {
     materialFrameRef.current?.gotoStage?.(Number(id))
@@ -592,15 +593,20 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // SectionMaterialFrame). И только на материале класса: рамка другого
     // материала говорит о своём, а не о том, что видит класс.
     if (!own) return
-    if (isStaff && presenting && liveState?.materialId != null && liveState.materialId === activeMaterialKey) {
+    if (isStaff && presenting && liveState?.materialId != null && liveState.materialId === activeMaterialKey
+      && liveState.stageIndex !== index) {
       sendStage(activeMaterialKey, index)
     }
   }
 
+  // Только на эхо своей указки — позиция та, на которую её слали. Указка из
+  // другой вкладки ведёт класс в другое место, и стадия этого «Внимания» ей не
+  // пара: отметка ждёт своего эха.
   function shareStageAfterFocus(live) {
     const stage = stageToShareRef.current
+    if (!stage || String(live.sectionId) !== String(stage.sectionId) || live.materialId !== stage.materialId) return
     stageToShareRef.current = null
-    if (!stage || !live.leading || stage.materialId !== live.materialId || live.stageIndex === stage.index) return
+    if (!live.leading || live.stageIndex === stage.index) return
     sendStage(stage.materialId, stage.index)
   }
 
@@ -1491,7 +1497,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setTeacherStepId(onLessonSteps ? activeStepId : activeSectionId)
     setPresenting(true)
     const stageAtFocus = !onLessonSteps && stageAt.materialId === activeMaterialKey
-      ? { materialId: activeMaterialKey, index: stageAt.index }
+      ? { sectionId: activeSectionId, materialId: activeMaterialKey, index: stageAt.index }
       : null
     if (stageAtFocus) setStageRestore(stageAtFocus)
     stageToShareRef.current = stageAtFocus
