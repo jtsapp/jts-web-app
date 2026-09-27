@@ -305,15 +305,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // тянет только новая указка. Рамка снова своя, а не страница следования: на
   // ней ученик работает, и ответы сохраняются. Указка на шаг, ждущая разбора
   // урока, — тоже переход с классом: на выбранный им материал она не переезжает.
+  // Переключатель «Идти за преподавателем» гаснет вместе с уходом: он не должен
+  // обещать следование, которого нет, и вернуться к классу — одно нажатие.
   function leaveClass() {
     setFollowMode(false)
     followModeRef.current = false
     pendingFocusStepRef.current = null
-    stopFollowingClass()
-  }
-
-  function stopFollowingClass() {
     followRef.current = { ...followRef.current, following: false }
+    setFollowTeacher(false)
     setClassStage(NO_CLASS_STAGE)
     setCatchUp(null)
   }
@@ -848,11 +847,15 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     if (target.sectionId == null) return
     // На шагах урока бегунок «Т» = stepId; на разделах занятия = sectionId.
     setTeacherStepId(target.stepId ?? target.sectionId)
+    // iframe catch-up только для HTML-материала. На шагах каталога
+    // reloadToken только лишний ре-рендер LessonContent.
+    const reloadsFrame = explicit && target.stepId == null
+    // Указка приносит снимок рамки преподавателя со всем потоком до неё:
+    // накопленное раньше проигралось бы поверх него второй раз.
+    if (reloadsFrame) pendingPresentRef.current = []
     const run = () => {
       applyTeacherPointer(target)
-      // iframe catch-up только для HTML-материала. На шагах каталога
-      // reloadToken только лишний ре-рендер LessonContent.
-      if (explicit && target.stepId == null) setReloadToken((n) => n + 1)
+      if (reloadsFrame) setReloadToken((n) => n + 1)
     }
     if (!knowsFocusTarget(sections, target)) {
       // Раздел могли прикрепить после входа — перечитываем. Нет его и после
@@ -926,17 +929,17 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setReloadToken((n) => n + 1)
   }
 
-  // Ученик переключает «Идти за преподавателем» — тот же «ушёл сам» (§4.3 п.5),
-  // только явный: выключенный, он не даёт стадии класса двигать рамку.
+  // Ученик переключает «Идти за преподавателем». Выключение — тот же ручной
+  // уход (§7): стадия класса больше не двигает рамку, отложенное отменяется, а
+  // рамка уходит со страницы следования, где мост ответов не сохраняет.
   // Включённый, пока класс ведут, — сразу к классу, как на входе: ждать
   // следующей смены позиции значило бы стоять на месте неизвестно сколько.
   function toggleFollowTeacher() {
-    const next = !followTeacher
-    setFollowTeacher(next)
-    if (!next) {
-      stopFollowingClass()
+    if (followTeacher) {
+      leaveClass()
       return
     }
+    setFollowTeacher(true)
     followRef.current = { ...followRef.current, following: true }
     if (liveState?.leading) {
       setClassStage(classStageOf(liveState))
@@ -982,6 +985,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // приходят сюда одинаково — и одинаково ждут рамку.
     onPresent: (evt) => {
       if (isStaff) return
+      // Не следующему показ не адресован: к классу его вернёт указка, и она
+      // принесёт снимок рамки со всем потоком — копить мимо него нечего.
+      if (!followRef.current.following) return
       const events = evt.events || []
       if (!events.length) return
       // Material may still be switching after focus — buffer until iframe can replay.
@@ -1019,9 +1025,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       // Указка включает followMode один раз (см. goToClass), но
       // без этого студента переносило бы только на первый шаг — дальше
       // преподаватель продолжает идти по уроку, а бегунок «Т» просто едет мимо
-      // застывшего экрана. Пока следование включено, каждый следующий шаг
-      // преподавателя переносит и сюда — до тех пор, пока студент сам не
-      // сменит раздел (см. selectSection, где followMode гасится).
+      // застывшего экрана. Пока ученик следует за классом, каждый следующий шаг
+      // преподавателя переносит и сюда; ушедшего сам, выключившего
+      // переключатель или отпущенного классом — нет (followRef, §4.3).
       if (!isStaff && evt.senderRole !== 'STUDENT') {
         // Teacher filled a word-bank gap (or corrected an answer) — apply it
         // here. A remount via applyTeacherPointer would wipe the uncontrolled
@@ -1079,7 +1085,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
         // ИЗМЕНЕНИЕ в ответе, поэтому она только адресату: у соседа по классу
         // на том вопросе не поменялось ничего, и прыжок туда он читает как
         // «со мной что-то сделали», без объяснений.
-        if (followTeacher
+        if (followRef.current.following
           && evt.stepId != null && String(evt.stepId) !== String(activeStepIdRef.current)) {
           // Без questionId указка встаёт на начало шага (`block-0`) — ровно
           // то, что нужно тому, кого перенесло за классом, а не за правкой.

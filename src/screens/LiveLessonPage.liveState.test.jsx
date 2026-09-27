@@ -177,6 +177,14 @@ async function loadFrame(container) {
 
 const gotoStage = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index }, '*']
 
+/** Живое действие показа — клик по элементу рамки. */
+const click = (selector) => [{ selector, eventType: 'click', value: null }]
+
+/** Что проигралось в рамке показом — по селекторам, в порядке отправки. */
+const replayedIn = (post) => post.mock.calls
+  .filter(([m]) => m.type === 'present')
+  .flatMap(([m]) => m.events.map((e) => e.selector))
+
 /** Класс ведут на разделе/материале — такое состояние шлёт сервер после «Внимания». */
 const leadingAt = (sectionId, materialId, patch = {}) =>
   liveState({ leading: true, focusSeq: 1, sectionId, materialId, ...patch })
@@ -548,24 +556,61 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
   })
 
   // Снимок рамки преподавателя несёт весь поток до просьбы: живые события,
-  // накопленные, пока рамки класса у ученика не было, проигрались бы поверх
-  // него второй раз. Пришедшие после просьбы не трогаются.
+  // накопленные, пока рамки класса у ученика не было (он следует, но у доски),
+  // проигрались бы поверх него второй раз. Пришедшие после просьбы не трогаются.
   it('гасит долг — накопленные до просьбы живые события не проигрываются поверх снимка', async () => {
     const { container } = await renderAsStudent()
-    const click = (selector) => [{ selector, eventType: 'click', value: null }]
-    await act(async () => { socketHandlers.onPresent({ materialId: 12, events: click('#before') }) })
-
     await connectWith(leadingAt(4, 12))
+    fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+    await flush()
+    await act(async () => { socketHandlers.onPresent({ materialId: 12, events: click('#before') }) })
+    await connectWith(leadingAt(4, 12))
+    sendCatchUp.mockClear()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Урок' }))
+    await flush()
     expect(sendCatchUp).toHaveBeenCalledWith(12)
     await act(async () => { socketHandlers.onPresent({ materialId: 12, events: click('#snapshot') }) })
     await act(async () => { socketHandlers.onPresent({ materialId: 12, events: click('#after') }) })
     const post = await loadFrame(container)
     await act(async () => { vi.advanceTimersByTime(1_000) })
 
-    const replayed = post.mock.calls
-      .filter(([m]) => m.type === 'present')
-      .flatMap(([m]) => m.events.map((e) => e.selector))
-    expect(replayed).toEqual(['#snapshot', '#after'])
+    expect(replayedIn(post)).toEqual(['#snapshot', '#after'])
+  })
+
+  // Ушедшему самому показ не адресован: к классу его вернёт указка, и она
+  // принесёт снимок рамки преподавателя со всем потоком.
+  it('ушёл сам — показ мимо него не копится: после указки в рамку уходит только её снимок', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#live') }) })
+
+    await push(leadingAt(3, 11, { version: 2, focusSeq: 2 }))
+    expect(frameMaterial(container)).toBe(11)
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#snapshot') }) })
+    const post = await loadFrame(container)
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    expect(replayedIn(post)).toEqual(['#snapshot'])
+  })
+
+  // Следующий у доски: рамки нет, показ копится в буфере. Снимок указки несёт
+  // тот же поток — накопленное поверх него проигралось бы второй раз.
+  it('следовал с доски — после указки в рамку уходит только её снимок', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+    await flush()
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#live') }) })
+
+    await push(leadingAt(3, 11, { version: 2, focusSeq: 2 }))
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#snapshot') }) })
+    const post = await loadFrame(container)
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    expect(replayedIn(post)).toEqual(['#snapshot'])
   })
 
   // На доске рамки нет: погасить долг нечем. Он ждёт вкладки урока, где рамка
@@ -1024,6 +1069,68 @@ describe('LiveLessonPage — ученик уходит сам', () => {
 
     await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
     expect(frameMaterial(container)).toBe(13)
+  })
+
+  // Кнопка не врёт: ушедший сам видит «Смотрю сам» и возвращается к классу
+  // одним нажатием, а не двумя.
+  it('ушёл сам — переключатель выключен, одно нажатие возвращает к классу', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(4, 12))
+    const toggle = container.querySelector('.ls-follow')
+    fireEvent.click(screen.getByRole('button', { name: 'Разминка' }))
+    await flush()
+    expect(toggle.getAttribute('aria-pressed')).toBe('false')
+
+    fireEvent.click(toggle)
+    await flush()
+
+    expect(frameMaterial(container)).toBe(12)
+  })
+
+  // Выключение переключателя — тот же ручной уход (§7): на странице следования
+  // мост ответов не сохраняет, а ученик теперь работает сам.
+  it('выключил переключатель — рамка уходит со страницы следования', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    expect(frameOf(container).getAttribute('src')).toContain('follow=1')
+
+    fireEvent.click(container.querySelector('.ls-follow'))
+    await flush()
+
+    expect(frameOf(container).getAttribute('src')).toContain('follow=0')
+  })
+
+  // Остался на материале класса, но уже на своей странице: поток показа
+  // щёлкал бы по его собственной работе.
+  it('выключил переключатель — показ класса в свою рамку не проигрывается', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11))
+    fireEvent.click(container.querySelector('.ls-follow'))
+    await flush()
+    const post = await loadFrame(container)
+
+    await act(async () => { socketHandlers.onPresent({ materialId: 11, events: click('#live') }) })
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    expect(replayedIn(post)).toEqual([])
+  })
+
+  // Шаг преподавателя тянет только следующего: у отпущенного класса (и у
+  // ушедшего сам) экран остаётся на своём шаге.
+  it('класс отпущен — шаг преподавателя больше не тянет', async () => {
+    const steps = ['s1', 's2', 's3'].map((id) => ({ id, title: id, blocks: [] }))
+    catalogByUrl = { [SECTIONS[0].materials[0].fileUrl]: { id: 'A', steps } }
+    await renderAsStudent()
+    const shownStep = () => screen.getByTestId('content').textContent
+    const teacherAt = (stepId) => act(async () => { socketHandlers.onStepProgress({ senderRole: 'TEACHER', senderUserId: 6, stepId }) })
+    await connectWith(leadingAt(3, 11, { stepId: 's1' }))
+    await teacherAt('s2')
+    expect(shownStep()).toBe('s2')
+
+    await push(liveState({ version: 2, focusSeq: 1, sectionId: 3, materialId: 11, stepId: 's1' }))
+    await teacherAt('s3')
+
+    expect(shownStep()).toBe('s2')
   })
 
   // Нажатая своя же вкладка — не выбор другого материала.
