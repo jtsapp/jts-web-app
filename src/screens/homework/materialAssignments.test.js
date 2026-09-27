@@ -59,6 +59,14 @@ describe('materialCard', () => {
     const просрочена = materialCard(assignment({ dueDate: '2026-08-01', isOverdue: true }))
     expect(homeworkStateKey(просрочена, new Date(2026, 7, 20))).toBe('overdue')
   })
+
+  it('переносит снимок «что задано» на карточку — списку нужна строка, а не назначение', () => {
+    const card = materialCard(assignment({ stageTitlesSnapshot: 'Practice · Задание 1, Listening · Задание 2' }))
+    expect(card.stageTitlesSnapshot).toBe('Practice · Задание 1, Listening · Задание 2')
+
+    // Старая выдача без снимка — null, а не undefined: карточка плоская, поле есть всегда.
+    expect(materialCard(assignment()).stageTitlesSnapshot).toBeNull()
+  })
 })
 
 describe('isMaterialGraded / isInteractiveMaterial', () => {
