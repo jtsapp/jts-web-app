@@ -13,6 +13,8 @@ import { LOAD_SETTLE_MS } from './live/SectionMaterialFrame.jsx'
 const NOW = 1790000000000
 let socketHandlers = {}
 let snapshot = null
+// Жив ли сокет урока — хук сокета подменён, и связь тест держит сам.
+let socketConnected = true
 const sendCatchUp = vi.fn()
 const sendRelease = vi.fn()
 const sendPresent = vi.fn()
@@ -60,7 +62,7 @@ vi.mock('./live/useLessonPresence.js', () => ({
 
 vi.mock('./live/useLessonLiveSocket.js', () => ({
   useLessonLiveSocket: (lessonId, token, selfUserId, opts) => ({
-    connected: true,
+    connected: socketConnected,
     sendFocus: vi.fn(),
     sendMirror: vi.fn(),
     sendPresent,
@@ -166,6 +168,7 @@ beforeEach(() => {
   vi.setSystemTime(NOW)
   snapshot = null
   socketHandlers = {}
+  socketConnected = true
   sendCatchUp.mockClear()
   sendRelease.mockClear()
   sendPresent.mockClear()
@@ -361,6 +364,27 @@ describe('LiveLessonPage — статус занятия из состояния
 
     expect(screen.getByText(/^Урок завершён/)).toBeTruthy()
   })
+
+  // Пока сокет жив, статус — из состояния; опрос шапки его не перебивает. Сокет
+  // лёг — состояние больше не обновится, и последнее слово за опросом: иначе
+  // завершённый за время обрыва урок так и висел бы идущим.
+  it('сокет разорван — статус из опроса шапки', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(liveState())
+    const lesson = await api.getLessonById.mock.results[0].value
+    api.getLessonById
+      .mockResolvedValueOnce({ ...lesson, status: 'PAUSED' })
+      .mockResolvedValueOnce({ ...lesson, status: 'COMPLETED' })
+
+    await act(async () => { vi.advanceTimersByTime(30_000) })
+    await flush()
+    expect(badge(container)).toBe('Идёт')
+
+    socketConnected = false
+    await act(async () => { vi.advanceTimersByTime(30_000) })
+    await flush()
+    expect(badge(container)).toBe('Завершён')
+  })
 })
 
 describe('LiveLessonPage — опрос шапки занятия', () => {
@@ -547,15 +571,48 @@ describe('LiveLessonPage — преподаватель', () => {
   it('стадия своей рамки уходит серверу, пока ведёт на материале класса', async () => {
     await renderAsTeacher()
     await connectWith(leadingAt(3, 11))
+    await frameStage(0)
 
     await frameStage(2)
 
     expect(sendStage).toHaveBeenCalledWith(11, 2)
   })
 
+  // Мост сам сообщает, на какой стадии открылась страница. После F5 ведущего
+  // (ведение восстановлено раньше, чем рамка загрузилась) это стадия 0, и в
+  // состоянии она увела бы весь класс назад.
+  it('после загрузки рамки первая стадия серверу не уходит, следующая уходит', async () => {
+    await renderAsTeacher()
+    await connectWith(leadingAt(3, 11, { stageIndex: 3 }))
+
+    await frameStage(0)
+    expect(sendStage).not.toHaveBeenCalled()
+
+    await frameStage(4)
+    expect(sendStage).toHaveBeenCalledTimes(1)
+    expect(sendStage).toHaveBeenCalledWith(11, 4)
+  })
+
+  // «Внимание» перезагружает рамку ведущего — новая страница снова открывается
+  // на стадии 0, и это не переход класса.
+  it('«Внимание» перезагружает рамку — её стадия открытия серверу не уходит', async () => {
+    const { container } = await renderAsTeacher()
+    await connectWith(leadingAt(3, 11, { stageIndex: 3 }))
+    await frameStage(0)
+    await frameStage(3)
+    sendStage.mockClear()
+
+    fireEvent.click(container.querySelector('.lw-focus-btn'))
+    await flush()
+    await frameStage(0)
+
+    expect(sendStage).not.toHaveBeenCalled()
+  })
+
   it('без ведения стадия не уходит', async () => {
     await renderAsTeacher()
     await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
+    await frameStage(0)
 
     await frameStage(2)
 
@@ -569,6 +626,7 @@ describe('LiveLessonPage — преподаватель', () => {
     await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
     await push(leadingAt(4, 12, { version: 2, focusSeq: 2 }))
     expect(frameMaterial(container)).toBe(11)
+    await frameStage(0)
 
     await frameStage(2)
 

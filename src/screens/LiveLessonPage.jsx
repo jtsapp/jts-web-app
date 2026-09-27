@@ -550,11 +550,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     materialFrameRef.current?.gotoStage?.(Number(id))
   }
 
-  function handleFrameStage({ index }) {
+  function handleFrameStage({ index }, { opening }) {
     setStageAt({ materialId: activeMaterialKey, index })
     // Ведущий преподаватель сообщает стадию своей рамки серверу — за ней идут
-    // следующие ученики. Только на материале класса: рамка другого материала
+    // следующие ученики. Только переход: где страница открылась после загрузки,
+    // классу не указ. И только на материале класса: рамка другого материала
     // говорит о своём, а не о том, что видит класс.
+    if (opening) return
     if (isStaff && presenting && liveState?.materialId != null && liveState.materialId === activeMaterialKey) {
       sendStage(activeMaterialKey, index)
     }
@@ -1474,7 +1476,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Статус — из состояния занятия: пауза и завершение приходят сокетом сразу,
   // а не со следующим опросом. Сервер хранит PAUSED до конца паузы и о конце
   // не сообщает (§9) — его отмечает здесь один таймер по часам сервера. Пока
-  // состояния нет (старый бэкенд, снимок не пришёл) — статус самого занятия.
+  // состояния нет (старый бэкенд, снимок не пришёл) или сокет лежит и оно
+  // больше не обновляется — статус самого занятия из опроса шапки.
   const pausedUntilMs = liveState?.status === 'PAUSED' ? (liveState.pausedUntilMs ?? null) : null
   const [pauseEndedAt, setPauseEndedAt] = useState(null)
   useEffect(() => {
@@ -1482,7 +1485,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     const handle = setTimeout(() => setPauseEndedAt(pausedUntilMs), Math.max(0, pausedUntilMs - (Date.now() + liveOffset)))
     return () => clearTimeout(handle)
   }, [pausedUntilMs, liveOffset])
-  const status = liveState
+  const status = liveState && liveConnected
     ? (pausedUntilMs != null && pauseEndedAt === pausedUntilMs ? 'IN_PROGRESS' : liveState.status)
     : lesson?.status
   // Урок открыт в любом состоянии, кроме отменённого: ученик заходит и делает

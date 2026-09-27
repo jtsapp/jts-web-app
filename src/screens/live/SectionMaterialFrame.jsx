@@ -38,6 +38,12 @@ export const LOAD_SETTLE_MS = 350
 // молча. Поэтому стадия отправляется после каждой загрузки заново — явная
 // указка перезагружает рамку, и новая страница о стадии ничего не знает.
 //
+// Первое сообщение о стадии после каждой загрузки мост шлёт сам: так страница
+// сообщает, где открылась (всегда на стадии 0), а не переходит. onStage
+// получает это вторым аргументом ({ opening }) — ведущему нельзя отдавать такой
+// отчёт в состояние занятия, иначе F5 или «Внимание» вернули бы класс на
+// стадию 0.
+//
 // Снимок рамки преподавателя (ответ на request-snapshot) уходит в onSnapshot,
 // отдельно от живых действий (onPresentEvent): кому его отдать — классу после
 // «Внимания» или одному догоняющему ученику — решает страница.
@@ -61,10 +67,15 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // Последняя стадия класса — для отправки после осадки, которая наступает уже
   // вне рендера (таймер в handleLoad).
   const stageRef = useRef(stage)
+  // Страница этого цикла загрузки уже сообщила, где открылась. Сбрасывается
+  // вместе с загрузкой, а не в onLoad: мост шлёт начальную стадию, как только
+  // в разметке появились стадии, — это может случиться раньше события load.
+  const stageReportedRef = useRef(false)
 
   useEffect(() => {
     loadedRef.current = false
     settledRef.current = false
+    stageReportedRef.current = false
     pendingRef.current = []
     // pendingHiddenKeysRef сюда намеренно НЕ входит. pendingRef — очередь
     // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
@@ -193,7 +204,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       }
       const stage = parseStageMessage(data)
       if (stage) {
-        onStage?.(stage)
+        const opening = !stageReportedRef.current
+        stageReportedRef.current = true
+        onStage?.(stage, { opening })
         return
       }
       if (!data || data.source !== BRIDGE) return

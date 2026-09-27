@@ -36,7 +36,27 @@ describe('SectionMaterialFrame — стадии файлового урока', 
     const onStage = vi.fn()
     renderFrame({ onStage })
     await message({ source: 'jts-lesson', type: 'stage', index: 3, total: 7 })
-    expect(onStage).toHaveBeenCalledWith({ index: 3, total: 7 })
+    expect(onStage).toHaveBeenCalledWith({ index: 3, total: 7 }, { opening: true })
+  })
+
+  // Мост сам сообщает стадию, на которой страница открылась, — это не переход.
+  // Отправь его ведущий в состояние занятия — и после F5 или «Внимания» весь
+  // класс уехал бы на стадию 0.
+  it('первая стадия после загрузки — отчёт об открытии, следующие — переходы', async () => {
+    const onStage = vi.fn()
+    const { rerender } = renderFrame({ onStage })
+    const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
+
+    await stage(0)
+    await stage(2)
+    expect(onStage.mock.calls).toEqual([
+      [{ index: 0, total: 7 }, { opening: true }],
+      [{ index: 2, total: 7 }, { opening: false }],
+    ])
+
+    rerender(frame({ onStage, reloadToken: 1 }))
+    await stage(0)
+    expect(onStage).toHaveBeenLastCalledWith({ index: 0, total: 7 }, { opening: true })
   })
 
   it('за стадию не принимаются чужие сообщения, а мост работает как раньше', async () => {
