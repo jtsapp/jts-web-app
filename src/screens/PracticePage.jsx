@@ -551,11 +551,11 @@ export default function PracticePage({
   const tourSteps = [
     { selector: '.pk-skills', title: t('tour.practice.skills.title'), text: t('tour.practice.skills.text') },
     { selector: '.pk-levels', title: t('tour.practice.levels.title'), text: t('tour.practice.levels.text') },
-    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
     { selector: '#sec-listening', title: t('tour.practice.listening.title'), text: t('tour.practice.listening.text') },
     { selector: '#sec-listenchoose', title: t('tour.practice.listenchoose.title'), text: t('tour.practice.listenchoose.text') },
     { selector: '#sec-words', title: t('tour.practice.words.title'), text: t('tour.practice.words.text') },
     { selector: '#sec-shadowing', title: t('tour.practice.shadowing.title'), text: t('tour.practice.shadowing.text') },
+    { selector: '#sec-tales', title: t('tour.practice.library.title'), text: t('tour.practice.library.text') },
   ]
   // Перед стартом возвращаем обзор «Аудирования»: под развёрнутым разделом или
   // другой вкладкой шагов в DOM нет, и тур свёлся бы к двум.
