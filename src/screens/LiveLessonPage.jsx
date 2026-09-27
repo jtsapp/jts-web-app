@@ -1007,15 +1007,21 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // живёт guard `already` ниже. Пишущего здесь нет: persistProgress молчит,
     // пока progressLoadedFor не совпал с новым материалом, а отложенная запись
     // предыдущего досылается сама (progressSaver помнит свой materialId).
-    const materialChanged = materialForStateRef.current !== stepMaterialId
+    const previousMaterial = materialForStateRef.current
+    const materialChanged = previousMaterial !== stepMaterialId
     if (materialChanged) {
       materialForStateRef.current = stepMaterialId
-      if (!isStaff) {
+      // Сбрасываем только при смене одного материала на другой. Первое
+      // назначение (null → материал) совпадает с кадром, где вопросы уже
+      // на экране: эффект бежит после него, и пустой setAnswers стирал бы
+      // клик, который ученик (и тест IN_PROGRESS) успел сделать в этом окне.
+      const switchingMaterials = previousMaterial != null
+      if (switchingMaterials && !isStaff) {
         setAnswers({})
         answersRef.current = {}
         setCheckedSteps(new Set())
         flushProgressRef.current = false
-      } else if (reviewStudentId != null) {
+      } else if (switchingMaterials && isStaff && reviewStudentId != null) {
         // У преподавателя работа участника живёт в studentLiveState и тоже
         // ключуется сквозными id шагов — на смене материала он видел бы
         // чужую карточку «готово» с выключенными вариантами и ответы из
@@ -1069,18 +1075,26 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
               setActiveStepId(restored.stepId)
             }
           }
+        } else if (!already && !isStaff && Object.keys(answersRef.current).length) {
+          // Кликнули до ответа сервера: на экране ответ есть, в строке прогресса
+          // нет. Восстанавливать нечего — дописываем то, что уже выбрано.
+          flushProgressRef.current = true
         }
         restoredForRef.current = stepMaterialId
         setProgressLoadedFor(stepMaterialId)
       })
       .catch(() => {
         if (!cancelled) {
+          if (!isStaff && Object.keys(answersRef.current).length) flushProgressRef.current = true
           restoredForRef.current = stepMaterialId
           setProgressLoadedFor(stepMaterialId)
         }
       })
     return () => { cancelled = true }
-  }, [stepMaterialId, lessonId, token, isStaff, reviewStudentId])
+    // У ученика reviewStudentId в запрос не входит — держать его в зависимостях
+    // значит отменять первый GET в тот же кадр, когда эффект выше выставляет
+    // первого участника по умолчанию.
+  }, [stepMaterialId, lessonId, token, isStaff, isStaff ? reviewStudentId : null])
 
   // Пишет только ученик и только свою работу: у преподавателя в answers лежит
   // зеркало чужих ответов, и сохранять его значило бы писать чужое в свою
