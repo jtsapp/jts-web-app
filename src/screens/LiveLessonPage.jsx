@@ -181,6 +181,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
   const [presenting, setPresenting] = useState(false)
+  // Первое состояние занятия у персонала, пока не пришло само занятие.
+  const firstStaffStateRef = useRef(null)
   const materialFrameRef = useRef(null)
   // Present events that arrived before the follow iframe mounted / finished
   // loading (same race web-admin solves with pendingPresent).
@@ -225,6 +227,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Тип занятия известен не всегда (урок ещё грузится) — тогда единственное, чем
   // можно ответить, это число участников, как было раньше.
   const groupLesson = isGroupLesson(lesson) ?? activeParticipants.length > 1
+  const isLessonTeacher = selfUserId != null && lesson?.teacherId != null && String(lesson.teacherId) === String(selfUserId)
   // Ученик: «Вас вызвали» и «Учитель смотрит ваш экран» (макет живого урока).
   // Имя преподавателя, а не флаг: в вызове ученик видит, кто его зовёт. Счётчик
   // нужен, чтобы повторный вызов был заметен — метка уже висит, и без него
@@ -871,27 +874,44 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // он берёт то, что терял после F5: ведёт ли он класс и где. Дальше — только
   // ПЕРЕХОДЫ ведения (другая вкладка отпустила или повела класс): состояние с
   // тем же leading свой presenting не трогает.
+  //
+  // «Ведёт» из состояния достаётся только преподавателю этого занятия и только
+  // вкладке на материале класса: иначе наблюдающий админ или вторая вкладка на
+  // другом материале тоже «вели» бы — отвечали на «догоните», слали стадию
+  // своей рамки. Остальным — пассивный признак (classLedElsewhere).
+  // Собственные действия вкладки («Внимание», отпустить) — у любого персонала.
   function applyStaffLiveState(next, prev) {
     if (prev === null) {
-      setPresenting(Boolean(next.leading))
-      const placed = restoreClassPosition(next)
-      // Ведущий после F5 доводит свою рамку до стадии класса — это не его
-      // действие, и классу оно не уходит (handleFrameStage).
-      if (placed && next.leading && next.materialId != null && next.stageIndex != null) {
-        setStageRestore({ materialId: next.materialId, index: next.stageIndex })
-      }
+      firstStaffStateRef.current = next
+      restoreFromFirstState()
       return
     }
     if (prev.leading && !next.leading) {
       setPresenting(false)
       snapshotQueue.reset()
-    } else if (!prev.leading && next.leading) {
+    } else if (!prev.leading && next.leading && isLessonTeacher && activeMaterialKey === next.materialId) {
       setPresenting(true)
     }
     if (next.focusSeq > prev.focusSeq) shareStageAfterFocus(next)
     // Указка из другой вкладки двигает бегунок «Т» и здесь.
     if (next.focusSeq > prev.focusSeq && next.focusView !== 'BOARD' && next.sectionId != null) {
       setTeacherStepId(next.stepId ?? next.sectionId)
+    }
+  }
+
+  // Первое состояние ждёт занятия: кто его преподаватель, знает только ответ
+  // занятия, а он может прийти и позже снимка.
+  function restoreFromFirstState() {
+    const live = firstStaffStateRef.current
+    if (!live || !lesson) return
+    firstStaffStateRef.current = null
+    const placed = restoreClassPosition(live)
+    const leads = Boolean(live.leading) && placed && isLessonTeacher
+    setPresenting(leads)
+    // Ведущий после F5 доводит свою рамку до стадии класса — это не его
+    // действие, и классу оно не уходит (handleFrameStage).
+    if (leads && live.materialId != null && live.stageIndex != null) {
+      setStageRestore({ materialId: live.materialId, index: live.stageIndex })
     }
   }
 
@@ -1553,6 +1573,14 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId, token])
 
+  // Первое состояние персонала, пришедшее раньше занятия, применяется, как
+  // только занятие известно (restoreFromFirstState).
+  const lessonLoaded = lesson != null
+  useEffect(() => {
+    if (isStaff) restoreFromFirstState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStaff, lessonLoaded])
+
   async function act(fn) {
     setBusy(true)
     try { const updated = await fn(token, lessonId); if (updated) setLesson(updated); else await load() }
@@ -1635,6 +1663,10 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // заданиями, и на рамку файлового материала — что из них на экране, зависит
   // от вида урока, а состояние одно.
   const stageFlags = `${calledBy != null ? ' is-called' : ''}${watchedBy != null ? ' is-watched' : ''}`
+  // Класс ведут, но не из этой вкладки (другой преподаватель или вкладка,
+  // админ-наблюдатель): только признак — класс она не тянет и на «догоните» не
+  // отвечает.
+  const classLedElsewhere = isStaff && Boolean(liveState?.leading) && !presenting
   const contentReadOnly = contentLocked(isStaff)
   const ownProgress = stepProgress(lessonSteps, isStaff ? reviewAnswers : answers)
   // Шапка урока считает задания открытой темы теми же карточками, что лента их
@@ -1840,8 +1872,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
                           Вызов ученик снимает сам: это обращение к нему, и
                           гасить его должен человек, а не таймер. Метку
                           просмотра снимает преподаватель, закрыв чужой экран. */}
-                      {(calledBy != null || watchedBy != null || savedWord != null || blockedAudio != null) && (
+                      {(calledBy != null || watchedBy != null || savedWord != null || blockedAudio != null || classLedElsewhere) && (
                         <div className="lv-flags" role="status">
+                          {classLedElsewhere && (
+                            <span className="lv-flag lv-flag--led">{t('live.classLedByTeacher')}</span>
+                          )}
                           {calledBy != null && (
                             <span className="lv-flag lv-flag--call" key={callNonce}>
                               {t('live.calledOnYou')}

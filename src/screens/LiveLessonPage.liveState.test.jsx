@@ -156,6 +156,11 @@ async function renderAs(role, id) {
 const renderAsStudent = () => renderAs('STUDENT', 7)
 /** Преподаватель (id 6) того же занятия — в jts-web-app у него свой экран урока. */
 const renderAsTeacher = () => renderAs('TEACHER', 6)
+/** Админ (id 99): персонал, но не преподаватель этого занятия. */
+const renderAsAdmin = () => renderAs('ADMIN', 99)
+
+/** Пассивный признак «класс ведёт преподаватель» у вкладки, которая не ведёт. */
+const ledElsewhere = () => screen.queryByText('Класс ведёт преподаватель')
 
 /** Какой материал открыт в рамке. */
 function frameMaterial(container) {
@@ -696,6 +701,80 @@ describe('LiveLessonPage — преподаватель', () => {
 
     await bridge(presentEvent)
     expect(sendPresent).toHaveBeenCalledWith(12, [{ selector: '#a', eventType: 'click', value: null }])
+    expect(ledElsewhere()).toBeNull()
+  })
+
+  // Снимок может прийти раньше занятия, а кто его преподаватель, знает только
+  // ответ занятия: решение «ведёт» ждёт его.
+  it('состояние пришло раньше занятия — ведение восстанавливается, когда занятие известно', async () => {
+    const lesson = await api.getLessonById()
+    api.getLessonById.mockClear()
+    let answerLesson
+    api.getLessonById.mockImplementationOnce(() => new Promise((resolve) => { answerLesson = resolve }))
+    const { container } = await renderAsTeacher()
+
+    await connectWith(leadingAt(4, 12))
+    await act(async () => { answerLesson(lesson) })
+    await flush()
+
+    expect(frameMaterial(container)).toBe(12)
+    await bridge(presentEvent)
+    expect(sendPresent).toHaveBeenCalledWith(12, [{ selector: '#a', eventType: 'click', value: null }])
+  })
+
+  // Наблюдающий админ — не преподаватель занятия: «ведёт» из состояния ему не
+  // достаётся, иначе его вкладка отвечала бы на «догоните», слала стадию и
+  // тащила класс за своими переходами. Он видит признак, что класс ведут.
+  describe('«ведёт» из состояния — только преподавателю занятия на материале класса', () => {
+    it('админ после загрузки — показ не включается, признак виден', async () => {
+      const { container } = await renderAsAdmin()
+      await connectWith(leadingAt(3, 11))
+      const post = await loadFrame(container)
+
+      await bridge(presentEvent)
+      await act(async () => { socketHandlers.onCatchUp({ studentId: 7, materialId: 11 }) })
+
+      expect(sendPresent).not.toHaveBeenCalled()
+      expect(post).not.toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'request-snapshot' }, '*')
+      expect(ledElsewhere()).not.toBeNull()
+    })
+
+    it('админ: класс повели из другой вкладки — показ не включается, признак виден', async () => {
+      await renderAsAdmin()
+      await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
+      expect(ledElsewhere()).toBeNull()
+
+      await push(leadingAt(3, 11, { version: 2, focusSeq: 2 }))
+      await bridge(presentEvent)
+
+      expect(sendPresent).not.toHaveBeenCalled()
+      expect(ledElsewhere()).not.toBeNull()
+    })
+
+    it('преподаватель на другом материале — класс повели, показ не включается', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
+
+      await push(leadingAt(4, 12, { version: 2, focusSeq: 2 }))
+      await bridge(presentEvent)
+
+      expect(frameMaterial(container)).toBe(11)
+      expect(sendPresent).not.toHaveBeenCalled()
+      expect(ledElsewhere()).not.toBeNull()
+    })
+
+    // Своё «Внимание» работает у любого персонала, как раньше.
+    it('админ сам нажал «Внимание» — ведёт', async () => {
+      const { container } = await renderAsAdmin()
+      await connectWith(leadingAt(3, 11))
+
+      fireEvent.click(container.querySelector('.lw-focus-btn'))
+      await flush()
+      await bridge(presentEvent)
+
+      expect(sendPresent).toHaveBeenCalledWith(11, [{ selector: '#a', eventType: 'click', value: null }])
+      expect(ledElsewhere()).toBeNull()
+    })
   })
 
   // Вторая вкладка (или админка) отпустила класс — эта перестаёт транслировать.
