@@ -34,6 +34,9 @@ const TWO_MATERIALS = [
 // Раздел, прикреплённый уже после входа ученика, — его нет в первом списке.
 const LATE_SECTION = { id: 5, title: 'Новый', materials: [{ materialId: 15, title: 'A0 · Урок 07', materialType: 'LINK', fileUrl: 'https://files/course-catalog/a0/L07.html' }] }
 let sections = SECTIONS
+// Материалы, которые открываются шагами разбора (урок каталога), — по адресу
+// файла. null — у всех материалов файл, как у FILE-занятия.
+let catalogByUrl = null
 
 vi.mock('../api.js', () => ({
   getLessonById: vi.fn(async () => ({
@@ -87,8 +90,18 @@ vi.mock('./live/useLessonLiveSocket.js', () => ({
   }),
 }))
 
+vi.mock('./live/catalogLessonByUrl.js', () => ({
+  shouldResolveCatalogLesson: (url) => Boolean(catalogByUrl?.[url]),
+  catalogLessonIdFor: async (url) => url,
+  isStandaloneLessonUrl: () => false,
+}))
+vi.mock('./workspace/loadCatalogLesson.js', () => ({
+  loadCatalogLesson: async (id) => catalogByUrl?.[id] ?? null,
+}))
+
+// Шаг разбора на экране — по его id.
 vi.mock('./workspace/LessonContent.jsx', () => ({
-  default: () => <div data-testid="content" />,
+  default: ({ step }) => <div data-testid="content">{step?.id}</div>,
   practiceCardStats: () => ({ total: 0, current: 0 }),
 }))
 vi.mock('./live/LiveBoard.jsx', () => ({ default: () => <div data-testid="board" /> }))
@@ -181,6 +194,7 @@ beforeEach(() => {
   vi.setSystemTime(NOW)
   snapshot = null
   sections = SECTIONS
+  catalogByUrl = null
   socketHandlers = {}
   socketConnected = true
   sendCatchUp.mockReset()
@@ -526,6 +540,27 @@ describe('LiveLessonPage — ученик догоняет показ', () => {
     expect(oldPost).not.toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
     const post = await loadFrame(container)
     expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
+  })
+
+  // Снимок рамки преподавателя несёт весь поток до просьбы: живые события,
+  // накопленные, пока рамки класса у ученика не было, проигрались бы поверх
+  // него второй раз. Пришедшие после просьбы не трогаются.
+  it('гасит долг — накопленные до просьбы живые события не проигрываются поверх снимка', async () => {
+    const { container } = await renderAsStudent()
+    const click = (selector) => [{ selector, eventType: 'click', value: null }]
+    await act(async () => { socketHandlers.onPresent({ materialId: 12, events: click('#before') }) })
+
+    await connectWith(leadingAt(4, 12))
+    expect(sendCatchUp).toHaveBeenCalledWith(12)
+    await act(async () => { socketHandlers.onPresent({ materialId: 12, events: click('#snapshot') }) })
+    await act(async () => { socketHandlers.onPresent({ materialId: 12, events: click('#after') }) })
+    const post = await loadFrame(container)
+    await act(async () => { vi.advanceTimersByTime(1_000) })
+
+    const replayed = post.mock.calls
+      .filter(([m]) => m.type === 'present')
+      .flatMap(([m]) => m.events.map((e) => e.selector))
+    expect(replayed).toEqual(['#snapshot', '#after'])
   })
 
   // На доске рамки нет: погасить долг нечем. Он ждёт вкладки урока, где рамка
@@ -944,6 +979,31 @@ describe('LiveLessonPage — ученик уходит сам', () => {
     await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
 
     expect(post).toHaveBeenCalledWith(...gotoStage(2))
+  })
+
+  // Указка на шаг урока каталога, пришедшая, когда материал уже разобран, ждёт
+  // следующего разбора. Ушёл сам — она уже не его: иначе выбранный им материал
+  // открылся бы на шаге класса, а не там, где ученик стоял.
+  it('ушёл сам — ждущая указка на шаг не переезжает на выбранный им материал', async () => {
+    const steps = ['s1', 's2', 's3'].map((id) => ({ id, title: id, blocks: [] }))
+    catalogByUrl = {
+      [SECTIONS[0].materials[0].fileUrl]: { id: 'A', steps },
+      [SECTIONS[1].materials[0].fileUrl]: { id: 'B', steps },
+    }
+    const { container } = await renderAsStudent()
+    const shownStep = () => screen.getByTestId('content').textContent
+    await connectWith(leadingAt(3, 11, { stepId: 's2' }))
+    await push(leadingAt(3, 11, { version: 2, stepId: 's3' }))
+    expect(shownStep()).toBe('s3')
+    fireEvent.click(container.querySelector('.lw-stepnav__btn--ghost'))
+    await flush()
+    expect(shownStep()).toBe('s2')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Практика' }))
+    await flush()
+
+    expect(frameOf(container)).toBeNull()
+    expect(shownStep()).toBe('s2')
   })
 
   // Раздел класса ещё не знаком — страница перечитывает разделы. Пока ответа

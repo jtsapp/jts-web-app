@@ -303,10 +303,12 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // Ушёл сам (§4.3): смена позиции или стадии класса его больше не тянет,
   // тянет только новая указка. Рамка снова своя, а не страница следования: на
-  // ней ученик работает, и ответы сохраняются.
+  // ней ученик работает, и ответы сохраняются. Указка на шаг, ждущая разбора
+  // урока, — тоже переход с классом: на выбранный им материал она не переезжает.
   function leaveClass() {
     setFollowMode(false)
     followModeRef.current = false
+    pendingFocusStepRef.current = null
     stopFollowingClass()
   }
 
@@ -1622,6 +1624,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     if (!catchUp || catchUpSentRef.current === catchUp) return
     if (!frameOnScreen || !followMode || activeMaterialKey !== catchUp.materialId) return
     catchUpSentRef.current = catchUp
+    // Снимок рамки преподавателя несёт весь поток до этой просьбы: накопленное
+    // раньше проигралось бы поверх него второй раз.
+    pendingPresentRef.current = []
     sendCatchUp(catchUp.materialId)
   }, [catchUp, frameOnScreen, followMode, activeMaterialKey, sendCatchUp])
 
