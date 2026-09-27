@@ -746,6 +746,24 @@ describe('LiveLessonPage — преподаватель', () => {
     expect(sendPresent).toHaveBeenCalledWith(12, [{ selector: '#a', eventType: 'click', value: null }])
   })
 
+  // Решение ждёт занятия, но берёт состояние на момент его прихода, а не
+  // первое: отпущенный за это время класс вести нечего.
+  it('до занятия класс повели и отпустили — ведение не восстанавливается', async () => {
+    const lesson = await api.getLessonById()
+    api.getLessonById.mockClear()
+    let answerLesson
+    api.getLessonById.mockImplementationOnce(() => new Promise((resolve) => { answerLesson = resolve }))
+    await renderAsTeacher()
+
+    await connectWith(leadingAt(4, 12))
+    await push(liveState({ version: 2, focusSeq: 1, sectionId: 4, materialId: 12 }))
+    await act(async () => { answerLesson(lesson) })
+    await flush()
+    await bridge(presentEvent)
+
+    expect(sendPresent).not.toHaveBeenCalled()
+  })
+
   // Наблюдающий админ — не преподаватель занятия: «ведёт» из состояния ему не
   // достаётся, иначе его вкладка отвечала бы на «догоните», слала стадию и
   // тащила класс за своими переходами. Он видит признак, что класс ведут.
@@ -1328,6 +1346,25 @@ describe('LiveLessonPage — ученик уходит сам', () => {
     await teacherAt('s3')
 
     expect(shownStep()).toBe('s2')
+  })
+
+  // Включённый переключатель без ведения — не следование (§4.3 п.1: следует
+  // тот, кого застали за ведением): шаг неведущего преподавателя не тянет.
+  it('включил переключатель без ведения — шаг преподавателя не тянет', async () => {
+    const steps = ['s1', 's2', 's3'].map((id) => ({ id, title: id, blocks: [] }))
+    catalogByUrl = { [SECTIONS[0].materials[0].fileUrl]: { id: 'A', steps } }
+    const { container } = await renderAsStudent()
+    const shownStep = () => screen.getByTestId('content').textContent
+    await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
+    const toggle = container.querySelector('.ls-follow')
+    fireEvent.click(toggle)
+    fireEvent.click(toggle)
+    await flush()
+    expect(shownStep()).toBe('s1')
+
+    await act(async () => { socketHandlers.onStepProgress({ senderRole: 'TEACHER', senderUserId: 6, stepId: 's3' }) })
+
+    expect(shownStep()).toBe('s1')
   })
 
   // Нажатая своя же вкладка — не выбор другого материала.

@@ -183,8 +183,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Учитель: true после "Внимание на упражнение" - его дальнейшие действия
   // в материале транслируются студентам, пока он не уйдёт с раздела сам.
   const [presenting, setPresenting] = useState(false)
-  // Первое состояние занятия у персонала, пока не пришло само занятие.
-  const firstStaffStateRef = useRef(null)
+  // Восстановление места и ведения персонала ждёт занятия (restoreFromFirstState).
+  const staffRestorePendingRef = useRef(false)
   const materialFrameRef = useRef(null)
   // Present events that arrived before the follow iframe mounted / finished
   // loading (same race web-admin solves with pendingPresent).
@@ -884,8 +884,8 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // Собственные действия вкладки («Внимание», отпустить) — у любого персонала.
   function applyStaffLiveState(next, prev) {
     if (prev === null) {
-      firstStaffStateRef.current = next
-      restoreFromFirstState()
+      staffRestorePendingRef.current = true
+      restoreFromFirstState(next)
       return
     }
     if (prev.leading && !next.leading) {
@@ -902,11 +902,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   // Первое состояние ждёт занятия: кто его преподаватель, знает только ответ
-  // занятия, а он может прийти и позже снимка.
-  function restoreFromFirstState() {
-    const live = firstStaffStateRef.current
-    if (!live || !lesson) return
-    firstStaffStateRef.current = null
+  // занятия, а он может прийти и позже снимка. Применяется состояние на момент
+  // прихода занятия, а не первое: класс за это время могли отпустить.
+  function restoreFromFirstState(live) {
+    if (!staffRestorePendingRef.current || !live || !lesson) return
+    staffRestorePendingRef.current = false
     const placed = restoreClassPosition(live)
     const leads = Boolean(live.leading) && placed && isLessonTeacher
     setPresenting(leads)
@@ -963,7 +963,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
       return
     }
     setFollowTeacher(true)
-    followRef.current = { ...followRef.current, following: true }
+    // Следует тот, кого застали за ведением (§4.3 п.1): без ведения включённый
+    // переключатель ждёт указки, а шаги неведущего преподавателя не тянут.
+    followRef.current = { ...followRef.current, following: Boolean(liveState?.leading) }
     if (liveState?.leading) {
       setClassStage(classStageOf(liveState))
       goToClass(liveState, false)
@@ -1582,7 +1584,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   // только занятие известно (restoreFromFirstState).
   const lessonLoaded = lesson != null
   useEffect(() => {
-    if (isStaff) restoreFromFirstState()
+    if (isStaff) restoreFromFirstState(liveState)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStaff, lessonLoaded])
 
