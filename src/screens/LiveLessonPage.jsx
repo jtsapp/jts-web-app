@@ -279,6 +279,9 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   }
 
   function selectSection(sectionId) {
+    // Нажатый открытый раздел (вкладка или тема маршрута) — не уход с него:
+    // иначе он снимал бы следование ученика и отпускал класс у ведущего.
+    if (String(sectionId) === String(activeSectionId)) return
     setActiveSectionId(sectionId)
     // Материал выбирается заново: id из прошлого раздела в новом не найдётся,
     // и без сброса первый рендер сваливался бы на «первый по списку» молча.

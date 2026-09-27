@@ -163,6 +163,9 @@ function frameMaterial(container) {
   return Number(src.match(/materials\/(\d+)\//)?.[1] ?? NaN)
 }
 
+/** Открытая тема маршрута (у FILE-занятия без стадий — раздел). */
+const openTopic = (container) => container.querySelector('.lv-topics__btn[aria-current="step"]')
+
 /** Рамка на экране (или null — её нет: доска, шаги разбора). */
 const frameOf = (container) => container.querySelector('iframe.lw-material-iframe')
 
@@ -741,6 +744,18 @@ describe('LiveLessonPage — преподаватель', () => {
     expect(sendRelease).toHaveBeenCalledTimes(1)
   })
 
+  // Нажатый открытый раздел — не уход с него: ведение остаётся.
+  it('нажал открытый раздел при ведении — класс не отпускает', async () => {
+    const { container } = await renderAsTeacher()
+    await connectWith(leadingAt(3, 11))
+
+    fireEvent.click(openTopic(container))
+    await bridge(presentEvent)
+
+    expect(sendRelease).not.toHaveBeenCalled()
+    expect(sendPresent).toHaveBeenCalledWith(11, [{ selector: '#a', eventType: 'click', value: null }])
+  })
+
   it('без ведения переход на раздел ничего не шлёт', async () => {
     await renderAsTeacher()
     await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
@@ -1176,6 +1191,20 @@ describe('LiveLessonPage — ученик уходит сам', () => {
     const { container } = await renderAsStudent()
     await connectWith(leadingAt(3, 11, { stageIndex: 1 }))
     fireEvent.click(screen.getByRole('button', { name: 'A0 · Урок 05' }))
+    await flush()
+    const post = await loadFrame(container)
+    post.mockClear()
+
+    await push(leadingAt(3, 11, { version: 2, stageIndex: 2 }))
+
+    expect(post).toHaveBeenCalledWith(...gotoStage(2))
+  })
+
+  // Своя же вкладка раздела (или тема маршрута) — тоже не уход.
+  it('нажал открытый раздел — следует дальше', async () => {
+    const { container } = await renderAsStudent()
+    await connectWith(leadingAt(3, 11, { stageIndex: 1 }))
+    fireEvent.click(openTopic(container))
     await flush()
     const post = await loadFrame(container)
     post.mockClear()
