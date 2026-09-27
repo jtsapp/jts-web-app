@@ -20,8 +20,10 @@ from agent import (  # noqa: E402
     LearnerProfile,
     PERSONA_OPENER,
     PERSONA_OVERRIDE,
+    POST_CALL_MEMORY_TOOLS,
     SONIOX_TTS_VOICE,
     TUTOR_MOODS,
+    TutorAgent,
     OPENAI_BRAIN_FALLBACK,
     _brain_model_for,
     _is_openai_brain,
@@ -33,9 +35,11 @@ from agent import (  # noqa: E402
     _tts_speech_lang,
     build_greeting_hint,
     build_instructions,
+    drop_post_call_memory_tools,
     explanation_language_block,
     language_mode_block,
     persona_key,
+    slim_prompt_for_persona,
     tutor_session_lang,
 )
 
@@ -129,6 +133,34 @@ assert _brain_model_for("") == "jts-voice-router"
 os.environ["BRAIN_MODEL_AIZERE"] = "claude-haiku-4-5"
 assert _brain_model_for(AIZERE) == "claude-haiku-4-5", "откат без деплоя кода"
 os.environ.pop("BRAIN_MODEL_AIZERE", None)
+
+# --- тулы памяти у мозга на GPT ----------------------------------------------
+# GPT зовёт тул и говорит в РАЗНЫХ ответах — сначала немой круг, потом речь.
+# Темы и факты пишет выжимка звонка, поэтому log_topic/log_fact он не получает
+# ни в промпте, ни в списке тулов; ошибки и повторение остаются живыми.
+assert POST_CALL_MEMORY_TOOLS == {"log_topic", "log_fact"}
+full = slim_prompt_for_persona(build_instructions(_aizere(lang="kz", level="A2")), persona_key(AIZERE))
+assert "log_topic" in full and "log_fact" in full, "блок тулов на месте у всех, режем только GPT"
+cut = drop_post_call_memory_tools(full)
+assert cut != full, "разметка MEMORY_TOOLS_BLOCK поменялась — поправь drop_post_call_memory_tools"
+assert "log_topic" not in cut and "log_fact" not in cut
+assert "You have four tools" in cut and " - log_mistake(" in cut and " - log_resolved(" in cut
+assert " - log_review(" in cut and " - raise_safety_alert(" in cut
+assert drop_post_call_memory_tools("no tools block here") == "no tools block here"
+
+
+def _tool_names(agent):
+    return {t.info.name for t in agent.tools}
+
+
+kept = _tool_names(TutorAgent(instructions="x", device_id="d", api_url="https://e.invalid", tutor=AIZERE))
+assert {"log_topic", "log_fact", "log_mistake"} <= kept, "по умолчанию сессия получает все тулы"
+cut_tools = _tool_names(TutorAgent(
+    instructions="x", device_id="d", api_url="https://e.invalid", tutor=AIZERE,
+    skip_tools=POST_CALL_MEMORY_TOOLS,
+))
+assert not (cut_tools & POST_CALL_MEMORY_TOOLS)
+assert cut_tools == kept - POST_CALL_MEMORY_TOOLS, "режем ровно два тула, остальные на месте"
 
 # --- голос ------------------------------------------------------------------
 p = _aizere(lang="kz")

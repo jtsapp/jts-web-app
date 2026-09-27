@@ -1963,8 +1963,16 @@ class TutorAgent(Agent):
         tutor: str = "",
         moods_enabled: bool = False,
         speech_lang: str = "",
+        skip_tools: frozenset[str] = frozenset(),
     ):
         super().__init__(instructions=instructions)
+        # Тулы, которых у этой сессии нет (см. POST_CALL_MEMORY_TOOLS). Режем
+        # список Agent сразу после сборки: модель не должна их даже видеть.
+        if skip_tools:
+            self._tools = [
+                t for t in self._tools
+                if getattr(getattr(t, "info", None), "name", None) not in skip_tools
+            ]
         self._device_id = device_id
         self._api_url = api_url.rstrip("/")
         # Which structured scenario this call is running (for report_task_complete).
@@ -3386,6 +3394,42 @@ MEMORY_TOOLS_BLOCK = (
     "learner. NEVER quote what you logged. The tools are your private\n"
     "notebook, not a status update."
 )
+
+# Темы и факты в долгую память пишет выжимка звонка (src/lib/callSummary:
+# topic_log/fact_log по транскрипту, режимы free|placement), так что живые
+# log_topic/log_fact её дублируют. Мозгу на GPT этот дубль стоит паузы: GPT
+# кладёт тул и речь в РАЗНЫЕ ответы — сначала молча зовёт тул, потом говорит, а
+# Claude пишет текст первым и тул в конце. Замер 27.09.2026 (gpt-6-sol, промпт
+# Айзере, 22 хода с тулами агента): немой круг перед речью в 11 ходах из 22, из
+# них 10 — log_topic; без этих двух тулов — 4 из 22, ровно ходы с исправлением
+# ошибки (log_mistake поймал все 4). Просьба «сначала говори» GPT не лечит: он
+# тогда бросает тулы совсем. Ошибки и повторение остаются живыми —
+# интервального повторения выжимка не ведёт.
+POST_CALL_MEMORY_TOOLS = frozenset({"log_topic", "log_fact"})
+_MEMORY_TOOLS_HEAD_ALL = (
+    "You have six tools — log_mistake, log_topic, log_fact, log_resolved,\n"
+    "log_review and raise_safety_alert."
+)
+_MEMORY_TOOLS_HEAD_LIVE = (
+    "You have four tools — log_mistake, log_resolved, log_review and\n"
+    "raise_safety_alert. Topics and facts are captured from the transcript\n"
+    "after the call — there is nothing to log for them."
+)
+
+
+def drop_post_call_memory_tools(text: str) -> str:
+    """Убрать log_topic/log_fact из уже собранного промпта (POST_CALL_MEMORY_TOOLS).
+
+    Правит готовый текст, как slim_prompt_for_persona: MEMORY_TOOLS_BLOCK один на
+    всех тьюторов, а резать нужно только мозгу на GPT. Разметка блока не нашлась —
+    промпт как есть: самих тулов у сессии всё равно не будет, а test_aizere
+    поймает правку блока раньше, чем она доедет до звонка."""
+    start = text.find(" - log_topic(topic)\n")
+    end = text.find(" - log_resolved(corrected_form)\n")
+    if _MEMORY_TOOLS_HEAD_ALL not in text or start < 0 or end < start:
+        logger.warning("[tools] memory block markup changed — log_topic/log_fact stay in the prompt")
+        return text
+    return text[:start].replace(_MEMORY_TOOLS_HEAD_ALL, _MEMORY_TOOLS_HEAD_LIVE) + text[end:]
 
 
 def build_instructions(p: LearnerProfile) -> str:
@@ -6173,6 +6217,20 @@ async def entrypoint(ctx: JobContext):
     instructions = (
         slim_prompt_for_persona(instructions, persona_key(profile.tutor, profile.temper))
     )
+    # Мозг на GPT без живых log_topic/log_fact (см. POST_CALL_MEMORY_TOOLS). Только
+    # обычный урок: выжимка пишет темы и факты для режима free, а у сценариев,
+    # дебатов, проверки уровня и своих промптов (Джарвис, Buddy) блок тулов иной.
+    post_call_memory = (
+        profile.mode == "tutor"
+        and not (is_buddy or is_standalone)
+        and _is_openai_brain(_brain_model_for(profile.tutor))
+    )
+    if post_call_memory:
+        instructions = drop_post_call_memory_tools(instructions)
+        logger.info(
+            "[tools] %s left to the post-call summary (GPT brain, tutor=%s)",
+            "/".join(sorted(POST_CALL_MEMORY_TOOLS)), profile.tutor,
+        )
     if is_buddy:
         logger.info(
             "Speaking Buddy mode (KZ TEST = Dexter): %d chars; voice, STT, brain of %s",
@@ -6281,6 +6339,7 @@ async def entrypoint(ctx: JobContext):
         # Пусто → tts_node пропускает текст как есть (см. _pronunciation_lang:
         # гейт по провайдеру, чтобы не трогать живого Спарка на проде).
         speech_lang=_pronunciation_lang(buddy_voice_profile(profile)),
+        skip_tools=POST_CALL_MEMORY_TOOLS if post_call_memory else frozenset(),
     )
     # Enable Krisp background-voice + noise/echo cancellation when the plugin is
     # available (LiveKit Cloud). BVC isolates the learner's voice and cancels the
