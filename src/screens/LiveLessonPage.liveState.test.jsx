@@ -1023,6 +1023,43 @@ describe('LiveLessonPage — преподаватель', () => {
       expect(sendPresent.mock.calls).toEqual([[11, events, 7]])
     })
 
+    // «Внимание» перезагружает рамку, и через 500 мс она может ещё грузиться:
+    // запрос, ушедший в неё, пропал бы и на 5 с заглушил бы просьбы учеников.
+    it('«Внимание»: рамка ещё грузится — запрос снимка уходит после её загрузки', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))
+      fireEvent.click(container.querySelector('.lw-focus-btn'))
+      await flush()
+      const iframe = frameOf(container)
+      const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+      await act(async () => { vi.advanceTimersByTime(500) })
+      expect(requestsIn(post)).toBe(0)
+
+      await act(async () => { iframe.dispatchEvent(new Event('load')) })
+      await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
+      expect(requestsIn(post)).toBe(1)
+    })
+
+    // У доски рамки нет — спросить некого. Встань просьба в очередь, она заняла
+    // бы отсечку 3 с, и повторная, уже с рамкой на экране, осталась бы без ответа.
+    it('рамки нет (преподаватель у доски) — просьба в очередь не встаёт', async () => {
+      const { container } = await renderAsTeacher()
+      await connectWith(leadingAt(3, 11))
+      fireEvent.click(screen.getByRole('button', { name: 'Доска' }))
+      await flush()
+      await askCatchUp(7)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Урок' }))
+      await flush()
+      const post = await loadFrame(container)
+      await askCatchUp(7)
+      expect(requestsIn(post)).toBe(1)
+
+      await snapshotFromFrame()
+      expect(sendPresent.mock.calls).toEqual([[11, events, 7]])
+    })
+
     // Ответ новой страницы другого материала ждавшему про старый не нужен.
     it('смена материала — ждущие сброшены', async () => {
       sections = TWO_MATERIALS

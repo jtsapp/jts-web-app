@@ -1436,9 +1436,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
 
   // Ученик вошёл посреди показа и просит догнать класс — отвечаем снимком
   // своей рамки ему одному (handleBridgeSnapshot). Только пока ведём и только
-  // на том же материале: иначе снимок увёл бы его не туда.
+  // на том же материале: иначе снимок увёл бы его не туда. Рамки нет (доска,
+  // шаги разбора) — просьба в очередь не встаёт: она заняла бы отсечку и ждала
+  // ответа, которого не будет.
   function handleCatchUpRequest(evt) {
-    if (!isStaff || !presenting || evt.studentId == null) return
+    if (!isStaff || !presenting || evt.studentId == null || !materialFrameRef.current) return
     if (evt.materialId == null || evt.materialId !== activeMaterial?.materialId) return
     if (snapshotQueue.ask(evt.studentId, evt.materialId)) materialFrameRef.current?.requestSnapshot?.()
   }

@@ -147,7 +147,24 @@ describe('SectionMaterialFrame — стадия класса', () => {
 // ответом на просьбу, и странице надо знать, кому его отдать (классу или
 // одному догоняющему ученику).
 describe('SectionMaterialFrame — снимок и живой показ', () => {
+  afterEach(() => vi.useRealTimers())
+
   const message = (data) => act(async () => { window.dispatchEvent(new MessageEvent('message', { data })) })
+
+  // Запрос в рамку, которая ещё грузится, пропал бы молча, а очередь ответов
+  // ждала бы его до истечения.
+  it('запрос снимка до осадки рамки уходит после неё', async () => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame({ isStaff: true, presenting: true })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+
+    act(() => { ref.current.requestSnapshot() })
+    expect(post).not.toHaveBeenCalled()
+
+    await settle(iframe)
+    expect(post).toHaveBeenCalledTimes(1)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'request-snapshot' }, '*')
+  })
 
   it('снимок уходит в onSnapshot, живое действие — в onPresentEvent', async () => {
     const onSnapshot = vi.fn()

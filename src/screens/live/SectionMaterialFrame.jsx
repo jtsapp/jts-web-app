@@ -64,6 +64,12 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // hiddenStepIds || []), а null здесь однозначно читается как «нечего
   // накатывать при следующей загрузке».
   const pendingHiddenKeysRef = useRef(null)
+  // Запрос снимка, пришедший до осадки: слушателя на той стороне ещё нет, и
+  // сообщение пропало бы молча, а очередь ответов ждала бы его до истечения.
+  // Флаг, а не очередь — ответ один на любое число просьб. В сброс по смене
+  // документа не входит: ответ — поток, дошедший до рамки сейчас, и новая
+  // страница ответит на него так же, как ответила бы прежняя.
+  const snapshotRequestedRef = useRef(false)
   // Последняя стадия класса — для отправки после осадки, которая наступает уже
   // вне рендера (таймер в handleLoad).
   const stageRef = useRef(stage)
@@ -118,7 +124,11 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
       }
     },
     requestSnapshot() {
-      post({ type: 'request-snapshot' })
+      if (settledRef.current) {
+        post({ type: 'request-snapshot' })
+      } else {
+        snapshotRequestedRef.current = true
+      }
     },
     // Teacher watching a student review page: one live action (click/input/change/
     // scroll) arrived over the socket — replay it here so the teacher's own iframe
@@ -201,6 +211,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         pendingHiddenKeysRef.current = null
       }
       if (stageRef.current != null) postStage(stageRef.current)
+      if (snapshotRequestedRef.current) {
+        snapshotRequestedRef.current = false
+        post({ type: 'request-snapshot' })
+      }
     }, LOAD_SETTLE_MS)
   }
 
