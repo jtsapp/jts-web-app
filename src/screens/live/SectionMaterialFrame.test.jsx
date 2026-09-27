@@ -31,6 +31,12 @@ function message(data) {
   })
 }
 
+/** Рамка загрузилась и осела — теперь ей можно писать. */
+async function settle(iframe) {
+  await act(async () => { iframe.dispatchEvent(new Event('load')) })
+  await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
+}
+
 describe('SectionMaterialFrame — стадии файлового урока', () => {
   it('сообщение stage от рамки уходит наверх как {index, total}', async () => {
     const onStage = vi.fn()
@@ -87,11 +93,6 @@ describe('SectionMaterialFrame — стадия класса', () => {
   afterEach(() => vi.useRealTimers())
 
   const gotoStage = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index }, '*']
-
-  async function settle(iframe) {
-    await act(async () => { iframe.dispatchEvent(new Event('load')) })
-    await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
-  }
 
   it('до загрузки не шлёт, после осадки — шлёт', async () => {
     vi.useFakeTimers()
@@ -160,5 +161,45 @@ describe('SectionMaterialFrame — снимок и живой показ', () =>
     expect(onSnapshot).toHaveBeenCalledWith(events)
     expect(onPresentEvent).toHaveBeenCalledTimes(1)
     expect(onPresentEvent).toHaveBeenCalledWith([{ selector: '#b', eventType: 'input', value: 'x' }])
+  })
+})
+
+// Адрес рамки зависит не только от материала и перезагрузки: у ученика — от
+// страницы следования, у преподавателя — от ученика, чей экран он смотрит.
+// Сменилось любое из них — в рамке открывается новый документ, и отметки
+// загрузки прошлого к нему не относятся.
+describe('SectionMaterialFrame — новый документ в рамке', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
+
+  it('сменился ученик для просмотра — первая стадия снова отчёт об открытии', async () => {
+    const onStage = vi.fn()
+    const { rerender } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+    await stage(0)
+    await stage(2)
+
+    rerender(frame({ isStaff: true, reviewStudentId: 8, onStage }))
+    await stage(0)
+
+    expect(onStage).toHaveBeenLastCalledWith({ index: 0, total: 7 }, { opening: true })
+  })
+
+  // Поздний вход ученика включает страницу следования без перезагрузки: ответ
+  // на просьбу догнать класс, ушедший в прежний документ, пропал бы вместе с ним.
+  it('включилась страница следования — реплей ждёт загрузки новой страницы', async () => {
+    vi.useFakeTimers()
+    const { ref, container, rerender } = renderFrame({ follow: false })
+    await settle(container.querySelector('iframe'))
+
+    rerender(frame({ ref, follow: true }))
+    const followPage = container.querySelector('iframe')
+    const post = vi.spyOn(followPage.contentWindow, 'postMessage')
+    const events = [{ selector: '#a', eventType: 'click', value: null }]
+    act(() => { ref.current.replay(events) })
+    expect(post).not.toHaveBeenCalled()
+
+    await settle(followPage)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'present', events }, '*')
   })
 })

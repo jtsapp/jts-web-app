@@ -71,6 +71,18 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // вместе с загрузкой, а не в onLoad: мост шлёт начальную стадию, как только
   // в разметке появились стадии, — это может случиться раньше события load.
   const stageReportedRef = useRef(false)
+  // Какой документ открыт в рамке. Адрес зависит не только от материала и
+  // перезагрузки: у ученика — от страницы следования, у преподавателя — от
+  // ученика, чей экран он смотрит (studentId в адресе). Сменилось любое из них —
+  // браузер грузит новую страницу, и отметки загрузки прошлой к ней не
+  // относятся: иначе её стадия открытия считалась бы переходом, а реплей ушёл бы
+  // в перезагружающуюся страницу. Поэтому тот же ключ и у iframe, и у сброса ниже.
+  const documentKey = [
+    material?.id,
+    reloadToken || 0,
+    !isStaff && follow ? 'follow' : 'own',
+    isStaff ? (reviewStudentId ?? '') : '',
+  ].join(':')
 
   useEffect(() => {
     loadedRef.current = false
@@ -81,13 +93,13 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // конкретной загрузки (реплей событий учителя, потерявших смысл, если эта
     // рамка уже не досмотрит до конца), а тут — последнее известное состояние
     // «что сейчас скрыто», не привязанное к конкретному циклу загрузки. Если
-    // material/reloadToken сменились раньше, чем успел сработать onLoad
-    // предыдущей рамки, значение всё ещё правда и должно докатиться в
+    // документ сменился раньше, чем успел сработать onLoad предыдущего,
+    // значение всё ещё правда и должно докатиться в
     // СЛЕДУЮЩУЮ — родитель не обязан звать setHiddenKeys повторно только
     // потому что рамка перезагрузилась (эффект в LiveLessonPage.jsx висит на
     // hiddenStepIds, а не на reloadToken). Стереть его здесь — вернуть тот же
     // баг, который чинит этот ref, просто с другим триггером потери.
-  }, [material?.id, reloadToken])
+  }, [documentKey])
 
   // Стоит ПОСЛЕ сброса выше: сменились и стадия, и рамка в одном рендере —
   // сброс уже отметил рамку незагруженной, и стадия дождётся её загрузки.
@@ -275,7 +287,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
           ничего. */}
       <iframe
         ref={iframeRef}
-        key={`${material.id}-${reloadToken || 0}`}
+        key={documentKey}
         src={src}
         title={material.title}
         className="lw-material-iframe"

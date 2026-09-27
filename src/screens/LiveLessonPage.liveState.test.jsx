@@ -37,6 +37,9 @@ let sections = SECTIONS
 // Материалы, которые открываются шагами разбора (урок каталога), — по адресу
 // файла. null — у всех материалов файл, как у FILE-занятия.
 let catalogByUrl = null
+const STUDENT = { studentId: 7, studentName: 'Ученик', status: 'SCHEDULED' }
+// Состав занятия; групповые тесты добавляют второго ученика.
+let participants = [STUDENT]
 
 vi.mock('../api.js', () => ({
   getLessonById: vi.fn(async () => ({
@@ -49,7 +52,7 @@ vi.mock('../api.js', () => ({
     teacherName: 'Преподаватель',
     meetingUrl: null,
     durationMinutes: 60,
-    participants: [{ studentId: 7, studentName: 'Ученик', status: 'SCHEDULED' }],
+    participants,
   })),
   getLiveState: vi.fn(async () => snapshot),
   getLessonSections: vi.fn(async () => sections),
@@ -59,9 +62,10 @@ vi.mock('../api.js', () => ({
   getLessonMaterialProgress: vi.fn(async () => ({})),
   saveLessonMaterialProgress: vi.fn(async () => ({})),
   getLessonViewStages: vi.fn(async () => []),
-  // Страница следования (follow) и перезагрузка (_r) видны в адресе рамки.
-  lessonMaterialRenderUrl: (lessonId, materialId, token, { follow, forceReload } = {}) =>
-    `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render?follow=${follow ? 1 : 0}&_r=${forceReload ?? 0}`,
+  // Как у настоящего адреса: в нём страница следования (follow), перезагрузка
+  // (_r) и ученик, чей экран смотрит преподаватель (studentId).
+  lessonMaterialRenderUrl: (lessonId, materialId, token, { follow, forceReload, studentId } = {}) =>
+    `http://api.test/student/lessons/${lessonId}/materials/${materialId}/render?follow=${follow ? 1 : 0}&_r=${forceReload ?? 0}${studentId != null ? `&studentId=${studentId}` : ''}`,
   startLiveLesson: vi.fn(async () => ({})),
   pauseLiveLesson: vi.fn(async () => ({})),
   resumeLiveLesson: vi.fn(async () => ({})),
@@ -195,6 +199,7 @@ beforeEach(() => {
   snapshot = null
   sections = SECTIONS
   catalogByUrl = null
+  participants = [STUDENT]
   socketHandlers = {}
   socketConnected = true
   sendCatchUp.mockReset()
@@ -742,6 +747,26 @@ describe('LiveLessonPage — преподаватель', () => {
 
     fireEvent.click(container.querySelector('.lw-focus-btn'))
     await flush()
+    await frameStage(0)
+
+    expect(sendStage).not.toHaveBeenCalled()
+  })
+
+  // «Смотреть экран» другого ученика открывает в рамке его страницу, и она тоже
+  // сообщает стадию, на которой открылась. Прими её за переход — весь класс
+  // уехал бы на стадию 0.
+  it('ведёт и сменил ученика для просмотра — стадия открытия серверу не уходит', async () => {
+    participants = [STUDENT, { studentId: 8, studentName: 'Второй', status: 'SCHEDULED' }]
+    const { container } = await renderAsTeacher()
+    await connectWith(leadingAt(3, 11))
+    await frameStage(0)
+    await frameStage(2)
+    sendStage.mockClear()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Группа' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Смотреть экран' })[1])
+    await flush()
+    expect(frameOf(container).getAttribute('src')).toContain('studentId=8')
     await frameStage(0)
 
     expect(sendStage).not.toHaveBeenCalled()
