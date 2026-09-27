@@ -22,6 +22,27 @@ export function maskLength(durationSec, stepMs = MASK_STEP_MS) {
   return Math.ceil((d * 1000) / stepMs)
 }
 
+/**
+ * Отмечает в маске пения отрезок клеток, который трек прошёл за один замер VAD.
+ *
+ * Клетка маски — это 50 мс ТРЕКА, а замеры идут по стенным часам. Пока
+ * скорость равна единице, одно совпадает с другим, но на 1,25× позиция за
+ * замер уходит на 62 мс, и каждая пятая клетка осталась бы нулевой у того,
+ * кто пел не замолкая. По маске считаются и ритм, и покрытие, то есть дырка в
+ * ней — это заниженный балл на ровном месте.
+ *
+ * `prev` < 0 (первый замер, пауза, перемотка назад) или разрыв больше
+ * `maxSpan` клеток (перемотка вперёд, подвисание на буферизации) — красим
+ * только текущую клетку: музыка в этом промежутке не играла, и домысливать
+ * там пение нельзя.
+ */
+export function markSpan(mask, prev, idx, maxSpan = 8) {
+  if (!mask || !Number.isInteger(idx) || idx < 0 || idx >= mask.length) return
+  const gap = idx - prev
+  const from = prev >= 0 && gap > 0 && gap <= maxSpan ? prev + 1 : idx
+  for (let i = Math.max(0, from); i <= idx; i++) mask[i] = 1
+}
+
 /** Эталонная маска: единицы там, где по разметке звучит строка. */
 export function referenceMask(lines, durationSec, stepMs = MASK_STEP_MS) {
   const len = maskLength(durationSec, stepMs)

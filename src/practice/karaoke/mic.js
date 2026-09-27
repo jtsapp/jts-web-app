@@ -13,7 +13,7 @@
 // написано на экране запроса разрешения, поэтому нарушать его нельзя.
 
 import { blobToWav16kMono } from '../../lib/ielts-audio.js'
-import { MASK_STEP_MS, maskLength } from './scoring.js'
+import { MASK_STEP_MS, maskLength, markSpan } from './scoring.js'
 
 export function isMicSupported() {
   if (typeof window === 'undefined') return false
@@ -152,6 +152,10 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
   // соседу. В маску это легло бы на одну и ту же клетку (позиция не движется),
   // но в запись — целиком, и распознавание приписало бы болтовню к песне.
   let paused = false
+  // Клетка маски прошлого замера: по ней markSpan закрашивает всё, что трек
+  // успел пройти между замерами (на скорости ≠ 1× это больше одной клетки).
+  // −1 — «предыдущей клетки нет»: старт, пауза, перемотка.
+  let lastIdx = -1
 
   const timer = setInterval(() => {
     if (paused) return
@@ -165,7 +169,8 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
     level = Math.min(1, rms / (threshold * 4))
     const pos = positionSec()
     const idx = Math.floor((pos * 1000) / stepMs)
-    if (voiced && idx >= 0 && idx < mask.length) mask[idx] = 1
+    if (voiced) markSpan(mask, lastIdx, idx)
+    lastIdx = idx
   }, stepMs)
 
   // Запись всего дубля. Битрейт занижен намеренно: 16 кГц моно WAV после
@@ -192,6 +197,9 @@ export async function startTake({ stream, durationSec, positionSec, ctx: given, 
       paused = true
       level = 0
       voicedNow = false
+      // Между паузой и продолжением трек стоит, а в маске это выглядело бы
+      // разрывом, который markSpan закрасил бы как спетое.
+      lastIdx = -1
       try {
         if (recorder?.state === 'recording') recorder.pause()
       } catch {

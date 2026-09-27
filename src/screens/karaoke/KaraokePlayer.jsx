@@ -52,12 +52,34 @@ import { CloseIco, MicIco, Replay5Ico, Forward5Ico, PlayCircleIco, ReplayIco } f
 // пару секунд, в конце — её собственное совпадение вместо разбора песни.
 
 const SEEK_STEP = 5
+// Ступени скорости. Шире брать нельзя: ниже 0,5× Chrome глушит звук совсем, а
+// уже на 0,5× растяжка с сохранением высоты тона начинает булькать — петь под
+// такое невозможно. 0,75× хватает, чтобы успеть за быстрым куплетом.
+const RATES = [0.75, 1, 1.25]
 // Высоты полосок в покое — ровно рисунок из макета, чтобы плашка не
 // схлопывалась в линию до старта и в паузах.
 const IDLE_BARS = [10, 18, 26, 14, 30, 22, 12, 24, 16, 8, 20, 28].map((h) => ({ h, on: false }))
 
+/**
+ * Ставит скорость на фонограмму.
+ *
+ * Зовётся не только на смену ступени, но и на каждый новый файл: браузер
+ * сбрасывает `playbackRate` в единицу при смене `src`, а её здесь меняет
+ * тумблер «Минус» — без этого вызова замедление слетало бы при переключении
+ * на минусовку.
+ */
+function applyRate(audio, rate) {
+  if (!audio) return
+  audio.playbackRate = rate
+  // Растяжка с сохранением высоты тона. Во всех современных браузерах она и
+  // так включена по умолчанию, но Safari до 17 знает только webkit-имя, а без
+  // неё замедленная песня звучит ниже тоном — подпевать такому нельзя.
+  audio.preservesPitch = true
+  audio.webkitPreservesPitch = true
+}
+
 /** Разбор дубля целиком: метрики, медаль, строки для повтора. */
-function buildResult({ lines, duration, mask, sungSec, text, instrumental }) {
+function buildResult({ lines, duration, mask, sungSec, text, instrumental, offRate }) {
   const ref = referenceMask(lines, duration)
   const rhythm = rhythmScore(ref, mask)
   const { score: coverage, perLine } = coverageScore(lines, mask)
@@ -98,6 +120,10 @@ function buildResult({ lines, duration, mask, sungSec, text, instrumental }) {
     missed: missedSpan(perLine, lines),
     hard,
     repeat,
+    // Дубль на нестандартной скорости: балл показываем, но в рекорд трека он
+    // не идёт — замедлившись, петь заметно легче, и «Лучший: N» в каталоге
+    // перестал бы что-либо значить.
+    offRate,
   }
 }
 
@@ -110,6 +136,11 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   // ready → calibrating → run ⇄ paused → scoring
   const [phase, setPhase] = useState('ready')
   const [micOn, setMicOn] = useState(() => isMicSupported())
+  // Режим без оценки: петь под музыку, не отдавая ни микрофона, ни записи.
+  // Отдельно от `micOn` — тот про устройство («микрофон занят, выключу»), а
+  // этот про то, чем заканчивается песня: разбором или ничем.
+  const [scored, setScored] = useState(true)
+  const [rate, setRate] = useState(1)
   const [instrumental, setInstrumental] = useState(false)
   const [pos, setPos] = useState(from)
   const [voiced, setVoiced] = useState(false)
@@ -125,6 +156,9 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   // маска с подсветкой прыгнули бы в начало песни. Держим позицию здесь.
   const swapRef = useRef(null)
   const vocalUsedRef = useRef(false)
+  // Скорость меняют на ходу, поэтому пометку «не в рекорд» ставим один раз за
+  // дубль: вернуть ползунок на 1× в конце песни и получить рекорд нельзя.
+  const offRateRef = useRef(false)
   const finishingRef = useRef(false)
   // Номер запуска: выход или «Начать заново» посреди калибровки не должен
   // дать старому start() доиграть до play() — он сверяет номер после каждого
@@ -134,6 +168,15 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   const trackElRef = useRef(null)
 
   const src = instrumental && track.instrumentalUrl ? track.instrumentalUrl : track.audioUrl
+  // Микрофон включаем, только если он и разрешён устройством, и нужен режиму.
+  // «Повторить строку» — всегда с оценкой: ради неё туда и приходят.
+  const useMic = micOn && (scored || Boolean(range))
+
+  // Скорость живёт на элементе, а не в React: возвращаем её после каждого
+  // рендера, где она могла поменяться, — и после смены файла (см. onMeta).
+  useEffect(() => {
+    applyRate(audioRef.current, rate)
+  }, [rate, src])
 
   // Свежие обработчики для requestAnimationFrame и клавиатуры: подписки
   // живут дольше одного рендера и звали бы замыкание с устаревшим состоянием.
@@ -243,6 +286,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
         // иначе его можно было бы получить, спев всё под певца и щёлкнув
         // тумблер на последней строке.
         instrumental: Boolean(track.instrumentalUrl) && !vocalUsedRef.current,
+        offRate: offRateRef.current,
       }),
     )
   }
@@ -258,9 +302,9 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
     // разрешения на микрофон и полторы секунды калибровки, и к настоящему
     // play() жест уже не будет засчитан: в Safari трек просто не запускался.
     unlockPlayback(audio)
-    const ctx = micOn ? createAudioContext() : null
+    const ctx = useMic ? createAudioContext() : null
 
-    if (micOn) {
+    if (useMic) {
       if (!isMicSupported()) {
         setNote(t('karaoke.micUnsupported'))
         ctx?.close?.().catch(() => {})
@@ -286,6 +330,8 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
       takeRef.current = take
     }
     vocalUsedRef.current = !(instrumental && track.instrumentalUrl)
+    offRateRef.current = rate !== 1
+    applyRate(audio, rate)
     audio.currentTime = from
     setPos(from)
     setPhase('run')
@@ -365,10 +411,19 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
     setInstrumental((v) => !v)
   }
 
+  const cycleRate = () => {
+    const next = RATES[(RATES.indexOf(rate) + 1) % RATES.length]
+    if (next !== 1) offRateRef.current = true
+    setRate(next)
+  }
+
   // Новый файл фонограммы встал — возвращаемся туда, где пели.
   const onMeta = () => {
-    const s = swapRef.current
     const a = audioRef.current
+    // Скорость у нового файла своя, дефолтная: ставим её до всего остального,
+    // иначе первые секунды минусовки играли бы на 1×.
+    applyRate(a, rate)
+    const s = swapRef.current
     if (!s || !a) return
     a.currentTime = s.time
     swapRef.current = null
@@ -438,7 +493,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
   const pct = duration ? `${(Math.min(pos, duration) / duration) * 100}%` : '0%'
   const inLine = lineAt(lines, pos) >= 0
   const status = (() => {
-    if (!micOn) return { text: t('karaoke.st.noMic'), tone: 'mute' }
+    if (!useMic) return { text: t('karaoke.st.noMic'), tone: 'mute' }
     if (phase === 'calibrating') return { text: t('karaoke.st.calibrating'), tone: 'mute' }
     if (phase === 'scoring') return { text: t('karaoke.scoring'), tone: 'mute' }
     if (phase === 'run' || phase === 'paused') {
@@ -448,7 +503,10 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
     return { text: t('karaoke.st.ready'), tone: 'mute' }
   })()
   const live = phase === 'run' || phase === 'paused'
-  const showPrivacy = phase === 'ready' && micOn && !note && doc && !failed
+  const showPrivacy = phase === 'ready' && useMic && !note && doc && !failed
+  // Десятичная запятая — в ru и kk, точка — в en. Intl сюда тащить незачем:
+  // значений всего три.
+  const rateLabel = lang === 'en' ? String(rate) : String(rate).replace('.', ',')
 
   const passed = linesPassed(lines, pos)
   const pauseMeta = `${t(`karaoke.pause.sung.${pluralForm(passed, lang)}`, { n: passed, total: lines.length })} · ${t(
@@ -479,6 +537,26 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
             {track.artist && <span className="kk-top__artist">{track.artist}</span>}
           </span>
         </div>
+        {/* «Повторить строку» приходит с экрана результата за новым
+            совпадением — там режим без оценки бессмыслен. */}
+        {!range && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={!scored}
+            className="kk-pill kk-top__free"
+            onClick={() => {
+              setNote('')
+              setScored((v) => !v)
+            }}
+            disabled={phase !== 'ready'}
+            title={scored ? t('karaoke.freeOnHint') : t('karaoke.freeOffHint')}
+          >
+            <b>{t('karaoke.free')}</b>
+            <span className="kk-top__freeSub">{t('karaoke.freeShort')}</span>
+            <span className="kk-sw" aria-hidden="true" />
+          </button>
+        )}
         {track.instrumentalUrl && (
           <button
             type="button"
@@ -496,13 +574,15 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
         <button
           type="button"
           role="switch"
-          aria-checked={micOn}
+          aria-checked={useMic}
           className="kk-pill kk-top__mic"
           onClick={() => {
             setNote('')
             setMicOn((v) => !v)
           }}
-          disabled={phase !== 'ready' || Boolean(range)}
+          // В режиме без оценки микрофон не нужен вовсе — тумблер гаснет
+          // следом, чтобы не обещать записи там, где её не будет.
+          disabled={phase !== 'ready' || Boolean(range) || !scored}
           // Имя — явно: на телефоне подпись скрыта, и без него экранный
           // диктор читал бы подсказку из title.
           aria-label={t('karaoke.mic')}
@@ -555,7 +635,7 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
           <div className="kk-ctl__left">
             <div className={`kk-live kk-live--${status.tone}`} aria-live="polite">
               <MicIco size={18} />
-              {micOn && (
+              {useMic && (
                 <span className="kk-live__bars" aria-hidden="true">
                   {(live ? bars : IDLE_BARS).map((b, i) => (
                     <i key={i} style={{ height: b.h }} className={b.on ? 'is-on' : ''} />
@@ -567,6 +647,15 @@ export default function KaraokePlayer({ track, doc, failed, range, onResult, onL
           </div>
 
           <div className="kk-ctl__center">
+            <button
+              type="button"
+              className={rate === 1 ? 'kk-round kk-speed' : 'kk-round kk-speed is-off'}
+              onClick={cycleRate}
+              disabled={!doc || failed || phase === 'scoring'}
+              aria-label={t('karaoke.speed', { rate: rateLabel })}
+            >
+              {rateLabel}×
+            </button>
             <button
               type="button"
               className="kk-round"
