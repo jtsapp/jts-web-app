@@ -136,21 +136,14 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
   })
 
   // Переход идёт через рамку, а не через своё состояние: скрипт кликает рельс
-  // стадий в файле, и этот же клик зеркалом уходит преподавателю. Рамка должна
-  // осесть — в грузящуюся goto-stage пропал бы.
-  it('клик по стадии шлёт осевшей рамке goto-stage', async () => {
+  // стадий в файле, и этот же клик зеркалом уходит преподавателю. Движок файла
+  // должен быть готов — он сообщает об этом первой стадией документа.
+  it('клик по стадии шлёт готовой рамке goto-stage', async () => {
     const { container, getByRole } = await renderAsStudent()
-    // Динамически, как и сама страница: статический импорт рамки поднял бы мок
-    // api.js раньше getLessonViewStages, на который он ссылается.
-    const { LOAD_SETTLE_MS } = await import('./live/SectionMaterialFrame.jsx')
     const iframe = container.querySelector('iframe.lw-material-iframe')
-    vi.useFakeTimers()
-    try {
-      await act(async () => { iframe.dispatchEvent(new Event('load')) })
-      await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
-    } finally {
-      vi.useRealTimers()
-    }
+    await act(async () => {
+      window.dispatchEvent(new MessageEvent('message', { data: { source: 'jts-lesson', type: 'stage', index: 0, total: 6 } }))
+    })
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     fireEvent.click(getByRole('button', { name: 'Listening' }))
     expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')

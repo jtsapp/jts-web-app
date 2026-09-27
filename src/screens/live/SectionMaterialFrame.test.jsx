@@ -4,7 +4,7 @@
 // наверх, переход на стадию уходит вниз — тем же контрактом, что у рабочей
 // области преподавателя в web-admin (см. lessonStages.js).
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { createRef } from 'react'
+import { createRef, useLayoutEffect } from 'react'
 import { render, act } from '@testing-library/react'
 import { I18nProvider } from '../../i18n.jsx'
 import SectionMaterialFrame, { LOAD_SETTLE_MS } from './SectionMaterialFrame.jsx'
@@ -57,15 +57,13 @@ describe('SectionMaterialFrame — стадии файлового урока', 
   })
 
   it('gotoStage шлёт осевшей рамке goto-stage от имени рабочей области', async () => {
-    vi.useFakeTimers()
     const { ref, iframe } = renderFrame()
-    await settle(iframe)
+    await message({ source: 'jts-lesson', type: 'stage', index: 0, total: 7 })
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     act(() => {
       ref.current.gotoStage(4)
     })
     expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')
-    vi.useRealTimers()
   })
 })
 
@@ -126,24 +124,86 @@ describe('SectionMaterialFrame — стадия как действие преп
 
   // До осадки goto-stage пропал бы, а признак остался бы стоять — и своей
   // посчиталась бы стадия открытия новой страницы.
-  it('свой переход до осадки отложен; стадия открытия — не его, стадия перехода — его', async () => {
+  // Осела для своего перехода = движок сообщил первую стадию документа (как в
+  // web-admin): его слушатель goto-stage уже стоит.
+  it('свой переход до осадки отложен до первой стадии документа; стадия открытия — не его', async () => {
     vi.useFakeTimers()
     const onStage = vi.fn()
     const { ref, container, rerender } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
     await settle(container.querySelector('iframe'))
+    await stage(0)
 
     rerender(frame({ ref, isStaff: true, reviewStudentId: 8, onStage }))
     const fresh = container.querySelector('iframe')
     const post = vi.spyOn(fresh.contentWindow, 'postMessage')
     act(() => { ref.current.gotoStage(4) })
     expect(post).not.toHaveBeenCalled()
-    await stage(0)
 
-    await settle(fresh)
+    await stage(0)
     expect(post).toHaveBeenCalledWith(...goto(4))
     await stage(4)
 
-    expect(ownFlags(onStage)).toEqual([false, true])
+    expect(ownFlags(onStage)).toEqual([false, false, true])
+  })
+
+  it('отложенный свой переход уходит, даже если рамка уже на этой стадии', async () => {
+    const { ref, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    act(() => { ref.current.gotoStage(0) })
+
+    await stage(0)
+
+    expect(post).toHaveBeenCalledWith(...goto(0))
+  })
+
+  // Отложенный переход — для страницы, на которой его выбрали: новой (другой
+  // ученик, другой материал) он не указ.
+  it('отложенный свой переход сбрасывается со сменой документа', async () => {
+    vi.useFakeTimers()
+    const { ref, container, rerender } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    act(() => { ref.current.gotoStage(4) })
+
+    rerender(frame({ ref, isStaff: true, reviewStudentId: 7, reloadToken: 1 }))
+    const fresh = container.querySelector('iframe')
+    const post = vi.spyOn(fresh.contentWindow, 'postMessage')
+    await stage(0)
+    await settle(fresh)
+
+    expect(post).not.toHaveBeenCalledWith(...goto(4))
+  })
+
+  it.each([
+    ['доводка, потом свой', (frameRef) => { frameRef.restoreStage(3); frameRef.gotoStage(4) }],
+    ['свой, потом доводка', (frameRef) => { frameRef.gotoStage(4); frameRef.restoreStage(3) }],
+  ])('свой переход важнее доводки (%s)', async (_, request) => {
+    vi.useFakeTimers()
+    const { ref, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7 })
+    const post = vi.spyOn(iframe.contentWindow, 'postMessage')
+    act(() => { request(ref.current) })
+
+    await stage(0)
+    await settle(iframe)
+
+    expect(post).toHaveBeenCalledWith(...goto(4))
+    expect(post).not.toHaveBeenCalledWith(...goto(3))
+  })
+
+  // Мост передаёт синтетический клик по рельсу наверх и после своего перехода:
+  // это тот же отголосок, что у доводки. Стадию классу отдаёт сам переход.
+  it('отголосок своего перехода признак не взводит и дальше не идёт', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const onPresentEvent = vi.fn()
+    const { ref } = renderFrame({ isStaff: true, presenting: true, reviewStudentId: 7, onStage, onPresentEvent })
+    await stage(0)
+
+    act(() => { ref.current.gotoStage(4) })
+    await stage(4)
+    await presentEvent()
+    await stage(5)
+
+    expect(ownFlags(onStage)).toEqual([false, true, false])
+    expect(onPresentEvent).not.toHaveBeenCalled()
   })
 
   it('новый документ в рамке — взведённый признак сброшен', async () => {
@@ -315,6 +375,42 @@ describe('SectionMaterialFrame — новый документ в рамке', (
     await stage(0)
 
     expect(onStage).toHaveBeenLastCalledWith({ index: 0, total: 7 }, { own: false })
+  })
+
+  // Новая страница может загрузиться раньше, чем отработают эффекты рендера:
+  // сброс по смене документа тогда снял бы уже её таймер осадки, и рамка не
+  // осела бы никогда. Поэтому сброс — в эффекте раскладки, до событий браузера.
+  it('load новой страницы до эффектов рендера не теряет её осадку', async () => {
+    vi.useFakeTimers()
+    // Обёртка грузит новую страницу из своего эффекта раскладки: он идёт после
+    // эффектов раскладки рамки, но раньше всех обычных эффектов.
+    let loadEarly = null
+    function LoadsEarly({ children }) {
+      useLayoutEffect(() => { loadEarly?.() })
+      return children
+    }
+    const ref = createRef()
+    const view = (reloadToken) => (
+      <I18nProvider>
+        <LoadsEarly>
+          <SectionMaterialFrame ref={ref} lessonId={14} token="t" material={MATERIAL} isStaff={false} follow reloadToken={reloadToken} />
+        </LoadsEarly>
+      </I18nProvider>
+    )
+    const { container, rerender } = render(view(0))
+    await settle(container.querySelector('iframe'))
+
+    loadEarly = () => {
+      loadEarly = null
+      container.querySelector('iframe').dispatchEvent(new Event('load'))
+    }
+    act(() => { rerender(view(1)) })
+    const fresh = container.querySelector('iframe')
+    const post = vi.spyOn(fresh.contentWindow, 'postMessage')
+    await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
+    act(() => { ref.current.setHiddenKeys(['s1']) })
+
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'hidden-blocks', keys: ['s1'] }, '*')
   })
 
   // Таймер осадки прошлой страницы, сработав уже после смены документа, отметил
