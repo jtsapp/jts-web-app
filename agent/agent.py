@@ -5010,10 +5010,30 @@ def _tts_provider_for(profile: LearnerProfile) -> str:
 # и первый токен медианой 1.3 с против 0.7 с — отчасти это съедает разговорная
 # v3 в озвучке. Спарк остаётся на Haiku: переводить живого тьютора без его
 # собственного замера нельзя.
+#
+# 27.09.2026 Айзере переехала на GPT-6 Sol. Тот же стенд на промпте develop
+# (с #506), 22 ответа на модель, тот же судья вслепую: ошибок в казахских
+# формах на ответ Haiku 3.27, Sonnet 5 0.68, GPT-6 Luna 0.45, GPT-6 Sol 0.09;
+# естественность 2.55 / 4.00 / 4.23 / 4.41. Luna не взяли из-за хвоста: 4
+# первых токена из 22 позже 3 с, худший 7 с — для голоса это обрыв разговора.
+# У Sol медиана 1.05 с против 1.15 у Sonnet (замер из КЗ, только относительный).
 TUTOR_BRAIN_MODEL = {
-    "aizere": "claude-sonnet-5",
+    "aizere": "gpt-6-sol",
 }
 DEFAULT_BRAIN_MODEL = "jts-voice-router"
+# Во что откатываться, если модель OpenAI выбрана, а ключа у воркера нет:
+# лучший казахский из того, что умеет шим.
+OPENAI_BRAIN_FALLBACK = "claude-sonnet-5"
+
+
+def _is_openai_brain(model: str) -> bool:
+    """Модели OpenAI агент зовёт НАПРЯМУЮ, мимо шима /api/voice/brain: шим
+    переводит OpenAI-запрос в Anthropic и других провайдеров не знает. Мимо шима
+    теряются только его подпорки под Claude — «пинок» для приветствия (Anthropic
+    не отвечает на диалог без реплики пользователя, OpenAI отвечает) и замена
+    пустого ответа; проверено плагином 1.6.7 на gpt-6-sol: приветствие, обычный
+    ход и вызов инструмента проходят."""
+    return (model or "").strip().lower().startswith("gpt-")
 
 
 def _brain_model_for(tutor: str) -> str:
@@ -5684,14 +5704,32 @@ def build_cascade_session(
     # который выдал токен (см. _resolve_api_url): дев не должен писать в прод.
     # VOICE_BRAIN_URL не задан → всё как было, один адрес на оба дела.
     brain_model = _brain_model_for(profile.tutor)
-    if brain_model != DEFAULT_BRAIN_MODEL:
-        logger.info("[brain] model %s for tutor=%s", brain_model, profile.tutor)
-    llm = lk_openai.LLM(
-        base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
-        api_key=brain_key or "unset",
-        model=brain_model,
-        temperature=persona_temperature,
-    )
+    openai_key = _openai_api_key() if _is_openai_brain(brain_model) else ""
+    if _is_openai_brain(brain_model) and not openai_key:
+        logger.error(
+            "[brain] %s needs OPENAI_API_KEY — falling back to %s via the shim",
+            brain_model, OPENAI_BRAIN_FALLBACK,
+        )
+        brain_model = OPENAI_BRAIN_FALLBACK
+    if openai_key:
+        # reasoning_effort="none": рассуждения перед первым токеном — это
+        # секунды тишины в звонке, а замер выше снят именно в этом режиме.
+        logger.info("[brain] direct OpenAI %s for tutor=%s", brain_model, profile.tutor)
+        llm = lk_openai.LLM(
+            model=brain_model,
+            api_key=openai_key,
+            temperature=persona_temperature,
+            reasoning_effort="none",
+        )
+    else:
+        if brain_model != DEFAULT_BRAIN_MODEL:
+            logger.info("[brain] model %s for tutor=%s", brain_model, profile.tutor)
+        llm = lk_openai.LLM(
+            base_url=f"{(brain_url or api_url).rstrip('/')}/api/voice/brain",
+            api_key=brain_key or "unset",
+            model=brain_model,
+            temperature=persona_temperature,
+        )
     tts = _cascade_tts(profile)
     # Silero остаётся источником речевой активности в обоих режимах. Детектору
     # он тоже нужен: инференс запрашивается не раньше, чем накопится 200мс
