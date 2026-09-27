@@ -11,7 +11,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, act, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
-import { LOAD_SETTLE_MS } from './live/SectionMaterialFrame.jsx'
 
 let socketHandlers = {}
 let sectionsFixture = []
@@ -141,6 +140,9 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
   // осесть — в грузящуюся goto-stage пропал бы.
   it('клик по стадии шлёт осевшей рамке goto-stage', async () => {
     const { container, getByRole } = await renderAsStudent()
+    // Динамически, как и сама страница: статический импорт рамки поднял бы мок
+    // api.js раньше getLessonViewStages, на который он ссылается.
+    const { LOAD_SETTLE_MS } = await import('./live/SectionMaterialFrame.jsx')
     const iframe = container.querySelector('iframe.lw-material-iframe')
     vi.useFakeTimers()
     try {
