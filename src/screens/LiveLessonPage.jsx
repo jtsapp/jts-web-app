@@ -45,8 +45,11 @@ const PAUSE_MINUTES = 5
 const MESSAGE_POLL_MS = 5000
 // Шапка занятия (ссылка на звонок, тема, состав) — опросом раз в 30 с. Статус
 // приходит состоянием занятия сразу, ждать опроса ему не нужно (спека
-// live-lesson-server-state §2 п.6).
+// live-lesson-server-state §2 п.6). Пока сокет лежит или состояния ещё нет,
+// статус берётся из опроса — и опрос идёт раз в 5 с, как до состояния занятия
+// (решение владельца 28.09).
 const LESSON_POLL_MS = 30000
+const LESSON_POLL_NO_STATE_MS = 5000
 // Просьбы одного ученика про один материал чаще раза в 3 с не обслуживаются, а
 // запрос снимка без ответа рамки истекает через 5 с (snapshotQueue.js).
 const CATCH_UP_COOLDOWN_MS = 3000
@@ -115,7 +118,6 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   const isStaff = canControl(role)
   const { roster, connected } = useLessonPresence(lessonId, token)
   const onlineUserIds = useMemo(() => new Set(roster.map((p) => p.userId)), [roster])
-  const pollRef = useRef(null)
 
   // --- Разделы урока ("Маршрут урока") + материал активного раздела -------
   const [sections, setSections] = useState([])
@@ -1550,19 +1552,22 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
   useEffect(() => {
     if (!lessonId || !token) return undefined
     load()
-    // Статус приходит состоянием занятия; опрос остаётся только шапке — ссылка
-    // на звонок, тема, состав класса меняются редко.
-    if (!isStaff) {
-      pollRef.current = setInterval(() => {
-        getLessonById(token, lessonId).then((d) => {
-          setLesson((prev) => (sameLessonSnapshot(prev, d) ? prev : d))
-          setState((s) => (s === 'ready' ? s : 'ready'))
-        }).catch(() => {})
-      }, LESSON_POLL_MS)
-    }
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, token, isStaff])
+  }, [lessonId, token])
+
+  // Статус приходит состоянием занятия; пока оно живо, опрос нужен только
+  // шапке — ссылка на звонок, тема, состав класса меняются редко.
+  const lessonPollMs = liveConnected && liveState ? LESSON_POLL_MS : LESSON_POLL_NO_STATE_MS
+  useEffect(() => {
+    if (!lessonId || !token || isStaff) return undefined
+    const handle = setInterval(() => {
+      getLessonById(token, lessonId).then((d) => {
+        setLesson((prev) => (sameLessonSnapshot(prev, d) ? prev : d))
+        setState((s) => (s === 'ready' ? s : 'ready'))
+      }).catch(() => {})
+    }, lessonPollMs)
+    return () => clearInterval(handle)
+  }, [lessonId, token, isStaff, lessonPollMs])
 
   useEffect(() => {
     if (!lessonId || !token) return undefined

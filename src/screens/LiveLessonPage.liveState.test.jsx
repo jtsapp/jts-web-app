@@ -439,15 +439,39 @@ describe('LiveLessonPage — статус занятия из состояния
 describe('LiveLessonPage — опрос шапки занятия', () => {
   // Статус приходит сокетом, шапке (ссылка на звонок, тема, состав) хватает
   // опроса раз в 30 с (решение владельца §2 п.6).
-  it('раз в 30 секунд, а не в 5', async () => {
+  it('сокет жив и состояние есть — раз в 30 секунд', async () => {
     await renderAsStudent()
-    expect(api.getLessonById).toHaveBeenCalledTimes(1)
+    await connectWith(liveState())
+    api.getLessonById.mockClear()
 
     await act(async () => { vi.advanceTimersByTime(29_000) })
-    expect(api.getLessonById).toHaveBeenCalledTimes(1)
+    expect(api.getLessonById).not.toHaveBeenCalled()
 
     await act(async () => { vi.advanceTimersByTime(1_000) })
+    expect(api.getLessonById).toHaveBeenCalledTimes(1)
+  })
+
+  // Без состояния статус берётся из опроса шапки — и опрашивать её надо так же
+  // часто, как до состояния занятия (решение владельца 28.09).
+  it('состояния нет — раз в 5 секунд', async () => {
+    await renderAsStudent()
+    api.getLessonById.mockClear()
+
+    await act(async () => { vi.advanceTimersByTime(5_000) })
+    expect(api.getLessonById).toHaveBeenCalledTimes(1)
+
+    await act(async () => { vi.advanceTimersByTime(5_000) })
     expect(api.getLessonById).toHaveBeenCalledTimes(2)
+  })
+
+  it('сокет лежит — раз в 5 секунд, даже если состояние было', async () => {
+    socketConnected = false
+    await renderAsStudent()
+    await connectWith(liveState())
+    api.getLessonById.mockClear()
+
+    await act(async () => { vi.advanceTimersByTime(5_000) })
+    expect(api.getLessonById).toHaveBeenCalledTimes(1)
   })
 })
 
