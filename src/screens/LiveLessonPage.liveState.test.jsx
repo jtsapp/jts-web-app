@@ -772,6 +772,41 @@ describe('LiveLessonPage — преподаватель', () => {
     expect(sendStage).not.toHaveBeenCalled()
   })
 
+  // «Внимание» перезагружает рамку ведущего — новая страница открывается на
+  // стадии 0, а сервер на том же материале стадию класса не сбрасывает: класс
+  // стоял бы на одной стадии, ведущий на другой.
+  describe('«Внимание» на стадии файлового урока', () => {
+    async function focusAtStage(classStage, ownStage) {
+      const { container } = await renderAsTeacher()
+      await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11, stageIndex: classStage }))
+      await frameStage(0)
+      await frameStage(ownStage)
+      fireEvent.click(container.querySelector('.lw-focus-btn'))
+      await flush()
+      return container
+    }
+
+    it('рамка ведущего возвращается на свою стадию, сервер получает её на эхо указки', async () => {
+      const container = await focusAtStage(3, 5)
+      const post = vi.spyOn(frameOf(container).contentWindow, 'postMessage')
+
+      await frameStage(0)
+      expect(post).toHaveBeenCalledWith(...gotoStage(5))
+
+      await push(leadingAt(3, 11, { version: 2, focusSeq: 2, stageIndex: 3 }))
+      expect(sendStage).toHaveBeenCalledTimes(1)
+      expect(sendStage).toHaveBeenCalledWith(11, 5)
+    })
+
+    it('класс уже на той же стадии — на эхо серверу ничего не уходит', async () => {
+      await focusAtStage(5, 5)
+
+      await push(leadingAt(3, 11, { version: 2, focusSeq: 2, stageIndex: 5 }))
+
+      expect(sendStage).not.toHaveBeenCalled()
+    })
+  })
+
   it('без ведения стадия не уходит', async () => {
     await renderAsTeacher()
     await connectWith(liveState({ focusSeq: 1, sectionId: 3, materialId: 11 }))

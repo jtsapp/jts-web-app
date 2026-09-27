@@ -456,6 +456,13 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     ? liveTitles.map((title, index) => ({ index, title, taskCount: 0 }))
     : serverStages
   const currentStage = stageAt.materialId === activeMaterialKey ? stageAt.index : 0
+  // Стадия, на которой ведущий нажал «Внимание». Оно перезагружает его рамку, и
+  // новая страница открывается на стадии 0, а сервер на том же материале стадию
+  // класса не сбрасывает: класс и ведущий разошлись бы. Рамка возвращается на
+  // неё, сервер получает её на эхо своей указки (как сверка в web-admin). Две
+  // отметки, потому что эхо приходит и раньше, и позже открытия рамки.
+  const stageToRestoreRef = useRef(null)
+  const stageToShareRef = useRef(null)
 
   // Упражнения, скрытые преподавателем поштучно («Скрыть это упражнение от ученика»).
   // Вырезать их на сервере нельзя: шаги приезжают из каталога — один и тот же урок на
@@ -572,12 +579,31 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     setStageAt({ materialId: activeMaterialKey, index })
     // Ведущий преподаватель сообщает стадию своей рамки серверу — за ней идут
     // следующие ученики. Только переход: где страница открылась после загрузки,
-    // классу не указ. И только на материале класса: рамка другого материала
-    // говорит о своём, а не о том, что видит класс.
-    if (opening) return
+    // классу не указ (после «Внимания» рамка сама вернётся на свою стадию). И
+    // только на материале класса: рамка другого материала говорит о своём, а не
+    // о том, что видит класс.
+    if (opening) {
+      restoreStageAfterFocus(index)
+      return
+    }
     if (isStaff && presenting && liveState?.materialId != null && liveState.materialId === activeMaterialKey) {
       sendStage(activeMaterialKey, index)
     }
+  }
+
+  function restoreStageAfterFocus(openedAt) {
+    const stage = stageToRestoreRef.current
+    stageToRestoreRef.current = null
+    if (stage?.materialId === activeMaterialKey && stage.index !== openedAt) {
+      materialFrameRef.current?.gotoStage?.(stage.index)
+    }
+  }
+
+  function shareStageAfterFocus(live) {
+    const stage = stageToShareRef.current
+    stageToShareRef.current = null
+    if (!stage || !live.leading || stage.materialId !== live.materialId || live.stageIndex === stage.index) return
+    sendStage(stage.materialId, stage.index)
   }
 
   function handleFrameStageList(titles) {
@@ -860,6 +886,7 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     } else if (!prev.leading && next.leading) {
       setPresenting(true)
     }
+    if (next.focusSeq > prev.focusSeq) shareStageAfterFocus(next)
     // Указка из другой вкладки двигает бегунок «Т» и здесь.
     if (next.focusSeq > prev.focusSeq && next.focusView !== 'BOARD' && next.sectionId != null) {
       setTeacherStepId(next.stepId ?? next.sectionId)
@@ -1430,6 +1457,11 @@ export default function LiveLessonPage({ lessonId, userName, userLevel, token, o
     // «Т» и ведение ставим сразу, иначе преподаватель не увидит себя на треке.
     setTeacherStepId(onLessonSteps ? activeStepId : activeSectionId)
     setPresenting(true)
+    const stageAtFocus = !onLessonSteps && stageAt.materialId === activeMaterialKey
+      ? { materialId: activeMaterialKey, index: stageAt.index }
+      : null
+    stageToRestoreRef.current = stageAtFocus
+    stageToShareRef.current = stageAtFocus
     // На шагах каталога iframe нет — достаточно focus (+ stepId внутри него).
     if (onLessonSteps && activeStepId) {
       sendStepProgress({
