@@ -705,6 +705,14 @@ export function getLessonById(token, id) {
   return authGet(`/admin/lessons/${id}`, token)
 }
 
+// Состояние живого занятия (где класс, ведёт ли преподаватель, стадия, таймер,
+// статус) — снимок при входе и после каждого переподключения сокета; дальше
+// оно приходит каналом /topic/lesson/{id}/state. Без SWR-кэша: снимок из кэша
+// увёл бы вошедшего ученика к позиции класса, которой уже нет.
+export function getLiveState(token, lessonId) {
+  return authGet(`/admin/lessons/${lessonId}/live-state`, token)
+}
+
 export function startLiveLesson(token, id) {
   return authPut(`/admin/lessons/${id}/start`, token)
 }
