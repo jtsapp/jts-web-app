@@ -8,6 +8,10 @@
 // вкладках, а заголовки «Караоке» и «Ситуации» — 18px вместо 24px. Это
 // сверено по узлам, а не на глаз; править надо макет, а не здесь.
 //
+// Одно отступление от макета — по решению владельца (27.09.2026): в макете
+// сказки открывают вкладку, у нас они последняя секция везде, где есть. Не
+// возвращать наверх при следующей сверке с макетом.
+//
 // `modules` — какие тренажёры секция выводит (пара баннеров — два), по ним
 // считается подпись «N тренажёров» на карточке навыка.
 
@@ -15,7 +19,6 @@ export const SKILLS = [
   {
     key: 'listening',
     sections: [
-      { id: 'tales', all: 'pill' },
       { id: 'listenPair', modules: ['listening', 'listenchoose'] },
       // «Слов в картинках» на экране макета нет, хотя в таблице модулей они
       // стоят в Аудировании. Без баннера раздел пропал бы из Практики вовсе,
@@ -24,15 +27,16 @@ export const SKILLS = [
       { id: 'shadowing', all: 'link' },
       { id: 'karaoke', all: 'pill', small: true },
       { id: 'memes', all: 'pill' },
+      { id: 'tales', all: 'pill' },
     ],
   },
   {
     key: 'reading',
     sections: [
-      { id: 'tales', all: 'pill' },
       { id: 'reading' },
       { id: 'books', all: 'pill' },
       { id: 'comics', all: 'pill' },
+      { id: 'tales', all: 'pill' },
     ],
   },
   {
@@ -46,10 +50,10 @@ export const SKILLS = [
   {
     key: 'speaking',
     sections: [
-      { id: 'tales', all: 'link' },
       { id: 'shadowing', all: 'link' },
       { id: 'situations', all: 'pill', small: true },
       { id: 'karaoke', all: 'pill', small: true },
+      { id: 'tales', all: 'link' },
     ],
   },
 ]

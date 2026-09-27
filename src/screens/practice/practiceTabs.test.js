@@ -6,8 +6,14 @@ describe('practiceTabs', () => {
     expect(SKILLS.map((s) => s.key)).toEqual(['listening', 'reading', 'writing', 'speaking'])
   })
 
+  it('сказки — последней секцией в каждой вкладке, где они есть', () => {
+    const withTales = SKILLS.filter((s) => s.sections.some((sec) => sec.id === 'tales'))
+    expect(withTales.map((s) => s.key)).toEqual(['listening', 'reading', 'speaking'])
+    for (const s of withTales) expect(s.sections.at(-1).id, s.key).toBe('tales')
+  })
+
   it('тренажёры навыка считаются по модулям, пара баннеров — за два', () => {
-    expect(skillModules('reading')).toEqual(['tales', 'reading', 'books', 'comics'])
+    expect(skillModules('reading')).toEqual(['reading', 'books', 'comics', 'tales'])
     expect(skillModules('writing')).toEqual(['grammar', 'writing', 'verbs', 'workbooks'])
     expect(skillModules('speaking')).toHaveLength(4)
     expect(skillModules('listening')).toContain('words')
