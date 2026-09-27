@@ -113,9 +113,10 @@ async function renderAsStudent() {
 }
 
 /**
- * Тот же Данияр, но урок уже открыт разобранным на шаги и преподаватель позвал
- * класс на `ex1`. Без «Внимания на упражнение» указки на экране нет вовсе
- * (`liveQuestionId` отдаётся только в followMode), и наблюдать было бы нечего.
+ * Тот же Данияр, но урок уже открыт разобранным на шаги и преподаватель ведёт
+ * класс на `ex1` — так говорит состояние занятия с сервера. Без ведения указки
+ * на экране нет вовсе (`liveQuestionId` отдаётся только в followMode), и
+ * наблюдать было бы нечего.
  */
 async function renderOnStep() {
   sectionsFixture = [
@@ -131,8 +132,11 @@ async function renderOnStep() {
   // Разделы и урок каталога доезжают промисами уже после первого рендера.
   await act(async () => {})
   await act(async () => {
-    socketHandlers.onFocus?.({
-      senderUserId: 7, senderRole: 'TEACHER', sectionId: 1, materialId: 100, stepId: 'ex1', questionId: 'block-0',
+    socketHandlers.onState?.({
+      lessonId: 5, version: 1, status: 'IN_PROGRESS', pausedUntilMs: null,
+      leading: true, focusSeq: 1, focusView: 'LESSON',
+      sectionId: 1, materialId: 100, stepId: 'ex1', questionId: 'block-0', stageIndex: null,
+      timer: null, serverNowMs: Date.now(),
     })
   })
   await act(async () => {})

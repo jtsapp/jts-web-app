@@ -31,8 +31,18 @@ export const LOAD_SETTLE_MS = 350
 // скрипт в файле сообщает 'jts-lesson'/'stage' на каждом переходе (→ onStage),
 // а gotoStage просит его перейти на стадию от имени 'jts-workspace'. Ходит
 // мимо BRIDGE_HOST намеренно: это разговор с движком урока, а не с мостом.
+//
+// `stage` — стадия класса, за которой идёт следующий ученик (состояние занятия,
+// спека live-lesson-server-state §7). Уходит тем же goto-stage, но только в
+// загруженную и осевшую рамку: пока она грузится, сообщение потерялось бы
+// молча. Поэтому стадия отправляется после каждой загрузки заново — явная
+// указка перезагружает рамку, и новая страница о стадии ничего не знает.
+//
+// Снимок рамки преподавателя (ответ на request-snapshot) уходит в onSnapshot,
+// отдельно от живых действий (onPresentEvent): кому его отдать — классу после
+// «Внимания» или одному догоняющему ученику — решает страница.
 const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
-  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, onMirror, onPresentEvent, onStage, onStageList, className = '' },
+  { lessonId, token, material, isStaff, reviewStudentId, follow, reloadToken, presenting, stage = null, onMirror, onPresentEvent, onSnapshot, onStage, onStageList, className = '' },
   ref
 ) {
   const { t } = useI18n()
@@ -48,6 +58,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
   // hiddenStepIds || []), а null здесь однозначно читается как «нечего
   // накатывать при следующей загрузке».
   const pendingHiddenKeysRef = useRef(null)
+  // Последняя стадия класса — для отправки после осадки, которая наступает уже
+  // вне рендера (таймер в handleLoad).
+  const stageRef = useRef(stage)
 
   useEffect(() => {
     loadedRef.current = false
@@ -64,6 +77,13 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // hiddenStepIds, а не на reloadToken). Стереть его здесь — вернуть тот же
     // баг, который чинит этот ref, просто с другим триггером потери.
   }, [material?.id, reloadToken])
+
+  // Стоит ПОСЛЕ сброса выше: сменились и стадия, и рамка в одном рендере —
+  // сброс уже отметил рамку незагруженной, и стадия дождётся её загрузки.
+  useEffect(() => {
+    stageRef.current = stage
+    if (stage != null && settledRef.current) postStage(stage)
+  }, [stage])
 
   useImperativeHandle(ref, () => ({
     replay(events) {
@@ -90,7 +110,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     // этот клик уходит собеседнику тем же мостом, что и настоящие, — класс идёт
     // следом сам, здесь ничего досылать не нужно.
     gotoStage(index) {
-      iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+      postStage(index)
     },
     // Скрытие вживую: преподаватель прячет задание/блок PATCH'ом .../visibility,
     // но CSS для этого вшивается только при рендере файла на сервере — уже
@@ -137,6 +157,10 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     iframeRef.current?.contentWindow?.postMessage({ source: BRIDGE_HOST, ...payload }, '*')
   }
 
+  function postStage(index) {
+    iframeRef.current?.contentWindow?.postMessage(gotoStageMessage(index), '*')
+  }
+
   function handleLoad() {
     loadedRef.current = true
     setTimeout(() => {
@@ -153,6 +177,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         post({ type: 'hidden-blocks', keys: pendingHiddenKeysRef.current })
         pendingHiddenKeysRef.current = null
       }
+      if (stageRef.current != null) postStage(stageRef.current)
     }, LOAD_SETTLE_MS)
   }
 
@@ -179,9 +204,9 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
         return
       }
       if (!presenting) return
-      // Catch-up batch after «Внимание на упражнение» (reply to request-snapshot).
+      // Ответ на request-snapshot: весь поток, дошедший до рамки преподавателя.
       if (data.type === 'snapshot' && Array.isArray(data.events)) {
-        onPresentEvent?.(data.events)
+        onSnapshot?.(data.events)
         return
       }
       if (data.type === 'present-event') {
@@ -190,7 +215,7 @@ const SectionMaterialFrame = forwardRef(function SectionMaterialFrame(
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [isStaff, presenting, onMirror, onPresentEvent, onStage, onStageList])
+  }, [isStaff, presenting, onMirror, onPresentEvent, onSnapshot, onStage, onStageList])
 
   if (!material) {
     return <div className="lw-material-empty">{t('lesson.ws.noMaterial')}</div>

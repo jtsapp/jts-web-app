@@ -151,7 +151,12 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
   it('метка преподавателя не путает раздел занятия со стадией файла', async () => {
     const { container } = await renderAsStudent()
     await act(async () => {
-      socketHandlers.onFocus?.({ senderUserId: 6, senderRole: 'TEACHER', sectionId: 3, materialId: 11 })
+      socketHandlers.onState?.({
+        lessonId: 14, version: 1, status: 'IN_PROGRESS', pausedUntilMs: null,
+        leading: true, focusSeq: 1, focusView: 'LESSON',
+        sectionId: 3, materialId: 11, stepId: null, questionId: null, stageIndex: null,
+        timer: null, serverNowMs: Date.now(),
+      })
     })
     expect(container.querySelector('.lv-topics__teacher')).toBeNull()
   })

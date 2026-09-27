@@ -3,27 +3,25 @@ import { Client } from '@stomp/stompjs'
 import { wsBase } from '../../lib/wsUrl.js'
 
 // Живая координация урока помимо доски: состояние занятия (state — где класс,
-// ведёт ли преподаватель, стадия, таймер, статус), «Внимание на упражнение»
-// (focus), зеркалирование действий студента внутри материала (mirror),
-// проигрывание потока действий учителя студенту (present), сигнал «список
-// разделов изменился» (sectionsChanged). Порт web-admin'овского
-// LessonLiveSocketService на голый @stomp/stompjs — тот же
-// brokerURL/connectHeaders, что и в useLessonPresence.js. Колбэки передаются
+// ведёт ли преподаватель, стадия, таймер, статус), зеркалирование действий
+// студента внутри материала (mirror), проигрывание потока действий учителя
+// студенту (present), сигнал «список разделов изменился» (sectionsChanged).
+// Порт web-admin'овского LessonLiveSocketService на голый @stomp/stompjs — тот
+// же brokerURL/connectHeaders, что и в useLessonPresence.js. Колбэки передаются
 // параметром (как в useLessonBoard), чтобы не плодить лишний React-стейт здесь —
 // событие пришло, вызвали и всё. Брокер рассылает публикацию всем подписчикам
-// топика, включая самого отправителя — focus/present сравнивают senderUserId с
-// selfUserId и глушат собственное эхо (тот же приём, что и в useLessonBoard).
+// топика, включая самого отправителя — present сравнивает senderUserId с
+// selfUserId и глушит собственное эхо (тот же приём, что и в useLessonBoard).
 //
-// Канала timer здесь больше нет: таймер считается от времени окончания в
-// состоянии (спека live-lesson-server-state §7). Сервер строит состояние из
-// timer любой админки, в том числе старой, и пока пересылает старый канал для
-// старых клиентов.
+// Каналов focus и timer здесь больше нет: их заменило состояние (спека
+// live-lesson-server-state §7). Сервер строит его из focus/timer любой админки,
+// в том числе старой, и пока пересылает старые каналы для старых клиентов.
 //
 // `isStaff` — подписываться ли на учительский канал шагов. Работа ученика идёт
 // не в общий топик урока, а в `.../step-progress/staff`: иначе в групповом
 // занятии браузер каждого ученика получал бы ответы всех остальных (рисовать
 // он их не станет, но данные были бы уже на устройстве).
-export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, onState, onCatchUp, onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved, isStaff = false } = {}) {
+export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved, isStaff = false } = {}) {
   const clientRef = useRef(null)
   // Соединение нужно знать снаружи: publish до CONNECT молча теряется, и
   // вызывающему приходится ждать связи, чтобы отправить состояние (см.
@@ -34,8 +32,8 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
   // onVocabSaved здесь не было вовсе: подписка на канал слова вызывала
   // handlersRef.current.onVocabSaved, которого в объекте не существовало, — и
   // ученик не узнавал о слове, которое ему только что положили.
-  const handlersRef = useRef({ onConnect, onState, onCatchUp, onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved })
-  useEffect(() => { handlersRef.current = { onConnect, onState, onCatchUp, onFocus, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved } })
+  const handlersRef = useRef({ onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved })
+  useEffect(() => { handlersRef.current = { onConnect, onState, onCatchUp, onMirror, onPresent, onSectionsChanged, onStepProgress, onAnswerCorrection, onAnswerReset, onAudioBroadcast, onCall, onWatch, onVocabSaved } })
 
   useEffect(() => {
     if (!lessonId || !token) return undefined
@@ -56,11 +54,6 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
           const evt = parse(m.body)
           if (evt) handlersRef.current.onState?.(evt)
         })
-        client.subscribe(`/topic/lesson/${lessonId}/focus`, (m) => {
-          const evt = parse(m.body)
-          if (!evt || evt.senderUserId === selfUserId) return
-          handlersRef.current.onFocus?.(evt)
-        })
         client.subscribe(`/topic/lesson/${lessonId}/material-mirror`, (m) => {
           const evt = parse(m.body)
           if (evt) handlersRef.current.onMirror?.(evt)
@@ -76,7 +69,7 @@ export function useLessonLiveSocket(lessonId, token, selfUserId, { onConnect, on
         })
         // Учитель транслирует аудио всему классу ("Транслировать классу") — лесson-wide
         // топик, как и позиция учителя в step-progress. Своё эхо глушим тем же приёмом,
-        // что и focus/present: у teacher-клиента звук уже играет локально по клику.
+        // что и present: у teacher-клиента звук уже играет локально по клику.
         client.subscribe(`/topic/lesson/${lessonId}/audio`, (m) => {
           const evt = parse(m.body)
           if (!evt || evt.senderUserId === selfUserId) return

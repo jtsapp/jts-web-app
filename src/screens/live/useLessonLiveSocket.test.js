@@ -25,7 +25,6 @@ describe('useLessonLiveSocket', () => {
     expect(lastClient.cfg.connectHeaders.Authorization).toBe('Bearer TOK')
     expect(Object.keys(lastClient.subs)).toEqual(expect.arrayContaining([
       '/topic/lesson/7/state',
-      '/topic/lesson/7/focus',
       '/topic/lesson/7/material-mirror',
       '/topic/lesson/7/present',
       '/topic/lesson/7/sections-changed',
@@ -34,11 +33,12 @@ describe('useLessonLiveSocket', () => {
     ]))
   })
 
-  /* Таймер заменило состояние занятия (спека §7): время окончания сервер строит
-     из timer любой админки, в том числе старой. Старый канал сервер ещё
-     рассылает — подпишись на него новый клиент, отсчёт заводился бы дважды. */
-  it('на старый канал timer не подписывается', () => {
+  /* Указку и таймер заменило состояние занятия (спека §7): сервер строит его из
+     focus/timer любой админки, в том числе старой. Старые каналы сервер ещё
+     рассылает — подпишись на них новый клиент, указка применялась бы дважды. */
+  it('на старые каналы focus и timer не подписывается', () => {
     renderHook(() => useLessonLiveSocket(7, 'TOK', 1, {}))
+    expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/focus')
     expect(Object.keys(lastClient.subs)).not.toContain('/topic/lesson/7/timer')
   })
 
@@ -199,25 +199,19 @@ describe('useLessonLiveSocket', () => {
     })
   })
 
-  it('drops focus/present echoes from itself but delivers events from others', () => {
-    const onFocus = vi.fn()
+  it('drops present echoes from itself but delivers events from others', () => {
     const onPresent = vi.fn()
-    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onFocus, onPresent }))
-
-    act(() => {
-      lastClient.subs['/topic/lesson/7/focus']({ body: JSON.stringify({ sectionId: 2, materialId: 5, senderUserId: 1 }) })
-    })
-    expect(onFocus).not.toHaveBeenCalled()
-
-    act(() => {
-      lastClient.subs['/topic/lesson/7/focus']({ body: JSON.stringify({ sectionId: 2, materialId: 5, senderUserId: 9 }) })
-    })
-    expect(onFocus).toHaveBeenCalledWith({ sectionId: 2, materialId: 5, senderUserId: 9 })
+    renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onPresent }))
 
     act(() => {
       lastClient.subs['/topic/lesson/7/present']({ body: JSON.stringify({ materialId: 5, events: [], senderUserId: 1 }) })
     })
     expect(onPresent).not.toHaveBeenCalled()
+
+    act(() => {
+      lastClient.subs['/topic/lesson/7/present']({ body: JSON.stringify({ materialId: 5, events: [], senderUserId: 9 }) })
+    })
+    expect(onPresent).toHaveBeenCalledWith({ materialId: 5, events: [], senderUserId: 9 })
   })
 
   it('passes mirror events through unconditionally and fires onSectionsChanged', () => {
@@ -407,7 +401,7 @@ describe('useLessonLiveSocket', () => {
 
   // Трансляция преподавателя ("Транслировать классу") — лесson-wide /topic/lesson/7/audio,
   // тот же канал, что несёт позицию учителя в step-progress. Своё эхо глушится тем же
-  // приёмом, что у focus/present.
+  // приёмом, что у present.
   it('доставляет трансляцию учителя, но глушит собственное эхо', () => {
     const onAudioBroadcast = vi.fn()
     renderHook(() => useLessonLiveSocket(7, 'TOK', 1, { onAudioBroadcast }))
