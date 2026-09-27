@@ -911,7 +911,7 @@ describe('LiveLessonPage — преподаватель', () => {
     })
     await frameStage(0)
 
-    const post = vi.spyOn(frameOf(container).contentWindow, 'postMessage')
+    const post = await loadFrame(container)
     fireEvent.click(screen.getByRole('button', { name: 'Practice' }))
     expect(post).toHaveBeenCalledWith(...gotoStage(2))
     await frameStage(2)
@@ -934,6 +934,7 @@ describe('LiveLessonPage — преподаватель', () => {
     await frameStage(5)
 
     expect(sendStage).not.toHaveBeenCalled()
+    expect(sendPresent).not.toHaveBeenCalled()
   })
 
   // «Внимание» перезагружает рамку ведущего — новая страница снова открывается

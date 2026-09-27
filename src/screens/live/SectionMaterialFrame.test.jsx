@@ -56,43 +56,65 @@ describe('SectionMaterialFrame — стадии файлового урока', 
     expect(onMirror).toHaveBeenCalledWith({ selector: '#a', eventType: 'click', value: null })
   })
 
-  it('gotoStage шлёт рамке goto-stage от имени рабочей области', () => {
+  it('gotoStage шлёт осевшей рамке goto-stage от имени рабочей области', async () => {
+    vi.useFakeTimers()
     const { ref, iframe } = renderFrame()
+    await settle(iframe)
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     act(() => {
       ref.current.gotoStage(4)
     })
     expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')
+    vi.useRealTimers()
   })
 })
 
 // Стадию в рамке преподавателя двигает не только он: мост проигрывает
-// сохранённую работу ученика и зеркалит его клики, а страница сама сообщает,
-// где открылась. Переходом преподавателя стадия считается, только если в этом
-// документе он действовал сам: доверенный клик или ввод (present-event) или
-// свой переход по стадиям (gotoStage).
+// сохранённую работу ученика и зеркалит его клики, страница сама сообщает, где
+// открылась, а restoreStage доводит рамку до нужной стадии. Своей стадия
+// считается только сразу после его действия (stage-rule-exact.md): разовый
+// признак взводят доверенный клик или ввод (present-event) и свой переход по
+// стадиям, гасит первый же отчёт о стадии, и через 500 мс он истекает.
 describe('SectionMaterialFrame — стадия как действие преподавателя', () => {
   afterEach(() => vi.useRealTimers())
 
   const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
   const presentEvent = (eventType = 'click') => message({ source: 'jts-bridge', type: 'present-event', selector: '#rail > button', eventType })
   const ownFlags = (onStage) => onStage.mock.calls.map(([, { own }]) => own)
+  const wait = (ms) => act(async () => { vi.advanceTimersByTime(ms) })
+  const goto = (index) => [{ source: 'jts-workspace', type: 'goto-stage', index }, '*']
 
-  it('проигрывание и зеркало меняют стадию — не его действие; доверенный клик — его', async () => {
+  it('после своего клика стадия его, следующая подряд (проигрывание, зеркало) — уже нет', async () => {
+    vi.useFakeTimers()
     const onStage = vi.fn()
     renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
 
     await stage(0)
     await stage(2)
     await presentEvent()
+    await wait(400)
+    await stage(3)
+    await stage(4)
+
+    expect(ownFlags(onStage)).toEqual([false, false, true, false])
+  })
+
+  it('стадия позже 500 мс после клика — не его', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+
+    await presentEvent()
+    await wait(501)
     await stage(3)
 
-    expect(ownFlags(onStage)).toEqual([false, false, true])
+    expect(ownFlags(onStage)).toEqual([false])
   })
 
   // isTrusted прокрутку не отличает от программной (её роняют и переходы,
-  // проигранные мостом), поэтому она действием не считается.
+  // проигранные мостом), поэтому она признак не взводит.
   it('прокрутка — не действие преподавателя', async () => {
+    vi.useFakeTimers()
     const onStage = vi.fn()
     renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
 
@@ -102,50 +124,80 @@ describe('SectionMaterialFrame — стадия как действие преп
     expect(ownFlags(onStage)).toEqual([false])
   })
 
-  it('свой переход по стадиям — действие преподавателя', async () => {
+  // До осадки goto-stage пропал бы, а признак остался бы стоять — и своей
+  // посчиталась бы стадия открытия новой страницы.
+  it('свой переход до осадки отложен; стадия открытия — не его, стадия перехода — его', async () => {
+    vi.useFakeTimers()
     const onStage = vi.fn()
-    const { ref } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+    const { ref, container, rerender } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+    await settle(container.querySelector('iframe'))
 
+    rerender(frame({ ref, isStaff: true, reviewStudentId: 8, onStage }))
+    const fresh = container.querySelector('iframe')
+    const post = vi.spyOn(fresh.contentWindow, 'postMessage')
     act(() => { ref.current.gotoStage(4) })
+    expect(post).not.toHaveBeenCalled()
+    await stage(0)
+
+    await settle(fresh)
+    expect(post).toHaveBeenCalledWith(...goto(4))
     await stage(4)
 
-    expect(ownFlags(onStage)).toEqual([true])
+    expect(ownFlags(onStage)).toEqual([false, true])
   })
 
-  it('новый документ в рамке — признак сброшен', async () => {
+  it('новый документ в рамке — взведённый признак сброшен', async () => {
+    vi.useFakeTimers()
     const onStage = vi.fn()
     const { rerender } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
     await presentEvent()
-    await stage(2)
 
     rerender(frame({ isStaff: true, reviewStudentId: 7, reloadToken: 1, onStage }))
     await stage(0)
-    await stage(4)
 
-    expect(ownFlags(onStage)).toEqual([true, false, false])
+    expect(ownFlags(onStage)).toEqual([false])
   })
 
-  // Доводка до стадии (класса после F5, своей после «Внимания») — не действие
+  // Доводка (класса после F5, своей после «Внимания») — не действие
   // преподавателя. Мост передаёт её синтетический клик по рельсу наверх тем же
-  // present-event, и этот отголосок признак не ставит.
-  it('доводка ждёт осадки рамки, её отголосок не считается действием', async () => {
+  // present-event: этот отголосок признак не взводит и классу не уходит — класс
+  // уже на этой стадии.
+  it('доводка ждёт осадки; её стадия не его, отголосок признак не взводит и дальше не идёт', async () => {
     vi.useFakeTimers()
     const onStage = vi.fn()
-    const { ref, iframe } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
+    const onPresentEvent = vi.fn()
+    const { ref, iframe } = renderFrame({ isStaff: true, presenting: true, reviewStudentId: 7, onStage, onPresentEvent })
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
 
     act(() => { ref.current.restoreStage(3) })
     expect(post).not.toHaveBeenCalled()
     await settle(iframe)
-    expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 3 }, '*')
+    expect(post).toHaveBeenCalledWith(...goto(3))
 
     await stage(3)
     await presentEvent()
     await stage(5)
-    await presentEvent()
-    await stage(6)
 
-    expect(ownFlags(onStage)).toEqual([false, false, true])
+    expect(ownFlags(onStage)).toEqual([false, false])
+    expect(onPresentEvent).not.toHaveBeenCalled()
+  })
+
+  // Отголоска может не быть (у файла нет рельса, мост ещё не слушает) — тогда
+  // окно не должно съесть настоящий клик.
+  it('клик позже 1 с после доводки — его действие', async () => {
+    vi.useFakeTimers()
+    const onStage = vi.fn()
+    const onPresentEvent = vi.fn()
+    const { ref, iframe } = renderFrame({ isStaff: true, presenting: true, reviewStudentId: 7, onStage, onPresentEvent })
+    act(() => { ref.current.restoreStage(3) })
+    await settle(iframe)
+
+    await wait(1_001)
+    await presentEvent()
+    await stage(5)
+
+    expect(ownFlags(onStage)).toEqual([true])
+    expect(onPresentEvent).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -254,15 +306,34 @@ describe('SectionMaterialFrame — новый документ в рамке', (
   const stage = (index) => message({ source: 'jts-lesson', type: 'stage', index, total: 7 })
 
   it('сменился ученик для просмотра — стадия новой страницы не действие преподавателя', async () => {
+    vi.useFakeTimers()
     const onStage = vi.fn()
     const { rerender } = renderFrame({ isStaff: true, reviewStudentId: 7, onStage })
     await message({ source: 'jts-bridge', type: 'present-event', selector: '#a', eventType: 'click' })
-    await stage(2)
 
     rerender(frame({ isStaff: true, reviewStudentId: 8, onStage }))
     await stage(0)
 
     expect(onStage).toHaveBeenLastCalledWith({ index: 0, total: 7 }, { own: false })
+  })
+
+  // Таймер осадки прошлой страницы, сработав уже после смены документа, отметил
+  // бы новую осевшей раньше времени — и ей стали бы писать до её загрузки.
+  it('осадка прошлого документа новому не засчитывается', async () => {
+    vi.useFakeTimers()
+    const { ref, container, rerender } = renderFrame({ follow: true })
+    const old = container.querySelector('iframe')
+    await act(async () => { old.dispatchEvent(new Event('load')) })
+
+    rerender(frame({ ref, follow: true, reloadToken: 1 }))
+    const fresh = container.querySelector('iframe')
+    const post = vi.spyOn(fresh.contentWindow, 'postMessage')
+    await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
+    act(() => { ref.current.setHiddenKeys(['s1']) })
+    expect(post).not.toHaveBeenCalled()
+
+    await settle(fresh)
+    expect(post).toHaveBeenCalledWith({ source: 'jts-bridge-host', type: 'hidden-blocks', keys: ['s1'] }, '*')
   })
 
   // Поздний вход ученика включает страницу следования без перезагрузки: ответ

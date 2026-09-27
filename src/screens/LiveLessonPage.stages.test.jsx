@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, act, fireEvent } from '@testing-library/react'
 import { I18nProvider } from '../i18n.jsx'
+import { LOAD_SETTLE_MS } from './live/SectionMaterialFrame.jsx'
 
 let socketHandlers = {}
 let sectionsFixture = []
@@ -136,10 +137,18 @@ describe('LiveLessonPage — «Темы» ученика на файловом �
   })
 
   // Переход идёт через рамку, а не через своё состояние: скрипт кликает рельс
-  // стадий в файле, и этот же клик зеркалом уходит преподавателю.
-  it('клик по стадии шлёт рамке goto-stage', async () => {
+  // стадий в файле, и этот же клик зеркалом уходит преподавателю. Рамка должна
+  // осесть — в грузящуюся goto-stage пропал бы.
+  it('клик по стадии шлёт осевшей рамке goto-stage', async () => {
     const { container, getByRole } = await renderAsStudent()
     const iframe = container.querySelector('iframe.lw-material-iframe')
+    vi.useFakeTimers()
+    try {
+      await act(async () => { iframe.dispatchEvent(new Event('load')) })
+      await act(async () => { vi.advanceTimersByTime(LOAD_SETTLE_MS) })
+    } finally {
+      vi.useRealTimers()
+    }
     const post = vi.spyOn(iframe.contentWindow, 'postMessage')
     fireEvent.click(getByRole('button', { name: 'Listening' }))
     expect(post).toHaveBeenCalledWith({ source: 'jts-workspace', type: 'goto-stage', index: 4 }, '*')
